@@ -43,6 +43,37 @@ export function withHP(character, maxHP) {
 }
 
 /**
+ * Reserved ResourcePool id for a character's mana. Like HP, mana is a regular
+ * pool of `type: 'mana'` so spend/restore reuse the existing machinery; a
+ * character without this pool simply has no mana tracking.
+ */
+export const MANA_RESOURCE_ID = 'mana';
+
+/**
+ * @param {Character} character
+ * @returns {ResourcePool | null} the character's mana pool, if they have one
+ */
+export function getMana(character) {
+  return character.resources.find((r) => r.id === MANA_RESOURCE_ID) ?? null;
+}
+
+/**
+ * Give a character a mana pool at full, replacing any existing one. Ordered
+ * after HP so the two bars read HP-then-mana on the card.
+ * @param {Character} character
+ * @param {number} maxMana
+ * @returns {Character}
+ */
+export function withMana(character, maxMana) {
+  const mana = createResource(MANA_RESOURCE_ID, 'Mana', 'mana', maxMana);
+  const hp = character.resources.filter((r) => r.id === HP_RESOURCE_ID);
+  const others = character.resources.filter(
+    (r) => r.id !== MANA_RESOURCE_ID && r.id !== HP_RESOURCE_ID,
+  );
+  return { ...character, resources: [...hp, mana, ...others] };
+}
+
+/**
  * Fill in fields a loaded character may predate: any missing ability score at
  * the neutral 10 (keeping existing values) and an empty-string race. No HP
  * pool is invented — its absence legitimately means "no HP tracking".

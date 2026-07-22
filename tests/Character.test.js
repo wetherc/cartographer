@@ -5,7 +5,10 @@ import {
   withDefaults,
   withHP,
   getHP,
+  withMana,
+  getMana,
   HP_RESOURCE_ID,
+  MANA_RESOURCE_ID,
   ABILITY_SCORES,
   addXP,
   setStat,
@@ -68,6 +71,32 @@ test('HP damage/heal works through the generic resource spend/restore machinery'
   assert.equal(getHP(hero)?.current, 6);
   hero = restoreResource(hero, HP_RESOURCE_ID, 100);
   assert.equal(getHP(hero)?.current, 10);
+});
+
+test('withMana gives a full pool of type mana under the reserved id, replacing any existing one', () => {
+  let mage = withMana(createCharacter('c1', 'Mage'), 8);
+  const mana = getMana(mage);
+  assert.equal(mana?.id, MANA_RESOURCE_ID);
+  assert.equal(mana?.type, 'mana');
+  assert.deepEqual({ current: mana?.current, max: mana?.max }, { current: 8, max: 8 });
+
+  mage = withMana(mage, 12);
+  assert.equal(mage.resources.filter((r) => r.id === MANA_RESOURCE_ID).length, 1);
+  assert.equal(getMana(mage)?.max, 12);
+});
+
+test('withMana orders HP before mana and leaves other resources intact', () => {
+  let mage = withHP(createCharacter('c1', 'Mage'), 10);
+  mage = addResource(mage, createResource('ki', 'Ki', 'custom', 3));
+  mage = withMana(mage, 8);
+  assert.deepEqual(
+    mage.resources.map((r) => r.id),
+    [HP_RESOURCE_ID, MANA_RESOURCE_ID, 'ki'],
+  );
+});
+
+test('getMana returns null when no mana pool exists', () => {
+  assert.equal(getMana(createCharacter('c1', 'Fighter')), null);
 });
 
 test('addXP accumulates without leveling up below the threshold', () => {

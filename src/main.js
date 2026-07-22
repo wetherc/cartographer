@@ -29,7 +29,7 @@ import { mountMapDescription } from './ui/MapDescription.js';
 import { mountTileTooltip } from './ui/TileTooltip.js';
 import { promptModal, confirmModal } from './ui/Modal.js';
 import { PartyTracker } from './party/PartyTracker.js';
-import { createCharacter, withHP } from './entities/Character.js';
+import { createCharacter, withHP, withMana } from './entities/Character.js';
 import { createEncounter, encountersAt } from './entities/Encounter.js';
 import { slugId, replaceById, removeById } from './entities/Roster.js';
 import { mountCharacterRoster } from './ui/CharacterRoster.js';
@@ -616,14 +616,17 @@ const characterRoster = mountCharacterRoster(mustGetElement('party-container'), 
       { name: 'name', label: 'Name', value: '' },
       { name: 'race', label: 'Race', value: '' },
       { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1 },
+      { name: 'maxMana', label: 'Max mana', type: 'number', value: 0, min: 0 },
     ]);
     const name = values?.name.trim();
     if (!values || !name) return;
     const maxHP = Math.max(1, Number(values.maxHP) || 1);
-    const created = withHP(
+    const maxMana = Math.max(0, Number(values.maxMana) || 0);
+    let created = withHP(
       createCharacter(slugId(name, characters.map((c) => c.id)), name, {}, values.race.trim()),
       maxHP,
     );
+    if (maxMana > 0) created = withMana(created, maxMana);
     characters = [...characters, created];
     selectCharacter(characters[characters.length - 1].id);
   },
