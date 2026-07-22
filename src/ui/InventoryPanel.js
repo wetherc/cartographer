@@ -1,4 +1,5 @@
 import { addItem, removeItem } from '../entities/Character.js';
+import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -49,7 +50,9 @@ export function mountInventoryPanel(container, character, onChange = () => {}) {
 
       const removeButton = document.createElement('button');
       removeButton.type = 'button';
-      removeButton.textContent = '-';
+      removeButton.className = 'btn btn--icon btn--danger';
+      removeButton.setAttribute('aria-label', `Remove one ${item.name}`);
+      removeButton.appendChild(icon('minus'));
       removeButton.addEventListener('click', () => commit(removeItem(current, item.id, 1)));
 
       row.append(label, removeButton);
@@ -63,17 +66,20 @@ export function mountInventoryPanel(container, character, onChange = () => {}) {
     const nameInput = document.createElement('input');
     nameInput.type = 'text';
     nameInput.placeholder = 'Item name';
-    nameInput.className = 'inventory-panel__name-input';
+    nameInput.className = 'field inventory-panel__name-input';
 
     const quantityInput = document.createElement('input');
     quantityInput.type = 'number';
     quantityInput.value = '1';
     quantityInput.min = '1';
-    quantityInput.className = 'inventory-panel__quantity-input';
+    quantityInput.className = 'field inventory-panel__quantity-input';
+    quantityInput.setAttribute('aria-label', 'Quantity to add');
 
     const addButton = document.createElement('button');
     addButton.type = 'button';
-    addButton.textContent = 'Add item';
+    addButton.className = 'btn btn--primary';
+    addButton.setAttribute('aria-label', 'Add item');
+    addButton.appendChild(icon('add'));
     addButton.addEventListener('click', () => {
       const name = nameInput.value.trim();
       const quantity = Number(quantityInput.value);

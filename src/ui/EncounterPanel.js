@@ -1,4 +1,5 @@
 import { applyDamage, heal, isDefeated } from '../entities/Encounter.js';
+import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
 
@@ -45,18 +46,23 @@ export function mountEncounterPanel(container, encounters, onChange = () => {}) 
       amountInput.type = 'number';
       amountInput.value = '1';
       amountInput.min = '0';
-      amountInput.className = 'encounter-panel__amount';
+      amountInput.className = 'field encounter-panel__amount';
+      amountInput.setAttribute('aria-label', `Damage/heal amount for ${encounter.name}`);
 
       const damageButton = document.createElement('button');
       damageButton.type = 'button';
-      damageButton.textContent = 'Damage';
+      damageButton.className = 'btn btn--icon btn--danger';
+      damageButton.setAttribute('aria-label', `Damage ${encounter.name}`);
+      damageButton.appendChild(icon('damage'));
       damageButton.addEventListener('click', () => {
         updateOne(encounter.id, (e) => applyDamage(e, Number(amountInput.value)));
       });
 
       const healButton = document.createElement('button');
       healButton.type = 'button';
-      healButton.textContent = 'Heal';
+      healButton.className = 'btn btn--icon btn--success';
+      healButton.setAttribute('aria-label', `Heal ${encounter.name}`);
+      healButton.appendChild(icon('heal'));
       healButton.addEventListener('click', () => {
         updateOne(encounter.id, (e) => heal(e, Number(amountInput.value)));
       });

@@ -10,9 +10,9 @@
   <header class="app-header">
     <h1>Campaign Builder</h1>
     <div class="app-header__actions">
-      <button id="save-btn" type="button">Save</button>
-      <button id="export-btn" type="button">Export</button>
-      <button id="import-btn" type="button">Import</button>
+      <button id="save-btn" class="btn btn--primary" type="button">Save</button>
+      <button id="export-btn" class="btn" type="button">Export</button>
+      <button id="import-btn" class="btn" type="button">Import</button>
       <input id="import-input" type="file" accept="application/json" hidden />
     </div>
   </header>
@@ -24,10 +24,16 @@
     </section>
 
     <aside class="app-sidebar">
-      <section id="character-sheet-container" class="panel"></section>
-      <section id="inventory-container" class="panel"></section>
-      <section id="encounter-container" class="panel"></section>
-      <section id="dice-tray-container" class="panel"></section>
+      <section id="character-sheet-container" class="card" aria-label="Character sheet"></section>
+      <section id="inventory-container" class="card" aria-label="Inventory">
+        <h2 class="card__title">Inventory</h2>
+      </section>
+      <section id="encounter-container" class="card" aria-label="Encounters">
+        <h2 class="card__title">Encounters</h2>
+      </section>
+      <section id="dice-tray-container" class="card" aria-label="Dice tray">
+        <h2 class="card__title">Dice</h2>
+      </section>
     </aside>
   </main>
 

@@ -187,7 +187,7 @@ Each phase should land as its own set of commits (following the existing per-mod
 
 ## Status — To Do (UI overhaul)
 
-- [ ] **Phase A** — design tokens (color/spacing/type custom properties), `.btn`/`.field`/`.card` shared classes, inline SVG icon set; retrofit `DiceTray`/`CharacterSheet`/`InventoryPanel`/`EncounterPanel`/`Breadcrumb` with no behavior change
+- [x] **Phase A** — design tokens (color/spacing/type/radius/elevation custom properties in `style.css` `:root`, with a `prefers-color-scheme: dark` override), shared `.btn` (+ `--primary`/`--danger`/`--success`/`--icon` variants), `.field`, and `.card` (+ `.card__title`) classes, and an inline-SVG icon set (`src/ui/icons.js`, `icon(name)` builds a detached 24x24 stroke SVG in `currentColor`). Retrofitted `DiceTray` (icon steppers + primary Roll), `CharacterSheet`/`InventoryPanel` (`.field` inputs, icon add/remove buttons), `EncounterPanel` (danger/success icon damage/heal), header actions, and the sidebar sections (now `.card`s with titles) with no behavior change. Breadcrumb restyled via CSS only (no JS change). Typecheck clean, 77 tests still pass, visually verified in-browser (no console errors)
 - [ ] **Phase B** — fix `MapCanvas` pointer-coordinate scaling bug (canvas buffer size vs. CSS-rendered size); draw a map-bounds indicator distinct from fog; breadcrumb visual polish
 - [ ] **Phase C** — tile metadata inspector/editor; tile painting via the palette (place/replace/remove); `MapNode` create/delete; region-link authoring (select block → link to child node); `ui/WorldTree.js` Build-mode navigation
 - [ ] **Phase D** — character roster CRUD + selector (replacing hardcoded `characters[0]`); encounter roster CRUD + selector (replacing hardcoded demo Goblin)
