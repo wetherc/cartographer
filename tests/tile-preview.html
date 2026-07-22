@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Tile preview</title>
+<style>
+  body { background: #222; font-family: sans-serif; color: #eee; }
+  h2 { margin: 24px 0 8px; }
+  .row { display: flex; gap: 0; }
+  img { width: 64px; height: 64px; display: block; image-rendering: pixelated; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 64px); gap: 0; }
+  .roadgrid { display: grid; grid-template-columns: repeat(4, 64px); gap: 0; width: max-content; }
+</style>
+</head>
+<body>
+<h2>Grass</h2>
+<div class="row"><img src="../assets/tiles/grass/grass-1.svg"><img src="../assets/tiles/grass/grass-2.svg"><img src="../assets/tiles/grass/grass-3.svg"><img src="../assets/tiles/grass/grass-1.svg"><img src="../assets/tiles/grass/grass-2.svg"></div>
+<h2>Forest</h2>
+<div class="row"><img src="../assets/tiles/forest/forest-1.svg"><img src="../assets/tiles/forest/forest-2.svg"><img src="../assets/tiles/forest/forest-3.svg"><img src="../assets/tiles/forest/forest-1.svg"><img src="../assets/tiles/forest/forest-2.svg"></div>
+<h2>Mountain</h2>
+<div class="row"><img src="../assets/tiles/mountain/mountain-1.svg"><img src="../assets/tiles/mountain/mountain-2.svg"><img src="../assets/tiles/mountain/mountain-3.svg"><img src="../assets/tiles/mountain/mountain-1.svg"><img src="../assets/tiles/mountain/mountain-2.svg"></div>
+<h2>Water</h2>
+<div class="row"><img src="../assets/tiles/water/water-1.svg"><img src="../assets/tiles/water/water-2.svg"><img src="../assets/tiles/water/water-3.svg"><img src="../assets/tiles/water/water-1.svg"><img src="../assets/tiles/water/water-2.svg"></div>
+<h2>Desert</h2>
+<div class="row"><img src="../assets/tiles/desert/desert-1.svg"><img src="../assets/tiles/desert/desert-2.svg"><img src="../assets/tiles/desert/desert-3.svg"><img src="../assets/tiles/desert/desert-1.svg"><img src="../assets/tiles/desert/desert-2.svg"></div>
+<h2>POI markers</h2>
+<div class="row"><img src="../assets/tiles/settlement/settlement.svg"><img src="../assets/tiles/dungeon/dungeon.svg"></div>
+<h2>Road network (path winding through grass)</h2>
+<div class="roadgrid" style="grid-template-columns: repeat(3, 64px);">
+  <img src="../assets/tiles/road/road-end-w.svg"><img src="../assets/tiles/road/road-h.svg"><img src="../assets/tiles/road/road-corner-sw.svg">
+  <img src="../assets/tiles/grass/grass-1.svg"><img src="../assets/tiles/grass/grass-2.svg"><img src="../assets/tiles/road/road-v.svg">
+  <img src="../assets/tiles/grass/grass-3.svg"><img src="../assets/tiles/grass/grass-1.svg"><img src="../assets/tiles/road/road-end-n.svg">
+</div>
+<h2>Road pieces (all)</h2>
+<div class="roadgrid">
+  <img src="../assets/tiles/road/road-h.svg"><img src="../assets/tiles/road/road-v.svg"><img src="../assets/tiles/road/road-cross.svg"><img src="../assets/tiles/road/road-corner-ne.svg">
+  <img src="../assets/tiles/road/road-corner-nw.svg"><img src="../assets/tiles/road/road-corner-se.svg"><img src="../assets/tiles/road/road-corner-sw.svg"><img src="../assets/tiles/road/road-end-n.svg">
+  <img src="../assets/tiles/road/road-end-s.svg"><img src="../assets/tiles/road/road-end-e.svg"><img src="../assets/tiles/road/road-end-w.svg">
+</div>
+</body>
+</html>
