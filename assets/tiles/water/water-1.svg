@@ -1,8 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#3f7fb0"/>
-  <g stroke="#7fb8e0" stroke-width="2.5" fill="none" stroke-linecap="round">
-    <path d="M6 18 Q16 12 26 18 T46 18 T64 18"/>
-    <path d="M0 34 Q10 28 20 34 T40 34 T60 34"/>
-    <path d="M6 50 Q16 44 26 50 T46 50 T64 50"/>
+  <rect width="64" height="64" fill="#33719f"/>
+  <ellipse cx="20" cy="26" rx="15" ry="9" fill="#2d6591"/>
+  <ellipse cx="48" cy="46" rx="11" ry="7" fill="#2d6591"/>
+  <g fill="#8ac2e6">
+    <circle cx="42" cy="10" r="1"/>
+    <circle cx="12" cy="44" r="1"/>
+    <circle cx="55" cy="30" r="0.9"/>
+  </g>
+  <g fill="none" stroke-linecap="round">
+    <path d="M0 16 Q8 10 16 16 T32 16 T48 16 T64 16" stroke="#2a5d87" stroke-width="2.5" transform="translate(0 2.5)"/>
+    <path d="M0 16 Q8 10 16 16 T32 16 T48 16 T64 16" stroke="#8ac2e6" stroke-width="2"/>
+    <path d="M0 36 Q8 42 16 36 T32 36 T48 36 T64 36" stroke="#2a5d87" stroke-width="2.5" transform="translate(0 2.5)"/>
+    <path d="M0 36 Q8 42 16 36 T32 36 T48 36 T64 36" stroke="#8ac2e6" stroke-width="2"/>
+    <path d="M0 56 Q8 50 16 56 T32 56 T48 56 T64 56" stroke="#2a5d87" stroke-width="2.5" transform="translate(0 2)"/>
+    <path d="M0 56 Q8 50 16 56 T32 56 T48 56 T64 56" stroke="#8ac2e6" stroke-width="2"/>
   </g>
 </svg>

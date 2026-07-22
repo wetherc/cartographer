@@ -1,10 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#3f7fb0"/>
-  <g stroke="#7fb8e0" stroke-width="2.5" fill="none" stroke-linecap="round">
-    <path d="M-4 12 Q6 6 16 12 T36 12 T56 12 T76 12"/>
-    <path d="M-8 30 Q2 24 12 30 T32 30 T52 30 T72 30"/>
+  <rect width="64" height="64" fill="#33719f"/>
+  <ellipse cx="42" cy="24" rx="14" ry="8" fill="#2d6591"/>
+  <g fill="none" stroke="#a8d4f0">
+    <circle cx="18" cy="46" r="3" stroke-width="1.5"/>
+    <circle cx="18" cy="46" r="6.5" stroke-width="1" opacity="0.7"/>
+    <circle cx="18" cy="46" r="10" stroke-width="0.8" opacity="0.4"/>
   </g>
-  <circle cx="46" cy="46" r="3" fill="none" stroke="#a8d4f0" stroke-width="1.5"/>
-  <circle cx="46" cy="46" r="7" fill="none" stroke="#a8d4f0" stroke-width="1"/>
-  <circle cx="18" cy="52" r="2" fill="none" stroke="#a8d4f0" stroke-width="1.2"/>
+  <g fill="#8ac2e6">
+    <circle cx="50" cy="46" r="1"/>
+    <circle cx="10" cy="26" r="0.9"/>
+  </g>
+  <g fill="none" stroke-linecap="round">
+    <path d="M0 16 Q8 10 16 16 T32 16 T48 16 T64 16" stroke="#2a5d87" stroke-width="2.5" transform="translate(0 2.5)"/>
+    <path d="M0 16 Q8 10 16 16 T32 16 T48 16 T64 16" stroke="#8ac2e6" stroke-width="2"/>
+    <path d="M0 36 Q8 42 16 36 T32 36 T48 36 T64 36" stroke="#2a5d87" stroke-width="2.5" transform="translate(0 2.5)"/>
+    <path d="M0 36 Q8 42 16 36 T32 36 T48 36 T64 36" stroke="#8ac2e6" stroke-width="2"/>
+    <path d="M0 56 Q8 50 16 56 T32 56 T48 56 T64 56" stroke="#2a5d87" stroke-width="2.5" transform="translate(0 2)"/>
+    <path d="M0 56 Q8 50 16 56 T32 56 T48 56 T64 56" stroke="#8ac2e6" stroke-width="2"/>
+  </g>
 </svg>
