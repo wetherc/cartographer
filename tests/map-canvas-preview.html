@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>MapCanvas preview</title>
+  <style>
+    body { background: #111; color: #eee; font-family: sans-serif; padding: 1rem; }
+    canvas { background: #000; border: 1px solid #444; cursor: grab; }
+    p { max-width: 40rem; }
+  </style>
+</head>
+<body>
+  <h1>MapCanvas preview</h1>
+  <p>8x6 grid, mix of terrain + a road strip + one unrevealed fog tile. Drag to pan, wheel to zoom.</p>
+  <canvas id="map" width="640" height="480"></canvas>
+
+  <script type="module">
+    import { createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
+    import { TilePalette } from '../src/map/TilePalette.js';
+    import { MapCanvas } from '../src/map/MapCanvas.js';
+
+    const palette = new TilePalette();
+    const rng = () => Math.random();
+    let node = createMapNode('world', 'World', null, 8, 6);
+
+    for (let y = 0; y < 6; y++) {
+      for (let x = 0; x < 8; x++) {
+        const entry = y === 2 ? palette.getRoadPiece(x === 0 ? 'end-w' : x === 7 ? 'end-e' : 'h')
+          : palette.pickVariant('grass', rng);
+        const revealed = !(x === 5 && y === 4);
+        node = setTile(node, createTile(`${x},${y}`, entry.imageRef, { revealed }));
+      }
+    }
+
+    const canvas = document.getElementById('map');
+    const mapCanvas = new MapCanvas(canvas, palette, { tileSize: 48 });
+    mapCanvas.setNode(node);
+  </script>
+</body>
+</html>
