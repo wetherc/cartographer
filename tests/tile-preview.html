@@ -77,11 +77,15 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     'grass/grass-1', 'grass/grass-2', 'road/road-end-e', 'road/road-corner-nw',
   ].map((s) => (s.startsWith('road/') ? cell('grass/grass-1', s) : cell(s))).join('');
 
+  // Every piece, ordered on the 4-wide grid so no two neighboring tiles have
+  // road ends that meet: no left tile opens east onto a right tile that opens
+  // west, and no upper tile opens south onto a lower tile that opens north. So
+  // the roads read as isolated fragments, not one connected network.
   document.getElementById('road-all').innerHTML = [
-    'road-h', 'road-v', 'road-cross',
-    'road-tee-n', 'road-tee-s', 'road-tee-e', 'road-tee-w',
-    'road-corner-ne', 'road-corner-nw', 'road-corner-se', 'road-corner-sw',
-    'road-end-n', 'road-end-s', 'road-end-w', 'road-end-e',
+    'road-h', 'road-end-n', 'road-tee-n', 'road-end-e',
+    'road-end-w', 'road-corner-nw', 'road-corner-ne', 'road-v',
+    'road-tee-w', 'road-cross', 'road-tee-e', 'road-end-s',
+    'road-corner-sw', 'road-tee-s', 'road-corner-se',
   ].map((r) => cell('grass/grass-1', `road/${r}`)).join('');
 </script>
 </body>
