@@ -9,11 +9,11 @@
   <polygon points="14,27 31,17 48,27" fill="#8a6f4a"/>
   <polygon points="31,17 48,27 31,27" fill="#6b5236"/>
   <path d="M18 24.8 L44 24.8 M22 22.2 L40 22.2" stroke="#7a5f40" stroke-width="0.7" fill="none"/>
-  <!-- striped awning -->
-  <path d="M15 31 L47 31 L44 37 L18 37 Z" fill="#c94f3d"/>
-  <path d="M19 31 L21.5 37 M27 31 L28.5 37 M35 31 L33.5 37 M43 31 L40.5 37" stroke="#eee6d4" stroke-width="3" fill="none"/>
-  <path d="M15 31 L47 31 L44 37 L18 37 Z" fill="none" stroke="#8f3a2c" stroke-width="0.8"/>
-  <path d="M18 37 q1.5 1.8 3 0 q1.5 1.8 3 0 q1.5 1.8 3 0 q1.5 1.8 3 0 q1.5 1.8 3 0 q1.5 1.8 3 0 q1.5 1.8 3 0 q1.5 1.8 2.9 0" fill="none" stroke="#8f3a2c" stroke-width="0.9"/>
+  <!-- striped awning: widens toward the viewer at the bottom -->
+  <path d="M17 31 L45 31 L48 37 L14 37 Z" fill="#c94f3d"/>
+  <path d="M20 31 L17.6 37 M26.5 31 L25.5 37 M35.5 31 L36.5 37 M42 31 L44.4 37" stroke="#eee6d4" stroke-width="3" fill="none"/>
+  <path d="M17 31 L45 31 L48 37 L14 37 Z" fill="none" stroke="#8f3a2c" stroke-width="0.8"/>
+  <path d="M14 37 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0 q1.7 1.8 3.4 0" fill="none" stroke="#8f3a2c" stroke-width="0.9"/>
   <!-- display window and door -->
   <rect x="19.5" y="40" width="9" height="7" fill="#b9d4d8" stroke="#8a6f4a" stroke-width="0.8"/>
   <path d="M24 40 V47 M19.5 43.5 H28.5" stroke="#8a6f4a" stroke-width="0.6"/>

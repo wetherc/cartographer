@@ -17,7 +17,7 @@
   <path d="M18 29 L30 15.5 L45 26.5 L41 28 L22 29.5 Z" fill="#6b4a8c"/>
   <path d="M30 15.5 L45 26.5 L41 28 L31 28.4 Z" fill="#523a6d"/>
   <path d="M21.5 26.5 L40 25.2 M25 23 L36 21.5" stroke="#5d4179" stroke-width="0.8" fill="none"/>
-  <rect x="38" y="14" width="3.5" height="7" fill="#8a8f94" stroke="#6f747a" stroke-width="0.5" transform="rotate(8 39.7 17.5)"/>
+  <rect x="38" y="16" width="3.5" height="9" fill="#8a8f94" stroke="#6f747a" stroke-width="0.5" transform="rotate(8 39.75 20.5)"/>
   <!-- round window, glowing green -->
   <circle cx="31.5" cy="31" r="2.6" fill="#9fe08a" stroke="#8a6f4a" stroke-width="0.8"/>
   <path d="M29 31 H34 M31.5 28.5 V33.5" stroke="#8a6f4a" stroke-width="0.55"/>

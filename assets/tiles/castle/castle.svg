@@ -7,7 +7,7 @@
   <!-- keep behind curtain wall -->
   <g>
     <rect x="26" y="16" width="12" height="18" fill="#b0aa9e" stroke="#6f6a60" stroke-width="0.8"/>
-    <path d="M25 16 h3 v-3 h2 v3 h4 v-3 h2 v3 h3 v3 h-14 Z" fill="#9a948a"/>
+    <path d="M25 16 h3 v-3 h2 v3 h4 v-3 h2 v3 h3 v3 h-14 Z" fill="#9a948a" stroke="#6f6a60" stroke-width="0.6"/>
     <rect x="30.6" y="22" width="2.8" height="4.5" rx="1.4" fill="#3a3630"/>
     <path d="M32 10 L32 15" stroke="#5a4530" stroke-width="1"/>
     <path d="M32 10 L38 11.5 L32 13 Z" fill="#b03a2e"/>
