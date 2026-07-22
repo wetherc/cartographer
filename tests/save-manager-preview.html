@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>SaveManager preview</title>
+  <style>
+    body { font-family: sans-serif; padding: 1rem; }
+    pre { background: #eee; padding: 0.5rem; max-width: 40rem; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <button id="save">Save to localStorage</button>
+  <button id="load">Load from localStorage</button>
+  <button id="download">Download .json</button>
+  <pre id="output"></pre>
+
+  <script type="module">
+    import { createMapNode, createTile, setTile, TileGrid } from '../src/map/TileGrid.js';
+    import { createCharacter, addXP } from '../src/entities/Character.js';
+    import { createEncounter } from '../src/entities/Encounter.js';
+    import { buildState, saveToLocalStorage, loadFromLocalStorage, downloadState, toTileGrid } from '../src/storage/SaveManager.js';
+
+    let world = createMapNode('world', 'World', null, 1, 1);
+    world = setTile(world, createTile('0,0', 'grass.svg', { revealed: true }));
+    const grid = new TileGrid();
+    grid.addNode(world);
+
+    const party = { nodeId: 'world', tileId: '0,0' };
+    const characters = [addXP(createCharacter('c1', 'Hero'), 50)];
+    const encounters = [createEncounter('e1', 'Goblin', 7)];
+    const state = buildState(grid, party, characters, encounters);
+
+    const output = document.getElementById('output');
+
+    document.getElementById('save').addEventListener('click', () => {
+      saveToLocalStorage(state);
+      output.textContent = 'Saved.';
+    });
+
+    document.getElementById('load').addEventListener('click', () => {
+      const loaded = loadFromLocalStorage();
+      const rebuilt = loaded && toTileGrid(loaded);
+      output.textContent = loaded
+        ? `Loaded. World tile revealed: ${rebuilt.getNode('world').tiles[0].revealed}, Hero xp: ${loaded.characters[0].xp}, Hero level: ${loaded.characters[0].level}`
+        : 'Nothing saved yet.';
+    });
+
+    document.getElementById('download').addEventListener('click', () => {
+      downloadState(state);
+    });
+  </script>
+</body>
+</html>
