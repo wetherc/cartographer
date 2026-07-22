@@ -24,6 +24,7 @@ import { collectSubtreeIds } from './map/WorldTree.js';
 import { mountTileInspector } from './ui/TileInspector.js';
 import { mountPalettePanel } from './ui/PalettePanel.js';
 import { mountMapControls } from './ui/MapControls.js';
+import { mountMapDescription } from './ui/MapDescription.js';
 import { mountTileTooltip } from './ui/TileTooltip.js';
 import { promptModal, confirmModal } from './ui/Modal.js';
 import { PartyTracker } from './party/PartyTracker.js';
@@ -70,6 +71,13 @@ const canvasEl = /** @type {HTMLCanvasElement} */ (mustGetElement('map-canvas'))
 function syncPartyMarker() {
   const position = partyTracker.getPosition();
   mapCanvas.setPartyTile(position.nodeId === navigator.getCurrentNode().id ? position.tileId : null);
+  refreshMapDescription();
+}
+
+/** Re-narrate the current map for the screen-reader live region. Called wherever
+ * the node, party, fog, or tiles change (the same events that redraw). */
+function refreshMapDescription() {
+  mapDescription.update(navigator.getCurrentNode(), partyTracker.getPosition(), currentMode === 'build');
 }
 
 /**
@@ -451,6 +459,7 @@ function applyToTile(tileId, transform) {
   if (tileId === selectedTileId) {
     inspector.setTile(getTile(updated, tileId) ?? null, true);
   }
+  refreshMapDescription();
 }
 
 const tileTooltip = mountTileTooltip(document.body);
@@ -489,6 +498,8 @@ mapControls = mountMapControls(mustGetElement('map-viewport'), {
   onFit: () => mapCanvas.fit(),
   getZoom: () => mapCanvas.scale,
 });
+
+const mapDescription = mountMapDescription(mustGetElement('map-viewport'));
 
 // Keep the canvas buffer matched to the CSS size of the element (times the
 // device pixel ratio), so the map fills the fluid layout column instead of
@@ -636,6 +647,7 @@ mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => 
   if (mode !== 'build') clearSelection();
   worldTree.update();
   regionTree.update();
+  refreshMapDescription();
 });
 
 /**
