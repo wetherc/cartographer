@@ -14,7 +14,8 @@ test('TilePalette ships with built-in road connector pieces', () => {
   const palette = new TilePalette();
   const cross = palette.getRoadPiece('cross');
   assert.equal(cross.imageRef, 'assets/tiles/road/road-cross.svg');
-  assert.equal(palette.listVariants('road').length, 11);
+  assert.equal(palette.getRoadPiece('tee-n').imageRef, 'assets/tiles/road/road-tee-n.svg');
+  assert.equal(palette.listVariants('road').length, 15);
 });
 
 test('TilePalette ships with single-image POI markers', () => {

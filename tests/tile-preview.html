@@ -78,9 +78,10 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
   ].map((s) => (s.startsWith('road/') ? cell('grass/grass-1', s) : cell(s))).join('');
 
   document.getElementById('road-all').innerHTML = [
-    'road-h', 'road-v', 'road-cross', 'road-corner-ne',
-    'road-corner-nw', 'road-corner-se', 'road-corner-sw', 'road-end-n',
-    'road-end-s', 'road-end-w', 'road-end-e',
+    'road-h', 'road-v', 'road-cross',
+    'road-tee-n', 'road-tee-s', 'road-tee-e', 'road-tee-w',
+    'road-corner-ne', 'road-corner-nw', 'road-corner-se', 'road-corner-sw',
+    'road-end-n', 'road-end-s', 'road-end-w', 'road-end-e',
   ].map((r) => cell('grass/grass-1', `road/${r}`)).join('');
 </script>
 </body>

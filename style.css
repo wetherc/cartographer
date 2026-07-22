@@ -417,16 +417,18 @@ body.mode-build .app-sidebar {
    ========================================================================== */
 
 .palette__tools {
-  display: flex;
-  /* Tool buttons refuse to shrink below their icon + label, so let the row
-     wrap instead of overflowing the card when the rail is narrow. */
-  flex-wrap: wrap;
+  /* A 2-column grid so the four tool buttons are all the same width,
+     regardless of label length. */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-2);
   margin-bottom: var(--space-3);
 }
 
 .palette__tools .palette__item {
-  flex: 1 1 auto;
+  /* Center the icon + label; the grid track sets the width. */
+  justify-content: center;
+  min-width: 0;
 }
 
 .palette__item--active {

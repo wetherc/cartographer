@@ -66,12 +66,12 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   bindSelect(inspectBtn, null);
   inspectBtnRef.el = inspectBtn;
 
-  const eraseBtn = document.createElement('button');
-  eraseBtn.type = 'button';
-  eraseBtn.className = 'btn btn--danger palette__item';
-  eraseBtn.appendChild(icon('remove'));
-  eraseBtn.appendChild(document.createTextNode('Erase'));
-  bindSelect(eraseBtn, 'erase');
+  const regionBtn = document.createElement('button');
+  regionBtn.type = 'button';
+  regionBtn.className = 'btn palette__item';
+  regionBtn.appendChild(icon('map'));
+  regionBtn.appendChild(document.createTextNode('Region'));
+  bindSelect(regionBtn, 'region');
 
   const erasePathBtn = document.createElement('button');
   erasePathBtn.type = 'button';
@@ -80,14 +80,15 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   erasePathBtn.appendChild(document.createTextNode('Erase path'));
   bindSelect(erasePathBtn, 'erase-path');
 
-  const regionBtn = document.createElement('button');
-  regionBtn.type = 'button';
-  regionBtn.className = 'btn palette__item';
-  regionBtn.appendChild(icon('map'));
-  regionBtn.appendChild(document.createTextNode('Region'));
-  bindSelect(regionBtn, 'region');
+  const eraseBtn = document.createElement('button');
+  eraseBtn.type = 'button';
+  eraseBtn.className = 'btn btn--danger palette__item';
+  eraseBtn.appendChild(icon('remove'));
+  eraseBtn.appendChild(document.createTextNode('Erase tile'));
+  bindSelect(eraseBtn, 'erase');
 
-  tools.append(inspectBtn, eraseBtn, erasePathBtn, regionBtn);
+  // Grid order (row-major): Inspect, Region, Erase path, Erase tile.
+  tools.append(inspectBtn, regionBtn, erasePathBtn, eraseBtn);
   root.appendChild(tools);
 
   // Swatch grid of every palette entry.
