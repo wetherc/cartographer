@@ -2,6 +2,7 @@ import {
   setStat,
   addXP,
   getHP,
+  getMana,
   spendResource,
   restoreResource,
   XP_PER_LEVEL,
@@ -13,29 +14,32 @@ import { icon } from './icons.js';
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
 /**
- * Build the compact HP healthbar shown on the collapsed card. Absence of an
- * HP pool (older saves) renders no bar rather than a fake full one.
- * @param {ResourcePool} hp
+ * Build a compact stat bar (HP or mana) shown on the collapsed card. Absence
+ * of the pool (older saves, no mana) renders no bar rather than a fake full one.
+ * @param {ResourcePool} pool
+ * @param {{ modifier: string, label: string, critical?: boolean }} opts
+ *   `modifier` selects the fill colour (`'hp'` | `'mana'`); `critical` arms the
+ *   low-fill red state (HP only).
  * @returns {HTMLElement}
  */
-function buildHPBar(hp) {
+function buildStatBar(pool, opts) {
   const wrap = document.createElement('span');
-  wrap.className = 'hp-bar';
+  wrap.className = 'stat-bar';
   wrap.setAttribute('role', 'img');
-  wrap.setAttribute('aria-label', `HP ${hp.current} of ${hp.max}`);
+  wrap.setAttribute('aria-label', `${opts.label} ${pool.current} of ${pool.max}`);
 
   const track = document.createElement('span');
-  track.className = 'hp-bar__track';
+  track.className = 'stat-bar__track';
   const fill = document.createElement('span');
-  fill.className = 'hp-bar__fill';
-  const ratio = hp.max > 0 ? hp.current / hp.max : 0;
+  fill.className = `stat-bar__fill stat-bar__fill--${opts.modifier}`;
+  const ratio = pool.max > 0 ? pool.current / pool.max : 0;
   fill.style.width = `${Math.round(ratio * 100)}%`;
-  if (ratio <= 0.25) fill.classList.add('hp-bar__fill--critical');
+  if (opts.critical && ratio <= 0.25) fill.classList.add('stat-bar__fill--critical');
   track.appendChild(fill);
 
   const text = document.createElement('span');
-  text.className = 'hp-bar__text';
-  text.textContent = `${hp.current}/${hp.max}`;
+  text.className = 'stat-bar__text';
+  text.textContent = `${pool.current}/${pool.max}`;
 
   wrap.append(track, text);
   return wrap;
@@ -99,7 +103,10 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
     }
 
     const hp = getHP(character);
-    if (hp) summary.appendChild(buildHPBar(hp));
+    if (hp) summary.appendChild(buildStatBar(hp, { modifier: 'hp', label: 'HP', critical: true }));
+
+    const mana = getMana(character);
+    if (mana) summary.appendChild(buildStatBar(mana, { modifier: 'mana', label: 'Mana' }));
 
     summary.appendChild(icon('chevron', { className: 'disclosure__chevron' }));
 

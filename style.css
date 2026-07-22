@@ -38,6 +38,7 @@
   --danger-contrast: #fbf9f4;
   --success: #3f7a3f;
   --success-contrast: #fbf9f4;
+  --mana: #3a5fa8;
   --focus-ring: #b8783f;
   --shadow-color: 30 25 15;
 
@@ -86,6 +87,7 @@
     --danger-contrast: #191712;
     --success: #6faa6f;
     --success-contrast: #191712;
+    --mana: #6f8fd0;
     --focus-ring: #d99a6a;
     --shadow-color: 0 0 0;
   }
@@ -722,14 +724,14 @@ body.mode-build .app-sidebar {
    HP healthbar
    ========================================================================== */
 
-.hp-bar {
+.stat-bar {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
   min-width: 0;
 }
 
-.hp-bar__track {
+.stat-bar__track {
   width: 3.5rem;
   height: 0.4rem;
   border-radius: 999px;
@@ -737,18 +739,22 @@ body.mode-build .app-sidebar {
   overflow: hidden;
 }
 
-.hp-bar__fill {
+.stat-bar__fill {
   display: block;
   height: 100%;
   border-radius: inherit;
   background: var(--success);
 }
 
-.hp-bar__fill--critical {
+.stat-bar__fill--mana {
+  background: var(--mana);
+}
+
+.stat-bar__fill--critical {
   background: var(--danger);
 }
 
-.hp-bar__text {
+.stat-bar__text {
   font-family: var(--font-mono);
   font-size: var(--text-label);
   color: var(--text-muted);
