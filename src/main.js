@@ -1,10 +1,18 @@
-import { createMapNode, createTile, setTile, TileGrid } from './map/TileGrid.js';
+import {
+  createMapNode,
+  createTile,
+  setTile,
+  getTile,
+  updateTileMetadata,
+  TileGrid,
+} from './map/TileGrid.js';
 import { TilePalette } from './map/TilePalette.js';
 import { MapCanvas } from './map/MapCanvas.js';
 import { MapNavigator } from './map/MapNavigator.js';
 import { mountBreadcrumb } from './ui/Breadcrumb.js';
 import { mountModeSwitch } from './ui/ModeSwitch.js';
 import { mountWorldTree } from './ui/WorldTree.js';
+import { mountTileInspector } from './ui/TileInspector.js';
 import { PartyTracker } from './party/PartyTracker.js';
 import { createCharacter, addResource } from './entities/Character.js';
 import { createResource } from './entities/Resource.js';
@@ -77,6 +85,11 @@ const initial = saved
 const { grid } = initial;
 let { characters, encounters } = initial;
 
+/** @type {'play' | 'build'} */
+let currentMode = 'play';
+/** @type {string | null} tile id selected for inspection/editing in Build mode */
+let selectedTileId = null;
+
 const navigator = new MapNavigator(grid, initial.party.nodeId);
 const partyTracker = new PartyTracker(grid, initial.party);
 
@@ -93,9 +106,17 @@ function syncPartyMarker() {
 function goToNode(nodeId) {
   navigator.goTo(nodeId);
   mapCanvas.setNode(navigator.getCurrentNode());
+  clearSelection();
   syncPartyMarker();
   breadcrumb.update(navigator.getBreadcrumb());
   worldTree.update();
+}
+
+/** Drop any Build-mode tile selection and its inspector/canvas highlight. */
+function clearSelection() {
+  selectedTileId = null;
+  mapCanvas.setSelectedTile(null);
+  inspector.setTile(null);
 }
 
 const breadcrumb = mountBreadcrumb(breadcrumbContainer, goToNode);
@@ -110,6 +131,12 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
   tileSize: 48,
   getNodeName: (nodeId) => grid.getNode(nodeId)?.name,
   onTileClick: (tile) => {
+    // In Build mode a click selects a tile to author, rather than navigating or
+    // moving the party (both of which are Play-mode actions).
+    if (currentMode === 'build') {
+      selectTile(tile.id);
+      return;
+    }
     if (tile.childNodeId) {
       if (navigator.zoomIn(tile.id)) {
         mapCanvas.setNode(navigator.getCurrentNode());
@@ -123,6 +150,23 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
     syncPartyMarker();
   },
 });
+
+const inspector = mountTileInspector(document.getElementById('inspector-container'), {
+  onChange: (patch) => {
+    if (!selectedTileId) return;
+    const updated = updateTileMetadata(navigator.getCurrentNode(), selectedTileId, patch);
+    grid.updateNode(updated);
+    mapCanvas.refreshNode(updated);
+    inspector.setTile(getTile(updated, selectedTileId) ?? null, true);
+  },
+});
+
+/** Select a tile within the current node and point the inspector at it. */
+function selectTile(tileId) {
+  selectedTileId = tileId;
+  mapCanvas.setSelectedTile(tileId);
+  inspector.setTile(getTile(navigator.getCurrentNode(), tileId) ?? null, true);
+}
 
 mapCanvas.setNode(navigator.getCurrentNode());
 syncPartyMarker();
@@ -154,9 +198,11 @@ mountDiceTray(document.getElementById('dice-tray-container'));
 
 // Play/Build mode drives which rails the layout shows (a body class toggled by
 // CSS), and defaults to Play so a first-run visitor lands on the live view.
-mountModeSwitch(document.getElementById('mode-switch-container'), 'play', (mode) => {
+mountModeSwitch(document.getElementById('mode-switch-container'), currentMode, (mode) => {
+  currentMode = mode;
   document.body.classList.toggle('mode-play', mode === 'play');
   document.body.classList.toggle('mode-build', mode === 'build');
+  if (mode !== 'build') clearSelection();
   worldTree.update();
 });
 

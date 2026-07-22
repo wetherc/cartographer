@@ -340,6 +340,48 @@ body.mode-build .app-sidebar {
   display: none;
 }
 
+/* ==========================================================================
+   Tile inspector (Build-mode right rail)
+   ========================================================================== */
+
+.tile-inspector__empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
+.tile-inspector__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tile-inspector__coord {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.tile-inspector__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.tile-inspector__field--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text);
+}
+
+.tile-inspector__notes {
+  resize: vertical;
+  font-family: inherit;
+}
+
 .app-main {
   display: flex;
   gap: var(--space-4);
