@@ -25,15 +25,36 @@ export function createTile(id, imageRef, overrides = {}) {
 
 /**
  * Create a map node (world/region/subregion/POI level) with an empty tile grid.
+ * Defaults to an outdoor region with no environment tag.
  * @param {string} id
  * @param {string} name
  * @param {string | null} parentId
  * @param {number} width
  * @param {number} height
+ * @param {{ kind?: import('../types/map.js').NodeKind, environ?: string | null }} [options]
  * @returns {MapNode}
  */
-export function createMapNode(id, name, parentId, width, height) {
-  return { id, name, parentId, width, height, tiles: [] };
+export function createMapNode(id, name, parentId, width, height, options = {}) {
+  return {
+    id,
+    name,
+    parentId,
+    width,
+    height,
+    tiles: [],
+    kind: options.kind ?? 'region',
+    environ: options.environ ?? null,
+  };
+}
+
+/**
+ * Backfill a loaded node with the kind/environ fields older saves predate, so
+ * a node written before interiors existed loads as a plain region.
+ * @param {MapNode} node
+ * @returns {MapNode}
+ */
+export function withNodeDefaults(node) {
+  return { ...node, kind: node.kind ?? 'region', environ: node.environ ?? null };
 }
 
 /**

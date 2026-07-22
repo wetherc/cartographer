@@ -10,6 +10,7 @@ function sampleGrid() {
   let world = createMapNode('world', 'World', null, 2, 2);
   world = setTile(world, createTile('0,0', 'grass.svg', { childNodeId: 'region', revealed: true }));
   grid.addNode(world);
+  grid.addNode(createMapNode('hall', 'Great Hall', 'world', 1, 1, { kind: 'interior', environ: 'castle' }));
   grid.addNode(createMapNode('region', 'Region', 'world', 1, 1));
   return grid;
 }
@@ -21,7 +22,7 @@ test('buildState collects grid nodes, party, characters, and encounters', () => 
   const encounters = [createEncounter('e1', 'Goblin', 7)];
 
   const state = buildState(grid, party, characters, encounters);
-  assert.equal(state.nodes.length, 2);
+  assert.equal(state.nodes.length, 3);
   assert.equal(state.party.nodeId, 'world');
   assert.equal(state.characters.length, 1);
   assert.equal(state.encounters.length, 1);
@@ -59,4 +60,22 @@ test('toTileGrid rebuilds a working TileGrid preserving hierarchy', () => {
   assert.equal(tile.revealed, true);
   const target = rebuilt.getZoomTarget(tile);
   assert.equal(target.id, 'region');
+});
+
+test('toTileGrid preserves node kind/environ and backfills older nodes as regions', () => {
+  const grid = sampleGrid();
+  const rebuilt = toTileGrid(deserialize(serialize(buildState(grid, null, [], []))));
+  const hall = rebuilt.getNode('hall');
+  assert.equal(hall.kind, 'interior');
+  assert.equal(hall.environ, 'castle');
+
+  // A node from a save predating the fields loads as a plain region.
+  const legacy = toTileGrid({
+    nodes: [{ id: 'old', name: 'Old', parentId: null, width: 1, height: 1, tiles: [] }],
+    party: null,
+    characters: [],
+    encounters: [],
+  });
+  assert.equal(legacy.getNode('old').kind, 'region');
+  assert.equal(legacy.getNode('old').environ, null);
 });

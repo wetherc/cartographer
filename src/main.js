@@ -9,6 +9,7 @@ import { TilePalette } from './map/TilePalette.js';
 import { MapCanvas, clientToBuffer, screenToTile, parseCoords } from './map/MapCanvas.js';
 import { paintTile, eraseTile, normalizeRect, tilesInRect, linkTilesInRect } from './map/TilePaint.js';
 import { computeRegionEntryTile } from './map/EntryPoint.js';
+import { NODE_KINDS, ENVIRONS } from './map/NodeKinds.js';
 import { MapNavigator } from './map/MapNavigator.js';
 import { discoveredNodes } from './map/FogOfWar.js';
 import {
@@ -89,9 +90,48 @@ function goToNode(nodeId) {
   mapCanvas.setNode(navigator.getCurrentNode());
   clearSelection();
   syncPartyMarker();
+  syncPaletteKind();
   breadcrumb.update(navigator.getBreadcrumb());
   worldTree.update();
   regionTree.update();
+}
+
+/**
+ * Modal fields (kind + environment) shared by the new-node and edit-node
+ * prompts. Environ is a single flat list of every suggested tag across kinds
+ * (the modal is static and can't repopulate when the kind select changes), so
+ * a GM can pick, say, an interior "temple" tag even while the select still says
+ * whatever it defaulted to; the model stores whatever string is chosen.
+ * @param {import('./types/map.js').NodeKind} kind
+ * @param {string | null} environ
+ * @returns {import('./ui/Modal.js').ModalField[]}
+ */
+function nodeKindFields(kind, environ) {
+  const environs = [...ENVIRONS.region, ...ENVIRONS.interior];
+  return [
+    {
+      name: 'kind',
+      label: 'Kind',
+      type: 'select',
+      value: kind,
+      options: NODE_KINDS.map((k) => ({ value: k, label: k[0].toUpperCase() + k.slice(1) })),
+    },
+    {
+      name: 'environ',
+      label: 'Environment',
+      type: 'select',
+      value: environ ?? '',
+      options: [
+        { value: '', label: '(none)' },
+        ...environs.map((e) => ({ value: e, label: e[0].toUpperCase() + e.slice(1) })),
+      ],
+    },
+  ];
+}
+
+/** Show the palette only the terrain the current node's kind can use. */
+function syncPaletteKind() {
+  palettePanel.setKind(navigator.getCurrentNode().kind);
 }
 
 /** Drop any Build-mode tile selection and its inspector/canvas highlight. */
@@ -169,12 +209,21 @@ async function addChildNode(parentId) {
     { name: 'name', label: 'Name', value: 'New region' },
     { name: 'width', label: 'Width (tiles)', type: 'number', value: 6, min: 1 },
     { name: 'height', label: 'Height (tiles)', type: 'number', value: 6, min: 1 },
+    ...nodeKindFields('region', null),
   ]);
   if (!values) return null;
   const id = freshNodeId();
   const width = Math.max(1, Number(values.width) || 1);
   const height = Math.max(1, Number(values.height) || 1);
-  grid.addNode(createMapNode(id, values.name || 'Untitled', parentId, width, height));
+  const kind = /** @type {import('./types/map.js').NodeKind} */ (
+    NODE_KINDS.includes(values.kind) ? values.kind : 'region'
+  );
+  grid.addNode(
+    createMapNode(id, values.name || 'Untitled', parentId, width, height, {
+      kind,
+      environ: values.environ || null,
+    }),
+  );
   worldTree.update();
   return id;
 }
@@ -226,6 +275,7 @@ async function editNode(nodeId) {
       { name: 'name', label: 'Name', value: node.name },
       { name: 'width', label: 'Width (tiles)', type: 'number', value: node.width, min: 1 },
       { name: 'height', label: 'Height (tiles)', type: 'number', value: node.height, min: 1 },
+      ...nodeKindFields(node.kind, node.environ),
     ],
     { submitLabel: 'Save' },
   );
@@ -240,7 +290,15 @@ async function editNode(nodeId) {
     );
     if (!ok) return;
   }
-  grid.updateNode({ ...resizeNode(node, width, height), name: values.name.trim() || node.name });
+  const kind = /** @type {import('./types/map.js').NodeKind} */ (
+    NODE_KINDS.includes(values.kind) ? values.kind : node.kind
+  );
+  grid.updateNode({
+    ...resizeNode(node, width, height),
+    name: values.name.trim() || node.name,
+    kind,
+    environ: values.environ || null,
+  });
 
   const position = partyTracker.getPosition();
   if (position.nodeId === nodeId) {
@@ -253,10 +311,12 @@ async function editNode(nodeId) {
     }
   }
   if (navigator.getCurrentNode().id === nodeId) {
-    // The extent changed, so re-frame the view; the selected tile may be gone.
+    // The extent or kind changed, so re-frame the view and re-filter the
+    // palette; the selected tile may be gone.
     clearSelection();
     mapCanvas.setNode(navigator.getCurrentNode());
     syncPartyMarker();
+    syncPaletteKind();
   }
   breadcrumb.update(navigator.getBreadcrumb());
   worldTree.update();
@@ -465,7 +525,7 @@ function applyToTile(tileId, transform) {
 const tileTooltip = mountTileTooltip(document.body);
 
 // The tooltip doubles as the palette's hover label, naming each image-only swatch.
-mountPalettePanel(
+const palettePanel = mountPalettePanel(
   mustGetElement('palette-container'),
   palette,
   (brush) => {
@@ -515,6 +575,7 @@ new ResizeObserver(resizeMapToViewport).observe(canvasEl);
 
 mapCanvas.setNode(navigator.getCurrentNode());
 syncPartyMarker();
+syncPaletteKind();
 breadcrumb.update(navigator.getBreadcrumb());
 
 /** @type {string | null} id of the character the sheet/inventory are scoped to */

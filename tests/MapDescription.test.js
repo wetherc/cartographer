@@ -19,8 +19,13 @@ function node() {
 
 test('describeNode reports name, size, and explored count in Play mode', () => {
   const text = describeNode(node(), null);
-  assert.match(text, /World, 4 by 3 tiles\./);
+  assert.match(text, /World, a region, 4 by 3 tiles\./);
   assert.match(text, /2 of 12 tiles explored\./); // two revealed tiles (0,0 and 2,1)
+});
+
+test('describeNode names the kind and environment when set', () => {
+  const n = { ...node(), kind: /** @type {const} */ ('interior'), environ: 'temple' };
+  assert.match(describeNode(n, null), /World, an interior \(temple\), 4 by 3 tiles\./);
 });
 
 test('describeNode reports the party position when the party is in the node', () => {

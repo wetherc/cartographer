@@ -1,4 +1,5 @@
 import { icon } from './icons.js';
+import { allowsPaletteType } from '../map/NodeKinds.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 /** @typedef {import('../map/TilePalette.js').PaletteEntry} PaletteEntry */
@@ -18,7 +19,7 @@ import { icon } from './icons.js';
  * @param {TilePalette} palette
  * @param {(brush: Brush) => void} onBrushChange
  * @param {ReturnType<import('./TileTooltip.js').mountTileTooltip>} [tooltip]
- * @returns {{ getBrush: () => Brush }}
+ * @returns {{ getBrush: () => Brush, setKind: (kind: string) => void }}
  */
 export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   /** @type {Brush} */
@@ -30,6 +31,9 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
 
   /** @type {HTMLElement[]} */
   const selectables = [];
+  /** @type {{ el: HTMLElement, type: string }[]} swatches, tagged with their palette type for kind-filtering */
+  const swatchEntries = [];
+  const inspectBtnRef = { el: /** @type {HTMLElement | null} */ (null) };
 
   /**
    * @param {HTMLElement} el
@@ -60,6 +64,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   inspectBtn.appendChild(icon('edit'));
   inspectBtn.appendChild(document.createTextNode('Inspect'));
   bindSelect(inspectBtn, null);
+  inspectBtnRef.el = inspectBtn;
 
   const eraseBtn = document.createElement('button');
   eraseBtn.type = 'button';
@@ -109,9 +114,25 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
     });
 
     bindSelect(swatch, entry);
+    swatchEntries.push({ el: swatch, type: entry.type });
     grid.appendChild(swatch);
   }
   root.appendChild(grid);
 
-  return { getBrush: () => brush };
+  /**
+   * Filter the swatch grid to the terrain a node kind can use (interiors show
+   * only interior/custom pieces, regions everything else). If the active brush
+   * is now hidden, fall back to Inspect so a stale hidden brush can't paint.
+   * @param {string} kind
+   */
+  function setKind(kind) {
+    for (const { el, type } of swatchEntries) {
+      el.hidden = !allowsPaletteType(kind, type);
+    }
+    if (brush && brush !== 'erase' && brush !== 'region' && !allowsPaletteType(kind, brush.type)) {
+      if (inspectBtnRef.el) select(null, inspectBtnRef.el);
+    }
+  }
+
+  return { getBrush: () => brush, setKind };
 }

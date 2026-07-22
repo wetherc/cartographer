@@ -31,7 +31,9 @@ export function describeNode(node, party, options = {}) {
   const total = node.width * node.height;
   const revealed = gridTiles.filter((t) => t.revealed).length;
 
-  const parts = [`${node.name}, ${node.width} by ${node.height} tiles.`];
+  const kindPhrase = node.kind === 'interior' ? 'an interior' : 'a region';
+  const environ = node.environ ? ` (${node.environ})` : '';
+  const parts = [`${node.name}, ${kindPhrase}${environ}, ${node.width} by ${node.height} tiles.`];
 
   parts.push(
     revealAll

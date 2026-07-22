@@ -1,4 +1,4 @@
-import { TileGrid } from '../map/TileGrid.js';
+import { TileGrid, withNodeDefaults } from '../map/TileGrid.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -51,7 +51,8 @@ export function deserialize(json) {
  */
 export function toTileGrid(state) {
   const grid = new TileGrid();
-  for (const node of state.nodes) grid.addNode(node);
+  // Backfill kind/environ so nodes from saves predating interiors load cleanly.
+  for (const node of state.nodes) grid.addNode(withNodeDefaults(node));
   return grid;
 }
 
