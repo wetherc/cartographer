@@ -52,8 +52,37 @@ function mustGetElement(id) {
   return el;
 }
 
-/** A small starter world so the app has something to look at on first run. */
-function buildDefaultCampaign() {
+/**
+ * @typedef {{
+ *   grid: TileGrid,
+ *   party: import('./types/map.js').PartyPosition,
+ *   characters: Character[],
+ *   encounters: import('./types/entities.js').Encounter[],
+ * }} Campaign
+ */
+
+/**
+ * A genuinely blank campaign: one empty world node to author into, nobody in
+ * the party, nothing to fight. This is what a first run and the "New" button
+ * produce, so demo content only ever appears when explicitly asked for.
+ * @returns {Campaign}
+ */
+function buildBlankCampaign() {
+  const grid = new TileGrid();
+  grid.addNode(createMapNode('world', 'World', null, 8, 6));
+  return {
+    grid,
+    party: { nodeId: 'world', tileId: '0,0' },
+    characters: [],
+    encounters: [],
+  };
+}
+
+/**
+ * A small example world, loadable on demand via the "Load example" button.
+ * @returns {Campaign}
+ */
+function buildExampleCampaign() {
   const rng = () => Math.random();
   const grid = new TileGrid();
 
@@ -104,7 +133,8 @@ const initial = saved
       characters: saved.characters.map(withDefaultStats),
       encounters: saved.encounters,
     }
-  : buildDefaultCampaign();
+  : // First run starts blank; the demo world is opt-in via "Load example".
+    buildBlankCampaign();
 
 const { grid } = initial;
 let { characters, encounters } = initial;
@@ -480,6 +510,35 @@ mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => 
   mapCanvas.setRevealAll(mode === 'build');
   if (mode !== 'build') clearSelection();
   worldTree.update();
+});
+
+/**
+ * Replace the whole campaign: persist the given one and reload, so every
+ * module re-initializes from the same loadFromLocalStorage path a normal page
+ * load takes (the same pattern the import flow uses).
+ * @param {Campaign} campaign
+ */
+function replaceCampaign(campaign) {
+  saveToLocalStorage(
+    buildState(campaign.grid, campaign.party, campaign.characters, campaign.encounters),
+  );
+  location.reload();
+}
+
+mustGetElement('new-btn').addEventListener('click', async () => {
+  const ok = await confirmModal(
+    'Start a new blank campaign? The current campaign is replaced, including anything saved.',
+    { danger: true, confirmLabel: 'New campaign' },
+  );
+  if (ok) replaceCampaign(buildBlankCampaign());
+});
+
+mustGetElement('example-btn').addEventListener('click', async () => {
+  const ok = await confirmModal(
+    'Load the example campaign? The current campaign is replaced, including anything saved.',
+    { danger: true, confirmLabel: 'Load example' },
+  );
+  if (ok) replaceCampaign(buildExampleCampaign());
 });
 
 mustGetElement('save-btn').addEventListener('click', () => {
