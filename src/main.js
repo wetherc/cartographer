@@ -7,8 +7,10 @@ import {
   TileGrid,
 } from './map/TileGrid.js';
 import { TilePalette } from './map/TilePalette.js';
-import { MapCanvas, clientToBuffer, screenToTile } from './map/MapCanvas.js';
+import { MapCanvas, clientToBuffer, screenToTile, parseCoords } from './map/MapCanvas.js';
 import { paintTile, eraseTile } from './map/TilePaint.js';
+import { findRegionGroups } from './map/RegionGroups.js';
+import { computeEntryTile } from './map/EntryPoint.js';
 import { MapNavigator } from './map/MapNavigator.js';
 import { mountBreadcrumb } from './ui/Breadcrumb.js';
 import { mountModeSwitch } from './ui/ModeSwitch.js';
@@ -101,6 +103,25 @@ const partyTracker = new PartyTracker(grid, initial.party);
 
 const breadcrumbContainer = document.getElementById('breadcrumb-container');
 const canvasEl = /** @type {HTMLCanvasElement} */ (document.getElementById('map-canvas'));
+
+/**
+ * Where the party lands when it first travels into a child node: the child edge
+ * facing the direction they approached the region from in the parent map, or the
+ * grid centre if that direction can't be determined.
+ * @param {import('./types/map.js').MapNode} parent node being viewed when zooming in
+ * @param {import('./types/map.js').MapNode} child node being entered
+ * @param {string} childNodeId
+ * @returns {string} child tile id
+ */
+function entryTileId(parent, child, childNodeId) {
+  const position = partyTracker.getPosition();
+  const partyCoords = position.nodeId === parent.id ? parseCoords(position.tileId) : null;
+  const group = findRegionGroups(parent).find((g) => g.childNodeId === childNodeId) ?? null;
+  const block = group
+    ? { minX: group.minX, minY: group.minY, maxX: group.maxX, maxY: group.maxY }
+    : null;
+  return computeEntryTile(child.width, child.height, block, partyCoords);
+}
 
 /** Show the party marker only on the node the party is actually standing in. */
 function syncPartyMarker() {
@@ -217,7 +238,18 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
     // Play mode acts only on a real tile; empty cells are inert.
     if (!tile) return;
     if (tile.childNodeId) {
+      const parent = navigator.getCurrentNode();
       if (navigator.zoomIn(tile.id)) {
+        const child = navigator.getCurrentNode();
+        // Zooming into a region moves the party into it. Unless the party has
+        // already been placed in this child before, drop them at the edge they
+        // approached from and reveal fog around it, so the child doesn't render
+        // as a blank fog field with no party marker.
+        if (partyTracker.getPosition().nodeId !== child.id) {
+          partyTracker.moveTo(child.id, entryTileId(parent, child, tile.childNodeId));
+        }
+        // Re-read the node: moveTo wrote a new, fog-revealed node into the grid,
+        // so the `child` captured above is stale and still fully fogged.
         mapCanvas.setNode(navigator.getCurrentNode());
         breadcrumb.update(navigator.getBreadcrumb());
         worldTree.update();
