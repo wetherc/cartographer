@@ -14,10 +14,11 @@ const DEFAULT_STORAGE_KEY = 'campaign-builder:save';
  * @param {PartyPosition | null} party
  * @param {Character[]} characters
  * @param {Encounter[]} encounters
+ * @param {import('../types/log.js').LogEntry[]} [travelog]
  * @returns {CampaignState}
  */
-export function buildState(grid, party, characters, encounters) {
-  return { nodes: [...grid.nodes.values()], party, characters, encounters };
+export function buildState(grid, party, characters, encounters, travelog = []) {
+  return { nodes: [...grid.nodes.values()], party, characters, encounters, travelog };
 }
 
 /**
@@ -41,6 +42,7 @@ export function deserialize(json) {
     party: parsed.party ?? null,
     characters: parsed.characters ?? [],
     encounters: parsed.encounters ?? [],
+    travelog: parsed.travelog ?? [],
   };
 }
 

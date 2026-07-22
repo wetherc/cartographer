@@ -17,6 +17,7 @@ import { loadFromLocalStorage, toTileGrid } from '../storage/SaveManager.js';
  *   party: import('../types/map.js').PartyPosition,
  *   characters: import('../types/entities.js').Character[],
  *   encounters: import('../types/entities.js').Encounter[],
+ *   travelog: import('../types/log.js').LogEntry[],
  * }} Campaign
  */
 
@@ -34,6 +35,7 @@ export function buildBlankCampaign() {
     party: { nodeId: 'world', tileId: '0,0' },
     characters: [],
     encounters: [],
+    travelog: [],
   };
 }
 
@@ -83,6 +85,7 @@ export function buildExampleCampaign(palette) {
     party: { nodeId: 'world', tileId: '3,3' },
     characters: [hero],
     encounters: [createEncounter('goblin', 'Goblin', 7, {}, { nodeId: 'world', tileId: '5,2' })],
+    travelog: [],
   };
 }
 
@@ -102,5 +105,6 @@ export function loadInitialCampaign() {
     party: saved.party ?? { nodeId: 'world', tileId: '0,0' },
     characters: saved.characters.map(withDefaults),
     encounters: saved.encounters.map(withEncounterDefaults),
+    travelog: saved.travelog ?? [],
   };
 }
