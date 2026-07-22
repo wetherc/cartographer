@@ -97,3 +97,98 @@ tests/
 - [x] `storage/SaveManager.js` — `types/storage.ts` adds `CampaignState` (flat `nodes` array + party + characters + encounters); `buildState`/`serialize`/`deserialize`/`toTileGrid` are pure and round-trip tested (4 tests, including hierarchy/zoom-target integrity after rebuild and default-filling missing fields on load); `saveToLocalStorage`/`loadFromLocalStorage`/`downloadState`/`readStateFromFile` are thin browser-API wrappers around those, verified visually (not unit tested, consistent with the DOM-wrapper convention) — `tests/save-manager-preview.html` confirmed a save-then-load round trip preserves revealed state and character xp/level
 - [x] `index.html` / `style.css` — app shell: header with Save/Export/Import, a map column (breadcrumb + canvas), and a sidebar of panels (character sheet, inventory, encounter, dice tray)
 - [x] `main.js` — wires every module together: builds a small default 2-node campaign (world + one region, one character, one encounter) if `localStorage` has no save, otherwise rebuilds via `SaveManager.toTileGrid`; `MapCanvas`'s `onTileClick` zooms in via `MapNavigator` for a tile with a `childNodeId`, otherwise moves the party there via `PartyTracker` (added `MapCanvas.refreshNode`, a pan/zoom-preserving sibling to `setNode`, so a party move doesn't jolt the view, and `MapCanvas.setPartyTile`/`_renderPartyMarker` to draw the party's position); `CharacterSheet`/`InventoryPanel` are kept in sync via a `setCharacter` method added to both, since they share one underlying `Character` but each held its own copy; Import saves the uploaded file's state to `localStorage` and reloads rather than re-wiring every closure by hand. Verified end-to-end in a browser: clicking a tile moved the party and expanded fog, clicking the region block zoomed in and the breadcrumb zoomed back out, and Save followed by a full page reload restored the exact party position and revealed-tile state
+
+---
+
+## GM playtesting notes (2026-07-22)
+
+First hands-on pass with the wired-up app surfaced 7 issues. Diagnosed below as **[Bug]** (existing code behaves incorrectly) or **[Gap]** (behavior is correct as built, but the feature/clarity was never built). None of these are fixed yet — this section is the diagnosis and the pointer to where the fix lands in the overhaul plan below.
+
+1. **[Bug] Clicking the map moves the party to what looks like a random tile.**
+   Root cause: `#map-canvas` has a fixed internal pixel buffer (`width="720" height="480"` attributes) but is styled `max-width: 100%` inside a flex sidebar layout, so its **rendered CSS size** shrinks to fit the column and no longer matches its internal buffer size. `MapCanvas`'s pointer handlers (`_onPointerUp`, `_onPointerMove`, `_onWheel`) convert `event.clientX/clientY` to canvas-local coordinates via `getBoundingClientRect()` alone, with no correction for the ratio between CSS size and buffer size (`canvas.width / rect.width`, `canvas.height / rect.height`). Since `tileRect`/`screenToTile` operate in buffer-pixel space (`tileSize = 48` raw canvas units), every click, drag delta, and wheel-zoom anchor point is silently off by that ratio — worse the more the sidebar layout has shrunk the canvas. Fix: scale client coordinates by the buffer/CSS ratio in all three handlers before doing any tile math. → Overhaul Phase B.
+
+2. **[Bug/Gap] No indication when you're at the edge of the world.**
+   The canvas background (`#000`, from `style.css`'s `#map-canvas` rule) is nearly indistinguishable from the unrevealed-fog fill (`#1a1a1a` in `MapCanvas.render`), and nothing is ever drawn to mark a node's actual `width × height` extent — so "panned off the edge of the real map" and "a fogged tile that's part of the map" look almost identical, and there's no boundary line at all. Fix: draw an explicit border/backdrop for the node's full extent, and pick a fog color clearly distinct from the empty-canvas background. → Overhaul Phase B.
+
+3. **[Gap] Unclear which of "World" / "Northmarch Region" is the parent, which is the child, or which one is currently being viewed.**
+   The breadcrumb (`ui/Breadcrumb.js`) is root-to-current order with the current node bold (`aria-current`), which is *technically* enough information, but it's not legible enough in practice: a bare `/` separator doesn't read as "contains," there's no persistent view of the whole tree (only the path to the current node), and the region-block overlay on the parent map (outline + name label) isn't visually tied back to the breadcrumb trail. There is no single authoritative "here is the whole hierarchy, here is where you are in it" view. → Overhaul Phase B (breadcrumb polish) and Phase C (a real world-tree nav view).
+
+4. **[Gap] No way for a GM to design their own world.**
+   This was actually planned — `PLAN.md`'s original "Key mechanics" §3 ("Tile metadata editor — click tile in edit mode → side panel form → writes metadata onto `Tile` object") — but that mechanic was never turned into a Build-order/Status checklist item, so it silently never got built. Today there is *no* authoring UI at all: no way to create/delete a `MapNode`, no way to place/replace/remove a tile in a grid, no way to draw a region link (a block of tiles sharing a `childNodeId`), and no way to edit a tile's metadata (POI type, discoverable flag, notes) — the only way any of this happens is by hand-writing it in `main.js`. This is the biggest real gap for a GM. → Overhaul Phase C (this is most of what Phase C is).
+
+5. **[Gap] No way to create, remove, or edit player characters.**
+   `entities/Character.js` fully supports this at the data layer (`createCharacter`, `setStat`, `addXP`, etc.), but there is no UI for it: `main.js` hardcodes exactly one `Character` (`characters[0]`) and permanently wires `CharacterSheet`/`InventoryPanel` to that one slot. There's no roster, no "new character" button, no delete, no switcher. → Overhaul Phase D.
+
+6. **[Gap, mostly a UI illusion] "Why don't characters have their own individual inventories?"**
+   They do, at the data layer — `Character.inventory` is a per-`Character` field (see `types/entities.ts`), and `entities/Character.js`'s `addItem`/`removeItem` already operate on one character's inventory in isolation. It *looks* global only because #5 means there's only ever one character to look at, so there's nothing to contrast it against. Fixing #5 (a real character roster) resolves this automatically — no data-layer change needed. → Overhaul Phase D (same work as #5).
+
+7. **[Gap] Why is there always a Goblin encounter onscreen?**
+   `main.js`'s `buildDefaultCampaign()` hardcodes one demo character and one demo encounter so the app isn't blank on first run, but there's (a) no add/remove-encounter UI — `EncounterPanel` can damage/heal but not create or delete a row — and (b) no "start a genuinely blank campaign" flow, so the placeholder demo data has no way to be distinguished from or cleared in favor of real GM-authored content. → Overhaul Phase D (encounter roster CRUD) + Phase E (explicit "new campaign" flow replacing the implicit demo-data fallback).
+
+---
+
+## UI/UX overhaul plan
+
+Everything shipped so far is functionally wired but visually and interactionally minimal: default browser widgets, ad hoc inline-ish CSS per component, no shared design language, no drag-and-drop, no dialogs, ad hoc plain-text buttons. The goal now is a rich, cohesive experience for two distinct audiences using the *same* app: **players/GM running a live session**, and **a GM building/editing a world** between or ahead of sessions. This is a substantial addition to scope beyond the original MVP checklist above, so it's broken into phases below rather than one big undifferentiated task.
+
+### Goals
+
+- One consistent visual language across the map, every sidebar panel, and the new authoring screens — not four independently-styled widgets sharing a page.
+- Two modes in one app, not two apps: a **Play mode** (map + party + dice + live encounters, read/act-focused) and a **Build mode** (world/character/encounter authoring, edit-focused), switched via the header rather than requiring separate tooling.
+- Stay at zero dependencies: everything below is buildable in plain CSS (custom properties for theming), the native `<dialog>` element for modals, inline SVG for icons (matching the hand-authored tile SVGs already in the project), and plain drag-and-drop (`draggable` + `dragstart`/`dragover`/`drop` events) — no framework, no bundler, no icon library, no CSS framework.
+- Fix the concrete bugs/gaps from the playtesting notes above as part of the relevant phase, rather than as a separate detour.
+
+### Visual language
+
+- **Color**: a small CSS custom-property palette (surface/background layers, text, accent, a danger/health-red for damage, a success/heal-green for healing, a muted/disabled tone), each with a light and dark value, replacing today's bare `currentColor` borders and unstyled buttons. Respect `prefers-color-scheme` (already declared via `color-scheme: light dark`) but actually theme against it instead of relying on browser defaults.
+- **Type scale**: a handful of named sizes (display, heading, body, label, and a monospace variant for dice/numeric readouts) instead of one-off `rem` values scattered per component's CSS block.
+- **Spacing scale**: a small set of spacing tokens (custom properties) instead of hand-picked `0.25rem`/`0.5rem`/`0.75rem` values repeated across `DiceTray`/`CharacterSheet`/`InventoryPanel`/`EncounterPanel`'s CSS.
+- **Iconography**: a small inline-SVG icon set for recurring actions (zoom/pan, party marker, damage, heal, add, remove, edit, save, export, import, mode switch) to replace plain-text buttons like "Damage"/"Heal"/"Add item".
+- **Surfaces**: give panels an actual "card" treatment (subtle elevation/border-radius/background distinct from the page background) so "map chrome," "sidebar panel," and "modal overlay" read as three distinct visual layers instead of one flat page of bordered boxes.
+
+### Information architecture
+
+- **App shell**: header (campaign name, Play/Build mode switch, Save/Export/Import) stays, but the body layout reflows by mode:
+  - **Play mode** (today's default layout, refined): map as the primary/largest element, a right rail with party/character quick-glance, dice tray, and active encounters.
+  - **Build mode**: a left rail showing the **world tree** (a nested, expandable list mirroring `TileGrid`'s `parentId` hierarchy — the direct fix for playtesting note #3, since it's always-visible instead of only showing the path to the current node), a center panel with the selected node's tile grid in an editable state, and a right rail with the tile palette (drag source) plus a tile inspector (the originally-planned metadata editor from note #4).
+- The breadcrumb from Play mode and the world tree from Build mode are two views over the same `TileGrid`/`MapNavigator` data — not two separate hierarchy concepts — so "which one is the parent, which is the child" only ever has one source of truth to look at.
+
+### Key flows
+
+**GM / Build mode:**
+- Create/delete a `MapNode` (name, width, height, optional parent).
+- Paint tiles: select a palette entry (terrain variant, road piece, or POI marker), then click/drag across the grid to place it, instead of the grid only ever being populated by hand-written `main.js` code.
+- Tile inspector: click a tile in Build mode → side-panel form for `TileMetadata` (POI type, discoverable flag, notes) — the mechanic originally planned and never built.
+- Region-link authoring: select a contiguous block of tiles, then "link to" an existing child node or "create new region" — the authoring-side counterpart to the `RegionGroups`/`childNodeId` model that's already built for rendering.
+- Character roster: list, create, delete characters; selecting one opens the existing `CharacterSheet`/`InventoryPanel` scoped to that character instead of a hardcoded `characters[0]`.
+- Encounter roster: list, create, delete encounters (fixes note #7 directly); a new campaign starts with an empty roster instead of a hardcoded Goblin.
+- "New campaign" flow: explicit blank-start instead of the implicit `buildDefaultCampaign()` fallback whenever `localStorage` is empty — the demo campaign becomes an explicit "load example" option, not silent default content indistinguishable from a GM's real work.
+
+**Players / Play mode:**
+- View the map with fog/party marker, roll dice, view (their own) character sheet. Per-seat/multi-user access control (so each player only sees their own sheet) is a real future consideration but explicitly out of scope for this phase — flagging it here so it isn't forgotten, not committing to it now.
+
+### Component-level plan
+
+- `ui/Modal.js`: one small reusable wrapper around the native `<dialog>` element (open/close/focus handling) used for "confirm delete," "new character," "new node," "import conflict," etc., instead of ad hoc per-feature markup.
+- A `ModeSwitch` control (Play/Build) in the header driving which app-shell layout is active.
+- `ui/WorldTree.js`: nested disclosure list (`<details>`/`<ul>`) over `TileGrid`'s `parentId` structure; read-only navigation in Play mode, adds rename/delete/add-child affordances in Build mode.
+- Tile palette becomes a real drag source (`draggable` + `dragstart`) with the map grid as a drop target in Build mode, instead of palette entries only ever being read programmatically.
+- Shared `.btn` / `.field` / `.card` CSS classes so `DiceTray`, `CharacterSheet`, `InventoryPanel`, `EncounterPanel`, and the new Build-mode components all pull from the same primitives instead of each hand-rolling button/input styling (or, in most cases today, not styling them at all).
+
+### Phased build order
+
+- **Phase A — Design system foundation.** CSS custom properties (color/spacing/type), shared `.btn`/`.field`/`.card` classes, an inline SVG icon set. Retrofit the existing panels (`DiceTray`, `CharacterSheet`, `InventoryPanel`, `EncounterPanel`, `Breadcrumb`) onto it with no behavior change — a pure visual pass, so it can be verified against the existing Playwright checks with no new interaction to test.
+- **Phase B — Correctness + clarity.** Fix the canvas pointer-coordinate scaling bug (note #1), add a map-bounds indicator (note #2), and polish the breadcrumb (note #3, partial — full fix is Phase C's world tree).
+- **Phase C — GM authoring.** Tile inspector/metadata editor, tile painting (place/replace/remove via the palette), `MapNode` create/delete, region-link authoring, and the `WorldTree` Build-mode nav (note #3, full fix; note #4, full fix).
+- **Phase D — Roster management.** Character roster CRUD + selector (notes #5 and #6), encounter roster CRUD + selector (note #7, partial).
+- **Phase E — Mode split + polish.** The header Play/Build mode switch and layout reflow, an explicit "new campaign" flow replacing the implicit demo-data fallback (note #7, full fix), and a pass over any remaining rough edges surfaced by the earlier phases.
+
+Each phase should land as its own set of commits (following the existing per-module commit convention), get its own unit tests where there's new pure logic (e.g. world-tree data derivation, tile-painting validation), and get visually verified in a browser per `docs/testing.md` for anything DOM/canvas-facing — same conventions as everything built so far, just applied to a larger scope.
+
+## Status — To Do (UI overhaul)
+
+- [ ] **Phase A** — design tokens (color/spacing/type custom properties), `.btn`/`.field`/`.card` shared classes, inline SVG icon set; retrofit `DiceTray`/`CharacterSheet`/`InventoryPanel`/`EncounterPanel`/`Breadcrumb` with no behavior change
+- [ ] **Phase B** — fix `MapCanvas` pointer-coordinate scaling bug (canvas buffer size vs. CSS-rendered size); draw a map-bounds indicator distinct from fog; breadcrumb visual polish
+- [ ] **Phase C** — tile metadata inspector/editor; tile painting via the palette (place/replace/remove); `MapNode` create/delete; region-link authoring (select block → link to child node); `ui/WorldTree.js` Build-mode navigation
+- [ ] **Phase D** — character roster CRUD + selector (replacing hardcoded `characters[0]`); encounter roster CRUD + selector (replacing hardcoded demo Goblin)
+- [ ] **Phase E** — header Play/Build `ModeSwitch` + layout reflow; explicit "new campaign" flow (demo data becomes an opt-in "load example," not a silent default)
