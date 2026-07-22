@@ -1,4 +1,5 @@
 import { collectSubtreeIds } from './WorldTree.js';
+import { parseCoords } from './MapCanvas.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').TileMetadata} TileMetadata */
@@ -69,6 +70,44 @@ export function updateTileMetadata(node, tileId, metadata) {
     t.id === tileId ? { ...t, metadata: { ...t.metadata, ...metadata } } : t
   );
   return { ...node, tiles };
+}
+
+/**
+ * Tiles whose grid coordinate falls outside a width x height bound. Used to
+ * warn before a shrink prunes authored tiles; tiles with non-coordinate ids
+ * have no position and are never considered out of bounds.
+ * @param {MapNode} node
+ * @param {number} width
+ * @param {number} height
+ * @returns {Tile[]}
+ */
+export function tilesOutsideBounds(node, width, height) {
+  return node.tiles.filter((tile) => {
+    const coords = parseCoords(tile.id);
+    return coords !== null && (coords.x >= width || coords.y >= height);
+  });
+}
+
+/**
+ * Change a node's grid dimensions after creation, returning a new node.
+ * Growing keeps every existing tile; shrinking prunes tiles outside the new
+ * bounds (the caller is expected to confirm first via tilesOutsideBounds).
+ * Dimensions clamp to at least 1x1.
+ * @param {MapNode} node
+ * @param {number} width
+ * @param {number} height
+ * @returns {MapNode}
+ */
+export function resizeNode(node, width, height) {
+  const w = Math.max(1, Math.floor(width));
+  const h = Math.max(1, Math.floor(height));
+  const pruned = new Set(tilesOutsideBounds(node, w, h).map((t) => t.id));
+  return {
+    ...node,
+    width: w,
+    height: h,
+    tiles: pruned.size ? node.tiles.filter((t) => !pruned.has(t.id)) : node.tiles,
+  };
 }
 
 /**

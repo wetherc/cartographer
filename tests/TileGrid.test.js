@@ -6,6 +6,8 @@ import {
   setTile,
   getTile,
   updateTileMetadata,
+  resizeNode,
+  tilesOutsideBounds,
   TileGrid,
 } from '../src/map/TileGrid.js';
 
@@ -35,6 +37,39 @@ test('updateTileMetadata merges metadata without touching other fields', () => {
   assert.equal(tile.metadata.poiType, 'settlement');
   assert.equal(tile.metadata.notes, 'a village');
   assert.equal(tile.metadata.discoverable, false);
+});
+
+test('tilesOutsideBounds finds coordinate tiles past the bounds, ignoring non-coordinate ids', () => {
+  let node = createMapNode('n', 'N', null, 4, 4);
+  node = setTile(node, createTile('1,1', 'grass.png'));
+  node = setTile(node, createTile('3,0', 'grass.png'));
+  node = setTile(node, createTile('0,3', 'grass.png'));
+  node = setTile(node, createTile('poi', 'town.png'));
+  const outside = tilesOutsideBounds(node, 2, 2).map((t) => t.id);
+  assert.deepEqual(outside.sort(), ['0,3', '3,0']);
+});
+
+test('resizeNode grow keeps every tile', () => {
+  let node = createMapNode('n', 'N', null, 2, 2);
+  node = setTile(node, createTile('1,1', 'grass.png'));
+  const grown = resizeNode(node, 5, 6);
+  assert.equal(grown.width, 5);
+  assert.equal(grown.height, 6);
+  assert.equal(grown.tiles.length, 1);
+});
+
+test('resizeNode shrink prunes tiles outside the new bounds', () => {
+  let node = createMapNode('n', 'N', null, 4, 4);
+  node = setTile(node, createTile('0,0', 'grass.png'));
+  node = setTile(node, createTile('3,3', 'grass.png'));
+  const shrunk = resizeNode(node, 2, 2);
+  assert.deepEqual(shrunk.tiles.map((t) => t.id), ['0,0']);
+});
+
+test('resizeNode clamps dimensions to at least 1x1', () => {
+  const shrunk = resizeNode(createMapNode('n', 'N', null, 4, 4), 0, -3);
+  assert.equal(shrunk.width, 1);
+  assert.equal(shrunk.height, 1);
 });
 
 test('TileGrid tracks parent/child hierarchy and breadcrumb', () => {

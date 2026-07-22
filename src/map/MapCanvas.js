@@ -128,7 +128,7 @@ export class MapCanvas {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {TilePalette} palette
-   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void }} [options]
+   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, onStrokeCell?: (x: number, y: number, tile: Tile | null, first: boolean) => void, onStrokeEnd?: () => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void }} [options]
    */
   constructor(canvas, palette, options = {}) {
     this.canvas = canvas;
@@ -140,6 +140,8 @@ export class MapCanvas {
     this.minZoom = options.minZoom ?? 0.25;
     this.maxZoom = options.maxZoom ?? 4;
     this.onCellClick = options.onCellClick;
+    this.onStrokeCell = options.onStrokeCell;
+    this.onStrokeEnd = options.onStrokeEnd;
     this.getNodeName = options.getNodeName;
     this.onViewChange = options.onViewChange;
     this.onCellHover = options.onCellHover;
@@ -157,6 +159,12 @@ export class MapCanvas {
     /** When true (Build mode), draw every tile's image regardless of its
      * revealed flag, so a GM authors against the whole map, not through fog. */
     this.revealAll = false;
+    /** When true (Build mode), the left button strokes cells through
+     * onStrokeCell/onStrokeEnd and panning moves to the right button, so
+     * authoring gestures and navigation don't share one button. */
+    this.authoring = false;
+    /** @type {import('./TilePaint.js').CellRect | null} marquee highlight for the region tool */
+    this.marquee = null;
     this.offsetX = 0;
     this.offsetY = 0;
     this.scale = 1;
@@ -168,17 +176,22 @@ export class MapCanvas {
     this._lastX = 0;
     this._lastY = 0;
     this._dragDistance = 0;
+    this._stroking = false;
+    /** @type {string | null} last cell a stroke touched, so a stroke applies once per cell */
+    this._lastStrokeCellId = null;
 
     this._onPointerDown = this._onPointerDown.bind(this);
     this._onPointerMove = this._onPointerMove.bind(this);
     this._onPointerUp = this._onPointerUp.bind(this);
     this._onWheel = this._onWheel.bind(this);
+    this._onContextMenu = this._onContextMenu.bind(this);
 
     canvas.addEventListener('pointerdown', this._onPointerDown);
     canvas.addEventListener('pointermove', this._onPointerMove);
     canvas.addEventListener('pointerup', this._onPointerUp);
     canvas.addEventListener('pointerleave', this._onPointerUp);
     canvas.addEventListener('wheel', this._onWheel, { passive: false });
+    canvas.addEventListener('contextmenu', this._onContextMenu);
   }
 
   /**
@@ -281,6 +294,29 @@ export class MapCanvas {
   }
 
   /**
+   * Toggle authoring interaction (Build mode): left-drag strokes cells,
+   * right-drag pans, the context menu is suppressed. Off (Play mode), the
+   * left button pans and short drags fire onCellClick as before.
+   * @param {boolean} value
+   */
+  setAuthoring(value) {
+    this.authoring = value;
+    this._stroking = false;
+    this._dragging = false;
+    this.setMarquee(null);
+  }
+
+  /**
+   * Highlight (or clear, with null) a rectangular block of cells — the live
+   * preview for the region tool's drag gesture.
+   * @param {import('./TilePaint.js').CellRect | null} rect
+   */
+  setMarquee(rect) {
+    this.marquee = rect;
+    this.render();
+  }
+
+  /**
    * @param {string} imageRef
    * @returns {HTMLImageElement}
    */
@@ -329,9 +365,28 @@ export class MapCanvas {
     }
 
     this._renderRegionGroups();
+    this._renderMarquee();
     this._renderSelection();
     this._renderPartyMarker();
     this._renderMapBoundsBorder();
+  }
+
+  /** Dashed outline + tint over the region tool's in-progress drag block. */
+  _renderMarquee() {
+    if (!this.marquee) return;
+    const { ctx } = this;
+    const topLeft = tileRect(this.marquee.minX, this.marquee.minY, this.tileSize, this.offsetX, this.offsetY, this.scale);
+    const bottomRight = tileRect(this.marquee.maxX, this.marquee.maxY, this.tileSize, this.offsetX, this.offsetY, this.scale);
+    const w = bottomRight.sx + bottomRight.size - topLeft.sx;
+    const h = bottomRight.sy + bottomRight.size - topLeft.sy;
+    ctx.save();
+    ctx.fillStyle = 'rgba(224, 193, 75, 0.18)';
+    ctx.fillRect(topLeft.sx, topLeft.sy, w, h);
+    ctx.strokeStyle = '#e0c14b';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 4]);
+    ctx.strokeRect(topLeft.sx + 1, topLeft.sy + 1, w - 2, h - 2);
+    ctx.restore();
   }
 
   /** Outline the Build-mode selected tile so the GM sees which tile the
@@ -425,16 +480,69 @@ export class MapCanvas {
     }
   }
 
+  /** Right-drag pans in authoring mode, so its context menu must not pop.
+   * @param {MouseEvent} event */
+  _onContextMenu(event) {
+    if (this.authoring) event.preventDefault();
+  }
+
   /** @param {PointerEvent} event */
   _onPointerDown(event) {
+    if (this.authoring && event.button === 0) {
+      // Left button authors: begin a stroke and apply it to the pressed cell.
+      // Capture the pointer so a stroke that wanders off the canvas mid-drag
+      // keeps applying and still gets its pointerup.
+      this._stroking = true;
+      this._lastStrokeCellId = null;
+      this.canvas.setPointerCapture?.(event.pointerId);
+      this._strokeCell(event, true);
+      return;
+    }
+    // Panning: the right button while authoring, the left button otherwise.
+    if (event.button !== (this.authoring ? 2 : 0)) return;
     this._dragging = true;
     this._dragDistance = 0;
     this._lastX = event.clientX;
     this._lastY = event.clientY;
   }
 
+  /**
+   * The grid cell under a pointer event, or null when it's outside the node.
+   * @param {PointerEvent} event
+   * @returns {{ x: number, y: number } | null}
+   */
+  _eventCell(event) {
+    if (!this.node) return null;
+    const rect = this.canvas.getBoundingClientRect();
+    const buffer = clientToBuffer(event.clientX, event.clientY, rect, this.canvas.width, this.canvas.height);
+    const coords = screenToTile(buffer.x, buffer.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+    const inBounds =
+      coords.x >= 0 && coords.y >= 0 && coords.x < this.node.width && coords.y < this.node.height;
+    return inBounds ? coords : null;
+  }
+
+  /**
+   * Fire onStrokeCell for the cell under the pointer, once per distinct cell,
+   * skipping out-of-bounds cells so a stroke can't author past the map edge.
+   * @param {PointerEvent} event
+   * @param {boolean} first
+   */
+  _strokeCell(event, first) {
+    const coords = this._eventCell(event);
+    if (!coords || !this.node) return;
+    const cellId = `${coords.x},${coords.y}`;
+    if (cellId === this._lastStrokeCellId) return;
+    this._lastStrokeCellId = cellId;
+    const tile = this.node.tiles.find((t) => t.id === cellId) ?? null;
+    this.onStrokeCell?.(coords.x, coords.y, tile, first);
+  }
+
   /** @param {PointerEvent} event */
   _onPointerMove(event) {
+    if (this._stroking) {
+      this._strokeCell(event, false);
+      return;
+    }
     if (!this._dragging) {
       this._trackHover(event);
       return;
@@ -485,24 +593,22 @@ export class MapCanvas {
   /** @param {PointerEvent} event */
   _onPointerUp(event) {
     if (event.type === 'pointerleave') this._clearHover();
+    if (this._stroking) {
+      if (event.type === 'pointerleave') return; // captured pointer: stroke ends on pointerup
+      this._stroking = false;
+      this._lastStrokeCellId = null;
+      this.onStrokeEnd?.();
+      return;
+    }
     const wasClick = this._dragging && this._dragDistance < 4;
     this._dragging = false;
-    if (!wasClick || !this.onCellClick || !this.node) return;
+    // A short right-drag (authoring pan) must not read as a click.
+    if (!wasClick || this.authoring || !this.onCellClick || !this.node) return;
 
-    const rect = this.canvas.getBoundingClientRect();
-    const buffer = clientToBuffer(event.clientX, event.clientY, rect, this.canvas.width, this.canvas.height);
-    const coords = screenToTile(
-      buffer.x,
-      buffer.y,
-      this.tileSize,
-      this.offsetX,
-      this.offsetY,
-      this.scale,
-    );
-    // Fire for any in-bounds cell, whether or not a tile currently sits there,
-    // so Build mode can paint into an empty (e.g. just-erased) cell. The
-    // handler gets the tile if one exists, or null.
-    if (coords.x < 0 || coords.y < 0 || coords.x >= this.node.width || coords.y >= this.node.height) return;
+    // Fire for any in-bounds cell, whether or not a tile currently sits there.
+    // The handler gets the tile if one exists, or null.
+    const coords = this._eventCell(event);
+    if (!coords) return;
     const tile = this.node.tiles.find((t) => t.id === `${coords.x},${coords.y}`) ?? null;
     this.onCellClick(coords.x, coords.y, tile);
   }
@@ -532,5 +638,6 @@ export class MapCanvas {
     this.canvas.removeEventListener('pointerup', this._onPointerUp);
     this.canvas.removeEventListener('pointerleave', this._onPointerUp);
     this.canvas.removeEventListener('wheel', this._onWheel);
+    this.canvas.removeEventListener('contextmenu', this._onContextMenu);
   }
 }

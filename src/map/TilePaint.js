@@ -37,6 +37,66 @@ export function paintTile(node, tileId, imageRef) {
 }
 
 /**
+ * A tile-coordinate rectangle, inclusive on all edges.
+ * @typedef {{ minX: number, minY: number, maxX: number, maxY: number }} CellRect
+ */
+
+/**
+ * The inclusive rectangle spanned by two corner cells, in either drag
+ * direction, so a marquee anchored bottom-right and released top-left still
+ * yields a well-ordered rect.
+ * @param {{ x: number, y: number }} a
+ * @param {{ x: number, y: number }} b
+ * @returns {CellRect}
+ */
+export function normalizeRect(a, b) {
+  return {
+    minX: Math.min(a.x, b.x),
+    minY: Math.min(a.y, b.y),
+    maxX: Math.max(a.x, b.x),
+    maxY: Math.max(a.y, b.y),
+  };
+}
+
+/**
+ * The node's existing tiles whose coordinates fall inside a rect. Empty cells
+ * contribute nothing — a region link lives on tiles, so linking a block only
+ * ever stamps what's already painted there.
+ * @param {MapNode} node
+ * @param {CellRect} rect
+ * @returns {import('../types/map.js').Tile[]}
+ */
+export function tilesInRect(node, rect) {
+  return node.tiles.filter((tile) => {
+    const coords = parseCoords(tile.id);
+    if (!coords) return false;
+    return (
+      coords.x >= rect.minX && coords.x <= rect.maxX && coords.y >= rect.minY && coords.y <= rect.maxY
+    );
+  });
+}
+
+/**
+ * Stamp a childNodeId onto every existing tile inside a rect, returning a new
+ * node — the area-authoring counterpart to linking tiles one at a time in the
+ * inspector. Pass null to unlink the block instead. Empty cells are skipped
+ * (no tile is created), so the caller should check tilesInRect first if it
+ * wants to warn about a block with nothing to link.
+ * @param {MapNode} node
+ * @param {CellRect} rect
+ * @param {string | null} childNodeId
+ * @returns {MapNode}
+ */
+export function linkTilesInRect(node, rect, childNodeId) {
+  const targets = new Set(tilesInRect(node, rect).map((t) => t.id));
+  if (!targets.size) return node;
+  return {
+    ...node,
+    tiles: node.tiles.map((t) => (targets.has(t.id) ? { ...t, childNodeId } : t)),
+  };
+}
+
+/**
  * Remove the tile at tileId, returning a new node. No-op if no tile is there.
  * @param {MapNode} node
  * @param {string} tileId

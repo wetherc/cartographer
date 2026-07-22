@@ -4,11 +4,13 @@ import {
   setTile,
   getTile,
   updateTileMetadata,
+  resizeNode,
+  tilesOutsideBounds,
   TileGrid,
 } from './map/TileGrid.js';
 import { TilePalette } from './map/TilePalette.js';
 import { MapCanvas, clientToBuffer, screenToTile, parseCoords } from './map/MapCanvas.js';
-import { paintTile, eraseTile } from './map/TilePaint.js';
+import { paintTile, eraseTile, normalizeRect, tilesInRect, linkTilesInRect } from './map/TilePaint.js';
 import { findRegionGroups } from './map/RegionGroups.js';
 import { computeEntryTile } from './map/EntryPoint.js';
 import { MapNavigator } from './map/MapNavigator.js';
@@ -152,6 +154,8 @@ let currentMode = 'play';
 let selectedTileId = null;
 /** @type {import('./ui/PalettePanel.js').Brush} active Build-mode paint brush */
 let activeBrush = null;
+/** @type {{ x: number, y: number } | null} first cell of an in-progress region-tool drag */
+let regionAnchor = null;
 
 /** @typedef {import('./types/entities.js').Character} Character */
 
@@ -214,6 +218,7 @@ const worldTree = mountWorldTree(mustGetElement('world-tree-container'), {
   getCurrentId: () => navigator.getCurrentNode().id,
   onSelect: goToNode,
   onAddChild: addChildNode,
+  onEdit: editNode,
   onDelete: deleteNode,
 });
 
@@ -316,6 +321,106 @@ async function deleteNode(nodeId) {
   }
 }
 
+/**
+ * Edit a node's name and grid dimensions after creation. Growing keeps every
+ * tile; shrinking prompts before pruning tiles outside the new bounds, and
+ * pulls the party back inside them if it stood on a pruned tile.
+ * @param {string} nodeId
+ */
+async function editNode(nodeId) {
+  const node = grid.getNode(nodeId);
+  if (!node) return;
+  const values = await promptModal(
+    'Edit node',
+    [
+      { name: 'name', label: 'Name', value: node.name },
+      { name: 'width', label: 'Width (tiles)', type: 'number', value: node.width, min: 1 },
+      { name: 'height', label: 'Height (tiles)', type: 'number', value: node.height, min: 1 },
+    ],
+    { submitLabel: 'Save' },
+  );
+  if (!values) return;
+  const width = Math.max(1, Number(values.width) || node.width);
+  const height = Math.max(1, Number(values.height) || node.height);
+  const lost = tilesOutsideBounds(node, width, height);
+  if (lost.length) {
+    const ok = await confirmModal(
+      `Shrinking "${node.name}" removes ${lost.length} tile${lost.length === 1 ? '' : 's'} outside the new bounds.`,
+      { danger: true, confirmLabel: 'Shrink' },
+    );
+    if (!ok) return;
+  }
+  grid.updateNode({ ...resizeNode(node, width, height), name: values.name.trim() || node.name });
+
+  const position = partyTracker.getPosition();
+  if (position.nodeId === nodeId) {
+    const coords = parseCoords(position.tileId);
+    if (coords && (coords.x >= width || coords.y >= height)) {
+      partyTracker.moveTo(
+        nodeId,
+        `${Math.min(coords.x, width - 1)},${Math.min(coords.y, height - 1)}`,
+      );
+    }
+  }
+  if (navigator.getCurrentNode().id === nodeId) {
+    // The extent changed, so re-frame the view; the selected tile may be gone.
+    clearSelection();
+    mapCanvas.setNode(navigator.getCurrentNode());
+    syncPartyMarker();
+  }
+  breadcrumb.update(navigator.getBreadcrumb());
+  worldTree.update();
+  regionTree.update();
+}
+
+/**
+ * Resolve a completed region-tool drag: link every existing tile in the
+ * marquee block to a child node chosen from the current node's children, or to
+ * a newly created one — the area counterpart to the inspector's per-tile link.
+ */
+async function finishRegionStroke() {
+  const rect = mapCanvas.marquee;
+  regionAnchor = null;
+  mapCanvas.setMarquee(null);
+  if (!rect) return;
+  const node = navigator.getCurrentNode();
+  if (!tilesInRect(node, rect).length) {
+    await confirmModal('No tiles in the selected block. Paint tiles first, then link them.', {
+      confirmLabel: 'OK',
+    });
+    return;
+  }
+  const children = grid.getChildren(node.id);
+  /** @type {string | null} */
+  let childId;
+  if (children.length) {
+    const values = await promptModal(
+      'Link region block',
+      [
+        {
+          name: 'target',
+          label: 'Link to',
+          type: 'select',
+          options: [
+            ...children.map((c) => ({ value: c.id, label: c.name })),
+            { value: '', label: 'Create new region...' },
+          ],
+        },
+      ],
+      { submitLabel: 'Link' },
+    );
+    if (!values) return;
+    childId = values.target || (await addChildNode(node.id));
+  } else {
+    childId = await addChildNode(node.id);
+  }
+  if (!childId) return;
+  const updated = linkTilesInRect(navigator.getCurrentNode(), rect, childId);
+  grid.updateNode(updated);
+  mapCanvas.refreshNode(updated);
+  if (selectedTileId) inspector.setTile(getTile(updated, selectedTileId) ?? null, true);
+}
+
 /** @type {{ update: () => void } | null} assigned right after mapCanvas exists */
 let mapControls = null;
 
@@ -346,24 +451,32 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
       clientY,
     );
   },
-  onCellClick: (x, y, tile) => {
+  // Build-mode authoring arrives as strokes: a left-drag applies the active
+  // brush to every cell it crosses (a click is a one-cell stroke), so painting
+  // a row is one gesture instead of one click per tile. The Region brush
+  // instead drags out a marquee block, resolved to a child-node link on release.
+  onStrokeCell: (x, y, tile, first) => {
     const id = `${x},${y}`;
-    // In Build mode a click authors the cell per the active brush, rather than
-    // navigating or moving the party (both of which are Play-mode actions). It
-    // fires for empty cells too, so a just-erased cell can be painted again.
-    if (currentMode === 'build') {
-      if (activeBrush === 'erase') {
-        applyToTile(id, (node) => eraseTile(node, id));
-      } else if (activeBrush) {
-        // Captured so the closure below keeps the non-null, non-'erase' narrowing.
-        const brush = activeBrush;
-        applyToTile(id, (node) => paintTile(node, id, brush.imageRef));
-      } else {
-        selectTile(id);
-      }
-      return;
+    if (activeBrush === 'region') {
+      if (first) regionAnchor = { x, y };
+      if (regionAnchor) mapCanvas.setMarquee(normalizeRect(regionAnchor, { x, y }));
+    } else if (activeBrush === 'erase') {
+      applyToTile(id, (node) => eraseTile(node, id));
+    } else if (activeBrush) {
+      // Captured so the closure below keeps the non-null narrowing.
+      const brush = activeBrush;
+      applyToTile(id, (node) => paintTile(node, id, brush.imageRef));
+    } else if (first) {
+      // Inspect acts on the pressed cell only; dragging doesn't re-select.
+      selectTile(id);
     }
-    // Play mode acts only on a real tile; empty cells are inert.
+  },
+  onStrokeEnd: () => {
+    if (regionAnchor) finishRegionStroke();
+  },
+  onCellClick: (x, y, tile) => {
+    // Fires only outside authoring mode: Play-mode navigation and party moves.
+    // Empty cells are inert.
     if (!tile) return;
     if (tile.childNodeId) {
       const parent = navigator.getCurrentNode();
@@ -626,7 +739,9 @@ mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => 
   document.body.classList.toggle('mode-play', mode === 'play');
   document.body.classList.toggle('mode-build', mode === 'build');
   mapCanvas.setRevealAll(mode === 'build');
+  mapCanvas.setAuthoring(mode === 'build');
   tileTooltip.hide();
+  regionAnchor = null;
   if (mode !== 'build') clearSelection();
   worldTree.update();
   regionTree.update();
