@@ -117,6 +117,9 @@ export class MapCanvas {
     this.partyTileId = null;
     /** @type {string | null} tile id highlighted as the Build-mode selection, if any */
     this.selectedTileId = null;
+    /** When true (Build mode), draw every tile's image regardless of its
+     * revealed flag, so a GM authors against the whole map, not through fog. */
+    this.revealAll = false;
     this.offsetX = 0;
     this.offsetY = 0;
     this.scale = 1;
@@ -188,6 +191,16 @@ export class MapCanvas {
   }
 
   /**
+   * Toggle whether unrevealed tiles are drawn as fog (false, Play) or fully
+   * (true, Build).
+   * @param {boolean} value
+   */
+  setRevealAll(value) {
+    this.revealAll = value;
+    this.render();
+  }
+
+  /**
    * @param {string} imageRef
    * @returns {HTMLImageElement}
    */
@@ -215,7 +228,7 @@ export class MapCanvas {
       const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
       if (sx + size < 0 || sy + size < 0 || sx > canvas.width || sy > canvas.height) continue;
 
-      if (!tile.revealed) {
+      if (!tile.revealed && !this.revealAll) {
         // A distinctly lighter fill than the map backdrop and the empty-canvas
         // background, so an unexplored-but-real tile reads as fog, not void.
         ctx.fillStyle = '#48412f';

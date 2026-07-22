@@ -7,12 +7,14 @@ import {
   TileGrid,
 } from './map/TileGrid.js';
 import { TilePalette } from './map/TilePalette.js';
-import { MapCanvas } from './map/MapCanvas.js';
+import { MapCanvas, clientToBuffer, screenToTile } from './map/MapCanvas.js';
+import { paintTile, eraseTile } from './map/TilePaint.js';
 import { MapNavigator } from './map/MapNavigator.js';
 import { mountBreadcrumb } from './ui/Breadcrumb.js';
 import { mountModeSwitch } from './ui/ModeSwitch.js';
 import { mountWorldTree } from './ui/WorldTree.js';
 import { mountTileInspector } from './ui/TileInspector.js';
+import { mountPalettePanel } from './ui/PalettePanel.js';
 import { PartyTracker } from './party/PartyTracker.js';
 import { createCharacter, addResource } from './entities/Character.js';
 import { createResource } from './entities/Resource.js';
@@ -89,6 +91,8 @@ let { characters, encounters } = initial;
 let currentMode = 'play';
 /** @type {string | null} tile id selected for inspection/editing in Build mode */
 let selectedTileId = null;
+/** @type {import('./ui/PalettePanel.js').Brush} active Build-mode paint brush */
+let activeBrush = null;
 
 const navigator = new MapNavigator(grid, initial.party.nodeId);
 const partyTracker = new PartyTracker(grid, initial.party);
@@ -131,10 +135,16 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
   tileSize: 48,
   getNodeName: (nodeId) => grid.getNode(nodeId)?.name,
   onTileClick: (tile) => {
-    // In Build mode a click selects a tile to author, rather than navigating or
-    // moving the party (both of which are Play-mode actions).
+    // In Build mode a click authors the tile per the active brush, rather than
+    // navigating or moving the party (both of which are Play-mode actions).
     if (currentMode === 'build') {
-      selectTile(tile.id);
+      if (activeBrush === 'erase') {
+        applyToTile(tile.id, (node) => eraseTile(node, tile.id));
+      } else if (activeBrush) {
+        applyToTile(tile.id, (node) => paintTile(node, tile.id, activeBrush.imageRef));
+      } else {
+        selectTile(tile.id);
+      }
       return;
     }
     if (tile.childNodeId) {
@@ -167,6 +177,44 @@ function selectTile(tileId) {
   mapCanvas.setSelectedTile(tileId);
   inspector.setTile(getTile(navigator.getCurrentNode(), tileId) ?? null, true);
 }
+
+/**
+ * Apply a pure node transform (paint/erase) to the current node, persist it,
+ * re-render the canvas, and keep the inspector in sync if it was showing the
+ * affected tile.
+ * @param {string} tileId
+ * @param {(node: import('./types/map.js').MapNode) => import('./types/map.js').MapNode} transform
+ */
+function applyToTile(tileId, transform) {
+  const updated = transform(navigator.getCurrentNode());
+  grid.updateNode(updated);
+  mapCanvas.refreshNode(updated);
+  if (tileId === selectedTileId) {
+    inspector.setTile(getTile(updated, tileId) ?? null, true);
+  }
+}
+
+mountPalettePanel(document.getElementById('palette-container'), palette, (brush) => {
+  activeBrush = brush;
+});
+
+// The canvas is a drop target for palette swatches: dragging a tile onto a grid
+// cell paints it there, an alternative to selecting a brush and clicking.
+canvasEl.addEventListener('dragover', (event) => {
+  if (currentMode === 'build') event.preventDefault();
+});
+canvasEl.addEventListener('drop', (event) => {
+  if (currentMode !== 'build') return;
+  event.preventDefault();
+  const id = event.dataTransfer?.getData('text/tile-id');
+  const entry = id ? palette.get(id) : undefined;
+  if (!entry) return;
+  const rect = canvasEl.getBoundingClientRect();
+  const buffer = clientToBuffer(event.clientX, event.clientY, rect, canvasEl.width, canvasEl.height);
+  const coords = screenToTile(buffer.x, buffer.y, mapCanvas.tileSize, mapCanvas.offsetX, mapCanvas.offsetY, mapCanvas.scale);
+  const tileId = `${coords.x},${coords.y}`;
+  applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef));
+});
 
 mapCanvas.setNode(navigator.getCurrentNode());
 syncPartyMarker();
@@ -202,6 +250,7 @@ mountModeSwitch(document.getElementById('mode-switch-container'), currentMode, (
   currentMode = mode;
   document.body.classList.toggle('mode-play', mode === 'play');
   document.body.classList.toggle('mode-build', mode === 'build');
+  mapCanvas.setRevealAll(mode === 'build');
   if (mode !== 'build') clearSelection();
   worldTree.update();
 });
