@@ -438,7 +438,8 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
     } else if (activeBrush) {
       // Captured so the closure below keeps the non-null narrowing.
       const brush = activeBrush;
-      applyToTile(id, (node) => paintTile(node, id, brush.imageRef));
+      const overlay = brush.type === 'road';
+      applyToTile(id, (node) => paintTile(node, id, brush.imageRef, overlay));
     } else if (first) {
       // Inspect acts on the pressed cell only; dragging doesn't re-select.
       selectTile(id);
@@ -573,7 +574,7 @@ canvasEl.addEventListener('drop', (event) => {
   const buffer = clientToBuffer(event.clientX, event.clientY, rect, canvasEl.width, canvasEl.height);
   const coords = screenToTile(buffer.x, buffer.y, mapCanvas.tileSize, mapCanvas.offsetX, mapCanvas.offsetY, mapCanvas.scale);
   const tileId = `${coords.x},${coords.y}`;
-  applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef));
+  applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef, entry.type === 'road'));
 });
 
 mapControls = mountMapControls(mustGetElement('map-viewport'), {

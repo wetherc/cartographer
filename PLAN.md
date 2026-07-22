@@ -111,16 +111,16 @@ First hands-on pass with the wired-up app surfaced 7 issues. Diagnosed below as 
    The canvas background (`#000`, from `style.css`'s `#map-canvas` rule) is nearly indistinguishable from the unrevealed-fog fill (`#1a1a1a` in `MapCanvas.render`), and nothing is ever drawn to mark a node's actual `width × height` extent — so "panned off the edge of the real map" and "a fogged tile that's part of the map" look almost identical, and there's no boundary line at all. Fix: draw an explicit border/backdrop for the node's full extent, and pick a fog color clearly distinct from the empty-canvas background. → Overhaul Phase B.
 
 3. **[Gap] Unclear which of "World" / "Northmarch Region" is the parent, which is the child, or which one is currently being viewed.**
-   The breadcrumb (`ui/Breadcrumb.js`) is root-to-current order with the current node bold (`aria-current`), which is *technically* enough information, but it's not legible enough in practice: a bare `/` separator doesn't read as "contains," there's no persistent view of the whole tree (only the path to the current node), and the region-block overlay on the parent map (outline + name label) isn't visually tied back to the breadcrumb trail. There is no single authoritative "here is the whole hierarchy, here is where you are in it" view. → Overhaul Phase B (breadcrumb polish) and Phase C (a real world-tree nav view).
+   The breadcrumb (`ui/Breadcrumb.js`) is root-to-current order with the current node bold (`aria-current`), which is _technically_ enough information, but it's not legible enough in practice: a bare `/` separator doesn't read as "contains," there's no persistent view of the whole tree (only the path to the current node), and the region-block overlay on the parent map (outline + name label) isn't visually tied back to the breadcrumb trail. There is no single authoritative "here is the whole hierarchy, here is where you are in it" view. → Overhaul Phase B (breadcrumb polish) and Phase C (a real world-tree nav view).
 
 4. **[Gap] No way for a GM to design their own world.**
-   This was actually planned — `PLAN.md`'s original "Key mechanics" §3 ("Tile metadata editor — click tile in edit mode → side panel form → writes metadata onto `Tile` object") — but that mechanic was never turned into a Build-order/Status checklist item, so it silently never got built. Today there is *no* authoring UI at all: no way to create/delete a `MapNode`, no way to place/replace/remove a tile in a grid, no way to draw a region link (a block of tiles sharing a `childNodeId`), and no way to edit a tile's metadata (POI type, discoverable flag, notes) — the only way any of this happens is by hand-writing it in `main.js`. This is the biggest real gap for a GM. → Overhaul Phase C (this is most of what Phase C is).
+   This was actually planned — `PLAN.md`'s original "Key mechanics" §3 ("Tile metadata editor — click tile in edit mode → side panel form → writes metadata onto `Tile` object") — but that mechanic was never turned into a Build-order/Status checklist item, so it silently never got built. Today there is _no_ authoring UI at all: no way to create/delete a `MapNode`, no way to place/replace/remove a tile in a grid, no way to draw a region link (a block of tiles sharing a `childNodeId`), and no way to edit a tile's metadata (POI type, discoverable flag, notes) — the only way any of this happens is by hand-writing it in `main.js`. This is the biggest real gap for a GM. → Overhaul Phase C (this is most of what Phase C is).
 
 5. **[Gap] No way to create, remove, or edit player characters.**
    `entities/Character.js` fully supports this at the data layer (`createCharacter`, `setStat`, `addXP`, etc.), but there is no UI for it: `main.js` hardcodes exactly one `Character` (`characters[0]`) and permanently wires `CharacterSheet`/`InventoryPanel` to that one slot. There's no roster, no "new character" button, no delete, no switcher. → Overhaul Phase D.
 
 6. **[Gap, mostly a UI illusion] "Why don't characters have their own individual inventories?"**
-   They do, at the data layer — `Character.inventory` is a per-`Character` field (see `types/entities.ts`), and `entities/Character.js`'s `addItem`/`removeItem` already operate on one character's inventory in isolation. It *looks* global only because #5 means there's only ever one character to look at, so there's nothing to contrast it against. Fixing #5 (a real character roster) resolves this automatically — no data-layer change needed. → Overhaul Phase D (same work as #5).
+   They do, at the data layer — `Character.inventory` is a per-`Character` field (see `types/entities.ts`), and `entities/Character.js`'s `addItem`/`removeItem` already operate on one character's inventory in isolation. It _looks_ global only because #5 means there's only ever one character to look at, so there's nothing to contrast it against. Fixing #5 (a real character roster) resolves this automatically — no data-layer change needed. → Overhaul Phase D (same work as #5).
 
 7. **[Gap] Why is there always a Goblin encounter onscreen?**
    `main.js`'s `buildDefaultCampaign()` hardcodes one demo character and one demo encounter so the app isn't blank on first run, but there's (a) no add/remove-encounter UI — `EncounterPanel` can damage/heal but not create or delete a row — and (b) no "start a genuinely blank campaign" flow, so the placeholder demo data has no way to be distinguished from or cleared in favor of real GM-authored content. → Overhaul Phase D (encounter roster CRUD) + Phase E (explicit "new campaign" flow replacing the implicit demo-data fallback).
@@ -129,7 +129,7 @@ First hands-on pass with the wired-up app surfaced 7 issues. Diagnosed below as 
 
 ## UI/UX overhaul plan
 
-Everything shipped so far is functionally wired but visually and interactionally minimal: default browser widgets, ad hoc inline-ish CSS per component, no shared design language, no drag-and-drop, no dialogs, ad hoc plain-text buttons. The goal now is a rich, cohesive experience for two distinct audiences using the *same* app: **players/GM running a live session**, and **a GM building/editing a world** between or ahead of sessions. This is a substantial addition to scope beyond the original MVP checklist above, so it's broken into phases below rather than one big undifferentiated task.
+Everything shipped so far is functionally wired but visually and interactionally minimal: default browser widgets, ad hoc inline-ish CSS per component, no shared design language, no drag-and-drop, no dialogs, ad hoc plain-text buttons. The goal now is a rich, cohesive experience for two distinct audiences using the _same_ app: **players/GM running a live session**, and **a GM building/editing a world** between or ahead of sessions. This is a substantial addition to scope beyond the original MVP checklist above, so it's broken into phases below rather than one big undifferentiated task.
 
 ### Goals
 
@@ -156,6 +156,7 @@ Everything shipped so far is functionally wired but visually and interactionally
 ### Key flows
 
 **GM / Build mode:**
+
 - Create/delete a `MapNode` (name, width, height, optional parent).
 - Paint tiles: select a palette entry (terrain variant, road piece, or POI marker), then click/drag across the grid to place it, instead of the grid only ever being populated by hand-written `main.js` code.
 - Tile inspector: click a tile in Build mode → side-panel form for `TileMetadata` (POI type, discoverable flag, notes) — the mechanic originally planned and never built.
@@ -165,6 +166,7 @@ Everything shipped so far is functionally wired but visually and interactionally
 - "New campaign" flow: explicit blank-start instead of the implicit `buildDefaultCampaign()` fallback whenever `localStorage` is empty — the demo campaign becomes an explicit "load example" option, not silent default content indistinguishable from a GM's real work.
 
 **Players / Play mode:**
+
 - View the map with fog/party marker, roll dice, view (their own) character sheet. Per-seat/multi-user access control (so each player only sees their own sheet) is a real future consideration but explicitly out of scope for this phase — flagging it here so it isn't forgotten, not committing to it now.
 
 ### Component-level plan
@@ -225,10 +227,12 @@ Promoted from campaign-lifecycle gap #10 to a named phase, since "clean, intuiti
 Every Play sidebar panel is maximized all the time. Most don't need to be. The sidebar should default to a compact, glanceable state and expand on demand, so a live session shows the map first and detail only when asked.
 
 Data-model prereqs (touch `types/entities.ts` + `entities/Character.js`, add unit tests + `SaveManager` round-trip coverage, and default-fill on load for back-compat with existing saves):
+
 - `Character` gains a `race` field (string) — the collapsed card shows name / race / healthbar; race does not exist in the model today.
 - `Character` needs current/max HP for the healthbar. Model as a conventional `ResourcePool` (e.g. reserved id `"hp"`, `type: 'custom'`) reusing the existing `spend`/`restore`/`setMax` machinery rather than adding a parallel HP field, so damage/heal on a character works like every other resource. Card reads the `"hp"` pool; absence renders no bar.
 
 UI work:
+
 - **Character cards collapse.** `ui/CharacterSheet.js` (or a new `ui/CharacterCard.js` wrapper) gets a collapsed state: name / race / HP healthbar only, expanding to the full sheet (stats, XP, resources) on click. Collapsed by default; accessible disclosure (`aria-expanded`, keyboard-operable, `<button>` header), matching the design tokens from Phase A.
 - **Inventory collapses and scopes to one character.** `ui/InventoryPanel.js` shows the inventory of the currently selected character only (ties to the Phase D roster/selector — one character active at a time), collapsed by default. Stacks with `quantity > 1` get a per-unit "consume" control that decrements the stack by one (distinct from the existing remove-whole-stack button), via `Character.removeItem` decrement semantics.
 - **Encounters are location-scoped, not ever-present.** An encounter binds to a map location (a node id + tile id on `Encounter`, a data-model addition). `ui/EncounterPanel.js` renders only encounters at the party's current node/tile instead of the whole roster always onscreen; no active-location encounters means no panel. (Authoring/binding an encounter to a location is Phase D roster work; this phase is the Play-mode filtered display.)
@@ -261,7 +265,7 @@ Phases A-E make what's already built usable and pretty. They don't add the mecha
 6. **NPCs conflated with hostile encounters.** `Encounter` is modeled as "enemy with HP," but a campaign needs friendly/neutral NPCs too: name, notes, location, disposition/faction, without necessarily having HP or being a combat participant. Currently the only way to represent an NPC is misusing `Encounter`.
 7. **No quest/session log.** Nothing persists "what happened" or "what's outstanding" across sessions — no quest list (active/completed), no session notes/recap. `SaveManager`'s `CampaignState` would need a new top-level field; this is pure data + a simple panel, low risk.
 8. **No handout/lore delivery to players.** No way to attach an image, a read-aloud box, or a lore snippet to a tile/node and reveal it to players at the right moment — separate from the tile's own map image.
-9. **Tile metadata editor writes data nobody can see yet.** Phase C plans the *editor*; nothing today displays `TileMetadata` (POI type, notes) back to a GM during play, e.g. on hover/click outside Build mode. Worth folding into Phase C rather than treating as a separate gap.
+9. **Tile metadata editor writes data nobody can see yet.** Phase C plans the _editor_; nothing today displays `TileMetadata` (POI type, notes) back to a GM during play, e.g. on hover/click outside Build mode. Worth folding into Phase C rather than treating as a separate gap.
 10. **No accessibility pass despite it being the README's stated top priority.** The whole map is a `<canvas>` with mouse/wheel-only interaction — no keyboard pan/zoom/tile-select, no ARIA/text alternative for canvas content, no focus management in the (planned) `<dialog>`-based modals. This cuts against "Place a heavy focus on clean, intuitive, and accessible visual styles" in `CLAUDE.md` and should be a named phase, not an afterthought bolted onto Phase A.
 11. **No undo or save history.** `SaveManager` overwrites the one `localStorage` slot on every save; a bad edit (wrong tile painted, wrong character deleted) has no way back except re-importing an older export, if one happens to exist. Even a small ring buffer of recent snapshots would cover most real mistakes.
 
@@ -275,16 +279,27 @@ None of this is scheduled into a phase yet — flagging for prioritization along
 - [ ] Status/condition tracking on `Character` and `Encounter`
 - [ ] In-game time/calendar concept + short/long rest actions wired to `Resource.restore`
 - [ ] `entities/NPC.js` (or generalize `Encounter`) for non-hostile characters
-- [ ] Quest/session log as a new `CampaignState` field + panel
+- [x] Quest/session log as a new `CampaignState` field + panel — `quests` field of `Quest` records (title/notes/status), pure `quest/Quests.js` (reusing `Roster.js` for list ops); `ui/QuestPanel.js` groups active/completed with toggle/edit/delete + New quest, as a Play-mode sidebar card
 - [ ] Handout/lore attachment on tiles/nodes, revealed to players on demand
 - [ ] Surface `TileMetadata` to a GM during play, not just in the Build-mode editor
 - [x] Accessibility pass: keyboard map nav, ARIA/text alternative for canvas content, modal focus management — done as Phase I in the UI-overhaul checklist above
 - [ ] Save history / undo — small ring buffer of recent snapshots in `SaveManager`
 - [ ] Add support for large, procedurally-generated worlds
+  - [ ] In the Builder, add options to auto-generate archetypes to fit into a new region/interior (e.g., small / medium / large; town / dungeon / castle)
 - [ ] Improve support for the "discoverable" parameter already on each tile
 - [ ] Max mana and HP, and XP to level up, should be configurable, but also have reasonable defaults and level scaling
-- [ ] There should be a mana bar in addition to each character's health bar
-- [ ] The path tiles should overlay on top of other background tiles so they can be placed on sand, snow, etc.
+- [x] There should be a mana bar in addition to each character's health bar — mana modeled as a reserved `"mana"` ResourcePool (`withMana`/`getMana` mirroring HP), rendered as a blue bar beside HP on the collapsed character card via a generalized `buildStatBar`; new-character modal gains an optional Max mana field
+- [x] The path tiles should overlay on top of other background tiles so they can be placed on sand, snow, etc. — `Tile` gains an `overlayRef` layer drawn over the base terrain in `MapCanvas`; `paintTile(node, id, imageRef, overlay)` stamps a road brush (`type === 'road'`) onto `overlayRef` while preserving the terrain beneath (an empty cell falls back to the road as its base), so re-terraining under a road keeps the road. The 11 road SVGs were redrawn with transparent backgrounds (grass rect/tufts removed) so the underlying tile shows through the verges. Covered by new `TilePaint` overlay tests; verified in-browser that a road overlays sand with sandy verges.
 - [ ] Encounters should be tied to specific grid coordinates in a region. There should be a visual indicator that it's a point of interest as the party approaches an Encounter location
 - [ ] When building a new map, party spawn point should also be a configurable param in the app
-- [ ] Add a travelogue / event log that tracks the party's adventure
+- [x] Add a travelogue / event log that tracks the party's adventure — new `travelog` `CampaignState` field (capped append-only `LogEntry[]`, pure `log/Travelogue.js`); auto-records region entry, teleport, and encounter defeat; `ui/TravelogPanel.js` renders newest-first with a confirm-gated Clear, as a Play-mode sidebar card
+- [ ] Add user docs for GMs
+- [ ] In the Play tab, the default behavior is still left click and drag to move the map; it should be right click and drag to match the Build tab
+- [ ] In the overworld, regions shouldn't be highlighted until at least one tile of them has been discovered through the fog of war
+- [ ] Fix the sword icon used in encounters; it's impossible to tell what it's supposed to visually indicate
+- [ ] When a tile with an encounter is stepped on, the encounter should open as a modal overlaid on top of the map. Fled/ignored encounters should remain in the sidebar. The sidebar should be collapsible. Encounters should include tile region + coordinates
+- [ ] The map grid should include coordinates (each row / column should have its X/Y coordinate displayed above or to the left of the map)
+- [ ] The travelogue should arguably be in its own tab or somewhere that won't be competing for space as much
+- [ ] The dice tray should live below the map, as should the expandable party member boxes
+- [ ] In the quests box, when a quest is completed the plus sign in the button next to it should transform into a checkmark
+- [ ] Should the quests also have their own standalone tab?

@@ -16,6 +16,7 @@ export function createTile(id, imageRef, overrides = {}) {
   return {
     id,
     imageRef,
+    overlayRef: null,
     metadata: { poiType: null, discoverable: false, notes: '' },
     revealed: false,
     childNodeId: null,
