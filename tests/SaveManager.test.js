@@ -50,7 +50,19 @@ test('deserialize defaults missing fields instead of throwing', () => {
     characters: [],
     encounters: [],
     travelog: [],
+    quests: [],
   });
+});
+
+test('serialize/deserialize round-trips the quest log', () => {
+  const grid = sampleGrid();
+  const quests = [
+    { id: 'q1', title: 'Find the sword', notes: 'It lies in the Keep.', status: 'active' },
+    { id: 'q2', title: 'Slay the dragon', notes: '', status: 'completed' },
+  ];
+  const state = buildState(grid, null, [], [], [], quests);
+  const restored = deserialize(serialize(state));
+  assert.deepEqual(restored.quests, quests);
 });
 
 test('serialize/deserialize round-trips the travelogue', () => {

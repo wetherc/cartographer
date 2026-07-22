@@ -18,6 +18,7 @@ import { loadFromLocalStorage, toTileGrid } from '../storage/SaveManager.js';
  *   characters: import('../types/entities.js').Character[],
  *   encounters: import('../types/entities.js').Encounter[],
  *   travelog: import('../types/log.js').LogEntry[],
+ *   quests: import('../types/quest.js').Quest[],
  * }} Campaign
  */
 
@@ -36,6 +37,7 @@ export function buildBlankCampaign() {
     characters: [],
     encounters: [],
     travelog: [],
+    quests: [],
   };
 }
 
@@ -86,6 +88,14 @@ export function buildExampleCampaign(palette) {
     characters: [hero],
     encounters: [createEncounter('goblin', 'Goblin', 7, {}, { nodeId: 'world', tileId: '5,2' })],
     travelog: [],
+    quests: [
+      {
+        id: 'reach-northmarch',
+        title: 'Reach the Northmarch',
+        notes: 'Travel north through the forest to the region beyond.',
+        status: 'active',
+      },
+    ],
   };
 }
 
@@ -106,5 +116,6 @@ export function loadInitialCampaign() {
     characters: saved.characters.map(withDefaults),
     encounters: saved.encounters.map(withEncounterDefaults),
     travelog: saved.travelog ?? [],
+    quests: saved.quests ?? [],
   };
 }

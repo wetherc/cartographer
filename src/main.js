@@ -39,6 +39,8 @@ import { mountEncounterPanel } from './ui/EncounterPanel.js';
 import { mountDiceTray } from './ui/DiceTray.js';
 import { mountTravelogPanel } from './ui/TravelogPanel.js';
 import { appendEntry, createEntry } from './log/Travelogue.js';
+import { mountQuestPanel } from './ui/QuestPanel.js';
+import { createQuest, toggleQuestStatus } from './quest/Quests.js';
 import {
   buildState,
   saveToLocalStorage,
@@ -54,6 +56,8 @@ const { grid } = initial;
 let { characters, encounters } = initial;
 /** @type {import('./types/log.js').LogEntry[]} auto-recorded party travelogue */
 let travelog = initial.travelog;
+/** @type {import('./types/quest.js').Quest[]} GM-authored quest/session log */
+let quests = initial.quests;
 /** Monotonic counter making travelogue entry ids unique within a session. */
 let logSeq = 0;
 
@@ -735,6 +739,41 @@ const travelogPanel = mountTravelogPanel(mustGetElement('travelog-container'), {
   },
 });
 
+mountQuestPanel(mustGetElement('quest-container'), {
+  getQuests: () => quests,
+  onToggle: (quest) => {
+    quests = replaceById(quests, toggleQuestStatus(quest));
+  },
+  onAdd: async () => {
+    const values = await promptModal('New quest', [
+      { name: 'title', label: 'Title', value: '' },
+      { name: 'notes', label: 'Notes', value: '' },
+    ]);
+    const title = values?.title.trim();
+    if (!values || !title) return null;
+    const created = createQuest(slugId(title, quests.map((q) => q.id)), title, values.notes.trim());
+    quests = [...quests, created];
+    return created;
+  },
+  onEdit: async (quest) => {
+    const values = await promptModal('Edit quest', [
+      { name: 'title', label: 'Title', value: quest.title },
+      { name: 'notes', label: 'Notes', value: quest.notes },
+    ]);
+    const title = values?.title.trim();
+    if (!values || !title) return false;
+    quests = replaceById(quests, { ...quest, title, notes: values.notes.trim() });
+    return true;
+  },
+  onDelete: async (id) => {
+    const quest = quests.find((q) => q.id === id);
+    if (!quest) return false;
+    const ok = await confirmModal(`Delete "${quest.title}"?`, { danger: true, confirmLabel: 'Delete' });
+    if (ok) quests = removeById(quests, id);
+    return ok;
+  },
+});
+
 // Play/Build mode drives which rails the layout shows (a body class toggled by
 // CSS), and defaults to Play so a first-run visitor lands on the live view.
 mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => {
@@ -765,6 +804,7 @@ function replaceCampaign(campaign) {
       campaign.characters,
       campaign.encounters,
       campaign.travelog,
+      campaign.quests,
     ),
   );
   location.reload();
@@ -787,11 +827,15 @@ mustGetElement('example-btn').addEventListener('click', async () => {
 });
 
 mustGetElement('save-btn').addEventListener('click', () => {
-  saveToLocalStorage(buildState(grid, partyTracker.getPosition(), characters, encounters, travelog));
+  saveToLocalStorage(
+    buildState(grid, partyTracker.getPosition(), characters, encounters, travelog, quests),
+  );
 });
 
 mustGetElement('export-btn').addEventListener('click', () => {
-  downloadState(buildState(grid, partyTracker.getPosition(), characters, encounters, travelog));
+  downloadState(
+    buildState(grid, partyTracker.getPosition(), characters, encounters, travelog, quests),
+  );
 });
 
 const importInput = /** @type {HTMLInputElement} */ (mustGetElement('import-input'));
