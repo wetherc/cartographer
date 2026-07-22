@@ -115,6 +115,8 @@ export class MapCanvas {
     this.regionGroups = [];
     /** @type {string | null} tile id of the party marker within the current node, if any */
     this.partyTileId = null;
+    /** @type {string | null} tile id highlighted as the Build-mode selection, if any */
+    this.selectedTileId = null;
     this.offsetX = 0;
     this.offsetY = 0;
     this.scale = 1;
@@ -147,6 +149,7 @@ export class MapCanvas {
     this.node = node;
     this.regionGroups = findRegionGroups(node);
     this.partyTileId = null;
+    this.selectedTileId = null;
     this.offsetX = 0;
     this.offsetY = 0;
     this.scale = 1;
@@ -171,6 +174,16 @@ export class MapCanvas {
    */
   setPartyTile(tileId) {
     this.partyTileId = tileId;
+    this.render();
+  }
+
+  /**
+   * Highlight (or clear, with null) the Build-mode selected tile. Independent
+   * of the party marker, so a GM can inspect any tile without moving the party.
+   * @param {string | null} tileId
+   */
+  setSelectedTile(tileId) {
+    this.selectedTileId = tileId;
     this.render();
   }
 
@@ -220,8 +233,24 @@ export class MapCanvas {
     }
 
     this._renderRegionGroups();
+    this._renderSelection();
     this._renderPartyMarker();
     this._renderMapBoundsBorder();
+  }
+
+  /** Outline the Build-mode selected tile so the GM sees which tile the
+   * inspector and palette act on. */
+  _renderSelection() {
+    if (!this.selectedTileId) return;
+    const coords = parseCoords(this.selectedTileId);
+    if (!coords) return;
+    const { ctx } = this;
+    const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+    ctx.save();
+    ctx.strokeStyle = '#e0c14b';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(sx + 1.5, sy + 1.5, size - 3, size - 3);
+    ctx.restore();
   }
 
   /**
