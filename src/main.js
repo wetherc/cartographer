@@ -13,8 +13,10 @@ import { MapNavigator } from './map/MapNavigator.js';
 import { mountBreadcrumb } from './ui/Breadcrumb.js';
 import { mountModeSwitch } from './ui/ModeSwitch.js';
 import { mountWorldTree } from './ui/WorldTree.js';
+import { collectSubtreeIds } from './map/WorldTree.js';
 import { mountTileInspector } from './ui/TileInspector.js';
 import { mountPalettePanel } from './ui/PalettePanel.js';
+import { promptModal, confirmModal } from './ui/Modal.js';
 import { PartyTracker } from './party/PartyTracker.js';
 import { createCharacter, addResource } from './entities/Character.js';
 import { createResource } from './entities/Resource.js';
@@ -129,7 +131,70 @@ const worldTree = mountWorldTree(document.getElementById('world-tree-container')
   getNodes: () => [...grid.nodes.values()],
   getCurrentId: () => navigator.getCurrentNode().id,
   onSelect: goToNode,
+  onAddChild: addChildNode,
+  onDelete: deleteNode,
 });
+
+/** Generate a node id not already used by the grid. */
+function freshNodeId() {
+  let id;
+  do {
+    id = `node-${Math.random().toString(36).slice(2, 8)}`;
+  } while (grid.getNode(id));
+  return id;
+}
+
+/**
+ * Prompt for a new child MapNode's name and dimensions, add it under parentId,
+ * and refresh the tree. Returns the new node id, or null if cancelled.
+ * @param {string} parentId
+ * @returns {Promise<string | null>}
+ */
+async function addChildNode(parentId) {
+  const values = await promptModal('New node', [
+    { name: 'name', label: 'Name', value: 'New region' },
+    { name: 'width', label: 'Width (tiles)', type: 'number', value: 6, min: 1 },
+    { name: 'height', label: 'Height (tiles)', type: 'number', value: 6, min: 1 },
+  ]);
+  if (!values) return null;
+  const id = freshNodeId();
+  const width = Math.max(1, Number(values.width) || 1);
+  const height = Math.max(1, Number(values.height) || 1);
+  grid.addNode(createMapNode(id, values.name || 'Untitled', parentId, width, height));
+  worldTree.update();
+  return id;
+}
+
+/**
+ * Confirm and delete a node and its subtree, then move the view somewhere valid
+ * if the current node was removed. Refuses to delete the last remaining node.
+ * @param {string} nodeId
+ */
+async function deleteNode(nodeId) {
+  const node = grid.getNode(nodeId);
+  if (!node) return;
+  const doomed = collectSubtreeIds([...grid.nodes.values()], nodeId);
+  if (doomed.size >= grid.nodes.size) {
+    await confirmModal('Cannot delete the last node in the campaign.', { confirmLabel: 'OK' });
+    return;
+  }
+  const ok = await confirmModal(`Delete "${node.name}" and everything inside it?`, {
+    danger: true,
+    confirmLabel: 'Delete',
+  });
+  if (!ok) return;
+
+  const removed = grid.removeNode(nodeId);
+  if (removed.has(navigator.currentNodeId)) {
+    const fallback =
+      node.parentId && grid.getNode(node.parentId) ? node.parentId : [...grid.nodes.keys()][0];
+    goToNode(fallback);
+  } else {
+    // Current node survived, but a link it drew may have been cleared.
+    mapCanvas.refreshNode(navigator.getCurrentNode());
+    worldTree.update();
+  }
+}
 
 const mapCanvas = new MapCanvas(canvasEl, palette, {
   tileSize: 48,
@@ -173,7 +238,31 @@ const inspector = mountTileInspector(document.getElementById('inspector-containe
     mapCanvas.refreshNode(updated);
     inspector.setTile(getTile(updated, selectedTileId) ?? null, true);
   },
+  linking: {
+    getOptions: () => grid.getChildren(navigator.currentNodeId).map((n) => ({ id: n.id, name: n.name })),
+    onChange: (childNodeId) => linkSelectedTile(childNodeId),
+    onCreateNew: async () => {
+      const id = await addChildNode(navigator.currentNodeId);
+      if (id) linkSelectedTile(id);
+    },
+  },
 });
+
+/**
+ * Point the selected tile's childNodeId at a node (or null to unlink), so
+ * zooming that tile enters the linked node. Re-derives region groups via the
+ * canvas refresh so the block outline updates immediately.
+ * @param {string | null} childNodeId
+ */
+function linkSelectedTile(childNodeId) {
+  if (!selectedTileId) return;
+  const node = navigator.getCurrentNode();
+  const tiles = node.tiles.map((t) => (t.id === selectedTileId ? { ...t, childNodeId } : t));
+  const updated = { ...node, tiles };
+  grid.updateNode(updated);
+  mapCanvas.refreshNode(updated);
+  inspector.setTile(getTile(updated, selectedTileId) ?? null, true);
+}
 
 /** Select a tile within the current node and point the inspector at it. */
 function selectTile(tileId) {

@@ -13,7 +13,14 @@ const POI_TYPES = ['', 'settlement', 'landmark', 'dungeon', 'shop', 'quest', 'cu
  * to edit them (the surface for playtesting gap #9). Call setTile(tile,
  * editable) to point it at the selected tile, or setTile(null) to clear it.
  * @param {HTMLElement} container
- * @param {{ onChange: (patch: Partial<TileMetadata>) => void }} opts
+ * @param {{
+ *   onChange: (patch: Partial<TileMetadata>) => void,
+ *   linking?: {
+ *     getOptions: () => { id: string, name: string }[],
+ *     onChange: (childNodeId: string | null) => void,
+ *     onCreateNew: () => void,
+ *   },
+ * }} opts
  * @returns {{ setTile: (tile: Tile | null, editable?: boolean) => void }}
  */
 export function mountTileInspector(container, opts) {
@@ -72,6 +79,45 @@ export function mountTileInspector(container, opts) {
 
   form.append(coordLabel, typeField, discField, notesField);
 
+  // Region link (optional): which child node this tile zooms into. Only shown
+  // when the caller supplies linking, i.e. in Build mode.
+  const linkField = document.createElement('label');
+  linkField.className = 'tile-inspector__field';
+  linkField.textContent = 'Zooms into';
+  const linkSelect = document.createElement('select');
+  linkSelect.className = 'field';
+  const newRegionBtn = document.createElement('button');
+  newRegionBtn.type = 'button';
+  newRegionBtn.className = 'btn tile-inspector__new-region';
+  newRegionBtn.textContent = 'New region here';
+  if (opts.linking) {
+    const linking = opts.linking;
+    linkSelect.addEventListener('change', () => {
+      linking.onChange(linkSelect.value === '' ? null : linkSelect.value);
+    });
+    newRegionBtn.addEventListener('click', () => linking.onCreateNew());
+    linkField.appendChild(linkSelect);
+    form.append(linkField, newRegionBtn);
+  }
+
+  function renderLinkOptions() {
+    if (!opts.linking || !tile) return;
+    linkSelect.innerHTML = '';
+    const none = document.createElement('option');
+    none.value = '';
+    none.textContent = 'Nothing';
+    linkSelect.appendChild(none);
+    for (const opt of opts.linking.getOptions()) {
+      const option = document.createElement('option');
+      option.value = opt.id;
+      option.textContent = opt.name;
+      linkSelect.appendChild(option);
+    }
+    linkSelect.value = tile.childNodeId ?? '';
+    linkSelect.disabled = !editable;
+    newRegionBtn.disabled = !editable;
+  }
+
   function render() {
     root.innerHTML = '';
     if (!tile) {
@@ -87,6 +133,7 @@ export function mountTileInspector(container, opts) {
     discInput.disabled = !editable;
     notesInput.readOnly = !editable;
 
+    renderLinkOptions();
     root.appendChild(form);
   }
 
