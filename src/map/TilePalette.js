@@ -34,7 +34,55 @@ const ROAD_KINDS = [
  * Single-image POI markers with no variants.
  * @type {string[]}
  */
-const MARKER_TYPES = ['settlement', 'dungeon'];
+const MARKER_TYPES = [
+  'settlement',
+  'dungeon',
+  'castle',
+  'tavern',
+  'inn',
+  'blacksmith',
+  'general-store',
+  'alchemist',
+  'temple',
+  'shrine',
+  'wizard-tower',
+  'academy',
+  'barracks',
+];
+
+/**
+ * Building-interior pieces (castle halls, shop floors). Like roads these are
+ * distinct shapes picked deliberately, not random variants: flagstone floors,
+ * wall segments/corners sharing one cross-section, doors, and stairs.
+ * @type {string[]}
+ */
+const INTERIOR_KINDS = [
+  'floor-1',
+  'floor-2',
+  'floor-3',
+  'wall-h',
+  'wall-v',
+  'wall-corner-ne',
+  'wall-corner-nw',
+  'wall-corner-se',
+  'wall-corner-sw',
+  'door-h',
+  'door-v',
+  'stairs-up',
+  'stairs-down',
+];
+
+/**
+ * "general-store" -> "General Store"
+ * @param {string} type
+ * @returns {string}
+ */
+function titleCase(type) {
+  return type
+    .split('-')
+    .map((word) => word[0].toUpperCase() + word.slice(1))
+    .join(' ');
+}
 
 /** @returns {PaletteEntry[]} */
 function buildBuiltins() {
@@ -67,8 +115,18 @@ function buildBuiltins() {
     entries.push({
       id: type,
       type,
-      label: `${type[0].toUpperCase()}${type.slice(1)}`,
+      label: titleCase(type),
       imageRef: `${TILE_ROOT}/${type}/${type}.svg`,
+      custom: false,
+    });
+  }
+
+  for (const kind of INTERIOR_KINDS) {
+    entries.push({
+      id: `interior-${kind}`,
+      type: 'interior',
+      label: `Interior (${kind})`,
+      imageRef: `${TILE_ROOT}/interior/interior-${kind}.svg`,
       custom: false,
     });
   }
@@ -151,6 +209,15 @@ export class TilePalette {
    */
   getRoadPiece(kind) {
     return this.entries.get(`road-${kind}`);
+  }
+
+  /**
+   * Look up a specific interior piece by kind (e.g. "floor-1", "wall-h", "stairs-up").
+   * @param {string} kind
+   * @returns {PaletteEntry | undefined}
+   */
+  getInteriorPiece(kind) {
+    return this.entries.get(`interior-${kind}`);
   }
 
   /** @returns {PaletteEntry[]} */

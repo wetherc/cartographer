@@ -16,9 +16,13 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
 <div id="terrains"></div>
 
 <h2>POI markers (zoomed)</h2>
-<div class="grid zoom" style="grid-template-columns: repeat(2, 128px);">
-  <img src="../assets/tiles/settlement/settlement.svg"><img src="../assets/tiles/dungeon/dungeon.svg">
-</div>
+<div class="grid zoom" style="grid-template-columns: repeat(5, 128px); gap: 4px;" id="markers"></div>
+
+<h2>Interior floor (mixed variants)</h2>
+<div class="grid" style="grid-template-columns: repeat(6, 64px);" id="interior-floors"></div>
+
+<h2>Interior room (walls, doors, stairs)</h2>
+<div class="grid" style="grid-template-columns: repeat(4, 64px);" id="interior-room"></div>
 
 <h2>Road network (path winding through grass)</h2>
 <div class="grid" style="grid-template-columns: repeat(4, 64px);" id="road-network"></div>
@@ -40,6 +44,25 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     .map((t) => `<h2>${t}</h2><div class="grid" style="grid-template-columns: repeat(6, 64px);">
       ${layout.flat().map((v) => img(`${t}/${t}-${v}`)).join('')}</div>`)
     .join('');
+
+  document.getElementById('markers').innerHTML = [
+    'settlement', 'dungeon', 'castle', 'tavern', 'inn',
+    'blacksmith', 'general-store', 'alchemist', 'temple', 'shrine',
+    'wizard-tower', 'academy', 'barracks',
+  ].map((m) => img(`${m}/${m}`)).join('');
+
+  document.getElementById('interior-floors').innerHTML =
+    layout.flat().map((v) => img(`interior/interior-floor-${v}`)).join('');
+
+  // A closed room: corners open toward the interior (corner-se = opens south
+  // and east, so it caps the room's north-west corner), a door in the north
+  // and west walls, stairs inside.
+  document.getElementById('interior-room').innerHTML = [
+    'wall-corner-se', 'door-h', 'wall-h', 'wall-corner-sw',
+    'wall-v', 'floor-1', 'stairs-down', 'wall-v',
+    'door-v', 'floor-3', 'stairs-up', 'wall-v',
+    'wall-corner-ne', 'wall-h', 'wall-h', 'wall-corner-nw',
+  ].map((k) => img(`interior/interior-${k}`)).join('');
 
   document.getElementById('road-network').innerHTML = [
     'road/road-end-w', 'road/road-h', 'road/road-corner-sw', 'grass/grass-1',

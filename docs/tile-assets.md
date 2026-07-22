@@ -1,6 +1,6 @@
 # Tile assets
 
-Built-in tile art lives under `assets/tiles/<type>/`, one subfolder per tile type (`grass/`, `forest/`, `mountain/`, `water/`, `desert/`, `road/`, `settlement/`, `dungeon/`). `TilePalette` (`src/map/TilePalette.js`) is the single source of truth for the catalog and the paths it expects — see `VARIANT_COUNTS`, `ROAD_KINDS`, and `MARKER_TYPES` there before adding or renaming files.
+Built-in tile art lives under `assets/tiles/<type>/`, one subfolder per tile type (`grass/`, `forest/`, `mountain/`, `water/`, `desert/`, `road/`, `interior/`, plus one folder per POI marker such as `settlement/`, `castle/`, `tavern/`). `TilePalette` (`src/map/TilePalette.js`) is the single source of truth for the catalog and the paths it expects — see `VARIANT_COUNTS`, `ROAD_KINDS`, `MARKER_TYPES`, and `INTERIOR_KINDS` there before adding or renaming files.
 
 ## Terrain variants
 
@@ -18,6 +18,19 @@ Road tiles are not random variants — each is a distinct connector shape, looke
 
 - The same background fill as `grass` (roads are grass-adjacent terrain, not a separate background color) — a mismatch here shows up as a visible seam where road tiles meet grass tiles.
 - The same path stroke width and centerline position, so a straight piece's path lines up with a corner or cross piece's path at the shared edge.
+
+## POI markers
+
+Single-image markers (`MARKER_TYPES`) sit on the standard grass background (`#5a9b4a`, with the usual mottle ellipses and a dirt clearing under the building) so they abut grass terrain seamlessly. All building art stays inset from the tile edges. The set covers `settlement`, `dungeon`, `castle`, `tavern`, `inn`, `blacksmith`, `general-store`, `alchemist`, `temple`, `shrine`, `wizard-tower`, `academy`, and `barracks`.
+
+## Interior pieces
+
+`interior/` holds building-interior tiles (castle halls, shops) selected by kind via `palette.getInteriorPiece(kind)`, mirroring the road-piece pattern. Every piece shares a byte-identical flagstone floor base: fill `#a89f8d` with a `#8f8776` grout grid on a 16px pitch, including half-width grout strokes centered on the tile edges so the grid continues across any seam. Kinds:
+
+- `floor-1..3` — floor variants; differ only in inset cracks/pebbles and tinted inner grid cells (tints never touch a tile edge).
+- `wall-h`, `wall-v`, `wall-corner-*` — a 16px stone wall band centered on the tile, sharing one cross-section (fill `#6f6a60`, dark `#4c4841` edges, `#55514a` course line, `#8a857a` highlight one unit inside the top/left face) so straights and corners join cleanly. Corner names describe the open edges: `wall-corner-ne` connects north and east, so it caps a room's *south-west* corner.
+- `door-h`, `door-v` — a wall with a framed wooden door leaf in the gap.
+- `stairs-up`, `stairs-down` — treads lightening toward the ascent / darkening into the descent, with a direction chevron.
 
 ## Adding a new tile
 

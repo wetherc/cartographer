@@ -21,6 +21,23 @@ test('TilePalette ships with single-image POI markers', () => {
   const palette = new TilePalette();
   assert.equal(palette.get('settlement').imageRef, 'assets/tiles/settlement/settlement.svg');
   assert.equal(palette.get('dungeon').imageRef, 'assets/tiles/dungeon/dungeon.svg');
+  assert.equal(palette.get('castle').imageRef, 'assets/tiles/castle/castle.svg');
+  assert.equal(palette.get('wizard-tower').label, 'Wizard Tower');
+  assert.equal(palette.get('general-store').label, 'General Store');
+  for (const type of ['tavern', 'inn', 'blacksmith', 'alchemist', 'temple', 'shrine', 'academy', 'barracks']) {
+    assert.ok(palette.get(type), `missing marker "${type}"`);
+  }
+});
+
+test('TilePalette ships with building-interior pieces', () => {
+  const palette = new TilePalette();
+  assert.equal(palette.listVariants('interior').length, 13);
+  assert.equal(
+    palette.getInteriorPiece('wall-corner-ne').imageRef,
+    'assets/tiles/interior/interior-wall-corner-ne.svg',
+  );
+  assert.equal(palette.getInteriorPiece('floor-1').type, 'interior');
+  assert.equal(palette.getInteriorPiece('stairs-down').id, 'interior-stairs-down');
 });
 
 test('pickVariant selects deterministically from an injected rng', () => {
