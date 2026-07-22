@@ -23,6 +23,8 @@ import { PartyTracker } from './party/PartyTracker.js';
 import { createCharacter, addResource } from './entities/Character.js';
 import { createResource } from './entities/Resource.js';
 import { createEncounter } from './entities/Encounter.js';
+import { slugId, replaceById, removeById } from './entities/Roster.js';
+import { mountCharacterRoster } from './ui/CharacterRoster.js';
 import { mountCharacterSheet } from './ui/CharacterSheet.js';
 import { mountInventoryPanel } from './ui/InventoryPanel.js';
 import { mountEncounterPanel } from './ui/EncounterPanel.js';
@@ -83,7 +85,9 @@ const initial = saved
   ? {
       grid: toTileGrid(saved),
       party: saved.party ?? { nodeId: 'world', tileId: '0,0' },
-      characters: saved.characters.length ? saved.characters : [createCharacter('hero', 'Hero')],
+      // An empty roster is legitimate authored state (a GM may have deleted
+      // the demo character), so no default character is injected on load.
+      characters: saved.characters,
       encounters: saved.encounters,
     }
   : buildDefaultCampaign();
@@ -345,27 +349,94 @@ mapCanvas.setNode(navigator.getCurrentNode());
 syncPartyMarker();
 breadcrumb.update(navigator.getBreadcrumb());
 
+/** @type {string | null} id of the character the sheet/inventory are scoped to */
+let selectedCharacterId = characters[0]?.id ?? null;
+
+/** @returns {import('./types/entities.js').Character | null} */
+function selectedCharacter() {
+  return characters.find((c) => c.id === selectedCharacterId) ?? null;
+}
+
+/** Point the sheet and inventory at a character (or null) and refresh the roster. */
+function selectCharacter(id) {
+  selectedCharacterId = id;
+  const character = selectedCharacter();
+  characterSheet.setCharacter(character);
+  inventoryPanel.setCharacter(character);
+  characterRoster.update();
+}
+
+/** Write an edited character back into the roster by id. */
+function commitCharacter(next) {
+  characters = replaceById(characters, next);
+  characterRoster.update();
+}
+
+const characterRoster = mountCharacterRoster(document.getElementById('party-container'), {
+  getCharacters: () => characters,
+  getSelectedId: () => selectedCharacterId,
+  onSelect: selectCharacter,
+  onAdd: async () => {
+    const values = await promptModal('New character', [
+      { name: 'name', label: 'Name', value: '' },
+    ]);
+    const name = values?.name.trim();
+    if (!name) return;
+    characters = [...characters, createCharacter(slugId(name, characters.map((c) => c.id)), name)];
+    selectCharacter(characters[characters.length - 1].id);
+  },
+  onDelete: async (id) => {
+    const character = characters.find((c) => c.id === id);
+    if (!character) return;
+    const ok = await confirmModal(`Delete "${character.name}"? Their inventory is lost too.`, {
+      danger: true,
+      confirmLabel: 'Delete',
+    });
+    if (!ok) return;
+    characters = removeById(characters, id);
+    selectCharacter(id === selectedCharacterId ? (characters[0]?.id ?? null) : selectedCharacterId);
+  },
+});
+
 const characterSheet = mountCharacterSheet(
   document.getElementById('character-sheet-container'),
-  characters[0],
+  selectedCharacter(),
   (next) => {
-    characters[0] = next;
+    commitCharacter(next);
     inventoryPanel.setCharacter(next);
   },
 );
 
 const inventoryPanel = mountInventoryPanel(
   document.getElementById('inventory-container'),
-  characters[0],
+  selectedCharacter(),
   (next) => {
-    characters[0] = next;
+    commitCharacter(next);
     characterSheet.setCharacter(next);
   },
 );
 
-mountEncounterPanel(document.getElementById('encounter-container'), encounters, (next) => {
-  encounters = next;
-});
+mountEncounterPanel(
+  document.getElementById('encounter-container'),
+  encounters,
+  (next) => {
+    encounters = next;
+  },
+  {
+    onAdd: async () => {
+      const values = await promptModal('New encounter', [
+        { name: 'name', label: 'Name', value: '' },
+        { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1 },
+      ]);
+      const name = values?.name.trim();
+      if (!name) return null;
+      const maxHP = Math.max(1, Number(values.maxHP) || 1);
+      return createEncounter(slugId(name, encounters.map((e) => e.id)), name, maxHP);
+    },
+    confirmDelete: (encounter) =>
+      confirmModal(`Delete "${encounter.name}"?`, { danger: true, confirmLabel: 'Delete' }),
+  },
+);
 
 mountDiceTray(document.getElementById('dice-tray-container'));
 

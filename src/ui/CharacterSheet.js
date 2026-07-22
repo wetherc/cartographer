@@ -6,10 +6,11 @@ import { icon } from './icons.js';
 /**
  * Mount an editable character sheet: name/level/xp header, an XP-add
  * control, and one number input per stat.
+ * Renders an empty state when no character is selected (`null`).
  * @param {HTMLElement} container
- * @param {Character} character
+ * @param {Character | null} character
  * @param {(character: Character) => void} [onChange]
- * @returns {{ getCharacter: () => Character }}
+ * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountCharacterSheet(container, character, onChange = () => {}) {
   let current = character;
@@ -26,6 +27,14 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
 
   function render() {
     root.innerHTML = '';
+
+    if (!current) {
+      const empty = document.createElement('p');
+      empty.className = 'empty-state';
+      empty.textContent = 'No character selected.';
+      root.appendChild(empty);
+      return;
+    }
 
     const header = document.createElement('div');
     header.className = 'character-sheet__header';

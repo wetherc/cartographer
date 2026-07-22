@@ -17,10 +17,11 @@ function idFromName(name) {
  * Mount an inventory panel: a list of items with quantity and a remove
  * button, plus a small form to add new items (or add quantity to an
  * existing one, keyed by name).
+ * Renders an empty state when no character is selected (`null`).
  * @param {HTMLElement} container
- * @param {Character} character
+ * @param {Character | null} character
  * @param {(character: Character) => void} [onChange]
- * @returns {{ getCharacter: () => Character }}
+ * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountInventoryPanel(container, character, onChange = () => {}) {
   let current = character;
@@ -37,6 +38,14 @@ export function mountInventoryPanel(container, character, onChange = () => {}) {
 
   function render() {
     root.innerHTML = '';
+
+    if (!current) {
+      const empty = document.createElement('p');
+      empty.className = 'empty-state';
+      empty.textContent = 'No character selected.';
+      root.appendChild(empty);
+      return;
+    }
 
     const list = document.createElement('div');
     list.className = 'inventory-panel__list';
