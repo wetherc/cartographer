@@ -1,0 +1,140 @@
+/** @typedef {import('../types/map.js').Tile} Tile */
+/** @typedef {import('../types/map.js').TileMetadata} TileMetadata */
+/** @typedef {import('../types/map.js').MapNode} MapNode */
+
+/**
+ * Create a tile with default metadata, not yet revealed.
+ * @param {string} id
+ * @param {string} imageRef
+ * @param {Partial<Tile>} [overrides]
+ * @returns {Tile}
+ */
+export function createTile(id, imageRef, overrides = {}) {
+  return {
+    id,
+    imageRef,
+    metadata: { poiType: null, discoverable: false, notes: '' },
+    revealed: false,
+    childNodeId: null,
+    ...overrides,
+  };
+}
+
+/**
+ * Create a map node (world/region/subregion/POI level) with an empty tile grid.
+ * @param {string} id
+ * @param {string} name
+ * @param {string | null} parentId
+ * @param {number} width
+ * @param {number} height
+ * @returns {MapNode}
+ */
+export function createMapNode(id, name, parentId, width, height) {
+  return { id, name, parentId, width, height, tiles: [] };
+}
+
+/**
+ * Return a new node with the tile added, replacing any existing tile with the same id.
+ * @param {MapNode} node
+ * @param {Tile} tile
+ * @returns {MapNode}
+ */
+export function setTile(node, tile) {
+  const tiles = node.tiles.filter((t) => t.id !== tile.id);
+  tiles.push(tile);
+  return { ...node, tiles };
+}
+
+/**
+ * Find a tile by id within a node.
+ * @param {MapNode} node
+ * @param {string} tileId
+ * @returns {Tile | undefined}
+ */
+export function getTile(node, tileId) {
+  return node.tiles.find((t) => t.id === tileId);
+}
+
+/**
+ * Update an existing tile's metadata within a node, returning a new node.
+ * @param {MapNode} node
+ * @param {string} tileId
+ * @param {Partial<TileMetadata>} metadata
+ * @returns {MapNode}
+ */
+export function updateTileMetadata(node, tileId, metadata) {
+  const tiles = node.tiles.map((t) =>
+    t.id === tileId ? { ...t, metadata: { ...t.metadata, ...metadata } } : t
+  );
+  return { ...node, tiles };
+}
+
+/**
+ * Registry of MapNodes keyed by id, forming the world→region→subregion→POI hierarchy
+ * via each node's parentId.
+ */
+export class TileGrid {
+  constructor() {
+    /** @type {Map<string, MapNode>} */
+    this.nodes = new Map();
+  }
+
+  /** @param {MapNode} node */
+  addNode(node) {
+    this.nodes.set(node.id, node);
+    return node;
+  }
+
+  /**
+   * @param {string} nodeId
+   * @returns {MapNode | undefined}
+   */
+  getNode(nodeId) {
+    return this.nodes.get(nodeId);
+  }
+
+  /**
+   * Replace a node in the registry (e.g. after setTile/updateTileMetadata).
+   * @param {MapNode} node
+   */
+  updateNode(node) {
+    this.nodes.set(node.id, node);
+  }
+
+  /**
+   * Direct children of a node, i.e. nodes whose parentId matches.
+   * @param {string} nodeId
+   * @returns {MapNode[]}
+   */
+  getChildren(nodeId) {
+    return [...this.nodes.values()].filter((n) => n.parentId === nodeId);
+  }
+
+  /**
+   * Breadcrumb from the root node down to (and including) the given node.
+   * @param {string} nodeId
+   * @returns {MapNode[]}
+   */
+  getBreadcrumb(nodeId) {
+    /** @type {MapNode[]} */
+    const path = [];
+    /** @type {string | null} */
+    let currentId = nodeId;
+    while (currentId) {
+      const node = this.nodes.get(currentId);
+      if (!node) break;
+      path.unshift(node);
+      currentId = node.parentId;
+    }
+    return path;
+  }
+
+  /**
+   * Resolve the node a tile zooms into, if any.
+   * @param {Tile} tile
+   * @returns {MapNode | undefined}
+   */
+  getZoomTarget(tile) {
+    return tile.childNodeId ? this.nodes.get(tile.childNodeId) : undefined;
+  }
+}
