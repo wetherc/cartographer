@@ -134,19 +134,23 @@ const worldTree = mountWorldTree(document.getElementById('world-tree-container')
 const mapCanvas = new MapCanvas(canvasEl, palette, {
   tileSize: 48,
   getNodeName: (nodeId) => grid.getNode(nodeId)?.name,
-  onTileClick: (tile) => {
-    // In Build mode a click authors the tile per the active brush, rather than
-    // navigating or moving the party (both of which are Play-mode actions).
+  onCellClick: (x, y, tile) => {
+    const id = `${x},${y}`;
+    // In Build mode a click authors the cell per the active brush, rather than
+    // navigating or moving the party (both of which are Play-mode actions). It
+    // fires for empty cells too, so a just-erased cell can be painted again.
     if (currentMode === 'build') {
       if (activeBrush === 'erase') {
-        applyToTile(tile.id, (node) => eraseTile(node, tile.id));
+        applyToTile(id, (node) => eraseTile(node, id));
       } else if (activeBrush) {
-        applyToTile(tile.id, (node) => paintTile(node, tile.id, activeBrush.imageRef));
+        applyToTile(id, (node) => paintTile(node, id, activeBrush.imageRef));
       } else {
-        selectTile(tile.id);
+        selectTile(id);
       }
       return;
     }
+    // Play mode acts only on a real tile; empty cells are inert.
+    if (!tile) return;
     if (tile.childNodeId) {
       if (navigator.zoomIn(tile.id)) {
         mapCanvas.setNode(navigator.getCurrentNode());

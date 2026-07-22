@@ -276,7 +276,9 @@ body {
   flex-shrink: 0;
 }
 
-#build-tools {
+/* A class, not the #build-tools id, so the mode-based hide rule below (a
+   class-specificity selector) can still win over it. */
+.app-buildrail--stack {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
