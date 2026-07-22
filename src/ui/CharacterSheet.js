@@ -1,11 +1,51 @@
-import { setStat, addXP, XP_PER_LEVEL } from '../entities/Character.js';
+import {
+  setStat,
+  addXP,
+  getHP,
+  spendResource,
+  restoreResource,
+  XP_PER_LEVEL,
+} from '../entities/Character.js';
+import { wireDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
 /**
- * Mount an editable character sheet: name/level/xp header, an XP-add
- * control, and one number input per stat.
+ * Build the compact HP healthbar shown on the collapsed card. Absence of an
+ * HP pool (older saves) renders no bar rather than a fake full one.
+ * @param {ResourcePool} hp
+ * @returns {HTMLElement}
+ */
+function buildHPBar(hp) {
+  const wrap = document.createElement('span');
+  wrap.className = 'hp-bar';
+  wrap.setAttribute('role', 'img');
+  wrap.setAttribute('aria-label', `HP ${hp.current} of ${hp.max}`);
+
+  const track = document.createElement('span');
+  track.className = 'hp-bar__track';
+  const fill = document.createElement('span');
+  fill.className = 'hp-bar__fill';
+  const ratio = hp.max > 0 ? hp.current / hp.max : 0;
+  fill.style.width = `${Math.round(ratio * 100)}%`;
+  if (ratio <= 0.25) fill.classList.add('hp-bar__fill--critical');
+  track.appendChild(fill);
+
+  const text = document.createElement('span');
+  text.className = 'hp-bar__text';
+  text.textContent = `${hp.current}/${hp.max}`;
+
+  wrap.append(track, text);
+  return wrap;
+}
+
+/**
+ * Mount a character card: collapsed by default to a glanceable summary
+ * (name / race / HP healthbar) behind an accessible disclosure button,
+ * expanding to the full sheet — XP control, ability scores, and resource
+ * pools (HP included) with spend/restore steppers.
  * Renders an empty state when no character is selected (`null`).
  * @param {HTMLElement} container
  * @param {Character | null} character
@@ -14,6 +54,9 @@ import { icon } from './icons.js';
  */
 export function mountCharacterSheet(container, character, onChange = () => {}) {
   let current = character;
+  // Survives re-renders (every edit re-renders) but stays per-mount, so the
+  // card the GM opened doesn't snap shut after each stat change.
+  let expanded = false;
 
   const root = document.createElement('div');
   root.className = 'character-sheet';
@@ -39,10 +82,34 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
       return;
     }
 
+    const summary = document.createElement('button');
+    summary.type = 'button';
+    summary.className = 'disclosure character-sheet__summary';
+
+    const name = document.createElement('span');
+    name.className = 'character-sheet__name';
+    name.textContent = character.name;
+    summary.appendChild(name);
+
+    if (character.race) {
+      const race = document.createElement('span');
+      race.className = 'character-sheet__race';
+      race.textContent = character.race;
+      summary.appendChild(race);
+    }
+
+    const hp = getHP(character);
+    if (hp) summary.appendChild(buildHPBar(hp));
+
+    summary.appendChild(icon('chevron', { className: 'disclosure__chevron' }));
+
+    const body = document.createElement('div');
+    body.className = 'character-sheet__body';
+
     const header = document.createElement('div');
     header.className = 'character-sheet__header';
-    header.textContent = `${character.name} — Level ${character.level}`;
-    root.appendChild(header);
+    header.textContent = `Level ${character.level}`;
+    body.appendChild(header);
 
     const xpRow = document.createElement('div');
     xpRow.className = 'character-sheet__xp';
@@ -67,7 +134,7 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
     });
 
     xpRow.append(xpLabel, xpInput, xpButton);
-    root.appendChild(xpRow);
+    body.appendChild(xpRow);
 
     const statsList = document.createElement('div');
     statsList.className = 'character-sheet__stats';
@@ -91,7 +158,41 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
       row.appendChild(label);
       statsList.appendChild(row);
     }
-    root.appendChild(statsList);
+    body.appendChild(statsList);
+
+    if (character.resources.length > 0) {
+      const resources = document.createElement('div');
+      resources.className = 'character-sheet__resources';
+      for (const pool of character.resources) {
+        const row = document.createElement('div');
+        row.className = 'character-sheet__resource-row';
+
+        const label = document.createElement('span');
+        label.className = 'character-sheet__resource-label';
+        label.textContent = `${pool.name} ${pool.current}/${pool.max}`;
+
+        const spendButton = document.createElement('button');
+        spendButton.type = 'button';
+        spendButton.className = 'btn btn--icon btn--danger';
+        spendButton.setAttribute('aria-label', `Spend one ${pool.name}`);
+        spendButton.appendChild(icon('minus'));
+        spendButton.addEventListener('click', () => commit(spendResource(character, pool.id, 1)));
+
+        const restoreButton = document.createElement('button');
+        restoreButton.type = 'button';
+        restoreButton.className = 'btn btn--icon btn--success';
+        restoreButton.setAttribute('aria-label', `Restore one ${pool.name}`);
+        restoreButton.appendChild(icon('plus'));
+        restoreButton.addEventListener('click', () => commit(restoreResource(character, pool.id, 1)));
+
+        row.append(label, spendButton, restoreButton);
+        resources.appendChild(row);
+      }
+      body.appendChild(resources);
+    }
+
+    wireDisclosure(summary, body, { expanded, onToggle: (next) => { expanded = next; } });
+    root.append(summary, body);
   }
 
   render();

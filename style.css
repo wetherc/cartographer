@@ -571,6 +571,14 @@ body.mode-build .app-sidebar {
    Dice tray
    ========================================================================== */
 
+.dice-tray__summary .dice-tray__d20 {
+  color: var(--accent);
+}
+
+.dice-tray {
+  padding-top: var(--space-2);
+}
+
 .dice-tray__row {
   display: flex;
   align-items: center;
@@ -608,13 +616,110 @@ body.mode-build .app-sidebar {
 }
 
 /* ==========================================================================
+   Disclosure (collapsible panel headers)
+   ========================================================================== */
+
+.disclosure {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-1) 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.disclosure__chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.disclosure--open .disclosure__chevron {
+  transform: rotate(90deg);
+}
+
+/* ==========================================================================
+   HP healthbar
+   ========================================================================== */
+
+.hp-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.hp-bar__track {
+  width: 3.5rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.hp-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--success);
+}
+
+.hp-bar__fill--critical {
+  background: var(--danger);
+}
+
+.hp-bar__text {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
    Character sheet
    ========================================================================== */
+
+.character-sheet__summary .character-sheet__name {
+  font-weight: 700;
+}
+
+.character-sheet__summary .character-sheet__race {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.character-sheet__body {
+  padding-top: var(--space-3);
+}
 
 .character-sheet__header {
   font-size: var(--text-heading);
   font-weight: 700;
   margin-bottom: var(--space-3);
+}
+
+.character-sheet__resources {
+  margin-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.character-sheet__resource-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.character-sheet__resource-row .character-sheet__resource-label {
+  margin-right: auto;
 }
 
 .character-sheet__xp {
@@ -657,6 +762,15 @@ body.mode-build .app-sidebar {
 /* ==========================================================================
    Inventory
    ========================================================================== */
+
+.inventory-panel__summary {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.inventory-panel__body {
+  padding-top: var(--space-2);
+}
 
 .inventory-panel__row {
   display: flex;

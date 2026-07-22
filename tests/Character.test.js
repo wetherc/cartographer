@@ -2,7 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createCharacter,
-  withDefaultStats,
+  withDefaults,
+  withHP,
+  getHP,
+  HP_RESOURCE_ID,
   ABILITY_SCORES,
   addXP,
   setStat,
@@ -30,14 +33,41 @@ test('createCharacter fills all six ability scores at 10, keeping overrides', ()
   assert.equal(hero.stats.WIS, 10);
 });
 
-test('withDefaultStats backfills missing scores on a loaded character', () => {
+test('withDefaults backfills missing scores and race on a loaded character', () => {
   const legacy = { ...createCharacter('c1', 'Hero'), stats: { STR: 16, DEX: 8 } };
-  const filled = withDefaultStats(legacy);
+  delete legacy.race;
+  const filled = withDefaults(legacy);
   assert.deepEqual(
     filled.stats,
     { STR: 16, DEX: 8, CON: 10, INT: 10, WIS: 10, CHA: 10 },
   );
+  assert.equal(filled.race, '');
   assert.deepEqual(legacy.stats, { STR: 16, DEX: 8 }, 'input untouched');
+});
+
+test('withDefaults keeps an existing race and does not invent an HP pool', () => {
+  const elf = withDefaults(createCharacter('c1', 'Hero', {}, 'Elf'));
+  assert.equal(elf.race, 'Elf');
+  assert.equal(getHP(elf), null);
+});
+
+test('withHP gives a full-health pool under the reserved id, replacing any existing one', () => {
+  let hero = withHP(createCharacter('c1', 'Hero'), 12);
+  const hp = getHP(hero);
+  assert.equal(hp?.id, HP_RESOURCE_ID);
+  assert.deepEqual({ current: hp?.current, max: hp?.max }, { current: 12, max: 12 });
+
+  hero = withHP(hero, 20);
+  assert.equal(hero.resources.filter((r) => r.id === HP_RESOURCE_ID).length, 1);
+  assert.equal(getHP(hero)?.max, 20);
+});
+
+test('HP damage/heal works through the generic resource spend/restore machinery', () => {
+  let hero = withHP(createCharacter('c1', 'Hero'), 10);
+  hero = spendResource(hero, HP_RESOURCE_ID, 4);
+  assert.equal(getHP(hero)?.current, 6);
+  hero = restoreResource(hero, HP_RESOURCE_ID, 100);
+  assert.equal(getHP(hero)?.current, 10);
 });
 
 test('addXP accumulates without leveling up below the threshold', () => {

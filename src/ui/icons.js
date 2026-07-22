@@ -7,7 +7,7 @@
  * (aria-hidden); give the surrounding control its own accessible label.
  */
 
-/** @typedef {'plus'|'minus'|'damage'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'add'|'chevron'|'map'} IconName */
+/** @typedef {'plus'|'minus'|'damage'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'chevron'|'map'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -28,6 +28,15 @@ const PATHS = {
   export: ['M12 3v12', 'M8 11l4 4 4-4', 'M5 21h14'],
   import: ['M12 15V3', 'M8 7l4-4 4 4', 'M5 21h14'],
   dice: ['M4 4h16v16H4z', 'M9 9h.01', 'M15 9h.01', 'M9 15h.01', 'M15 15h.01', 'M12 12h.01'],
+  d20: [
+    'M12 2l8.5 5v10L12 22l-8.5-5V7z',
+    'M12 8L6 17h12z',
+    'M12 2v6',
+    'M3.5 7L6 17',
+    'M20.5 7L18 17',
+    'M6 17l6 5',
+    'M18 17l-6 5',
+  ],
   chevron: ['M9 6l6 6-6 6'],
   map: ['M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z', 'M9 4v14', 'M15 6v14'],
 };

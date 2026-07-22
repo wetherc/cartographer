@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createEncounter, applyDamage, heal, isDefeated } from '../src/entities/Encounter.js';
+import { createEncounter, applyDamage, heal, isDefeated, withDefaults, encountersAt } from '../src/entities/Encounter.js';
 
 test('createEncounter starts at full health', () => {
   const goblin = createEncounter('e1', 'Goblin', 7, { AC: 15 });
@@ -32,4 +32,26 @@ test('isDefeated reflects currentHP <= 0', () => {
   const goblin = createEncounter('e1', 'Goblin', 7);
   assert.equal(isDefeated(goblin), false);
   assert.equal(isDefeated(applyDamage(goblin, 7)), true);
+});
+
+test('withDefaults leaves a bound location alone and defaults a missing one to null', () => {
+  const bound = createEncounter('e1', 'Goblin', 7, {}, { nodeId: 'region', tileId: '1,1' });
+  assert.deepEqual(withDefaults(bound).location, { nodeId: 'region', tileId: '1,1' });
+
+  const legacy = { id: 'e2', name: 'Wolf', maxHP: 5, currentHP: 5, statBlock: {} };
+  assert.equal(withDefaults(legacy).location, null);
+});
+
+test('encountersAt keeps encounters in the party node plus unbound ones', () => {
+  const here = createEncounter('e1', 'Goblin', 7, {}, { nodeId: 'region', tileId: '1,1' });
+  const elsewhere = createEncounter('e2', 'Ogre', 20, {}, { nodeId: 'world', tileId: '0,0' });
+  const unbound = createEncounter('e3', 'Wandering ghost', 10);
+  const all = [here, elsewhere, unbound];
+
+  assert.deepEqual(
+    encountersAt(all, { nodeId: 'region', tileId: '3,0' }).map((e) => e.id),
+    ['e1', 'e3'],
+    'node-level match: tile within the node does not matter',
+  );
+  assert.deepEqual(encountersAt(all, null).map((e) => e.id), ['e3']);
 });
