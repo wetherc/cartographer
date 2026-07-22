@@ -1,4 +1,5 @@
 import { findRegionGroups } from './RegionGroups.js';
+import { isCursorKey, nextCursor } from './MapCursor.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -165,6 +166,10 @@ export class MapCanvas {
     this.authoring = false;
     /** @type {import('./TilePaint.js').CellRect | null} marquee highlight for the region tool */
     this.marquee = null;
+    /** @type {string | null} keyboard cursor cell id, drawn only while the canvas has focus */
+    this.cursorCellId = null;
+    /** @type {boolean} whether the canvas is focused, so the cursor outline shows */
+    this._focused = false;
     this.offsetX = 0;
     this.offsetY = 0;
     this.scale = 1;
@@ -185,6 +190,16 @@ export class MapCanvas {
     this._onPointerUp = this._onPointerUp.bind(this);
     this._onWheel = this._onWheel.bind(this);
     this._onContextMenu = this._onContextMenu.bind(this);
+    this._onKeyDown = this._onKeyDown.bind(this);
+    this._onFocus = this._onFocus.bind(this);
+    this._onBlur = this._onBlur.bind(this);
+
+    // The map is the app's primary content and was previously mouse/wheel-only;
+    // make it a focusable widget so it's keyboard-operable and screen-reader
+    // announced (pan/zoom/cursor handled in _onKeyDown).
+    canvas.tabIndex = 0;
+    canvas.setAttribute('role', 'application');
+    canvas.setAttribute('aria-label', 'Campaign map. Arrow keys move the cursor, Enter acts, plus and minus zoom.');
 
     canvas.addEventListener('pointerdown', this._onPointerDown);
     canvas.addEventListener('pointermove', this._onPointerMove);
@@ -192,6 +207,9 @@ export class MapCanvas {
     canvas.addEventListener('pointerleave', this._onPointerUp);
     canvas.addEventListener('wheel', this._onWheel, { passive: false });
     canvas.addEventListener('contextmenu', this._onContextMenu);
+    canvas.addEventListener('keydown', this._onKeyDown);
+    canvas.addEventListener('focus', this._onFocus);
+    canvas.addEventListener('blur', this._onBlur);
   }
 
   /**
@@ -203,6 +221,7 @@ export class MapCanvas {
     this.regionGroups = findRegionGroups(node);
     this.partyTileId = null;
     this.selectedTileId = null;
+    this.cursorCellId = null;
     this.fit();
   }
 
@@ -368,7 +387,24 @@ export class MapCanvas {
     this._renderMarquee();
     this._renderSelection();
     this._renderPartyMarker();
+    this._renderCursor();
     this._renderMapBoundsBorder();
+  }
+
+  /** Draw the keyboard cursor cell while the canvas is focused, distinct from
+   * the Build selection (solid gold) and party marker (dot). */
+  _renderCursor() {
+    if (!this._focused || !this.cursorCellId) return;
+    const coords = parseCoords(this.cursorCellId);
+    if (!coords) return;
+    const { ctx } = this;
+    const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+    ctx.save();
+    ctx.strokeStyle = '#5ec8ff';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([4, 3]);
+    ctx.strokeRect(sx + 1.5, sy + 1.5, size - 3, size - 3);
+    ctx.restore();
   }
 
   /** Dashed outline + tint over the region tool's in-progress drag block. */
@@ -484,6 +520,93 @@ export class MapCanvas {
    * @param {MouseEvent} event */
   _onContextMenu(event) {
     if (this.authoring) event.preventDefault();
+  }
+
+  _onFocus() {
+    this._focused = true;
+    this.render();
+  }
+
+  _onBlur() {
+    this._focused = false;
+    this.render();
+  }
+
+  /**
+   * Keyboard equivalent of the pointer interactions, so the map is operable
+   * without a mouse: arrows move a cursor cell, Enter/Space acts on it (the same
+   * paths a click takes), and +/- zoom. Panning is via arrows moving the cursor,
+   * which scrolls the view to keep the cursor in frame.
+   * @param {KeyboardEvent} event
+   */
+  _onKeyDown(event) {
+    if (!this.node) return;
+    if (isCursorKey(event.key)) {
+      event.preventDefault();
+      const current = this.cursorCellId ? parseCoords(this.cursorCellId) : null;
+      const next = nextCursor(current, event.key, this.node.width, this.node.height);
+      this.cursorCellId = `${next.x},${next.y}`;
+      this._ensureCellVisible(next.x, next.y);
+      this.render();
+      this._announceCursor();
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this._activateCursor();
+      return;
+    }
+    if (event.key === '+' || event.key === '=') {
+      event.preventDefault();
+      this.zoomBy(1.25);
+    } else if (event.key === '-' || event.key === '_') {
+      event.preventDefault();
+      this.zoomBy(1 / 1.25);
+    }
+  }
+
+  /** Act on the cursor cell exactly as a click would: author in Build mode
+   * (a one-cell stroke), navigate/move the party in Play mode. */
+  _activateCursor() {
+    if (!this.cursorCellId || !this.node) return;
+    const coords = parseCoords(this.cursorCellId);
+    if (!coords) return;
+    const tile = this.node.tiles.find((t) => t.id === this.cursorCellId) ?? null;
+    if (this.authoring) {
+      this.onStrokeCell?.(coords.x, coords.y, tile, true);
+      this.onStrokeEnd?.();
+    } else {
+      this.onCellClick?.(coords.x, coords.y, tile);
+    }
+  }
+
+  /** Fire onCellHover for the cursor cell so keyboard users get the same
+   * tooltip a mouse hover shows, positioned at the cell's screen centre. */
+  _announceCursor() {
+    if (!this.onCellHover || !this.cursorCellId || !this.node) return;
+    const coords = parseCoords(this.cursorCellId);
+    if (!coords) return;
+    const tile = this.node.tiles.find((t) => t.id === this.cursorCellId) ?? null;
+    const rect = this.canvas.getBoundingClientRect();
+    const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+    const scaleX = rect.width === 0 ? 1 : rect.width / this.canvas.width;
+    const scaleY = rect.height === 0 ? 1 : rect.height / this.canvas.height;
+    this.onCellHover(
+      tile,
+      rect.left + (sx + size / 2) * scaleX,
+      rect.top + (sy + size / 2) * scaleY,
+    );
+  }
+
+  /** Pan the view so a cell sits inside the visible buffer, used when the
+   * keyboard cursor moves toward or past an edge. */
+  _ensureCellVisible(x, y) {
+    const { sx, sy, size } = tileRect(x, y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+    const margin = size;
+    if (sx < margin) this.offsetX += margin - sx;
+    else if (sx + size > this.canvas.width - margin) this.offsetX -= sx + size - (this.canvas.width - margin);
+    if (sy < margin) this.offsetY += margin - sy;
+    else if (sy + size > this.canvas.height - margin) this.offsetY -= sy + size - (this.canvas.height - margin);
   }
 
   /** @param {PointerEvent} event */
@@ -639,5 +762,8 @@ export class MapCanvas {
     this.canvas.removeEventListener('pointerleave', this._onPointerUp);
     this.canvas.removeEventListener('wheel', this._onWheel);
     this.canvas.removeEventListener('contextmenu', this._onContextMenu);
+    this.canvas.removeEventListener('keydown', this._onKeyDown);
+    this.canvas.removeEventListener('focus', this._onFocus);
+    this.canvas.removeEventListener('blur', this._onBlur);
   }
 }
