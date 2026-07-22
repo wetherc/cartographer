@@ -79,7 +79,7 @@ tests/
 ## Status — To Do
 
 - [x] **Visual test DiceTray in browser** — Playwright: navigated `localhost:8934/index.html`, incremented d6 x2, d20 x1, modifier x1, clicked Roll. Result line rendered correctly: `d6[6,2]=8 + d20[10]=10 + modifier=1 -> total: 19`. Only console error is harmless `favicon.ico` 404.
-- [ ] `types/map.ts`, `types/entities.ts` — type declarations
+- [x] `types/map.ts`, `types/entities.ts` — type declarations
 - [ ] `map/TileGrid.js` — tile data structure, hierarchy
 - [ ] `map/TilePalette.js` — built-in + custom tile image loading
 - [ ] `map/MapCanvas.js` — canvas render, pan/zoom
