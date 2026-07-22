@@ -3,6 +3,8 @@ import { TilePalette } from './map/TilePalette.js';
 import { MapCanvas } from './map/MapCanvas.js';
 import { MapNavigator } from './map/MapNavigator.js';
 import { mountBreadcrumb } from './ui/Breadcrumb.js';
+import { mountModeSwitch } from './ui/ModeSwitch.js';
+import { mountWorldTree } from './ui/WorldTree.js';
 import { PartyTracker } from './party/PartyTracker.js';
 import { createCharacter, addResource } from './entities/Character.js';
 import { createResource } from './entities/Resource.js';
@@ -87,11 +89,21 @@ function syncPartyMarker() {
   mapCanvas.setPartyTile(position.nodeId === navigator.getCurrentNode().id ? position.tileId : null);
 }
 
-const breadcrumb = mountBreadcrumb(breadcrumbContainer, (nodeId) => {
+/** Navigate to a node by id and resync every view that reflects the location. */
+function goToNode(nodeId) {
   navigator.goTo(nodeId);
   mapCanvas.setNode(navigator.getCurrentNode());
   syncPartyMarker();
   breadcrumb.update(navigator.getBreadcrumb());
+  worldTree.update();
+}
+
+const breadcrumb = mountBreadcrumb(breadcrumbContainer, goToNode);
+
+const worldTree = mountWorldTree(document.getElementById('world-tree-container'), {
+  getNodes: () => [...grid.nodes.values()],
+  getCurrentId: () => navigator.getCurrentNode().id,
+  onSelect: goToNode,
 });
 
 const mapCanvas = new MapCanvas(canvasEl, palette, {
@@ -102,6 +114,7 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
       if (navigator.zoomIn(tile.id)) {
         mapCanvas.setNode(navigator.getCurrentNode());
         breadcrumb.update(navigator.getBreadcrumb());
+        worldTree.update();
       }
     } else {
       partyTracker.moveTo(navigator.getCurrentNode().id, tile.id);
@@ -138,6 +151,14 @@ mountEncounterPanel(document.getElementById('encounter-container'), encounters, 
 });
 
 mountDiceTray(document.getElementById('dice-tray-container'));
+
+// Play/Build mode drives which rails the layout shows (a body class toggled by
+// CSS), and defaults to Play so a first-run visitor lands on the live view.
+mountModeSwitch(document.getElementById('mode-switch-container'), 'play', (mode) => {
+  document.body.classList.toggle('mode-play', mode === 'play');
+  document.body.classList.toggle('mode-build', mode === 'build');
+  worldTree.update();
+});
 
 document.getElementById('save-btn').addEventListener('click', () => {
   saveToLocalStorage(buildState(grid, partyTracker.getPosition(), characters, encounters));

@@ -236,6 +236,110 @@ body {
   gap: var(--space-2);
 }
 
+/* ==========================================================================
+   Mode switch (Play / Build)
+   ========================================================================== */
+
+.mode-switch {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.mode-switch__btn {
+  border: none;
+  border-radius: 0;
+  background: var(--surface);
+}
+
+.mode-switch__btn + .mode-switch__btn {
+  border-left: 1px solid var(--border-strong);
+}
+
+.mode-switch__btn--active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.mode-switch__btn--active:hover {
+  background: var(--accent-hover);
+}
+
+/* ==========================================================================
+   World tree (Build-mode left rail)
+   ========================================================================== */
+
+.app-buildrail {
+  width: 18rem;
+  flex-shrink: 0;
+}
+
+.world-tree__children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.world-tree__root > .world-tree__item > .world-tree__row {
+  padding-left: 0;
+}
+
+.world-tree__children .world-tree__children {
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--border);
+  margin-left: var(--space-2);
+}
+
+.world-tree__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+}
+
+.world-tree__select {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  font-size: var(--text-label);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.world-tree__select:hover {
+  background: var(--surface-sunken);
+}
+
+.world-tree__select--current {
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+  font-weight: 700;
+}
+
+.world-tree__action {
+  opacity: 0;
+}
+
+.world-tree__row:hover .world-tree__action,
+.world-tree__action:focus-visible {
+  opacity: 1;
+}
+
+/* Layout reflow by mode: Build shows the world tree, Play shows the sidebar. */
+body.mode-play .app-buildrail {
+  display: none;
+}
+
+body.mode-build .app-sidebar {
+  display: none;
+}
+
 .app-main {
   display: flex;
   gap: var(--space-4);
