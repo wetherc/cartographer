@@ -100,7 +100,9 @@ function buildExampleCampaign() {
     for (let x = 0; x < 8; x++) {
       const entry =
         y === 2
-          ? palette.getRoadPiece(x === 0 ? 'end-w' : x === 7 ? 'end-e' : 'h')
+          ? // end-* names the tile's open edge: the westmost tile connects to
+            // the road on its east, so it takes end-e (and vice versa at x=7).
+            palette.getRoadPiece(x === 0 ? 'end-e' : x === 7 ? 'end-w' : 'h')
           : palette.pickVariant('grass', rng);
       if (!entry) continue;
       const inRegionBlock = x < 2 && y < 2;
