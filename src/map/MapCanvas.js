@@ -381,6 +381,11 @@ export class MapCanvas {
         ctx.fillStyle = '#333';
         ctx.fillRect(sx, sy, size, size);
       }
+
+      // A drawn (revealed or Build-mode) tile carrying a POI type gets a
+      // prominent outline so a discovered point of interest stands out from
+      // ordinary terrain.
+      if (tile.metadata.poiType) this._renderPoiOutline(sx, sy, size);
     }
 
     this._renderRegionGroups();
@@ -389,6 +394,26 @@ export class MapCanvas {
     this._renderPartyMarker();
     this._renderCursor();
     this._renderMapBoundsBorder();
+  }
+
+  /**
+   * Outline a discovered point-of-interest tile with a glowing gold border, so
+   * it reads as special against surrounding terrain. Drawn per tile inside the
+   * render loop rather than as an overlay pass, so it sits directly on the tile.
+   * @param {number} sx
+   * @param {number} sy
+   * @param {number} size
+   */
+  _renderPoiOutline(sx, sy, size) {
+    const { ctx } = this;
+    ctx.save();
+    ctx.strokeStyle = '#ffd24a';
+    ctx.lineWidth = Math.max(2, size * 0.06);
+    ctx.shadowColor = 'rgba(255, 190, 60, 0.9)';
+    ctx.shadowBlur = size * 0.18;
+    const inset = ctx.lineWidth / 2 + 1;
+    ctx.strokeRect(sx + inset, sy + inset, size - inset * 2, size - inset * 2);
+    ctx.restore();
   }
 
   /** Draw the keyboard cursor cell while the canvas is focused, distinct from
