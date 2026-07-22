@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="14" cy="10" rx="8" ry="4.5" fill="#63a651"/>
+  <ellipse cx="52" cy="57" rx="8" ry="4" fill="#529044"/>
+  <ellipse cx="32" cy="44" rx="22" ry="11" fill="#c2a36c"/>
+  <ellipse cx="32" cy="44" rx="17" ry="8" fill="#cdb078"/>
+  <!-- keep behind curtain wall -->
+  <g>
+    <rect x="26" y="16" width="12" height="18" fill="#b0aa9e" stroke="#6f6a60" stroke-width="0.8"/>
+    <path d="M25 16 h3 v-3 h2 v3 h4 v-3 h2 v3 h3 v3 h-14 Z" fill="#9a948a"/>
+    <rect x="30.6" y="22" width="2.8" height="4.5" rx="1.4" fill="#3a3630"/>
+    <path d="M32 10 L32 15" stroke="#5a4530" stroke-width="1"/>
+    <path d="M32 10 L38 11.5 L32 13 Z" fill="#b03a2e"/>
+  </g>
+  <!-- curtain wall -->
+  <rect x="15" y="32" width="34" height="15" fill="#9a948a" stroke="#6f6a60" stroke-width="0.8"/>
+  <g fill="#9a948a" stroke="#6f6a60" stroke-width="0.8">
+    <path d="M17 32 v-2.5 h3 v2.5 M23 32 v-2.5 h3 v2.5 M38 32 v-2.5 h3 v2.5 M44 32 v-2.5 h3 v2.5"/>
+  </g>
+  <g stroke="#807a6e" stroke-width="0.7" fill="none">
+    <path d="M15 37 H24 M40 37 H49 M15 42 H24 M40 42 H49"/>
+    <path d="M19 32 V37 M21 37 V42 M43 32 V37 M45 37 V42"/>
+  </g>
+  <!-- corner towers -->
+  <g>
+    <rect x="10" y="26" width="10" height="22" fill="#a8a296" stroke="#6f6a60" stroke-width="0.8"/>
+    <path d="M9 26 h2.6 v-3 h2 v3 h2.8 v-3 h2 v3 h2.6 v3 h-12 Z" fill="#8f897d" stroke="#6f6a60" stroke-width="0.6"/>
+    <rect x="14" y="33" width="2" height="5" rx="1" fill="#3a3630"/>
+    <rect x="44" y="26" width="10" height="22" fill="#a8a296" stroke="#6f6a60" stroke-width="0.8"/>
+    <path d="M43 26 h2.6 v-3 h2 v3 h2.8 v-3 h2 v3 h2.6 v3 h-12 Z" fill="#8f897d" stroke="#6f6a60" stroke-width="0.6"/>
+    <rect x="48" y="33" width="2" height="5" rx="1" fill="#3a3630"/>
+  </g>
+  <!-- gatehouse arch and portcullis -->
+  <g>
+    <path d="M27 47 L27 39 Q32 34 37 39 L37 47 Z" fill="#6f6a60"/>
+    <path d="M28.2 47 L28.2 39.6 Q32 35.8 35.8 39.6 L35.8 47 Z" fill="#2c2820"/>
+    <path d="M30 37.6 V47 M32 36.8 V47 M34 37.6 V47 M28.4 41 H35.6 M28.4 44 H35.6" stroke="#55514a" stroke-width="0.7"/>
+  </g>
+  <path d="M29 51 Q32 50 35 51 M27 54 Q32 52.8 37 54" stroke="#b09a63" stroke-width="1" fill="none" stroke-linecap="round"/>
+</svg>
