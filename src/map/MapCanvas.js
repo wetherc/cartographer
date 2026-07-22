@@ -64,6 +64,31 @@ export function clampZoom(scale, min, max) {
 }
 
 /**
+ * Convert a client (viewport) point to the canvas's internal buffer-pixel
+ * space. A canvas can be rendered at a different CSS size than its internal
+ * pixel buffer (e.g. `max-width: 100%` shrinks the element while `width`/
+ * `height` attributes fix the buffer); `getBoundingClientRect()` alone gives
+ * CSS-space coordinates, so all buffer-space tile math must first scale by the
+ * buffer/CSS ratio or every click, drag, and zoom anchor is silently offset.
+ * @param {number} clientX
+ * @param {number} clientY
+ * @param {DOMRect} rect result of canvas.getBoundingClientRect()
+ * @param {number} bufferWidth canvas.width
+ * @param {number} bufferHeight canvas.height
+ * @returns {{ x: number, y: number, scaleX: number, scaleY: number }}
+ */
+export function clientToBuffer(clientX, clientY, rect, bufferWidth, bufferHeight) {
+  const scaleX = rect.width === 0 ? 1 : bufferWidth / rect.width;
+  const scaleY = rect.height === 0 ? 1 : bufferHeight / rect.height;
+  return {
+    x: (clientX - rect.left) * scaleX,
+    y: (clientY - rect.top) * scaleY,
+    scaleX,
+    scaleY,
+  };
+}
+
+/**
  * Renders a MapNode's tile grid onto a canvas, with mouse-drag pan and
  * wheel zoom. Unrevealed tiles draw as a flat fog rect instead of their
  * imageRef, matching the fog-of-war model on Tile.revealed.
@@ -169,6 +194,8 @@ export class MapCanvas {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (!node) return;
 
+    this._renderMapBounds();
+
     for (const tile of node.tiles) {
       const coords = parseCoords(tile.id);
       if (!coords) continue;
@@ -176,7 +203,9 @@ export class MapCanvas {
       if (sx + size < 0 || sy + size < 0 || sx > canvas.width || sy > canvas.height) continue;
 
       if (!tile.revealed) {
-        ctx.fillStyle = '#1a1a1a';
+        // A distinctly lighter fill than the map backdrop and the empty-canvas
+        // background, so an unexplored-but-real tile reads as fog, not void.
+        ctx.fillStyle = '#48412f';
         ctx.fillRect(sx, sy, size, size);
         continue;
       }
@@ -192,6 +221,32 @@ export class MapCanvas {
 
     this._renderRegionGroups();
     this._renderPartyMarker();
+    this._renderMapBoundsBorder();
+  }
+
+  /**
+   * Fill the node's full width x height extent with a map-area backdrop, drawn
+   * before the tiles. This gives the map a definite shape even where no tile is
+   * revealed, so panning past the edge is visually obvious.
+   */
+  _renderMapBounds() {
+    const { ctx, node } = this;
+    if (!node) return;
+    const size = this.tileSize * this.scale;
+    ctx.fillStyle = '#241f16';
+    ctx.fillRect(this.offsetX, this.offsetY, node.width * size, node.height * size);
+  }
+
+  /** Stroke the node extent after tiles so the world edge is always visible. */
+  _renderMapBoundsBorder() {
+    const { ctx, node } = this;
+    if (!node) return;
+    const size = this.tileSize * this.scale;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(230, 215, 180, 0.55)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(this.offsetX, this.offsetY, node.width * size, node.height * size);
+    ctx.restore();
   }
 
   _renderPartyMarker() {
@@ -256,8 +311,13 @@ export class MapCanvas {
   /** @param {PointerEvent} event */
   _onPointerMove(event) {
     if (!this._dragging) return;
-    const dx = event.clientX - this._lastX;
-    const dy = event.clientY - this._lastY;
+    // Drag deltas are measured in client (CSS) px but pan offsets live in
+    // buffer px, so scale the delta by the buffer/CSS ratio.
+    const rect = this.canvas.getBoundingClientRect();
+    const scaleX = rect.width === 0 ? 1 : this.canvas.width / rect.width;
+    const scaleY = rect.height === 0 ? 1 : this.canvas.height / rect.height;
+    const dx = (event.clientX - this._lastX) * scaleX;
+    const dy = (event.clientY - this._lastY) * scaleY;
     this.offsetX += dx;
     this.offsetY += dy;
     this._dragDistance += Math.abs(dx) + Math.abs(dy);
@@ -273,9 +333,10 @@ export class MapCanvas {
     if (!wasClick || !this.onTileClick || !this.node) return;
 
     const rect = this.canvas.getBoundingClientRect();
+    const buffer = clientToBuffer(event.clientX, event.clientY, rect, this.canvas.width, this.canvas.height);
     const coords = screenToTile(
-      event.clientX - rect.left,
-      event.clientY - rect.top,
+      buffer.x,
+      buffer.y,
       this.tileSize,
       this.offsetX,
       this.offsetY,
@@ -289,8 +350,9 @@ export class MapCanvas {
   _onWheel(event) {
     event.preventDefault();
     const rect = this.canvas.getBoundingClientRect();
-    const pointerX = event.clientX - rect.left;
-    const pointerY = event.clientY - rect.top;
+    const buffer = clientToBuffer(event.clientX, event.clientY, rect, this.canvas.width, this.canvas.height);
+    const pointerX = buffer.x;
+    const pointerY = buffer.y;
 
     const before = screenToTile(pointerX, pointerY, this.tileSize, this.offsetX, this.offsetY, this.scale);
     const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
