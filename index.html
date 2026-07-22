@@ -9,6 +9,7 @@
 <body>
   <header class="app-header">
     <h1>Campaign Builder</h1>
+    <div id="mode-switch-container"></div>
     <div class="app-header__actions">
       <button id="save-btn" class="btn btn--primary" type="button">Save</button>
       <button id="export-btn" class="btn" type="button">Export</button>
@@ -18,6 +19,10 @@
   </header>
 
   <main class="app-main">
+    <aside id="world-tree-container" class="app-buildrail card" aria-label="World tree">
+      <h2 class="card__title">World</h2>
+    </aside>
+
     <section class="app-map">
       <div id="breadcrumb-container"></div>
       <canvas id="map-canvas" width="720" height="540"></canvas>
