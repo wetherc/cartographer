@@ -4,36 +4,54 @@
 <style>
   body { background: #222; font-family: sans-serif; color: #eee; }
   h2 { margin: 24px 0 8px; }
-  .row { display: flex; gap: 0; }
-  img { width: 64px; height: 64px; display: block; image-rendering: pixelated; }
-  .grid3 { display: grid; grid-template-columns: repeat(3, 64px); gap: 0; }
-  .roadgrid { display: grid; grid-template-columns: repeat(4, 64px); gap: 0; width: max-content; }
+  .grid { display: grid; gap: 0; width: max-content; }
+  img { width: 64px; height: 64px; display: block; }
+  .zoom img { width: 128px; height: 128px; }
 </style>
 </head>
 <body>
-<h2>Grass</h2>
-<div class="row"><img src="../assets/tiles/grass/grass-1.svg"><img src="../assets/tiles/grass/grass-2.svg"><img src="../assets/tiles/grass/grass-3.svg"><img src="../assets/tiles/grass/grass-1.svg"><img src="../assets/tiles/grass/grass-2.svg"></div>
-<h2>Forest</h2>
-<div class="row"><img src="../assets/tiles/forest/forest-1.svg"><img src="../assets/tiles/forest/forest-2.svg"><img src="../assets/tiles/forest/forest-3.svg"><img src="../assets/tiles/forest/forest-1.svg"><img src="../assets/tiles/forest/forest-2.svg"></div>
-<h2>Mountain</h2>
-<div class="row"><img src="../assets/tiles/mountain/mountain-1.svg"><img src="../assets/tiles/mountain/mountain-2.svg"><img src="../assets/tiles/mountain/mountain-3.svg"><img src="../assets/tiles/mountain/mountain-1.svg"><img src="../assets/tiles/mountain/mountain-2.svg"></div>
-<h2>Water</h2>
-<div class="row"><img src="../assets/tiles/water/water-1.svg"><img src="../assets/tiles/water/water-2.svg"><img src="../assets/tiles/water/water-3.svg"><img src="../assets/tiles/water/water-1.svg"><img src="../assets/tiles/water/water-2.svg"></div>
-<h2>Desert</h2>
-<div class="row"><img src="../assets/tiles/desert/desert-1.svg"><img src="../assets/tiles/desert/desert-2.svg"><img src="../assets/tiles/desert/desert-3.svg"><img src="../assets/tiles/desert/desert-1.svg"><img src="../assets/tiles/desert/desert-2.svg"></div>
-<h2>POI markers</h2>
-<div class="row"><img src="../assets/tiles/settlement/settlement.svg"><img src="../assets/tiles/dungeon/dungeon.svg"></div>
+<p>Each terrain renders as a 6x3 block mixing all variants, so both horizontal
+and vertical seams between any variant pair are visible. A clean result shows
+no banding, hard lines, or pattern breaks at tile boundaries.</p>
+<div id="terrains"></div>
+
+<h2>POI markers (zoomed)</h2>
+<div class="grid zoom" style="grid-template-columns: repeat(2, 128px);">
+  <img src="../assets/tiles/settlement/settlement.svg"><img src="../assets/tiles/dungeon/dungeon.svg">
+</div>
+
 <h2>Road network (path winding through grass)</h2>
-<div class="roadgrid" style="grid-template-columns: repeat(3, 64px);">
-  <img src="../assets/tiles/road/road-end-w.svg"><img src="../assets/tiles/road/road-h.svg"><img src="../assets/tiles/road/road-corner-sw.svg">
-  <img src="../assets/tiles/grass/grass-1.svg"><img src="../assets/tiles/grass/grass-2.svg"><img src="../assets/tiles/road/road-v.svg">
-  <img src="../assets/tiles/grass/grass-3.svg"><img src="../assets/tiles/grass/grass-1.svg"><img src="../assets/tiles/road/road-end-n.svg">
-</div>
+<div class="grid" style="grid-template-columns: repeat(4, 64px);" id="road-network"></div>
+
 <h2>Road pieces (all)</h2>
-<div class="roadgrid">
-  <img src="../assets/tiles/road/road-h.svg"><img src="../assets/tiles/road/road-v.svg"><img src="../assets/tiles/road/road-cross.svg"><img src="../assets/tiles/road/road-corner-ne.svg">
-  <img src="../assets/tiles/road/road-corner-nw.svg"><img src="../assets/tiles/road/road-corner-se.svg"><img src="../assets/tiles/road/road-corner-sw.svg"><img src="../assets/tiles/road/road-end-n.svg">
-  <img src="../assets/tiles/road/road-end-s.svg"><img src="../assets/tiles/road/road-end-e.svg"><img src="../assets/tiles/road/road-end-w.svg">
-</div>
+<div class="grid" style="grid-template-columns: repeat(4, 64px);" id="road-all"></div>
+
+<script>
+  const img = (src) => `<img src="../assets/tiles/${src}.svg">`;
+
+  // 6x3 mixed-variant block per terrain: every ordered variant pair occurs
+  // somewhere as a horizontal neighbor, and each column mixes variants vertically.
+  const layout = [
+    [1, 2, 3, 1, 3, 2],
+    [3, 1, 2, 3, 2, 1],
+    [2, 3, 1, 2, 1, 3],
+  ];
+  document.getElementById('terrains').innerHTML = ['grass', 'forest', 'mountain', 'water', 'desert']
+    .map((t) => `<h2>${t}</h2><div class="grid" style="grid-template-columns: repeat(6, 64px);">
+      ${layout.flat().map((v) => img(`${t}/${t}-${v}`)).join('')}</div>`)
+    .join('');
+
+  document.getElementById('road-network').innerHTML = [
+    'road/road-end-w', 'road/road-h', 'road/road-corner-sw', 'grass/grass-1',
+    'grass/grass-2', 'grass/grass-3', 'road/road-corner-ne', 'road/road-corner-sw',
+    'grass/grass-1', 'grass/grass-2', 'road/road-end-e', 'road/road-corner-nw',
+  ].map(img).join('');
+
+  document.getElementById('road-all').innerHTML = [
+    'road-h', 'road-v', 'road-cross', 'road-corner-ne',
+    'road-corner-nw', 'road-corner-se', 'road-corner-sw', 'road-end-n',
+    'road-end-s', 'road-end-e', 'road-end-w',
+  ].map((r) => img(`road/${r}`)).join('');
+</script>
 </body>
 </html>

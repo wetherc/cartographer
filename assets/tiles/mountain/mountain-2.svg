@@ -1,7 +1,18 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" fill="#9aa0a6"/>
-  <polygon points="4,54 18,28 26,40 32,20 40,36 48,26 60,54" fill="#6e747a"/>
-  <polygon points="18,28 22,35 14,35" fill="#e8ecef"/>
-  <polygon points="32,20 37,29 27,29" fill="#e8ecef"/>
-  <polygon points="48,26 52,33 44,33" fill="#e8ecef"/>
+  <g fill="#878e94">
+    <circle cx="8" cy="10" r="1.2"/><circle cx="56" cy="12" r="1.3"/>
+    <circle cx="32" cy="60" r="1.1"/>
+  </g>
+  <ellipse cx="32" cy="53" rx="27" ry="4.5" fill="#8a9096"/>
+  <polygon points="4,54 16,26 28,54" fill="#757c84"/>
+  <polygon points="16,26 16,54 28,54" fill="#545a60"/>
+  <polygon points="36,54 48,24 60,54" fill="#757c84"/>
+  <polygon points="48,24 48,54 60,54" fill="#545a60"/>
+  <polygon points="18,54 32,16 46,54" fill="#7d848c"/>
+  <polygon points="32,16 32,54 46,54" fill="#5b6167"/>
+  <polygon points="16,26 19.5,33 17.6,31.6 16,34 14.4,31.6 12.5,33" fill="#e3e9ee"/>
+  <polygon points="32,16 36.5,25 34.2,23.2 32,26 29.8,23.2 27.5,25" fill="#eef2f5"/>
+  <polygon points="48,24 51.5,31 49.6,29.6 48,32 46.4,29.6 44.5,31" fill="#e3e9ee"/>
+  <path d="M32 16 L32 54" stroke="#4e545a" stroke-width="1" opacity="0.4"/>
 </svg>

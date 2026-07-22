@@ -7,8 +7,10 @@ Built-in tile art lives under `assets/tiles/<type>/`, one subfolder per tile typ
 Each terrain type ships 3 variants (`grass-1.svg`, `grass-2.svg`, `grass-3.svg`, etc.), selected via `palette.pickVariant(type, rng)` so adjacent tiles of the same type don't look identical. For variants to abut cleanly in the grid:
 
 - All variants of a type share the exact same background fill color.
-- Decorative details (grass tufts, trees, rocks, waves, dunes) stay inset from the tile edges — nothing touches or crosses a border.
+- Decorative details (grass tufts, trees, rocks, sparkles) stay inset from the tile edges — nothing one-off touches or crosses a border.
+- The one allowed exception: a type may carry an edge-crossing *periodic* motif (water's wave rows, desert's dune crests), provided it is byte-identical across all variants of the type and its geometry is phase-continuous at the borders — the path must pass through the same point with the same tangent at x=0 and x=64 (e.g. a `Q .. T ..` chain whose period divides 64), so any variant abuts any variant seamlessly. Never vary such a motif per variant; variants differ only in their inset details.
 - Variants differ only in the count/placement/arrangement of those inset details, never in background color or overall tone.
+- Reusable elements (a grass tuft, a tree) are defined once in `<defs>` and stamped with `<use href="#id" transform=...>`; canvas `drawImage` renders these fine.
 
 ## Road connector pieces
 

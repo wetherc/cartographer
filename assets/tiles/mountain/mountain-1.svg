@@ -1,6 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" fill="#9aa0a6"/>
-  <polygon points="8,52 24,22 36,40 44,26 58,52" fill="#6e747a"/>
-  <polygon points="24,22 30,32 18,32" fill="#e8ecef"/>
-  <polygon points="44,26 48,33 40,33" fill="#e8ecef"/>
+  <g fill="#878e94">
+    <circle cx="10" cy="12" r="1.3"/><circle cx="54" cy="12" r="1.1"/>
+    <circle cx="14" cy="58" r="1.2"/><circle cx="50" cy="58" r="1.4"/>
+  </g>
+  <ellipse cx="32" cy="51" rx="25" ry="4.5" fill="#8a9096"/>
+  <polygon points="8,52 24,20 38,52" fill="#7d848c"/>
+  <polygon points="24,20 24,52 38,52" fill="#5b6167"/>
+  <polygon points="30,52 44,26 56,52" fill="#757c84"/>
+  <polygon points="44,26 44,52 56,52" fill="#545a60"/>
+  <polygon points="24,20 29,30 26.5,28 24,32 21.5,28 19,30" fill="#eef2f5"/>
+  <polygon points="44,26 48,34 45.8,32.4 44,35 42.2,32.4 40,34" fill="#e3e9ee"/>
+  <path d="M24 20 L24 52 M44 26 L44 52" stroke="#4e545a" stroke-width="1" opacity="0.4"/>
 </svg>
