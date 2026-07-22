@@ -97,7 +97,7 @@ export class MapCanvas {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {TilePalette} palette
-   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, onTileClick?: (tile: Tile) => void, getNodeName?: (nodeId: string) => string | undefined }} [options]
+   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, getNodeName?: (nodeId: string) => string | undefined }} [options]
    */
   constructor(canvas, palette, options = {}) {
     this.canvas = canvas;
@@ -106,7 +106,7 @@ export class MapCanvas {
     this.tileSize = options.tileSize ?? 48;
     this.minZoom = options.minZoom ?? 0.25;
     this.maxZoom = options.maxZoom ?? 4;
-    this.onTileClick = options.onTileClick;
+    this.onCellClick = options.onCellClick;
     this.getNodeName = options.getNodeName;
 
     /** @type {MapNode | null} */
@@ -372,7 +372,7 @@ export class MapCanvas {
   _onPointerUp(event) {
     const wasClick = this._dragging && this._dragDistance < 4;
     this._dragging = false;
-    if (!wasClick || !this.onTileClick || !this.node) return;
+    if (!wasClick || !this.onCellClick || !this.node) return;
 
     const rect = this.canvas.getBoundingClientRect();
     const buffer = clientToBuffer(event.clientX, event.clientY, rect, this.canvas.width, this.canvas.height);
@@ -384,8 +384,12 @@ export class MapCanvas {
       this.offsetY,
       this.scale,
     );
-    const tile = this.node.tiles.find((t) => t.id === `${coords.x},${coords.y}`);
-    if (tile) this.onTileClick(tile);
+    // Fire for any in-bounds cell, whether or not a tile currently sits there,
+    // so Build mode can paint into an empty (e.g. just-erased) cell. The
+    // handler gets the tile if one exists, or null.
+    if (coords.x < 0 || coords.y < 0 || coords.x >= this.node.width || coords.y >= this.node.height) return;
+    const tile = this.node.tiles.find((t) => t.id === `${coords.x},${coords.y}`) ?? null;
+    this.onCellClick(coords.x, coords.y, tile);
   }
 
   /** @param {WheelEvent} event */
