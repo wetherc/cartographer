@@ -192,3 +192,37 @@ Each phase should land as its own set of commits (following the existing per-mod
 - [ ] **Phase C** — tile metadata inspector/editor; tile painting via the palette (place/replace/remove); `MapNode` create/delete; region-link authoring (select block → link to child node); `ui/WorldTree.js` Build-mode navigation
 - [ ] **Phase D** — character roster CRUD + selector (replacing hardcoded `characters[0]`); encounter roster CRUD + selector (replacing hardcoded demo Goblin)
 - [ ] **Phase E** — header Play/Build `ModeSwitch` + layout reflow; explicit "new campaign" flow (demo data becomes an opt-in "load example," not a silent default)
+
+---
+
+## Campaign-lifecycle gaps (beyond the UI overhaul)
+
+Phases A-E make what's already built usable and pretty. They don't add the mechanics a full session-to-session 5e-style campaign needs. Gaps below, ranked by how much they block real play, not by ease of build.
+
+1. **GM/player screen separation — currently a hard blocker for real use.** One browser tab shows one truth: `EncounterPanel` renders exact current/max HP, tile metadata notes would show plot secrets, and there's one `localStorage` key for the whole campaign. A real table has a GM screen (full HP, secret notes, undiscovered POIs) and a player screen (bloodied/healthy/dying instead of exact HP, only revealed tiles, no notes). No amount of dice/inventory polish matters if the GM can't safely show players the map without narrating past every secret out loud. Needs a `viewerRole: 'gm' | 'player'` render mode threaded through `MapCanvas`, `EncounterPanel`, and the tile inspector, independent of the Play/Build mode split above.
+2. **No live multi-device sync.** State lives in one browser's `localStorage`; export/import is a manual file hand-off. A real session has the GM on one device and players looking at a shared display or their own devices. Without sync, "player view" from #1 has nowhere to render. Minimum viable version: a second browser tab/window reading the same origin's `localStorage` via the `storage` event, so a GM laptop can drive a second player-facing tab — no server needed, stays at zero dependencies.
+3. **No initiative/turn tracker.** `entities/Encounter.js` tracks HP but not turn order, and there's no combat-round concept anywhere. Running actual 5e combat needs an initiative list (party + encounters interleaved, sorted, current-turn pointer, round counter) — currently a GM would have to track this on paper next to the app.
+4. **No status/condition tracking.** Neither `Character` nor `Encounter` has a conditions list (poisoned, prone, concentrating, etc.) or duration counter. This is core 5e state that resets/matters every round.
+5. **No rest/recovery model.** `Resource.restore` exists but nothing calls it on a short/long rest, and there's no in-game clock to hang a rest on. Needs a lightweight in-game time/calendar concept (even just "day N, short rest / long rest" buttons) that resources and HP can hook into.
+6. **NPCs conflated with hostile encounters.** `Encounter` is modeled as "enemy with HP," but a campaign needs friendly/neutral NPCs too: name, notes, location, disposition/faction, without necessarily having HP or being a combat participant. Currently the only way to represent an NPC is misusing `Encounter`.
+7. **No quest/session log.** Nothing persists "what happened" or "what's outstanding" across sessions — no quest list (active/completed), no session notes/recap. `SaveManager`'s `CampaignState` would need a new top-level field; this is pure data + a simple panel, low risk.
+8. **No handout/lore delivery to players.** No way to attach an image, a read-aloud box, or a lore snippet to a tile/node and reveal it to players at the right moment — separate from the tile's own map image.
+9. **Tile metadata editor writes data nobody can see yet.** Phase C plans the *editor*; nothing today displays `TileMetadata` (POI type, notes) back to a GM during play, e.g. on hover/click outside Build mode. Worth folding into Phase C rather than treating as a separate gap.
+10. **No accessibility pass despite it being the README's stated top priority.** The whole map is a `<canvas>` with mouse/wheel-only interaction — no keyboard pan/zoom/tile-select, no ARIA/text alternative for canvas content, no focus management in the (planned) `<dialog>`-based modals. This cuts against "Place a heavy focus on clean, intuitive, and accessible visual styles" in `CLAUDE.md` and should be a named phase, not an afterthought bolted onto Phase A.
+11. **No undo or save history.** `SaveManager` overwrites the one `localStorage` slot on every save; a bad edit (wrong tile painted, wrong character deleted) has no way back except re-importing an older export, if one happens to exist. Even a small ring buffer of recent snapshots would cover most real mistakes.
+
+None of this is scheduled into a phase yet — flagging for prioritization alongside Phases A-E above, not folded into them, since several of these (1-3 especially) are more load-bearing for actually running a session than the visual/authoring polish in Phase A-E.
+
+## Status — To Do (campaign-lifecycle gaps)
+
+- [ ] GM/player view-role split across `MapCanvas`, `EncounterPanel`, tile inspector (HP abstraction, hidden notes, unrevealed tiles)
+- [ ] Cross-tab live sync via the `storage` event, as the minimum viable multi-device story
+- [ ] Initiative/turn-order tracker spanning party + encounters
+- [ ] Status/condition tracking on `Character` and `Encounter`
+- [ ] In-game time/calendar concept + short/long rest actions wired to `Resource.restore`
+- [ ] `entities/NPC.js` (or generalize `Encounter`) for non-hostile characters
+- [ ] Quest/session log as a new `CampaignState` field + panel
+- [ ] Handout/lore attachment on tiles/nodes, revealed to players on demand
+- [ ] Surface `TileMetadata` to a GM during play, not just in the Build-mode editor
+- [ ] Accessibility pass: keyboard map nav, ARIA/text alternative for canvas content, modal focus management
+- [ ] Save history / undo — small ring buffer of recent snapshots in `SaveManager`
