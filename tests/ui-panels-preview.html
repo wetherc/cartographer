@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>UI panels preview</title>
+  <link rel="stylesheet" href="../style.css" />
+  <style>
+    body { display: flex; gap: 1rem; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <section id="character-sheet-container" class="panel"></section>
+  <section id="inventory-container" class="panel"></section>
+  <section id="encounter-container" class="panel"></section>
+
+  <script type="module">
+    import { createCharacter, addResource } from '../src/entities/Character.js';
+    import { createResource } from '../src/entities/Resource.js';
+    import { createEncounter } from '../src/entities/Encounter.js';
+    import { mountCharacterSheet } from '../src/ui/CharacterSheet.js';
+    import { mountInventoryPanel } from '../src/ui/InventoryPanel.js';
+    import { mountEncounterPanel } from '../src/ui/EncounterPanel.js';
+
+    let hero = createCharacter('c1', 'Hero', { STR: 14, DEX: 12, CON: 13 });
+    hero = addResource(hero, createResource('mana', 'Mana', 'mana', 10));
+
+    mountCharacterSheet(document.getElementById('character-sheet-container'), hero, (next) => {
+      hero = next;
+    });
+
+    mountInventoryPanel(document.getElementById('inventory-container'), hero, (next) => {
+      hero = next;
+    });
+
+    mountEncounterPanel(document.getElementById('encounter-container'), [
+      createEncounter('e1', 'Goblin', 7),
+      createEncounter('e2', 'Wolf', 11),
+    ]);
+  </script>
+</body>
+</html>
