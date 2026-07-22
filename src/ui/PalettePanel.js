@@ -3,7 +3,7 @@ import { allowsPaletteType } from '../map/NodeKinds.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 /** @typedef {import('../map/TilePalette.js').PaletteEntry} PaletteEntry */
-/** @typedef {null | 'erase' | 'region' | PaletteEntry} Brush */
+/** @typedef {null | 'erase' | 'erase-path' | 'region' | PaletteEntry} Brush */
 
 /**
  * Mount the tile palette: a picker of paint brushes for Build mode. The active
@@ -73,6 +73,13 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   eraseBtn.appendChild(document.createTextNode('Erase'));
   bindSelect(eraseBtn, 'erase');
 
+  const erasePathBtn = document.createElement('button');
+  erasePathBtn.type = 'button';
+  erasePathBtn.className = 'btn palette__item';
+  erasePathBtn.appendChild(icon('remove'));
+  erasePathBtn.appendChild(document.createTextNode('Erase path'));
+  bindSelect(erasePathBtn, 'erase-path');
+
   const regionBtn = document.createElement('button');
   regionBtn.type = 'button';
   regionBtn.className = 'btn palette__item';
@@ -80,7 +87,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   regionBtn.appendChild(document.createTextNode('Region'));
   bindSelect(regionBtn, 'region');
 
-  tools.append(inspectBtn, eraseBtn, regionBtn);
+  tools.append(inspectBtn, eraseBtn, erasePathBtn, regionBtn);
   root.appendChild(tools);
 
   // Swatch grid of every palette entry.

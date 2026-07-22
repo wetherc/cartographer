@@ -7,6 +7,9 @@
   .grid { display: grid; gap: 0; width: max-content; }
   img { width: 64px; height: 64px; display: block; }
   .zoom img { width: 128px; height: 128px; }
+  /* Roads are transparent overlays, so preview them stacked over a grass base. */
+  .cell { position: relative; width: 64px; height: 64px; }
+  .cell img { position: absolute; inset: 0; }
 </style>
 </head>
 <body>
@@ -64,17 +67,21 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     'wall-corner-ne', 'wall-h', 'wall-h', 'wall-corner-nw',
   ].map((k) => img(`interior/interior-${k}`)).join('');
 
+  // A road piece is a transparent overlay, so stack it over a grass base; a
+  // plain grass cell is just the grass tile.
+  const cell = (base, over) => `<div class="cell">${img(base)}${over ? img(over) : ''}</div>`;
+
   document.getElementById('road-network').innerHTML = [
-    'road/road-end-w', 'road/road-h', 'road/road-corner-sw', 'grass/grass-1',
+    'road/road-end-e', 'road/road-h', 'road/road-corner-sw', 'grass/grass-1',
     'grass/grass-2', 'grass/grass-3', 'road/road-corner-ne', 'road/road-corner-sw',
     'grass/grass-1', 'grass/grass-2', 'road/road-end-e', 'road/road-corner-nw',
-  ].map(img).join('');
+  ].map((s) => (s.startsWith('road/') ? cell('grass/grass-1', s) : cell(s))).join('');
 
   document.getElementById('road-all').innerHTML = [
     'road-h', 'road-v', 'road-cross', 'road-corner-ne',
     'road-corner-nw', 'road-corner-se', 'road-corner-sw', 'road-end-n',
-    'road-end-s', 'road-end-e', 'road-end-w',
-  ].map((r) => img(`road/${r}`)).join('');
+    'road-end-s', 'road-end-w', 'road-end-e',
+  ].map((r) => cell('grass/grass-1', `road/${r}`)).join('');
 </script>
 </body>
 </html>

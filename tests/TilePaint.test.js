@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   paintTile,
   eraseTile,
+  erasePath,
   isInBounds,
   normalizeRect,
   tilesInRect,
@@ -70,11 +71,43 @@ test('re-terraining beneath an overlay keeps the overlay', () => {
   assert.equal(tile.overlayRef, 'road-h.svg');
 });
 
-test('paintTile overlay on an empty cell becomes the base image', () => {
+test('paintTile overlay on an empty cell keeps an empty base, road as overlay', () => {
   const node = paintTile(node2x2(), '0,0', 'road-h.svg', true);
   const tile = getTile(node, '0,0');
-  assert.equal(tile.imageRef, 'road-h.svg');
-  assert.equal(tile.overlayRef, null);
+  assert.equal(tile.imageRef, '');
+  assert.equal(tile.overlayRef, 'road-h.svg');
+});
+
+test('painting terrain under an overlay-only tile fills the base, keeps the path', () => {
+  let node = paintTile(node2x2(), '0,0', 'road-h.svg', true);
+  node = paintTile(node, '0,0', 'sand.svg');
+  const tile = getTile(node, '0,0');
+  assert.equal(tile.imageRef, 'sand.svg');
+  assert.equal(tile.overlayRef, 'road-h.svg');
+});
+
+test('paintTile overlay is a no-op over a POI-marker tile', () => {
+  let node = node2x2();
+  node = setTile(
+    node,
+    createTile('0,0', 'grass.svg', {
+      metadata: { poiType: 'settlement', discoverable: true, notes: '' },
+    }),
+  );
+  const after = paintTile(node, '0,0', 'road-h.svg', true);
+  assert.equal(after, node);
+  assert.equal(getTile(after, '0,0').overlayRef, null);
+});
+
+test('erasePath removes only the overlay, keeping terrain and no-ops when absent', () => {
+  let node = paintTile(node2x2(), '0,0', 'grass.svg');
+  node = paintTile(node, '0,0', 'road-h.svg', true);
+  const noOverlay = erasePath(node, '0,0');
+  assert.equal(getTile(noOverlay, '0,0').overlayRef, null);
+  assert.equal(getTile(noOverlay, '0,0').imageRef, 'grass.svg');
+  assert.equal(erasePath(noOverlay, '0,0'), noOverlay); // already no overlay
+  const empty = node2x2();
+  assert.equal(erasePath(empty, '0,0'), empty); // absent tile: identical no-op
 });
 
 test('paintTile out of bounds is a no-op', () => {
