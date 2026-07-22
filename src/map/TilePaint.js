@@ -26,11 +26,14 @@ export function isInBounds(node, tileId) {
  * Out-of-bounds ids are ignored.
  *
  * With overlay=true (a path/road brush) the image is layered as the tile's
- * overlayRef over an existing tile's terrain, so a road can sit on sand, snow,
- * etc. without erasing what's beneath — and re-terraining beneath keeps the
- * overlay, since it's preserved by the spread above. On an empty cell there is
- * no terrain to layer over, so the overlay image becomes the base like any
- * other brush.
+ * overlayRef over the terrain, so a road can sit on sand, snow, etc. without
+ * erasing what's beneath — and re-terraining beneath keeps the overlay, since
+ * it's preserved by the spread above. A road is never the base layer, so an
+ * overlay brush on an empty cell creates a tile with an empty base (the map
+ * backdrop shows through) carrying the overlay; the GM can paint terrain under
+ * it afterward without disturbing the path. An overlay brush is a no-op over a
+ * tile that carries a POI marker, so a path can't be laid across a settlement,
+ * dungeon, etc.
  * @param {MapNode} node
  * @param {string} tileId
  * @param {string} imageRef
@@ -40,11 +43,28 @@ export function isInBounds(node, tileId) {
 export function paintTile(node, tileId, imageRef, overlay = false) {
   if (!isInBounds(node, tileId)) return node;
   const existing = getTile(node, tileId);
-  if (overlay && existing) {
-    return setTile(node, { ...existing, overlayRef: imageRef });
+  if (overlay) {
+    if (existing?.metadata.poiType) return node;
+    const base = existing ?? createTile(tileId, '');
+    return setTile(node, { ...base, overlayRef: imageRef });
   }
   const tile = existing ? { ...existing, imageRef } : createTile(tileId, imageRef);
   return setTile(node, tile);
+}
+
+/**
+ * Remove only a tile's path/road overlay, leaving its terrain, metadata, and
+ * region link intact — the dedicated "erase path" gesture, distinct from
+ * eraseTile which removes the whole tile. No-op if the tile is absent or has
+ * no overlay.
+ * @param {MapNode} node
+ * @param {string} tileId
+ * @returns {MapNode}
+ */
+export function erasePath(node, tileId) {
+  const existing = getTile(node, tileId);
+  if (!existing || !existing.overlayRef) return node;
+  return setTile(node, { ...existing, overlayRef: null });
 }
 
 /**

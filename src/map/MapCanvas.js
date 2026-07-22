@@ -374,12 +374,17 @@ export class MapCanvas {
         continue;
       }
 
-      const img = this._getImage(tile.imageRef);
-      if (img.complete && img.naturalWidth > 0) {
-        ctx.drawImage(img, sx, sy, size, size);
-      } else {
-        ctx.fillStyle = '#333';
-        ctx.fillRect(sx, sy, size, size);
+      // A tile carrying only an overlay (a path on an as-yet-unpainted cell)
+      // has an empty base, so let the map backdrop show through rather than
+      // drawing a placeholder under the path.
+      if (tile.imageRef) {
+        const img = this._getImage(tile.imageRef);
+        if (img.complete && img.naturalWidth > 0) {
+          ctx.drawImage(img, sx, sy, size, size);
+        } else {
+          ctx.fillStyle = '#333';
+          ctx.fillRect(sx, sy, size, size);
+        }
       }
 
       // A path/road overlay draws on top of the base terrain, so a road can sit

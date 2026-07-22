@@ -56,17 +56,22 @@ export function buildExampleCampaign(palette) {
       // The 2x2 block linking to the forested Northmarch region shows forest
       // terrain on the world map too, so the overview hints at what's inside.
       const inRegionBlock = x < 2 && y < 2;
-      const entry =
-        y === 2
-          ? // end-* names the tile's open edge: the westmost tile connects to
-            // the road on its east, so it takes end-e (and vice versa at x=7).
-            palette.getRoadPiece(x === 0 ? 'end-e' : x === 7 ? 'end-w' : 'h')
-          : palette.pickVariant(inRegionBlock ? 'forest' : 'grass', rng);
-      if (!entry) continue;
-      world = setTile(
-        world,
-        createTile(`${x},${y}`, entry.imageRef, inRegionBlock ? { childNodeId: 'region' } : {}),
-      );
+      if (y === 2) {
+        // The road runs as an overlay over a grass base, so it reads as a path
+        // laid on the terrain rather than replacing it. end-* names the tile's
+        // open edge: the westmost tile connects to the road on its east, so it
+        // takes end-e (and vice versa at x=7).
+        const grass = palette.pickVariant('grass', rng);
+        const road = palette.getRoadPiece(x === 0 ? 'end-e' : x === 7 ? 'end-w' : 'h');
+        if (!road) continue;
+        world = setTile(world, createTile(`${x},${y}`, grass.imageRef, { overlayRef: road.imageRef }));
+      } else {
+        const entry = palette.pickVariant(inRegionBlock ? 'forest' : 'grass', rng);
+        world = setTile(
+          world,
+          createTile(`${x},${y}`, entry.imageRef, inRegionBlock ? { childNodeId: 'region' } : {}),
+        );
+      }
     }
   }
   grid.addNode(world);

@@ -7,7 +7,7 @@ import {
 } from './map/TileGrid.js';
 import { TilePalette } from './map/TilePalette.js';
 import { MapCanvas, clientToBuffer, screenToTile, parseCoords } from './map/MapCanvas.js';
-import { paintTile, eraseTile, normalizeRect, tilesInRect, linkTilesInRect } from './map/TilePaint.js';
+import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesInRect } from './map/TilePaint.js';
 import { computeRegionEntryTile } from './map/EntryPoint.js';
 import { NODE_KINDS, ENVIRONS } from './map/NodeKinds.js';
 import { MapNavigator } from './map/MapNavigator.js';
@@ -435,6 +435,8 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
       if (regionAnchor) mapCanvas.setMarquee(normalizeRect(regionAnchor, { x, y }));
     } else if (activeBrush === 'erase') {
       applyToTile(id, (node) => eraseTile(node, id));
+    } else if (activeBrush === 'erase-path') {
+      applyToTile(id, (node) => erasePath(node, id));
     } else if (activeBrush) {
       // Captured so the closure below keeps the non-null narrowing.
       const brush = activeBrush;
