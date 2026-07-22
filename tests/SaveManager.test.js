@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMapNode, createTile, setTile, TileGrid } from '../src/map/TileGrid.js';
-import { createCharacter, addXP } from '../src/entities/Character.js';
+import { createCharacter, addXP, withHP, getHP } from '../src/entities/Character.js';
 import { createEncounter, applyDamage } from '../src/entities/Encounter.js';
 import { buildState, serialize, deserialize, toTileGrid } from '../src/storage/SaveManager.js';
 
@@ -30,13 +30,15 @@ test('buildState collects grid nodes, party, characters, and encounters', () => 
 test('serialize/deserialize round-trips a full campaign state', () => {
   const grid = sampleGrid();
   const party = { nodeId: 'world', tileId: '0,0' };
-  const characters = [addXP(createCharacter('c1', 'Hero', { STR: 14 }), 50)];
+  const characters = [withHP(addXP(createCharacter('c1', 'Hero', { STR: 14 }, 'Dwarf'), 50), 12)];
   const encounters = [applyDamage(createEncounter('e1', 'Goblin', 7), 3)];
 
   const state = buildState(grid, party, characters, encounters);
   const restored = deserialize(serialize(state));
 
   assert.deepEqual(restored, state);
+  assert.equal(restored.characters[0].race, 'Dwarf');
+  assert.equal(getHP(restored.characters[0])?.max, 12);
 });
 
 test('deserialize defaults missing fields instead of throwing', () => {

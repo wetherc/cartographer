@@ -1,16 +1,30 @@
 import { DIE_TYPES, roll, emptySelection } from '../dice/DiceRoller.js';
+import { wireDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
 
 /**
- * Mount a dice tray widget: +/- counters per die type, +/- modifier, roll button, result display.
+ * Mount a dice tray widget, collapsed by default to a D20 icon behind an
+ * accessible disclosure button; expanding reveals the full tray (+/- counters
+ * per die type, +/- modifier, roll button, result display).
  * @param {HTMLElement} container
  * @returns {{ getSelection: () => import('../types/dice.js').DiceSelection }}
  */
 export function mountDiceTray(container) {
   const selection = emptySelection();
 
+  const summary = document.createElement('button');
+  summary.type = 'button';
+  summary.className = 'disclosure dice-tray__summary';
+  summary.setAttribute('aria-label', 'Dice tray');
+  summary.append(
+    icon('d20', { size: 28, className: 'dice-tray__d20' }),
+    icon('chevron', { className: 'disclosure__chevron' }),
+  );
+  container.appendChild(summary);
+
   const root = document.createElement('div');
   root.className = 'dice-tray';
+  wireDisclosure(summary, root);
 
   /** @param {string} label @param {number} delta @param {() => number} read @param {(n: number) => void} apply */
   const stepper = (label, delta, read, apply) => {

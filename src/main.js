@@ -20,9 +20,13 @@ import { mountTileInspector } from './ui/TileInspector.js';
 import { mountPalettePanel } from './ui/PalettePanel.js';
 import { promptModal, confirmModal } from './ui/Modal.js';
 import { PartyTracker } from './party/PartyTracker.js';
-import { createCharacter, addResource, withDefaultStats } from './entities/Character.js';
+import { createCharacter, addResource, withDefaults, withHP } from './entities/Character.js';
 import { createResource } from './entities/Resource.js';
-import { createEncounter } from './entities/Encounter.js';
+import {
+  createEncounter,
+  encountersAt,
+  withDefaults as withEncounterDefaults,
+} from './entities/Encounter.js';
 import { slugId, replaceById, removeById } from './entities/Roster.js';
 import { mountCharacterRoster } from './ui/CharacterRoster.js';
 import { mountCharacterSheet } from './ui/CharacterSheet.js';
@@ -111,14 +115,14 @@ function buildExampleCampaign() {
   }
   grid.addNode(region);
 
-  let hero = createCharacter('hero', 'Hero', { STR: 14, DEX: 12, CON: 13 });
+  let hero = withHP(createCharacter('hero', 'Hero', { STR: 14, DEX: 12, CON: 13 }, 'Human'), 12);
   hero = addResource(hero, createResource('mana', 'Mana', 'mana', 10));
 
   return {
     grid,
     party: { nodeId: 'world', tileId: '3,3' },
     characters: [hero],
-    encounters: [createEncounter('goblin', 'Goblin', 7)],
+    encounters: [createEncounter('goblin', 'Goblin', 7, {}, { nodeId: 'world', tileId: '5,2' })],
   };
 }
 
@@ -130,8 +134,8 @@ const initial = saved
       // An empty roster is legitimate authored state (a GM may have deleted
       // the demo character), so no default character is injected on load.
       // Older saves may predate the full six-ability-score set.
-      characters: saved.characters.map(withDefaultStats),
-      encounters: saved.encounters,
+      characters: saved.characters.map(withDefaults),
+      encounters: saved.encounters.map(withEncounterDefaults),
     }
   : // First run starts blank; the demo world is opt-in via "Load example".
     buildBlankCampaign();
@@ -314,6 +318,9 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
       mapCanvas.refreshNode(navigator.getCurrentNode());
     }
     syncPartyMarker();
+    // The party may have changed nodes, so the location-scoped encounter list
+    // needs re-filtering. (Mounted later in this file; clicks only happen after.)
+    encounterPanel.update();
   },
 });
 
@@ -439,10 +446,17 @@ const characterRoster = mountCharacterRoster(mustGetElement('party-container'), 
   onAdd: async () => {
     const values = await promptModal('New character', [
       { name: 'name', label: 'Name', value: '' },
+      { name: 'race', label: 'Race', value: '' },
+      { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1 },
     ]);
     const name = values?.name.trim();
-    if (!name) return;
-    characters = [...characters, createCharacter(slugId(name, characters.map((c) => c.id)), name)];
+    if (!values || !name) return;
+    const maxHP = Math.max(1, Number(values.maxHP) || 1);
+    const created = withHP(
+      createCharacter(slugId(name, characters.map((c) => c.id)), name, {}, values.race.trim()),
+      maxHP,
+    );
+    characters = [...characters, created];
     selectCharacter(characters[characters.length - 1].id);
   },
   onDelete: async (id) => {
@@ -476,28 +490,40 @@ const inventoryPanel = mountInventoryPanel(
   },
 );
 
-mountEncounterPanel(
-  mustGetElement('encounter-container'),
-  encounters,
-  (next) => {
-    encounters = next;
+const encounterPanel = mountEncounterPanel(mustGetElement('encounter-container'), {
+  // The panel shows only what's relevant where the party stands: encounters
+  // staged in the current node, plus unbound ones from older saves.
+  getEncounters: () => encountersAt(encounters, partyTracker.getPosition()),
+  onUpdate: (next) => {
+    encounters = replaceById(encounters, next);
   },
-  {
-    onAdd: async () => {
-      const values = await promptModal('New encounter', [
-        { name: 'name', label: 'Name', value: '' },
-        { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1 },
-      ]);
-      if (!values) return null;
-      const name = values.name.trim();
-      if (!name) return null;
-      const maxHP = Math.max(1, Number(values.maxHP) || 1);
-      return createEncounter(slugId(name, encounters.map((e) => e.id)), name, maxHP);
-    },
-    confirmDelete: (encounter) =>
-      confirmModal(`Delete "${encounter.name}"?`, { danger: true, confirmLabel: 'Delete' }),
+  onDelete: (id) => {
+    encounters = removeById(encounters, id);
   },
-);
+  onAdd: async () => {
+    const values = await promptModal('New encounter', [
+      { name: 'name', label: 'Name', value: '' },
+      { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1 },
+    ]);
+    if (!values) return null;
+    const name = values.name.trim();
+    if (!name) return null;
+    const maxHP = Math.max(1, Number(values.maxHP) || 1);
+    // New encounters are staged where the party currently is, so the GM
+    // authors them in place and they scope to that node from then on.
+    const created = createEncounter(
+      slugId(name, encounters.map((e) => e.id)),
+      name,
+      maxHP,
+      {},
+      { ...partyTracker.getPosition() },
+    );
+    encounters = [...encounters, created];
+    return created;
+  },
+  confirmDelete: (encounter) =>
+    confirmModal(`Delete "${encounter.name}"?`, { danger: true, confirmLabel: 'Delete' }),
+});
 
 mountDiceTray(mustGetElement('dice-tray-container'));
 

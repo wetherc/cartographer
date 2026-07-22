@@ -1,4 +1,4 @@
-import { spend as spendPool, restore as restorePool } from './Resource.js';
+import { createResource, spend as spendPool, restore as restorePool } from './Resource.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -16,14 +16,41 @@ function defaultStats() {
 }
 
 /**
- * Fill in any ability score a character is missing at the neutral 10, keeping
- * existing values. Applied to loaded saves so characters created before the
- * full six-score set existed still render a complete sheet.
+ * Reserved ResourcePool id for a character's hit points. HP is a regular pool
+ * so damage/heal reuse the existing spend/restore machinery; a character
+ * without this pool simply has no HP tracking (older saves).
+ */
+export const HP_RESOURCE_ID = 'hp';
+
+/**
+ * @param {Character} character
+ * @returns {ResourcePool | null} the character's HP pool, if they have one
+ */
+export function getHP(character) {
+  return character.resources.find((r) => r.id === HP_RESOURCE_ID) ?? null;
+}
+
+/**
+ * Give a character an HP pool at full health, replacing any existing one.
+ * @param {Character} character
+ * @param {number} maxHP
+ * @returns {Character}
+ */
+export function withHP(character, maxHP) {
+  const hp = createResource(HP_RESOURCE_ID, 'HP', 'custom', maxHP);
+  const others = character.resources.filter((r) => r.id !== HP_RESOURCE_ID);
+  return { ...character, resources: [hp, ...others] };
+}
+
+/**
+ * Fill in fields a loaded character may predate: any missing ability score at
+ * the neutral 10 (keeping existing values) and an empty-string race. No HP
+ * pool is invented — its absence legitimately means "no HP tracking".
  * @param {Character} character
  * @returns {Character}
  */
-export function withDefaultStats(character) {
-  return { ...character, stats: { ...defaultStats(), ...character.stats } };
+export function withDefaults(character) {
+  return { ...character, race: character.race ?? '', stats: { ...defaultStats(), ...character.stats } };
 }
 
 /**
@@ -32,10 +59,11 @@ export function withDefaultStats(character) {
  * @param {string} id
  * @param {string} name
  * @param {Record<string, number>} [stats]
+ * @param {string} [race]
  * @returns {Character}
  */
-export function createCharacter(id, name, stats = {}) {
-  return { id, name, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [] };
+export function createCharacter(id, name, stats = {}, race = '') {
+  return { id, name, race, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [] };
 }
 
 /**

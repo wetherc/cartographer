@@ -7,48 +7,46 @@ import { icon } from './icons.js';
  * Mount an encounter panel: one row per encounter with an HP readout and a
  * damage/heal amount applied via two buttons. Defeated encounters (currentHP
  * <= 0) render with a distinguishing class instead of being removed, so a
- * GM can still see what died. Rows can be deleted and new encounters created;
- * both delegate to caller-supplied async hooks (modals live in main.js, so
- * this stays a thin DOM wrapper like the other panels).
+ * GM can still see what died.
+ *
+ * The panel owns no roster state: `getEncounters` supplies the rows to show
+ * (typically pre-filtered to the party's location) and every mutation flows
+ * back through a callback, so the caller keeps the master list — including
+ * encounters filtered out of the current view. Modals live in main.js, so
+ * this stays a thin DOM wrapper like the other panels.
  * @param {HTMLElement} container
- * @param {Encounter[]} encounters
- * @param {(encounters: Encounter[]) => void} [onChange]
  * @param {{
+ *   getEncounters: () => Encounter[],
+ *   onUpdate: (encounter: Encounter) => void,
+ *   onDelete: (id: string) => void,
  *   onAdd?: () => Promise<Encounter | null>,
  *   confirmDelete?: (encounter: Encounter) => Promise<boolean>,
- * }} [hooks]
- * @returns {{ getEncounters: () => Encounter[], setEncounters: (encounters: Encounter[]) => void }}
+ * }} callbacks
+ * @returns {{ update: () => void }}
  */
-export function mountEncounterPanel(container, encounters, onChange = () => {}, hooks = {}) {
-  let current = encounters;
-
+export function mountEncounterPanel(container, callbacks) {
   const root = document.createElement('div');
   root.className = 'encounter-panel';
   container.appendChild(root);
 
-  /** @param {Encounter[]} next */
-  function commit(next) {
-    current = next;
-    onChange(next);
+  /** @param {Encounter} encounter @param {(encounter: Encounter) => Encounter} fn */
+  function updateOne(encounter, fn) {
+    callbacks.onUpdate(fn(encounter));
     render();
-  }
-
-  /** @param {string} id @param {(encounter: Encounter) => Encounter} fn */
-  function updateOne(id, fn) {
-    commit(current.map((e) => (e.id === id ? fn(e) : e)));
   }
 
   function render() {
     root.innerHTML = '';
+    const encounters = callbacks.getEncounters();
 
-    if (current.length === 0) {
+    if (encounters.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'empty-state';
-      empty.textContent = 'No encounters yet.';
+      empty.textContent = 'No encounters here.';
       root.appendChild(empty);
     }
 
-    for (const encounter of current) {
+    for (const encounter of encounters) {
       const row = document.createElement('div');
       row.className = 'encounter-panel__row';
       if (isDefeated(encounter)) row.classList.add('encounter-panel__row--defeated');
@@ -70,7 +68,7 @@ export function mountEncounterPanel(container, encounters, onChange = () => {}, 
       damageButton.setAttribute('aria-label', `Damage ${encounter.name}`);
       damageButton.appendChild(icon('damage'));
       damageButton.addEventListener('click', () => {
-        updateOne(encounter.id, (e) => applyDamage(e, Number(amountInput.value)));
+        updateOne(encounter, (e) => applyDamage(e, Number(amountInput.value)));
       });
 
       const healButton = document.createElement('button');
@@ -79,7 +77,7 @@ export function mountEncounterPanel(container, encounters, onChange = () => {}, 
       healButton.setAttribute('aria-label', `Heal ${encounter.name}`);
       healButton.appendChild(icon('heal'));
       healButton.addEventListener('click', () => {
-        updateOne(encounter.id, (e) => heal(e, Number(amountInput.value)));
+        updateOne(encounter, (e) => heal(e, Number(amountInput.value)));
       });
 
       const deleteButton = document.createElement('button');
@@ -88,35 +86,31 @@ export function mountEncounterPanel(container, encounters, onChange = () => {}, 
       deleteButton.setAttribute('aria-label', `Delete ${encounter.name}`);
       deleteButton.appendChild(icon('remove'));
       deleteButton.addEventListener('click', async () => {
-        const ok = hooks.confirmDelete ? await hooks.confirmDelete(encounter) : true;
-        if (ok) commit(current.filter((e) => e.id !== encounter.id));
+        const ok = callbacks.confirmDelete ? await callbacks.confirmDelete(encounter) : true;
+        if (!ok) return;
+        callbacks.onDelete(encounter.id);
+        render();
       });
 
       row.append(label, amountInput, damageButton, healButton, deleteButton);
       root.appendChild(row);
     }
 
-    const onAdd = hooks.onAdd;
+    const onAdd = callbacks.onAdd;
     if (onAdd) {
       const addButton = document.createElement('button');
       addButton.type = 'button';
       addButton.className = 'btn encounter-panel__add';
       addButton.append(icon('add'), document.createTextNode('New encounter'));
       addButton.addEventListener('click', async () => {
-        const encounter = await onAdd();
-        if (encounter) commit([...current, encounter]);
+        // The caller creates and stores the encounter; a non-null return just
+        // signals that the visible list may have changed.
+        if (await onAdd()) render();
       });
       root.appendChild(addButton);
     }
   }
 
   render();
-  return {
-    getEncounters: () => current,
-    /** Sync in an externally-replaced roster (e.g. after import) and re-render. */
-    setEncounters: (next) => {
-      current = next;
-      render();
-    },
-  };
+  return { update: render };
 }
