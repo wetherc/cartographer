@@ -30,13 +30,15 @@ import { mountTileTooltip } from './ui/TileTooltip.js';
 import { promptModal, confirmModal } from './ui/Modal.js';
 import { PartyTracker } from './party/PartyTracker.js';
 import { createCharacter, withHP, withMana } from './entities/Character.js';
-import { createEncounter, encountersAt } from './entities/Encounter.js';
+import { createEncounter, encountersAt, isDefeated } from './entities/Encounter.js';
 import { slugId, replaceById, removeById } from './entities/Roster.js';
 import { mountCharacterRoster } from './ui/CharacterRoster.js';
 import { mountCharacterSheet } from './ui/CharacterSheet.js';
 import { mountInventoryPanel } from './ui/InventoryPanel.js';
 import { mountEncounterPanel } from './ui/EncounterPanel.js';
 import { mountDiceTray } from './ui/DiceTray.js';
+import { mountTravelogPanel } from './ui/TravelogPanel.js';
+import { appendEntry, createEntry } from './log/Travelogue.js';
 import {
   buildState,
   saveToLocalStorage,
@@ -50,6 +52,22 @@ const initial = loadInitialCampaign();
 
 const { grid } = initial;
 let { characters, encounters } = initial;
+/** @type {import('./types/log.js').LogEntry[]} auto-recorded party travelogue */
+let travelog = initial.travelog;
+/** Monotonic counter making travelogue entry ids unique within a session. */
+let logSeq = 0;
+
+/**
+ * Record a travelogue event and refresh the panel. Ids combine the clock with
+ * a session counter so two events in the same millisecond never collide.
+ * @param {import('./types/log.js').LogEntryKind} kind
+ * @param {string} message
+ */
+function logEvent(kind, message) {
+  const now = Date.now();
+  travelog = appendEntry(travelog, createEntry(`log-${now}-${logSeq++}`, kind, message, now));
+  travelogPanel.update();
+}
 
 /** @type {'play' | 'build'} */
 let currentMode = 'play';
@@ -186,6 +204,7 @@ async function teleportToNode(nodeId) {
     `${Math.floor(node.width / 2)},${Math.floor(node.height / 2)}`;
   partyTracker.moveTo(nodeId, target);
   goToNode(nodeId);
+  logEvent('travel', `Traveled to ${node.name}.`);
   encounterPanel.update();
 }
 
@@ -449,6 +468,7 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
         worldTree.update();
         // Entering a node for the first time discovers it.
         regionTree.update();
+        logEvent('travel', `Entered ${child.name}.`);
       }
     } else {
       partyTracker.moveTo(navigator.getCurrentNode().id, tile.id);
@@ -666,6 +686,10 @@ const encounterPanel = mountEncounterPanel(mustGetElement('encounter-container')
   // staged in the current node, plus unbound ones from older saves.
   getEncounters: () => encountersAt(encounters, partyTracker.getPosition()),
   onUpdate: (next) => {
+    // Log the transition into defeat exactly once (damage that keeps it down
+    // shouldn't re-log), by comparing against the pre-update encounter.
+    const prev = encounters.find((e) => e.id === next.id);
+    if (prev && !isDefeated(prev) && isDefeated(next)) logEvent('combat', `Defeated ${next.name}.`);
     encounters = replaceById(encounters, next);
   },
   onDelete: (id) => {
@@ -698,6 +722,19 @@ const encounterPanel = mountEncounterPanel(mustGetElement('encounter-container')
 
 mountDiceTray(mustGetElement('dice-tray-container'));
 
+const travelogPanel = mountTravelogPanel(mustGetElement('travelog-container'), {
+  getEntries: () => travelog,
+  onClear: async () => {
+    if (travelog.length === 0) return false;
+    const ok = await confirmModal('Clear the travelogue? Its recorded events are lost.', {
+      danger: true,
+      confirmLabel: 'Clear',
+    });
+    if (ok) travelog = [];
+    return ok;
+  },
+});
+
 // Play/Build mode drives which rails the layout shows (a body class toggled by
 // CSS), and defaults to Play so a first-run visitor lands on the live view.
 mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => {
@@ -722,7 +759,13 @@ mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => 
  */
 function replaceCampaign(campaign) {
   saveToLocalStorage(
-    buildState(campaign.grid, campaign.party, campaign.characters, campaign.encounters),
+    buildState(
+      campaign.grid,
+      campaign.party,
+      campaign.characters,
+      campaign.encounters,
+      campaign.travelog,
+    ),
   );
   location.reload();
 }
@@ -744,11 +787,11 @@ mustGetElement('example-btn').addEventListener('click', async () => {
 });
 
 mustGetElement('save-btn').addEventListener('click', () => {
-  saveToLocalStorage(buildState(grid, partyTracker.getPosition(), characters, encounters));
+  saveToLocalStorage(buildState(grid, partyTracker.getPosition(), characters, encounters, travelog));
 });
 
 mustGetElement('export-btn').addEventListener('click', () => {
-  downloadState(buildState(grid, partyTracker.getPosition(), characters, encounters));
+  downloadState(buildState(grid, partyTracker.getPosition(), characters, encounters, travelog));
 });
 
 const importInput = /** @type {HTMLInputElement} */ (mustGetElement('import-input'));

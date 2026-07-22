@@ -44,7 +44,24 @@ test('serialize/deserialize round-trips a full campaign state', () => {
 
 test('deserialize defaults missing fields instead of throwing', () => {
   const restored = deserialize(JSON.stringify({}));
-  assert.deepEqual(restored, { nodes: [], party: null, characters: [], encounters: [] });
+  assert.deepEqual(restored, {
+    nodes: [],
+    party: null,
+    characters: [],
+    encounters: [],
+    travelog: [],
+  });
+});
+
+test('serialize/deserialize round-trips the travelogue', () => {
+  const grid = sampleGrid();
+  const travelog = [
+    { id: 'l1', at: 1000, kind: 'travel', message: 'Entered the Keep.' },
+    { id: 'l2', at: 2000, kind: 'combat', message: 'Defeated the Goblin.' },
+  ];
+  const state = buildState(grid, null, [], [], travelog);
+  const restored = deserialize(serialize(state));
+  assert.deepEqual(restored.travelog, travelog);
 });
 
 test('toTileGrid rebuilds a working TileGrid preserving hierarchy', () => {

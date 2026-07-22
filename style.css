@@ -967,3 +967,51 @@ body.mode-build .app-sidebar {
   color: var(--text-muted);
   font-style: italic;
 }
+
+/* ==========================================================================
+   Travelogue
+   ========================================================================== */
+
+.travelog__list {
+  list-style: none;
+  margin: 0 0 var(--space-2);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.travelog__item {
+  display: flex;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  border-left: 3px solid var(--border-strong);
+  font-size: var(--text-label);
+}
+
+.travelog__item--combat {
+  border-left-color: var(--danger);
+}
+
+.travelog__item--travel {
+  border-left-color: var(--accent);
+}
+
+.travelog__time {
+  flex: none;
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.travelog__message {
+  color: var(--text);
+}
+
+.travelog__clear {
+  font-size: var(--text-label);
+}
