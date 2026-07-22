@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createCharacter,
+  withDefaultStats,
+  ABILITY_SCORES,
   addXP,
   setStat,
   addResource,
@@ -19,6 +21,23 @@ test('createCharacter starts at level 1 with no xp/resources/inventory', () => {
   assert.deepEqual(hero.resources, []);
   assert.deepEqual(hero.inventory, []);
   assert.equal(hero.stats.STR, 14);
+});
+
+test('createCharacter fills all six ability scores at 10, keeping overrides', () => {
+  const hero = createCharacter('c1', 'Hero', { STR: 14 });
+  assert.deepEqual(Object.keys(hero.stats), ABILITY_SCORES);
+  assert.equal(hero.stats.STR, 14);
+  assert.equal(hero.stats.WIS, 10);
+});
+
+test('withDefaultStats backfills missing scores on a loaded character', () => {
+  const legacy = { ...createCharacter('c1', 'Hero'), stats: { STR: 16, DEX: 8 } };
+  const filled = withDefaultStats(legacy);
+  assert.deepEqual(
+    filled.stats,
+    { STR: 16, DEX: 8, CON: 10, INT: 10, WIS: 10, CHA: 10 },
+  );
+  assert.deepEqual(legacy.stats, { STR: 16, DEX: 8 }, 'input untouched');
 });
 
 test('addXP accumulates without leveling up below the threshold', () => {

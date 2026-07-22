@@ -7,15 +7,35 @@ import { spend as spendPool, restore as restorePool } from './Resource.js';
 /** XP required to go from level N to N+1 is N * XP_PER_LEVEL. */
 export const XP_PER_LEVEL = 100;
 
+/** The six ability scores every character carries, in conventional order. */
+export const ABILITY_SCORES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+
+/** @returns {Record<string, number>} every ability score at the neutral 10 */
+function defaultStats() {
+  return Object.fromEntries(ABILITY_SCORES.map((key) => [key, 10]));
+}
+
 /**
- * Create a level 1 character with no resources or inventory.
+ * Fill in any ability score a character is missing at the neutral 10, keeping
+ * existing values. Applied to loaded saves so characters created before the
+ * full six-score set existed still render a complete sheet.
+ * @param {Character} character
+ * @returns {Character}
+ */
+export function withDefaultStats(character) {
+  return { ...character, stats: { ...defaultStats(), ...character.stats } };
+}
+
+/**
+ * Create a level 1 character with no resources or inventory. All six ability
+ * scores start at 10; `stats` overrides individual scores.
  * @param {string} id
  * @param {string} name
  * @param {Record<string, number>} [stats]
  * @returns {Character}
  */
 export function createCharacter(id, name, stats = {}) {
-  return { id, name, level: 1, xp: 0, stats, resources: [], inventory: [] };
+  return { id, name, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [] };
 }
 
 /**

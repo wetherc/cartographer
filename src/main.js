@@ -20,7 +20,7 @@ import { mountTileInspector } from './ui/TileInspector.js';
 import { mountPalettePanel } from './ui/PalettePanel.js';
 import { promptModal, confirmModal } from './ui/Modal.js';
 import { PartyTracker } from './party/PartyTracker.js';
-import { createCharacter, addResource } from './entities/Character.js';
+import { createCharacter, addResource, withDefaultStats } from './entities/Character.js';
 import { createResource } from './entities/Resource.js';
 import { createEncounter } from './entities/Encounter.js';
 import { slugId, replaceById, removeById } from './entities/Roster.js';
@@ -87,7 +87,8 @@ const initial = saved
       party: saved.party ?? { nodeId: 'world', tileId: '0,0' },
       // An empty roster is legitimate authored state (a GM may have deleted
       // the demo character), so no default character is injected on load.
-      characters: saved.characters,
+      // Older saves may predate the full six-ability-score set.
+      characters: saved.characters.map(withDefaultStats),
       encounters: saved.encounters,
     }
   : buildDefaultCampaign();
