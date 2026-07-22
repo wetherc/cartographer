@@ -1,3 +1,6 @@
+import { parseCoords } from './MapCanvas.js';
+import { findRegionGroups } from './RegionGroups.js';
+
 /** @typedef {{ minX: number, minY: number, maxX: number, maxY: number }} Bounds */
 /** @typedef {{ x: number, y: number }} Coords */
 
@@ -59,4 +62,23 @@ export function computeEntryTile(width, height, block, party) {
     return `${projectAlong(party.x, block.minX, block.maxX, width)},${hy < 0 ? 0 : maxY}`;
   }
   return `${midX},${midY}`;
+}
+
+/**
+ * computeEntryTile, resolved from live map state: derives the region block the
+ * childNodeId occupies in the parent and the party's coordinates there, so a
+ * caller can pass nodes and a PartyPosition instead of pre-computed geometry.
+ * @param {import('../types/map.js').MapNode} parent node being viewed when zooming in
+ * @param {import('../types/map.js').MapNode} child node being entered
+ * @param {string} childNodeId
+ * @param {import('../types/map.js').PartyPosition} party
+ * @returns {string} child tile id ("x,y")
+ */
+export function computeRegionEntryTile(parent, child, childNodeId, party) {
+  const partyCoords = party.nodeId === parent.id ? parseCoords(party.tileId) : null;
+  const group = findRegionGroups(parent).find((g) => g.childNodeId === childNodeId) ?? null;
+  const block = group
+    ? { minX: group.minX, minY: group.minY, maxX: group.maxX, maxY: group.maxY }
+    : null;
+  return computeEntryTile(child.width, child.height, block, partyCoords);
 }

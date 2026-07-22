@@ -6,6 +6,7 @@
 src/
   main.js              entry point, wires modules, mounts app
   types/               .ts declaration files, no runtime code (checked via JSDoc + tsc)
+  campaign/            campaign construction: blank/example campaign builders + initial load
   map/                 tile grid, hierarchy, canvas rendering, region grouping, fog of war
   dice/                dice roll logic
   entities/            encounter/resource/character models
@@ -14,7 +15,7 @@ src/
   ui/                  thin DOM-wiring widgets (DiceTray, Breadcrumb, CharacterSheet, InventoryPanel, EncounterPanel)
 ```
 
-`index.html`/`style.css`/`main.js` wiring all of the above into one app is the only piece not yet built — see `PLAN.md`.
+`index.html`/`style.css`/`main.js` wire all of the above into one app. `main.js` holds only wiring — state singletons, mount calls, and event handlers; anything constructible without the DOM (campaign generation in `campaign/Campaigns.js`, region-entry resolution in `map/EntryPoint.js`) lives in a module instead.
 
 Everything is a native ES module loaded directly by the browser — no bundler, no transpilation. `tsconfig.json` sets `allowJs`/`checkJs` so `tsc --noEmit` typechecks the `.js` files against the `.ts` declarations without emitting anything.
 

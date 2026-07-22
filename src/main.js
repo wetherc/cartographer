@@ -1,20 +1,22 @@
 import {
   createMapNode,
-  createTile,
-  setTile,
   getTile,
   updateTileMetadata,
   resizeNode,
   tilesOutsideBounds,
-  TileGrid,
 } from './map/TileGrid.js';
 import { TilePalette } from './map/TilePalette.js';
 import { MapCanvas, clientToBuffer, screenToTile, parseCoords } from './map/MapCanvas.js';
 import { paintTile, eraseTile, normalizeRect, tilesInRect, linkTilesInRect } from './map/TilePaint.js';
-import { findRegionGroups } from './map/RegionGroups.js';
-import { computeEntryTile } from './map/EntryPoint.js';
+import { computeRegionEntryTile } from './map/EntryPoint.js';
 import { MapNavigator } from './map/MapNavigator.js';
 import { discoveredNodes } from './map/FogOfWar.js';
+import {
+  buildBlankCampaign,
+  buildExampleCampaign,
+  loadInitialCampaign,
+} from './campaign/Campaigns.js';
+import { mustGetElement } from './ui/dom.js';
 import { mountBreadcrumb } from './ui/Breadcrumb.js';
 import { mountModeSwitch } from './ui/ModeSwitch.js';
 import { mountWorldTree } from './ui/WorldTree.js';
@@ -25,13 +27,8 @@ import { mountMapControls } from './ui/MapControls.js';
 import { mountTileTooltip } from './ui/TileTooltip.js';
 import { promptModal, confirmModal } from './ui/Modal.js';
 import { PartyTracker } from './party/PartyTracker.js';
-import { createCharacter, addResource, withDefaults, withHP } from './entities/Character.js';
-import { createResource } from './entities/Resource.js';
-import {
-  createEncounter,
-  encountersAt,
-  withDefaults as withEncounterDefaults,
-} from './entities/Encounter.js';
+import { createCharacter, withHP } from './entities/Character.js';
+import { createEncounter, encountersAt } from './entities/Encounter.js';
 import { slugId, replaceById, removeById } from './entities/Roster.js';
 import { mountCharacterRoster } from './ui/CharacterRoster.js';
 import { mountCharacterSheet } from './ui/CharacterSheet.js';
@@ -41,111 +38,13 @@ import { mountDiceTray } from './ui/DiceTray.js';
 import {
   buildState,
   saveToLocalStorage,
-  loadFromLocalStorage,
   downloadState,
   readStateFromFile,
-  toTileGrid,
 } from './storage/SaveManager.js';
 
 const palette = new TilePalette();
 
-/**
- * Fetch a required mount-point element, failing loudly at startup if the
- * markup and the wiring here ever drift apart.
- * @param {string} id
- * @returns {HTMLElement}
- */
-function mustGetElement(id) {
-  const el = document.getElementById(id);
-  if (!el) throw new Error(`Required element #${id} is missing from index.html`);
-  return el;
-}
-
-/**
- * @typedef {{
- *   grid: TileGrid,
- *   party: import('./types/map.js').PartyPosition,
- *   characters: Character[],
- *   encounters: import('./types/entities.js').Encounter[],
- * }} Campaign
- */
-
-/**
- * A genuinely blank campaign: one empty world node to author into, nobody in
- * the party, nothing to fight. This is what a first run and the "New" button
- * produce, so demo content only ever appears when explicitly asked for.
- * @returns {Campaign}
- */
-function buildBlankCampaign() {
-  const grid = new TileGrid();
-  grid.addNode(createMapNode('world', 'World', null, 8, 6));
-  return {
-    grid,
-    party: { nodeId: 'world', tileId: '0,0' },
-    characters: [],
-    encounters: [],
-  };
-}
-
-/**
- * A small example world, loadable on demand via the "Load example" button.
- * @returns {Campaign}
- */
-function buildExampleCampaign() {
-  const rng = () => Math.random();
-  const grid = new TileGrid();
-
-  let world = createMapNode('world', 'World', null, 8, 6);
-  for (let y = 0; y < 6; y++) {
-    for (let x = 0; x < 8; x++) {
-      const entry =
-        y === 2
-          ? // end-* names the tile's open edge: the westmost tile connects to
-            // the road on its east, so it takes end-e (and vice versa at x=7).
-            palette.getRoadPiece(x === 0 ? 'end-e' : x === 7 ? 'end-w' : 'h')
-          : palette.pickVariant('grass', rng);
-      if (!entry) continue;
-      const inRegionBlock = x < 2 && y < 2;
-      world = setTile(
-        world,
-        createTile(`${x},${y}`, entry.imageRef, inRegionBlock ? { childNodeId: 'region' } : {}),
-      );
-    }
-  }
-  grid.addNode(world);
-
-  let region = createMapNode('region', 'Northmarch Region', 'world', 4, 4);
-  for (let y = 0; y < 4; y++) {
-    for (let x = 0; x < 4; x++) {
-      region = setTile(region, createTile(`${x},${y}`, palette.pickVariant('forest', rng).imageRef));
-    }
-  }
-  grid.addNode(region);
-
-  let hero = withHP(createCharacter('hero', 'Hero', { STR: 14, DEX: 12, CON: 13 }, 'Human'), 12);
-  hero = addResource(hero, createResource('mana', 'Mana', 'mana', 10));
-
-  return {
-    grid,
-    party: { nodeId: 'world', tileId: '3,3' },
-    characters: [hero],
-    encounters: [createEncounter('goblin', 'Goblin', 7, {}, { nodeId: 'world', tileId: '5,2' })],
-  };
-}
-
-const saved = loadFromLocalStorage();
-const initial = saved
-  ? {
-      grid: toTileGrid(saved),
-      party: saved.party ?? { nodeId: 'world', tileId: '0,0' },
-      // An empty roster is legitimate authored state (a GM may have deleted
-      // the demo character), so no default character is injected on load.
-      // Older saves may predate the full six-ability-score set.
-      characters: saved.characters.map(withDefaults),
-      encounters: saved.encounters.map(withEncounterDefaults),
-    }
-  : // First run starts blank; the demo world is opt-in via "Load example".
-    buildBlankCampaign();
+const initial = loadInitialCampaign();
 
 const { grid } = initial;
 let { characters, encounters } = initial;
@@ -166,25 +65,6 @@ const partyTracker = new PartyTracker(grid, initial.party);
 
 const breadcrumbContainer = mustGetElement('breadcrumb-container');
 const canvasEl = /** @type {HTMLCanvasElement} */ (mustGetElement('map-canvas'));
-
-/**
- * Where the party lands when it first travels into a child node: the child edge
- * facing the direction they approached the region from in the parent map, or the
- * grid centre if that direction can't be determined.
- * @param {import('./types/map.js').MapNode} parent node being viewed when zooming in
- * @param {import('./types/map.js').MapNode} child node being entered
- * @param {string} childNodeId
- * @returns {string} child tile id
- */
-function entryTileId(parent, child, childNodeId) {
-  const position = partyTracker.getPosition();
-  const partyCoords = position.nodeId === parent.id ? parseCoords(position.tileId) : null;
-  const group = findRegionGroups(parent).find((g) => g.childNodeId === childNodeId) ?? null;
-  const block = group
-    ? { minX: group.minX, minY: group.minY, maxX: group.maxX, maxY: group.maxY }
-    : null;
-  return computeEntryTile(child.width, child.height, block, partyCoords);
-}
 
 /** Show the party marker only on the node the party is actually standing in. */
 function syncPartyMarker() {
@@ -489,7 +369,10 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
         // approached from and reveal fog around it, so the child doesn't render
         // as a blank fog field with no party marker.
         if (partyTracker.getPosition().nodeId !== child.id) {
-          partyTracker.moveTo(child.id, entryTileId(parent, child, tile.childNodeId));
+          partyTracker.moveTo(
+            child.id,
+            computeRegionEntryTile(parent, child, tile.childNodeId, partyTracker.getPosition()),
+          );
         }
         // Re-read the node: moveTo wrote a new, fog-revealed node into the grid,
         // so the `child` captured above is stale and still fully fogged.
@@ -759,7 +642,7 @@ mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => 
  * Replace the whole campaign: persist the given one and reload, so every
  * module re-initializes from the same loadFromLocalStorage path a normal page
  * load takes (the same pattern the import flow uses).
- * @param {Campaign} campaign
+ * @param {import('./campaign/Campaigns.js').Campaign} campaign
  */
 function replaceCampaign(campaign) {
   saveToLocalStorage(
@@ -781,7 +664,7 @@ mustGetElement('example-btn').addEventListener('click', async () => {
     'Load the example campaign? The current campaign is replaced, including anything saved.',
     { danger: true, confirmLabel: 'Load example' },
   );
-  if (ok) replaceCampaign(buildExampleCampaign());
+  if (ok) replaceCampaign(buildExampleCampaign(palette));
 });
 
 mustGetElement('save-btn').addEventListener('click', () => {
