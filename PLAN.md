@@ -89,7 +89,7 @@ tests/
   - [x] `map/MapCanvas.js` — renders each group's bounding outline + translucent tint overlay, with an optional `getNodeName` callback to draw the target node's name as a label; click-to-zoom needed no changes since every tile in a group already carries its own `childNodeId`
   - [x] `tests/map-canvas-preview.html` updated to a 2x2 region block; verified via Playwright (outline + "Northmarch Region" label render, and clicking any tile in the block, not just one corner, zooms in)
 - [x] `map/FogOfWar.js` — pure functions over a MapNode: `revealAround(node, centerId, radius)` (Euclidean distance from a parsed "x,y" tile id, never un-reveals a tile), `hideAll(node)`, `revealedCount(node)`; 6 tests
-- [ ] `party/PartyTracker.js` — position, movement, triggers reveal
+- [x] `party/PartyTracker.js` — holds a `PartyPosition` (nodeId + tileId), `moveTo(nodeId, tileId)` writes the new position and calls `FogOfWar.revealAround` on that node (radius configurable, default 2), writing the revealed node back into the `TileGrid`; throws on an unknown node; 6 tests
 - [ ] `entities/Encounter.js` — enemy/encounter HP tracking
 - [ ] `entities/Resource.js` — item/mana/expendable tracking
 - [ ] `entities/Character.js` — stats, level, progression
