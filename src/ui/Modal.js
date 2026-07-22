@@ -5,7 +5,7 @@
  * it to <body>, and removes it on close, resolving a Promise with the result.
  */
 
-/** @typedef {{ name: string, label: string, type?: 'text' | 'number', value?: string | number, min?: number }} ModalField */
+/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select', value?: string | number, min?: number, options?: { value: string, label: string }[] }} ModalField */
 
 /**
  * Show a form modal. Resolves to a record of field name -> string value on
@@ -29,18 +29,31 @@ export function promptModal(title, fields, options = {}) {
     heading.textContent = title;
     form.appendChild(heading);
 
-    /** @type {Record<string, HTMLInputElement>} */
+    /** @type {Record<string, HTMLInputElement | HTMLSelectElement>} */
     const inputs = {};
     for (const field of fields) {
       const label = document.createElement('label');
       label.className = 'modal__field';
       label.textContent = field.label;
 
-      const input = document.createElement('input');
+      /** @type {HTMLInputElement | HTMLSelectElement} */
+      let input;
+      if (field.type === 'select') {
+        input = document.createElement('select');
+        for (const option of field.options ?? []) {
+          const el = document.createElement('option');
+          el.value = option.value;
+          el.textContent = option.label;
+          input.appendChild(el);
+        }
+        if (field.value !== undefined) input.value = String(field.value);
+      } else {
+        input = document.createElement('input');
+        input.type = field.type ?? 'text';
+        if (field.value !== undefined) input.value = String(field.value);
+        if (field.min !== undefined) input.min = String(field.min);
+      }
       input.className = 'field';
-      input.type = field.type ?? 'text';
-      if (field.value !== undefined) input.value = String(field.value);
-      if (field.min !== undefined) input.min = String(field.min);
       label.appendChild(input);
       form.appendChild(label);
       inputs[field.name] = input;

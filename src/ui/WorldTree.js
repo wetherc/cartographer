@@ -8,15 +8,17 @@ import { buildWorldTree } from '../map/WorldTree.js';
  * Mount the world tree: a nested list mirroring the MapNode hierarchy, always
  * showing the whole tree rather than only the path to the current node. It is
  * the Build-mode counterpart to the Play-mode breadcrumb, over the same
- * TileGrid data. Selecting a node invokes onSelect; if onAddChild/onDelete are
- * supplied, each row also gets an add-child and delete affordance (used in
- * Build mode). Call update() after any structural change to the tree.
+ * TileGrid data. Selecting a node invokes onSelect; if onAddChild/onEdit/
+ * onDelete are supplied, each row also gets an add-child, edit-settings, and
+ * delete affordance (used in Build mode). Call update() after any structural
+ * change to the tree.
  * @param {HTMLElement} container
  * @param {{
  *   getNodes: () => MapNode[],
  *   getCurrentId: () => string,
  *   onSelect: (nodeId: string) => void,
  *   onAddChild?: (parentId: string) => void,
+ *   onEdit?: (nodeId: string) => void,
  *   onDelete?: (nodeId: string) => void,
  * }} opts
  * @returns {{ update: () => void }}
@@ -54,6 +56,16 @@ export function mountWorldTree(container, opts) {
       add.appendChild(icon('add'));
       add.addEventListener('click', () => opts.onAddChild?.(treeNode.node.id));
       row.appendChild(add);
+    }
+
+    if (opts.onEdit) {
+      const edit = document.createElement('button');
+      edit.type = 'button';
+      edit.className = 'btn btn--icon world-tree__action';
+      edit.setAttribute('aria-label', `Edit ${treeNode.node.name}`);
+      edit.appendChild(icon('edit'));
+      edit.addEventListener('click', () => opts.onEdit?.(treeNode.node.id));
+      row.appendChild(edit);
     }
 
     if (opts.onDelete) {

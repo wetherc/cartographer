@@ -2,12 +2,13 @@ import { icon } from './icons.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 /** @typedef {import('../map/TilePalette.js').PaletteEntry} PaletteEntry */
-/** @typedef {null | 'erase' | PaletteEntry} Brush */
+/** @typedef {null | 'erase' | 'region' | PaletteEntry} Brush */
 
 /**
  * Mount the tile palette: a picker of paint brushes for Build mode. The active
  * brush determines what clicking a tile does — an Inspect brush (null) selects
- * a tile for the inspector, an Erase brush removes a tile, and any tile swatch
+ * a tile for the inspector, an Erase brush removes a tile, a Region brush
+ * drag-selects a block of tiles to link to a child node, and any tile swatch
  * paints that image. Selecting a brush invokes onBrushChange; the active brush
  * is highlighted. Swatches are also drag sources so a tile can be dragged onto
  * the grid, in addition to click-to-paint.
@@ -64,7 +65,14 @@ export function mountPalettePanel(container, palette, onBrushChange) {
   eraseBtn.appendChild(document.createTextNode('Erase'));
   bindSelect(eraseBtn, 'erase');
 
-  tools.append(inspectBtn, eraseBtn);
+  const regionBtn = document.createElement('button');
+  regionBtn.type = 'button';
+  regionBtn.className = 'btn palette__item';
+  regionBtn.appendChild(icon('map'));
+  regionBtn.appendChild(document.createTextNode('Region'));
+  bindSelect(regionBtn, 'region');
+
+  tools.append(inspectBtn, eraseBtn, regionBtn);
   root.appendChild(tools);
 
   // Swatch grid of every palette entry.
