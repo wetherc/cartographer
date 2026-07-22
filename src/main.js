@@ -12,6 +12,7 @@ import { paintTile, eraseTile } from './map/TilePaint.js';
 import { findRegionGroups } from './map/RegionGroups.js';
 import { computeEntryTile } from './map/EntryPoint.js';
 import { MapNavigator } from './map/MapNavigator.js';
+import { discoveredNodes } from './map/FogOfWar.js';
 import { mountBreadcrumb } from './ui/Breadcrumb.js';
 import { mountModeSwitch } from './ui/ModeSwitch.js';
 import { mountWorldTree } from './ui/WorldTree.js';
@@ -196,6 +197,7 @@ function goToNode(nodeId) {
   syncPartyMarker();
   breadcrumb.update(navigator.getBreadcrumb());
   worldTree.update();
+  regionTree.update();
 }
 
 /** Drop any Build-mode tile selection and its inspector/canvas highlight. */
@@ -214,6 +216,43 @@ const worldTree = mountWorldTree(mustGetElement('world-tree-container'), {
   onAddChild: addChildNode,
   onDelete: deleteNode,
 });
+
+// The Play-mode counterpart to the Build-mode world tree: the same hierarchy,
+// but read-only (no add/delete affordances) and limited to nodes the party has
+// actually discovered, so unexplored regions stay hidden from the table.
+// Selecting a node offers to teleport the party there.
+const regionTree = mountWorldTree(mustGetElement('region-tree-container'), {
+  getNodes: () => discoveredNodes([...grid.nodes.values()], partyTracker.getPosition()),
+  getCurrentId: () => navigator.getCurrentNode().id,
+  onSelect: teleportToNode,
+});
+
+/**
+ * Offer to teleport the party to a discovered node. Clicking the node the
+ * party already occupies just brings the view back to it; otherwise a confirm
+ * dialog gates the move. The party lands on the node's first revealed tile
+ * (there is always one for a discovered node with tiles), falling back to the
+ * grid centre for a tile-less node.
+ * @param {string} nodeId
+ */
+async function teleportToNode(nodeId) {
+  const node = grid.getNode(nodeId);
+  if (!node) return;
+  if (partyTracker.getPosition().nodeId === nodeId) {
+    goToNode(nodeId);
+    return;
+  }
+  const ok = await confirmModal(`Would you like to teleport to "${node.name}"?`, {
+    confirmLabel: 'Teleport',
+  });
+  if (!ok) return;
+  const target =
+    node.tiles.find((t) => t.revealed)?.id ??
+    `${Math.floor(node.width / 2)},${Math.floor(node.height / 2)}`;
+  partyTracker.moveTo(nodeId, target);
+  goToNode(nodeId);
+  encounterPanel.update();
+}
 
 /** Generate a node id not already used by the grid. */
 function freshNodeId() {
@@ -273,6 +312,7 @@ async function deleteNode(nodeId) {
     // Current node survived, but a link it drew may have been cleared.
     mapCanvas.refreshNode(navigator.getCurrentNode());
     worldTree.update();
+    regionTree.update();
   }
 }
 
@@ -341,6 +381,8 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
         mapCanvas.setNode(navigator.getCurrentNode());
         breadcrumb.update(navigator.getBreadcrumb());
         worldTree.update();
+        // Entering a node for the first time discovers it.
+        regionTree.update();
       }
     } else {
       partyTracker.moveTo(navigator.getCurrentNode().id, tile.id);
@@ -587,6 +629,7 @@ mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => 
   tileTooltip.hide();
   if (mode !== 'build') clearSelection();
   worldTree.update();
+  regionTree.update();
 });
 
 /**

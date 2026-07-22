@@ -45,3 +45,18 @@ export function hideAll(node) {
 export function revealedCount(node) {
   return node.tiles.filter((tile) => tile.revealed).length;
 }
+
+/**
+ * The nodes the party has discovered: any node with at least one revealed tile
+ * (the party reveals fog wherever it goes, so a visit always leaves a mark),
+ * plus the node the party currently stands in even if it has no tiles yet
+ * (e.g. the blank starting world). Preserves input order.
+ * @param {MapNode[]} nodes
+ * @param {import('../types/map.js').PartyPosition} party
+ * @returns {MapNode[]}
+ */
+export function discoveredNodes(nodes, party) {
+  return nodes.filter(
+    (node) => node.id === party.nodeId || node.tiles.some((tile) => tile.revealed),
+  );
+}
