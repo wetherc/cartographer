@@ -276,6 +276,12 @@ body {
   flex-shrink: 0;
 }
 
+#build-tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
 .world-tree__children {
   list-style: none;
   margin: 0;
@@ -338,6 +344,51 @@ body.mode-play .app-buildrail {
 
 body.mode-build .app-sidebar {
   display: none;
+}
+
+/* ==========================================================================
+   Tile palette (Build-mode right rail)
+   ========================================================================== */
+
+.palette__tools {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.palette__tools .palette__item {
+  flex: 1;
+}
+
+.palette__item--active {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.palette__grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-1);
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.palette__swatch {
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  cursor: pointer;
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+.palette__swatch img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
 }
 
 /* ==========================================================================
