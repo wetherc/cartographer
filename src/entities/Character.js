@@ -5,7 +5,7 @@ import { spend as spendPool, restore as restorePool } from './Resource.js';
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 
 /** XP required to go from level N to N+1 is N * XP_PER_LEVEL. */
-const XP_PER_LEVEL = 100;
+export const XP_PER_LEVEL = 100;
 
 /**
  * Create a level 1 character with no resources or inventory.

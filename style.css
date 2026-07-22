@@ -45,3 +45,78 @@ body {
   font-family: monospace;
   white-space: pre-wrap;
 }
+
+.character-sheet__header {
+  font-weight: bold;
+  margin-bottom: 0.5rem;
+}
+
+.character-sheet__xp {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.character-sheet__xp-input {
+  width: 4rem;
+}
+
+.character-sheet__stat-row {
+  margin-bottom: 0.25rem;
+}
+
+.character-sheet__stat-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.character-sheet__stat-input {
+  width: 3.5rem;
+}
+
+.inventory-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.inventory-panel__label {
+  flex: 1;
+}
+
+.inventory-panel__form {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.inventory-panel__name-input {
+  flex: 1;
+}
+
+.inventory-panel__quantity-input {
+  width: 3.5rem;
+}
+
+.encounter-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.encounter-panel__row--defeated {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+
+.encounter-panel__label {
+  flex: 1;
+}
+
+.encounter-panel__amount {
+  width: 3rem;
+}
