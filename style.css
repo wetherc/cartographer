@@ -545,6 +545,27 @@ body.mode-build .app-sidebar {
   color: #e6d7b4;
 }
 
+.tile-tooltip {
+  position: fixed;
+  z-index: 10;
+  max-width: 18rem;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: rgba(15, 13, 10, 0.9);
+  color: #e6d7b4;
+  font-size: var(--text-label);
+  pointer-events: none;
+  box-shadow: var(--shadow-2);
+}
+
+.tile-tooltip__title {
+  font-weight: 700;
+}
+
+.tile-tooltip__title + .tile-tooltip__notes {
+  margin-top: var(--space-1);
+}
+
 .app-sidebar {
   display: flex;
   flex-direction: column;

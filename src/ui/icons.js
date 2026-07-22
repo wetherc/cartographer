@@ -21,7 +21,9 @@ const PATHS = {
   minus: ['M5 12h14'],
   add: ['M12 5v14', 'M5 12h14'],
   remove: ['M4 7h16', 'M10 11v6', 'M14 11v6', 'M6 7l1 13h10l1-13', 'M9 7V4h6v3'],
-  damage: ['M14.5 3.5l6 6-9 9-3 1 1-3z', 'M4 20l4-4'],
+  // A sword (blade, crossguard, grip): danger-red + a blade must read as
+  // "damage", not as an edit pencil the previous glyph resembled.
+  damage: ['M19.5 4.5L9 15', 'M6.5 12.5l5 5', 'M8.5 16.5L5 20', 'M4 17l3 3'],
   heal: ['M12 6v12', 'M6 12h12'],
   edit: ['M4 20h4l10-10-4-4L4 16z', 'M13.5 6.5l4 4'],
   save: ['M5 3h11l3 3v15H5z', 'M8 3v6h7V3', 'M8 21v-7h8v7'],
