@@ -89,6 +89,37 @@ export function clientToBuffer(clientX, clientY, rect, bufferWidth, bufferHeight
 }
 
 /**
+ * Compute the zoom scale and pan offsets that frame an extent of
+ * `extentW x extentH` (in world px at scale 1) centered inside a
+ * `bufferW x bufferH` canvas with some breathing room, so a node loads
+ * filling the view instead of adrift in backdrop at an arbitrary zoom.
+ * @param {number} extentW
+ * @param {number} extentH
+ * @param {number} bufferW
+ * @param {number} bufferH
+ * @param {{ padding?: number, minScale?: number, maxScale?: number }} [options]
+ * @returns {{ scale: number, offsetX: number, offsetY: number }}
+ */
+export function fitToExtent(extentW, extentH, bufferW, bufferH, options = {}) {
+  const padding = options.padding ?? 24;
+  if (extentW <= 0 || extentH <= 0 || bufferW <= 0 || bufferH <= 0) {
+    return { scale: 1, offsetX: 0, offsetY: 0 };
+  }
+  const availW = Math.max(1, bufferW - padding * 2);
+  const availH = Math.max(1, bufferH - padding * 2);
+  const scale = clampZoom(
+    Math.min(availW / extentW, availH / extentH),
+    options.minScale ?? 0.25,
+    options.maxScale ?? 4,
+  );
+  return {
+    scale,
+    offsetX: (bufferW - extentW * scale) / 2,
+    offsetY: (bufferH - extentH * scale) / 2,
+  };
+}
+
+/**
  * Renders a MapNode's tile grid onto a canvas, with mouse-drag pan and
  * wheel zoom. Unrevealed tiles draw as a flat fog rect instead of their
  * imageRef, matching the fog-of-war model on Tile.revealed.
@@ -97,7 +128,7 @@ export class MapCanvas {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {TilePalette} palette
-   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, getNodeName?: (nodeId: string) => string | undefined }} [options]
+   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void }} [options]
    */
   constructor(canvas, palette, options = {}) {
     this.canvas = canvas;
@@ -110,6 +141,7 @@ export class MapCanvas {
     this.maxZoom = options.maxZoom ?? 4;
     this.onCellClick = options.onCellClick;
     this.getNodeName = options.getNodeName;
+    this.onViewChange = options.onViewChange;
 
     /** @type {MapNode | null} */
     this.node = null;
@@ -147,7 +179,7 @@ export class MapCanvas {
   }
 
   /**
-   * Load a new MapNode, resetting pan/zoom.
+   * Load a new MapNode, framing its full extent in the view.
    * @param {MapNode} node
    */
   setNode(node) {
@@ -155,10 +187,53 @@ export class MapCanvas {
     this.regionGroups = findRegionGroups(node);
     this.partyTileId = null;
     this.selectedTileId = null;
-    this.offsetX = 0;
-    this.offsetY = 0;
-    this.scale = 1;
+    this.fit();
+  }
+
+  /** Re-frame the current node's full extent in the view (zoom-to-extents). */
+  fit() {
+    const { node, canvas } = this;
+    if (!node) return;
+    const fitted = fitToExtent(
+      node.width * this.tileSize,
+      node.height * this.tileSize,
+      canvas.width,
+      canvas.height,
+      { minScale: this.minZoom, maxScale: this.maxZoom },
+    );
+    this.scale = fitted.scale;
+    this.offsetX = fitted.offsetX;
+    this.offsetY = fitted.offsetY;
     this.render();
+  }
+
+  /**
+   * Zoom by a factor anchored on the canvas centre (the wheel handler anchors
+   * on the pointer instead), for the on-canvas +/- controls.
+   * @param {number} factor
+   */
+  zoomBy(factor) {
+    const cx = this.canvas.width / 2;
+    const cy = this.canvas.height / 2;
+    const worldX = (cx - this.offsetX) / this.scale;
+    const worldY = (cy - this.offsetY) / this.scale;
+    this.scale = clampZoom(this.scale * factor, this.minZoom, this.maxZoom);
+    this.offsetX = cx - worldX * this.scale;
+    this.offsetY = cy - worldY * this.scale;
+    this.render();
+  }
+
+  /**
+   * Resize the canvas buffer (e.g. when the layout column changes width) and
+   * re-frame the node, so the map always fills the space it's given.
+   * @param {number} width
+   * @param {number} height
+   */
+  resize(width, height) {
+    if (this.canvas.width === width && this.canvas.height === height) return;
+    this.canvas.width = width;
+    this.canvas.height = height;
+    this.fit();
   }
 
   /**
@@ -219,6 +294,9 @@ export class MapCanvas {
 
   render() {
     const { ctx, canvas, node } = this;
+    // Pan/zoom/resize all funnel through here, so this is the one place the
+    // zoom readout (and any other view-dependent chrome) needs a poke from.
+    this.onViewChange?.();
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (!node) return;
 

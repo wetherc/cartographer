@@ -18,6 +18,7 @@ import { mountWorldTree } from './ui/WorldTree.js';
 import { collectSubtreeIds } from './map/WorldTree.js';
 import { mountTileInspector } from './ui/TileInspector.js';
 import { mountPalettePanel } from './ui/PalettePanel.js';
+import { mountMapControls } from './ui/MapControls.js';
 import { promptModal, confirmModal } from './ui/Modal.js';
 import { PartyTracker } from './party/PartyTracker.js';
 import { createCharacter, addResource, withDefaults, withHP } from './entities/Character.js';
@@ -274,9 +275,13 @@ async function deleteNode(nodeId) {
   }
 }
 
+/** @type {{ update: () => void } | null} assigned right after mapCanvas exists */
+let mapControls = null;
+
 const mapCanvas = new MapCanvas(canvasEl, palette, {
   tileSize: 48,
   getNodeName: (nodeId) => grid.getNode(nodeId)?.name,
+  onViewChange: () => mapControls?.update(),
   onCellClick: (x, y, tile) => {
     const id = `${x},${y}`;
     // In Build mode a click authors the cell per the active brush, rather than
@@ -405,6 +410,25 @@ canvasEl.addEventListener('drop', (event) => {
   const tileId = `${coords.x},${coords.y}`;
   applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef));
 });
+
+mapControls = mountMapControls(mustGetElement('map-viewport'), {
+  onZoomIn: () => mapCanvas.zoomBy(1.25),
+  onZoomOut: () => mapCanvas.zoomBy(1 / 1.25),
+  onFit: () => mapCanvas.fit(),
+  getZoom: () => mapCanvas.scale,
+});
+
+// Keep the canvas buffer matched to the CSS size of the element (times the
+// device pixel ratio), so the map fills the fluid layout column instead of
+// staying a fixed 720x540 island; each resize re-frames the node.
+const resizeMapToViewport = () => {
+  const dpr = window.devicePixelRatio || 1;
+  mapCanvas.resize(
+    Math.max(1, Math.round(canvasEl.clientWidth * dpr)),
+    Math.max(1, Math.round(canvasEl.clientHeight * dpr)),
+  );
+};
+new ResizeObserver(resizeMapToViewport).observe(canvasEl);
 
 mapCanvas.setNode(navigator.getCurrentNode());
 syncPartyMarker();
