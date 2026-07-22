@@ -92,7 +92,7 @@ tests/
 - [x] `party/PartyTracker.js` — holds a `PartyPosition` (nodeId + tileId), `moveTo(nodeId, tileId)` writes the new position and calls `FogOfWar.revealAround` on that node (radius configurable, default 2), writing the revealed node back into the `TileGrid`; throws on an unknown node; 6 tests
 - [x] `entities/Encounter.js` — `createEncounter`/`applyDamage`/`heal`/`isDefeated`, immutable (returns a new Encounter rather than mutating), HP clamped to `[0, maxHP]`; 5 tests
 - [x] `entities/Resource.js` — `createResource`/`spend`/`restore`/`setMax`/`isEmpty`, immutable, `current` clamped to `[0, max]` (and re-clamped by `setMax` if capacity drops below current); 7 tests
-- [ ] `entities/Character.js` — stats, level, progression
+- [x] `entities/Character.js` — `createCharacter` (level 1, 0 xp), `addXP` (auto-levels up, possibly multiple times per call, on an N*100-xp-per-level curve, carrying remainder xp), `setStat`, `addResource`/`spendResource`/`restoreResource` (delegate to `entities/Resource.js` by matching `resources[].id`), `addItem`/`removeItem` (merges/splits inventory stacks by id, drops a stack once its quantity hits 0); 9 tests
 - [ ] `ui/` panels — character sheet, inventory, encounter panel, dice tray
 - [ ] `storage/SaveManager.js` — serialize/deserialize + localStorage + export/import + round-trip tests
 - [ ] `index.html` / `style.css` — app shell
