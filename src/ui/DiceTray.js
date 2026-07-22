@@ -12,7 +12,7 @@ export function mountDiceTray(container) {
   const root = document.createElement('div');
   root.className = 'dice-tray';
 
-  /** @param {number} delta @param {(n: number) => void} apply @param {() => number} read */
+  /** @param {string} label @param {number} delta @param {() => number} read @param {(n: number) => void} apply */
   const stepper = (label, delta, read, apply) => {
     const row = document.createElement('div');
     row.className = 'dice-tray__row';

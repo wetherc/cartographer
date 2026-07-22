@@ -30,16 +30,19 @@ export function mountInventoryPanel(container, character, onChange = () => {}) {
   root.className = 'inventory-panel';
   container.appendChild(root);
 
+  /** @param {Character} next */
   function commit(next) {
     current = next;
-    onChange(current);
+    onChange(next);
     render();
   }
 
   function render() {
     root.innerHTML = '';
 
-    if (!current) {
+    // Captured non-null so listeners created below keep the narrowing.
+    const character = current;
+    if (!character) {
       const empty = document.createElement('p');
       empty.className = 'empty-state';
       empty.textContent = 'No character selected.';
@@ -49,7 +52,7 @@ export function mountInventoryPanel(container, character, onChange = () => {}) {
 
     const list = document.createElement('div');
     list.className = 'inventory-panel__list';
-    for (const item of current.inventory) {
+    for (const item of character.inventory) {
       const row = document.createElement('div');
       row.className = 'inventory-panel__row';
 
@@ -62,7 +65,7 @@ export function mountInventoryPanel(container, character, onChange = () => {}) {
       removeButton.className = 'btn btn--icon btn--danger';
       removeButton.setAttribute('aria-label', `Remove one ${item.name}`);
       removeButton.appendChild(icon('minus'));
-      removeButton.addEventListener('click', () => commit(removeItem(current, item.id, 1)));
+      removeButton.addEventListener('click', () => commit(removeItem(character, item.id, 1)));
 
       row.append(label, removeButton);
       list.appendChild(row);
@@ -93,7 +96,7 @@ export function mountInventoryPanel(container, character, onChange = () => {}) {
       const name = nameInput.value.trim();
       const quantity = Number(quantityInput.value);
       if (!name || quantity <= 0) return;
-      commit(addItem(current, { id: idFromName(name), name, quantity, notes: '' }));
+      commit(addItem(character, { id: idFromName(name), name, quantity, notes: '' }));
       nameInput.value = '';
       quantityInput.value = '1';
     });

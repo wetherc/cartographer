@@ -32,15 +32,19 @@ export function mountBreadcrumb(container, onSelect) {
         root.appendChild(sep);
       }
 
-      const crumb = document.createElement(isLast ? 'span' : 'button');
-      crumb.className = 'breadcrumb__crumb';
-      crumb.textContent = node.name;
+      /** @type {HTMLElement} */
+      let crumb;
       if (!isLast) {
-        crumb.type = 'button';
-        crumb.addEventListener('click', () => onSelect(node.id));
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.addEventListener('click', () => onSelect(node.id));
+        crumb = button;
       } else {
+        crumb = document.createElement('span');
         crumb.setAttribute('aria-current', 'location');
       }
+      crumb.className = 'breadcrumb__crumb';
+      crumb.textContent = node.name;
       root.appendChild(crumb);
     });
   }

@@ -101,7 +101,9 @@ export class MapCanvas {
    */
   constructor(canvas, palette, options = {}) {
     this.canvas = canvas;
-    this.ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('MapCanvas requires a 2d canvas context');
+    this.ctx = ctx;
     this.palette = palette;
     this.tileSize = options.tileSize ?? 48;
     this.minZoom = options.minZoom ?? 0.25;
