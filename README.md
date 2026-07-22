@@ -17,3 +17,37 @@ With Campaign Builder, you can:
   - Add resource tracking (both items and mana or other expendable character-based resources)
   - Add character sheets with full character stats, level/progression tracking, etc.
   - Simulate dice rolls and their results for any combination of dice needed in an interaction
+
+## Development
+
+No build step. Plain HTML/CSS/JS served as native ES modules; the app is `index.html` + `style.css` + `src/main.js`.
+
+Serve the project root over HTTP (module imports don't work over `file://`) and open it in a browser, e.g.:
+
+```
+pnpx http-server -p 8934
+```
+
+Types live in `src/types/*.ts` as declaration files; `.js` files reference them via JSDoc (`@typedef {import('../types/map.js').Tile}`). Typecheck with:
+
+```
+pnpx tsc --noEmit
+```
+
+Tests use Node's built-in test runner, no extra dependencies:
+
+```
+node --test tests/some-module.test.js   # single file, preferred while iterating
+node --test tests/*.test.js             # full suite
+```
+
+See [`docs/architecture.md`](docs/architecture.md) for module layout and the map data model, [`docs/testing.md`](docs/testing.md) for how to test and visually verify changes, and [`docs/tile-assets.md`](docs/tile-assets.md) for tile art conventions. `PLAN.md` tracks the current build order and status.
+
+## Contributing
+
+- Keep dependencies at zero. If a feature seems to need one, look for a plain DOM/Canvas/`fetch` way to do it first.
+- Match the existing module shape: pure, dependency-injected logic (e.g. `roll(selection, rng)`, `MapNavigator`, `RegionGroups.findRegionGroups`) separated from thin DOM-wiring code (`ui/*.js`, `MapCanvas`'s event handlers). Pure logic gets unit tests; DOM/canvas rendering gets checked visually instead.
+- Add unit tests for new pure logic and run `tsc --noEmit` before committing; both are expected to pass cleanly.
+- For any UI/canvas change, visually verify it in a browser (Playwright against the running dev server, or by hand) — passing tests confirm correctness, not that a feature looks or feels right.
+- Commit messages are full sentences explaining the motivation and mechanism of a change, not a bullet list of what changed.
+- Update `PLAN.md`'s status checklist alongside any change to the build order it tracks.
