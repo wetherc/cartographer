@@ -11,13 +11,16 @@ import { icon } from './icons.js';
  * drag-selects a block of tiles to link to a child node, and any tile swatch
  * paints that image. Selecting a brush invokes onBrushChange; the active brush
  * is highlighted. Swatches are also drag sources so a tile can be dragged onto
- * the grid, in addition to click-to-paint.
+ * the grid, in addition to click-to-paint. Hovering a swatch shows its label in
+ * the supplied tooltip (swatches are image-only, so the name has no other
+ * visible surface).
  * @param {HTMLElement} container
  * @param {TilePalette} palette
  * @param {(brush: Brush) => void} onBrushChange
+ * @param {ReturnType<import('./TileTooltip.js').mountTileTooltip>} [tooltip]
  * @returns {{ getBrush: () => Brush }}
  */
-export function mountPalettePanel(container, palette, onBrushChange) {
+export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   /** @type {Brush} */
   let brush = null;
 
@@ -82,7 +85,6 @@ export function mountPalettePanel(container, palette, onBrushChange) {
     const swatch = document.createElement('button');
     swatch.type = 'button';
     swatch.className = 'palette__swatch palette__item';
-    swatch.title = entry.label;
     swatch.setAttribute('aria-label', entry.label);
     swatch.draggable = true;
 
@@ -91,8 +93,19 @@ export function mountPalettePanel(container, palette, onBrushChange) {
     img.alt = '';
     swatch.appendChild(img);
 
+    if (tooltip) {
+      swatch.addEventListener('pointermove', (event) => {
+        tooltip.show({ title: entry.label, notes: '' }, event.clientX, event.clientY);
+      });
+      swatch.addEventListener('pointerleave', () => tooltip.hide());
+    } else {
+      // No tooltip supplied: fall back to the native one.
+      swatch.title = entry.label;
+    }
+
     swatch.addEventListener('dragstart', (event) => {
       event.dataTransfer?.setData('text/tile-id', entry.id);
+      tooltip?.hide();
     });
 
     bindSelect(swatch, entry);

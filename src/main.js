@@ -570,9 +570,17 @@ function applyToTile(tileId, transform) {
   }
 }
 
-mountPalettePanel(mustGetElement('palette-container'), palette, (brush) => {
-  activeBrush = brush;
-});
+const tileTooltip = mountTileTooltip(document.body);
+
+// The tooltip doubles as the palette's hover label, naming each image-only swatch.
+mountPalettePanel(
+  mustGetElement('palette-container'),
+  palette,
+  (brush) => {
+    activeBrush = brush;
+  },
+  tileTooltip,
+);
 
 // The canvas is a drop target for palette swatches: dragging a tile onto a grid
 // cell paints it there, an alternative to selecting a brush and clicking.
@@ -591,8 +599,6 @@ canvasEl.addEventListener('drop', (event) => {
   const tileId = `${coords.x},${coords.y}`;
   applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef));
 });
-
-const tileTooltip = mountTileTooltip(document.body);
 
 mapControls = mountMapControls(mustGetElement('map-viewport'), {
   onZoomIn: () => mapCanvas.zoomBy(1.25),
