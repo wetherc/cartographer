@@ -1,4 +1,5 @@
 import { DIE_TYPES, roll, emptySelection } from '../dice/DiceRoller.js';
+import { icon } from './icons.js';
 
 /**
  * Mount a dice tray widget: +/- counters per die type, +/- modifier, roll button, result display.
@@ -22,7 +23,9 @@ export function mountDiceTray(container) {
 
     const minus = document.createElement('button');
     minus.type = 'button';
-    minus.textContent = '-';
+    minus.className = 'btn btn--icon';
+    minus.setAttribute('aria-label', `Decrease ${label}`);
+    minus.appendChild(icon('minus'));
     minus.addEventListener('click', () => {
       apply(read() - delta);
       count.textContent = String(read());
@@ -34,7 +37,9 @@ export function mountDiceTray(container) {
 
     const plus = document.createElement('button');
     plus.type = 'button';
-    plus.textContent = '+';
+    plus.className = 'btn btn--icon';
+    plus.setAttribute('aria-label', `Increase ${label}`);
+    plus.appendChild(icon('plus'));
     plus.addEventListener('click', () => {
       apply(read() + delta);
       count.textContent = String(read());
@@ -70,8 +75,8 @@ export function mountDiceTray(container) {
 
   const rollButton = document.createElement('button');
   rollButton.type = 'button';
-  rollButton.className = 'dice-tray__roll';
-  rollButton.textContent = 'Roll';
+  rollButton.className = 'btn btn--primary dice-tray__roll';
+  rollButton.append(icon('dice'), document.createTextNode('Roll'));
 
   const resultEl = document.createElement('div');
   resultEl.className = 'dice-tray__result';

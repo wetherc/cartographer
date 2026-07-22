@@ -1,33 +1,244 @@
+/* ==========================================================================
+   Design tokens
+   Single source of truth for color, spacing, type, radius, and elevation.
+   Light values are the default; the prefers-color-scheme block below overrides
+   the color tokens for dark. Everything else references these custom
+   properties so components never hand-pick raw values.
+   ========================================================================== */
+
 :root {
   color-scheme: light dark;
-  font-family: system-ui, sans-serif;
+
+  /* Color — light theme */
+  --bg: #f4f1ea;
+  --surface: #fbf9f4;
+  --surface-raised: #ffffff;
+  --surface-sunken: #ebe6db;
+  --border: #d8d0be;
+  --border-strong: #b9ae95;
+  --text: #2b2620;
+  --text-muted: #6b6355;
+  --accent: #7b4a2f;
+  --accent-hover: #653c26;
+  --accent-contrast: #fbf9f4;
+  --danger: #a5352b;
+  --danger-contrast: #fbf9f4;
+  --success: #3f7a3f;
+  --success-contrast: #fbf9f4;
+  --focus-ring: #b8783f;
+  --shadow-color: 30 25 15;
+
+  /* Spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  /* Type */
+  --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --text-display: 1.5rem;
+  --text-heading: 1.125rem;
+  --text-body: 1rem;
+  --text-label: 0.8125rem;
+  --line-body: 1.5;
+
+  /* Radius */
+  --radius-sm: 0.375rem;
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+
+  /* Elevation */
+  --shadow-1: 0 1px 2px rgb(var(--shadow-color) / 0.08);
+  --shadow-2: 0 2px 8px rgb(var(--shadow-color) / 0.12);
+  --shadow-3: 0 8px 24px rgb(var(--shadow-color) / 0.18);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #191712;
+    --surface: #221f19;
+    --surface-raised: #2b271f;
+    --surface-sunken: #14120e;
+    --border: #3a352b;
+    --border-strong: #544c3d;
+    --text: #ece5d6;
+    --text-muted: #a89e8a;
+    --accent: #c98a5a;
+    --accent-hover: #d99a6a;
+    --accent-contrast: #191712;
+    --danger: #d4655a;
+    --danger-contrast: #191712;
+    --success: #6faa6f;
+    --success-contrast: #191712;
+    --focus-ring: #d99a6a;
+    --shadow-color: 0 0 0;
+  }
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
-  padding: 1rem;
+  padding: var(--space-4);
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--line-body);
 }
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.icon {
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* ==========================================================================
+   Shared primitives: .btn / .field / .card
+   ========================================================================== */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-label);
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.04s ease;
+}
+
+.btn:hover {
+  background: var(--surface-sunken);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.btn--primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn--danger {
+  background: transparent;
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.btn--danger:hover {
+  background: var(--danger);
+  color: var(--danger-contrast);
+}
+
+.btn--success {
+  background: transparent;
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.btn--success:hover {
+  background: var(--success);
+  color: var(--success-contrast);
+}
+
+/* Square, compact button for a single icon (steppers, remove, etc.) */
+.btn--icon {
+  padding: var(--space-1);
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.field {
+  padding: var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-label);
+}
+
+.field:focus {
+  border-color: var(--focus-ring);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-1);
+}
+
+.card__title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-label);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   App shell
+   ========================================================================== */
 
 .app-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
 }
 
 .app-header h1 {
-  font-size: 1.25rem;
+  font-size: var(--text-display);
   margin: 0;
 }
 
 .app-header__actions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
 }
 
 .app-main {
   display: flex;
-  gap: 1rem;
+  gap: var(--space-4);
   align-items: flex-start;
   flex-wrap: wrap;
 }
@@ -38,137 +249,195 @@ body {
 }
 
 #breadcrumb-container {
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--space-2);
 }
 
 #map-canvas {
   max-width: 100%;
-  border: 1px solid currentColor;
-  border-radius: 0.5rem;
-  background: #000;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: #0f0d0a;
+  box-shadow: var(--shadow-2);
   touch-action: none;
 }
 
 .app-sidebar {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  width: 20rem;
+  gap: var(--space-4);
+  width: 22rem;
   flex-shrink: 0;
 }
 
+/* ==========================================================================
+   Breadcrumb
+   ========================================================================== */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  font-size: var(--text-label);
+}
+
 .breadcrumb__crumb {
-  color: inherit;
+  color: var(--accent);
   background: none;
   border: none;
   font: inherit;
   cursor: pointer;
-  padding: 0;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.breadcrumb__crumb:hover {
+  background: var(--surface-sunken);
 }
 
 .breadcrumb__crumb[aria-current] {
-  font-weight: bold;
+  font-weight: 700;
+  color: var(--text);
   cursor: default;
 }
 
-.breadcrumb__separator {
-  margin: 0 0.35rem;
-  opacity: 0.6;
+.breadcrumb__crumb[aria-current]:hover {
+  background: none;
 }
 
-.panel {
-  border: 1px solid currentColor;
-  border-radius: 0.5rem;
-  padding: 1rem;
-  max-width: 32rem;
+.breadcrumb__separator {
+  color: var(--text-muted);
+  opacity: 0.7;
 }
+
+/* ==========================================================================
+   Dice tray
+   ========================================================================== */
 
 .dice-tray__row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
 }
 
 .dice-tray__label {
-  width: 4rem;
+  width: 4.5rem;
+  font-size: var(--text-label);
+  color: var(--text-muted);
 }
 
 .dice-tray__count {
   width: 2rem;
   text-align: center;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 .dice-tray__roll {
-  margin-top: 0.75rem;
+  margin-top: var(--space-3);
+  width: 100%;
 }
 
 .dice-tray__result {
-  margin-top: 0.75rem;
-  font-family: monospace;
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
   white-space: pre-wrap;
+  min-height: 1.5rem;
 }
 
+/* ==========================================================================
+   Character sheet
+   ========================================================================== */
+
 .character-sheet__header {
-  font-weight: bold;
-  margin-bottom: 0.5rem;
+  font-size: var(--text-heading);
+  font-weight: 700;
+  margin-bottom: var(--space-3);
 }
 
 .character-sheet__xp {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-label);
+  color: var(--text-muted);
 }
 
 .character-sheet__xp-input {
   width: 4rem;
+  margin-left: auto;
 }
 
-.character-sheet__stat-row {
-  margin-bottom: 0.25rem;
+.character-sheet__stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
 }
 
 .character-sheet__stat-label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
 }
 
 .character-sheet__stat-input {
   width: 3.5rem;
+  text-align: center;
+  font-family: var(--font-mono);
 }
+
+/* ==========================================================================
+   Inventory
+   ========================================================================== */
 
 .inventory-panel__row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
 }
 
 .inventory-panel__label {
   flex: 1;
+  font-size: var(--text-label);
 }
 
 .inventory-panel__form {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
 }
 
 .inventory-panel__name-input {
   flex: 1;
+  min-width: 0;
 }
 
 .inventory-panel__quantity-input {
   width: 3.5rem;
+  text-align: center;
 }
+
+/* ==========================================================================
+   Encounters
+   ========================================================================== */
 
 .encounter-panel__row {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.25rem;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
 }
 
 .encounter-panel__row--defeated {
@@ -178,8 +447,10 @@ body {
 
 .encounter-panel__label {
   flex: 1;
+  font-size: var(--text-label);
 }
 
 .encounter-panel__amount {
   width: 3rem;
+  text-align: center;
 }

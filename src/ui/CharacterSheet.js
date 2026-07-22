@@ -1,4 +1,5 @@
 import { setStat, addXP, XP_PER_LEVEL } from '../entities/Character.js';
+import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -39,13 +40,15 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
 
     const xpInput = document.createElement('input');
     xpInput.type = 'number';
-    xpInput.className = 'character-sheet__xp-input';
+    xpInput.className = 'field character-sheet__xp-input';
     xpInput.value = '0';
     xpInput.min = '0';
+    xpInput.setAttribute('aria-label', 'XP to add');
 
     const xpButton = document.createElement('button');
     xpButton.type = 'button';
-    xpButton.textContent = 'Add XP';
+    xpButton.className = 'btn';
+    xpButton.append(icon('add'), document.createTextNode('XP'));
     xpButton.addEventListener('click', () => {
       const amount = Number(xpInput.value);
       if (amount > 0) commit(addXP(current, amount));
@@ -66,7 +69,7 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
 
       const input = document.createElement('input');
       input.type = 'number';
-      input.className = 'character-sheet__stat-input';
+      input.className = 'field character-sheet__stat-input';
       input.value = String(value);
       input.addEventListener('change', () => {
         commit(setStat(current, key, Number(input.value)));
