@@ -1,6 +1,9 @@
+import { findRegionGroups } from './RegionGroups.js';
+
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
+/** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
 
 /**
  * Grid tiles use "x,y" as their id (e.g. "3,4"), giving MapCanvas a coordinate
@@ -69,7 +72,7 @@ export class MapCanvas {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {TilePalette} palette
-   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, onTileClick?: (tile: Tile) => void }} [options]
+   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, onTileClick?: (tile: Tile) => void, getNodeName?: (nodeId: string) => string | undefined }} [options]
    */
   constructor(canvas, palette, options = {}) {
     this.canvas = canvas;
@@ -79,9 +82,12 @@ export class MapCanvas {
     this.minZoom = options.minZoom ?? 0.25;
     this.maxZoom = options.maxZoom ?? 4;
     this.onTileClick = options.onTileClick;
+    this.getNodeName = options.getNodeName;
 
     /** @type {MapNode | null} */
     this.node = null;
+    /** @type {RegionGroup[]} */
+    this.regionGroups = [];
     this.offsetX = 0;
     this.offsetY = 0;
     this.scale = 1;
@@ -112,6 +118,7 @@ export class MapCanvas {
    */
   setNode(node) {
     this.node = node;
+    this.regionGroups = findRegionGroups(node);
     this.offsetX = 0;
     this.offsetY = 0;
     this.scale = 1;
@@ -157,6 +164,41 @@ export class MapCanvas {
         ctx.fillStyle = '#333';
         ctx.fillRect(sx, sy, size, size);
       }
+    }
+
+    this._renderRegionGroups();
+  }
+
+  _renderRegionGroups() {
+    const { ctx, canvas } = this;
+    for (const group of this.regionGroups) {
+      const topLeft = tileRect(group.minX, group.minY, this.tileSize, this.offsetX, this.offsetY, this.scale);
+      const bottomRight = tileRect(group.maxX, group.maxY, this.tileSize, this.offsetX, this.offsetY, this.scale);
+      const x = topLeft.sx;
+      const y = topLeft.sy;
+      const w = bottomRight.sx + bottomRight.size - topLeft.sx;
+      const h = bottomRight.sy + bottomRight.size - topLeft.sy;
+      if (x + w < 0 || y + h < 0 || x > canvas.width || y > canvas.height) continue;
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+
+      const name = this.getNodeName?.(group.childNodeId);
+      if (name) {
+        ctx.font = '12px sans-serif';
+        ctx.textBaseline = 'top';
+        const label = ` ${name} `;
+        const metrics = ctx.measureText(label);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(x, y, metrics.width, 16);
+        ctx.fillStyle = '#fff';
+        ctx.fillText(label, x, y + 2);
+      }
+      ctx.restore();
     }
   }
 

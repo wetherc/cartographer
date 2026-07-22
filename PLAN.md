@@ -84,10 +84,10 @@ tests/
 - [x] `map/TilePalette.js` — built-in tile catalog (5 terrain types x 3 variants + 11 road connector pieces + 2 POI markers, SVG assets under `assets/tiles/<type>/`) with `pickVariant`/`getRoadPiece` lookups, plus custom tile registration (addCustom/removeCustom), refuses to override built-in ids
 - [x] `map/MapCanvas.js` — canvas render, pan (pointer drag) + zoom (wheel, anchored at cursor); grid tiles addressed by `"x,y"` id convention (parsed via `parseCoords`); unrevealed tiles draw as flat fog rects
 - [x] Hierarchy zoom nav (world → region → subregion → POI) + breadcrumb — `map/MapNavigator.js` (pure logic: zoomIn/zoomOut/goTo/getBreadcrumb over TileGrid) wired to `MapCanvas`'s new `onTileClick` option and a plain-DOM `ui/Breadcrumb.js` trail
-- [ ] Region grouping — multiple contiguous tiles zoom to the same child node (they just share one `childNodeId`, no Tile/type schema change needed) so a region can occupy a block instead of a single POI tile:
-  - [ ] `map/TileGrid.js` (or new `map/RegionGroups.js`) — pure flood-fill helper: given a node's tiles, group contiguous tiles (4-neighbor adjacency via parsed `x,y` ids) sharing the same non-null `childNodeId` into `{ childNodeId, tileIds: string[] }` groups; unit tests, no DOM
-  - [ ] `map/MapCanvas.js` — render each group's bounding outline + subtle tint overlay (using target node's name as a label) instead of relying on a single tile's look; click-to-zoom already works per-tile since every tile in a group already carries its own `childNodeId`, no MapNavigator change expected
-  - [ ] Update `tests/map-canvas-preview.html` to demo a multi-tile region block (not just a single POI tile) and visually verify grouping/outline via Playwright
+- [x] Region grouping — multiple contiguous tiles zoom to the same child node (they just share one `childNodeId`, no Tile/type schema change needed) so a region can occupy a block instead of a single POI tile:
+  - [x] `map/RegionGroups.js` — pure flood-fill helper: groups contiguous tiles (4-neighbor adjacency via parsed `x,y` ids) sharing the same non-null `childNodeId` into `{ childNodeId, tileIds, minX, minY, maxX, maxY }` groups; 5 unit tests, no DOM
+  - [x] `map/MapCanvas.js` — renders each group's bounding outline + translucent tint overlay, with an optional `getNodeName` callback to draw the target node's name as a label; click-to-zoom needed no changes since every tile in a group already carries its own `childNodeId`
+  - [x] `tests/map-canvas-preview.html` updated to a 2x2 region block; verified via Playwright (outline + "Northmarch Region" label render, and clicking any tile in the block, not just one corner, zooms in)
 - [ ] `map/FogOfWar.js` — reveal/hide logic + tests
 - [ ] `party/PartyTracker.js` — position, movement, triggers reveal
 - [ ] `entities/Encounter.js` — enemy/encounter HP tracking
