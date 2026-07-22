@@ -88,7 +88,7 @@ tests/
   - [x] `map/RegionGroups.js` — pure flood-fill helper: groups contiguous tiles (4-neighbor adjacency via parsed `x,y` ids) sharing the same non-null `childNodeId` into `{ childNodeId, tileIds, minX, minY, maxX, maxY }` groups; 5 unit tests, no DOM
   - [x] `map/MapCanvas.js` — renders each group's bounding outline + translucent tint overlay, with an optional `getNodeName` callback to draw the target node's name as a label; click-to-zoom needed no changes since every tile in a group already carries its own `childNodeId`
   - [x] `tests/map-canvas-preview.html` updated to a 2x2 region block; verified via Playwright (outline + "Northmarch Region" label render, and clicking any tile in the block, not just one corner, zooms in)
-- [ ] `map/FogOfWar.js` — reveal/hide logic + tests
+- [x] `map/FogOfWar.js` — pure functions over a MapNode: `revealAround(node, centerId, radius)` (Euclidean distance from a parsed "x,y" tile id, never un-reveals a tile), `hideAll(node)`, `revealedCount(node)`; 6 tests
 - [ ] `party/PartyTracker.js` — position, movement, triggers reveal
 - [ ] `entities/Encounter.js` — enemy/encounter HP tracking
 - [ ] `entities/Resource.js` — item/mana/expendable tracking
