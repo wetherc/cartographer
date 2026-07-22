@@ -24,14 +24,25 @@ export function isInBounds(node, tileId) {
  * link a GM already set on it. A brand-new tile starts unrevealed (fog), so
  * authored maps still reveal through play rather than starting fully explored.
  * Out-of-bounds ids are ignored.
+ *
+ * With overlay=true (a path/road brush) the image is layered as the tile's
+ * overlayRef over an existing tile's terrain, so a road can sit on sand, snow,
+ * etc. without erasing what's beneath — and re-terraining beneath keeps the
+ * overlay, since it's preserved by the spread above. On an empty cell there is
+ * no terrain to layer over, so the overlay image becomes the base like any
+ * other brush.
  * @param {MapNode} node
  * @param {string} tileId
  * @param {string} imageRef
+ * @param {boolean} [overlay]
  * @returns {MapNode}
  */
-export function paintTile(node, tileId, imageRef) {
+export function paintTile(node, tileId, imageRef, overlay = false) {
   if (!isInBounds(node, tileId)) return node;
   const existing = getTile(node, tileId);
+  if (overlay && existing) {
+    return setTile(node, { ...existing, overlayRef: imageRef });
+  }
   const tile = existing ? { ...existing, imageRef } : createTile(tileId, imageRef);
   return setTile(node, tile);
 }

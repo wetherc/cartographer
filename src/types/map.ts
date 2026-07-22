@@ -9,6 +9,9 @@ export interface TileMetadata {
 export interface Tile {
   id: string;
   imageRef: string;
+  /** image drawn on top of imageRef (e.g. a road/path), so path pieces layer
+   * over the terrain beneath instead of replacing it; null if none */
+  overlayRef: string | null;
   metadata: TileMetadata;
   revealed: boolean;
   /** id of the MapNode this tile zooms into, if any */

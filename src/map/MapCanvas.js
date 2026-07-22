@@ -382,6 +382,15 @@ export class MapCanvas {
         ctx.fillRect(sx, sy, size, size);
       }
 
+      // A path/road overlay draws on top of the base terrain, so a road can sit
+      // on sand, snow, etc. rather than replacing the tile beneath it.
+      if (tile.overlayRef) {
+        const overlay = this._getImage(tile.overlayRef);
+        if (overlay.complete && overlay.naturalWidth > 0) {
+          ctx.drawImage(overlay, sx, sy, size, size);
+        }
+      }
+
       // A drawn (revealed or Build-mode) tile carrying a POI type gets a
       // prominent outline so a discovered point of interest stands out from
       // ordinary terrain.

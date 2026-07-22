@@ -48,6 +48,35 @@ test('paintTile over an existing tile keeps metadata, childNodeId, revealed', ()
   assert.deepEqual(tile.metadata, { poiType: 'dungeon', discoverable: true, notes: 'crypt' });
 });
 
+test('paintTile creates overlayRef null by default', () => {
+  const painted = paintTile(node2x2(), '0,0', 'grass.svg');
+  assert.equal(getTile(painted, '0,0').overlayRef, null);
+});
+
+test('paintTile overlay layers on an existing tile, keeping its terrain', () => {
+  let node = paintTile(node2x2(), '0,0', 'desert.svg');
+  node = paintTile(node, '0,0', 'road-h.svg', true);
+  const tile = getTile(node, '0,0');
+  assert.equal(tile.imageRef, 'desert.svg');
+  assert.equal(tile.overlayRef, 'road-h.svg');
+});
+
+test('re-terraining beneath an overlay keeps the overlay', () => {
+  let node = paintTile(node2x2(), '0,0', 'desert.svg');
+  node = paintTile(node, '0,0', 'road-h.svg', true);
+  node = paintTile(node, '0,0', 'snow.svg');
+  const tile = getTile(node, '0,0');
+  assert.equal(tile.imageRef, 'snow.svg');
+  assert.equal(tile.overlayRef, 'road-h.svg');
+});
+
+test('paintTile overlay on an empty cell becomes the base image', () => {
+  const node = paintTile(node2x2(), '0,0', 'road-h.svg', true);
+  const tile = getTile(node, '0,0');
+  assert.equal(tile.imageRef, 'road-h.svg');
+  assert.equal(tile.overlayRef, null);
+});
+
 test('paintTile out of bounds is a no-op', () => {
   const node = node2x2();
   assert.equal(paintTile(node, '5,5', 'grass.svg'), node);
