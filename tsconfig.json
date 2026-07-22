@@ -4,7 +4,8 @@
         "noEmit": true,
         "allowJs": true,
         "checkJs": true,
-        "target": "es6",
+        "strict": true,
+        "target": "es2020",
         "resolveJsonModule": true,
         "moduleResolution": "node"
     },

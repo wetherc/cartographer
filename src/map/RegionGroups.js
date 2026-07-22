@@ -45,6 +45,7 @@ export function findRegionGroups(node) {
 
     while (stack.length) {
       const current = stack.pop();
+      if (!current) break;
       members.push(current.tile.id);
       minX = Math.min(minX, current.x);
       maxX = Math.max(maxX, current.x);

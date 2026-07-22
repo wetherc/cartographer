@@ -61,10 +61,12 @@ export function buildWorldTree(nodes) {
  * @returns {Set<string>}
  */
 export function collectSubtreeIds(nodes, rootId) {
+  /** @type {Map<string | null, string[]>} */
   const childrenOf = new Map();
   for (const n of nodes) {
-    if (!childrenOf.has(n.parentId)) childrenOf.set(n.parentId, []);
-    childrenOf.get(n.parentId).push(n.id);
+    const siblings = childrenOf.get(n.parentId) ?? [];
+    if (siblings.length === 0) childrenOf.set(n.parentId, siblings);
+    siblings.push(n.id);
   }
 
   /** @type {Set<string>} */
@@ -73,7 +75,7 @@ export function collectSubtreeIds(nodes, rootId) {
   const stack = [rootId];
   while (stack.length) {
     const id = stack.pop();
-    if (ids.has(id)) continue;
+    if (id === undefined || ids.has(id)) continue;
     ids.add(id);
     for (const childId of childrenOf.get(id) ?? []) stack.push(childId);
   }

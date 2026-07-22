@@ -26,12 +26,14 @@ export function mountEncounterPanel(container, encounters, onChange = () => {}, 
   root.className = 'encounter-panel';
   container.appendChild(root);
 
+  /** @param {Encounter[]} next */
   function commit(next) {
     current = next;
-    onChange(current);
+    onChange(next);
     render();
   }
 
+  /** @param {string} id @param {(encounter: Encounter) => Encounter} fn */
   function updateOne(id, fn) {
     commit(current.map((e) => (e.id === id ? fn(e) : e)));
   }
@@ -94,13 +96,14 @@ export function mountEncounterPanel(container, encounters, onChange = () => {}, 
       root.appendChild(row);
     }
 
-    if (hooks.onAdd) {
+    const onAdd = hooks.onAdd;
+    if (onAdd) {
       const addButton = document.createElement('button');
       addButton.type = 'button';
       addButton.className = 'btn encounter-panel__add';
       addButton.append(icon('add'), document.createTextNode('New encounter'));
       addButton.addEventListener('click', async () => {
-        const encounter = await hooks.onAdd();
+        const encounter = await onAdd();
         if (encounter) commit([...current, encounter]);
       });
       root.appendChild(addButton);

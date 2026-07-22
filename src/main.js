@@ -40,6 +40,18 @@ import {
 
 const palette = new TilePalette();
 
+/**
+ * Fetch a required mount-point element, failing loudly at startup if the
+ * markup and the wiring here ever drift apart.
+ * @param {string} id
+ * @returns {HTMLElement}
+ */
+function mustGetElement(id) {
+  const el = document.getElementById(id);
+  if (!el) throw new Error(`Required element #${id} is missing from index.html`);
+  return el;
+}
+
 /** A small starter world so the app has something to look at on first run. */
 function buildDefaultCampaign() {
   const rng = () => Math.random();
@@ -52,6 +64,7 @@ function buildDefaultCampaign() {
         y === 2
           ? palette.getRoadPiece(x === 0 ? 'end-w' : x === 7 ? 'end-e' : 'h')
           : palette.pickVariant('grass', rng);
+      if (!entry) continue;
       const inRegionBlock = x < 2 && y < 2;
       world = setTile(
         world,
@@ -103,11 +116,13 @@ let selectedTileId = null;
 /** @type {import('./ui/PalettePanel.js').Brush} active Build-mode paint brush */
 let activeBrush = null;
 
+/** @typedef {import('./types/entities.js').Character} Character */
+
 const navigator = new MapNavigator(grid, initial.party.nodeId);
 const partyTracker = new PartyTracker(grid, initial.party);
 
-const breadcrumbContainer = document.getElementById('breadcrumb-container');
-const canvasEl = /** @type {HTMLCanvasElement} */ (document.getElementById('map-canvas'));
+const breadcrumbContainer = mustGetElement('breadcrumb-container');
+const canvasEl = /** @type {HTMLCanvasElement} */ (mustGetElement('map-canvas'));
 
 /**
  * Where the party lands when it first travels into a child node: the child edge
@@ -134,7 +149,10 @@ function syncPartyMarker() {
   mapCanvas.setPartyTile(position.nodeId === navigator.getCurrentNode().id ? position.tileId : null);
 }
 
-/** Navigate to a node by id and resync every view that reflects the location. */
+/**
+ * Navigate to a node by id and resync every view that reflects the location.
+ * @param {string} nodeId
+ */
 function goToNode(nodeId) {
   navigator.goTo(nodeId);
   mapCanvas.setNode(navigator.getCurrentNode());
@@ -153,7 +171,7 @@ function clearSelection() {
 
 const breadcrumb = mountBreadcrumb(breadcrumbContainer, goToNode);
 
-const worldTree = mountWorldTree(document.getElementById('world-tree-container'), {
+const worldTree = mountWorldTree(mustGetElement('world-tree-container'), {
   getNodes: () => [...grid.nodes.values()],
   getCurrentId: () => navigator.getCurrentNode().id,
   onSelect: goToNode,
@@ -234,7 +252,9 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
       if (activeBrush === 'erase') {
         applyToTile(id, (node) => eraseTile(node, id));
       } else if (activeBrush) {
-        applyToTile(id, (node) => paintTile(node, id, activeBrush.imageRef));
+        // Captured so the closure below keeps the non-null, non-'erase' narrowing.
+        const brush = activeBrush;
+        applyToTile(id, (node) => paintTile(node, id, brush.imageRef));
       } else {
         selectTile(id);
       }
@@ -267,7 +287,7 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
   },
 });
 
-const inspector = mountTileInspector(document.getElementById('inspector-container'), {
+const inspector = mountTileInspector(mustGetElement('inspector-container'), {
   onChange: (patch) => {
     if (!selectedTileId) return;
     const updated = updateTileMetadata(navigator.getCurrentNode(), selectedTileId, patch);
@@ -301,7 +321,10 @@ function linkSelectedTile(childNodeId) {
   inspector.setTile(getTile(updated, selectedTileId) ?? null, true);
 }
 
-/** Select a tile within the current node and point the inspector at it. */
+/**
+ * Select a tile within the current node and point the inspector at it.
+ * @param {string} tileId
+ */
 function selectTile(tileId) {
   selectedTileId = tileId;
   mapCanvas.setSelectedTile(tileId);
@@ -324,7 +347,7 @@ function applyToTile(tileId, transform) {
   }
 }
 
-mountPalettePanel(document.getElementById('palette-container'), palette, (brush) => {
+mountPalettePanel(mustGetElement('palette-container'), palette, (brush) => {
   activeBrush = brush;
 });
 
@@ -353,12 +376,15 @@ breadcrumb.update(navigator.getBreadcrumb());
 /** @type {string | null} id of the character the sheet/inventory are scoped to */
 let selectedCharacterId = characters[0]?.id ?? null;
 
-/** @returns {import('./types/entities.js').Character | null} */
+/** @returns {Character | null} */
 function selectedCharacter() {
   return characters.find((c) => c.id === selectedCharacterId) ?? null;
 }
 
-/** Point the sheet and inventory at a character (or null) and refresh the roster. */
+/**
+ * Point the sheet and inventory at a character (or null) and refresh the roster.
+ * @param {string | null} id
+ */
 function selectCharacter(id) {
   selectedCharacterId = id;
   const character = selectedCharacter();
@@ -367,13 +393,16 @@ function selectCharacter(id) {
   characterRoster.update();
 }
 
-/** Write an edited character back into the roster by id. */
+/**
+ * Write an edited character back into the roster by id.
+ * @param {Character} next
+ */
 function commitCharacter(next) {
   characters = replaceById(characters, next);
   characterRoster.update();
 }
 
-const characterRoster = mountCharacterRoster(document.getElementById('party-container'), {
+const characterRoster = mountCharacterRoster(mustGetElement('party-container'), {
   getCharacters: () => characters,
   getSelectedId: () => selectedCharacterId,
   onSelect: selectCharacter,
@@ -400,7 +429,7 @@ const characterRoster = mountCharacterRoster(document.getElementById('party-cont
 });
 
 const characterSheet = mountCharacterSheet(
-  document.getElementById('character-sheet-container'),
+  mustGetElement('character-sheet-container'),
   selectedCharacter(),
   (next) => {
     commitCharacter(next);
@@ -409,7 +438,7 @@ const characterSheet = mountCharacterSheet(
 );
 
 const inventoryPanel = mountInventoryPanel(
-  document.getElementById('inventory-container'),
+  mustGetElement('inventory-container'),
   selectedCharacter(),
   (next) => {
     commitCharacter(next);
@@ -418,7 +447,7 @@ const inventoryPanel = mountInventoryPanel(
 );
 
 mountEncounterPanel(
-  document.getElementById('encounter-container'),
+  mustGetElement('encounter-container'),
   encounters,
   (next) => {
     encounters = next;
@@ -429,7 +458,8 @@ mountEncounterPanel(
         { name: 'name', label: 'Name', value: '' },
         { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1 },
       ]);
-      const name = values?.name.trim();
+      if (!values) return null;
+      const name = values.name.trim();
       if (!name) return null;
       const maxHP = Math.max(1, Number(values.maxHP) || 1);
       return createEncounter(slugId(name, encounters.map((e) => e.id)), name, maxHP);
@@ -439,11 +469,11 @@ mountEncounterPanel(
   },
 );
 
-mountDiceTray(document.getElementById('dice-tray-container'));
+mountDiceTray(mustGetElement('dice-tray-container'));
 
 // Play/Build mode drives which rails the layout shows (a body class toggled by
 // CSS), and defaults to Play so a first-run visitor lands on the live view.
-mountModeSwitch(document.getElementById('mode-switch-container'), currentMode, (mode) => {
+mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => {
   currentMode = mode;
   document.body.classList.toggle('mode-play', mode === 'play');
   document.body.classList.toggle('mode-build', mode === 'build');
@@ -452,16 +482,16 @@ mountModeSwitch(document.getElementById('mode-switch-container'), currentMode, (
   worldTree.update();
 });
 
-document.getElementById('save-btn').addEventListener('click', () => {
+mustGetElement('save-btn').addEventListener('click', () => {
   saveToLocalStorage(buildState(grid, partyTracker.getPosition(), characters, encounters));
 });
 
-document.getElementById('export-btn').addEventListener('click', () => {
+mustGetElement('export-btn').addEventListener('click', () => {
   downloadState(buildState(grid, partyTracker.getPosition(), characters, encounters));
 });
 
-const importInput = /** @type {HTMLInputElement} */ (document.getElementById('import-input'));
-document.getElementById('import-btn').addEventListener('click', () => importInput.click());
+const importInput = /** @type {HTMLInputElement} */ (mustGetElement('import-input'));
+mustGetElement('import-btn').addEventListener('click', () => importInput.click());
 importInput.addEventListener('change', async () => {
   const file = importInput.files?.[0];
   if (!file) return;

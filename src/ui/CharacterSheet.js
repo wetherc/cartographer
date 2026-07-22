@@ -19,16 +19,19 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
   root.className = 'character-sheet';
   container.appendChild(root);
 
+  /** @param {Character} next */
   function commit(next) {
     current = next;
-    onChange(current);
+    onChange(next);
     render();
   }
 
   function render() {
     root.innerHTML = '';
 
-    if (!current) {
+    // Captured non-null so listeners created below keep the narrowing.
+    const character = current;
+    if (!character) {
       const empty = document.createElement('p');
       empty.className = 'empty-state';
       empty.textContent = 'No character selected.';
@@ -38,14 +41,14 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
 
     const header = document.createElement('div');
     header.className = 'character-sheet__header';
-    header.textContent = `${current.name} — Level ${current.level}`;
+    header.textContent = `${character.name} — Level ${character.level}`;
     root.appendChild(header);
 
     const xpRow = document.createElement('div');
     xpRow.className = 'character-sheet__xp';
 
     const xpLabel = document.createElement('span');
-    xpLabel.textContent = `XP: ${current.xp} / ${current.level * XP_PER_LEVEL}`;
+    xpLabel.textContent = `XP: ${character.xp} / ${character.level * XP_PER_LEVEL}`;
 
     const xpInput = document.createElement('input');
     xpInput.type = 'number';
@@ -60,7 +63,7 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
     xpButton.append(icon('add'), document.createTextNode('XP'));
     xpButton.addEventListener('click', () => {
       const amount = Number(xpInput.value);
-      if (amount > 0) commit(addXP(current, amount));
+      if (amount > 0) commit(addXP(character, amount));
     });
 
     xpRow.append(xpLabel, xpInput, xpButton);
@@ -68,7 +71,7 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
 
     const statsList = document.createElement('div');
     statsList.className = 'character-sheet__stats';
-    for (const [key, value] of Object.entries(current.stats)) {
+    for (const [key, value] of Object.entries(character.stats)) {
       const row = document.createElement('div');
       row.className = 'character-sheet__stat-row';
 
@@ -81,7 +84,7 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
       input.className = 'field character-sheet__stat-input';
       input.value = String(value);
       input.addEventListener('change', () => {
-        commit(setStat(current, key, Number(input.value)));
+        commit(setStat(character, key, Number(input.value)));
       });
 
       label.appendChild(input);
