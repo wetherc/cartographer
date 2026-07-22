@@ -9,10 +9,26 @@
 <body>
   <header class="app-header">
     <h1>Campaign Builder</h1>
+    <div class="app-header__actions">
+      <button id="save-btn" type="button">Save</button>
+      <button id="export-btn" type="button">Export</button>
+      <button id="import-btn" type="button">Import</button>
+      <input id="import-input" type="file" accept="application/json" hidden />
+    </div>
   </header>
 
   <main class="app-main">
-    <section id="dice-tray-container" class="panel"></section>
+    <section class="app-map">
+      <div id="breadcrumb-container"></div>
+      <canvas id="map-canvas" width="720" height="540"></canvas>
+    </section>
+
+    <aside class="app-sidebar">
+      <section id="character-sheet-container" class="panel"></section>
+      <section id="inventory-container" class="panel"></section>
+      <section id="encounter-container" class="panel"></section>
+      <section id="dice-tray-container" class="panel"></section>
+    </aside>
   </main>
 
   <script type="module" src="src/main.js"></script>

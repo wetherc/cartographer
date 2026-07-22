@@ -80,5 +80,12 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
   }
 
   render();
-  return { getCharacter: () => current };
+  return {
+    getCharacter: () => current,
+    /** Sync in an externally-updated character (e.g. from a sibling panel) and re-render. */
+    setCharacter: (next) => {
+      current = next;
+      render();
+    },
+  };
 }

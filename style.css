@@ -8,9 +8,72 @@ body {
   padding: 1rem;
 }
 
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
 .app-header h1 {
   font-size: 1.25rem;
-  margin: 0 0 1rem;
+  margin: 0;
+}
+
+.app-header__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.app-main {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.app-map {
+  flex: 1;
+  min-width: 0;
+}
+
+#breadcrumb-container {
+  margin-bottom: 0.5rem;
+}
+
+#map-canvas {
+  max-width: 100%;
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+  background: #000;
+  touch-action: none;
+}
+
+.app-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 20rem;
+  flex-shrink: 0;
+}
+
+.breadcrumb__crumb {
+  color: inherit;
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.breadcrumb__crumb[aria-current] {
+  font-weight: bold;
+  cursor: default;
+}
+
+.breadcrumb__separator {
+  margin: 0 0.35rem;
+  opacity: 0.6;
 }
 
 .panel {

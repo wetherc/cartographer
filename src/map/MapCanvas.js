@@ -88,6 +88,8 @@ export class MapCanvas {
     this.node = null;
     /** @type {RegionGroup[]} */
     this.regionGroups = [];
+    /** @type {string | null} tile id of the party marker within the current node, if any */
+    this.partyTileId = null;
     this.offsetX = 0;
     this.offsetY = 0;
     this.scale = 1;
@@ -119,9 +121,31 @@ export class MapCanvas {
   setNode(node) {
     this.node = node;
     this.regionGroups = findRegionGroups(node);
+    this.partyTileId = null;
     this.offsetX = 0;
     this.offsetY = 0;
     this.scale = 1;
+    this.render();
+  }
+
+  /**
+   * Swap in an updated copy of the *same* node (e.g. after a tile mutation
+   * like a fog reveal) without resetting pan/zoom, unlike setNode.
+   * @param {MapNode} node
+   */
+  refreshNode(node) {
+    this.node = node;
+    this.regionGroups = findRegionGroups(node);
+    this.render();
+  }
+
+  /**
+   * Show (or clear, with null) the party marker at a tile id within the
+   * current node. Does not reset pan/zoom, unlike setNode.
+   * @param {string | null} tileId
+   */
+  setPartyTile(tileId) {
+    this.partyTileId = tileId;
     this.render();
   }
 
@@ -167,6 +191,25 @@ export class MapCanvas {
     }
 
     this._renderRegionGroups();
+    this._renderPartyMarker();
+  }
+
+  _renderPartyMarker() {
+    if (!this.partyTileId) return;
+    const coords = parseCoords(this.partyTileId);
+    if (!coords) return;
+    const { ctx } = this;
+    const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+
+    ctx.save();
+    ctx.fillStyle = '#e0c14b';
+    ctx.strokeStyle = '#3a2f0a';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(sx + size / 2, sy + size / 2, size * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
   }
 
   _renderRegionGroups() {
