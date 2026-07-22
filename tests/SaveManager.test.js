@@ -1,0 +1,60 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createMapNode, createTile, setTile, TileGrid } from '../src/map/TileGrid.js';
+import { createCharacter, addXP } from '../src/entities/Character.js';
+import { createEncounter, applyDamage } from '../src/entities/Encounter.js';
+import { buildState, serialize, deserialize, toTileGrid } from '../src/storage/SaveManager.js';
+
+function sampleGrid() {
+  const grid = new TileGrid();
+  let world = createMapNode('world', 'World', null, 2, 2);
+  world = setTile(world, createTile('0,0', 'grass.svg', { childNodeId: 'region', revealed: true }));
+  grid.addNode(world);
+  grid.addNode(createMapNode('region', 'Region', 'world', 1, 1));
+  return grid;
+}
+
+test('buildState collects grid nodes, party, characters, and encounters', () => {
+  const grid = sampleGrid();
+  const party = { nodeId: 'world', tileId: '0,0' };
+  const characters = [createCharacter('c1', 'Hero')];
+  const encounters = [createEncounter('e1', 'Goblin', 7)];
+
+  const state = buildState(grid, party, characters, encounters);
+  assert.equal(state.nodes.length, 2);
+  assert.equal(state.party.nodeId, 'world');
+  assert.equal(state.characters.length, 1);
+  assert.equal(state.encounters.length, 1);
+});
+
+test('serialize/deserialize round-trips a full campaign state', () => {
+  const grid = sampleGrid();
+  const party = { nodeId: 'world', tileId: '0,0' };
+  const characters = [addXP(createCharacter('c1', 'Hero', { STR: 14 }), 50)];
+  const encounters = [applyDamage(createEncounter('e1', 'Goblin', 7), 3)];
+
+  const state = buildState(grid, party, characters, encounters);
+  const restored = deserialize(serialize(state));
+
+  assert.deepEqual(restored, state);
+});
+
+test('deserialize defaults missing fields instead of throwing', () => {
+  const restored = deserialize(JSON.stringify({}));
+  assert.deepEqual(restored, { nodes: [], party: null, characters: [], encounters: [] });
+});
+
+test('toTileGrid rebuilds a working TileGrid preserving hierarchy', () => {
+  const grid = sampleGrid();
+  const state = buildState(grid, null, [], []);
+  const rebuilt = toTileGrid(deserialize(serialize(state)));
+
+  assert.equal(rebuilt.getNode('world').name, 'World');
+  const breadcrumb = rebuilt.getBreadcrumb('region').map((n) => n.id);
+  assert.deepEqual(breadcrumb, ['world', 'region']);
+
+  const tile = rebuilt.getNode('world').tiles[0];
+  assert.equal(tile.revealed, true);
+  const target = rebuilt.getZoomTarget(tile);
+  assert.equal(target.id, 'region');
+});
