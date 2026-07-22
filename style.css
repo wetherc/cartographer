@@ -711,3 +711,65 @@ body.mode-build .app-sidebar {
   width: 3rem;
   text-align: center;
 }
+
+.encounter-panel__add {
+  margin-top: var(--space-2);
+  font-size: var(--text-label);
+}
+
+/* ==========================================================================
+   Party roster
+   ========================================================================== */
+
+.character-roster__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+}
+
+.character-roster__select {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  font-size: var(--text-label);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.character-roster__select:hover {
+  background: var(--surface-sunken);
+}
+
+.character-roster__select--current {
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+  font-weight: 700;
+}
+
+.character-roster__delete {
+  opacity: 0;
+}
+
+.character-roster__row:hover .character-roster__delete,
+.character-roster__delete:focus-visible {
+  opacity: 1;
+}
+
+.character-roster__add {
+  margin-top: var(--space-2);
+  font-size: var(--text-label);
+}
+
+/* Shared "nothing here yet" copy for panels with no content. */
+.empty-state {
+  margin: 0;
+  padding: var(--space-2) 0;
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  font-style: italic;
+}
