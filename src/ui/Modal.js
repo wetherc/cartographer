@@ -17,6 +17,9 @@
  */
 export function promptModal(title, fields, options = {}) {
   return new Promise((resolve) => {
+    // Return focus to whatever opened the dialog once it closes, so keyboard
+    // users aren't dropped at the top of the document.
+    const opener = /** @type {HTMLElement | null} */ (document.activeElement);
     const dialog = document.createElement('dialog');
     dialog.className = 'modal';
 
@@ -84,6 +87,7 @@ export function promptModal(title, fields, options = {}) {
           ? null
           : Object.fromEntries(Object.entries(inputs).map(([k, el]) => [k, el.value]));
       dialog.remove();
+      opener?.focus?.();
       resolve(result);
     });
 
@@ -100,6 +104,7 @@ export function promptModal(title, fields, options = {}) {
  */
 export function confirmModal(message, options = {}) {
   return new Promise((resolve) => {
+    const opener = /** @type {HTMLElement | null} */ (document.activeElement);
     const dialog = document.createElement('dialog');
     dialog.className = 'modal';
 
@@ -129,6 +134,7 @@ export function confirmModal(message, options = {}) {
     dialog.addEventListener('close', () => {
       const confirmed = dialog.returnValue === 'confirm';
       dialog.remove();
+      opener?.focus?.();
       resolve(confirmed);
     });
 
