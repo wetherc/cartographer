@@ -193,6 +193,18 @@ Each phase should land as its own set of commits (following the existing per-mod
 - [ ] **Phase D** — character roster CRUD + selector (replacing hardcoded `characters[0]`); encounter roster CRUD + selector (replacing hardcoded demo Goblin)
 - [ ] **Phase E** — explicit "new campaign" flow (demo data becomes an opt-in "load example," not a silent default) and a polish pass over rough edges. (The header Play/Build `ModeSwitch` + layout reflow originally scoped here landed early in Phase C, since Build-mode authoring needed a shell to live in.)
 - [ ] **Phase F** — Play-mode sidebar density pass (see below)
+- [ ] **Phase H** — Build-mode map-editor interaction (see below)
+
+### Phase H — Build-mode map-editor interaction
+
+The Build-mode editor works cell-by-cell with a single mouse gesture that both pans and paints, which is slow and imprecise for authoring a real map. This phase reworks the Build-mode canvas interaction and adds node-shape editing. It touches `map/MapCanvas.js`'s pointer handlers plus `main.js`'s Build-mode `onCellClick` wiring; the paint/erase primitives in `map/TilePaint.js` already exist and are reused.
+
+Note the current binding this replaces: today any-button drag pans, and a drag shorter than ~4px is treated as a click that paints or erases exactly one cell (`MapCanvas._onPointerDown/Move/Up`). Split panning off the left button and make the left button a continuous authoring gesture.
+
+- **Right-drag to pan.** Panning moves to the right mouse button (`pointerdown` with `button === 2`); suppress the canvas context menu (`contextmenu` → `preventDefault`) so the right-drag doesn't pop a menu. Wheel-zoom is unchanged. In Play mode, panning can stay on the left button since there's no paint gesture to conflict with — decide per mode rather than globally.
+- **Left-drag to paint/erase across cells.** In Build mode a left `pointerdown` starts a stroke that applies the active operation (paint with the selected brush, or erase) to every distinct cell the pointer passes over, not just the cell released on. Track the last-applied cell id to avoid re-applying to the same cell on every `pointermove`, and coalesce the stroke so one drag is a single logical edit (relevant once undo, campaign-lifecycle gap #11, exists). A click (no movement) still edits the single cell, as today.
+- **Left-drag to mark a subregion's area on the parent.** Region-link authoring (Phase C did this per-tile via the inspector) gains an area gesture: with a "region" tool active, left-drag paints a rectangular (or freehand, matching the paint stroke) block of parent tiles that will all share one child `childNodeId` — the authoring counterpart to the multi-tile `RegionGroups` block the renderer already draws. On release, prompt to link the block to an existing child node or create a new one (reusing the Phase C new-node modal), then stamp the chosen `childNodeId` onto every tile in the block.
+- **Resize a node's X/Y after creation.** Node dimensions are fixed at create time today (`createMapNode(id, name, parentId, width, height)`, only set via the new-node modal). Add a way to change a node's `width`/`height` afterward — for both a region and the parent world — from the Build-mode UI (e.g. a node-settings control on the world tree or an inspector field). Growing keeps existing tiles; shrinking must decide what happens to tiles/region-links outside the new bounds (drop them, with a confirm if any non-empty tiles would be lost). Add a pure resize helper (unit-testable: tiles preserved on grow, out-of-bounds tiles pruned on shrink) rather than mutating in the UI layer.
 
 ### Phase F — Play-mode sidebar density
 
