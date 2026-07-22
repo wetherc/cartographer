@@ -10,12 +10,12 @@
   <path d="M16 24 V32 M8 32 V40 M48 24 V32 M56 32 V40" stroke="#55514a" stroke-width="1" fill="none"/>
   <path d="M0 25 H22 M42 25 H64" stroke="#8a857a" stroke-width="1" fill="none"/>
   <path d="M0 24 H22 M0 40 H22 M42 24 H64 M42 40 H64 M22 24 V40 M42 24 V40" stroke="#4c4841" stroke-width="1.5" fill="none"/>
-  <rect x="23" y="26" width="18" height="12" rx="1" fill="#7a5a34" stroke="#4e3a22" stroke-width="1"/>
-  <path d="M27.5 26.5 V37.5 M32 26.5 V37.5 M36.5 26.5 V37.5" stroke="#5f4527" stroke-width="0.8" fill="none"/>
-  <path d="M24 29 H40 M24 35 H40" stroke="#3f2f1c" stroke-width="0.9" fill="none"/>
-  <circle cx="25.6" cy="29" r="0.7" fill="#2e2214"/>
-  <circle cx="38.4" cy="29" r="0.7" fill="#2e2214"/>
-  <circle cx="25.6" cy="35" r="0.7" fill="#2e2214"/>
-  <circle cx="38.4" cy="35" r="0.7" fill="#2e2214"/>
+  <rect x="23" y="19" width="18" height="26" rx="1" fill="#7a5a34" stroke="#4e3a22" stroke-width="1"/>
+  <path d="M27.5 19.5 V44.5 M32 19.5 V44.5 M36.5 19.5 V44.5" stroke="#5f4527" stroke-width="0.8" fill="none"/>
+  <path d="M24 24.5 H40 M24 39.5 H40" stroke="#3f2f1c" stroke-width="0.9" fill="none"/>
+  <circle cx="25.6" cy="24.5" r="0.7" fill="#2e2214"/>
+  <circle cx="38.4" cy="24.5" r="0.7" fill="#2e2214"/>
+  <circle cx="25.6" cy="39.5" r="0.7" fill="#2e2214"/>
+  <circle cx="38.4" cy="39.5" r="0.7" fill="#2e2214"/>
   <circle cx="33.5" cy="32" r="1" fill="#c9a020"/>
 </svg>

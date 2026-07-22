@@ -6,9 +6,9 @@
   <ellipse cx="32" cy="44" rx="16" ry="8" fill="#cdb078"/>
   <!-- chimney smoke -->
   <g fill="#8f8a84">
-    <circle cx="24" cy="15" r="2" opacity="0.55"/>
-    <circle cx="21.5" cy="11.5" r="2.6" opacity="0.4"/>
-    <circle cx="18.5" cy="8.5" r="3" opacity="0.25"/>
+    <circle cx="22" cy="17" r="2" opacity="0.55"/>
+    <circle cx="19.5" cy="13.5" r="2.6" opacity="0.4"/>
+    <circle cx="16.5" cy="10.5" r="3" opacity="0.25"/>
   </g>
   <!-- open-fronted forge shed -->
   <rect x="16" y="30" width="26" height="17" fill="#8a6f4a" stroke="#5f4c33" stroke-width="0.8"/>
@@ -16,17 +16,19 @@
   <polygon points="13,31 29,20 45,31" fill="#7a5a3a"/>
   <polygon points="29,20 45,31 29,31" fill="#5f4630"/>
   <path d="M17 28.2 L41 28.2 M21 25.5 L37 25.5" stroke="#6b4e33" stroke-width="0.8" fill="none"/>
-  <rect x="22" y="17" width="4" height="8" fill="#8a8f94" stroke="#6f747a" stroke-width="0.5"/>
+  <rect x="20" y="19" width="4" height="8" fill="#8a8f94" stroke="#6f747a" stroke-width="0.5"/>
   <!-- forge glow inside -->
   <circle cx="29" cy="41" r="8" fill="#e86a2c" opacity="0.18"/>
   <circle cx="29" cy="41" r="4.5" fill="#e86a2c" opacity="0.4"/>
   <path d="M27 44 q-1.5 -3 0.6 -5 q0.2 1.6 1.4 2.2 q-0.3 -2.6 1.8 -4.2 q0 2 1.3 3.2 q1 1.2 0.6 2.8 q-0.6 2 -2.9 2.2 q-2 0 -2.8 -1.2 Z" fill="#f5a23c"/>
   <path d="M28.4 43.6 q-0.7 -1.6 0.5 -2.8 q0.4 1 1.2 1.4 q0.5 1.4 -0.2 2.1 q-1 0.6 -1.5 -0.7 Z" fill="#fbd77a"/>
-  <!-- anvil on a stump -->
+  <!-- anvil on a stump: flat top face, horn to the right, waist, base -->
   <g>
-    <rect x="45" y="42" width="6.5" height="4.5" fill="#6b5236"/>
-    <path d="M44 39 h6 q3 0 4 -1.6 l0 3 q-1.2 1 -3 1.2 l-4.6 0 q-1.5 1.6 -1.4 3.4 l-2.4 0 q-0.2 -2.2 1.4 -3.6 Z" fill="#4a4d52"/>
-    <path d="M44 39 h6 q3 0 4 -1.6 l0 1.2 q-1.6 1.2 -4 1.2 Z" fill="#6a6e74"/>
+    <rect x="45" y="43.2" width="6.8" height="3.4" fill="#6b5236"/>
+    <rect x="45.4" y="40.8" width="6" height="2.4" rx="0.5" fill="#4a4d52"/>
+    <path d="M46.8 38.4 h3.6 l0.6 2.4 h-4.8 Z" fill="#3f4247"/>
+    <path d="M43.5 36 H52.5 Q56.4 36 57.8 37.2 Q56.2 38.4 53.5 38.4 H43.5 Z" fill="#4a4d52"/>
+    <path d="M43.5 36 H52.5 Q56.4 36 57.8 37.2 L57 37.6 Q55.8 36.8 52.5 36.8 H43.5 Z" fill="#6a6e74"/>
   </g>
   <!-- horseshoe on the post -->
   <path d="M12.5 33 a3 3 0 1 1 5 0 l-1 2.6 l-0.9 -2.4 a1.6 1.6 0 1 0 -1.2 0 l-0.9 2.4 Z" fill="#5a5d62" transform="rotate(12 15 34)"/>
