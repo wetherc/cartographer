@@ -128,7 +128,7 @@ export class MapCanvas {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {TilePalette} palette
-   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void }} [options]
+   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void }} [options]
    */
   constructor(canvas, palette, options = {}) {
     this.canvas = canvas;
@@ -142,6 +142,9 @@ export class MapCanvas {
     this.onCellClick = options.onCellClick;
     this.getNodeName = options.getNodeName;
     this.onViewChange = options.onViewChange;
+    this.onCellHover = options.onCellHover;
+    /** @type {string | null} last hovered cell id, so hover fires per cell, not per pixel */
+    this._hoverCellId = null;
 
     /** @type {MapNode | null} */
     this.node = null;
@@ -432,7 +435,12 @@ export class MapCanvas {
 
   /** @param {PointerEvent} event */
   _onPointerMove(event) {
-    if (!this._dragging) return;
+    if (!this._dragging) {
+      this._trackHover(event);
+      return;
+    }
+    // Panning: any tooltip anchored to the old position is stale.
+    this._clearHover();
     // Drag deltas are measured in client (CSS) px but pan offsets live in
     // buffer px, so scale the delta by the buffer/CSS ratio.
     const rect = this.canvas.getBoundingClientRect();
@@ -448,8 +456,35 @@ export class MapCanvas {
     this.render();
   }
 
+  /**
+   * Fire onCellHover when the pointer crosses into a different grid cell
+   * (or leaves the grid), passing the tile there if one exists.
+   * @param {PointerEvent} event
+   */
+  _trackHover(event) {
+    if (!this.onCellHover || !this.node) return;
+    const rect = this.canvas.getBoundingClientRect();
+    const buffer = clientToBuffer(event.clientX, event.clientY, rect, this.canvas.width, this.canvas.height);
+    const coords = screenToTile(buffer.x, buffer.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+    const inBounds =
+      coords.x >= 0 && coords.y >= 0 && coords.x < this.node.width && coords.y < this.node.height;
+    const cellId = inBounds ? `${coords.x},${coords.y}` : null;
+    if (cellId === this._hoverCellId) return;
+    this._hoverCellId = cellId;
+    const tile = cellId ? (this.node.tiles.find((t) => t.id === cellId) ?? null) : null;
+    this.onCellHover(tile, event.clientX, event.clientY);
+  }
+
+  /** Reset hover state and tell the handler the pointer is off the grid. */
+  _clearHover() {
+    if (this._hoverCellId === null) return;
+    this._hoverCellId = null;
+    this.onCellHover?.(null, 0, 0);
+  }
+
   /** @param {PointerEvent} event */
   _onPointerUp(event) {
+    if (event.type === 'pointerleave') this._clearHover();
     const wasClick = this._dragging && this._dragDistance < 4;
     this._dragging = false;
     if (!wasClick || !this.onCellClick || !this.node) return;

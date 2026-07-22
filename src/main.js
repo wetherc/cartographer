@@ -19,6 +19,7 @@ import { collectSubtreeIds } from './map/WorldTree.js';
 import { mountTileInspector } from './ui/TileInspector.js';
 import { mountPalettePanel } from './ui/PalettePanel.js';
 import { mountMapControls } from './ui/MapControls.js';
+import { mountTileTooltip } from './ui/TileTooltip.js';
 import { promptModal, confirmModal } from './ui/Modal.js';
 import { PartyTracker } from './party/PartyTracker.js';
 import { createCharacter, addResource, withDefaults, withHP } from './entities/Character.js';
@@ -282,6 +283,29 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
   tileSize: 48,
   getNodeName: (nodeId) => grid.getNode(nodeId)?.name,
   onViewChange: () => mapControls?.update(),
+  // Play-mode read side of the Build-mode tile inspector: hovering a revealed
+  // tile with metadata shows what the GM authored there. Build mode already
+  // surfaces the same data through the inspector, so hover stays quiet there.
+  onCellHover: (tile, clientX, clientY) => {
+    if (
+      currentMode !== 'play' ||
+      !tile ||
+      !tile.revealed ||
+      (!tile.metadata.poiType && !tile.metadata.notes)
+    ) {
+      tileTooltip.hide();
+      return;
+    }
+    const poiType = tile.metadata.poiType;
+    tileTooltip.show(
+      {
+        title: poiType ? poiType.charAt(0).toUpperCase() + poiType.slice(1) : '',
+        notes: tile.metadata.notes,
+      },
+      clientX,
+      clientY,
+    );
+  },
   onCellClick: (x, y, tile) => {
     const id = `${x},${y}`;
     // In Build mode a click authors the cell per the active brush, rather than
@@ -410,6 +434,8 @@ canvasEl.addEventListener('drop', (event) => {
   const tileId = `${coords.x},${coords.y}`;
   applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef));
 });
+
+const tileTooltip = mountTileTooltip(document.body);
 
 mapControls = mountMapControls(mustGetElement('map-viewport'), {
   onZoomIn: () => mapCanvas.zoomBy(1.25),
@@ -558,6 +584,7 @@ mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => 
   document.body.classList.toggle('mode-play', mode === 'play');
   document.body.classList.toggle('mode-build', mode === 'build');
   mapCanvas.setRevealAll(mode === 'build');
+  tileTooltip.hide();
   if (mode !== 'build') clearSelection();
   worldTree.update();
 });
