@@ -16,7 +16,7 @@
 <body>
   <h1>MapCanvas preview</h1>
   <p>8x6 world grid, mix of terrain + a road strip + one unrevealed fog tile.
-    Top-left tile (0,0) zooms into a region. Drag to pan, wheel to zoom, click breadcrumbs to zoom out.</p>
+    The 2x2 block at top-left zooms into a region (outlined, labeled). Drag to pan, wheel to zoom, click breadcrumbs to zoom out.</p>
   <div id="breadcrumb-container"></div>
   <canvas id="map" width="640" height="480"></canvas>
 
@@ -37,7 +37,8 @@
         const entry = y === 2 ? palette.getRoadPiece(x === 0 ? 'end-w' : x === 7 ? 'end-e' : 'h')
           : palette.pickVariant('grass', rng);
         const revealed = !(x === 5 && y === 4);
-        const overrides = x === 0 && y === 0 ? { revealed, childNodeId: 'region' } : { revealed };
+        const inRegionBlock = x < 2 && y < 2;
+        const overrides = inRegionBlock ? { revealed, childNodeId: 'region' } : { revealed };
         world = setTile(world, createTile(`${x},${y}`, entry.imageRef, overrides));
       }
     }
@@ -62,6 +63,7 @@
     const canvas = document.getElementById('map');
     const mapCanvas = new MapCanvas(canvas, palette, {
       tileSize: 48,
+      getNodeName: (nodeId) => grid.getNode(nodeId)?.name,
       onTileClick: (tile) => {
         if (navigator.zoomIn(tile.id)) {
           mapCanvas.setNode(navigator.getCurrentNode());
