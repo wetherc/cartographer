@@ -81,8 +81,8 @@ tests/
 - [x] **Visual test DiceTray in browser** — Playwright: navigated `localhost:8934/index.html`, incremented d6 x2, d20 x1, modifier x1, clicked Roll. Result line rendered correctly: `d6[6,2]=8 + d20[10]=10 + modifier=1 -> total: 19`. Only console error is harmless `favicon.ico` 404.
 - [x] `types/map.ts`, `types/entities.ts` — type declarations
 - [x] `map/TileGrid.js` — tile data structure, hierarchy (parentId chain + breadcrumb + zoom-target resolution)
-- [x] `map/TilePalette.js` — built-in tile catalog + custom tile registration (addCustom/removeCustom), refuses to override built-in ids
-- [ ] `map/MapCanvas.js` — canvas render, pan/zoom
+- [x] `map/TilePalette.js` — built-in tile catalog (5 terrain types x 3 variants + 11 road connector pieces + 2 POI markers, SVG assets under `assets/tiles/<type>/`) with `pickVariant`/`getRoadPiece` lookups, plus custom tile registration (addCustom/removeCustom), refuses to override built-in ids
+- [x] `map/MapCanvas.js` — canvas render, pan (pointer drag) + zoom (wheel, anchored at cursor); grid tiles addressed by `"x,y"` id convention (parsed via `parseCoords`); unrevealed tiles draw as flat fog rects
 - [ ] Hierarchy zoom nav (world → region → subregion → POI) + breadcrumb
 - [ ] `map/FogOfWar.js` — reveal/hide logic + tests
 - [ ] `party/PartyTracker.js` — position, movement, triggers reveal
