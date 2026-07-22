@@ -69,7 +69,7 @@ export class MapCanvas {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {TilePalette} palette
-   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number }} [options]
+   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, onTileClick?: (tile: Tile) => void }} [options]
    */
   constructor(canvas, palette, options = {}) {
     this.canvas = canvas;
@@ -78,6 +78,7 @@ export class MapCanvas {
     this.tileSize = options.tileSize ?? 48;
     this.minZoom = options.minZoom ?? 0.25;
     this.maxZoom = options.maxZoom ?? 4;
+    this.onTileClick = options.onTileClick;
 
     /** @type {MapNode | null} */
     this.node = null;
@@ -91,6 +92,7 @@ export class MapCanvas {
     this._dragging = false;
     this._lastX = 0;
     this._lastY = 0;
+    this._dragDistance = 0;
 
     this._onPointerDown = this._onPointerDown.bind(this);
     this._onPointerMove = this._onPointerMove.bind(this);
@@ -161,6 +163,7 @@ export class MapCanvas {
   /** @param {PointerEvent} event */
   _onPointerDown(event) {
     this._dragging = true;
+    this._dragDistance = 0;
     this._lastX = event.clientX;
     this._lastY = event.clientY;
   }
@@ -168,15 +171,33 @@ export class MapCanvas {
   /** @param {PointerEvent} event */
   _onPointerMove(event) {
     if (!this._dragging) return;
-    this.offsetX += event.clientX - this._lastX;
-    this.offsetY += event.clientY - this._lastY;
+    const dx = event.clientX - this._lastX;
+    const dy = event.clientY - this._lastY;
+    this.offsetX += dx;
+    this.offsetY += dy;
+    this._dragDistance += Math.abs(dx) + Math.abs(dy);
     this._lastX = event.clientX;
     this._lastY = event.clientY;
     this.render();
   }
 
-  _onPointerUp() {
+  /** @param {PointerEvent} event */
+  _onPointerUp(event) {
+    const wasClick = this._dragging && this._dragDistance < 4;
     this._dragging = false;
+    if (!wasClick || !this.onTileClick || !this.node) return;
+
+    const rect = this.canvas.getBoundingClientRect();
+    const coords = screenToTile(
+      event.clientX - rect.left,
+      event.clientY - rect.top,
+      this.tileSize,
+      this.offsetX,
+      this.offsetY,
+      this.scale,
+    );
+    const tile = this.node.tiles.find((t) => t.id === `${coords.x},${coords.y}`);
+    if (tile) this.onTileClick(tile);
   }
 
   /** @param {WheelEvent} event */

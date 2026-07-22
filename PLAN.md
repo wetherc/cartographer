@@ -83,7 +83,7 @@ tests/
 - [x] `map/TileGrid.js` — tile data structure, hierarchy (parentId chain + breadcrumb + zoom-target resolution)
 - [x] `map/TilePalette.js` — built-in tile catalog (5 terrain types x 3 variants + 11 road connector pieces + 2 POI markers, SVG assets under `assets/tiles/<type>/`) with `pickVariant`/`getRoadPiece` lookups, plus custom tile registration (addCustom/removeCustom), refuses to override built-in ids
 - [x] `map/MapCanvas.js` — canvas render, pan (pointer drag) + zoom (wheel, anchored at cursor); grid tiles addressed by `"x,y"` id convention (parsed via `parseCoords`); unrevealed tiles draw as flat fog rects
-- [ ] Hierarchy zoom nav (world → region → subregion → POI) + breadcrumb
+- [x] Hierarchy zoom nav (world → region → subregion → POI) + breadcrumb — `map/MapNavigator.js` (pure logic: zoomIn/zoomOut/goTo/getBreadcrumb over TileGrid) wired to `MapCanvas`'s new `onTileClick` option and a plain-DOM `ui/Breadcrumb.js` trail
 - [ ] `map/FogOfWar.js` — reveal/hide logic + tests
 - [ ] `party/PartyTracker.js` — position, movement, triggers reveal
 - [ ] `entities/Encounter.js` — enemy/encounter HP tracking

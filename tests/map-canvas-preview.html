@@ -7,34 +7,70 @@
     body { background: #111; color: #eee; font-family: sans-serif; padding: 1rem; }
     canvas { background: #000; border: 1px solid #444; cursor: grab; }
     p { max-width: 40rem; }
+    .breadcrumb { margin-bottom: 0.5rem; }
+    .breadcrumb__crumb { color: #eee; background: none; border: none; font: inherit; cursor: pointer; padding: 0; }
+    .breadcrumb__crumb[aria-current] { color: #8fc97a; cursor: default; }
+    .breadcrumb__separator { margin: 0 0.35rem; color: #666; }
   </style>
 </head>
 <body>
   <h1>MapCanvas preview</h1>
-  <p>8x6 grid, mix of terrain + a road strip + one unrevealed fog tile. Drag to pan, wheel to zoom.</p>
+  <p>8x6 world grid, mix of terrain + a road strip + one unrevealed fog tile.
+    Top-left tile (0,0) zooms into a region. Drag to pan, wheel to zoom, click breadcrumbs to zoom out.</p>
+  <div id="breadcrumb-container"></div>
   <canvas id="map" width="640" height="480"></canvas>
 
   <script type="module">
-    import { createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
+    import { createMapNode, createTile, setTile, TileGrid } from '../src/map/TileGrid.js';
     import { TilePalette } from '../src/map/TilePalette.js';
     import { MapCanvas } from '../src/map/MapCanvas.js';
+    import { MapNavigator } from '../src/map/MapNavigator.js';
+    import { mountBreadcrumb } from '../src/ui/Breadcrumb.js';
 
     const palette = new TilePalette();
     const rng = () => Math.random();
-    let node = createMapNode('world', 'World', null, 8, 6);
+    const grid = new TileGrid();
 
+    let world = createMapNode('world', 'World', null, 8, 6);
     for (let y = 0; y < 6; y++) {
       for (let x = 0; x < 8; x++) {
         const entry = y === 2 ? palette.getRoadPiece(x === 0 ? 'end-w' : x === 7 ? 'end-e' : 'h')
           : palette.pickVariant('grass', rng);
         const revealed = !(x === 5 && y === 4);
-        node = setTile(node, createTile(`${x},${y}`, entry.imageRef, { revealed }));
+        const overrides = x === 0 && y === 0 ? { revealed, childNodeId: 'region' } : { revealed };
+        world = setTile(world, createTile(`${x},${y}`, entry.imageRef, overrides));
       }
     }
+    grid.addNode(world);
+
+    let region = createMapNode('region', 'Northmarch Region', 'world', 4, 4);
+    for (let y = 0; y < 4; y++) {
+      for (let x = 0; x < 4; x++) {
+        const entry = palette.pickVariant('forest', rng);
+        region = setTile(region, createTile(`${x},${y}`, entry.imageRef, { revealed: true }));
+      }
+    }
+    grid.addNode(region);
+
+    const navigator = new MapNavigator(grid, 'world');
+    const breadcrumb = mountBreadcrumb(document.getElementById('breadcrumb-container'), (nodeId) => {
+      navigator.goTo(nodeId);
+      mapCanvas.setNode(navigator.getCurrentNode());
+      breadcrumb.update(navigator.getBreadcrumb());
+    });
 
     const canvas = document.getElementById('map');
-    const mapCanvas = new MapCanvas(canvas, palette, { tileSize: 48 });
-    mapCanvas.setNode(node);
+    const mapCanvas = new MapCanvas(canvas, palette, {
+      tileSize: 48,
+      onTileClick: (tile) => {
+        if (navigator.zoomIn(tile.id)) {
+          mapCanvas.setNode(navigator.getCurrentNode());
+          breadcrumb.update(navigator.getBreadcrumb());
+        }
+      },
+    });
+    mapCanvas.setNode(navigator.getCurrentNode());
+    breadcrumb.update(navigator.getBreadcrumb());
   </script>
 </body>
 </html>
