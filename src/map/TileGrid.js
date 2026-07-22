@@ -1,3 +1,5 @@
+import { collectSubtreeIds } from './WorldTree.js';
+
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').TileMetadata} TileMetadata */
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -99,6 +101,28 @@ export class TileGrid {
    */
   updateNode(node) {
     this.nodes.set(node.id, node);
+  }
+
+  /**
+   * Remove a node and its entire subtree from the registry, and clear any tile
+   * childNodeId in the remaining nodes that pointed at a removed node, so no
+   * tile is left linking to a node that no longer exists. Returns the set of
+   * removed node ids.
+   * @param {string} nodeId
+   * @returns {Set<string>}
+   */
+  removeNode(nodeId) {
+    const removed = collectSubtreeIds([...this.nodes.values()], nodeId);
+    for (const id of removed) this.nodes.delete(id);
+    for (const node of this.nodes.values()) {
+      if (node.tiles.some((t) => t.childNodeId && removed.has(t.childNodeId))) {
+        const tiles = node.tiles.map((t) =>
+          t.childNodeId && removed.has(t.childNodeId) ? { ...t, childNodeId: null } : t
+        );
+        this.nodes.set(node.id, { ...node, tiles });
+      }
+    }
+    return removed;
   }
 
   /**
