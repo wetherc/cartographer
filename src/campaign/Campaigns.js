@@ -87,15 +87,16 @@ export function buildExampleCampaign(palette) {
   const rng = () => Math.random();
   const grid = new TileGrid();
 
-  // Linked entrance blocks on the overworld. Outdoor regions get 2x2 blocks
-  // (rendered as one scaled image); the dungeon interior gets a single marker
-  // tile. Each block sits inside matching terrain so the overview hints at
-  // what's inside, and Briarwick's block carries a settlement POI marker so
-  // the scaled block art reads as a town.
+  // Linked entrance blocks on the overworld: 4x4 for the two wilderness
+  // regions (rendered as four scaled 2x2 images), 2x2 for Briarwick, and a
+  // single marker tile for the dungeon interior. Each block sits inside
+  // matching terrain so the overview hints at what's inside, and Briarwick's
+  // block carries a settlement POI marker so the scaled block art reads as a
+  // town.
   /** @type {Record<string, { nodeId: string, poi?: { tileId: string, imageId: string, poiType: import('../types/map.js').POIType } }>} */
   const links = {};
-  for (const [x, y] of [[5, 3], [6, 3], [5, 4], [6, 4]]) links[`${x},${y}`] = { nodeId: 'northmarch' };
-  for (const [x, y] of [[27, 8], [28, 8], [27, 9], [28, 9]]) links[`${x},${y}`] = { nodeId: 'graypeak' };
+  for (let y = 2; y <= 5; y++) for (let x = 4; x <= 7; x++) links[`${x},${y}`] = { nodeId: 'northmarch' };
+  for (let y = 7; y <= 10; y++) for (let x = 26; x <= 29; x++) links[`${x},${y}`] = { nodeId: 'graypeak' };
   for (const [x, y] of [[11, 23], [12, 23], [11, 24], [12, 24]]) links[`${x},${y}`] = { nodeId: 'briarwick' };
   links['12,23'].poi = { tileId: '12,23', imageId: 'settlement', poiType: 'settlement' };
   links['22,10'] = { nodeId: 'barrow', poi: { tileId: '22,10', imageId: 'dungeon', poiType: 'dungeon' } };
