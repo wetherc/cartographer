@@ -24,6 +24,9 @@ export interface Encounter {
   location: EncounterLocation | null;
   /** Active status conditions (empty on older saves). */
   conditions: Condition[];
+  /** True once the party has walked into this encounter, so the travelogue
+   * records the first meeting exactly once. Absent on older saves. */
+  noticed?: boolean;
 }
 
 /** A reusable encounter blueprint saved to the campaign's bestiary. */

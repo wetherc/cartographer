@@ -23,6 +23,7 @@ import { icon } from './icons.js';
  *   onNext: () => void,
  *   onEnd: () => void,
  *   rollInitiative?: (participant: Participant) => number,
+ *   onRolled?: (results: { name: string, value: number }[]) => void,
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -77,10 +78,16 @@ export function mountInitiativePanel(container, callbacks) {
       rollAll.className = 'btn';
       rollAll.append(icon('dice'), document.createTextNode('Roll initiative'));
       rollAll.addEventListener('click', () => {
+        /** @type {{ name: string, value: number }[]} */
+        const results = [];
         for (const participant of roster) {
           const input = inputs.get(participant.id);
-          if (input) input.value = String(rollInitiative(participant));
+          if (!input) continue;
+          const value = rollInitiative(participant);
+          input.value = String(value);
+          results.push({ name: participant.name, value });
         }
+        if (results.length > 0) callbacks.onRolled?.(results);
       });
       actions.appendChild(rollAll);
     }

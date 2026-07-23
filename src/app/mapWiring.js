@@ -208,9 +208,12 @@ export function wireMapView(app) {
       node.tiles.find((t) => t.revealed)?.id ??
         `${Math.floor(node.width / 2)},${Math.floor(node.height / 2)}`,
     );
+    // No revealed tile yet means the party has never set foot here, so this
+    // teleport is the region's discovery (checked before moveTo reveals fog).
+    const firstVisit = !node.tiles.some((t) => t.revealed);
     partyTracker.moveTo(nodeId, target);
     goToNode(nodeId);
-    app.actions.logEvent('travel', `Traveled to ${node.name}.`);
+    app.actions.logEvent('travel', firstVisit ? `Discovered ${node.name}.` : `Traveled to ${node.name}.`);
     refreshLocationPanels();
     app.actions.maybeTriggerEncounter();
   }
@@ -365,6 +368,9 @@ export function wireMapView(app) {
         const parent = navigator.getCurrentNode();
         if (navigator.zoomIn(tile.id)) {
           const child = navigator.getCurrentNode();
+          // Checked before moveTo reveals entry fog: an all-fogged child has
+          // never been visited, so stepping in now is its discovery.
+          const firstVisit = !child.tiles.some((t) => t.revealed);
           // Zooming into a region moves the party into it. Unless the party has
           // already been placed in this child before, drop them at the edge they
           // approached from and reveal fog around it, so the child doesn't render
@@ -382,7 +388,7 @@ export function wireMapView(app) {
           worldTree.update();
           // Entering a node for the first time discovers it.
           regionTree.update();
-          app.actions.logEvent('travel', `Entered ${child.name}.`);
+          app.actions.logEvent('travel', firstVisit ? `Discovered ${child.name}.` : `Entered ${child.name}.`);
         }
       } else {
         partyTracker.moveTo(navigator.getCurrentNode().id, tile.id);

@@ -21,6 +21,7 @@ import { wireStory } from './app/storyWiring.js';
 import { wireSessionControls } from './app/sessionControls.js';
 import { wireShortcuts } from './app/shortcuts.js';
 import { maybeShowOnboarding } from './app/onboarding.js';
+import { isGM } from './view/ViewRole.js';
 
 const palette = new TilePalette();
 const initial = loadInitialCampaign();
@@ -61,7 +62,11 @@ wireGenerateAction(app);
 wireParty(app); // roster, sheet, inventory, time
 wireEncounters(app); // encounter + initiative panels, bestiary
 wireStory(app); // travelogue (logEvent), NPCs, quests, handouts
-mountDiceTray(mustGetElement('dice-tray-container'));
+// Rolls live in the travelogue (the tray shows only the latest), tagged by
+// which side of the screen rolled them.
+mountDiceTray(mustGetElement('dice-tray-container'), {
+  onRoll: (text) => app.actions.logEvent('roll', `${isGM(app.state.role) ? 'The GM' : 'A player'} rolls ${text}.`),
+});
 wireSessionControls(app); // mode/role switches (applies the initial role), tabs, sidebar
 wireShortcuts(app);
 
