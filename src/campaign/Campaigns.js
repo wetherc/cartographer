@@ -1,4 +1,5 @@
 import { createMapNode, createTile, setTile, TileGrid } from '../map/TileGrid.js';
+import { generateNodeTiles } from '../map/MapGenerator.js';
 import { createCharacter, withDefaults, withHP } from '../entities/Character.js';
 import { withSpellSlots } from '../entities/SpellSlots.js';
 import {
@@ -55,8 +56,30 @@ export function buildBlankCampaign() {
   };
 }
 
+/** The example overworld is a WORLD_SIZE x WORLD_SIZE grid. */
+const WORLD_SIZE = 32;
+
 /**
- * A small example world, loadable on demand via the "Load example" button.
+ * Terrain type for an example-world cell, from hand-shaped features rather
+ * than noise so the demo map always has the same recognizable geography: a
+ * broad forest across the north, a mountain range down the east edge, a lake
+ * in the southwest, and badlands in the far southeast corner, on a grass base.
+ * @param {number} x @param {number} y
+ * @returns {string}
+ */
+function exampleTerrain(x, y) {
+  if (y <= 8 && x <= 20 && (y <= 6 || x >= 3)) return 'forest';
+  if (x >= 26 && y <= 20) return 'mountain';
+  if (((x - 6) / 4) ** 2 + ((y - 24) / 3) ** 2 <= 1) return 'water';
+  if (x >= 25 && y >= 27) return 'desert';
+  return 'grass';
+}
+
+/**
+ * A small example world, loadable on demand via the "Load example" button:
+ * a 32x32 overworld with a crossroads, three outdoor subregions (the forested
+ * Northmarch, the Graypeak Highlands, and the town of Briarwick) plus a
+ * dungeon interior, each entered through a linked block or marker tile.
  * @param {TilePalette} palette
  * @returns {Campaign}
  */
@@ -64,56 +87,92 @@ export function buildExampleCampaign(palette) {
   const rng = () => Math.random();
   const grid = new TileGrid();
 
-  let world = createMapNode('world', 'World', null, 8, 6);
-  for (let y = 0; y < 6; y++) {
-    for (let x = 0; x < 8; x++) {
-      // The 2x2 block linking to the forested Northmarch region shows forest
-      // terrain on the world map too, so the overview hints at what's inside.
-      const inRegionBlock = x < 2 && y < 2;
-      if (y === 2) {
-        // The road runs as an overlay over a grass base, so it reads as a path
-        // laid on the terrain rather than replacing it. end-* names the tile's
-        // open edge: the westmost tile connects to the road on its east, so it
-        // takes end-e (and vice versa at x=7).
-        const grass = palette.pickVariant('grass', rng);
-        const road = palette.getRoadPiece(x === 0 ? 'end-e' : x === 7 ? 'end-w' : 'h');
+  // Linked entrance blocks on the overworld. Outdoor regions get 2x2 blocks
+  // (rendered as one scaled image); the dungeon interior gets a single marker
+  // tile. Each block sits inside matching terrain so the overview hints at
+  // what's inside, and Briarwick's block carries a settlement POI marker so
+  // the scaled block art reads as a town.
+  /** @type {Record<string, { nodeId: string, poi?: { tileId: string, imageId: string, poiType: import('../types/map.js').POIType } }>} */
+  const links = {};
+  for (const [x, y] of [[5, 3], [6, 3], [5, 4], [6, 4]]) links[`${x},${y}`] = { nodeId: 'northmarch' };
+  for (const [x, y] of [[27, 8], [28, 8], [27, 9], [28, 9]]) links[`${x},${y}`] = { nodeId: 'graypeak' };
+  for (const [x, y] of [[11, 23], [12, 23], [11, 24], [12, 24]]) links[`${x},${y}`] = { nodeId: 'briarwick' };
+  links['12,23'].poi = { tileId: '12,23', imageId: 'settlement', poiType: 'settlement' };
+  links['22,10'] = { nodeId: 'barrow', poi: { tileId: '22,10', imageId: 'dungeon', poiType: 'dungeon' } };
+
+  let world = createMapNode('world', 'World', null, WORLD_SIZE, WORLD_SIZE);
+  const last = WORLD_SIZE - 1;
+  for (let y = 0; y < WORLD_SIZE; y++) {
+    for (let x = 0; x < WORLD_SIZE; x++) {
+      const id = `${x},${y}`;
+      const link = links[id];
+
+      // Roads run as overlays over the terrain base, so they read as paths
+      // laid on the land rather than replacing it. end-* names the tile's
+      // open edge: the westmost tile connects to the road on its east, so it
+      // takes end-e (and vice versa at the far edge). An east-west road
+      // crosses the map at y=16; a branch at x=12 tees off south to end just
+      // above Briarwick's block.
+      const onHighway = y === 16;
+      const onBranch = x === 12 && y > 16 && y <= 22;
+      if (!link && (onHighway || onBranch)) {
+        const roadKind = onHighway
+          ? x === 0 ? 'end-e' : x === last ? 'end-w' : x === 12 ? 'tee-s' : 'h'
+          : y === 22 ? 'end-n' : 'v';
+        const road = palette.getRoadPiece(roadKind);
         if (!road) continue;
-        world = setTile(world, createTile(`${x},${y}`, grass.imageRef, { overlayRef: road.imageRef }));
-      } else {
-        const entry = palette.pickVariant(inRegionBlock ? 'forest' : 'grass', rng);
-        world = setTile(
-          world,
-          createTile(`${x},${y}`, entry.imageRef, inRegionBlock ? { childNodeId: 'region' } : {}),
-        );
+        const base = palette.pickVariant(exampleTerrain(x, y), rng);
+        world = setTile(world, createTile(id, base.imageRef, { overlayRef: road.imageRef }));
+        continue;
       }
+
+      if (link?.poi) {
+        const marker = palette.get(link.poi.imageId);
+        if (!marker) continue;
+        const tile = createTile(id, marker.imageRef, { childNodeId: link.nodeId });
+        tile.metadata = { ...tile.metadata, poiType: link.poi.poiType, discoverable: true };
+        world = setTile(world, tile);
+        continue;
+      }
+
+      const terrain = link ? { northmarch: 'forest', graypeak: 'mountain', briarwick: 'grass' }[link.nodeId] : exampleTerrain(x, y);
+      const entry = palette.pickVariant(terrain ?? 'grass', rng);
+      world = setTile(world, createTile(id, entry.imageRef, link ? { childNodeId: link.nodeId } : {}));
     }
   }
   grid.addNode(world);
 
-  let region = createMapNode('region', 'Northmarch Region', 'world', 4, 4);
-  for (let y = 0; y < 4; y++) {
-    for (let x = 0; x < 4; x++) {
-      region = setTile(region, createTile(`${x},${y}`, palette.pickVariant('forest', rng).imageRef));
-    }
+  // Subregion maps come from the same generators the Build tab's "Generate"
+  // action uses, so the demo shows off representative generated content: two
+  // wilderness regions, a road-and-buildings town, and a dungeon interior.
+  const regions = [
+    { id: 'northmarch', name: 'Northmarch Region', kind: /** @type {const} */ ('region'), archetype: 'wilderness' },
+    { id: 'graypeak', name: 'Graypeak Highlands', kind: /** @type {const} */ ('region'), archetype: 'wilderness' },
+    { id: 'briarwick', name: 'Briarwick', kind: /** @type {const} */ ('region'), archetype: 'town' },
+    { id: 'barrow', name: 'Barrow of the Old King', kind: /** @type {const} */ ('interior'), archetype: 'dungeon' },
+  ];
+  for (const { id, name, kind, archetype } of regions) {
+    const gen = generateNodeTiles(palette, { kind, archetype, size: 'medium' }, rng);
+    const node = createMapNode(id, name, 'world', gen.width, gen.height, { kind });
+    grid.addNode({ ...node, tiles: gen.tiles });
   }
-  grid.addNode(region);
 
   let hero = withHP(createCharacter('hero', 'Hero', { STR: 14, DEX: 12, CON: 13 }, 'Human'), 12);
   hero = withSpellSlots(hero);
 
   return {
     grid,
-    party: { nodeId: 'world', tileId: '3,3' },
+    party: { nodeId: 'world', tileId: '16,16' },
     characters: [hero],
     encounters: [
-      createEncounter('goblin', 'Goblin', 7, defaultEnemyStats(1, 'mob'), { nodeId: 'world', tileId: '5,2' }),
+      createEncounter('goblin', 'Goblin', 7, defaultEnemyStats(1, 'mob'), { nodeId: 'world', tileId: '18,15' }),
     ],
     travelog: [],
     quests: [
       {
         id: 'reach-northmarch',
         title: 'Reach the Northmarch',
-        notes: 'Travel north through the forest to the region beyond.',
+        notes: 'Follow the north road, then strike northwest through the forest to the Northmarch.',
         status: 'active',
       },
     ],
@@ -122,11 +181,11 @@ export function buildExampleCampaign(palette) {
       {
         id: 'innkeeper-bram',
         name: 'Bram',
-        role: 'Innkeeper, the Waystation',
+        role: 'Innkeeper, the Waystation at Briarwick',
         disposition: 'friendly',
         notes: 'Knows the roads north and gossips freely for a warm meal.',
         stats: { STR: 10, DEX: 10, CON: 10, INT: 12, WIS: 14, CHA: 13 },
-        location: { nodeId: 'world', tileId: '3,2' },
+        location: { nodeId: 'world', tileId: '12,19' },
       },
     ],
     handouts: [

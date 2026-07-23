@@ -15,10 +15,12 @@ Three ways to begin:
 
 - **New** (header) — a confirmed reset back to the blank campaign. This replaces
   the current campaign and its save, so you're asked to confirm first.
-- **Load example** — replaces the current campaign with a small demo world
-  (a world map plus one region, a sample character, an encounter, an NPC, and a
-  handout). Useful for seeing how a filled-in campaign looks before building your
-  own. It also overwrites the current campaign, so it confirms first.
+- **Load example** — replaces the current campaign with a demo world: a 32x32
+  overworld with a crossroads and hand-shaped terrain, three outdoor subregions
+  (two wilderness regions and the town of Briarwick) plus a dungeon interior,
+  along with a sample character, an encounter, an NPC, and a handout. Useful for
+  seeing how a filled-in campaign looks before building your own. It also
+  overwrites the current campaign, so it confirms first.
 - **Import** — load a campaign from a `.json` file you exported earlier.
 
 Nothing is saved automatically. Click **Save** to write the campaign to the
