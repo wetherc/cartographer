@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { TilePalette } from '../src/map/TilePalette.js';
+import { overlayList } from '../src/map/TileGrid.js';
 import {
   GENERATOR_SIZES,
   ARCHETYPES,
@@ -66,10 +67,11 @@ test('wilderness places a river, coastlines around water, and landmark POIs', ()
   let sawCoast = false;
   for (const seed of [1, 2, 3, 4, 5]) {
     const gen = generateNodeTiles(palette, { kind: 'region', archetype: 'wilderness', size: 'medium' }, mulberry32(seed));
-    assert.ok(gen.tiles.some((t) => t.overlayRef?.includes('/river/')), `seed ${seed}: has a river`);
+    assert.ok(gen.tiles.some((t) => overlayList(t).some((r) => r.includes('/river/'))), `seed ${seed}: has a river`);
     assert.ok(gen.tiles.some((t) => t.metadata.poiType === 'landmark'), `seed ${seed}: has a landmark`);
     // Coast overlays only appear next to water; every land tile beside water
-    // must carry one (the smoothing pass guarantees a piece exists for it).
+    // must carry one (the smoothing pass guarantees a piece exists for it),
+    // stacked under the river channel where the two meet.
     const n = gen.width;
     const isWater = new Set(gen.tiles.filter((t) => t.imageRef.includes('/water/')).map((t) => t.id));
     for (const t of gen.tiles) {
@@ -77,14 +79,30 @@ test('wilderness places a river, coastlines around water, and landmark POIs', ()
       const [x, y] = t.id.split(',').map(Number);
       const orthWater = [[0, -1], [1, 0], [0, 1], [-1, 0]]
         .some(([dx, dy]) => isWater.has(`${x + dx},${y + dy}`));
-      if (orthWater && !t.overlayRef?.includes('/river/')) {
+      if (orthWater) {
         sawCoast = true;
-        assert.ok(t.overlayRef?.includes('/coast/'), `seed ${seed}: shore tile ${t.id} has a coast overlay`);
+        assert.ok(overlayList(t).some((r) => r.includes('/coast/')), `seed ${seed}: shore tile ${t.id} has a coast overlay`);
       }
     }
     assert.ok(n * n === gen.tiles.length, 'wilderness fills the grid');
   }
   assert.ok(sawCoast, 'at least one seed produced a shoreline');
+});
+
+test('a wilderness river draining into a lake stacks its channel over the shoreline', () => {
+  // Scan seeds until a generation's river ends beside water; deterministic
+  // PRNG makes the found seed stable.
+  let mouth = null;
+  for (let seed = 1; seed <= 60 && !mouth; seed++) {
+    const gen = generateNodeTiles(palette, { kind: 'region', archetype: 'wilderness', size: 'medium' }, mulberry32(seed));
+    mouth = gen.tiles.find((t) => {
+      const refs = overlayList(t);
+      return refs.some((r) => r.includes('/river/')) && refs.some((r) => r.includes('/coast/'));
+    }) ?? null;
+  }
+  assert.ok(mouth, 'some seed produced a river mouth');
+  const refs = overlayList(mouth);
+  assert.ok(refs[0].includes('/coast/') && refs[1].includes('/river/'), 'shoreline draws under the channel');
 });
 
 test('dungeon floors are fully enclosed by placed tiles, with stairs up', () => {

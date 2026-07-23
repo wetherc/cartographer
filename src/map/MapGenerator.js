@@ -107,13 +107,15 @@ function generateWilderness(palette, size, rng) {
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const id = `${x},${y}`;
-      const overlayKind = river.get(id)
-        ? palette.getRiverPiece(/** @type {string} */ (river.get(id)))
-        : coast.get(id)
-          ? palette.getCoastPiece(/** @type {string} */ (coast.get(id)))
-          : null;
+      // Shoreline draws under the channel, so a river drains through the
+      // beach into the water instead of one overlay displacing the other.
+      const refs = [];
+      const coastPiece = coast.get(id) && palette.getCoastPiece(/** @type {string} */ (coast.get(id)));
+      const riverPiece = river.get(id) && palette.getRiverPiece(/** @type {string} */ (river.get(id)));
+      if (coastPiece) refs.push(coastPiece.imageRef);
+      if (riverPiece) refs.push(riverPiece.imageRef);
       tiles.push(createTile(id, terrainRef(palette, cells[y * size + x], rng),
-        overlayKind ? { overlayRef: overlayKind.imageRef } : {}));
+        refs.length ? { overlayRef: refs.length > 1 ? refs : refs[0] } : {}));
     }
   }
   // Landmark markers on plain grass away from the border, so generated wilds

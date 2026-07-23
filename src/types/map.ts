@@ -14,9 +14,11 @@ export interface TileMetadata {
 export interface Tile {
   id: string;
   imageRef: string;
-  /** image drawn on top of imageRef (e.g. a road/path), so path pieces layer
-   * over the terrain beneath instead of replacing it; null if none */
-  overlayRef: string | null;
+  /** image(s) drawn on top of imageRef (e.g. a road/path), so path pieces
+   * layer over the terrain beneath instead of replacing it; null if none.
+   * An array draws in order (first at the bottom), letting overlays stack —
+   * e.g. a river channel over the shoreline where it drains into a lake. */
+  overlayRef: string | string[] | null;
   metadata: TileMetadata;
   revealed: boolean;
   /** id of the MapNode this tile zooms into, if any */
