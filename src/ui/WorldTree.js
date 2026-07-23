@@ -10,8 +10,10 @@ import { buildWorldTree } from '../map/WorldTree.js';
  * the Build-mode counterpart to the Play-mode breadcrumb, over the same
  * TileGrid data. Selecting a node invokes onSelect; if onAddChild/onEdit/
  * onDelete are supplied, each row also gets an add-child, edit-settings, and
- * delete affordance (used in Build mode). Call update() after any structural
- * change to the tree.
+ * delete affordance (used in Build mode). With `collapsible`, every row with
+ * children gets an expand/collapse chevron; collapse state lives in the mount
+ * and survives update() calls. Call update() after any structural change to
+ * the tree.
  * @param {HTMLElement} container
  * @param {{
  *   getNodes: () => MapNode[],
@@ -20,6 +22,7 @@ import { buildWorldTree } from '../map/WorldTree.js';
  *   onAddChild?: (parentId: string) => void,
  *   onEdit?: (nodeId: string) => void,
  *   onDelete?: (nodeId: string) => void,
+ *   collapsible?: boolean,
  * }} opts
  * @returns {{ update: () => void }}
  */
@@ -29,6 +32,9 @@ export function mountWorldTree(container, opts) {
   root.setAttribute('aria-label', 'World hierarchy');
   container.appendChild(root);
 
+  /** Node ids whose children are currently hidden. @type {Set<string>} */
+  const collapsed = new Set();
+
   /** @param {WorldTreeNode} treeNode @returns {HTMLLIElement} */
   function renderNode(treeNode) {
     const li = document.createElement('li');
@@ -36,6 +42,34 @@ export function mountWorldTree(container, opts) {
 
     const row = document.createElement('div');
     row.className = 'world-tree__row';
+
+    // Collapsible trees give every row a fixed-width toggle slot so labels
+    // line up; only rows with children get a live chevron in that slot.
+    const isCollapsed = collapsed.has(treeNode.node.id);
+    if (opts.collapsible) {
+      if (treeNode.children.length) {
+        const toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'world-tree__toggle';
+        if (!isCollapsed) toggle.classList.add('world-tree__toggle--open');
+        toggle.setAttribute('aria-expanded', String(!isCollapsed));
+        toggle.setAttribute(
+          'aria-label',
+          `${isCollapsed ? 'Expand' : 'Collapse'} ${treeNode.node.name}`,
+        );
+        toggle.appendChild(icon('chevron', { size: 14 }));
+        toggle.addEventListener('click', () => {
+          if (isCollapsed) collapsed.delete(treeNode.node.id);
+          else collapsed.add(treeNode.node.id);
+          update();
+        });
+        row.appendChild(toggle);
+      } else {
+        const spacer = document.createElement('span');
+        spacer.className = 'world-tree__toggle world-tree__toggle--leaf';
+        row.appendChild(spacer);
+      }
+    }
 
     const select = document.createElement('button');
     select.type = 'button';
@@ -80,7 +114,7 @@ export function mountWorldTree(container, opts) {
 
     li.appendChild(row);
 
-    if (treeNode.children.length) {
+    if (treeNode.children.length && !(opts.collapsible && isCollapsed)) {
       const childList = document.createElement('ul');
       childList.className = 'world-tree__children';
       for (const child of treeNode.children) childList.appendChild(renderNode(child));
