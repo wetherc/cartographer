@@ -64,6 +64,15 @@ import {
   readStateFromFile,
   onExternalSave,
 } from './storage/SaveManager.js';
+import {
+  GM_LOCK_KEY,
+  GM_LOCK_HEARTBEAT,
+  claimLock,
+  isHeldByOther,
+  loadLock,
+  saveLock,
+  releaseLock,
+} from './storage/GMLock.js';
 
 const palette = new TilePalette();
 
@@ -1193,10 +1202,65 @@ function applyRole() {
   tileTooltip.hide();
 }
 
-mountRoleSwitch(mustGetElement('role-switch-container'), currentRole, (role) => {
+// Only one tab at a time may hold the GM view: the GM tab keeps a heartbeat
+// lock in localStorage, and any other tab that opens as (or switches to) GM
+// while it's live is forced into the Player view instead. The lock expires on
+// its own if the GM tab crashes, and is released on a clean close or a switch
+// to Player.
+const gmTabId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+/** @type {ReturnType<typeof setInterval> | null} */
+let gmHeartbeat = null;
+
+function tryClaimGM() {
+  const next = claimLock(loadLock(), gmTabId, Date.now());
+  if (!next) return false;
+  saveLock(next);
+  if (gmHeartbeat === null) {
+    gmHeartbeat = setInterval(() => saveLock({ id: gmTabId, at: Date.now() }), GM_LOCK_HEARTBEAT);
+  }
+  return true;
+}
+
+function dropGMClaim() {
+  if (gmHeartbeat !== null) clearInterval(gmHeartbeat);
+  gmHeartbeat = null;
+  releaseLock(gmTabId);
+}
+
+/** @type {{ getRole: () => import('./types/view.js').ViewRole, setRole: (role: import('./types/view.js').ViewRole) => void }} */
+let roleSwitch;
+roleSwitch = mountRoleSwitch(mustGetElement('role-switch-container'), currentRole, (role) => {
+  if (role === 'gm' && !tryClaimGM()) {
+    toasts.show('Another tab is running the GM view; this one stays on the Player view.');
+    role = 'player';
+    // During the initial mount the switch is still being constructed; sync its
+    // buttons to the forced role once it exists. setRole re-enters this
+    // callback, which settles immediately on the player branch.
+    queueMicrotask(() => roleSwitch.setRole('player'));
+  }
+  if (role === 'player') dropGMClaim();
   currentRole = role;
   sessionStorage.setItem('campaign-builder:role', role);
   applyRole();
+});
+
+// Free the lock when the GM tab goes away so a follower can take over without
+// waiting out the TTL. pagehide also covers tab discard and navigation.
+window.addEventListener('pagehide', () => {
+  if (currentRole === 'gm') dropGMClaim();
+});
+
+// Belt and braces: if another tab somehow claims the lock while this tab is
+// GM (e.g. this tab was frozen past the TTL and its lock was taken over),
+// yield to it rather than run two GM views.
+window.addEventListener('storage', (event) => {
+  if (event.key !== GM_LOCK_KEY || currentRole !== 'gm') return;
+  if (isHeldByOther(loadLock(), gmTabId, Date.now())) {
+    if (gmHeartbeat !== null) clearInterval(gmHeartbeat);
+    gmHeartbeat = null;
+    toasts.show('Another tab took over the GM view; this one switched to the Player view.');
+    roleSwitch.setRole('player');
+  }
 });
 
 // Group the Play sidebar panels into Session / Story / Log tabs so the story

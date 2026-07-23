@@ -46,7 +46,11 @@ Two independent switches in the header change what you see:
   authoring and campaign-management controls.
 
 Role is **per browser tab**, so you can open a second tab, set it to Player, and
-put it on a display facing the table. When you click **Save** in your GM tab, any
+put it on a display facing the table. Only one tab at a time can hold the GM
+view: while a GM tab is open, every other tab of the same origin opens as (and
+is kept in) the Player view. Closing the GM tab frees the role for another tab
+to claim; if the GM tab crashes instead of closing, the claim expires on its
+own after a few seconds. When you click **Save** in your GM tab, any
 other tab of the same origin reloads to match — a minimal way to drive a
 player-facing screen from your laptop with no server. (The two tabs share one
 campaign; the role is the only thing that differs between them.)
