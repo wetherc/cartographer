@@ -126,22 +126,22 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   }
   root.appendChild(scaleRow);
 
-  // Swatches, grouped into collapsible sections so terrain, roads, buildings,
-  // and interior pieces aren't commingled in one grid. Terrain starts open
-  // (the most common brush); the rest start collapsed.
+  // Swatches, grouped into collapsible sections so terrain, paths (roads and
+  // rivers), buildings, and interior pieces aren't commingled in one grid.
+  // Terrain starts open (the most common brush); the rest start collapsed.
   const TERRAIN_TYPES = new Set([
     'grass', 'forest', 'mountain', 'water', 'desert',
-    'swamp', 'snow', 'hills', 'farmland', 'custom',
+    'swamp', 'snow', 'hills', 'farmland', 'coast', 'custom',
   ]);
   /** @param {PaletteEntry} entry */
   const sectionFor = (entry) =>
-    TERRAIN_TYPES.has(entry.type) ? 'Terrain' : entry.type === 'road' ? 'Roads' : entry.type === 'interior' ? 'Interior' : 'Buildings';
+    TERRAIN_TYPES.has(entry.type) ? 'Terrain' : entry.type === 'road' || entry.type === 'river' ? 'Paths' : entry.type === 'interior' ? 'Interior' : 'Buildings';
 
   const sectionsEl = document.createElement('div');
   sectionsEl.className = 'palette__sections';
   /** @type {Map<string, { wrap: HTMLElement, grid: HTMLElement, swatches: HTMLElement[] }>} */
   const sections = new Map();
-  for (const label of ['Terrain', 'Roads', 'Buildings', 'Interior']) {
+  for (const label of ['Terrain', 'Paths', 'Buildings', 'Interior']) {
     const wrap = document.createElement('div');
     wrap.className = 'palette__section';
 

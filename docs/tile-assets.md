@@ -1,6 +1,6 @@
 # Tile assets
 
-Built-in tile art lives under `assets/tiles/<type>/`, one subfolder per tile type (`grass/`, `forest/`, `mountain/`, `water/`, `desert/`, `swamp/`, `snow/`, `hills/`, `farmland/`, `road/`, `interior/`, plus one folder per POI marker such as `settlement/`, `castle/`, `tavern/`). `TilePalette` (`src/map/TilePalette.js`) is the single source of truth for the catalog and the paths it expects — see `VARIANT_COUNTS`, `ROAD_KINDS`, `MARKER_TYPES`, and `INTERIOR_KINDS` there before adding or renaming files.
+Built-in tile art lives under `assets/tiles/<type>/`, one subfolder per tile type (`grass/`, `forest/`, `mountain/`, `water/`, `desert/`, `swamp/`, `snow/`, `hills/`, `farmland/`, `road/`, `river/`, `coast/`, `interior/`, plus one folder per POI marker such as `settlement/`, `castle/`, `tavern/`). `TilePalette` (`src/map/TilePalette.js`) is the single source of truth for the catalog and the paths it expects — see `VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`, `MARKER_TYPES`, and `INTERIOR_KINDS` there before adding or renaming files.
 
 ## Terrain variants
 
@@ -18,6 +18,14 @@ Road tiles are not random variants — each is a distinct connector shape, looke
 
 - The same background fill as `grass` (roads are grass-adjacent terrain, not a separate background color) — a mismatch here shows up as a visible seam where road tiles meet grass tiles.
 - The same path stroke width and centerline position, so a straight piece's path lines up with a corner or cross piece's path at the shared edge.
+
+## River connector pieces
+
+Rivers follow the road pattern exactly — the same fifteen connector kinds looked up via `palette.getRiverPiece(kind)`, painted as transparent overlays (`overlayRef`) so a channel can cross grass, sand, or snow. Every piece shares one cross-section centered on the tile: a `#6b5a3e` muddy bank stroke 22 wide, a `#33719f` water stroke 18 wide (the water terrain's base color), and two `#7fb2d9` flow lines at 4 units either side of the centerline, so any piece joins any other at a shared edge. Corner flow lines follow parallel arcs (the inner line at x/y 36 exits at 28 and vice versa, matching the straights' 28/36 offsets). Two extra kinds, `bridge-h` and `bridge-v`, carry a road across the channel: `bridge-h` is an east-west road (standard road cross-section at the tile edges) over a north-south river, on a plank deck with rails; `bridge-v` is the reverse.
+
+## Coast transition pieces
+
+`coast/` holds the four straight shoreline tiles (`coast-n/s/e/w`, via `palette.getCoastPiece(kind)`), full tiles rather than overlays: the named edge's half is water in the water terrain's base `#33719f`, the other half is standard grass, with a wavy `#c2a36c` sand strand and a `#8ac2e6` foam line between. The waterline and the sand/grass boundary cross the two perpendicular tile edges at fixed offsets (28 and 36 units from the water edge) on periodic curves, so coast tiles of the same orientation abut each other seamlessly along a shoreline; the water half's edge matches water tiles and the grass half's edge matches grass. Corner pieces don't exist yet — a shoreline that turns still shows a hard seam at the turn.
 
 ## POI markers
 

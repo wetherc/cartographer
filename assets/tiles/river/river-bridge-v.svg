@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- East-west river channel, flow lines broken under the deck. -->
+  <path d="M0 32 L64 32" stroke="#6b5a3e" stroke-width="22" fill="none"/>
+  <path d="M0 32 L64 32" stroke="#33719f" stroke-width="18" fill="none"/>
+  <g stroke="#7fb2d9" stroke-width="1.5" fill="none">
+    <path d="M0 28 L18 28 M46 28 L64 28"/><path d="M0 36 L18 36 M46 36 L64 36"/>
+  </g>
+  <g fill="#8ac2e6"><circle cx="10" cy="26" r="0.9"/><circle cx="56" cy="38" r="0.9"/></g>
+  <!-- North-south road approaches meeting the deck. -->
+  <path d="M32 0 L32 19 M32 45 L32 64" stroke="#7c6448" stroke-width="20" fill="none"/>
+  <path d="M32 0 L32 19 M32 45 L32 64" stroke="#bb9c70" stroke-width="16" fill="none"/>
+  <g stroke="#9c8158" stroke-width="1.5" fill="none"><path d="M27 0 L27 19 M27 45 L27 64"/><path d="M37 0 L37 19 M37 45 L37 64"/></g>
+  <!-- Deck shadow on the water, then the plank deck with rails and posts. -->
+  <path d="M44 18 L44 46" stroke="#22516f" stroke-width="2" opacity="0.6"/>
+  <rect x="21.5" y="18" width="21" height="28" fill="#8a6f4a"/>
+  <path d="M21.5 22 L42.5 22 M21.5 26 L42.5 26 M21.5 30 L42.5 30 M21.5 34 L42.5 34 M21.5 38 L42.5 38 M21.5 42 L42.5 42" stroke="#6f583a" stroke-width="0.7" fill="none"/>
+  <rect x="19.5" y="17" width="2.4" height="30" fill="#5f4529"/>
+  <rect x="42.1" y="17" width="2.4" height="30" fill="#5f4529"/>
+  <g fill="#4a3a26">
+    <rect x="18.8" y="16.5" width="3.6" height="2.4"/><rect x="18.8" y="45.1" width="3.6" height="2.4"/>
+    <rect x="41.6" y="16.5" width="3.6" height="2.4"/><rect x="41.6" y="45.1" width="3.6" height="2.4"/>
+  </g>
+</svg>

@@ -21,6 +21,22 @@ test('TilePalette ships with built-in road connector pieces', () => {
   assert.equal(palette.listVariants('road').length, 15);
 });
 
+test('TilePalette ships with river connector and bridge pieces', () => {
+  const palette = new TilePalette();
+  assert.equal(palette.getRiverPiece('h').imageRef, 'assets/tiles/river/river-h.svg');
+  assert.equal(palette.getRiverPiece('corner-ne').imageRef, 'assets/tiles/river/river-corner-ne.svg');
+  assert.equal(palette.getRiverPiece('bridge-h').imageRef, 'assets/tiles/river/river-bridge-h.svg');
+  assert.equal(palette.getRiverPiece('bridge-v').type, 'river');
+  assert.equal(palette.listVariants('river').length, 17);
+});
+
+test('TilePalette ships with coast transition pieces', () => {
+  const palette = new TilePalette();
+  assert.equal(palette.getCoastPiece('n').imageRef, 'assets/tiles/coast/coast-n.svg');
+  assert.equal(palette.getCoastPiece('w').id, 'coast-w');
+  assert.equal(palette.listVariants('coast').length, 4);
+});
+
 test('TilePalette ships with single-image POI markers', () => {
   const palette = new TilePalette();
   assert.equal(palette.get('settlement').imageRef, 'assets/tiles/settlement/settlement.svg');
