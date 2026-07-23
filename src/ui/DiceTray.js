@@ -1,4 +1,4 @@
-import { DIE_TYPES, roll, emptySelection } from '../dice/DiceRoller.js';
+import { DIE_TYPES, roll, emptySelection, formatResult } from '../dice/DiceRoller.js';
 import { wireDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
 
@@ -128,14 +128,4 @@ export function mountDiceTray(container, opts = {}) {
   container.appendChild(root);
 
   return { getSelection: () => selection };
-}
-
-/**
- * @param {import('../types/dice.js').DiceResult} result
- * @returns {string}
- */
-function formatResult(result) {
-  const parts = result.results.map((r) => `${r.die}[${r.rolls.join(',')}]=${r.subtotal}`);
-  if (result.modifier !== 0) parts.push(`modifier=${result.modifier}`);
-  return `${parts.join(' + ')} -> total: ${result.total}`;
 }

@@ -236,6 +236,11 @@ a round counter advances. On each new round, timed conditions tick down and
 expire on their own. Walking off the tile (or defeating the last encounter on
 it) ends the encounter and hides the panel.
 
+While a foe holds the turn, its highlighted row shows a dice button (GM view
+only): set up the roll in the dice tray as usual, then click it to roll as that
+enemy — the result lands in the travelogue under the enemy's name, and in a
+toast, without disturbing the tray's own readout.
+
 ### Characters, HP, and resources
 
 Build the party in the **Party** roster (create / select / delete). Selecting a

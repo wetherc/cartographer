@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { roll, emptySelection, DIE_SIDES } from '../src/dice/DiceRoller.js';
+import { roll, emptySelection, formatResult, DIE_SIDES } from '../src/dice/DiceRoller.js';
 
 test('rolls correct count of dice per die type', () => {
   const selection = emptySelection();
@@ -46,6 +46,17 @@ test('ignores zero-count die types', () => {
   const result = roll(selection, () => 0);
   assert.equal(result.results.length, 1);
   assert.equal(result.results[0].die, 'd8');
+});
+
+test('formatResult lists each die group, the nonzero modifier, and the total', () => {
+  const selection = emptySelection();
+  selection.counts.d6 = 2;
+  selection.modifier = 3;
+  const result = roll(selection, () => 0.5);
+  assert.equal(formatResult(result), 'd6[4,4]=8 + modifier=3 -> total: 11');
+
+  selection.modifier = 0;
+  assert.equal(formatResult(roll(selection, () => 0.5)), 'd6[4,4]=8 -> total: 8');
 });
 
 test('emptySelection rolls to just the modifier', () => {

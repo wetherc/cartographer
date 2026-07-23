@@ -17,6 +17,7 @@ import type { NPC } from './npc.js';
 import type { Handout } from './handout.js';
 import type { ViewRole } from './view.js';
 import type { MapNode } from './map.js';
+import type { DiceSelection } from './dice.js';
 import type { TilePalette } from '../map/TilePalette.js';
 import type { TileGrid } from '../map/TileGrid.js';
 import type { MapNavigator } from '../map/MapNavigator.js';
@@ -83,6 +84,9 @@ export interface AppActions {
   onRoleChanged(role: ViewRole): void;
   // sessionControls
   setMode(mode: AppMode): void;
+  // main.js: the dice tray's live selection, for rolls made outside the tray
+  // (e.g. the GM rolling as the active enemy from the initiative panel).
+  getDiceSelection(): DiceSelection;
 }
 
 export interface AppContext {
