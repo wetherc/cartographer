@@ -89,6 +89,39 @@ test('painting terrain under an overlay-only tile fills the base, keeps the path
   assert.equal(tile.overlayRef, 'road-h.svg');
 });
 
+test('overlay families stack in draw order, whichever is painted first', () => {
+  const coast = 'assets/tiles/coast/coast-n.svg';
+  const river = 'assets/tiles/river/river-v.svg';
+  const road = 'assets/tiles/road/road-h.svg';
+  let node = paintTile(node2x2(), '0,0', coast, true);
+  node = paintTile(node, '0,0', river, true);
+  assert.deepEqual(getTile(node, '0,0').overlayRef, [coast, river]);
+  // Reversed painting order lands in the same canonical stack.
+  let rev = paintTile(node2x2(), '0,0', river, true);
+  rev = paintTile(rev, '0,0', coast, true);
+  assert.deepEqual(getTile(rev, '0,0').overlayRef, [coast, river]);
+  // Roads draw above both.
+  node = paintTile(node, '0,0', road, true);
+  assert.deepEqual(getTile(node, '0,0').overlayRef, [coast, river, road]);
+});
+
+test('repainting within an overlay family swaps that piece, keeping the rest', () => {
+  const coast = 'assets/tiles/coast/coast-n.svg';
+  const riverV = 'assets/tiles/river/river-v.svg';
+  const riverH = 'assets/tiles/river/river-h.svg';
+  let node = paintTile(node2x2(), '0,0', coast, true);
+  node = paintTile(node, '0,0', riverV, true);
+  node = paintTile(node, '0,0', riverH, true);
+  assert.deepEqual(getTile(node, '0,0').overlayRef, [coast, riverH]);
+});
+
+test('a custom overlay image (no family) replaces the whole stack', () => {
+  let node = paintTile(node2x2(), '0,0', 'assets/tiles/coast/coast-n.svg', true);
+  node = paintTile(node, '0,0', 'assets/tiles/river/river-v.svg', true);
+  node = paintTile(node, '0,0', 'data:image/svg+xml;base64,abc', true);
+  assert.equal(getTile(node, '0,0').overlayRef, 'data:image/svg+xml;base64,abc');
+});
+
 test('paintTile overlay is a no-op over a POI-marker tile', () => {
   let node = node2x2();
   node = setTile(
