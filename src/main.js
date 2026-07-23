@@ -29,6 +29,8 @@ import { mountTimePanel } from './ui/TimePanel.js';
 import { createParticipant, startCombat, advanceTurn } from './combat/Initiative.js';
 import { mountInitiativePanel } from './ui/InitiativePanel.js';
 import { tickConditions } from './entities/Conditions.js';
+import { createNPC, npcsAt, DISPOSITIONS } from './entities/NPC.js';
+import { mountNPCPanel } from './ui/NPCPanel.js';
 import { createEncounter, encountersAt, isDefeated } from './entities/Encounter.js';
 import { slugId, replaceById, removeById } from './entities/Roster.js';
 import { mountCharacterRoster } from './ui/CharacterRoster.js';
@@ -188,6 +190,7 @@ async function teleportToNode(nodeId) {
   logEvent('travel', `Traveled to ${node.name}.`);
   encounterPanel.update();
   initiativePanel.update();
+  npcPanel.update();
 }
 
 /**
@@ -330,6 +333,7 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
     // needs re-filtering. (Mounted later in this file; clicks only happen after.)
     encounterPanel.update();
     initiativePanel.update();
+    npcPanel.update();
   },
 });
 
@@ -636,6 +640,57 @@ const initiativePanel = mountInitiativePanel(mustGetElement('initiative-containe
   onEnd: () => {
     combat = null;
   },
+});
+
+const dispositionOptions = DISPOSITIONS.map((d) => ({ value: d, label: d[0].toUpperCase() + d.slice(1) }));
+
+const npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
+  getNPCs: () => npcsAt(npcs, partyTracker.getPosition()),
+  onDelete: (id) => {
+    npcs = removeById(npcs, id);
+  },
+  onAdd: async () => {
+    const values = await promptModal('New NPC', [
+      { name: 'name', label: 'Name', value: '' },
+      { name: 'role', label: 'Role / faction', value: '' },
+      { name: 'disposition', label: 'Disposition', type: 'select', value: 'neutral', options: dispositionOptions },
+      { name: 'notes', label: 'Notes', value: '' },
+    ]);
+    const name = values?.name.trim();
+    if (!values || !name) return null;
+    // Placed where the party stands, so the NPC scopes to that node.
+    const created = createNPC(slugId(name, npcs.map((n) => n.id)), name, {
+      role: values.role.trim(),
+      disposition: /** @type {import('./types/npc.js').Disposition} */ (values.disposition),
+      notes: values.notes.trim(),
+      location: { ...partyTracker.getPosition() },
+    });
+    npcs = [...npcs, created];
+    return created;
+  },
+  onEdit: async (npc) => {
+    const values = await promptModal(
+      'Edit NPC',
+      [
+        { name: 'name', label: 'Name', value: npc.name },
+        { name: 'role', label: 'Role / faction', value: npc.role },
+        { name: 'disposition', label: 'Disposition', type: 'select', value: npc.disposition, options: dispositionOptions },
+        { name: 'notes', label: 'Notes', value: npc.notes },
+      ],
+      { submitLabel: 'Save' },
+    );
+    const name = values?.name.trim();
+    if (!values || !name) return false;
+    npcs = replaceById(npcs, {
+      ...npc,
+      name,
+      role: values.role.trim(),
+      disposition: /** @type {import('./types/npc.js').Disposition} */ (values.disposition),
+      notes: values.notes.trim(),
+    });
+    return true;
+  },
+  confirmDelete: (npc) => confirmModal(`Delete "${npc.name}"?`, { danger: true, confirmLabel: 'Delete' }),
 });
 
 mountDiceTray(mustGetElement('dice-tray-container'));

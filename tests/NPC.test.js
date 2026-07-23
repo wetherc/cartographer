@@ -1,0 +1,25 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { createNPC, npcsAt, withDefaults } from '../src/entities/NPC.js';
+
+test('createNPC defaults role/notes empty, disposition neutral, unplaced', () => {
+  const npc = createNPC('n1', 'Bram');
+  assert.deepEqual(npc, { id: 'n1', name: 'Bram', role: '', disposition: 'neutral', notes: '', location: null });
+});
+
+test('npcsAt returns NPCs at the party node plus unplaced ones', () => {
+  const npcs = [
+    createNPC('a', 'Bram', { location: { nodeId: 'world', tileId: '3,2' } }),
+    createNPC('b', 'Wraith', { location: { nodeId: 'crypt', tileId: '0,0' } }),
+    createNPC('c', 'Narrator'), // unplaced, always shown
+  ];
+  const here = npcsAt(npcs, { nodeId: 'world' }).map((n) => n.id);
+  assert.deepEqual(here, ['a', 'c']);
+});
+
+test('withDefaults backfills a sparse NPC', () => {
+  const restored = withDefaults(/** @type {any} */ ({ id: 'x', name: 'Old' }));
+  assert.equal(restored.disposition, 'neutral');
+  assert.equal(restored.role, '');
+  assert.equal(restored.location, null);
+});
