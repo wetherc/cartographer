@@ -56,6 +56,8 @@ export class MapCanvas {
     this.encounterTileIds = [];
     /** @type {string[]} tile ids in the current node holding a placed NPC */
     this.npcTileIds = [];
+    /** @type {{ tileId: string, name: string }[]} per-character tokens in the current node */
+    this.characterTokens = [];
     /** When true (Build mode), draw every tile's image regardless of its
      * revealed flag, so a GM authors against the whole map, not through fog. */
     this.revealAll = false;
@@ -133,6 +135,7 @@ export class MapCanvas {
     this.node = node;
     this.regionGroups = findRegionGroups(node);
     this.partyTileId = null;
+    this.characterTokens = [];
     this.selectedTileId = null;
     this.cursorCellId = null;
     this.fit();
@@ -240,6 +243,17 @@ export class MapCanvas {
   }
 
   /**
+   * Set the per-character tokens to draw in the current node — one named
+   * marker per character standing here (resolved by the wiring from each
+   * character's own location or the shared party position).
+   * @param {{ tileId: string, name: string }[]} tokens
+   */
+  setCharacterTokens(tokens) {
+    this.characterTokens = tokens;
+    this.render();
+  }
+
+  /**
    * Toggle whether unrevealed tiles are drawn as fog (false, Play) or fully
    * (true, Build).
    * @param {boolean} value
@@ -293,6 +307,7 @@ export class MapCanvas {
       partyTileId: this.partyTileId,
       encounterTileIds: this.encounterTileIds,
       npcTileIds: this.npcTileIds,
+      characterTokens: this.characterTokens,
       selectedTileId: this.selectedTileId,
       cursorCellId: this.cursorCellId,
       focused: this._focused,

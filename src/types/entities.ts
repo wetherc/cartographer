@@ -80,4 +80,6 @@ export interface Character {
   conditions: Condition[];
   /** Equipped items by slot (absent on older saves; all slots empty). */
   equipment?: Equipment;
+  /** Own map position; null (and older saves' absence) = with the party. */
+  location?: EncounterLocation | null;
 }

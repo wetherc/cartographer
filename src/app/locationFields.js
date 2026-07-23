@@ -8,8 +8,10 @@
  * dialog, so every "put this at a location" flow reads the same way.
  * @param {AppContext} app
  * @param {EncounterLocation | null} location
+ * @param {{ unplacedLabel?: string }} [options] label for the null-location
+ *   option — "with the party" reads better than "unplaced" for a character
  */
-export function locationFields(app, location) {
+export function locationFields(app, location, options = {}) {
   const [x, y] = location ? location.tileId.split(',').map(Number) : [0, 0];
   return [
     {
@@ -18,7 +20,7 @@ export function locationFields(app, location) {
       type: /** @type {'select'} */ ('select'),
       value: location?.nodeId ?? '',
       options: [
-        { value: '', label: 'Unplaced (appears everywhere)' },
+        { value: '', label: options.unplacedLabel ?? 'Unplaced (appears everywhere)' },
         ...[...app.grid.nodes.values()].map((n) => ({
           value: n.id,
           label: app.grid.getBreadcrumb(n.id).map((b) => b.name).join(' / '),

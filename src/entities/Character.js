@@ -60,6 +60,7 @@ export function withDefaults(character) {
     stats: { ...defaultStats(), ...character.stats },
     conditions: character.conditions ?? [],
     equipment: { ...emptyEquipment(), ...character.equipment },
+    location: character.location ?? null,
   });
 }
 
@@ -73,7 +74,7 @@ export function withDefaults(character) {
  * @returns {Character}
  */
 export function createCharacter(id, name, stats = {}, race = '') {
-  return { id, name, race, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [], conditions: [], equipment: emptyEquipment() };
+  return { id, name, race, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [], conditions: [], equipment: emptyEquipment(), location: null };
 }
 
 /**
