@@ -64,12 +64,15 @@ export function mountCharacterRoster(container, options) {
       root.appendChild(row);
     }
 
+    const actions = document.createElement('div');
+    actions.className = 'panel-actions';
+
     const add = document.createElement('button');
     add.type = 'button';
     add.className = 'btn character-roster__add';
     add.append(icon('add'), document.createTextNode('New character'));
     add.addEventListener('click', () => options.onAdd());
-    root.appendChild(add);
+    actions.appendChild(add);
 
     if (options.onAwardXP && characters.length > 0) {
       const award = document.createElement('button');
@@ -77,8 +80,10 @@ export function mountCharacterRoster(container, options) {
       award.className = 'btn character-roster__award';
       award.append(icon('sparkles'), document.createTextNode('Award XP'));
       award.addEventListener('click', () => options.onAwardXP?.());
-      root.appendChild(award);
+      actions.appendChild(award);
     }
+
+    root.appendChild(actions);
   }
 
   render();

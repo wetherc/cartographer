@@ -148,6 +148,9 @@ export function mountEncounterPanel(container, callbacks) {
       root.appendChild(row);
     }
 
+    const actions = document.createElement('div');
+    actions.className = 'panel-actions';
+
     const onAdd = callbacks.onAdd;
     if (onAdd && gm) {
       const addButton = document.createElement('button');
@@ -159,7 +162,7 @@ export function mountEncounterPanel(container, callbacks) {
         // signals that the visible list may have changed.
         if (await onAdd()) render();
       });
-      root.appendChild(addButton);
+      actions.appendChild(addButton);
     }
 
     const onAddFromTemplate = callbacks.onAddFromTemplate;
@@ -171,8 +174,10 @@ export function mountEncounterPanel(container, callbacks) {
       bestiaryButton.addEventListener('click', async () => {
         if (await onAddFromTemplate()) render();
       });
-      root.appendChild(bestiaryButton);
+      actions.appendChild(bestiaryButton);
     }
+
+    if (actions.childElementCount > 0) root.appendChild(actions);
   }
 
   render();
