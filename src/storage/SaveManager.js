@@ -18,10 +18,21 @@ const DEFAULT_HISTORY_LIMIT = 20;
  * @param {Encounter[]} encounters
  * @param {import('../types/log.js').LogEntry[]} [travelog]
  * @param {import('../types/quest.js').Quest[]} [quests]
+ * @param {Partial<CampaignState>} [extra] later-added top-level fields (clock, npcs, ...)
  * @returns {CampaignState}
  */
-export function buildState(grid, party, characters, encounters, travelog = [], quests = []) {
-  return { nodes: [...grid.nodes.values()], party, characters, encounters, travelog, quests };
+export function buildState(grid, party, characters, encounters, travelog = [], quests = [], extra = {}) {
+  return {
+    nodes: [...grid.nodes.values()],
+    party,
+    characters,
+    encounters,
+    travelog,
+    quests,
+    clock: null,
+    npcs: [],
+    ...extra,
+  };
 }
 
 /**
@@ -47,6 +58,8 @@ export function deserialize(json) {
     encounters: parsed.encounters ?? [],
     travelog: parsed.travelog ?? [],
     quests: parsed.quests ?? [],
+    clock: parsed.clock ?? null,
+    npcs: parsed.npcs ?? [],
   };
 }
 

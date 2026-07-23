@@ -164,6 +164,40 @@ export function restoreResource(character, resourceId, amount) {
 }
 
 /**
+ * Restore every resource pool (HP, mana, and any custom pool) by a fraction of
+ * its max, clamped to full. The rest model: a long rest restores everything
+ * (fraction 1), a short rest restores half (fraction 0.5). Pure.
+ * @param {Character} character
+ * @param {number} fraction 0..1
+ * @returns {Character}
+ */
+export function restAll(character, fraction) {
+  const clamped = Math.max(0, Math.min(1, fraction));
+  return {
+    ...character,
+    resources: character.resources.map((r) => restorePool(r, Math.ceil(r.max * clamped))),
+  };
+}
+
+/**
+ * A long rest: fully restore HP, mana, and every resource pool.
+ * @param {Character} character
+ * @returns {Character}
+ */
+export function longRest(character) {
+  return restAll(character, 1);
+}
+
+/**
+ * A short rest: restore half of each pool's maximum.
+ * @param {Character} character
+ * @returns {Character}
+ */
+export function shortRest(character) {
+  return restAll(character, 0.5);
+}
+
+/**
  * Add an item, merging quantity into an existing stack with the same id.
  * @param {Character} character
  * @param {InventoryItem} item
