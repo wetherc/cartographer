@@ -3,7 +3,7 @@ import { TilePalette } from './map/TilePalette.js';
 import { MapCanvas } from './map/MapCanvas.js';
 import { clientToBuffer, screenToTile } from './map/MapGeometry.js';
 import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesInRect } from './map/TilePaint.js';
-import { computeRegionEntryTile } from './map/EntryPoint.js';
+import { computeRegionEntryTile, resolveEntryTile } from './map/EntryPoint.js';
 import { MapNavigator } from './map/MapNavigator.js';
 import { generateNodeTiles, ARCHETYPES } from './map/MapGenerator.js';
 import { discoveredNodes } from './map/FogOfWar.js';
@@ -234,9 +234,14 @@ async function teleportToNode(nodeId) {
     confirmLabel: 'Teleport',
   });
   if (!ok) return;
-  const target =
+  // Resolve the landing spot against the node's real tiles, so a teleport into
+  // a sparse or walled node (e.g. a generated dungeon) never strands the party
+  // on a wall or an empty cell.
+  const target = resolveEntryTile(
+    node,
     node.tiles.find((t) => t.revealed)?.id ??
-    `${Math.floor(node.width / 2)},${Math.floor(node.height / 2)}`;
+      `${Math.floor(node.width / 2)},${Math.floor(node.height / 2)}`,
+  );
   partyTracker.moveTo(nodeId, target);
   goToNode(nodeId);
   logEvent('travel', `Traveled to ${node.name}.`);
@@ -959,12 +964,15 @@ mustGetElement('generate-btn').addEventListener('click', async () => {
     Math.random,
   );
   grid.updateNode({ ...node, width: gen.width, height: gen.height, tiles: gen.tiles });
-  // A shrunk node may have stranded the party outside the new bounds; pull it
-  // back to the origin if so, so its marker stays on the grid.
+  // The regenerated layout may have shrunk past the party or replaced its tile
+  // with void/wall; re-land it on the layout's guaranteed entry tile if so.
   const pos = partyTracker.getPosition();
   if (pos.nodeId === node.id) {
     const [px, py] = pos.tileId.split(',').map(Number);
-    if (px >= gen.width || py >= gen.height) partyTracker.moveTo(node.id, '0,0');
+    const landing = resolveEntryTile(navigator.getCurrentNode(), pos.tileId);
+    if (px >= gen.width || py >= gen.height || landing !== pos.tileId) {
+      partyTracker.moveTo(node.id, px >= gen.width || py >= gen.height ? gen.entry : landing);
+    }
   }
   mapCanvas.setNode(navigator.getCurrentNode());
   clearSelection();

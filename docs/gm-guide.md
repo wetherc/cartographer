@@ -99,6 +99,18 @@ Panning is the **right mouse button** in both modes (drag with the right button
 held); the wheel zooms. This is deliberate — the left button is reserved for
 painting in Build and for acting in Play.
 
+### Generating a map
+
+Instead of painting a large map tile by tile, the **Generate** card (right rail)
+can fill the current node with an auto-generated layout. Pick an archetype —
+**wilderness** or **town** for a region, **dungeon** or **castle** for an
+interior — and a size (small / medium / large), and the node's grid is replaced
+with the generated map (with a confirmation first if the node already has
+tiles). Every generated layout is guaranteed to be reachable from its parent
+map: dungeons get an entrance corridor with a door on the map edge, castles a
+gate in the south wall, and towns roads that run edge to edge. Regenerate as
+many times as you like until you get a layout you want to refine by hand.
+
 ### Points of interest and tile metadata
 
 Select the **Inspect** tool and click a tile to open the **Tile inspector**. There
