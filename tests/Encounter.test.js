@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createEncounter, applyDamage, heal, isDefeated, withDefaults, encountersAt, encountersOnTile, toTemplate, fromTemplate } from '../src/entities/Encounter.js';
+import { createEncounter, editEncounter, applyDamage, heal, isDefeated, withDefaults, encountersAt, encountersOnTile, toTemplate, fromTemplate } from '../src/entities/Encounter.js';
 
 test('createEncounter starts at full health', () => {
   const goblin = createEncounter('e1', 'Goblin', 7, { AC: 15 });
@@ -109,4 +109,43 @@ test('fromTemplate spawns a fresh, full-health encounter at the given location',
   // Independent copy again: two spawns never share one stat block.
   spawned.statBlock.AC = 1;
   assert.equal(template.statBlock.AC, 13);
+});
+
+test('editEncounter rewrites blueprint fields but keeps live state', () => {
+  const base = applyDamage(
+    { ...createEncounter('e1', 'Goblin', 10, { AC: 13 }, { nodeId: 'world', tileId: '1,1' }), conditions: [{ name: 'prone' }] },
+    4,
+  );
+  const edited = editEncounter(base, {
+    name: 'Goblin Chief',
+    maxHP: 20,
+    level: 3,
+    tier: 'legend',
+    location: { nodeId: 'world', tileId: '1,1' },
+  });
+  assert.equal(edited.name, 'Goblin Chief');
+  assert.equal(edited.maxHP, 20);
+  assert.equal(edited.currentHP, 6, 'current HP survives the edit');
+  assert.equal(edited.level, 3);
+  assert.equal(edited.tier, 'legend');
+  assert.deepEqual(edited.statBlock, { AC: 13 }, 'hand-tuned stat block is not re-stamped');
+  assert.deepEqual(edited.conditions, [{ name: 'prone' }]);
+});
+
+test('editEncounter clamps current HP down to a lowered maximum', () => {
+  const base = createEncounter('e1', 'Ogre', 30);
+  const edited = editEncounter(base, { name: 'Ogre', maxHP: 12, level: 1, tier: 'mob', location: null });
+  assert.equal(edited.maxHP, 12);
+  assert.equal(edited.currentHP, 12);
+});
+
+test('editEncounter resets the noticed flag only when the location changes', () => {
+  const noticed = { ...createEncounter('e1', 'Goblin', 10, {}, { nodeId: 'world', tileId: '1,1' }), noticed: true };
+  const edits = { name: 'Goblin', maxHP: 10, level: 1, tier: /** @type {const} */ ('mob') };
+  const stayed = editEncounter(noticed, { ...edits, location: { nodeId: 'world', tileId: '1,1' } });
+  assert.equal(stayed.noticed, true, 'unmoved encounter stays noticed');
+  const moved = editEncounter(noticed, { ...edits, location: { nodeId: 'world', tileId: '2,2' } });
+  assert.equal(moved.noticed, false, 'a move makes the next walk-in log again');
+  const unplaced = editEncounter(noticed, { ...edits, location: null });
+  assert.equal(unplaced.noticed, false);
 });

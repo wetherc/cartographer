@@ -3,7 +3,8 @@ import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
-import { createEncounter, encountersAt, encountersOnTile, isDefeated, toTemplate, fromTemplate } from '../entities/Encounter.js';
+import { createEncounter, editEncounter, encountersAt, encountersOnTile, isDefeated, toTemplate, fromTemplate } from '../entities/Encounter.js';
+import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
 import { roll, formatResult } from '../dice/DiceRoller.js';
 import { abilityModifier, defaultEnemyStats, ENEMY_TIERS } from '../entities/Modifiers.js';
@@ -67,6 +68,75 @@ export function wireEncounters(app) {
     });
   };
 
+  /**
+   * The shared create/edit dialog behind every encounter authoring flow: name,
+   * HP, level/tier, and the same map/tile placement fields the NPC dialogs
+   * use. With an existing encounter it edits in place — live state (current
+   * HP, stat block, conditions) survives, so placement is finally editable
+   * without deleting and recreating. Without one it creates, stamping the
+   * tier's level-appropriate default stats. Returns the stored encounter, or
+   * null on cancel/blank name.
+   * @param {import('../types/entities.js').Encounter | null} existing
+   * @param {import('../types/entities.js').EncounterLocation | null} defaultLocation placement preset for a new encounter
+   * @returns {Promise<import('../types/entities.js').Encounter | null>}
+   */
+  async function encounterForm(existing, defaultLocation) {
+    const values = await promptModal(existing ? 'Edit encounter' : 'New encounter', [
+      { name: 'name', label: 'Name', value: existing?.name ?? '' },
+      { name: 'maxHP', label: 'Max HP', type: 'number', value: existing?.maxHP ?? 10, min: 1 },
+      { name: 'level', label: 'Level', type: 'number', value: existing?.level ?? 1, min: 1 },
+      {
+        name: 'tier',
+        label: 'Tier',
+        type: 'select',
+        value: existing?.tier ?? 'mob',
+        options: ENEMY_TIERS.map((t) => ({ value: t, label: t === 'mob' ? 'Mob' : 'Legend' })),
+      },
+      ...locationFields(app, existing ? existing.location : defaultLocation),
+    ], { submitLabel: existing ? 'Save' : 'Add' });
+    if (!values) return null;
+    const name = values.name.trim();
+    if (!name) return null;
+    const maxHP = Math.max(1, Number(values.maxHP) || 1);
+    const level = Math.max(1, Number(values.level) || 1);
+    const tier = /** @type {import('../types/entities.js').EnemyTier} */ (values.tier);
+    const location = readLocation(app, values);
+    let stored;
+    if (existing) {
+      // Level/tier edits don't re-stamp the stat block — the GM may have tuned
+      // it by hand on the row, and it stays editable there.
+      stored = editEncounter(existing, { name, maxHP, level, tier, location });
+      state.encounters = replaceById(state.encounters, stored);
+    } else {
+      stored = createEncounter(
+        slugId(name, state.encounters.map((e) => e.id)),
+        name,
+        maxHP,
+        defaultEnemyStats(level, tier),
+        location,
+        { level, tier },
+      );
+      state.encounters = [...state.encounters, stored];
+    }
+    app.actions.syncEncounterMarkers(); // also refreshes the Build-rail list
+    app.views.encounterPanel.update();
+    app.views.initiativePanel.update(); // authoring/moving one here starts or ends an encounter
+    app.actions.markDirty();
+    return stored;
+  }
+
+  /** Confirm-and-delete shared by both encounter lists. Resolves true if deleted. */
+  async function deleteEncounter(/** @type {import('../types/entities.js').Encounter} */ encounter) {
+    const ok = await confirmModal(`Delete "${encounter.name}"?`, { danger: true, confirmLabel: 'Delete' });
+    if (!ok) return false;
+    state.encounters = removeById(state.encounters, encounter.id);
+    app.actions.syncEncounterMarkers();
+    app.views.encounterPanel.update();
+    app.views.initiativePanel.update();
+    app.actions.markDirty();
+    return true;
+  }
+
   app.views.encounterPanel = mountEncounterPanel(mustGetElement('encounter-container'), {
     // The panel shows only what's relevant where the party stands: encounters
     // staged in the current node, plus unbound ones from older saves.
@@ -87,43 +157,11 @@ export function wireEncounters(app) {
       app.views.initiativePanel.update();
       app.actions.markDirty();
     },
-    onAdd: async () => {
-      const values = await promptModal('New encounter', [
-        { name: 'name', label: 'Name', value: '' },
-        { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1 },
-        { name: 'level', label: 'Level', type: 'number', value: 1, min: 1 },
-        {
-          name: 'tier',
-          label: 'Tier',
-          type: 'select',
-          value: 'mob',
-          options: ENEMY_TIERS.map((t) => ({ value: t, label: t === 'mob' ? 'Mob' : 'Legend' })),
-        },
-      ]);
-      if (!values) return null;
-      const name = values.name.trim();
-      if (!name) return null;
-      const maxHP = Math.max(1, Number(values.maxHP) || 1);
-      const level = Math.max(1, Number(values.level) || 1);
-      const tier = /** @type {import('../types/entities.js').EnemyTier} */ (values.tier);
-      // New encounters are staged where the party currently is, so the GM
-      // authors them in place and they scope to that node from then on. The
-      // stat block starts at the tier's level-appropriate defaults (legends
-      // above-normal), each score still editable afterwards.
-      const created = createEncounter(
-        slugId(name, state.encounters.map((e) => e.id)),
-        name,
-        maxHP,
-        defaultEnemyStats(level, tier),
-        { ...app.partyTracker.getPosition() },
-        { level, tier },
-      );
-      state.encounters = [...state.encounters, created];
-      app.actions.syncEncounterMarkers();
-      app.views.initiativePanel.update(); // authoring one here starts an encounter
-      app.actions.markDirty();
-      return created;
-    },
+    // New encounters default to where the party currently is (the common
+    // case), but the shared form's placement fields let the GM stage one
+    // anywhere — or leave it unplaced.
+    onAdd: () => encounterForm(null, { ...app.partyTracker.getPosition() }),
+    onEdit: (encounter) => encounterForm(encounter, null),
     // Save an encounter's blueprint (name, max HP, stat block) to the bestiary,
     // so the next Goblin isn't typed from scratch. Same-named saves stack as
     // separate templates — a template is a snapshot, not a live link.
@@ -193,6 +231,21 @@ export function wireEncounters(app) {
     canStartCombat: () => isGM(state.role) && combat === null && encountersHere().length > 0,
     onStartCombat: startCombatSetup,
     getRole: () => state.role,
+  });
+
+  // The Build rail's authoring list: the encounters staged in whatever node
+  // the GM is looking at (plus unplaced ones), editable without moving the
+  // party there. New encounters default onto the Build-mode selected tile of
+  // the viewed node, so "select a tile, add an encounter" places it there.
+  app.views.buildEncounters = mountBuildEncounterPanel(mustGetElement('build-encounters-container'), {
+    getEncounters: () => encountersAt(state.encounters, { nodeId: app.navigator.getCurrentNode().id }),
+    onAdd: () =>
+      encounterForm(null, {
+        nodeId: app.navigator.getCurrentNode().id,
+        tileId: app.actions.getSelectedTileId() ?? '0,0',
+      }),
+    onEdit: (encounter) => encounterForm(encounter, null),
+    onDelete: deleteEncounter,
   });
 
   // "In an encounter" means the party stands on a tile with at least one live

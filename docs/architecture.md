@@ -29,7 +29,7 @@ One module per feature area, each a `wireX(app)` factory:
 - `generateAction.js` — the Generate dialog flow and its non-destructive apply.
 - `nodeActions.js` — node create/edit/delete (predates the split; same context-object pattern).
 - `partyWiring.js` — roster, character sheet, inventory, Time panel; provides `refreshSelectedCharacter`.
-- `encounterWiring.js` — Encounters and Initiative panels, bestiary, walked-into-an-encounter alert; owns transient combat state.
+- `encounterWiring.js` — Encounters and Initiative panels, the Build-rail encounter authoring list, bestiary, walked-into-an-encounter alert; owns transient combat state. A shared create/edit dialog (name, HP, level/tier, placement via `locationFields`) backs both panels' add and edit actions; edits go through the pure `Encounter.editEncounter`, which keeps live state (current HP clamped to a new max, stat block, conditions) and resets the `noticed` flag when the encounter moves.
 - `storyWiring.js` — travelogue (provides `logEvent`), NPCs, quests, handouts.
 - `sessionControls.js` — mode/role switches (role guarded by the cross-tab GM lock), sidebar tabs and collapse; provides `setMode`.
 - `shortcuts.js`, `onboarding.js` — global keyboard shortcuts and the first-run overlay.

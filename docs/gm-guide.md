@@ -255,6 +255,16 @@ live encounter's tile shows a red diamond marker once the party (or a split-off
 character) comes within detection range — twice the fog reveal radius — so danger
 is sensed a little beyond sight, but distant threats stay hidden.
 
+Every encounter row has an **edit** (pencil) action opening the same dialog the
+add flow uses — name, HP, level/tier, and the map/tile placement — so moving an
+encounter somewhere else no longer means deleting and recreating it. Its live
+state survives an edit: current HP carries over (clamped if you lower the max),
+and the stat block and conditions stay as you tuned them. Build mode gets its
+own **Encounters** card in the right rail, scoped to whatever map you're
+looking at, with the same edit/delete actions plus a New encounter button that
+defaults onto the selected tile — so you can stage a region's fights while
+authoring it, without walking the party there.
+
 Damage and heal from the panel; a defeated encounter is styled as such rather than
 deleted, so you keep a record of what died. Each encounter row tracks its own
 status **conditions** (poisoned, prone, …) and a **stat block** — chips like
