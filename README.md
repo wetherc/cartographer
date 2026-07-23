@@ -14,7 +14,7 @@ With Campaign Builder, you can:
     - You can progressively reveal parts of the map as your party travels. Unexplored areas remain greyed out until your party moves closer
     - Track your party's location on the map at all times
   - Add major enemies/encounters with life tracking
-  - Add resource tracking (both items and mana or other expendable character-based resources)
+  - Add resource tracking (items, D&D-style spell slots, and other expendable character-based resources)
   - Add character sheets with full character stats, level/progression tracking, etc.
   - Simulate dice rolls and their results for any combination of dice needed in an interaction
 

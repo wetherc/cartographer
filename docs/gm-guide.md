@@ -255,13 +255,19 @@ character scopes the **Character sheet** and **Inventory** to that character —
 each character has its own inventory.
 
 The character card is collapsed by default to the name and race with a
-full-width bar line each for HP and mana; expand it for stats, XP, and
-resource pools (where the HP and mana steppers live). Each ability score shows
-its derived modifier beside it (DEX 20 is +5) — the same modifier initiative
-uses. NPCs carry the six scores too, editable in their dialogs. HP and mana are modeled
-as resource pools, set at character creation with sensible defaults. Gaining
-enough XP levels the character up automatically (an N×100 curve), and HP and
-mana grow per level. Inventory stacks of two or more get a **consume one**
+full-width HP bar and, for spellcasters, a **spell slots** line — one pip group
+per spell level, filled pips being the slots still unspent. Expand it for
+stats, XP, and resource pools (where the HP and per-level slot steppers live).
+Each ability score shows its derived modifier beside it (DEX 20 is +5) — the
+same modifier initiative uses. NPCs carry the six scores too, editable in
+their dialogs. HP and spell slots are modeled as resource pools; creation asks
+for max HP and whether the character is a spellcaster, and a caster's slots
+follow the standard full-caster table for their level. Gaining enough XP
+levels the character up automatically (an N×100 curve): HP grows per level and
+a caster's slot maxima track the table, with newly unlocked spell levels
+arriving at full and already-spent slots staying spent. Saves from the old
+mana system migrate on load — the mana pool becomes the slot pools for the
+character's level. Inventory stacks of two or more get a **consume one**
 control distinct from the remove-whole-stack button.
 
 For combat speed, the Party roster's **Award XP** grants the same amount to
@@ -271,8 +277,8 @@ every character at once.
 
 The **Time** panel tracks the in-game day and watch. **Advance** moves time
 forward; **Short rest** and **Long rest** restore character resources (half vs.
-full) and log the rest. Rest recovery hooks into the same resource machinery HP
-and mana use.
+full) and log the rest. Spell slots follow the D&D rule: only a long rest
+refills them — a short rest leaves them spent.
 
 ### NPCs, quests, handouts, and the travelogue
 
