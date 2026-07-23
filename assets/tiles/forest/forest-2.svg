@@ -31,21 +31,28 @@
     <circle cx="13" cy="30" r="1.1"/>
   </g>
   <!-- Edge canopy: byte-identical across forest variants, stamped in wrapped
-       pairs (x=0 repeats at x=64, y=0 at y=64) so any variant abuts any
-       variant seamlessly. -->
+       pairs (a stamp crossing x=0 repeats at +64, likewise y, corners at all
+       four) so any variant abuts any variant seamlessly. Stamps mix full
+       trees with clusters, sit at irregular offsets staggered a few units
+       off the border line, and some are mirrored, so seams read as forest
+       rather than a straight row of identical blobs at every boundary. -->
   <g>
-    <use href="#ec" transform="translate(0 0)"/>
-    <use href="#ec" transform="translate(64 0)"/>
-    <use href="#ec" transform="translate(0 64)"/>
-    <use href="#ec" transform="translate(64 64)"/>
-    <use href="#ec" transform="translate(0 24) scale(0.9)"/>
-    <use href="#ec" transform="translate(64 24) scale(0.9)"/>
-    <use href="#ec" transform="translate(0 45) scale(0.85)"/>
-    <use href="#ec" transform="translate(64 45) scale(0.85)"/>
-    <use href="#ec" transform="translate(22 0) scale(0.9)"/>
-    <use href="#ec" transform="translate(22 64) scale(0.9)"/>
-    <use href="#ec" transform="translate(43 0) scale(0.85)"/>
-    <use href="#ec" transform="translate(43 64) scale(0.85)"/>
+    <use href="#ec" transform="translate(0 0) scale(0.8)"/>
+    <use href="#ec" transform="translate(64 0) scale(0.8)"/>
+    <use href="#ec" transform="translate(0 64) scale(0.8)"/>
+    <use href="#ec" transform="translate(64 64) scale(0.8)"/>
+    <use href="#tr" transform="translate(2 17) scale(0.85)"/>
+    <use href="#tr" transform="translate(66 17) scale(0.85)"/>
+    <use href="#ec" transform="translate(-3 38) scale(0.7)"/>
+    <use href="#ec" transform="translate(61 38) scale(0.7)"/>
+    <use href="#tr" transform="translate(1 53) scale(-0.75 0.75)"/>
+    <use href="#tr" transform="translate(65 53) scale(-0.75 0.75)"/>
+    <use href="#tr" transform="translate(13 2) scale(0.8)"/>
+    <use href="#tr" transform="translate(13 66) scale(0.8)"/>
+    <use href="#ec" transform="translate(35 -2) scale(0.75)"/>
+    <use href="#ec" transform="translate(35 62) scale(0.75)"/>
+    <use href="#tr" transform="translate(52 1) scale(-0.9 0.9)"/>
+    <use href="#tr" transform="translate(52 65) scale(-0.9 0.9)"/>
   </g>
   <use href="#tr" transform="translate(25 23) scale(1.15)"/>
   <use href="#tr" transform="translate(45 37) scale(1.2)"/>
