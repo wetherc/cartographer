@@ -31,6 +31,7 @@ export function buildState(grid, party, characters, encounters, travelog = [], q
     quests,
     clock: null,
     npcs: [],
+    handouts: [],
     ...extra,
   };
 }
@@ -60,6 +61,7 @@ export function deserialize(json) {
     quests: parsed.quests ?? [],
     clock: parsed.clock ?? null,
     npcs: parsed.npcs ?? [],
+    handouts: parsed.handouts ?? [],
   };
 }
 
