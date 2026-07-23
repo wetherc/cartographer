@@ -2,6 +2,7 @@ import { mustGetElement } from '../ui/dom.js';
 import { promptModal, confirmModal } from '../ui/Modal.js';
 import { createCharacter, withHP, shortRest, longRest, addXP } from '../entities/Character.js';
 import { withSpellSlots } from '../entities/SpellSlots.js';
+import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { mountCharacterRoster } from '../ui/CharacterRoster.js';
 import { mountCharacterSheet } from '../ui/CharacterSheet.js';
@@ -133,6 +134,13 @@ export function wireParty(app) {
     (next) => {
       commitCharacter(next);
       characterSheet.setCharacter(next);
+    },
+    (event, character) => {
+      const node = app.grid.getNode(app.partyTracker.getPosition().nodeId);
+      app.actions.logEvent(
+        'note',
+        formatInventoryEvent(character.name, event, { region: node?.name, time: formatClock(state.clock) }),
+      );
     },
   );
 

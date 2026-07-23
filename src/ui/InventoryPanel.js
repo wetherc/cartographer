@@ -5,6 +5,7 @@ import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
+/** @typedef {import('../entities/InventoryLog.js').InventoryEvent} InventoryEvent */
 
 /**
  * Derive a stable item id from its name so adding the same item twice stacks
@@ -72,12 +73,16 @@ function buildEquipment(character, commit) {
  * remove-whole-stack button, plus a small form to add new items (or add
  * quantity to an existing one, keyed by name).
  * Renders an empty state when no character is selected (`null`).
+ * Item interactions (add, consume, discard) are reported through `onEvent`
+ * with the acting character, so the caller can log them; equipment changes
+ * commit silently.
  * @param {HTMLElement} container
  * @param {Character | null} initial
  * @param {(character: Character) => void} [onChange]
+ * @param {(event: InventoryEvent, character: Character) => void} [onEvent]
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
-export function mountInventoryPanel(container, initial, onChange = () => {}) {
+export function mountInventoryPanel(container, initial, onChange = () => {}, onEvent = () => {}) {
   let current = initial;
   // Survives re-renders (every edit re-renders) but stays per-mount, so the
   // panel doesn't snap shut after each item change.
@@ -87,10 +92,14 @@ export function mountInventoryPanel(container, initial, onChange = () => {}) {
   root.className = 'inventory-panel';
   container.appendChild(root);
 
-  /** @param {Character} next */
-  function commit(next) {
+  /**
+   * @param {Character} next
+   * @param {InventoryEvent} [event] the interaction that produced `next`, when loggable
+   */
+  function commit(next, event) {
     current = next;
     onChange(next);
+    if (event) onEvent(event, next);
     render();
   }
 
@@ -136,22 +145,30 @@ export function mountInventoryPanel(container, initial, onChange = () => {}) {
 
       row.append(label, type);
 
-      if (item.quantity > 1) {
-        const consumeButton = document.createElement('button');
-        consumeButton.type = 'button';
-        consumeButton.className = 'btn btn--icon';
-        consumeButton.setAttribute('aria-label', `Consume one ${item.name}`);
-        consumeButton.appendChild(icon('minus'));
-        consumeButton.addEventListener('click', () => commit(removeItem(character, item.id, 1)));
-        row.appendChild(consumeButton);
-      }
+      // Present even on 1-stacks: consuming the last of an item and discarding
+      // it are the same state change but different travelogue lines.
+      const consumeButton = document.createElement('button');
+      consumeButton.type = 'button';
+      consumeButton.className = 'btn btn--icon';
+      consumeButton.setAttribute('aria-label', `Consume one ${item.name}`);
+      consumeButton.appendChild(icon('minus'));
+      consumeButton.addEventListener('click', () =>
+        commit(removeItem(character, item.id, 1), { verb: 'use', itemName: item.name, count: 1 }),
+      );
+      row.appendChild(consumeButton);
 
       const removeButton = document.createElement('button');
       removeButton.type = 'button';
       removeButton.className = 'btn btn--icon btn--danger';
       removeButton.setAttribute('aria-label', `Remove all ${item.name}`);
       removeButton.appendChild(icon('remove'));
-      removeButton.addEventListener('click', () => commit(removeItem(character, item.id, item.quantity)));
+      removeButton.addEventListener('click', () =>
+        commit(removeItem(character, item.id, item.quantity), {
+          verb: 'discard',
+          itemName: item.name,
+          count: item.quantity,
+        }),
+      );
 
       row.appendChild(removeButton);
       list.appendChild(row);
@@ -193,7 +210,11 @@ export function mountInventoryPanel(container, initial, onChange = () => {}) {
       const quantity = Number(quantityInput.value);
       if (!name || quantity <= 0) return;
       const type = /** @type {ItemType} */ (typeSelect.value);
-      commit(addItem(character, { id: idFromName(name), name, quantity, notes: '', type }));
+      commit(addItem(character, { id: idFromName(name), name, quantity, notes: '', type }), {
+        verb: 'pickup',
+        itemName: name,
+        count: quantity,
+      });
       nameInput.value = '';
       quantityInput.value = '1';
     });
