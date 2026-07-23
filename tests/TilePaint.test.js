@@ -197,6 +197,20 @@ test('stampRegionLink links a single tile on interiors', () => {
   assert.equal(getTile(linked, '2,1').childNodeId, null);
 });
 
+test('stampRegionLink re-points a whole linked block at a new child', () => {
+  let node = createMapNode('world', 'World', null, 5, 5);
+  for (let x = 0; x < 3; x++) {
+    for (let y = 0; y < 3; y++) node = setTile(node, createTile(`${x},${y}`, 'grass.svg'));
+  }
+  node = linkTilesInRect(node, { minX: 0, minY: 0, maxX: 2, maxY: 2 }, 'vale');
+  const relinked = stampRegionLink(node, '1,1', 'moor');
+  for (let x = 0; x < 3; x++) {
+    for (let y = 0; y < 3; y++) {
+      assert.equal(getTile(relinked, `${x},${y}`).childNodeId, 'moor', `${x},${y}`);
+    }
+  }
+});
+
 test('stampRegionLink with null clears the whole contiguous block', () => {
   let node = createMapNode('world', 'World', null, 4, 4);
   for (const id of ['1,1', '2,1', '1,2', '2,2']) node = setTile(node, createTile(id, 'grass.svg'));
