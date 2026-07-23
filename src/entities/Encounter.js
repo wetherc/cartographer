@@ -11,7 +11,7 @@
  * @returns {Encounter}
  */
 export function createEncounter(id, name, maxHP, statBlock = {}, location = null) {
-  return { id, name, maxHP, currentHP: maxHP, statBlock, location };
+  return { id, name, maxHP, currentHP: maxHP, statBlock, location, conditions: [] };
 }
 
 /**
@@ -21,7 +21,7 @@ export function createEncounter(id, name, maxHP, statBlock = {}, location = null
  * @returns {Encounter}
  */
 export function withDefaults(encounter) {
-  return { ...encounter, location: encounter.location ?? null };
+  return { ...encounter, location: encounter.location ?? null, conditions: encounter.conditions ?? [] };
 }
 
 /**

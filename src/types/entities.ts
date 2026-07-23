@@ -3,6 +3,12 @@ export interface EncounterLocation {
   tileId: string;
 }
 
+/** A status/condition with an optional remaining-rounds counter (null = indefinite). */
+export interface Condition {
+  name: string;
+  rounds: number | null;
+}
+
 export interface Encounter {
   id: string;
   name: string;
@@ -11,6 +17,8 @@ export interface Encounter {
   statBlock: Record<string, number>;
   /** Map location the encounter is staged at; null = not location-bound (always shown). */
   location: EncounterLocation | null;
+  /** Active status conditions (empty on older saves). */
+  conditions: Condition[];
 }
 
 export type ResourceType = 'item-count' | 'mana' | 'custom';
@@ -39,4 +47,6 @@ export interface Character {
   stats: Record<string, number>;
   resources: ResourcePool[];
   inventory: InventoryItem[];
+  /** Active status conditions (empty on older saves). */
+  conditions: Condition[];
 }
