@@ -17,7 +17,7 @@ export function createTile(id, imageRef, overrides = {}) {
     id,
     imageRef,
     overlayRef: null,
-    metadata: { poiType: null, discoverable: false, notes: '' },
+    metadata: { poiType: null, discoverable: false, discovered: false, notes: '' },
     revealed: false,
     childNodeId: null,
     ...overrides,
@@ -55,7 +55,17 @@ export function createMapNode(id, name, parentId, width, height, options = {}) {
  * @returns {MapNode}
  */
 export function withNodeDefaults(node) {
-  return { ...node, kind: node.kind ?? 'region', environ: node.environ ?? null };
+  return {
+    ...node,
+    kind: node.kind ?? 'region',
+    environ: node.environ ?? null,
+    // Backfill the `discovered` flag on tiles saved before discoverable POIs
+    // did anything, so an older tile's metadata reads cleanly.
+    tiles: node.tiles.map((t) => ({
+      ...t,
+      metadata: { discovered: false, ...t.metadata },
+    })),
+  };
 }
 
 /**

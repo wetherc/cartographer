@@ -275,18 +275,18 @@ None of this is scheduled into a phase yet — flagging for prioritization along
 
 - [ ] GM/player view-role split across `MapCanvas`, `EncounterPanel`, tile inspector (HP abstraction, hidden notes, unrevealed tiles)
 - [ ] Cross-tab live sync via the `storage` event, as the minimum viable multi-device story
-- [ ] Initiative/turn-order tracker spanning party + encounters
-- [ ] Status/condition tracking on `Character` and `Encounter`
-- [ ] In-game time/calendar concept + short/long rest actions wired to `Resource.restore`
-- [ ] `entities/NPC.js` (or generalize `Encounter`) for non-hostile characters
+- [x] Initiative/turn-order tracker spanning party + encounters — pure `combat/Initiative.js` (`sortInitiative` with deterministic tie-break, `startCombat`, `advanceTurn` reporting round wrap; 4 tests), `ui/InitiativePanel.js` (setup list with per-combatant initiative -> running order with current-turn highlight, Next turn, End combat). Combat state is transient (not persisted); on each round rollover `main.js` ticks every combatant's timed conditions down
+- [x] Status/condition tracking on `Character` and `Encounter` — both gain a `conditions: { name, rounds }[]` list (backfilled empty on load); pure `entities/Conditions.js` (`CONDITIONS` vocab, `addCondition` replaces same-name case-insensitively, `removeCondition`, `tickConditions` decrements timed and drops expired; 6 tests); shared `ui/ConditionsBar.js` removable-chip row with an add dialog, mounted on the expanded character sheet and each encounter row
+- [x] In-game time/calendar concept + short/long rest actions wired to `Resource.restore` — `time/GameClock.js` (`{ day, watch }`, `advanceWatches` with day rollover, `advanceToDawn`, `formatClock`; 6 tests incl. rest recovery), `ui/TimePanel.js` (Day N, Watch readout + Advance/Short rest/Long rest). Rests use new pure `restAll`/`shortRest`/`longRest` on `Character` (half vs. full pool restore) and log a `'rest'` travelogue entry. `clock` added to `CampaignState`
+- [x] `entities/NPC.js` (or generalize `Encounter`) for non-hostile characters — new `NPC` entity (name/role/friendly-neutral-hostile disposition/notes/location, no HP); `npcsAt` mirrors `encountersAt`; `ui/NPCPanel.js` lists NPCs at the party's location with a disposition badge + create/edit/delete, refreshing on movement. `npcs` added to `CampaignState`, backfilled on load; example seeds Bram the innkeeper. 3 tests
 - [x] Quest/session log as a new `CampaignState` field + panel — `quests` field of `Quest` records (title/notes/status), pure `quest/Quests.js` (reusing `Roster.js` for list ops); `ui/QuestPanel.js` groups active/completed with toggle/edit/delete + New quest, as a Play-mode sidebar card
 - [ ] Handout/lore attachment on tiles/nodes, revealed to players on demand
-- [ ] Surface `TileMetadata` to a GM during play, not just in the Build-mode editor
+- [x] Surface `TileMetadata` to a GM during play, not just in the Build-mode editor — done in Phase G: `MapCanvas` tracks the hovered cell and `ui/TileTooltip.js` shows a revealed tile's POI type + notes as a cursor-following tooltip in Play mode (keyboard cursor moves fire it too, added in Phase I)
 - [x] Accessibility pass: keyboard map nav, ARIA/text alternative for canvas content, modal focus management — done as Phase I in the UI-overhaul checklist above
-- [ ] Save history / undo — small ring buffer of recent snapshots in `SaveManager`
+- [x] Save history / undo — small ring buffer of recent snapshots in `SaveManager` — `pushSnapshot` (pure bounded append, default 20) + `snapshotHistory`/`loadHistory`/`undoHistory` over a dedicated localStorage key; `main.js` snapshots the prior save before every Save/New/Load example/Import and a header Undo button pops+reloads. 5 tests
 - [ ] Add support for large, procedurally-generated worlds
   - [ ] In the Builder, add options to auto-generate archetypes to fit into a new region/interior (e.g., small / medium / large; town / dungeon / castle)
-- [ ] Improve support for the "discoverable" parameter already on each tile
+- [~] Improve support for the "discoverable" parameter already on each tile — IN PROGRESS. `TileMetadata` gains a `discovered` flag (backfilled false in `withNodeDefaults`); a discoverable POI's gold outline is suppressed in the renderer until reached (Build mode still shows all). Still to do: gate the Play-mode tooltip on discovery, mark a discoverable POI discovered when the party steps onto it (logging a travelogue entry), and a unit test — then commit
 - [ ] Max mana and HP, and XP to level up, should be configurable, but also have reasonable defaults and level scaling
 - [x] There should be a mana bar in addition to each character's health bar — mana modeled as a reserved `"mana"` ResourcePool (`withMana`/`getMana` mirroring HP), rendered as a blue bar beside HP on the collapsed character card via a generalized `buildStatBar`; new-character modal gains an optional Max mana field
 - [x] The path tiles should overlay on top of other background tiles so they can be placed on sand, snow, etc. — `Tile` gains an `overlayRef` layer drawn over the base terrain in `MapCanvas`; `paintTile(node, id, imageRef, overlay)` stamps a road brush (`type === 'road'`) onto `overlayRef` while preserving the terrain beneath (an empty cell falls back to the road as its base), so re-terraining under a road keeps the road. The 11 road SVGs were redrawn with transparent backgrounds (grass rect/tufts removed) so the underlying tile shows through the verges. Covered by new `TilePaint` overlay tests; verified in-browser that a road overlays sand with sandy verges.
@@ -294,12 +294,12 @@ None of this is scheduled into a phase yet — flagging for prioritization along
 - [ ] When building a new map, party spawn point should also be a configurable param in the app
 - [x] Add a travelogue / event log that tracks the party's adventure — new `travelog` `CampaignState` field (capped append-only `LogEntry[]`, pure `log/Travelogue.js`); auto-records region entry, teleport, and encounter defeat; `ui/TravelogPanel.js` renders newest-first with a confirm-gated Clear, as a Play-mode sidebar card
 - [ ] Add user docs for GMs
-- [ ] In the Play tab, the default behavior is still left click and drag to move the map; it should be right click and drag to match the Build tab
-- [ ] In the overworld, regions shouldn't be highlighted until at least one tile of them has been discovered through the fog of war
-- [ ] Fix the sword icon used in encounters; it's impossible to tell what it's supposed to visually indicate
+- [x] In the Play tab, the default behavior is still left click and drag to move the map; it should be right click and drag to match the Build tab — panning is now the right button in both modes (`MapCanvas` reworked: left is click-to-act in Play, authoring stroke in Build; context menu suppressed in both)
+- [x] In the overworld, regions shouldn't be highlighted until at least one tile of them has been discovered through the fog of war — `MapRenderer._renderRegionGroups` skips a group until one of its tiles is revealed (Build mode still draws all)
+- [x] Fix the sword icon used in encounters; it's impossible to tell what it's supposed to visually indicate — `damage` glyph redrawn as an upright sword (blade/crossguard/grip/pommel)
 - [ ] When a tile with an encounter is stepped on, the encounter should open as a modal overlaid on top of the map. Fled/ignored encounters should remain in the sidebar. The sidebar should be collapsible. Encounters should include tile region + coordinates
-- [ ] The map grid should include coordinates (each row / column should have its X/Y coordinate displayed above or to the left of the map)
+- [x] The map grid should include coordinates (each row / column should have its X/Y coordinate displayed above or to the left of the map) — `MapRenderer._renderCoordinates` labels columns above the top row and rows left of the first column, panning with the grid; sized to scale legibly on HiDPI
 - [ ] The travelogue should arguably be in its own tab or somewhere that won't be competing for space as much
 - [ ] The dice tray should live below the map, as should the expandable party member boxes
-- [ ] In the quests box, when a quest is completed the plus sign in the button next to it should transform into a checkmark
+- [x] In the quests box, when a quest is completed the plus sign in the button next to it should transform into a checkmark — `QuestPanel` toggle shows `check` when completed, `add` (plus) when active; new `check` icon added
 - [ ] Should the quests also have their own standalone tab?

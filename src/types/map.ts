@@ -2,7 +2,12 @@ export type POIType = 'settlement' | 'landmark' | 'dungeon' | 'shop' | 'quest' |
 
 export interface TileMetadata {
   poiType: POIType | null;
+  /** When true, this POI stays hidden (no outline, no tooltip) until the party
+   * reaches it; a plain POI is visible as soon as its tile is revealed. */
   discoverable: boolean;
+  /** Whether a discoverable POI has been reached yet. Meaningless when
+   * discoverable is false. Backfilled false on older saves. */
+  discovered: boolean;
   notes: string;
 }
 

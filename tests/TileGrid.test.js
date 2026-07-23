@@ -8,6 +8,7 @@ import {
   updateTileMetadata,
   resizeNode,
   tilesOutsideBounds,
+  withNodeDefaults,
   TileGrid,
 } from '../src/map/TileGrid.js';
 
@@ -15,7 +16,20 @@ test('createTile has default unrevealed metadata', () => {
   const tile = createTile('t1', 'grass.png');
   assert.equal(tile.revealed, false);
   assert.equal(tile.metadata.poiType, null);
+  assert.equal(tile.metadata.discoverable, false);
+  assert.equal(tile.metadata.discovered, false);
   assert.equal(tile.childNodeId, null);
+});
+
+test('withNodeDefaults backfills discovered on tiles from older saves', () => {
+  const legacy = {
+    id: 'n', name: 'Old', parentId: null, width: 1, height: 1, kind: 'region', environ: null,
+    tiles: [{ id: '0,0', imageRef: 'g.svg', overlayRef: null, revealed: true, childNodeId: null,
+      metadata: { poiType: 'dungeon', discoverable: true, notes: '' } }],
+  };
+  const node = withNodeDefaults(/** @type {any} */ (legacy));
+  assert.equal(node.tiles[0].metadata.discovered, false);
+  assert.equal(node.tiles[0].metadata.poiType, 'dungeon');
 });
 
 test('setTile adds a new tile and replaces an existing one by id', () => {

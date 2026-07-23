@@ -161,10 +161,14 @@ export class MapRenderer {
         }
       }
 
-      // A drawn (revealed or Build-mode) tile carrying a POI type gets a
-      // prominent outline so a discovered point of interest stands out from
-      // ordinary terrain.
-      if (tile.metadata.poiType) this._renderPoiOutline(sx, sy, size);
+      // A drawn tile carrying a POI type gets a prominent outline. A POI marked
+      // discoverable stays hidden until the party reaches it (unless authoring,
+      // where the GM sees everything), so secret sites aren't given away by fog
+      // reveal alone.
+      const poiVisible =
+        tile.metadata.poiType &&
+        (view.revealAll || !tile.metadata.discoverable || tile.metadata.discovered);
+      if (poiVisible) this._renderPoiOutline(sx, sy, size);
     }
   }
 
