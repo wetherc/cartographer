@@ -1,0 +1,177 @@
+/* ==========================================================================
+   Breadcrumb
+   ========================================================================== */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  font-size: var(--text-label);
+}
+
+.breadcrumb__crumb {
+  color: var(--accent);
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+}
+
+.breadcrumb__crumb:hover {
+  background: var(--surface-sunken);
+}
+
+.breadcrumb__crumb[aria-current] {
+  font-weight: 700;
+  color: var(--text);
+  cursor: default;
+}
+
+.breadcrumb__crumb[aria-current]:hover {
+  background: none;
+}
+
+.breadcrumb__anchor {
+  color: var(--text-muted);
+  margin-right: var(--space-1);
+}
+
+.breadcrumb__separator {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* ==========================================================================
+   Dice tray
+   ========================================================================== */
+
+.dice-tray__summary .dice-tray__d20 {
+  color: var(--accent);
+}
+
+.dice-tray {
+  padding-top: var(--space-2);
+}
+
+.dice-tray__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
+}
+
+.dice-tray__label {
+  width: 4.5rem;
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.dice-tray__count {
+  width: 2rem;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.dice-tray__target {
+  width: 4.5rem;
+  text-align: center;
+}
+
+.dice-tray__roll {
+  margin-top: var(--space-3);
+  width: 100%;
+}
+
+.dice-tray__result {
+  margin-top: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  white-space: pre-wrap;
+  min-height: 1.5rem;
+}
+
+/* ==========================================================================
+   Disclosure (collapsible panel headers)
+   ========================================================================== */
+
+.disclosure {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-1) 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.disclosure__chevron {
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.disclosure--open .disclosure__chevron {
+  transform: rotate(90deg);
+}
+
+/* ==========================================================================
+   HP healthbar
+   ========================================================================== */
+
+/* One full-width line per pool on the collapsed card: label, track, numbers. */
+.stat-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+}
+
+.stat-bar__label {
+  flex-shrink: 0;
+  width: 2.5rem;
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.stat-bar__track {
+  flex: 1;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.stat-bar__fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--success);
+}
+
+.stat-bar__fill--mana {
+  background: var(--mana);
+}
+
+.stat-bar__fill--critical {
+  background: var(--danger);
+}
+
+.stat-bar__text {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+

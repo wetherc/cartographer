@@ -16,7 +16,7 @@ src/
   ui/                  thin DOM-wiring widgets (DiceTray, Breadcrumb, CharacterSheet, InventoryPanel, EncounterPanel)
 ```
 
-`index.html`/`style.css` plus `main.js` and `src/app/` wire all of the above into one app. The wiring holds only wiring — state singletons, mount calls, and event handlers; anything constructible without the DOM (campaign generation in `campaign/Campaigns.js`, region-entry resolution in `map/EntryPoint.js`) lives in a module instead.
+`index.html`/`style.css` plus `main.js` and `src/app/` wire all of the above into one app. `style.css` only `@import`s the feature-scoped sheets in `styles/` (base tokens/primitives first, the responsive overrides last), so the cascade order is fixed in one place. The wiring holds only wiring — state singletons, mount calls, and event handlers; anything constructible without the DOM (campaign generation in `campaign/Campaigns.js`, region-entry resolution in `map/EntryPoint.js`) lives in a module instead.
 
 ### The app/ wiring layer
 

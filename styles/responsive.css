@@ -1,0 +1,29 @@
+/* ==========================================================================
+   Responsive: below tablet width the fixed-width rails would crush the map,
+   so every column goes full-width and stacks — map first, then panels.
+   Last in the file so it wins the cascade over the base column widths.
+   ========================================================================== */
+@media (max-width: 68rem) {
+  .app-main {
+    flex-direction: column;
+  }
+
+  .app-center {
+    width: 100%;
+  }
+
+  .app-sidebar,
+  .app-buildrail,
+  .app-buildrail--stack {
+    width: 100%;
+  }
+
+  .app-header {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+  }
+
+  #map-canvas {
+    height: min(55vh, 32rem);
+  }
+}

@@ -20,7 +20,7 @@ With Campaign Builder, you can:
 
 ## Development
 
-No build step. Plain HTML/CSS/JS served as native ES modules; the app is `index.html` + `style.css` + `src/main.js`.
+No build step. Plain HTML/CSS/JS served as native ES modules; the app is `index.html` + `style.css` + `src/main.js`. `style.css` is an import manifest for the feature-scoped sheets under `styles/`, listed in cascade order.
 
 Serve the project root over HTTP (module imports don't work over `file://`) and open it in a browser, e.g.:
 

@@ -1,0 +1,162 @@
+/* ==========================================================================
+   Character sheet
+   ========================================================================== */
+
+/* Collapsed-card head: the disclosure summary (name row + stat-bar lines). */
+.character-sheet__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.character-sheet__head .disclosure {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Stack the name row and the HP/mana lines; the chevron lives in the top row. */
+.character-sheet__summary {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+}
+
+.character-sheet__summary-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.character-sheet__summary .character-sheet__name {
+  font-weight: 700;
+}
+
+.character-sheet__summary .character-sheet__race {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.character-sheet__body {
+  padding-top: var(--space-3);
+}
+
+.character-sheet__header {
+  font-size: var(--text-heading);
+  font-weight: 700;
+  margin-bottom: var(--space-3);
+}
+
+.character-sheet__resources {
+  margin-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.character-sheet__resource-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.character-sheet__resource-row .character-sheet__resource-label {
+  margin-right: auto;
+}
+
+.character-sheet__xp {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.character-sheet__xp-input {
+  width: 4rem;
+  margin-left: auto;
+}
+
+.character-sheet__stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-2);
+}
+
+.character-sheet__stat-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.character-sheet__stat-label {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.character-sheet__stat-input {
+  width: 3.5rem;
+  text-align: center;
+  font-family: var(--font-mono);
+}
+
+/* The derived ability modifier shown beside each score. */
+.character-sheet__stat-mod {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  min-width: 2ch;
+  text-align: right;
+}
+
+/* ==========================================================================
+   Inventory
+   ========================================================================== */
+
+.inventory-panel__summary {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.inventory-panel__body {
+  padding-top: var(--space-2);
+}
+
+.inventory-panel__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+
+.inventory-panel__label {
+  flex: 1;
+  font-size: var(--text-label);
+}
+
+.inventory-panel__form {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+
+.inventory-panel__name-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.inventory-panel__quantity-input {
+  width: 3.5rem;
+  text-align: center;
+}
+
