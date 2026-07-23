@@ -15,6 +15,7 @@ import {
 import { mustGetElement } from './ui/dom.js';
 import { mountBreadcrumb } from './ui/Breadcrumb.js';
 import { mountModeSwitch } from './ui/ModeSwitch.js';
+import { wireTabs } from './ui/Tabs.js';
 import { mountRoleSwitch } from './ui/RoleSwitch.js';
 import { isGM, hpBand } from './view/ViewRole.js';
 import { mountWorldTree } from './ui/WorldTree.js';
@@ -911,6 +912,10 @@ mountRoleSwitch(mustGetElement('role-switch-container'), currentRole, (role) => 
   sessionStorage.setItem('campaign-builder:role', role);
   applyRole();
 });
+
+// Group the Play sidebar panels into Session / Quests / Log tabs so the quest
+// log and travelogue get their own space instead of a single long scroll.
+wireTabs(mustGetElement('sidebar-tabs'));
 
 // Collapse the Play sidebar to give the map the full width during a session.
 const sidebarToggle = /** @type {HTMLButtonElement} */ (mustGetElement('sidebar-toggle'));

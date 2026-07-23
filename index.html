@@ -28,50 +28,71 @@
       <h2 class="card__title">World</h2>
     </aside>
 
-    <section class="app-map">
-      <div id="breadcrumb-container"></div>
-      <div id="map-viewport" class="map-viewport">
-        <canvas id="map-canvas" width="720" height="540"></canvas>
+    <div class="app-center">
+      <section class="app-map">
+        <div id="breadcrumb-container"></div>
+        <div id="map-viewport" class="map-viewport">
+          <canvas id="map-canvas" width="720" height="540"></canvas>
+        </div>
+      </section>
+
+      <!-- The party's character boxes and the dice tray sit below the map so
+           they don't compete with the map for the sidebar's narrow width. -->
+      <div id="below-map" class="app-belowmap">
+        <section id="party-container" class="card" aria-label="Party roster">
+          <h2 class="card__title">Party</h2>
+        </section>
+        <section id="character-sheet-container" class="card" aria-label="Character sheet"></section>
+        <section id="inventory-container" class="card" aria-label="Inventory">
+          <h2 class="card__title">Inventory</h2>
+        </section>
+        <section id="dice-tray-container" class="card" aria-label="Dice tray">
+          <h2 class="card__title">Dice Tray</h2>
+        </section>
       </div>
-    </section>
+    </div>
 
     <aside class="app-sidebar">
       <button id="sidebar-toggle" class="sidebar-toggle btn" type="button" aria-expanded="true" aria-controls="sidebar-panels">Hide panels</button>
       <div id="sidebar-panels" class="sidebar-panels">
-      <section id="region-tree-container" class="card" aria-label="Discovered regions">
-        <h2 class="card__title">World</h2>
-      </section>
-      <section id="time-container" class="card" aria-label="In-game time">
-        <h2 class="card__title">Time</h2>
-      </section>
-      <section id="party-container" class="card" aria-label="Party roster">
-        <h2 class="card__title">Party</h2>
-      </section>
-      <section id="character-sheet-container" class="card" aria-label="Character sheet"></section>
-      <section id="inventory-container" class="card" aria-label="Inventory">
-        <h2 class="card__title">Inventory</h2>
-      </section>
-      <section id="encounter-container" class="card" aria-label="Encounters">
-        <h2 class="card__title">Encounters</h2>
-      </section>
-      <section id="initiative-container" class="card" aria-label="Initiative">
-        <h2 class="card__title">Initiative</h2>
-      </section>
-      <section id="npc-container" class="card" aria-label="NPCs">
-        <h2 class="card__title">NPCs</h2>
-      </section>
-      <section id="dice-tray-container" class="card" aria-label="Dice tray">
-        <h2 class="card__title">Dice Tray</h2>
-      </section>
-      <section id="quest-container" class="card" aria-label="Quest log">
-        <h2 class="card__title">Quests</h2>
-      </section>
-      <section id="handout-container" class="card" aria-label="Handouts">
-        <h2 class="card__title">Handouts</h2>
-      </section>
-      <section id="travelog-container" class="card" aria-label="Travelogue">
-        <h2 class="card__title">Travelogue</h2>
-      </section>
+        <div id="sidebar-tabs" class="tabs" role="tablist" aria-label="Session panels">
+          <button class="tabs__tab" type="button" role="tab" id="tab-session" aria-controls="panel-session" aria-selected="true">Session</button>
+          <button class="tabs__tab" type="button" role="tab" id="tab-quests" aria-controls="panel-quests" aria-selected="false" tabindex="-1">Quests</button>
+          <button class="tabs__tab" type="button" role="tab" id="tab-log" aria-controls="panel-log" aria-selected="false" tabindex="-1">Log</button>
+        </div>
+
+        <div class="tabs__panel" role="tabpanel" id="panel-session" aria-labelledby="tab-session">
+          <section id="region-tree-container" class="card" aria-label="Discovered regions">
+            <h2 class="card__title">World</h2>
+          </section>
+          <section id="time-container" class="card" aria-label="In-game time">
+            <h2 class="card__title">Time</h2>
+          </section>
+          <section id="encounter-container" class="card" aria-label="Encounters">
+            <h2 class="card__title">Encounters</h2>
+          </section>
+          <section id="initiative-container" class="card" aria-label="Initiative">
+            <h2 class="card__title">Initiative</h2>
+          </section>
+          <section id="npc-container" class="card" aria-label="NPCs">
+            <h2 class="card__title">NPCs</h2>
+          </section>
+          <section id="handout-container" class="card" aria-label="Handouts">
+            <h2 class="card__title">Handouts</h2>
+          </section>
+        </div>
+
+        <div class="tabs__panel" role="tabpanel" id="panel-quests" aria-labelledby="tab-quests" hidden>
+          <section id="quest-container" class="card" aria-label="Quest log">
+            <h2 class="card__title">Quests</h2>
+          </section>
+        </div>
+
+        <div class="tabs__panel" role="tabpanel" id="panel-log" aria-labelledby="tab-log" hidden>
+          <section id="travelog-container" class="card" aria-label="Travelogue">
+            <h2 class="card__title">Travelogue</h2>
+          </section>
+        </div>
       </div>
     </aside>
 
