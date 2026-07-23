@@ -39,6 +39,7 @@ Single-image markers (`MARKER_TYPES`) sit on the standard grass background (`#5a
 
 - `floor-1..3` — floor variants; differ only in inset cracks/pebbles and tinted inner grid cells (tints never touch a tile edge).
 - `wall-h`, `wall-v`, `wall-corner-*` — a 16px stone wall band centered on the tile, sharing one cross-section (fill `#6f6a60`, dark `#4c4841` edges, `#55514a` course line, `#8a857a` highlight one unit inside the top/left face) so straights and corners join cleanly. Corner names describe the open edges: `wall-corner-ne` connects north and east, so it caps a room's *south-west* corner.
+- `wall-tee-*`, `wall-cross` — three- and four-way junctions on the same cross-section. Like the road tees, a tee is named for its odd arm: `wall-tee-n` runs east-west with a branch north.
 - `door-h`, `door-v` — a wall with a framed wooden door leaf in the gap.
 - `stairs-up`, `stairs-down` — treads lightening toward the ascent / darkening into the descent, with a direction chevron.
 
