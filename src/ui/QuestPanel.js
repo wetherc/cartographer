@@ -1,14 +1,18 @@
 import { groupByStatus } from '../quest/Quests.js';
 import { icon } from './icons.js';
+import { isGM } from '../view/ViewRole.js';
 
 /** @typedef {import('../types/quest.js').Quest} Quest */
+/** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**
  * Mount the quest/session log: active quests first, completed ones below,
  * each with a toggle-complete, edit, and delete affordance, plus a "New quest"
  * control. The panel owns no state — `getQuests` supplies the rows and every
  * mutation flows back through a callback, matching the other panels. Modals
- * (add/edit/confirm) live in main.js.
+ * (add/edit/confirm) live in main.js. When `getRole` reports a player view,
+ * the log is read-only: rows render with a static status glyph and no
+ * edit/delete, and the add control is omitted.
  * @param {HTMLElement} container
  * @param {{
  *   getQuests: () => Quest[],
@@ -16,6 +20,7 @@ import { icon } from './icons.js';
  *   onEdit: (quest: Quest) => Promise<boolean> | boolean,
  *   onDelete: (id: string) => Promise<boolean> | boolean,
  *   onAdd: () => Promise<Quest | null>,
+ *   getRole?: () => ViewRole,
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -24,25 +29,37 @@ export function mountQuestPanel(container, callbacks) {
   root.className = 'quest-panel';
   container.appendChild(root);
 
-  /** @param {Quest} quest */
-  function buildRow(quest) {
+  const gmView = () => !callbacks.getRole || isGM(callbacks.getRole());
+
+  /** @param {Quest} quest @param {boolean} gm */
+  function buildRow(quest, gm) {
     const row = document.createElement('div');
     row.className = 'quest-panel__row';
     if (quest.status === 'completed') row.classList.add('quest-panel__row--completed');
 
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'btn btn--icon';
     const done = quest.status === 'completed';
-    toggle.setAttribute('aria-label', done ? `Reopen ${quest.title}` : `Complete ${quest.title}`);
-    toggle.setAttribute('aria-pressed', String(done));
-    // A completed quest's toggle shows a check; an active one shows a plus to
-    // add/mark-done, so the glyph tracks the quest's state.
-    toggle.appendChild(icon(done ? 'check' : 'add'));
-    toggle.addEventListener('click', () => {
-      callbacks.onToggle(quest);
-      render();
-    });
+    /** @type {HTMLElement} */
+    let toggle;
+    if (gm) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn--icon';
+      btn.setAttribute('aria-label', done ? `Reopen ${quest.title}` : `Complete ${quest.title}`);
+      btn.setAttribute('aria-pressed', String(done));
+      // A completed quest's toggle shows a check; an active one shows a plus to
+      // add/mark-done, so the glyph tracks the quest's state.
+      btn.appendChild(icon(done ? 'check' : 'add'));
+      btn.addEventListener('click', () => {
+        callbacks.onToggle(quest);
+        render();
+      });
+      toggle = btn;
+    } else {
+      // Players see the status glyph without the affordance to flip it.
+      toggle = document.createElement('span');
+      toggle.className = 'quest-panel__status';
+      toggle.appendChild(icon(done ? 'check' : 'add'));
+    }
 
     const body = document.createElement('div');
     body.className = 'quest-panel__body';
@@ -55,6 +72,11 @@ export function mountQuestPanel(container, callbacks) {
       notes.className = 'quest-panel__notes';
       notes.textContent = quest.notes;
       body.appendChild(notes);
+    }
+
+    if (!gm) {
+      row.append(toggle, body);
+      return row;
     }
 
     const editButton = document.createElement('button');
@@ -79,20 +101,21 @@ export function mountQuestPanel(container, callbacks) {
     return row;
   }
 
-  /** @param {string} label @param {Quest[]} quests */
-  function buildGroup(label, quests) {
+  /** @param {string} label @param {Quest[]} quests @param {boolean} gm */
+  function buildGroup(label, quests, gm) {
     const group = document.createElement('div');
     group.className = 'quest-panel__group';
     const heading = document.createElement('h3');
     heading.className = 'quest-panel__group-title';
     heading.textContent = label;
     group.appendChild(heading);
-    for (const quest of quests) group.appendChild(buildRow(quest));
+    for (const quest of quests) group.appendChild(buildRow(quest, gm));
     return group;
   }
 
   function render() {
     root.innerHTML = '';
+    const gm = gmView();
     const quests = callbacks.getQuests();
 
     if (quests.length === 0) {
@@ -102,10 +125,11 @@ export function mountQuestPanel(container, callbacks) {
       root.appendChild(empty);
     } else {
       const { active, completed } = groupByStatus(quests);
-      if (active.length > 0) root.appendChild(buildGroup('Active', active));
-      if (completed.length > 0) root.appendChild(buildGroup('Completed', completed));
+      if (active.length > 0) root.appendChild(buildGroup('Active', active, gm));
+      if (completed.length > 0) root.appendChild(buildGroup('Completed', completed, gm));
     }
 
+    if (!gm) return;
     const addButton = document.createElement('button');
     addButton.type = 'button';
     addButton.className = 'btn quest-panel__add';

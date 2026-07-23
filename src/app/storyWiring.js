@@ -126,9 +126,10 @@ export function wireStory(app) {
       return true;
     },
     confirmDelete: (npc) => confirmModal(`Delete "${npc.name}"?`, { danger: true, confirmLabel: 'Delete' }),
+    getRole: () => state.role,
   });
 
-  mountQuestPanel(mustGetElement('quest-container'), {
+  app.views.questPanel = mountQuestPanel(mustGetElement('quest-container'), {
     getQuests: () => state.quests,
     onToggle: (quest) => {
       state.quests = replaceById(state.quests, toggleQuestStatus(quest));
@@ -167,6 +168,7 @@ export function wireStory(app) {
       }
       return ok;
     },
+    getRole: () => state.role,
   });
 
   app.views.handoutPanel = mountHandoutPanel(mustGetElement('handout-container'), {

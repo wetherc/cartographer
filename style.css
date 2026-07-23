@@ -1748,6 +1748,17 @@ body.sidebar-collapsed .app-sidebar {
   font-size: var(--text-label);
 }
 
+/* Player-view stand-in for the toggle button: same footprint, no affordance. */
+.quest-panel__status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex: 0 0 auto;
+  color: var(--text-muted);
+}
+
 .handout-panel__row {
   padding: var(--space-1) 0;
   border-bottom: 1px solid var(--border);

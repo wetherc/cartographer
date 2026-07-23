@@ -1,13 +1,17 @@
 import { icon } from './icons.js';
+import { isGM } from '../view/ViewRole.js';
 
 /** @typedef {import('../types/npc.js').NPC} NPC */
+/** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**
  * Mount the NPC panel: one row per NPC relevant to the party's location, each
  * showing name, role, a disposition badge, and notes, with edit and delete
  * affordances plus a "New NPC" control. Like the encounter panel it owns no
  * roster state — `getNPCs` supplies the visible rows and every mutation flows
- * back through a callback; modals live in main.js.
+ * back through a callback; modals live in main.js. When `getRole` reports a
+ * player view, the roster is read-only: rows render without edit/delete and
+ * the add control is omitted.
  * @param {HTMLElement} container
  * @param {{
  *   getNPCs: () => NPC[],
@@ -16,6 +20,7 @@ import { icon } from './icons.js';
  *   onEdit?: (npc: NPC) => Promise<boolean>,
  *   confirmDelete?: (npc: NPC) => Promise<boolean>,
  *   getLocationLabel?: (npc: NPC) => string,
+ *   getRole?: () => ViewRole,
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -24,8 +29,10 @@ export function mountNPCPanel(container, callbacks) {
   root.className = 'npc-panel';
   container.appendChild(root);
 
-  /** @param {NPC} npc */
-  function buildRow(npc) {
+  const gmView = () => !callbacks.getRole || isGM(callbacks.getRole());
+
+  /** @param {NPC} npc @param {boolean} gm */
+  function buildRow(npc, gm) {
     const row = document.createElement('div');
     row.className = 'npc-panel__row';
 
@@ -62,6 +69,11 @@ export function mountNPCPanel(container, callbacks) {
       body.appendChild(notes);
     }
 
+    if (!gm) {
+      row.appendChild(body);
+      return row;
+    }
+
     const controls = document.createElement('div');
     controls.className = 'npc-panel__controls';
 
@@ -96,6 +108,7 @@ export function mountNPCPanel(container, callbacks) {
 
   function render() {
     root.innerHTML = '';
+    const gm = gmView();
     const npcs = callbacks.getNPCs();
     if (npcs.length === 0) {
       const empty = document.createElement('p');
@@ -103,10 +116,10 @@ export function mountNPCPanel(container, callbacks) {
       empty.textContent = 'No one of note here.';
       root.appendChild(empty);
     }
-    for (const npc of npcs) root.appendChild(buildRow(npc));
+    for (const npc of npcs) root.appendChild(buildRow(npc, gm));
 
     const onAdd = callbacks.onAdd;
-    if (onAdd) {
+    if (onAdd && gm) {
       const addButton = document.createElement('button');
       addButton.type = 'button';
       addButton.className = 'btn npc-panel__add';
