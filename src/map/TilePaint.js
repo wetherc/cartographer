@@ -186,8 +186,12 @@ export function linkTilesInRect(node, rect, childNodeId) {
  * existing non-wall tiles that are unlinked (or already linked to the same
  * child) are stamped, so a neighboring region's block is never silently
  * overwritten; the anchor itself is always stamped. Interiors keep single-tile
- * links (a door or stair is one cell). Unlinking (null) clears the anchor's
- * whole contiguous block, so no orphaned corner keeps zooming into the child.
+ * links (a door or stair is one cell). When the anchor already sits inside a
+ * block linked to a different child, the whole contiguous block is re-pointed
+ * as one unit (and unlinking with null clears it the same way) — a multi-tile
+ * entrance zooms into exactly one child, never two overlapping ones, and no
+ * orphaned corner keeps the old link. Re-stamping the same child falls through
+ * to the block-widening path, so ensureChildLink can grow a fresh anchor.
  * @param {MapNode} node
  * @param {string} tileId anchor tile (must exist)
  * @param {string | null} childNodeId
@@ -195,12 +199,19 @@ export function linkTilesInRect(node, rect, childNodeId) {
  */
 export function stampRegionLink(node, tileId, childNodeId) {
   const anchor = parseCoords(tileId);
+  const group = findRegionGroups(node).find((g) => g.tileIds.includes(tileId));
   if (childNodeId === null) {
-    const group = findRegionGroups(node).find((g) => g.tileIds.includes(tileId));
     const clear = new Set(group ? group.tileIds : [tileId]);
     return {
       ...node,
       tiles: node.tiles.map((t) => (clear.has(t.id) ? { ...t, childNodeId: null } : t)),
+    };
+  }
+  if (group && group.childNodeId !== childNodeId) {
+    const ids = new Set(group.tileIds);
+    return {
+      ...node,
+      tiles: node.tiles.map((t) => (ids.has(t.id) ? { ...t, childNodeId } : t)),
     };
   }
   if (!anchor || node.kind !== 'region') {
