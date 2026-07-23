@@ -1,5 +1,6 @@
 import { parseCoords, tileRect } from './MapGeometry.js';
 import { withinRadius } from './FogOfWar.js';
+import { groupImageChunks } from './RegionGroups.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
@@ -76,7 +77,8 @@ export class MapRenderer {
     if (!view.node) return;
 
     this._renderMapBounds(view);
-    this._renderTiles(view);
+    const groupCover = this._renderGroupImages(view);
+    this._renderTiles(view, groupCover);
     this._renderRegionGroups(view);
     this._renderMarquee(view);
     this._renderSelection(view);
@@ -125,11 +127,55 @@ export class MapRenderer {
   }
 
   /**
-   * Draw every in-view tile: fog rect when unrevealed (outside Build mode), the
-   * base terrain image, any path/road overlay on top, and a POI outline.
+   * Draw each multi-tile region block on an outdoor map as scaled images in
+   * chunks of at most 2x2 tiles, so a sub-region entrance reads as a landmark
+   * instead of repeated tiles — a 4x4 block gets four distinct 2x2 images, not
+   * one image stretched 4x. Interiors keep per-tile rendering, as do ragged
+   * groups (their bounding box would paint over neighboring tiles). The
+   * per-tile pass then skips the base images of every covered tile, while its
+   * fog rects and path overlays still draw per tile on top, so a partially
+   * explored block reveals the scaled image piecewise and a road through a
+   * region stays 1x1. Returns the covered tile ids for that skip.
    * @param {MapView} view
+   * @returns {Set<string>}
    */
-  _renderTiles(view) {
+  _renderGroupImages(view) {
+    /** @type {Set<string>} */
+    const covered = new Set();
+    if (!view.node || view.node.kind !== 'region') return covered;
+    const { ctx } = this;
+    for (const group of view.regionGroups) {
+      if (group.tileIds.length < 2) continue;
+      for (const chunk of groupImageChunks(view.node, group)) {
+        for (const id of chunk.tileIds) covered.add(id);
+
+        const topLeft = tileRect(chunk.minX, chunk.minY, this.tileSize, view.offsetX, view.offsetY, view.scale);
+        const bottomRight = tileRect(chunk.maxX, chunk.maxY, this.tileSize, view.offsetX, view.offsetY, view.scale);
+        const w = bottomRight.sx + bottomRight.size - topLeft.sx;
+        const h = bottomRight.sy + bottomRight.size - topLeft.sy;
+        if (topLeft.sx + w < 0 || topLeft.sy + h < 0 || topLeft.sx > view.canvasWidth || topLeft.sy > view.canvasHeight) continue;
+
+        const img = this._getImage(chunk.imageRef);
+        if (img.complete && img.naturalWidth > 0) {
+          ctx.drawImage(img, topLeft.sx, topLeft.sy, w, h);
+        } else {
+          ctx.fillStyle = '#333';
+          ctx.fillRect(topLeft.sx, topLeft.sy, w, h);
+        }
+      }
+    }
+    return covered;
+  }
+
+  /**
+   * Draw every in-view tile: fog rect when unrevealed (outside Build mode), the
+   * base terrain image, any path/road overlay on top, and a POI outline. Tiles
+   * in `groupCover` skip their base image — a scaled region-block image was
+   * already drawn beneath them — but keep fog, overlays, and POI outlines.
+   * @param {MapView} view
+   * @param {Set<string>} groupCover
+   */
+  _renderTiles(view, groupCover) {
     const { ctx } = this;
     const node = view.node;
     if (!node) return;
@@ -150,7 +196,7 @@ export class MapRenderer {
       // A tile carrying only an overlay (a path on an as-yet-unpainted cell)
       // has an empty base, so let the map backdrop show through rather than
       // drawing a placeholder under the path.
-      if (tile.imageRef) {
+      if (tile.imageRef && !groupCover.has(tile.id)) {
         const img = this._getImage(tile.imageRef);
         if (img.complete && img.naturalWidth > 0) {
           ctx.drawImage(img, sx, sy, size, size);
