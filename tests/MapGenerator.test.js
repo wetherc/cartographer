@@ -84,3 +84,48 @@ test('castle is a walled ring with a floored interior and doors', () => {
   assert.ok(gen.tiles.some((t) => t.imageRef.includes('door')), 'has a door');
   assert.ok(gen.tiles.some((t) => t.imageRef.includes('stairs')), 'has stairs');
 });
+
+test('every archetype returns a border entry that exists and is walkable', () => {
+  const cases = [
+    ['region', 'wilderness'],
+    ['region', 'town'],
+    ['interior', 'dungeon'],
+    ['interior', 'castle'],
+  ];
+  for (const [kind, archetype] of cases) {
+    for (const seed of [1, 2, 3, 4, 5]) {
+      const gen = generateNodeTiles(palette, { kind, archetype, size: 'small' }, mulberry32(seed));
+      const [x, y] = gen.entry.split(',').map(Number);
+      const onBorder = x === 0 || y === 0 || x === gen.width - 1 || y === gen.height - 1;
+      assert.ok(onBorder, `${archetype} seed ${seed}: entry ${gen.entry} on the border`);
+      const tile = gen.tiles.find((t) => t.id === gen.entry);
+      assert.ok(tile, `${archetype} seed ${seed}: entry tile exists`);
+      assert.ok(!tile.imageRef.includes('wall-'), `${archetype} seed ${seed}: entry is not a wall`);
+    }
+  }
+});
+
+test('dungeon entry connects to the whole floor network', () => {
+  for (const seed of [3, 11, 27]) {
+    const n = GENERATOR_SIZES.medium;
+    const gen = generateNodeTiles(palette, { kind: 'interior', archetype: 'dungeon', size: 'medium' }, mulberry32(seed));
+    const walkable = new Set(
+      gen.tiles.filter((t) => !t.imageRef.includes('wall-')).map((t) => t.id),
+    );
+    // Flood-fill the walkable tiles from the entry door.
+    const seen = new Set([gen.entry]);
+    const queue = [gen.entry];
+    while (queue.length) {
+      const [x, y] = queue.pop().split(',').map(Number);
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const id = `${x + dx},${y + dy}`;
+        if (walkable.has(id) && !seen.has(id)) {
+          seen.add(id);
+          queue.push(id);
+        }
+      }
+    }
+    assert.equal(seen.size, walkable.size, `seed ${seed}: every walkable tile reachable from the entry (${seen.size}/${walkable.size})`);
+    assert.ok(n * n > walkable.size, 'sanity: dungeon is sparse');
+  }
+});

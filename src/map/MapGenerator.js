@@ -66,8 +66,10 @@ function shuffle(items, rng) {
  * Procedural open terrain: a grass base with a handful of clustered blobs of
  * forest/water/mountain/desert grown by probabilistic flood-fill, so terrain
  * reads as contiguous features rather than per-tile noise.
+ * Fully tiled, so it connects to the parent along its whole border; entry is
+ * the bottom-centre border tile.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
- * @returns {Tile[]}
+ * @returns {{ tiles: Tile[], entry: string }}
  */
 function generateWilderness(palette, size, rng) {
   /** @type {string[]} terrain type per cell, indexed y*size + x */
@@ -98,17 +100,20 @@ function generateWilderness(palette, size, rng) {
       tiles.push(createTile(`${x},${y}`, terrainRef(palette, cells[y * size + x], rng)));
     }
   }
-  return tiles;
+  return { tiles, entry: `${Math.floor(size / 2)},${size - 1}` };
 }
 
 /**
  * A settlement: grass everywhere, a cross of roads through the middle (drawn as
  * an overlay so the grass shows through the verges), and building POI markers
- * scattered on the grass tiles bordering the roads.
+ * scattered on the grass tiles bordering the roads. Entry is the south end of
+ * the vertical road, which runs edge to edge.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
- * @returns {Tile[]}
+ * @returns {{ tiles: Tile[], entry: string }}
  */
 function generateTown(palette, size, rng) {
+  // Roads run edge to edge, so the road cross itself connects the town to the
+  // parent map on all four sides.
   const mx = Math.floor(size / 2);
   const my = Math.floor(size / 2);
   /** @param {number} x @param {number} y */
@@ -148,7 +153,7 @@ function generateTown(palette, size, rng) {
     tile.overlayRef = null;
     tile.metadata = { ...tile.metadata, poiType: 'settlement' };
   });
-  return [...byId.values()];
+  return { tiles: [...byId.values()], entry: `${mx},${size - 1}` };
 }
 
 /**
@@ -174,8 +179,9 @@ function wallKind(n, e, s, w) {
  * wrapped in walls wherever floor meets the void; stairs up/down sit in the
  * first and last room. Cells that are neither floor nor wall are left empty
  * (no tile), so the level reads as carved out of blank space.
+ * An entrance corridor with a border door keeps it connected to the parent map.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
- * @returns {Tile[]}
+ * @returns {{ tiles: Tile[], entry: string }}
  */
 function generateDungeon(palette, size, rng) {
   /** @type {boolean[]} floor mask, indexed y*size + x */
@@ -218,6 +224,25 @@ function generateDungeon(palette, size, rng) {
     for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) carve(bx, y);
   }
 
+  // Entrance: carve a straight corridor from the first room to the nearest map
+  // edge and put a door on the border cell, so the dungeon is always reachable
+  // from the parent map instead of floating disconnected in the void.
+  /** @type {string} */
+  let entry = '0,0';
+  /** @type {'door-h' | 'door-v'} */
+  let entryDoor = 'door-h';
+  if (centers.length) {
+    const [ex, ey] = centers[0];
+    const dists = [ey, size - 1 - ey, ex, size - 1 - ex]; // top, bottom, left, right
+    const side = dists.indexOf(Math.min(...dists));
+    if (side === 0) for (let y = 0; y <= ey; y++) carve(ex, y);
+    else if (side === 1) for (let y = ey; y < size; y++) carve(ex, y);
+    else if (side === 2) for (let x = 0; x <= ex; x++) carve(x, ey);
+    else for (let x = ex; x < size; x++) carve(x, ey);
+    entry = side === 0 ? `${ex},0` : side === 1 ? `${ex},${size - 1}` : side === 2 ? `0,${ey}` : `${size - 1},${ey}`;
+    entryDoor = side <= 1 ? 'door-h' : 'door-v';
+  }
+
   /** @type {Tile[]} */
   const tiles = [];
   for (let y = 0; y < size; y++) {
@@ -231,26 +256,29 @@ function generateDungeon(palette, size, rng) {
       }
     }
   }
-  // Stairs mark the entrance (first room) and the descent (last room).
+  // Stairs mark the entrance (first room) and the descent (last room), and the
+  // border cell of the entrance corridor becomes the door in from the parent.
   if (centers.length) {
     const up = centers[0];
     const down = centers[centers.length - 1];
-    const stair = (id, kind) => {
+    const stamp = (id, kind) => {
       const t = tiles.find((tile) => tile.id === id);
       if (t) t.imageRef = interiorRef(palette, kind);
     };
-    stair(`${up[0]},${up[1]}`, 'stairs-up');
-    stair(`${down[0]},${down[1]}`, 'stairs-down');
+    stamp(`${up[0]},${up[1]}`, 'stairs-up');
+    stamp(`${down[0]},${down[1]}`, 'stairs-down');
+    stamp(entry, entryDoor);
   }
-  return tiles;
+  return { tiles, entry };
 }
 
 /**
  * A castle keep: a floored hall enclosed by a full wall ring with a door in the
  * south wall, split by one interior partition wall (with its own door), and
- * stairs up/down in the top corners of the hall.
+ * stairs up/down in the top corners of the hall. The south door is the entry
+ * connecting the keep to the parent map.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
- * @returns {Tile[]}
+ * @returns {{ tiles: Tile[], entry: string }}
  */
 function generateCastle(palette, size, rng) {
   const max = size - 1;
@@ -282,25 +310,28 @@ function generateCastle(palette, size, rng) {
   };
   stair('1,1', 'stairs-up');
   stair(`${max - 1},1`, 'stairs-down');
-  return tiles;
+  return { tiles, entry: `${doorX},${max}` };
 }
 
 /**
  * Generate a full tile grid for a node from an archetype and size preset. Pure
  * and RNG-injected (pass `Math.random` in the app, a seeded generator in
  * tests). The returned width/height replace the node's dimensions; the caller
- * stamps the tiles in.
+ * stamps the tiles in. Every archetype guarantees `entry`: a border tile that
+ * exists and connects to the layout's walkable area (a door for interiors, a
+ * road end or open ground for regions), so a generated space is always
+ * reachable from its parent map.
  * @param {TilePalette} palette
  * @param {{ kind: NodeKind, archetype: string, size: string }} options
  * @param {() => number} rng
- * @returns {{ width: number, height: number, tiles: Tile[] }}
+ * @returns {{ width: number, height: number, tiles: Tile[], entry: string }}
  */
 export function generateNodeTiles(palette, { kind, archetype, size }, rng) {
   const n = GENERATOR_SIZES[size] ?? GENERATOR_SIZES.medium;
-  let tiles;
-  if (archetype === 'town') tiles = generateTown(palette, n, rng);
-  else if (archetype === 'dungeon') tiles = generateDungeon(palette, n, rng);
-  else if (archetype === 'castle') tiles = generateCastle(palette, n, rng);
-  else tiles = generateWilderness(palette, n, rng);
-  return { width: n, height: n, tiles };
+  let gen;
+  if (archetype === 'town') gen = generateTown(palette, n, rng);
+  else if (archetype === 'dungeon') gen = generateDungeon(palette, n, rng);
+  else if (archetype === 'castle') gen = generateCastle(palette, n, rng);
+  else gen = generateWilderness(palette, n, rng);
+  return { width: n, height: n, tiles: gen.tiles, entry: gen.entry };
 }

@@ -64,10 +64,54 @@ export function computeEntryTile(width, height, block, party) {
   return `${midX},${midY}`;
 }
 
+/** @param {import('../types/map.js').Tile} tile */
+function isWall(tile) {
+  // Wall segments/corners are the one interior piece the party shouldn't stand
+  // on; doors, stairs, and floors are all fair landing spots.
+  return tile.imageRef.includes('wall-');
+}
+
+/**
+ * Snap a computed entry tile to one that actually exists and can be stood on.
+ * Sparse layouts (a generated dungeon's void, a castle's wall ring) can leave
+ * the geometric entry pointing at nothing or at a wall; landing there would
+ * strand the party outside the walkable area. Keeps the preferred tile when
+ * it's real and walkable; otherwise picks the nearest walkable tile, preferring
+ * a door on a tie so entering an interior reads as walking in through it.
+ * Falls back to the preferred id on an empty node.
+ * @param {import('../types/map.js').MapNode} node node being entered
+ * @param {string} preferredId tile id ("x,y") the approach geometry chose
+ * @returns {string} tile id to land the party on
+ */
+export function resolveEntryTile(node, preferredId) {
+  const preferred = node.tiles.find((t) => t.id === preferredId);
+  if (preferred && !isWall(preferred)) return preferredId;
+  const candidates = node.tiles.filter((t) => !isWall(t));
+  const pool = candidates.length ? candidates : node.tiles;
+  if (!pool.length) return preferredId;
+  const target = parseCoords(preferredId);
+  let best = pool[0];
+  let bestScore = Infinity;
+  for (const tile of pool) {
+    const { x, y } = parseCoords(tile.id);
+    const d = (x - target.x) ** 2 + (y - target.y) ** 2;
+    // A door at equal distance wins: it's the authored way in.
+    const score = d - (tile.imageRef.includes('door') ? 0.5 : 0);
+    if (score < bestScore) {
+      best = tile;
+      bestScore = score;
+    }
+  }
+  return best.id;
+}
+
 /**
  * computeEntryTile, resolved from live map state: derives the region block the
  * childNodeId occupies in the parent and the party's coordinates there, so a
  * caller can pass nodes and a PartyPosition instead of pre-computed geometry.
+ * The geometric pick is then resolved against the child's actual tiles, so a
+ * sparse or walled child (a generated dungeon or castle) still lands the party
+ * on a real, walkable tile.
  * @param {import('../types/map.js').MapNode} parent node being viewed when zooming in
  * @param {import('../types/map.js').MapNode} child node being entered
  * @param {string} childNodeId
@@ -80,5 +124,5 @@ export function computeRegionEntryTile(parent, child, childNodeId, party) {
   const block = group
     ? { minX: group.minX, minY: group.minY, maxX: group.maxX, maxY: group.maxY }
     : null;
-  return computeEntryTile(child.width, child.height, block, partyCoords);
+  return resolveEntryTile(child, computeEntryTile(child.width, child.height, block, partyCoords));
 }

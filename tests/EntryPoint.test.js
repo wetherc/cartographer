@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { computeEntryTile } from '../src/map/EntryPoint.js';
+import { computeEntryTile, resolveEntryTile } from '../src/map/EntryPoint.js';
+import { createTile } from '../src/map/TileGrid.js';
 
 // 8x8 child region. Its block sits at parent coords x 4..7, y 4..7.
 const W = 8;
@@ -46,4 +47,33 @@ test('a single-tile block projects a head-on approach to the wall midpoint', () 
   const one = { minX: 5, minY: 5, maxX: 5, maxY: 5 };
   // West of a 1-tile block, aligned on y: west edge, mid height.
   assert.equal(computeEntryTile(W, H, one, { x: 0, y: 5 }), '0,3');
+});
+
+test('resolveEntryTile keeps a real, walkable preferred tile', () => {
+  const node = {
+    id: 'n', name: 'N', parentId: null, width: 4, height: 4, kind: 'interior', environ: null,
+    tiles: [createTile('1,1', 'assets/tiles/interior/interior-floor-1.svg')],
+  };
+  assert.equal(resolveEntryTile(node, '1,1'), '1,1');
+});
+
+test('resolveEntryTile snaps a void or wall preferred tile to the nearest walkable one, doors first', () => {
+  const node = {
+    id: 'n', name: 'N', parentId: null, width: 6, height: 6, kind: 'interior', environ: null,
+    tiles: [
+      createTile('2,0', 'assets/tiles/interior/interior-wall-h.svg'),
+      createTile('2,1', 'assets/tiles/interior/interior-floor-2.svg'),
+      createTile('3,0', 'assets/tiles/interior/interior-door-h.svg'),
+    ],
+  };
+  // '2,0' exists but is a wall: nearest walkable are the floor (d=1) and the
+  // door (d=1); the door wins the tie.
+  assert.equal(resolveEntryTile(node, '2,0'), '3,0');
+  // Void cell: same resolution applies.
+  assert.equal(resolveEntryTile(node, '5,5'), '2,1');
+});
+
+test('resolveEntryTile returns the preferred id for an empty node', () => {
+  const node = { id: 'n', name: 'N', parentId: null, width: 4, height: 4, kind: 'region', environ: null, tiles: [] };
+  assert.equal(resolveEntryTile(node, '2,2'), '2,2');
 });
