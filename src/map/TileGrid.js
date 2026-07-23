@@ -1,5 +1,5 @@
 import { collectSubtreeIds } from './WorldTree.js';
-import { parseCoords } from './MapCanvas.js';
+import { parseCoords } from './MapGeometry.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').TileMetadata} TileMetadata */

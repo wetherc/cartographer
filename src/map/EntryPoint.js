@@ -1,4 +1,4 @@
-import { parseCoords } from './MapCanvas.js';
+import { parseCoords } from './MapGeometry.js';
 import { findRegionGroups } from './RegionGroups.js';
 
 /** @typedef {{ minX: number, minY: number, maxX: number, maxY: number }} Bounds */

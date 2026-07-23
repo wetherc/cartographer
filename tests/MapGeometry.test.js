@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseCoords, tileRect, screenToTile, clampZoom, clientToBuffer, fitToExtent } from '../src/map/MapCanvas.js';
+import { parseCoords, tileRect, screenToTile, clampZoom, clientToBuffer, fitToExtent } from '../src/map/MapGeometry.js';
 
 test('parseCoords reads "x,y" tile ids', () => {
   assert.deepEqual(parseCoords('3,4'), { x: 3, y: 4 });
