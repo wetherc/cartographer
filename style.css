@@ -1469,9 +1469,11 @@ body.sidebar-collapsed .app-sidebar {
 }
 
 /* Stat-block chips on encounter rows share the conditions bar's chip look. */
+/* Three fixed columns so an enemy's six ability scores read as two aligned
+   rows of equal-width chips; the add button rides in the next free cell. */
 .statblock-bar {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   align-items: center;
   gap: var(--space-1);
 }
@@ -1479,6 +1481,7 @@ body.sidebar-collapsed .app-sidebar {
 .statblock-bar__chip {
   display: inline-flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-1);
   padding: 0.1rem var(--space-1) 0.1rem var(--space-2);
   border-radius: var(--radius-sm);
@@ -1506,6 +1509,7 @@ body.sidebar-collapsed .app-sidebar {
 
 .statblock-bar__add {
   padding: 0.1rem;
+  justify-self: start;
 }
 
 .statblock-bar__add--labeled {
