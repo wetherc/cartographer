@@ -220,12 +220,16 @@ encounter don't change them) and the same dialog can delete a stale one.
 
 ### Initiative and conditions
 
-The **Initiative** panel interleaves the party and the encounters into one turn
-order. Enter each combatant's initiative — or click **Roll initiative** to roll
-a d20 for everyone at once (you can still adjust any value) — then start combat
-and step through with **Next turn**; the current turn is highlighted and a
-round counter advances. On each new round, timed conditions tick down and
-expire on their own.
+The **Initiative** panel appears only while the party is in an encounter —
+standing on a tile with at least one live encounter bound to it — and lists
+exactly who is involved: the party, that tile's encounters, and any NPCs placed
+on the same tile (hostile NPCs line up as foes, friendly and neutral ones with
+the party). Enter each combatant's initiative — or click **Roll initiative** to
+roll a d20 for everyone at once (you can still adjust any value) — then start
+combat and step through with **Next turn**; the current turn is highlighted and
+a round counter advances. On each new round, timed conditions tick down and
+expire on their own. Walking off the tile (or defeating the last encounter on
+it) ends the encounter and hides the panel.
 
 ### Characters, HP, and resources
 
