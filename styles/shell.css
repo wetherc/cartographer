@@ -155,6 +155,11 @@ body.role-gm .party-binding {
   display: none;
 }
 
+/* Whether the party may split up is the GM's call; players never see the switch. */
+body.role-player .party-split {
+  display: none;
+}
+
 /* The lock-as-Player affordance only makes sense from an unlocked Player tab;
    a locked tab hides the whole role cluster so nothing can flip it back. */
 body.role-gm #player-lock-btn {

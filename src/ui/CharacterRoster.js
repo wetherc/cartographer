@@ -23,10 +23,12 @@ import { icon } from './icons.js';
  *   onAwardXP?: () => void,
  *   onPlace?: (id: string) => void,
  *   canManage?: () => boolean,
+ *   canPlace?: () => boolean,
  * }} options
  * With `onPlace`, each managed row also offers a "place on map" action so the
  * GM can move one character to any node/tile (or back to the party) without
- * touching the rest of the party.
+ * touching the rest of the party; `canPlace` (checked per render, like
+ * `canManage`) hides that action while splitting the party is disallowed.
  * @returns {{ update: () => void }}
  */
 export function mountCharacterRoster(container, options) {
@@ -63,7 +65,7 @@ export function mountCharacterRoster(container, options) {
       select.addEventListener('click', () => options.onSelect(character.id));
 
       row.appendChild(select);
-      if (canManage() && options.onPlace) {
+      if (canManage() && options.onPlace && (options.canPlace?.() ?? true)) {
         const place = document.createElement('button');
         place.type = 'button';
         place.className = 'btn btn--icon character-roster__place';

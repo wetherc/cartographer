@@ -23,4 +23,6 @@ export interface CampaignState {
   handouts: Handout[];
   /** Reusable encounter templates (empty on older saves). */
   bestiary: EncounterTemplate[];
+  /** Whether the GM currently allows the party to split up (false on older saves). */
+  splitParty: boolean;
 }

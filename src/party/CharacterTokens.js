@@ -48,6 +48,28 @@ export function moveCharacter(characters, id, location) {
 }
 
 /**
+ * Whether anyone currently stands apart from the party marker — i.e. whether
+ * turning the split-party toggle off needs a regroup first.
+ * @param {Character[]} characters
+ * @returns {boolean}
+ */
+export function isSplit(characters) {
+  return characters.some((c) => (c.location ?? null) !== null);
+}
+
+/**
+ * Where a character actually stands: their own location when placed, the
+ * shared party position otherwise. This is the regroup target when the GM
+ * gathers the party at one member.
+ * @param {Character} character
+ * @param {PartyPosition} partyPosition
+ * @returns {PartyPosition}
+ */
+export function characterPosition(character, partyPosition) {
+  return character.location ?? partyPosition;
+}
+
+/**
  * Recall every character to the party marker — the whole-party teleport: any
  * individually placed character drops their own location and follows again.
  * @param {Character[]} characters

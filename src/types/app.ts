@@ -36,6 +36,8 @@ export interface AppState {
   npcs: NPC[];
   handouts: Handout[];
   bestiary: EncounterTemplate[];
+  /** GM toggle: whether characters may hold their own positions on the map. */
+  splitParty: boolean;
   mode: AppMode;
   role: ViewRole;
 }

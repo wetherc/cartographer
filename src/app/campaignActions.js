@@ -102,6 +102,7 @@ export function wireCampaignActions(app) {
       npcs: state.npcs,
       handouts: state.handouts,
       bestiary: state.bestiary,
+      splitParty: state.splitParty,
     });
   }
 

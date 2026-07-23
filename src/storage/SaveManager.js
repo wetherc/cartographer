@@ -36,6 +36,7 @@ export function buildState(grid, party, characters, encounters, travelog = [], q
     npcs: [],
     handouts: [],
     bestiary: [],
+    splitParty: false,
     ...extra,
   };
 }
@@ -67,6 +68,7 @@ export function deserialize(json) {
     npcs: parsed.npcs ?? [],
     handouts: parsed.handouts ?? [],
     bestiary: parsed.bestiary ?? [],
+    splitParty: parsed.splitParty ?? false,
   };
 }
 

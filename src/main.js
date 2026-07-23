@@ -46,6 +46,7 @@ const app = /** @type {import('./types/app.js').AppContext} */ (
       npcs: initial.npcs,
       handouts: initial.handouts,
       bestiary: initial.bestiary,
+      splitParty: initial.splitParty,
       mode: 'play',
       // Role is per-tab (sessionStorage, not the tab-shared localStorage) so a
       // follower tab can be Player while the GM's tab is GM.
