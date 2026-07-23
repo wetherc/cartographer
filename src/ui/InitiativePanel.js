@@ -130,7 +130,7 @@ export function mountInitiativePanel(container, callbacks) {
     const end = document.createElement('button');
     end.type = 'button';
     end.className = 'btn';
-    end.textContent = 'End combat';
+    end.append(icon('flag'), document.createTextNode('End combat'));
     end.addEventListener('click', () => {
       callbacks.onEnd();
       render();
