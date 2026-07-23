@@ -162,8 +162,9 @@ from the direction of approach, rather than dropping into a fully fogged interio
 ## Running a session (Play mode)
 
 Switch to **Play** mode. The map is the primary element; a sidebar holds the
-session panels. Collapse the sidebar with **Hide panels** to give the map the full
-width.
+session panels in three tabs: **Session** (world, time, encounters, initiative),
+**Story** (quests, NPCs, handouts), and **Log** (the travelogue). Collapse the
+sidebar with **Hide panels** to give the map the full width.
 
 ### Moving the party and fog of war
 

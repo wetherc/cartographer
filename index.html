@@ -57,7 +57,7 @@
       <div id="sidebar-panels" class="sidebar-panels">
         <div id="sidebar-tabs" class="tabs" role="tablist" aria-label="Session panels">
           <button class="tabs__tab" type="button" role="tab" id="tab-session" aria-controls="panel-session" aria-selected="true">Session</button>
-          <button class="tabs__tab" type="button" role="tab" id="tab-quests" aria-controls="panel-quests" aria-selected="false" tabindex="-1">Quests</button>
+          <button class="tabs__tab" type="button" role="tab" id="tab-story" aria-controls="panel-story" aria-selected="false" tabindex="-1">Story</button>
           <button class="tabs__tab" type="button" role="tab" id="tab-log" aria-controls="panel-log" aria-selected="false" tabindex="-1">Log</button>
         </div>
 
@@ -74,17 +74,17 @@
           <section id="initiative-container" class="card" aria-label="Initiative">
             <h2 class="card__title">Initiative</h2>
           </section>
+        </div>
+
+        <div class="tabs__panel" role="tabpanel" id="panel-story" aria-labelledby="tab-story" hidden>
+          <section id="quest-container" class="card" aria-label="Quest log">
+            <h2 class="card__title">Quests</h2>
+          </section>
           <section id="npc-container" class="card" aria-label="NPCs">
             <h2 class="card__title">NPCs</h2>
           </section>
           <section id="handout-container" class="card" aria-label="Handouts">
             <h2 class="card__title">Handouts</h2>
-          </section>
-        </div>
-
-        <div class="tabs__panel" role="tabpanel" id="panel-quests" aria-labelledby="tab-quests" hidden>
-          <section id="quest-container" class="card" aria-label="Quest log">
-            <h2 class="card__title">Quests</h2>
           </section>
         </div>
 
