@@ -1199,8 +1199,9 @@ mountRoleSwitch(mustGetElement('role-switch-container'), currentRole, (role) => 
   applyRole();
 });
 
-// Group the Play sidebar panels into Session / Quests / Log tabs so the quest
-// log and travelogue get their own space instead of a single long scroll.
+// Group the Play sidebar panels into Session / Story / Log tabs so the story
+// panels (quests, NPCs, handouts) and travelogue get their own space instead
+// of a single long scroll.
 wireTabs(mustGetElement('sidebar-tabs'));
 
 // Build-mode procedural generation: fill the current node with an archetype
