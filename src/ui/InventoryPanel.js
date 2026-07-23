@@ -1,8 +1,10 @@
 import { addItem, removeItem } from '../entities/Character.js';
+import { EQUIPMENT_SLOTS, ITEM_TYPES, itemType, equip, getEquipped } from '../entities/Equipment.js';
 import { wireDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {import('../types/entities.js').ItemType} ItemType */
 
 /**
  * Derive a stable item id from its name so adding the same item twice stacks
@@ -12,6 +14,55 @@ import { icon } from './icons.js';
  */
 function idFromName(name) {
   return name.trim().toLowerCase().replace(/\s+/g, '-');
+}
+
+/**
+ * Equipment slot rows: a labeled select per slot, its options drawn from the
+ * character's inventory with the slot's suggested item types listed first.
+ * No type enforcement — any item can go in any slot.
+ * @param {Character} character
+ * @param {(next: Character) => void} commit
+ * @returns {HTMLElement}
+ */
+function buildEquipment(character, commit) {
+  const section = document.createElement('div');
+  section.className = 'inventory-panel__equipment';
+  for (const slot of EQUIPMENT_SLOTS) {
+    const row = document.createElement('label');
+    row.className = 'inventory-panel__slot';
+
+    const label = document.createElement('span');
+    label.className = 'inventory-panel__slot-label';
+    label.textContent = slot.label;
+
+    const select = document.createElement('select');
+    select.className = 'field';
+    const empty = document.createElement('option');
+    empty.value = '';
+    empty.textContent = '—';
+    select.appendChild(empty);
+    const ranked = [...character.inventory].sort((a, b) => {
+      const rank = (/** @type {typeof a} */ i) => {
+        const at = slot.suggests.indexOf(itemType(i));
+        return at === -1 ? slot.suggests.length : at;
+      };
+      return rank(a) - rank(b) || a.name.localeCompare(b.name);
+    });
+    for (const item of ranked) {
+      const option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = item.name;
+      select.appendChild(option);
+    }
+    select.value = getEquipped(character, slot.key)?.id ?? '';
+    select.addEventListener('change', () =>
+      commit(equip(character, slot.key, select.value === '' ? null : select.value)),
+    );
+
+    row.append(label, select);
+    section.appendChild(row);
+  }
+  return section;
 }
 
 /**
@@ -67,6 +118,8 @@ export function mountInventoryPanel(container, initial, onChange = () => {}) {
     const body = document.createElement('div');
     body.className = 'inventory-panel__body';
 
+    body.appendChild(buildEquipment(character, commit));
+
     const list = document.createElement('div');
     list.className = 'inventory-panel__list';
     for (const item of character.inventory) {
@@ -77,7 +130,11 @@ export function mountInventoryPanel(container, initial, onChange = () => {}) {
       label.className = 'inventory-panel__label';
       label.textContent = `${item.name} x${item.quantity}`;
 
-      row.appendChild(label);
+      const type = document.createElement('span');
+      type.className = 'inventory-panel__type';
+      type.textContent = itemType(item);
+
+      row.append(label, type);
 
       if (item.quantity > 1) {
         const consumeButton = document.createElement('button');
@@ -116,6 +173,16 @@ export function mountInventoryPanel(container, initial, onChange = () => {}) {
     quantityInput.className = 'field inventory-panel__quantity-input';
     quantityInput.setAttribute('aria-label', 'Quantity to add');
 
+    const typeSelect = document.createElement('select');
+    typeSelect.className = 'field inventory-panel__type-select';
+    typeSelect.setAttribute('aria-label', 'Item type');
+    for (const t of ITEM_TYPES) {
+      const option = document.createElement('option');
+      option.value = t;
+      option.textContent = t;
+      typeSelect.appendChild(option);
+    }
+
     const addButton = document.createElement('button');
     addButton.type = 'button';
     addButton.className = 'btn btn--primary';
@@ -125,12 +192,13 @@ export function mountInventoryPanel(container, initial, onChange = () => {}) {
       const name = nameInput.value.trim();
       const quantity = Number(quantityInput.value);
       if (!name || quantity <= 0) return;
-      commit(addItem(character, { id: idFromName(name), name, quantity, notes: '' }));
+      const type = /** @type {ItemType} */ (typeSelect.value);
+      commit(addItem(character, { id: idFromName(name), name, quantity, notes: '', type }));
       nameInput.value = '';
       quantityInput.value = '1';
     });
 
-    form.append(nameInput, quantityInput, addButton);
+    form.append(nameInput, typeSelect, quantityInput, addButton);
     body.appendChild(form);
 
     wireDisclosure(summary, body, { expanded, onToggle: (next) => { expanded = next; } });

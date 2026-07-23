@@ -132,11 +132,42 @@
   padding-top: var(--space-2);
 }
 
+/* Equipment slots: label + item picker per wearable slot, above the item list. */
+.inventory-panel__equipment {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+
+.inventory-panel__slot {
+  display: contents;
+}
+
+.inventory-panel__slot-label {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.inventory-panel__slot select {
+  min-width: 0;
+  font-size: var(--text-label);
+}
+
 .inventory-panel__row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) 0;
+}
+
+/* Broad item-type tag on each inventory row. */
+.inventory-panel__type {
+  font-size: var(--text-label);
+  color: var(--text-muted);
 }
 
 .inventory-panel__label {
@@ -146,17 +177,28 @@
 
 .inventory-panel__form {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: var(--space-3);
 }
 
+/* Full first row to itself; the type/quantity/add controls wrap below. */
 .inventory-panel__name-input {
-  flex: 1;
+  flex: 1 1 100%;
   min-width: 0;
+}
+
+.inventory-panel__type-select {
+  flex: 1;
 }
 
 .inventory-panel__quantity-input {
   width: 3.5rem;
   text-align: center;
+}
+
+.inventory-panel__type-select {
+  width: auto;
+  font-size: var(--text-label);
 }
 
