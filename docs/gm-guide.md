@@ -267,8 +267,11 @@ levels the character up automatically (an N×100 curve): HP grows per level and
 a caster's slot maxima track the table, with newly unlocked spell levels
 arriving at full and already-spent slots staying spent. Saves from the old
 mana system migrate on load — the mana pool becomes the slot pools for the
-character's level. Inventory stacks of two or more get a **consume one**
-control distinct from the remove-whole-stack button.
+character's level. Every inventory stack gets a **consume one** control
+distinct from the remove-whole-stack button — even 1-stacks, since using the
+last potion and throwing it away are different stories. Inventory changes
+write themselves into the travelogue: pickups record who found what, where,
+and at what in-game time; consuming or discarding logs a shorter line.
 
 Items carry a broad **type** (gear, weapon, armor, shield, bow, or consumable),
 picked when adding one, and the Inventory panel opens with four **equipment
