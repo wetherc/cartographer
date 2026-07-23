@@ -1,4 +1,4 @@
-import { parseCoords } from './MapCanvas.js';
+import { parseCoords } from './MapGeometry.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */

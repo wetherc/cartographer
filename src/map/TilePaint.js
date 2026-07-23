@@ -1,5 +1,5 @@
 import { createTile, getTile, setTile } from './TileGrid.js';
-import { parseCoords } from './MapCanvas.js';
+import { parseCoords } from './MapGeometry.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 

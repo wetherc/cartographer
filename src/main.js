@@ -6,7 +6,8 @@ import {
   tilesOutsideBounds,
 } from './map/TileGrid.js';
 import { TilePalette } from './map/TilePalette.js';
-import { MapCanvas, clientToBuffer, screenToTile, parseCoords } from './map/MapCanvas.js';
+import { MapCanvas } from './map/MapCanvas.js';
+import { clientToBuffer, screenToTile, parseCoords } from './map/MapGeometry.js';
 import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesInRect } from './map/TilePaint.js';
 import { computeRegionEntryTile } from './map/EntryPoint.js';
 import { NODE_KINDS, ENVIRONS } from './map/NodeKinds.js';
