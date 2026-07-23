@@ -14,22 +14,27 @@
   </g>
   <!-- Mid-ground ridge + edge outcrops: byte-identical across mountain
        variants; the ridge is phase-continuous at x=0/x=64 (same point, same
-       tangent) and the outcrops are stamped in wrapped pairs (x=0 repeats at
-       x=64, y=0 at y=64), so ranges run unbroken across tile seams. -->
+       tangent) and the outcrops are stamped in wrapped pairs (a stamp
+       crossing x=0 repeats at +64, likewise y, corners at all four). Stamp
+       centers are staggered a few units off the border line at irregular
+       offsets that differ per edge, and some are mirrored, so seams read as
+       broken rock rather than a straight row of identical outcrops. -->
   <path d="M0 36 L10 30 L18 35 L26 27 L34 34 L43 29 L54 42 L64 36 L64 50 L0 50 Z" fill="#8a9096"/>
   <g>
-    <use href="#er" transform="translate(0 0)"/>
-    <use href="#er" transform="translate(64 0)"/>
-    <use href="#er" transform="translate(0 64)"/>
-    <use href="#er" transform="translate(64 64)"/>
-    <use href="#er" transform="translate(0 14) scale(0.8)"/>
-    <use href="#er" transform="translate(64 14) scale(0.8)"/>
-    <use href="#er" transform="translate(0 44) scale(0.9)"/>
-    <use href="#er" transform="translate(64 44) scale(0.9)"/>
-    <use href="#er" transform="translate(20 0) scale(0.9)"/>
-    <use href="#er" transform="translate(20 64) scale(0.9)"/>
-    <use href="#er" transform="translate(46 0) scale(0.8)"/>
-    <use href="#er" transform="translate(46 64) scale(0.8)"/>
+    <use href="#er" transform="translate(0 0) scale(0.8)"/>
+    <use href="#er" transform="translate(64 0) scale(0.8)"/>
+    <use href="#er" transform="translate(0 64) scale(0.8)"/>
+    <use href="#er" transform="translate(64 64) scale(0.8)"/>
+    <use href="#er" transform="translate(2 20) scale(0.85)"/>
+    <use href="#er" transform="translate(66 20) scale(0.85)"/>
+    <use href="#er" transform="translate(-3 47) scale(-0.75 0.75)"/>
+    <use href="#er" transform="translate(61 47) scale(-0.75 0.75)"/>
+    <use href="#er" transform="translate(14 1) scale(0.8)"/>
+    <use href="#er" transform="translate(14 65) scale(0.8)"/>
+    <use href="#er" transform="translate(38 -2) scale(0.9)"/>
+    <use href="#er" transform="translate(38 62) scale(0.9)"/>
+    <use href="#er" transform="translate(53 2) scale(-0.7 0.7)"/>
+    <use href="#er" transform="translate(53 66) scale(-0.7 0.7)"/>
   </g>
   <polygon points="6,54 23,16 39,54" fill="#7d848c"/>
   <polygon points="23,16 23,54 39,54" fill="#5b6167"/>
