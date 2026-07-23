@@ -86,12 +86,16 @@ export function wireMapView(app) {
 
   /** Show the party marker only on the node the party is actually standing in,
    * and resolve each character's named token for the node being viewed (their
-   * own location, or the party's tile for characters still with the party). */
+   * own location, or the party's tile for characters still with the party).
+   * With the split-party toggle off everyone moves as one, so the individual
+   * named tokens stay hidden and only the shared party marker renders. */
   function syncPartyMarker() {
     const position = partyTracker.getPosition();
     const nodeId = navigator.getCurrentNode().id;
     mapCanvas.setPartyTile(position.nodeId === nodeId ? position.tileId : null);
-    mapCanvas.setCharacterTokens(characterTokens(state.characters, position, nodeId));
+    mapCanvas.setCharacterTokens(
+      state.splitParty ? characterTokens(state.characters, position, nodeId) : [],
+    );
     syncEncounterMarkers();
     syncNPCMarkers();
     refreshMapDescription();
@@ -544,6 +548,9 @@ export function wireMapView(app) {
    * @param {import('../types/map.js').Tile} tile
    */
   function moveBoundCharacter(tile) {
+    // Individual movement exists only while the GM's split-party toggle is on;
+    // otherwise the party moves simultaneously, by GM clicks alone.
+    if (!state.splitParty) return;
     const boundId = app.actions.getBoundCharacterId();
     const character = state.characters.find((c) => c.id === boundId);
     if (!character) return;

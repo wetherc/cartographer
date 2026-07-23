@@ -27,6 +27,7 @@ import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
  *   npcs: import('../types/npc.js').NPC[],
  *   handouts: import('../types/handout.js').Handout[],
  *   bestiary: import('../types/entities.js').EncounterTemplate[],
+ *   splitParty: boolean,
  * }} Campaign
  */
 
@@ -50,6 +51,7 @@ export function buildBlankCampaign() {
     npcs: [],
     handouts: [],
     bestiary: [],
+    splitParty: false,
   };
 }
 
@@ -140,6 +142,7 @@ export function buildExampleCampaign(palette) {
     bestiary: [
       { id: 'goblin', name: 'Goblin', maxHP: 7, statBlock: { AC: 13, Speed: 30 }, level: 1, tier: 'mob' },
     ],
+    splitParty: false,
   };
 }
 
@@ -165,5 +168,6 @@ export function loadInitialCampaign() {
     npcs: (saved.npcs ?? []).map(withNPCDefaults),
     handouts: (saved.handouts ?? []).map(withHandoutDefaults),
     bestiary: saved.bestiary ?? [],
+    splitParty: saved.splitParty ?? false,
   };
 }

@@ -24,7 +24,7 @@ import {
   saveLock,
   releaseLock,
 } from '../storage/GMLock.js';
-import { moveCharacter } from '../party/CharacterTokens.js';
+import { moveCharacter, isSplit, characterPosition, recallAll } from '../party/CharacterTokens.js';
 import { locationFields, readLocation } from './locationFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -196,10 +196,103 @@ export function wireParty(app) {
   }
   updateBindingPicker();
 
+  // GM-only (hidden from players via CSS) switch governing whether the party
+  // may split up. Off by default: no individual tokens or name labels, and
+  // everyone moves simultaneously with the party marker. Turning it off while
+  // characters stand apart first regroups the whole party at one member's
+  // position, chosen by the GM.
+  const split = document.createElement('label');
+  split.className = 'party-split';
+  const splitInput = document.createElement('input');
+  splitInput.type = 'checkbox';
+  splitInput.checked = state.splitParty;
+  splitInput.setAttribute('aria-label', 'Allow splitting the party');
+  const splitLabel = document.createElement('span');
+  splitLabel.textContent = 'Allow splitting the party';
+  split.append(splitInput, splitLabel);
+  mustGetElement('party-container').appendChild(split);
+
+  /** Refresh everything the toggle changes: tokens/labels, roster place buttons. */
+  function syncSplitViews() {
+    app.actions.syncPartyMarker();
+    characterRoster.update();
+    app.actions.markDirty();
+  }
+
+  /**
+   * Gather the whole party at one member's position before disallowing the
+   * split: the GM picks the character, everyone teleports to where they stand
+   * (a member still with the party means the current party tile). Resolves
+   * false when the GM cancels, leaving the toggle on.
+   * @returns {Promise<boolean>}
+   */
+  async function regroupParty() {
+    if (!isSplit(state.characters)) return true;
+    const values = await promptModal(
+      'Regroup the party',
+      [
+        {
+          name: 'at',
+          label: 'Teleport everyone to',
+          type: 'select',
+          options: state.characters.map((c) => {
+            const at = characterPosition(c, app.partyTracker.getPosition());
+            const node = app.grid.getNode(at.nodeId);
+            return {
+              value: c.id,
+              label: c.location
+                ? `${c.name} — ${node?.name ?? at.nodeId} (tile ${at.tileId})`
+                : `${c.name} — with the party`,
+            };
+          }),
+        },
+      ],
+      { submitLabel: 'Regroup' },
+    );
+    if (!values) return false;
+    const chosen = state.characters.find((c) => c.id === values.at);
+    if (!chosen) return false;
+    const target = characterPosition(chosen, app.partyTracker.getPosition());
+    app.partyTracker.moveTo(target.nodeId, target.tileId);
+    state.characters = recallAll(state.characters);
+    app.views.mapCanvas.refreshNode(app.navigator.getCurrentNode());
+    app.views.regionTree.update();
+    app.views.encounterPanel.update();
+    app.views.initiativePanel.update();
+    app.views.npcPanel.update();
+    app.views.handoutPanel.update();
+    const node = app.grid.getNode(target.nodeId);
+    app.actions.logEvent(
+      'travel',
+      `The party regroups at ${chosen.name}'s position in ${node?.name ?? target.nodeId} (tile ${target.tileId}).`,
+    );
+    app.actions.maybeTriggerEncounter();
+    return true;
+  }
+
+  splitInput.addEventListener('change', async () => {
+    if (splitInput.checked) {
+      state.splitParty = true;
+      app.actions.logEvent('note', 'The GM allows the party to split up.');
+      syncSplitViews();
+      return;
+    }
+    const regrouped = await regroupParty();
+    if (!regrouped) {
+      splitInput.checked = true; // cancelled: the party stays split
+      return;
+    }
+    state.splitParty = false;
+    app.actions.logEvent('note', 'The GM gathers the party; splitting up is no longer allowed.');
+    syncSplitViews();
+  });
+
   const characterRoster = mountCharacterRoster(mustGetElement('party-container'), {
     getCharacters: () => state.characters,
     getSelectedId: () => selectedCharacterId,
     canManage: () => isGM(state.role),
+    // The place action only exists while the GM allows splitting the party.
+    canPlace: () => state.splitParty,
     onSelect: selectCharacter,
     // GM-only individual movement: place one character at any node/tile — or
     // back "with the party" — without moving anyone else. The map click stays

@@ -55,6 +55,7 @@ test('deserialize defaults missing fields instead of throwing', () => {
     npcs: [],
     handouts: [],
     bestiary: [],
+    splitParty: false,
   });
 });
 

@@ -199,23 +199,34 @@ sidebar with **Hide panels** to give the map the full width.
 
 ### Moving the party and fog of war
 
-Every character stands on the map as their own gold token with their name above
-it; characters travelling together share a tile and their names stack. Who a
-click moves depends on the tab. As GM, click a tile to move the whole party
-there (or use the keyboard cursor — arrows to move the cursor, Enter/Space to
-act); any character who had wandered off is recalled to the party. In a player
-tab bound to a character (see "Player tabs play one character"), a click moves
-only that player's own character — their step reveals fog around them, and
-clicking the party's tile rejoins it. A spectator tab moves no one. Moving
-reveals fog in a radius around the new position; revealed tiles stay revealed.
-Clicking a region-linked tile zooms into that region: as GM this moves the
-party in; in a player tab it only brings the region into view.
+The party moves as one marker by default. As GM, click a tile to move the
+whole party there (or use the keyboard cursor — arrows to move the cursor,
+Enter/Space to act). Moving reveals fog in a radius around the new position;
+revealed tiles stay revealed. Clicking a region-linked tile zooms into that
+region: as GM this moves the party in; in a player tab it only brings the
+region into view.
 
-To split the party deliberately, use the map button on a roster row (**Place
-&lt;name&gt; on the map**): it places that one character at any map and tile —
-or back "With the party" — without moving anyone else. Individual moves are
+Whether the party may split up is governed by the GM-only **Allow splitting
+the party** switch at the top of the Party panel, off by default. While it's
+off, only the shared party marker renders (no per-character tokens or name
+labels), and everyone travels simultaneously with the GM's clicks — a player
+tab's map clicks move no one.
+
+With the switch on, every character stands on the map as their own gold token
+with their name above it; characters travelling together share a tile and
+their names stack. In a player tab bound to a character (see "Player tabs play
+one character"), a click moves only that player's own character — their step
+reveals fog around them, and clicking the party's tile rejoins it. A spectator
+tab moves no one. As GM you can also place one character from the roster (the
+map button on their row, **Place &lt;name&gt; on the map**): any map and tile,
+or back "With the party", without moving anyone else. Individual moves are
 logged, and a character stepping onto an encounter's tile raises the encounter
-alert under their own name.
+alert under their own name. A GM whole-party move still recalls everyone.
+
+Turning the switch off while characters stand apart first regroups the party:
+a dialog asks which member's position everyone teleports to, then all
+characters gather there and simultaneous movement resumes. Cancelling the
+dialog leaves the switch on and nobody moves.
 
 Regions on the overworld aren't highlighted until at least one of their tiles has
 been revealed, so undiscovered areas stay hidden from view.
