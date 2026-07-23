@@ -53,6 +53,21 @@ export function npcsAt(npcs, position) {
 }
 
 /**
+ * The NPCs placed exactly on a tile — participants when an encounter triggers
+ * there. Unlike `npcsAt`, unplaced (appears-everywhere) NPCs are excluded: an
+ * NPC joins a fight only by standing on its tile. Pure.
+ * @param {NPC[]} npcs
+ * @param {EncounterLocation | null} position
+ * @returns {NPC[]}
+ */
+export function npcsOnTile(npcs, position) {
+  if (!position) return [];
+  return npcs.filter(
+    (n) => n.location !== null && n.location.nodeId === position.nodeId && n.location.tileId === position.tileId,
+  );
+}
+
+/**
  * Human-readable placement for an NPC row: the node's name plus the tile
  * coordinates, or a fixed label for an unplaced (appears-everywhere) NPC.
  * @param {EncounterLocation | null} location

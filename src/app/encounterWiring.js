@@ -4,6 +4,7 @@ import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { createEncounter, encountersAt, encountersOnTile, isDefeated, toTemplate, fromTemplate } from '../entities/Encounter.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
+import { npcsOnTile } from '../entities/NPC.js';
 import { tickConditions } from '../entities/Conditions.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
@@ -58,11 +59,13 @@ export function wireEncounters(app) {
       if (prev && !isDefeated(prev) && isDefeated(next)) app.actions.logEvent('combat', `Defeated ${next.name}.`);
       state.encounters = replaceById(state.encounters, next);
       app.actions.syncEncounterMarkers(); // a defeat or move should update the map marker
+      app.views.initiativePanel.update(); // defeating the last one here ends the encounter
       app.actions.markDirty();
     },
     onDelete: (id) => {
       state.encounters = removeById(state.encounters, id);
       app.actions.syncEncounterMarkers();
+      app.views.initiativePanel.update();
       app.actions.markDirty();
     },
     onAdd: async () => {
@@ -85,6 +88,7 @@ export function wireEncounters(app) {
       );
       state.encounters = [...state.encounters, created];
       app.actions.syncEncounterMarkers();
+      app.views.initiativePanel.update(); // authoring one here starts an encounter
       app.actions.markDirty();
       return created;
     },
@@ -146,6 +150,7 @@ export function wireEncounters(app) {
       );
       state.encounters = [...state.encounters, created];
       app.actions.syncEncounterMarkers();
+      app.views.initiativePanel.update(); // a spawn on the party's tile starts an encounter
       app.actions.markDirty();
       return created;
     },
@@ -154,15 +159,25 @@ export function wireEncounters(app) {
     getRole: () => state.role,
   });
 
-  app.views.initiativePanel = mountInitiativePanel(mustGetElement('initiative-container'), {
+  // "In an encounter" means the party stands on a tile with at least one live
+  // encounter bound to it — the same trigger the walked-into-it alert uses.
+  function encountersHere() {
+    return encountersOnTile(state.encounters, app.partyTracker.getPosition());
+  }
+
+  const initiativeContainer = mustGetElement('initiative-container');
+  const initiativePanel = mountInitiativePanel(initiativeContainer, {
     getState: () => combat,
-    // Candidate combatants: the whole party plus the living encounters where the
-    // party stands. Initiative defaults to 10 and is edited in the setup list.
+    // Combatants are whoever is involved in *this* encounter: the whole party,
+    // the live encounters on the party's tile, and any NPCs standing on that
+    // tile (hostile ones line up as foes, friendly/neutral ones with the
+    // party). Initiative defaults to 10 and is edited in the setup list.
     getRoster: () => [
       ...state.characters.map((c) => createParticipant(c.id, c.name, 'party', 10)),
-      ...encountersAt(state.encounters, app.partyTracker.getPosition())
-        .filter((e) => !isDefeated(e))
-        .map((e) => createParticipant(e.id, e.name, 'foe', 10)),
+      ...encountersHere().map((e) => createParticipant(e.id, e.name, 'foe', 10)),
+      ...npcsOnTile(state.npcs, app.partyTracker.getPosition()).map((n) =>
+        createParticipant(n.id, n.name, n.disposition === 'hostile' ? 'foe' : 'party', 10),
+      ),
     ],
     onStart: (participants) => {
       combat = startCombat(participants);
@@ -185,4 +200,20 @@ export function wireEncounters(app) {
     // Straight d20 per combatant; the field stays editable for manual override.
     rollInitiative: () => Math.floor(Math.random() * 20) + 1,
   });
+
+  // The Initiative card only shows while the party is in an encounter (standing
+  // on a tile with a live encounter). Leaving the tile — or defeating the last
+  // encounter on it — hides the card and drops any running combat, since its
+  // participants are no longer "here". Wrapped so every existing
+  // `initiativePanel.update()` call site (party moves, role switches) gets the
+  // visibility sync for free.
+  app.views.initiativePanel = {
+    update: () => {
+      const active = encountersHere().length > 0;
+      initiativeContainer.hidden = !active;
+      if (!active) combat = null;
+      initiativePanel.update();
+    },
+  };
+  app.views.initiativePanel.update();
 }
