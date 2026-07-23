@@ -359,3 +359,28 @@ Every prior checklist item is done: the app builds worlds (hand-painted and proc
 - [x] First-run blank-campaign onboarding overlay — UX #14 — a blank campaign (one empty node, no characters) overlays the map with three ways forward (Build by hand / Generate a world / Load the example); any choice or Dismiss sets a localStorage flag so it never reappears
 - [x] App-wide keyboard shortcuts + shortcut-reference dialog — UX #15 — document-level: Ctrl/Cmd+S save, Ctrl/Cmd+Z undo, B/P mode switch (GM only), ? opens a shortcut-reference alert (which also documents the map's own keys); suppressed while typing or while a dialog is open
 - [x] Touch interaction: pinch-zoom, touch pan, tap-to-inspect tooltip — UX #16 — `MapCanvas` tracks touch pointers: one finger taps-to-act or (after 8px) pans in Play and strokes in Build, two fingers pan by centroid delta and pinch-zoom anchored at the centroid, `pointercancel` aborts cleanly, and a tap fires the hover path first so the tile tooltip surfaces without a hover
+
+---
+
+## Follow-up backlog — 2026-07-22 (post-refactor pass)
+
+Gaps observed while working in the codebase after the feature-evaluation items landed (session work that day also delivered, outside any checklist: the Story tab regrouping, NPC location assignment, the cross-tab GM lock, the restored real typecheck, and the split of main.js into `src/app/` wiring modules). Same tags as above.
+
+### Tooling debt
+
+- [ ] **[Gap] Linting + pre-commit hook.** CLAUDE.md's workflow calls for linting and a pre-commit hook; neither exists (no eslint config, no package.json, no `.git/hooks/pre-commit`). Add an ESLint flat config suited to plain-ESM browser code and a pre-commit hook running the linter, `node --test tests/*.test.js`, and the real typecheck (`pnpm --package=typescript dlx tsc --noEmit` — note the bare `pnpx tsc` trap documented in the README). This would have caught the 26 latent type errors months earlier.
+
+### Session play
+
+- [ ] **[Gap] NPC map markers.** NPCs now carry tile coordinates, but the map doesn't show them — encounters get red diamond markers, NPCs get nothing. Add a marker (distinct shape/colour from encounters) on revealed tiles holding a placed NPC, with the existing hover tooltip naming them; respect the player-role rules the encounter markers follow.
+- [ ] **[Gap] Bestiary spawn at coordinates.** "From bestiary" spawns only at the party's tile; NPCs can now be placed on any map/tile from their dialog. Reuse that node-picker + tile X/Y field group in the spawn dialog (default: party position).
+- [ ] **[Gap] Migrate mana to spell slots.** Replace the single `mana` pool with D&D-style spell slots: per-level slot pools (e.g. 1st–9th, each with current/max), set at character creation and grown on level-up, spent/restored per level from the character sheet, restored by rests (long: all; short: none or class-appropriate fraction), and shown on the collapsed card in place of the Mana bar. Needs a `ResourcePool`-compatible representation (one reserved pool per slot level is the least invasive), back-compat for saves that still carry a `mana` pool (keep loading it; offer or auto-run a migration), and updates to the example campaign, character-creation dialog, rest logic, and GM guide.
+
+### Reliability
+
+- [ ] **[Gap] Autosave.** Persistence is fully manual and undo history is small; an engrossed GM can lose an hour. Add a periodic (or idle-triggered) autosave writing through the same snapshot-then-save path as the Save button, with the dirty flag cleared and a quiet toast — and make sure the cross-tab reload prompt doesn't fire storms off autosaves in follower tabs.
+- [ ] **[UX] localStorage quota warning.** Handout images and custom tiles are data: URLs in one localStorage blob; a few phone photos can hit the ~5MB origin quota and make Save throw. Measure the serialized size on save, warn near the limit, and surface a clear error (instead of a silent failure) when `setItem` throws.
+
+### Player-view hardening
+
+- [ ] **[UX] Hide the role switch from settled Player tabs.** The GM lock stops two concurrent GM views, but a Player tab still shows the GM button, which claims the role the moment the GM tab closes. Fine for a home table; for a shared screen, consider a "lock this tab as Player" mode (e.g. a `?role=player` URL or a confirm-gated toggle) so the table display can't be flipped by a stray tap.
