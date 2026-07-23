@@ -24,6 +24,8 @@ import {
   saveLock,
   releaseLock,
 } from '../storage/GMLock.js';
+import { moveCharacter } from '../party/CharacterTokens.js';
+import { locationFields, readLocation } from './locationFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -199,6 +201,32 @@ export function wireParty(app) {
     getSelectedId: () => selectedCharacterId,
     canManage: () => isGM(state.role),
     onSelect: selectCharacter,
+    // GM-only individual movement: place one character at any node/tile — or
+    // back "with the party" — without moving anyone else. The map click stays
+    // the whole-party move; this is the split-the-party tool.
+    onPlace: async (id) => {
+      const character = state.characters.find((c) => c.id === id);
+      if (!character) return;
+      const values = await promptModal(
+        `Move ${character.name}`,
+        locationFields(app, character.location ?? { ...app.partyTracker.getPosition() }, {
+          unplacedLabel: 'With the party',
+        }),
+        { submitLabel: 'Move' },
+      );
+      if (!values) return;
+      const location = readLocation(app, values);
+      state.characters = moveCharacter(state.characters, id, location);
+      app.actions.syncPartyMarker();
+      app.actions.markDirty();
+      if (location) {
+        const node = app.grid.getNode(location.nodeId);
+        app.actions.logEvent('travel', `${character.name} moves to ${node?.name ?? location.nodeId} (tile ${location.tileId}).`);
+        app.actions.maybeTriggerEncounter(location, character.name);
+      } else {
+        app.actions.logEvent('travel', `${character.name} rejoins the party.`);
+      }
+    },
     onAdd: async () => {
       const values = await promptModal('New character', [
         { name: 'name', label: 'Name', value: '' },

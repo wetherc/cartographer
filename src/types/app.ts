@@ -16,7 +16,7 @@ import type { GameClock } from './time.js';
 import type { NPC } from './npc.js';
 import type { Handout } from './handout.js';
 import type { ViewRole } from './view.js';
-import type { MapNode } from './map.js';
+import type { MapNode, PartyPosition } from './map.js';
 import type { DiceSelection } from './dice.js';
 import type { TilePalette } from '../map/TilePalette.js';
 import type { TileGrid } from '../map/TileGrid.js';
@@ -71,8 +71,9 @@ export interface AppActions {
   refreshSelectedCharacter(): void;
   // partyWiring: the character this tab is bound to (Player view), or null.
   getBoundCharacterId(): string | null;
-  // encounterWiring
-  maybeTriggerEncounter(): void;
+  // encounterWiring: defaults to the party's position and "The party"; a
+  // player moving their own token passes that character's tile and name.
+  maybeTriggerEncounter(position?: PartyPosition, subject?: string): void;
   // mapWiring
   syncPartyMarker(): void;
   syncEncounterMarkers(): void;

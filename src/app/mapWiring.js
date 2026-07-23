@@ -3,7 +3,8 @@ import { MapCanvas } from '../map/MapCanvas.js';
 import { clientToBuffer, screenToTile } from '../map/MapGeometry.js';
 import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesInRect, stampRegionLink } from '../map/TilePaint.js';
 import { computeRegionEntryTile, resolveEntryTile } from '../map/EntryPoint.js';
-import { discoveredNodes, revealAll, setTileRevealed } from '../map/FogOfWar.js';
+import { discoveredNodes, revealAll, revealAround, setTileRevealed } from '../map/FogOfWar.js';
+import { characterTokens, moveCharacter, recallAll } from '../party/CharacterTokens.js';
 import { pushEdit, popEdit } from '../map/EditHistory.js';
 import { renderNodeToCanvas, downloadCanvasPNG, exportFilename } from '../map/MapExport.js';
 import { findRegionGroups } from '../map/RegionGroups.js';
@@ -83,10 +84,14 @@ export function wireMapView(app) {
   }
   app.actions.undoStroke = undoStroke;
 
-  /** Show the party marker only on the node the party is actually standing in. */
+  /** Show the party marker only on the node the party is actually standing in,
+   * and resolve each character's named token for the node being viewed (their
+   * own location, or the party's tile for characters still with the party). */
   function syncPartyMarker() {
     const position = partyTracker.getPosition();
-    mapCanvas.setPartyTile(position.nodeId === navigator.getCurrentNode().id ? position.tileId : null);
+    const nodeId = navigator.getCurrentNode().id;
+    mapCanvas.setPartyTile(position.nodeId === nodeId ? position.tileId : null);
+    mapCanvas.setCharacterTokens(characterTokens(state.characters, position, nodeId));
     syncEncounterMarkers();
     syncNPCMarkers();
     refreshMapDescription();
@@ -192,7 +197,9 @@ export function wireMapView(app) {
   async function teleportToNode(nodeId) {
     const node = grid.getNode(nodeId);
     if (!node) return;
-    if (partyTracker.getPosition().nodeId === nodeId) {
+    // Teleporting the party is the GM's call; a player selecting a node just
+    // brings it into view without moving anyone.
+    if (!isGM(state.role) || partyTracker.getPosition().nodeId === nodeId) {
       goToNode(nodeId);
       return;
     }
@@ -212,6 +219,7 @@ export function wireMapView(app) {
     // teleport is the region's discovery (checked before moveTo reveals fog).
     const firstVisit = !node.tiles.some((t) => t.revealed);
     partyTracker.moveTo(nodeId, target);
+    state.characters = recallAll(state.characters); // the whole party teleports
     goToNode(nodeId);
     app.actions.logEvent('travel', firstVisit ? `Discovered ${node.name}.` : `Traveled to ${node.name}.`);
     refreshLocationPanels();
@@ -361,25 +369,34 @@ export function wireMapView(app) {
       if (regionAnchor) finishRegionStroke();
     },
     onCellClick: (x, y, tile) => {
-      // Fires only outside authoring mode: Play-mode navigation and party moves.
-      // Empty cells are inert.
+      // Fires only outside authoring mode: Play-mode navigation and moves.
+      // Empty cells are inert. Who moves depends on the tab: the GM's clicks
+      // move the whole party (recalling any individually placed character), a
+      // bound player tab's clicks move only that player's own character, and a
+      // spectator tab moves no one (region tiles still navigate the view).
       if (!tile) return;
+      const gm = isGM(state.role);
       if (tile.childNodeId) {
         const parent = navigator.getCurrentNode();
         if (navigator.zoomIn(tile.id)) {
           const child = navigator.getCurrentNode();
-          // Checked before moveTo reveals entry fog: an all-fogged child has
-          // never been visited, so stepping in now is its discovery.
-          const firstVisit = !child.tiles.some((t) => t.revealed);
-          // Zooming into a region moves the party into it. Unless the party has
-          // already been placed in this child before, drop them at the edge they
-          // approached from and reveal fog around it, so the child doesn't render
-          // as a blank fog field with no party marker.
-          if (partyTracker.getPosition().nodeId !== child.id) {
-            partyTracker.moveTo(
-              child.id,
-              computeRegionEntryTile(parent, child, tile.childNodeId, partyTracker.getPosition()),
-            );
+          if (gm) {
+            // Checked before moveTo reveals entry fog: an all-fogged child has
+            // never been visited, so stepping in now is its discovery.
+            const firstVisit = !child.tiles.some((t) => t.revealed);
+            // Zooming into a region moves the party into it. Unless the party
+            // has already been placed in this child before, drop them at the
+            // edge they approached from and reveal fog around it, so the child
+            // doesn't render as a blank fog field with no party marker.
+            if (partyTracker.getPosition().nodeId !== child.id) {
+              partyTracker.moveTo(
+                child.id,
+                computeRegionEntryTile(parent, child, tile.childNodeId, partyTracker.getPosition()),
+              );
+              state.characters = recallAll(state.characters);
+            }
+            app.actions.logEvent('travel', firstVisit ? `Discovered ${child.name}.` : `Entered ${child.name}.`);
+            app.actions.markDirty(); // party position and fog changed
           }
           // Re-read the node: moveTo wrote a new, fog-revealed node into the grid,
           // so the `child` captured above is stale and still fully fogged.
@@ -388,17 +405,24 @@ export function wireMapView(app) {
           worldTree.update();
           // Entering a node for the first time discovers it.
           regionTree.update();
-          app.actions.logEvent('travel', firstVisit ? `Discovered ${child.name}.` : `Entered ${child.name}.`);
+          syncPartyMarker();
+          refreshLocationPanels();
+          if (gm) app.actions.maybeTriggerEncounter();
         }
-      } else {
+        return;
+      }
+      if (gm) {
         partyTracker.moveTo(navigator.getCurrentNode().id, tile.id);
+        state.characters = recallAll(state.characters);
         discoverTile(tile);
         mapCanvas.refreshNode(navigator.getCurrentNode());
+        syncPartyMarker();
+        app.actions.markDirty(); // party position and fog changed
+        refreshLocationPanels();
+        app.actions.maybeTriggerEncounter();
+        return;
       }
-      syncPartyMarker();
-      app.actions.markDirty(); // party position and fog changed
-      refreshLocationPanels();
-      app.actions.maybeTriggerEncounter();
+      moveBoundCharacter(tile);
     },
   });
   app.views.mapCanvas = mapCanvas;
@@ -442,6 +466,7 @@ export function wireMapView(app) {
     // Build-mode spawn placement: make the selected tile the party's start.
     onSetSpawn: (tileId) => {
       partyTracker.moveTo(navigator.getCurrentNode().id, tileId);
+      state.characters = recallAll(state.characters);
       mapCanvas.refreshNode(navigator.getCurrentNode());
       syncPartyMarker();
       app.actions.markDirty();
@@ -508,6 +533,31 @@ export function wireMapView(app) {
     grid.updateNode(updateTileMetadata(node, tile.id, { discovered: true }));
     const what = tile.metadata.poiType ?? 'a hidden location';
     app.actions.logEvent('travel', `Discovered ${what}${tile.metadata.notes ? `: ${tile.metadata.notes}` : ''}.`);
+  }
+
+  /**
+   * A bound player tab moving its own character: the character takes their own
+   * location on the current node's tile (rejoining the party when the click
+   * lands on the party's tile), their step reveals fog around them, and an
+   * encounter on that tile alerts under the character's name. A spectator tab
+   * (no binding) moves no one.
+   * @param {import('../types/map.js').Tile} tile
+   */
+  function moveBoundCharacter(tile) {
+    const boundId = app.actions.getBoundCharacterId();
+    const character = state.characters.find((c) => c.id === boundId);
+    if (!character) return;
+    const nodeId = navigator.getCurrentNode().id;
+    const party = partyTracker.getPosition();
+    const rejoined = party.nodeId === nodeId && party.tileId === tile.id;
+    state.characters = moveCharacter(state.characters, character.id, rejoined ? null : { nodeId, tileId: tile.id });
+    grid.updateNode(revealAround(navigator.getCurrentNode(), tile.id, partyTracker.revealRadius));
+    discoverTile(tile);
+    mapCanvas.refreshNode(navigator.getCurrentNode());
+    syncPartyMarker();
+    regionTree.update();
+    app.actions.markDirty();
+    app.actions.maybeTriggerEncounter({ nodeId, tileId: tile.id }, character.name);
   }
 
   const tileTooltip = mountTileTooltip(document.body);

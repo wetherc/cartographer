@@ -34,9 +34,12 @@ export function wireEncounters(app) {
    * into something" alert. The readout respects the viewer role: the GM sees
    * exact HP, players see the coarse status band. Called after a real move, not
    * on initial render, so the app doesn't greet a fresh load with a popup.
+   * Defaults to the whole party at its shared position; a player moving their
+   * own token passes that character's tile and name instead.
+   * @param {import('../types/map.js').PartyPosition} [position]
+   * @param {string} [subject]
    */
-  app.actions.maybeTriggerEncounter = () => {
-    const position = app.partyTracker.getPosition();
+  app.actions.maybeTriggerEncounter = (position = app.partyTracker.getPosition(), subject = 'The party') => {
     const here = encountersOnTile(state.encounters, position);
     if (here.length === 0) return;
     const node = app.grid.getNode(position.nodeId);
@@ -49,7 +52,7 @@ export function wireEncounters(app) {
         fresh.some((f) => f.id === e.id) ? { ...e, noticed: true } : e,
       );
       for (const e of fresh) {
-        app.actions.logEvent('combat', `The party encounters ${e.name} in ${region} (tile ${position.tileId}).`);
+        app.actions.logEvent('combat', `${subject} encounters ${e.name} in ${region} (tile ${position.tileId}).`);
       }
       app.actions.markDirty();
     }
@@ -58,7 +61,7 @@ export function wireEncounters(app) {
       gm ? `${e.name} (${e.currentHP}/${e.maxHP} HP)` : `${e.name} (${hpBand(e.currentHP, e.maxHP)})`,
     );
     const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0];
-    alertModal(`The party has come upon ${list} here in ${region}.`, {
+    alertModal(`${subject} has come upon ${list} here in ${region}.`, {
       title: here.length > 1 ? 'Encounters!' : 'Encounter!',
       label: 'Continue',
     });

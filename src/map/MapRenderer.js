@@ -20,6 +20,7 @@ import { parseCoords, tileRect } from './MapGeometry.js';
  * @property {string | null} partyTileId
  * @property {string[]} [encounterTileIds] tiles carrying a live encounter, marked when revealed
  * @property {string[]} [npcTileIds] tiles holding a placed NPC, marked when revealed
+ * @property {{ tileId: string, name: string }[]} [characterTokens] per-character markers, named above their tile
  * @property {string | null} selectedTileId
  * @property {string | null} cursorCellId
  * @property {boolean} focused whether the keyboard cursor outline shows
@@ -80,6 +81,7 @@ export class MapRenderer {
     this._renderEncounterMarkers(view);
     this._renderNPCMarkers(view);
     this._renderPartyMarker(view);
+    this._renderCharacterTokens(view);
     this._renderCursor(view);
     this._renderMapBoundsBorder(view);
     this._renderCoordinates(view);
@@ -337,9 +339,14 @@ export class MapRenderer {
     }
   }
 
-  /** @param {MapView} view */
+  /** Gold dot for the party's tile. Skipped when a character token stands on
+   * that tile — the tokens carry the presence, so the dot underneath would
+   * only add clutter. It still draws for an empty roster (or a party tile all
+   * of whose members wandered off), keeping the anchor visible.
+   * @param {MapView} view */
   _renderPartyMarker(view) {
     if (!view.partyTileId) return;
+    if (view.characterTokens?.some((t) => t.tileId === view.partyTileId)) return;
     const coords = parseCoords(view.partyTileId);
     if (!coords) return;
     const { ctx } = this;
@@ -354,6 +361,64 @@ export class MapRenderer {
     ctx.fill();
     ctx.stroke();
     ctx.restore();
+  }
+
+  /**
+   * Per-character tokens: a small gold dot per character, spread across their
+   * tile when several share it, with the characters' names stacked above the
+   * tile. Same palette as the party dot so a token reads as "one of ours",
+   * distinct from the blue NPC circle and the red encounter diamond.
+   * @param {MapView} view
+   */
+  _renderCharacterTokens(view) {
+    const tokens = view.characterTokens;
+    if (!tokens || tokens.length === 0 || !view.node) return;
+    const { ctx } = this;
+    /** @type {Map<string, string[]>} tile id -> names standing there */
+    const byTile = new Map();
+    for (const token of tokens) {
+      const names = byTile.get(token.tileId) ?? [];
+      names.push(token.name);
+      byTile.set(token.tileId, names);
+    }
+    for (const [tileId, names] of byTile) {
+      const coords = parseCoords(tileId);
+      if (!coords) continue;
+      const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
+      if (sx + size < 0 || sy + size < 0 || sx > view.canvasWidth || sy > view.canvasHeight) continue;
+
+      ctx.save();
+      // Dots spread evenly along the tile's midline; a lone token sits centred.
+      const r = Math.min(size * 0.14, (size * 0.8) / (names.length * 2));
+      names.forEach((_, i) => {
+        const cx = sx + (size * (i + 1)) / (names.length + 1);
+        ctx.fillStyle = '#e0c14b';
+        ctx.strokeStyle = '#3a2f0a';
+        ctx.lineWidth = Math.max(1.5, size * 0.03);
+        ctx.beginPath();
+        ctx.arc(cx, sy + size / 2, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+      });
+
+      // Names stack above the tile, nearest name closest to it. Skipped when
+      // tiles get too small for the label to be legible.
+      if (size >= 24) {
+        const fontSize = Math.round(Math.max(11, Math.min(size * 0.24, 26)));
+        ctx.font = `600 ${fontSize}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        names.forEach((name, i) => {
+          const ty = sy - 3 - (names.length - 1 - i) * (fontSize + 2);
+          const width = ctx.measureText(name).width;
+          ctx.fillStyle = 'rgba(20, 16, 8, 0.72)';
+          ctx.fillRect(sx + size / 2 - width / 2 - 3, ty - fontSize - 1, width + 6, fontSize + 4);
+          ctx.fillStyle = '#f2e4bd';
+          ctx.fillText(name, sx + size / 2, ty);
+        });
+      }
+      ctx.restore();
+    }
   }
 
   /** @param {MapView} view */
