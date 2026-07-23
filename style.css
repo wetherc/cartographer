@@ -374,6 +374,12 @@ body.role-player .app-header__actions {
   display: none;
 }
 
+/* Advancing world time (including rests, which advance it as a side effect) is
+   the GM's call: players keep the clock readout but lose the buttons. */
+body.role-player .time-panel__actions {
+  display: none;
+}
+
 /* The lock-as-Player affordance only makes sense from an unlocked Player tab;
    a locked tab hides the whole role cluster so nothing can flip it back. */
 body.role-gm #player-lock-btn {
