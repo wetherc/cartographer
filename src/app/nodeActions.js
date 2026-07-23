@@ -24,6 +24,7 @@ import { promptModal, confirmModal } from '../ui/Modal.js';
  * @property {() => void} clearSelection
  * @property {() => void} syncPaletteKind
  * @property {() => void} syncPartyMarker
+ * @property {() => void} [markDirty] flag unsaved changes after a node mutation
  */
 
 /**
@@ -105,6 +106,7 @@ export function createNodeActions(ctx) {
       }),
     );
     ctx.worldTree.update();
+    ctx.markDirty?.();
     return id;
   }
 
@@ -128,6 +130,7 @@ export function createNodeActions(ctx) {
     if (!ok) return;
 
     const removed = ctx.grid.removeNode(nodeId);
+    ctx.markDirty?.();
     if (removed.has(ctx.navigator.currentNodeId)) {
       const fallback =
         node.parentId && ctx.grid.getNode(node.parentId)
@@ -181,6 +184,7 @@ export function createNodeActions(ctx) {
       kind,
       environ: values.environ || null,
     });
+    ctx.markDirty?.();
 
     const position = ctx.partyTracker.getPosition();
     if (position.nodeId === nodeId) {

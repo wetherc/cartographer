@@ -166,6 +166,11 @@ been revealed, so undiscovered areas stay hidden from view.
 The map grid is labeled with X/Y coordinates along the top and left edges, so you
 can call out tile positions.
 
+As GM you also get direct fog control (the eye buttons on the map): a **reveal
+brush** and a **hide brush** — click or drag across tiles to light or re-fog
+them — plus a **reveal whole area** action for the current map. Players never
+see these controls.
+
 ### Encounters
 
 Build an encounter roster in the **Encounters** panel (name, max HP, stat block),
@@ -185,9 +190,11 @@ status **conditions** (poisoned, prone, …).
 ### Initiative and conditions
 
 The **Initiative** panel interleaves the party and the encounters into one turn
-order. Enter each combatant's initiative, start combat, and step through with
-**Next turn**; the current turn is highlighted and a round counter advances. On
-each new round, timed conditions tick down and expire on their own.
+order. Enter each combatant's initiative — or click **Roll initiative** to roll
+a d20 for everyone at once (you can still adjust any value) — then start combat
+and step through with **Next turn**; the current turn is highlighted and a
+round counter advances. On each new round, timed conditions tick down and
+expire on their own.
 
 ### Characters, HP, and resources
 
@@ -202,6 +209,10 @@ the character up automatically (an N×100 curve), and HP and mana grow per level
 Inventory stacks of two or more get a **consume one** control distinct from the
 remove-whole-stack button.
 
+For combat speed, the collapsed card carries **-/+ HP buttons** so damage and
+healing don't require expanding the sheet, and the Party roster's **Award XP**
+grants the same amount to every character at once.
+
 ### Time and rests
 
 The **Time** panel tracks the in-game day and watch. **Advance** moves time
@@ -215,8 +226,9 @@ and mana use.
   notes, and a location. The panel shows the NPCs at the party's current location.
 - **Quests** — active/completed quest log. Completing a quest turns its toggle
   button's plus into a checkmark.
-- **Handouts** — read-aloud text or lore attached to a node (or campaign-wide).
-  Each has an eye toggle that reveals or hides it; a revealed handout shows its
+- **Handouts** — read-aloud text or lore attached to a node (or campaign-wide),
+  optionally with an attached image (shown above the text once revealed). Each
+  has an eye toggle that reveals or hides it; a revealed handout shows its
   read-aloud block, so the panel doubles as your "read this now" surface. Players
   (Player role) see only revealed handouts, read-only.
 - **Travelogue** — an automatic event log: region entry, teleports, encounter
@@ -227,7 +239,8 @@ and mana use.
 The **Dice Tray** collapses to a single d20 icon; expand it for the full tray. Set
 counts per die type (d4–d100) and a flat modifier with +/- steppers — there's no
 text-expression parsing — then roll. The result shows each die's face and the
-total.
+total, and the last eight rolls stay listed beneath it (with timestamps) so
+contested rolls can be compared. The history is session-only.
 
 ## Accessibility
 
@@ -239,6 +252,10 @@ their expanded state, and both light and dark themes are supported.
 
 ## Tips
 
+- **Watch the Save button.** It reads "Save •" whenever you have unsaved
+  changes; saving confirms with a toast, and closing the tab with unsaved work
+  warns first. Press `?` anywhere for the keyboard-shortcut reference
+  (Ctrl/Cmd+S saves, Ctrl/Cmd+Z undoes, B/P switch modes).
 - **Save often.** Autosave doesn't exist; Undo history is small. Export a backup
   before a big edit.
 - **Build discoverable POIs and secret notes for surprises.** Both stay hidden

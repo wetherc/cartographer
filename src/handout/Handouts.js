@@ -14,10 +14,11 @@
  * @param {string} [body]
  * @param {string | null} [nodeId] node the handout attaches to; null = campaign-wide
  * @param {boolean} [revealed]
+ * @param {string | null} [image] data: URL of an attached image; null = none
  * @returns {Handout}
  */
-export function createHandout(id, title, body = '', nodeId = null, revealed = false) {
-  return { id, title, body, nodeId, revealed };
+export function createHandout(id, title, body = '', nodeId = null, revealed = false, image = null) {
+  return { id, title, body, nodeId, revealed, image };
 }
 
 /**
@@ -31,6 +32,7 @@ export function withDefaults(handout) {
     body: handout.body ?? '',
     nodeId: handout.nodeId ?? null,
     revealed: handout.revealed ?? false,
+    image: handout.image ?? null,
   };
 }
 

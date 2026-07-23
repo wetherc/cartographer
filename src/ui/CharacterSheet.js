@@ -111,6 +111,30 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
 
     summary.appendChild(icon('chevron', { className: 'disclosure__chevron' }));
 
+    // Combat-speed HP controls on the collapsed card, so damage and healing
+    // don't require expanding the sheet and finding the HP pool's steppers.
+    // Siblings of the summary (a button can't nest buttons).
+    const head = document.createElement('div');
+    head.className = 'character-sheet__head';
+    head.appendChild(summary);
+    if (hp) {
+      const damage = document.createElement('button');
+      damage.type = 'button';
+      damage.className = 'btn btn--icon btn--danger';
+      damage.setAttribute('aria-label', `Damage ${character.name} by 1`);
+      damage.appendChild(icon('minus'));
+      damage.addEventListener('click', () => commit(spendResource(character, hp.id, 1)));
+
+      const healBtn = document.createElement('button');
+      healBtn.type = 'button';
+      healBtn.className = 'btn btn--icon btn--success';
+      healBtn.setAttribute('aria-label', `Heal ${character.name} by 1`);
+      healBtn.appendChild(icon('plus'));
+      healBtn.addEventListener('click', () => commit(restoreResource(character, hp.id, 1)));
+
+      head.append(damage, healBtn);
+    }
+
     const body = document.createElement('div');
     body.className = 'character-sheet__body';
 
@@ -212,7 +236,7 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
     body.appendChild(conditions);
 
     wireDisclosure(summary, body, { expanded, onToggle: (next) => { expanded = next; } });
-    root.append(summary, body);
+    root.append(head, body);
   }
 
   render();

@@ -9,7 +9,7 @@ import {
 
 test('createHandout defaults to hidden, empty body, campaign-wide', () => {
   const h = createHandout('h1', 'The Prophecy');
-  assert.deepEqual(h, { id: 'h1', title: 'The Prophecy', body: '', nodeId: null, revealed: false });
+  assert.deepEqual(h, { id: 'h1', title: 'The Prophecy', body: '', nodeId: null, revealed: false, image: null });
 });
 
 test('createHandout keeps supplied body/nodeId/revealed', () => {
@@ -21,7 +21,7 @@ test('createHandout keeps supplied body/nodeId/revealed', () => {
 
 test('withDefaults backfills a legacy handout missing fields', () => {
   const filled = withDefaults({ id: 'h1', title: 'Old' });
-  assert.deepEqual(filled, { id: 'h1', title: 'Old', body: '', nodeId: null, revealed: false });
+  assert.deepEqual(filled, { id: 'h1', title: 'Old', body: '', nodeId: null, revealed: false, image: null });
 });
 
 test('toggleRevealed flips the reveal flag without touching other fields', () => {

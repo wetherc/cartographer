@@ -8,4 +8,6 @@ export interface Handout {
   nodeId: string | null;
   /** Whether players can currently see it. Authored hidden, revealed on demand. */
   revealed: boolean;
+  /** Optional attached image as a data: URL, shown with the revealed body. */
+  image: string | null;
 }

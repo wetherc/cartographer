@@ -348,14 +348,14 @@ Every prior checklist item is done: the app builds worlds (hand-painted and proc
 - [ ] Encounter templates/bestiary + stat-block editor on encounter rows — Gap #3
 - [ ] Generator preview + reroll + visible seed in the Generate modal — Gap #4
 - [ ] Export current node as PNG (Build/GM only) — Gap #5
-- [ ] GM fog brush: reveal/hide strokes + reveal-all on node, Play mode GM-only — Gap #6
-- [ ] Initiative auto-roll (d20 + per-combatant modifier, manual override kept) — Gap #7
-- [ ] Dice roll history (session-local, under the tray) — Gap #8
-- [ ] Handout images (optional data:-URL image in body, player view included) — Gap #9
-- [ ] Collapsed-card HP/mana quick controls + party-wide XP award — Gap #10
-- [ ] Toast/status feedback for Save/Export/Import/Undo/generation — UX #11
-- [ ] Dirty-state tracking: beforeunload guard, Save-button indicator, prompted external-save reload — UX #12
-- [ ] Responsive breakpoints for sidebar/rails/header below tablet width — UX #13
-- [ ] First-run blank-campaign onboarding overlay — UX #14
-- [ ] App-wide keyboard shortcuts + shortcut-reference dialog — UX #15
-- [ ] Touch interaction: pinch-zoom, touch pan, tap-to-inspect tooltip — UX #16
+- [x] GM fog brush: reveal/hide strokes + reveal-all on node, Play mode GM-only — Gap #6 — pure `revealAll`/`setTileRevealed` in `map/FogOfWar.js` (2 tests); the on-canvas map controls gain a GM cluster (reveal brush / hide brush / reveal whole area) that toggles the canvas's authoring stroke gesture in Play mode and routes `onStrokeCell` to fog ops; hidden from players and in Build mode (which reveals everything already), dropped on mode/role change
+- [x] Initiative auto-roll (d20, manual override kept) — Gap #7 — `InitiativePanel` gains an optional `rollInitiative` callback and a "Roll initiative" button filling every setup row (values stay editable before Start); main.js supplies a plain d20
+- [x] Dice roll history (session-local, under the tray) — Gap #8 — the tray keeps the last 8 results (HH:MM + breakdown, newest first) under the current-result line; not persisted
+- [x] Handout images (optional data:-URL image in body, player view included) — Gap #9 — `Handout` gains `image: string | null` (backfilled null on load), `promptModal` gains a `file` field type reading a picked image to a data: URL (untouched keeps the existing value), and the panel renders the image above the read-aloud body for GM and player views
+- [x] Collapsed-card HP/mana quick controls + party-wide XP award — Gap #10 — the collapsed character card gains -/+ HP buttons beside the disclosure summary (spend/restore on the reserved hp pool), and the Party roster gains an "Award XP" action granting a prompted amount to every character at once (logged to the travelogue)
+- [x] Toast/status feedback for Save/Export/Import/Undo/generation — UX #11 — `ui/Toast.js`: a polite-live-region toast stack plus `queueToastAfterReload`/`flushQueuedToast` (sessionStorage) so reload-based actions (Undo, Import, New, Load example) confirm after the reload; Save/Export/generation/fog-reveal/XP award toast immediately
+- [x] Dirty-state tracking: beforeunload guard, Save-button indicator, prompted external-save reload — UX #12 — a `markDirty` flag set by every mutation path (panels, node actions, painting, party moves, travelogue); the Save button shows "Save •" with an outline while dirty, `beforeunload` warns (intentional reload flows clear the flag first), and a cross-tab external save now prompts before discarding unsaved local changes instead of reloading blind
+- [x] Responsive breakpoints for sidebar/rails/header below tablet width — UX #13 — below 68rem the app columns stack full-width (map first), the header wraps, and the canvas caps at 55vh; placed at the end of style.css so it wins the cascade
+- [x] First-run blank-campaign onboarding overlay — UX #14 — a blank campaign (one empty node, no characters) overlays the map with three ways forward (Build by hand / Generate a world / Load the example); any choice or Dismiss sets a localStorage flag so it never reappears
+- [x] App-wide keyboard shortcuts + shortcut-reference dialog — UX #15 — document-level: Ctrl/Cmd+S save, Ctrl/Cmd+Z undo, B/P mode switch (GM only), ? opens a shortcut-reference alert (which also documents the map's own keys); suppressed while typing or while a dialog is open
+- [x] Touch interaction: pinch-zoom, touch pan, tap-to-inspect tooltip — UX #16 — `MapCanvas` tracks touch pointers: one finger taps-to-act or (after 8px) pans in Play and strokes in Build, two fingers pan by centroid delta and pinch-zoom anchored at the centroid, `pointercancel` aborts cleanly, and a tap fires the hover path first so the tile tooltip surfaces without a hover

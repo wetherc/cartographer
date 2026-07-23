@@ -8,12 +8,16 @@ import { icon } from './icons.js';
  * (modals, id generation, list updates) are supplied via callbacks so the
  * roster stays as thin as the other panels.
  * @param {HTMLElement} container
+ * With `onAwardXP`, a non-empty roster also offers an "Award XP" action that
+ * grants the same amount to every party member at once (the caller prompts for
+ * the amount), so leveling after an encounter doesn't mean visiting each sheet.
  * @param {{
  *   getCharacters: () => Character[],
  *   getSelectedId: () => string | null,
  *   onSelect: (id: string) => void,
  *   onAdd: () => void,
  *   onDelete: (id: string) => void,
+ *   onAwardXP?: () => void,
  * }} options
  * @returns {{ update: () => void }}
  */
@@ -66,6 +70,15 @@ export function mountCharacterRoster(container, options) {
     add.append(icon('add'), document.createTextNode('New character'));
     add.addEventListener('click', () => options.onAdd());
     root.appendChild(add);
+
+    if (options.onAwardXP && characters.length > 0) {
+      const award = document.createElement('button');
+      award.type = 'button';
+      award.className = 'btn character-roster__award';
+      award.append(icon('sparkles'), document.createTextNode('Award XP'));
+      award.addEventListener('click', () => options.onAwardXP?.());
+      root.appendChild(award);
+    }
   }
 
   render();
