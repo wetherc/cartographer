@@ -24,6 +24,27 @@
     <ellipse cx="16" cy="14" rx="10" ry="6"/>
     <ellipse cx="52" cy="54" rx="10" ry="6"/>
   </g>
+  <!-- Edge band: byte-identical across hills variants, stamped in wrapped
+       pairs (a stamp crossing x=0 repeats at +64, likewise y, corners at
+       all four) so mottle and low hills continue across tile seams. -->
+  <g>
+    <ellipse cx="0" cy="0" rx="10" ry="6" fill="#5d974a"/>
+    <ellipse cx="64" cy="0" rx="10" ry="6" fill="#5d974a"/>
+    <ellipse cx="0" cy="64" rx="10" ry="6" fill="#5d974a"/>
+    <ellipse cx="64" cy="64" rx="10" ry="6" fill="#5d974a"/>
+    <ellipse cx="-1" cy="26" rx="8" ry="5" fill="#5d974a"/>
+    <ellipse cx="63" cy="26" rx="8" ry="5" fill="#5d974a"/>
+    <ellipse cx="30" cy="-1" rx="9" ry="5" fill="#5d974a"/>
+    <ellipse cx="30" cy="63" rx="9" ry="5" fill="#5d974a"/>
+    <use href="#hl" transform="translate(1 44) scale(0.6)"/>
+    <use href="#hl" transform="translate(65 44) scale(0.6)"/>
+    <use href="#hl" transform="translate(46 1) scale(0.65)"/>
+    <use href="#hl" transform="translate(46 65) scale(0.65)"/>
+    <use href="#t" transform="translate(20 1) scale(0.9)"/>
+    <use href="#t" transform="translate(20 65) scale(0.9)"/>
+    <use href="#t" transform="translate(-1 12)"/>
+    <use href="#t" transform="translate(63 12)"/>
+  </g>
   <!-- Hills farthest (highest base) first, then foreground grass and rock. -->
   <use href="#hl" transform="translate(46 16) scale(0.6)"/>
   <use href="#hl" transform="translate(22 32)"/>

@@ -15,6 +15,25 @@
     <ellipse cx="14" cy="14" rx="7" ry="5"/>
     <ellipse cx="50" cy="48" rx="8" ry="5"/>
   </g>
+  <!-- Edge band: byte-identical across swamp variants, stamped in wrapped
+       pairs (a stamp crossing x=0 repeats at +64, likewise y, corners at
+       all four) so murk and reeds continue across tile seams. -->
+  <g>
+    <ellipse cx="0" cy="0" rx="10" ry="6" fill="#475738"/>
+    <ellipse cx="64" cy="0" rx="10" ry="6" fill="#475738"/>
+    <ellipse cx="0" cy="64" rx="10" ry="6" fill="#475738"/>
+    <ellipse cx="64" cy="64" rx="10" ry="6" fill="#475738"/>
+    <ellipse cx="-1" cy="38" rx="8" ry="5" fill="#576741"/>
+    <ellipse cx="63" cy="38" rx="8" ry="5" fill="#576741"/>
+    <ellipse cx="34" cy="-1" rx="9" ry="5" fill="#475738"/>
+    <ellipse cx="34" cy="63" rx="9" ry="5" fill="#475738"/>
+    <use href="#rd" transform="translate(1 20) scale(0.85)"/>
+    <use href="#rd" transform="translate(65 20) scale(0.85)"/>
+    <use href="#rd" transform="translate(56 2) scale(0.8)"/>
+    <use href="#rd" transform="translate(56 66) scale(0.8)"/>
+    <use href="#rd" transform="translate(22 1) scale(-0.9 0.9)"/>
+    <use href="#rd" transform="translate(22 65) scale(-0.9 0.9)"/>
+  </g>
   <ellipse cx="40" cy="42" rx="12" ry="7" fill="#3a4d46"/>
   <ellipse cx="40" cy="42" rx="12" ry="7" fill="none" stroke="#32423c" stroke-width="1"/>
   <ellipse cx="37" cy="40" rx="7" ry="3.5" fill="#44584f"/>

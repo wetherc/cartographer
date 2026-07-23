@@ -24,12 +24,34 @@
     <ellipse cx="48" cy="12" rx="10" ry="6"/>
     <ellipse cx="14" cy="52" rx="9" ry="5"/>
   </g>
-  <!-- Boulder on the high ground, then hills front-to-back by base height. -->
+  <!-- Edge band: byte-identical across hills variants, stamped in wrapped
+       pairs (a stamp crossing x=0 repeats at +64, likewise y, corners at
+       all four) so mottle and low hills continue across tile seams. -->
+  <g>
+    <ellipse cx="0" cy="0" rx="10" ry="6" fill="#5d974a"/>
+    <ellipse cx="64" cy="0" rx="10" ry="6" fill="#5d974a"/>
+    <ellipse cx="0" cy="64" rx="10" ry="6" fill="#5d974a"/>
+    <ellipse cx="64" cy="64" rx="10" ry="6" fill="#5d974a"/>
+    <ellipse cx="-1" cy="26" rx="8" ry="5" fill="#5d974a"/>
+    <ellipse cx="63" cy="26" rx="8" ry="5" fill="#5d974a"/>
+    <ellipse cx="30" cy="-1" rx="9" ry="5" fill="#5d974a"/>
+    <ellipse cx="30" cy="63" rx="9" ry="5" fill="#5d974a"/>
+    <use href="#hl" transform="translate(1 44) scale(0.6)"/>
+    <use href="#hl" transform="translate(65 44) scale(0.6)"/>
+    <use href="#hl" transform="translate(46 1) scale(0.65)"/>
+    <use href="#hl" transform="translate(46 65) scale(0.65)"/>
+    <use href="#t" transform="translate(20 1) scale(0.9)"/>
+    <use href="#t" transform="translate(20 65) scale(0.9)"/>
+    <use href="#t" transform="translate(-1 12)"/>
+    <use href="#t" transform="translate(63 12)"/>
+  </g>
+  <!-- Boulder on the high ground, then hills front-to-back by base height,
+       spaced so no interior hill overlaps another or the edge-band hills. -->
   <use href="#bd" transform="translate(14 16)"/>
   <use href="#t" transform="translate(26 20) scale(0.9)"/>
   <use href="#hl" transform="translate(40 26) scale(0.9)"/>
-  <use href="#t" transform="translate(10 32)"/>
-  <use href="#hl" transform="translate(18 42)"/>
+  <use href="#hl" transform="translate(16 30) scale(0.75)"/>
   <use href="#t" transform="translate(56 42) scale(0.9)"/>
-  <use href="#hl" transform="translate(46 55) scale(0.7)"/>
+  <use href="#hl" transform="translate(34 48) scale(0.8)"/>
+  <use href="#t" transform="translate(12 58)"/>
 </svg>
