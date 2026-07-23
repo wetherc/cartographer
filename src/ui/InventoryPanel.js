@@ -23,9 +23,10 @@ function idFromName(name) {
  * No type enforcement — any item can go in any slot.
  * @param {Character} character
  * @param {(next: Character) => void} commit
+ * @param {boolean} playable false renders the pickers disabled (read-only view)
  * @returns {HTMLElement}
  */
-function buildEquipment(character, commit) {
+function buildEquipment(character, commit, playable) {
   const section = document.createElement('div');
   section.className = 'inventory-panel__equipment';
   for (const slot of EQUIPMENT_SLOTS) {
@@ -56,6 +57,7 @@ function buildEquipment(character, commit) {
       select.appendChild(option);
     }
     select.value = getEquipped(character, slot.key)?.id ?? '';
+    select.disabled = !playable;
     select.addEventListener('change', () =>
       commit(equip(character, slot.key, select.value === '' ? null : select.value)),
     );
@@ -78,11 +80,21 @@ function buildEquipment(character, commit) {
  * commit silently.
  * @param {HTMLElement} container
  * @param {Character | null} initial
+ * With a `canPlay` callback returning false the panel renders read-only: no
+ * equipment changes, no consume/remove controls, no add form (a spectator's
+ * or another player's view of this character).
  * @param {(character: Character) => void} [onChange]
  * @param {(event: InventoryEvent, character: Character) => void} [onEvent]
+ * @param {() => boolean} [canPlay]
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
-export function mountInventoryPanel(container, initial, onChange = () => {}, onEvent = () => {}) {
+export function mountInventoryPanel(
+  container,
+  initial,
+  onChange = () => {},
+  onEvent = () => {},
+  canPlay = () => true,
+) {
   let current = initial;
   // Survives re-renders (every edit re-renders) but stays per-mount, so the
   // panel doesn't snap shut after each item change.
@@ -127,7 +139,8 @@ export function mountInventoryPanel(container, initial, onChange = () => {}, onE
     const body = document.createElement('div');
     body.className = 'inventory-panel__body';
 
-    body.appendChild(buildEquipment(character, commit));
+    const playable = canPlay();
+    body.appendChild(buildEquipment(character, commit, playable));
 
     const list = document.createElement('div');
     list.className = 'inventory-panel__list';
@@ -144,6 +157,11 @@ export function mountInventoryPanel(container, initial, onChange = () => {}, onE
       type.textContent = itemType(item);
 
       row.append(label, type);
+
+      if (!playable) {
+        list.appendChild(row);
+        continue;
+      }
 
       // Present even on 1-stacks: consuming the last of an item and discarding
       // it are the same state change but different travelogue lines.
@@ -174,6 +192,12 @@ export function mountInventoryPanel(container, initial, onChange = () => {}, onE
       list.appendChild(row);
     }
     body.appendChild(list);
+
+    if (!playable) {
+      wireDisclosure(summary, body, { expanded, onToggle: (next) => { expanded = next; } });
+      root.append(summary, body);
+      return;
+    }
 
     const form = document.createElement('div');
     form.className = 'inventory-panel__form';

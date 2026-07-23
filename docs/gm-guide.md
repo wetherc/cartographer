@@ -62,6 +62,17 @@ click the padlock next to the role switch while in the Player view and confirm.
 A locked tab hides the switch entirely and can never show the GM view; unlock it
 by closing the tab (or removing `?role=player` from the URL).
 
+A Player tab can also **play as one character**. Pick one from the "Playing as"
+dropdown at the top of the Party panel, or open the tab with `?character=<id>`
+on the URL (combine with `?role=player&character=hero` for a bookmarked
+per-player display). A bound tab can play its character — spend and restore HP,
+spell slots, and other resources, add and clear conditions, and manage
+inventory — but cannot edit base attributes (stats, XP) or touch any other
+character; an unbound Player tab is a pure spectator. Bindings are exclusive:
+only one tab at a time can play a given character, on the same claim-and-expire
+rules as the GM view, so two tabs can never both act as the same hero. The GM
+tab ignores bindings entirely and can always edit everyone.
+
 ## Building a world (Build mode)
 
 Switch to **Build** mode. The layout reflows to a world-tree rail on the left, the

@@ -105,12 +105,21 @@ function buildSlotLine(pools) {
  * expanding to the full sheet — XP control, ability scores, and resource
  * pools (HP included) with spend/restore steppers.
  * Renders an empty state when no character is selected (`null`).
+ * `getPermissions` scopes what the viewer may touch: without `editBase` the
+ * stats and XP render read-only, and without `play` the pool steppers and
+ * condition controls disappear too (a spectator's view of the sheet).
  * @param {HTMLElement} container
  * @param {Character | null} initial
  * @param {(character: Character) => void} [onChange]
+ * @param {() => { editBase: boolean, play: boolean }} [getPermissions]
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
-export function mountCharacterSheet(container, initial, onChange = () => {}) {
+export function mountCharacterSheet(
+  container,
+  initial,
+  onChange = () => {},
+  getPermissions = () => ({ editBase: true, play: true }),
+) {
   let current = initial;
   // Survives re-renders (every edit re-renders) but stays per-mount, so the
   // card the GM opened doesn't snap shut after each stat change.
@@ -139,6 +148,7 @@ export function mountCharacterSheet(container, initial, onChange = () => {}) {
       root.appendChild(empty);
       return;
     }
+    const perms = getPermissions();
 
     const summary = document.createElement('button');
     summary.type = 'button';
@@ -187,24 +197,27 @@ export function mountCharacterSheet(container, initial, onChange = () => {}) {
 
     const xpLabel = document.createElement('span');
     xpLabel.textContent = `XP: ${character.xp} / ${character.level * XP_PER_LEVEL}`;
+    xpRow.appendChild(xpLabel);
 
-    const xpInput = document.createElement('input');
-    xpInput.type = 'number';
-    xpInput.className = 'field character-sheet__xp-input';
-    xpInput.value = '0';
-    xpInput.min = '0';
-    xpInput.setAttribute('aria-label', 'XP to add');
+    if (perms.editBase) {
+      const xpInput = document.createElement('input');
+      xpInput.type = 'number';
+      xpInput.className = 'field character-sheet__xp-input';
+      xpInput.value = '0';
+      xpInput.min = '0';
+      xpInput.setAttribute('aria-label', 'XP to add');
 
-    const xpButton = document.createElement('button');
-    xpButton.type = 'button';
-    xpButton.className = 'btn';
-    xpButton.append(icon('add'), document.createTextNode('XP'));
-    xpButton.addEventListener('click', () => {
-      const amount = Number(xpInput.value);
-      if (amount > 0) commit(addXP(character, amount));
-    });
+      const xpButton = document.createElement('button');
+      xpButton.type = 'button';
+      xpButton.className = 'btn';
+      xpButton.append(icon('add'), document.createTextNode('XP'));
+      xpButton.addEventListener('click', () => {
+        const amount = Number(xpInput.value);
+        if (amount > 0) commit(addXP(character, amount));
+      });
 
-    xpRow.append(xpLabel, xpInput, xpButton);
+      xpRow.append(xpInput, xpButton);
+    }
     body.appendChild(xpRow);
 
     const statsList = document.createElement('div');
@@ -221,6 +234,7 @@ export function mountCharacterSheet(container, initial, onChange = () => {}) {
       input.type = 'number';
       input.className = 'field character-sheet__stat-input';
       input.value = String(value);
+      input.disabled = !perms.editBase;
       input.addEventListener('change', () => {
         commit(setStat(character, key, Number(input.value)));
       });
@@ -247,22 +261,25 @@ export function mountCharacterSheet(container, initial, onChange = () => {}) {
         const label = document.createElement('span');
         label.className = 'character-sheet__resource-label';
         label.textContent = `${pool.name} ${pool.current}/${pool.max}`;
+        row.appendChild(label);
 
-        const spendButton = document.createElement('button');
-        spendButton.type = 'button';
-        spendButton.className = 'btn btn--icon btn--danger';
-        spendButton.setAttribute('aria-label', `Spend one ${pool.name}`);
-        spendButton.appendChild(icon('minus'));
-        spendButton.addEventListener('click', () => commit(spendResource(character, pool.id, 1)));
+        if (perms.play) {
+          const spendButton = document.createElement('button');
+          spendButton.type = 'button';
+          spendButton.className = 'btn btn--icon btn--danger';
+          spendButton.setAttribute('aria-label', `Spend one ${pool.name}`);
+          spendButton.appendChild(icon('minus'));
+          spendButton.addEventListener('click', () => commit(spendResource(character, pool.id, 1)));
 
-        const restoreButton = document.createElement('button');
-        restoreButton.type = 'button';
-        restoreButton.className = 'btn btn--icon btn--success';
-        restoreButton.setAttribute('aria-label', `Restore one ${pool.name}`);
-        restoreButton.appendChild(icon('plus'));
-        restoreButton.addEventListener('click', () => commit(restoreResource(character, pool.id, 1)));
+          const restoreButton = document.createElement('button');
+          restoreButton.type = 'button';
+          restoreButton.className = 'btn btn--icon btn--success';
+          restoreButton.setAttribute('aria-label', `Restore one ${pool.name}`);
+          restoreButton.appendChild(icon('plus'));
+          restoreButton.addEventListener('click', () => commit(restoreResource(character, pool.id, 1)));
 
-        row.append(label, spendButton, restoreButton);
+          row.append(spendButton, restoreButton);
+        }
         resources.appendChild(row);
       }
       body.appendChild(resources);
@@ -277,6 +294,7 @@ export function mountCharacterSheet(container, initial, onChange = () => {}) {
     mountConditionsBar(conditions, {
       getConditions: () => current?.conditions ?? [],
       onChange: (next) => commit({ ...character, conditions: next }),
+      canEdit: () => getPermissions().play,
     });
     body.appendChild(conditions);
 

@@ -9,6 +9,21 @@ import { mountCharacterSheet } from '../ui/CharacterSheet.js';
 import { mountInventoryPanel } from '../ui/InventoryPanel.js';
 import { mountTimePanel } from '../ui/TimePanel.js';
 import { advanceWatches, advanceToDawn, formatClock } from '../time/GameClock.js';
+import { isGM } from '../view/ViewRole.js';
+import {
+  BOUND_CHARACTER_SESSION_KEY,
+  characterLockKey,
+  initialBinding,
+  partyPermissions,
+} from '../view/CharacterBinding.js';
+import {
+  GM_LOCK_HEARTBEAT,
+  claimLock,
+  isHeldByOther,
+  loadLock,
+  saveLock,
+  releaseLock,
+} from '../storage/GMLock.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -23,8 +38,94 @@ import { advanceWatches, advanceToDawn, formatClock } from '../time/GameClock.js
 export function wireParty(app) {
   const { state } = app;
 
+  // This tab's bound character (Player view only): the one character this tab
+  // may play. Bound via ?character=<id> or the "Playing as" picker below.
+  /** @type {string | null} */
+  let boundCharacterId = null;
+  app.actions.getBoundCharacterId = () => boundCharacterId;
+
+  // Bindings are exclusive across tabs: claiming a character takes a
+  // heartbeat lock in localStorage (same machinery as the GM lock), so two
+  // player tabs can never both play "Hero". A failed claim leaves the tab a
+  // spectator with a toast explaining who has it.
+  const bindingTabId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+  /** @type {ReturnType<typeof setInterval> | null} */
+  let bindingHeartbeat = null;
+
+  /** @param {string} characterId @returns {boolean} whether the claim stuck */
+  function tryClaimCharacter(characterId) {
+    const key = characterLockKey(characterId);
+    const next = claimLock(loadLock(key), bindingTabId, Date.now());
+    if (!next) return false;
+    saveLock(next, key);
+    if (bindingHeartbeat === null) {
+      bindingHeartbeat = setInterval(() => {
+        if (boundCharacterId) saveLock({ id: bindingTabId, at: Date.now() }, characterLockKey(boundCharacterId));
+      }, GM_LOCK_HEARTBEAT);
+    }
+    return true;
+  }
+
+  function dropCharacterClaim() {
+    if (bindingHeartbeat !== null) clearInterval(bindingHeartbeat);
+    bindingHeartbeat = null;
+    if (boundCharacterId) releaseLock(bindingTabId, characterLockKey(boundCharacterId));
+  }
+
+  /**
+   * Bind this tab to a character (or null for spectator), enforcing the
+   * cross-tab claim. Returns the binding that actually took effect.
+   * @param {string | null} id
+   * @returns {string | null}
+   */
+  function setBinding(id) {
+    if (id === boundCharacterId) return boundCharacterId;
+    dropCharacterClaim();
+    if (id !== null && !tryClaimCharacter(id)) {
+      const name = state.characters.find((c) => c.id === id)?.name ?? id;
+      app.toasts.show(`Another tab is already playing ${name}; this tab stays a spectator.`);
+      id = null;
+    }
+    boundCharacterId = id;
+    if (id) sessionStorage.setItem(BOUND_CHARACTER_SESSION_KEY, id);
+    else sessionStorage.removeItem(BOUND_CHARACTER_SESSION_KEY);
+    return id;
+  }
+
+  setBinding(initialBinding(
+    location.search,
+    sessionStorage.getItem(BOUND_CHARACTER_SESSION_KEY),
+    state.characters,
+  ));
+
+  // Free the claim when the tab goes away so another tab can pick the
+  // character up without waiting out the TTL.
+  window.addEventListener('pagehide', dropCharacterClaim);
+
+  // Belt and braces, mirroring the GM lock: if another tab takes over our
+  // character's lock (e.g. this tab was frozen past the TTL), yield to it.
+  window.addEventListener('storage', (event) => {
+    if (!boundCharacterId || event.key !== characterLockKey(boundCharacterId)) return;
+    if (isHeldByOther(loadLock(event.key), bindingTabId, Date.now())) {
+      const name = state.characters.find((c) => c.id === boundCharacterId)?.name ?? boundCharacterId;
+      if (bindingHeartbeat !== null) clearInterval(bindingHeartbeat);
+      bindingHeartbeat = null;
+      boundCharacterId = null;
+      sessionStorage.removeItem(BOUND_CHARACTER_SESSION_KEY);
+      app.toasts.show(`Another tab took over ${name}; this tab is now a spectator.`);
+      selectCharacter(selectedCharacterId);
+    }
+  });
+
+  /** What this tab may do to the character currently on the sheet/inventory.
+   * @returns {{ editBase: boolean, play: boolean }} */
+  function selectedPermissions() {
+    const character = selectedCharacter();
+    return partyPermissions(state.role, boundCharacterId, character?.id ?? '');
+  }
+
   /** @type {string | null} id of the character the sheet/inventory are scoped to */
-  let selectedCharacterId = state.characters[0]?.id ?? null;
+  let selectedCharacterId = boundCharacterId ?? state.characters[0]?.id ?? null;
 
   /** @returns {Character | null} */
   function selectedCharacter() {
@@ -41,6 +142,7 @@ export function wireParty(app) {
     characterSheet.setCharacter(character);
     inventoryPanel.setCharacter(character);
     characterRoster.update();
+    updateBindingPicker();
   }
   app.actions.refreshSelectedCharacter = () => selectCharacter(selectedCharacterId);
 
@@ -54,9 +156,48 @@ export function wireParty(app) {
     app.actions.markDirty();
   }
 
+  // "Playing as" picker, Player view only (hidden for the GM via CSS): binds
+  // this tab to one character, or to none for a spectator tab. The URL form
+  // (?character=<id>) survives reloads; the picker is per-tab session state.
+  const binding = document.createElement('label');
+  binding.className = 'party-binding';
+  const bindingLabel = document.createElement('span');
+  bindingLabel.className = 'party-binding__label';
+  bindingLabel.textContent = 'Playing as';
+  const bindingSelect = document.createElement('select');
+  bindingSelect.className = 'field';
+  bindingSelect.setAttribute('aria-label', 'Character this tab plays as');
+  binding.append(bindingLabel, bindingSelect);
+  mustGetElement('party-container').appendChild(binding);
+  bindingSelect.addEventListener('change', () => {
+    const took = setBinding(bindingSelect.value === '' ? null : bindingSelect.value);
+    selectCharacter(took ?? selectedCharacterId);
+  });
+
+  function updateBindingPicker() {
+    // A binding whose character left the roster silently resolves to spectator.
+    if (boundCharacterId && !state.characters.some((c) => c.id === boundCharacterId)) {
+      setBinding(null);
+    }
+    bindingSelect.innerHTML = '';
+    const spectator = document.createElement('option');
+    spectator.value = '';
+    spectator.textContent = 'Spectator (view only)';
+    bindingSelect.appendChild(spectator);
+    for (const character of state.characters) {
+      const option = document.createElement('option');
+      option.value = character.id;
+      option.textContent = character.name;
+      bindingSelect.appendChild(option);
+    }
+    bindingSelect.value = boundCharacterId ?? '';
+  }
+  updateBindingPicker();
+
   const characterRoster = mountCharacterRoster(mustGetElement('party-container'), {
     getCharacters: () => state.characters,
     getSelectedId: () => selectedCharacterId,
+    canManage: () => isGM(state.role),
     onSelect: selectCharacter,
     onAdd: async () => {
       const values = await promptModal('New character', [
@@ -126,6 +267,7 @@ export function wireParty(app) {
       commitCharacter(next);
       inventoryPanel.setCharacter(next);
     },
+    selectedPermissions,
   );
 
   const inventoryPanel = mountInventoryPanel(
@@ -142,6 +284,7 @@ export function wireParty(app) {
         formatInventoryEvent(character.name, event, { region: node?.name, time: formatClock(state.clock) }),
       );
     },
+    () => selectedPermissions().play,
   );
 
   mountTimePanel(mustGetElement('time-container'), {

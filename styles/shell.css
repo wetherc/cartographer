@@ -149,6 +149,12 @@ body.role-player .time-panel__actions {
   display: none;
 }
 
+/* The "Playing as" binding picker is a Player-view concept: the GM plays
+   everyone, so the GM view hides it. */
+body.role-gm .party-binding {
+  display: none;
+}
+
 /* The lock-as-Player affordance only makes sense from an unlocked Player tab;
    a locked tab hides the whole role cluster so nothing can flip it back. */
 body.role-gm #player-lock-btn {

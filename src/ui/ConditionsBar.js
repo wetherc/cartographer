@@ -9,11 +9,14 @@ import { icon } from './icons.js';
  * sheet and the encounter panel. Self-contained: it reads the current list via
  * `getConditions`, opens its own add dialog, and reports the whole new list
  * through `onChange`, so the owner only has to persist it.
+ * With a `canEdit` callback returning false the bar renders read-only: chips
+ * without remove buttons and no add control (a spectator's view).
  * @param {HTMLElement} container
- * @param {{ getConditions: () => Condition[], onChange: (next: Condition[]) => void }} callbacks
+ * @param {{ getConditions: () => Condition[], onChange: (next: Condition[]) => void, canEdit?: () => boolean }} callbacks
  * @returns {{ update: () => void }}
  */
 export function mountConditionsBar(container, callbacks) {
+  const canEdit = callbacks.canEdit ?? (() => true);
   const root = document.createElement('div');
   root.className = 'conditions-bar';
   container.appendChild(root);
@@ -26,6 +29,7 @@ export function mountConditionsBar(container, callbacks) {
     const text = document.createElement('span');
     text.textContent = label;
     chip.appendChild(text);
+    if (!canEdit()) return chip;
 
     const remove = document.createElement('button');
     remove.type = 'button';
@@ -64,6 +68,7 @@ export function mountConditionsBar(container, callbacks) {
     root.innerHTML = '';
     const conditions = callbacks.getConditions();
     for (const condition of conditions) root.appendChild(buildChip(condition));
+    if (!canEdit()) return;
     // With no chips to give it context, a bare "+" is cryptic — spell it out.
     const addButton = document.createElement('button');
     addButton.type = 'button';

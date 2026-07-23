@@ -11,6 +11,9 @@ import { icon } from './icons.js';
  * With `onAwardXP`, a non-empty roster also offers an "Award XP" action that
  * grants the same amount to every party member at once (the caller prompts for
  * the amount), so leveling after an encounter doesn't mean visiting each sheet.
+ * With a `canManage` callback returning false the roster is browse-only:
+ * rows still select (any viewer may look at a sheet) but the add/delete/award
+ * controls disappear — roster membership is the GM's to manage.
  * @param {{
  *   getCharacters: () => Character[],
  *   getSelectedId: () => string | null,
@@ -18,10 +21,12 @@ import { icon } from './icons.js';
  *   onAdd: () => void,
  *   onDelete: (id: string) => void,
  *   onAwardXP?: () => void,
+ *   canManage?: () => boolean,
  * }} options
  * @returns {{ update: () => void }}
  */
 export function mountCharacterRoster(container, options) {
+  const canManage = options.canManage ?? (() => true);
   const root = document.createElement('div');
   root.className = 'character-roster';
   container.appendChild(root);
@@ -53,16 +58,20 @@ export function mountCharacterRoster(container, options) {
       select.textContent = `${character.name} (Lv ${character.level})`;
       select.addEventListener('click', () => options.onSelect(character.id));
 
-      const del = document.createElement('button');
-      del.type = 'button';
-      del.className = 'btn btn--icon character-roster__delete';
-      del.setAttribute('aria-label', `Delete ${character.name}`);
-      del.appendChild(icon('remove'));
-      del.addEventListener('click', () => options.onDelete(character.id));
-
-      row.append(select, del);
+      row.appendChild(select);
+      if (canManage()) {
+        const del = document.createElement('button');
+        del.type = 'button';
+        del.className = 'btn btn--icon character-roster__delete';
+        del.setAttribute('aria-label', `Delete ${character.name}`);
+        del.appendChild(icon('remove'));
+        del.addEventListener('click', () => options.onDelete(character.id));
+        row.appendChild(del);
+      }
       root.appendChild(row);
     }
+
+    if (!canManage()) return;
 
     const actions = document.createElement('div');
     actions.className = 'panel-actions';
