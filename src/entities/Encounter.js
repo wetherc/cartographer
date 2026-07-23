@@ -45,6 +45,33 @@ export function withDefaults(encounter) {
 }
 
 /**
+ * Apply a GM edit to an encounter's blueprint fields and placement, keeping
+ * its live state: currentHP survives (clamped to the new maximum) and the
+ * stat block and conditions are untouched, so re-tuning a fight in progress
+ * doesn't reset it. Moving the encounter clears the `noticed` flag, so the
+ * party walking into its new spot logs a fresh meeting.
+ * @param {Encounter} encounter
+ * @param {{ name: string, maxHP: number, level: number, tier: EnemyTier, location: EncounterLocation | null }} edits
+ * @returns {Encounter}
+ */
+export function editEncounter(encounter, edits) {
+  const maxHP = Math.max(1, edits.maxHP);
+  const moved =
+    (encounter.location?.nodeId ?? null) !== (edits.location?.nodeId ?? null) ||
+    (encounter.location?.tileId ?? null) !== (edits.location?.tileId ?? null);
+  return {
+    ...encounter,
+    name: edits.name,
+    maxHP,
+    currentHP: Math.min(encounter.currentHP, maxHP),
+    level: edits.level,
+    tier: edits.tier,
+    location: edits.location,
+    noticed: moved ? false : encounter.noticed,
+  };
+}
+
+/**
  * The encounters relevant to the party's position: those staged in the node
  * the party currently occupies, plus unbound ones (location === null), which
  * are always relevant. Binding is per-node, not per-tile, so an encounter

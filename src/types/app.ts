@@ -53,6 +53,8 @@ export interface AppViews {
   worldTree: Updatable;
   regionTree: Updatable;
   encounterPanel: Updatable;
+  /** Build-rail encounter authoring list, scoped to the node being viewed. */
+  buildEncounters: Updatable;
   initiativePanel: Updatable;
   npcPanel: Updatable;
   questPanel: Updatable;
@@ -82,6 +84,9 @@ export interface AppActions {
   syncNPCMarkers(): void;
   refreshMapDescription(): void;
   clearSelection(): void;
+  // mapWiring: the Build-mode selected tile id, or null — the default spot
+  // for authoring flows that place something "here".
+  getSelectedTileId(): string | null;
   syncPaletteKind(): void;
   snapshotEdit(...nodes: MapNode[]): void;
   undoStroke(): void;

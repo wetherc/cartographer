@@ -24,6 +24,7 @@ import { isGM, hpBand } from '../view/ViewRole.js';
  *   onUpdate: (encounter: Encounter) => void,
  *   onDelete: (id: string) => void,
  *   onAdd?: () => Promise<Encounter | null>,
+ *   onEdit?: (encounter: Encounter) => Promise<unknown>,
  *   onAddFromTemplate?: () => Promise<Encounter | null>,
  *   onSaveTemplate?: (encounter: Encounter) => void,
  *   confirmDelete?: (encounter: Encounter) => Promise<boolean>,
@@ -112,6 +113,18 @@ export function mountEncounterPanel(container, callbacks) {
         updateOne(encounter, (e) => heal(e, Number(amountInput.value)));
       });
 
+      // The full edit dialog (name, HP, level/tier, and crucially placement),
+      // so relocating an encounter doesn't mean deleting and recreating it.
+      const editButton = document.createElement('button');
+      editButton.type = 'button';
+      editButton.className = 'btn btn--icon';
+      editButton.setAttribute('aria-label', `Edit ${encounter.name}`);
+      editButton.title = 'Edit';
+      editButton.appendChild(icon('edit'));
+      editButton.addEventListener('click', async () => {
+        if (await callbacks.onEdit?.(encounter)) render();
+      });
+
       const templateButton = document.createElement('button');
       templateButton.type = 'button';
       templateButton.className = 'btn btn--icon';
@@ -134,7 +147,9 @@ export function mountEncounterPanel(container, callbacks) {
 
       const head = document.createElement('div');
       head.className = 'encounter-panel__head';
-      head.append(label, amountInput, damageButton, healButton, templateButton, deleteButton);
+      head.append(label, amountInput, damageButton, healButton);
+      if (callbacks.onEdit) head.appendChild(editButton);
+      head.append(templateButton, deleteButton);
       row.appendChild(head);
 
       // The GM edits the encounter's stat block (AC, Speed, ...) right on the

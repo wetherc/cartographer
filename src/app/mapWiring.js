@@ -111,6 +111,9 @@ export function wireMapView(app) {
         .filter((e) => e.location && e.location.nodeId === nodeId && !isDefeated(e))
         .map((e) => /** @type {import('../types/entities.js').EncounterLocation} */ (e.location).tileId),
     );
+    // The Build-rail authoring list shows the same node scope, so it refreshes
+    // wherever the markers do (navigation and every encounter mutation).
+    app.views.buildEncounters?.update();
   }
   app.actions.syncEncounterMarkers = syncEncounterMarkers;
 
@@ -161,6 +164,7 @@ export function wireMapView(app) {
     inspector.setTile(null);
   }
   app.actions.clearSelection = clearSelection;
+  app.actions.getSelectedTileId = () => selectedTileId;
 
   const breadcrumb = mountBreadcrumb(mustGetElement('breadcrumb-container'), goToNode);
 
