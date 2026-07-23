@@ -19,6 +19,7 @@ import { parseCoords, tileRect } from './MapGeometry.js';
  * @property {boolean} revealAll draw every tile's image regardless of fog (Build mode)
  * @property {string | null} partyTileId
  * @property {string[]} [encounterTileIds] tiles carrying a live encounter, marked when revealed
+ * @property {string[]} [npcTileIds] tiles holding a placed NPC, marked when revealed
  * @property {string | null} selectedTileId
  * @property {string | null} cursorCellId
  * @property {boolean} focused whether the keyboard cursor outline shows
@@ -77,6 +78,7 @@ export class MapRenderer {
     this._renderMarquee(view);
     this._renderSelection(view);
     this._renderEncounterMarkers(view);
+    this._renderNPCMarkers(view);
     this._renderPartyMarker(view);
     this._renderCursor(view);
     this._renderMapBoundsBorder(view);
@@ -301,6 +303,35 @@ export class MapRenderer {
       ctx.lineWidth = Math.max(1.5, size * 0.03);
       ctx.beginPath();
       ctx.rect(-r, -r, r * 2, r * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  /**
+   * Mark tiles holding a placed NPC with a blue circle in the tile's upper-left
+   * corner — mirroring the encounter diamond's upper-right spot, so a tile can
+   * carry both without overlap, and reading as a person rather than a threat.
+   * Same fog rule as encounters: only revealed tiles are marked (Build marks all).
+   * @param {MapView} view
+   */
+  _renderNPCMarkers(view) {
+    const ids = view.npcTileIds;
+    if (!ids || ids.length === 0 || !view.node) return;
+    const revealed = new Set(view.node.tiles.filter((t) => t.revealed).map((t) => t.id));
+    const { ctx } = this;
+    for (const id of ids) {
+      if (!view.revealAll && !revealed.has(id)) continue;
+      const coords = parseCoords(id);
+      if (!coords) continue;
+      const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
+      ctx.save();
+      ctx.fillStyle = '#3563a5';
+      ctx.strokeStyle = '#101f36';
+      ctx.lineWidth = Math.max(1.5, size * 0.03);
+      ctx.beginPath();
+      ctx.arc(sx + size * 0.26, sy + size * 0.26, size * 0.15, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
       ctx.restore();

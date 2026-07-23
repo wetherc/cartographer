@@ -72,6 +72,7 @@ export interface AppActions {
   // mapWiring
   syncPartyMarker(): void;
   syncEncounterMarkers(): void;
+  syncNPCMarkers(): void;
   refreshMapDescription(): void;
   clearSelection(): void;
   syncPaletteKind(): void;

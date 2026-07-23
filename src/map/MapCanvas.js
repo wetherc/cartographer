@@ -54,6 +54,8 @@ export class MapCanvas {
     this.selectedTileId = null;
     /** @type {string[]} tile ids in the current node carrying a live encounter */
     this.encounterTileIds = [];
+    /** @type {string[]} tile ids in the current node holding a placed NPC */
+    this.npcTileIds = [];
     /** When true (Build mode), draw every tile's image regardless of its
      * revealed flag, so a GM authors against the whole map, not through fog. */
     this.revealAll = false;
@@ -225,6 +227,16 @@ export class MapCanvas {
   }
 
   /**
+   * Set the tile ids in the current node that hold a placed NPC, marked by the
+   * renderer under the same fog rule as encounters (revealed tiles only in Play).
+   * @param {string[]} tileIds
+   */
+  setNPCTiles(tileIds) {
+    this.npcTileIds = tileIds;
+    this.render();
+  }
+
+  /**
    * Toggle whether unrevealed tiles are drawn as fog (false, Play) or fully
    * (true, Build).
    * @param {boolean} value
@@ -277,6 +289,7 @@ export class MapCanvas {
       revealAll: this.revealAll,
       partyTileId: this.partyTileId,
       encounterTileIds: this.encounterTileIds,
+      npcTileIds: this.npcTileIds,
       selectedTileId: this.selectedTileId,
       cursorCellId: this.cursorCellId,
       focused: this._focused,

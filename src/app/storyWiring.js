@@ -99,6 +99,7 @@ export function wireStory(app) {
     getLocationLabel: (npc) => formatLocation(npc.location, (id) => app.grid.getNode(id)?.name),
     onDelete: (id) => {
       state.npcs = removeById(state.npcs, id);
+      app.actions.syncNPCMarkers();
       app.actions.markDirty();
     },
     onAdd: async () => {
@@ -119,6 +120,7 @@ export function wireStory(app) {
         location: readNPCLocation(values),
       });
       state.npcs = [...state.npcs, created];
+      app.actions.syncNPCMarkers();
       app.actions.markDirty();
       return created;
     },
@@ -144,6 +146,7 @@ export function wireStory(app) {
         notes: values.notes.trim(),
         location: readNPCLocation(values),
       });
+      app.actions.syncNPCMarkers();
       app.actions.markDirty();
       return true;
     },

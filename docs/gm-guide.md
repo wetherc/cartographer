@@ -250,7 +250,10 @@ and mana use.
   notes, and a location. The add/edit dialog places an NPC on any map
   (region or interior) at specific tile coordinates — or leaves it unplaced,
   in which case it appears everywhere. Each row shows the placement, and the
-  panel shows the NPCs at the party's current location.
+  panel shows the NPCs at the party's current location. A placed NPC also shows
+  on the map as a blue circle in its tile's upper-left corner (the encounter
+  diamond sits upper-right, so a tile can carry both) once the tile is revealed,
+  and hovering the tile in Play mode names everyone standing there.
 - **Quests** — active/completed quest log. Completing a quest turns its toggle
   button's plus into a checkmark.
 - **Handouts** — read-aloud text or lore attached to a node (or campaign-wide),
