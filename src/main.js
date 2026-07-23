@@ -26,6 +26,9 @@ import { PartyTracker } from './party/PartyTracker.js';
 import { createCharacter, withHP, withMana, shortRest, longRest } from './entities/Character.js';
 import { advanceWatches, advanceToDawn, formatClock } from './time/GameClock.js';
 import { mountTimePanel } from './ui/TimePanel.js';
+import { createParticipant, startCombat, advanceTurn } from './combat/Initiative.js';
+import { mountInitiativePanel } from './ui/InitiativePanel.js';
+import { tickConditions } from './entities/Conditions.js';
 import { createEncounter, encountersAt, isDefeated } from './entities/Encounter.js';
 import { slugId, replaceById, removeById } from './entities/Roster.js';
 import { mountCharacterRoster } from './ui/CharacterRoster.js';
@@ -61,6 +64,8 @@ let quests = initial.quests;
 let clock = initial.clock;
 /** @type {import('./types/npc.js').NPC[]} non-combatant NPCs */
 let npcs = initial.npcs;
+/** @type {import('./types/combat.js').CombatState | null} running combat, transient (not persisted) */
+let combat = null;
 /** Monotonic counter making travelogue entry ids unique within a session. */
 let logSeq = 0;
 
@@ -182,6 +187,7 @@ async function teleportToNode(nodeId) {
   goToNode(nodeId);
   logEvent('travel', `Traveled to ${node.name}.`);
   encounterPanel.update();
+  initiativePanel.update();
 }
 
 /**
@@ -323,6 +329,7 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
     // The party may have changed nodes, so the location-scoped encounter list
     // needs re-filtering. (Mounted later in this file; clicks only happen after.)
     encounterPanel.update();
+    initiativePanel.update();
   },
 });
 
@@ -598,6 +605,36 @@ const timePanel = mountTimePanel(mustGetElement('time-container'), {
     clock = advanceToDawn(clock);
     selectCharacter(selectedCharacterId);
     logEvent('rest', `The party takes a long rest. Now ${formatClock(clock)}.`);
+  },
+});
+
+const initiativePanel = mountInitiativePanel(mustGetElement('initiative-container'), {
+  getState: () => combat,
+  // Candidate combatants: the whole party plus the living encounters where the
+  // party stands. Initiative defaults to 10 and is edited in the setup list.
+  getRoster: () => [
+    ...characters.map((c) => createParticipant(c.id, c.name, 'party', 10)),
+    ...encountersAt(encounters, partyTracker.getPosition())
+      .filter((e) => !isDefeated(e))
+      .map((e) => createParticipant(e.id, e.name, 'foe', 10)),
+  ],
+  onStart: (participants) => {
+    combat = startCombat(participants);
+  },
+  onNext: () => {
+    if (!combat) return;
+    const result = advanceTurn(combat);
+    combat = result.state;
+    // A new round elapsed, so tick every combatant's timed conditions down.
+    if (result.wrapped) {
+      characters = characters.map((c) => ({ ...c, conditions: tickConditions(c.conditions) }));
+      encounters = encounters.map((e) => ({ ...e, conditions: tickConditions(e.conditions) }));
+      selectCharacter(selectedCharacterId);
+      encounterPanel.update();
+    }
+  },
+  onEnd: () => {
+    combat = null;
   },
 });
 
