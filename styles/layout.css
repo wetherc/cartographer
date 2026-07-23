@@ -270,6 +270,23 @@ body.mode-build .map-controls__fog {
   outline-offset: -2px;
 }
 
+/* Small count bubble inside a tab label (e.g. staged encounters), so a
+   hidden panel's contents still register at a glance. */
+.tabs__count {
+  display: inline-block;
+  margin-left: var(--space-1);
+  padding: 0 0.4em;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--surface);
+  font-size: 0.85em;
+}
+
+/* The inline-block above would beat the UA's [hidden] rule, so restate it. */
+.tabs__count[hidden] {
+  display: none;
+}
+
 .tabs__panel {
   display: flex;
   flex-direction: column;
