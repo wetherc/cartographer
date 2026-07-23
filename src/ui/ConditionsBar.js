@@ -62,12 +62,17 @@ export function mountConditionsBar(container, callbacks) {
 
   function render() {
     root.innerHTML = '';
-    for (const condition of callbacks.getConditions()) root.appendChild(buildChip(condition));
+    const conditions = callbacks.getConditions();
+    for (const condition of conditions) root.appendChild(buildChip(condition));
+    // With no chips to give it context, a bare "+" is cryptic — spell it out.
     const addButton = document.createElement('button');
     addButton.type = 'button';
-    addButton.className = 'btn btn--icon conditions-bar__add';
+    addButton.className = conditions.length
+      ? 'btn btn--icon conditions-bar__add'
+      : 'btn conditions-bar__add conditions-bar__add--labeled';
     addButton.setAttribute('aria-label', 'Add condition');
     addButton.appendChild(icon('add'));
+    if (!conditions.length) addButton.appendChild(document.createTextNode('Condition'));
     addButton.addEventListener('click', add);
     root.appendChild(addButton);
   }

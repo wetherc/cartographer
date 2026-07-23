@@ -59,14 +59,17 @@ export function mountStatBlockBar(container, callbacks) {
 
   function render() {
     root.innerHTML = '';
-    for (const [name, value] of Object.entries(callbacks.getStatBlock())) {
-      root.appendChild(buildChip(name, value));
-    }
+    const entries = Object.entries(callbacks.getStatBlock());
+    for (const [name, value] of entries) root.appendChild(buildChip(name, value));
+    // With no chips to give it context, a bare "+" is cryptic — spell it out.
     const addButton = document.createElement('button');
     addButton.type = 'button';
-    addButton.className = 'btn btn--icon statblock-bar__add';
+    addButton.className = entries.length
+      ? 'btn btn--icon statblock-bar__add'
+      : 'btn statblock-bar__add statblock-bar__add--labeled';
     addButton.setAttribute('aria-label', 'Add stat');
     addButton.appendChild(icon('add'));
+    if (!entries.length) addButton.appendChild(document.createTextNode('Stat'));
     addButton.addEventListener('click', add);
     root.appendChild(addButton);
   }
