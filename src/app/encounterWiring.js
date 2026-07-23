@@ -4,6 +4,7 @@ import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { createEncounter, encountersAt, encountersOnTile, isDefeated, toTemplate, fromTemplate } from '../entities/Encounter.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
+import { roll, formatResult } from '../dice/DiceRoller.js';
 import { abilityModifier, defaultEnemyStats, ENEMY_TIERS } from '../entities/Modifiers.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { tickConditions } from '../entities/Conditions.js';
@@ -239,6 +240,15 @@ export function wireEncounters(app) {
     // hand-edited overrides before Start aren't re-logged.
     onRolled: (results) =>
       app.actions.logEvent('roll', `Initiative rolled: ${results.map((r) => `${r.name} ${r.value}`).join(', ')}.`),
+    // The GM rolls the dice tray's current selection on the active enemy's
+    // behalf; the result lands in the travelogue under the enemy's name (and
+    // in a toast, since the tray's own readout stays untouched).
+    onEnemyRoll: (participant) => {
+      const text = formatResult(roll(app.actions.getDiceSelection()));
+      app.actions.logEvent('roll', `${participant.name} rolls ${text}.`);
+      app.toasts.show(`${participant.name}: ${text}`);
+    },
+    getRole: () => state.role,
   });
 
   // The Initiative card only shows while the party is in an encounter (standing

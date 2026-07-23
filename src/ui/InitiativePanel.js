@@ -1,9 +1,11 @@
 import { currentParticipant } from '../combat/Initiative.js';
 import { formatModifier } from '../entities/Modifiers.js';
+import { isGM } from '../view/ViewRole.js';
 import { icon } from './icons.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
+/** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**
  * Mount the initiative tracker. Two states: a setup list (one row per potential
@@ -24,7 +26,12 @@ import { icon } from './icons.js';
  *   onEnd: () => void,
  *   rollInitiative?: (participant: Participant) => number,
  *   onRolled?: (results: { name: string, value: number }[]) => void,
+ *   onEnemyRoll?: (participant: Participant) => void,
+ *   getRole?: () => ViewRole,
  * }} callbacks
+ * With `onEnemyRoll`, a GM viewer gets a dice button on the active row while a
+ * foe holds the turn, to roll on that enemy's behalf (the app rolls the dice
+ * tray's current selection and logs it under the enemy's name).
  * @returns {{ update: () => void }}
  */
 export function mountInitiativePanel(container, callbacks) {
@@ -128,6 +135,20 @@ export function mountInitiativePanel(container, callbacks) {
       init.textContent = String(participant.initiative);
 
       row.append(name, init);
+
+      // On a foe's turn the GM can roll the dice tray's selection as that
+      // enemy, so the travelogue attributes the roll to it.
+      const gm = !callbacks.getRole || isGM(callbacks.getRole());
+      if (gm && active && i === state.index && participant.side === 'foe' && callbacks.onEnemyRoll) {
+        const rollBtn = document.createElement('button');
+        rollBtn.type = 'button';
+        rollBtn.className = 'btn btn--icon';
+        rollBtn.setAttribute('aria-label', `Roll dice as ${participant.name}`);
+        rollBtn.title = `Roll the dice tray's selection as ${participant.name}`;
+        rollBtn.appendChild(icon('dice'));
+        rollBtn.addEventListener('click', () => callbacks.onEnemyRoll?.(participant));
+        row.appendChild(rollBtn);
+      }
       root.appendChild(row);
     });
 

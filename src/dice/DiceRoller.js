@@ -56,3 +56,15 @@ export function roll(selection, rng = Math.random) {
 export function emptySelection() {
   return { counts: {}, modifier: 0 };
 }
+
+/**
+ * Render a roll result as a one-line readout, e.g.
+ * "d20[14]=14 + modifier=2 -> total: 16".
+ * @param {import('../types/dice.js').DiceResult} result
+ * @returns {string}
+ */
+export function formatResult(result) {
+  const parts = result.results.map((r) => `${r.die}[${r.rolls.join(',')}]=${r.subtotal}`);
+  if (result.modifier !== 0) parts.push(`modifier=${result.modifier}`);
+  return `${parts.join(' + ')} -> total: ${result.total}`;
+}
