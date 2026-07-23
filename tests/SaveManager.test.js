@@ -112,3 +112,16 @@ test('toTileGrid preserves node kind/environ and backfills older nodes as region
   assert.equal(legacy.getNode('old').kind, 'region');
   assert.equal(legacy.getNode('old').environ, null);
 });
+
+test('saveByteSize costs two bytes per UTF-16 code unit', async () => {
+  const { saveByteSize } = await import('../src/storage/SaveManager.js');
+  assert.equal(saveByteSize('abcd'), 8);
+  assert.equal(saveByteSize(''), 0);
+});
+
+test('isNearQuota flags sizes at or past the warning threshold', async () => {
+  const { isNearQuota, QUOTA_WARN_BYTES } = await import('../src/storage/SaveManager.js');
+  assert.equal(isNearQuota(QUOTA_WARN_BYTES - 1), false);
+  assert.equal(isNearQuota(QUOTA_WARN_BYTES), true);
+  assert.equal(isNearQuota(100, 100), true);
+});

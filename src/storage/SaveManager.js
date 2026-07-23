@@ -83,11 +83,59 @@ export function toTileGrid(state) {
 }
 
 /**
+ * Warn when a serialized save approaches the ~5 MB localStorage origin quota,
+ * leaving headroom for the undo-history ring that shares it. localStorage
+ * stores UTF-16 code units, so the byte cost of a string is twice its length.
+ */
+export const QUOTA_WARN_BYTES = 3 * 1024 * 1024;
+
+/**
+ * Approximate localStorage byte cost of a serialized save (UTF-16: two bytes
+ * per code unit). Pure.
+ * @param {string} json
+ * @returns {number}
+ */
+export function saveByteSize(json) {
+  return json.length * 2;
+}
+
+/**
+ * Whether a save of this size is close enough to the origin quota to warn the
+ * GM before writes start throwing. Pure.
+ * @param {number} bytes
+ * @param {number} [limit]
+ * @returns {boolean}
+ */
+export function isNearQuota(bytes, limit = QUOTA_WARN_BYTES) {
+  return bytes >= limit;
+}
+
+/**
  * @param {CampaignState} state
  * @param {string} [key]
  */
 export function saveToLocalStorage(state, key = DEFAULT_STORAGE_KEY) {
   localStorage.setItem(key, serialize(state));
+}
+
+/**
+ * Persist a campaign, reporting the outcome instead of throwing: localStorage
+ * writes fail (QuotaExceededError) once data: URL images push the origin past
+ * its quota, and a silent failure would let a GM believe they saved. `nearQuota`
+ * flags a write that succeeded but is approaching the limit.
+ * @param {CampaignState} state
+ * @param {string} [key]
+ * @returns {{ ok: boolean, nearQuota: boolean, bytes: number }}
+ */
+export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY) {
+  const json = serialize(state);
+  const bytes = saveByteSize(json);
+  try {
+    localStorage.setItem(key, json);
+  } catch {
+    return { ok: false, nearQuota: true, bytes };
+  }
+  return { ok: true, nearQuota: isNearQuota(bytes), bytes };
 }
 
 /**
@@ -152,7 +200,20 @@ export function loadHistory(key = DEFAULT_HISTORY_KEY) {
  * @param {number} [limit]
  */
 export function snapshotHistory(state, key = DEFAULT_HISTORY_KEY, limit = DEFAULT_HISTORY_LIMIT) {
-  localStorage.setItem(key, JSON.stringify(pushSnapshot(loadHistory(key), serialize(state), limit)));
+  const snapshot = serialize(state);
+  // The history ring holds up to `limit` full saves, so it hits the storage
+  // quota long before the save itself does. Degrade rather than throw: retry
+  // with only the newest snapshot, and as a last resort drop the history — an
+  // unsaveable campaign is worse than a shortened undo trail.
+  try {
+    localStorage.setItem(key, JSON.stringify(pushSnapshot(loadHistory(key), snapshot, limit)));
+  } catch {
+    try {
+      localStorage.setItem(key, JSON.stringify([snapshot]));
+    } catch {
+      localStorage.removeItem(key);
+    }
+  }
 }
 
 /**
