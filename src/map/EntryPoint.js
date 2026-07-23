@@ -119,6 +119,16 @@ export function resolveEntryTile(node, preferredId) {
  * @returns {string} child tile id ("x,y")
  */
 export function computeRegionEntryTile(parent, child, childNodeId, party) {
+  // Descending a staircase lands the party on the child level's matching
+  // stairs-up, not on a border tile — the levels of a multi-level dungeon are
+  // stacked, so entering "from the side" reads wrong and the stairs are the
+  // one authored connection between them.
+  const viaStairs = parent.tiles.some(
+    (t) => t.childNodeId === childNodeId && t.imageRef.includes('stairs-down'),
+  );
+  const stairsUp = child.tiles.find((t) => t.imageRef.includes('stairs-up'));
+  if (viaStairs && stairsUp) return stairsUp.id;
+
   const partyCoords = party.nodeId === parent.id ? parseCoords(party.tileId) : null;
   const group = findRegionGroups(parent).find((g) => g.childNodeId === childNodeId) ?? null;
   const block = group
