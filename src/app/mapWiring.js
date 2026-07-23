@@ -1,7 +1,7 @@
 import { getTile, updateTileMetadata } from '../map/TileGrid.js';
 import { MapCanvas } from '../map/MapCanvas.js';
 import { clientToBuffer, screenToTile } from '../map/MapGeometry.js';
-import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesInRect } from '../map/TilePaint.js';
+import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesInRect, stampRegionLink } from '../map/TilePaint.js';
 import { computeRegionEntryTile, resolveEntryTile } from '../map/EntryPoint.js';
 import { discoveredNodes, revealAll, setTileRevealed } from '../map/FogOfWar.js';
 import { pushEdit, popEdit } from '../map/EditHistory.js';
@@ -450,16 +450,17 @@ export function wireMapView(app) {
 
   /**
    * Point the selected tile's childNodeId at a node (or null to unlink), so
-   * zooming that tile enters the linked node. Re-derives region groups via the
-   * canvas refresh so the block outline updates immediately.
+   * zooming that tile enters the linked node. On outdoor maps the link stamps
+   * a 2x2 block (and unlinking clears the whole block); interiors stay
+   * single-tile. Re-derives region groups via the canvas refresh so the block
+   * outline updates immediately.
    * @param {string | null} childNodeId
    */
   function linkSelectedTile(childNodeId) {
     if (!selectedTileId) return;
     const node = navigator.getCurrentNode();
     snapshotEdit(node);
-    const tiles = node.tiles.map((t) => (t.id === selectedTileId ? { ...t, childNodeId } : t));
-    const updated = { ...node, tiles };
+    const updated = stampRegionLink(node, selectedTileId, childNodeId);
     grid.updateNode(updated);
     mapCanvas.refreshNode(updated);
     inspector.setTile(getTile(updated, selectedTileId) ?? null, true);

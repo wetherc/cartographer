@@ -1,5 +1,6 @@
 import { createTile, getTile, setTile } from './TileGrid.js';
 import { parseCoords } from './MapGeometry.js';
+import { findRegionGroups } from './RegionGroups.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
@@ -128,6 +129,57 @@ export function linkTilesInRect(node, rect, childNodeId) {
 }
 
 /**
+ * Point a tile at a child node, or unlink it. On an outdoor ('region') node a
+ * link occupies a 2x2 block — the anchor tile plus its right/below neighbors,
+ * shifted up/left at the grid's far edges so the block stays in bounds — which
+ * gives a sub-region a visible footprint instead of a single cell. Only
+ * existing non-wall tiles that are unlinked (or already linked to the same
+ * child) are stamped, so a neighboring region's block is never silently
+ * overwritten; the anchor itself is always stamped. Interiors keep single-tile
+ * links (a door or stair is one cell). Unlinking (null) clears the anchor's
+ * whole contiguous block, so no orphaned corner keeps zooming into the child.
+ * @param {MapNode} node
+ * @param {string} tileId anchor tile (must exist)
+ * @param {string | null} childNodeId
+ * @returns {MapNode}
+ */
+export function stampRegionLink(node, tileId, childNodeId) {
+  const anchor = parseCoords(tileId);
+  if (childNodeId === null) {
+    const group = findRegionGroups(node).find((g) => g.tileIds.includes(tileId));
+    const clear = new Set(group ? group.tileIds : [tileId]);
+    return {
+      ...node,
+      tiles: node.tiles.map((t) => (clear.has(t.id) ? { ...t, childNodeId: null } : t)),
+    };
+  }
+  if (!anchor || node.kind !== 'region') {
+    return {
+      ...node,
+      tiles: node.tiles.map((t) => (t.id === tileId ? { ...t, childNodeId } : t)),
+    };
+  }
+  const bx = Math.max(0, Math.min(anchor.x, node.width - 2));
+  const by = Math.max(0, Math.min(anchor.y, node.height - 2));
+  /** @type {Set<string>} */
+  const block = new Set();
+  for (let x = bx; x < Math.min(bx + 2, node.width); x++) {
+    for (let y = by; y < Math.min(by + 2, node.height); y++) block.add(`${x},${y}`);
+  }
+  return {
+    ...node,
+    tiles: node.tiles.map((t) =>
+      t.id === tileId ||
+      (block.has(t.id) &&
+        (!t.childNodeId || t.childNodeId === childNodeId) &&
+        !t.imageRef.includes('wall-'))
+        ? { ...t, childNodeId }
+        : t,
+    ),
+  };
+}
+
+/**
  * Guarantee that a node carries a tile linking to a child, so a generated
  * child map is always reachable from its parent instead of floating in the
  * world tree with no way in. No-op when a link already exists. Otherwise the
@@ -164,7 +216,9 @@ export function ensureChildLink(node, childId, art) {
       childNodeId: childId,
       metadata: { ...target.metadata, poiType: art.poiType ?? target.metadata.poiType },
     };
-    return { node: setTile(node, linked), tileId: target.id };
+    // Widen to the outdoor 2x2 footprint (a no-op on interiors), so generated
+    // links match hand-declared ones.
+    return { node: stampRegionLink(setTile(node, linked), target.id, childId), tileId: target.id };
   }
 
   // No paintable tile: put the link on the empty cell nearest the centre.

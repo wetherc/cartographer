@@ -167,6 +167,13 @@ the **Region** tool, drag a rectangle over the block, and on release link it to 
 existing child node or create a new one. Every tile in the block then shares that
 child, so clicking anywhere in the block (in Play mode) zooms in.
 
+Linking a single tile from the tile inspector (the **Zooms into** select or **New
+region here**) stamps a 2x2 block on outdoor maps — the selected tile plus its
+right/below neighbors, shifted at the map edge — so a sub-region always has a
+visible footprint; neighbors already linked elsewhere, walls, and empty cells are
+left alone. Interiors keep single-tile links (a stair or door is one cell), and
+unlinking a tile clears its whole block.
+
 When the party zooms into a region, it lands on a sensible border tile computed
 from the direction of approach, rather than dropping into a fully fogged interior.
 
