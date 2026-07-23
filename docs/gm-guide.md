@@ -253,7 +253,10 @@ Regions on the overworld aren't highlighted until at least one of their tiles ha
 been revealed, so undiscovered areas stay hidden from view.
 
 The map grid is labeled with X/Y coordinates along the top and left edges, so you
-can call out tile positions.
+can call out tile positions. When you zoom or pan far enough that the grid edge
+leaves the viewport, the labels pin to the top and left edges of the map viewer
+at partial opacity, so coordinates stay readable without hiding the map under
+them.
 
 As GM you also get direct fog control (the eye buttons on the map): a **reveal
 brush** and a **hide brush** — click or drag across tiles to light or re-fog
