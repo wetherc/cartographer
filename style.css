@@ -631,9 +631,29 @@ body.mode-build .app-sidebar {
 .app-sidebar {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-2);
   width: 22rem;
   flex-shrink: 0;
+}
+
+.sidebar-panels {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.sidebar-toggle {
+  align-self: flex-end;
+  font-size: var(--text-label);
+}
+
+/* Collapsing hides the panels and lets the map reclaim the column width. */
+body.sidebar-collapsed .sidebar-panels {
+  display: none;
+}
+
+body.sidebar-collapsed .app-sidebar {
+  width: auto;
 }
 
 /* ==========================================================================

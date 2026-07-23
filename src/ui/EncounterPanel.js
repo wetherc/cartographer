@@ -58,10 +58,13 @@ export function mountEncounterPanel(container, callbacks) {
       row.className = 'encounter-panel__row';
       if (isDefeated(encounter)) row.classList.add('encounter-panel__row--defeated');
 
+      // A bound encounter shows its tile coordinates so the GM can tell two
+      // same-named foes apart and see where in the region it's staged.
+      const coords = encounter.location ? ` @ (${encounter.location.tileId})` : '';
       const label = document.createElement('span');
       label.className = 'encounter-panel__label';
       label.textContent = gm
-        ? `${encounter.name} (${encounter.currentHP}/${encounter.maxHP})`
+        ? `${encounter.name} (${encounter.currentHP}/${encounter.maxHP})${coords}`
         : `${encounter.name} — ${hpBand(encounter.currentHP, encounter.maxHP)}`;
 
       // Player view stops at the name and its status band: no HP numbers, no

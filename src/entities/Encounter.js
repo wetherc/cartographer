@@ -40,6 +40,25 @@ export function encountersAt(encounters, position) {
 }
 
 /**
+ * The undefeated encounters staged on the party's exact tile — what a step
+ * onto that tile "walks into". Unbound (location === null) encounters aren't
+ * tile-specific, so they never trigger a step. Pure.
+ * @param {Encounter[]} encounters
+ * @param {{ nodeId: string, tileId: string } | null} position
+ * @returns {Encounter[]}
+ */
+export function encountersOnTile(encounters, position) {
+  if (!position) return [];
+  return encounters.filter(
+    (e) =>
+      e.location !== null &&
+      e.location.nodeId === position.nodeId &&
+      e.location.tileId === position.tileId &&
+      !isDefeated(e),
+  );
+}
+
+/**
  * Apply damage, clamped so currentHP never drops below 0.
  * @param {Encounter} encounter
  * @param {number} amount

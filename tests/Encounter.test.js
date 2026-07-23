@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createEncounter, applyDamage, heal, isDefeated, withDefaults, encountersAt } from '../src/entities/Encounter.js';
+import { createEncounter, applyDamage, heal, isDefeated, withDefaults, encountersAt, encountersOnTile } from '../src/entities/Encounter.js';
 
 test('createEncounter starts at full health', () => {
   const goblin = createEncounter('e1', 'Goblin', 7, { AC: 15 });
@@ -54,4 +54,23 @@ test('encountersAt keeps encounters in the party node plus unbound ones', () => 
     'node-level match: tile within the node does not matter',
   );
   assert.deepEqual(encountersAt(all, null).map((e) => e.id), ['e3']);
+});
+
+test('encountersOnTile matches the exact tile, skips unbound, defeated, and null position', () => {
+  const here = createEncounter('e1', 'Goblin', 7, {}, { nodeId: 'region', tileId: '1,1' });
+  const sameNodeOtherTile = createEncounter('e2', 'Ogre', 20, {}, { nodeId: 'region', tileId: '2,2' });
+  const dead = applyDamage(
+    createEncounter('e3', 'Corpse', 5, {}, { nodeId: 'region', tileId: '1,1' }),
+    5,
+  );
+  const unbound = createEncounter('e4', 'Ghost', 10);
+  const all = [here, sameNodeOtherTile, dead, unbound];
+
+  assert.deepEqual(
+    encountersOnTile(all, { nodeId: 'region', tileId: '1,1' }).map((e) => e.id),
+    ['e1'],
+    'exact-tile match, excluding the defeated e3 on the same tile',
+  );
+  assert.deepEqual(encountersOnTile(all, { nodeId: 'region', tileId: '9,9' }), []);
+  assert.deepEqual(encountersOnTile(all, null), []);
 });

@@ -97,6 +97,56 @@ export function promptModal(title, fields, options = {}) {
 }
 
 /**
+ * Show a single-button acknowledgement modal (an alert): an optional heading, a
+ * message, and one dismiss button. Resolves when dismissed. Used where there's
+ * nothing to confirm or cancel — e.g. announcing an encounter the party walks
+ * into.
+ * @param {string} message
+ * @param {{ label?: string, title?: string }} [options]
+ * @returns {Promise<void>}
+ */
+export function alertModal(message, options = {}) {
+  return new Promise((resolve) => {
+    const opener = /** @type {HTMLElement | null} */ (document.activeElement);
+    const dialog = document.createElement('dialog');
+    dialog.className = 'modal';
+
+    if (options.title) {
+      const heading = document.createElement('h2');
+      heading.className = 'modal__title';
+      heading.textContent = options.title;
+      dialog.appendChild(heading);
+    }
+
+    const text = document.createElement('p');
+    text.className = 'modal__message';
+    text.textContent = message;
+
+    const actions = document.createElement('div');
+    actions.className = 'modal__actions';
+
+    const ok = document.createElement('button');
+    ok.type = 'button';
+    ok.className = 'btn btn--primary';
+    ok.textContent = options.label ?? 'OK';
+    ok.addEventListener('click', () => dialog.close('ok'));
+
+    actions.append(ok);
+    dialog.append(text, actions);
+    document.body.appendChild(dialog);
+
+    dialog.addEventListener('close', () => {
+      dialog.remove();
+      opener?.focus?.();
+      resolve();
+    });
+
+    dialog.showModal();
+    ok.focus();
+  });
+}
+
+/**
  * Show a confirm modal. Resolves true if confirmed, false otherwise.
  * @param {string} message
  * @param {{ confirmLabel?: string, danger?: boolean }} [options]
