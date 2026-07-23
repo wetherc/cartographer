@@ -4,7 +4,8 @@
 
 ```
 src/
-  main.js              entry point, wires modules, mounts app
+  main.js              composition root: builds the AppContext, calls each app/ wiring module
+  app/                 wiring modules, one per feature area (see below)
   types/               .ts declaration files, no runtime code (checked via JSDoc + tsc)
   campaign/            campaign construction: blank/example campaign builders + initial load
   map/                 tile grid, hierarchy, canvas rendering, region grouping, fog of war
@@ -15,7 +16,25 @@ src/
   ui/                  thin DOM-wiring widgets (DiceTray, Breadcrumb, CharacterSheet, InventoryPanel, EncounterPanel)
 ```
 
-`index.html`/`style.css`/`main.js` wire all of the above into one app. `main.js` holds only wiring — state singletons, mount calls, and event handlers; anything constructible without the DOM (campaign generation in `campaign/Campaigns.js`, region-entry resolution in `map/EntryPoint.js`) lives in a module instead.
+`index.html`/`style.css` plus `main.js` and `src/app/` wire all of the above into one app. The wiring holds only wiring — state singletons, mount calls, and event handlers; anything constructible without the DOM (campaign generation in `campaign/Campaigns.js`, region-entry resolution in `map/EntryPoint.js`) lives in a module instead.
+
+### The app/ wiring layer
+
+`main.js` constructs one **AppContext** (`src/types/app.ts`): the engine objects (`palette`, `grid`, `navigator`, `partyTracker`, `toasts`), a mutable `state` record holding the campaign data a save serializes plus the mode/role switches, and two registries — `views` (mounted panels other modules refresh) and `actions` (cross-module operations) — that start empty and are filled in by the wiring modules as they run. Everything on the context is read at call time inside event handlers, never captured, so a module mounted early can safely call a view or action a later module registers.
+
+One module per feature area, each a `wireX(app)` factory:
+
+- `campaignActions.js` — the dirty flag (Save indicator, leave-page guard), header campaign controls (Save/Undo/New/Load example/Export/Import), cross-tab reload-on-save; provides `markDirty`/`setDirty`.
+- `mapWiring.js` — the canvas and its gestures, breadcrumb, both world trees, tile inspector, palette + drag-drop, fog controls, stroke-level undo, Build-rail tools; provides the map-facing actions (`goTo`-style syncs, `snapshotEdit`, `undoStroke`, `onModeChanged`/`onRoleChanged`).
+- `generateAction.js` — the Generate dialog flow and its non-destructive apply.
+- `nodeActions.js` — node create/edit/delete (predates the split; same context-object pattern).
+- `partyWiring.js` — roster, character sheet, inventory, Time panel; provides `refreshSelectedCharacter`.
+- `encounterWiring.js` — Encounters and Initiative panels, bestiary, walked-into-an-encounter alert; owns transient combat state.
+- `storyWiring.js` — travelogue (provides `logEvent`), NPCs, quests, handouts.
+- `sessionControls.js` — mode/role switches (role guarded by the cross-tab GM lock), sidebar tabs and collapse; provides `setMode`.
+- `shortcuts.js`, `onboarding.js` — global keyboard shortcuts and the first-run overlay.
+
+Per-module UI state (selected tile, active brush, fog tool, edit history, selected character, combat, dirty) stays private inside the module that owns it; only the campaign data lives on `app.state`.
 
 Everything is a native ES module loaded directly by the browser — no bundler, no transpilation. `tsconfig.json` sets `allowJs`/`checkJs` so `tsc --noEmit` typechecks the `.js` files against the `.ts` declarations without emitting anything.
 
