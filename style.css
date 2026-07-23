@@ -982,15 +982,24 @@ body.sidebar-collapsed .app-sidebar {
    HP healthbar
    ========================================================================== */
 
+/* One full-width line per pool on the collapsed card: label, track, numbers. */
 .stat-bar {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: var(--space-1);
+  gap: var(--space-2);
+  width: 100%;
   min-width: 0;
 }
 
+.stat-bar__label {
+  flex-shrink: 0;
+  width: 2.5rem;
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
 .stat-bar__track {
-  width: 3.5rem;
+  flex: 1;
   height: 0.4rem;
   border-radius: 999px;
   background: var(--surface-sunken);
@@ -1022,7 +1031,7 @@ body.sidebar-collapsed .app-sidebar {
    Character sheet
    ========================================================================== */
 
-/* Collapsed-card head: the disclosure summary plus the quick HP -/+ pair. */
+/* Collapsed-card head: the disclosure summary (name row + stat-bar lines). */
 .character-sheet__head {
   display: flex;
   align-items: center;
@@ -1031,6 +1040,20 @@ body.sidebar-collapsed .app-sidebar {
 
 .character-sheet__head .disclosure {
   flex: 1;
+  min-width: 0;
+}
+
+/* Stack the name row and the HP/mana lines; the chevron lives in the top row. */
+.character-sheet__summary {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+}
+
+.character-sheet__summary-top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   min-width: 0;
 }
 

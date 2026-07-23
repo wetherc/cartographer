@@ -221,16 +221,16 @@ Build the party in the **Party** roster (create / select / delete). Selecting a
 character scopes the **Character sheet** and **Inventory** to that character —
 each character has its own inventory.
 
-The character card is collapsed by default to name / race / HP / mana bars;
-expand it for stats, XP, and resource pools. HP and mana are modeled as resource
-pools, set at character creation with sensible defaults. Gaining enough XP levels
-the character up automatically (an N×100 curve), and HP and mana grow per level.
-Inventory stacks of two or more get a **consume one** control distinct from the
-remove-whole-stack button.
+The character card is collapsed by default to the name and race with a
+full-width bar line each for HP and mana; expand it for stats, XP, and
+resource pools (where the HP and mana steppers live). HP and mana are modeled
+as resource pools, set at character creation with sensible defaults. Gaining
+enough XP levels the character up automatically (an N×100 curve), and HP and
+mana grow per level. Inventory stacks of two or more get a **consume one**
+control distinct from the remove-whole-stack button.
 
-For combat speed, the collapsed card carries **-/+ HP buttons** so damage and
-healing don't require expanding the sheet, and the Party roster's **Award XP**
-grants the same amount to every character at once.
+For combat speed, the Party roster's **Award XP** grants the same amount to
+every character at once.
 
 ### Time and rests
 
