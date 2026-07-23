@@ -278,17 +278,16 @@ export class MapRenderer {
   /**
    * Mark tiles carrying a live encounter with a red diamond in the tile's upper
    * corner, so a point of danger reads distinctly from the gold party dot and a
-   * POI outline. Only revealed tiles are marked (Build mode marks all), so an
-   * encounter surfaces as the party reveals its tile through the fog.
+   * POI outline. Deliberately ignores the fog of war — a known danger stays
+   * visible even on tiles the party hasn't discovered, so players can steer
+   * around (or toward) it.
    * @param {MapView} view
    */
   _renderEncounterMarkers(view) {
     const ids = view.encounterTileIds;
     if (!ids || ids.length === 0 || !view.node) return;
-    const revealed = new Set(view.node.tiles.filter((t) => t.revealed).map((t) => t.id));
     const { ctx } = this;
     for (const id of ids) {
-      if (!view.revealAll && !revealed.has(id)) continue;
       const coords = parseCoords(id);
       if (!coords) continue;
       const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
