@@ -21,6 +21,14 @@ export interface Encounter {
   conditions: Condition[];
 }
 
+/** A reusable encounter blueprint saved to the campaign's bestiary. */
+export interface EncounterTemplate {
+  id: string;
+  name: string;
+  maxHP: number;
+  statBlock: Record<string, number>;
+}
+
 export type ResourceType = 'item-count' | 'mana' | 'custom';
 
 export interface ResourcePool {

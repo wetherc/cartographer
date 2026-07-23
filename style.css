@@ -1378,6 +1378,76 @@ body.sidebar-collapsed .app-sidebar {
   padding: 0.1rem;
 }
 
+/* Stat-block chips on encounter rows share the conditions bar's chip look. */
+.statblock-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.statblock-bar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1rem var(--space-1) 0.1rem var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  font-size: var(--text-label);
+  line-height: 1.4;
+}
+
+.statblock-bar__remove {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.15rem;
+  opacity: 0.65;
+}
+
+.statblock-bar__remove:hover {
+  opacity: 1;
+  color: var(--danger);
+}
+
+.statblock-bar__add {
+  padding: 0.1rem;
+}
+
+/* Build-rail map tools (stroke undo, PNG export). */
+.map-tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* The Generate dialog's seed row and live layout preview. */
+.modal--generate .modal__form {
+  min-width: min(34rem, 90vw);
+}
+
+.generate-dialog__seed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.generate-dialog__seed .field {
+  flex: 1;
+}
+
+.generate-dialog__preview {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  background: var(--surface-sunken);
+}
+
 .character-sheet__conditions {
   display: flex;
   flex-direction: column;

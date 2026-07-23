@@ -1,5 +1,5 @@
 import { MapNode, PartyPosition } from './map';
-import { Character, Encounter } from './entities';
+import { Character, Encounter, EncounterTemplate } from './entities';
 import { LogEntry } from './log';
 import { Quest } from './quest';
 import { GameClock } from './time';
@@ -21,4 +21,6 @@ export interface CampaignState {
   npcs: NPC[];
   /** GM-authored lore/read-aloud handouts (empty on older saves). */
   handouts: Handout[];
+  /** Reusable encounter templates (empty on older saves). */
+  bestiary: EncounterTemplate[];
 }

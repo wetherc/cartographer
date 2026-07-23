@@ -25,6 +25,7 @@ import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
  *   clock: import('../types/time.js').GameClock,
  *   npcs: import('../types/npc.js').NPC[],
  *   handouts: import('../types/handout.js').Handout[],
+ *   bestiary: import('../types/entities.js').EncounterTemplate[],
  * }} Campaign
  */
 
@@ -47,6 +48,7 @@ export function buildBlankCampaign() {
     clock: createClock(),
     npcs: [],
     handouts: [],
+    bestiary: [],
   };
 }
 
@@ -130,6 +132,7 @@ export function buildExampleCampaign(palette) {
         revealed: false,
       },
     ],
+    bestiary: [{ id: 'goblin', name: 'Goblin', maxHP: 7, statBlock: { AC: 13, Speed: 30 } }],
   };
 }
 
@@ -154,5 +157,6 @@ export function loadInitialCampaign() {
     clock: saved.clock ?? createClock(),
     npcs: (saved.npcs ?? []).map(withNPCDefaults),
     handouts: (saved.handouts ?? []).map(withHandoutDefaults),
+    bestiary: saved.bestiary ?? [],
   };
 }
