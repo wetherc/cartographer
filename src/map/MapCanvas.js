@@ -90,6 +90,10 @@ export class MapCanvas {
     this._stroking = false;
     /** @type {string | null} last cell a stroke touched, so a stroke applies once per cell */
     this._lastStrokeCellId = null;
+    /** @type {Map<number, { x: number, y: number }>} live touch points, for pan/pinch */
+    this._touches = new Map();
+    /** @type {{ cx: number, cy: number, dist: number } | null} previous two-finger frame */
+    this._pinch = null;
 
     this._onPointerDown = this._onPointerDown.bind(this);
     this._onPointerMove = this._onPointerMove.bind(this);
@@ -111,6 +115,7 @@ export class MapCanvas {
     canvas.addEventListener('pointermove', this._onPointerMove);
     canvas.addEventListener('pointerup', this._onPointerUp);
     canvas.addEventListener('pointerleave', this._onPointerUp);
+    canvas.addEventListener('pointercancel', this._onPointerUp);
     canvas.addEventListener('wheel', this._onWheel, { passive: false });
     canvas.addEventListener('contextmenu', this._onContextMenu);
     canvas.addEventListener('keydown', this._onKeyDown);
@@ -379,6 +384,34 @@ export class MapCanvas {
 
   /** @param {PointerEvent} event */
   _onPointerDown(event) {
+    if (event.pointerType === 'touch') {
+      this._touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      this.canvas.setPointerCapture?.(event.pointerId);
+      if (this._touches.size >= 2) {
+        // A second finger turns any in-flight gesture into a pan/pinch: cancel
+        // the stroke/tap so lifting a finger doesn't fire a stray action.
+        this._stroking = false;
+        this._lastStrokeCellId = null;
+        this._pendingClick = false;
+        this._panning = false;
+        this._pinch = null; // seeded by the first two-finger move
+        return;
+      }
+      if (this.authoring) {
+        // One finger authors, like the mouse's left button.
+        this._stroking = true;
+        this._lastStrokeCellId = null;
+        this._strokeCell(event, true);
+        return;
+      }
+      // Play mode: a tap acts, a drag pans (there's no second button on touch,
+      // so the single finger has to do both; _onPointerMove promotes it).
+      this._pendingClick = true;
+      this._dragDistance = 0;
+      this._lastX = event.clientX;
+      this._lastY = event.clientY;
+      return;
+    }
     if (this.authoring && event.button === 0) {
       // Left button authors: begin a stroke and apply it to the pressed cell.
       // Capture the pointer so a stroke that wanders off the canvas mid-drag
@@ -441,13 +474,26 @@ export class MapCanvas {
 
   /** @param {PointerEvent} event */
   _onPointerMove(event) {
+    if (event.pointerType === 'touch' && this._touches.has(event.pointerId)) {
+      this._touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
+      if (this._touches.size >= 2) {
+        this._updatePinch();
+        return;
+      }
+    }
     if (this._stroking) {
       this._strokeCell(event, false);
       return;
     }
     if (this._pendingClick) {
-      // Track movement so a left-drag doesn't count as a click; no pan.
+      // Track movement so a left-drag doesn't count as a click; no pan —
+      // except on touch, where a moved finger promotes the tap into a pan
+      // (touch has no second button to dedicate to panning).
       this._dragDistance += Math.abs(event.clientX - this._lastX) + Math.abs(event.clientY - this._lastY);
+      if (event.pointerType === 'touch' && this._dragDistance >= 8) {
+        this._pendingClick = false;
+        this._panning = true;
+      }
       this._lastX = event.clientX;
       this._lastY = event.clientY;
       return;
@@ -499,8 +545,54 @@ export class MapCanvas {
     this.onCellHover?.(null, 0, 0);
   }
 
+  /**
+   * Two-finger pan + pinch-zoom: the centroid delta pans, the finger-distance
+   * ratio zooms anchored at the centroid, matching the wheel's anchored zoom.
+   */
+  _updatePinch() {
+    const [a, b] = [...this._touches.values()];
+    const cx = (a.x + b.x) / 2;
+    const cy = (a.y + b.y) / 2;
+    const dist = Math.hypot(a.x - b.x, a.y - b.y);
+    if (!this._pinch) {
+      this._pinch = { cx, cy, dist };
+      return;
+    }
+    this._clearHover();
+    const rect = this.canvas.getBoundingClientRect();
+    const scaleX = rect.width === 0 ? 1 : this.canvas.width / rect.width;
+    const scaleY = rect.height === 0 ? 1 : this.canvas.height / rect.height;
+    this.offsetX += (cx - this._pinch.cx) * scaleX;
+    this.offsetY += (cy - this._pinch.cy) * scaleY;
+    if (this._pinch.dist > 0 && dist > 0) {
+      const buffer = clientToBuffer(cx, cy, rect, this.canvas.width, this.canvas.height);
+      const before = screenToTile(buffer.x, buffer.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+      this.scale = clampZoom(this.scale * (dist / this._pinch.dist), this.minZoom, this.maxZoom);
+      const after = tileRect(before.x, before.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+      this.offsetX += buffer.x - after.sx;
+      this.offsetY += buffer.y - after.sy;
+    }
+    this._pinch = { cx, cy, dist };
+    this.render();
+    this.onViewChange?.();
+  }
+
   /** @param {PointerEvent} event */
   _onPointerUp(event) {
+    if (event.pointerType === 'touch') {
+      this._touches.delete(event.pointerId);
+      if (this._touches.size < 2) this._pinch = null;
+      if (event.type === 'pointercancel') {
+        this._stroking = false;
+        this._lastStrokeCellId = null;
+        this._pendingClick = false;
+        this._panning = false;
+        return;
+      }
+      // A tap that acts should also surface the tile tooltip, since touch has
+      // no hover: report the tapped cell before the click handler runs.
+      if (this._pendingClick && this._dragDistance < 4) this._trackHover(event);
+    }
     if (event.type === 'pointerleave') this._clearHover();
     if (this._stroking) {
       if (event.type === 'pointerleave') return; // captured pointer: stroke ends on pointerup
@@ -549,6 +641,7 @@ export class MapCanvas {
     this.canvas.removeEventListener('pointermove', this._onPointerMove);
     this.canvas.removeEventListener('pointerup', this._onPointerUp);
     this.canvas.removeEventListener('pointerleave', this._onPointerUp);
+    this.canvas.removeEventListener('pointercancel', this._onPointerUp);
     this.canvas.removeEventListener('wheel', this._onWheel);
     this.canvas.removeEventListener('contextmenu', this._onContextMenu);
     this.canvas.removeEventListener('keydown', this._onKeyDown);

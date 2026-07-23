@@ -39,6 +39,32 @@ export function hideAll(node) {
 }
 
 /**
+ * Reveal every tile in a node — the GM's "show the whole area" action.
+ * @param {MapNode} node
+ * @returns {MapNode}
+ */
+export function revealAll(node) {
+  return { ...node, tiles: node.tiles.map((tile) => ({ ...tile, revealed: true })) };
+}
+
+/**
+ * Set one tile's revealed flag — the primitive behind the GM fog brush, which
+ * strokes reveal/hide across cells the same way the Build paint brush strokes
+ * terrain. No-op on an id with no tile (fog lives on tiles).
+ * @param {MapNode} node
+ * @param {string} tileId
+ * @param {boolean} revealed
+ * @returns {MapNode}
+ */
+export function setTileRevealed(node, tileId, revealed) {
+  if (!node.tiles.some((t) => t.id === tileId && t.revealed !== revealed)) return node;
+  return {
+    ...node,
+    tiles: node.tiles.map((t) => (t.id === tileId ? { ...t, revealed } : t)),
+  };
+}
+
+/**
  * @param {MapNode} node
  * @returns {number} count of currently-revealed tiles
  */

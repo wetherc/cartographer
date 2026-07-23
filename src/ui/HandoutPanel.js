@@ -76,18 +76,13 @@ export function mountHandoutPanel(container, callbacks) {
     head.append(toggle, title, editButton, deleteButton);
     row.appendChild(head);
 
-    // The read-aloud body shows only while revealed, so the panel doubles as
-    // the GM's "read this now" surface once they flip a handout on.
-    if (handout.revealed && handout.body) {
-      const body = document.createElement('p');
-      body.className = 'handout-panel__body';
-      body.textContent = handout.body;
-      row.appendChild(body);
-    }
+    // The read-aloud body (and any attached image) shows only while revealed,
+    // so the panel doubles as the GM's "read this now" surface once flipped on.
+    appendRevealedContent(row, handout, handout.revealed);
     return row;
   }
 
-  /** A player sees only revealed handouts, read-only: title + read-aloud body. */
+  /** A player sees only revealed handouts, read-only: title + body + image. */
   function buildPlayerRow(handout) {
     const row = document.createElement('div');
     row.className = 'handout-panel__row handout-panel__row--revealed';
@@ -95,13 +90,30 @@ export function mountHandoutPanel(container, callbacks) {
     title.className = 'handout-panel__title';
     title.textContent = handout.title;
     row.appendChild(title);
+    appendRevealedContent(row, handout, true);
+    return row;
+  }
+
+  /**
+   * @param {HTMLElement} row
+   * @param {Handout} handout
+   * @param {boolean} show
+   */
+  function appendRevealedContent(row, handout, show) {
+    if (!show) return;
+    if (handout.image) {
+      const img = document.createElement('img');
+      img.className = 'handout-panel__image';
+      img.src = handout.image;
+      img.alt = handout.title;
+      row.appendChild(img);
+    }
     if (handout.body) {
       const body = document.createElement('p');
       body.className = 'handout-panel__body';
       body.textContent = handout.body;
       row.appendChild(body);
     }
-    return row;
   }
 
   function render() {

@@ -95,12 +95,31 @@ export function mountDiceTray(container) {
   const resultEl = document.createElement('div');
   resultEl.className = 'dice-tray__result';
 
+  // Session-local roll history: the latest handful of results, newest first,
+  // so contested rolls can be compared after the fact. Not persisted.
+  const historyEl = document.createElement('ol');
+  historyEl.className = 'dice-tray__history';
+  historyEl.setAttribute('aria-label', 'Recent rolls');
+  const HISTORY_MAX = 8;
+
   rollButton.addEventListener('click', () => {
     const result = roll(selection);
-    resultEl.textContent = formatResult(result);
+    const text = formatResult(result);
+    resultEl.textContent = text;
+
+    const entry = document.createElement('li');
+    entry.className = 'dice-tray__history-entry';
+    const at = document.createElement('span');
+    at.className = 'dice-tray__history-time';
+    at.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    entry.append(at, document.createTextNode(` ${text}`));
+    historyEl.prepend(entry);
+    while (historyEl.children.length > HISTORY_MAX) {
+      /** @type {Element} */ (historyEl.lastElementChild).remove();
+    }
   });
 
-  root.append(rollButton, resultEl);
+  root.append(rollButton, resultEl, historyEl);
   container.appendChild(root);
 
   return { getSelection: () => selection };

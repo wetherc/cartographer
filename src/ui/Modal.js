@@ -5,7 +5,7 @@
  * it to <body>, and removes it on close, resolving a Promise with the result.
  */
 
-/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select', value?: string | number, min?: number, options?: { value: string, label: string }[] }} ModalField */
+/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file', value?: string | number, min?: number, options?: { value: string, label: string }[] }} ModalField */
 
 /**
  * Show a form modal. Resolves to a record of field name -> string value on
@@ -34,6 +34,10 @@ export function promptModal(title, fields, options = {}) {
 
     /** @type {Record<string, HTMLInputElement | HTMLSelectElement>} */
     const inputs = {};
+    /** Value accessors per field — file inputs resolve to a data: URL rather
+     * than the input's fakepath value. */
+    /** @type {Record<string, () => string>} */
+    const getters = {};
     for (const field of fields) {
       const label = document.createElement('label');
       label.className = 'modal__field';
@@ -50,11 +54,30 @@ export function promptModal(title, fields, options = {}) {
           input.appendChild(el);
         }
         if (field.value !== undefined) input.value = String(field.value);
+        getters[field.name] = () => input.value;
+      } else if (field.type === 'file') {
+        // A picked image is read into a data: URL; leaving the input untouched
+        // keeps the field's initial value (an existing image survives an edit).
+        input = document.createElement('input');
+        input.type = 'file';
+        input.accept = 'image/*';
+        let dataUrl = field.value !== undefined ? String(field.value) : '';
+        input.addEventListener('change', () => {
+          const file = /** @type {HTMLInputElement} */ (input).files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            dataUrl = String(reader.result ?? '');
+          };
+          reader.readAsDataURL(file);
+        });
+        getters[field.name] = () => dataUrl;
       } else {
         input = document.createElement('input');
         input.type = field.type ?? 'text';
         if (field.value !== undefined) input.value = String(field.value);
         if (field.min !== undefined) input.min = String(field.min);
+        getters[field.name] = () => input.value;
       }
       input.className = 'field';
       label.appendChild(input);
@@ -85,7 +108,7 @@ export function promptModal(title, fields, options = {}) {
       const result =
         dialog.returnValue === 'cancel'
           ? null
-          : Object.fromEntries(Object.entries(inputs).map(([k, el]) => [k, el.value]));
+          : Object.fromEntries(Object.entries(getters).map(([k, get]) => [k, get()]));
       dialog.remove();
       opener?.focus?.();
       resolve(result);

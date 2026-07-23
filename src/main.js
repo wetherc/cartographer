@@ -6,7 +6,7 @@ import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesI
 import { computeRegionEntryTile, resolveEntryTile } from './map/EntryPoint.js';
 import { MapNavigator } from './map/MapNavigator.js';
 import { generateNodeTiles, generateDungeonLevels, ARCHETYPES } from './map/MapGenerator.js';
-import { discoveredNodes } from './map/FogOfWar.js';
+import { discoveredNodes, revealAll, setTileRevealed } from './map/FogOfWar.js';
 import { createNodeActions } from './app/nodeActions.js';
 import {
   buildBlankCampaign,
@@ -26,8 +26,9 @@ import { mountMapControls } from './ui/MapControls.js';
 import { mountMapDescription } from './ui/MapDescription.js';
 import { mountTileTooltip } from './ui/TileTooltip.js';
 import { promptModal, confirmModal, alertModal } from './ui/Modal.js';
+import { mountToasts, queueToastAfterReload, flushQueuedToast } from './ui/Toast.js';
 import { PartyTracker } from './party/PartyTracker.js';
-import { createCharacter, withHP, withMana, shortRest, longRest } from './entities/Character.js';
+import { createCharacter, withHP, withMana, shortRest, longRest, addXP } from './entities/Character.js';
 import { advanceWatches, advanceToDawn, formatClock } from './time/GameClock.js';
 import { mountTimePanel } from './ui/TimePanel.js';
 import { createParticipant, startCombat, advanceTurn } from './combat/Initiative.js';
@@ -80,6 +81,35 @@ let combat = null;
 /** Monotonic counter making travelogue entry ids unique within a session. */
 let logSeq = 0;
 
+const toasts = mountToasts(document.body);
+
+/** Whether the live campaign has mutations not yet written by Save. Drives the
+ * Save-button indicator, the leave-page guard, and the external-sync prompt. */
+let dirty = false;
+
+/** @param {boolean} next */
+function setDirty(next) {
+  dirty = next;
+  const saveBtn = document.getElementById('save-btn');
+  if (saveBtn) {
+    saveBtn.classList.toggle('btn--attention', dirty);
+    saveBtn.textContent = dirty ? 'Save •' : 'Save';
+  }
+}
+
+/** Mark the campaign as having unsaved changes. Called from every mutation. */
+function markDirty() {
+  if (!dirty) setDirty(true);
+}
+
+// Warn before closing/reloading a tab with unsaved changes. Intentional
+// reload flows (Undo/Import/replace) clear the flag first, so they stay quiet.
+window.addEventListener('beforeunload', (event) => {
+  if (!dirty) return;
+  event.preventDefault();
+  event.returnValue = '';
+});
+
 /**
  * Record a travelogue event and refresh the panel. Ids combine the clock with
  * a session counter so two events in the same millisecond never collide.
@@ -90,6 +120,7 @@ function logEvent(kind, message) {
   const now = Date.now();
   travelog = appendEntry(travelog, createEntry(`log-${now}-${logSeq++}`, kind, message, now));
   travelogPanel.update();
+  markDirty();
 }
 
 /**
@@ -129,6 +160,8 @@ let currentRole = /** @type {any} */ (sessionStorage.getItem('campaign-builder:r
 let selectedTileId = null;
 /** @type {import('./ui/PalettePanel.js').Brush} active Build-mode paint brush */
 let activeBrush = null;
+/** @type {'reveal' | 'hide' | null} active Play-mode GM fog brush */
+let fogTool = null;
 /** @type {{ x: number, y: number } | null} first cell of an in-progress region-tool drag */
 let regionAnchor = null;
 /** @type {ReturnType<typeof createNodeActions>} create/edit/delete-node actions; assigned once the views they resync exist */
@@ -298,6 +331,7 @@ async function finishRegionStroke() {
   grid.updateNode(updated);
   mapCanvas.refreshNode(updated);
   if (selectedTileId) inspector.setTile(getTile(updated, selectedTileId) ?? null, true);
+  markDirty();
 }
 
 /** @type {{ update: () => void } | null} assigned right after mapCanvas exists */
@@ -344,6 +378,15 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
   // instead drags out a marquee block, resolved to a child-node link on release.
   onStrokeCell: (x, y, tile, first) => {
     const id = `${x},${y}`;
+    // Play-mode GM fog brush: strokes reveal/hide fog instead of authoring
+    // tiles. Only active while a fog tool is toggled on (which is what put the
+    // canvas in authoring mode outside Build).
+    if (currentMode === 'play') {
+      if (fogTool) {
+        applyToTile(id, (node) => setTileRevealed(node, id, fogTool === 'reveal'));
+      }
+      return;
+    }
     if (activeBrush === 'region') {
       if (first) regionAnchor = { x, y };
       if (regionAnchor) mapCanvas.setMarquee(normalizeRect(regionAnchor, { x, y }));
@@ -397,6 +440,7 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
       mapCanvas.refreshNode(navigator.getCurrentNode());
     }
     syncPartyMarker();
+    markDirty(); // party position and fog changed
     // The party may have changed nodes, so the location-scoped encounter list
     // needs re-filtering. (Mounted later in this file; clicks only happen after.)
     encounterPanel.update();
@@ -422,6 +466,7 @@ nodeActions = createNodeActions({
   clearSelection,
   syncPaletteKind,
   syncPartyMarker,
+  markDirty,
 });
 
 const inspector = mountTileInspector(mustGetElement('inspector-container'), {
@@ -431,6 +476,7 @@ const inspector = mountTileInspector(mustGetElement('inspector-container'), {
     grid.updateNode(updated);
     mapCanvas.refreshNode(updated);
     inspector.setTile(getTile(updated, selectedTileId) ?? null, true);
+    markDirty();
   },
   linking: {
     getOptions: () => grid.getChildren(navigator.currentNodeId).map((n) => ({ id: n.id, name: n.name })),
@@ -445,6 +491,7 @@ const inspector = mountTileInspector(mustGetElement('inspector-container'), {
     partyTracker.moveTo(navigator.getCurrentNode().id, tileId);
     mapCanvas.refreshNode(navigator.getCurrentNode());
     syncPartyMarker();
+    markDirty();
   },
 });
 
@@ -462,6 +509,7 @@ function linkSelectedTile(childNodeId) {
   grid.updateNode(updated);
   mapCanvas.refreshNode(updated);
   inspector.setTile(getTile(updated, selectedTileId) ?? null, true);
+  markDirty();
 }
 
 /**
@@ -489,6 +537,7 @@ function applyToTile(tileId, transform) {
     inspector.setTile(getTile(updated, tileId) ?? null, true);
   }
   refreshMapDescription();
+  markDirty();
 }
 
 /**
@@ -541,6 +590,26 @@ mapControls = mountMapControls(mustGetElement('map-viewport'), {
   onZoomOut: () => mapCanvas.zoomBy(1 / 1.25),
   onFit: () => mapCanvas.fit(),
   getZoom: () => mapCanvas.scale,
+  // GM fog controls (hidden from the player role via CSS): brushes stroke fog
+  // on/off, reveal-all lights the whole current node.
+  fog: {
+    getTool: () => fogTool,
+    onToolChange: (tool) => {
+      fogTool = currentMode === 'play' ? tool : null;
+      // A fog brush needs the stroke gesture, which only fires in authoring
+      // mode; Build mode keeps authoring on regardless.
+      mapCanvas.setAuthoring(currentMode === 'build' || fogTool !== null);
+    },
+    onRevealAll: () => {
+      const node = revealAll(navigator.getCurrentNode());
+      grid.updateNode(node);
+      mapCanvas.refreshNode(node);
+      regionTree.update();
+      refreshMapDescription();
+      markDirty();
+      toasts.show(`Revealed all of "${node.name}".`);
+    },
+  },
 });
 
 const mapDescription = mountMapDescription(mustGetElement('map-viewport'));
@@ -589,6 +658,7 @@ function selectCharacter(id) {
 function commitCharacter(next) {
   characters = replaceById(characters, next);
   characterRoster.update();
+  markDirty();
 }
 
 const characterRoster = mountCharacterRoster(mustGetElement('party-container'), {
@@ -613,6 +683,7 @@ const characterRoster = mountCharacterRoster(mustGetElement('party-container'), 
     if (maxMana > 0) created = withMana(created, maxMana);
     characters = [...characters, created];
     selectCharacter(characters[characters.length - 1].id);
+    markDirty();
   },
   onDelete: async (id) => {
     const character = characters.find((c) => c.id === id);
@@ -624,6 +695,24 @@ const characterRoster = mountCharacterRoster(mustGetElement('party-container'), 
     if (!ok) return;
     characters = removeById(characters, id);
     selectCharacter(id === selectedCharacterId ? (characters[0]?.id ?? null) : selectedCharacterId);
+    markDirty();
+  },
+  // Grant the same XP to the whole party at once — the common post-encounter
+  // case — instead of opening each sheet in turn. Levels (and the HP/mana
+  // growth addXP applies) land per character as usual.
+  onAwardXP: async () => {
+    const values = await promptModal(
+      'Award XP to the party',
+      [{ name: 'amount', label: 'XP per character', type: 'number', value: 100, min: 1 }],
+      { submitLabel: 'Award' },
+    );
+    const amount = Math.floor(Number(values?.amount) || 0);
+    if (!values || amount <= 0) return;
+    characters = characters.map((c) => addXP(c, amount));
+    selectCharacter(selectedCharacterId); // refresh sheet/inventory/roster
+    markDirty();
+    logEvent('note', `The party is awarded ${amount} XP each.`);
+    toasts.show(`Awarded ${amount} XP to ${characters.length} character${characters.length === 1 ? '' : 's'}.`);
   },
 });
 
@@ -656,10 +745,12 @@ const encounterPanel = mountEncounterPanel(mustGetElement('encounter-container')
     if (prev && !isDefeated(prev) && isDefeated(next)) logEvent('combat', `Defeated ${next.name}.`);
     encounters = replaceById(encounters, next);
     syncEncounterMarkers(); // a defeat or move should update the map marker
+    markDirty();
   },
   onDelete: (id) => {
     encounters = removeById(encounters, id);
     syncEncounterMarkers();
+    markDirty();
   },
   onAdd: async () => {
     const values = await promptModal('New encounter', [
@@ -681,6 +772,7 @@ const encounterPanel = mountEncounterPanel(mustGetElement('encounter-container')
     );
     encounters = [...encounters, created];
     syncEncounterMarkers();
+    markDirty();
     return created;
   },
   confirmDelete: (encounter) =>
@@ -692,6 +784,7 @@ const timePanel = mountTimePanel(mustGetElement('time-container'), {
   getClock: () => clock,
   onAdvance: () => {
     clock = advanceWatches(clock, 1);
+    markDirty();
   },
   onShortRest: () => {
     characters = characters.map(shortRest);
@@ -735,6 +828,8 @@ const initiativePanel = mountInitiativePanel(mustGetElement('initiative-containe
   onEnd: () => {
     combat = null;
   },
+  // Straight d20 per combatant; the field stays editable for manual override.
+  rollInitiative: () => Math.floor(Math.random() * 20) + 1,
 });
 
 const dispositionOptions = DISPOSITIONS.map((d) => ({ value: d, label: d[0].toUpperCase() + d.slice(1) }));
@@ -743,6 +838,7 @@ const npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
   getNPCs: () => npcsAt(npcs, partyTracker.getPosition()),
   onDelete: (id) => {
     npcs = removeById(npcs, id);
+    markDirty();
   },
   onAdd: async () => {
     const values = await promptModal('New NPC', [
@@ -761,6 +857,7 @@ const npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
       location: { ...partyTracker.getPosition() },
     });
     npcs = [...npcs, created];
+    markDirty();
     return created;
   },
   onEdit: async (npc) => {
@@ -783,6 +880,7 @@ const npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
       disposition: /** @type {import('./types/npc.js').Disposition} */ (values.disposition),
       notes: values.notes.trim(),
     });
+    markDirty();
     return true;
   },
   confirmDelete: (npc) => confirmModal(`Delete "${npc.name}"?`, { danger: true, confirmLabel: 'Delete' }),
@@ -798,7 +896,10 @@ const travelogPanel = mountTravelogPanel(mustGetElement('travelog-container'), {
       danger: true,
       confirmLabel: 'Clear',
     });
-    if (ok) travelog = [];
+    if (ok) {
+      travelog = [];
+      markDirty();
+    }
     return ok;
   },
 });
@@ -807,6 +908,7 @@ mountQuestPanel(mustGetElement('quest-container'), {
   getQuests: () => quests,
   onToggle: (quest) => {
     quests = replaceById(quests, toggleQuestStatus(quest));
+    markDirty();
   },
   onAdd: async () => {
     const values = await promptModal('New quest', [
@@ -817,6 +919,7 @@ mountQuestPanel(mustGetElement('quest-container'), {
     if (!values || !title) return null;
     const created = createQuest(slugId(title, quests.map((q) => q.id)), title, values.notes.trim());
     quests = [...quests, created];
+    markDirty();
     return created;
   },
   onEdit: async (quest) => {
@@ -827,13 +930,17 @@ mountQuestPanel(mustGetElement('quest-container'), {
     const title = values?.title.trim();
     if (!values || !title) return false;
     quests = replaceById(quests, { ...quest, title, notes: values.notes.trim() });
+    markDirty();
     return true;
   },
   onDelete: async (id) => {
     const quest = quests.find((q) => q.id === id);
     if (!quest) return false;
     const ok = await confirmModal(`Delete "${quest.title}"?`, { danger: true, confirmLabel: 'Delete' });
-    if (ok) quests = removeById(quests, id);
+    if (ok) {
+      quests = removeById(quests, id);
+      markDirty();
+    }
     return ok;
   },
 });
@@ -842,11 +949,13 @@ const handoutPanel = mountHandoutPanel(mustGetElement('handout-container'), {
   getHandouts: () => handoutsAt(handouts, partyTracker.getPosition().nodeId),
   onToggle: (handout) => {
     handouts = replaceById(handouts, toggleRevealed(handout));
+    markDirty();
   },
   onAdd: async () => {
     const values = await promptModal('New handout', [
       { name: 'title', label: 'Title', value: '' },
       { name: 'body', label: 'Read-aloud / lore', value: '' },
+      { name: 'image', label: 'Image (optional)', type: 'file' },
     ]);
     const title = values?.title.trim();
     if (!values || !title) return null;
@@ -856,8 +965,11 @@ const handoutPanel = mountHandoutPanel(mustGetElement('handout-container'), {
       title,
       values.body.trim(),
       partyTracker.getPosition().nodeId,
+      false,
+      values.image || null,
     );
     handouts = [...handouts, created];
+    markDirty();
     return created;
   },
   onEdit: async (handout) => {
@@ -866,19 +978,29 @@ const handoutPanel = mountHandoutPanel(mustGetElement('handout-container'), {
       [
         { name: 'title', label: 'Title', value: handout.title },
         { name: 'body', label: 'Read-aloud / lore', value: handout.body },
+        { name: 'image', label: 'Image (leave empty to keep)', type: 'file', value: handout.image ?? '' },
       ],
       { submitLabel: 'Save' },
     );
     const title = values?.title.trim();
     if (!values || !title) return false;
-    handouts = replaceById(handouts, { ...handout, title, body: values.body.trim() });
+    handouts = replaceById(handouts, {
+      ...handout,
+      title,
+      body: values.body.trim(),
+      image: values.image || null,
+    });
+    markDirty();
     return true;
   },
   onDelete: async (id) => {
     const handout = handouts.find((h) => h.id === id);
     if (!handout) return false;
     const ok = await confirmModal(`Delete "${handout.title}"?`, { danger: true, confirmLabel: 'Delete' });
-    if (ok) handouts = removeById(handouts, id);
+    if (ok) {
+      handouts = removeById(handouts, id);
+      markDirty();
+    }
     return ok;
   },
   getRole: () => currentRole,
@@ -894,6 +1016,8 @@ const modeSwitch = mountModeSwitch(mustGetElement('mode-switch-container'), curr
   mapCanvas.setAuthoring(mode === 'build');
   tileTooltip.hide();
   regionAnchor = null;
+  fogTool = null; // the fog brush is a Play-mode tool; changing modes drops it
+  mapControls?.update();
   if (mode !== 'build') clearSelection();
   worldTree.update();
   regionTree.update();
@@ -907,7 +1031,13 @@ const modeSwitch = mountModeSwitch(mustGetElement('mode-switch-container'), curr
 function applyRole() {
   document.body.classList.toggle('role-player', currentRole === 'player');
   document.body.classList.toggle('role-gm', currentRole === 'gm');
-  if (currentRole === 'player') modeSwitch.setMode('play');
+  if (currentRole === 'player') {
+    modeSwitch.setMode('play');
+    // Players don't get the fog brush; drop it and the authoring gesture.
+    fogTool = null;
+    mapCanvas.setAuthoring(false);
+    mapControls?.update();
+  }
   encounterPanel.update();
   handoutPanel.update();
   tileTooltip.hide();
@@ -1042,6 +1172,8 @@ mustGetElement('generate-btn').addEventListener('click', async () => {
   worldTree.update();
   regionTree.update();
   refreshMapDescription();
+  markDirty();
+  toasts.show(`Generated ${values.archetype} map in "${node.name}".`);
 });
 
 // Collapse the Play sidebar to give the map the full width during a session.
@@ -1076,7 +1208,7 @@ function buildCurrentState() {
   });
 }
 
-function replaceCampaign(campaign) {
+function replaceCampaign(campaign, toastMessage = 'Campaign replaced.') {
   snapshotCurrentSave();
   saveToLocalStorage(
     buildState(
@@ -1089,6 +1221,8 @@ function replaceCampaign(campaign) {
       { clock: campaign.clock, npcs: campaign.npcs, handouts: campaign.handouts },
     ),
   );
+  queueToastAfterReload(toastMessage);
+  setDirty(false); // intentional reload; don't trip the beforeunload guard
   location.reload();
 }
 
@@ -1097,7 +1231,7 @@ mustGetElement('new-btn').addEventListener('click', async () => {
     'Start a new blank campaign? The current campaign is replaced, including anything saved.',
     { danger: true, confirmLabel: 'New campaign' },
   );
-  if (ok) replaceCampaign(buildBlankCampaign());
+  if (ok) replaceCampaign(buildBlankCampaign(), 'Started a new blank campaign.');
 });
 
 mustGetElement('example-btn').addEventListener('click', async () => {
@@ -1105,13 +1239,15 @@ mustGetElement('example-btn').addEventListener('click', async () => {
     'Load the example campaign? The current campaign is replaced, including anything saved.',
     { danger: true, confirmLabel: 'Load example' },
   );
-  if (ok) replaceCampaign(buildExampleCampaign(palette));
+  if (ok) replaceCampaign(buildExampleCampaign(palette), 'Loaded the example campaign.');
 });
 
 mustGetElement('save-btn').addEventListener('click', () => {
   // Snapshot the previous save first so Undo can step back to it.
   snapshotCurrentSave();
   saveToLocalStorage(buildCurrentState());
+  setDirty(false);
+  toasts.show('Campaign saved.');
 });
 
 // Undo restores the most recent snapshot (the state before the last save,
@@ -1124,6 +1260,8 @@ mustGetElement('undo-btn').addEventListener('click', async () => {
     return;
   }
   saveToLocalStorage(restored);
+  queueToastAfterReload('Restored the previous save.');
+  setDirty(false);
   location.reload();
 });
 
@@ -1131,11 +1269,26 @@ mustGetElement('undo-btn').addEventListener('click', async () => {
 // tab of the same origin writes a new save — e.g. a GM laptop driving a
 // second player-facing tab — reload so this tab re-initializes from it through
 // the normal load path. The browser never fires this for our own saves, so
-// there's no feedback loop.
-onExternalSave(() => location.reload());
+// there's no feedback loop. A tab with unsaved local changes is asked first
+// instead of having them silently discarded.
+onExternalSave(async () => {
+  if (!dirty) {
+    location.reload();
+    return;
+  }
+  const ok = await confirmModal(
+    'Another tab saved this campaign. Reload to match it? Your unsaved changes here are discarded.',
+    { danger: true, confirmLabel: 'Reload' },
+  );
+  if (ok) {
+    setDirty(false);
+    location.reload();
+  }
+});
 
 mustGetElement('export-btn').addEventListener('click', () => {
   downloadState(buildCurrentState());
+  toasts.show('Campaign exported.');
 });
 
 const importInput = /** @type {HTMLInputElement} */ (mustGetElement('import-input'));
@@ -1149,5 +1302,117 @@ importInput.addEventListener('change', async () => {
   // path a normal page load takes, rather than re-wiring every closure above.
   snapshotCurrentSave();
   saveToLocalStorage(state);
+  queueToastAfterReload('Campaign imported.');
+  setDirty(false);
   location.reload();
 });
+
+// Show any confirmation queued by a pre-reload action (Undo, Import, New, ...).
+flushQueuedToast(toasts);
+
+// App-wide keyboard shortcuts. Skipped while typing in a field or while a
+// dialog is open, so they never eat input; the map keeps its own keys (arrows,
+// Enter, +/-) via canvas focus. '?' doubles as discoverability for all of it.
+document.addEventListener('keydown', (event) => {
+  const target = /** @type {HTMLElement} */ (event.target);
+  const typing =
+    target instanceof HTMLInputElement ||
+    target instanceof HTMLTextAreaElement ||
+    target instanceof HTMLSelectElement ||
+    target.isContentEditable;
+  if (typing || document.querySelector('dialog[open]')) return;
+
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+    event.preventDefault();
+    mustGetElement('save-btn').click();
+    return;
+  }
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+    event.preventDefault();
+    mustGetElement('undo-btn').click();
+    return;
+  }
+  if (event.ctrlKey || event.metaKey || event.altKey) return;
+
+  const gm = isGM(currentRole);
+  if (event.key === 'b' && gm) modeSwitch.setMode('build');
+  else if (event.key === 'p' && gm) modeSwitch.setMode('play');
+  else if (event.key === '?') {
+    alertModal(
+      [
+        'Ctrl/Cmd+S — save the campaign',
+        'Ctrl/Cmd+Z — undo to the previous save',
+        'B / P — switch to Build / Play mode',
+        'On the map (click it first):',
+        'Arrows — move the cursor · Enter/Space — act',
+        '+ / - — zoom',
+      ].join('\n'),
+      { title: 'Keyboard shortcuts', label: 'Close' },
+    );
+  }
+});
+
+// First-run onboarding: a blank campaign in Play mode is a fogged empty map
+// with no hint that Build mode, generation, or the example exist. Overlay the
+// three ways forward on the map until the GM picks one (or dismisses), then
+// never show it again on this browser.
+const ONBOARDED_KEY = 'campaign-builder:onboarded';
+(function maybeShowOnboarding() {
+  const blank =
+    grid.nodes.size === 1 &&
+    navigator.getCurrentNode().tiles.length === 0 &&
+    characters.length === 0;
+  if (!blank || localStorage.getItem(ONBOARDED_KEY)) return;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'onboarding';
+  const card = document.createElement('div');
+  card.className = 'onboarding__card card';
+  const heading = document.createElement('h2');
+  heading.className = 'card__title';
+  heading.textContent = 'Welcome, GM';
+  const blurb = document.createElement('p');
+  blurb.className = 'onboarding__blurb';
+  blurb.textContent = 'Your world is empty. Three ways to start:';
+  card.append(heading, blurb);
+
+  const dismiss = () => {
+    localStorage.setItem(ONBOARDED_KEY, '1');
+    overlay.remove();
+  };
+
+  /** @param {string} label @param {string} hint @param {() => void} action */
+  const option = (label, hint, action) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn onboarding__option';
+    btn.textContent = label;
+    btn.title = hint;
+    btn.addEventListener('click', () => {
+      dismiss();
+      action();
+    });
+    card.appendChild(btn);
+  };
+
+  option('Build it by hand', 'Switch to Build mode and paint tiles', () =>
+    modeSwitch.setMode('build'),
+  );
+  option('Generate a world', 'Switch to Build mode and auto-generate a map', () => {
+    modeSwitch.setMode('build');
+    mustGetElement('generate-btn').click();
+  });
+  option('Load the example campaign', 'See a small filled-in world first', () =>
+    mustGetElement('example-btn').click(),
+  );
+
+  const skip = document.createElement('button');
+  skip.type = 'button';
+  skip.className = 'btn onboarding__skip';
+  skip.textContent = 'Dismiss';
+  skip.addEventListener('click', dismiss);
+  card.appendChild(skip);
+
+  overlay.appendChild(card);
+  mustGetElement('map-viewport').appendChild(overlay);
+})();

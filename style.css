@@ -277,6 +277,7 @@ body {
 
 .modal__message {
   margin: 0 0 var(--space-4);
+  white-space: pre-line; /* multi-line alerts (e.g. the shortcut list) */
 }
 
 .modal__form {
@@ -631,12 +632,113 @@ body.mode-build .app-belowmap {
   background: transparent;
 }
 
+/* GM fog cluster: visually separated from zoom, hidden from players and in
+   Build mode (Build already reveals everything). */
+.map-controls__fog {
+  display: inline-flex;
+  gap: var(--space-1);
+  margin-left: var(--space-2);
+  padding-left: var(--space-2);
+  border-left: 1px solid rgba(230, 215, 180, 0.35);
+}
+
+body.role-player .map-controls__fog,
+body.mode-build .map-controls__fog {
+  display: none;
+}
+
+.map-controls__btn--active {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+  background: rgba(230, 215, 180, 0.15);
+}
+
 .map-controls__zoom {
   min-width: 3ch;
   padding: 0 var(--space-1);
   font-family: var(--font-mono);
   font-size: var(--text-label);
   color: #e6d7b4;
+}
+
+.handout-panel__image {
+  display: block;
+  max-width: 100%;
+  border-radius: var(--radius-sm);
+  margin-top: var(--space-2);
+}
+
+/* Unsaved-changes cue on the Save button. */
+.btn--attention {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* First-run onboarding overlay, centered over the map. */
+.onboarding {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 13, 10, 0.55);
+  border-radius: var(--radius);
+  z-index: 5;
+}
+
+.onboarding__card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-width: 22rem;
+  padding: var(--space-5);
+}
+
+.onboarding__blurb {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
+.onboarding__skip {
+  align-self: flex-end;
+  font-size: var(--text-label);
+}
+
+/* Transient action-feedback toasts, bottom center, above everything. */
+.toast-stack {
+  position: fixed;
+  bottom: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  pointer-events: none;
+}
+
+.toast {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius);
+  background: rgba(15, 13, 10, 0.9);
+  color: #e6d7b4;
+  font-size: var(--text-label);
+  box-shadow: var(--shadow-2);
+  pointer-events: auto;
+  cursor: pointer;
+  animation: toast-in 0.2s ease-out;
+}
+
+.toast--leaving {
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(0.5rem); }
+  to { opacity: 1; transform: none; }
 }
 
 .tile-tooltip {
@@ -826,6 +928,27 @@ body.sidebar-collapsed .app-sidebar {
   min-height: 1.5rem;
 }
 
+.dice-tray__history {
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.dice-tray__history-entry {
+  overflow-wrap: anywhere;
+}
+
+.dice-tray__history-time {
+  font-weight: 700;
+  margin-right: var(--space-1);
+}
+
 /* ==========================================================================
    Disclosure (collapsible panel headers)
    ========================================================================== */
@@ -898,6 +1021,18 @@ body.sidebar-collapsed .app-sidebar {
 /* ==========================================================================
    Character sheet
    ========================================================================== */
+
+/* Collapsed-card head: the disclosure summary plus the quick HP -/+ pair. */
+.character-sheet__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.character-sheet__head .disclosure {
+  flex: 1;
+  min-width: 0;
+}
 
 .character-sheet__summary .character-sheet__name {
   font-weight: 700;
@@ -1452,4 +1587,34 @@ body.sidebar-collapsed .app-sidebar {
 .handout-panel__add {
   margin-top: var(--space-1);
   font-size: var(--text-label);
+}
+
+/* ==========================================================================
+   Responsive: below tablet width the fixed-width rails would crush the map,
+   so every column goes full-width and stacks — map first, then panels.
+   Last in the file so it wins the cascade over the base column widths.
+   ========================================================================== */
+@media (max-width: 68rem) {
+  .app-main {
+    flex-direction: column;
+  }
+
+  .app-center {
+    width: 100%;
+  }
+
+  .app-sidebar,
+  .app-buildrail,
+  .app-buildrail--stack {
+    width: 100%;
+  }
+
+  .app-header {
+    flex-wrap: wrap;
+    row-gap: var(--space-2);
+  }
+
+  #map-canvas {
+    height: min(55vh, 32rem);
+  }
 }

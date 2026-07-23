@@ -11,12 +11,17 @@ import { icon } from './icons.js';
  * turn / End combat) once started. The panel owns no combat state — it reads it
  * via `getState`, the candidate roster via `getRoster`, and reports actions back.
  * @param {HTMLElement} container
+ * With `rollInitiative`, the setup list gains a "Roll initiative" button that
+ * fills every combatant's value from the callback (a d20 in the app, an
+ * injected roll in tests); values stay editable, so a rolled result can still
+ * be overridden by hand before Start.
  * @param {{
  *   getState: () => CombatState | null,
  *   getRoster: () => Participant[],
  *   onStart: (participants: Participant[]) => void,
  *   onNext: () => void,
  *   onEnd: () => void,
+ *   rollInitiative?: () => number,
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -56,6 +61,21 @@ export function mountInitiativePanel(container, callbacks) {
       root.appendChild(row);
     }
 
+    const actions = document.createElement('div');
+    actions.className = 'initiative-panel__actions';
+
+    const rollInitiative = callbacks.rollInitiative;
+    if (rollInitiative) {
+      const rollAll = document.createElement('button');
+      rollAll.type = 'button';
+      rollAll.className = 'btn';
+      rollAll.append(icon('dice'), document.createTextNode('Roll initiative'));
+      rollAll.addEventListener('click', () => {
+        for (const input of inputs.values()) input.value = String(rollInitiative());
+      });
+      actions.appendChild(rollAll);
+    }
+
     const start = document.createElement('button');
     start.type = 'button';
     start.className = 'btn btn--primary initiative-panel__start';
@@ -66,7 +86,8 @@ export function mountInitiativePanel(container, callbacks) {
       );
       render();
     });
-    root.appendChild(start);
+    actions.appendChild(start);
+    root.appendChild(actions);
   }
 
   /** @param {CombatState} state */
