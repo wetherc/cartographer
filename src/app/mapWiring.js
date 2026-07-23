@@ -166,13 +166,18 @@ export function wireMapView(app) {
   app.views.worldTree = worldTree;
 
   // The Play-mode counterpart to the Build-mode world tree: the same hierarchy,
-  // but read-only (no add/delete affordances) and limited to nodes the party has
-  // actually discovered, so unexplored regions stay hidden from the table.
-  // Selecting a node offers to teleport the party there.
+  // but read-only (no add/delete affordances). Players only see nodes the party
+  // has actually discovered, so unexplored regions stay hidden from the table;
+  // the GM always sees the whole world. Selecting a node offers to teleport the
+  // party there.
   const regionTree = mountWorldTree(mustGetElement('region-tree-container'), {
-    getNodes: () => discoveredNodes([...grid.nodes.values()], partyTracker.getPosition()),
+    getNodes: () =>
+      isGM(state.role)
+        ? [...grid.nodes.values()]
+        : discoveredNodes([...grid.nodes.values()], partyTracker.getPosition()),
     getCurrentId: () => navigator.getCurrentNode().id,
     onSelect: teleportToNode,
+    collapsible: true,
   });
   app.views.regionTree = regionTree;
 
@@ -582,6 +587,9 @@ export function wireMapView(app) {
       mapControls?.update();
     }
     tileTooltip.hide();
+    // The sidebar world tree shows everything to the GM but only discovered
+    // nodes to players, so a role flip changes its contents.
+    regionTree.update();
   };
 
   // Keep the canvas buffer matched to the CSS size of the element (times the

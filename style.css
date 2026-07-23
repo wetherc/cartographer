@@ -447,6 +447,34 @@ body.role-locked #role-switch-container {
   font-weight: 700;
 }
 
+/* Collapsible trees: a fixed-width chevron slot on every row keeps labels
+   aligned; leaf rows render an empty spacer in the same slot. */
+.world-tree__toggle {
+  flex: 0 0 auto;
+  width: 1.1rem;
+  height: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.world-tree__toggle svg {
+  transition: transform 120ms ease;
+}
+
+.world-tree__toggle--open svg {
+  transform: rotate(90deg);
+}
+
+.world-tree__toggle--leaf {
+  cursor: default;
+}
+
 .world-tree__action {
   opacity: 0;
 }
