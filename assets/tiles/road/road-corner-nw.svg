@@ -2,6 +2,5 @@
   <path d="M32 0 Q32 32 0 32" stroke="#7c6448" stroke-width="20" fill="none"/>
   <path d="M32 0 Q32 32 0 32" stroke="#bb9c70" stroke-width="16" fill="none"/>
   <g stroke="#9c8158" stroke-width="1.5" fill="none"><path d="M27 0 Q27 27 0 27"/><path d="M37 0 Q37 37 0 37"/></g>
-  <path d="M32 0 Q32 32 0 32" stroke="#8a7150" stroke-width="2" stroke-dasharray="5 7" fill="none"/>
   <circle cx="30" cy="18" r="1" fill="#a68a5e"/><circle cx="16" cy="34" r="0.9" fill="#cbb083"/>
 </svg>

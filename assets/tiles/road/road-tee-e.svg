@@ -7,7 +7,5 @@
     <path d="M27 0 L27 64"/><path d="M37 0 L37 27 M37 37 L37 64"/>
     <path d="M37 27 L64 27"/><path d="M37 37 L64 37"/>
   </g>
-  <path d="M32 0 L32 64" stroke="#8a7150" stroke-width="2" stroke-dasharray="5 7" fill="none"/>
-  <path d="M32 32 L64 32" stroke="#8a7150" stroke-width="2" stroke-dasharray="5 7" fill="none"/>
   <circle cx="32" cy="32" r="1.1" fill="#a68a5e"/><circle cx="30" cy="16" r="0.9" fill="#cbb083"/><circle cx="35" cy="46" r="0.9" fill="#cbb083"/>
 </svg>
