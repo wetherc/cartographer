@@ -38,6 +38,9 @@ import { createQuest, toggleQuestStatus } from './quest/Quests.js';
 import {
   buildState,
   saveToLocalStorage,
+  loadFromLocalStorage,
+  snapshotHistory,
+  undoHistory,
   downloadState,
   readStateFromFile,
 } from './storage/SaveManager.js';
@@ -645,7 +648,17 @@ mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => 
  * load takes (the same pattern the import flow uses).
  * @param {import('./campaign/Campaigns.js').Campaign} campaign
  */
+/**
+ * Push the currently-persisted campaign onto the undo history ring, so the
+ * next save/replace/import is reversible. No-op on a first run with no save.
+ */
+function snapshotCurrentSave() {
+  const current = loadFromLocalStorage();
+  if (current) snapshotHistory(current);
+}
+
 function replaceCampaign(campaign) {
+  snapshotCurrentSave();
   saveToLocalStorage(
     buildState(
       campaign.grid,
@@ -676,9 +689,24 @@ mustGetElement('example-btn').addEventListener('click', async () => {
 });
 
 mustGetElement('save-btn').addEventListener('click', () => {
+  // Snapshot the previous save first so Undo can step back to it.
+  snapshotCurrentSave();
   saveToLocalStorage(
     buildState(grid, partyTracker.getPosition(), characters, encounters, travelog, quests),
   );
+});
+
+// Undo restores the most recent snapshot (the state before the last save,
+// New, Load example, or Import) and reloads so every module re-initializes
+// from it — the same reload path those actions use.
+mustGetElement('undo-btn').addEventListener('click', async () => {
+  const restored = undoHistory();
+  if (!restored) {
+    await confirmModal('Nothing to undo.', { confirmLabel: 'OK' });
+    return;
+  }
+  saveToLocalStorage(restored);
+  location.reload();
 });
 
 mustGetElement('export-btn').addEventListener('click', () => {
@@ -696,6 +724,7 @@ importInput.addEventListener('change', async () => {
   // Simplest correct way to apply an imported campaign: persist it, then
   // reload so every module re-initializes from the same loadFromLocalStorage
   // path a normal page load takes, rather than re-wiring every closure above.
+  snapshotCurrentSave();
   saveToLocalStorage(state);
   location.reload();
 });
