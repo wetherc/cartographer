@@ -175,16 +175,28 @@
   color: var(--text-muted);
 }
 
-/* Spell-slot readout on the collapsed card: a pip group per spell level, the
-   filled pips being the slots still unspent. Shares .stat-bar's label column. */
+/* Spell-slot readout on the collapsed card: a column per spell level — the
+   ordinal centered over a two-wide pip grid. Shares .stat-bar's label column;
+   overflow wraps inside __groups, so continuation rows stay indented past the
+   "Slots" label. */
 .slot-line {
-  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.slot-line__groups {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(2rem, 1fr));
+  justify-items: center;
+  gap: var(--space-1) var(--space-1);
+  min-width: 0;
 }
 
 .slot-line__group {
   display: inline-flex;
-  align-items: baseline;
-  gap: var(--space-1);
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
 }
 
 .slot-line__level {
@@ -193,8 +205,11 @@
 }
 
 .slot-line__pips {
+  display: grid;
+  grid-template-columns: repeat(2, auto);
+  gap: 0 0.2rem;
   font-size: var(--text-label);
-  letter-spacing: 0.1em;
+  line-height: 1.1;
   color: var(--mana);
 }
 
