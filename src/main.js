@@ -1,18 +1,12 @@
-import {
-  createMapNode,
-  getTile,
-  updateTileMetadata,
-  resizeNode,
-  tilesOutsideBounds,
-} from './map/TileGrid.js';
+import { getTile, updateTileMetadata } from './map/TileGrid.js';
 import { TilePalette } from './map/TilePalette.js';
 import { MapCanvas } from './map/MapCanvas.js';
-import { clientToBuffer, screenToTile, parseCoords } from './map/MapGeometry.js';
+import { clientToBuffer, screenToTile } from './map/MapGeometry.js';
 import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesInRect } from './map/TilePaint.js';
 import { computeRegionEntryTile } from './map/EntryPoint.js';
-import { NODE_KINDS, ENVIRONS } from './map/NodeKinds.js';
 import { MapNavigator } from './map/MapNavigator.js';
 import { discoveredNodes } from './map/FogOfWar.js';
+import { createNodeActions } from './app/nodeActions.js';
 import {
   buildBlankCampaign,
   buildExampleCampaign,
@@ -22,7 +16,6 @@ import { mustGetElement } from './ui/dom.js';
 import { mountBreadcrumb } from './ui/Breadcrumb.js';
 import { mountModeSwitch } from './ui/ModeSwitch.js';
 import { mountWorldTree } from './ui/WorldTree.js';
-import { collectSubtreeIds } from './map/WorldTree.js';
 import { mountTileInspector } from './ui/TileInspector.js';
 import { mountPalettePanel } from './ui/PalettePanel.js';
 import { mountMapControls } from './ui/MapControls.js';
@@ -82,6 +75,8 @@ let selectedTileId = null;
 let activeBrush = null;
 /** @type {{ x: number, y: number } | null} first cell of an in-progress region-tool drag */
 let regionAnchor = null;
+/** @type {ReturnType<typeof createNodeActions>} create/edit/delete-node actions; assigned once the views they resync exist */
+let nodeActions;
 
 /** @typedef {import('./types/entities.js').Character} Character */
 
@@ -119,39 +114,6 @@ function goToNode(nodeId) {
   regionTree.update();
 }
 
-/**
- * Modal fields (kind + environment) shared by the new-node and edit-node
- * prompts. Environ is a single flat list of every suggested tag across kinds
- * (the modal is static and can't repopulate when the kind select changes), so
- * a GM can pick, say, an interior "temple" tag even while the select still says
- * whatever it defaulted to; the model stores whatever string is chosen.
- * @param {import('./types/map.js').NodeKind} kind
- * @param {string | null} environ
- * @returns {import('./ui/Modal.js').ModalField[]}
- */
-function nodeKindFields(kind, environ) {
-  const environs = [...ENVIRONS.region, ...ENVIRONS.interior];
-  return [
-    {
-      name: 'kind',
-      label: 'Kind',
-      type: 'select',
-      value: kind,
-      options: NODE_KINDS.map((k) => ({ value: k, label: k[0].toUpperCase() + k.slice(1) })),
-    },
-    {
-      name: 'environ',
-      label: 'Environment',
-      type: 'select',
-      value: environ ?? '',
-      options: [
-        { value: '', label: '(none)' },
-        ...environs.map((e) => ({ value: e, label: e[0].toUpperCase() + e.slice(1) })),
-      ],
-    },
-  ];
-}
-
 /** Show the palette only the terrain the current node's kind can use. */
 function syncPaletteKind() {
   palettePanel.setKind(navigator.getCurrentNode().kind);
@@ -170,9 +132,9 @@ const worldTree = mountWorldTree(mustGetElement('world-tree-container'), {
   getNodes: () => [...grid.nodes.values()],
   getCurrentId: () => navigator.getCurrentNode().id,
   onSelect: goToNode,
-  onAddChild: addChildNode,
-  onEdit: editNode,
-  onDelete: deleteNode,
+  onAddChild: (id) => nodeActions.addChildNode(id),
+  onEdit: (id) => nodeActions.editNode(id),
+  onDelete: (id) => nodeActions.deleteNode(id),
 });
 
 // The Play-mode counterpart to the Build-mode world tree: the same hierarchy,
@@ -213,140 +175,6 @@ async function teleportToNode(nodeId) {
   encounterPanel.update();
 }
 
-/** Generate a node id not already used by the grid. */
-function freshNodeId() {
-  let id;
-  do {
-    id = `node-${Math.random().toString(36).slice(2, 8)}`;
-  } while (grid.getNode(id));
-  return id;
-}
-
-/**
- * Prompt for a new child MapNode's name and dimensions, add it under parentId,
- * and refresh the tree. Returns the new node id, or null if cancelled.
- * @param {string} parentId
- * @returns {Promise<string | null>}
- */
-async function addChildNode(parentId) {
-  const values = await promptModal('New node', [
-    { name: 'name', label: 'Name', value: 'New region' },
-    { name: 'width', label: 'Width (tiles)', type: 'number', value: 6, min: 1 },
-    { name: 'height', label: 'Height (tiles)', type: 'number', value: 6, min: 1 },
-    ...nodeKindFields('region', null),
-  ]);
-  if (!values) return null;
-  const id = freshNodeId();
-  const width = Math.max(1, Number(values.width) || 1);
-  const height = Math.max(1, Number(values.height) || 1);
-  const kind = /** @type {import('./types/map.js').NodeKind} */ (
-    NODE_KINDS.includes(values.kind) ? values.kind : 'region'
-  );
-  grid.addNode(
-    createMapNode(id, values.name || 'Untitled', parentId, width, height, {
-      kind,
-      environ: values.environ || null,
-    }),
-  );
-  worldTree.update();
-  return id;
-}
-
-/**
- * Confirm and delete a node and its subtree, then move the view somewhere valid
- * if the current node was removed. Refuses to delete the last remaining node.
- * @param {string} nodeId
- */
-async function deleteNode(nodeId) {
-  const node = grid.getNode(nodeId);
-  if (!node) return;
-  const doomed = collectSubtreeIds([...grid.nodes.values()], nodeId);
-  if (doomed.size >= grid.nodes.size) {
-    await confirmModal('Cannot delete the last node in the campaign.', { confirmLabel: 'OK' });
-    return;
-  }
-  const ok = await confirmModal(`Delete "${node.name}" and everything inside it?`, {
-    danger: true,
-    confirmLabel: 'Delete',
-  });
-  if (!ok) return;
-
-  const removed = grid.removeNode(nodeId);
-  if (removed.has(navigator.currentNodeId)) {
-    const fallback =
-      node.parentId && grid.getNode(node.parentId) ? node.parentId : [...grid.nodes.keys()][0];
-    goToNode(fallback);
-  } else {
-    // Current node survived, but a link it drew may have been cleared.
-    mapCanvas.refreshNode(navigator.getCurrentNode());
-    worldTree.update();
-    regionTree.update();
-  }
-}
-
-/**
- * Edit a node's name and grid dimensions after creation. Growing keeps every
- * tile; shrinking prompts before pruning tiles outside the new bounds, and
- * pulls the party back inside them if it stood on a pruned tile.
- * @param {string} nodeId
- */
-async function editNode(nodeId) {
-  const node = grid.getNode(nodeId);
-  if (!node) return;
-  const values = await promptModal(
-    'Edit node',
-    [
-      { name: 'name', label: 'Name', value: node.name },
-      { name: 'width', label: 'Width (tiles)', type: 'number', value: node.width, min: 1 },
-      { name: 'height', label: 'Height (tiles)', type: 'number', value: node.height, min: 1 },
-      ...nodeKindFields(node.kind, node.environ),
-    ],
-    { submitLabel: 'Save' },
-  );
-  if (!values) return;
-  const width = Math.max(1, Number(values.width) || node.width);
-  const height = Math.max(1, Number(values.height) || node.height);
-  const lost = tilesOutsideBounds(node, width, height);
-  if (lost.length) {
-    const ok = await confirmModal(
-      `Shrinking "${node.name}" removes ${lost.length} tile${lost.length === 1 ? '' : 's'} outside the new bounds.`,
-      { danger: true, confirmLabel: 'Shrink' },
-    );
-    if (!ok) return;
-  }
-  const kind = /** @type {import('./types/map.js').NodeKind} */ (
-    NODE_KINDS.includes(values.kind) ? values.kind : node.kind
-  );
-  grid.updateNode({
-    ...resizeNode(node, width, height),
-    name: values.name.trim() || node.name,
-    kind,
-    environ: values.environ || null,
-  });
-
-  const position = partyTracker.getPosition();
-  if (position.nodeId === nodeId) {
-    const coords = parseCoords(position.tileId);
-    if (coords && (coords.x >= width || coords.y >= height)) {
-      partyTracker.moveTo(
-        nodeId,
-        `${Math.min(coords.x, width - 1)},${Math.min(coords.y, height - 1)}`,
-      );
-    }
-  }
-  if (navigator.getCurrentNode().id === nodeId) {
-    // The extent or kind changed, so re-frame the view and re-filter the
-    // palette; the selected tile may be gone.
-    clearSelection();
-    mapCanvas.setNode(navigator.getCurrentNode());
-    syncPartyMarker();
-    syncPaletteKind();
-  }
-  breadcrumb.update(navigator.getBreadcrumb());
-  worldTree.update();
-  regionTree.update();
-}
-
 /**
  * Resolve a completed region-tool drag: link every existing tile in the
  * marquee block to a child node chosen from the current node's children, or to
@@ -384,9 +212,9 @@ async function finishRegionStroke() {
       { submitLabel: 'Link' },
     );
     if (!values) return;
-    childId = values.target || (await addChildNode(node.id));
+    childId = values.target || (await nodeActions.addChildNode(node.id));
   } else {
-    childId = await addChildNode(node.id);
+    childId = await nodeActions.addChildNode(node.id);
   }
   if (!childId) return;
   const updated = linkTilesInRect(navigator.getCurrentNode(), rect, childId);
@@ -489,6 +317,23 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
   },
 });
 
+// The node create/edit/delete actions live in their own module; they resync
+// the views above, which now all exist, so their context can be handed over.
+// Views/callbacks are read at call time, so a stale reference can't form.
+nodeActions = createNodeActions({
+  grid,
+  navigator,
+  partyTracker,
+  mapCanvas,
+  breadcrumb,
+  worldTree,
+  regionTree,
+  goToNode,
+  clearSelection,
+  syncPaletteKind,
+  syncPartyMarker,
+});
+
 const inspector = mountTileInspector(mustGetElement('inspector-container'), {
   onChange: (patch) => {
     if (!selectedTileId) return;
@@ -501,7 +346,7 @@ const inspector = mountTileInspector(mustGetElement('inspector-container'), {
     getOptions: () => grid.getChildren(navigator.currentNodeId).map((n) => ({ id: n.id, name: n.name })),
     onChange: (childNodeId) => linkSelectedTile(childNodeId),
     onCreateNew: async () => {
-      const id = await addChildNode(navigator.currentNodeId);
+      const id = await nodeActions.addChildNode(navigator.currentNodeId);
       if (id) linkSelectedTile(id);
     },
   },
