@@ -39,6 +39,18 @@ export function wireEncounters(app) {
     if (here.length === 0) return;
     const node = app.grid.getNode(position.nodeId);
     const region = node ? node.name : position.nodeId;
+    // First meetings go in the travelogue exactly once, keyed by a persisted
+    // `noticed` flag — walking back onto the tile re-alerts but doesn't re-log.
+    const fresh = here.filter((e) => !e.noticed);
+    if (fresh.length > 0) {
+      state.encounters = state.encounters.map((e) =>
+        fresh.some((f) => f.id === e.id) ? { ...e, noticed: true } : e,
+      );
+      for (const e of fresh) {
+        app.actions.logEvent('combat', `The party encounters ${e.name} in ${region} (tile ${position.tileId}).`);
+      }
+      app.actions.markDirty();
+    }
     const gm = isGM(state.role);
     const list = here
       .map((e) => (gm ? `${e.name} (${e.currentHP}/${e.maxHP})` : `${e.name} — ${hpBand(e.currentHP, e.maxHP)}`))
@@ -222,6 +234,10 @@ export function wireEncounters(app) {
     },
     // d20 + DEX modifier per combatant; the field stays editable for override.
     rollInitiative: (participant) => Math.floor(Math.random() * 20) + 1 + (participant.modifier ?? 0),
+    // One travelogue line per "Roll initiative" press, recording every result;
+    // hand-edited overrides before Start aren't re-logged.
+    onRolled: (results) =>
+      app.actions.logEvent('roll', `Initiative rolled: ${results.map((r) => `${r.name} ${r.value}`).join(', ')}.`),
   });
 
   // The Initiative card only shows while the party is in an encounter (standing

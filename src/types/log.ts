@@ -1,5 +1,5 @@
 /** What produced a travelogue entry, used only to tag/style rows. */
-export type LogEntryKind = 'travel' | 'combat' | 'note' | 'rest';
+export type LogEntryKind = 'travel' | 'combat' | 'note' | 'rest' | 'roll';
 
 /** One automatically-recorded event in the party's travelogue. */
 export interface LogEntry {

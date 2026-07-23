@@ -5,11 +5,14 @@ import { icon } from './icons.js';
 /**
  * Mount a dice tray widget, collapsed by default to a D20 icon behind an
  * accessible disclosure button; expanding reveals the full tray (+/- counters
- * per die type, +/- modifier, roll button, result display).
+ * per die type, +/- modifier, roll button, result display). Only the latest
+ * result shows in the tray; past rolls are the caller's to keep — `onRoll`
+ * fires with each formatted result (the app records them in the travelogue).
  * @param {HTMLElement} container
+ * @param {{ onRoll?: (text: string) => void }} [opts]
  * @returns {{ getSelection: () => import('../types/dice.js').DiceSelection }}
  */
-export function mountDiceTray(container) {
+export function mountDiceTray(container, opts = {}) {
   const selection = emptySelection();
 
   const summary = document.createElement('button');
@@ -87,6 +90,21 @@ export function mountDiceTray(container) {
     ),
   );
 
+  // Optional difficulty target: when set, each roll also reports success or
+  // failure against it (meets-it-beats-it), in the tray and travelogue alike.
+  const targetRow = document.createElement('div');
+  targetRow.className = 'dice-tray__row';
+  const targetName = document.createElement('span');
+  targetName.className = 'dice-tray__label';
+  targetName.textContent = 'target';
+  const targetInput = document.createElement('input');
+  targetInput.type = 'number';
+  targetInput.className = 'field dice-tray__target';
+  targetInput.placeholder = 'none';
+  targetInput.setAttribute('aria-label', 'Target number to beat (optional)');
+  targetRow.append(targetName, targetInput);
+  root.appendChild(targetRow);
+
   const rollButton = document.createElement('button');
   rollButton.type = 'button';
   rollButton.className = 'btn btn--primary dice-tray__roll';
@@ -95,31 +113,18 @@ export function mountDiceTray(container) {
   const resultEl = document.createElement('div');
   resultEl.className = 'dice-tray__result';
 
-  // Session-local roll history: the latest handful of results, newest first,
-  // so contested rolls can be compared after the fact. Not persisted.
-  const historyEl = document.createElement('ol');
-  historyEl.className = 'dice-tray__history';
-  historyEl.setAttribute('aria-label', 'Recent rolls');
-  const HISTORY_MAX = 8;
-
   rollButton.addEventListener('click', () => {
     const result = roll(selection);
-    const text = formatResult(result);
-    resultEl.textContent = text;
-
-    const entry = document.createElement('li');
-    entry.className = 'dice-tray__history-entry';
-    const at = document.createElement('span');
-    at.className = 'dice-tray__history-time';
-    at.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    entry.append(at, document.createTextNode(` ${text}`));
-    historyEl.prepend(entry);
-    while (historyEl.children.length > HISTORY_MAX) {
-      /** @type {Element} */ (historyEl.lastElementChild).remove();
+    let text = formatResult(result);
+    const target = targetInput.value === '' ? null : Number(targetInput.value);
+    if (target !== null && Number.isFinite(target)) {
+      text += ` vs target ${target}: ${result.total >= target ? 'success' : 'failure'}`;
     }
+    resultEl.textContent = text;
+    opts.onRoll?.(text);
   });
 
-  root.append(rollButton, resultEl, historyEl);
+  root.append(rollButton, resultEl);
   container.appendChild(root);
 
   return { getSelection: () => selection };

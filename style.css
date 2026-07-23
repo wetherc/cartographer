@@ -964,6 +964,11 @@ body.sidebar-collapsed .app-sidebar {
   font-variant-numeric: tabular-nums;
 }
 
+.dice-tray__target {
+  width: 4.5rem;
+  text-align: center;
+}
+
 .dice-tray__roll {
   margin-top: var(--space-3);
   width: 100%;
@@ -978,27 +983,6 @@ body.sidebar-collapsed .app-sidebar {
   font-size: var(--text-label);
   white-space: pre-wrap;
   min-height: 1.5rem;
-}
-
-.dice-tray__history {
-  margin: var(--space-2) 0 0;
-  padding: 0;
-  list-style: none;
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  color: var(--text-muted);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.dice-tray__history-entry {
-  overflow-wrap: anywhere;
-}
-
-.dice-tray__history-time {
-  font-weight: 700;
-  margin-right: var(--space-1);
 }
 
 /* ==========================================================================
@@ -1688,6 +1672,10 @@ body.sidebar-collapsed .app-sidebar {
 
 .travelog__item--travel {
   border-left-color: var(--accent);
+}
+
+.travelog__item--roll {
+  border-left-color: var(--mana);
 }
 
 .travelog__time {
