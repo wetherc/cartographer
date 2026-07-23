@@ -44,8 +44,6 @@ export function wireMapView(app) {
   let fogTool = null;
   /** @type {{ x: number, y: number } | null} first cell of an in-progress region-tool drag */
   let regionAnchor = null;
-  /** @type {ReturnType<typeof createNodeActions>} create/edit/delete-node actions; assigned once the views they resync exist */
-  let nodeActions;
 
   /**
    * Build-mode stroke-level undo: an in-memory ring of node snapshots taken
@@ -378,8 +376,9 @@ export function wireMapView(app) {
 
   // The node create/edit/delete actions live in their own module; they resync
   // the views above, which now all exist, so their context can be handed over.
-  // Views/callbacks are read at call time, so a stale reference can't form.
-  nodeActions = createNodeActions({
+  // Earlier handlers close over this binding but only run after wiring, so
+  // declaring it here (past their definitions) is safe.
+  const nodeActions = createNodeActions({
     grid,
     navigator,
     partyTracker,

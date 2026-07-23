@@ -28,10 +28,10 @@ test('startCombat sorts and starts at round 1, first turn', () => {
 });
 
 test('advanceTurn steps through the order then wraps into the next round', () => {
-  let { state } = { state: startCombat([
+  const state = startCombat([
     createParticipant('a', 'Hero', 'party', 15),
     createParticipant('b', 'Goblin', 'foe', 8),
-  ]) };
+  ]);
   let result = advanceTurn(state);
   assert.equal(result.wrapped, false);
   assert.equal(currentParticipant(result.state).name, 'Goblin');

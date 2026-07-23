@@ -355,7 +355,7 @@ function generateCastle(palette, size, rng) {
  * @param {() => number} rng
  * @returns {{ width: number, height: number, tiles: Tile[], entry: string }}
  */
-export function generateNodeTiles(palette, { kind, archetype, size }, rng) {
+export function generateNodeTiles(palette, { archetype, size }, rng) {
   const n = GENERATOR_SIZES[size] ?? GENERATOR_SIZES.medium;
   let gen;
   if (archetype === 'town') gen = generateTown(palette, n, rng);

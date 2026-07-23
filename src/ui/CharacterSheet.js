@@ -59,12 +59,12 @@ function buildStatBar(pool, opts) {
  * pools (HP included) with spend/restore steppers.
  * Renders an empty state when no character is selected (`null`).
  * @param {HTMLElement} container
- * @param {Character | null} character
+ * @param {Character | null} initial
  * @param {(character: Character) => void} [onChange]
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
-export function mountCharacterSheet(container, character, onChange = () => {}) {
-  let current = character;
+export function mountCharacterSheet(container, initial, onChange = () => {}) {
+  let current = initial;
   // Survives re-renders (every edit re-renders) but stays per-mount, so the
   // card the GM opened doesn't snap shut after each stat change.
   let expanded = false;

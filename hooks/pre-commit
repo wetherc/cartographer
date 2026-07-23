@@ -1,0 +1,19 @@
+#!/bin/sh
+# Pre-commit gate: lint, unit tests, and the real typecheck must all pass.
+# This directory is versioned; point git at it once per clone with:
+#   git config core.hooksPath hooks
+# Note: the typecheck must be `pnpm --package=typescript dlx tsc` — the bare
+# `pnpx tsc` resolves npm's placeholder package and checks nothing (see README).
+set -e
+cd "$(git rev-parse --show-toplevel)"
+
+echo "pre-commit: eslint"
+pnpm --package=eslint dlx eslint .
+
+echo "pre-commit: unit tests"
+node --test tests/*.test.js
+
+echo "pre-commit: typecheck"
+pnpm --package=typescript dlx tsc --noEmit
+
+echo "pre-commit: all checks passed"

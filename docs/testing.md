@@ -14,10 +14,28 @@ Each `tests/*.test.js` file pairs with one `src/**/*.js` module. Tests exercise 
 ## Typecheck
 
 ```
-pnpx tsc --noEmit
+pnpm --package=typescript dlx tsc --noEmit
 ```
 
+(Not `pnpx tsc` — with no local TypeScript install, the bare `tsc` binary name resolves to npm's placeholder package, which exits without checking anything.)
+
 Catches JSDoc/type-declaration mismatches in `.js` files against `src/types/*.ts`. Run this after any non-trivial change, not just ones that touch types directly — `checkJs` will flag call-signature mismatches anywhere.
+
+## Lint
+
+```
+pnpm --package=eslint dlx eslint .
+```
+
+Flat config in `eslint.config.js`, core rules only (no plugin packages). `no-undef` is deliberately off — the typecheck already resolves identifiers with full DOM knowledge; the linter covers what tsc doesn't (unused vars, shadowing, `var`, loose equality, and similar).
+
+## Pre-commit hook
+
+`hooks/pre-commit` runs all three of the above (lint, full test suite, typecheck) and blocks the commit on any failure. Enable once per clone:
+
+```
+git config core.hooksPath hooks
+```
 
 ## Visual verification
 

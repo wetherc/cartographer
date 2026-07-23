@@ -40,7 +40,7 @@ test('moveTo updates position and reveals fog at the new tile', () => {
 test('moveTo reveals fog on the default radius', () => {
   const grid = new TileGrid();
   grid.addNode(grid5x5());
-  const tracker = new PartyTracker(grid, { nodeId: 'n', tileId: '2,2' });
+  new PartyTracker(grid, { nodeId: 'n', tileId: '2,2' });
   assert.ok(revealedCount(grid.getNode('n')) > 1);
 });
 
