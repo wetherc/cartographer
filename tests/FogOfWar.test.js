@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
-import { revealAround, hideAll, revealAll, setTileRevealed, revealedCount, discoveredNodes } from '../src/map/FogOfWar.js';
+import { revealAround, withinRadius, hideAll, revealAll, setTileRevealed, revealedCount, discoveredNodes } from '../src/map/FogOfWar.js';
 
 function grid5x5() {
   let node = createMapNode('n', 'Node', null, 5, 5);
@@ -91,4 +91,17 @@ test('setTileRevealed flips one tile each way and no-ops on missing or unchanged
   assert.equal(dark.tiles[0].revealed, false);
   assert.equal(setTileRevealed(dark, '0,0', false), dark, 'unchanged state returns same node');
   assert.equal(setTileRevealed(dark, '9,9', true), dark, 'missing tile is a no-op');
+});
+
+test('withinRadius applies the same Euclidean cutoff as revealAround', () => {
+  assert.equal(withinRadius('2,2', '2,2', 0), true, 'a tile is within any radius of itself');
+  assert.equal(withinRadius('4,2', '2,2', 2), true, 'straight-line distance 2');
+  assert.equal(withinRadius('4,4', '2,2', 2), false, 'diagonal distance 2*sqrt(2) exceeds 2');
+  assert.equal(withinRadius('4,4', '2,2', 4), true, 'diagonal within a doubled radius');
+  assert.equal(withinRadius('2,7', '2,2', 4), false, 'distance 5 is past the doubled radius');
+});
+
+test('withinRadius is false when either id is not a grid coordinate', () => {
+  assert.equal(withinRadius('not-a-tile', '2,2', 10), false);
+  assert.equal(withinRadius('2,2', 'not-a-tile', 10), false);
 });

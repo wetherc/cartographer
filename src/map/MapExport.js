@@ -83,6 +83,7 @@ export async function renderNodeToCanvas(node, options = {}) {
     offsetY: 0,
     scale: 1,
     revealAll: true,
+    markerRange: 0,
     partyTileId: null,
     encounterTileIds: [],
     selectedTileId: null,

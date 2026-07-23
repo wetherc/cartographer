@@ -129,6 +129,7 @@ export function generateDialog(options) {
         offsetY: Math.floor((canvas.height - candidate.height * tileSize) / 2),
         scale: 1,
         revealAll: true,
+        markerRange: 0,
         partyTileId: null,
         encounterTileIds: [],
         selectedTileId: null,

@@ -30,6 +30,25 @@ export function revealAround(node, centerId, radius) {
 }
 
 /**
+ * Whether a tile sits within a Euclidean radius (in grid cells) of a center
+ * tile — the same distance rule revealAround uses, exposed for callers that
+ * gate visibility by proximity (the map's marker detection range). False when
+ * either id isn't a grid "x,y" coordinate.
+ * @param {string} tileId
+ * @param {string} centerId
+ * @param {number} radius
+ * @returns {boolean}
+ */
+export function withinRadius(tileId, centerId, radius) {
+  const tile = parseCoords(tileId);
+  const center = parseCoords(centerId);
+  if (!tile || !center) return false;
+  const dx = tile.x - center.x;
+  const dy = tile.y - center.y;
+  return Math.sqrt(dx * dx + dy * dy) <= radius;
+}
+
+/**
  * Reset every tile in a node back to unrevealed.
  * @param {MapNode} node
  * @returns {MapNode}

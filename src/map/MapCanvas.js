@@ -24,7 +24,7 @@ export class MapCanvas {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {TilePalette} palette
-   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, onStrokeCell?: (x: number, y: number, tile: Tile | null, first: boolean) => void, onStrokeEnd?: () => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void }} [options]
+   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, markerRange?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, onStrokeCell?: (x: number, y: number, tile: Tile | null, first: boolean) => void, onStrokeEnd?: () => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void }} [options]
    */
   constructor(canvas, palette, options = {}) {
     this.canvas = canvas;
@@ -35,6 +35,9 @@ export class MapCanvas {
     this.tileSize = options.tileSize ?? 48;
     this.minZoom = options.minZoom ?? 0.25;
     this.maxZoom = options.maxZoom ?? 4;
+    /** Detection range for encounter/NPC/POI markers, in grid cells from the
+     * party or a character token (conventionally twice the fog reveal radius). */
+    this.markerRange = options.markerRange ?? 4;
     this.onCellClick = options.onCellClick;
     this.onStrokeCell = options.onStrokeCell;
     this.onStrokeEnd = options.onStrokeEnd;
@@ -223,8 +226,8 @@ export class MapCanvas {
 
   /**
    * Set the tile ids in the current node that carry a live encounter, so the
-   * renderer can mark them. Drawn regardless of fog, so a known danger is
-   * visible even on tiles the party hasn't discovered yet.
+   * renderer can mark them. Drawn only within markerRange of the party or a
+   * character token, so distant dangers stay unknown until approached.
    * @param {string[]} tileIds
    */
   setEncounterTiles(tileIds) {
@@ -234,7 +237,7 @@ export class MapCanvas {
 
   /**
    * Set the tile ids in the current node that hold a placed NPC, marked by the
-   * renderer under the same fog rule as encounters (revealed tiles only in Play).
+   * renderer under the same detection rule as encounters (within markerRange in Play).
    * @param {string[]} tileIds
    */
   setNPCTiles(tileIds) {
@@ -304,6 +307,7 @@ export class MapCanvas {
       offsetY: this.offsetY,
       scale: this.scale,
       revealAll: this.revealAll,
+      markerRange: this.markerRange,
       partyTileId: this.partyTileId,
       encounterTileIds: this.encounterTileIds,
       npcTileIds: this.npcTileIds,

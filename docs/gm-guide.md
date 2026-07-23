@@ -251,8 +251,9 @@ the party's current location — no active encounter, no clutter.
 When the party **steps onto a tile with an encounter**, it pops up as a modal over
 the map, naming the encounter, its region, and its coordinates. Fleeing or
 ignoring an encounter leaves it in the sidebar for that node; it isn't removed. A
-live encounter's tile shows a red diamond marker once revealed, so the party can
-see a point of interest as they approach.
+live encounter's tile shows a red diamond marker once the party (or a split-off
+character) comes within detection range — twice the fog reveal radius — so danger
+is sensed a little beyond sight, but distant threats stay hidden.
 
 Damage and heal from the panel; a defeated encounter is styled as such rather than
 deleted, so you keep a record of what died. Each encounter row tracks its own
@@ -341,8 +342,9 @@ refills them — a short rest leaves them spent.
   in which case it appears everywhere. Each row shows the placement, and the
   panel shows the NPCs at the party's current location. A placed NPC also shows
   on the map as a blue circle in its tile's upper-left corner (the encounter
-  diamond sits upper-right, so a tile can carry both) once the tile is revealed,
-  and hovering the tile in Play mode names everyone standing there.
+  diamond sits upper-right, so a tile can carry both) once the party comes
+  within detection range — the same twice-the-reveal-radius rule as encounter
+  markers — and hovering the tile in Play mode names everyone standing there.
 - **Quests** — active/completed quest log. Completing a quest turns its toggle
   button's plus into a checkmark.
 - **Handouts** — read-aloud text or lore attached to a node (or campaign-wide),
