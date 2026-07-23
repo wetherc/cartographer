@@ -449,6 +449,12 @@ body.mode-build .app-sidebar {
   display: none;
 }
 
+.generate__hint {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
 /* ==========================================================================
    Tile palette (Build-mode right rail)
    ========================================================================== */
