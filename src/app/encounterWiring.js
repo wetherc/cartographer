@@ -4,6 +4,7 @@ import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { createEncounter, encountersAt, encountersOnTile, isDefeated, toTemplate, fromTemplate } from '../entities/Encounter.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
+import { abilityModifier, defaultEnemyStats, ENEMY_TIERS } from '../entities/Modifiers.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { tickConditions } from '../entities/Conditions.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
@@ -72,19 +73,32 @@ export function wireEncounters(app) {
       const values = await promptModal('New encounter', [
         { name: 'name', label: 'Name', value: '' },
         { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1 },
+        { name: 'level', label: 'Level', type: 'number', value: 1, min: 1 },
+        {
+          name: 'tier',
+          label: 'Tier',
+          type: 'select',
+          value: 'mob',
+          options: ENEMY_TIERS.map((t) => ({ value: t, label: t === 'mob' ? 'Mob' : 'Legend' })),
+        },
       ]);
       if (!values) return null;
       const name = values.name.trim();
       if (!name) return null;
       const maxHP = Math.max(1, Number(values.maxHP) || 1);
+      const level = Math.max(1, Number(values.level) || 1);
+      const tier = /** @type {import('../types/entities.js').EnemyTier} */ (values.tier);
       // New encounters are staged where the party currently is, so the GM
-      // authors them in place and they scope to that node from then on.
+      // authors them in place and they scope to that node from then on. The
+      // stat block starts at the tier's level-appropriate defaults (legends
+      // above-normal), each score still editable afterwards.
       const created = createEncounter(
         slugId(name, state.encounters.map((e) => e.id)),
         name,
         maxHP,
-        {},
+        defaultEnemyStats(level, tier),
         { ...app.partyTracker.getPosition() },
+        { level, tier },
       );
       state.encounters = [...state.encounters, created];
       app.actions.syncEncounterMarkers();
@@ -171,14 +185,23 @@ export function wireEncounters(app) {
     // Combatants are whoever is involved in *this* encounter: the whole party,
     // the live encounters on the party's tile, and any NPCs standing on that
     // tile (hostile ones line up as foes, friendly/neutral ones with the
-    // party). Initiative defaults to 10 and is edited in the setup list.
-    getRoster: () => [
-      ...state.characters.map((c) => createParticipant(c.id, c.name, 'party', 10)),
-      ...encountersHere().map((e) => createParticipant(e.id, e.name, 'foe', 10)),
-      ...npcsOnTile(state.npcs, app.partyTracker.getPosition()).map((n) =>
-        createParticipant(n.id, n.name, n.disposition === 'hostile' ? 'foe' : 'party', 10),
-      ),
-    ],
+    // party). Each carries its DEX modifier: seeded into the default value
+    // (10 + mod, the passive baseline), added on top of the d20 by "Roll
+    // initiative", and shown beside the name. Values stay hand-editable.
+    getRoster: () => {
+      /** @type {(id: string, name: string, side: 'party' | 'foe', stats: Record<string, number> | undefined) => import('../types/combat.js').Participant} */
+      const withDex = (id, name, side, stats) => {
+        const mod = abilityModifier(stats?.DEX ?? 10);
+        return createParticipant(id, name, side, 10 + mod, mod);
+      };
+      return [
+        ...state.characters.map((c) => withDex(c.id, c.name, 'party', c.stats)),
+        ...encountersHere().map((e) => withDex(e.id, e.name, 'foe', e.statBlock)),
+        ...npcsOnTile(state.npcs, app.partyTracker.getPosition()).map((n) =>
+          withDex(n.id, n.name, n.disposition === 'hostile' ? 'foe' : 'party', n.stats),
+        ),
+      ];
+    },
     onStart: (participants) => {
       combat = startCombat(participants);
     },
@@ -197,8 +220,8 @@ export function wireEncounters(app) {
     onEnd: () => {
       combat = null;
     },
-    // Straight d20 per combatant; the field stays editable for manual override.
-    rollInitiative: () => Math.floor(Math.random() * 20) + 1,
+    // d20 + DEX modifier per combatant; the field stays editable for override.
+    rollInitiative: (participant) => Math.floor(Math.random() * 20) + 1 + (participant.modifier ?? 0),
   });
 
   // The Initiative card only shows while the party is in an encounter (standing

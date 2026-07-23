@@ -4,6 +4,8 @@ export interface Participant {
   name: string;
   side: 'party' | 'foe';
   initiative: number;
+  /** DEX-derived bonus added to this combatant's initiative roll. */
+  modifier: number;
 }
 
 /** A running combat: the sorted order, the round number, and whose turn it is. */

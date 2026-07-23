@@ -81,7 +81,14 @@ test('toTemplate captures the blueprint, not the live state', () => {
     3,
   );
   const template = toTemplate('goblin-template', goblin);
-  assert.deepEqual(template, { id: 'goblin-template', name: 'Goblin', maxHP: 7, statBlock: { AC: 13 } });
+  assert.deepEqual(template, {
+    id: 'goblin-template',
+    name: 'Goblin',
+    maxHP: 7,
+    statBlock: { AC: 13 },
+    level: 1,
+    tier: 'mob',
+  });
   // The stat block is copied, not shared: editing the template never touches
   // the encounter it was saved from.
   template.statBlock.AC = 99;
@@ -89,10 +96,13 @@ test('toTemplate captures the blueprint, not the live state', () => {
 });
 
 test('fromTemplate spawns a fresh, full-health encounter at the given location', () => {
-  const template = { id: 't1', name: 'Goblin', maxHP: 7, statBlock: { AC: 13, Speed: 30 } };
+  // A pre-tier template (no level/tier) still spawns, reading as a level-1 mob.
+  const template = /** @type {any} */ ({ id: 't1', name: 'Goblin', maxHP: 7, statBlock: { AC: 13, Speed: 30 } });
   const spawned = fromTemplate(template, 'e9', { nodeId: 'region', tileId: '1,1' });
   assert.equal(spawned.id, 'e9');
   assert.equal(spawned.currentHP, 7);
+  assert.equal(spawned.level, 1);
+  assert.equal(spawned.tier, 'mob');
   assert.deepEqual(spawned.statBlock, { AC: 13, Speed: 30 });
   assert.deepEqual(spawned.location, { nodeId: 'region', tileId: '1,1' });
   assert.deepEqual(spawned.conditions, []);

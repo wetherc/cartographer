@@ -11,7 +11,7 @@ export const XP_PER_LEVEL = 100;
 export const ABILITY_SCORES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
 
 /** @returns {Record<string, number>} every ability score at the neutral 10 */
-function defaultStats() {
+export function defaultStats() {
   return Object.fromEntries(ABILITY_SCORES.map((key) => [key, 10]));
 }
 

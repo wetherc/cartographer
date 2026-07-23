@@ -1,3 +1,5 @@
+import { defaultStats } from './Character.js';
+
 /** @typedef {import('../types/npc.js').NPC} NPC */
 /** @typedef {import('../types/npc.js').Disposition} Disposition */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
@@ -10,7 +12,7 @@ export const DISPOSITIONS = /** @type {Disposition[]} */ (['friendly', 'neutral'
  * named, placed, dispositioned campaign figure, not a fight.
  * @param {string} id
  * @param {string} name
- * @param {{ role?: string, disposition?: Disposition, notes?: string, location?: EncounterLocation | null }} [options]
+ * @param {{ role?: string, disposition?: Disposition, notes?: string, stats?: Record<string, number>, location?: EncounterLocation | null }} [options]
  * @returns {NPC}
  */
 export function createNPC(id, name, options = {}) {
@@ -20,6 +22,7 @@ export function createNPC(id, name, options = {}) {
     role: options.role ?? '',
     disposition: options.disposition ?? 'neutral',
     notes: options.notes ?? '',
+    stats: { ...defaultStats(), ...options.stats },
     location: options.location ?? null,
   };
 }
@@ -35,6 +38,7 @@ export function withDefaults(npc) {
     role: npc.role ?? '',
     disposition: npc.disposition ?? 'neutral',
     notes: npc.notes ?? '',
+    stats: { ...defaultStats(), ...npc.stats },
     location: npc.location ?? null,
   };
 }

@@ -4,6 +4,7 @@ import { mountTravelogPanel } from '../ui/TravelogPanel.js';
 import { appendEntry, createEntry } from '../log/Travelogue.js';
 import { mountNPCPanel } from '../ui/NPCPanel.js';
 import { createNPC, npcsAt, formatLocation, DISPOSITIONS } from '../entities/NPC.js';
+import { ABILITY_SCORES } from '../entities/Character.js';
 import { mountQuestPanel } from '../ui/QuestPanel.js';
 import { createQuest, toggleQuestStatus } from '../quest/Quests.js';
 import { mountHandoutPanel } from '../ui/HandoutPanel.js';
@@ -55,6 +56,15 @@ export function wireStory(app) {
 
   const dispositionOptions = DISPOSITIONS.map((d) => ({ value: d, label: d[0].toUpperCase() + d.slice(1) }));
 
+  // One number field per ability score, so an NPC's modifiers (initiative,
+  // future checks) derive from real stats rather than a flat default.
+  /** @type {(stats: Record<string, number>) => import('../ui/Modal.js').ModalField[]} */
+  const statFields = (stats) =>
+    ABILITY_SCORES.map((key) => ({ name: `stat-${key}`, label: key, type: 'number', value: stats[key] ?? 10, min: 1 }));
+  /** @type {(values: Record<string, string>) => Record<string, number>} */
+  const readStats = (values) =>
+    Object.fromEntries(ABILITY_SCORES.map((key) => [key, Math.max(1, Number(values[`stat-${key}`]) || 10)]));
+
   app.views.npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
     getNPCs: () => npcsAt(state.npcs, app.partyTracker.getPosition()),
     getLocationLabel: (npc) => formatLocation(npc.location, (id) => app.grid.getNode(id)?.name),
@@ -69,6 +79,7 @@ export function wireStory(app) {
         { name: 'role', label: 'Role / faction', value: '' },
         { name: 'disposition', label: 'Disposition', type: 'select', value: 'neutral', options: dispositionOptions },
         { name: 'notes', label: 'Notes', value: '' },
+        ...statFields({}),
         // Defaults to where the party stands, but any map/tile can be chosen.
         ...locationFields(app, { ...app.partyTracker.getPosition() }),
       ]);
@@ -78,6 +89,7 @@ export function wireStory(app) {
         role: values.role.trim(),
         disposition: /** @type {import('../types/npc.js').Disposition} */ (values.disposition),
         notes: values.notes.trim(),
+        stats: readStats(values),
         location: readLocation(app, values),
       });
       state.npcs = [...state.npcs, created];
@@ -93,6 +105,7 @@ export function wireStory(app) {
           { name: 'role', label: 'Role / faction', value: npc.role },
           { name: 'disposition', label: 'Disposition', type: 'select', value: npc.disposition, options: dispositionOptions },
           { name: 'notes', label: 'Notes', value: npc.notes },
+          ...statFields(npc.stats ?? {}),
           ...locationFields(app, npc.location),
         ],
         { submitLabel: 'Save' },
@@ -105,6 +118,7 @@ export function wireStory(app) {
         role: values.role.trim(),
         disposition: /** @type {import('../types/npc.js').Disposition} */ (values.disposition),
         notes: values.notes.trim(),
+        stats: readStats(values),
         location: readLocation(app, values),
       });
       app.actions.syncNPCMarkers();

@@ -7,6 +7,7 @@ import {
   restoreResource,
   XP_PER_LEVEL,
 } from '../entities/Character.js';
+import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { wireDisclosure } from './Disclosure.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { icon } from './icons.js';
@@ -178,8 +179,14 @@ export function mountCharacterSheet(container, initial, onChange = () => {}) {
         commit(setStat(character, key, Number(input.value)));
       });
 
+      // The derived modifier (DEX 20 = +5), which initiative and checks use.
+      const modifier = document.createElement('span');
+      modifier.className = 'character-sheet__stat-mod';
+      modifier.textContent = formatModifier(abilityModifier(value));
+      modifier.title = `${key} modifier`;
+
       label.appendChild(input);
-      row.appendChild(label);
+      row.append(label, modifier);
       statsList.appendChild(row);
     }
     body.appendChild(statsList);
