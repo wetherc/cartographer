@@ -16,14 +16,14 @@ import { mustGetElement } from './ui/dom.js';
 import { mountBreadcrumb } from './ui/Breadcrumb.js';
 import { mountModeSwitch } from './ui/ModeSwitch.js';
 import { mountRoleSwitch } from './ui/RoleSwitch.js';
-import { isGM } from './view/ViewRole.js';
+import { isGM, hpBand } from './view/ViewRole.js';
 import { mountWorldTree } from './ui/WorldTree.js';
 import { mountTileInspector } from './ui/TileInspector.js';
 import { mountPalettePanel } from './ui/PalettePanel.js';
 import { mountMapControls } from './ui/MapControls.js';
 import { mountMapDescription } from './ui/MapDescription.js';
 import { mountTileTooltip } from './ui/TileTooltip.js';
-import { promptModal, confirmModal } from './ui/Modal.js';
+import { promptModal, confirmModal, alertModal } from './ui/Modal.js';
 import { PartyTracker } from './party/PartyTracker.js';
 import { createCharacter, withHP, withMana, shortRest, longRest } from './entities/Character.js';
 import { advanceWatches, advanceToDawn, formatClock } from './time/GameClock.js';
@@ -33,7 +33,7 @@ import { mountInitiativePanel } from './ui/InitiativePanel.js';
 import { tickConditions } from './entities/Conditions.js';
 import { createNPC, npcsAt, DISPOSITIONS } from './entities/NPC.js';
 import { mountNPCPanel } from './ui/NPCPanel.js';
-import { createEncounter, encountersAt, isDefeated } from './entities/Encounter.js';
+import { createEncounter, encountersAt, encountersOnTile, isDefeated } from './entities/Encounter.js';
 import { slugId, replaceById, removeById } from './entities/Roster.js';
 import { mountCharacterRoster } from './ui/CharacterRoster.js';
 import { mountCharacterSheet } from './ui/CharacterSheet.js';
@@ -88,6 +88,30 @@ function logEvent(kind, message) {
   const now = Date.now();
   travelog = appendEntry(travelog, createEntry(`log-${now}-${logSeq++}`, kind, message, now));
   travelogPanel.update();
+}
+
+/**
+ * If the party's current tile holds a live encounter, announce it in a modal
+ * over the map. The encounter isn't removed — a party that flees or ignores it
+ * leaves it in the sidebar for the current node — so this is purely a "you walk
+ * into something" alert. The readout respects the viewer role: the GM sees
+ * exact HP, players see the coarse status band. Called after a real move, not
+ * on initial render, so the app doesn't greet a fresh load with a popup.
+ */
+function maybeTriggerEncounter() {
+  const position = partyTracker.getPosition();
+  const here = encountersOnTile(encounters, position);
+  if (here.length === 0) return;
+  const node = grid.getNode(position.nodeId);
+  const region = node ? node.name : position.nodeId;
+  const gm = isGM(currentRole);
+  const list = here
+    .map((e) => (gm ? `${e.name} (${e.currentHP}/${e.maxHP})` : `${e.name} — ${hpBand(e.currentHP, e.maxHP)}`))
+    .join(', ');
+  alertModal(`${list} — here in ${region}, tile (${position.tileId}).`, {
+    title: here.length > 1 ? 'Encounters!' : 'Encounter!',
+    label: 'Continue',
+  });
 }
 
 /** @type {'play' | 'build'} */
@@ -218,6 +242,7 @@ async function teleportToNode(nodeId) {
   initiativePanel.update();
   npcPanel.update();
   handoutPanel.update();
+  maybeTriggerEncounter();
 }
 
 /**
@@ -371,6 +396,7 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
     initiativePanel.update();
     npcPanel.update();
     handoutPanel.update();
+    maybeTriggerEncounter();
   },
 });
 
@@ -884,6 +910,14 @@ mountRoleSwitch(mustGetElement('role-switch-container'), currentRole, (role) => 
   currentRole = role;
   sessionStorage.setItem('campaign-builder:role', role);
   applyRole();
+});
+
+// Collapse the Play sidebar to give the map the full width during a session.
+const sidebarToggle = /** @type {HTMLButtonElement} */ (mustGetElement('sidebar-toggle'));
+sidebarToggle.addEventListener('click', () => {
+  const collapsed = document.body.classList.toggle('sidebar-collapsed');
+  sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+  sidebarToggle.textContent = collapsed ? 'Show panels' : 'Hide panels';
 });
 
 /**
