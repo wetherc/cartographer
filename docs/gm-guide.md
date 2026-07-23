@@ -197,9 +197,12 @@ see these controls.
 
 ### Encounters
 
-Build an encounter roster in the **Encounters** panel (name, max HP, stat block),
-and bind each to a tile. In Play mode the panel shows only the encounters at the
-party's current location — no active encounter, no clutter.
+Build an encounter roster in the **Encounters** panel (name, max HP, level, and a
+**tier** — a rank-and-file *mob* or an above-normal *legend*), and bind each to a
+tile. The tier and level stamp a reasonable default set of the six ability scores
+into the stat block (legends always out-stat a level-matched mob); every score
+stays editable afterwards. In Play mode the panel shows only the encounters at
+the party's current location — no active encounter, no clutter.
 
 When the party **steps onto a tile with an encounter**, it pops up as a modal over
 the map, naming the encounter, its region, and its coordinates. Fleeing or
@@ -224,8 +227,10 @@ The **Initiative** panel appears only while the party is in an encounter —
 standing on a tile with at least one live encounter bound to it — and lists
 exactly who is involved: the party, that tile's encounters, and any NPCs placed
 on the same tile (hostile NPCs line up as foes, friendly and neutral ones with
-the party). Enter each combatant's initiative — or click **Roll initiative** to
-roll a d20 for everyone at once (you can still adjust any value) — then start
+the party). Each combatant's **DEX modifier** (`floor((DEX - 10) / 2)`, so a
+DEX of 20 is +5) is shown beside their name and folded in everywhere: the
+default value is 10 + modifier, and **Roll initiative** rolls d20 + modifier for
+everyone at once (you can still adjust any value). Then start
 combat and step through with **Next turn**; the current turn is highlighted and
 a round counter advances. On each new round, timed conditions tick down and
 expire on their own. Walking off the tile (or defeating the last encounter on
@@ -239,7 +244,9 @@ each character has its own inventory.
 
 The character card is collapsed by default to the name and race with a
 full-width bar line each for HP and mana; expand it for stats, XP, and
-resource pools (where the HP and mana steppers live). HP and mana are modeled
+resource pools (where the HP and mana steppers live). Each ability score shows
+its derived modifier beside it (DEX 20 is +5) — the same modifier initiative
+uses. NPCs carry the six scores too, editable in their dialogs. HP and mana are modeled
 as resource pools, set at character creation with sensible defaults. Gaining
 enough XP levels the character up automatically (an N×100 curve), and HP and
 mana grow per level. Inventory stacks of two or more get a **consume one**

@@ -13,10 +13,11 @@
  * @param {string} name
  * @param {'party' | 'foe'} side
  * @param {number} [initiative]
+ * @param {number} [modifier] DEX-derived bonus added to this combatant's initiative roll
  * @returns {Participant}
  */
-export function createParticipant(id, name, side, initiative = 10) {
-  return { id, name, side, initiative };
+export function createParticipant(id, name, side, initiative = 10, modifier = 0) {
+  return { id, name, side, initiative, modifier };
 }
 
 /**

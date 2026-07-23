@@ -2,9 +2,17 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createNPC, npcsAt, npcsOnTile, withDefaults, formatLocation } from '../src/entities/NPC.js';
 
-test('createNPC defaults role/notes empty, disposition neutral, unplaced', () => {
+test('createNPC defaults role/notes empty, disposition neutral, unplaced, neutral stats', () => {
   const npc = createNPC('n1', 'Bram');
-  assert.deepEqual(npc, { id: 'n1', name: 'Bram', role: '', disposition: 'neutral', notes: '', location: null });
+  assert.deepEqual(npc, {
+    id: 'n1',
+    name: 'Bram',
+    role: '',
+    disposition: 'neutral',
+    notes: '',
+    stats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 },
+    location: null,
+  });
 });
 
 test('npcsAt returns NPCs at the party node plus unplaced ones', () => {
@@ -18,10 +26,12 @@ test('npcsAt returns NPCs at the party node plus unplaced ones', () => {
 });
 
 test('withDefaults backfills a sparse NPC', () => {
-  const restored = withDefaults(/** @type {any} */ ({ id: 'x', name: 'Old' }));
+  const restored = withDefaults(/** @type {any} */ ({ id: 'x', name: 'Old', stats: { DEX: 16 } }));
   assert.equal(restored.disposition, 'neutral');
   assert.equal(restored.role, '');
   assert.equal(restored.location, null);
+  assert.equal(restored.stats.DEX, 16); // kept
+  assert.equal(restored.stats.STR, 10); // backfilled
 });
 
 test('formatLocation names the node with coordinates, falling back to the raw id', () => {

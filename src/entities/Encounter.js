@@ -1,6 +1,7 @@
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
 /** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
+/** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
 
 /**
  * Create an encounter at full health, optionally staged at a map location.
@@ -9,20 +10,38 @@
  * @param {number} maxHP
  * @param {Record<string, number>} [statBlock]
  * @param {EncounterLocation | null} [location]
+ * @param {{ level?: number, tier?: EnemyTier }} [options]
  * @returns {Encounter}
  */
-export function createEncounter(id, name, maxHP, statBlock = {}, location = null) {
-  return { id, name, maxHP, currentHP: maxHP, statBlock, location, conditions: [] };
+export function createEncounter(id, name, maxHP, statBlock = {}, location = null, options = {}) {
+  return {
+    id,
+    name,
+    maxHP,
+    currentHP: maxHP,
+    statBlock,
+    level: options.level ?? 1,
+    tier: options.tier ?? 'mob',
+    location,
+    conditions: [],
+  };
 }
 
 /**
  * Fill in fields a loaded encounter may predate: encounters saved before
- * location binding existed stay unbound (always shown).
+ * location binding existed stay unbound (always shown); ones saved before
+ * levels and tiers read as level-1 mobs.
  * @param {Encounter} encounter
  * @returns {Encounter}
  */
 export function withDefaults(encounter) {
-  return { ...encounter, location: encounter.location ?? null, conditions: encounter.conditions ?? [] };
+  return {
+    ...encounter,
+    location: encounter.location ?? null,
+    conditions: encounter.conditions ?? [],
+    level: encounter.level ?? 1,
+    tier: encounter.tier ?? 'mob',
+  };
 }
 
 /**
@@ -67,7 +86,14 @@ export function encountersOnTile(encounters, position) {
  * @returns {EncounterTemplate}
  */
 export function toTemplate(id, encounter) {
-  return { id, name: encounter.name, maxHP: encounter.maxHP, statBlock: { ...encounter.statBlock } };
+  return {
+    id,
+    name: encounter.name,
+    maxHP: encounter.maxHP,
+    statBlock: { ...encounter.statBlock },
+    level: encounter.level ?? 1,
+    tier: encounter.tier ?? 'mob',
+  };
 }
 
 /**
@@ -78,7 +104,10 @@ export function toTemplate(id, encounter) {
  * @returns {Encounter}
  */
 export function fromTemplate(template, id, location = null) {
-  return createEncounter(id, template.name, template.maxHP, { ...template.statBlock }, location);
+  return createEncounter(id, template.name, template.maxHP, { ...template.statBlock }, location, {
+    level: template.level ?? 1,
+    tier: template.tier ?? 'mob',
+  });
 }
 
 /**

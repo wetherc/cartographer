@@ -8,6 +8,7 @@ import {
 import { loadFromLocalStorage, toTileGrid } from '../storage/SaveManager.js';
 import { createClock } from '../time/GameClock.js';
 import { withDefaults as withNPCDefaults } from '../entities/NPC.js';
+import { defaultEnemyStats } from '../entities/Modifiers.js';
 import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
@@ -102,7 +103,9 @@ export function buildExampleCampaign(palette) {
     grid,
     party: { nodeId: 'world', tileId: '3,3' },
     characters: [hero],
-    encounters: [createEncounter('goblin', 'Goblin', 7, {}, { nodeId: 'world', tileId: '5,2' })],
+    encounters: [
+      createEncounter('goblin', 'Goblin', 7, defaultEnemyStats(1, 'mob'), { nodeId: 'world', tileId: '5,2' }),
+    ],
     travelog: [],
     quests: [
       {
@@ -120,6 +123,7 @@ export function buildExampleCampaign(palette) {
         role: 'Innkeeper, the Waystation',
         disposition: 'friendly',
         notes: 'Knows the roads north and gossips freely for a warm meal.',
+        stats: { STR: 10, DEX: 10, CON: 10, INT: 12, WIS: 14, CHA: 13 },
         location: { nodeId: 'world', tileId: '3,2' },
       },
     ],
@@ -133,7 +137,9 @@ export function buildExampleCampaign(palette) {
         image: null,
       },
     ],
-    bestiary: [{ id: 'goblin', name: 'Goblin', maxHP: 7, statBlock: { AC: 13, Speed: 30 } }],
+    bestiary: [
+      { id: 'goblin', name: 'Goblin', maxHP: 7, statBlock: { AC: 13, Speed: 30 }, level: 1, tier: 'mob' },
+    ],
   };
 }
 

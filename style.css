@@ -1139,7 +1139,14 @@ body.sidebar-collapsed .app-sidebar {
   gap: var(--space-2);
 }
 
+.character-sheet__stat-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 .character-sheet__stat-label {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1154,6 +1161,15 @@ body.sidebar-collapsed .app-sidebar {
   width: 3.5rem;
   text-align: center;
   font-family: var(--font-mono);
+}
+
+/* The derived ability modifier shown beside each score. */
+.character-sheet__stat-mod {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  min-width: 2ch;
+  text-align: right;
 }
 
 /* ==========================================================================
@@ -1371,6 +1387,13 @@ body.sidebar-collapsed .app-sidebar {
 .initiative-panel__init {
   width: 3rem;
   text-align: center;
+}
+
+/* Each combatant's DEX modifier, shown between name and initiative value. */
+.initiative-panel__modifier {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text-muted);
 }
 
 .initiative-panel__init-readout {

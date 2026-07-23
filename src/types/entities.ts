@@ -9,12 +9,17 @@ export interface Condition {
   rounds: number | null;
 }
 
+/** Enemy authoring tier: mobs are rank-and-file, legends run above-normal stats for their level. */
+export type EnemyTier = 'mob' | 'legend';
+
 export interface Encounter {
   id: string;
   name: string;
   maxHP: number;
   currentHP: number;
   statBlock: Record<string, number>;
+  level: number;
+  tier: EnemyTier;
   /** Map location the encounter is staged at; null = not location-bound (always shown). */
   location: EncounterLocation | null;
   /** Active status conditions (empty on older saves). */
@@ -27,6 +32,8 @@ export interface EncounterTemplate {
   name: string;
   maxHP: number;
   statBlock: Record<string, number>;
+  level: number;
+  tier: EnemyTier;
 }
 
 export type ResourceType = 'item-count' | 'mana' | 'custom';

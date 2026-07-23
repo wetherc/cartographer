@@ -1,4 +1,5 @@
 import { currentParticipant } from '../combat/Initiative.js';
+import { formatModifier } from '../entities/Modifiers.js';
 import { icon } from './icons.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
@@ -12,16 +13,16 @@ import { icon } from './icons.js';
  * via `getState`, the candidate roster via `getRoster`, and reports actions back.
  * @param {HTMLElement} container
  * With `rollInitiative`, the setup list gains a "Roll initiative" button that
- * fills every combatant's value from the callback (a d20 in the app, an
- * injected roll in tests); values stay editable, so a rolled result can still
- * be overridden by hand before Start.
+ * fills every combatant's value from the callback (d20 + DEX modifier in the
+ * app, an injected roll in tests); values stay editable, so a rolled result
+ * can still be overridden by hand before Start.
  * @param {{
  *   getState: () => CombatState | null,
  *   getRoster: () => Participant[],
  *   onStart: (participants: Participant[]) => void,
  *   onNext: () => void,
  *   onEnd: () => void,
- *   rollInitiative?: () => number,
+ *   rollInitiative?: (participant: Participant) => number,
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -50,6 +51,11 @@ export function mountInitiativePanel(container, callbacks) {
       name.className = 'initiative-panel__name';
       name.textContent = participant.name;
 
+      const modifier = document.createElement('span');
+      modifier.className = 'initiative-panel__modifier';
+      modifier.textContent = formatModifier(participant.modifier ?? 0);
+      modifier.title = 'DEX modifier, added to the initiative roll';
+
       const input = document.createElement('input');
       input.type = 'number';
       input.className = 'field initiative-panel__init';
@@ -57,7 +63,7 @@ export function mountInitiativePanel(container, callbacks) {
       input.setAttribute('aria-label', `Initiative for ${participant.name}`);
       inputs.set(participant.id, input);
 
-      row.append(name, input);
+      row.append(name, modifier, input);
       root.appendChild(row);
     }
 
@@ -71,7 +77,10 @@ export function mountInitiativePanel(container, callbacks) {
       rollAll.className = 'btn';
       rollAll.append(icon('dice'), document.createTextNode('Roll initiative'));
       rollAll.addEventListener('click', () => {
-        for (const input of inputs.values()) input.value = String(rollInitiative());
+        for (const participant of roster) {
+          const input = inputs.get(participant.id);
+          if (input) input.value = String(rollInitiative(participant));
+        }
       });
       actions.appendChild(rollAll);
     }
