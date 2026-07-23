@@ -96,8 +96,10 @@ export class MapRenderer {
   /**
    * Draw column (x) numbers above the top row and row (y) numbers left of the
    * first column, so a GM can read a tile's coordinate off the grid. Labels
-   * hang off the grid edge and pan with it. Skipped when tiles are too small to
-   * label without clutter.
+   * hang off the grid edge and pan with it, but once the edge scrolls out of
+   * the viewport (zoomed/panned in) they pin to the viewport edge at partial
+   * opacity, over a translucent backing, so coordinates stay readable over
+   * map art. Skipped when tiles are too small to label without clutter.
    * @param {MapView} view
    */
   _renderCoordinates(view) {
@@ -106,7 +108,6 @@ export class MapRenderer {
     if (size < 20) return; // too dense to be legible
     const { ctx } = this;
     ctx.save();
-    ctx.fillStyle = 'rgba(230, 215, 180, 0.8)';
     // Font is in buffer pixels, which are devicePixelRatio-times denser than CSS
     // pixels, so a small cap renders illegibly on a HiDPI canvas. Scale with the
     // tile and only cap generously.
@@ -115,17 +116,47 @@ export class MapRenderer {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     const pad = fontSize * 0.9;
+    const colPinned = view.offsetY - pad < pad;
+    const colY = colPinned ? pad : view.offsetY - pad;
+    const rowPinned = view.offsetX - pad < pad;
+    const rowX = rowPinned ? pad : view.offsetX - pad;
     for (let x = 0; x < view.node.width; x++) {
       const cx = view.offsetX + (x + 0.5) * size;
       if (cx < 0 || cx > view.canvasWidth) continue;
-      ctx.fillText(String(x), cx, view.offsetY - pad);
+      this._drawCoordLabel(String(x), cx, colY, fontSize, colPinned);
     }
     for (let y = 0; y < view.node.height; y++) {
       const cy = view.offsetY + (y + 0.5) * size;
       if (cy < 0 || cy > view.canvasHeight) continue;
-      ctx.fillText(String(y), view.offsetX - pad, cy);
+      this._drawCoordLabel(String(y), rowX, cy, fontSize, rowPinned);
     }
     ctx.restore();
+  }
+
+  /**
+   * Draw one coordinate number. Pinned labels sit over map art, so they get a
+   * translucent dark pill behind the digits and render at reduced opacity;
+   * unpinned labels float on the empty canvas around the grid and need neither.
+   * @param {string} text
+   * @param {number} x
+   * @param {number} y
+   * @param {number} fontSize
+   * @param {boolean} pinned
+   */
+  _drawCoordLabel(text, x, y, fontSize, pinned) {
+    const { ctx } = this;
+    if (pinned) {
+      ctx.globalAlpha = 0.65;
+      const w = ctx.measureText(text).width + fontSize * 0.5;
+      const h = fontSize * 1.2;
+      ctx.fillStyle = 'rgba(20, 16, 10, 0.7)';
+      ctx.beginPath();
+      ctx.roundRect(x - w / 2, y - h / 2, w, h, h / 4);
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(230, 215, 180, 0.8)';
+    ctx.fillText(text, x, y);
+    if (pinned) ctx.globalAlpha = 1;
   }
 
   /**
