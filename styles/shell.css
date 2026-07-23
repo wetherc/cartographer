@@ -1,0 +1,161 @@
+/* ==========================================================================
+   App shell
+   ========================================================================== */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+/* The GM/Player switch stays pinned to the far right, so it doesn't shift when
+   the role change hides or shows the other header controls. */
+#role-switch-container {
+  margin-left: auto;
+}
+
+.app-header h1 {
+  font-size: var(--text-display);
+  margin: 0;
+}
+
+.app-header__actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ==========================================================================
+   Modal (native <dialog>)
+   ========================================================================== */
+
+.modal {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--text);
+  padding: var(--space-5);
+  min-width: 18rem;
+  max-width: 90vw;
+  box-shadow: var(--shadow-3);
+}
+
+.modal::backdrop {
+  background: rgb(var(--shadow-color) / 0.45);
+}
+
+.modal__title {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-heading);
+}
+
+.modal__message {
+  margin: 0 0 var(--space-4);
+  white-space: pre-line; /* multi-line alerts (e.g. the shortcut list) */
+}
+
+.modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* ==========================================================================
+   Mode switch (Play / Build)
+   ========================================================================== */
+
+.mode-switch {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.mode-switch__btn {
+  border: none;
+  border-radius: 0;
+  background: var(--surface);
+}
+
+.mode-switch__btn + .mode-switch__btn {
+  border-left: 1px solid var(--border-strong);
+}
+
+.mode-switch__btn--active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.mode-switch__btn--active:hover {
+  background: var(--accent-hover);
+}
+
+/* The role switch (GM/Player) shares the segmented-toggle look of the mode
+   switch. */
+.role-switch {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.role-switch__btn {
+  border: none;
+  border-radius: 0;
+  background: var(--surface);
+}
+
+.role-switch__btn + .role-switch__btn {
+  border-left: 1px solid var(--border-strong);
+}
+
+.role-switch__btn--active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.role-switch__btn--active:hover {
+  background: var(--accent-hover);
+}
+
+/* Player role is a read-only view: hide the authoring/campaign-lifecycle
+   header controls and the Play/Build switch, leaving just the map and the
+   player-facing panels. */
+body.role-player #mode-switch-container,
+body.role-player .app-header__actions {
+  display: none;
+}
+
+/* Advancing world time (including rests, which advance it as a side effect) is
+   the GM's call: players keep the clock readout but lose the buttons. */
+body.role-player .time-panel__actions {
+  display: none;
+}
+
+/* The lock-as-Player affordance only makes sense from an unlocked Player tab;
+   a locked tab hides the whole role cluster so nothing can flip it back. */
+body.role-gm #player-lock-btn {
+  display: none;
+}
+
+body.role-locked #role-switch-container {
+  display: none;
+}
+

@@ -1,0 +1,211 @@
+/* ==========================================================================
+   World tree (Build-mode left rail)
+   ========================================================================== */
+
+.app-buildrail {
+  width: 18rem;
+  flex-shrink: 0;
+}
+
+/* A class, not the #build-tools id, so the mode-based hide rule below (a
+   class-specificity selector) can still win over it. */
+.app-buildrail--stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.world-tree__children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.world-tree__root > .world-tree__item > .world-tree__row {
+  padding-left: 0;
+}
+
+.world-tree__children .world-tree__children {
+  padding-left: var(--space-4);
+  border-left: 1px solid var(--border);
+  margin-left: var(--space-2);
+}
+
+.world-tree__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+}
+
+.world-tree__select {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  font-size: var(--text-label);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.world-tree__select:hover {
+  background: var(--surface-sunken);
+}
+
+.world-tree__select--current {
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+  font-weight: 700;
+}
+
+/* Collapsible trees: a fixed-width chevron slot on every row keeps labels
+   aligned; leaf rows render an empty spacer in the same slot. */
+.world-tree__toggle {
+  flex: 0 0 auto;
+  width: 1.1rem;
+  height: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.world-tree__toggle svg {
+  transition: transform 120ms ease;
+}
+
+.world-tree__toggle--open svg {
+  transform: rotate(90deg);
+}
+
+.world-tree__toggle--leaf {
+  cursor: default;
+}
+
+.world-tree__action {
+  opacity: 0;
+}
+
+.world-tree__row:hover .world-tree__action,
+.world-tree__action:focus-visible {
+  opacity: 1;
+}
+
+/* Layout reflow by mode: Build shows the world tree, Play shows the sidebar. */
+body.mode-play .app-buildrail {
+  display: none;
+}
+
+body.mode-build .app-sidebar {
+  display: none;
+}
+
+.generate__hint {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
+   Tile palette (Build-mode right rail)
+   ========================================================================== */
+
+.palette__tools {
+  /* A 2-column grid so the four tool buttons are all the same width,
+     regardless of label length. */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.palette__tools .palette__item {
+  /* Center the icon + label; the grid track sets the width. */
+  justify-content: center;
+  min-width: 0;
+}
+
+.palette__item--active {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.palette__grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-1);
+  max-height: 14rem;
+  overflow-y: auto;
+}
+
+.palette__swatch {
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  cursor: pointer;
+  aspect-ratio: 1;
+  overflow: hidden;
+}
+
+.palette__swatch img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Tile inspector (Build-mode right rail)
+   ========================================================================== */
+
+.tile-inspector__empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
+.tile-inspector__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.tile-inspector__coord {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.tile-inspector__field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.tile-inspector__field--inline {
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text);
+}
+
+.tile-inspector__notes {
+  resize: vertical;
+  font-family: inherit;
+}
+
+.tile-inspector__new-region {
+  align-self: flex-start;
+}
+

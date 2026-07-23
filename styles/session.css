@@ -1,0 +1,202 @@
+/* ==========================================================================
+   Encounters
+   ========================================================================== */
+
+.encounter-panel__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+}
+
+.encounter-panel__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.encounter-panel__row--defeated {
+  opacity: 0.5;
+}
+
+.encounter-panel__row--defeated .encounter-panel__label {
+  text-decoration: line-through;
+}
+
+.encounter-panel__label {
+  flex: 1;
+  font-size: var(--text-label);
+}
+
+.encounter-panel__amount {
+  width: 3rem;
+  text-align: center;
+}
+
+.encounter-panel__add {
+  font-size: var(--text-label);
+}
+
+/* ==========================================================================
+   In-game time
+   ========================================================================== */
+
+.time-panel__readout {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-body);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.time-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.time-panel__btn {
+  font-size: var(--text-label);
+}
+
+/* ==========================================================================
+   NPCs
+   ========================================================================== */
+
+.npc-panel__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+}
+
+.npc-panel__body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.npc-panel__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.npc-panel__name {
+  font-weight: 600;
+}
+
+.npc-panel__badge {
+  font-size: var(--text-label);
+  padding: 0.05rem var(--space-1);
+  border-radius: var(--radius-sm);
+  text-transform: capitalize;
+}
+
+.npc-panel__badge--friendly {
+  background: color-mix(in srgb, var(--success) 22%, transparent);
+  color: var(--success);
+}
+
+.npc-panel__badge--neutral {
+  background: var(--surface-sunken);
+  opacity: 0.85;
+}
+
+.npc-panel__badge--hostile {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  color: var(--danger);
+}
+
+.npc-panel__role {
+  font-size: var(--text-label);
+  opacity: 0.8;
+}
+
+.npc-panel__notes {
+  font-size: var(--text-label);
+  opacity: 0.7;
+}
+
+.npc-panel__location {
+  font-size: var(--text-label);
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.npc-panel__controls {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.npc-panel__add {
+  margin-top: var(--space-2);
+  font-size: var(--text-label);
+}
+
+/* ==========================================================================
+   Initiative
+   ========================================================================== */
+
+.initiative-panel__header {
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+}
+
+.initiative-panel__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-sm);
+}
+
+.initiative-panel__row--foe .initiative-panel__name {
+  color: var(--danger);
+}
+
+.initiative-panel__row--active {
+  background: var(--surface-sunken);
+  border-left-color: var(--accent);
+  font-weight: 600;
+}
+
+.initiative-panel__name {
+  flex: 1;
+}
+
+.initiative-panel__init {
+  width: 3rem;
+  text-align: center;
+}
+
+/* Each combatant's DEX modifier, shown between name and initiative value. */
+.initiative-panel__modifier {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.initiative-panel__init-readout {
+  font-variant-numeric: tabular-nums;
+  opacity: 0.7;
+}
+
+/* Action pairs (Roll initiative / Start combat, Next turn / End combat) sit in
+   equal-width grid columns so the two buttons always match in size; when the
+   panel is too narrow for both labels on one line, they stack instead of
+   wrapping their text to different heights. */
+.initiative-panel__actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.initiative-panel__actions .btn {
+  white-space: nowrap;
+}
+

@@ -1,0 +1,213 @@
+/* ==========================================================================
+   Status conditions
+   ========================================================================== */
+
+.conditions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.conditions-bar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1rem var(--space-1) 0.1rem var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  font-size: var(--text-label);
+  line-height: 1.4;
+}
+
+.conditions-bar__remove {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.15rem;
+  opacity: 0.65;
+}
+
+.conditions-bar__remove:hover {
+  opacity: 1;
+  color: var(--danger);
+}
+
+.conditions-bar__add {
+  padding: 0.1rem;
+}
+
+/* Empty-bar variant: a labeled chip-sized button, since a bare "+" with no
+   chips beside it doesn't say what it adds. */
+.conditions-bar__add--labeled {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1rem var(--space-2) 0.1rem var(--space-1);
+  font-size: var(--text-label);
+}
+
+/* Stat-block chips on encounter rows share the conditions bar's chip look. */
+/* Three fixed columns so an enemy's six ability scores read as two aligned
+   rows of equal-width chips; the add button rides in the next free cell. */
+.statblock-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.statblock-bar__chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  padding: 0.1rem var(--space-1) 0.1rem var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  font-size: var(--text-label);
+  line-height: 1.4;
+}
+
+.statblock-bar__remove {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.15rem;
+  opacity: 0.65;
+}
+
+.statblock-bar__remove:hover {
+  opacity: 1;
+  color: var(--danger);
+}
+
+.statblock-bar__add {
+  padding: 0.1rem;
+  justify-self: start;
+}
+
+.statblock-bar__add--labeled {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1rem var(--space-2) 0.1rem var(--space-1);
+  font-size: var(--text-label);
+}
+
+/* Build-rail map tools (stroke undo, PNG export). */
+.map-tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* The Generate dialog's seed row and live layout preview. */
+.modal--generate .modal__form {
+  min-width: min(34rem, 90vw);
+}
+
+.generate-dialog__seed {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.generate-dialog__seed .field {
+  flex: 1;
+}
+
+.generate-dialog__preview {
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  background: var(--surface-sunken);
+}
+
+.character-sheet__conditions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.character-sheet__section-label {
+  font-size: var(--text-label);
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+/* ==========================================================================
+   Party roster
+   ========================================================================== */
+
+.character-roster__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+}
+
+.character-roster__select {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-2);
+  font: inherit;
+  font-size: var(--text-label);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.character-roster__select:hover {
+  background: var(--surface-sunken);
+}
+
+.character-roster__select--current {
+  background: var(--surface-sunken);
+  border-color: var(--border-strong);
+  font-weight: 700;
+}
+
+.character-roster__delete {
+  opacity: 0;
+}
+
+.character-roster__row:hover .character-roster__delete,
+.character-roster__delete:focus-visible {
+  opacity: 1;
+}
+
+.character-roster__add,
+.character-roster__award {
+  font-size: var(--text-label);
+}
+
+/* Shared row of panel-footer action buttons ("New X", "Award XP", ...). */
+.panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+/* Shared "nothing here yet" copy for panels with no content. */
+.empty-state {
+  margin: 0;
+  padding: var(--space-2) 0;
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
