@@ -1378,6 +1378,16 @@ body.sidebar-collapsed .app-sidebar {
   padding: 0.1rem;
 }
 
+/* Empty-bar variant: a labeled chip-sized button, since a bare "+" with no
+   chips beside it doesn't say what it adds. */
+.conditions-bar__add--labeled {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1rem var(--space-2) 0.1rem var(--space-1);
+  font-size: var(--text-label);
+}
+
 /* Stat-block chips on encounter rows share the conditions bar's chip look. */
 .statblock-bar {
   display: flex;
@@ -1416,6 +1426,14 @@ body.sidebar-collapsed .app-sidebar {
 
 .statblock-bar__add {
   padding: 0.1rem;
+}
+
+.statblock-bar__add--labeled {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1rem var(--space-2) 0.1rem var(--space-1);
+  font-size: var(--text-label);
 }
 
 /* Build-rail map tools (stroke undo, PNG export). */
