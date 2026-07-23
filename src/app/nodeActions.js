@@ -17,7 +17,7 @@ import { promptModal, confirmModal } from '../ui/Modal.js';
  * @property {import('../map/MapNavigator.js').MapNavigator} navigator
  * @property {import('../party/PartyTracker.js').PartyTracker} partyTracker
  * @property {{ setNode: (node: MapNode) => void, refreshNode: (node: MapNode) => void }} mapCanvas
- * @property {{ update: (crumb: unknown) => void }} breadcrumb
+ * @property {{ update: (crumb: MapNode[]) => void }} breadcrumb
  * @property {{ update: () => void }} worldTree
  * @property {{ update: () => void }} regionTree
  * @property {(nodeId: string) => void} goToNode
@@ -97,7 +97,7 @@ export function createNodeActions(ctx) {
     const width = Math.max(1, Number(values.width) || 1);
     const height = Math.max(1, Number(values.height) || 1);
     const kind = /** @type {NodeKind} */ (
-      NODE_KINDS.includes(values.kind) ? values.kind : 'region'
+      /** @type {readonly string[]} */ (NODE_KINDS).includes(values.kind) ? values.kind : 'region'
     );
     ctx.grid.addNode(
       createMapNode(id, values.name || 'Untitled', parentId, width, height, {
@@ -176,7 +176,7 @@ export function createNodeActions(ctx) {
       if (!ok) return;
     }
     const kind = /** @type {NodeKind} */ (
-      NODE_KINDS.includes(values.kind) ? values.kind : node.kind
+      /** @type {readonly string[]} */ (NODE_KINDS).includes(values.kind) ? values.kind : node.kind
     );
     ctx.grid.updateNode({
       ...resizeNode(node, width, height),

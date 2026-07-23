@@ -18,7 +18,7 @@ import { allowsPaletteType } from '../map/NodeKinds.js';
  * @param {HTMLElement} container
  * @param {TilePalette} palette
  * @param {(brush: Brush) => void} onBrushChange
- * @param {ReturnType<import('./TileTooltip.js').mountTileTooltip>} [tooltip]
+ * @param {ReturnType<typeof import('./TileTooltip.js').mountTileTooltip>} [tooltip]
  * @returns {{ getBrush: () => Brush, setKind: (kind: string) => void }}
  */
 export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
@@ -137,7 +137,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
     for (const { el, type } of swatchEntries) {
       el.hidden = !allowsPaletteType(kind, type);
     }
-    if (brush && brush !== 'erase' && brush !== 'region' && !allowsPaletteType(kind, brush.type)) {
+    if (brush && brush !== 'erase' && brush !== 'erase-path' && brush !== 'region' && !allowsPaletteType(kind, brush.type)) {
       if (inspectBtnRef.el) select(null, inspectBtnRef.el);
     }
   }

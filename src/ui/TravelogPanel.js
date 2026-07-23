@@ -2,7 +2,8 @@ import { icon } from './icons.js';
 
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
 
-/** Format an entry's epoch-ms timestamp as a local HH:MM readout. */
+/** Format an entry's epoch-ms timestamp as a local HH:MM readout.
+ * @param {number} at */
 function formatTime(at) {
   return new Date(at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }

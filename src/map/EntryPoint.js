@@ -90,11 +90,13 @@ export function resolveEntryTile(node, preferredId) {
   const pool = candidates.length ? candidates : node.tiles;
   if (!pool.length) return preferredId;
   const target = parseCoords(preferredId);
+  if (!target) return pool[0].id;
   let best = pool[0];
   let bestScore = Infinity;
   for (const tile of pool) {
-    const { x, y } = parseCoords(tile.id);
-    const d = (x - target.x) ** 2 + (y - target.y) ** 2;
+    const coords = parseCoords(tile.id);
+    if (!coords) continue;
+    const d = (coords.x - target.x) ** 2 + (coords.y - target.y) ** 2;
     // A door at equal distance wins: it's the authored way in.
     const score = d - (tile.imageRef.includes('door') ? 0.5 : 0);
     if (score < bestScore) {

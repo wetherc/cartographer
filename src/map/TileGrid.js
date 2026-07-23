@@ -63,7 +63,7 @@ export function withNodeDefaults(node) {
     // did anything, so an older tile's metadata reads cleanly.
     tiles: node.tiles.map((t) => ({
       ...t,
-      metadata: { discovered: false, ...t.metadata },
+      metadata: { ...t.metadata, discovered: t.metadata.discovered ?? false },
     })),
   };
 }

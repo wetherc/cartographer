@@ -130,6 +130,7 @@ export function buildExampleCampaign(palette) {
         body: 'They say the old forest road north hasn\'t been safe since the goblins came down from the hills. Travelers go in twos now, or not at all.',
         nodeId: 'world',
         revealed: false,
+        image: null,
       },
     ],
     bestiary: [{ id: 'goblin', name: 'Goblin', maxHP: 7, statBlock: { AC: 13, Speed: 30 } }],

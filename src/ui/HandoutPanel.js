@@ -82,7 +82,8 @@ export function mountHandoutPanel(container, callbacks) {
     return row;
   }
 
-  /** A player sees only revealed handouts, read-only: title + body + image. */
+  /** A player sees only revealed handouts, read-only: title + body + image.
+   * @param {Handout} handout */
   function buildPlayerRow(handout) {
     const row = document.createElement('div');
     row.className = 'handout-panel__row handout-panel__row--revealed';

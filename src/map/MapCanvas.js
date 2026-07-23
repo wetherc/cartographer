@@ -372,7 +372,8 @@ export class MapCanvas {
   }
 
   /** Pan the view so a cell sits inside the visible buffer, used when the
-   * keyboard cursor moves toward or past an edge. */
+   * keyboard cursor moves toward or past an edge.
+   * @param {number} x @param {number} y */
   _ensureCellVisible(x, y) {
     const { sx, sy, size } = tileRect(x, y, this.tileSize, this.offsetX, this.offsetY, this.scale);
     const margin = size;
