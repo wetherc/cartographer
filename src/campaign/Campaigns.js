@@ -7,6 +7,7 @@ import {
 } from '../entities/Encounter.js';
 import { loadFromLocalStorage, toTileGrid } from '../storage/SaveManager.js';
 import { createClock } from '../time/GameClock.js';
+import { withDefaults as withNPCDefaults } from '../entities/NPC.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 
@@ -139,6 +140,6 @@ export function loadInitialCampaign() {
     travelog: saved.travelog ?? [],
     quests: saved.quests ?? [],
     clock: saved.clock ?? createClock(),
-    npcs: saved.npcs ?? [],
+    npcs: (saved.npcs ?? []).map(withNPCDefaults),
   };
 }
