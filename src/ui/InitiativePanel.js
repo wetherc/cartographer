@@ -1,37 +1,30 @@
 import { currentParticipant } from '../combat/Initiative.js';
-import { formatModifier } from '../entities/Modifiers.js';
 import { isGM } from '../view/ViewRole.js';
 import { icon } from './icons.js';
 
-/** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
+/** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**
- * Mount the initiative tracker. Two states: a setup list (one row per potential
- * combatant with an editable initiative value and a Start button) when no combat
- * is running, and the running order (round counter, current-turn highlight, Next
- * turn / End combat) once started. The panel owns no combat state — it reads it
- * via `getState`, the candidate roster via `getRoster`, and reports actions back.
+ * Mount the initiative tracker for a running fight: the turn order with a
+ * round counter and current-turn highlight, plus Next turn / End combat for
+ * the GM. There is no setup state here — the GM opens combat through the
+ * setup dialog (`ui/CombatSetup.js`), and the panel's container stays hidden
+ * until a fight is actually running. The panel owns no combat state — it
+ * reads it via `getState` and reports actions back.
  * @param {HTMLElement} container
- * With `rollInitiative`, the setup list gains a "Roll initiative" button that
- * fills every combatant's value from the callback (d20 + DEX modifier in the
- * app, an injected roll in tests); values stay editable, so a rolled result
- * can still be overridden by hand before Start.
  * @param {{
  *   getState: () => CombatState | null,
- *   getRoster: () => Participant[],
- *   onStart: (participants: Participant[]) => void,
  *   onNext: () => void,
  *   onEnd: () => void,
- *   rollInitiative?: (participant: Participant) => number,
- *   onRolled?: (results: { name: string, value: number }[]) => void,
  *   onEnemyRoll?: (participant: Participant) => void,
  *   getRole?: () => ViewRole,
  * }} callbacks
  * With `onEnemyRoll`, a GM viewer gets a dice button on the active row while a
  * foe holds the turn, to roll on that enemy's behalf (the app rolls the dice
- * tray's current selection and logs it under the enemy's name).
+ * tray's current selection and logs it under the enemy's name). Advancing and
+ * ending combat are GM actions; a player viewer sees the order read-only.
  * @returns {{ update: () => void }}
  */
 export function mountInitiativePanel(container, callbacks) {
@@ -39,82 +32,12 @@ export function mountInitiativePanel(container, callbacks) {
   root.className = 'initiative-panel';
   container.appendChild(root);
 
-  function renderSetup() {
-    const roster = callbacks.getRoster();
-    if (roster.length === 0) {
-      const empty = document.createElement('p');
-      empty.className = 'empty-state';
-      empty.textContent = 'No combatants here to fight.';
-      root.appendChild(empty);
-      return;
-    }
+  function render() {
+    root.innerHTML = '';
+    const state = callbacks.getState();
+    if (!state) return;
+    const gm = !callbacks.getRole || isGM(callbacks.getRole());
 
-    /** @type {Map<string, HTMLInputElement>} */
-    const inputs = new Map();
-    for (const participant of roster) {
-      const row = document.createElement('div');
-      row.className = `initiative-panel__row initiative-panel__row--${participant.side}`;
-
-      const name = document.createElement('span');
-      name.className = 'initiative-panel__name';
-      name.textContent = participant.name;
-
-      const modifier = document.createElement('span');
-      modifier.className = 'initiative-panel__modifier';
-      modifier.textContent = formatModifier(participant.modifier ?? 0);
-      modifier.title = 'DEX modifier, added to the initiative roll';
-
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.className = 'field initiative-panel__init';
-      input.value = String(participant.initiative);
-      input.setAttribute('aria-label', `Initiative for ${participant.name}`);
-      inputs.set(participant.id, input);
-
-      row.append(name, modifier, input);
-      root.appendChild(row);
-    }
-
-    const actions = document.createElement('div');
-    actions.className = 'initiative-panel__actions';
-
-    const rollInitiative = callbacks.rollInitiative;
-    if (rollInitiative) {
-      const rollAll = document.createElement('button');
-      rollAll.type = 'button';
-      rollAll.className = 'btn';
-      rollAll.append(icon('dice'), document.createTextNode('Roll initiative'));
-      rollAll.addEventListener('click', () => {
-        /** @type {{ name: string, value: number }[]} */
-        const results = [];
-        for (const participant of roster) {
-          const input = inputs.get(participant.id);
-          if (!input) continue;
-          const value = rollInitiative(participant);
-          input.value = String(value);
-          results.push({ name: participant.name, value });
-        }
-        if (results.length > 0) callbacks.onRolled?.(results);
-      });
-      actions.appendChild(rollAll);
-    }
-
-    const start = document.createElement('button');
-    start.type = 'button';
-    start.className = 'btn btn--primary initiative-panel__start';
-    start.append(icon('sword'), document.createTextNode('Start combat'));
-    start.addEventListener('click', () => {
-      callbacks.onStart(
-        roster.map((p) => ({ ...p, initiative: Number(inputs.get(p.id)?.value) || 0 })),
-      );
-      render();
-    });
-    actions.appendChild(start);
-    root.appendChild(actions);
-  }
-
-  /** @param {CombatState} state */
-  function renderActive(state) {
     const header = document.createElement('div');
     header.className = 'initiative-panel__header';
     header.textContent = `Round ${state.round}`;
@@ -138,7 +61,6 @@ export function mountInitiativePanel(container, callbacks) {
 
       // On a foe's turn the GM can roll the dice tray's selection as that
       // enemy, so the travelogue attributes the roll to it.
-      const gm = !callbacks.getRole || isGM(callbacks.getRole());
       if (gm && active && i === state.index && participant.side === 'foe' && callbacks.onEnemyRoll) {
         const rollBtn = document.createElement('button');
         rollBtn.type = 'button';
@@ -151,6 +73,9 @@ export function mountInitiativePanel(container, callbacks) {
       }
       root.appendChild(row);
     });
+
+    // Turn flow is the GM's to drive; a player tab just watches the order.
+    if (!gm) return;
 
     const actions = document.createElement('div');
     actions.className = 'initiative-panel__actions';
@@ -175,13 +100,6 @@ export function mountInitiativePanel(container, callbacks) {
 
     actions.append(next, end);
     root.appendChild(actions);
-  }
-
-  function render() {
-    root.innerHTML = '';
-    const state = callbacks.getState();
-    if (state) renderActive(state);
-    else renderSetup();
   }
 
   render();

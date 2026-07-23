@@ -243,18 +243,23 @@ encounter don't change them) and the same dialog can delete a stale one.
 
 ### Initiative and conditions
 
-The **Initiative** panel appears only while the party is in an encounter —
-standing on a tile with at least one live encounter bound to it — and lists
-exactly who is involved: the party, that tile's encounters, and any NPCs placed
-on the same tile (hostile NPCs line up as foes, friendly and neutral ones with
-the party). Each combatant's **DEX modifier** (`floor((DEX - 10) / 2)`, so a
-DEX of 20 is +5) is shown beside their name and folded in everywhere: the
-default value is 10 + modifier, and **Roll initiative** rolls d20 + modifier for
-everyone at once (you can still adjust any value). Then start
-combat and step through with **Next turn**; the current turn is highlighted and
-a round counter advances. On each new round, timed conditions tick down and
-expire on their own. Walking off the tile (or defeating the last encounter on
-it) ends the encounter and hides the panel.
+Opening combat is a GM-only action. While the party stands on a tile with at
+least one live encounter, the GM's Encounters panel shows a **Start combat**
+button; it opens a setup dialog listing exactly who is involved: the party,
+that tile's encounters, and any NPCs placed on the same tile (hostile NPCs line
+up as foes, friendly and neutral ones with the party). Each combatant's **DEX
+modifier** (`floor((DEX - 10) / 2)`, so a DEX of 20 is +5) is shown beside
+their name and folded in everywhere: the default value is 10 + modifier, and
+**Roll initiative** rolls d20 + modifier for everyone at once (you can still
+adjust any value before starting). Players never see the button or the dialog —
+they cannot open a fight or roll the party's initiative.
+
+The **Initiative** panel itself appears only while a fight is actually running —
+there is no idle setup card parked in the sidebar. Once combat starts, step
+through with **Next turn**; the current turn is highlighted and a round counter
+advances. On each new round, timed conditions tick down and expire on their
+own. **End combat** — or walking off the tile, or defeating the last encounter
+on it — ends the fight and hides the panel again.
 
 While a foe holds the turn, its highlighted row shows a dice button (GM view
 only): set up the roll in the dice tray as usual, then click it to roll as that

@@ -27,8 +27,14 @@ import { isGM, hpBand } from '../view/ViewRole.js';
  *   onAddFromTemplate?: () => Promise<Encounter | null>,
  *   onSaveTemplate?: (encounter: Encounter) => void,
  *   confirmDelete?: (encounter: Encounter) => Promise<boolean>,
+ *   onStartCombat?: () => void,
+ *   canStartCombat?: () => boolean,
  *   getRole?: () => ViewRole,
  * }} callbacks
+ * With `onStartCombat`, the GM's action row gains a "Start combat" button
+ * whenever `canStartCombat` allows it (the party stands on a live encounter's
+ * tile and no fight is already running) — the entry into the initiative flow,
+ * which players don't get.
  * @returns {{ update: () => void }}
  */
 export function mountEncounterPanel(container, callbacks) {
@@ -175,6 +181,16 @@ export function mountEncounterPanel(container, callbacks) {
         if (await onAddFromTemplate()) render();
       });
       actions.appendChild(bestiaryButton);
+    }
+
+    const onStartCombat = callbacks.onStartCombat;
+    if (onStartCombat && gm && (callbacks.canStartCombat?.() ?? true)) {
+      const startButton = document.createElement('button');
+      startButton.type = 'button';
+      startButton.className = 'btn btn--primary encounter-panel__start-combat';
+      startButton.append(icon('sword'), document.createTextNode('Start combat'));
+      startButton.addEventListener('click', () => onStartCombat());
+      actions.appendChild(startButton);
     }
 
     if (actions.childElementCount > 0) root.appendChild(actions);
