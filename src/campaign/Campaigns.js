@@ -1,5 +1,6 @@
 import { createMapNode, createTile, setTile, TileGrid } from '../map/TileGrid.js';
 import { generateNodeTiles } from '../map/MapGenerator.js';
+import { coastOverlays, smoothCoastline } from '../map/Autotile.js';
 import { createCharacter, withDefaults, withHP } from '../entities/Character.js';
 import { withSpellSlots } from '../entities/SpellSlots.js';
 import {
@@ -61,19 +62,30 @@ const WORLD_SIZE = 32;
 
 /**
  * Terrain type for an example-world cell, from hand-shaped features rather
- * than noise so the demo map always has the same recognizable geography: a
- * broad forest across the north, a mountain range down the east edge, a lake
- * in the southwest, and badlands in the far southeast corner, on a grass base.
+ * than noise so the demo map always has the same recognizable geography: an
+ * ocean along the west edge, a broad forest across the north, snowfields over
+ * the northeastern peaks, a mountain range down the east edge with foothills
+ * below it, a lake in the southwest, farmland around Briarwick, a marsh where
+ * the river meets the south edge, and badlands in the far southeast corner,
+ * on a grass base.
  * @param {number} x @param {number} y
  * @returns {string}
  */
 function exampleTerrain(x, y) {
+  if (x <= 1) return 'water';
+  if (y <= 5 && x >= 24) return 'snow';
   if (y <= 8 && x <= 20 && (y <= 6 || x >= 3)) return 'forest';
   if (x >= 26 && y <= 20) return 'mountain';
+  if (x >= 21 && x <= 25 && y >= 9 && y <= 15) return 'hills';
   if (((x - 6) / 4) ** 2 + ((y - 24) / 3) ** 2 <= 1) return 'water';
+  if (x >= 8 && x <= 15 && y >= 19 && y <= 22) return 'farmland';
+  if (y >= 27 && x >= 13 && x <= 22) return 'swamp';
   if (x >= 25 && y >= 27) return 'desert';
   return 'grass';
 }
+
+/** The example world's river runs north-south down this column. */
+const RIVER_X = 19;
 
 /**
  * A small example world, loadable on demand via the "Load example" button:
@@ -101,6 +113,18 @@ export function buildExampleCampaign(palette) {
   links['12,23'].poi = { tileId: '12,23', imageId: 'settlement', poiType: 'settlement' };
   links['22,10'] = { nodeId: 'barrow', poi: { tileId: '22,10', imageId: 'dungeon', poiType: 'dungeon' } };
 
+  // Shape the terrain first so the coastline helpers can widen the water and
+  // pick shoreline overlays before any tiles are stamped.
+  /** @type {string[]} */
+  const cells = [];
+  for (let y = 0; y < WORLD_SIZE; y++) {
+    for (let x = 0; x < WORLD_SIZE; x++) cells.push(exampleTerrain(x, y));
+  }
+  const smoothed = smoothCoastline(cells, WORLD_SIZE, WORLD_SIZE);
+  const coast = coastOverlays(smoothed, WORLD_SIZE, WORLD_SIZE);
+  /** @param {number} x @param {number} y */
+  const terrainAt = (x, y) => smoothed[y * WORLD_SIZE + x];
+
   let world = createMapNode('world', 'World', null, WORLD_SIZE, WORLD_SIZE);
   const last = WORLD_SIZE - 1;
   for (let y = 0; y < WORLD_SIZE; y++) {
@@ -108,22 +132,26 @@ export function buildExampleCampaign(palette) {
       const id = `${x},${y}`;
       const link = links[id];
 
-      // Roads run as overlays over the terrain base, so they read as paths
-      // laid on the land rather than replacing it. end-* names the tile's
-      // open edge: the westmost tile connects to the road on its east, so it
-      // takes end-e (and vice versa at the far edge). An east-west road
-      // crosses the map at y=16; a branch at x=12 tees off south to end just
-      // above Briarwick's block.
-      const onHighway = y === 16;
+      // Roads and the river run as overlays over the terrain base, so they
+      // read as features laid on the land rather than replacing it. end-*
+      // names the tile's open edge: the westmost road tile connects to the
+      // road on its east, so it takes end-e (and vice versa at the far edge).
+      // An east-west road crosses the map at y=16, starting past the ocean
+      // shore; a branch at x=12 tees off south to end just above Briarwick's
+      // block. The river flows from the north edge to the marsh on the south
+      // edge, and the highway crosses it on a bridge.
+      const onHighway = y === 16 && x >= 3;
       const onBranch = x === 12 && y > 16 && y <= 22;
-      if (!link && (onHighway || onBranch)) {
-        const roadKind = onHighway
-          ? x === 0 ? 'end-e' : x === last ? 'end-w' : x === 12 ? 'tee-s' : 'h'
-          : y === 22 ? 'end-n' : 'v';
-        const road = palette.getRoadPiece(roadKind);
-        if (!road) continue;
-        const base = palette.pickVariant(exampleTerrain(x, y), rng);
-        world = setTile(world, createTile(id, base.imageRef, { overlayRef: road.imageRef }));
+      const onRiver = x === RIVER_X;
+      if (!link && (onHighway || onBranch || onRiver)) {
+        const overlay = onRiver
+          ? palette.getRiverPiece(y === 16 ? 'bridge-h' : 'v')
+          : onHighway
+            ? palette.getRoadPiece(x === 3 ? 'end-e' : x === last ? 'end-w' : x === 12 ? 'tee-s' : 'h')
+            : palette.getRoadPiece(y === 22 ? 'end-n' : 'v');
+        if (!overlay) continue;
+        const base = palette.pickVariant(terrainAt(x, y), rng);
+        world = setTile(world, createTile(id, base.imageRef, { overlayRef: overlay.imageRef }));
         continue;
       }
 
@@ -136,9 +164,13 @@ export function buildExampleCampaign(palette) {
         continue;
       }
 
-      const terrain = link ? { northmarch: 'forest', graypeak: 'mountain', briarwick: 'grass' }[link.nodeId] : exampleTerrain(x, y);
+      const terrain = link ? { northmarch: 'forest', graypeak: 'mountain', briarwick: 'grass' }[link.nodeId] : terrainAt(x, y);
+      /** @type {Partial<import('../types/map.js').Tile>} */
+      const opts = link ? { childNodeId: link.nodeId } : {};
+      const shoreline = !link && coast.get(id);
+      if (shoreline) opts.overlayRef = palette.getCoastPiece(shoreline)?.imageRef ?? null;
       const entry = palette.pickVariant(terrain ?? 'grass', rng);
-      world = setTile(world, createTile(id, entry.imageRef, link ? { childNodeId: link.nodeId } : {}));
+      world = setTile(world, createTile(id, entry.imageRef, opts));
     }
   }
   grid.addNode(world);
