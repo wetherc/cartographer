@@ -2,33 +2,66 @@
   <rect width="64" height="64" fill="#5a9b4a"/>
   <ellipse cx="14" cy="12" rx="9" ry="5" fill="#63a651"/>
   <ellipse cx="52" cy="16" rx="7" ry="4" fill="#529044"/>
-  <!-- Rock face with a timber-framed adit. -->
+  <!-- Rock face with strata and fissures, timber-framed adit at its foot. -->
   <path d="M10 48 Q12 26 28 20 Q42 16 52 26 Q56 34 55 48 Z" fill="#7f7a70"/>
   <path d="M10 48 Q12 26 28 20 Q42 16 52 26 Q42 22 32 24 Q16 30 14 48 Z" fill="#918c82"/>
+  <g stroke="#6b655b" stroke-width="0.9" fill="none" opacity="0.7">
+    <path d="M32 24 Q42 22 50 28 M24 28 Q30 25 38 26 M44 32 Q50 32 54 36"/>
+    <path d="M14 38 Q19 35 24 36"/>
+  </g>
+  <path d="M46 24 L48 29 L46.5 32 M16 34 L18 38" stroke="#5f5a52" stroke-width="0.7" fill="none"/>
+  <!-- A seam of ore glinting in the rock face. -->
+  <path d="M42 36 L45 38.5 L44 41" stroke="#c98a3d" stroke-width="1" fill="none"/>
+  <circle cx="43" cy="37" r="0.6" fill="#e0b04d"/>
+  <circle cx="44.6" cy="40" r="0.5" fill="#e0b04d"/>
+  <!-- Adit: dark shaft, timber posts and lintel with joint pegs, a hanging
+       lantern lighting the entrance. -->
   <path d="M20 48 L20 34 L38 34 L38 48 Z" fill="#241f1a"/>
+  <path d="M22 48 L22 36 L36 36 L36 48 Z" fill="#15120f"/>
   <g fill="#8a6f4a">
     <rect x="18" y="32" width="22" height="3"/>
     <rect x="18" y="35" width="3" height="13"/>
     <rect x="37" y="35" width="3" height="13"/>
   </g>
   <path d="M18 32 L40 32 L40 33 L18 33 Z" fill="#a3865c"/>
-  <!-- Rails running out of the adit to an ore cart. -->
-  <g stroke="#6b655b" stroke-width="1.2" fill="none">
-    <path d="M25 48 L22 60 M33 48 L38 60"/>
+  <path d="M19.5 35.5 L19.5 47 M38.5 35.5 L38.5 47" stroke="#6f583a" stroke-width="0.6" fill="none"/>
+  <circle cx="19.5" cy="33.5" r="0.55" fill="#5c4930"/>
+  <circle cx="38.5" cy="33.5" r="0.55" fill="#5c4930"/>
+  <g>
+    <circle cx="34" cy="39" r="4" fill="#e8a83c" opacity="0.15"/>
+    <path d="M34 34.5 L34 36" stroke="#3a362f" stroke-width="0.7"/>
+    <rect x="32.9" y="36" width="2.2" height="2.8" rx="0.5" fill="#4a453d"/>
+    <rect x="33.3" y="36.5" width="1.4" height="1.8" fill="#f5d06a"/>
   </g>
+  <!-- Rails on sleepers running out of the adit to a loaded ore cart. -->
   <g stroke="#8a6f4a" stroke-width="1.4" fill="none">
     <path d="M24 51 L34 51 M23 55 L36 55 M22.2 59 L37.5 59"/>
+  </g>
+  <g stroke="#6b655b" stroke-width="1.2" fill="none">
+    <path d="M25 48 L22 60 M33 48 L38 60"/>
   </g>
   <g>
     <rect x="42" y="46" width="11" height="7" rx="1" fill="#5f5a52"/>
     <path d="M42 46 L53 46 L52 44 L43 44 Z" fill="#4d4841"/>
+    <path d="M44 46.5 L44 52.5 M47.5 46.5 L47.5 52.5 M51 46.5 L51 52.5" stroke="#4d4841" stroke-width="0.6"/>
     <circle cx="44.5" cy="49" r="1" fill="#c98a3d"/><circle cx="48" cy="47.5" r="1" fill="#c98a3d"/>
-    <circle cx="50.5" cy="49.5" r="0.9" fill="#e0b04d"/>
+    <circle cx="50.5" cy="49.5" r="0.9" fill="#e0b04d"/><circle cx="46.3" cy="48" r="0.7" fill="#e0b04d"/>
     <circle cx="44.5" cy="54" r="1.6" fill="#3a362f"/><circle cx="50.5" cy="54" r="1.6" fill="#3a362f"/>
+    <circle cx="44.5" cy="54" r="0.5" fill="#6b655b"/><circle cx="50.5" cy="54" r="0.5" fill="#6b655b"/>
   </g>
-  <!-- Pickaxe against the rock and a spoil heap. -->
+  <!-- Miner's kit: pickaxe and shovel against the rock, a tool crate,
+       and the spoil heap with ore flecks. -->
   <path d="M12 46 L16 38" stroke="#8a6f4a" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M13 38.5 Q16 36 19 38.5 Q16 37.5 13 38.5 Z" fill="#9aa1ab"/>
+  <path d="M17 46 L19.5 40" stroke="#8a6f4a" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M18.6 39 Q20.6 38 21 40.2 Q20 41.6 18.6 41 Z" fill="#9aa1ab"/>
+  <g>
+    <rect x="55" y="38" width="6" height="5" fill="#a3865c" stroke="#7a6543" stroke-width="0.6"/>
+    <path d="M55 40.5 L61 40.5 M58 38 L58 43" stroke="#7a6543" stroke-width="0.6"/>
+  </g>
   <ellipse cx="12" cy="55" rx="6" ry="2.6" fill="#6b655b"/>
   <ellipse cx="11" cy="54" rx="3.5" ry="1.4" fill="#7f7a70"/>
+  <circle cx="10" cy="55.5" r="0.6" fill="#c98a3d"/>
+  <circle cx="14" cy="54.5" r="0.5" fill="#e0b04d"/>
+  <path d="M42 58 Q43 55.5 44 58 M46 59 Q47 56.5 48 59" stroke="#4c8a40" stroke-width="1" fill="none" stroke-linecap="round"/>
 </svg>

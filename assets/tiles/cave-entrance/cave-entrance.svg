@@ -5,23 +5,53 @@
   <!-- Rocky hillside rising from the grass, cave mouth at its foot. -->
   <path d="M8 52 Q10 30 24 22 Q34 16 46 24 Q56 31 56 52 Z" fill="#8a8478"/>
   <path d="M8 52 Q10 30 24 22 Q34 16 46 24 Q38 22 30 25 Q14 33 12 52 Z" fill="#9b958a"/>
-  <path d="M30 25 Q40 22 46 27 M22 30 Q28 27 36 28" stroke="#7a746a" stroke-width="1" fill="none" opacity="0.7"/>
-  <!-- Cave mouth: rock arch, deep dark interior, shadow gradient by layering. -->
+  <!-- Strata lines and fissures giving the rock its grain. -->
+  <g stroke="#7a746a" stroke-width="1" fill="none" opacity="0.7">
+    <path d="M30 25 Q40 22 46 27 M22 30 Q28 27 36 28 M40 32 Q47 31 52 36"/>
+    <path d="M16 40 Q22 37 27 38 M44 42 Q50 41 54 44"/>
+  </g>
+  <path d="M43 26 L45 31 L43.5 34 M20 34 L22 38" stroke="#6b655b" stroke-width="0.7" fill="none"/>
+  <path d="M25 23 Q26 26 24.5 29" stroke="#b0aa9e" stroke-width="0.8" fill="none" opacity="0.8"/>
+  <!-- Cave mouth: rock arch, deep dark interior layered toward black,
+       stalactite teeth hanging from the lip. -->
   <path d="M22 52 L22 40 Q32 28 42 40 L42 52 Z" fill="#6b655b"/>
   <path d="M24 52 L24 41 Q32 31 40 41 L40 52 Z" fill="#2e2a26"/>
   <path d="M27 52 L27 43 Q32 36.5 37 43 L37 52 Z" fill="#15120f"/>
-  <!-- Grass tufts on the hilltop and boulders flanking the entrance. -->
-  <path d="M26 21 Q27 18.5 28 21 M30 20 Q31 17.5 32 20 M34 20.5 Q35 18 36 20.5" stroke="#4c8a40" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <g fill="#57524a">
+    <path d="M28 37.5 L29 41 L30 37.2 Z"/>
+    <path d="M31.5 36 L32.3 40.5 L33.3 36 Z"/>
+    <path d="M35 37.5 L35.8 40.6 L36.6 37.8 Z"/>
+  </g>
+  <!-- Two eyes glinting from the dark. -->
+  <circle cx="30.5" cy="47" r="0.7" fill="#d8c34a" opacity="0.9"/>
+  <circle cx="33.5" cy="47" r="0.7" fill="#d8c34a" opacity="0.9"/>
+  <!-- Vines trailing over the entrance lip and grass on the hilltop. -->
+  <path d="M26 38 Q25.5 42 26.5 46 M38 38.5 Q38.8 42 38 45" stroke="#4c8a40" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <circle cx="26.2" cy="43" r="0.6" fill="#63a651"/>
+  <circle cx="38.3" cy="42" r="0.6" fill="#63a651"/>
+  <path d="M26 21 Q27 18.5 28 21 M30 20 Q31 17.5 32 20 M34 20.5 Q35 18 36 20.5 M22 24 Q23 21.8 24 24" stroke="#4c8a40" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <!-- Boulders flanking the entrance, with scree spilling down. -->
   <g>
     <ellipse cx="17" cy="53" rx="5" ry="2" fill="#4f8c40"/>
     <path d="M13 53 L14 48.5 L18 47.5 L21 50 L21 53 Z" fill="#9aa1ab"/>
     <path d="M14 48.5 L18 47.5 L21 50 Q17 51 14 48.5 Z" fill="#b3b9c2"/>
+    <path d="M16 50 L17.5 52.5" stroke="#7f8791" stroke-width="0.5" fill="none"/>
   </g>
   <g>
     <ellipse cx="47" cy="54" rx="4" ry="1.6" fill="#4f8c40"/>
     <path d="M44 54 L45 50.5 L48.5 50 L50.5 52 L50.5 54 Z" fill="#9aa1ab"/>
     <path d="M45 50.5 L48.5 50 L50.5 52 Q47 52.6 45 50.5 Z" fill="#b3b9c2"/>
   </g>
-  <!-- Worn dirt path leading in. -->
+  <g fill="#8a9199">
+    <circle cx="22" cy="55" r="0.9"/><circle cx="43" cy="56" r="0.8"/>
+    <circle cx="25" cy="57" r="0.7"/><circle cx="40" cy="54.5" r="0.6"/>
+  </g>
+  <!-- An old marker post with a rope-hung sign, and the worn path in. -->
   <path d="M28 62 Q30 56 32 52 Q34 56 36 62 Z" fill="#b09a72" opacity="0.8"/>
+  <ellipse cx="31" cy="59" rx="1" ry="0.5" fill="#9c885f"/>
+  <g>
+    <rect x="52.5" y="42" width="1.4" height="10" fill="#6f583a"/>
+    <rect x="50" y="43" width="6.5" height="3.6" rx="0.6" fill="#a3865c"/>
+    <path d="M50.8 44.8 L55.6 44.8 M50.8 45.8 L54.4 45.8" stroke="#6f583a" stroke-width="0.5"/>
+  </g>
 </svg>

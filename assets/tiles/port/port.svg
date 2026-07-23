@@ -1,33 +1,81 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <rect width="64" height="64" fill="#5a9b4a"/>
-  <ellipse cx="14" cy="10" rx="9" ry="5" fill="#63a651"/>
-  <ellipse cx="54" cy="14" rx="7" ry="4" fill="#529044"/>
-  <!-- Inset harbor basin: sandy shore ring, then water with sheen and ripples. -->
-  <ellipse cx="34" cy="42" rx="25" ry="15" fill="#c2a36c"/>
-  <ellipse cx="34" cy="43" rx="22" ry="12.5" fill="#3d6b8f"/>
-  <ellipse cx="30" cy="40" rx="12" ry="6" fill="#477aa0"/>
-  <path d="M22 46 Q28 44.5 34 46 T46 45.5" stroke="#5788ac" stroke-width="1" fill="none" opacity="0.8"/>
-  <path d="M26 50 Q31 48.8 36 50" stroke="#5788ac" stroke-width="1" fill="none" opacity="0.6"/>
-  <!-- Wooden pier from the shore with mooring posts. -->
-  <g>
-    <rect x="14" y="36" width="20" height="5" rx="1" fill="#8a6f4a"/>
-    <path d="M15 37.5 L33 37.5 M15 39.5 L33 39.5" stroke="#6f583a" stroke-width="0.7"/>
-    <rect x="32.5" y="34.5" width="2" height="4" fill="#6f583a"/>
-    <rect x="32.5" y="40" width="2" height="4" fill="#6f583a"/>
+  <ellipse cx="14" cy="8" rx="9" ry="5" fill="#63a651"/>
+  <ellipse cx="50" cy="10" rx="7" ry="4" fill="#529044"/>
+  <!-- Harbor: open water fills the tile's south half to the bottom edge in
+       the water terrain's base color, so a port abuts water tiles below.
+       A sandy strand runs along the shoreline. -->
+  <path d="M0 34 Q16 30 32 33 Q48 36 64 32 L64 40 L0 40 Z" fill="#c2a36c"/>
+  <path d="M0 34 Q16 30 32 33 Q48 36 64 32 L64 35 Q48 39 32 36 Q16 33 0 37 Z" fill="#cdb078"/>
+  <path d="M0 37 Q16 33 32 36 Q48 39 64 35 L64 64 L0 64 Z" fill="#33719f"/>
+  <path d="M0 37 Q16 33 32 36 Q48 39 64 35 L64 38 Q48 42 32 39 Q16 36 0 40 Z" fill="#8ac2e6" opacity="0.5"/>
+  <ellipse cx="20" cy="50" rx="13" ry="5" fill="#2d6591"/>
+  <ellipse cx="50" cy="58" rx="10" ry="4" fill="#2d6591"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M6 46 Q11 43.5 16 46 T26 46" stroke="#2a5d87" stroke-width="2" transform="translate(0 1.8)"/>
+    <path d="M6 46 Q11 43.5 16 46 T26 46" stroke="#8ac2e6" stroke-width="1.6"/>
+    <path d="M38 56 Q43 53.5 48 56 T58 56" stroke="#2a5d87" stroke-width="2" transform="translate(0 1.8)"/>
+    <path d="M38 56 Q43 53.5 48 56 T58 56" stroke="#8ac2e6" stroke-width="1.6"/>
   </g>
-  <!-- Small sailboat moored off the pier. -->
+  <circle cx="10" cy="55" r="0.8" fill="#8ac2e6"/>
+  <circle cx="59" cy="47" r="0.7" fill="#8ac2e6"/>
+  <!-- Harbormaster's warehouse on the shore, stacked cargo alongside. -->
   <g>
-    <path d="M40 43 Q45 45.6 50 43 L48.5 39.5 L41.5 39.5 Z" fill="#7a5a38"/>
-    <path d="M41.5 39.5 L48.5 39.5 L48 38.6 L42 38.6 Z" fill="#93714a"/>
-    <rect x="44.6" y="27" width="1" height="12" fill="#5f4529"/>
-    <path d="M45.6 28 L51 36.5 L45.6 36.5 Z" fill="#e6e1d2"/>
-    <path d="M44.6 29 L40.6 36.5 L44.6 36.5 Z" fill="#d5cfbe"/>
+    <rect x="8" y="16" width="17" height="13" fill="#a3865c"/>
+    <rect x="8" y="16" width="17" height="13" fill="none" stroke="#7a6543" stroke-width="0.7"/>
+    <path d="M8 20 L25 20 M8 24 L25 24" stroke="#8a7048" stroke-width="0.5"/>
+    <polygon points="6.5,16 16.5,9 26.5,16" fill="#6f583a"/>
+    <polygon points="16.5,9 26.5,16 16.5,16" fill="#5c4930"/>
+    <rect x="13.5" y="22" width="5" height="7" fill="#5a4530"/>
+    <path d="M13.5 22 L18.5 22" stroke="#3f2f20" stroke-width="0.6"/>
+    <rect x="20.5" y="18" width="3" height="3" fill="#7a6a4a" stroke="#5f5138" stroke-width="0.5"/>
+    <circle cx="16.5" cy="13.5" r="1.2" fill="#e6e1d2" stroke="#6f583a" stroke-width="0.5"/>
   </g>
-  <!-- Quayside crates and a coiled rope on the grass shore. -->
   <g>
-    <rect x="10" y="27" width="6" height="6" fill="#a3865c" stroke="#7a6543" stroke-width="0.7"/>
-    <path d="M10 30 L16 30 M13 27 L13 33" stroke="#7a6543" stroke-width="0.7"/>
-    <rect x="17" y="29" width="4.5" height="4.5" fill="#93714a" stroke="#6f583a" stroke-width="0.7"/>
-    <circle cx="12" cy="37" r="1.8" fill="none" stroke="#b09a72" stroke-width="1.1"/>
+    <rect x="29" y="23" width="6" height="6" fill="#a3865c" stroke="#7a6543" stroke-width="0.7"/>
+    <path d="M29 26 L35 26 M32 23 L32 29" stroke="#7a6543" stroke-width="0.7"/>
+    <rect x="36" y="25" width="4.5" height="4.5" fill="#93714a" stroke="#6f583a" stroke-width="0.7"/>
+    <ellipse cx="44" cy="28" rx="2.2" ry="2.8" fill="#8a6f4a"/>
+    <path d="M42 26.5 Q44 27.3 46.2 26.5 M42 29.5 Q44 30.3 46.2 29.5" stroke="#5c4930" stroke-width="0.6" fill="none"/>
+    <circle cx="51" cy="28" r="1.8" fill="none" stroke="#b09a72" stroke-width="1.1"/>
+    <circle cx="51" cy="28" r="0.6" fill="none" stroke="#b09a72" stroke-width="0.8"/>
+  </g>
+  <!-- Pier running out into the harbor on pilings, mooring bollard at its
+       head and a lit lamp post at the shore end. -->
+  <g>
+    <rect x="26" y="38" width="7" height="20" fill="#8a6f4a"/>
+    <path d="M28.2 38 L28.2 58 M30.8 38 L30.8 58" stroke="#6f583a" stroke-width="0.6"/>
+    <path d="M26 42 L33 42 M26 47 L33 47 M26 52 L33 52" stroke="#6f583a" stroke-width="0.5"/>
+    <rect x="25" y="44" width="1.6" height="5" fill="#5c4930"/>
+    <rect x="32.4" y="50" width="1.6" height="5" fill="#5c4930"/>
+    <rect x="28.6" y="58" width="1.8" height="2.6" rx="0.8" fill="#4a3a26"/>
+  </g>
+  <g>
+    <circle cx="24" cy="34" r="3.5" fill="#e8a83c" opacity="0.15"/>
+    <rect x="23.6" y="31" width="0.9" height="6" fill="#3a362f"/>
+    <rect x="22.9" y="29" width="2.3" height="2.6" rx="0.5" fill="#4a453d"/>
+    <rect x="23.3" y="29.4" width="1.5" height="1.7" fill="#f5d06a"/>
+  </g>
+  <!-- Single-masted trader moored at the pier, sails half-furled. -->
+  <g>
+    <path d="M38 52 Q44.5 55 51 52 L49.5 47 L40 47 Z" fill="#7a5a38"/>
+    <path d="M40 47 L49.5 47 L49 45.8 L40.7 45.8 Z" fill="#93714a"/>
+    <path d="M39 49.5 Q44.5 51.8 50 49.5" stroke="#5f4529" stroke-width="0.7" fill="none"/>
+    <rect x="44" y="31" width="1.1" height="16" fill="#5f4529"/>
+    <path d="M45.1 32.5 L51.5 43 L45.1 43 Z" fill="#e6e1d2"/>
+    <path d="M45.1 35 L49.5 43 L45.1 43 Z" fill="#d5cfbe"/>
+    <path d="M44 33.5 L39 43 L44 43 Z" fill="#d5cfbe"/>
+    <path d="M44.5 31.5 L47 30.7 L44.5 30 Z" fill="#b0432f"/>
+    <path d="M37 47.5 L33.5 46" stroke="#b09a72" stroke-width="0.7" fill="none"/>
+  </g>
+  <!-- Rowboat tied off the strand, and gulls overhead. -->
+  <g>
+    <path d="M8 44 Q12 46.4 16 44 L15 41.5 L9 41.5 Z" fill="#8a6f4a"/>
+    <path d="M9 41.5 L15 41.5 L14.6 40.7 L9.4 40.7 Z" fill="#a3865c"/>
+    <path d="M12 41 L12 38.5" stroke="#5f4529" stroke-width="0.7"/>
+  </g>
+  <g stroke="#e6e1d2" stroke-width="1" fill="none" stroke-linecap="round">
+    <path d="M52 18 Q53.5 16.5 55 18 M55 18 Q56.5 16.5 58 18"/>
+    <path d="M46 14 Q47.2 12.8 48.4 14 M48.4 14 Q49.6 12.8 50.8 14"/>
   </g>
 </svg>
