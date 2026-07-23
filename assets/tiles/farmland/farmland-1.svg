@@ -2,7 +2,21 @@
   <defs>
     <g id="fp">
       <rect x="-14" y="-9" width="28" height="18" rx="2" fill="#8a6a42"/>
-      <path d="M-11 -5.5 H11 M-11 -1.5 H11 M-11 2.5 H11 M-11 6.5 H11" stroke="#75552f" stroke-width="1.4" fill="none"/>
+      <rect x="-14" y="-9" width="28" height="18" rx="2" fill="none" stroke="#6d5233" stroke-width="1"/>
+      <path d="M-11 -5.5 H11 M-11 -1.5 H11 M-11 2.5 H11 M-11 6.5 H11" stroke="#75552f" stroke-width="1.6" fill="none"/>
+      <g fill="#9e7c50">
+        <circle cx="-7" cy="-3.5" r="0.7"/><circle cx="3" cy="-3.5" r="0.7"/>
+        <circle cx="-2" cy="0.5" r="0.7"/><circle cx="8" cy="4.5" r="0.7"/>
+      </g>
+    </g>
+    <g id="gp">
+      <rect x="-14" y="-9" width="28" height="18" rx="2" fill="#7d9a45"/>
+      <rect x="-14" y="-9" width="28" height="18" rx="2" fill="none" stroke="#66833a" stroke-width="1"/>
+      <path d="M-11 -5.5 H11 M-11 -1.5 H11 M-11 2.5 H11 M-11 6.5 H11" stroke="#6b8a38" stroke-width="1.6" fill="none"/>
+      <g fill="#a3bd60">
+        <circle cx="-9" cy="-5.5" r="0.9"/><circle cx="-3" cy="-5.5" r="0.9"/><circle cx="3" cy="-5.5" r="0.9"/><circle cx="9" cy="-5.5" r="0.9"/>
+        <circle cx="-9" cy="2.5" r="0.9"/><circle cx="-3" cy="2.5" r="0.9"/><circle cx="3" cy="2.5" r="0.9"/><circle cx="9" cy="2.5" r="0.9"/>
+      </g>
     </g>
     <g id="fc" stroke="#6e5233" stroke-linecap="round" fill="none">
       <path d="M0 0 V-6 M8 0 V-6 M16 0 V-6" stroke-width="1.6"/>
@@ -12,13 +26,17 @@
   <rect width="64" height="64" fill="#5a9b4a"/>
   <g fill="#529044">
     <ellipse cx="14" cy="12" rx="9" ry="5"/>
-    <ellipse cx="52" cy="54" rx="8" ry="5"/>
+    <ellipse cx="52" cy="58" rx="8" ry="4"/>
   </g>
   <use href="#fp" transform="translate(26 22)"/>
-  <g transform="translate(26 44)">
-    <rect x="-14" y="-9" width="28" height="18" rx="2" fill="#7d9a45"/>
-    <path d="M-11 -5.5 H11 M-11 -1.5 H11 M-11 2.5 H11 M-11 6.5 H11" stroke="#6b8a38" stroke-width="1.4" fill="none"/>
-  </g>
+  <use href="#gp" transform="translate(26 44)"/>
   <use href="#fc" transform="translate(44 26)"/>
-  <use href="#fc" transform="translate(44 50)"/>
+  <g transform="translate(50 42)">
+    <ellipse cx="0" cy="0.5" rx="4" ry="1.4" fill="#4e8740" opacity="0.6"/>
+    <path d="M0 0 V-9.5 M-4.5 -7 H4.5" stroke="#6e5233" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+    <path d="M-4.5 -7 L-3 -5.5 M4.5 -7 L3 -5.5" stroke="#d9b45c" stroke-width="1.1" stroke-linecap="round" fill="none"/>
+    <circle cx="0" cy="-10.5" r="2" fill="#d9b45c"/>
+    <path d="M-2.8 -11.5 L2.8 -11.5 L0 -14.5 Z" fill="#7a5a34"/>
+  </g>
+  <use href="#fc" transform="translate(44 54)"/>
 </svg>
