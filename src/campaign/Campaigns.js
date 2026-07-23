@@ -65,9 +65,9 @@ const WORLD_SIZE = 32;
  * than noise so the demo map always has the same recognizable geography: an
  * ocean along the west edge, a broad forest across the north, snowfields over
  * the northeastern peaks, a mountain range down the east edge with foothills
- * below it, a lake in the southwest, farmland around Briarwick, a marsh where
- * the river meets the south edge, and badlands in the far southeast corner,
- * on a grass base.
+ * below it, a lake in the southwest, farmland around Briarwick, a marsh in
+ * the southern lowlands, and badlands in the far southeast corner, on a
+ * grass base.
  * @param {number} x @param {number} y
  * @returns {string}
  */
@@ -84,8 +84,10 @@ function exampleTerrain(x, y) {
   return 'grass';
 }
 
-/** The example world's river runs north-south down this column. */
+/** The example world's river runs south down this column, then bends west. */
 const RIVER_X = 19;
+/** The row the river follows west from its bend to drain into the lake. */
+const RIVER_BEND_Y = 25;
 
 /**
  * A small example world, loadable on demand via the "Load example" button:
@@ -138,20 +140,24 @@ export function buildExampleCampaign(palette) {
       // road on its east, so it takes end-e (and vice versa at the far edge).
       // An east-west road crosses the map at y=16, starting past the ocean
       // shore; a branch at x=12 tees off south to end just above Briarwick's
-      // block. The river flows from the north edge to the marsh on the south
-      // edge, and the highway crosses it on a bridge.
+      // block. The river flows from the north edge, under the highway on a
+      // bridge, then bends west below Briarwick to drain into the lake — its
+      // mouth tile stacks the channel over the shoreline overlay.
       const onHighway = y === 16 && x >= 3;
       const onBranch = x === 12 && y > 16 && y <= 22;
-      const onRiver = x === RIVER_X;
+      const onRiver = (x === RIVER_X && y <= RIVER_BEND_Y) || (y === RIVER_BEND_Y && x >= 10 && x < RIVER_X);
       if (!link && (onHighway || onBranch || onRiver)) {
         const overlay = onRiver
-          ? palette.getRiverPiece(y === 16 ? 'bridge-h' : 'v')
+          ? palette.getRiverPiece(x === RIVER_X ? (y === 16 ? 'bridge-h' : y === RIVER_BEND_Y ? 'corner-nw' : 'v') : 'h')
           : onHighway
             ? palette.getRoadPiece(x === 3 ? 'end-e' : x === last ? 'end-w' : x === 12 ? 'tee-s' : 'h')
             : palette.getRoadPiece(y === 22 ? 'end-n' : 'v');
         if (!overlay) continue;
+        const shoreline = coast.get(id);
+        const shore = shoreline ? palette.getCoastPiece(shoreline) : null;
+        const refs = shore ? [shore.imageRef, overlay.imageRef] : overlay.imageRef;
         const base = palette.pickVariant(terrainAt(x, y), rng);
-        world = setTile(world, createTile(id, base.imageRef, { overlayRef: overlay.imageRef }));
+        world = setTile(world, createTile(id, base.imageRef, { overlayRef: refs }));
         continue;
       }
 

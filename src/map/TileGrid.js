@@ -69,6 +69,17 @@ export function withNodeDefaults(node) {
 }
 
 /**
+ * A tile's overlay images as a draw-ordered list (bottom first), whether the
+ * tile holds none, one, or a stack.
+ * @param {Tile} tile
+ * @returns {string[]}
+ */
+export function overlayList(tile) {
+  if (!tile.overlayRef) return [];
+  return Array.isArray(tile.overlayRef) ? tile.overlayRef : [tile.overlayRef];
+}
+
+/**
  * Return a new node with the tile added, replacing any existing tile with the same id.
  * @param {MapNode} node
  * @param {Tile} tile

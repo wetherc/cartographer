@@ -1,4 +1,5 @@
 import { MapRenderer } from './MapRenderer.js';
+import { overlayList } from './TileGrid.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
@@ -19,7 +20,7 @@ export function collectImageRefs(node) {
   const refs = new Set();
   for (const tile of node.tiles) {
     if (tile.imageRef) refs.add(tile.imageRef);
-    if (tile.overlayRef) refs.add(tile.overlayRef);
+    for (const ref of overlayList(tile)) refs.add(ref);
   }
   return [...refs];
 }

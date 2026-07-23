@@ -2,6 +2,7 @@ import { parseCoords, tileRect } from './MapGeometry.js';
 import { withinRadius } from './FogOfWar.js';
 import { groupImageChunks } from './RegionGroups.js';
 import { spanBlocks } from './TilePaint.js';
+import { overlayList } from './TileGrid.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
@@ -273,10 +274,11 @@ export class MapRenderer {
         }
       }
 
-      // A path/road overlay draws on top of the base terrain, so a road can sit
-      // on sand, snow, etc. rather than replacing the tile beneath it.
-      if (tile.overlayRef) {
-        const overlay = this._getImage(tile.overlayRef);
+      // Path/road overlays draw on top of the base terrain, so a road can sit
+      // on sand, snow, etc. rather than replacing the tile beneath it. A stack
+      // draws bottom-up (e.g. a river channel over its shoreline).
+      for (const ref of overlayList(tile)) {
+        const overlay = this._getImage(ref);
         if (overlay.complete && overlay.naturalWidth > 0) {
           ctx.drawImage(overlay, sx, sy, size, size);
         }

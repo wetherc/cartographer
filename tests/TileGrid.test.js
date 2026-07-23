@@ -9,6 +9,7 @@ import {
   resizeNode,
   tilesOutsideBounds,
   withNodeDefaults,
+  overlayList,
   TileGrid,
 } from '../src/map/TileGrid.js';
 
@@ -112,4 +113,13 @@ test('TileGrid resolves a tile zoom target through childNodeId', () => {
   const target = grid.getZoomTarget(getTile(world, 'poi'));
   assert.equal(target.id, 'region');
   assert.equal(target, region);
+});
+
+test('overlayList normalizes none, one, and stacked overlays to a draw-ordered list', () => {
+  assert.deepEqual(overlayList(createTile('0,0', 'g.svg')), []);
+  assert.deepEqual(overlayList(createTile('0,0', 'g.svg', { overlayRef: 'road.svg' })), ['road.svg']);
+  assert.deepEqual(
+    overlayList(createTile('0,0', 'g.svg', { overlayRef: ['coast.svg', 'river.svg'] })),
+    ['coast.svg', 'river.svg'],
+  );
 });
