@@ -18,6 +18,7 @@ import { parseCoords, tileRect } from './MapGeometry.js';
  * @property {number} scale
  * @property {boolean} revealAll draw every tile's image regardless of fog (Build mode)
  * @property {string | null} partyTileId
+ * @property {string[]} [encounterTileIds] tiles carrying a live encounter, marked when revealed
  * @property {string | null} selectedTileId
  * @property {string | null} cursorCellId
  * @property {boolean} focused whether the keyboard cursor outline shows
@@ -75,6 +76,7 @@ export class MapRenderer {
     this._renderRegionGroups(view);
     this._renderMarquee(view);
     this._renderSelection(view);
+    this._renderEncounterMarkers(view);
     this._renderPartyMarker(view);
     this._renderCursor(view);
     this._renderMapBoundsBorder(view);
@@ -269,6 +271,40 @@ export class MapRenderer {
     ctx.lineWidth = 2;
     ctx.strokeRect(view.offsetX, view.offsetY, view.node.width * size, view.node.height * size);
     ctx.restore();
+  }
+
+  /**
+   * Mark tiles carrying a live encounter with a red diamond in the tile's upper
+   * corner, so a point of danger reads distinctly from the gold party dot and a
+   * POI outline. Only revealed tiles are marked (Build mode marks all), so an
+   * encounter surfaces as the party reveals its tile through the fog.
+   * @param {MapView} view
+   */
+  _renderEncounterMarkers(view) {
+    const ids = view.encounterTileIds;
+    if (!ids || ids.length === 0 || !view.node) return;
+    const revealed = new Set(view.node.tiles.filter((t) => t.revealed).map((t) => t.id));
+    const { ctx } = this;
+    for (const id of ids) {
+      if (!view.revealAll && !revealed.has(id)) continue;
+      const coords = parseCoords(id);
+      if (!coords) continue;
+      const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
+      const cx = sx + size * 0.74;
+      const cy = sy + size * 0.26;
+      const r = size * 0.16;
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#a5352b';
+      ctx.strokeStyle = '#2a0f0c';
+      ctx.lineWidth = Math.max(1.5, size * 0.03);
+      ctx.beginPath();
+      ctx.rect(-r, -r, r * 2, r * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
   }
 
   /** @param {MapView} view */

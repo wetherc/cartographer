@@ -106,7 +106,19 @@ const canvasEl = /** @type {HTMLCanvasElement} */ (mustGetElement('map-canvas'))
 function syncPartyMarker() {
   const position = partyTracker.getPosition();
   mapCanvas.setPartyTile(position.nodeId === navigator.getCurrentNode().id ? position.tileId : null);
+  syncEncounterMarkers();
   refreshMapDescription();
+}
+
+/** Mark the current node's tiles that carry a live (undefeated) encounter, so
+ * the map shows where danger lies once its tile is revealed. */
+function syncEncounterMarkers() {
+  const nodeId = navigator.getCurrentNode().id;
+  mapCanvas.setEncounterTiles(
+    encounters
+      .filter((e) => e.location && e.location.nodeId === nodeId && !isDefeated(e))
+      .map((e) => /** @type {import('./types/entities.js').EncounterLocation} */ (e.location).tileId),
+  );
 }
 
 /** Re-narrate the current map for the screen-reader live region. Called wherever
@@ -581,9 +593,11 @@ const encounterPanel = mountEncounterPanel(mustGetElement('encounter-container')
     const prev = encounters.find((e) => e.id === next.id);
     if (prev && !isDefeated(prev) && isDefeated(next)) logEvent('combat', `Defeated ${next.name}.`);
     encounters = replaceById(encounters, next);
+    syncEncounterMarkers(); // a defeat or move should update the map marker
   },
   onDelete: (id) => {
     encounters = removeById(encounters, id);
+    syncEncounterMarkers();
   },
   onAdd: async () => {
     const values = await promptModal('New encounter', [
@@ -604,6 +618,7 @@ const encounterPanel = mountEncounterPanel(mustGetElement('encounter-container')
       { ...partyTracker.getPosition() },
     );
     encounters = [...encounters, created];
+    syncEncounterMarkers();
     return created;
   },
   confirmDelete: (encounter) =>
