@@ -161,6 +161,11 @@ body.mode-build .app-sidebar {
 .palette__sections {
   max-height: 18rem;
   overflow-y: auto;
+  /* Expanding a section can summon the vertical scrollbar, which narrows the
+     content box mid-layout and flashes a horizontal scrollbar. Reserve the
+     gutter up front and never scroll horizontally. */
+  overflow-x: hidden;
+  scrollbar-gutter: stable;
 }
 
 .palette__section-head {
