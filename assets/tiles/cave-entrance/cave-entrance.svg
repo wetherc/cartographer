@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="50" cy="12" rx="9" ry="5" fill="#63a651"/>
+  <ellipse cx="12" cy="54" rx="8" ry="4" fill="#529044"/>
+  <!-- Rocky hillside rising from the grass, cave mouth at its foot. -->
+  <path d="M8 52 Q10 30 24 22 Q34 16 46 24 Q56 31 56 52 Z" fill="#8a8478"/>
+  <path d="M8 52 Q10 30 24 22 Q34 16 46 24 Q38 22 30 25 Q14 33 12 52 Z" fill="#9b958a"/>
+  <path d="M30 25 Q40 22 46 27 M22 30 Q28 27 36 28" stroke="#7a746a" stroke-width="1" fill="none" opacity="0.7"/>
+  <!-- Cave mouth: rock arch, deep dark interior, shadow gradient by layering. -->
+  <path d="M22 52 L22 40 Q32 28 42 40 L42 52 Z" fill="#6b655b"/>
+  <path d="M24 52 L24 41 Q32 31 40 41 L40 52 Z" fill="#2e2a26"/>
+  <path d="M27 52 L27 43 Q32 36.5 37 43 L37 52 Z" fill="#15120f"/>
+  <!-- Grass tufts on the hilltop and boulders flanking the entrance. -->
+  <path d="M26 21 Q27 18.5 28 21 M30 20 Q31 17.5 32 20 M34 20.5 Q35 18 36 20.5" stroke="#4c8a40" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <g>
+    <ellipse cx="17" cy="53" rx="5" ry="2" fill="#4f8c40"/>
+    <path d="M13 53 L14 48.5 L18 47.5 L21 50 L21 53 Z" fill="#9aa1ab"/>
+    <path d="M14 48.5 L18 47.5 L21 50 Q17 51 14 48.5 Z" fill="#b3b9c2"/>
+  </g>
+  <g>
+    <ellipse cx="47" cy="54" rx="4" ry="1.6" fill="#4f8c40"/>
+    <path d="M44 54 L45 50.5 L48.5 50 L50.5 52 L50.5 54 Z" fill="#9aa1ab"/>
+    <path d="M45 50.5 L48.5 50 L50.5 52 Q47 52.6 45 50.5 Z" fill="#b3b9c2"/>
+  </g>
+  <!-- Worn dirt path leading in. -->
+  <path d="M28 62 Q30 56 32 52 Q34 56 36 62 Z" fill="#b09a72" opacity="0.8"/>
+</svg>

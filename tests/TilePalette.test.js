@@ -28,7 +28,10 @@ test('TilePalette ships with single-image POI markers', () => {
   assert.equal(palette.get('castle').imageRef, 'assets/tiles/castle/castle.svg');
   assert.equal(palette.get('wizard-tower').label, 'Wizard Tower');
   assert.equal(palette.get('general-store').label, 'General Store');
-  for (const type of ['tavern', 'inn', 'blacksmith', 'alchemist', 'temple', 'shrine', 'academy', 'barracks']) {
+  assert.equal(palette.get('cave-entrance').label, 'Cave Entrance');
+  assert.equal(palette.get('standing-stones').imageRef, 'assets/tiles/standing-stones/standing-stones.svg');
+  for (const type of ['tavern', 'inn', 'blacksmith', 'alchemist', 'temple', 'shrine', 'academy', 'barracks',
+    'ruins', 'mine', 'port', 'farm', 'graveyard', 'camp']) {
     assert.ok(palette.get(type), `missing marker "${type}"`);
   }
 });

@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="50" cy="10" rx="9" ry="5" fill="#529044"/>
+  <ellipse cx="12" cy="56" rx="8" ry="4" fill="#63a651"/>
+  <ellipse cx="32" cy="38" rx="23" ry="14" fill="#557f43"/>
+  <!-- Dead tree watching over the yard. -->
+  <g>
+    <ellipse cx="51" cy="30" rx="5" ry="1.8" fill="#42522f" opacity="0.6"/>
+    <path d="M51 29 L50.4 19 L50 12" stroke="#4a3a26" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    <path d="M50.4 19 L45 14 M50.2 16 L55 10 M50.1 14 L47 9" stroke="#4a3a26" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+  </g>
+  <!-- Headstones in loose rows: rounded slabs, a cross, a leaning slab. -->
+  <g>
+    <ellipse cx="17" cy="27" rx="3.5" ry="1.2" fill="#42522f" opacity="0.5"/>
+    <path d="M14.5 27 L14.5 21 Q17 18.5 19.5 21 L19.5 27 Z" fill="#9aa1ab"/>
+    <path d="M14.5 27 L14.5 21 Q15.5 20 17 20 L17 27 Z" fill="#b3b9c2"/>
+  </g>
+  <g>
+    <ellipse cx="31" cy="25" rx="3" ry="1.1" fill="#42522f" opacity="0.5"/>
+    <rect x="29.8" y="15" width="2.4" height="10" fill="#9aa1ab"/>
+    <rect x="27" y="17.5" width="8" height="2.4" fill="#9aa1ab"/>
+    <rect x="29.8" y="15" width="1" height="10" fill="#b3b9c2"/>
+  </g>
+  <g>
+    <ellipse cx="23" cy="40" rx="3.5" ry="1.2" fill="#42522f" opacity="0.5"/>
+    <path d="M20.5 40 L21 33 Q23.5 31 25.5 33.5 L25 40 Z" fill="#8a9199" transform="rotate(-7 23 37)"/>
+  </g>
+  <g>
+    <ellipse cx="38" cy="42" rx="3.5" ry="1.2" fill="#42522f" opacity="0.5"/>
+    <path d="M35.5 42 L35.5 35.5 Q38 33 40.5 35.5 L40.5 42 Z" fill="#9aa1ab"/>
+    <path d="M36.8 37 L39.2 37 M36.8 38.8 L39.2 38.8" stroke="#7f8791" stroke-width="0.6"/>
+  </g>
+  <g>
+    <ellipse cx="47" cy="46" rx="3" ry="1.1" fill="#42522f" opacity="0.5"/>
+    <path d="M44.8 46 L44.8 41 Q47 39 49.2 41 L49.2 46 Z" fill="#9aa1ab"/>
+  </g>
+  <!-- Fresh mound and wrought-iron fence fragment at the near edge. -->
+  <ellipse cx="30" cy="50" rx="4.5" ry="1.8" fill="#7a5f3d"/>
+  <g stroke="#3a362f" stroke-width="1" fill="none">
+    <path d="M12 44 L12 38 M16 45 L16 39 M20 46 L20 40"/>
+    <path d="M11 40 L21 42.2"/>
+  </g>
+</svg>

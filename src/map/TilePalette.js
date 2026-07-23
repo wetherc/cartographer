@@ -62,6 +62,14 @@ const MARKER_TYPES = [
   'wizard-tower',
   'academy',
   'barracks',
+  'ruins',
+  'cave-entrance',
+  'mine',
+  'port',
+  'farm',
+  'graveyard',
+  'camp',
+  'standing-stones',
 ];
 
 /**

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="14" cy="12" rx="9" ry="5" fill="#63a651"/>
+  <ellipse cx="52" cy="16" rx="7" ry="4" fill="#529044"/>
+  <!-- Rock face with a timber-framed adit. -->
+  <path d="M10 48 Q12 26 28 20 Q42 16 52 26 Q56 34 55 48 Z" fill="#7f7a70"/>
+  <path d="M10 48 Q12 26 28 20 Q42 16 52 26 Q42 22 32 24 Q16 30 14 48 Z" fill="#918c82"/>
+  <path d="M20 48 L20 34 L38 34 L38 48 Z" fill="#241f1a"/>
+  <g fill="#8a6f4a">
+    <rect x="18" y="32" width="22" height="3"/>
+    <rect x="18" y="35" width="3" height="13"/>
+    <rect x="37" y="35" width="3" height="13"/>
+  </g>
+  <path d="M18 32 L40 32 L40 33 L18 33 Z" fill="#a3865c"/>
+  <!-- Rails running out of the adit to an ore cart. -->
+  <g stroke="#6b655b" stroke-width="1.2" fill="none">
+    <path d="M25 48 L22 60 M33 48 L38 60"/>
+  </g>
+  <g stroke="#8a6f4a" stroke-width="1.4" fill="none">
+    <path d="M24 51 L34 51 M23 55 L36 55 M22.2 59 L37.5 59"/>
+  </g>
+  <g>
+    <rect x="42" y="46" width="11" height="7" rx="1" fill="#5f5a52"/>
+    <path d="M42 46 L53 46 L52 44 L43 44 Z" fill="#4d4841"/>
+    <circle cx="44.5" cy="49" r="1" fill="#c98a3d"/><circle cx="48" cy="47.5" r="1" fill="#c98a3d"/>
+    <circle cx="50.5" cy="49.5" r="0.9" fill="#e0b04d"/>
+    <circle cx="44.5" cy="54" r="1.6" fill="#3a362f"/><circle cx="50.5" cy="54" r="1.6" fill="#3a362f"/>
+  </g>
+  <!-- Pickaxe against the rock and a spoil heap. -->
+  <path d="M12 46 L16 38" stroke="#8a6f4a" stroke-width="1.3" stroke-linecap="round"/>
+  <path d="M13 38.5 Q16 36 19 38.5 Q16 37.5 13 38.5 Z" fill="#9aa1ab"/>
+  <ellipse cx="12" cy="55" rx="6" ry="2.6" fill="#6b655b"/>
+  <ellipse cx="11" cy="54" rx="3.5" ry="1.4" fill="#7f7a70"/>
+</svg>
