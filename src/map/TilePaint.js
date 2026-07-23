@@ -1,8 +1,47 @@
-import { createTile, getTile, setTile } from './TileGrid.js';
+import { createTile, getTile, setTile, overlayList } from './TileGrid.js';
 import { parseCoords } from './MapGeometry.js';
 import { findRegionGroups } from './RegionGroups.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
+
+/** Overlay families in draw order: shoreline under channel under road. */
+const OVERLAY_ORDER = ['coast', 'river', 'road'];
+
+/**
+ * The overlay family a built-in piece belongs to, from its asset path; null
+ * for anything else (e.g. a custom data: URL image).
+ * @param {string} ref
+ * @returns {string | null}
+ */
+function overlayFamily(ref) {
+  const match = /\/tiles\/(coast|river|road)\//.exec(ref);
+  return match ? match[1] : null;
+}
+
+/**
+ * Merge a newly painted overlay into a tile's existing overlay(s): a piece
+ * replaces any existing piece of its own family (repainting a road corrects
+ * the road) but stacks with other families in canonical draw order (coast
+ * under river under road), so a channel painted across a shoreline drains
+ * through it instead of erasing it. A piece from no known family — custom
+ * overlay art — replaces the whole stack, matching the old behavior.
+ * @param {string | string[] | null} existing
+ * @param {string} imageRef
+ * @returns {string | string[]}
+ */
+export function stackOverlay(existing, imageRef) {
+  const family = overlayFamily(imageRef);
+  if (!family) return imageRef;
+  const kept = overlayList(/** @type {import('../types/map.js').Tile} */ ({ overlayRef: existing }))
+    .filter((ref) => {
+      const f = overlayFamily(ref);
+      return f !== null && f !== family;
+    });
+  const stack = [...kept, imageRef].sort(
+    (a, b) => OVERLAY_ORDER.indexOf(/** @type {string} */ (overlayFamily(a))) - OVERLAY_ORDER.indexOf(/** @type {string} */ (overlayFamily(b))),
+  );
+  return stack.length === 1 ? stack[0] : stack;
+}
 
 /**
  * Whether an "x,y" tile id falls inside a node's width x height grid. Painting
@@ -34,7 +73,9 @@ export function isInBounds(node, tileId) {
  * backdrop shows through) carrying the overlay; the GM can paint terrain under
  * it afterward without disturbing the path. An overlay brush is a no-op over a
  * tile that carries a POI marker, so a path can't be laid across a settlement,
- * dungeon, etc.
+ * dungeon, etc. Overlays of different families stack (see stackOverlay): a
+ * river painted across a coast tile layers over the shoreline instead of
+ * replacing it, while repainting within one family swaps that piece.
  *
  * `span` > 1 paints the image as a scaled block: the anchor tile records the
  * span and the renderer stretches its image across span x span cells (shifted
@@ -55,7 +96,7 @@ export function paintTile(node, tileId, imageRef, overlay = false, span = 1) {
   if (overlay) {
     if (existing?.metadata.poiType) return node;
     const base = existing ?? createTile(tileId, '');
-    return setTile(node, { ...base, overlayRef: imageRef });
+    return setTile(node, { ...base, overlayRef: stackOverlay(base.overlayRef, imageRef) });
   }
   const n = Math.max(1, Math.min(Math.floor(span), node.width, node.height));
   if (n > 1) {
