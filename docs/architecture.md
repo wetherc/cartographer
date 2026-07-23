@@ -52,6 +52,8 @@ There is deliberately no separate "region" entity — a region is just a `MapNod
 
 A region can be entered from more than one tile: any set of 4-neighbor-contiguous tiles sharing the same non-null `childNodeId` count as one region block. `RegionGroups.findRegionGroups(node)` (`src/map/RegionGroups.js`) is a pure flood-fill that returns `{ childNodeId, tileIds, minX, minY, maxX, maxY }` per group — no schema change was needed to support this, since multiple tiles simply carry the same `childNodeId` value. `MapCanvas` recomputes groups whenever a node loads and draws a tint + outline over each group's bounding box, optionally labeled via a `getNodeName` callback.
 
+On outdoor (`kind: 'region'`) maps, a multi-tile region block also renders as scaled images instead of per-tile art: `groupImageChunks(node, group)` partitions a filled-rectangle group into blocks of at most 2x2 tiles, each represented by one image (`groupImageRef` — a POI-marked tile's art wins, else the top-left-most tile's), and `MapRenderer._renderGroupImages` draws each chunk's image stretched across its block, with the per-tile pass skipping the covered base images. Fog rects and path overlays still draw per tile on top, so a partially explored block reveals piecewise and a road through a region stays tile-sized. Ragged (non-rectangular) groups and interiors keep plain per-tile rendering.
+
 ### Rendering and navigation
 
 - `MapCanvas` (`src/map/MapCanvas.js`) owns the `<canvas>`: draws tiles (fog rect if `!tile.revealed`, otherwise the image at `tile.imageRef`) and region group overlays, and handles pointer-drag pan + cursor-anchored wheel zoom. A pointerup is treated as a tile click only if total drag distance stayed below a small threshold, so panning never also triggers a zoom-in.

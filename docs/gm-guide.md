@@ -187,6 +187,13 @@ visible footprint; neighbors already linked elsewhere, walls, and empty cells ar
 left alone. Interiors keep single-tile links (a stair or door is one cell), and
 unlinking a tile clears its whole block.
 
+On outdoor maps a linked block also draws as enlarged art rather than repeated
+tiles: each 2x2 chunk of the block shows one image scaled across it (a bigger
+block gets several distinct 2x2 images, never one image stretched further), so a
+region entrance reads as a landmark. Roads and paths laid through the block stay
+tile-sized on top of it, fog still reveals it piecewise, and interiors render
+tile by tile as usual.
+
 When the party zooms into a region, it lands on a sensible border tile computed
 from the direction of approach, rather than dropping into a fully fogged interior.
 
