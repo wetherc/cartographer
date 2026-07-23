@@ -2,7 +2,7 @@ import { getTile, updateTileMetadata, createMapNode } from './map/TileGrid.js';
 import { TilePalette } from './map/TilePalette.js';
 import { MapCanvas } from './map/MapCanvas.js';
 import { clientToBuffer, screenToTile } from './map/MapGeometry.js';
-import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesInRect } from './map/TilePaint.js';
+import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesInRect, ensureChildLink } from './map/TilePaint.js';
 import { computeRegionEntryTile, resolveEntryTile } from './map/EntryPoint.js';
 import { MapNavigator } from './map/MapNavigator.js';
 import { generateNodeTiles, generateDungeonLevels, ARCHETYPES } from './map/MapGenerator.js';
@@ -997,6 +997,34 @@ mustGetElement('generate-btn').addEventListener('click', async () => {
     );
   }
   grid.updateNode({ ...node, width: gen.width, height: gen.height, tiles: gen.tiles });
+  // A generated map must be reachable from the overworld, not just internally
+  // connected: if no parent tile links to this node yet, stamp one (a POI
+  // marker matching the archetype) on the parent tile nearest its centre, so
+  // there is always a way in. Tell the GM where it landed so it can be moved.
+  const parent = node.parentId ? grid.getNode(node.parentId) : null;
+  if (parent) {
+    /** @type {Record<string, { marker: string, poi: import('./types/map.js').POIType }>} */
+    const entranceArt = {
+      dungeon: { marker: 'dungeon', poi: 'dungeon' },
+      castle: { marker: 'castle', poi: 'landmark' },
+      town: { marker: 'settlement', poi: 'settlement' },
+    };
+    const artFor = entranceArt[values.archetype];
+    const linked = ensureChildLink(parent, node.id, {
+      // Wilderness gets no marker: the link rides the existing terrain tile
+      // (or a fresh grass tile) and shows as a region outline once discovered.
+      markerRef: artFor ? (palette.get(artFor.marker)?.imageRef ?? null) : null,
+      createRef: palette.pickVariant('grass', Math.random).imageRef,
+      poiType: artFor ? artFor.poi : null,
+    });
+    if (linked.tileId) {
+      grid.updateNode(linked.node);
+      alertModal(
+        `Linked "${node.name}" from ${parent.name} at tile (${linked.tileId}), so it can be reached during play. Repaint or relink that tile to move the entrance.`,
+        { title: 'Entrance placed', label: 'OK' },
+      );
+    }
+  }
   // The regenerated layout may have shrunk past the party or replaced its tile
   // with void/wall; re-land it on the layout's guaranteed entry tile if so.
   const pos = partyTracker.getPosition();
