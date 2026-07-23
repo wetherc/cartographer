@@ -1,8 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" fill="#5a9b4a"/>
-  <ellipse cx="16" cy="10" rx="9" ry="4" fill="#63a651"/>
-  <ellipse cx="48" cy="16" rx="8" ry="4" fill="#529044"/>
-  <path d="M12 22 Q13 19.5 14 22 M50 20 Q51 17.5 52 20" stroke="#4c8a40" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <!-- Overlay shoreline: water fills the south half, a sand strand fades to
+       transparent above, so any terrain beneath supplies the land side. -->
   <rect y="34" width="64" height="30" fill="#33719f"/>
   <ellipse cx="22" cy="52" rx="13" ry="6" fill="#2d6591"/>
   <ellipse cx="50" cy="45" rx="9" ry="4" fill="#2d6591"/>

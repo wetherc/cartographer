@@ -1,5 +1,6 @@
 import { icon } from './icons.js';
 import { allowsPaletteType } from '../map/NodeKinds.js';
+import { isOverlayType } from '../map/TilePalette.js';
 import { wireDisclosure } from './Disclosure.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
@@ -126,22 +127,22 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   }
   root.appendChild(scaleRow);
 
-  // Swatches, grouped into collapsible sections so terrain, paths (roads and
-  // rivers), buildings, and interior pieces aren't commingled in one grid.
-  // Terrain starts open (the most common brush); the rest start collapsed.
+  // Swatches, grouped into collapsible sections so terrain, overlays (roads,
+  // rivers, coasts), buildings, and interior pieces aren't commingled in one
+  // grid. Terrain starts open (the most common brush); the rest start collapsed.
   const TERRAIN_TYPES = new Set([
     'grass', 'forest', 'mountain', 'water', 'desert',
-    'swamp', 'snow', 'hills', 'farmland', 'coast', 'custom',
+    'swamp', 'snow', 'hills', 'farmland', 'custom',
   ]);
   /** @param {PaletteEntry} entry */
   const sectionFor = (entry) =>
-    TERRAIN_TYPES.has(entry.type) ? 'Terrain' : entry.type === 'road' || entry.type === 'river' ? 'Paths' : entry.type === 'interior' ? 'Interior' : 'Buildings';
+    TERRAIN_TYPES.has(entry.type) ? 'Terrain' : isOverlayType(entry.type) ? 'Overlays' : entry.type === 'interior' ? 'Interior' : 'Buildings';
 
   const sectionsEl = document.createElement('div');
   sectionsEl.className = 'palette__sections';
   /** @type {Map<string, { wrap: HTMLElement, grid: HTMLElement, swatches: HTMLElement[] }>} */
   const sections = new Map();
-  for (const label of ['Terrain', 'Paths', 'Buildings', 'Interior']) {
+  for (const label of ['Terrain', 'Overlays', 'Buildings', 'Interior']) {
     const wrap = document.createElement('div');
     wrap.className = 'palette__section';
 

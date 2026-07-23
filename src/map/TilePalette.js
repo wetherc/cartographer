@@ -54,21 +54,22 @@ const ROAD_KINDS = [
 const RIVER_KINDS = [...ROAD_KINDS, 'bridge-h', 'bridge-v'];
 
 /**
- * Coast transition tiles: water fills one half (the named edge) with a sandy
- * shoreline against grass on the other, so a water area can meet grass without
- * a hard seam. Straight edges only for now; corners can follow.
+ * Coast transition overlays: water fills one half (the named edge) with a
+ * sandy shoreline fading to transparent on the other, so any terrain beneath
+ * (grass, desert, snow, mountain) supplies the land side without needing a
+ * water-and-X tile per biome. Straight edges only for now; corners can follow.
  * @type {string[]}
  */
 const COAST_KINDS = ['n', 's', 'e', 'w'];
 
 /**
  * Palette types painted as a tile's overlayRef (layered over terrain) rather
- * than as its base image, so a path can cross sand, snow, etc.
+ * than as its base image, so a path or shoreline can cross sand, snow, etc.
  * @param {string} type
  * @returns {boolean}
  */
 export function isOverlayType(type) {
-  return type === 'road' || type === 'river';
+  return type === 'road' || type === 'river' || type === 'coast';
 }
 
 /**
