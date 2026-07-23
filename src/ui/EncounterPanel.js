@@ -1,5 +1,6 @@
 import { applyDamage, heal, isDefeated } from '../entities/Encounter.js';
 import { mountConditionsBar } from './ConditionsBar.js';
+import { mountStatBlockBar } from './StatBlockBar.js';
 import { icon } from './icons.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
 
@@ -23,6 +24,8 @@ import { isGM, hpBand } from '../view/ViewRole.js';
  *   onUpdate: (encounter: Encounter) => void,
  *   onDelete: (id: string) => void,
  *   onAdd?: () => Promise<Encounter | null>,
+ *   onAddFromTemplate?: () => Promise<Encounter | null>,
+ *   onSaveTemplate?: (encounter: Encounter) => void,
  *   confirmDelete?: (encounter: Encounter) => Promise<boolean>,
  *   getRole?: () => ViewRole,
  * }} callbacks
@@ -103,6 +106,14 @@ export function mountEncounterPanel(container, callbacks) {
         updateOne(encounter, (e) => heal(e, Number(amountInput.value)));
       });
 
+      const templateButton = document.createElement('button');
+      templateButton.type = 'button';
+      templateButton.className = 'btn btn--icon';
+      templateButton.setAttribute('aria-label', `Save ${encounter.name} as a bestiary template`);
+      templateButton.title = 'Save as template';
+      templateButton.appendChild(icon('save'));
+      templateButton.addEventListener('click', () => callbacks.onSaveTemplate?.(encounter));
+
       const deleteButton = document.createElement('button');
       deleteButton.type = 'button';
       deleteButton.className = 'btn btn--icon';
@@ -117,8 +128,15 @@ export function mountEncounterPanel(container, callbacks) {
 
       const head = document.createElement('div');
       head.className = 'encounter-panel__head';
-      head.append(label, amountInput, damageButton, healButton, deleteButton);
+      head.append(label, amountInput, damageButton, healButton, templateButton, deleteButton);
       row.appendChild(head);
+
+      // The GM edits the encounter's stat block (AC, Speed, ...) right on the
+      // row; edits write the whole record back through onUpdate.
+      mountStatBlockBar(row, {
+        getStatBlock: () => encounter.statBlock ?? {},
+        onChange: (next) => updateOne(encounter, (e) => ({ ...e, statBlock: next })),
+      });
 
       // A GM tracks an encounter's status conditions (poisoned, prone, ...)
       // right on its row; edits write the whole list back through onUpdate.
@@ -142,6 +160,18 @@ export function mountEncounterPanel(container, callbacks) {
         if (await onAdd()) render();
       });
       root.appendChild(addButton);
+    }
+
+    const onAddFromTemplate = callbacks.onAddFromTemplate;
+    if (onAddFromTemplate && gm) {
+      const bestiaryButton = document.createElement('button');
+      bestiaryButton.type = 'button';
+      bestiaryButton.className = 'btn encounter-panel__add';
+      bestiaryButton.append(icon('scroll'), document.createTextNode('From bestiary'));
+      bestiaryButton.addEventListener('click', async () => {
+        if (await onAddFromTemplate()) render();
+      });
+      root.appendChild(bestiaryButton);
     }
   }
 

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createEncounter, applyDamage, heal, isDefeated, withDefaults, encountersAt, encountersOnTile } from '../src/entities/Encounter.js';
+import { createEncounter, applyDamage, heal, isDefeated, withDefaults, encountersAt, encountersOnTile, toTemplate, fromTemplate } from '../src/entities/Encounter.js';
 
 test('createEncounter starts at full health', () => {
   const goblin = createEncounter('e1', 'Goblin', 7, { AC: 15 });
@@ -73,4 +73,30 @@ test('encountersOnTile matches the exact tile, skips unbound, defeated, and null
   );
   assert.deepEqual(encountersOnTile(all, { nodeId: 'region', tileId: '9,9' }), []);
   assert.deepEqual(encountersOnTile(all, null), []);
+});
+
+test('toTemplate captures the blueprint, not the live state', () => {
+  const goblin = applyDamage(
+    createEncounter('e1', 'Goblin', 7, { AC: 13 }, { nodeId: 'world', tileId: '5,2' }),
+    3,
+  );
+  const template = toTemplate('goblin-template', goblin);
+  assert.deepEqual(template, { id: 'goblin-template', name: 'Goblin', maxHP: 7, statBlock: { AC: 13 } });
+  // The stat block is copied, not shared: editing the template never touches
+  // the encounter it was saved from.
+  template.statBlock.AC = 99;
+  assert.equal(goblin.statBlock.AC, 13);
+});
+
+test('fromTemplate spawns a fresh, full-health encounter at the given location', () => {
+  const template = { id: 't1', name: 'Goblin', maxHP: 7, statBlock: { AC: 13, Speed: 30 } };
+  const spawned = fromTemplate(template, 'e9', { nodeId: 'region', tileId: '1,1' });
+  assert.equal(spawned.id, 'e9');
+  assert.equal(spawned.currentHP, 7);
+  assert.deepEqual(spawned.statBlock, { AC: 13, Speed: 30 });
+  assert.deepEqual(spawned.location, { nodeId: 'region', tileId: '1,1' });
+  assert.deepEqual(spawned.conditions, []);
+  // Independent copy again: two spawns never share one stat block.
+  spawned.statBlock.AC = 1;
+  assert.equal(template.statBlock.AC, 13);
 });

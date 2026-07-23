@@ -1,5 +1,6 @@
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
+/** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
 
 /**
  * Create an encounter at full health, optionally staged at a map location.
@@ -56,6 +57,28 @@ export function encountersOnTile(encounters, position) {
       e.location.tileId === position.tileId &&
       !isDefeated(e),
   );
+}
+
+/**
+ * Capture an encounter as a reusable bestiary template: its blueprint (name,
+ * max HP, stat block), not its live state (current HP, location, conditions).
+ * @param {string} id
+ * @param {Encounter} encounter
+ * @returns {EncounterTemplate}
+ */
+export function toTemplate(id, encounter) {
+  return { id, name: encounter.name, maxHP: encounter.maxHP, statBlock: { ...encounter.statBlock } };
+}
+
+/**
+ * Spawn a fresh, full-health encounter from a bestiary template.
+ * @param {EncounterTemplate} template
+ * @param {string} id
+ * @param {EncounterLocation | null} [location]
+ * @returns {Encounter}
+ */
+export function fromTemplate(template, id, location = null) {
+  return createEncounter(id, template.name, template.maxHP, { ...template.statBlock }, location);
 }
 
 /**

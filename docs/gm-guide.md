@@ -99,17 +99,29 @@ Panning is the **right mouse button** in both modes (drag with the right button
 held); the wheel zooms. This is deliberate — the left button is reserved for
 painting in Build and for acting in Play.
 
+Mistakes are cheap: **Undo stroke** (the Tools card, or Ctrl/Cmd+Z in Build
+mode) reverts the last edit — a whole paint or erase drag counts as one edit,
+as does a region link or a generation. This history is separate from the
+header's save-level Undo and lasts only until the page reloads.
+
+The Tools card also has **Export PNG**, which downloads the current map as a
+full-resolution image (fog ignored) — for printing, or dropping into a VTT.
+
 ### Generating a map
 
 Instead of painting a large map tile by tile, the **Generate** card (right rail)
 can fill the current node with an auto-generated layout. Pick an archetype —
 **wilderness** or **town** for a region, **dungeon** or **castle** for an
-interior — and a size (small / medium / large), and the node's grid is replaced
-with the generated map (with a confirmation first if the node already has
-tiles). Every generated layout is guaranteed to be reachable from its parent
-map: dungeons get an entrance corridor with a door on the map edge, castles a
-gate in the south wall, and towns roads that run edge to edge. Regenerate as
-many times as you like until you get a layout you want to refine by hand.
+interior — and a size (small / medium / large). The dialog shows a **live
+preview** of the exact layout it will stamp, driven by a visible **seed**:
+click **Reroll** (or change any field) to see a different candidate, and
+nothing touches the node until you accept — so finding a good layout is no
+longer a destructive loop. The seed reproduces the layout, so note it down if
+you want to regenerate the same map later. Accepting replaces the node's grid
+(with a confirmation first if the node already has tiles). Every generated
+layout is guaranteed to be reachable from its parent map: dungeons get an
+entrance corridor with a door on the map edge, castles a gate in the south
+wall, and towns roads that run edge to edge.
 
 Generating also guarantees a way in from the map above: if nothing on the
 parent map links to the node yet, an entrance tile (a dungeon, castle, or
@@ -185,7 +197,14 @@ see a point of interest as they approach.
 
 Damage and heal from the panel; a defeated encounter is styled as such rather than
 deleted, so you keep a record of what died. Each encounter row tracks its own
-status **conditions** (poisoned, prone, …).
+status **conditions** (poisoned, prone, …) and a **stat block** — chips like
+"AC 13" added right on the row, GM-only.
+
+Recurring foes go in the **bestiary**: the save icon on an encounter row stores
+its blueprint (name, max HP, stat block) as a template, and **From bestiary**
+spawns a fresh, full-health copy at the party's location — so the fourth goblin
+isn't typed from scratch. Templates are snapshots (later edits to the live
+encounter don't change them) and the same dialog can delete a stale one.
 
 ### Initiative and conditions
 

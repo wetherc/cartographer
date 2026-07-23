@@ -7,6 +7,10 @@ import { computeRegionEntryTile, resolveEntryTile } from './map/EntryPoint.js';
 import { MapNavigator } from './map/MapNavigator.js';
 import { generateNodeTiles, generateDungeonLevels, ARCHETYPES } from './map/MapGenerator.js';
 import { discoveredNodes, revealAll, setTileRevealed } from './map/FogOfWar.js';
+import { pushEdit, popEdit } from './map/EditHistory.js';
+import { renderNodeToCanvas, downloadCanvasPNG, exportFilename } from './map/MapExport.js';
+import { findRegionGroups } from './map/RegionGroups.js';
+import { mulberry32 } from './util/Rng.js';
 import { createNodeActions } from './app/nodeActions.js';
 import {
   buildBlankCampaign,
@@ -26,6 +30,7 @@ import { mountMapControls } from './ui/MapControls.js';
 import { mountMapDescription } from './ui/MapDescription.js';
 import { mountTileTooltip } from './ui/TileTooltip.js';
 import { promptModal, confirmModal, alertModal } from './ui/Modal.js';
+import { generateDialog } from './ui/GenerateDialog.js';
 import { mountToasts, queueToastAfterReload, flushQueuedToast } from './ui/Toast.js';
 import { PartyTracker } from './party/PartyTracker.js';
 import { createCharacter, withHP, withMana, shortRest, longRest, addXP } from './entities/Character.js';
@@ -36,7 +41,7 @@ import { mountInitiativePanel } from './ui/InitiativePanel.js';
 import { tickConditions } from './entities/Conditions.js';
 import { createNPC, npcsAt, DISPOSITIONS } from './entities/NPC.js';
 import { mountNPCPanel } from './ui/NPCPanel.js';
-import { createEncounter, encountersAt, encountersOnTile, isDefeated } from './entities/Encounter.js';
+import { createEncounter, encountersAt, encountersOnTile, isDefeated, toTemplate, fromTemplate } from './entities/Encounter.js';
 import { slugId, replaceById, removeById } from './entities/Roster.js';
 import { mountCharacterRoster } from './ui/CharacterRoster.js';
 import { mountCharacterSheet } from './ui/CharacterSheet.js';
@@ -76,6 +81,8 @@ let clock = initial.clock;
 let npcs = initial.npcs;
 /** @type {import('./types/handout.js').Handout[]} GM lore/read-aloud handouts */
 let handouts = initial.handouts;
+/** @type {import('./types/entities.js').EncounterTemplate[]} reusable encounter templates */
+let bestiary = initial.bestiary;
 /** @type {import('./types/combat.js').CombatState | null} running combat, transient (not persisted) */
 let combat = null;
 /** Monotonic counter making travelogue entry ids unique within a session. */
@@ -166,6 +173,42 @@ let fogTool = null;
 let regionAnchor = null;
 /** @type {ReturnType<typeof createNodeActions>} create/edit/delete-node actions; assigned once the views they resync exist */
 let nodeActions;
+
+/**
+ * Build-mode stroke-level undo: an in-memory ring of node snapshots taken
+ * before each paint/erase stroke, region link, tile link, drop-paint, and
+ * generate, so one bad edit is reversible without reloading a whole earlier
+ * save. Session-only — the persisted Undo button stays the save-level story.
+ * @type {import('./types/map.js').MapNode[][]}
+ */
+let editHistory = [];
+
+/** Snapshot the given nodes' pre-edit state onto the stroke-undo ring.
+ * @param {...import('./types/map.js').MapNode} nodes */
+function snapshotEdit(...nodes) {
+  editHistory = pushEdit(editHistory, nodes);
+}
+
+/** Restore the most recent stroke-undo snapshot, skipping nodes deleted since. */
+function undoStroke() {
+  const popped = popEdit(editHistory);
+  editHistory = popped.history;
+  if (!popped.nodes) {
+    toasts.show('Nothing to undo.');
+    return;
+  }
+  for (const node of popped.nodes) {
+    if (grid.getNode(node.id)) grid.updateNode(node);
+  }
+  mapCanvas.setNode(navigator.getCurrentNode());
+  clearSelection();
+  syncPartyMarker();
+  worldTree.update();
+  regionTree.update();
+  refreshMapDescription();
+  markDirty();
+  toasts.show('Undid the last edit.');
+}
 
 /** @typedef {import('./types/entities.js').Character} Character */
 
@@ -327,6 +370,7 @@ async function finishRegionStroke() {
     childId = await nodeActions.addChildNode(node.id);
   }
   if (!childId) return;
+  snapshotEdit(navigator.getCurrentNode());
   const updated = linkTilesInRect(navigator.getCurrentNode(), rect, childId);
   grid.updateNode(updated);
   mapCanvas.refreshNode(updated);
@@ -386,6 +430,12 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
         applyToTile(id, (node) => setTileRevealed(node, id, fogTool === 'reveal'));
       }
       return;
+    }
+    // A whole drag coalesces into one stroke, so one snapshot on its first
+    // cell makes the stroke the unit of undo. Inspect (no brush) and the
+    // region marquee don't mutate here; the region tool snapshots on link.
+    if (first && activeBrush && activeBrush !== 'region') {
+      snapshotEdit(navigator.getCurrentNode());
     }
     if (activeBrush === 'region') {
       if (first) regionAnchor = { x, y };
@@ -504,6 +554,7 @@ const inspector = mountTileInspector(mustGetElement('inspector-container'), {
 function linkSelectedTile(childNodeId) {
   if (!selectedTileId) return;
   const node = navigator.getCurrentNode();
+  snapshotEdit(node);
   const tiles = node.tiles.map((t) => (t.id === selectedTileId ? { ...t, childNodeId } : t));
   const updated = { ...node, tiles };
   grid.updateNode(updated);
@@ -582,6 +633,7 @@ canvasEl.addEventListener('drop', (event) => {
   const buffer = clientToBuffer(event.clientX, event.clientY, rect, canvasEl.width, canvasEl.height);
   const coords = screenToTile(buffer.x, buffer.y, mapCanvas.tileSize, mapCanvas.offsetX, mapCanvas.offsetY, mapCanvas.scale);
   const tileId = `${coords.x},${coords.y}`;
+  snapshotEdit(navigator.getCurrentNode());
   applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef, entry.type === 'road'));
 });
 
@@ -770,6 +822,61 @@ const encounterPanel = mountEncounterPanel(mustGetElement('encounter-container')
       {},
       { ...partyTracker.getPosition() },
     );
+    encounters = [...encounters, created];
+    syncEncounterMarkers();
+    markDirty();
+    return created;
+  },
+  // Save an encounter's blueprint (name, max HP, stat block) to the bestiary,
+  // so the next Goblin isn't typed from scratch. Same-named saves stack as
+  // separate templates — a template is a snapshot, not a live link.
+  onSaveTemplate: (encounter) => {
+    bestiary = [...bestiary, toTemplate(slugId(encounter.name, bestiary.map((t) => t.id)), encounter)];
+    markDirty();
+    toasts.show(`Saved "${encounter.name}" to the bestiary.`);
+  },
+  // Spawn a fresh, full-health encounter from a saved template at the party's
+  // location; the same dialog can also prune a stale template instead.
+  onAddFromTemplate: async () => {
+    if (bestiary.length === 0) {
+      await alertModal('The bestiary is empty. Save an encounter as a template first (the save icon on its row).', {
+        title: 'Bestiary',
+      });
+      return null;
+    }
+    const values = await promptModal(
+      'Add from bestiary',
+      [
+        {
+          name: 'template',
+          label: 'Template',
+          type: 'select',
+          options: bestiary.map((t) => ({ value: t.id, label: `${t.name} (${t.maxHP} HP)` })),
+        },
+        {
+          name: 'action',
+          label: 'Action',
+          type: 'select',
+          value: 'spawn',
+          options: [
+            { value: 'spawn', label: 'Spawn at party location' },
+            { value: 'delete', label: 'Delete this template' },
+          ],
+        },
+      ],
+      { submitLabel: 'Apply' },
+    );
+    const template = values ? bestiary.find((t) => t.id === values.template) : undefined;
+    if (!values || !template) return null;
+    if (values.action === 'delete') {
+      bestiary = removeById(bestiary, template.id);
+      markDirty();
+      toasts.show(`Deleted "${template.name}" from the bestiary.`);
+      return null;
+    }
+    const created = fromTemplate(template, slugId(template.name, encounters.map((e) => e.id)), {
+      ...partyTracker.getPosition(),
+    });
     encounters = [...encounters, created];
     syncEncounterMarkers();
     markDirty();
@@ -1060,25 +1167,50 @@ wireTabs(mustGetElement('sidebar-tabs'));
 mustGetElement('generate-btn').addEventListener('click', async () => {
   const node = navigator.getCurrentNode();
   const archetypes = ARCHETYPES[node.kind];
-  const values = await promptModal(
-    'Generate map',
-    [
-      { name: 'archetype', label: 'Archetype', type: 'select', value: archetypes[0].value, options: archetypes },
-      {
-        name: 'size',
-        label: 'Size',
-        type: 'select',
-        value: 'medium',
-        options: [
-          { value: 'small', label: 'Small' },
-          { value: 'medium', label: 'Medium' },
-          { value: 'large', label: 'Large' },
-        ],
-      },
-      { name: 'levels', label: 'Levels (dungeon only)', type: 'number', value: 1, min: 1 },
-    ],
-    { submitLabel: 'Generate' },
-  );
+
+  /**
+   * Build (and memoize) the full generation result for a dialog choice. The
+   * RNG is seeded from the choice, so the preview the dialog renders and the
+   * layout stamped on accept are the same map — and the seed shown to the GM
+   * reproduces it later. Multi-level dungeons are built whole here so the
+   * preview's level 1 carries the exact stairs the accepted map will.
+   * @type {{ key: string, gen: { width: number, height: number, tiles: import('./types/map.js').Tile[], entry: string }, levels: ReturnType<typeof generateDungeonLevels> | null } | null}
+   */
+  let candidate = null;
+  const freshId = () => {
+    let id;
+    do id = `node-${Math.random().toString(36).slice(2, 8)}`;
+    while (grid.getNode(id));
+    return id;
+  };
+  /** @param {import('./ui/GenerateDialog.js').GenerateChoice} choice */
+  const makeCandidate = (choice) => {
+    const key = JSON.stringify(choice);
+    if (candidate?.key !== key) {
+      const rng = mulberry32(choice.seed);
+      if (choice.archetype === 'dungeon') {
+        // A dungeon can be a chain of levels: each level's stairs-down is
+        // linked to a freshly created child node holding the level below, so
+        // stairs always connect to a real generated level.
+        const levels = generateDungeonLevels(
+          palette,
+          { size: choice.size, levels: choice.levels },
+          rng,
+          freshId,
+        );
+        candidate = { key, gen: levels[0], levels };
+      } else {
+        candidate = {
+          key,
+          gen: generateNodeTiles(palette, { kind: node.kind, archetype: choice.archetype, size: choice.size }, rng),
+          levels: null,
+        };
+      }
+    }
+    return candidate.gen;
+  };
+
+  const values = await generateDialog({ archetypes, makeCandidate });
   if (!values) return;
   if (
     node.tiles.length > 0 &&
@@ -1089,26 +1221,13 @@ mustGetElement('generate-btn').addEventListener('click', async () => {
   ) {
     return;
   }
-  /** @type {{ width: number, height: number, tiles: import('./types/map.js').Tile[], entry: string }} */
-  let gen;
-  if (values.archetype === 'dungeon') {
-    // A dungeon can be a chain of levels: each level's stairs-down is linked
-    // to a freshly created child node holding the level below, so stairs
-    // always connect to a real generated level instead of being decoration.
-    const freshId = () => {
-      let id;
-      do id = `node-${Math.random().toString(36).slice(2, 8)}`;
-      while (grid.getNode(id));
-      return id;
-    };
-    const levels = generateDungeonLevels(
-      palette,
-      { size: values.size, levels: Math.max(1, Number(values.levels) || 1) },
-      Math.random,
-      freshId,
-    );
-    gen = levels[0];
-    levels.slice(1).forEach((level, i) => {
+  const gen = makeCandidate(values);
+  // The regenerated layout replaces the node (and may restamp its parent's
+  // entrance link below); snapshot both so the stroke-undo ring can revert it.
+  const parentBefore = node.parentId ? grid.getNode(node.parentId) : null;
+  snapshotEdit(node, ...(parentBefore ? [parentBefore] : []));
+  if (candidate?.levels) {
+    candidate.levels.slice(1).forEach((level, i) => {
       const child = createMapNode(
         /** @type {string} */ (level.id),
         `${node.name} (level ${i + 2})`,
@@ -1119,12 +1238,6 @@ mustGetElement('generate-btn').addEventListener('click', async () => {
       );
       grid.addNode({ ...child, tiles: level.tiles });
     });
-  } else {
-    gen = generateNodeTiles(
-      palette,
-      { kind: node.kind, archetype: values.archetype, size: values.size },
-      Math.random,
-    );
   }
   grid.updateNode({ ...node, width: gen.width, height: gen.height, tiles: gen.tiles });
   // A generated map must be reachable from the overworld, not just internally
@@ -1173,7 +1286,21 @@ mustGetElement('generate-btn').addEventListener('click', async () => {
   regionTree.update();
   refreshMapDescription();
   markDirty();
-  toasts.show(`Generated ${values.archetype} map in "${node.name}".`);
+  toasts.show(`Generated ${values.archetype} map in "${node.name}" (seed ${values.seed}).`);
+});
+
+// Build-rail map tools: stroke-level undo and a fog-free PNG export of the
+// current node (Build rail, so GM/Build only — a player never sees these).
+mustGetElement('stroke-undo-btn').addEventListener('click', undoStroke);
+mustGetElement('export-png-btn').addEventListener('click', async () => {
+  const node = navigator.getCurrentNode();
+  const canvas = await renderNodeToCanvas(node, {
+    tileSize: 64,
+    regionGroups: findRegionGroups(node),
+    getNodeName: (id) => grid.getNode(id)?.name,
+  });
+  downloadCanvasPNG(canvas, exportFilename(node.name));
+  toasts.show(`Exported "${node.name}" as PNG.`);
 });
 
 // Collapse the Play sidebar to give the map the full width during a session.
@@ -1205,6 +1332,7 @@ function buildCurrentState() {
     clock,
     npcs,
     handouts,
+    bestiary,
   });
 }
 
@@ -1218,7 +1346,7 @@ function replaceCampaign(campaign, toastMessage = 'Campaign replaced.') {
       campaign.encounters,
       campaign.travelog,
       campaign.quests,
-      { clock: campaign.clock, npcs: campaign.npcs, handouts: campaign.handouts },
+      { clock: campaign.clock, npcs: campaign.npcs, handouts: campaign.handouts, bestiary: campaign.bestiary },
     ),
   );
   queueToastAfterReload(toastMessage);
@@ -1329,7 +1457,11 @@ document.addEventListener('keydown', (event) => {
   }
   if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
     event.preventDefault();
-    mustGetElement('undo-btn').click();
+    // In Build mode, Ctrl+Z undoes the last stroke-level edit (the thing a GM
+    // mid-painting reaches for); the header Undo button keeps the save-level
+    // story, which Ctrl+Z still drives everywhere else.
+    if (currentMode === 'build') undoStroke();
+    else mustGetElement('undo-btn').click();
     return;
   }
   if (event.ctrlKey || event.metaKey || event.altKey) return;
@@ -1341,7 +1473,7 @@ document.addEventListener('keydown', (event) => {
     alertModal(
       [
         'Ctrl/Cmd+S — save the campaign',
-        'Ctrl/Cmd+Z — undo to the previous save',
+        'Ctrl/Cmd+Z — undo (Build: last edit; Play: previous save)',
         'B / P — switch to Build / Play mode',
         'On the map (click it first):',
         'Arrows — move the cursor · Enter/Space — act',
