@@ -47,6 +47,12 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
   <div class="grid" style="grid-template-columns: repeat(3, 64px);" id="coast-ew"></div>
 </div>
 
+<h2>Island (outer corners) and lake (inner corners)</h2>
+<div style="display: flex; gap: 24px; align-items: flex-start;">
+  <div class="grid" style="grid-template-columns: repeat(5, 64px);" id="coast-island"></div>
+  <div class="grid" style="grid-template-columns: repeat(4, 64px);" id="coast-lake"></div>
+</div>
+
 <script>
   const img = (src) => `<img src="../assets/tiles/${src}.svg">`;
 
@@ -131,6 +137,25 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     ['desert/desert-1'], ['desert/desert-2'],
     ['desert/desert-2', 'coast/coast-s'], ['desert/desert-3', 'coast/coast-s'],
     ['water/water-3'], ['water/water-1'],
+  ].map(([base, over]) => cell(base, over)).join('');
+
+  // A 3x2 island ringed by water: the four outer corner pieces wrap the land
+  // tips and join the straight pieces at the shared edge cusps. Two base
+  // biomes prove the corners are overlays too.
+  document.getElementById('coast-island').innerHTML = [
+    ['water/water-1'], ['water/water-2'], ['water/water-3'], ['water/water-1'], ['water/water-2'],
+    ['water/water-2'], ['grass/grass-1', 'coast/coast-corner-nw'], ['grass/grass-2', 'coast/coast-n'], ['grass/grass-3', 'coast/coast-corner-ne'], ['water/water-3'],
+    ['water/water-3'], ['desert/desert-1', 'coast/coast-corner-sw'], ['desert/desert-2', 'coast/coast-s'], ['desert/desert-3', 'coast/coast-corner-se'], ['water/water-1'],
+    ['water/water-1'], ['water/water-3'], ['water/water-2'], ['water/water-2'], ['water/water-1'],
+  ].map(([base, over]) => cell(base, over)).join('');
+
+  // A 2x2 lake ringed by land: straight pieces along the shores, inner corner
+  // pieces where the shoreline turns through a single tile quadrant.
+  document.getElementById('coast-lake').innerHTML = [
+    ['grass/grass-1', 'coast/coast-inner-se'], ['grass/grass-2', 'coast/coast-s'], ['grass/grass-3', 'coast/coast-s'], ['desert/desert-1', 'coast/coast-inner-sw'],
+    ['grass/grass-2', 'coast/coast-e'], ['water/water-1'], ['water/water-2'], ['desert/desert-2', 'coast/coast-w'],
+    ['snow/snow-1', 'coast/coast-e'], ['water/water-3'], ['water/water-1'], ['desert/desert-3', 'coast/coast-w'],
+    ['snow/snow-2', 'coast/coast-inner-ne'], ['snow/snow-3', 'coast/coast-n'], ['snow/snow-1', 'coast/coast-n'], ['desert/desert-1', 'coast/coast-inner-nw'],
   ].map(([base, over]) => cell(base, over)).join('');
 
   document.getElementById('coast-ew').innerHTML = [
