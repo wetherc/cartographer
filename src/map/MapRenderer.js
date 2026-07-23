@@ -78,6 +78,38 @@ export class MapRenderer {
     this._renderPartyMarker(view);
     this._renderCursor(view);
     this._renderMapBoundsBorder(view);
+    this._renderCoordinates(view);
+  }
+
+  /**
+   * Draw column (x) numbers above the top row and row (y) numbers left of the
+   * first column, so a GM can read a tile's coordinate off the grid. Labels
+   * hang off the grid edge and pan with it. Skipped when tiles are too small to
+   * label without clutter.
+   * @param {MapView} view
+   */
+  _renderCoordinates(view) {
+    if (!view.node) return;
+    const size = this.tileSize * view.scale;
+    if (size < 20) return; // too dense to be legible
+    const { ctx } = this;
+    ctx.save();
+    ctx.fillStyle = 'rgba(230, 215, 180, 0.7)';
+    ctx.font = `${Math.min(12, Math.round(size * 0.32))}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const pad = Math.min(12, size * 0.35);
+    for (let x = 0; x < view.node.width; x++) {
+      const cx = view.offsetX + (x + 0.5) * size;
+      if (cx < 0 || cx > view.canvasWidth) continue;
+      ctx.fillText(String(x), cx, view.offsetY - pad);
+    }
+    for (let y = 0; y < view.node.height; y++) {
+      const cy = view.offsetY + (y + 0.5) * size;
+      if (cy < 0 || cy > view.canvasHeight) continue;
+      ctx.fillText(String(y), view.offsetX - pad, cy);
+    }
+    ctx.restore();
   }
 
   /**
@@ -253,7 +285,14 @@ export class MapRenderer {
   /** @param {MapView} view */
   _renderRegionGroups(view) {
     const { ctx } = this;
+    // Outside Build mode, a region stays hidden until the party has discovered
+    // at least one of its tiles through the fog, so the overworld doesn't
+    // reveal where every unexplored region sits.
+    const revealedIds = view.revealAll
+      ? null
+      : new Set((view.node?.tiles ?? []).filter((t) => t.revealed).map((t) => t.id));
     for (const group of view.regionGroups) {
+      if (revealedIds && !group.tileIds.some((id) => revealedIds.has(id))) continue;
       const topLeft = tileRect(group.minX, group.minY, this.tileSize, view.offsetX, view.offsetY, view.scale);
       const bottomRight = tileRect(group.maxX, group.maxY, this.tileSize, view.offsetX, view.offsetY, view.scale);
       const x = topLeft.sx;
