@@ -1,25 +1,53 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <defs><g id="tr">
-    <ellipse cx="0" cy="10" rx="9" ry="3" fill="#2b5228" opacity="0.6"/>
-    <path d="M-1.5 10 L-2.5 1 L2.5 1 L1.5 10 Z" fill="#5a4028"/>
-    <path d="M-1.5 10 L-4 12 M1.5 10 L4 12" stroke="#5a4028" stroke-width="1.2" fill="none"/>
-    <circle cx="-5" cy="-2" r="7" fill="#2c5c29"/>
-    <circle cx="5" cy="-1" r="7.5" fill="#2c5c29"/>
-    <circle cx="0" cy="-7" r="7" fill="#2c5c29"/>
-    <circle cx="-4" cy="-6" r="5.5" fill="#397236"/>
-    <circle cx="2" cy="-3" r="6" fill="#397236"/>
-    <circle cx="-2" cy="-8" r="4" fill="#478744"/>
-  </g></defs>
+  <defs>
+    <g id="tr">
+      <ellipse cx="0" cy="10" rx="9" ry="3" fill="#2b5228" opacity="0.6"/>
+      <path d="M-1.5 10 L-2.5 1 L2.5 1 L1.5 10 Z" fill="#5a4028"/>
+      <path d="M-1.5 10 L-4 12 M1.5 10 L4 12" stroke="#5a4028" stroke-width="1.2" fill="none"/>
+      <circle cx="-5" cy="-2" r="7" fill="#2c5c29"/>
+      <circle cx="5" cy="-1" r="7.5" fill="#2c5c29"/>
+      <circle cx="0" cy="-7" r="7" fill="#2c5c29"/>
+      <circle cx="-4" cy="-6" r="5.5" fill="#397236"/>
+      <circle cx="2" cy="-3" r="6" fill="#397236"/>
+      <circle cx="-2" cy="-8" r="4" fill="#478744"/>
+    </g>
+    <g id="ec">
+      <circle cx="-5" cy="2" r="6.5" fill="#2c5c29"/>
+      <circle cx="4" cy="-2" r="7" fill="#2c5c29"/>
+      <circle cx="-1" cy="-5" r="5.5" fill="#2c5c29"/>
+      <circle cx="1" cy="4" r="6" fill="#2c5c29"/>
+      <circle cx="-3" cy="-1" r="4.5" fill="#397236"/>
+      <circle cx="4" cy="1" r="4" fill="#397236"/>
+      <circle cx="0" cy="-3" r="3" fill="#478744"/>
+    </g>
+  </defs>
   <rect width="64" height="64" fill="#3a6f36"/>
   <g fill="#33622f">
-    <ellipse cx="50" cy="58" rx="10" ry="4"/>
-    <ellipse cx="10" cy="10" rx="7" ry="4"/>
+    <ellipse cx="15" cy="42" rx="7" ry="4"/>
+    <ellipse cx="47" cy="52" rx="8" ry="4"/>
   </g>
   <g fill="#478744">
-    <circle cx="56" cy="22" r="1.2"/>
-    <circle cx="8" cy="40" r="1.1"/>
+    <circle cx="52" cy="20" r="1.2"/>
+    <circle cx="13" cy="30" r="1.1"/>
   </g>
-  <use href="#tr" transform="translate(21 20) scale(1.15)"/>
-  <use href="#tr" transform="translate(46 36) scale(1.2)"/>
-  <use href="#tr" transform="translate(19 47) scale(0.95)"/>
+  <!-- Edge canopy: byte-identical across forest variants, stamped in wrapped
+       pairs (x=0 repeats at x=64, y=0 at y=64) so any variant abuts any
+       variant seamlessly. -->
+  <g>
+    <use href="#ec" transform="translate(0 0)"/>
+    <use href="#ec" transform="translate(64 0)"/>
+    <use href="#ec" transform="translate(0 64)"/>
+    <use href="#ec" transform="translate(64 64)"/>
+    <use href="#ec" transform="translate(0 24) scale(0.9)"/>
+    <use href="#ec" transform="translate(64 24) scale(0.9)"/>
+    <use href="#ec" transform="translate(0 45) scale(0.85)"/>
+    <use href="#ec" transform="translate(64 45) scale(0.85)"/>
+    <use href="#ec" transform="translate(22 0) scale(0.9)"/>
+    <use href="#ec" transform="translate(22 64) scale(0.9)"/>
+    <use href="#ec" transform="translate(43 0) scale(0.85)"/>
+    <use href="#ec" transform="translate(43 64) scale(0.85)"/>
+  </g>
+  <use href="#tr" transform="translate(25 23) scale(1.15)"/>
+  <use href="#tr" transform="translate(45 37) scale(1.2)"/>
+  <use href="#tr" transform="translate(24 46) scale(0.95)"/>
 </svg>
