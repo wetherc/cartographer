@@ -7,7 +7,7 @@
  * (aria-hidden); give the surrounding control its own accessible label.
  */
 
-/** @typedef {'plus'|'minus'|'damage'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'} IconName */
+/** @typedef {'plus'|'minus'|'damage'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -49,6 +49,7 @@ const PATHS = {
   chevron: ['M9 6l6 6-6 6'],
   map: ['M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z', 'M9 4v14', 'M15 6v14'],
   eye: ['M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z', 'M12 15a3 3 0 100-6 3 3 0 000 6z'],
+  lock: ['M6 11h12v9H6z', 'M9 11V7a3 3 0 016 0v4'],
   'eye-off': ['M4 4l16 16', 'M9.9 5.2A9.9 9.9 0 0112 5c6.5 0 10 7 10 7a15 15 0 01-3.3 3.9', 'M6.3 6.3A15 15 0 002 12s3.5 7 10 7a9.6 9.6 0 004-.8', 'M9.5 9.5a3 3 0 004.2 4.2'],
   fit: ['M9 4H4v5', 'M15 4h5v5', 'M20 15v5h-5', 'M9 20H4v-5'],
 };

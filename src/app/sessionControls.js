@@ -11,6 +11,9 @@ import {
   saveLock,
   releaseLock,
 } from '../storage/GMLock.js';
+import { isPlayerLocked, PLAYER_LOCK_SESSION_KEY } from '../view/PlayerLock.js';
+import { confirmModal } from '../ui/Modal.js';
+import { icon } from '../ui/icons.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -23,6 +26,16 @@ import {
  * @param {AppContext} app
  */
 export function wireSessionControls(app) {
+  // A tab locked to the Player view (a `?role=player` URL or the header's lock
+  // control) can never show the GM's truth: the role is forced to player, the
+  // role switch is hidden, and the switch callback refuses GM as a backstop.
+  // Meant for a shared table display that a stray tap must not flip.
+  let playerLocked = isPlayerLocked(location.search, sessionStorage.getItem(PLAYER_LOCK_SESSION_KEY));
+  if (playerLocked) {
+    app.state.role = 'player';
+    document.body.classList.add('role-locked');
+  }
+
   // Play/Build mode drives which rails the layout shows (a body class toggled
   // by CSS), and defaults to Play so a first-run visitor lands on the live view.
   const modeSwitch = mountModeSwitch(mustGetElement('mode-switch-container'), app.state.mode, (mode) => {
@@ -75,6 +88,12 @@ export function wireSessionControls(app) {
   // The change callback references roleSwitch, but only via queueMicrotask /
   // later events, so the const is initialized before any read.
   const roleSwitch = mountRoleSwitch(mustGetElement('role-switch-container'), app.state.role, (role) => {
+    if (role === 'gm' && playerLocked) {
+      // Backstop: the switch is hidden while locked, but nothing else may
+      // claim GM in this tab either (e.g. a programmatic setRole).
+      role = 'player';
+      queueMicrotask(() => roleSwitch.setRole('player'));
+    }
     if (role === 'gm' && !tryClaimGM()) {
       app.toasts.show('Another tab is running the GM view; this one stays on the Player view.');
       role = 'player';
@@ -88,6 +107,30 @@ export function wireSessionControls(app) {
     sessionStorage.setItem('campaign-builder:role', role);
     applyRole();
   });
+
+  // A settled Player tab (a shared table display) can be locked so a stray tap
+  // can't flip it to GM once the GM tab closes and frees the GM lock. Per-tab
+  // and deliberately one-way: unlock by closing the tab (or dropping the
+  // ?role=player URL parameter). Only visible while already in the Player role.
+  const lockBtn = document.createElement('button');
+  lockBtn.type = 'button';
+  lockBtn.id = 'player-lock-btn';
+  lockBtn.className = 'btn btn--icon';
+  lockBtn.title = 'Lock this tab to the Player view';
+  lockBtn.setAttribute('aria-label', 'Lock this tab to the Player view');
+  lockBtn.appendChild(icon('lock'));
+  lockBtn.addEventListener('click', async () => {
+    const ok = await confirmModal(
+      'Lock this tab to the Player view? The GM view stays unavailable in this tab until it is closed.',
+      { confirmLabel: 'Lock' },
+    );
+    if (!ok) return;
+    sessionStorage.setItem(PLAYER_LOCK_SESSION_KEY, '1');
+    playerLocked = true;
+    document.body.classList.add('role-locked');
+    app.toasts.show('This tab is locked to the Player view. Close the tab to unlock it.');
+  });
+  mustGetElement('role-switch-container').appendChild(lockBtn);
 
   // Free the lock when the GM tab goes away so a follower can take over without
   // waiting out the TTL. pagehide also covers tab discard and navigation.
