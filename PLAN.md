@@ -368,7 +368,7 @@ Gaps observed while working in the codebase after the feature-evaluation items l
 
 ### Tooling debt
 
-- [ ] **[Gap] Linting + pre-commit hook.** CLAUDE.md's workflow calls for linting and a pre-commit hook; neither exists (no eslint config, no package.json, no `.git/hooks/pre-commit`). Add an ESLint flat config suited to plain-ESM browser code and a pre-commit hook running the linter, `node --test tests/*.test.js`, and the real typecheck (`pnpm --package=typescript dlx tsc --noEmit` — note the bare `pnpx tsc` trap documented in the README). This would have caught the 26 latent type errors months earlier.
+- [x] **[Gap] Linting + pre-commit hook.** CLAUDE.md's workflow calls for linting and a pre-commit hook; neither exists (no eslint config, no package.json, no `.git/hooks/pre-commit`). Add an ESLint flat config suited to plain-ESM browser code and a pre-commit hook running the linter, `node --test tests/*.test.js`, and the real typecheck (`pnpm --package=typescript dlx tsc --noEmit` — note the bare `pnpx tsc` trap documented in the README). This would have caught the 26 latent type errors months earlier.
 
 ### Session play
 

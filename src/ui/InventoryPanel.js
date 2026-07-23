@@ -22,12 +22,12 @@ function idFromName(name) {
  * quantity to an existing one, keyed by name).
  * Renders an empty state when no character is selected (`null`).
  * @param {HTMLElement} container
- * @param {Character | null} character
+ * @param {Character | null} initial
  * @param {(character: Character) => void} [onChange]
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
-export function mountInventoryPanel(container, character, onChange = () => {}) {
-  let current = character;
+export function mountInventoryPanel(container, initial, onChange = () => {}) {
+  let current = initial;
   // Survives re-renders (every edit re-renders) but stays per-mount, so the
   // panel doesn't snap shut after each item change.
   let expanded = false;

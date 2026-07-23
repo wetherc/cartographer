@@ -72,9 +72,9 @@ export function wireSessionControls(app) {
     releaseLock(gmTabId);
   }
 
-  /** @type {{ getRole: () => import('../types/view.js').ViewRole, setRole: (role: import('../types/view.js').ViewRole) => void }} */
-  let roleSwitch;
-  roleSwitch = mountRoleSwitch(mustGetElement('role-switch-container'), app.state.role, (role) => {
+  // The change callback references roleSwitch, but only via queueMicrotask /
+  // later events, so the const is initialized before any read.
+  const roleSwitch = mountRoleSwitch(mustGetElement('role-switch-container'), app.state.role, (role) => {
     if (role === 'gm' && !tryClaimGM()) {
       app.toasts.show('Another tab is running the GM view; this one stays on the Player view.');
       role = 'player';
