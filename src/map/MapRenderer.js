@@ -94,11 +94,15 @@ export class MapRenderer {
     if (size < 20) return; // too dense to be legible
     const { ctx } = this;
     ctx.save();
-    ctx.fillStyle = 'rgba(230, 215, 180, 0.7)';
-    ctx.font = `${Math.min(12, Math.round(size * 0.32))}px sans-serif`;
+    ctx.fillStyle = 'rgba(230, 215, 180, 0.8)';
+    // Font is in buffer pixels, which are devicePixelRatio-times denser than CSS
+    // pixels, so a small cap renders illegibly on a HiDPI canvas. Scale with the
+    // tile and only cap generously.
+    const fontSize = Math.round(Math.max(14, Math.min(size * 0.3, 42)));
+    ctx.font = `600 ${fontSize}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    const pad = Math.min(12, size * 0.35);
+    const pad = fontSize * 0.9;
     for (let x = 0; x < view.node.width; x++) {
       const cx = view.offsetX + (x + 0.5) * size;
       if (cx < 0 || cx > view.canvasWidth) continue;

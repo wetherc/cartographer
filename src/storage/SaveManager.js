@@ -6,6 +6,8 @@ import { TileGrid, withNodeDefaults } from '../map/TileGrid.js';
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
 
 const DEFAULT_STORAGE_KEY = 'campaign-builder:save';
+const DEFAULT_HISTORY_KEY = 'campaign-builder:history';
+const DEFAULT_HISTORY_LIMIT = 20;
 
 /**
  * Collect the whole campaign (tile hierarchy, party position, characters,
@@ -90,6 +92,61 @@ export function downloadState(state, filename = 'campaign.json') {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+/**
+ * Append a serialized snapshot to a bounded history ring, dropping the oldest
+ * entries once it exceeds `limit`. Pure: returns a new array, newest last.
+ * @param {string[]} history
+ * @param {string} snapshot
+ * @param {number} [limit]
+ * @returns {string[]}
+ */
+export function pushSnapshot(history, snapshot, limit = DEFAULT_HISTORY_LIMIT) {
+  const next = [...history, snapshot];
+  return next.length > limit ? next.slice(next.length - limit) : next;
+}
+
+/**
+ * Read the undo history ring (newest last), tolerating a missing or corrupt
+ * entry by returning an empty list.
+ * @param {string} [key]
+ * @returns {string[]}
+ */
+export function loadHistory(key = DEFAULT_HISTORY_KEY) {
+  const json = localStorage.getItem(key);
+  if (!json) return [];
+  try {
+    const parsed = JSON.parse(json);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Push the current state onto the undo history ring, so a later `undoHistory`
+ * can restore it. Call this with the state that is about to be replaced.
+ * @param {CampaignState} state
+ * @param {string} [key]
+ * @param {number} [limit]
+ */
+export function snapshotHistory(state, key = DEFAULT_HISTORY_KEY, limit = DEFAULT_HISTORY_LIMIT) {
+  localStorage.setItem(key, JSON.stringify(pushSnapshot(loadHistory(key), serialize(state), limit)));
+}
+
+/**
+ * Pop the most recent snapshot, persist the shortened ring, and return the
+ * restored state, or null when there's nothing to undo.
+ * @param {string} [key]
+ * @returns {CampaignState | null}
+ */
+export function undoHistory(key = DEFAULT_HISTORY_KEY) {
+  const history = loadHistory(key);
+  const snapshot = history.pop();
+  if (snapshot === undefined) return null;
+  localStorage.setItem(key, JSON.stringify(history));
+  return deserialize(snapshot);
 }
 
 /**
