@@ -9,6 +9,9 @@ const DEFAULT_STORAGE_KEY = 'campaign-builder:save';
 const DEFAULT_HISTORY_KEY = 'campaign-builder:history';
 const DEFAULT_HISTORY_LIMIT = 20;
 
+/** The localStorage key the campaign save lives under, exposed for cross-tab sync. */
+export const STORAGE_KEY = DEFAULT_STORAGE_KEY;
+
 /**
  * Collect the whole campaign (tile hierarchy, party position, characters,
  * encounters) into one plain, JSON-serializable object.
@@ -162,6 +165,35 @@ export function undoHistory(key = DEFAULT_HISTORY_KEY) {
   if (snapshot === undefined) return null;
   localStorage.setItem(key, JSON.stringify(history));
   return deserialize(snapshot);
+}
+
+/**
+ * Whether a `storage` event represents another tab writing a new campaign save
+ * (as opposed to a history-key write, a clear, or a no-op). The browser fires
+ * `storage` only in tabs *other* than the one that made the change, so a driving
+ * tab never sees its own saves — this is the seam a follower tab watches. Pure.
+ * @param {StorageEvent} event
+ * @param {string} [key]
+ * @returns {boolean}
+ */
+export function isExternalSaveEvent(event, key = DEFAULT_STORAGE_KEY) {
+  return event.key === key && event.newValue != null && event.newValue !== event.oldValue;
+}
+
+/**
+ * Subscribe to campaign saves made in other tabs of the same origin, the
+ * minimum-viable multi-device story (GM tab drives, follower tabs react). No
+ * server, no dependencies — just the `storage` event. Returns an unsubscribe.
+ * @param {() => void} callback run when another tab writes a new save
+ * @param {string} [key]
+ * @returns {() => void}
+ */
+export function onExternalSave(callback, key = DEFAULT_STORAGE_KEY) {
+  const handler = (/** @type {StorageEvent} */ event) => {
+    if (isExternalSaveEvent(event, key)) callback();
+  };
+  window.addEventListener('storage', handler);
+  return () => window.removeEventListener('storage', handler);
 }
 
 /**

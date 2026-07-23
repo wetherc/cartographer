@@ -52,6 +52,7 @@ import {
   undoHistory,
   downloadState,
   readStateFromFile,
+  onExternalSave,
 } from './storage/SaveManager.js';
 
 const palette = new TilePalette();
@@ -922,6 +923,13 @@ mustGetElement('undo-btn').addEventListener('click', async () => {
   saveToLocalStorage(restored);
   location.reload();
 });
+
+// Cross-tab live sync (the minimum-viable multi-device story): when another
+// tab of the same origin writes a new save — e.g. a GM laptop driving a
+// second player-facing tab — reload so this tab re-initializes from it through
+// the normal load path. The browser never fires this for our own saves, so
+// there's no feedback loop.
+onExternalSave(() => location.reload());
 
 mustGetElement('export-btn').addEventListener('click', () => {
   downloadState(buildCurrentState());
