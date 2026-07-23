@@ -63,9 +63,15 @@ wireParty(app); // roster, sheet, inventory, time
 wireEncounters(app); // encounter + initiative panels, bestiary
 wireStory(app); // travelogue (logEvent), NPCs, quests, handouts
 // Rolls live in the travelogue (the tray shows only the latest), tagged by
-// which side of the screen rolled them.
+// which side of the screen rolled them — by name when the tab is bound to a
+// character, "A player" for a spectator tab.
+function rollerName() {
+  if (isGM(app.state.role)) return 'The GM';
+  const boundId = app.actions.getBoundCharacterId();
+  return app.state.characters.find((c) => c.id === boundId)?.name ?? 'A player';
+}
 const diceTray = mountDiceTray(mustGetElement('dice-tray-container'), {
-  onRoll: (text) => app.actions.logEvent('roll', `${isGM(app.state.role) ? 'The GM' : 'A player'} rolls ${text}.`),
+  onRoll: (text) => app.actions.logEvent('roll', `${rollerName()} rolls ${text}.`),
 });
 // Lets the initiative panel roll the tray's current selection as an enemy.
 app.actions.getDiceSelection = () => diceTray.getSelection();
