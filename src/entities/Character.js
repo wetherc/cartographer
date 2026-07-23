@@ -1,5 +1,6 @@
 import { createResource, spend as spendPool, restore as restorePool } from './Resource.js';
 import { isSlotPool, syncSlotsToLevel, migrateManaToSlots } from './SpellSlots.js';
+import { emptyEquipment, pruneEquipment } from './Equipment.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -48,7 +49,7 @@ export function withHP(character, maxHP) {
  * the neutral 10 (keeping existing values) and an empty-string race. No HP
  * pool is invented — its absence legitimately means "no HP tracking". A
  * mana-era save's mana pool is migrated to spell slots for the character's
- * level (see SpellSlots.js).
+ * level (see SpellSlots.js), and a pre-equipment save gets empty slots.
  * @param {Character} character
  * @returns {Character}
  */
@@ -58,6 +59,7 @@ export function withDefaults(character) {
     race: character.race ?? '',
     stats: { ...defaultStats(), ...character.stats },
     conditions: character.conditions ?? [],
+    equipment: { ...emptyEquipment(), ...character.equipment },
   });
 }
 
@@ -71,7 +73,7 @@ export function withDefaults(character) {
  * @returns {Character}
  */
 export function createCharacter(id, name, stats = {}, race = '') {
-  return { id, name, race, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [], conditions: [] };
+  return { id, name, race, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [], conditions: [], equipment: emptyEquipment() };
 }
 
 /**
@@ -217,7 +219,8 @@ export function addItem(character, item) {
 }
 
 /**
- * Remove quantity from a stack, dropping it from the inventory entirely once it hits 0.
+ * Remove quantity from a stack, dropping it from the inventory entirely once
+ * it hits 0 — and unequipping it from any slot it occupied.
  * @param {Character} character
  * @param {string} itemId
  * @param {number} quantity
@@ -227,5 +230,5 @@ export function removeItem(character, itemId, quantity) {
   const inventory = character.inventory
     .map((i) => (i.id === itemId ? { ...i, quantity: Math.max(0, i.quantity - quantity) } : i))
     .filter((i) => i.quantity > 0);
-  return { ...character, inventory };
+  return pruneEquipment({ ...character, inventory });
 }

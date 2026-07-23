@@ -49,12 +49,23 @@ export interface ResourcePool {
   max: number;
 }
 
+/** Broad item classification — advisory only, no slot enforcement. */
+export type ItemType = 'weapon' | 'armor' | 'shield' | 'bow' | 'consumable' | 'gear';
+
 export interface InventoryItem {
   id: string;
   name: string;
   quantity: number;
   notes: string;
+  /** Absent on older saves; treated as 'gear'. */
+  type?: ItemType;
 }
+
+/** The wearable slots on a character. */
+export type EquipmentSlot = 'armor' | 'mainHand' | 'offHand' | 'ranged';
+
+/** Inventory item id equipped in each slot; null = slot empty. */
+export type Equipment = Record<EquipmentSlot, string | null>;
 
 export interface Character {
   id: string;
@@ -67,4 +78,6 @@ export interface Character {
   inventory: InventoryItem[];
   /** Active status conditions (empty on older saves). */
   conditions: Condition[];
+  /** Equipped items by slot (absent on older saves; all slots empty). */
+  equipment?: Equipment;
 }

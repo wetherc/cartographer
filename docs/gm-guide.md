@@ -270,6 +270,14 @@ mana system migrate on load — the mana pool becomes the slot pools for the
 character's level. Inventory stacks of two or more get a **consume one**
 control distinct from the remove-whole-stack button.
 
+Items carry a broad **type** (gear, weapon, armor, shield, bow, or consumable),
+picked when adding one, and the Inventory panel opens with four **equipment
+slots** — Armor, Main hand, Off hand, and Ranged — each a picker over that
+character's inventory. Slot pickers list the slot's natural types first (a
+shield tops the off-hand list) but nothing is enforced: any item can go in any
+slot; the party is trusted not to equip boots as a hat. Removing the last of a
+stack unequips it automatically.
+
 For combat speed, the Party roster's **Award XP** grants the same amount to
 every character at once.
 
