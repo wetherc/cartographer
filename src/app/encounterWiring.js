@@ -2,6 +2,7 @@ import { mustGetElement } from '../ui/dom.js';
 import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
+import { combatSetupModal } from '../ui/CombatSetup.js';
 import { createEncounter, encountersAt, encountersOnTile, isDefeated, toTemplate, fromTemplate } from '../entities/Encounter.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
 import { roll, formatResult } from '../dice/DiceRoller.js';
@@ -184,6 +185,10 @@ export function wireEncounters(app) {
     },
     confirmDelete: (encounter) =>
       confirmModal(`Delete "${encounter.name}"?`, { danger: true, confirmLabel: 'Delete' }),
+    // Opening combat is the GM's call: the button shows only to the GM, only
+    // while the party stands on a live encounter's tile with no fight running.
+    canStartCombat: () => isGM(state.role) && combat === null && encountersHere().length > 0,
+    onStartCombat: startCombatSetup,
     getRole: () => state.role,
   });
 
@@ -193,32 +198,47 @@ export function wireEncounters(app) {
     return encountersOnTile(state.encounters, app.partyTracker.getPosition());
   }
 
+  // Combatants are whoever is involved in *this* encounter: the whole party,
+  // the live encounters on the party's tile, and any NPCs standing on that
+  // tile (hostile ones line up as foes, friendly/neutral ones with the
+  // party). Each carries its DEX modifier: seeded into the default value
+  // (10 + mod, the passive baseline), added on top of the d20 by "Roll
+  // initiative", and shown beside the name. Values stay hand-editable.
+  function combatRoster() {
+    /** @type {(id: string, name: string, side: 'party' | 'foe', stats: Record<string, number> | undefined) => import('../types/combat.js').Participant} */
+    const withDex = (id, name, side, stats) => {
+      const mod = abilityModifier(stats?.DEX ?? 10);
+      return createParticipant(id, name, side, 10 + mod, mod);
+    };
+    return [
+      ...state.characters.map((c) => withDex(c.id, c.name, 'party', c.stats)),
+      ...encountersHere().map((e) => withDex(e.id, e.name, 'foe', e.statBlock)),
+      ...npcsOnTile(state.npcs, app.partyTracker.getPosition()).map((n) =>
+        withDex(n.id, n.name, n.disposition === 'hostile' ? 'foe' : 'party', n.stats),
+      ),
+    ];
+  }
+
+  // The GM's entry into combat: a setup dialog over the map with the roster,
+  // a "Roll initiative" fill (d20 + DEX modifier, hand-editable after), and a
+  // Start that flips the initiative panel from hidden to the running order.
+  async function startCombatSetup() {
+    const participants = await combatSetupModal(combatRoster(), {
+      rollInitiative: (participant) => Math.floor(Math.random() * 20) + 1 + (participant.modifier ?? 0),
+      // One travelogue line per "Roll initiative" press, recording every
+      // result; hand-edited overrides before Start aren't re-logged.
+      onRolled: (results) =>
+        app.actions.logEvent('roll', `Initiative rolled: ${results.map((r) => `${r.name} ${r.value}`).join(', ')}.`),
+    });
+    if (!participants) return;
+    combat = startCombat(participants);
+    app.views.initiativePanel.update(); // un-hides the panel
+    app.views.encounterPanel.update(); // hides the Start combat button
+  }
+
   const initiativeContainer = mustGetElement('initiative-container');
   const initiativePanel = mountInitiativePanel(initiativeContainer, {
     getState: () => combat,
-    // Combatants are whoever is involved in *this* encounter: the whole party,
-    // the live encounters on the party's tile, and any NPCs standing on that
-    // tile (hostile ones line up as foes, friendly/neutral ones with the
-    // party). Each carries its DEX modifier: seeded into the default value
-    // (10 + mod, the passive baseline), added on top of the d20 by "Roll
-    // initiative", and shown beside the name. Values stay hand-editable.
-    getRoster: () => {
-      /** @type {(id: string, name: string, side: 'party' | 'foe', stats: Record<string, number> | undefined) => import('../types/combat.js').Participant} */
-      const withDex = (id, name, side, stats) => {
-        const mod = abilityModifier(stats?.DEX ?? 10);
-        return createParticipant(id, name, side, 10 + mod, mod);
-      };
-      return [
-        ...state.characters.map((c) => withDex(c.id, c.name, 'party', c.stats)),
-        ...encountersHere().map((e) => withDex(e.id, e.name, 'foe', e.statBlock)),
-        ...npcsOnTile(state.npcs, app.partyTracker.getPosition()).map((n) =>
-          withDex(n.id, n.name, n.disposition === 'hostile' ? 'foe' : 'party', n.stats),
-        ),
-      ];
-    },
-    onStart: (participants) => {
-      combat = startCombat(participants);
-    },
     onNext: () => {
       if (!combat) return;
       const result = advanceTurn(combat);
@@ -233,13 +253,9 @@ export function wireEncounters(app) {
     },
     onEnd: () => {
       combat = null;
+      app.views.initiativePanel.update(); // re-hides the panel
+      app.views.encounterPanel.update(); // brings the Start combat button back
     },
-    // d20 + DEX modifier per combatant; the field stays editable for override.
-    rollInitiative: (participant) => Math.floor(Math.random() * 20) + 1 + (participant.modifier ?? 0),
-    // One travelogue line per "Roll initiative" press, recording every result;
-    // hand-edited overrides before Start aren't re-logged.
-    onRolled: (results) =>
-      app.actions.logEvent('roll', `Initiative rolled: ${results.map((r) => `${r.name} ${r.value}`).join(', ')}.`),
     // The GM rolls the dice tray's current selection on the active enemy's
     // behalf; the result lands in the travelogue under the enemy's name (and
     // in a toast, since the tray's own readout stays untouched).
@@ -251,17 +267,16 @@ export function wireEncounters(app) {
     getRole: () => state.role,
   });
 
-  // The Initiative card only shows while the party is in an encounter (standing
-  // on a tile with a live encounter). Leaving the tile — or defeating the last
-  // encounter on it — hides the card and drops any running combat, since its
-  // participants are no longer "here". Wrapped so every existing
-  // `initiativePanel.update()` call site (party moves, role switches) gets the
-  // visibility sync for free.
+  // The Initiative card only shows while a fight is actually running — no
+  // setup or idle state parked in the sidebar. Walking off the encounter's
+  // tile (or defeating/deleting the last encounter there) drops the running
+  // combat, since its participants are no longer "here", which hides the card
+  // again. Wrapped so every existing `initiativePanel.update()` call site
+  // (party moves, role switches) gets the visibility sync for free.
   app.views.initiativePanel = {
     update: () => {
-      const active = encountersHere().length > 0;
-      initiativeContainer.hidden = !active;
-      if (!active) combat = null;
+      if (combat && encountersHere().length === 0) combat = null;
+      initiativeContainer.hidden = combat === null;
       initiativePanel.update();
     },
   };
