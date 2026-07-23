@@ -52,10 +52,11 @@ export function wireEncounters(app) {
       app.actions.markDirty();
     }
     const gm = isGM(state.role);
-    const list = here
-      .map((e) => (gm ? `${e.name} (${e.currentHP}/${e.maxHP})` : `${e.name} — ${hpBand(e.currentHP, e.maxHP)}`))
-      .join(', ');
-    alertModal(`${list} — here in ${region}, tile (${position.tileId}).`, {
+    const names = here.map((e) =>
+      gm ? `${e.name} (${e.currentHP}/${e.maxHP} HP)` : `${e.name} (${hpBand(e.currentHP, e.maxHP)})`,
+    );
+    const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0];
+    alertModal(`The party has come upon ${list} here in ${region}.`, {
       title: here.length > 1 ? 'Encounters!' : 'Encounter!',
       label: 'Continue',
     });
