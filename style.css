@@ -236,9 +236,14 @@ body {
 .app-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-4);
   margin-bottom: var(--space-4);
+}
+
+/* The GM/Player switch stays pinned to the far right, so it doesn't shift when
+   the role change hides or shows the other header controls. */
+#role-switch-container {
+  margin-left: auto;
 }
 
 .app-header h1 {
@@ -1296,6 +1301,12 @@ body.sidebar-collapsed .app-sidebar {
   opacity: 0.7;
 }
 
+.npc-panel__location {
+  font-size: var(--text-label);
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
 .npc-panel__controls {
   display: flex;
   gap: var(--space-1);
@@ -1348,17 +1359,19 @@ body.sidebar-collapsed .app-sidebar {
   opacity: 0.7;
 }
 
-.initiative-panel__start,
+/* Action pairs (Roll initiative / Start combat, Next turn / End combat) sit in
+   equal-width grid columns so the two buttons always match in size; when the
+   panel is too narrow for both labels on one line, they stack instead of
+   wrapping their text to different heights. */
 .initiative-panel__actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: var(--space-2);
   margin-top: var(--space-2);
 }
 
-/* Action pairs (Roll initiative / Start combat, Next turn / End combat) share
-   the row evenly so the two buttons always match in size. */
 .initiative-panel__actions .btn {
-  flex: 1;
+  white-space: nowrap;
 }
 
 /* ==========================================================================
