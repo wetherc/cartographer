@@ -767,6 +767,15 @@ body.mode-build .map-controls__fog {
   margin-top: var(--space-1);
 }
 
+/* Who stands on the tile: tinted to match the blue NPC map marker. */
+.tile-tooltip__npcs {
+  color: #9fc3f0;
+}
+
+.tile-tooltip__title + .tile-tooltip__npcs {
+  margin-top: var(--space-1);
+}
+
 .app-sidebar {
   display: flex;
   flex-direction: column;

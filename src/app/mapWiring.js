@@ -88,6 +88,7 @@ export function wireMapView(app) {
     const position = partyTracker.getPosition();
     mapCanvas.setPartyTile(position.nodeId === navigator.getCurrentNode().id ? position.tileId : null);
     syncEncounterMarkers();
+    syncNPCMarkers();
     refreshMapDescription();
   }
   app.actions.syncPartyMarker = syncPartyMarker;
@@ -103,6 +104,18 @@ export function wireMapView(app) {
     );
   }
   app.actions.syncEncounterMarkers = syncEncounterMarkers;
+
+  /** Mark the current node's tiles that hold a placed NPC (distinct blue marker),
+   * so a revealed tile shows who is standing there. */
+  function syncNPCMarkers() {
+    const nodeId = navigator.getCurrentNode().id;
+    mapCanvas.setNPCTiles(
+      state.npcs
+        .filter((n) => n.location && n.location.nodeId === nodeId)
+        .map((n) => /** @type {import('../types/entities.js').EncounterLocation} */ (n.location).tileId),
+    );
+  }
+  app.actions.syncNPCMarkers = syncNPCMarkers;
 
   /** Re-narrate the current map for the screen-reader live region. Called wherever
    * the node, party, fog, or tiles change (the same events that redraw). */
@@ -270,23 +283,28 @@ export function wireMapView(app) {
         state.mode !== 'play' ||
         !tile ||
         !tile.revealed ||
-        (tile.metadata.discoverable && !tile.metadata.discovered) ||
-        (!tile.metadata.poiType && !tile.metadata.notes)
+        (tile.metadata.discoverable && !tile.metadata.discovered)
       ) {
         tileTooltip.hide();
         return;
       }
+      const nodeId = navigator.getCurrentNode().id;
+      const npcNames = state.npcs
+        .filter((n) => n.location && n.location.nodeId === nodeId && n.location.tileId === tile.id)
+        .map((n) => n.name);
       const poiType = tile.metadata.poiType;
-      // Notes are the GM's secret; players see only the POI type. A player-role
-      // tile with no POI type therefore has nothing to show.
+      // Notes are the GM's secret; players see the POI type and who stands
+      // here (the marker is already visible once the tile is revealed).
       const gm = isGM(state.role);
-      if (!gm && !poiType) {
+      const visible = poiType || npcNames.length > 0 || (gm && tile.metadata.notes);
+      if (!visible) {
         tileTooltip.hide();
         return;
       }
       tileTooltip.show(
         {
           title: poiType ? poiType.charAt(0).toUpperCase() + poiType.slice(1) : '',
+          npcs: npcNames.join(', '),
           notes: gm ? tile.metadata.notes : '',
         },
         clientX,

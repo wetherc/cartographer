@@ -6,7 +6,7 @@
  * when it would spill past the viewport edge.
  * @param {HTMLElement} container
  * @returns {{
- *   show: (content: { title: string, notes: string }, clientX: number, clientY: number) => void,
+ *   show: (content: { title: string, notes: string, npcs?: string }, clientX: number, clientY: number) => void,
  *   hide: () => void,
  * }}
  */
@@ -24,6 +24,12 @@ export function mountTileTooltip(container) {
         title.className = 'tile-tooltip__title';
         title.textContent = content.title;
         el.appendChild(title);
+      }
+      if (content.npcs) {
+        const npcs = document.createElement('div');
+        npcs.className = 'tile-tooltip__npcs';
+        npcs.textContent = content.npcs;
+        el.appendChild(npcs);
       }
       if (content.notes) {
         const notes = document.createElement('div');
