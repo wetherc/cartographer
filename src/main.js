@@ -256,6 +256,7 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
       currentMode !== 'play' ||
       !tile ||
       !tile.revealed ||
+      (tile.metadata.discoverable && !tile.metadata.discovered) ||
       (!tile.metadata.poiType && !tile.metadata.notes)
     ) {
       tileTooltip.hide();
@@ -326,6 +327,7 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
       }
     } else {
       partyTracker.moveTo(navigator.getCurrentNode().id, tile.id);
+      discoverTile(tile);
       mapCanvas.refreshNode(navigator.getCurrentNode());
     }
     syncPartyMarker();
@@ -413,6 +415,21 @@ function applyToTile(tileId, transform) {
     inspector.setTile(getTile(updated, tileId) ?? null, true);
   }
   refreshMapDescription();
+}
+
+/**
+ * Mark a discoverable POI discovered once the party reaches it, persisting the
+ * flag and logging the find. A non-discoverable or already-found tile is a
+ * no-op. Read the node fresh from the navigator since the party's move just
+ * rewrote it in the grid.
+ * @param {import('./types/map.js').Tile} tile
+ */
+function discoverTile(tile) {
+  if (!tile.metadata.discoverable || tile.metadata.discovered) return;
+  const node = navigator.getCurrentNode();
+  grid.updateNode(updateTileMetadata(node, tile.id, { discovered: true }));
+  const what = tile.metadata.poiType ?? 'a hidden location';
+  logEvent('travel', `Discovered ${what}${tile.metadata.notes ? `: ${tile.metadata.notes}` : ''}.`);
 }
 
 const tileTooltip = mountTileTooltip(document.body);
