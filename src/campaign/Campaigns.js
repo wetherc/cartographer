@@ -1,6 +1,6 @@
 import { createMapNode, createTile, setTile, TileGrid } from '../map/TileGrid.js';
-import { createCharacter, addResource, withDefaults, withHP } from '../entities/Character.js';
-import { createResource } from '../entities/Resource.js';
+import { createCharacter, withDefaults, withHP } from '../entities/Character.js';
+import { withSpellSlots } from '../entities/SpellSlots.js';
 import {
   createEncounter,
   withDefaults as withEncounterDefaults,
@@ -97,7 +97,7 @@ export function buildExampleCampaign(palette) {
   grid.addNode(region);
 
   let hero = withHP(createCharacter('hero', 'Hero', { STR: 14, DEX: 12, CON: 13 }, 'Human'), 12);
-  hero = addResource(hero, createResource('mana', 'Mana', 'mana', 10));
+  hero = withSpellSlots(hero);
 
   return {
     grid,

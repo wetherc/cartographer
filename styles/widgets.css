@@ -175,3 +175,26 @@
   color: var(--text-muted);
 }
 
+/* Spell-slot readout on the collapsed card: a pip group per spell level, the
+   filled pips being the slots still unspent. Shares .stat-bar's label column. */
+.slot-line {
+  flex-wrap: wrap;
+}
+
+.slot-line__group {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-1);
+}
+
+.slot-line__level {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.slot-line__pips {
+  font-size: var(--text-label);
+  letter-spacing: 0.1em;
+  color: var(--mana);
+}
+

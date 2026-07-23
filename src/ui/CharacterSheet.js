@@ -2,11 +2,11 @@ import {
   setStat,
   addXP,
   getHP,
-  getMana,
   spendResource,
   restoreResource,
   XP_PER_LEVEL,
 } from '../entities/Character.js';
+import { getSlotPools, slotLevelOf } from '../entities/SpellSlots.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { wireDisclosure } from './Disclosure.js';
 import { mountConditionsBar } from './ConditionsBar.js';
@@ -16,13 +16,12 @@ import { icon } from './icons.js';
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
 /**
- * Build a stat bar (HP or mana) shown on the collapsed card, one full-width
- * line per pool: a visible label, the fill track, and the numbers. Absence
- * of the pool (older saves, no mana) renders no bar rather than a fake full one.
+ * Build a stat bar (HP) shown on the collapsed card, one full-width line per
+ * pool: a visible label, the fill track, and the numbers. Absence of the pool
+ * (older saves) renders no bar rather than a fake full one.
  * @param {ResourcePool} pool
  * @param {{ modifier: string, label: string, critical?: boolean }} opts
- *   `modifier` selects the fill colour (`'hp'` | `'mana'`); `critical` arms the
- *   low-fill red state (HP only).
+ *   `modifier` selects the fill colour; `critical` arms the low-fill red state.
  * @returns {HTMLElement}
  */
 function buildStatBar(pool, opts) {
@@ -50,6 +49,44 @@ function buildStatBar(pool, opts) {
   text.textContent = `${pool.current}/${pool.max}`;
 
   wrap.append(track, text);
+  return wrap;
+}
+
+/**
+ * Compact spell-slot readout for the collapsed card: one line, a pip group per
+ * spell level ("1st ●●○  2nd ●○"), filled pips being the slots still unspent.
+ * Replaces the old mana bar; a non-caster (no slot pools) renders nothing.
+ * @param {import('../types/entities.js').ResourcePool[]} pools
+ * @returns {HTMLElement}
+ */
+function buildSlotLine(pools) {
+  const wrap = document.createElement('span');
+  wrap.className = 'stat-bar slot-line';
+  const readout = pools
+    .map((p) => `level ${slotLevelOf(p)}: ${p.current} of ${p.max}`)
+    .join(', ');
+  wrap.setAttribute('role', 'img');
+  wrap.setAttribute('aria-label', `Spell slots — ${readout}`);
+
+  const label = document.createElement('span');
+  label.className = 'stat-bar__label';
+  label.textContent = 'Slots';
+  wrap.appendChild(label);
+
+  /** @param {number} n */
+  const ordinal = (n) => `${n}${n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`;
+  for (const pool of pools) {
+    const group = document.createElement('span');
+    group.className = 'slot-line__group';
+    const level = document.createElement('span');
+    level.className = 'slot-line__level';
+    level.textContent = ordinal(slotLevelOf(pool));
+    const pips = document.createElement('span');
+    pips.className = 'slot-line__pips';
+    pips.textContent = '●'.repeat(pool.current) + '○'.repeat(pool.max - pool.current);
+    group.append(level, pips);
+    wrap.appendChild(group);
+  }
   return wrap;
 }
 
@@ -98,8 +135,8 @@ export function mountCharacterSheet(container, initial, onChange = () => {}) {
     summary.type = 'button';
     summary.className = 'disclosure character-sheet__summary';
 
-    // Top line: name / race / chevron. HP and mana get a full-width line each
-    // below it, so their fill bars are long enough to read at a glance.
+    // Top line: name / race / chevron. The HP bar and the spell-slot pips get
+    // a full-width line each below it, so both read at a glance.
     const summaryTop = document.createElement('span');
     summaryTop.className = 'character-sheet__summary-top';
 
@@ -121,8 +158,8 @@ export function mountCharacterSheet(container, initial, onChange = () => {}) {
     const hp = getHP(character);
     if (hp) summary.appendChild(buildStatBar(hp, { modifier: 'hp', label: 'HP', critical: true }));
 
-    const mana = getMana(character);
-    if (mana) summary.appendChild(buildStatBar(mana, { modifier: 'mana', label: 'Mana' }));
+    const slots = getSlotPools(character);
+    if (slots.length > 0) summary.appendChild(buildSlotLine(slots));
 
     const head = document.createElement('div');
     head.className = 'character-sheet__head';

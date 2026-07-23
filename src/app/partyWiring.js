@@ -1,6 +1,7 @@
 import { mustGetElement } from '../ui/dom.js';
 import { promptModal, confirmModal } from '../ui/Modal.js';
-import { createCharacter, withHP, withMana, shortRest, longRest, addXP } from '../entities/Character.js';
+import { createCharacter, withHP, shortRest, longRest, addXP } from '../entities/Character.js';
+import { withSpellSlots } from '../entities/SpellSlots.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { mountCharacterRoster } from '../ui/CharacterRoster.js';
 import { mountCharacterSheet } from '../ui/CharacterSheet.js';
@@ -61,17 +62,25 @@ export function wireParty(app) {
         { name: 'name', label: 'Name', value: '' },
         { name: 'race', label: 'Race', value: '' },
         { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1 },
-        { name: 'maxMana', label: 'Max mana', type: 'number', value: 0, min: 0 },
+        {
+          name: 'caster',
+          label: 'Spellcaster',
+          type: 'select',
+          value: 'no',
+          options: [
+            { value: 'no', label: 'No' },
+            { value: 'yes', label: 'Yes (spell slots by level)' },
+          ],
+        },
       ]);
       const name = values?.name.trim();
       if (!values || !name) return;
       const maxHP = Math.max(1, Number(values.maxHP) || 1);
-      const maxMana = Math.max(0, Number(values.maxMana) || 0);
       let created = withHP(
         createCharacter(slugId(name, state.characters.map((c) => c.id)), name, {}, values.race.trim()),
         maxHP,
       );
-      if (maxMana > 0) created = withMana(created, maxMana);
+      if (values.caster === 'yes') created = withSpellSlots(created);
       state.characters = [...state.characters, created];
       selectCharacter(state.characters[state.characters.length - 1].id);
       app.actions.markDirty();
@@ -89,8 +98,8 @@ export function wireParty(app) {
       app.actions.markDirty();
     },
     // Grant the same XP to the whole party at once — the common post-encounter
-    // case — instead of opening each sheet in turn. Levels (and the HP/mana
-    // growth addXP applies) land per character as usual.
+    // case — instead of opening each sheet in turn. Levels (and the HP growth
+    // and spell-slot progression addXP applies) land per character as usual.
     onAwardXP: async () => {
       const values = await promptModal(
         'Award XP to the party',

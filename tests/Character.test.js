@@ -5,10 +5,7 @@ import {
   withDefaults,
   withHP,
   getHP,
-  withMana,
-  getMana,
   HP_RESOURCE_ID,
-  MANA_RESOURCE_ID,
   ABILITY_SCORES,
   addXP,
   setStat,
@@ -18,6 +15,7 @@ import {
   addItem,
   removeItem,
 } from '../src/entities/Character.js';
+import { getSlotPools } from '../src/entities/SpellSlots.js';
 import { createResource } from '../src/entities/Resource.js';
 
 test('createCharacter starts at level 1 with no xp/resources/inventory', () => {
@@ -73,30 +71,24 @@ test('HP damage/heal works through the generic resource spend/restore machinery'
   assert.equal(getHP(hero)?.current, 10);
 });
 
-test('withMana gives a full pool of type mana under the reserved id, replacing any existing one', () => {
-  let mage = withMana(createCharacter('c1', 'Mage'), 8);
-  const mana = getMana(mage);
-  assert.equal(mana?.id, MANA_RESOURCE_ID);
-  assert.equal(mana?.type, 'mana');
-  assert.deepEqual({ current: mana?.current, max: mana?.max }, { current: 8, max: 8 });
-
-  mage = withMana(mage, 12);
-  assert.equal(mage.resources.filter((r) => r.id === MANA_RESOURCE_ID).length, 1);
-  assert.equal(getMana(mage)?.max, 12);
-});
-
-test('withMana orders HP before mana and leaves other resources intact', () => {
+test('withDefaults migrates a mana-era save to spell slots for its level', () => {
   let mage = withHP(createCharacter('c1', 'Mage'), 10);
-  mage = addResource(mage, createResource('ki', 'Ki', 'custom', 3));
-  mage = withMana(mage, 8);
+  mage = addResource(mage, createResource('mana', 'Mana', 'mana', 8));
+  mage = { ...mage, level: 3 };
+  const migrated = withDefaults(mage);
+  assert.equal(migrated.resources.some((r) => r.id === 'mana'), false);
   assert.deepEqual(
-    mage.resources.map((r) => r.id),
-    [HP_RESOURCE_ID, MANA_RESOURCE_ID, 'ki'],
+    getSlotPools(migrated).map((p) => ({ id: p.id, max: p.max, current: p.current })),
+    [
+      { id: 'slots-1', max: 4, current: 4 },
+      { id: 'slots-2', max: 2, current: 2 },
+    ],
   );
 });
 
-test('getMana returns null when no mana pool exists', () => {
-  assert.equal(getMana(createCharacter('c1', 'Fighter')), null);
+test('withDefaults leaves a mana-less character without slot pools', () => {
+  const fighter = withDefaults(withHP(createCharacter('c1', 'Fighter'), 10));
+  assert.deepEqual(getSlotPools(fighter), []);
 });
 
 test('addXP accumulates without leveling up below the threshold', () => {
@@ -118,13 +110,12 @@ test('addXP can trigger multiple level-ups in one call', () => {
   assert.equal(hero.xp, 20);
 });
 
-test('addXP grows the HP and mana pools per level gained, default a tenth of max', () => {
-  let hero = withMana(withHP(createCharacter('c1', 'Hero'), 20), 10);
+test('addXP grows the HP pool per level gained, default a tenth of max', () => {
+  let hero = withHP(createCharacter('c1', 'Hero'), 20);
   hero = addXP(hero, 320); // level 1 -> 3, two levels gained
-  // HP grows ceil(20*0.1)=2 per level -> +4; mana ceil(10*0.1)=1 -> +2.
+  // HP grows ceil(20*0.1)=2 per level -> +4.
   assert.equal(getHP(hero).max, 24);
   assert.equal(getHP(hero).current, 24);
-  assert.equal(hero.resources.find((r) => r.id === 'mana').max, 12);
 });
 
 test('addXP honors an explicit per-level growth override', () => {

@@ -1,4 +1,5 @@
 import { createResource, spend as spendPool, restore as restorePool } from './Resource.js';
+import { isSlotPool, syncSlotsToLevel, migrateManaToSlots } from './SpellSlots.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -43,50 +44,21 @@ export function withHP(character, maxHP) {
 }
 
 /**
- * Reserved ResourcePool id for a character's mana. Like HP, mana is a regular
- * pool of `type: 'mana'` so spend/restore reuse the existing machinery; a
- * character without this pool simply has no mana tracking.
- */
-export const MANA_RESOURCE_ID = 'mana';
-
-/**
- * @param {Character} character
- * @returns {ResourcePool | null} the character's mana pool, if they have one
- */
-export function getMana(character) {
-  return character.resources.find((r) => r.id === MANA_RESOURCE_ID) ?? null;
-}
-
-/**
- * Give a character a mana pool at full, replacing any existing one. Ordered
- * after HP so the two bars read HP-then-mana on the card.
- * @param {Character} character
- * @param {number} maxMana
- * @returns {Character}
- */
-export function withMana(character, maxMana) {
-  const mana = createResource(MANA_RESOURCE_ID, 'Mana', 'mana', maxMana);
-  const hp = character.resources.filter((r) => r.id === HP_RESOURCE_ID);
-  const others = character.resources.filter(
-    (r) => r.id !== MANA_RESOURCE_ID && r.id !== HP_RESOURCE_ID,
-  );
-  return { ...character, resources: [...hp, mana, ...others] };
-}
-
-/**
  * Fill in fields a loaded character may predate: any missing ability score at
  * the neutral 10 (keeping existing values) and an empty-string race. No HP
- * pool is invented — its absence legitimately means "no HP tracking".
+ * pool is invented — its absence legitimately means "no HP tracking". A
+ * mana-era save's mana pool is migrated to spell slots for the character's
+ * level (see SpellSlots.js).
  * @param {Character} character
  * @returns {Character}
  */
 export function withDefaults(character) {
-  return {
+  return migrateManaToSlots({
     ...character,
     race: character.race ?? '',
     stats: { ...defaultStats(), ...character.stats },
     conditions: character.conditions ?? [],
-  };
+  });
 }
 
 /**
@@ -114,13 +86,14 @@ function defaultGrowth(max) {
 
 /**
  * Add XP, auto-leveling up (possibly multiple times) as thresholds are crossed.
- * Each level gained grows the HP and mana pools' maximum (and current, so the
- * gained capacity is immediately usable) by a per-level amount — configurable
- * via `opts`, defaulting to a tenth of each pool's current max. Characters with
- * no HP/mana pool level up without any pool change.
+ * Each level gained grows the HP pool's maximum (and current, so the gained
+ * capacity is immediately usable) by a per-level amount — configurable via
+ * `opts`, defaulting to a tenth of the pool's current max — and re-derives a
+ * caster's spell-slot pools from the new level (spent slots stay spent).
+ * Characters with no HP pool level up without any pool change.
  * @param {Character} character
  * @param {number} amount
- * @param {{ hpGrowth?: number, manaGrowth?: number }} [opts]
+ * @param {{ hpGrowth?: number }} [opts]
  * @returns {Character}
  */
 export function addXP(character, amount, opts = {}) {
@@ -135,17 +108,11 @@ export function addXP(character, amount, opts = {}) {
   if (gained === 0) return { ...character, level, xp };
 
   const resources = character.resources.map((r) => {
-    const perLevel =
-      r.id === HP_RESOURCE_ID
-        ? (opts.hpGrowth ?? defaultGrowth(r.max))
-        : r.id === MANA_RESOURCE_ID
-          ? (opts.manaGrowth ?? defaultGrowth(r.max))
-          : 0;
-    if (perLevel === 0) return r;
-    const added = perLevel * gained;
+    if (r.id !== HP_RESOURCE_ID) return r;
+    const added = (opts.hpGrowth ?? defaultGrowth(r.max)) * gained;
     return { ...r, max: r.max + added, current: Math.min(r.max + added, r.current + added) };
   });
-  return { ...character, level, xp, resources };
+  return syncSlotsToLevel({ ...character, level, xp, resources });
 }
 
 /**
@@ -194,9 +161,11 @@ export function restoreResource(character, resourceId, amount) {
 }
 
 /**
- * Restore every resource pool (HP, mana, and any custom pool) by a fraction of
- * its max, clamped to full. The rest model: a long rest restores everything
- * (fraction 1), a short rest restores half (fraction 0.5). Pure.
+ * Restore every resource pool (HP and any custom pool) by a fraction of its
+ * max, clamped to full. The rest model: a long rest restores everything
+ * (fraction 1), a short rest restores half (fraction 0.5). Spell slots follow
+ * the D&D rule instead: only a full rest (fraction 1) refills them; anything
+ * less leaves them untouched. Pure.
  * @param {Character} character
  * @param {number} fraction 0..1
  * @returns {Character}
@@ -205,12 +174,14 @@ export function restAll(character, fraction) {
   const clamped = Math.max(0, Math.min(1, fraction));
   return {
     ...character,
-    resources: character.resources.map((r) => restorePool(r, Math.ceil(r.max * clamped))),
+    resources: character.resources.map((r) =>
+      isSlotPool(r) && clamped < 1 ? r : restorePool(r, Math.ceil(r.max * clamped)),
+    ),
   };
 }
 
 /**
- * A long rest: fully restore HP, mana, and every resource pool.
+ * A long rest: fully restore HP, spell slots, and every resource pool.
  * @param {Character} character
  * @returns {Character}
  */
@@ -219,7 +190,7 @@ export function longRest(character) {
 }
 
 /**
- * A short rest: restore half of each pool's maximum.
+ * A short rest: restore half of each pool's maximum; spell slots stay spent.
  * @param {Character} character
  * @returns {Character}
  */
