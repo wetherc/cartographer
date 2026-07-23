@@ -52,6 +52,8 @@ export class MapCanvas {
     this.partyTileId = null;
     /** @type {string | null} tile id highlighted as the Build-mode selection, if any */
     this.selectedTileId = null;
+    /** @type {string[]} tile ids in the current node carrying a live encounter */
+    this.encounterTileIds = [];
     /** When true (Build mode), draw every tile's image regardless of its
      * revealed flag, so a GM authors against the whole map, not through fog. */
     this.revealAll = false;
@@ -207,6 +209,17 @@ export class MapCanvas {
   }
 
   /**
+   * Set the tile ids in the current node that carry a live encounter, so the
+   * renderer can mark them. Only revealed ones are drawn, so an encounter stays
+   * hidden until the party reveals its tile through the fog.
+   * @param {string[]} tileIds
+   */
+  setEncounterTiles(tileIds) {
+    this.encounterTileIds = tileIds;
+    this.render();
+  }
+
+  /**
    * Toggle whether unrevealed tiles are drawn as fog (false, Play) or fully
    * (true, Build).
    * @param {boolean} value
@@ -258,6 +271,7 @@ export class MapCanvas {
       scale: this.scale,
       revealAll: this.revealAll,
       partyTileId: this.partyTileId,
+      encounterTileIds: this.encounterTileIds,
       selectedTileId: this.selectedTileId,
       cursorCellId: this.cursorCellId,
       focused: this._focused,
