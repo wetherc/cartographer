@@ -36,7 +36,9 @@ export function mountQuestPanel(container, callbacks) {
     const done = quest.status === 'completed';
     toggle.setAttribute('aria-label', done ? `Reopen ${quest.title}` : `Complete ${quest.title}`);
     toggle.setAttribute('aria-pressed', String(done));
-    toggle.appendChild(icon(done ? 'heal' : 'add'));
+    // A completed quest's toggle shows a check; an active one shows a plus to
+    // add/mark-done, so the glyph tracks the quest's state.
+    toggle.appendChild(icon(done ? 'check' : 'add'));
     toggle.addEventListener('click', () => {
       callbacks.onToggle(quest);
       render();

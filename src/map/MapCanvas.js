@@ -78,7 +78,10 @@ export class MapCanvas {
       onImageLoad: () => this.render(),
     });
 
-    this._dragging = false;
+    /** Right-drag pan is active (both modes). */
+    this._panning = false;
+    /** Play-mode left button is down and may resolve to a click. */
+    this._pendingClick = false;
     this._lastX = 0;
     this._lastY = 0;
     this._dragDistance = 0;
@@ -222,7 +225,8 @@ export class MapCanvas {
   setAuthoring(value) {
     this.authoring = value;
     this._stroking = false;
-    this._dragging = false;
+    this._panning = false;
+    this._pendingClick = false;
     this.setMarquee(null);
   }
 
@@ -266,10 +270,10 @@ export class MapCanvas {
     this.renderer.render(this._view());
   }
 
-  /** Right-drag pans in authoring mode, so its context menu must not pop.
+  /** Right-drag pans in both modes now, so its context menu must never pop.
    * @param {MouseEvent} event */
   _onContextMenu(event) {
-    if (this.authoring) event.preventDefault();
+    event.preventDefault();
   }
 
   _onFocus() {
@@ -371,12 +375,23 @@ export class MapCanvas {
       this._strokeCell(event, true);
       return;
     }
-    // Panning: the right button while authoring, the left button otherwise.
-    if (event.button !== (this.authoring ? 2 : 0)) return;
-    this._dragging = true;
-    this._dragDistance = 0;
-    this._lastX = event.clientX;
-    this._lastY = event.clientY;
+    // Panning is the right button in both modes, so Play and Build share one
+    // navigation gesture and the left button is free to act (click) or author.
+    if (event.button === 2) {
+      this._panning = true;
+      this._dragDistance = 0;
+      this._lastX = event.clientX;
+      this._lastY = event.clientY;
+      return;
+    }
+    // Play-mode left button: a click candidate (navigate/move on release if it
+    // didn't turn into a drag). No left-drag pan, matching Build mode.
+    if (!this.authoring && event.button === 0) {
+      this._pendingClick = true;
+      this._dragDistance = 0;
+      this._lastX = event.clientX;
+      this._lastY = event.clientY;
+    }
   }
 
   /**
@@ -416,7 +431,14 @@ export class MapCanvas {
       this._strokeCell(event, false);
       return;
     }
-    if (!this._dragging) {
+    if (this._pendingClick) {
+      // Track movement so a left-drag doesn't count as a click; no pan.
+      this._dragDistance += Math.abs(event.clientX - this._lastX) + Math.abs(event.clientY - this._lastY);
+      this._lastX = event.clientX;
+      this._lastY = event.clientY;
+      return;
+    }
+    if (!this._panning) {
       this._trackHover(event);
       return;
     }
@@ -473,9 +495,12 @@ export class MapCanvas {
       this.onStrokeEnd?.();
       return;
     }
-    const wasClick = this._dragging && this._dragDistance < 4;
-    this._dragging = false;
-    // A short right-drag (authoring pan) must not read as a click.
+    if (this._panning) {
+      this._panning = false;
+      return; // a pan (right-drag) never acts as a click
+    }
+    const wasClick = this._pendingClick && this._dragDistance < 4;
+    this._pendingClick = false;
     if (!wasClick || this.authoring || !this.onCellClick || !this.node) return;
 
     // Fire for any in-bounds cell, whether or not a tile currently sits there.
