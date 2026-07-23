@@ -56,11 +56,16 @@ test('TilePalette ships with single-image POI markers', () => {
 
 test('TilePalette ships with building-interior pieces', () => {
   const palette = new TilePalette();
-  assert.equal(palette.listVariants('interior').length, 13);
+  assert.equal(palette.listVariants('interior').length, 18);
   assert.equal(
     palette.getInteriorPiece('wall-corner-ne').imageRef,
     'assets/tiles/interior/interior-wall-corner-ne.svg',
   );
+  assert.equal(
+    palette.getInteriorPiece('wall-cross').imageRef,
+    'assets/tiles/interior/interior-wall-cross.svg',
+  );
+  assert.equal(palette.getInteriorPiece('wall-tee-n').type, 'interior');
   assert.equal(palette.getInteriorPiece('floor-1').type, 'interior');
   assert.equal(palette.getInteriorPiece('stairs-down').id, 'interior-stairs-down');
 });
