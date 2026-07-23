@@ -1,6 +1,8 @@
 import { icon } from './icons.js';
+import { isGM } from '../view/ViewRole.js';
 
 /** @typedef {import('../types/handout.js').Handout} Handout */
+/** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**
  * Mount the handouts panel: the GM's lore/read-aloud snippets for the party's
@@ -20,6 +22,7 @@ import { icon } from './icons.js';
  *   onEdit: (handout: Handout) => Promise<boolean> | boolean,
  *   onDelete: (id: string) => Promise<boolean> | boolean,
  *   onAdd: () => Promise<Handout | null>,
+ *   getRole?: () => ViewRole,
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -84,8 +87,40 @@ export function mountHandoutPanel(container, callbacks) {
     return row;
   }
 
+  /** A player sees only revealed handouts, read-only: title + read-aloud body. */
+  function buildPlayerRow(handout) {
+    const row = document.createElement('div');
+    row.className = 'handout-panel__row handout-panel__row--revealed';
+    const title = document.createElement('div');
+    title.className = 'handout-panel__title';
+    title.textContent = handout.title;
+    row.appendChild(title);
+    if (handout.body) {
+      const body = document.createElement('p');
+      body.className = 'handout-panel__body';
+      body.textContent = handout.body;
+      row.appendChild(body);
+    }
+    return row;
+  }
+
   function render() {
     root.innerHTML = '';
+    const gm = !callbacks.getRole || isGM(callbacks.getRole());
+
+    if (!gm) {
+      const shown = callbacks.getHandouts().filter((h) => h.revealed);
+      if (shown.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'empty-state';
+        empty.textContent = 'Nothing to show yet.';
+        root.appendChild(empty);
+        return;
+      }
+      for (const handout of shown) root.appendChild(buildPlayerRow(handout));
+      return;
+    }
+
     const handouts = callbacks.getHandouts();
     if (handouts.length === 0) {
       const empty = document.createElement('p');

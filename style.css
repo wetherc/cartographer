@@ -331,6 +331,43 @@ body {
   background: var(--accent-hover);
 }
 
+/* The role switch (GM/Player) shares the segmented-toggle look of the mode
+   switch. */
+.role-switch {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.role-switch__btn {
+  border: none;
+  border-radius: 0;
+  background: var(--surface);
+}
+
+.role-switch__btn + .role-switch__btn {
+  border-left: 1px solid var(--border-strong);
+}
+
+.role-switch__btn--active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.role-switch__btn--active:hover {
+  background: var(--accent-hover);
+}
+
+/* Player role is a read-only view: hide the authoring/campaign-lifecycle
+   header controls and the Play/Build switch, leaving just the map and the
+   player-facing panels. */
+body.role-player #mode-switch-container,
+body.role-player .app-header__actions {
+  display: none;
+}
+
 /* ==========================================================================
    World tree (Build-mode left rail)
    ========================================================================== */
