@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createNPC, npcsAt, withDefaults } from '../src/entities/NPC.js';
+import { createNPC, npcsAt, withDefaults, formatLocation } from '../src/entities/NPC.js';
 
 test('createNPC defaults role/notes empty, disposition neutral, unplaced', () => {
   const npc = createNPC('n1', 'Bram');
@@ -22,4 +22,12 @@ test('withDefaults backfills a sparse NPC', () => {
   assert.equal(restored.disposition, 'neutral');
   assert.equal(restored.role, '');
   assert.equal(restored.location, null);
+});
+
+test('formatLocation names the node with coordinates, falling back to the raw id', () => {
+  const names = { world: 'World' };
+  const lookup = (id) => names[id];
+  assert.equal(formatLocation({ nodeId: 'world', tileId: '3,2' }, lookup), 'World (3,2)');
+  assert.equal(formatLocation({ nodeId: 'gone', tileId: '0,0' }, lookup), 'gone (0,0)');
+  assert.equal(formatLocation(null, lookup), 'Everywhere');
 });
