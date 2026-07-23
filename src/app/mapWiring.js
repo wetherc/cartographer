@@ -103,7 +103,7 @@ export function wireMapView(app) {
   app.actions.syncPartyMarker = syncPartyMarker;
 
   /** Mark the current node's tiles that carry a live (undefeated) encounter, so
-   * the map shows where danger lies once its tile is revealed. */
+   * the map shows where danger lies once the party comes within detection range. */
   function syncEncounterMarkers() {
     const nodeId = navigator.getCurrentNode().id;
     mapCanvas.setEncounterTiles(
@@ -115,7 +115,7 @@ export function wireMapView(app) {
   app.actions.syncEncounterMarkers = syncEncounterMarkers;
 
   /** Mark the current node's tiles that hold a placed NPC (distinct blue marker),
-   * so a revealed tile shows who is standing there. */
+   * shown once the party comes within detection range. */
   function syncNPCMarkers() {
     const nodeId = navigator.getCurrentNode().id;
     mapCanvas.setNPCTiles(
@@ -293,6 +293,9 @@ export function wireMapView(app) {
 
   const mapCanvas = new MapCanvas(canvasEl, palette, {
     tileSize: 48,
+    // Encounter/NPC/POI markers are sensed out to twice the fog reveal radius
+    // around the party (and any split-off character), but no further.
+    markerRange: partyTracker.revealRadius * 2,
     getNodeName: (nodeId) => grid.getNode(nodeId)?.name,
     onViewChange: () => mapControls?.update(),
     // Play-mode read side of the Build-mode tile inspector: hovering a revealed

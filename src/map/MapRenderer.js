@@ -1,4 +1,5 @@
 import { parseCoords, tileRect } from './MapGeometry.js';
+import { withinRadius } from './FogOfWar.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
@@ -17,6 +18,7 @@ import { parseCoords, tileRect } from './MapGeometry.js';
  * @property {number} offsetY
  * @property {number} scale
  * @property {boolean} revealAll draw every tile's image regardless of fog (Build mode)
+ * @property {number} markerRange detection range in grid cells: encounter/NPC/POI markers only draw within this Euclidean distance of the party or a character token
  * @property {string | null} partyTileId
  * @property {string[]} [encounterTileIds] tiles carrying a live encounter, marked when revealed
  * @property {string[]} [npcTileIds] tiles holding a placed NPC, marked when revealed
@@ -170,10 +172,13 @@ export class MapRenderer {
       // A drawn tile carrying a POI type gets a prominent outline. A POI marked
       // discoverable stays hidden until the party reaches it (unless authoring,
       // where the GM sees everything), so secret sites aren't given away by fog
-      // reveal alone.
+      // reveal alone — and like the encounter/NPC markers, an outline only
+      // shows within detection range of the party or a character token.
       const poiVisible =
         tile.metadata.poiType &&
-        (view.revealAll || !tile.metadata.discoverable || tile.metadata.discovered);
+        (view.revealAll ||
+          ((!tile.metadata.discoverable || tile.metadata.discovered) &&
+            this._markerVisible(view, tile.id)));
       if (poiVisible) this._renderPoiOutline(sx, sy, size);
     }
   }
@@ -278,11 +283,37 @@ export class MapRenderer {
   }
 
   /**
+   * The tiles markers are detected from: the party's tile plus every
+   * character token's tile, so a scout who wandered off senses danger around
+   * their own position, not just the party's.
+   * @param {MapView} view
+   * @returns {string[]}
+   */
+  _markerAnchors(view) {
+    const anchors = (view.characterTokens ?? []).map((t) => t.tileId);
+    if (view.partyTileId) anchors.push(view.partyTileId);
+    return anchors;
+  }
+
+  /**
+   * Whether a marker at a tile is within detection range of the party or a
+   * character token. Build mode sees everything; in Play a node the party
+   * isn't in has no anchors, so its markers stay hidden.
+   * @param {MapView} view
+   * @param {string} tileId
+   * @returns {boolean}
+   */
+  _markerVisible(view, tileId) {
+    if (view.revealAll) return true;
+    return this._markerAnchors(view).some((a) => withinRadius(tileId, a, view.markerRange));
+  }
+
+  /**
    * Mark tiles carrying a live encounter with a red diamond in the tile's upper
    * corner, so a point of danger reads distinctly from the gold party dot and a
-   * POI outline. Deliberately ignores the fog of war — a known danger stays
-   * visible even on tiles the party hasn't discovered, so players can steer
-   * around (or toward) it.
+   * POI outline. Markers respect the fog of war loosely: a danger is sensed out
+   * to the detection range (twice the fog reveal radius) around the party and
+   * any split-off character, even on still-fogged tiles, but never further.
    * @param {MapView} view
    */
   _renderEncounterMarkers(view) {
@@ -290,6 +321,7 @@ export class MapRenderer {
     if (!ids || ids.length === 0 || !view.node) return;
     const { ctx } = this;
     for (const id of ids) {
+      if (!this._markerVisible(view, id)) continue;
       const coords = parseCoords(id);
       if (!coords) continue;
       const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
@@ -314,16 +346,16 @@ export class MapRenderer {
    * Mark tiles holding a placed NPC with a blue circle in the tile's upper-left
    * corner — mirroring the encounter diamond's upper-right spot, so a tile can
    * carry both without overlap, and reading as a person rather than a threat.
-   * Same fog rule as encounters: only revealed tiles are marked (Build marks all).
+   * Same detection rule as encounters: marked only within the detection range
+   * of the party or a character token (Build marks all).
    * @param {MapView} view
    */
   _renderNPCMarkers(view) {
     const ids = view.npcTileIds;
     if (!ids || ids.length === 0 || !view.node) return;
-    const revealed = new Set(view.node.tiles.filter((t) => t.revealed).map((t) => t.id));
     const { ctx } = this;
     for (const id of ids) {
-      if (!view.revealAll && !revealed.has(id)) continue;
+      if (!this._markerVisible(view, id)) continue;
       const coords = parseCoords(id);
       if (!coords) continue;
       const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
