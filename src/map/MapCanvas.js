@@ -1,5 +1,6 @@
 import { findRegionGroups } from './RegionGroups.js';
 import { isCursorKey, nextCursor } from './MapCursor.js';
+import { MapRenderer } from './MapRenderer.js';
 import {
   parseCoords,
   tileRect,
@@ -68,8 +69,14 @@ export class MapCanvas {
     this.offsetY = 0;
     this.scale = 1;
 
-    /** @type {Map<string, HTMLImageElement>} */
-    this.imageCache = new Map();
+    // Drawing lives in MapRenderer; MapCanvas stays the owner of interaction
+    // state and hands the renderer a view snapshot each frame. A tile image
+    // that finishes loading asks for a redraw so it appears once decoded.
+    this.renderer = new MapRenderer(this.ctx, {
+      tileSize: this.tileSize,
+      getNodeName: this.getNodeName,
+      onImageLoad: () => this.render(),
+    });
 
     this._dragging = false;
     this._lastX = 0;
@@ -230,223 +237,33 @@ export class MapCanvas {
   }
 
   /**
-   * @param {string} imageRef
-   * @returns {HTMLImageElement}
+   * Assemble the current interaction state into a view snapshot and hand it to
+   * the renderer. Pan/zoom/resize and every state setter funnel through here,
+   * so this is also the one place the zoom readout (and any other view-dependent
+   * chrome) needs poking from.
+   * @returns {import('./MapRenderer.js').MapView}
    */
-  _getImage(imageRef) {
-    let img = this.imageCache.get(imageRef);
-    if (!img) {
-      img = new Image();
-      img.src = `/${imageRef}`;
-      img.onload = () => this.render();
-      this.imageCache.set(imageRef, img);
-    }
-    return img;
+  _view() {
+    return {
+      canvasWidth: this.canvas.width,
+      canvasHeight: this.canvas.height,
+      node: this.node,
+      regionGroups: this.regionGroups,
+      offsetX: this.offsetX,
+      offsetY: this.offsetY,
+      scale: this.scale,
+      revealAll: this.revealAll,
+      partyTileId: this.partyTileId,
+      selectedTileId: this.selectedTileId,
+      cursorCellId: this.cursorCellId,
+      focused: this._focused,
+      marquee: this.marquee,
+    };
   }
 
   render() {
-    const { ctx, canvas, node } = this;
-    // Pan/zoom/resize all funnel through here, so this is the one place the
-    // zoom readout (and any other view-dependent chrome) needs a poke from.
     this.onViewChange?.();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    if (!node) return;
-
-    this._renderMapBounds();
-
-    for (const tile of node.tiles) {
-      const coords = parseCoords(tile.id);
-      if (!coords) continue;
-      const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
-      if (sx + size < 0 || sy + size < 0 || sx > canvas.width || sy > canvas.height) continue;
-
-      if (!tile.revealed && !this.revealAll) {
-        // A distinctly lighter fill than the map backdrop and the empty-canvas
-        // background, so an unexplored-but-real tile reads as fog, not void.
-        ctx.fillStyle = '#48412f';
-        ctx.fillRect(sx, sy, size, size);
-        continue;
-      }
-
-      // A tile carrying only an overlay (a path on an as-yet-unpainted cell)
-      // has an empty base, so let the map backdrop show through rather than
-      // drawing a placeholder under the path.
-      if (tile.imageRef) {
-        const img = this._getImage(tile.imageRef);
-        if (img.complete && img.naturalWidth > 0) {
-          ctx.drawImage(img, sx, sy, size, size);
-        } else {
-          ctx.fillStyle = '#333';
-          ctx.fillRect(sx, sy, size, size);
-        }
-      }
-
-      // A path/road overlay draws on top of the base terrain, so a road can sit
-      // on sand, snow, etc. rather than replacing the tile beneath it.
-      if (tile.overlayRef) {
-        const overlay = this._getImage(tile.overlayRef);
-        if (overlay.complete && overlay.naturalWidth > 0) {
-          ctx.drawImage(overlay, sx, sy, size, size);
-        }
-      }
-
-      // A drawn (revealed or Build-mode) tile carrying a POI type gets a
-      // prominent outline so a discovered point of interest stands out from
-      // ordinary terrain.
-      if (tile.metadata.poiType) this._renderPoiOutline(sx, sy, size);
-    }
-
-    this._renderRegionGroups();
-    this._renderMarquee();
-    this._renderSelection();
-    this._renderPartyMarker();
-    this._renderCursor();
-    this._renderMapBoundsBorder();
-  }
-
-  /**
-   * Outline a discovered point-of-interest tile with a glowing gold border, so
-   * it reads as special against surrounding terrain. Drawn per tile inside the
-   * render loop rather than as an overlay pass, so it sits directly on the tile.
-   * @param {number} sx
-   * @param {number} sy
-   * @param {number} size
-   */
-  _renderPoiOutline(sx, sy, size) {
-    const { ctx } = this;
-    ctx.save();
-    ctx.strokeStyle = '#ffd24a';
-    ctx.lineWidth = Math.max(2, size * 0.06);
-    ctx.shadowColor = 'rgba(255, 190, 60, 0.9)';
-    ctx.shadowBlur = size * 0.18;
-    const inset = ctx.lineWidth / 2 + 1;
-    ctx.strokeRect(sx + inset, sy + inset, size - inset * 2, size - inset * 2);
-    ctx.restore();
-  }
-
-  /** Draw the keyboard cursor cell while the canvas is focused, distinct from
-   * the Build selection (solid gold) and party marker (dot). */
-  _renderCursor() {
-    if (!this._focused || !this.cursorCellId) return;
-    const coords = parseCoords(this.cursorCellId);
-    if (!coords) return;
-    const { ctx } = this;
-    const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
-    ctx.save();
-    ctx.strokeStyle = '#5ec8ff';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([4, 3]);
-    ctx.strokeRect(sx + 1.5, sy + 1.5, size - 3, size - 3);
-    ctx.restore();
-  }
-
-  /** Dashed outline + tint over the region tool's in-progress drag block. */
-  _renderMarquee() {
-    if (!this.marquee) return;
-    const { ctx } = this;
-    const topLeft = tileRect(this.marquee.minX, this.marquee.minY, this.tileSize, this.offsetX, this.offsetY, this.scale);
-    const bottomRight = tileRect(this.marquee.maxX, this.marquee.maxY, this.tileSize, this.offsetX, this.offsetY, this.scale);
-    const w = bottomRight.sx + bottomRight.size - topLeft.sx;
-    const h = bottomRight.sy + bottomRight.size - topLeft.sy;
-    ctx.save();
-    ctx.fillStyle = 'rgba(224, 193, 75, 0.18)';
-    ctx.fillRect(topLeft.sx, topLeft.sy, w, h);
-    ctx.strokeStyle = '#e0c14b';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
-    ctx.strokeRect(topLeft.sx + 1, topLeft.sy + 1, w - 2, h - 2);
-    ctx.restore();
-  }
-
-  /** Outline the Build-mode selected tile so the GM sees which tile the
-   * inspector and palette act on. */
-  _renderSelection() {
-    if (!this.selectedTileId) return;
-    const coords = parseCoords(this.selectedTileId);
-    if (!coords) return;
-    const { ctx } = this;
-    const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
-    ctx.save();
-    ctx.strokeStyle = '#e0c14b';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(sx + 1.5, sy + 1.5, size - 3, size - 3);
-    ctx.restore();
-  }
-
-  /**
-   * Fill the node's full width x height extent with a map-area backdrop, drawn
-   * before the tiles. This gives the map a definite shape even where no tile is
-   * revealed, so panning past the edge is visually obvious.
-   */
-  _renderMapBounds() {
-    const { ctx, node } = this;
-    if (!node) return;
-    const size = this.tileSize * this.scale;
-    ctx.fillStyle = '#241f16';
-    ctx.fillRect(this.offsetX, this.offsetY, node.width * size, node.height * size);
-  }
-
-  /** Stroke the node extent after tiles so the world edge is always visible. */
-  _renderMapBoundsBorder() {
-    const { ctx, node } = this;
-    if (!node) return;
-    const size = this.tileSize * this.scale;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(230, 215, 180, 0.55)';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(this.offsetX, this.offsetY, node.width * size, node.height * size);
-    ctx.restore();
-  }
-
-  _renderPartyMarker() {
-    if (!this.partyTileId) return;
-    const coords = parseCoords(this.partyTileId);
-    if (!coords) return;
-    const { ctx } = this;
-    const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
-
-    ctx.save();
-    ctx.fillStyle = '#e0c14b';
-    ctx.strokeStyle = '#3a2f0a';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(sx + size / 2, sy + size / 2, size * 0.22, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  _renderRegionGroups() {
-    const { ctx, canvas } = this;
-    for (const group of this.regionGroups) {
-      const topLeft = tileRect(group.minX, group.minY, this.tileSize, this.offsetX, this.offsetY, this.scale);
-      const bottomRight = tileRect(group.maxX, group.maxY, this.tileSize, this.offsetX, this.offsetY, this.scale);
-      const x = topLeft.sx;
-      const y = topLeft.sy;
-      const w = bottomRight.sx + bottomRight.size - topLeft.sx;
-      const h = bottomRight.sy + bottomRight.size - topLeft.sy;
-      if (x + w < 0 || y + h < 0 || x > canvas.width || y > canvas.height) continue;
-
-      ctx.save();
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-      ctx.fillRect(x, y, w, h);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
-
-      const name = this.getNodeName?.(group.childNodeId);
-      if (name) {
-        ctx.font = '12px sans-serif';
-        ctx.textBaseline = 'top';
-        const label = ` ${name} `;
-        const metrics = ctx.measureText(label);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(x, y, metrics.width, 16);
-        ctx.fillStyle = '#fff';
-        ctx.fillText(label, x, y + 2);
-      }
-      ctx.restore();
-    }
+    this.renderer.render(this._view());
   }
 
   /** Right-drag pans in authoring mode, so its context menu must not pop.
