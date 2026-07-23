@@ -237,8 +237,18 @@ export function wireEncounters(app) {
   // the GM is looking at (plus unplaced ones), editable without moving the
   // party there. New encounters default onto the Build-mode selected tile of
   // the viewed node, so "select a tile, add an encounter" places it there.
+  // The Build rail's Encounters tab shows a count badge so staged encounters
+  // stay visible while another tab is forward. Every panel render calls
+  // getEncounters, so refreshing the badge here keeps it current through
+  // add/edit/delete and node navigation alike.
+  const buildEncounterCount = mustGetElement('build-encounter-count');
   app.views.buildEncounters = mountBuildEncounterPanel(mustGetElement('build-encounters-container'), {
-    getEncounters: () => encountersAt(state.encounters, { nodeId: app.navigator.getCurrentNode().id }),
+    getEncounters: () => {
+      const rows = encountersAt(state.encounters, { nodeId: app.navigator.getCurrentNode().id });
+      buildEncounterCount.textContent = String(rows.length);
+      buildEncounterCount.hidden = rows.length === 0;
+      return rows;
+    },
     onAdd: () =>
       encounterForm(null, {
         nodeId: app.navigator.getCurrentNode().id,

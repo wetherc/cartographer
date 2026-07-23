@@ -97,27 +97,41 @@
     </aside>
 
     <aside id="build-tools" class="app-buildrail app-buildrail--stack" aria-label="Build tools">
-      <section id="generate-container" class="card" aria-label="Generate map">
-        <h2 class="card__title">Generate</h2>
-        <p class="generate__hint">Fill this node with an auto-generated layout.</p>
-        <button id="generate-btn" class="btn" type="button">Generate map...</button>
-      </section>
-      <section id="map-tools-container" class="card" aria-label="Map tools">
-        <h2 class="card__title">Tools</h2>
-        <div class="map-tools">
-          <button id="stroke-undo-btn" class="btn" type="button">Undo stroke</button>
-          <button id="export-png-btn" class="btn" type="button">Export PNG</button>
-        </div>
-      </section>
-      <section id="palette-container" class="card" aria-label="Tile palette">
-        <h2 class="card__title">Palette</h2>
-      </section>
-      <section id="inspector-container" class="card" aria-label="Tile inspector">
-        <h2 class="card__title">Tile</h2>
-      </section>
-      <section id="build-encounters-container" class="card" aria-label="Encounter authoring">
-        <h2 class="card__title">Encounters</h2>
-      </section>
+      <div id="build-tabs" class="tabs" role="tablist" aria-label="Build panels">
+        <button class="tabs__tab" type="button" role="tab" id="build-tab-paint" aria-controls="build-panel-paint" aria-selected="true">Paint</button>
+        <button class="tabs__tab" type="button" role="tab" id="build-tab-tile" aria-controls="build-panel-tile" aria-selected="false" tabindex="-1">Tile</button>
+        <button class="tabs__tab" type="button" role="tab" id="build-tab-encounters" aria-controls="build-panel-encounters" aria-selected="false" tabindex="-1">Encounters<span id="build-encounter-count" class="tabs__count" hidden></span></button>
+      </div>
+
+      <div class="tabs__panel" role="tabpanel" id="build-panel-paint" aria-labelledby="build-tab-paint">
+        <section id="generate-container" class="card" aria-label="Generate map">
+          <h2 class="card__title">Generate</h2>
+          <p class="generate__hint">Fill this node with an auto-generated layout.</p>
+          <button id="generate-btn" class="btn" type="button">Generate map...</button>
+        </section>
+        <section id="map-tools-container" class="card" aria-label="Map tools">
+          <h2 class="card__title">Tools</h2>
+          <div class="map-tools">
+            <button id="stroke-undo-btn" class="btn" type="button">Undo stroke</button>
+            <button id="export-png-btn" class="btn" type="button">Export PNG</button>
+          </div>
+        </section>
+        <section id="palette-container" class="card" aria-label="Tile palette">
+          <h2 class="card__title">Palette</h2>
+        </section>
+      </div>
+
+      <div class="tabs__panel" role="tabpanel" id="build-panel-tile" aria-labelledby="build-tab-tile" hidden>
+        <section id="inspector-container" class="card" aria-label="Tile inspector">
+          <h2 class="card__title">Tile</h2>
+        </section>
+      </div>
+
+      <div class="tabs__panel" role="tabpanel" id="build-panel-encounters" aria-labelledby="build-tab-encounters" hidden>
+        <section id="build-encounters-container" class="card" aria-label="Encounter authoring">
+          <h2 class="card__title">Encounters</h2>
+        </section>
+      </div>
     </aside>
   </main>
 

@@ -17,6 +17,7 @@ import { mountPalettePanel } from '../ui/PalettePanel.js';
 import { mountMapControls } from '../ui/MapControls.js';
 import { mountMapDescription } from '../ui/MapDescription.js';
 import { mountTileTooltip } from '../ui/TileTooltip.js';
+import { wireTabs } from '../ui/Tabs.js';
 import { promptModal, confirmModal } from '../ui/Modal.js';
 import { isDefeated } from '../entities/Encounter.js';
 import { isGM } from '../view/ViewRole.js';
@@ -36,6 +37,11 @@ export function wireMapView(app) {
   const { palette, grid, navigator, partyTracker, toasts, state } = app;
 
   const canvasEl = /** @type {HTMLCanvasElement} */ (mustGetElement('map-canvas'));
+
+  // The Build rail's tab strip (Paint / Tile / Encounters), so the rail stays
+  // one screen tall instead of stacking every card. Selecting a tile jumps to
+  // the Tile tab below; everything else is user-driven.
+  const buildTabs = wireTabs(mustGetElement('build-tabs'));
 
   /** @type {string | null} tile id selected for inspection/editing in Build mode */
   let selectedTileId = null;
@@ -509,13 +515,15 @@ export function wireMapView(app) {
   }
 
   /**
-   * Select a tile within the current node and point the inspector at it.
+   * Select a tile within the current node and point the inspector at it,
+   * bringing the Tile tab forward so the inspector is actually visible.
    * @param {string} tileId
    */
   function selectTile(tileId) {
     selectedTileId = tileId;
     mapCanvas.setSelectedTile(tileId);
     inspector.setTile(getTile(navigator.getCurrentNode(), tileId) ?? null, true);
+    buildTabs.select('build-tab-tile');
   }
 
   /**
