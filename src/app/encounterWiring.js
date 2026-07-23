@@ -7,6 +7,7 @@ import { createParticipant, startCombat, advanceTurn } from '../combat/Initiativ
 import { tickConditions } from '../entities/Conditions.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
+import { locationFields, readLocation } from './locationFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -95,8 +96,9 @@ export function wireEncounters(app) {
       app.actions.markDirty();
       app.toasts.show(`Saved "${encounter.name}" to the bestiary.`);
     },
-    // Spawn a fresh, full-health encounter from a saved template at the party's
-    // location; the same dialog can also prune a stale template instead.
+    // Spawn a fresh, full-health encounter from a saved template at a chosen
+    // map/tile (defaulting to where the party stands); the same dialog can
+    // also prune a stale template instead.
     onAddFromTemplate: async () => {
       if (state.bestiary.length === 0) {
         await alertModal('The bestiary is empty. Save an encounter as a template first (the save icon on its row).', {
@@ -119,10 +121,13 @@ export function wireEncounters(app) {
             type: 'select',
             value: 'spawn',
             options: [
-              { value: 'spawn', label: 'Spawn at party location' },
+              { value: 'spawn', label: 'Spawn at the location below' },
               { value: 'delete', label: 'Delete this template' },
             ],
           },
+          // Same node-picker + tile X/Y group the NPC dialogs use; defaults to
+          // the party's position so the common case is unchanged.
+          ...locationFields(app, { ...app.partyTracker.getPosition() }),
         ],
         { submitLabel: 'Apply' },
       );
@@ -134,9 +139,11 @@ export function wireEncounters(app) {
         app.toasts.show(`Deleted "${template.name}" from the bestiary.`);
         return null;
       }
-      const created = fromTemplate(template, slugId(template.name, state.encounters.map((e) => e.id)), {
-        ...app.partyTracker.getPosition(),
-      });
+      const created = fromTemplate(
+        template,
+        slugId(template.name, state.encounters.map((e) => e.id)),
+        readLocation(app, values),
+      );
       state.encounters = [...state.encounters, created];
       app.actions.syncEncounterMarkers();
       app.actions.markDirty();
