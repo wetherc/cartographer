@@ -15,6 +15,8 @@ import {
 import { mustGetElement } from './ui/dom.js';
 import { mountBreadcrumb } from './ui/Breadcrumb.js';
 import { mountModeSwitch } from './ui/ModeSwitch.js';
+import { mountRoleSwitch } from './ui/RoleSwitch.js';
+import { isGM } from './view/ViewRole.js';
 import { mountWorldTree } from './ui/WorldTree.js';
 import { mountTileInspector } from './ui/TileInspector.js';
 import { mountPalettePanel } from './ui/PalettePanel.js';
@@ -90,6 +92,13 @@ function logEvent(kind, message) {
 
 /** @type {'play' | 'build'} */
 let currentMode = 'play';
+/**
+ * Viewer role, per-tab so a follower tab can be Player while the GM's tab is
+ * GM. Persisted in sessionStorage (not localStorage, which is shared across
+ * tabs and would fight the cross-tab save sync).
+ * @type {import('./types/view.js').ViewRole}
+ */
+let currentRole = /** @type {any} */ (sessionStorage.getItem('campaign-builder:role')) || 'gm';
 /** @type {string | null} tile id selected for inspection/editing in Build mode */
 let selectedTileId = null;
 /** @type {import('./ui/PalettePanel.js').Brush} active Build-mode paint brush */
@@ -281,10 +290,17 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
       return;
     }
     const poiType = tile.metadata.poiType;
+    // Notes are the GM's secret; players see only the POI type. A player-role
+    // tile with no POI type therefore has nothing to show.
+    const gm = isGM(currentRole);
+    if (!gm && !poiType) {
+      tileTooltip.hide();
+      return;
+    }
     tileTooltip.show(
       {
         title: poiType ? poiType.charAt(0).toUpperCase() + poiType.slice(1) : '',
-        notes: tile.metadata.notes,
+        notes: gm ? tile.metadata.notes : '',
       },
       clientX,
       clientY,
@@ -636,6 +652,7 @@ const encounterPanel = mountEncounterPanel(mustGetElement('encounter-container')
   },
   confirmDelete: (encounter) =>
     confirmModal(`Delete "${encounter.name}"?`, { danger: true, confirmLabel: 'Delete' }),
+  getRole: () => currentRole,
 });
 
 const timePanel = mountTimePanel(mustGetElement('time-container'), {
@@ -831,11 +848,12 @@ const handoutPanel = mountHandoutPanel(mustGetElement('handout-container'), {
     if (ok) handouts = removeById(handouts, id);
     return ok;
   },
+  getRole: () => currentRole,
 });
 
 // Play/Build mode drives which rails the layout shows (a body class toggled by
 // CSS), and defaults to Play so a first-run visitor lands on the live view.
-mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => {
+const modeSwitch = mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => {
   currentMode = mode;
   document.body.classList.toggle('mode-play', mode === 'play');
   document.body.classList.toggle('mode-build', mode === 'build');
@@ -847,6 +865,25 @@ mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => 
   worldTree.update();
   regionTree.update();
   refreshMapDescription();
+});
+
+// Viewer role (GM vs player) is orthogonal to Play/Build: it changes what the
+// panels reveal, not what the operator can do. Player role is read-only, so it
+// forces Play mode and a body class hides the authoring/header affordances via
+// CSS; the panels re-render against the new role.
+function applyRole() {
+  document.body.classList.toggle('role-player', currentRole === 'player');
+  document.body.classList.toggle('role-gm', currentRole === 'gm');
+  if (currentRole === 'player') modeSwitch.setMode('play');
+  encounterPanel.update();
+  handoutPanel.update();
+  tileTooltip.hide();
+}
+
+mountRoleSwitch(mustGetElement('role-switch-container'), currentRole, (role) => {
+  currentRole = role;
+  sessionStorage.setItem('campaign-builder:role', role);
+  applyRole();
 });
 
 /**

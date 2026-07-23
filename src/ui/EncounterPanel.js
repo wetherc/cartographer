@@ -1,8 +1,10 @@
 import { applyDamage, heal, isDefeated } from '../entities/Encounter.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { icon } from './icons.js';
+import { isGM, hpBand } from '../view/ViewRole.js';
 
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
+/** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**
  * Mount an encounter panel: one row per encounter with an HP readout and a
@@ -22,6 +24,7 @@ import { icon } from './icons.js';
  *   onDelete: (id: string) => void,
  *   onAdd?: () => Promise<Encounter | null>,
  *   confirmDelete?: (encounter: Encounter) => Promise<boolean>,
+ *   getRole?: () => ViewRole,
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -39,6 +42,9 @@ export function mountEncounterPanel(container, callbacks) {
   function render() {
     root.innerHTML = '';
     const encounters = callbacks.getEncounters();
+    // Players see a coarse status band and no controls; the GM sees exact HP
+    // and the full damage/heal/condition/roster machinery.
+    const gm = !callbacks.getRole || isGM(callbacks.getRole());
 
     if (encounters.length === 0) {
       const empty = document.createElement('p');
@@ -54,7 +60,20 @@ export function mountEncounterPanel(container, callbacks) {
 
       const label = document.createElement('span');
       label.className = 'encounter-panel__label';
-      label.textContent = `${encounter.name} (${encounter.currentHP}/${encounter.maxHP})`;
+      label.textContent = gm
+        ? `${encounter.name} (${encounter.currentHP}/${encounter.maxHP})`
+        : `${encounter.name} — ${hpBand(encounter.currentHP, encounter.maxHP)}`;
+
+      // Player view stops at the name and its status band: no HP numbers, no
+      // damage/heal/delete controls, no condition editing, no add button.
+      if (!gm) {
+        const head = document.createElement('div');
+        head.className = 'encounter-panel__head';
+        head.appendChild(label);
+        row.appendChild(head);
+        root.appendChild(row);
+        continue;
+      }
 
       const amountInput = document.createElement('input');
       amountInput.type = 'number';
@@ -109,7 +128,7 @@ export function mountEncounterPanel(container, callbacks) {
     }
 
     const onAdd = callbacks.onAdd;
-    if (onAdd) {
+    if (onAdd && gm) {
       const addButton = document.createElement('button');
       addButton.type = 'button';
       addButton.className = 'btn encounter-panel__add';
