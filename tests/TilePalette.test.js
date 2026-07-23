@@ -8,6 +8,9 @@ test('TilePalette ships with built-in terrain variants', () => {
   assert.equal(grassVariants.length, 3);
   assert.equal(palette.get('grass-1').custom, false);
   assert.equal(palette.get('grass-1').imageRef, 'assets/tiles/grass/grass-1.svg');
+  for (const type of ['forest', 'mountain', 'water', 'desert', 'swamp', 'snow', 'hills', 'farmland']) {
+    assert.equal(palette.listVariants(type).length, 3, `expected 3 variants of "${type}"`);
+  }
 });
 
 test('TilePalette ships with built-in road connector pieces', () => {

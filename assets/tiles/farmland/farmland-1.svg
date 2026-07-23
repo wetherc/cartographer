@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <g id="fp">
+      <rect x="-14" y="-9" width="28" height="18" rx="2" fill="#8a6a42"/>
+      <path d="M-11 -5.5 H11 M-11 -1.5 H11 M-11 2.5 H11 M-11 6.5 H11" stroke="#75552f" stroke-width="1.4" fill="none"/>
+    </g>
+    <g id="fc" stroke="#6e5233" stroke-linecap="round" fill="none">
+      <path d="M0 0 V-6 M8 0 V-6 M16 0 V-6" stroke-width="1.6"/>
+      <path d="M-1 -4.5 H17 M-1 -1.5 H17" stroke-width="1.2"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <g fill="#529044">
+    <ellipse cx="14" cy="12" rx="9" ry="5"/>
+    <ellipse cx="52" cy="54" rx="8" ry="5"/>
+  </g>
+  <use href="#fp" transform="translate(26 22)"/>
+  <g transform="translate(26 44)">
+    <rect x="-14" y="-9" width="28" height="18" rx="2" fill="#7d9a45"/>
+    <path d="M-11 -5.5 H11 M-11 -1.5 H11 M-11 2.5 H11 M-11 6.5 H11" stroke="#6b8a38" stroke-width="1.4" fill="none"/>
+  </g>
+  <use href="#fc" transform="translate(44 26)"/>
+  <use href="#fc" transform="translate(44 50)"/>
+</svg>

@@ -1,12 +1,12 @@
 # Tile assets
 
-Built-in tile art lives under `assets/tiles/<type>/`, one subfolder per tile type (`grass/`, `forest/`, `mountain/`, `water/`, `desert/`, `road/`, `interior/`, plus one folder per POI marker such as `settlement/`, `castle/`, `tavern/`). `TilePalette` (`src/map/TilePalette.js`) is the single source of truth for the catalog and the paths it expects — see `VARIANT_COUNTS`, `ROAD_KINDS`, `MARKER_TYPES`, and `INTERIOR_KINDS` there before adding or renaming files.
+Built-in tile art lives under `assets/tiles/<type>/`, one subfolder per tile type (`grass/`, `forest/`, `mountain/`, `water/`, `desert/`, `swamp/`, `snow/`, `hills/`, `farmland/`, `road/`, `interior/`, plus one folder per POI marker such as `settlement/`, `castle/`, `tavern/`). `TilePalette` (`src/map/TilePalette.js`) is the single source of truth for the catalog and the paths it expects — see `VARIANT_COUNTS`, `ROAD_KINDS`, `MARKER_TYPES`, and `INTERIOR_KINDS` there before adding or renaming files.
 
 ## Terrain variants
 
 Each terrain type ships 3 variants (`grass-1.svg`, `grass-2.svg`, `grass-3.svg`, etc.), selected via `palette.pickVariant(type, rng)` so adjacent tiles of the same type don't look identical. For variants to abut cleanly in the grid:
 
-- All variants of a type share the exact same background fill color.
+- All variants of a type share the exact same background fill color. (`farmland` deliberately reuses the grass background, like roads do, so fields abut grass seamlessly around settlements.)
 - Decorative details (grass tufts, trees, rocks, sparkles) stay inset from the tile edges — nothing one-off touches or crosses a border.
 - The one allowed exception: a type may carry an edge-crossing motif, provided it is byte-identical across all variants of the type and geometrically continuous at the borders. Two forms exist. A *periodic path* (water's wave rows, desert's dune crests, mountain's mid-ground ridge band) must pass through the same point with the same tangent at x=0 and x=64 (e.g. a `Q .. T ..` chain whose period divides 64). A *wrapped stamp* (forest's edge-canopy clusters, mountain's edge outcrops) is a `<use>` element straddling a border, duplicated at the opposite border with the same transform except the 64-unit offset — anything crossing x=0 repeats at +64, anything crossing y=0 likewise, corners at all four. Stagger wrapped-stamp centers a few units off the border line and vary their shapes/offsets per edge — identical stamps sitting exactly on every border read as a straight row of blobs at each seam and produce a visible 64px lattice. Either way, any variant abuts any variant seamlessly. Never vary such a motif per variant; variants differ only in their inset details.
 - Variants differ only in the count/placement/arrangement of those inset details, never in background color or overall tone.

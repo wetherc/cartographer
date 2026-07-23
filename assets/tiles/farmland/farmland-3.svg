@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <g id="fp">
+      <rect x="-14" y="-9" width="28" height="18" rx="2" fill="#8a6a42"/>
+      <path d="M-11 -5.5 H11 M-11 -1.5 H11 M-11 2.5 H11 M-11 6.5 H11" stroke="#75552f" stroke-width="1.4" fill="none"/>
+    </g>
+    <g id="fc" stroke="#6e5233" stroke-linecap="round" fill="none">
+      <path d="M0 0 V-6 M8 0 V-6 M16 0 V-6" stroke-width="1.6"/>
+      <path d="M-1 -4.5 H17 M-1 -1.5 H17" stroke-width="1.2"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <g fill="#529044">
+    <ellipse cx="14" cy="34" rx="8" ry="5"/>
+    <ellipse cx="52" cy="30" rx="7" ry="4"/>
+  </g>
+  <g transform="translate(34 18) scale(0.85)">
+    <rect x="-14" y="-9" width="28" height="18" rx="2" fill="#7d9a45"/>
+    <path d="M-11 -5.5 H11 M-11 -1.5 H11 M-11 2.5 H11 M-11 6.5 H11" stroke="#6b8a38" stroke-width="1.4" fill="none"/>
+  </g>
+  <use href="#fp" transform="translate(22 48) scale(0.95)"/>
+  <path d="M44 48 Q47 40 50 48 Q53 54 47 54 Q41 54 44 48 Z" fill="#d9b45c"/>
+  <path d="M44 48 Q47 40 50 48" stroke="#c39c44" stroke-width="1.2" fill="none"/>
+  <ellipse cx="47" cy="54.5" rx="6" ry="1.6" fill="#4e8740" opacity="0.6"/>
+  <use href="#fc" transform="translate(10 14)"/>
+  <use href="#fc" transform="translate(38 60) scale(0.8)"/>
+</svg>
