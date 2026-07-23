@@ -1,11 +1,11 @@
-import { getTile, updateTileMetadata } from './map/TileGrid.js';
+import { getTile, updateTileMetadata, createMapNode } from './map/TileGrid.js';
 import { TilePalette } from './map/TilePalette.js';
 import { MapCanvas } from './map/MapCanvas.js';
 import { clientToBuffer, screenToTile } from './map/MapGeometry.js';
 import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesInRect } from './map/TilePaint.js';
 import { computeRegionEntryTile, resolveEntryTile } from './map/EntryPoint.js';
 import { MapNavigator } from './map/MapNavigator.js';
-import { generateNodeTiles, ARCHETYPES } from './map/MapGenerator.js';
+import { generateNodeTiles, generateDungeonLevels, ARCHETYPES } from './map/MapGenerator.js';
 import { discoveredNodes } from './map/FogOfWar.js';
 import { createNodeActions } from './app/nodeActions.js';
 import {
@@ -945,6 +945,7 @@ mustGetElement('generate-btn').addEventListener('click', async () => {
           { value: 'large', label: 'Large' },
         ],
       },
+      { name: 'levels', label: 'Levels (dungeon only)', type: 'number', value: 1, min: 1 },
     ],
     { submitLabel: 'Generate' },
   );
@@ -958,11 +959,43 @@ mustGetElement('generate-btn').addEventListener('click', async () => {
   ) {
     return;
   }
-  const gen = generateNodeTiles(
-    palette,
-    { kind: node.kind, archetype: values.archetype, size: values.size },
-    Math.random,
-  );
+  /** @type {{ width: number, height: number, tiles: import('./types/map.js').Tile[], entry: string }} */
+  let gen;
+  if (values.archetype === 'dungeon') {
+    // A dungeon can be a chain of levels: each level's stairs-down is linked
+    // to a freshly created child node holding the level below, so stairs
+    // always connect to a real generated level instead of being decoration.
+    const freshId = () => {
+      let id;
+      do id = `node-${Math.random().toString(36).slice(2, 8)}`;
+      while (grid.getNode(id));
+      return id;
+    };
+    const levels = generateDungeonLevels(
+      palette,
+      { size: values.size, levels: Math.max(1, Number(values.levels) || 1) },
+      Math.random,
+      freshId,
+    );
+    gen = levels[0];
+    levels.slice(1).forEach((level, i) => {
+      const child = createMapNode(
+        /** @type {string} */ (level.id),
+        `${node.name} (level ${i + 2})`,
+        node.id,
+        level.width,
+        level.height,
+        { kind: 'interior', environ: node.environ },
+      );
+      grid.addNode({ ...child, tiles: level.tiles });
+    });
+  } else {
+    gen = generateNodeTiles(
+      palette,
+      { kind: node.kind, archetype: values.archetype, size: values.size },
+      Math.random,
+    );
+  }
   grid.updateNode({ ...node, width: gen.width, height: gen.height, tiles: gen.tiles });
   // The regenerated layout may have shrunk past the party or replaced its tile
   // with void/wall; re-land it on the layout's guaranteed entry tile if so.

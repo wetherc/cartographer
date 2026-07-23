@@ -111,6 +111,12 @@ map: dungeons get an entrance corridor with a door on the map edge, castles a
 gate in the south wall, and towns roads that run edge to edge. Regenerate as
 many times as you like until you get a layout you want to refine by hand.
 
+Dungeons can be multi-level: set **Levels** to more than one and each level's
+stairs-down leads to a freshly generated level below it (created as a child
+node in the world tree). Descending the stairs lands the party on the lower
+level's stairs-up, and the bottom level has no stairs-down — stairs never lead
+nowhere.
+
 ### Points of interest and tile metadata
 
 Select the **Inspect** tool and click a tile to open the **Tile inspector**. There

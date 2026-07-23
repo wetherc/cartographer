@@ -179,11 +179,23 @@ function wallKind(n, e, s, w) {
  * wrapped in walls wherever floor meets the void; stairs up/down sit in the
  * first and last room. Cells that are neither floor nor wall are left empty
  * (no tile), so the level reads as carved out of blank space.
- * An entrance corridor with a border door keeps it connected to the parent map.
+ *
+ * How the level connects to what's above it depends on `entrance`: an `edge`
+ * level (a dungeon entered from the overworld) gets a corridor carved from the
+ * first room to the nearest map edge with a door on the border cell, while a
+ * `stairs` level (a deeper floor reached by descending) has no surface exit —
+ * its stairs-up tile is the way back, and it becomes the entry. `descend`
+ * controls whether a stairs-down tile is placed at all; the bottom level of a
+ * multi-level dungeon omits it so no stairs lead nowhere. The returned
+ * `stairsDown` is that tile's id (null when omitted), the seam the caller
+ * links to the next level via `childNodeId`.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
- * @returns {{ tiles: Tile[], entry: string }}
+ * @param {{ entrance?: 'edge' | 'stairs', descend?: boolean }} [options]
+ * @returns {{ tiles: Tile[], entry: string, stairsDown: string | null }}
  */
-function generateDungeon(palette, size, rng) {
+function generateDungeon(palette, size, rng, options = {}) {
+  const entrance = options.entrance ?? 'edge';
+  const descend = options.descend ?? true;
   /** @type {boolean[]} floor mask, indexed y*size + x */
   const floor = new Array(size * size).fill(false);
   /** @param {number} x @param {number} y */
@@ -224,14 +236,16 @@ function generateDungeon(palette, size, rng) {
     for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) carve(bx, y);
   }
 
-  // Entrance: carve a straight corridor from the first room to the nearest map
-  // edge and put a door on the border cell, so the dungeon is always reachable
-  // from the parent map instead of floating disconnected in the void.
+  // Edge entrance: carve a straight corridor from the first room to the
+  // nearest map edge and put a door on the border cell, so the dungeon is
+  // reachable from the parent map instead of floating disconnected in the
+  // void. A stairs-entered level skips this — it has no surface exit, and its
+  // stairs-up is the entry instead.
   /** @type {string} */
   let entry = '0,0';
   /** @type {'door-h' | 'door-v'} */
   let entryDoor = 'door-h';
-  if (centers.length) {
+  if (centers.length && entrance === 'edge') {
     const [ex, ey] = centers[0];
     const dists = [ey, size - 1 - ey, ex, size - 1 - ex]; // top, bottom, left, right
     const side = dists.indexOf(Math.min(...dists));
@@ -256,8 +270,11 @@ function generateDungeon(palette, size, rng) {
       }
     }
   }
-  // Stairs mark the entrance (first room) and the descent (last room), and the
-  // border cell of the entrance corridor becomes the door in from the parent.
+  // Stairs mark the way up (first room) and, when a level exists below, the
+  // way down (last room); an edge level also doors the border cell of its
+  // entrance corridor. A stairs-entered level's entry is its stairs-up.
+  /** @type {string | null} */
+  let stairsDown = null;
   if (centers.length) {
     const up = centers[0];
     const down = centers[centers.length - 1];
@@ -266,10 +283,22 @@ function generateDungeon(palette, size, rng) {
       if (t) t.imageRef = interiorRef(palette, kind);
     };
     stamp(`${up[0]},${up[1]}`, 'stairs-up');
-    stamp(`${down[0]},${down[1]}`, 'stairs-down');
-    stamp(entry, entryDoor);
+    if (descend) {
+      stairsDown = `${down[0]},${down[1]}`;
+      if (stairsDown === `${up[0]},${up[1]}`) {
+        // Single-room level: shift the descent off the stairs-up cell onto an
+        // adjacent floor tile so both stairs exist.
+        const neighbor = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+          .map(([dx, dy]) => [down[0] + dx, down[1] + dy])
+          .find(([x, y]) => isFloor(x, y));
+        stairsDown = neighbor ? `${neighbor[0]},${neighbor[1]}` : null;
+      }
+      if (stairsDown) stamp(stairsDown, 'stairs-down');
+    }
+    if (entrance === 'edge') stamp(entry, entryDoor);
+    else entry = `${up[0]},${up[1]}`;
   }
-  return { tiles, entry };
+  return { tiles, entry, stairsDown };
 }
 
 /**
@@ -330,8 +359,53 @@ export function generateNodeTiles(palette, { kind, archetype, size }, rng) {
   const n = GENERATOR_SIZES[size] ?? GENERATOR_SIZES.medium;
   let gen;
   if (archetype === 'town') gen = generateTown(palette, n, rng);
-  else if (archetype === 'dungeon') gen = generateDungeon(palette, n, rng);
+  else if (archetype === 'dungeon') gen = generateDungeon(palette, n, rng, { descend: false });
   else if (archetype === 'castle') gen = generateCastle(palette, n, rng);
   else gen = generateWilderness(palette, n, rng);
   return { width: n, height: n, tiles: gen.tiles, entry: gen.entry };
+}
+
+/**
+ * Generate a multi-level dungeon as a chain of levels: level 1 is entered from
+ * the map edge (corridor + border door), each deeper level is entered by
+ * stairs, and every level's stairs-down tile is linked (via the existing
+ * `childNodeId` zoom seam) to the level below it, so stairs always connect to
+ * a real generated level. The bottom level places no stairs-down, so no stairs
+ * lead nowhere. `makeId` supplies each sub-level's node id (injected so the
+ * caller can guarantee uniqueness against its grid and tests stay pure).
+ *
+ * Returns one entry per level, top first: the caller stamps level 1's tiles
+ * into the node being generated and creates a child node per deeper level.
+ * @param {TilePalette} palette
+ * @param {{ size: string, levels: number }} options
+ * @param {() => number} rng
+ * @param {() => string} makeId
+ * @returns {{ id: string | null, width: number, height: number, tiles: Tile[], entry: string }[]}
+ *   `id` is null for the first level (it fills the existing node) and a fresh
+ *   node id for each level below.
+ */
+export function generateDungeonLevels(palette, { size, levels }, rng, makeId) {
+  const n = GENERATOR_SIZES[size] ?? GENERATOR_SIZES.medium;
+  const count = Math.max(1, Math.floor(levels) || 1);
+  /** @type {{ id: string | null, width: number, height: number, tiles: Tile[], entry: string }[]} */
+  const out = [];
+  /** @type {Tile | null} the stairs-down tile awaiting a link to the level below */
+  let pendingStairs = null;
+  for (let i = 0; i < count; i++) {
+    const last = i === count - 1;
+    const gen = generateDungeon(palette, n, rng, {
+      entrance: i === 0 ? 'edge' : 'stairs',
+      // A level only gets stairs-down if a level genuinely exists below it. A
+      // level that failed to place them (degenerate single-room layouts with
+      // no free neighbor) ends the chain early rather than orphaning levels.
+      descend: !last,
+    });
+    const id = i === 0 ? null : makeId();
+    out.push({ id, width: n, height: n, tiles: gen.tiles, entry: gen.entry });
+    if (pendingStairs) pendingStairs.childNodeId = /** @type {string} */ (id);
+    if (last || !gen.stairsDown) break;
+    pendingStairs = gen.tiles.find((t) => t.id === gen.stairsDown) ?? null;
+    if (!pendingStairs) break;
+  }
+  return out;
 }

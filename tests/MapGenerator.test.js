@@ -5,6 +5,7 @@ import {
   GENERATOR_SIZES,
   ARCHETYPES,
   generateNodeTiles,
+  generateDungeonLevels,
 } from '../src/map/MapGenerator.js';
 
 /** Deterministic PRNG so a seed reproduces a generation exactly. */
@@ -49,7 +50,7 @@ test('town lays roads as overlays and scatters building markers', () => {
   assert.ok(gen.tiles.some((t) => t.metadata.poiType === 'settlement'), 'has at least one building POI');
 });
 
-test('dungeon floors are fully enclosed by placed tiles, with stairs up and down', () => {
+test('dungeon floors are fully enclosed by placed tiles, with stairs up', () => {
   const n = GENERATOR_SIZES.medium;
   const gen = generateNodeTiles(palette, { kind: 'interior', archetype: 'dungeon', size: 'medium' }, mulberry32(3));
   const placed = new Set(gen.tiles.map((t) => t.id));
@@ -66,7 +67,37 @@ test('dungeon floors are fully enclosed by placed tiles, with stairs up and down
     }
   }
   assert.ok(gen.tiles.some((t) => t.imageRef.includes('stairs-up')));
-  assert.ok(gen.tiles.some((t) => t.imageRef.includes('stairs-down')));
+  // A single-level dungeon has no level below, so no stairs-down leads nowhere.
+  assert.ok(!gen.tiles.some((t) => t.imageRef.includes('stairs-down')));
+});
+
+test('multi-level dungeon links each stairs-down to the level below, none on the bottom', () => {
+  for (const seed of [5, 21]) {
+    const ids = ['lvl-2', 'lvl-3', 'lvl-4'];
+    let next = 0;
+    const levels = generateDungeonLevels(palette, { size: 'medium', levels: 3 }, mulberry32(seed), () => ids[next++]);
+    assert.equal(levels.length, 3, `seed ${seed}: three levels`);
+    assert.equal(levels[0].id, null, 'first level fills the existing node');
+    assert.deepEqual(levels.slice(1).map((l) => l.id), ['lvl-2', 'lvl-3']);
+    for (let i = 0; i < levels.length; i++) {
+      const down = levels[i].tiles.filter((t) => t.imageRef.includes('stairs-down'));
+      const up = levels[i].tiles.filter((t) => t.imageRef.includes('stairs-up'));
+      assert.equal(up.length, 1, `seed ${seed} level ${i + 1}: one stairs-up`);
+      if (i < levels.length - 1) {
+        assert.equal(down.length, 1, `seed ${seed} level ${i + 1}: one stairs-down`);
+        assert.equal(down[0].childNodeId, levels[i + 1].id, `seed ${seed} level ${i + 1}: stairs-down links to the level below`);
+      } else {
+        assert.equal(down.length, 0, `seed ${seed}: bottom level has no stairs-down`);
+      }
+    }
+    // Deeper levels are stairs-entered: entry is their stairs-up, and there is
+    // no border door (that's the surface entrance of level 1 only).
+    for (const level of levels.slice(1)) {
+      const up = level.tiles.find((t) => t.imageRef.includes('stairs-up'));
+      assert.equal(level.entry, up.id, `seed ${seed}: deep level entry is its stairs-up`);
+      assert.ok(!level.tiles.some((t) => t.imageRef.includes('door')), `seed ${seed}: deep level has no surface door`);
+    }
+  }
 });
 
 test('castle is a walled ring with a floored interior and doors', () => {
