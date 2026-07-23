@@ -41,7 +41,7 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
 <h2>River pieces (all)</h2>
 <div class="grid" style="grid-template-columns: repeat(4, 64px);" id="river-all"></div>
 
-<h2>Coast strips (water above/below/beside grass)</h2>
+<h2>Coast strips (overlays: same pieces over grass, desert, snow, mountain)</h2>
 <div style="display: flex; gap: 24px; align-items: flex-start;">
   <div class="grid" style="grid-template-columns: repeat(2, 64px);" id="coast-ns"></div>
   <div class="grid" style="grid-template-columns: repeat(3, 64px);" id="coast-ew"></div>
@@ -121,22 +121,24 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     'river-bridge-v',
   ].map((r) => cell('grass/grass-1', `river/${r}`)).join('');
 
-  // Coast straights in context: each strip sits between real water and grass
-  // tiles, doubled up so the coast-to-coast seam along the shoreline shows.
+  // Coast straights are overlays: each strip stacks over a land terrain and
+  // sits against real water tiles, doubled up so the coast-to-coast seam along
+  // the shoreline shows. Different base biomes prove the pieces are reusable.
   document.getElementById('coast-ns').innerHTML = [
-    'water/water-1', 'water/water-2',
-    'coast/coast-n', 'coast/coast-n',
-    'grass/grass-1', 'grass/grass-2',
-    'coast/coast-s', 'coast/coast-s',
-    'water/water-3', 'water/water-1',
-  ].map((s) => cell(s)).join('');
+    ['water/water-1'], ['water/water-2'],
+    ['grass/grass-1', 'coast/coast-n'], ['grass/grass-2', 'coast/coast-n'],
+    ['grass/grass-1'], ['grass/grass-2'],
+    ['desert/desert-1'], ['desert/desert-2'],
+    ['desert/desert-2', 'coast/coast-s'], ['desert/desert-3', 'coast/coast-s'],
+    ['water/water-3'], ['water/water-1'],
+  ].map(([base, over]) => cell(base, over)).join('');
 
   document.getElementById('coast-ew').innerHTML = [
-    'water/water-1', 'coast/coast-w', 'grass/grass-1',
-    'water/water-2', 'coast/coast-w', 'grass/grass-2',
-    'grass/grass-3', 'coast/coast-e', 'water/water-3',
-    'grass/grass-1', 'coast/coast-e', 'water/water-1',
-  ].map((s) => cell(s)).join('');
+    ['water/water-1'], ['snow/snow-1', 'coast/coast-w'], ['snow/snow-1'],
+    ['water/water-2'], ['snow/snow-2', 'coast/coast-w'], ['snow/snow-3'],
+    ['mountain/mountain-1'], ['mountain/mountain-1', 'coast/coast-e'], ['water/water-3'],
+    ['mountain/mountain-2'], ['mountain/mountain-3', 'coast/coast-e'], ['water/water-1'],
+  ].map(([base, over]) => cell(base, over)).join('');
 </script>
 </body>
 </html>
