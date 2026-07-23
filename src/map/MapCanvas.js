@@ -142,12 +142,15 @@ export class MapCanvas {
   fit() {
     const { node, canvas } = this;
     if (!node) return;
+    // Pad enough for the coordinate labels, which hang off the grid's top and
+    // left edges (up to ~60 buffer px at the label font cap); the default 24px
+    // clips them whenever the fit isn't slack from the zoom clamp.
     const fitted = fitToExtent(
       node.width * this.tileSize,
       node.height * this.tileSize,
       canvas.width,
       canvas.height,
-      { minScale: this.minZoom, maxScale: this.maxZoom },
+      { minScale: this.minZoom, maxScale: this.maxZoom, padding: 64 },
     );
     this.scale = fitted.scale;
     this.offsetX = fitted.offsetX;
