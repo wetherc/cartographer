@@ -51,7 +51,9 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
   document.getElementById('markers').innerHTML = [
     'settlement', 'dungeon', 'castle', 'tavern', 'inn',
     'blacksmith', 'general-store', 'alchemist', 'temple', 'shrine',
-    'wizard-tower', 'academy', 'barracks',
+    'wizard-tower', 'academy', 'barracks', 'ruins', 'cave-entrance',
+    'mine', 'port', 'farm', 'graveyard', 'camp',
+    'standing-stones',
   ].map((m) => img(`${m}/${m}`)).join('');
 
   document.getElementById('interior-floors').innerHTML =

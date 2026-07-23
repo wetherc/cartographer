@@ -21,7 +21,7 @@ Road tiles are not random variants — each is a distinct connector shape, looke
 
 ## POI markers
 
-Single-image markers (`MARKER_TYPES`) sit on the standard grass background (`#5a9b4a`, with the usual mottle ellipses and a dirt clearing under the building) so they abut grass terrain seamlessly. All building art stays inset from the tile edges. The set covers `settlement`, `dungeon`, `castle`, `tavern`, `inn`, `blacksmith`, `general-store`, `alchemist`, `temple`, `shrine`, `wizard-tower`, `academy`, and `barracks`.
+Single-image markers (`MARKER_TYPES`) sit on the standard grass background (`#5a9b4a`, with the usual mottle ellipses and a dirt clearing under the building) so they abut grass terrain seamlessly. All building art stays inset from the tile edges. The set covers `settlement`, `dungeon`, `castle`, `tavern`, `inn`, `blacksmith`, `general-store`, `alchemist`, `temple`, `shrine`, `wizard-tower`, `academy`, `barracks`, `ruins`, `cave-entrance`, `mine`, `port`, `farm`, `graveyard`, `camp`, and `standing-stones`. (`dungeon` predates the grass-base rule and keeps its stone background; every marker since sits on grass.)
 
 ## Interior pieces
 

@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="14" cy="12" rx="9" ry="5" fill="#63a651"/>
+  <ellipse cx="52" cy="54" rx="8" ry="4" fill="#529044"/>
+  <ellipse cx="32" cy="40" rx="21" ry="11" fill="#8e9678"/>
+  <ellipse cx="32" cy="40" rx="16" ry="8" fill="#9ba184"/>
+  <!-- Broken colonnade: two standing columns of unequal height, one stump. -->
+  <g>
+    <rect x="16" y="24" width="5" height="20" fill="#c9c4b2"/>
+    <rect x="16" y="24" width="2" height="20" fill="#dcd7c6"/>
+    <rect x="15" y="22" width="7" height="3" fill="#b5b09e"/>
+    <path d="M16 24 L21 24 L20 21 L17 22 Z" fill="#dcd7c6"/>
+  </g>
+  <g>
+    <rect x="30" y="30" width="5" height="14" fill="#c9c4b2"/>
+    <rect x="30" y="30" width="2" height="14" fill="#dcd7c6"/>
+    <path d="M30 30 L35 30 L34.2 27.5 L30.6 28.5 Z" fill="#dcd7c6"/>
+  </g>
+  <g>
+    <rect x="43" y="38" width="5" height="6" fill="#c9c4b2"/>
+    <rect x="43" y="38" width="2" height="6" fill="#dcd7c6"/>
+    <path d="M43 38 L48 38 L47 36 L44 36.6 Z" fill="#dcd7c6"/>
+  </g>
+  <!-- Fallen column drums and a collapsed lintel in front. -->
+  <g>
+    <ellipse cx="27" cy="49" rx="4.5" ry="2" fill="#b5b09e"/>
+    <ellipse cx="26" cy="48.4" rx="3" ry="1.2" fill="#c9c4b2"/>
+    <ellipse cx="38" cy="50" rx="3.5" ry="1.7" fill="#b5b09e"/>
+    <ellipse cx="37.2" cy="49.5" rx="2.2" ry="1" fill="#c9c4b2"/>
+    <rect x="46" y="46" width="9" height="3" rx="1" fill="#b5b09e" transform="rotate(-8 50 47.5)"/>
+  </g>
+  <!-- Crumbled wall remnant behind, rubble, and creeping vines. -->
+  <path d="M12 34 L12 30 L15 30 L15 32 L19 32 L19 28 L23 28 L23 34 Z" fill="#a6a18d"/>
+  <g fill="#8e8975">
+    <circle cx="14" cy="46" r="1.2"/><circle cx="42" cy="45" r="1"/>
+    <circle cx="50" cy="52" r="1.1"/><circle cx="22" cy="52" r="0.9"/>
+  </g>
+  <path d="M17 44 Q15 38 17 33 M18.5 44 Q20 40 19 35" stroke="#4c8a40" stroke-width="1" fill="none" stroke-linecap="round"/>
+  <path d="M34 44 Q32.5 40 34 34" stroke="#4c8a40" stroke-width="1" fill="none" stroke-linecap="round"/>
+</svg>

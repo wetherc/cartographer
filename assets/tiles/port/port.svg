@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="14" cy="10" rx="9" ry="5" fill="#63a651"/>
+  <ellipse cx="54" cy="14" rx="7" ry="4" fill="#529044"/>
+  <!-- Inset harbor basin: sandy shore ring, then water with sheen and ripples. -->
+  <ellipse cx="34" cy="42" rx="25" ry="15" fill="#c2a36c"/>
+  <ellipse cx="34" cy="43" rx="22" ry="12.5" fill="#3d6b8f"/>
+  <ellipse cx="30" cy="40" rx="12" ry="6" fill="#477aa0"/>
+  <path d="M22 46 Q28 44.5 34 46 T46 45.5" stroke="#5788ac" stroke-width="1" fill="none" opacity="0.8"/>
+  <path d="M26 50 Q31 48.8 36 50" stroke="#5788ac" stroke-width="1" fill="none" opacity="0.6"/>
+  <!-- Wooden pier from the shore with mooring posts. -->
+  <g>
+    <rect x="14" y="36" width="20" height="5" rx="1" fill="#8a6f4a"/>
+    <path d="M15 37.5 L33 37.5 M15 39.5 L33 39.5" stroke="#6f583a" stroke-width="0.7"/>
+    <rect x="32.5" y="34.5" width="2" height="4" fill="#6f583a"/>
+    <rect x="32.5" y="40" width="2" height="4" fill="#6f583a"/>
+  </g>
+  <!-- Small sailboat moored off the pier. -->
+  <g>
+    <path d="M40 43 Q45 45.6 50 43 L48.5 39.5 L41.5 39.5 Z" fill="#7a5a38"/>
+    <path d="M41.5 39.5 L48.5 39.5 L48 38.6 L42 38.6 Z" fill="#93714a"/>
+    <rect x="44.6" y="27" width="1" height="12" fill="#5f4529"/>
+    <path d="M45.6 28 L51 36.5 L45.6 36.5 Z" fill="#e6e1d2"/>
+    <path d="M44.6 29 L40.6 36.5 L44.6 36.5 Z" fill="#d5cfbe"/>
+  </g>
+  <!-- Quayside crates and a coiled rope on the grass shore. -->
+  <g>
+    <rect x="10" y="27" width="6" height="6" fill="#a3865c" stroke="#7a6543" stroke-width="0.7"/>
+    <path d="M10 30 L16 30 M13 27 L13 33" stroke="#7a6543" stroke-width="0.7"/>
+    <rect x="17" y="29" width="4.5" height="4.5" fill="#93714a" stroke="#6f583a" stroke-width="0.7"/>
+    <circle cx="12" cy="37" r="1.8" fill="none" stroke="#b09a72" stroke-width="1.1"/>
+  </g>
+</svg>
