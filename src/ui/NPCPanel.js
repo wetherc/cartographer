@@ -15,6 +15,7 @@ import { icon } from './icons.js';
  *   onAdd?: () => Promise<NPC | null>,
  *   onEdit?: (npc: NPC) => Promise<boolean>,
  *   confirmDelete?: (npc: NPC) => Promise<boolean>,
+ *   getLocationLabel?: (npc: NPC) => string,
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -47,6 +48,12 @@ export function mountNPCPanel(container, callbacks) {
       role.className = 'npc-panel__role';
       role.textContent = npc.role;
       body.appendChild(role);
+    }
+    if (callbacks.getLocationLabel) {
+      const location = document.createElement('span');
+      location.className = 'npc-panel__location';
+      location.textContent = callbacks.getLocationLabel(npc);
+      body.appendChild(location);
     }
     if (npc.notes) {
       const notes = document.createElement('span');

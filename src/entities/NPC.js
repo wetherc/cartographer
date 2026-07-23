@@ -51,3 +51,15 @@ export function npcsAt(npcs, position) {
     (n) => n.location === null || (position !== null && n.location.nodeId === position.nodeId),
   );
 }
+
+/**
+ * Human-readable placement for an NPC row: the node's name plus the tile
+ * coordinates, or a fixed label for an unplaced (appears-everywhere) NPC.
+ * @param {EncounterLocation | null} location
+ * @param {(nodeId: string) => string | undefined} getNodeName
+ * @returns {string}
+ */
+export function formatLocation(location, getNodeName) {
+  if (!location) return 'Everywhere';
+  return `${getNodeName(location.nodeId) ?? location.nodeId} (${location.tileId})`;
+}
