@@ -41,7 +41,7 @@ node --test tests/some-module.test.js   # single file, preferred while iterating
 node --test tests/*.test.js             # full suite
 ```
 
-See [`docs/architecture.md`](docs/architecture.md) for module layout and the map data model, [`docs/testing.md`](docs/testing.md) for how to test and visually verify changes, and [`docs/tile-assets.md`](docs/tile-assets.md) for tile art conventions. `PLAN.md` tracks the current build order and status.
+See [`docs/gm-guide.md`](docs/gm-guide.md) for a GM-facing walkthrough of running and building a campaign, [`docs/architecture.md`](docs/architecture.md) for module layout and the map data model, [`docs/testing.md`](docs/testing.md) for how to test and visually verify changes, and [`docs/tile-assets.md`](docs/tile-assets.md) for tile art conventions. `PLAN.md` tracks the current build order and status.
 
 ## Contributing
 
