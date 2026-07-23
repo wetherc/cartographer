@@ -71,7 +71,9 @@ inventory — but cannot edit base attributes (stats, XP) or touch any other
 character; an unbound Player tab is a pure spectator. Bindings are exclusive:
 only one tab at a time can play a given character, on the same claim-and-expire
 rules as the GM view, so two tabs can never both act as the same hero. The GM
-tab ignores bindings entirely and can always edit everyone.
+tab ignores bindings entirely and can always edit everyone. Dice rolled from a
+bound tab are logged in the travelogue under the character's name ("Hero rolls
+d20..."); a spectator tab's rolls stay anonymous ("A player rolls...").
 
 ## Building a world (Build mode)
 
