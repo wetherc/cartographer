@@ -8,6 +8,7 @@ import {
 import { loadFromLocalStorage, toTileGrid } from '../storage/SaveManager.js';
 import { createClock } from '../time/GameClock.js';
 import { withDefaults as withNPCDefaults } from '../entities/NPC.js';
+import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 
@@ -23,6 +24,7 @@ import { withDefaults as withNPCDefaults } from '../entities/NPC.js';
  *   quests: import('../types/quest.js').Quest[],
  *   clock: import('../types/time.js').GameClock,
  *   npcs: import('../types/npc.js').NPC[],
+ *   handouts: import('../types/handout.js').Handout[],
  * }} Campaign
  */
 
@@ -44,6 +46,7 @@ export function buildBlankCampaign() {
     quests: [],
     clock: createClock(),
     npcs: [],
+    handouts: [],
   };
 }
 
@@ -118,6 +121,15 @@ export function buildExampleCampaign(palette) {
         location: { nodeId: 'world', tileId: '3,2' },
       },
     ],
+    handouts: [
+      {
+        id: 'northmarch-rumor',
+        title: 'A Rumor at the Waystation',
+        body: 'They say the old forest road north hasn\'t been safe since the goblins came down from the hills. Travelers go in twos now, or not at all.',
+        nodeId: 'world',
+        revealed: false,
+      },
+    ],
   };
 }
 
@@ -141,5 +153,6 @@ export function loadInitialCampaign() {
     quests: saved.quests ?? [],
     clock: saved.clock ?? createClock(),
     npcs: (saved.npcs ?? []).map(withNPCDefaults),
+    handouts: (saved.handouts ?? []).map(withHandoutDefaults),
   };
 }

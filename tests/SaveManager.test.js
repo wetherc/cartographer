@@ -53,6 +53,7 @@ test('deserialize defaults missing fields instead of throwing', () => {
     quests: [],
     clock: null,
     npcs: [],
+    handouts: [],
   });
 });
 

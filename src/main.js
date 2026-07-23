@@ -42,6 +42,8 @@ import { mountTravelogPanel } from './ui/TravelogPanel.js';
 import { appendEntry, createEntry } from './log/Travelogue.js';
 import { mountQuestPanel } from './ui/QuestPanel.js';
 import { createQuest, toggleQuestStatus } from './quest/Quests.js';
+import { mountHandoutPanel } from './ui/HandoutPanel.js';
+import { createHandout, toggleRevealed, handoutsAt } from './handout/Handouts.js';
 import {
   buildState,
   saveToLocalStorage,
@@ -66,6 +68,8 @@ let quests = initial.quests;
 let clock = initial.clock;
 /** @type {import('./types/npc.js').NPC[]} non-combatant NPCs */
 let npcs = initial.npcs;
+/** @type {import('./types/handout.js').Handout[]} GM lore/read-aloud handouts */
+let handouts = initial.handouts;
 /** @type {import('./types/combat.js').CombatState | null} running combat, transient (not persisted) */
 let combat = null;
 /** Monotonic counter making travelogue entry ids unique within a session. */
@@ -203,6 +207,7 @@ async function teleportToNode(nodeId) {
   encounterPanel.update();
   initiativePanel.update();
   npcPanel.update();
+  handoutPanel.update();
 }
 
 /**
@@ -348,6 +353,7 @@ const mapCanvas = new MapCanvas(canvasEl, palette, {
     encounterPanel.update();
     initiativePanel.update();
     npcPanel.update();
+    handoutPanel.update();
   },
 });
 
@@ -781,6 +787,51 @@ mountQuestPanel(mustGetElement('quest-container'), {
   },
 });
 
+const handoutPanel = mountHandoutPanel(mustGetElement('handout-container'), {
+  getHandouts: () => handoutsAt(handouts, partyTracker.getPosition().nodeId),
+  onToggle: (handout) => {
+    handouts = replaceById(handouts, toggleRevealed(handout));
+  },
+  onAdd: async () => {
+    const values = await promptModal('New handout', [
+      { name: 'title', label: 'Title', value: '' },
+      { name: 'body', label: 'Read-aloud / lore', value: '' },
+    ]);
+    const title = values?.title.trim();
+    if (!values || !title) return null;
+    // Bound to the node the party stands in, so it surfaces at that location.
+    const created = createHandout(
+      slugId(title, handouts.map((h) => h.id)),
+      title,
+      values.body.trim(),
+      partyTracker.getPosition().nodeId,
+    );
+    handouts = [...handouts, created];
+    return created;
+  },
+  onEdit: async (handout) => {
+    const values = await promptModal(
+      'Edit handout',
+      [
+        { name: 'title', label: 'Title', value: handout.title },
+        { name: 'body', label: 'Read-aloud / lore', value: handout.body },
+      ],
+      { submitLabel: 'Save' },
+    );
+    const title = values?.title.trim();
+    if (!values || !title) return false;
+    handouts = replaceById(handouts, { ...handout, title, body: values.body.trim() });
+    return true;
+  },
+  onDelete: async (id) => {
+    const handout = handouts.find((h) => h.id === id);
+    if (!handout) return false;
+    const ok = await confirmModal(`Delete "${handout.title}"?`, { danger: true, confirmLabel: 'Delete' });
+    if (ok) handouts = removeById(handouts, id);
+    return ok;
+  },
+});
+
 // Play/Build mode drives which rails the layout shows (a body class toggled by
 // CSS), and defaults to Play so a first-run visitor lands on the live view.
 mountModeSwitch(mustGetElement('mode-switch-container'), currentMode, (mode) => {
@@ -817,6 +868,7 @@ function buildCurrentState() {
   return buildState(grid, partyTracker.getPosition(), characters, encounters, travelog, quests, {
     clock,
     npcs,
+    handouts,
   });
 }
 
@@ -830,7 +882,7 @@ function replaceCampaign(campaign) {
       campaign.encounters,
       campaign.travelog,
       campaign.quests,
-      { clock: campaign.clock, npcs: campaign.npcs },
+      { clock: campaign.clock, npcs: campaign.npcs, handouts: campaign.handouts },
     ),
   );
   location.reload();

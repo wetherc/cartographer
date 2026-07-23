@@ -1277,3 +1277,46 @@ body.mode-build .app-sidebar {
   margin-top: var(--space-1);
   font-size: var(--text-label);
 }
+
+.handout-panel__row {
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.handout-panel__row:last-of-type {
+  border-bottom: none;
+}
+
+.handout-panel__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.handout-panel__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+}
+
+/* A hidden handout's title is dimmed; revealing it brings the title to full
+   strength and shows the read-aloud body, so the GM sees at a glance what the
+   party can currently see. */
+.handout-panel__row:not(.handout-panel__row--revealed) .handout-panel__title {
+  color: var(--text-muted);
+}
+
+.handout-panel__body {
+  margin: var(--space-1) 0 0;
+  padding: var(--space-2);
+  font-size: var(--text-label);
+  line-height: 1.5;
+  background: var(--surface-2);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-1);
+}
+
+.handout-panel__add {
+  margin-top: var(--space-1);
+  font-size: var(--text-label);
+}
