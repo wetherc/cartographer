@@ -9,6 +9,7 @@ import { createQuest, toggleQuestStatus } from '../quest/Quests.js';
 import { mountHandoutPanel } from '../ui/HandoutPanel.js';
 import { createHandout, toggleRevealed, handoutsAt } from '../handout/Handouts.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
+import { locationFields, readLocation } from './locationFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -54,46 +55,6 @@ export function wireStory(app) {
 
   const dispositionOptions = DISPOSITIONS.map((d) => ({ value: d, label: d[0].toUpperCase() + d.slice(1) }));
 
-  /**
-   * Modal fields for placing an NPC: a map picker (every node, labelled by its
-   * breadcrumb path, plus an unplaced option) and the tile coordinates within it.
-   * @param {import('../types/entities.js').EncounterLocation | null} location
-   */
-  function npcLocationFields(location) {
-    const [x, y] = location ? location.tileId.split(',').map(Number) : [0, 0];
-    return [
-      {
-        name: 'nodeId',
-        label: 'Location (map)',
-        type: /** @type {'select'} */ ('select'),
-        value: location?.nodeId ?? '',
-        options: [
-          { value: '', label: 'Unplaced (appears everywhere)' },
-          ...[...app.grid.nodes.values()].map((n) => ({
-            value: n.id,
-            label: app.grid.getBreadcrumb(n.id).map((b) => b.name).join(' / '),
-          })),
-        ],
-      },
-      { name: 'tileX', label: 'Tile X', type: /** @type {'number'} */ ('number'), value: x, min: 0 },
-      { name: 'tileY', label: 'Tile Y', type: /** @type {'number'} */ ('number'), value: y, min: 0 },
-    ];
-  }
-
-  /**
-   * Read the placement fields back into a location, clamping the coordinates to
-   * the chosen node's bounds; the unplaced option (or a deleted node) yields null.
-   * @param {Record<string, string>} values
-   * @returns {import('../types/entities.js').EncounterLocation | null}
-   */
-  function readNPCLocation(values) {
-    const node = values.nodeId ? app.grid.getNode(values.nodeId) : undefined;
-    if (!node) return null;
-    const clamp = (/** @type {string} */ raw, /** @type {number} */ max) =>
-      Math.min(Math.max(0, Math.floor(Number(raw) || 0)), max - 1);
-    return { nodeId: node.id, tileId: `${clamp(values.tileX, node.width)},${clamp(values.tileY, node.height)}` };
-  }
-
   app.views.npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
     getNPCs: () => npcsAt(state.npcs, app.partyTracker.getPosition()),
     getLocationLabel: (npc) => formatLocation(npc.location, (id) => app.grid.getNode(id)?.name),
@@ -109,7 +70,7 @@ export function wireStory(app) {
         { name: 'disposition', label: 'Disposition', type: 'select', value: 'neutral', options: dispositionOptions },
         { name: 'notes', label: 'Notes', value: '' },
         // Defaults to where the party stands, but any map/tile can be chosen.
-        ...npcLocationFields({ ...app.partyTracker.getPosition() }),
+        ...locationFields(app, { ...app.partyTracker.getPosition() }),
       ]);
       const name = values?.name.trim();
       if (!values || !name) return null;
@@ -117,7 +78,7 @@ export function wireStory(app) {
         role: values.role.trim(),
         disposition: /** @type {import('../types/npc.js').Disposition} */ (values.disposition),
         notes: values.notes.trim(),
-        location: readNPCLocation(values),
+        location: readLocation(app, values),
       });
       state.npcs = [...state.npcs, created];
       app.actions.syncNPCMarkers();
@@ -132,7 +93,7 @@ export function wireStory(app) {
           { name: 'role', label: 'Role / faction', value: npc.role },
           { name: 'disposition', label: 'Disposition', type: 'select', value: npc.disposition, options: dispositionOptions },
           { name: 'notes', label: 'Notes', value: npc.notes },
-          ...npcLocationFields(npc.location),
+          ...locationFields(app, npc.location),
         ],
         { submitLabel: 'Save' },
       );
@@ -144,7 +105,7 @@ export function wireStory(app) {
         role: values.role.trim(),
         disposition: /** @type {import('../types/npc.js').Disposition} */ (values.disposition),
         notes: values.notes.trim(),
-        location: readNPCLocation(values),
+        location: readLocation(app, values),
       });
       app.actions.syncNPCMarkers();
       app.actions.markDirty();
