@@ -5,6 +5,7 @@ import { clientToBuffer, screenToTile } from './map/MapGeometry.js';
 import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesInRect } from './map/TilePaint.js';
 import { computeRegionEntryTile } from './map/EntryPoint.js';
 import { MapNavigator } from './map/MapNavigator.js';
+import { generateNodeTiles, ARCHETYPES } from './map/MapGenerator.js';
 import { discoveredNodes } from './map/FogOfWar.js';
 import { createNodeActions } from './app/nodeActions.js';
 import {
@@ -916,6 +917,63 @@ mountRoleSwitch(mustGetElement('role-switch-container'), currentRole, (role) => 
 // Group the Play sidebar panels into Session / Quests / Log tabs so the quest
 // log and travelogue get their own space instead of a single long scroll.
 wireTabs(mustGetElement('sidebar-tabs'));
+
+// Build-mode procedural generation: fill the current node with an archetype
+// layout (wilderness/town for regions, dungeon/castle for interiors) at a size
+// preset, as an alternative to painting a large map tile by tile. Archetypes
+// are filtered to the node's kind, and overwriting a non-empty node confirms.
+mustGetElement('generate-btn').addEventListener('click', async () => {
+  const node = navigator.getCurrentNode();
+  const archetypes = ARCHETYPES[node.kind];
+  const values = await promptModal(
+    'Generate map',
+    [
+      { name: 'archetype', label: 'Archetype', type: 'select', value: archetypes[0].value, options: archetypes },
+      {
+        name: 'size',
+        label: 'Size',
+        type: 'select',
+        value: 'medium',
+        options: [
+          { value: 'small', label: 'Small' },
+          { value: 'medium', label: 'Medium' },
+          { value: 'large', label: 'Large' },
+        ],
+      },
+    ],
+    { submitLabel: 'Generate' },
+  );
+  if (!values) return;
+  if (
+    node.tiles.length > 0 &&
+    !(await confirmModal(`Replace every tile in "${node.name}" with a generated map?`, {
+      danger: true,
+      confirmLabel: 'Replace',
+    }))
+  ) {
+    return;
+  }
+  const gen = generateNodeTiles(
+    palette,
+    { kind: node.kind, archetype: values.archetype, size: values.size },
+    Math.random,
+  );
+  grid.updateNode({ ...node, width: gen.width, height: gen.height, tiles: gen.tiles });
+  // A shrunk node may have stranded the party outside the new bounds; pull it
+  // back to the origin if so, so its marker stays on the grid.
+  const pos = partyTracker.getPosition();
+  if (pos.nodeId === node.id) {
+    const [px, py] = pos.tileId.split(',').map(Number);
+    if (px >= gen.width || py >= gen.height) partyTracker.moveTo(node.id, '0,0');
+  }
+  mapCanvas.setNode(navigator.getCurrentNode());
+  clearSelection();
+  syncPaletteKind();
+  syncPartyMarker();
+  worldTree.update();
+  regionTree.update();
+  refreshMapDescription();
+});
 
 // Collapse the Play sidebar to give the map the full width during a session.
 const sidebarToggle = /** @type {HTMLButtonElement} */ (mustGetElement('sidebar-toggle'));

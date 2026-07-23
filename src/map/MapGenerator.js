@@ -1,0 +1,306 @@
+import { createTile } from './TileGrid.js';
+
+/** @typedef {import('../types/map.js').Tile} Tile */
+/** @typedef {import('../types/map.js').NodeKind} NodeKind */
+/** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
+
+/**
+ * Grid side length per size preset. Square grids keep the archetype generators
+ * simple and read the same at any size; "large" is big enough to be a genuinely
+ * procedurally-generated area rather than a hand-place-able handful of tiles.
+ * @type {Record<string, number>}
+ */
+export const GENERATOR_SIZES = { small: 8, medium: 14, large: 22 };
+
+/**
+ * Which archetypes make sense for each node kind — region archetypes lay out
+ * open terrain, interior archetypes carve enclosed structures. The Build UI
+ * offers only the current node's kind's list.
+ * @type {Record<NodeKind, { value: string, label: string }[]>}
+ */
+export const ARCHETYPES = {
+  region: [
+    { value: 'wilderness', label: 'Wilderness (procedural terrain)' },
+    { value: 'town', label: 'Town (roads + buildings)' },
+  ],
+  interior: [
+    { value: 'dungeon', label: 'Dungeon (rooms + corridors)' },
+    { value: 'castle', label: 'Castle (walls + halls)' },
+  ],
+};
+
+const TERRAIN_BLOBS = ['forest', 'water', 'mountain', 'desert'];
+const TOWN_BUILDINGS = ['tavern', 'inn', 'blacksmith', 'general-store', 'alchemist', 'temple', 'shrine'];
+const FLOOR_KINDS = ['floor-1', 'floor-2', 'floor-3'];
+
+/** @param {TilePalette} palette @param {string} type @param {() => number} rng */
+function terrainRef(palette, type, rng) {
+  return palette.pickVariant(type, rng).imageRef;
+}
+
+/** @param {TilePalette} palette @param {string} kind */
+function interiorRef(palette, kind) {
+  return palette.getInteriorPiece(kind)?.imageRef ?? '';
+}
+
+/** @param {() => number} rng @param {number} n */
+function randInt(rng, n) {
+  return Math.floor(rng() * n);
+}
+
+/**
+ * Fisher-Yates shuffle of a copy of `items`, using the injected RNG so a seed
+ * reproduces the same order (used to scatter town buildings deterministically).
+ * @template T @param {T[]} items @param {() => number} rng @returns {T[]}
+ */
+function shuffle(items, rng) {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = randInt(rng, i + 1);
+    [out[i], out[j]] = [out[j], out[i]];
+  }
+  return out;
+}
+
+/**
+ * Procedural open terrain: a grass base with a handful of clustered blobs of
+ * forest/water/mountain/desert grown by probabilistic flood-fill, so terrain
+ * reads as contiguous features rather than per-tile noise.
+ * @param {TilePalette} palette @param {number} size @param {() => number} rng
+ * @returns {Tile[]}
+ */
+function generateWilderness(palette, size, rng) {
+  /** @type {string[]} terrain type per cell, indexed y*size + x */
+  const cells = new Array(size * size).fill('grass');
+  const blobCount = Math.max(3, Math.round((size * size) / 16));
+  for (let b = 0; b < blobCount; b++) {
+    const type = TERRAIN_BLOBS[randInt(rng, TERRAIN_BLOBS.length)];
+    const target = 4 + randInt(rng, size);
+    /** @type {[number, number][]} */
+    const frontier = [[randInt(rng, size), randInt(rng, size)]];
+    let placed = 0;
+    while (frontier.length && placed < target) {
+      const [x, y] = frontier.splice(randInt(rng, frontier.length), 1)[0];
+      if (x < 0 || y < 0 || x >= size || y >= size) continue;
+      const idx = y * size + x;
+      if (cells[idx] === type) continue;
+      cells[idx] = type;
+      placed++;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        if (rng() < 0.6) frontier.push([x + dx, y + dy]);
+      }
+    }
+  }
+  /** @type {Tile[]} */
+  const tiles = [];
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      tiles.push(createTile(`${x},${y}`, terrainRef(palette, cells[y * size + x], rng)));
+    }
+  }
+  return tiles;
+}
+
+/**
+ * A settlement: grass everywhere, a cross of roads through the middle (drawn as
+ * an overlay so the grass shows through the verges), and building POI markers
+ * scattered on the grass tiles bordering the roads.
+ * @param {TilePalette} palette @param {number} size @param {() => number} rng
+ * @returns {Tile[]}
+ */
+function generateTown(palette, size, rng) {
+  const mx = Math.floor(size / 2);
+  const my = Math.floor(size / 2);
+  /** @param {number} x @param {number} y */
+  const isRoad = (x, y) => x === mx || y === my;
+  /** @type {Map<string, Tile>} */
+  const byId = new Map();
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const base = terrainRef(palette, 'grass', rng);
+      const tile = createTile(`${x},${y}`, base);
+      if (isRoad(x, y)) {
+        const kind = x === mx && y === my ? 'cross' : x === mx ? 'v' : 'h';
+        tile.overlayRef = palette.getRoadPiece(kind)?.imageRef ?? null;
+      }
+      byId.set(tile.id, tile);
+    }
+  }
+  // Building sites: grass cells orthogonally adjacent to a road, scattered and
+  // capped so a small town stays sparse and a large one fills out.
+  /** @type {string[]} */
+  const sites = [];
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      if (isRoad(x, y)) continue;
+      const touchesRoad = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => isRoad(x + dx, y + dy));
+      if (touchesRoad) sites.push(`${x},${y}`);
+    }
+  }
+  const count = Math.min(sites.length, Math.max(3, Math.round(size / 2)));
+  const chosen = shuffle(sites, rng).slice(0, count);
+  chosen.forEach((id, i) => {
+    const building = TOWN_BUILDINGS[i % TOWN_BUILDINGS.length];
+    const ref = palette.get(building)?.imageRef;
+    const tile = byId.get(id);
+    if (!ref || !tile) return;
+    tile.imageRef = ref;
+    tile.overlayRef = null;
+    tile.metadata = { ...tile.metadata, poiType: 'settlement' };
+  });
+  return [...byId.values()];
+}
+
+/**
+ * Pick a wall piece for a wall cell from which orthogonal neighbors are floor:
+ * a straight run gets a matching horizontal/vertical segment, an inner elbow
+ * gets the corner facing the floor, and an isolated nub falls back to a
+ * horizontal segment.
+ * @param {boolean} n @param {boolean} e @param {boolean} s @param {boolean} w
+ * @returns {string}
+ */
+function wallKind(n, e, s, w) {
+  if (s && e) return 'wall-corner-nw';
+  if (s && w) return 'wall-corner-ne';
+  if (n && e) return 'wall-corner-sw';
+  if (n && w) return 'wall-corner-se';
+  if (n || s) return 'wall-h';
+  if (e || w) return 'wall-v';
+  return 'wall-h';
+}
+
+/**
+ * A dungeon of rectangular rooms joined by L-shaped corridors, all floored,
+ * wrapped in walls wherever floor meets the void; stairs up/down sit in the
+ * first and last room. Cells that are neither floor nor wall are left empty
+ * (no tile), so the level reads as carved out of blank space.
+ * @param {TilePalette} palette @param {number} size @param {() => number} rng
+ * @returns {Tile[]}
+ */
+function generateDungeon(palette, size, rng) {
+  /** @type {boolean[]} floor mask, indexed y*size + x */
+  const floor = new Array(size * size).fill(false);
+  /** @param {number} x @param {number} y */
+  const inBounds = (x, y) => x >= 0 && y >= 0 && x < size && y < size;
+  /** @param {number} x @param {number} y */
+  const isFloor = (x, y) => inBounds(x, y) && floor[y * size + x];
+  /** @param {number} x @param {number} y */
+  const carve = (x, y) => {
+    if (inBounds(x, y)) floor[y * size + x] = true;
+  };
+
+  /** @type {[number, number][]} room centers */
+  const centers = [];
+  const roomTarget = Math.max(3, Math.round(size / 3));
+  for (let attempt = 0; attempt < roomTarget * 4 && centers.length < roomTarget; attempt++) {
+    const w = 3 + randInt(rng, 3);
+    const h = 3 + randInt(rng, 3);
+    const x0 = 1 + randInt(rng, Math.max(1, size - w - 1));
+    const y0 = 1 + randInt(rng, Math.max(1, size - h - 1));
+    // Reject rooms that would touch an existing one (keeps a wall between them).
+    let clash = false;
+    for (let y = y0 - 1; y <= y0 + h && !clash; y++) {
+      for (let x = x0 - 1; x <= x0 + w; x++) {
+        if (isFloor(x, y)) clash = true;
+      }
+    }
+    if (clash) continue;
+    for (let y = y0; y < y0 + h; y++) {
+      for (let x = x0; x < x0 + w; x++) carve(x, y);
+    }
+    centers.push([x0 + (w >> 1), y0 + (h >> 1)]);
+  }
+  // Connect each room to the previous one with an L-shaped corridor.
+  for (let i = 1; i < centers.length; i++) {
+    const [ax, ay] = centers[i - 1];
+    const [bx, by] = centers[i];
+    for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) carve(x, ay);
+    for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) carve(bx, y);
+  }
+
+  /** @type {Tile[]} */
+  const tiles = [];
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const id = `${x},${y}`;
+      if (isFloor(x, y)) {
+        tiles.push(createTile(id, interiorRef(palette, FLOOR_KINDS[randInt(rng, FLOOR_KINDS.length)])));
+      } else if ([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].some(([dx, dy]) => isFloor(x + dx, y + dy))) {
+        const kind = wallKind(isFloor(x, y - 1), isFloor(x + 1, y), isFloor(x, y + 1), isFloor(x - 1, y));
+        tiles.push(createTile(id, interiorRef(palette, kind)));
+      }
+    }
+  }
+  // Stairs mark the entrance (first room) and the descent (last room).
+  if (centers.length) {
+    const up = centers[0];
+    const down = centers[centers.length - 1];
+    const stair = (id, kind) => {
+      const t = tiles.find((tile) => tile.id === id);
+      if (t) t.imageRef = interiorRef(palette, kind);
+    };
+    stair(`${up[0]},${up[1]}`, 'stairs-up');
+    stair(`${down[0]},${down[1]}`, 'stairs-down');
+  }
+  return tiles;
+}
+
+/**
+ * A castle keep: a floored hall enclosed by a full wall ring with a door in the
+ * south wall, split by one interior partition wall (with its own door), and
+ * stairs up/down in the top corners of the hall.
+ * @param {TilePalette} palette @param {number} size @param {() => number} rng
+ * @returns {Tile[]}
+ */
+function generateCastle(palette, size, rng) {
+  const max = size - 1;
+  const doorX = Math.floor(size / 2);
+  const partitionY = Math.floor(size / 2);
+  const partitionDoorX = 1 + randInt(rng, Math.max(1, size - 2));
+  /** @type {Tile[]} */
+  const tiles = [];
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      const id = `${x},${y}`;
+      /** @type {string} */
+      let kind;
+      if (y === max && x === doorX) kind = 'door-h';
+      else if (x === 0 && y === 0) kind = 'wall-corner-nw';
+      else if (x === max && y === 0) kind = 'wall-corner-ne';
+      else if (x === 0 && y === max) kind = 'wall-corner-sw';
+      else if (x === max && y === max) kind = 'wall-corner-se';
+      else if (y === 0 || y === max) kind = 'wall-h';
+      else if (x === 0 || x === max) kind = 'wall-v';
+      else if (y === partitionY) kind = x === partitionDoorX ? 'door-h' : 'wall-h';
+      else kind = FLOOR_KINDS[randInt(rng, FLOOR_KINDS.length)];
+      tiles.push(createTile(id, interiorRef(palette, kind)));
+    }
+  }
+  const stair = (id, kind) => {
+    const t = tiles.find((tile) => tile.id === id);
+    if (t) t.imageRef = interiorRef(palette, kind);
+  };
+  stair('1,1', 'stairs-up');
+  stair(`${max - 1},1`, 'stairs-down');
+  return tiles;
+}
+
+/**
+ * Generate a full tile grid for a node from an archetype and size preset. Pure
+ * and RNG-injected (pass `Math.random` in the app, a seeded generator in
+ * tests). The returned width/height replace the node's dimensions; the caller
+ * stamps the tiles in.
+ * @param {TilePalette} palette
+ * @param {{ kind: NodeKind, archetype: string, size: string }} options
+ * @param {() => number} rng
+ * @returns {{ width: number, height: number, tiles: Tile[] }}
+ */
+export function generateNodeTiles(palette, { kind, archetype, size }, rng) {
+  const n = GENERATOR_SIZES[size] ?? GENERATOR_SIZES.medium;
+  let tiles;
+  if (archetype === 'town') tiles = generateTown(palette, n, rng);
+  else if (archetype === 'dungeon') tiles = generateDungeon(palette, n, rng);
+  else if (archetype === 'castle') tiles = generateCastle(palette, n, rng);
+  else tiles = generateWilderness(palette, n, rng);
+  return { width: n, height: n, tiles };
+}
