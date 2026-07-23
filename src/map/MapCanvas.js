@@ -217,8 +217,8 @@ export class MapCanvas {
 
   /**
    * Set the tile ids in the current node that carry a live encounter, so the
-   * renderer can mark them. Only revealed ones are drawn, so an encounter stays
-   * hidden until the party reveals its tile through the fog.
+   * renderer can mark them. Drawn regardless of fog, so a known danger is
+   * visible even on tiles the party hasn't discovered yet.
    * @param {string[]} tileIds
    */
   setEncounterTiles(tileIds) {
