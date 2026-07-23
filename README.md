@@ -31,8 +31,11 @@ pnpx http-server -p 8934
 Types live in `src/types/*.ts` as declaration files; `.js` files reference them via JSDoc (`@typedef {import('../types/map.js').Tile}`). Typecheck with:
 
 ```
-pnpx tsc --noEmit
+pnpm --package=typescript dlx tsc --noEmit
 ```
+
+(Not `pnpx tsc` — with no local TypeScript install, the bare `tsc` binary name
+resolves to npm's placeholder package, which exits without checking anything.)
 
 Tests use Node's built-in test runner, no extra dependencies:
 

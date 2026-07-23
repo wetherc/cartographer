@@ -278,7 +278,7 @@ function generateDungeon(palette, size, rng, options = {}) {
   if (centers.length) {
     const up = centers[0];
     const down = centers[centers.length - 1];
-    const stamp = (id, kind) => {
+    const stamp = (/** @type {string} */ id, /** @type {string} */ kind) => {
       const t = tiles.find((tile) => tile.id === id);
       if (t) t.imageRef = interiorRef(palette, kind);
     };
@@ -333,7 +333,7 @@ function generateCastle(palette, size, rng) {
       tiles.push(createTile(id, interiorRef(palette, kind)));
     }
   }
-  const stair = (id, kind) => {
+  const stair = (/** @type {string} */ id, /** @type {string} */ kind) => {
     const t = tiles.find((tile) => tile.id === id);
     if (t) t.imageRef = interiorRef(palette, kind);
   };

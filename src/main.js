@@ -985,7 +985,8 @@ function npcLocationFields(location) {
 function readNPCLocation(values) {
   const node = values.nodeId ? grid.getNode(values.nodeId) : undefined;
   if (!node) return null;
-  const clamp = (raw, max) => Math.min(Math.max(0, Math.floor(Number(raw) || 0)), max - 1);
+  const clamp = (/** @type {string} */ raw, /** @type {number} */ max) =>
+    Math.min(Math.max(0, Math.floor(Number(raw) || 0)), max - 1);
   return { nodeId: node.id, tileId: `${clamp(values.tileX, node.width)},${clamp(values.tileY, node.height)}` };
 }
 
@@ -1292,7 +1293,7 @@ mustGetElement('generate-btn').addEventListener('click', async () => {
     return id;
   };
   /** @param {import('./ui/GenerateDialog.js').GenerateChoice} choice */
-  const makeCandidate = (choice) => {
+  const buildCandidate = (choice) => {
     const key = JSON.stringify(choice);
     if (candidate?.key !== key) {
       const rng = mulberry32(choice.seed);
@@ -1315,8 +1316,10 @@ mustGetElement('generate-btn').addEventListener('click', async () => {
         };
       }
     }
-    return candidate.gen;
+    return candidate;
   };
+  /** @param {import('./ui/GenerateDialog.js').GenerateChoice} choice */
+  const makeCandidate = (choice) => buildCandidate(choice).gen;
 
   const values = await generateDialog({ archetypes, makeCandidate });
   if (!values) return;
@@ -1329,13 +1332,14 @@ mustGetElement('generate-btn').addEventListener('click', async () => {
   ) {
     return;
   }
-  const gen = makeCandidate(values);
+  const built = buildCandidate(values);
+  const gen = built.gen;
   // The regenerated layout replaces the node (and may restamp its parent's
   // entrance link below); snapshot both so the stroke-undo ring can revert it.
   const parentBefore = node.parentId ? grid.getNode(node.parentId) : null;
   snapshotEdit(node, ...(parentBefore ? [parentBefore] : []));
-  if (candidate?.levels) {
-    candidate.levels.slice(1).forEach((level, i) => {
+  if (built.levels) {
+    built.levels.slice(1).forEach((level, i) => {
       const child = createMapNode(
         /** @type {string} */ (level.id),
         `${node.name} (level ${i + 2})`,
@@ -1444,6 +1448,10 @@ function buildCurrentState() {
   });
 }
 
+/**
+ * @param {import('./campaign/Campaigns.js').Campaign} campaign
+ * @param {string} [toastMessage]
+ */
 function replaceCampaign(campaign, toastMessage = 'Campaign replaced.') {
   snapshotCurrentSave();
   saveToLocalStorage(
