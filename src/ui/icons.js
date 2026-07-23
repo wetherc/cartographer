@@ -7,7 +7,7 @@
  * (aria-hidden); give the surrounding control its own accessible label.
  */
 
-/** @typedef {'plus'|'minus'|'damage'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'chevron'|'map'|'fit'} IconName */
+/** @typedef {'plus'|'minus'|'damage'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -21,9 +21,16 @@ const PATHS = {
   minus: ['M5 12h14'],
   add: ['M12 5v14', 'M5 12h14'],
   remove: ['M4 7h16', 'M10 11v6', 'M14 11v6', 'M6 7l1 13h10l1-13', 'M9 7V4h6v3'],
-  // A sword (blade, crossguard, grip): danger-red + a blade must read as
-  // "damage", not as an edit pencil the previous glyph resembled.
-  damage: ['M19.5 4.5L9 15', 'M6.5 12.5l5 5', 'M8.5 16.5L5 20', 'M4 17l3 3'],
+  // An upright sword (pointed blade, crossguard, grip, pommel): reads as
+  // "attack/damage" at a glance where the previous diagonal glyph did not.
+  damage: ['M12 2l1.6 12h-3.2z', 'M7 14h10', 'M12 14v6', 'M9.5 20h5'],
+  sword: ['M12 2l1.6 12h-3.2z', 'M7 14h10', 'M12 14v6', 'M9.5 20h5'],
+  check: ['M5 12l5 5L20 6'],
+  shield: ['M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z'],
+  clock: ['M12 3a9 9 0 100 18 9 9 0 000-18z', 'M12 7v5l3 2'],
+  flag: ['M6 21V4', 'M6 4h11l-2 4 2 4H6'],
+  scroll: ['M6 4h10v14a2 2 0 002 2H8a2 2 0 01-2-2z', 'M16 4a2 2 0 012 2v2h-2', 'M9 9h5', 'M9 13h5'],
+  sparkles: ['M12 3l1.5 5L19 9.5 13.5 11 12 16l-1.5-5L5 9.5 10.5 8z', 'M18 15l.7 2.3L21 18l-2.3.7L18 21l-.7-2.3L15 18l2.3-.7z'],
   heal: ['M12 6v12', 'M6 12h12'],
   edit: ['M4 20h4l10-10-4-4L4 16z', 'M13.5 6.5l4 4'],
   save: ['M5 3h11l3 3v15H5z', 'M8 3v6h7V3', 'M8 21v-7h8v7'],
