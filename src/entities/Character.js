@@ -81,7 +81,12 @@ export function withMana(character, maxMana) {
  * @returns {Character}
  */
 export function withDefaults(character) {
-  return { ...character, race: character.race ?? '', stats: { ...defaultStats(), ...character.stats } };
+  return {
+    ...character,
+    race: character.race ?? '',
+    stats: { ...defaultStats(), ...character.stats },
+    conditions: character.conditions ?? [],
+  };
 }
 
 /**
@@ -94,7 +99,7 @@ export function withDefaults(character) {
  * @returns {Character}
  */
 export function createCharacter(id, name, stats = {}, race = '') {
-  return { id, name, race, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [] };
+  return { id, name, race, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [], conditions: [] };
 }
 
 /**

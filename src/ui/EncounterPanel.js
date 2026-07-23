@@ -1,4 +1,5 @@
 import { applyDamage, heal, isDefeated } from '../entities/Encounter.js';
+import { mountConditionsBar } from './ConditionsBar.js';
 import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
@@ -92,7 +93,18 @@ export function mountEncounterPanel(container, callbacks) {
         render();
       });
 
-      row.append(label, amountInput, damageButton, healButton, deleteButton);
+      const head = document.createElement('div');
+      head.className = 'encounter-panel__head';
+      head.append(label, amountInput, damageButton, healButton, deleteButton);
+      row.appendChild(head);
+
+      // A GM tracks an encounter's status conditions (poisoned, prone, ...)
+      // right on its row; edits write the whole list back through onUpdate.
+      mountConditionsBar(row, {
+        getConditions: () => encounter.conditions ?? [],
+        onChange: (next) => updateOne(encounter, (e) => ({ ...e, conditions: next })),
+      });
+
       root.appendChild(row);
     }
 

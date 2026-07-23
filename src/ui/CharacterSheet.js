@@ -8,6 +8,7 @@ import {
   XP_PER_LEVEL,
 } from '../entities/Character.js';
 import { wireDisclosure } from './Disclosure.js';
+import { mountConditionsBar } from './ConditionsBar.js';
 import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -197,6 +198,18 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
       }
       body.appendChild(resources);
     }
+
+    const conditions = document.createElement('div');
+    conditions.className = 'character-sheet__conditions';
+    const conditionsLabel = document.createElement('span');
+    conditionsLabel.className = 'character-sheet__section-label';
+    conditionsLabel.textContent = 'Conditions';
+    conditions.appendChild(conditionsLabel);
+    mountConditionsBar(conditions, {
+      getConditions: () => current?.conditions ?? [],
+      onChange: (next) => commit({ ...character, conditions: next }),
+    });
+    body.appendChild(conditions);
 
     wireDisclosure(summary, body, { expanded, onToggle: (next) => { expanded = next; } });
     root.append(summary, body);

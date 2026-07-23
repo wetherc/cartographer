@@ -888,13 +888,22 @@ body.mode-build .app-sidebar {
 
 .encounter-panel__row {
   display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+}
+
+.encounter-panel__head {
+  display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: var(--space-1) 0;
 }
 
 .encounter-panel__row--defeated {
   opacity: 0.5;
+}
+
+.encounter-panel__row--defeated .encounter-panel__label {
   text-decoration: line-through;
 }
 
@@ -911,6 +920,62 @@ body.mode-build .app-sidebar {
 .encounter-panel__add {
   margin-top: var(--space-2);
   font-size: var(--text-label);
+}
+
+/* ==========================================================================
+   Status conditions
+   ========================================================================== */
+
+.conditions-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.conditions-bar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1rem var(--space-1) 0.1rem var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  font-size: var(--text-label);
+  line-height: 1.4;
+}
+
+.conditions-bar__remove {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: inherit;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0 0.15rem;
+  opacity: 0.65;
+}
+
+.conditions-bar__remove:hover {
+  opacity: 1;
+  color: var(--danger);
+}
+
+.conditions-bar__add {
+  padding: 0.1rem;
+}
+
+.character-sheet__conditions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+.character-sheet__section-label {
+  font-size: var(--text-label);
+  font-weight: 600;
+  opacity: 0.7;
 }
 
 /* ==========================================================================
