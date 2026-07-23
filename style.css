@@ -1350,12 +1350,15 @@ body.sidebar-collapsed .app-sidebar {
 
 .initiative-panel__start,
 .initiative-panel__actions {
+  display: flex;
+  gap: var(--space-2);
   margin-top: var(--space-2);
 }
 
-.initiative-panel__actions {
-  display: flex;
-  gap: var(--space-2);
+/* Action pairs (Roll initiative / Start combat, Next turn / End combat) share
+   the row evenly so the two buttons always match in size. */
+.initiative-panel__actions .btn {
+  flex: 1;
 }
 
 /* ==========================================================================
