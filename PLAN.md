@@ -303,3 +303,59 @@ None of this is scheduled into a phase yet — flagging for prioritization along
 - [x] The dice tray should live below the map, as should the expandable party member boxes — the map and a new below-map card strip (`.app-belowmap`) now share one center column; the Party roster, the expandable character card, the inventory, and the dice tray render in that strip beneath the map (wrapping row) instead of the narrow sidebar. Hidden in Build mode
 - [x] In the quests box, when a quest is completed the plus sign in the button next to it should transform into a checkmark — `QuestPanel` toggle shows `check` when completed, `add` (plus) when active; new `check` icon added
 - [x] Should the quests also have their own standalone tab? — yes; the quest log now lives in its own Quests tab in the tabbed Play sidebar (alongside Session and Log)
+
+---
+
+## Feature evaluation — 2026-07-22 (post-completion pass)
+
+Every prior checklist item is done: the app builds worlds (hand-painted and procedurally generated, with guaranteed reachability), runs sessions (fog, party, encounters, initiative, conditions, time/rests, NPCs, quests, handouts, travelogue, dice), splits GM/player views with cross-tab sync, and passes a real accessibility bar. This section is a fresh hands-on evaluation of what a GM would still miss, diagnosed the same way as the earlier playtesting notes: **[Promise]** (README claims it, never built), **[Gap]** (missing capability), **[UX]** (built but rough to use). Ranked within each group by value to a real table.
+
+### GM authoring
+
+1. **[Promise] No UI to supply custom tile images.** The README says "use a suite of pre-built tiled images, or supply your own" and `TilePalette.addCustom`/`removeCustom` have existed since the palette was built — but nothing ever calls them: there is no upload control anywhere. Needs a palette-panel affordance (file input reading to a `data:` URL), a remove affordance for custom entries, and persistence — custom entries must survive a reload, so `CampaignState` needs a `customTiles` field (id/label/imageRef) restored into the palette on load, with export/import carrying them.
+2. **[Gap] No stroke-level undo in Build mode.** Undo is save-snapshot-granular; one wrong paint stroke means redoing everything since the last Save. The stroke machinery already coalesces a drag into one logical edit (noted in Phase H for exactly this reason) — add an in-memory edit-history ring (node-state before each stroke/erase/link/generate) with Ctrl+Z / a Build-rail Undo button, separate from the save-level Undo.
+3. **[Gap] No encounter/monster templates.** Every Goblin is typed from scratch (name + HP each time); `statBlock` exists in the data model but has no editor and no display, so AC etc. is unusable. Add a small bestiary: save an encounter as a template, spawn a template at the party's location, and give the stat block a key/value editor on the encounter row (GM-only).
+4. **[Gap] Generator has no preview or seed.** Generate stamps straight into the node; getting a good layout means repeated destructive regenerations (and each one re-fires the entrance-link alert). Add a preview step in the modal (render the candidate to a small canvas, Reroll / Accept), and surface the seed so a liked layout is reproducible. Pure generator already takes an injected RNG, so seeding is nearly free.
+5. **[Gap] No map image export.** GMs print maps or drop them into VTTs. The canvas already renders the whole node — add "Export map as PNG" (render full extent to an offscreen canvas at tile resolution, `toBlob`, download), GM/Build only so fog stays honest.
+
+### Session play
+
+6. **[Gap] No GM fog brush.** Fog only reveals via party movement radius; a GM can't pre-reveal a scouted area, re-hide a mistake, or reveal a room the party sees from a doorway. Build mode shows everything, so the gap is Play-mode-specific: a GM-only reveal/hide brush (reuse the stroke machinery) plus "reveal room/all" on the current node.
+7. **[Gap] Initiative isn't rolled.** Every combatant defaults to 10 and the GM types each value. Add a "roll all" (d20 via the existing `roll()`, per-combatant modifier field) with manual override kept — the sort/tie-break logic already exists.
+8. **[Gap] Dice results vanish.** The tray shows only the latest result; contested rolls need the last few. Keep a short session-local roll history (die faces + total + timestamp) under the tray, and log notable rolls to the travelogue on demand.
+9. **[Gap] Handouts are text-only.** Campaign-lifecycle gap #8 promised "an image, a read-aloud box" — images never landed. Add an optional image (`data:` URL via file input, same pattern as custom tiles) rendered in the revealed handout body; the player-role view gets it automatically.
+10. **[Gap] Damage doesn't flow from characters.** Character HP/mana pools have steppers buried in the expanded sheet; in combat the GM wants damage/heal on the collapsed card. Add compact +/- HP controls to the collapsed character card (mirroring the encounter row), and an "award XP to party" action so leveling doesn't mean visiting each sheet.
+
+### UI/UX
+
+11. **[UX] Zero action feedback.** Save, Export, and cross-tab sync all succeed silently; Undo reloads without saying what it restored. A GM cannot tell whether Save worked. Add a small toast/status primitive (polite `aria-live`) and use it for Save ("Saved"), Export, Import, Undo ("Restored save from HH:MM"), and generation.
+12. **[UX] No unsaved-changes guard.** Nothing tracks dirtiness: closing the tab, or a follower-tab reload triggered by cross-tab sync, silently discards unsaved work. Track a dirty flag (any mutation since last save), add `beforeunload` when dirty, show a dirty indicator on the Save button, and make the external-save reload prompt instead of firing blind when local changes exist.
+13. **[UX] No responsive layout.** One media query exists (dark theme). Below ~1100px the fixed 22rem sidebar and 18rem build rails crush the map; on a tablet — a natural at-the-table device — the app is unusable. Add breakpoints: sidebar/rails collapse to full-width stacked sections (or a drawer) under a tablet width, below-map strip wraps (already does), header actions collapse to a menu.
+14. **[UX] First run is a dead end.** A new GM lands on an empty fogged world in Play mode with no hint that Build mode, Generate, or Load example exist. Add a first-run empty-state overlay on the map ("Build your world / Generate one / Load the example") shown only when the campaign is blank, dismissed forever once touched.
+15. **[UX] No keyboard shortcuts beyond the map.** Mode/role switching, Save, Undo, dice, and sidebar tabs are mouse-only outside the canvas. Add a small shortcut set (e.g. Ctrl+S save, B/P mode toggle, ? for a shortcut-reference dialog) — the dialog doubles as discoverability for the map's existing keys.
+16. **[UX] Touch support unverified.** Pointer events are wired for mouse buttons (left stroke, right pan); pinch-zoom, touch-drag panning, and the hover-only tile tooltip have no touch path. At minimum: two-finger pan/pinch on the canvas and tap-to-inspect surfacing the tooltip content.
+
+### Deliberately not planned
+
+- Real-time server sync / per-player accounts — the localStorage + `storage`-event model is the scope ceiling by design (zero dependencies, no server).
+- Rules-engine automation (attack rolls resolving damage, spell slots by class) — the app visualizes a world and tracks state; it does not GM.
+- Per-character map tokens — the party moves as one marker by design; splitting the party is trackable via notes/NPCs today and the payoff doesn't justify the fog/marker complexity yet.
+
+## Status — To Do (feature evaluation)
+
+- [ ] Custom tile upload UI + persistence (`customTiles` in CampaignState, palette add/remove affordances) — Promise #1
+- [ ] Build-mode stroke-level undo (in-memory node-state ring, Ctrl+Z + rail button) — Gap #2
+- [ ] Encounter templates/bestiary + stat-block editor on encounter rows — Gap #3
+- [ ] Generator preview + reroll + visible seed in the Generate modal — Gap #4
+- [ ] Export current node as PNG (Build/GM only) — Gap #5
+- [ ] GM fog brush: reveal/hide strokes + reveal-all on node, Play mode GM-only — Gap #6
+- [ ] Initiative auto-roll (d20 + per-combatant modifier, manual override kept) — Gap #7
+- [ ] Dice roll history (session-local, under the tray) — Gap #8
+- [ ] Handout images (optional data:-URL image in body, player view included) — Gap #9
+- [ ] Collapsed-card HP/mana quick controls + party-wide XP award — Gap #10
+- [ ] Toast/status feedback for Save/Export/Import/Undo/generation — UX #11
+- [ ] Dirty-state tracking: beforeunload guard, Save-button indicator, prompted external-save reload — UX #12
+- [ ] Responsive breakpoints for sidebar/rails/header below tablet width — UX #13
+- [ ] First-run blank-campaign onboarding overlay — UX #14
+- [ ] App-wide keyboard shortcuts + shortcut-reference dialog — UX #15
+- [ ] Touch interaction: pinch-zoom, touch pan, tap-to-inspect tooltip — UX #16
