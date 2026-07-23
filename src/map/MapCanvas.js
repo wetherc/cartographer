@@ -74,6 +74,9 @@ export class MapCanvas {
     this.cursorCellId = null;
     /** @type {boolean} whether the canvas is focused, so the cursor outline shows */
     this._focused = false;
+    // True once the user pans or zooms away from the fitted view; controls
+    // whether resize() re-fits or preserves their framing.
+    this._userView = false;
     this.offsetX = 0;
     this.offsetY = 0;
     this.scale = 1;
@@ -148,6 +151,7 @@ export class MapCanvas {
   fit() {
     const { node, canvas } = this;
     if (!node) return;
+    this._userView = false;
     // Pad enough for the coordinate labels, which hang off the grid's top and
     // left edges (up to ~60 buffer px at the label font cap); the default 24px
     // clips them whenever the fit isn't slack from the zoom clamp.
@@ -174,6 +178,7 @@ export class MapCanvas {
     const cy = this.canvas.height / 2;
     const worldX = (cx - this.offsetX) / this.scale;
     const worldY = (cy - this.offsetY) / this.scale;
+    this._userView = true;
     this.scale = clampZoom(this.scale * factor, this.minZoom, this.maxZoom);
     this.offsetX = cx - worldX * this.scale;
     this.offsetY = cy - worldY * this.scale;
@@ -181,16 +186,29 @@ export class MapCanvas {
   }
 
   /**
-   * Resize the canvas buffer (e.g. when the layout column changes width) and
-   * re-frame the node, so the map always fills the space it's given.
+   * Resize the canvas buffer (e.g. when the layout column changes width).
+   * While the view is still the fitted default this re-frames the node; once
+   * the user has panned or zoomed it instead keeps their scale and the world
+   * point at the canvas centre anchored, so an unrelated layout reflow (a
+   * panel expanding, a scrollbar appearing) doesn't reset their view.
    * @param {number} width
    * @param {number} height
    */
   resize(width, height) {
     if (this.canvas.width === width && this.canvas.height === height) return;
+    if (!this._userView) {
+      this.canvas.width = width;
+      this.canvas.height = height;
+      this.fit();
+      return;
+    }
+    const worldX = (this.canvas.width / 2 - this.offsetX) / this.scale;
+    const worldY = (this.canvas.height / 2 - this.offsetY) / this.scale;
     this.canvas.width = width;
     this.canvas.height = height;
-    this.fit();
+    this.offsetX = width / 2 - worldX * this.scale;
+    this.offsetY = height / 2 - worldY * this.scale;
+    this.render();
   }
 
   /**
@@ -411,6 +429,7 @@ export class MapCanvas {
    * @param {number} x @param {number} y */
   _ensureCellVisible(x, y) {
     const { sx, sy, size } = tileRect(x, y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+    this._userView = true;
     const margin = size;
     if (sx < margin) this.offsetX += margin - sx;
     else if (sx + size > this.canvas.width - margin) this.offsetX -= sx + size - (this.canvas.width - margin);
@@ -547,6 +566,7 @@ export class MapCanvas {
     const scaleY = rect.height === 0 ? 1 : this.canvas.height / rect.height;
     const dx = (event.clientX - this._lastX) * scaleX;
     const dy = (event.clientY - this._lastY) * scaleY;
+    this._userView = true;
     this.offsetX += dx;
     this.offsetY += dy;
     this._dragDistance += Math.abs(dx) + Math.abs(dy);
@@ -595,6 +615,7 @@ export class MapCanvas {
       return;
     }
     this._clearHover();
+    this._userView = true;
     const rect = this.canvas.getBoundingClientRect();
     const scaleX = rect.width === 0 ? 1 : this.canvas.width / rect.width;
     const scaleY = rect.height === 0 ? 1 : this.canvas.height / rect.height;
@@ -663,6 +684,7 @@ export class MapCanvas {
 
     const before = screenToTile(pointerX, pointerY, this.tileSize, this.offsetX, this.offsetY, this.scale);
     const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
+    this._userView = true;
     this.scale = clampZoom(this.scale * factor, this.minZoom, this.maxZoom);
 
     const afterRect = tileRect(before.x, before.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
