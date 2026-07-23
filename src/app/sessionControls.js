@@ -58,6 +58,8 @@ export function wireSessionControls(app) {
     app.actions.onRoleChanged(role);
     app.views.encounterPanel.update();
     app.views.handoutPanel.update();
+    app.views.npcPanel.update();
+    app.views.questPanel.update();
   }
 
   // Only one tab at a time may hold the GM view: the GM tab keeps a heartbeat

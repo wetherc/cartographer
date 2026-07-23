@@ -52,6 +52,7 @@ export interface AppViews {
   encounterPanel: Updatable;
   initiativePanel: Updatable;
   npcPanel: Updatable;
+  questPanel: Updatable;
   handoutPanel: Updatable;
   travelogPanel: Updatable;
 }
