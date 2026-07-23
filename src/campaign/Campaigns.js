@@ -6,6 +6,7 @@ import {
   withDefaults as withEncounterDefaults,
 } from '../entities/Encounter.js';
 import { loadFromLocalStorage, toTileGrid } from '../storage/SaveManager.js';
+import { createClock } from '../time/GameClock.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 
@@ -19,6 +20,8 @@ import { loadFromLocalStorage, toTileGrid } from '../storage/SaveManager.js';
  *   encounters: import('../types/entities.js').Encounter[],
  *   travelog: import('../types/log.js').LogEntry[],
  *   quests: import('../types/quest.js').Quest[],
+ *   clock: import('../types/time.js').GameClock,
+ *   npcs: import('../types/npc.js').NPC[],
  * }} Campaign
  */
 
@@ -38,6 +41,8 @@ export function buildBlankCampaign() {
     encounters: [],
     travelog: [],
     quests: [],
+    clock: createClock(),
+    npcs: [],
   };
 }
 
@@ -101,6 +106,17 @@ export function buildExampleCampaign(palette) {
         status: 'active',
       },
     ],
+    clock: createClock(),
+    npcs: [
+      {
+        id: 'innkeeper-bram',
+        name: 'Bram',
+        role: 'Innkeeper, the Waystation',
+        disposition: 'friendly',
+        notes: 'Knows the roads north and gossips freely for a warm meal.',
+        location: { nodeId: 'world', tileId: '3,2' },
+      },
+    ],
   };
 }
 
@@ -122,5 +138,7 @@ export function loadInitialCampaign() {
     encounters: saved.encounters.map(withEncounterDefaults),
     travelog: saved.travelog ?? [],
     quests: saved.quests ?? [],
+    clock: saved.clock ?? createClock(),
+    npcs: saved.npcs ?? [],
   };
 }

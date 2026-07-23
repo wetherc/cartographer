@@ -43,7 +43,7 @@ test('loadHistory tolerates a missing or corrupt entry', () => {
 });
 
 test('snapshotHistory then undoHistory round-trips a state and shrinks the ring', () => {
-  const state = { nodes: [], party: null, characters: [], encounters: [], travelog: [], quests: [] };
+  const state = { nodes: [], party: null, characters: [], encounters: [], travelog: [], quests: [], clock: null, npcs: [] };
   snapshotHistory(state);
   assert.equal(loadHistory().length, 1);
   const restored = undoHistory();

@@ -23,7 +23,9 @@ import { mountMapDescription } from './ui/MapDescription.js';
 import { mountTileTooltip } from './ui/TileTooltip.js';
 import { promptModal, confirmModal } from './ui/Modal.js';
 import { PartyTracker } from './party/PartyTracker.js';
-import { createCharacter, withHP, withMana } from './entities/Character.js';
+import { createCharacter, withHP, withMana, shortRest, longRest } from './entities/Character.js';
+import { advanceWatches, advanceToDawn, formatClock } from './time/GameClock.js';
+import { mountTimePanel } from './ui/TimePanel.js';
 import { createEncounter, encountersAt, isDefeated } from './entities/Encounter.js';
 import { slugId, replaceById, removeById } from './entities/Roster.js';
 import { mountCharacterRoster } from './ui/CharacterRoster.js';
@@ -55,6 +57,10 @@ let { characters, encounters } = initial;
 let travelog = initial.travelog;
 /** @type {import('./types/quest.js').Quest[]} GM-authored quest/session log */
 let quests = initial.quests;
+/** @type {import('./types/time.js').GameClock} in-game day/watch clock */
+let clock = initial.clock;
+/** @type {import('./types/npc.js').NPC[]} non-combatant NPCs */
+let npcs = initial.npcs;
 /** Monotonic counter making travelogue entry ids unique within a session. */
 let logSeq = 0;
 
@@ -576,6 +582,25 @@ const encounterPanel = mountEncounterPanel(mustGetElement('encounter-container')
     confirmModal(`Delete "${encounter.name}"?`, { danger: true, confirmLabel: 'Delete' }),
 });
 
+const timePanel = mountTimePanel(mustGetElement('time-container'), {
+  getClock: () => clock,
+  onAdvance: () => {
+    clock = advanceWatches(clock, 1);
+  },
+  onShortRest: () => {
+    characters = characters.map(shortRest);
+    clock = advanceWatches(clock, 1);
+    selectCharacter(selectedCharacterId);
+    logEvent('rest', `The party takes a short rest. Now ${formatClock(clock)}.`);
+  },
+  onLongRest: () => {
+    characters = characters.map(longRest);
+    clock = advanceToDawn(clock);
+    selectCharacter(selectedCharacterId);
+    logEvent('rest', `The party takes a long rest. Now ${formatClock(clock)}.`);
+  },
+});
+
 mountDiceTray(mustGetElement('dice-tray-container'));
 
 const travelogPanel = mountTravelogPanel(mustGetElement('travelog-container'), {
@@ -657,6 +682,14 @@ function snapshotCurrentSave() {
   if (current) snapshotHistory(current);
 }
 
+/** Assemble the live campaign into a serializable state for save/export. */
+function buildCurrentState() {
+  return buildState(grid, partyTracker.getPosition(), characters, encounters, travelog, quests, {
+    clock,
+    npcs,
+  });
+}
+
 function replaceCampaign(campaign) {
   snapshotCurrentSave();
   saveToLocalStorage(
@@ -667,6 +700,7 @@ function replaceCampaign(campaign) {
       campaign.encounters,
       campaign.travelog,
       campaign.quests,
+      { clock: campaign.clock, npcs: campaign.npcs },
     ),
   );
   location.reload();
@@ -691,9 +725,7 @@ mustGetElement('example-btn').addEventListener('click', async () => {
 mustGetElement('save-btn').addEventListener('click', () => {
   // Snapshot the previous save first so Undo can step back to it.
   snapshotCurrentSave();
-  saveToLocalStorage(
-    buildState(grid, partyTracker.getPosition(), characters, encounters, travelog, quests),
-  );
+  saveToLocalStorage(buildCurrentState());
 });
 
 // Undo restores the most recent snapshot (the state before the last save,
@@ -710,9 +742,7 @@ mustGetElement('undo-btn').addEventListener('click', async () => {
 });
 
 mustGetElement('export-btn').addEventListener('click', () => {
-  downloadState(
-    buildState(grid, partyTracker.getPosition(), characters, encounters, travelog, quests),
-  );
+  downloadState(buildCurrentState());
 });
 
 const importInput = /** @type {HTMLInputElement} */ (mustGetElement('import-input'));
