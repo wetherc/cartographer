@@ -8,6 +8,7 @@ import {
   normalizeRect,
   tilesInRect,
   linkTilesInRect,
+  stampRegionLink,
   ensureChildLink,
 } from '../src/map/TilePaint.js';
 import { createMapNode, createTile, setTile, getTile } from '../src/map/TileGrid.js';
@@ -154,6 +155,66 @@ test('linkTilesInRect stamps childNodeId onto in-rect tiles only, creating none'
 test('linkTilesInRect is a no-op node when the rect covers no tiles', () => {
   const node = node2x2();
   assert.equal(linkTilesInRect(node, { minX: 0, minY: 0, maxX: 1, maxY: 1 }, 'region'), node);
+});
+
+test('stampRegionLink stamps a 2x2 block on an outdoor node', () => {
+  let node = createMapNode('world', 'World', null, 4, 4);
+  for (const id of ['1,1', '2,1', '1,2', '2,2']) node = setTile(node, createTile(id, 'grass.svg'));
+  const linked = stampRegionLink(node, '1,1', 'vale');
+  for (const id of ['1,1', '2,1', '1,2', '2,2']) {
+    assert.equal(getTile(linked, id).childNodeId, 'vale', id);
+  }
+});
+
+test('stampRegionLink shifts the block up/left at the far edges', () => {
+  let node = createMapNode('world', 'World', null, 3, 3);
+  for (const id of ['1,1', '2,1', '1,2', '2,2']) node = setTile(node, createTile(id, 'grass.svg'));
+  const linked = stampRegionLink(node, '2,2', 'vale');
+  for (const id of ['1,1', '2,1', '1,2', '2,2']) {
+    assert.equal(getTile(linked, id).childNodeId, 'vale', id);
+  }
+});
+
+test('stampRegionLink skips walls, other links, and empty cells but always stamps the anchor', () => {
+  let node = createMapNode('world', 'World', null, 4, 4);
+  node = setTile(node, createTile('1,1', 'grass.svg'));
+  node = setTile(node, createTile('2,1', 'grass.svg', { childNodeId: 'other' }));
+  node = setTile(node, createTile('1,2', 'assets/tiles/interior/interior-wall-h.svg'));
+  const linked = stampRegionLink(node, '1,1', 'vale');
+  assert.equal(getTile(linked, '1,1').childNodeId, 'vale');
+  assert.equal(getTile(linked, '2,1').childNodeId, 'other', 'neighboring link preserved');
+  assert.equal(getTile(linked, '1,2').childNodeId, null, 'wall not linked');
+  assert.equal(getTile(linked, '2,2'), undefined, 'no tile created on the empty cell');
+});
+
+test('stampRegionLink links a single tile on interiors', () => {
+  let node = createMapNode('inn', 'Inn', null, 4, 4, { kind: 'interior' });
+  node = setTile(node, createTile('1,1', 'floor.svg'));
+  node = setTile(node, createTile('2,1', 'floor.svg'));
+  const linked = stampRegionLink(node, '1,1', 'cellar');
+  assert.equal(getTile(linked, '1,1').childNodeId, 'cellar');
+  assert.equal(getTile(linked, '2,1').childNodeId, null);
+});
+
+test('stampRegionLink with null clears the whole contiguous block', () => {
+  let node = createMapNode('world', 'World', null, 4, 4);
+  for (const id of ['1,1', '2,1', '1,2', '2,2']) node = setTile(node, createTile(id, 'grass.svg'));
+  node = stampRegionLink(node, '1,1', 'vale');
+  const cleared = stampRegionLink(node, '2,2', null);
+  for (const id of ['1,1', '2,1', '1,2', '2,2']) {
+    assert.equal(getTile(cleared, id).childNodeId, null, id);
+  }
+});
+
+test('ensureChildLink widens its outdoor link to the 2x2 block', () => {
+  let node = createMapNode('world', 'World', null, 5, 5);
+  for (const id of ['2,2', '3,2', '2,3', '3,3']) node = setTile(node, createTile(id, 'grass.svg'));
+  const result = ensureChildLink(node, 'crypt', { markerRef: 'dungeon.svg', createRef: 'grass.svg' });
+  assert.equal(result.tileId, '2,2');
+  for (const id of ['2,2', '3,2', '2,3', '3,3']) {
+    assert.equal(getTile(result.node, id).childNodeId, 'crypt', id);
+  }
+  assert.equal(getTile(result.node, '3,3').imageRef, 'grass.svg', 'marker art only on the anchor');
 });
 
 test('ensureChildLink is a no-op when a link to the child already exists', () => {
