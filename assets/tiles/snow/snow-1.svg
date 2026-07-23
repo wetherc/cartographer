@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><g id="pn">
+    <ellipse cx="0" cy="1.5" rx="7" ry="2.2" fill="#d5dce6"/>
+    <path d="M-1 1 L1 1 L0.7 -2 L-0.7 -2 Z" fill="#5a4634"/>
+    <polygon points="-6,-1 0,-15 6,-1" fill="#2f4a38"/>
+    <polygon points="-4,-5.5 0,-15 4,-5.5" fill="#3a5a44"/>
+    <polygon points="-2.6,-9.5 0,-15 2.6,-9.5" fill="#f2f6fa"/>
+  </g></defs>
+  <rect width="64" height="64" fill="#e9edf3"/>
+  <g fill="#dfe5ee">
+    <ellipse cx="16" cy="18" rx="11" ry="7"/>
+    <ellipse cx="46" cy="44" rx="13" ry="8"/>
+  </g>
+  <g fill="#f3f6fa">
+    <ellipse cx="46" cy="14" rx="9" ry="6"/>
+    <ellipse cx="14" cy="46" rx="9" ry="6"/>
+  </g>
+  <use href="#pn" transform="translate(20 30)"/>
+  <use href="#pn" transform="translate(44 24) scale(0.8)"/>
+  <use href="#pn" transform="translate(36 52) scale(0.9)"/>
+  <polygon points="48,52 52,46 56,52" fill="#aab2bd"/>
+  <polygon points="52,46 52,52 56,52" fill="#8e96a2"/>
+  <g fill="#ffffff">
+    <circle cx="12" cy="14" r="0.9"/><circle cx="52" cy="34" r="0.8"/>
+    <circle cx="28" cy="44" r="0.7"/><circle cx="40" cy="12" r="0.8"/>
+  </g>
+</svg>

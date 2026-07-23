@@ -415,3 +415,14 @@ Gaps observed while working in the codebase after the feature-evaluation items l
 ### Player-view hardening
 
 - [x] **[UX] Hide the role switch from settled Player tabs.** The GM lock stops two concurrent GM views, but a Player tab still shows the GM button, which claims the role the moment the GM tab closes. Fine for a home table; for a shared screen, consider a "lock this tab as Player" mode (e.g. a `?role=player` URL or a confirm-gated toggle) so the table display can't be flipped by a stray tap. — Done, both ways in: pure `view/PlayerLock.js` (`roleParam` honors only `?role=player`, never GM-by-URL; `isPlayerLocked` also accepts the per-tab sessionStorage flag; 3 tests), plus a confirm-gated padlock button beside the role switch (visible only in the Player role, new `lock` icon). A locked tab forces the Player role, hides the whole role-switch cluster via a `role-locked` body class, and refuses a programmatic GM switch as a backstop; unlock is deliberately out-of-app (close the tab or drop the URL parameter). GM guide documents it. Verified in-browser: `?role=player` locks a fresh tab, the padlock+confirm locks a settled Player tab and survives reload via sessionStorage.
+
+---
+
+## Tile catalog expansion — 2026-07-23
+
+Gaps in the built-in tile catalog identified while reviewing the terrain set. The terrain additions landed; the connector types and POI markers below are queued, not started.
+
+- [x] **Four new terrain types (swamp, snow, hills, farmland), 3 variants each.** Pure asset work following the existing conventions in `docs/tile-assets.md` (shared background fill per type, inset details only, `<defs>`+`<use>` for repeated elements): swamp (murky base, water pools, cattail reeds, a dead tree), snow (pale base, snow-capped pines, rocks, drift lines), hills (rolling mound shapes with highlight/shadow on a green base), and farmland (tilled and cropped field plots, fences, haystacks, sharing the grass background like roads do so farms abut grass seamlessly). Registered in `TilePalette.VARIANT_COUNTS`, added to `PalettePanel`'s Terrain section set, `tests/tile-preview.html`, and the `TilePalette` variant-count test.
+- [ ] **River connector pieces.** Water currently only works as area blobs; rivers need the road-piece pattern (`h`, `v`, corners, tees, ends) with a water channel on the grass background, plus autotiling-caller integration mirroring `getRoadPiece`. Includes **bridge** tiles (road-over-river, `h` and `v`) so the two networks can cross.
+- [ ] **Coast/shore transition pieces.** Water-meets-grass edge tiles so shorelines don't render as a hard seam. Start with the four straight-edge pieces (water on the n/s/e/w half); the full corner set can follow if the straights prove out.
+- [ ] **New POI markers.** Single-image markers on the standard grass base, registered in `MARKER_TYPES`: `ruins`, `cave-entrance`, `mine`, `port`, `farm`, `graveyard`, `camp`, `standing-stones`.

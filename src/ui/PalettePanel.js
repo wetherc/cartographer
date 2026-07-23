@@ -129,7 +129,10 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   // Swatches, grouped into collapsible sections so terrain, roads, buildings,
   // and interior pieces aren't commingled in one grid. Terrain starts open
   // (the most common brush); the rest start collapsed.
-  const TERRAIN_TYPES = new Set(['grass', 'forest', 'mountain', 'water', 'desert', 'custom']);
+  const TERRAIN_TYPES = new Set([
+    'grass', 'forest', 'mountain', 'water', 'desert',
+    'swamp', 'snow', 'hills', 'farmland', 'custom',
+  ]);
   /** @param {PaletteEntry} entry */
   const sectionFor = (entry) =>
     TERRAIN_TYPES.has(entry.type) ? 'Terrain' : entry.type === 'road' ? 'Roads' : entry.type === 'interior' ? 'Interior' : 'Buildings';

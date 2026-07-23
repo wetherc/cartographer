@@ -8,7 +8,17 @@ const TILE_ROOT = 'assets/tiles';
  * because they share the same background fill.
  * @type {Record<string, number>}
  */
-const VARIANT_COUNTS = { grass: 3, forest: 3, mountain: 3, water: 3, desert: 3 };
+const VARIANT_COUNTS = {
+  grass: 3,
+  forest: 3,
+  mountain: 3,
+  water: 3,
+  desert: 3,
+  swamp: 3,
+  snow: 3,
+  hills: 3,
+  farmland: 3,
+};
 
 /**
  * Road pieces are not random variants: each is a distinct connector shape,

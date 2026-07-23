@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs><g id="rd" fill="none" stroke-linecap="round">
+    <path d="M0 0 Q-1.5 -5 -3 -9" stroke="#6b7d3f" stroke-width="1.4"/>
+    <path d="M0 0 Q0 -6 0.5 -10.5" stroke="#7a8c4a" stroke-width="1.4"/>
+    <path d="M0 0 Q2 -5 3.5 -8" stroke="#6b7d3f" stroke-width="1.4"/>
+    <ellipse cx="0.5" cy="-10.5" rx="1" ry="2" fill="#5a4a30"/>
+  </g></defs>
+  <rect width="64" height="64" fill="#4f5f3c"/>
+  <g fill="#475738">
+    <ellipse cx="15" cy="14" rx="10" ry="6"/>
+    <ellipse cx="48" cy="50" rx="11" ry="7"/>
+  </g>
+  <g fill="#576741">
+    <ellipse cx="50" cy="12" rx="8" ry="5"/>
+    <ellipse cx="13" cy="50" rx="8" ry="5"/>
+  </g>
+  <ellipse cx="27" cy="36" rx="14" ry="8" fill="#3d5049"/>
+  <ellipse cx="27" cy="36" rx="14" ry="8" fill="none" stroke="#35463f" stroke-width="1"/>
+  <path d="M18 35 Q23 33 28 35 T38 36" stroke="#4a5c54" stroke-width="1" fill="none" opacity="0.8"/>
+  <ellipse cx="22" cy="38" rx="2.4" ry="1.4" fill="#5f7a3d"/>
+  <ellipse cx="32" cy="34" rx="2" ry="1.2" fill="#5f7a3d"/>
+  <use href="#rd" transform="translate(14 32)"/>
+  <use href="#rd" transform="translate(40 40) scale(0.9)"/>
+  <use href="#rd" transform="translate(50 24) scale(0.8)"/>
+  <use href="#rd" transform="translate(20 54) scale(0.85)"/>
+</svg>
