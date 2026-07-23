@@ -53,8 +53,10 @@ function buildStatBar(pool, opts) {
 }
 
 /**
- * Compact spell-slot readout for the collapsed card: one line, a pip group per
- * spell level ("1st ●●○  2nd ●○"), filled pips being the slots still unspent.
+ * Compact spell-slot readout for the collapsed card: a column per spell level,
+ * the ordinal centered above a two-wide grid of pips, filled pips being the
+ * slots still unspent. Columns wrap under the pip area (not the label) when a
+ * high-level caster outgrows the card width.
  * Replaces the old mana bar; a non-caster (no slot pools) renders nothing.
  * @param {import('../types/entities.js').ResourcePool[]} pools
  * @returns {HTMLElement}
@@ -75,6 +77,8 @@ function buildSlotLine(pools) {
 
   /** @param {number} n */
   const ordinal = (n) => `${n}${n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`;
+  const groups = document.createElement('span');
+  groups.className = 'slot-line__groups';
   for (const pool of pools) {
     const group = document.createElement('span');
     group.className = 'slot-line__group';
@@ -83,10 +87,15 @@ function buildSlotLine(pools) {
     level.textContent = ordinal(slotLevelOf(pool));
     const pips = document.createElement('span');
     pips.className = 'slot-line__pips';
-    pips.textContent = '●'.repeat(pool.current) + '○'.repeat(pool.max - pool.current);
+    for (let i = 0; i < pool.max; i += 1) {
+      const pip = document.createElement('span');
+      pip.textContent = i < pool.current ? '●' : '○';
+      pips.appendChild(pip);
+    }
     group.append(level, pips);
-    wrap.appendChild(group);
+    groups.appendChild(group);
   }
+  wrap.appendChild(groups);
   return wrap;
 }
 
