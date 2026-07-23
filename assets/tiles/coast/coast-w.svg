@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <!-- Overlay shoreline: water fills the west half, a sand strand fades to
-       transparent eastward, so any terrain beneath supplies the land side. -->
+       transparent eastward. Scalloped waterline, cusps at the tile edges. -->
   <rect width="30" height="64" fill="#33719f"/>
   <ellipse cx="12" cy="20" rx="6" ry="13" fill="#2d6591"/>
   <ellipse cx="19" cy="50" rx="4" ry="9" fill="#2d6591"/>
   <g fill="#8ac2e6"><circle cx="8" cy="42" r="1"/><circle cx="22" cy="12" r="0.9"/><circle cx="12" cy="57" r="0.9"/></g>
-  <path d="M23.5 6 L23.5 11 M22 28 L22 34 M24 48 L24 53" stroke="#8ac2e6" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/>
-  <path d="M28 0 Q25 8 28 16 T28 32 T28 48 T28 64 L36 64 Q39 56 36 48 T36 32 T36 16 T36 0 Z" fill="#c2a36c"/>
-  <path d="M28 0 Q25 8 28 16 T28 32 T28 48 T28 64" stroke="#8ac2e6" stroke-width="1.4" fill="none" opacity="0.9"/>
+  <path d="M22 6 L22 11 M20.5 28 L20.5 34 M22.5 48 L22.5 53" stroke="#8ac2e6" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/>
+  <path d="M28 0 Q24.5 8 28 16 Q24.5 24 28 32 Q24.5 40 28 48 Q24.5 56 28 64 L36 64 Q38.5 56 36 48 Q38.5 40 36 32 Q38.5 24 36 16 Q38.5 8 36 0 Z" fill="#c2a36c"/>
+  <path d="M28 0 Q24.5 8 28 16 Q24.5 24 28 32 Q24.5 40 28 48 Q24.5 56 28 64" stroke="#8ac2e6" stroke-width="1.4" fill="none" opacity="0.9"/>
   <g fill="#b08f57"><circle cx="32.5" cy="10" r="0.7"/><circle cx="33.5" cy="30" r="0.6"/><circle cx="32" cy="52" r="0.7"/></g>
   <g fill="#cdb078"><circle cx="31" cy="20" r="0.6"/><circle cx="34" cy="42" r="0.6"/></g>
 </svg>

@@ -34,7 +34,9 @@ test('TilePalette ships with coast transition pieces', () => {
   const palette = new TilePalette();
   assert.equal(palette.getCoastPiece('n').imageRef, 'assets/tiles/coast/coast-n.svg');
   assert.equal(palette.getCoastPiece('w').id, 'coast-w');
-  assert.equal(palette.listVariants('coast').length, 4);
+  assert.equal(palette.getCoastPiece('corner-nw').imageRef, 'assets/tiles/coast/coast-corner-nw.svg');
+  assert.equal(palette.getCoastPiece('inner-se').type, 'coast');
+  assert.equal(palette.listVariants('coast').length, 12);
 });
 
 test('TilePalette ships with single-image POI markers', () => {

@@ -57,10 +57,17 @@ const RIVER_KINDS = [...ROAD_KINDS, 'bridge-h', 'bridge-v'];
  * Coast transition overlays: water fills one half (the named edge) with a
  * sandy shoreline fading to transparent on the other, so any terrain beneath
  * (grass, desert, snow, mountain) supplies the land side without needing a
- * water-and-X tile per biome. Straight edges only for now; corners can follow.
+ * water-and-X tile per biome. Beyond the four straight edges there are two
+ * corner families: `corner-*` (outer corner — water wraps the two named edges
+ * around a land tip) and `inner-*` (inner corner — water fills only the named
+ * quadrant, the inside of a bay's turn).
  * @type {string[]}
  */
-const COAST_KINDS = ['n', 's', 'e', 'w'];
+const COAST_KINDS = [
+  'n', 's', 'e', 'w',
+  'corner-ne', 'corner-nw', 'corner-se', 'corner-sw',
+  'inner-ne', 'inner-nw', 'inner-se', 'inner-sw',
+];
 
 /**
  * Palette types painted as a tile's overlayRef (layered over terrain) rather

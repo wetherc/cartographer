@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <!-- North-south channel drifting gently as it passes under the deck. -->
-  <path d="M32 0 C32 12 29 20 30 32 C31 44 32 52 32 64" stroke="#6b5a3e" stroke-width="22" fill="none"/>
-  <path d="M32 0 C32 12 29 20 30 32 C31 44 32 52 32 64" stroke="#33719f" stroke-width="18" fill="none"/>
+  <!-- North-south channel with one gentle symmetric bow under the deck. -->
+  <path d="M32 0 C32 10 30 16 30 32 C30 48 32 54 32 64" stroke="#6b5a3e" stroke-width="22" fill="none"/>
+  <path d="M32 0 C32 10 30 16 30 32 C30 48 32 54 32 64" stroke="#33719f" stroke-width="18" fill="none"/>
   <g stroke="#7fb2d9" stroke-width="1.4" fill="none" stroke-linecap="round">
     <path d="M27.5 8 C27 11 26.5 14 26.5 17"/>
     <path d="M36.5 48 C36.5 51 36 54 35.5 57"/>
