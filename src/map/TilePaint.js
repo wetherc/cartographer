@@ -35,13 +35,21 @@ export function isInBounds(node, tileId) {
  * it afterward without disturbing the path. An overlay brush is a no-op over a
  * tile that carries a POI marker, so a path can't be laid across a settlement,
  * dungeon, etc.
+ *
+ * `span` > 1 paints the image as a scaled block: the anchor tile records the
+ * span and the renderer stretches its image across span x span cells (shifted
+ * up/left near the far edges so the block stays in bounds). Covered neighbors
+ * are untouched — the block is purely visual, so the terrain beneath survives
+ * a later repaint at 1x, which also clears a tile's span. Overlays (roads)
+ * always stay one cell and ignore span.
  * @param {MapNode} node
  * @param {string} tileId
  * @param {string} imageRef
  * @param {boolean} [overlay]
+ * @param {number} [span]
  * @returns {MapNode}
  */
-export function paintTile(node, tileId, imageRef, overlay = false) {
+export function paintTile(node, tileId, imageRef, overlay = false, span = 1) {
   if (!isInBounds(node, tileId)) return node;
   const existing = getTile(node, tileId);
   if (overlay) {
@@ -49,8 +57,50 @@ export function paintTile(node, tileId, imageRef, overlay = false) {
     const base = existing ?? createTile(tileId, '');
     return setTile(node, { ...base, overlayRef: imageRef });
   }
-  const tile = existing ? { ...existing, imageRef } : createTile(tileId, imageRef);
+  const n = Math.max(1, Math.min(Math.floor(span), node.width, node.height));
+  if (n > 1) {
+    const coords = /** @type {{ x: number, y: number }} */ (parseCoords(tileId));
+    const ax = Math.min(coords.x, node.width - n);
+    const ay = Math.min(coords.y, node.height - n);
+    const anchorId = `${ax},${ay}`;
+    const anchor = getTile(node, anchorId) ?? createTile(anchorId, imageRef);
+    return setTile(node, { ...anchor, imageRef, span: n });
+  }
+  const tile = existing ? { ...existing, imageRef, span: undefined } : createTile(tileId, imageRef);
   return setTile(node, tile);
+}
+
+/**
+ * A scaled-art block: the anchor tile plus the inclusive rect its image is
+ * stretched across.
+ * @typedef {{ tile: import('../types/map.js').Tile, minX: number, minY: number, maxX: number, maxY: number, tileIds: string[] }} SpanBlock
+ */
+
+/**
+ * Every scaled-art block on a node: each tile with span > 1 yields its anchor
+ * plus the rect (clamped to the grid) its image covers, with the covered tile
+ * ids the renderer uses to skip those cells' own base images. Pure geometry —
+ * covered cells need not hold tiles.
+ * @param {MapNode} node
+ * @returns {SpanBlock[]}
+ */
+export function spanBlocks(node) {
+  /** @type {SpanBlock[]} */
+  const blocks = [];
+  for (const tile of node.tiles) {
+    if (!tile.span || tile.span <= 1) continue;
+    const coords = parseCoords(tile.id);
+    if (!coords) continue;
+    const maxX = Math.min(coords.x + tile.span - 1, node.width - 1);
+    const maxY = Math.min(coords.y + tile.span - 1, node.height - 1);
+    /** @type {string[]} */
+    const tileIds = [];
+    for (let y = coords.y; y <= maxY; y++) {
+      for (let x = coords.x; x <= maxX; x++) tileIds.push(`${x},${y}`);
+    }
+    blocks.push({ tile, minX: coords.x, minY: coords.y, maxX, maxY, tileIds });
+  }
+  return blocks;
 }
 
 /**

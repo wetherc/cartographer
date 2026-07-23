@@ -21,6 +21,10 @@ export interface Tile {
   revealed: boolean;
   /** id of the MapNode this tile zooms into, if any */
   childNodeId: string | null;
+  /** side length, in tiles, of the block this tile's image is drawn scaled
+   * across (anchored here, extending right/down) — purely visual, no region
+   * link implied. Absent or 1 means a normal one-cell image. */
+  span?: number;
 }
 
 /** Whether a node is an outdoor area or the inside of a structure. */

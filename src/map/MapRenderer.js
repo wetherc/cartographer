@@ -1,6 +1,7 @@
 import { parseCoords, tileRect } from './MapGeometry.js';
 import { withinRadius } from './FogOfWar.js';
 import { groupImageChunks } from './RegionGroups.js';
+import { spanBlocks } from './TilePaint.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
@@ -78,6 +79,7 @@ export class MapRenderer {
 
     this._renderMapBounds(view);
     const groupCover = this._renderGroupImages(view);
+    this._renderSpanImages(view, groupCover);
     this._renderTiles(view, groupCover);
     this._renderRegionGroups(view);
     this._renderMarquee(view);
@@ -165,6 +167,40 @@ export class MapRenderer {
       }
     }
     return covered;
+  }
+
+  /**
+   * Draw each scaled-art tile (span > 1) as one image stretched across its
+   * block — purely visual sizing, independent of region links, so a landmark
+   * like a 3x3 academy can dominate a town without zooming anywhere. Covered
+   * cell ids are added to `cover` so the tile pass skips their base images,
+   * while fog rects and path overlays still draw per tile on top (a block
+   * reveals piecewise; roads across it stay 1x1), matching region-block
+   * chunks. Unlike those, span art draws on interiors too.
+   * @param {MapView} view
+   * @param {Set<string>} cover accumulates covered tile ids
+   */
+  _renderSpanImages(view, cover) {
+    if (!view.node) return;
+    const { ctx } = this;
+    for (const block of spanBlocks(view.node)) {
+      for (const id of block.tileIds) cover.add(id);
+
+      const topLeft = tileRect(block.minX, block.minY, this.tileSize, view.offsetX, view.offsetY, view.scale);
+      const bottomRight = tileRect(block.maxX, block.maxY, this.tileSize, view.offsetX, view.offsetY, view.scale);
+      const w = bottomRight.sx + bottomRight.size - topLeft.sx;
+      const h = bottomRight.sy + bottomRight.size - topLeft.sy;
+      if (topLeft.sx + w < 0 || topLeft.sy + h < 0 || topLeft.sx > view.canvasWidth || topLeft.sy > view.canvasHeight) continue;
+      if (!block.tile.imageRef) continue;
+
+      const img = this._getImage(block.tile.imageRef);
+      if (img.complete && img.naturalWidth > 0) {
+        ctx.drawImage(img, topLeft.sx, topLeft.sy, w, h);
+      } else {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(topLeft.sx, topLeft.sy, w, h);
+      }
+    }
   }
 
   /**

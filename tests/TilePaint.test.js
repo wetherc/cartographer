@@ -10,6 +10,7 @@ import {
   linkTilesInRect,
   stampRegionLink,
   ensureChildLink,
+  spanBlocks,
 } from '../src/map/TilePaint.js';
 import { createMapNode, createTile, setTile, getTile } from '../src/map/TileGrid.js';
 
@@ -272,4 +273,45 @@ test('ensureChildLink without a marker keeps the terrain art and uses createRef 
   const empty = createMapNode('world2', 'World2', null, 3, 3);
   const made = ensureChildLink(empty, 'vale', { markerRef: null, createRef: 'grass.svg' });
   assert.equal(getTile(made.node, made.tileId).imageRef, 'grass.svg', 'new tile falls back to createRef');
+});
+
+test('paintTile with span > 1 stamps the anchor with the span', () => {
+  const node = createMapNode('n', 'N', null, 5, 5);
+  const painted = paintTile(node, '1,1', 'academy.svg', false, 3);
+  const anchor = getTile(painted, '1,1');
+  assert.equal(anchor.imageRef, 'academy.svg');
+  assert.equal(anchor.span, 3);
+  assert.equal(painted.tiles.length, 1, 'covered neighbors get no tiles');
+});
+
+test('paintTile shifts a span block up/left so it stays in bounds', () => {
+  const node = createMapNode('n', 'N', null, 5, 5);
+  const painted = paintTile(node, '4,4', 'keep.svg', false, 2);
+  assert.equal(getTile(painted, '4,4'), undefined);
+  assert.equal(getTile(painted, '3,3').span, 2);
+});
+
+test('paintTile at 1x clears a previous span, and overlays ignore span', () => {
+  let node = createMapNode('n', 'N', null, 5, 5);
+  node = paintTile(node, '0,0', 'academy.svg', false, 3);
+  node = paintTile(node, '0,0', 'grass.svg');
+  assert.equal(getTile(node, '0,0').span, undefined);
+
+  node = paintTile(node, '2,2', 'road-h.svg', true, 3);
+  assert.equal(getTile(node, '2,2').overlayRef, 'road-h.svg');
+  assert.equal(getTile(node, '2,2').span, undefined);
+});
+
+test('spanBlocks lists each scaled tile with its clamped rect and covered ids', () => {
+  let node = createMapNode('n', 'N', null, 4, 4);
+  node = paintTile(node, '0,0', 'academy.svg', false, 3);
+  node = setTile(node, createTile('3,3', 'grass.svg'));
+  const blocks = spanBlocks(node);
+  assert.equal(blocks.length, 1);
+  assert.deepEqual(
+    { minX: blocks[0].minX, minY: blocks[0].minY, maxX: blocks[0].maxX, maxY: blocks[0].maxY },
+    { minX: 0, minY: 0, maxX: 2, maxY: 2 },
+  );
+  assert.equal(blocks[0].tileIds.length, 9);
+  assert.ok(blocks[0].tileIds.includes('2,2'));
 });

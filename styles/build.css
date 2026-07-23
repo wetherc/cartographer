@@ -137,12 +137,49 @@ body.mode-build .app-sidebar {
   outline-offset: 1px;
 }
 
+/* Art-size row: 1x/2x/3x stamp footprint for the next painted tile. */
+.palette__scale {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.palette__scale-label {
+  color: var(--text-muted);
+  font-size: var(--text-label);
+  margin-right: auto;
+}
+
+.palette__scale .palette__item {
+  min-width: 2.5rem;
+  justify-content: center;
+}
+
+/* Collapsible swatch sections (Terrain / Roads / Buildings / Interior); the
+   section list scrolls as a whole rather than each grid individually. */
+.palette__sections {
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.palette__section-head {
+  font-size: var(--text-label);
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 .palette__grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: var(--space-1);
-  max-height: 14rem;
-  overflow-y: auto;
+  padding-bottom: var(--space-2);
+}
+
+/* `display: grid` outranks the hidden attribute, so a collapsed section's
+   grid needs the explicit override. */
+.palette__grid[hidden] {
+  display: none;
 }
 
 .palette__swatch {

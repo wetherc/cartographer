@@ -370,7 +370,12 @@ export function wireMapView(app) {
         // Captured so the closure below keeps the non-null narrowing.
         const brush = activeBrush;
         const overlay = brush.type === 'road';
-        applyToTile(id, (node) => paintTile(node, id, brush.imageRef, overlay));
+        const scale = overlay ? 1 : palettePanel.getScale();
+        // A scaled stamp is a single placement, not a stroke: dragging with a
+        // 2x/3x size would litter overlapping blocks, so only the first cell
+        // paints.
+        if (scale > 1 && !first) return;
+        applyToTile(id, (node) => paintTile(node, id, brush.imageRef, overlay, scale));
       } else if (first) {
         // Inspect acts on the pressed cell only; dragging doesn't re-select.
         selectTile(id);
@@ -602,7 +607,9 @@ export function wireMapView(app) {
     const coords = screenToTile(buffer.x, buffer.y, mapCanvas.tileSize, mapCanvas.offsetX, mapCanvas.offsetY, mapCanvas.scale);
     const tileId = `${coords.x},${coords.y}`;
     snapshotEdit(navigator.getCurrentNode());
-    applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef, entry.type === 'road'));
+    const overlay = entry.type === 'road';
+    const scale = overlay ? 1 : palettePanel.getScale();
+    applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef, overlay, scale));
   });
 
   mapControls = mountMapControls(mustGetElement('map-viewport'), {
