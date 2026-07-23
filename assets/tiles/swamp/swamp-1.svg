@@ -15,6 +15,25 @@
     <ellipse cx="50" cy="12" rx="8" ry="5"/>
     <ellipse cx="13" cy="50" rx="8" ry="5"/>
   </g>
+  <!-- Edge band: byte-identical across swamp variants, stamped in wrapped
+       pairs (a stamp crossing x=0 repeats at +64, likewise y, corners at
+       all four) so murk and reeds continue across tile seams. -->
+  <g>
+    <ellipse cx="0" cy="0" rx="10" ry="6" fill="#475738"/>
+    <ellipse cx="64" cy="0" rx="10" ry="6" fill="#475738"/>
+    <ellipse cx="0" cy="64" rx="10" ry="6" fill="#475738"/>
+    <ellipse cx="64" cy="64" rx="10" ry="6" fill="#475738"/>
+    <ellipse cx="-1" cy="38" rx="8" ry="5" fill="#576741"/>
+    <ellipse cx="63" cy="38" rx="8" ry="5" fill="#576741"/>
+    <ellipse cx="34" cy="-1" rx="9" ry="5" fill="#475738"/>
+    <ellipse cx="34" cy="63" rx="9" ry="5" fill="#475738"/>
+    <use href="#rd" transform="translate(1 20) scale(0.85)"/>
+    <use href="#rd" transform="translate(65 20) scale(0.85)"/>
+    <use href="#rd" transform="translate(56 2) scale(0.8)"/>
+    <use href="#rd" transform="translate(56 66) scale(0.8)"/>
+    <use href="#rd" transform="translate(22 1) scale(-0.9 0.9)"/>
+    <use href="#rd" transform="translate(22 65) scale(-0.9 0.9)"/>
+  </g>
   <!-- Pool: mud bank behind the far rim, water, sheen, ripples, then pads. -->
   <path d="M14 34 Q20 26 30 27 Q38 28 40 33 Q30 30 20 33 Q15 34 14 34 Z" fill="#5b4f35"/>
   <ellipse cx="27" cy="36" rx="14" ry="8" fill="#3a4d46"/>

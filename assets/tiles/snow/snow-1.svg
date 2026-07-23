@@ -26,6 +26,27 @@
     <ellipse cx="46" cy="14" rx="9" ry="6"/>
     <ellipse cx="14" cy="46" rx="9" ry="6"/>
   </g>
+  <!-- Edge band: byte-identical across snow variants, stamped in wrapped
+       pairs (a stamp crossing x=0 repeats at +64, likewise y, corners at
+       all four) so drifts and pines continue across tile seams. -->
+  <g>
+    <ellipse cx="0" cy="0" rx="10" ry="6" fill="#dde3ec"/>
+    <ellipse cx="64" cy="0" rx="10" ry="6" fill="#dde3ec"/>
+    <ellipse cx="0" cy="64" rx="10" ry="6" fill="#dde3ec"/>
+    <ellipse cx="64" cy="64" rx="10" ry="6" fill="#dde3ec"/>
+    <ellipse cx="-1" cy="30" rx="8" ry="5" fill="#f1f4f9"/>
+    <ellipse cx="63" cy="30" rx="8" ry="5" fill="#f1f4f9"/>
+    <ellipse cx="26" cy="-1" rx="9" ry="5" fill="#dde3ec"/>
+    <ellipse cx="26" cy="63" rx="9" ry="5" fill="#dde3ec"/>
+    <use href="#pn" transform="translate(1 22) scale(0.85)"/>
+    <use href="#pn" transform="translate(65 22) scale(0.85)"/>
+    <use href="#pn" transform="translate(44 2) scale(0.8)"/>
+    <use href="#pn" transform="translate(44 66) scale(0.8)"/>
+    <use href="#pn" transform="translate(14 1) scale(-0.75 0.75)"/>
+    <use href="#pn" transform="translate(14 65) scale(-0.75 0.75)"/>
+    <use href="#rk" transform="translate(-1 52) scale(0.7)"/>
+    <use href="#rk" transform="translate(63 52) scale(0.7)"/>
+  </g>
   <path d="M12 34 Q18 31 24 34 Q30 37 36 34" stroke="#cfd7e2" stroke-width="2" fill="none" stroke-linecap="round"/>
   <g fill="#ffffff">
     <circle cx="12" cy="14" r="0.9"/><circle cx="52" cy="34" r="0.8"/>
