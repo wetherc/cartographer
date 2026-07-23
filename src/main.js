@@ -384,6 +384,12 @@ const inspector = mountTileInspector(mustGetElement('inspector-container'), {
       if (id) linkSelectedTile(id);
     },
   },
+  // Build-mode spawn placement: make the selected tile the party's start.
+  onSetSpawn: (tileId) => {
+    partyTracker.moveTo(navigator.getCurrentNode().id, tileId);
+    mapCanvas.refreshNode(navigator.getCurrentNode());
+    syncPartyMarker();
+  },
 });
 
 /**

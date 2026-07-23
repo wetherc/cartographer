@@ -118,6 +118,27 @@ test('addXP can trigger multiple level-ups in one call', () => {
   assert.equal(hero.xp, 20);
 });
 
+test('addXP grows the HP and mana pools per level gained, default a tenth of max', () => {
+  let hero = withMana(withHP(createCharacter('c1', 'Hero'), 20), 10);
+  hero = addXP(hero, 320); // level 1 -> 3, two levels gained
+  // HP grows ceil(20*0.1)=2 per level -> +4; mana ceil(10*0.1)=1 -> +2.
+  assert.equal(getHP(hero).max, 24);
+  assert.equal(getHP(hero).current, 24);
+  assert.equal(hero.resources.find((r) => r.id === 'mana').max, 12);
+});
+
+test('addXP honors an explicit per-level growth override', () => {
+  let hero = withHP(createCharacter('c1', 'Hero'), 20);
+  hero = addXP(hero, 100, { hpGrowth: 5 }); // one level -> +5
+  assert.equal(getHP(hero).max, 25);
+});
+
+test('addXP leaves a pool-less character unchanged but for level/xp', () => {
+  const hero = addXP(createCharacter('c1', 'Hero'), 120);
+  assert.equal(hero.level, 2);
+  assert.deepEqual(hero.resources, []);
+});
+
 test('setStat updates one stat without touching others', () => {
   const hero = setStat(createCharacter('c1', 'Hero', { STR: 14, DEX: 12 }), 'STR', 16);
   assert.equal(hero.stats.STR, 16);

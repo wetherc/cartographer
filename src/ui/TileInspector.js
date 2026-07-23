@@ -20,6 +20,7 @@ const POI_TYPES = ['', 'settlement', 'landmark', 'dungeon', 'shop', 'quest', 'cu
  *     onChange: (childNodeId: string | null) => void,
  *     onCreateNew: () => void,
  *   },
+ *   onSetSpawn?: (tileId: string) => void,
  * }} opts
  * @returns {{ setTile: (tile: Tile | null, editable?: boolean) => void }}
  */
@@ -100,6 +101,20 @@ export function mountTileInspector(container, opts) {
     form.append(linkField, newRegionBtn);
   }
 
+  // Set-spawn (optional, Build mode): make the selected tile the party's start
+  // position, so a GM can place where the party begins while authoring a map.
+  const spawnBtn = document.createElement('button');
+  spawnBtn.type = 'button';
+  spawnBtn.className = 'btn tile-inspector__spawn';
+  spawnBtn.textContent = 'Set party start here';
+  if (opts.onSetSpawn) {
+    const onSetSpawn = opts.onSetSpawn;
+    spawnBtn.addEventListener('click', () => {
+      if (tile) onSetSpawn(tile.id);
+    });
+    form.appendChild(spawnBtn);
+  }
+
   function renderLinkOptions() {
     if (!opts.linking || !tile) return;
     linkSelect.innerHTML = '';
@@ -132,6 +147,7 @@ export function mountTileInspector(container, opts) {
     typeSelect.disabled = !editable;
     discInput.disabled = !editable;
     notesInput.readOnly = !editable;
+    spawnBtn.disabled = !editable;
 
     renderLinkOptions();
     root.appendChild(form);

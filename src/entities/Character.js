@@ -103,19 +103,49 @@ export function createCharacter(id, name, stats = {}, race = '') {
 }
 
 /**
+ * Default per-level growth for a pool: a tenth of its maximum, at least 1, so a
+ * bigger pool scales faster while a small one still grows each level.
+ * @param {number} max
+ * @returns {number}
+ */
+function defaultGrowth(max) {
+  return Math.max(1, Math.ceil(max * 0.1));
+}
+
+/**
  * Add XP, auto-leveling up (possibly multiple times) as thresholds are crossed.
+ * Each level gained grows the HP and mana pools' maximum (and current, so the
+ * gained capacity is immediately usable) by a per-level amount — configurable
+ * via `opts`, defaulting to a tenth of each pool's current max. Characters with
+ * no HP/mana pool level up without any pool change.
  * @param {Character} character
  * @param {number} amount
+ * @param {{ hpGrowth?: number, manaGrowth?: number }} [opts]
  * @returns {Character}
  */
-export function addXP(character, amount) {
+export function addXP(character, amount, opts = {}) {
   let { level, xp } = character;
+  const startLevel = level;
   xp += amount;
   while (xp >= level * XP_PER_LEVEL) {
     xp -= level * XP_PER_LEVEL;
     level += 1;
   }
-  return { ...character, level, xp };
+  const gained = level - startLevel;
+  if (gained === 0) return { ...character, level, xp };
+
+  const resources = character.resources.map((r) => {
+    const perLevel =
+      r.id === HP_RESOURCE_ID
+        ? (opts.hpGrowth ?? defaultGrowth(r.max))
+        : r.id === MANA_RESOURCE_ID
+          ? (opts.manaGrowth ?? defaultGrowth(r.max))
+          : 0;
+    if (perLevel === 0) return r;
+    const added = perLevel * gained;
+    return { ...r, max: r.max + added, current: Math.min(r.max + added, r.current + added) };
+  });
+  return { ...character, level, xp, resources };
 }
 
 /**
