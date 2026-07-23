@@ -106,8 +106,20 @@ growing keeps existing tiles, shrinking prunes anything outside the new bounds
 ### Painting tiles
 
 Pick a brush in the **Palette** (right rail), then **left-drag** across the map to
-paint every cell the pointer crosses; a single click paints one cell. The palette
-is filtered to the node's kind, so an interior only offers interior pieces.
+paint every cell the pointer crosses; a single click paints one cell. Swatches
+are grouped into collapsible **Terrain**, **Roads**, **Buildings**, and
+**Interior** sections (click a heading to expand or collapse it), and the
+palette is filtered to the node's kind, so an interior only offers interior
+pieces.
+
+The **Size** row (1x/2x/3x) sets how large the next painted tile's art draws:
+at 2x or 3x a click stamps one tile whose image is stretched across a 2x2 or
+3x3 block — good for landmarks like an academy or a keep that should dominate
+their surroundings, with no sub-region link involved. The block is purely
+visual: the covered cells keep their own terrain, roads across it stay
+tile-sized, fog reveals it piecewise, and re-painting the anchor cell at 1x
+shrinks the art back to one cell. Scaled stamps place one block per click
+(dragging doesn't repeat them), and roads always paint at 1x.
 
 Tools in the palette:
 
