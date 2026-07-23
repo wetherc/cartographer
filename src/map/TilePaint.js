@@ -128,6 +128,65 @@ export function linkTilesInRect(node, rect, childNodeId) {
 }
 
 /**
+ * Guarantee that a node carries a tile linking to a child, so a generated
+ * child map is always reachable from its parent instead of floating in the
+ * world tree with no way in. No-op when a link already exists. Otherwise the
+ * plain tile (no existing link, not a wall piece) nearest the grid centre is
+ * stamped with the link — and with `markerRef` art plus a `poiType` when
+ * given, so the way in reads as a place on the parent map. On a parent with no
+ * eligible tile, a new tile is created at the empty cell nearest the centre
+ * using `createRef` art. Returns the updated node plus which tile now links
+ * (null when a link already existed, or when the grid is somehow full with
+ * nothing eligible).
+ * @param {MapNode} node parent node to link from
+ * @param {string} childId node the link should zoom into
+ * @param {{ markerRef?: string | null, createRef: string, poiType?: import('../types/map.js').POIType | null }} art
+ * @returns {{ node: MapNode, tileId: string | null }}
+ */
+export function ensureChildLink(node, childId, art) {
+  if (node.tiles.some((t) => t.childNodeId === childId)) return { node, tileId: null };
+  const cx = (node.width - 1) / 2;
+  const cy = (node.height - 1) / 2;
+  /** @param {string} id */
+  const distToCentre = (id) => {
+    const c = parseCoords(id);
+    return c ? (c.x - cx) ** 2 + (c.y - cy) ** 2 : Infinity;
+  };
+
+  const candidates = node.tiles.filter(
+    (t) => !t.childNodeId && !t.imageRef.includes('wall-') && !t.metadata.poiType,
+  );
+  if (candidates.length) {
+    const target = candidates.reduce((a, b) => (distToCentre(b.id) < distToCentre(a.id) ? b : a));
+    const linked = {
+      ...target,
+      imageRef: art.markerRef ?? target.imageRef,
+      childNodeId: childId,
+      metadata: { ...target.metadata, poiType: art.poiType ?? target.metadata.poiType },
+    };
+    return { node: setTile(node, linked), tileId: target.id };
+  }
+
+  // No paintable tile: put the link on the empty cell nearest the centre.
+  const occupied = new Set(node.tiles.map((t) => t.id));
+  /** @type {string | null} */
+  let best = null;
+  for (let y = 0; y < node.height; y++) {
+    for (let x = 0; x < node.width; x++) {
+      const id = `${x},${y}`;
+      if (occupied.has(id)) continue;
+      if (best === null || distToCentre(id) < distToCentre(best)) best = id;
+    }
+  }
+  if (best === null) return { node, tileId: null };
+  const created = createTile(best, art.markerRef ?? art.createRef, {
+    childNodeId: childId,
+    metadata: { poiType: art.poiType ?? null, discoverable: false, discovered: false, notes: '' },
+  });
+  return { node: setTile(node, created), tileId: best };
+}
+
+/**
  * Remove the tile at tileId, returning a new node. No-op if no tile is there.
  * @param {MapNode} node
  * @param {string} tileId

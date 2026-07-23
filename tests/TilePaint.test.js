@@ -8,6 +8,7 @@ import {
   normalizeRect,
   tilesInRect,
   linkTilesInRect,
+  ensureChildLink,
 } from '../src/map/TilePaint.js';
 import { createMapNode, createTile, setTile, getTile } from '../src/map/TileGrid.js';
 
@@ -153,4 +154,61 @@ test('linkTilesInRect stamps childNodeId onto in-rect tiles only, creating none'
 test('linkTilesInRect is a no-op node when the rect covers no tiles', () => {
   const node = node2x2();
   assert.equal(linkTilesInRect(node, { minX: 0, minY: 0, maxX: 1, maxY: 1 }, 'region'), node);
+});
+
+test('ensureChildLink is a no-op when a link to the child already exists', () => {
+  let node = createMapNode('world', 'World', null, 4, 4);
+  node = setTile(node, createTile('1,1', 'grass.svg', { childNodeId: 'crypt' }));
+  const result = ensureChildLink(node, 'crypt', { createRef: 'grass.svg' });
+  assert.equal(result.tileId, null);
+  assert.equal(result.node, node);
+});
+
+test('ensureChildLink stamps the plain tile nearest the centre with marker art and the link', () => {
+  let node = createMapNode('world', 'World', null, 5, 5);
+  node = setTile(node, createTile('0,0', 'grass.svg'));
+  node = setTile(node, createTile('2,2', 'grass.svg'));
+  node = setTile(node, createTile('4,4', 'grass.svg'));
+  const result = ensureChildLink(node, 'crypt', {
+    markerRef: 'dungeon.svg',
+    createRef: 'grass.svg',
+    poiType: 'dungeon',
+  });
+  assert.equal(result.tileId, '2,2', 'nearest to centre wins');
+  const tile = getTile(result.node, '2,2');
+  assert.equal(tile.childNodeId, 'crypt');
+  assert.equal(tile.imageRef, 'dungeon.svg');
+  assert.equal(tile.metadata.poiType, 'dungeon');
+});
+
+test('ensureChildLink skips walls, existing links, and POI tiles', () => {
+  let node = createMapNode('world', 'World', null, 3, 3);
+  node = setTile(node, createTile('1,1', 'assets/tiles/interior/interior-wall-h.svg'));
+  node = setTile(node, createTile('1,0', 'grass.svg', { childNodeId: 'other' }));
+  node = setTile(node, createTile('0,1', 'tavern.svg', {
+    metadata: { poiType: 'settlement', discoverable: false, discovered: false, notes: '' },
+  }));
+  node = setTile(node, createTile('2,2', 'grass.svg'));
+  const result = ensureChildLink(node, 'crypt', { markerRef: 'dungeon.svg', createRef: 'grass.svg' });
+  assert.equal(result.tileId, '2,2', 'only the plain tile is eligible');
+});
+
+test('ensureChildLink creates a tile on the empty cell nearest the centre when nothing is eligible', () => {
+  const node = createMapNode('world', 'World', null, 3, 3);
+  const result = ensureChildLink(node, 'crypt', { markerRef: 'dungeon.svg', createRef: 'grass.svg' });
+  assert.equal(result.tileId, '1,1');
+  const tile = getTile(result.node, '1,1');
+  assert.equal(tile.childNodeId, 'crypt');
+  assert.equal(tile.imageRef, 'dungeon.svg');
+});
+
+test('ensureChildLink without a marker keeps the terrain art and uses createRef only for new tiles', () => {
+  let node = createMapNode('world', 'World', null, 3, 3);
+  node = setTile(node, createTile('1,1', 'forest.svg'));
+  const kept = ensureChildLink(node, 'vale', { markerRef: null, createRef: 'grass.svg' });
+  assert.equal(getTile(kept.node, '1,1').imageRef, 'forest.svg', 'existing terrain art kept');
+
+  const empty = createMapNode('world2', 'World2', null, 3, 3);
+  const made = ensureChildLink(empty, 'vale', { markerRef: null, createRef: 'grass.svg' });
+  assert.equal(getTile(made.node, made.tileId).imageRef, 'grass.svg', 'new tile falls back to createRef');
 });

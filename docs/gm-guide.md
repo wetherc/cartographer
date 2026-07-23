@@ -111,6 +111,12 @@ map: dungeons get an entrance corridor with a door on the map edge, castles a
 gate in the south wall, and towns roads that run edge to edge. Regenerate as
 many times as you like until you get a layout you want to refine by hand.
 
+Generating also guarantees a way in from the map above: if nothing on the
+parent map links to the node yet, an entrance tile (a dungeon, castle, or
+settlement marker matching the archetype) is placed near the parent's centre
+and an alert tells you where — repaint or relink that tile to move the
+entrance where you want it.
+
 Dungeons can be multi-level: set **Levels** to more than one and each level's
 stairs-down leads to a freshly generated level below it (created as a child
 node in the world tree). Descending the stairs lands the party on the lower
