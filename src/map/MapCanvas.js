@@ -623,11 +623,12 @@ export class MapCanvas {
     this.offsetY += (cy - this._pinch.cy) * scaleY;
     if (this._pinch.dist > 0 && dist > 0) {
       const buffer = clientToBuffer(cx, cy, rect, this.canvas.width, this.canvas.height);
-      const before = screenToTile(buffer.x, buffer.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+      // Anchor the exact world point under the centroid, same as the wheel.
+      const worldX = (buffer.x - this.offsetX) / this.scale;
+      const worldY = (buffer.y - this.offsetY) / this.scale;
       this.scale = clampZoom(this.scale * (dist / this._pinch.dist), this.minZoom, this.maxZoom);
-      const after = tileRect(before.x, before.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
-      this.offsetX += buffer.x - after.sx;
-      this.offsetY += buffer.y - after.sy;
+      this.offsetX = buffer.x - worldX * this.scale;
+      this.offsetY = buffer.y - worldY * this.scale;
     }
     this._pinch = { cx, cy, dist };
     this.render();
@@ -682,14 +683,16 @@ export class MapCanvas {
     const pointerX = buffer.x;
     const pointerY = buffer.y;
 
-    const before = screenToTile(pointerX, pointerY, this.tileSize, this.offsetX, this.offsetY, this.scale);
+    // Anchor the exact world point under the pointer (not the nearest tile
+    // corner) so repeated wheel ticks zoom smoothly instead of snapping.
+    const worldX = (pointerX - this.offsetX) / this.scale;
+    const worldY = (pointerY - this.offsetY) / this.scale;
     const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
     this._userView = true;
     this.scale = clampZoom(this.scale * factor, this.minZoom, this.maxZoom);
 
-    const afterRect = tileRect(before.x, before.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
-    this.offsetX += pointerX - afterRect.sx;
-    this.offsetY += pointerY - afterRect.sy;
+    this.offsetX = pointerX - worldX * this.scale;
+    this.offsetY = pointerY - worldY * this.scale;
 
     this.render();
   }
