@@ -2,7 +2,6 @@
   <path d="M32 0 L32 64" stroke="#7c6448" stroke-width="20" fill="none"/>
   <path d="M32 0 L32 64" stroke="#bb9c70" stroke-width="16" fill="none"/>
   <g stroke="#9c8158" stroke-width="1.5" fill="none"><path d="M27 0 L27 64"/><path d="M37 0 L37 64"/></g>
-  <path d="M32 0 L32 64" stroke="#8a7150" stroke-width="2" stroke-dasharray="5 7" fill="none"/>
   <g fill="#a68a5e"><circle cx="30" cy="14" r="1"/><circle cx="35" cy="40" r="0.9"/></g>
   <circle cx="29" cy="52" r="0.9" fill="#cbb083"/>
 </svg>
