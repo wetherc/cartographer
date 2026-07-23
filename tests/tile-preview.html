@@ -5,6 +5,8 @@
   body { background: #222; font-family: sans-serif; color: #eee; }
   h2 { margin: 24px 0 8px; }
   .grid { display: grid; gap: 0; width: max-content; }
+  /* Terrain swatch blocks flow into two columns to save vertical space. */
+  #terrains { display: grid; grid-template-columns: repeat(2, max-content); column-gap: 48px; }
   img { width: 64px; height: 64px; display: block; }
   .zoom img { width: 128px; height: 128px; }
   /* Roads are transparent overlays, so preview them stacked over a grass base. */
@@ -33,6 +35,18 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
 <h2>Road pieces (all)</h2>
 <div class="grid" style="grid-template-columns: repeat(4, 64px);" id="road-all"></div>
 
+<h2>River network (with a road bridge)</h2>
+<div class="grid" style="grid-template-columns: repeat(4, 64px);" id="river-network"></div>
+
+<h2>River pieces (all)</h2>
+<div class="grid" style="grid-template-columns: repeat(4, 64px);" id="river-all"></div>
+
+<h2>Coast strips (water above/below/beside grass)</h2>
+<div style="display: flex; gap: 24px; align-items: flex-start;">
+  <div class="grid" style="grid-template-columns: repeat(2, 64px);" id="coast-ns"></div>
+  <div class="grid" style="grid-template-columns: repeat(3, 64px);" id="coast-ew"></div>
+</div>
+
 <script>
   const img = (src) => `<img src="../assets/tiles/${src}.svg">`;
 
@@ -44,8 +58,8 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     [2, 3, 1, 2, 1, 3],
   ];
   document.getElementById('terrains').innerHTML = ['grass', 'forest', 'mountain', 'water', 'desert', 'swamp', 'snow', 'hills', 'farmland']
-    .map((t) => `<h2>${t}</h2><div class="grid" style="grid-template-columns: repeat(6, 64px);">
-      ${layout.flat().map((v) => img(`${t}/${t}-${v}`)).join('')}</div>`)
+    .map((t) => `<div><h2>${t}</h2><div class="grid" style="grid-template-columns: repeat(6, 64px);">
+      ${layout.flat().map((v) => img(`${t}/${t}-${v}`)).join('')}</div></div>`)
     .join('');
 
   document.getElementById('markers').innerHTML = [
@@ -89,6 +103,40 @@ no banding, hard lines, or pattern breaks at tile boundaries.</p>
     'road-tee-w', 'road-cross', 'road-tee-e', 'road-end-s',
     'road-corner-sw', 'road-tee-s', 'road-corner-se',
   ].map((r) => cell('grass/grass-1', `road/${r}`)).join('');
+
+  // A river flowing in from the west, turning south, and passing under an
+  // east-west road on the bridge piece. Rivers are overlays like roads.
+  document.getElementById('river-network').innerHTML = [
+    'river/river-end-w', 'river/river-h', 'river/river-corner-sw', 'grass/grass-1',
+    'road/road-end-e', 'road/road-h', 'river/river-bridge-h', 'road/road-end-w',
+    'grass/grass-2', 'grass/grass-1', 'river/river-end-n', 'grass/grass-3',
+  ].map((s) => (s.startsWith('grass/') ? cell(s) : cell('grass/grass-1', s))).join('');
+
+  // Same non-meeting ordering as the road grid, with the two bridges appended.
+  document.getElementById('river-all').innerHTML = [
+    'river-h', 'river-end-n', 'river-tee-n', 'river-end-e',
+    'river-end-w', 'river-corner-nw', 'river-corner-ne', 'river-v',
+    'river-tee-w', 'river-cross', 'river-tee-e', 'river-end-s',
+    'river-corner-sw', 'river-tee-s', 'river-corner-se', 'river-bridge-h',
+    'river-bridge-v',
+  ].map((r) => cell('grass/grass-1', `river/${r}`)).join('');
+
+  // Coast straights in context: each strip sits between real water and grass
+  // tiles, doubled up so the coast-to-coast seam along the shoreline shows.
+  document.getElementById('coast-ns').innerHTML = [
+    'water/water-1', 'water/water-2',
+    'coast/coast-n', 'coast/coast-n',
+    'grass/grass-1', 'grass/grass-2',
+    'coast/coast-s', 'coast/coast-s',
+    'water/water-3', 'water/water-1',
+  ].map((s) => cell(s)).join('');
+
+  document.getElementById('coast-ew').innerHTML = [
+    'water/water-1', 'coast/coast-w', 'grass/grass-1',
+    'water/water-2', 'coast/coast-w', 'grass/grass-2',
+    'grass/grass-3', 'coast/coast-e', 'water/water-3',
+    'grass/grass-1', 'coast/coast-e', 'water/water-1',
+  ].map((s) => cell(s)).join('');
 </script>
 </body>
 </html>

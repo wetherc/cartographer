@@ -45,6 +45,33 @@ const ROAD_KINDS = [
 ];
 
 /**
+ * River pieces follow the road-connector pattern: distinct channel shapes
+ * picked by which edges must meet neighboring river tiles, plus two bridge
+ * pieces where a road crosses the channel (`bridge-h` carries an east-west
+ * road over a north-south river; `bridge-v` the reverse).
+ * @type {string[]}
+ */
+const RIVER_KINDS = [...ROAD_KINDS, 'bridge-h', 'bridge-v'];
+
+/**
+ * Coast transition tiles: water fills one half (the named edge) with a sandy
+ * shoreline against grass on the other, so a water area can meet grass without
+ * a hard seam. Straight edges only for now; corners can follow.
+ * @type {string[]}
+ */
+const COAST_KINDS = ['n', 's', 'e', 'w'];
+
+/**
+ * Palette types painted as a tile's overlayRef (layered over terrain) rather
+ * than as its base image, so a path can cross sand, snow, etc.
+ * @param {string} type
+ * @returns {boolean}
+ */
+export function isOverlayType(type) {
+  return type === 'road' || type === 'river';
+}
+
+/**
  * Single-image POI markers with no variants.
  * @type {string[]}
  */
@@ -129,6 +156,26 @@ function buildBuiltins() {
       type: 'road',
       label: `Road (${kind})`,
       imageRef: `${TILE_ROOT}/road/road-${kind}.svg`,
+      custom: false,
+    });
+  }
+
+  for (const kind of RIVER_KINDS) {
+    entries.push({
+      id: `river-${kind}`,
+      type: 'river',
+      label: `River (${kind})`,
+      imageRef: `${TILE_ROOT}/river/river-${kind}.svg`,
+      custom: false,
+    });
+  }
+
+  for (const kind of COAST_KINDS) {
+    entries.push({
+      id: `coast-${kind}`,
+      type: 'coast',
+      label: `Coast (${kind})`,
+      imageRef: `${TILE_ROOT}/coast/coast-${kind}.svg`,
       custom: false,
     });
   }
@@ -231,6 +278,24 @@ export class TilePalette {
    */
   getRoadPiece(kind) {
     return this.entries.get(`road-${kind}`);
+  }
+
+  /**
+   * Look up a specific river connector piece by kind (e.g. "h", "corner-ne", "bridge-h").
+   * @param {string} kind
+   * @returns {PaletteEntry | undefined}
+   */
+  getRiverPiece(kind) {
+    return this.entries.get(`river-${kind}`);
+  }
+
+  /**
+   * Look up a coast transition piece by the edge its water half faces ("n", "s", "e", "w").
+   * @param {string} kind
+   * @returns {PaletteEntry | undefined}
+   */
+  getCoastPiece(kind) {
+    return this.entries.get(`coast-${kind}`);
   }
 
   /**

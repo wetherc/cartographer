@@ -2,6 +2,7 @@ import { getTile, updateTileMetadata } from '../map/TileGrid.js';
 import { MapCanvas } from '../map/MapCanvas.js';
 import { clientToBuffer, screenToTile } from '../map/MapGeometry.js';
 import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesInRect, stampRegionLink } from '../map/TilePaint.js';
+import { isOverlayType } from '../map/TilePalette.js';
 import { computeRegionEntryTile, resolveEntryTile } from '../map/EntryPoint.js';
 import { discoveredNodes, revealAll, revealAround, setTileRevealed } from '../map/FogOfWar.js';
 import { characterTokens, moveCharacter, recallAll } from '../party/CharacterTokens.js';
@@ -375,7 +376,7 @@ export function wireMapView(app) {
       } else if (activeBrush) {
         // Captured so the closure below keeps the non-null narrowing.
         const brush = activeBrush;
-        const overlay = brush.type === 'road';
+        const overlay = isOverlayType(brush.type);
         const scale = overlay ? 1 : palettePanel.getScale();
         // A scaled stamp is a single placement, not a stroke: dragging with a
         // 2x/3x size would litter overlapping blocks, so only the first cell
@@ -615,7 +616,7 @@ export function wireMapView(app) {
     const coords = screenToTile(buffer.x, buffer.y, mapCanvas.tileSize, mapCanvas.offsetX, mapCanvas.offsetY, mapCanvas.scale);
     const tileId = `${coords.x},${coords.y}`;
     snapshotEdit(navigator.getCurrentNode());
-    const overlay = entry.type === 'road';
+    const overlay = isOverlayType(entry.type);
     const scale = overlay ? 1 : palettePanel.getScale();
     applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef, overlay, scale));
   });
