@@ -15,7 +15,8 @@ import { icon } from './icons.js';
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
 /**
- * Build a compact stat bar (HP or mana) shown on the collapsed card. Absence
+ * Build a stat bar (HP or mana) shown on the collapsed card, one full-width
+ * line per pool: a visible label, the fill track, and the numbers. Absence
  * of the pool (older saves, no mana) renders no bar rather than a fake full one.
  * @param {ResourcePool} pool
  * @param {{ modifier: string, label: string, critical?: boolean }} opts
@@ -28,6 +29,11 @@ function buildStatBar(pool, opts) {
   wrap.className = 'stat-bar';
   wrap.setAttribute('role', 'img');
   wrap.setAttribute('aria-label', `${opts.label} ${pool.current} of ${pool.max}`);
+
+  const label = document.createElement('span');
+  label.className = 'stat-bar__label';
+  label.textContent = opts.label;
+  wrap.appendChild(label);
 
   const track = document.createElement('span');
   track.className = 'stat-bar__track';
@@ -91,17 +97,25 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
     summary.type = 'button';
     summary.className = 'disclosure character-sheet__summary';
 
+    // Top line: name / race / chevron. HP and mana get a full-width line each
+    // below it, so their fill bars are long enough to read at a glance.
+    const summaryTop = document.createElement('span');
+    summaryTop.className = 'character-sheet__summary-top';
+
     const name = document.createElement('span');
     name.className = 'character-sheet__name';
     name.textContent = character.name;
-    summary.appendChild(name);
+    summaryTop.appendChild(name);
 
     if (character.race) {
       const race = document.createElement('span');
       race.className = 'character-sheet__race';
       race.textContent = character.race;
-      summary.appendChild(race);
+      summaryTop.appendChild(race);
     }
+
+    summaryTop.appendChild(icon('chevron', { className: 'disclosure__chevron' }));
+    summary.appendChild(summaryTop);
 
     const hp = getHP(character);
     if (hp) summary.appendChild(buildStatBar(hp, { modifier: 'hp', label: 'HP', critical: true }));
@@ -109,31 +123,9 @@ export function mountCharacterSheet(container, character, onChange = () => {}) {
     const mana = getMana(character);
     if (mana) summary.appendChild(buildStatBar(mana, { modifier: 'mana', label: 'Mana' }));
 
-    summary.appendChild(icon('chevron', { className: 'disclosure__chevron' }));
-
-    // Combat-speed HP controls on the collapsed card, so damage and healing
-    // don't require expanding the sheet and finding the HP pool's steppers.
-    // Siblings of the summary (a button can't nest buttons).
     const head = document.createElement('div');
     head.className = 'character-sheet__head';
     head.appendChild(summary);
-    if (hp) {
-      const damage = document.createElement('button');
-      damage.type = 'button';
-      damage.className = 'btn btn--icon btn--danger';
-      damage.setAttribute('aria-label', `Damage ${character.name} by 1`);
-      damage.appendChild(icon('minus'));
-      damage.addEventListener('click', () => commit(spendResource(character, hp.id, 1)));
-
-      const healBtn = document.createElement('button');
-      healBtn.type = 'button';
-      healBtn.className = 'btn btn--icon btn--success';
-      healBtn.setAttribute('aria-label', `Heal ${character.name} by 1`);
-      healBtn.appendChild(icon('plus'));
-      healBtn.addEventListener('click', () => commit(restoreResource(character, hp.id, 1)));
-
-      head.append(damage, healBtn);
-    }
 
     const body = document.createElement('div');
     body.className = 'character-sheet__body';
