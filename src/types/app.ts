@@ -69,6 +69,8 @@ export interface AppActions {
   // partyWiring: re-point the sheet/inventory/roster at the currently selected
   // character after an out-of-band character mutation (e.g. condition ticks).
   refreshSelectedCharacter(): void;
+  // partyWiring: the character this tab is bound to (Player view), or null.
+  getBoundCharacterId(): string | null;
   // encounterWiring
   maybeTriggerEncounter(): void;
   // mapWiring

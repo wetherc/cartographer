@@ -56,6 +56,9 @@ export function wireSessionControls(app) {
     document.body.classList.toggle('role-gm', role === 'gm');
     if (role === 'player') modeSwitch.setMode('play');
     app.actions.onRoleChanged(role);
+    // Re-render the party panels: their edit affordances depend on the role
+    // (and, in the Player view, on this tab's character binding).
+    app.actions.refreshSelectedCharacter();
     app.views.encounterPanel.update();
     app.views.handoutPanel.update();
     app.views.npcPanel.update();
