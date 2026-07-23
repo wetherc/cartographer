@@ -374,6 +374,16 @@ body.role-player .app-header__actions {
   display: none;
 }
 
+/* The lock-as-Player affordance only makes sense from an unlocked Player tab;
+   a locked tab hides the whole role cluster so nothing can flip it back. */
+body.role-gm #player-lock-btn {
+  display: none;
+}
+
+body.role-locked #role-switch-container {
+  display: none;
+}
+
 /* ==========================================================================
    World tree (Build-mode left rail)
    ========================================================================== */
