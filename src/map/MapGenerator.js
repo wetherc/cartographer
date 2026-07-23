@@ -1,4 +1,5 @@
 import { createTile } from './TileGrid.js';
+import { coastOverlays, riverCourse, smoothCoastline } from './Autotile.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
@@ -29,8 +30,9 @@ export const ARCHETYPES = {
   ],
 };
 
-const TERRAIN_BLOBS = ['forest', 'water', 'mountain', 'desert'];
-const TOWN_BUILDINGS = ['tavern', 'inn', 'blacksmith', 'general-store', 'alchemist', 'temple', 'shrine'];
+const TERRAIN_BLOBS = ['forest', 'water', 'mountain', 'desert', 'swamp', 'snow', 'hills', 'farmland'];
+const TOWN_BUILDINGS = ['tavern', 'inn', 'blacksmith', 'general-store', 'alchemist', 'temple', 'shrine', 'wizard-tower', 'academy', 'barracks'];
+const WILDERNESS_LANDMARKS = ['ruins', 'camp', 'standing-stones', 'mine', 'cave-entrance', 'graveyard'];
 const FLOOR_KINDS = ['floor-1', 'floor-2', 'floor-3'];
 
 /** @param {TilePalette} palette @param {string} type @param {() => number} rng */
@@ -63,9 +65,11 @@ function shuffle(items, rng) {
 }
 
 /**
- * Procedural open terrain: a grass base with a handful of clustered blobs of
- * forest/water/mountain/desert grown by probabilistic flood-fill, so terrain
- * reads as contiguous features rather than per-tile noise.
+ * Procedural open terrain: a grass base with clustered blobs of every biome
+ * grown by probabilistic flood-fill, so terrain reads as contiguous features
+ * rather than per-tile noise. Water blobs get sandy coast overlays where they
+ * meet land, a river meanders in from the north edge, and a few landmark POI
+ * markers (ruins, camps, standing stones...) dot the open ground.
  * Fully tiled, so it connects to the parent along its whole border; entry is
  * the bottom-centre border tile.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
@@ -73,7 +77,7 @@ function shuffle(items, rng) {
  */
 function generateWilderness(palette, size, rng) {
   /** @type {string[]} terrain type per cell, indexed y*size + x */
-  const cells = new Array(size * size).fill('grass');
+  let cells = new Array(size * size).fill('grass');
   const blobCount = Math.max(3, Math.round((size * size) / 16));
   for (let b = 0; b < blobCount; b++) {
     const type = TERRAIN_BLOBS[randInt(rng, TERRAIN_BLOBS.length)];
@@ -93,13 +97,41 @@ function generateWilderness(palette, size, rng) {
       }
     }
   }
+  cells = smoothCoastline(cells, size, size);
+  const isWater = (/** @type {number} */ x, /** @type {number} */ y) =>
+    x >= 0 && y >= 0 && x < size && y < size && cells[y * size + x] === 'water';
+  const coast = coastOverlays(cells, size, size);
+  const river = riverCourse(size, size, rng, isWater);
   /** @type {Tile[]} */
   const tiles = [];
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      tiles.push(createTile(`${x},${y}`, terrainRef(palette, cells[y * size + x], rng)));
+      const id = `${x},${y}`;
+      const overlayKind = river.get(id)
+        ? palette.getRiverPiece(/** @type {string} */ (river.get(id)))
+        : coast.get(id)
+          ? palette.getCoastPiece(/** @type {string} */ (coast.get(id)))
+          : null;
+      tiles.push(createTile(id, terrainRef(palette, cells[y * size + x], rng),
+        overlayKind ? { overlayRef: overlayKind.imageRef } : {}));
     }
   }
+  // Landmark markers on plain grass away from the border, so generated wilds
+  // offer something to discover. Grass keeps markers off water/river cells.
+  const grassIds = tiles.filter((t) => {
+    const [x, y] = t.id.split(',').map(Number);
+    const inner = x > 0 && y > 0 && x < size - 1 && y < size - 1;
+    return inner && !t.overlayRef && cells[y * size + x] === 'grass';
+  }).map((t) => t.id);
+  const landmarkCount = Math.min(grassIds.length, Math.max(1, Math.round(size / 7)));
+  const spots = shuffle(grassIds, rng);
+  shuffle(WILDERNESS_LANDMARKS, rng).slice(0, landmarkCount).forEach((type, i) => {
+    const ref = palette.get(type)?.imageRef;
+    const tile = tiles.find((t) => t.id === spots[i]);
+    if (!ref || !tile) return;
+    tile.imageRef = ref;
+    tile.metadata = { ...tile.metadata, poiType: 'landmark' };
+  });
   return { tiles, entry: `${Math.floor(size / 2)},${size - 1}` };
 }
 
@@ -118,13 +150,19 @@ function generateTown(palette, size, rng) {
   const my = Math.floor(size / 2);
   /** @param {number} x @param {number} y */
   const isRoad = (x, y) => x === mx || y === my;
+  // A river runs north-south through town a couple of tiles off the crossroads,
+  // bridged where the east-west road crosses it.
+  const rx = mx + (rng() < 0.5 ? -1 : 1) * (2 + randInt(rng, Math.max(1, mx - 3)));
   /** @type {Map<string, Tile>} */
   const byId = new Map();
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const base = terrainRef(palette, 'grass', rng);
       const tile = createTile(`${x},${y}`, base);
-      if (isRoad(x, y)) {
+      if (x === rx) {
+        const kind = y === my ? 'bridge-h' : 'v';
+        tile.overlayRef = palette.getRiverPiece(kind)?.imageRef ?? null;
+      } else if (isRoad(x, y)) {
         const kind = x === mx && y === my ? 'cross' : x === mx ? 'v' : 'h';
         tile.overlayRef = palette.getRoadPiece(kind)?.imageRef ?? null;
       }
@@ -137,7 +175,7 @@ function generateTown(palette, size, rng) {
   const sites = [];
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      if (isRoad(x, y)) continue;
+      if (isRoad(x, y) || x === rx) continue;
       const touchesRoad = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => isRoad(x + dx, y + dy));
       if (touchesRoad) sites.push(`${x},${y}`);
     }
@@ -157,20 +195,25 @@ function generateTown(palette, size, rng) {
 }
 
 /**
- * Pick a wall piece for a wall cell from which orthogonal neighbors are floor:
- * a straight run gets a matching horizontal/vertical segment, an inner elbow
- * gets the corner facing the floor, and an isolated nub falls back to a
- * horizontal segment.
+ * Pick a wall piece for a wall cell from which orthogonal neighbors continue
+ * the wall (another wall cell, or a door set into the same run). Piece names
+ * describe the connected edges, so four arms make a cross, three a tee (named
+ * for its odd arm, matching the tile assets), two an elbow or straight, and a
+ * one-armed stub extends its run. An isolated nub falls back to horizontal.
  * @param {boolean} n @param {boolean} e @param {boolean} s @param {boolean} w
  * @returns {string}
  */
-function wallKind(n, e, s, w) {
-  if (s && e) return 'wall-corner-nw';
-  if (s && w) return 'wall-corner-ne';
-  if (n && e) return 'wall-corner-sw';
-  if (n && w) return 'wall-corner-se';
-  if (n || s) return 'wall-h';
-  if (e || w) return 'wall-v';
+export function wallKind(n, e, s, w) {
+  const arms = Number(n) + Number(e) + Number(s) + Number(w);
+  if (arms === 4) return 'wall-cross';
+  if (arms === 3) return !s ? 'wall-tee-n' : !w ? 'wall-tee-e' : !n ? 'wall-tee-s' : 'wall-tee-w';
+  if (n && s) return 'wall-v';
+  if (e && w) return 'wall-h';
+  if (n && e) return 'wall-corner-ne';
+  if (n && w) return 'wall-corner-nw';
+  if (s && e) return 'wall-corner-se';
+  if (s && w) return 'wall-corner-sw';
+  if (n || s) return 'wall-v';
   return 'wall-h';
 }
 
@@ -257,6 +300,21 @@ function generateDungeon(palette, size, rng, options = {}) {
     entryDoor = side <= 1 ? 'door-h' : 'door-v';
   }
 
+  // Walls wrap the floor wherever it meets the void (8-way, so diagonals are
+  // sealed too). Each wall cell's piece comes from which orthogonal neighbors
+  // continue the wall — the border door counts, since a door is a wall segment
+  // with a leaf in it — so runs, elbows, tees, and crossings all join cleanly.
+  /** @type {Set<string>} */
+  const walls = new Set();
+  for (let y = 0; y < size; y++) {
+    for (let x = 0; x < size; x++) {
+      if (!isFloor(x, y) && [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].some(([dx, dy]) => isFloor(x + dx, y + dy))) {
+        walls.add(`${x},${y}`);
+      }
+    }
+  }
+  /** @param {number} x @param {number} y */
+  const continuesWall = (x, y) => walls.has(`${x},${y}`) || (entrance === 'edge' && `${x},${y}` === entry);
   /** @type {Tile[]} */
   const tiles = [];
   for (let y = 0; y < size; y++) {
@@ -264,8 +322,8 @@ function generateDungeon(palette, size, rng, options = {}) {
       const id = `${x},${y}`;
       if (isFloor(x, y)) {
         tiles.push(createTile(id, interiorRef(palette, FLOOR_KINDS[randInt(rng, FLOOR_KINDS.length)])));
-      } else if ([[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].some(([dx, dy]) => isFloor(x + dx, y + dy))) {
-        const kind = wallKind(isFloor(x, y - 1), isFloor(x + 1, y), isFloor(x, y + 1), isFloor(x - 1, y));
+      } else if (walls.has(id)) {
+        const kind = wallKind(continuesWall(x, y - 1), continuesWall(x + 1, y), continuesWall(x, y + 1), continuesWall(x - 1, y));
         tiles.push(createTile(id, interiorRef(palette, kind)));
       }
     }
@@ -322,10 +380,16 @@ function generateCastle(palette, size, rng) {
       /** @type {string} */
       let kind;
       if (y === max && x === doorX) kind = 'door-h';
-      else if (x === 0 && y === 0) kind = 'wall-corner-nw';
-      else if (x === max && y === 0) kind = 'wall-corner-ne';
-      else if (x === 0 && y === max) kind = 'wall-corner-sw';
-      else if (x === max && y === max) kind = 'wall-corner-se';
+      // Corner names describe the connected edges, so the ring's NW corner
+      // (walls continuing east and south) takes wall-corner-se, and so on.
+      else if (x === 0 && y === 0) kind = 'wall-corner-se';
+      else if (x === max && y === 0) kind = 'wall-corner-sw';
+      else if (x === 0 && y === max) kind = 'wall-corner-ne';
+      else if (x === max && y === max) kind = 'wall-corner-nw';
+      // The partition tees into the side walls, so the ring keeps a
+      // continuous run through the junctions.
+      else if (x === 0 && y === partitionY) kind = 'wall-tee-e';
+      else if (x === max && y === partitionY) kind = 'wall-tee-w';
       else if (y === 0 || y === max) kind = 'wall-h';
       else if (x === 0 || x === max) kind = 'wall-v';
       else if (y === partitionY) kind = x === partitionDoorX ? 'door-h' : 'wall-h';
