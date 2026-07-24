@@ -99,9 +99,15 @@ function buildEquipment(character, commit, playable) {
  * With a `canPlay` callback returning false the panel renders read-only: no
  * equipment changes, no consume/remove/edit controls, no add form (a
  * spectator's or another player's view of this character).
+ * With `transfer` wired, each row grows a give control: pick another party
+ * member and a count, and the panel hands the stack over through
+ * `transfer.send` — the caller owns moving the items and re-rendering, since
+ * both characters change.
  * @param {(character: Character) => void} [onChange]
  * @param {(event: InventoryEvent, character: Character) => void} [onEvent]
  * @param {() => boolean} [canPlay]
+ * @param {{ recipients: () => { id: string, name: string }[],
+ *   send: (item: InventoryItem, count: number, recipientId: string) => void }} [transfer]
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountInventoryPanel(
@@ -110,6 +116,7 @@ export function mountInventoryPanel(
   onChange = () => {},
   onEvent = () => {},
   canPlay = () => true,
+  transfer = undefined,
 ) {
   let current = initial;
   // All view state survives re-renders (every edit re-renders) but stays
@@ -125,6 +132,8 @@ export function mountInventoryPanel(
   let sortKey = 'name';
   /** @type {string | null} id of the item whose edit form is open */
   let editingId = null;
+  /** @type {string | null} id of the item whose give form is open */
+  let givingId = null;
 
   const root = document.createElement('div');
   root.className = 'inventory-panel';
@@ -206,9 +215,27 @@ export function mountInventoryPanel(
     editButton.appendChild(icon('edit'));
     editButton.addEventListener('click', () => {
       editingId = item.id;
+      givingId = null;
       render();
     });
     row.appendChild(editButton);
+
+    // Hand-off to another party member; only offered when someone else exists
+    // to receive. The give form opens inline under the row.
+    const recipients = transfer ? transfer.recipients().filter((r) => r.id !== character.id) : [];
+    if (recipients.length > 0) {
+      const giveButton = document.createElement('button');
+      giveButton.type = 'button';
+      giveButton.className = 'btn btn--icon';
+      giveButton.setAttribute('aria-label', `Give ${item.name} to another character`);
+      giveButton.appendChild(icon('give'));
+      giveButton.addEventListener('click', () => {
+        givingId = givingId === item.id ? null : item.id;
+        editingId = null;
+        render();
+      });
+      row.appendChild(giveButton);
+    }
 
     // Present even on 1-stacks: consuming the last of an item and discarding
     // it are the same state change but different travelogue lines.
@@ -235,7 +262,67 @@ export function mountInventoryPanel(
       }),
     );
     row.appendChild(removeButton);
-    return row;
+    if (item.id !== givingId || recipients.length === 0) return row;
+
+    const wrap = document.createElement('div');
+    wrap.appendChild(row);
+    wrap.appendChild(buildGiveForm(item, recipients));
+    return wrap;
+  }
+
+  /**
+   * The inline give form under a row: recipient picker, a count clamped to
+   * the stack, and confirm/cancel. Confirming defers to `transfer.send` —
+   * the caller updates both characters and syncs this panel back in.
+   * @param {InventoryItem} item
+   * @param {{ id: string, name: string }[]} recipients
+   * @returns {HTMLElement}
+   */
+  function buildGiveForm(item, recipients) {
+    const form = document.createElement('div');
+    form.className = 'inventory-panel__give';
+
+    const recipientSelect = document.createElement('select');
+    recipientSelect.className = 'field';
+    recipientSelect.setAttribute('aria-label', `Give ${item.name} to`);
+    for (const r of recipients) {
+      const option = document.createElement('option');
+      option.value = r.id;
+      option.textContent = r.name;
+      recipientSelect.appendChild(option);
+    }
+
+    const countInput = document.createElement('input');
+    countInput.type = 'number';
+    countInput.className = 'field inventory-panel__give-count';
+    countInput.min = '1';
+    countInput.max = String(item.quantity);
+    countInput.value = '1';
+    countInput.setAttribute('aria-label', `How many ${item.name} to give`);
+    // A 1-stack has nothing to choose; skip the input and give the one.
+    countInput.hidden = item.quantity === 1;
+
+    const giveButton = document.createElement('button');
+    giveButton.type = 'button';
+    giveButton.className = 'btn';
+    giveButton.textContent = 'Give';
+    giveButton.addEventListener('click', () => {
+      const count = Math.min(item.quantity, Math.max(1, Math.floor(Number(countInput.value)) || 1));
+      givingId = null;
+      transfer?.send(item, count, recipientSelect.value);
+    });
+
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'btn';
+    cancelButton.textContent = 'Cancel';
+    cancelButton.addEventListener('click', () => {
+      givingId = null;
+      render();
+    });
+
+    form.append(recipientSelect, countInput, giveButton, cancelButton);
+    return form;
   }
 
   /**

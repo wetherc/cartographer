@@ -296,6 +296,28 @@ export function addItem(character, item) {
 }
 
 /**
+ * Hand part of a stack (or all of it) from one party member to another. The
+ * giver loses `quantity` — unequipping the item if the whole stack goes — and
+ * the receiver gains it, merging into an existing stack with the same id.
+ * A missing item, a non-positive count, or self-transfer changes nothing.
+ * Pure: returns both updated characters.
+ * @param {Character} giver
+ * @param {Character} receiver
+ * @param {string} itemId
+ * @param {number} quantity
+ * @returns {{ giver: Character, receiver: Character }}
+ */
+export function transferItem(giver, receiver, itemId, quantity) {
+  const item = giver.inventory.find((i) => i.id === itemId);
+  const count = Math.min(Math.floor(quantity), item?.quantity ?? 0);
+  if (!item || count < 1 || giver.id === receiver.id) return { giver, receiver };
+  return {
+    giver: removeItem(giver, itemId, count),
+    receiver: addItem(receiver, { ...item, quantity: count }),
+  };
+}
+
+/**
  * Replace an inventory item's fields wholesale (the GM's post-creation edit),
  * keeping its id so equipment references survive. The replacement is the
  * edited item as a whole, not a patch — a field absent from `next` is gone.

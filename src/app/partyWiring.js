@@ -1,6 +1,13 @@
 import { mustGetElement } from '../ui/dom.js';
 import { promptModal, confirmModal } from '../ui/Modal.js';
-import { createCharacter, withHP, shortRest, longRest, addXP } from '../entities/Character.js';
+import {
+  createCharacter,
+  withHP,
+  shortRest,
+  longRest,
+  addXP,
+  transferItem,
+} from '../entities/Character.js';
 import { withSpellSlots } from '../entities/SpellSlots.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
@@ -426,6 +433,27 @@ export function wireParty(app) {
       );
     },
     () => selectedPermissions().play,
+    {
+      recipients: () => state.characters.map((c) => ({ id: c.id, name: c.name })),
+      send: (item, count, recipientId) => {
+        const giver = selectedCharacter();
+        const receiver = state.characters.find((c) => c.id === recipientId);
+        if (!giver || !receiver) return;
+        const next = transferItem(giver, receiver, item.id, count);
+        commitCharacter(next.receiver);
+        commitCharacter(next.giver);
+        characterSheet.setCharacter(next.giver);
+        inventoryPanel.setCharacter(next.giver);
+        app.actions.logEvent(
+          'note',
+          formatInventoryEvent(
+            giver.name,
+            { verb: 'give', itemName: item.name, count, target: receiver.name },
+            { time: formatClock(state.clock) },
+          ),
+        );
+      },
+    },
   );
 
   mountTimePanel(mustGetElement('time-container'), {

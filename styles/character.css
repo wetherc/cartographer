@@ -344,6 +344,23 @@
   margin-top: 0;
 }
 
+/* Inline give form under a row: recipient picker, count, confirm/cancel. */
+.inventory-panel__give {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) 0 var(--space-1) var(--space-2);
+}
+
+.inventory-panel__give select {
+  flex: 1;
+  min-width: 0;
+}
+
+.inventory-panel__give-count {
+  width: 4.5rem;
+}
+
 /* Broad item-type tag on each inventory row. */
 .inventory-panel__type {
   font-size: var(--text-label);

@@ -53,6 +53,13 @@ test('using several items reads with the count', () => {
   );
 });
 
+test('give names the recipient with the given count', () => {
+  assert.equal(
+    formatInventoryEvent('Hero', { verb: 'give', itemName: 'Rope', count: 2, target: 'Sage' }),
+    'Hero gives Rope x2 to Sage.',
+  );
+});
+
 test('discard reads as discards with the whole stack count', () => {
   assert.equal(
     formatInventoryEvent('Hero', { verb: 'discard', itemName: 'Rope', count: 5 }),

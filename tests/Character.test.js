@@ -14,6 +14,7 @@ import {
   restoreResource,
   addItem,
   removeItem,
+  transferItem,
   setMaxHP,
   setBonusHP,
   setBaseAC,
@@ -21,6 +22,7 @@ import {
 } from '../src/entities/Character.js';
 import { getSlotPools } from '../src/entities/SpellSlots.js';
 import { createResource } from '../src/entities/Resource.js';
+import { equip } from '../src/entities/Equipment.js';
 
 test('createCharacter starts at level 1 with no xp/resources/inventory', () => {
   const hero = createCharacter('c1', 'Hero', { STR: 14 });
@@ -166,6 +168,53 @@ test('addItem merges quantity into an existing stack', () => {
   hero = addItem(hero, { id: 'arrow', name: 'Arrow', quantity: 3, notes: '' });
   assert.equal(hero.inventory.length, 1);
   assert.equal(hero.inventory[0].quantity, 8);
+});
+
+test('transferItem moves part of a stack, merging into the receiver', () => {
+  let hero = addItem(createCharacter('c1', 'Hero'), {
+    id: 'arrow',
+    name: 'Arrow',
+    quantity: 5,
+    notes: '',
+  });
+  let sage = addItem(createCharacter('c2', 'Sage'), {
+    id: 'arrow',
+    name: 'Arrow',
+    quantity: 1,
+    notes: '',
+  });
+  ({ giver: hero, receiver: sage } = transferItem(hero, sage, 'arrow', 2));
+  assert.equal(hero.inventory[0].quantity, 3);
+  assert.equal(sage.inventory[0].quantity, 3);
+});
+
+test('transferItem clamps to the stack and unequips a fully given item', () => {
+  let hero = addItem(createCharacter('c1', 'Hero'), {
+    id: 'sword',
+    name: 'Sword',
+    quantity: 1,
+    notes: '',
+    type: 'weapon',
+  });
+  hero = equip(hero, 'mainHand', 'sword');
+  const sage = createCharacter('c2', 'Sage');
+  const moved = transferItem(hero, sage, 'sword', 5);
+  assert.equal(moved.giver.inventory.length, 0);
+  assert.equal(moved.giver.equipment.mainHand, null);
+  assert.equal(moved.receiver.inventory[0].quantity, 1);
+});
+
+test('transferItem refuses missing items, bad counts, and self-transfer', () => {
+  const hero = addItem(createCharacter('c1', 'Hero'), {
+    id: 'arrow',
+    name: 'Arrow',
+    quantity: 5,
+    notes: '',
+  });
+  const sage = createCharacter('c2', 'Sage');
+  assert.deepEqual(transferItem(hero, sage, 'ghost', 1), { giver: hero, receiver: sage });
+  assert.deepEqual(transferItem(hero, sage, 'arrow', 0), { giver: hero, receiver: sage });
+  assert.deepEqual(transferItem(hero, hero, 'arrow', 1), { giver: hero, receiver: hero });
 });
 
 test('removeItem reduces quantity and drops the stack once it hits 0', () => {

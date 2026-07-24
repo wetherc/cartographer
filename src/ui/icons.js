@@ -7,7 +7,7 @@
  * (aria-hidden); give the surrounding control its own accessible label.
  */
 
-/** @typedef {'plus'|'minus'|'damage'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'} IconName */
+/** @typedef {'plus'|'minus'|'damage'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -25,6 +25,7 @@ const PATHS = {
   // "attack/damage" at a glance where the previous diagonal glyph did not.
   damage: ['M12 2l1.6 12h-3.2z', 'M7 14h10', 'M12 14v6', 'M9.5 20h5'],
   sword: ['M12 2l1.6 12h-3.2z', 'M7 14h10', 'M12 14v6', 'M9.5 20h5'],
+  give: ['M5 12h14', 'M13 6l6 6-6 6'],
   check: ['M5 12l5 5L20 6'],
   shield: ['M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z'],
   clock: ['M12 3a9 9 0 100 18 9 9 0 000-18z', 'M12 7v5l3 2'],
