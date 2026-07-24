@@ -24,16 +24,18 @@ import { icon } from './icons.js';
  * pool: a visible label, the fill track, and the numbers. Absence of the pool
  * (older saves) renders no bar rather than a fake full one.
  * @param {ResourcePool} pool
- * @param {{ modifier: string, label: string, critical?: boolean, bonus?: number }} opts
+ * @param {{ modifier: string, label: string, critical?: boolean, bonus?: number,
+ *   flank?: { before: HTMLElement, after: HTMLElement } }} opts
  *   `modifier` selects the fill colour; `critical` arms the low-fill red
  *   state; `bonus` appends a "+N" readout for temporary points on top of the
- *   pool (bonus HP).
+ *   pool (bonus HP); `flank` places a control on either side of the track
+ *   (damage/heal steppers), keeping the numeric readout after them.
  * @returns {HTMLElement}
  */
 function buildStatBar(pool, opts) {
   const wrap = document.createElement('span');
   wrap.className = 'stat-bar';
-  wrap.setAttribute('role', 'img');
+  if (!opts.flank) wrap.setAttribute('role', 'img');
   const bonusReadout = opts.bonus ? `, plus ${opts.bonus} bonus` : '';
   wrap.setAttribute('aria-label', `${opts.label} ${pool.current} of ${pool.max}${bonusReadout}`);
 
@@ -41,6 +43,8 @@ function buildStatBar(pool, opts) {
   label.className = 'stat-bar__label';
   label.textContent = opts.label;
   wrap.appendChild(label);
+
+  if (opts.flank) wrap.appendChild(opts.flank.before);
 
   const track = document.createElement('span');
   track.className = 'stat-bar__track';
@@ -50,11 +54,14 @@ function buildStatBar(pool, opts) {
   fill.style.width = `${Math.round(ratio * 100)}%`;
   if (opts.critical && ratio <= 0.25) fill.classList.add('stat-bar__fill--critical');
   track.appendChild(fill);
+  wrap.appendChild(track);
+
+  if (opts.flank) wrap.appendChild(opts.flank.after);
 
   const text = document.createElement('span');
   text.className = 'stat-bar__text';
   text.textContent = `${pool.current}/${pool.max}`;
-  wrap.append(track, text);
+  wrap.appendChild(text);
 
   if (opts.bonus) {
     const bonus = document.createElement('span');
@@ -223,12 +230,8 @@ export function mountCharacterSheet(
     if (hp) {
       const hpLine = document.createElement('div');
       hpLine.className = 'character-sheet__hp-line';
-      const bar = buildStatBar(hp, {
-        modifier: 'hp',
-        label: 'HP',
-        critical: true,
-        bonus: character.bonusHP ?? 0,
-      });
+      /** @type {{ before: HTMLElement, after: HTMLElement } | undefined} */
+      let flank;
       if (perms.play) {
         const damageButton = document.createElement('button');
         damageButton.type = 'button';
@@ -245,10 +248,19 @@ export function mountCharacterSheet(
         healButton.appendChild(icon('plus'));
         healButton.addEventListener('click', () => commit(restoreResource(character, 'hp', 1)));
 
-        hpLine.append(damageButton, bar, healButton);
-      } else {
-        hpLine.appendChild(bar);
+        flank = { before: damageButton, after: healButton };
       }
+      // Reads "HP  - [bar] +  current/max +bonus": steppers hug the track,
+      // the numbers sit after them on the right.
+      hpLine.appendChild(
+        buildStatBar(hp, {
+          modifier: 'hp',
+          label: 'HP',
+          critical: true,
+          bonus: character.bonusHP ?? 0,
+          flank,
+        }),
+      );
       head.appendChild(hpLine);
     }
 

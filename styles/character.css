@@ -125,8 +125,11 @@
   color: var(--text-muted);
 }
 
+/* One shared key width across the field rows (sized for the longest key,
+   "BONUS HP") so the XP / max HP / bonus HP inputs line up in a column. */
 .character-sheet__field-row .character-sheet__stat-key {
   white-space: nowrap;
+  flex: 0 0 5rem;
 }
 
 /* A wide gutter between the two stat columns, so one column's modifier
@@ -289,18 +292,39 @@
 .inventory-panel__form {
   display: flex;
   flex-wrap: wrap;
+  align-items: flex-end;
   gap: var(--space-2);
   margin-top: var(--space-3);
 }
 
-/* Full first row to itself; the type/quantity/add controls wrap below. */
+/* Full first row to itself; the type/AC/quantity/add controls wrap below. */
 .inventory-panel__name-input {
   flex: 1 1 100%;
   min-width: 0;
 }
 
-.inventory-panel__type-select {
+/* Captioned form controls: a small label stacked over its input. */
+.inventory-panel__field-label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+/* The display:flex above would otherwise defeat the hidden attribute the AC
+   field toggles with. */
+.inventory-panel__field-label[hidden] {
+  display: none;
+}
+
+.inventory-panel__field-label:has(.inventory-panel__type-select) {
   flex: 1;
+  min-width: 0;
+}
+
+.inventory-panel__type-select {
+  width: 100%;
 }
 
 .inventory-panel__quantity-input {
@@ -315,7 +339,6 @@
 }
 
 .inventory-panel__type-select {
-  width: auto;
   font-size: var(--text-label);
 }
 
