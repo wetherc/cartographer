@@ -367,6 +367,25 @@
   color: var(--text-muted);
 }
 
+/* One pill per mechanical effect, wrapping under the name line, so an item
+   with many modifiers stays scannable instead of one long comma run. */
+.inventory-panel__effects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-1);
+}
+
+.inventory-panel__effect {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0 var(--space-2);
+  white-space: nowrap;
+}
+
 .inventory-panel__label {
   flex: 1;
   font-size: var(--text-label);

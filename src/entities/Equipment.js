@@ -472,13 +472,13 @@ export function armorClass(character) {
 }
 
 /**
- * A short human-readable summary of an item's mechanical effects, for the
- * inventory list and slot pickers: "light armor, AC 12 + DEX", "+2 AC",
- * "+2 STR"... Empty string for a plain item.
+ * An item's mechanical effects as one short phrase each — "light armor,
+ * AC 12 + DEX", "+2 AC", "+2 STR", "inflicts burning" — so a modifier-heavy
+ * item can render one badge per effect. Empty for a plain item.
  * @param {InventoryItem} item
- * @returns {string}
+ * @returns {string[]}
  */
-export function itemSummary(item) {
+export function itemEffects(item) {
   /** @type {string[]} */
   const parts = [];
   const type = itemType(item);
@@ -505,7 +505,17 @@ export function itemSummary(item) {
     if (delta !== 0) parts.push(`${delta > 0 ? '+' : ''}${delta} ${stat}`);
   }
   if (item.statusEffects?.length) parts.push(`inflicts ${item.statusEffects.join(', ')}`);
-  return parts.join(', ');
+  return parts;
+}
+
+/**
+ * The same effects joined into one line, for plain-text spots like the
+ * equipment slot pickers' option labels. Empty string for a plain item.
+ * @param {InventoryItem} item
+ * @returns {string}
+ */
+export function itemSummary(item) {
+  return itemEffects(item).join(', ');
 }
 
 /**

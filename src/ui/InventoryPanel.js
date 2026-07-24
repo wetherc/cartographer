@@ -4,6 +4,7 @@ import {
   ITEM_TYPES,
   itemType,
   itemSummary,
+  itemEffects,
   filterItems,
   equip,
   getEquipped,
@@ -198,10 +199,24 @@ export function mountInventoryPanel(
     label.textContent = `${item.name} x${item.quantity}`;
     const type = document.createElement('span');
     type.className = 'inventory-panel__type';
-    const effects = itemSummary(item);
-    type.textContent = effects ? `${itemType(item)} — ${effects}` : itemType(item);
+    type.textContent = itemType(item);
     line.append(label, type);
     main.appendChild(line);
+
+    // One badge per effect, so a modifier-heavy item (damage riders, stat
+    // bonuses, inflicted statuses) wraps into pills instead of one long line.
+    const effects = itemEffects(item);
+    if (effects.length > 0) {
+      const badges = document.createElement('div');
+      badges.className = 'inventory-panel__effects';
+      for (const effect of effects) {
+        const badge = document.createElement('span');
+        badge.className = 'inventory-panel__effect';
+        badge.textContent = effect;
+        badges.appendChild(badge);
+      }
+      main.appendChild(badges);
+    }
 
     if (item.description) {
       const description = document.createElement('div');

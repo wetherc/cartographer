@@ -10,6 +10,7 @@ import {
   migrateItem,
   itemType,
   itemSummary,
+  itemEffects,
   slotAccepts,
   equip,
   getEquipped,
@@ -308,6 +309,26 @@ test('itemSummary describes armor scaling, shield/flat bonuses, and stat buffs',
     '+1 AC, +2 STR',
   );
   assert.equal(itemSummary({ id: 't', name: 'T', quantity: 1, notes: '', type: 'gear' }), '');
+});
+
+test('itemEffects keeps each effect as its own phrase for per-badge rendering', () => {
+  assert.deepEqual(
+    itemEffects({
+      id: 'e',
+      name: 'Ember Blade',
+      quantity: 1,
+      notes: '',
+      type: 'weapon',
+      damage: [
+        { count: 2, sides: 6, damageType: 'slashing' },
+        { count: 1, sides: 4, damageType: 'fire' },
+      ],
+      statBonuses: { STR: 1, CHA: 2 },
+      statusEffects: ['burning'],
+    }),
+    ['2d6 slashing + 1d4 fire (STR)', '+1 STR', '+2 CHA', 'inflicts burning'],
+  );
+  assert.deepEqual(itemEffects({ id: 't', name: 'T', quantity: 1, notes: '', type: 'gear' }), []);
 });
 
 test('itemType defaults an untyped (older-save) item to gear', () => {
