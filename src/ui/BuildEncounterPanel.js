@@ -1,11 +1,14 @@
 import { icon } from './icons.js';
+import { mountStatBlockBar } from './StatBlockBar.js';
 
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
 
 /**
- * Mount the Build-rail encounter authoring list: one compact row per encounter
- * staged in the node being viewed (plus unplaced ones), each with edit and
- * delete actions, and a "New encounter" button. Unlike the Play-mode
+ * Mount the Build-rail encounter authoring list: one row per encounter staged
+ * in the node being viewed (plus unplaced ones), each with edit and delete
+ * actions, its full stat block (every stat editable in place — this is where
+ * base stats are tuned), and a "New encounter" button. Selecting a placed
+ * encounter's name focuses the map on its tile. Unlike the Play-mode
  * EncounterPanel this carries no combat machinery — it exists so a GM
  * authoring a map can stage, move, and re-tune its encounters in place,
  * without walking the party there first.
@@ -18,6 +21,8 @@ import { icon } from './icons.js';
  *   onAdd: () => Promise<unknown>,
  *   onEdit: (encounter: Encounter) => Promise<unknown>,
  *   onDelete: (encounter: Encounter) => Promise<unknown>,
+ *   onUpdate: (encounter: Encounter) => void,
+ *   onFocus: (encounter: Encounter) => void,
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -41,10 +46,24 @@ export function mountBuildEncounterPanel(container, callbacks) {
       const row = document.createElement('div');
       row.className = 'build-encounters__row';
 
-      const label = document.createElement('span');
-      label.className = 'build-encounters__label';
       const where = encounter.location ? `@ (${encounter.location.tileId})` : 'unplaced';
-      label.textContent = `${encounter.name} (${encounter.currentHP}/${encounter.maxHP}) ${where}`;
+      const text = `${encounter.name} (${encounter.currentHP}/${encounter.maxHP}) ${where}`;
+
+      // A placed encounter's name is a button that brings its tile into view;
+      // an unplaced one has nowhere to focus, so it stays plain text.
+      /** @type {HTMLElement} */
+      let label;
+      if (encounter.location) {
+        label = document.createElement('button');
+        label.setAttribute('type', 'button');
+        label.className = 'build-encounters__label build-encounters__label--link';
+        label.title = 'Show on map';
+        label.addEventListener('click', () => callbacks.onFocus(encounter));
+      } else {
+        label = document.createElement('span');
+        label.className = 'build-encounters__label';
+      }
+      label.textContent = text;
 
       const editButton = document.createElement('button');
       editButton.type = 'button';
@@ -66,7 +85,22 @@ export function mountBuildEncounterPanel(container, callbacks) {
         if (await callbacks.onDelete(encounter)) render();
       });
 
-      row.append(label, editButton, deleteButton);
+      const head = document.createElement('div');
+      head.className = 'build-encounters__head';
+      head.append(label, editButton, deleteButton);
+      row.appendChild(head);
+
+      // Base stat authoring lives here: every stat (the six abilities + AC)
+      // is a chip that sets its value; edits write back through onUpdate.
+      mountStatBlockBar(row, {
+        mode: 'base',
+        getStatBlock: () => encounter.statBlock ?? {},
+        onSetStat: (stat, value) => {
+          callbacks.onUpdate({ ...encounter, statBlock: { ...encounter.statBlock, [stat]: value } });
+          render();
+        },
+      });
+
       root.appendChild(row);
     }
 

@@ -1,4 +1,4 @@
-import { applyDamage, heal, isDefeated } from '../entities/Encounter.js';
+import { addStatModifier, applyDamage, heal, isDefeated } from '../entities/Encounter.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { mountStatBlockBar } from './StatBlockBar.js';
 import { icon } from './icons.js';
@@ -152,11 +152,15 @@ export function mountEncounterPanel(container, callbacks) {
       head.append(templateButton, deleteButton);
       row.appendChild(head);
 
-      // The GM edits the encounter's stat block (AC, Speed, ...) right on the
-      // row; edits write the whole record back through onUpdate.
+      // In Play the stat block is read-mostly: base values aren't editable or
+      // removable here (that's the Build rail's job) — clicking a chip instead
+      // applies a timed +/- adjustment that ticks down with the combat rounds.
       mountStatBlockBar(row, {
+        mode: 'temp',
         getStatBlock: () => encounter.statBlock ?? {},
-        onChange: (next) => updateOne(encounter, (e) => ({ ...e, statBlock: next })),
+        getStatMods: () => encounter.statMods ?? [],
+        onAddModifier: (stat, delta, rounds) =>
+          updateOne(encounter, (e) => addStatModifier(e, stat, delta, rounds)),
       });
 
       // A GM tracks an encounter's status conditions (poisoned, prone, ...)

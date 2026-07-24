@@ -1,10 +1,15 @@
+import { normalizeStatBlock } from './Modifiers.js';
+import { withinRadius } from '../map/FogOfWar.js';
+
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
 /** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
 /** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
+/** @typedef {import('../types/entities.js').StatModifier} StatModifier */
 
 /**
  * Create an encounter at full health, optionally staged at a map location.
+ * The stat block is closed over the fixed stat set (six abilities + AC).
  * @param {string} id
  * @param {string} name
  * @param {number} maxHP
@@ -19,29 +24,72 @@ export function createEncounter(id, name, maxHP, statBlock = {}, location = null
     name,
     maxHP,
     currentHP: maxHP,
-    statBlock,
+    statBlock: normalizeStatBlock(statBlock),
     level: options.level ?? 1,
     tier: options.tier ?? 'mob',
     location,
     conditions: [],
+    statMods: [],
   };
 }
 
 /**
  * Fill in fields a loaded encounter may predate: encounters saved before
  * location binding existed stay unbound (always shown); ones saved before
- * levels and tiers read as level-1 mobs.
+ * levels and tiers read as level-1 mobs. The stat block is re-closed over the
+ * fixed stat set, so custom stats from older saves drop away.
  * @param {Encounter} encounter
  * @returns {Encounter}
  */
 export function withDefaults(encounter) {
   return {
     ...encounter,
+    statBlock: normalizeStatBlock(encounter.statBlock ?? {}),
     location: encounter.location ?? null,
     conditions: encounter.conditions ?? [],
+    statMods: encounter.statMods ?? [],
     level: encounter.level ?? 1,
     tier: encounter.tier ?? 'mob',
   };
+}
+
+/**
+ * Add a timed adjustment to one stat: +delta (or -delta) for a number of
+ * combat rounds. Modifiers on the same stat stack; each ticks down on its own.
+ * @param {Encounter} encounter
+ * @param {string} stat
+ * @param {number} delta
+ * @param {number} rounds
+ * @returns {Encounter}
+ */
+export function addStatModifier(encounter, stat, delta, rounds) {
+  if (!delta || rounds < 1) return encounter;
+  const mod = { stat, delta, rounds: Math.floor(rounds) };
+  return { ...encounter, statMods: [...(encounter.statMods ?? []), mod] };
+}
+
+/**
+ * Advance one combat round: decrement every stat modifier's counter and drop
+ * any that reach zero — the stat-block twin of tickConditions.
+ * @param {StatModifier[]} mods
+ * @returns {StatModifier[]}
+ */
+export function tickStatModifiers(mods) {
+  return mods.map((m) => ({ ...m, rounds: m.rounds - 1 })).filter((m) => m.rounds > 0);
+}
+
+/**
+ * The stat block as it currently reads: base values plus every active timed
+ * modifier. This is what combat math and the Play view display should use.
+ * @param {Encounter} encounter
+ * @returns {Record<string, number>}
+ */
+export function effectiveStatBlock(encounter) {
+  const block = { ...normalizeStatBlock(encounter.statBlock ?? {}) };
+  for (const mod of encounter.statMods ?? []) {
+    if (mod.stat in block) block[mod.stat] += mod.delta;
+  }
+  return block;
 }
 
 /**
@@ -87,6 +135,46 @@ export function encountersAt(encounters, position) {
 }
 
 /**
+ * The encounters a GM's Play sidebar should list: those the party is close
+ * enough to matter — staged in the party's node within `radius` grid cells of
+ * its tile — plus unbound ones (location === null), which are always relevant.
+ * Distance is the same Euclidean rule the fog uses. Pure.
+ * @param {Encounter[]} encounters
+ * @param {{ nodeId: string, tileId: string } | null} position
+ * @param {number} radius
+ * @returns {Encounter[]}
+ */
+export function encountersNear(encounters, position, radius) {
+  return encounters.filter(
+    (e) =>
+      e.location === null ||
+      (position !== null &&
+        e.location.nodeId === position.nodeId &&
+        withinRadius(e.location.tileId, position.tileId, radius)),
+  );
+}
+
+/**
+ * The encounters a player's sidebar should list: only what the party has
+ * actually discovered. A bound encounter is discovered once its tile has been
+ * revealed through the fog of war (checked against `node`, the party's current
+ * node); an unbound one only once the party has walked into it (`noticed`).
+ * Pure.
+ * @param {Encounter[]} encounters
+ * @param {{ nodeId: string } | null} position
+ * @param {import('../types/map.js').MapNode | null} node the party's current node
+ * @returns {Encounter[]}
+ */
+export function discoveredEncounters(encounters, position, node) {
+  return encounters.filter((e) => {
+    if (e.location === null) return e.noticed === true;
+    if (position === null || node === null || e.location.nodeId !== position.nodeId) return false;
+    const { tileId } = e.location;
+    return node.tiles.some((t) => t.id === tileId && t.revealed);
+  });
+}
+
+/**
  * The undefeated encounters staged on the party's exact tile — what a step
  * onto that tile "walks into". Unbound (location === null) encounters aren't
  * tile-specific, so they never trigger a step. Pure.
@@ -117,7 +205,7 @@ export function toTemplate(id, encounter) {
     id,
     name: encounter.name,
     maxHP: encounter.maxHP,
-    statBlock: { ...encounter.statBlock },
+    statBlock: normalizeStatBlock(encounter.statBlock ?? {}),
     level: encounter.level ?? 1,
     tier: encounter.tier ?? 'mob',
   };

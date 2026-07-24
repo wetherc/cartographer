@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createEncounter, editEncounter, applyDamage, heal, isDefeated, withDefaults, encountersAt, encountersOnTile, toTemplate, fromTemplate } from '../src/entities/Encounter.js';
+import { createEncounter, editEncounter, applyDamage, heal, isDefeated, withDefaults, encountersAt, encountersNear, encountersOnTile, discoveredEncounters, addStatModifier, tickStatModifiers, effectiveStatBlock, toTemplate, fromTemplate } from '../src/entities/Encounter.js';
+
+/** The normalized stat block createEncounter stamps from partial input. */
+const fullBlock = (/** @type {Record<string, number>} */ overrides = {}) => ({
+  STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10, AC: 10,
+  ...overrides,
+});
 
 test('createEncounter starts at full health', () => {
   const goblin = createEncounter('e1', 'Goblin', 7, { AC: 15 });
@@ -85,7 +91,7 @@ test('toTemplate captures the blueprint, not the live state', () => {
     id: 'goblin-template',
     name: 'Goblin',
     maxHP: 7,
-    statBlock: { AC: 13 },
+    statBlock: fullBlock({ AC: 13 }),
     level: 1,
     tier: 'mob',
   });
@@ -103,7 +109,7 @@ test('fromTemplate spawns a fresh, full-health encounter at the given location',
   assert.equal(spawned.currentHP, 7);
   assert.equal(spawned.level, 1);
   assert.equal(spawned.tier, 'mob');
-  assert.deepEqual(spawned.statBlock, { AC: 13, Speed: 30 });
+  assert.deepEqual(spawned.statBlock, fullBlock({ AC: 13 }), 'custom stats are dropped');
   assert.deepEqual(spawned.location, { nodeId: 'region', tileId: '1,1' });
   assert.deepEqual(spawned.conditions, []);
   // Independent copy again: two spawns never share one stat block.
@@ -128,7 +134,7 @@ test('editEncounter rewrites blueprint fields but keeps live state', () => {
   assert.equal(edited.currentHP, 6, 'current HP survives the edit');
   assert.equal(edited.level, 3);
   assert.equal(edited.tier, 'legend');
-  assert.deepEqual(edited.statBlock, { AC: 13 }, 'hand-tuned stat block is not re-stamped');
+  assert.deepEqual(edited.statBlock, fullBlock({ AC: 13 }), 'hand-tuned stat block is not re-stamped');
   assert.deepEqual(edited.conditions, [{ name: 'prone' }]);
 });
 
@@ -137,6 +143,92 @@ test('editEncounter clamps current HP down to a lowered maximum', () => {
   const edited = editEncounter(base, { name: 'Ogre', maxHP: 12, level: 1, tier: 'mob', location: null });
   assert.equal(edited.maxHP, 12);
   assert.equal(edited.currentHP, 12);
+});
+
+test('withDefaults normalizes a legacy stat block and missing statMods', () => {
+  const legacy = /** @type {any} */ ({
+    id: 'e1', name: 'Wolf', maxHP: 5, currentHP: 5, statBlock: { STR: 14, Speed: 40 },
+  });
+  const filled = withDefaults(legacy);
+  assert.deepEqual(filled.statBlock, fullBlock({ STR: 14 }));
+  assert.deepEqual(filled.statMods, []);
+});
+
+test('addStatModifier stacks timed adjustments and rejects no-ops', () => {
+  const goblin = createEncounter('e1', 'Goblin', 7);
+  const buffed = addStatModifier(goblin, 'STR', 2, 3);
+  const stacked = addStatModifier(buffed, 'STR', -1, 1);
+  assert.deepEqual(stacked.statMods, [
+    { stat: 'STR', delta: 2, rounds: 3 },
+    { stat: 'STR', delta: -1, rounds: 1 },
+  ]);
+  assert.deepEqual(goblin.statMods, [], 'original untouched');
+  assert.equal(addStatModifier(goblin, 'STR', 0, 3), goblin, 'zero delta is a no-op');
+  assert.equal(addStatModifier(goblin, 'STR', 2, 0), goblin, 'zero rounds is a no-op');
+});
+
+test('effectiveStatBlock layers active modifiers over the base block', () => {
+  const goblin = addStatModifier(
+    addStatModifier(createEncounter('e1', 'Goblin', 7, { STR: 12, AC: 13 }), 'STR', 2, 3),
+    'AC',
+    -1,
+    2,
+  );
+  const effective = effectiveStatBlock(goblin);
+  assert.equal(effective.STR, 14);
+  assert.equal(effective.AC, 12);
+  assert.equal(effective.DEX, 10, 'unmodified stats read as base');
+  assert.equal(goblin.statBlock.STR, 12, 'base block is untouched');
+});
+
+test('tickStatModifiers counts rounds down and drops expired modifiers', () => {
+  const mods = [
+    { stat: 'STR', delta: 2, rounds: 2 },
+    { stat: 'AC', delta: -1, rounds: 1 },
+  ];
+  const once = tickStatModifiers(mods);
+  assert.deepEqual(once, [{ stat: 'STR', delta: 2, rounds: 1 }]);
+  assert.deepEqual(tickStatModifiers(once), []);
+});
+
+test('encountersNear keeps unbound encounters plus bound ones within the radius', () => {
+  const near = createEncounter('e1', 'Goblin', 7, {}, { nodeId: 'region', tileId: '3,4' });
+  const far = createEncounter('e2', 'Ogre', 20, {}, { nodeId: 'region', tileId: '20,20' });
+  const otherNode = createEncounter('e3', 'Wight', 15, {}, { nodeId: 'world', tileId: '0,0' });
+  const unbound = createEncounter('e4', 'Ghost', 10);
+  const all = [near, far, otherNode, unbound];
+
+  assert.deepEqual(
+    encountersNear(all, { nodeId: 'region', tileId: '0,0' }, 8).map((e) => e.id),
+    ['e1', 'e4'],
+    'e1 is 5 cells away (within 8); e2 is ~28 away; e3 is in another node',
+  );
+  assert.deepEqual(encountersNear(all, null, 8).map((e) => e.id), ['e4']);
+});
+
+test('discoveredEncounters shows bound ones only once their tile is revealed', () => {
+  const seen = createEncounter('e1', 'Goblin', 7, {}, { nodeId: 'region', tileId: '1,1' });
+  const hidden = createEncounter('e2', 'Ogre', 20, {}, { nodeId: 'region', tileId: '2,2' });
+  const met = { ...createEncounter('e3', 'Ghost', 10), noticed: true };
+  const unmet = createEncounter('e4', 'Shade', 10);
+  const node = /** @type {any} */ ({
+    id: 'region',
+    tiles: [
+      { id: '1,1', revealed: true },
+      { id: '2,2', revealed: false },
+    ],
+  });
+
+  assert.deepEqual(
+    discoveredEncounters([seen, hidden, met, unmet], { nodeId: 'region' }, node).map((e) => e.id),
+    ['e1', 'e3'],
+    'revealed tile shows e1; unmet unbound e4 and fogged e2 stay hidden',
+  );
+  assert.deepEqual(
+    discoveredEncounters([seen, met], null, null).map((e) => e.id),
+    ['e3'],
+    'without a position only noticed unbound encounters show',
+  );
 });
 
 test('editEncounter resets the noticed flag only when the location changes', () => {

@@ -169,6 +169,23 @@ export class MapCanvas {
   }
 
   /**
+   * Pan the view so a tile sits at the canvas centre, keeping the current
+   * zoom — how "show me this encounter" focuses the map without yanking the
+   * user's scale around. No-op on an id that isn't a grid coordinate.
+   * @param {string} tileId
+   */
+  centerOnTile(tileId) {
+    const coords = parseCoords(tileId);
+    if (!coords) return;
+    const worldX = (coords.x + 0.5) * this.tileSize;
+    const worldY = (coords.y + 0.5) * this.tileSize;
+    this._userView = true;
+    this.offsetX = this.canvas.width / 2 - worldX * this.scale;
+    this.offsetY = this.canvas.height / 2 - worldY * this.scale;
+    this.render();
+  }
+
+  /**
    * Zoom by a factor anchored on the canvas centre (the wheel handler anchors
    * on the pointer instead), for the on-canvas +/- controls.
    * @param {number} factor

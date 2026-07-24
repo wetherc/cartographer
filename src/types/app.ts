@@ -9,7 +9,7 @@
  * per-module UI state (selected tile, active brush, combat, dirty flag...)
  * stays private inside the module that owns it.
  */
-import type { Character, Encounter, EncounterTemplate } from './entities.js';
+import type { Character, Encounter, EncounterLocation, EncounterTemplate } from './entities.js';
 import type { LogEntry, LogEntryKind } from './log.js';
 import type { Quest } from './quest.js';
 import type { GameClock } from './time.js';
@@ -87,6 +87,9 @@ export interface AppActions {
   // mapWiring: the Build-mode selected tile id, or null — the default spot
   // for authoring flows that place something "here".
   getSelectedTileId(): string | null;
+  // mapWiring: navigate to and centre the map on a staged location, selecting
+  // its tile (the Build encounter list's "show on map").
+  focusLocation(location: EncounterLocation): void;
   syncPaletteKind(): void;
   snapshotEdit(...nodes: MapNode[]): void;
   undoStroke(): void;
