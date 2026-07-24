@@ -65,7 +65,7 @@ player-facing screen from your laptop with no server. (The two tabs share one
 campaign; the role is the only thing that differs between them.)
 
 A Player tab still shows the GM/Player switch, which would claim the GM view
-the moment your GM tab closes — risky on a display the table can reach. Lock it:
+the moment your GM tab closes. You can lock it:
 either open the tab with `?role=player` on the URL (good for a bookmark), or
 click the padlock next to the role switch while in the Player view and confirm.
 A locked tab hides the switch entirely and can never show the GM view; unlock it
