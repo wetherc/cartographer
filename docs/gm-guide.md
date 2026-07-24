@@ -274,12 +274,13 @@ Build an encounter roster in the **Encounters** panel (name, max HP, level, and 
 tile. The tier and level stamp a reasonable default stat block — the six ability
 scores plus AC, the only stats an enemy carries (legends always out-stat a
 level-matched mob). In Play mode the panel splits into two tabs. **Active
-encounter** exists only while the party stands on a tile with a live encounter:
-it lists what the party has walked into and carries the **Start combat**
-button; stepping onto such a tile switches to it. **Nearby encounters** lists
+encounter** lists the live encounters on the party's tile — what the party has
+walked into — and carries the **Start combat** button; stepping onto such a
+tile switches to it, and leaving switches back. **Nearby encounters** lists
 the rest in range — within four times the fog reveal radius of the party's
-tile — along with the New encounter and From bestiary buttons; with nothing
-underfoot the tabs collapse to this plain list. Players see less still — a
+tile — along with the New encounter and From bestiary buttons. Both tabs are
+always present and freely selectable; an empty one says so. Players see less
+still — a
 nearby encounter enters their sidebar only once it's been discovered, its tile
 revealed through the fog (or, for an unplaced one, once the party has walked
 into it).

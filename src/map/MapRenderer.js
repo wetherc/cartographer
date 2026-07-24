@@ -625,10 +625,17 @@ export class MapRenderer {
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
       ctx.lineWidth = 2;
       ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+      ctx.restore();
 
+      // The name label draws outside the clip: once any of the region's tiles
+      // is discovered its name should read in full, not be cut to the revealed
+      // tiles — or to the region's own bounds, which would truncate a long
+      // name on a small region.
       const name = this.getNodeName?.(group.childNodeId);
       if (name) {
+        ctx.save();
         ctx.font = '12px sans-serif';
+        ctx.textAlign = 'left';
         ctx.textBaseline = 'top';
         const label = ` ${name} `;
         const metrics = ctx.measureText(label);
@@ -636,8 +643,8 @@ export class MapRenderer {
         ctx.fillRect(x, y, metrics.width, 16);
         ctx.fillStyle = '#fff';
         ctx.fillText(label, x, y + 2);
+        ctx.restore();
       }
-      ctx.restore();
     }
   }
 }
