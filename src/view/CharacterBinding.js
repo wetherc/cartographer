@@ -53,13 +53,14 @@ export function initialBinding(search, sessionValue, characters) {
  * What a viewer may do to a given character's sheet. The GM may do anything;
  * a player tab may play (spend/restore pools, conditions, inventory) only the
  * character it is bound to, and may edit base attributes (stats, XP) never.
- * Pure.
+ * HP is GM-adjudicated — damage and healing land through the GM's screen or
+ * combat rolls, so even a bound player tab may not step its own HP. Pure.
  * @param {ViewRole} role
  * @param {string | null} boundId this tab's bound character id
  * @param {string} characterId the character being rendered
- * @returns {{ editBase: boolean, play: boolean }}
+ * @returns {{ editBase: boolean, play: boolean, hp: boolean }}
  */
 export function partyPermissions(role, boundId, characterId) {
-  if (role === 'gm') return { editBase: true, play: true };
-  return { editBase: false, play: boundId !== null && boundId === characterId };
+  if (role === 'gm') return { editBase: true, play: true, hp: true };
+  return { editBase: false, play: boundId !== null && boundId === characterId, hp: false };
 }

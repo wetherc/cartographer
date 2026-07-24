@@ -151,19 +151,21 @@ function buildSlotLine(pools, onToggle) {
  * pools (HP included) with spend/restore steppers.
  * Renders an empty state when no character is selected (`null`).
  * `getPermissions` scopes what the viewer may touch: without `editBase` the
- * stats and XP render read-only, and without `play` the pool steppers and
- * condition controls disappear too (a spectator's view of the sheet).
+ * stats and XP render read-only, without `play` the pool steppers and
+ * condition controls disappear too (a spectator's view of the sheet), and the
+ * HP damage/heal steppers additionally require `hp` (GM-only — damage and
+ * healing are adjudicated, not self-served).
  * @param {HTMLElement} container
  * @param {Character | null} initial
  * @param {(character: Character) => void} [onChange]
- * @param {() => { editBase: boolean, play: boolean }} [getPermissions]
+ * @param {() => { editBase: boolean, play: boolean, hp: boolean }} [getPermissions]
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountCharacterSheet(
   container,
   initial,
   onChange = () => {},
-  getPermissions = () => ({ editBase: true, play: true }),
+  getPermissions = () => ({ editBase: true, play: true, hp: true }),
 ) {
   let current = initial;
   // Survives re-renders (every edit re-renders) but stays per-mount, so the
@@ -233,7 +235,7 @@ export function mountCharacterSheet(
       hpLine.className = 'character-sheet__hp-line';
       /** @type {{ before: HTMLElement, after: HTMLElement } | undefined} */
       let flank;
-      if (perms.play) {
+      if (perms.hp) {
         const damageButton = document.createElement('button');
         damageButton.type = 'button';
         damageButton.className = 'btn btn--icon btn--danger character-sheet__hp-step';

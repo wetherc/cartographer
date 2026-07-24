@@ -124,7 +124,7 @@ export function wireParty(app) {
   });
 
   /** What this tab may do to the character currently on the sheet/inventory.
-   * @returns {{ editBase: boolean, play: boolean }} */
+   * @returns {{ editBase: boolean, play: boolean, hp: boolean }} */
   function selectedPermissions() {
     const character = selectedCharacter();
     return partyPermissions(state.role, boundCharacterId, character?.id ?? '');

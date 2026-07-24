@@ -28,18 +28,34 @@ test('initialBinding resolves an id that names no party member to unbound', () =
   assert.equal(initialBinding('', 'ghost', party), null);
 });
 
-test('the GM may edit and play any character regardless of binding', () => {
-  assert.deepEqual(partyPermissions('gm', null, 'hero'), { editBase: true, play: true });
-  assert.deepEqual(partyPermissions('gm', 'sage', 'hero'), { editBase: true, play: true });
+test('the GM may edit, play, and adjust HP on any character regardless of binding', () => {
+  assert.deepEqual(partyPermissions('gm', null, 'hero'), { editBase: true, play: true, hp: true });
+  assert.deepEqual(partyPermissions('gm', 'sage', 'hero'), {
+    editBase: true,
+    play: true,
+    hp: true,
+  });
 });
 
-test('a bound player tab may play its character but never edit base attributes', () => {
-  assert.deepEqual(partyPermissions('player', 'hero', 'hero'), { editBase: false, play: true });
-  assert.deepEqual(partyPermissions('player', 'hero', 'sage'), { editBase: false, play: false });
+test('a bound player tab may play its character but never edit base attributes or HP', () => {
+  assert.deepEqual(partyPermissions('player', 'hero', 'hero'), {
+    editBase: false,
+    play: true,
+    hp: false,
+  });
+  assert.deepEqual(partyPermissions('player', 'hero', 'sage'), {
+    editBase: false,
+    play: false,
+    hp: false,
+  });
 });
 
 test('an unbound player tab is a pure spectator', () => {
-  assert.deepEqual(partyPermissions('player', null, 'hero'), { editBase: false, play: false });
+  assert.deepEqual(partyPermissions('player', null, 'hero'), {
+    editBase: false,
+    play: false,
+    hp: false,
+  });
 });
 
 test('character lock keys are per character and drive the shared lock logic', () => {
