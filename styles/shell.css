@@ -75,6 +75,26 @@
   margin-top: var(--space-2);
 }
 
+/* Two-column form dialogs (e.g. the encounter editor): fields flow two per
+   row, with the title, any field marked full, and the actions spanning both
+   columns. */
+.modal--wide .modal__form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3) var(--space-4);
+  min-width: min(28rem, 85vw);
+}
+
+.modal--wide .modal__title {
+  margin-bottom: var(--space-2);
+}
+
+.modal--wide .modal__title,
+.modal--wide .modal__field--full,
+.modal--wide .modal__actions {
+  grid-column: 1 / -1;
+}
+
 /* ==========================================================================
    Context menu (right-click, floated at the pointer)
    ========================================================================== */

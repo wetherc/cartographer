@@ -5,14 +5,16 @@
  * it to <body>, and removes it on close, resolving a Promise with the result.
  */
 
-/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file', value?: string | number, min?: number, options?: { value: string, label: string }[] }} ModalField */
+/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file', value?: string | number, min?: number, options?: { value: string, label: string }[], full?: boolean }} ModalField */
 
 /**
  * Show a form modal. Resolves to a record of field name -> string value on
- * submit, or null if cancelled/dismissed.
+ * submit, or null if cancelled/dismissed. With `wide` the form lays fields
+ * out two per row (a field marked `full` spans both columns), for dialogs
+ * with too many fields to read comfortably as one tall stack.
  * @param {string} title
  * @param {ModalField[]} fields
- * @param {{ submitLabel?: string }} [options]
+ * @param {{ submitLabel?: string, wide?: boolean }} [options]
  * @returns {Promise<Record<string, string> | null>}
  */
 export function promptModal(title, fields, options = {}) {
@@ -21,7 +23,7 @@ export function promptModal(title, fields, options = {}) {
     // users aren't dropped at the top of the document.
     const opener = /** @type {HTMLElement | null} */ (document.activeElement);
     const dialog = document.createElement('dialog');
-    dialog.className = 'modal';
+    dialog.className = options.wide ? 'modal modal--wide' : 'modal';
 
     const form = document.createElement('form');
     form.method = 'dialog';
@@ -40,7 +42,7 @@ export function promptModal(title, fields, options = {}) {
     const getters = {};
     for (const field of fields) {
       const label = document.createElement('label');
-      label.className = 'modal__field';
+      label.className = field.full ? 'modal__field modal__field--full' : 'modal__field';
       label.textContent = field.label;
 
       /** @type {HTMLInputElement | HTMLSelectElement} */

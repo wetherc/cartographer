@@ -156,10 +156,23 @@ export function wireEncounters(app) {
         : []),
       ...ARMOR_PRESETS.map((p) => ({ value: p.name, label: `${p.name} (+${p.baseAC - 10} AC)` })),
     ];
+    // Two-column layout, fields paired by theme: identity (name/tier), then
+    // vitals (HP/level), then gear (weapon/armor), then placement — the map
+    // picker's breadcrumb labels run long, so it spans the full width.
     const values = await promptModal(
       existing ? 'Edit encounter' : 'New encounter',
       [
         { name: 'name', label: 'Name', value: existing?.name ?? '' },
+        {
+          name: 'tier',
+          label: 'Tier',
+          type: 'select',
+          value: existing?.tier ?? 'mob',
+          options: ENEMY_TIERS.map((t) => ({
+            value: t,
+            label: t === 'mob' ? 'Mob' : 'Legend',
+          })),
+        },
         {
           name: 'maxHP',
           label: 'Max HP',
@@ -173,16 +186,6 @@ export function wireEncounters(app) {
           type: 'number',
           value: existing?.level ?? 1,
           min: 1,
-        },
-        {
-          name: 'tier',
-          label: 'Tier',
-          type: 'select',
-          value: existing?.tier ?? 'mob',
-          options: ENEMY_TIERS.map((t) => ({
-            value: t,
-            label: t === 'mob' ? 'Mob' : 'Legend',
-          })),
         },
         {
           name: 'weapon',
@@ -202,9 +205,11 @@ export function wireEncounters(app) {
             defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').armor.name,
           options: armorOptions,
         },
-        ...locationFields(app, existing ? existing.location : defaultLocation),
+        ...locationFields(app, existing ? existing.location : defaultLocation).map((field) =>
+          field.name === 'nodeId' ? { ...field, full: true } : field,
+        ),
       ],
-      { submitLabel: existing ? 'Save' : 'Add' },
+      { submitLabel: existing ? 'Save' : 'Add', wide: true },
     );
     if (!values) return null;
     const name = values.name.trim();
