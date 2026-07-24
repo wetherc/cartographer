@@ -132,6 +132,22 @@ test('rollDamage rolls each term and groups totals by damage type', () => {
   assert.deepEqual(result.byType[1], { damageType: 'fire', rolls: [3], subtotal: 3 });
   assert.equal(result.total, 11);
   assert.equal(result.text, '8 slashing + 3 fire');
+  assert.equal(result.detail, '8 slashing [4,4] + 3 fire [3]');
+});
+
+test('rollDamage detail shows the folded modifier on the first group only', () => {
+  const result = rollDamage(
+    [
+      { count: 2, sides: 6, damageType: 'slashing' },
+      { count: 1, sides: 4, damageType: 'fire' },
+    ],
+    3,
+    () => 0.5,
+  );
+  assert.equal(result.detail, '11 slashing [4,4 +3] + 3 fire [3]');
+
+  const negative = rollDamage([{ count: 1, sides: 6, damageType: 'piercing' }], -2, () => 0.5);
+  assert.equal(negative.detail, '2 piercing [4 -2]');
 });
 
 test('rollDamage folds the modifier into the first term, never below zero', () => {

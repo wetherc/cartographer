@@ -640,9 +640,11 @@ export function wireEncounters(app) {
         ? `, inflicting ${weapon.statusEffects.join(', ')}`
         : '';
     const blow = crit ? 'critically hits' : 'hits';
+    // The travelogue keeps the raw damage dice (detail), while the toast
+    // below stays with the short per-type totals (text).
     app.actions.logEvent(
       'combat',
-      `${weapon.name} ${blow} ${defender.name} for ${damage.text || '0 damage'}${inflicts}.`,
+      `${weapon.name} ${blow} ${defender.name} for ${damage.detail || '0 damage'}${inflicts}.`,
     );
     // Apply the damage on the spot. Encounters and characters track HP; a
     // defender that's an HP-less NPC keeps the log line only. Defeat is

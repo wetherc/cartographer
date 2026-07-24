@@ -81,10 +81,14 @@ export function emptySelection() {
  * ability modifier boosts the weapon's own damage, not its riders. Terms
  * sharing a damage type merge into one group; a negative modifier can't take
  * the base group below zero.
+ * `text` is the short per-type readout ("7 slashing + 3 fire"); `detail`
+ * additionally shows each group's raw dice and the folded modifier
+ * ("7 slashing [2,3 +2] + 3 fire [3]") for logs that should preserve the
+ * individual rolls.
  * @param {{ count: number, sides: number, damageType: string }[]} parts
  * @param {number} [modifier]
  * @param {RandomFn} [rng]
- * @returns {{ total: number, byType: { damageType: string, rolls: number[], subtotal: number }[], text: string }}
+ * @returns {{ total: number, byType: { damageType: string, rolls: number[], subtotal: number }[], text: string, detail: string }}
  */
 export function rollDamage(parts, modifier = 0, rng = Math.random) {
   /** @type {Map<string, { damageType: string, rolls: number[], subtotal: number }>} */
@@ -109,6 +113,13 @@ export function rollDamage(parts, modifier = 0, rng = Math.random) {
     total: groups.reduce((sum, g) => sum + g.subtotal, 0),
     byType: groups,
     text: groups.map((g) => `${g.subtotal} ${g.damageType}`).join(' + '),
+    detail: groups
+      .map((g, i) => {
+        const mod =
+          i === 0 && modifier !== 0 ? ` ${modifier > 0 ? '+' : '-'}${Math.abs(modifier)}` : '';
+        return `${g.subtotal} ${g.damageType} [${g.rolls.join(',')}${mod}]`;
+      })
+      .join(' + '),
   };
 }
 
