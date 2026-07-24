@@ -16,6 +16,7 @@ import {
   removeItem,
   setMaxHP,
   setBonusHP,
+  setBaseAC,
   damageCharacter,
 } from '../src/entities/Character.js';
 import { getSlotPools } from '../src/entities/SpellSlots.js';
@@ -206,4 +207,24 @@ test('withDefaults backfills bonusHP as 0', () => {
   const legacy = { ...createCharacter('c1', 'Hero') };
   delete legacy.bonusHP;
   assert.equal(withDefaults(legacy).bonusHP, 0);
+});
+
+test('setBaseAC sets the unarmored baseline, never below 1', () => {
+  const hero = createCharacter('c1', 'Hero');
+  assert.equal(setBaseAC(hero, 13).baseAC, 13, 'Mage Armor');
+  assert.equal(setBaseAC(hero, 0).baseAC, 1);
+});
+
+test('withDefaults backfills baseAC as 10 and migrates bonus-era armor items', () => {
+  const legacy = { ...createCharacter('c1', 'Hero') };
+  delete legacy.baseAC;
+  legacy.inventory = [
+    { id: 'mail', name: 'Mail', quantity: 1, notes: '', type: 'armor', acBonus: 4 },
+  ];
+  const filled = withDefaults(legacy);
+  assert.equal(filled.baseAC, 10);
+  assert.deepEqual(
+    { armorWeight: filled.inventory[0].armorWeight, baseAC: filled.inventory[0].baseAC },
+    { armorWeight: 'light', baseAC: 14 },
+  );
 });

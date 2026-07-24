@@ -60,7 +60,7 @@ export interface ResourcePool {
 }
 
 /** Item classification; each equipment slot accepts only compatible types.
- * 'armor' is chest armor — helmets, gloves, and greaves are their own types. */
+ * 'armor' is body armor — helmets, gloves, and greaves are their own types. */
 export type ItemType =
   | 'weapon'
   | 'armor'
@@ -69,8 +69,14 @@ export type ItemType =
   | 'greaves'
   | 'shield'
   | 'bow'
+  | 'ring'
   | 'consumable'
   | 'gear';
+
+/** 5e armor weight class, which alone determines how DEX scales the armor's
+ * AC: light adds the full DEX modifier, medium caps it at +2, heavy ignores
+ * DEX entirely. */
+export type ArmorWeight = 'light' | 'medium' | 'heavy';
 
 export interface InventoryItem {
   id: string;
@@ -79,8 +85,15 @@ export interface InventoryItem {
   notes: string;
   /** Absent on older saves; treated as 'gear'. */
   type?: ItemType;
-  /** Armor-class bonus granted while equipped (armor pieces and shields). */
+  /** Body armor only: its weight class, fixing the DEX scaling rule. */
+  armorWeight?: ArmorWeight;
+  /** Body armor only: the armor's base AC, replacing the unarmored 10. */
+  baseAC?: number;
+  /** Flat armor-class bonus granted while equipped (helmets, rings, etc.).
+   * Ignored on body armor (which uses baseAC) and shields (always +2). */
   acBonus?: number;
+  /** Ability-score buffs granted while equipped, e.g. { STR: 2 }. */
+  statBonuses?: Record<string, number>;
 }
 
 /** The wearable slots on a character. Older saves' 'armor' slot reads as 'chest'. */
@@ -91,7 +104,8 @@ export type EquipmentSlot =
   | 'greaves'
   | 'mainHand'
   | 'offHand'
-  | 'ranged';
+  | 'ranged'
+  | 'accessory';
 
 /** Inventory item id equipped in each slot; null = slot empty. */
 export type Equipment = Record<EquipmentSlot, string | null>;
@@ -112,6 +126,9 @@ export interface Character {
   /** Temporary hit points from items/boons, absorbed before the HP pool when
    * taking damage. Tracked separately from intrinsic HP; absent reads as 0. */
   bonusHP?: number;
+  /** Unarmored base AC, normally 10; effects like Mage Armor raise it.
+   * Only applies while no body armor is equipped. Absent reads as 10. */
+  baseAC?: number;
   /** Own map position; null (and older saves' absence) = with the party. */
   location?: EncounterLocation | null;
 }

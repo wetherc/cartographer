@@ -1,5 +1,15 @@
-import { addItem, removeItem } from '../entities/Character.js';
-import { EQUIPMENT_SLOTS, ITEM_TYPES, itemType, equip, getEquipped, slotAccepts } from '../entities/Equipment.js';
+import { addItem, removeItem, ABILITY_SCORES } from '../entities/Character.js';
+import {
+  EQUIPMENT_SLOTS,
+  ITEM_TYPES,
+  ARMOR_WEIGHTS,
+  SHIELD_AC,
+  itemType,
+  itemSummary,
+  equip,
+  getEquipped,
+  slotAccepts,
+} from '../entities/Equipment.js';
 import { wireDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
 
@@ -58,7 +68,8 @@ function buildEquipment(character, commit, playable) {
     for (const item of eligible) {
       const option = document.createElement('option');
       option.value = item.id;
-      option.textContent = item.acBonus ? `${item.name} (+${item.acBonus} AC)` : item.name;
+      const summary = itemSummary(item);
+      option.textContent = summary ? `${item.name} (${summary})` : item.name;
       select.appendChild(option);
     }
     select.value = equippedId;
@@ -159,7 +170,8 @@ export function mountInventoryPanel(
 
       const type = document.createElement('span');
       type.className = 'inventory-panel__type';
-      type.textContent = item.acBonus ? `${itemType(item)} +${item.acBonus} AC` : itemType(item);
+      const effects = itemSummary(item);
+      type.textContent = effects ? `${itemType(item)} — ${effects}` : itemType(item);
 
       row.append(label, type);
 
@@ -244,21 +256,81 @@ export function mountInventoryPanel(
       typeSelect.appendChild(option);
     }
 
-    // Defensive items carry an AC bonus, applied while equipped; the field
-    // only shows for types that can grant one.
-    const AC_TYPES = ['armor', 'helmet', 'gloves', 'greaves', 'shield'];
+    // Body armor: its 5e weight class (which alone fixes the DEX scaling —
+    // never the GM's input) and a configurable base AC defaulting to a
+    // representative value for the chosen weight.
+    const weightSelect = document.createElement('select');
+    weightSelect.className = 'field';
+    for (const w of ARMOR_WEIGHTS) {
+      const option = document.createElement('option');
+      option.value = w.key;
+      option.textContent =
+        w.dexCap === 0 ? `${w.label} (no DEX)`
+        : w.dexCap === Infinity ? `${w.label} (+ DEX)`
+        : `${w.label} (+ DEX, max ${w.dexCap})`;
+      weightSelect.appendChild(option);
+    }
+    const baseACInput = document.createElement('input');
+    baseACInput.type = 'number';
+    baseACInput.value = String(ARMOR_WEIGHTS[0].defaultBaseAC);
+    baseACInput.min = '1';
+    baseACInput.className = 'field inventory-panel__ac-input';
+    weightSelect.addEventListener('change', () => {
+      const weight = ARMOR_WEIGHTS.find((w) => w.key === weightSelect.value);
+      if (weight) baseACInput.value = String(weight.defaultBaseAC);
+    });
+    const weightField = labeled('Weight', weightSelect);
+    const baseACField = labeled('Base AC', baseACInput);
+
+    // Shields are always +2 AC (5e), so no input — just say so.
+    const shieldNote = document.createElement('span');
+    shieldNote.className = 'inventory-panel__note';
+    shieldNote.textContent = `+${SHIELD_AC} AC`;
+    const shieldField = labeled('Shield', shieldNote);
+
+    // Non-armor equippables (helmets, rings, bows...) may carry a flat AC
+    // bonus while equipped.
+    const FLAT_AC_TYPES = ['weapon', 'helmet', 'gloves', 'greaves', 'bow', 'ring'];
     const acInput = document.createElement('input');
     acInput.type = 'number';
-    acInput.value = '1';
+    acInput.value = '0';
     acInput.min = '0';
     acInput.className = 'field inventory-panel__ac-input';
-    acInput.title = 'AC bonus while equipped';
+    acInput.title = 'Flat AC bonus while equipped';
     const acField = labeled('AC bonus', acInput);
-    const syncACVisibility = () => {
-      acField.hidden = !AC_TYPES.includes(typeSelect.value);
+
+    // Any equippable may buff an ability score while worn (e.g. +2 STR).
+    const EQUIPPABLE_TYPES = ['weapon', 'armor', 'helmet', 'gloves', 'greaves', 'shield', 'bow', 'ring'];
+    const buffStatSelect = document.createElement('select');
+    buffStatSelect.className = 'field';
+    const noBuff = document.createElement('option');
+    noBuff.value = '';
+    noBuff.textContent = '—';
+    buffStatSelect.appendChild(noBuff);
+    for (const stat of ABILITY_SCORES) {
+      const option = document.createElement('option');
+      option.value = stat;
+      option.textContent = stat;
+      buffStatSelect.appendChild(option);
+    }
+    const buffAmountInput = document.createElement('input');
+    buffAmountInput.type = 'number';
+    buffAmountInput.value = '1';
+    buffAmountInput.className = 'field inventory-panel__ac-input';
+    const buffStatField = labeled('Buff', buffStatSelect);
+    const buffAmountField = labeled('Amount', buffAmountInput);
+
+    const syncTypeFields = () => {
+      const type = typeSelect.value;
+      weightField.hidden = baseACField.hidden = type !== 'armor';
+      shieldField.hidden = type !== 'shield';
+      acField.hidden = !FLAT_AC_TYPES.includes(type);
+      buffStatField.hidden = !EQUIPPABLE_TYPES.includes(type);
+      buffAmountField.hidden = buffStatField.hidden || buffStatSelect.value === '';
     };
-    typeSelect.addEventListener('change', syncACVisibility);
-    syncACVisibility();
+    typeSelect.addEventListener('change', syncTypeFields);
+    buffStatSelect.addEventListener('change', syncTypeFields);
+    syncTypeFields();
 
     const addButton = document.createElement('button');
     addButton.type = 'button';
@@ -270,7 +342,9 @@ export function mountInventoryPanel(
       const quantity = Number(quantityInput.value);
       if (!name || quantity <= 0) return;
       const type = /** @type {ItemType} */ (typeSelect.value);
-      const acBonus = AC_TYPES.includes(type) ? Math.max(0, Number(acInput.value) || 0) : 0;
+      const acBonus = FLAT_AC_TYPES.includes(type) ? Math.max(0, Number(acInput.value) || 0) : 0;
+      const buffStat = EQUIPPABLE_TYPES.includes(type) ? buffStatSelect.value : '';
+      const buffAmount = Number(buffAmountInput.value) || 0;
       commit(
         addItem(character, {
           id: idFromName(name),
@@ -278,7 +352,14 @@ export function mountInventoryPanel(
           quantity,
           notes: '',
           type,
+          ...(type === 'armor'
+            ? {
+                armorWeight: /** @type {import('../types/entities.js').ArmorWeight} */ (weightSelect.value),
+                baseAC: Math.max(1, Number(baseACInput.value) || 10),
+              }
+            : {}),
           ...(acBonus > 0 ? { acBonus } : {}),
+          ...(buffStat && buffAmount !== 0 ? { statBonuses: { [buffStat]: buffAmount } } : {}),
         }),
         { verb: 'pickup', itemName: name, count: quantity },
       );
@@ -289,7 +370,12 @@ export function mountInventoryPanel(
     form.append(
       nameInput,
       labeled('Type', typeSelect),
+      weightField,
+      baseACField,
+      shieldField,
       acField,
+      buffStatField,
+      buffAmountField,
       labeled('Qty', quantityInput),
       addButton,
     );

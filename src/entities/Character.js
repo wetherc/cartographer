@@ -1,6 +1,6 @@
 import { createResource, spend as spendPool, restore as restorePool } from './Resource.js';
 import { isSlotPool, syncSlotsToLevel, migrateManaToSlots } from './SpellSlots.js';
-import { emptyEquipment, migrateEquipment, pruneEquipment } from './Equipment.js';
+import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -74,6 +74,19 @@ export function setBonusHP(character, amount) {
 }
 
 /**
+ * Set the character's unarmored base AC — normally 10, raised by effects like
+ * Mage Armor (13 + DEX). Only matters while no body armor is equipped, since
+ * body armor replaces the unarmored baseline entirely. At least 1. Pure.
+ * @param {Character} character
+ * @param {number} value
+ * @returns {Character}
+ */
+export function setBaseAC(character, value) {
+  const parsed = Math.floor(value);
+  return { ...character, baseAC: Number.isFinite(parsed) ? Math.max(1, parsed) : 10 };
+}
+
+/**
  * Apply damage: bonus HP absorbs it first (temporary points are lost before
  * real ones), and only the remainder drains the HP pool. Healing is separate
  * (restoreResource) and never refills bonus HP — that's granted, not healed.
@@ -106,7 +119,9 @@ export function withDefaults(character) {
     stats: { ...defaultStats(), ...character.stats },
     conditions: character.conditions ?? [],
     equipment: migrateEquipment(character.equipment),
+    inventory: (character.inventory ?? []).map(migrateItem),
     bonusHP: character.bonusHP ?? 0,
+    baseAC: character.baseAC ?? 10,
     location: character.location ?? null,
   });
 }
@@ -121,7 +136,7 @@ export function withDefaults(character) {
  * @returns {Character}
  */
 export function createCharacter(id, name, stats = {}, race = '') {
-  return { id, name, race, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [], conditions: [], equipment: emptyEquipment(), bonusHP: 0, location: null };
+  return { id, name, race, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [], conditions: [], equipment: emptyEquipment(), bonusHP: 0, baseAC: 10, location: null };
 }
 
 /**

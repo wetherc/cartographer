@@ -3,13 +3,18 @@ import assert from 'node:assert/strict';
 import {
   EQUIPMENT_SLOTS,
   ITEM_TYPES,
+  ARMOR_WEIGHTS,
+  SHIELD_AC,
   emptyEquipment,
   migrateEquipment,
+  migrateItem,
   itemType,
+  itemSummary,
   slotAccepts,
   equip,
   getEquipped,
   armorClass,
+  effectiveStats,
   pruneEquipment,
 } from '../src/entities/Equipment.js';
 import { createCharacter, withDefaults, addItem, removeItem } from '../src/entities/Character.js';
@@ -67,17 +72,96 @@ test('migrateEquipment carries the legacy armor slot into chest', () => {
   assert.equal(migrateEquipment({ armor: 'old', chest: 'new' }).chest, 'new');
 });
 
-test('armorClass is 10 + DEX modifier + equipped AC bonuses', () => {
-  let hero = createCharacter('c1', 'Hero', { DEX: 14 }); // +2
-  assert.equal(armorClass(hero), 12, 'unarmored: 10 + DEX mod');
-  hero = addItem(hero, { id: 'mail', name: 'Chain Mail', quantity: 1, notes: '', type: 'armor', acBonus: 4 });
-  hero = addItem(hero, { id: 'shield', name: 'Shield', quantity: 1, notes: '', type: 'shield', acBonus: 2 });
-  assert.equal(armorClass(hero), 12, 'carrying armor does nothing until equipped');
-  hero = equip(hero, 'chest', 'mail');
+test('unarmored AC is the character base AC + full DEX modifier', () => {
+  const hero = createCharacter('c1', 'Hero', { DEX: 14 }); // +2
+  assert.equal(armorClass(hero), 12, '10 + DEX mod by default');
+  assert.equal(armorClass({ ...hero, baseAC: 13 }), 15, 'Mage Armor-style base AC raise');
+});
+
+test('body armor replaces the baseline; its weight class fixes the DEX scaling', () => {
+  /** @param {import('../src/types/entities.js').ArmorWeight} weight @param {number} baseAC @param {number} dex */
+  const acFor = (weight, baseAC, dex) => {
+    let hero = createCharacter('c1', 'Hero', { DEX: dex });
+    hero = addItem(hero, { id: 'suit', name: 'Suit', quantity: 1, notes: '', type: 'armor', armorWeight: weight, baseAC });
+    assert.equal(armorClass(hero), 10 + Math.floor((dex - 10) / 2), 'carrying armor does nothing until equipped');
+    return armorClass(equip(hero, 'chest', 'suit'));
+  };
+  assert.equal(acFor('light', 12, 18), 16, 'light: base + full DEX (+4)');
+  assert.equal(acFor('medium', 14, 18), 16, 'medium: DEX capped at +2');
+  assert.equal(acFor('heavy', 16, 18), 16, 'heavy: DEX ignored');
+  assert.equal(acFor('heavy', 16, 6), 16, 'heavy: negative DEX does not hurt either');
+  assert.equal(acFor('medium', 14, 8), 13, 'medium still takes a negative DEX mod');
+  assert.equal(
+    armorClass({ ...createCharacter('c0', 'Mage'), baseAC: 15 }),
+    15,
+    'character base AC applies only while unarmored',
+  );
+});
+
+test('shields always grant a flat +2, ignoring any stored bonus', () => {
+  let hero = createCharacter('c1', 'Hero'); // DEX 10, AC 10
+  hero = addItem(hero, { id: 'shield', name: 'Shield', quantity: 1, notes: '', type: 'shield', acBonus: 9 });
   hero = equip(hero, 'offHand', 'shield');
-  assert.equal(armorClass(hero), 18);
-  hero = equip(hero, 'offHand', null);
-  assert.equal(armorClass(hero), 16, 'unequipping drops the bonus');
+  assert.equal(SHIELD_AC, 2);
+  assert.equal(armorClass(hero), 12);
+});
+
+test('other equipped items add flat AC bonuses on top', () => {
+  let hero = createCharacter('c1', 'Hero', { DEX: 14 });
+  hero = addItem(hero, { id: 'helm', name: 'Helm', quantity: 1, notes: '', type: 'helmet', acBonus: 1 });
+  hero = addItem(hero, { id: 'band', name: 'Band', quantity: 1, notes: '', type: 'ring', acBonus: 1 });
+  hero = equip(hero, 'helmet', 'helm');
+  hero = equip(hero, 'accessory', 'band');
+  assert.equal(armorClass(hero), 14, '10 + 2 DEX + 1 helm + 1 ring');
+});
+
+test('effectiveStats folds equipped stat buffs in, and AC uses the buffed DEX', () => {
+  let hero = createCharacter('c1', 'Hero', { STR: 14, DEX: 12 });
+  hero = addItem(hero, { id: 'ring', name: 'Ring', quantity: 1, notes: '', type: 'ring', statBonuses: { STR: 2, DEX: 2 } });
+  assert.equal(effectiveStats(hero).STR, 14, 'carried, not worn: no buff');
+  hero = equip(hero, 'accessory', 'ring');
+  assert.deepEqual(
+    { STR: effectiveStats(hero).STR, DEX: effectiveStats(hero).DEX },
+    { STR: 16, DEX: 14 },
+  );
+  assert.equal(hero.stats.STR, 14, 'base score untouched');
+  assert.equal(armorClass(hero), 12, '10 + buffed DEX mod (+2)');
+});
+
+test('migrateItem turns bonus-era body armor into light armor with the same total AC', () => {
+  const old = { id: 'mail', name: 'Chain Mail', quantity: 1, notes: '', type: /** @type {const} */ ('armor'), acBonus: 4 };
+  const migrated = migrateItem(old);
+  assert.deepEqual(
+    { armorWeight: migrated.armorWeight, baseAC: migrated.baseAC, acBonus: migrated.acBonus },
+    { armorWeight: 'light', baseAC: 14, acBonus: undefined },
+  );
+  const shield = migrateItem({ id: 's', name: 'S', quantity: 1, notes: '', type: /** @type {const} */ ('shield'), acBonus: 3 });
+  assert.equal(shield.acBonus, undefined, 'shields drop stored bonuses');
+  const modern = { id: 'plate', name: 'Plate', quantity: 1, notes: '', type: /** @type {const} */ ('armor'), armorWeight: /** @type {const} */ ('heavy'), baseAC: 18 };
+  assert.equal(migrateItem(modern), modern, 'already-migrated items pass through by reference');
+});
+
+test('every armor weight has a positive default base AC and a distinct DEX cap', () => {
+  assert.deepEqual(ARMOR_WEIGHTS.map((w) => w.key), ['light', 'medium', 'heavy']);
+  assert.deepEqual(ARMOR_WEIGHTS.map((w) => w.dexCap), [Infinity, 2, 0]);
+  assert.ok(ARMOR_WEIGHTS.every((w) => w.defaultBaseAC > 10));
+});
+
+test('itemSummary describes armor scaling, shield/flat bonuses, and stat buffs', () => {
+  assert.equal(
+    itemSummary({ id: 'a', name: 'A', quantity: 1, notes: '', type: 'armor', armorWeight: 'medium', baseAC: 14 }),
+    'medium armor, AC 14 + DEX (max 2)',
+  );
+  assert.equal(
+    itemSummary({ id: 'a', name: 'A', quantity: 1, notes: '', type: 'armor', armorWeight: 'heavy', baseAC: 16 }),
+    'heavy armor, AC 16',
+  );
+  assert.equal(itemSummary({ id: 's', name: 'S', quantity: 1, notes: '', type: 'shield' }), '+2 AC');
+  assert.equal(
+    itemSummary({ id: 'r', name: 'R', quantity: 1, notes: '', type: 'ring', acBonus: 1, statBonuses: { STR: 2 } }),
+    '+1 AC, +2 STR',
+  );
+  assert.equal(itemSummary({ id: 't', name: 'T', quantity: 1, notes: '', type: 'gear' }), '');
 });
 
 test('itemType defaults an untyped (older-save) item to gear', () => {

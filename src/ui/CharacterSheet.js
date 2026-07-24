@@ -4,12 +4,13 @@ import {
   getHP,
   setMaxHP,
   setBonusHP,
+  setBaseAC,
   damageCharacter,
   spendResource,
   restoreResource,
   XP_PER_LEVEL,
 } from '../entities/Character.js';
-import { armorClass } from '../entities/Equipment.js';
+import { armorClass, effectiveStats } from '../entities/Equipment.js';
 import { getSlotPools, isSlotPool, slotLevelOf } from '../entities/SpellSlots.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { wireDisclosure } from './Disclosure.js';
@@ -296,7 +297,10 @@ export function mountCharacterSheet(
     const acBadge = document.createElement('span');
     acBadge.className = 'character-sheet__ac';
     acBadge.textContent = `AC ${armorClass(character)}`;
-    acBadge.title = 'Armor class: 10 + DEX modifier + equipped armor and shield bonuses';
+    acBadge.title =
+      'Armor class: equipped body armor sets base AC + DEX per its weight class '
+      + '(light: full, medium: max +2, heavy: none); unarmored is base AC + DEX. '
+      + 'Shields add +2; other equipped items add their flat bonuses.';
     const xpProgress = document.createElement('span');
     xpProgress.className = 'character-sheet__xp-progress';
     xpProgress.textContent = `XP ${character.xp} / ${character.level * XP_PER_LEVEL}`;
@@ -364,8 +368,23 @@ export function mountCharacterSheet(
       body.appendChild(row);
     }
 
+    // Unarmored base AC, normally 10; effects like Mage Armor raise it. Only
+    // in play while no body armor is equipped.
+    if (perms.play) {
+      const { row } = buildFieldRow(
+        'BASE AC',
+        character.baseAC ?? 10,
+        `Unarmored base AC for ${character.name}`,
+        (value) => commit(setBaseAC(character, value)),
+      );
+      body.appendChild(row);
+    }
+
     const statsList = document.createElement('div');
     statsList.className = 'character-sheet__stats';
+    // Equipped-item buffs (a ring's +2 STR) ride on top of the base score:
+    // the input edits the base, the modifier reflects the buffed total.
+    const buffed = effectiveStats(character);
     for (const [key, value] of Object.entries(character.stats)) {
       const row = document.createElement('div');
       row.className = 'character-sheet__stat-row';
@@ -388,10 +407,12 @@ export function mountCharacterSheet(
         commit(setStat(character, key, Number(input.value)));
       });
 
-      // The derived modifier (DEX 20 = +5), which initiative and checks use.
+      // The derived modifier (DEX 20 = +5), which initiative and checks use;
+      // computed from the buffed total when equipment raises the score.
+      const total = buffed[key] ?? value;
       const modifier = document.createElement('span');
       modifier.className = 'character-sheet__stat-mod';
-      modifier.textContent = formatModifier(abilityModifier(value));
+      modifier.textContent = formatModifier(abilityModifier(total));
       modifier.title = `${key} modifier`;
 
       // Score and its modifier read as one unit, visually separated from the
@@ -399,6 +420,14 @@ export function mountCharacterSheet(
       const valueGroup = document.createElement('span');
       valueGroup.className = 'character-sheet__stat-value';
       valueGroup.append(input, modifier);
+
+      if (total !== value) {
+        const buff = document.createElement('span');
+        buff.className = 'character-sheet__stat-buff';
+        buff.textContent = `${total > value ? '+' : ''}${total - value}`;
+        buff.title = `${key} buffed to ${total} by equipped items`;
+        valueGroup.appendChild(buff);
+      }
       label.appendChild(valueGroup);
       row.appendChild(label);
       statsList.appendChild(row);

@@ -373,9 +373,10 @@ export function buildExampleCampaign(palette, rng = Math.random) {
   aldric = withHP({ ...aldric, level: 3 }, 28);
   aldric.inventory = [
     { id: 'longsword', name: 'Longsword', quantity: 1, notes: '', type: 'weapon' },
-    { id: 'oak-shield', name: 'Oak Shield', quantity: 1, notes: '', type: 'shield', acBonus: 2 },
-    { id: 'chain-mail', name: 'Chain Mail', quantity: 1, notes: '', type: 'armor', acBonus: 4 },
+    { id: 'oak-shield', name: 'Oak Shield', quantity: 1, notes: '', type: 'shield' },
+    { id: 'chain-mail', name: 'Chain Mail', quantity: 1, notes: '', type: 'armor', armorWeight: 'heavy', baseAC: 16 },
     { id: 'steel-helm', name: 'Steel Helm', quantity: 1, notes: '', type: 'helmet', acBonus: 1 },
+    { id: 'ring-of-vigor', name: 'Ring of Vigor', quantity: 1, notes: '', type: 'ring', statBonuses: { STR: 2 } },
     { id: 'healing-potion', name: 'Potion of Healing', quantity: 2, notes: 'Restores 2d4+2 HP.', type: 'consumable' },
     { id: 'torch', name: 'Torch', quantity: 5, notes: '', type: 'gear' },
   ];
@@ -387,6 +388,7 @@ export function buildExampleCampaign(palette, rng = Math.random) {
     mainHand: 'longsword',
     offHand: 'oak-shield',
     ranged: null,
+    accessory: 'ring-of-vigor',
   };
 
   let mirelle = createCharacter('mirelle', 'Mirelle', { WIS: 16, CHA: 13, CON: 12 }, 'Half-elf');
@@ -404,6 +406,7 @@ export function buildExampleCampaign(palette, rng = Math.random) {
     mainHand: 'mace',
     offHand: null,
     ranged: null,
+    accessory: null,
   };
 
   /**
