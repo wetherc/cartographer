@@ -273,7 +273,12 @@ Build an encounter roster in the **Encounters** panel (name, max HP, level, and 
 **tier** — a rank-and-file *mob* or an above-normal *legend*), and bind each to a
 tile. The tier and level stamp a reasonable default stat block — the six ability
 scores plus AC, the only stats an enemy carries (legends always out-stat a
-level-matched mob). In Play mode the panel splits into two tabs. **Active
+level-matched mob) — and arm the enemy with generic **gear**: a weapon picked
+from the 5e preset list and a named armor whose flat AC bonus adds on top of
+the stat block's base AC. Both are editable in the same create/edit dialog
+(Weapon, Armor, and Armor AC bonus fields), and the Build rail's Encounters
+tab shows each enemy's gear under its name. Bestiary templates carry gear
+along with the stat block. In Play mode the panel splits into two tabs. **Active
 encounter** lists the live encounters on the party's tile — what the party has
 walked into — and carries the **Start combat** button; stepping onto such a
 tile switches to it, and leaving switches back. **Nearby encounters** lists

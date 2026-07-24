@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createEncounter, editEncounter, applyDamage, heal, isDefeated, withDefaults, encountersAt, encountersNear, encountersOnTile, discoveredEncounters, addStatModifier, tickStatModifiers, effectiveStatBlock, toTemplate, fromTemplate } from '../src/entities/Encounter.js';
+import { createEncounter, defaultEnemyGear, editEncounter, applyDamage, heal, isDefeated, withDefaults, encountersAt, encountersNear, encountersOnTile, discoveredEncounters, addStatModifier, tickStatModifiers, effectiveStatBlock, toTemplate, fromTemplate } from '../src/entities/Encounter.js';
 
 /** The normalized stat block createEncounter stamps from partial input. */
 const fullBlock = (/** @type {Record<string, number>} */ overrides = {}) => ({
@@ -94,6 +94,8 @@ test('toTemplate captures the blueprint, not the live state', () => {
     statBlock: fullBlock({ AC: 13 }),
     level: 1,
     tier: 'mob',
+    weapon: goblin.weapon,
+    armor: goblin.armor,
   });
   // The stat block is copied, not shared: editing the template never touches
   // the encounter it was saved from.
@@ -176,7 +178,7 @@ test('effectiveStatBlock layers active modifiers over the base block', () => {
   );
   const effective = effectiveStatBlock(goblin);
   assert.equal(effective.STR, 14);
-  assert.equal(effective.AC, 12);
+  assert.equal(effective.AC, 12 + (goblin.armor?.acBonus ?? 0), 'armor bonus layers with modifiers');
   assert.equal(effective.DEX, 10, 'unmodified stats read as base');
   assert.equal(goblin.statBlock.STR, 12, 'base block is untouched');
 });
@@ -240,4 +242,71 @@ test('editEncounter resets the noticed flag only when the location changes', () 
   assert.equal(moved.noticed, false, 'a move makes the next walk-in log again');
   const unplaced = editEncounter(noticed, { ...edits, location: null });
   assert.equal(unplaced.noticed, false);
+});
+
+test('defaultEnemyGear arms by tier and level', () => {
+  const mob = defaultEnemyGear(1, 'mob');
+  assert.equal(mob.weapon.name, 'Shortsword');
+  assert.deepEqual(mob.armor, { name: 'Leather Armor', acBonus: 1 });
+  assert.equal(defaultEnemyGear(5, 'mob').weapon.name, 'Longsword');
+  assert.equal(defaultEnemyGear(1, 'legend').weapon.name, 'Longsword');
+  const bigLegend = defaultEnemyGear(10, 'legend');
+  assert.equal(bigLegend.weapon.name, 'Greatsword');
+  assert.deepEqual(bigLegend.armor, { name: 'Plate', acBonus: 6 });
+});
+
+test('createEncounter stamps default gear; explicit gear wins', () => {
+  const goblin = createEncounter('e1', 'Goblin', 7);
+  assert.equal(goblin.weapon?.name, 'Shortsword');
+  assert.equal(goblin.armor?.acBonus, 1);
+  const custom = createEncounter('e2', 'Chief', 20, {}, null, {
+    weapon: { name: 'Club', handling: 'melee', damage: [{ count: 1, sides: 4, damageType: 'bludgeoning' }] },
+    armor: { name: 'Hide', acBonus: 2 },
+  });
+  assert.equal(custom.weapon?.name, 'Club');
+  assert.equal(custom.armor?.name, 'Hide');
+});
+
+test('withDefaults backfills gear on older saves without touching existing gear', () => {
+  const old = /** @type {import('../src/types/entities.js').Encounter} */ (
+    /** @type {unknown} */ ({ id: 'e1', name: 'Wolf', maxHP: 11, currentHP: 11, statBlock: {}, level: 6, tier: 'mob' })
+  );
+  const filled = withDefaults(old);
+  assert.equal(filled.weapon?.name, 'Longsword', 'level 6 mob default');
+  assert.equal(filled.armor?.name, 'Chain Shirt');
+  const armed = withDefaults(createEncounter('e2', 'Chief', 20, {}, null, {
+    weapon: { name: 'Club', handling: 'melee', damage: [{ count: 1, sides: 4, damageType: 'bludgeoning' }] },
+  }));
+  assert.equal(armed.weapon?.name, 'Club');
+});
+
+test('effectiveStatBlock adds the armor AC bonus to base AC', () => {
+  const goblin = createEncounter('e1', 'Goblin', 7, { AC: 12 });
+  assert.equal(effectiveStatBlock(goblin).AC, 13, '12 base + leather 1');
+  const naked = { ...goblin, armor: undefined };
+  assert.equal(effectiveStatBlock(naked).AC, 12);
+});
+
+test('templates carry gear through the save/spawn roundtrip', () => {
+  const chief = createEncounter('e1', 'Chief', 20, {}, null, {
+    weapon: { name: 'Club', handling: 'melee', damage: [{ count: 1, sides: 4, damageType: 'bludgeoning' }] },
+    armor: { name: 'Hide', acBonus: 2 },
+  });
+  const spawned = fromTemplate(toTemplate('t1', chief), 'e2');
+  assert.equal(spawned.weapon?.name, 'Club');
+  assert.deepEqual(spawned.armor, { name: 'Hide', acBonus: 2 });
+});
+
+test('editEncounter swaps gear and keeps it when the edit omits gear', () => {
+  const goblin = createEncounter('e1', 'Goblin', 7);
+  const edits = { name: 'Goblin', maxHP: 7, level: 1, tier: /** @type {const} */ ('mob'), location: null };
+  const rearmed = editEncounter(goblin, {
+    ...edits,
+    weapon: { name: 'Spear', handling: /** @type {const} */ ('melee'), damage: [{ count: 1, sides: 6, damageType: 'piercing' }] },
+    armor: { name: 'Chain Shirt', acBonus: 3 },
+  });
+  assert.equal(rearmed.weapon?.name, 'Spear');
+  assert.equal(rearmed.armor?.acBonus, 3);
+  const untouched = editEncounter(rearmed, edits);
+  assert.equal(untouched.weapon?.name, 'Spear');
 });

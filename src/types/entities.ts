@@ -20,6 +20,21 @@ export interface StatModifier {
   rounds: number;
 }
 
+/** An enemy's weapon: enough of an InventoryItem's weapon fields to drive the
+ * same attack math, without dragging in the full inventory model. */
+export interface EnemyWeapon {
+  name: string;
+  handling: WeaponHandling;
+  damage: DamagePart[];
+}
+
+/** An enemy's worn armor: a name and the flat AC it adds on top of the stat
+ * block's base AC (its effective AC includes this bonus). */
+export interface EnemyArmor {
+  name: string;
+  acBonus: number;
+}
+
 export interface Encounter {
   id: string;
   name: string;
@@ -37,6 +52,11 @@ export interface Encounter {
   /** True once the party has walked into this encounter, so the travelogue
    * records the first meeting exactly once. Absent on older saves. */
   noticed?: boolean;
+  /** The enemy's weapon; stamped with a level/tier default on creation and on
+   * older saves, so every enemy can attack. */
+  weapon?: EnemyWeapon;
+  /** The enemy's armor; stamped with a level/tier default like the weapon. */
+  armor?: EnemyArmor;
 }
 
 /** A reusable encounter blueprint saved to the campaign's bestiary. */
@@ -47,6 +67,8 @@ export interface EncounterTemplate {
   statBlock: Record<string, number>;
   level: number;
   tier: EnemyTier;
+  weapon?: EnemyWeapon;
+  armor?: EnemyArmor;
 }
 
 export type ResourceType = 'item-count' | 'mana' | 'custom';
