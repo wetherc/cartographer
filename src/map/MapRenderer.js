@@ -161,6 +161,20 @@ export class MapRenderer {
   }
 
   /**
+   * The revealed tile ids to fog-gate multi-tile art against, or null when
+   * everything shows (Build mode). A block none of whose tiles are revealed
+   * must not draw at all: the per-tile fog rects painted over it leave
+   * antialiased seams at fractional zoom, tracing the block's outline through
+   * the fog in a different color than the map backdrop's grid.
+   * @param {MapView} view
+   * @returns {Set<string> | null}
+   */
+  _revealedIds(view) {
+    if (view.revealAll) return null;
+    return new Set((view.node?.tiles ?? []).filter((t) => t.revealed).map((t) => t.id));
+  }
+
+  /**
    * Draw each multi-tile region block on an outdoor map as scaled images in
    * chunks of at most 2x2 tiles, so a sub-region entrance reads as a landmark
    * instead of repeated tiles — a 4x4 block gets four distinct 2x2 images, not
@@ -178,9 +192,12 @@ export class MapRenderer {
     const covered = new Set();
     if (!view.node || view.node.kind !== 'region') return covered;
     const { ctx } = this;
+    const revealedIds = this._revealedIds(view);
     for (const group of view.regionGroups) {
       if (group.tileIds.length < 2) continue;
       for (const chunk of groupImageChunks(view.node, group)) {
+        // A fully-fogged chunk draws nothing — see _revealedIds.
+        if (revealedIds && !chunk.tileIds.some((id) => revealedIds.has(id))) continue;
         for (const id of chunk.tileIds) covered.add(id);
 
         const topLeft = tileRect(chunk.minX, chunk.minY, this.tileSize, view.offsetX, view.offsetY, view.scale);
@@ -215,7 +232,10 @@ export class MapRenderer {
   _renderSpanImages(view, cover) {
     if (!view.node) return;
     const { ctx } = this;
+    const revealedIds = this._revealedIds(view);
     for (const block of spanBlocks(view.node)) {
+      // A fully-fogged block draws nothing — see _revealedIds.
+      if (revealedIds && !block.tileIds.some((id) => revealedIds.has(id))) continue;
       for (const id of block.tileIds) cover.add(id);
 
       const topLeft = tileRect(block.minX, block.minY, this.tileSize, view.offsetX, view.offsetY, view.scale);
@@ -574,9 +594,7 @@ export class MapRenderer {
     // Outside Build mode, a region stays hidden until the party has discovered
     // at least one of its tiles through the fog, so the overworld doesn't
     // reveal where every unexplored region sits.
-    const revealedIds = view.revealAll
-      ? null
-      : new Set((view.node?.tiles ?? []).filter((t) => t.revealed).map((t) => t.id));
+    const revealedIds = this._revealedIds(view);
     for (const group of view.regionGroups) {
       if (revealedIds && !group.tileIds.some((id) => revealedIds.has(id))) continue;
       const topLeft = tileRect(group.minX, group.minY, this.tileSize, view.offsetX, view.offsetY, view.scale);
@@ -588,6 +606,20 @@ export class MapRenderer {
       if (x + w < 0 || y + h < 0 || x > view.canvasWidth || y > view.canvasHeight) continue;
 
       ctx.save();
+      // The overlay (tint, border, name label) is clipped to the group's
+      // revealed tiles, so a partly-explored region doesn't trace its full
+      // extent — a differently-colored rectangle — through the fog.
+      if (revealedIds) {
+        const clip = new Path2D();
+        for (const id of group.tileIds) {
+          if (!revealedIds.has(id)) continue;
+          const coords = parseCoords(id);
+          if (!coords) continue;
+          const r = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
+          clip.rect(r.sx, r.sy, r.size, r.size);
+        }
+        ctx.clip(clip);
+      }
       ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
       ctx.fillRect(x, y, w, h);
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
