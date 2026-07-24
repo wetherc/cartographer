@@ -55,6 +55,8 @@ export interface AppViews {
   encounterPanel: Updatable;
   /** Build-rail encounter authoring list, scoped to the node being viewed. */
   buildEncounters: Updatable;
+  /** Build-rail NPC authoring list, scoped to the node being viewed. */
+  buildNPCs: Updatable;
   initiativePanel: Updatable;
   npcPanel: Updatable;
   questPanel: Updatable;

@@ -44,6 +44,7 @@ import { tickConditions } from '../entities/Conditions.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
 import { locationFields, readLocation } from './locationFields.js';
+import { npcForm } from './npcForm.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -448,8 +449,8 @@ export function wireEncounters(app) {
 
   /**
    * The Build-mode right-click menu for a tile of the viewed node, floated at
-   * the pointer: create a new encounter placed there, or edit one already
-   * staged on that tile. Each choice opens the shared encounter form.
+   * the pointer: create a new encounter or NPC placed there, or edit one
+   * already staged on that tile. Each choice opens the matching shared form.
    * @param {number} x
    * @param {number} y
    * @param {number} clientX
@@ -461,12 +462,18 @@ export function wireEncounters(app) {
       tileId: `${x},${y}`,
     };
     const here = encountersOnTile(state.encounters, location);
+    const folkHere = npcsOnTile(state.npcs, location);
     openContextMenu(
       [
         { label: 'New encounter here', onSelect: () => encounterForm(null, location) },
+        { label: 'New NPC here', onSelect: () => npcForm(app, null, location) },
         ...here.map((e) => ({
           label: `Edit ${e.name}`,
           onSelect: () => encounterForm(e, null),
+        })),
+        ...folkHere.map((n) => ({
+          label: `Edit ${n.name}`,
+          onSelect: () => npcForm(app, n, null),
         })),
       ],
       { clientX, clientY },

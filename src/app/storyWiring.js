@@ -3,15 +3,14 @@ import { promptModal, confirmModal } from '../ui/Modal.js';
 import { mountTravelogPanel } from '../ui/TravelogPanel.js';
 import { appendEntry, createEntry } from '../log/Travelogue.js';
 import { mountNPCPanel } from '../ui/NPCPanel.js';
-import { createNPC, npcsAt, knownNpcsAt, formatLocation, DISPOSITIONS } from '../entities/NPC.js';
+import { npcsAt, knownNpcsAt, formatLocation } from '../entities/NPC.js';
 import { isGM } from '../view/ViewRole.js';
-import { ABILITY_SCORES } from '../entities/Character.js';
 import { mountQuestPanel } from '../ui/QuestPanel.js';
 import { createQuest, toggleQuestStatus } from '../quest/Quests.js';
 import { mountHandoutPanel } from '../ui/HandoutPanel.js';
 import { createHandout, toggleRevealed, handoutsAt } from '../handout/Handouts.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
-import { locationFields, readLocation } from './locationFields.js';
+import { npcForm } from './npcForm.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -58,27 +57,15 @@ export function wireStory(app) {
     },
   });
 
-  const dispositionOptions = DISPOSITIONS.map((d) => ({
-    value: d,
-    label: d[0].toUpperCase() + d.slice(1),
-  }));
-
-  // One number field per ability score, so an NPC's modifiers (initiative,
-  // future checks) derive from real stats rather than a flat default.
-  /** @type {(stats: Record<string, number>) => import('../ui/Modal.js').ModalField[]} */
-  const statFields = (stats) =>
-    ABILITY_SCORES.map((key) => ({
-      name: `stat-${key}`,
-      label: key,
-      type: 'number',
-      value: stats[key] ?? 10,
-      min: 1,
-    }));
-  /** @type {(values: Record<string, string>) => Record<string, number>} */
-  const readStats = (values) =>
-    Object.fromEntries(
-      ABILITY_SCORES.map((key) => [key, Math.max(1, Number(values[`stat-${key}`]) || 10)]),
-    );
+  /** Confirm-and-delete shared by both NPC lists. */
+  const deleteNPC = (/** @type {string} */ id) => {
+    state.npcs = removeById(state.npcs, id);
+    app.actions.syncNPCMarkers();
+    app.views.npcPanel.update();
+    app.actions.markDirty();
+  };
+  const confirmDeleteNPC = (/** @type {import('../types/npc.js').NPC} */ npc) =>
+    confirmModal(`Delete "${npc.name}"?`, { danger: true, confirmLabel: 'Delete' });
 
   app.views.npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
     // Players only learn of a placed NPC once the party has landed on its
@@ -91,88 +78,29 @@ export function wireStory(app) {
       const label = formatLocation(npc.location, (id) => app.grid.getNode(id)?.name);
       return npc.location && !npc.met ? `${label} — not yet met` : label;
     },
-    onDelete: (id) => {
-      state.npcs = removeById(state.npcs, id);
-      app.actions.syncNPCMarkers();
-      app.actions.markDirty();
-    },
-    onAdd: async () => {
-      const values = await promptModal('New NPC', [
-        { name: 'name', label: 'Name', value: '' },
-        { name: 'role', label: 'Role / faction', value: '' },
-        {
-          name: 'disposition',
-          label: 'Disposition',
-          type: 'select',
-          value: 'neutral',
-          options: dispositionOptions,
-        },
-        { name: 'notes', label: 'Notes', value: '' },
-        ...statFields({}),
-        // Defaults to where the party stands, but any map/tile can be chosen.
-        ...locationFields(app, { ...app.partyTracker.getPosition() }),
-      ]);
-      const name = values?.name.trim();
-      if (!values || !name) return null;
-      const created = createNPC(
-        slugId(
-          name,
-          state.npcs.map((n) => n.id),
-        ),
-        name,
-        {
-          role: values.role.trim(),
-          disposition: /** @type {import('../types/npc.js').Disposition} */ (values.disposition),
-          notes: values.notes.trim(),
-          stats: readStats(values),
-          location: readLocation(app, values),
-        },
-      );
-      state.npcs = [...state.npcs, created];
-      // An NPC dropped on the party's own tile is met on the spot.
-      app.actions.meetNPCs();
-      app.actions.syncNPCMarkers();
-      app.actions.markDirty();
-      return created;
-    },
-    onEdit: async (npc) => {
-      const values = await promptModal(
-        'Edit NPC',
-        [
-          { name: 'name', label: 'Name', value: npc.name },
-          { name: 'role', label: 'Role / faction', value: npc.role },
-          {
-            name: 'disposition',
-            label: 'Disposition',
-            type: 'select',
-            value: npc.disposition,
-            options: dispositionOptions,
-          },
-          { name: 'notes', label: 'Notes', value: npc.notes },
-          ...statFields(npc.stats ?? {}),
-          ...locationFields(app, npc.location),
-        ],
-        { submitLabel: 'Save' },
-      );
-      const name = values?.name.trim();
-      if (!values || !name) return false;
-      state.npcs = replaceById(state.npcs, {
-        ...npc,
-        name,
-        role: values.role.trim(),
-        disposition: /** @type {import('../types/npc.js').Disposition} */ (values.disposition),
-        notes: values.notes.trim(),
-        stats: readStats(values),
-        location: readLocation(app, values),
-      });
-      // Moving an NPC onto the party's own tile meets it on the spot.
-      app.actions.meetNPCs();
-      app.actions.syncNPCMarkers();
-      app.actions.markDirty();
-      return true;
-    },
-    confirmDelete: (npc) =>
-      confirmModal(`Delete "${npc.name}"?`, { danger: true, confirmLabel: 'Delete' }),
+    onDelete: deleteNPC,
+    // New NPCs from the Story tab default to where the party stands.
+    onAdd: () => npcForm(app, null, { ...app.partyTracker.getPosition() }),
+    onEdit: (npc) => npcForm(app, npc, null),
+    confirmDelete: confirmDeleteNPC,
+    getRole: () => state.role,
+  });
+
+  // The Build rail's NPC authoring list (the NPCs subtab beside the mob
+  // roster): the NPCs placed in whatever node the GM is looking at, plus
+  // unplaced ones, editable without moving the party there. New NPCs default
+  // onto the Build-mode selected tile of the viewed node.
+  app.views.buildNPCs = mountNPCPanel(mustGetElement('build-npcs-container'), {
+    getNPCs: () => npcsAt(state.npcs, { nodeId: app.navigator.getCurrentNode().id }),
+    getLocationLabel: (npc) => formatLocation(npc.location, (id) => app.grid.getNode(id)?.name),
+    onDelete: deleteNPC,
+    onAdd: () =>
+      npcForm(app, null, {
+        nodeId: app.navigator.getCurrentNode().id,
+        tileId: app.actions.getSelectedTileId() ?? '0,0',
+      }),
+    onEdit: (npc) => npcForm(app, npc, null),
+    confirmDelete: confirmDeleteNPC,
     getRole: () => state.role,
   });
 

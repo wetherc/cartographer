@@ -52,6 +52,8 @@ export function wireMapView(app) {
   // one screen tall instead of stacking every card. Selecting a tile jumps to
   // the Tile tab below; everything else is user-driven.
   const buildTabs = wireTabs(mustGetElement('build-tabs'));
+  // The Encounters tab's nested Mobs / NPCs strip, splitting the two rosters.
+  wireTabs(mustGetElement('build-encounter-tabs'));
 
   /** @type {string | null} tile id selected for inspection/editing in Build mode */
   let selectedTileId = null;
@@ -148,6 +150,9 @@ export function wireMapView(app) {
             /** @type {import('../types/entities.js').EncounterLocation} */ (n.location).tileId,
         ),
     );
+    // The Build-rail NPC list shows the same node scope, so it refreshes
+    // wherever the markers do (navigation and every NPC mutation).
+    app.views.buildNPCs?.update();
   }
   app.actions.syncNPCMarkers = syncNPCMarkers;
 

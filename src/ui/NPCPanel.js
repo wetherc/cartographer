@@ -16,8 +16,8 @@ import { isGM } from '../view/ViewRole.js';
  * @param {{
  *   getNPCs: () => NPC[],
  *   onDelete: (id: string) => void,
- *   onAdd?: () => Promise<NPC | null>,
- *   onEdit?: (npc: NPC) => Promise<boolean>,
+ *   onAdd?: () => Promise<unknown>,
+ *   onEdit?: (npc: NPC) => Promise<unknown>,
  *   confirmDelete?: (npc: NPC) => Promise<boolean>,
  *   getLocationLabel?: (npc: NPC) => string,
  *   getRole?: () => ViewRole,

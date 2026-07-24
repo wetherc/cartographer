@@ -128,9 +128,20 @@
       </div>
 
       <div class="tabs__panel" role="tabpanel" id="build-panel-encounters" aria-labelledby="build-tab-encounters" hidden>
-        <section id="build-encounters-container" class="card" aria-label="Encounter authoring">
-          <h2 class="card__title">Encounters</h2>
-        </section>
+        <div id="build-encounter-tabs" class="tabs" role="tablist" aria-label="Mob and NPC authoring">
+          <button class="tabs__tab" type="button" role="tab" id="build-tab-mobs" aria-controls="build-subpanel-mobs" aria-selected="true">Mobs</button>
+          <button class="tabs__tab" type="button" role="tab" id="build-tab-npcs" aria-controls="build-subpanel-npcs" aria-selected="false" tabindex="-1">NPCs</button>
+        </div>
+        <div class="tabs__panel" role="tabpanel" id="build-subpanel-mobs" aria-labelledby="build-tab-mobs">
+          <section id="build-encounters-container" class="card" aria-label="Encounter authoring">
+            <h2 class="card__title">Mobs</h2>
+          </section>
+        </div>
+        <div class="tabs__panel" role="tabpanel" id="build-subpanel-npcs" aria-labelledby="build-tab-npcs" hidden>
+          <section id="build-npcs-container" class="card" aria-label="NPC authoring">
+            <h2 class="card__title">NPCs</h2>
+          </section>
+        </div>
       </div>
     </aside>
   </main>
