@@ -15,10 +15,14 @@ Three ways to begin:
 
 - **New** (header) — a confirmed reset back to the blank campaign. This replaces
   the current campaign and its save, so you're asked to confirm first.
-- **Load example** — replaces the current campaign with a demo world: a 32x32
-  overworld with a crossroads and hand-shaped terrain, three outdoor subregions
-  (two wilderness regions and the town of Briarwick) plus a dungeon interior,
-  along with a sample character, an encounter, an NPC, and a handout. Useful for
+- **Load example** — replaces the current campaign with a complete demo
+  campaign: a 32x32 overworld with a crossroads and hand-shaped terrain, three
+  outdoor subregions (two wilderness regions and the town of Briarwick) plus a
+  dungeon interior, populated end to end as a playable arc. It ships a
+  seven-quest chain (goblin raids that trace back to the risen king in the
+  barrow), a staffed town of NPCs, field enemies in every biome, three minor
+  bosses and a major boss, lore handouts, a bestiary of reusable mob
+  templates, and a two-member party with kit and spell slots. Useful for
   seeing how a filled-in campaign looks before building your own. It also
   overwrites the current campaign, so it confirms first.
 - **Import** — load a campaign from a `.json` file you exported earlier.
