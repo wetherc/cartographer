@@ -3,29 +3,48 @@ import { abilityModifier } from './Modifiers.js';
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
+/** @typedef {import('../types/entities.js').ArmorWeight} ArmorWeight */
 /** @typedef {import('../types/entities.js').Equipment} Equipment */
 /** @typedef {import('../types/entities.js').EquipmentSlot} EquipmentSlot */
 
 /**
  * The wearable slots on a character, in display order. Each slot accepts only
- * the item types listed — a potion can't be worn as armor — and armor is worn
- * piecewise: helmet, chest, gloves, and greaves are separate slots.
+ * the item types listed — a potion can't be worn as armor. Body armor (the
+ * 'armor' type) goes in the chest slot; helmets, gloves, and greaves are
+ * separate flat-bonus pieces.
  * @type {{ key: EquipmentSlot, label: string, accepts: ItemType[] }[]}
  */
 export const EQUIPMENT_SLOTS = [
   { key: 'helmet', label: 'Helmet', accepts: ['helmet'] },
-  { key: 'chest', label: 'Chest', accepts: ['armor'] },
+  { key: 'chest', label: 'Armor', accepts: ['armor'] },
   { key: 'gloves', label: 'Gloves', accepts: ['gloves'] },
   { key: 'greaves', label: 'Greaves', accepts: ['greaves'] },
   { key: 'mainHand', label: 'Main hand', accepts: ['weapon'] },
   { key: 'offHand', label: 'Off hand', accepts: ['shield', 'weapon'] },
   { key: 'ranged', label: 'Ranged', accepts: ['bow'] },
+  { key: 'accessory', label: 'Accessory', accepts: ['ring'] },
 ];
 
 /** The item classifications, in the add-form's display order. 'armor' is
- * chest armor; consumables and gear can't be equipped anywhere.
+ * body armor; consumables and gear can't be equipped anywhere.
  * @type {ItemType[]} */
-export const ITEM_TYPES = ['gear', 'weapon', 'armor', 'helmet', 'gloves', 'greaves', 'shield', 'bow', 'consumable'];
+export const ITEM_TYPES = ['gear', 'weapon', 'armor', 'helmet', 'gloves', 'greaves', 'shield', 'bow', 'ring', 'consumable'];
+
+/**
+ * The 5e armor weight classes. The weight alone fixes how DEX scales the
+ * armor's AC — light adds the full DEX modifier, medium caps it at +2, heavy
+ * ignores DEX entirely (never a penalty) — while the base AC stays
+ * configurable per item, defaulting to a representative 5e value.
+ * @type {{ key: ArmorWeight, label: string, dexCap: number, defaultBaseAC: number }[]}
+ */
+export const ARMOR_WEIGHTS = [
+  { key: 'light', label: 'Light', dexCap: Infinity, defaultBaseAC: 11 },
+  { key: 'medium', label: 'Medium', dexCap: 2, defaultBaseAC: 13 },
+  { key: 'heavy', label: 'Heavy', dexCap: 0, defaultBaseAC: 16 },
+];
+
+/** Shields always grant a flat +2 AC, per 5e; not configurable. */
+export const SHIELD_AC = 2;
 
 /** @returns {Equipment} every slot empty */
 export function emptyEquipment() {
@@ -37,6 +56,7 @@ export function emptyEquipment() {
     mainHand: null,
     offHand: null,
     ranged: null,
+    accessory: null,
   };
 }
 
@@ -111,17 +131,105 @@ export function getEquipped(character, slot) {
 }
 
 /**
- * A character's armor class: the unarmored 10 + DEX modifier baseline plus
- * the AC bonus of every equipped item that grants one (armor pieces, shields).
+ * Normalize an inventory item from any era. Pre-weight-class body armor
+ * carried a flat acBonus on top of 10 + DEX; that reads as light armor (full
+ * DEX scaling, same total) with a base AC of 10 + the old bonus. Shields drop
+ * any stored bonus — they are always +2 now. Pure; unchanged items return
+ * the same reference.
+ * @param {InventoryItem} item
+ * @returns {InventoryItem}
+ */
+export function migrateItem(item) {
+  if (item.type === 'armor' && item.baseAC === undefined) {
+    const { acBonus, ...rest } = item;
+    return { ...rest, armorWeight: item.armorWeight ?? 'light', baseAC: 10 + (acBonus ?? 0) };
+  }
+  if (item.type === 'shield' && item.acBonus !== undefined) {
+    const { acBonus: _dropped, ...rest } = item;
+    return rest;
+  }
+  return item;
+}
+
+/** Every item currently equipped in some slot.
+ * @param {Character} character
+ * @returns {InventoryItem[]} */
+function equippedItems(character) {
+  return EQUIPMENT_SLOTS.flatMap((slot) => {
+    const item = getEquipped(character, slot.key);
+    return item ? [item] : [];
+  });
+}
+
+/**
+ * The character's ability scores with equipped-item buffs (e.g. a ring's
+ * +2 STR) folded in. Unknown stats pass through untouched.
+ * @param {Character} character
+ * @returns {Record<string, number>}
+ */
+export function effectiveStats(character) {
+  const stats = { ...character.stats };
+  for (const item of equippedItems(character)) {
+    for (const [stat, delta] of Object.entries(item.statBonuses ?? {})) {
+      stats[stat] = (stats[stat] ?? 10) + delta;
+    }
+  }
+  return stats;
+}
+
+/**
+ * A character's armor class, 5e-style. Equipped body armor replaces the
+ * unarmored baseline with its own base AC plus a DEX contribution fixed by
+ * its weight class (light: full modifier, medium: capped at +2, heavy: none);
+ * unarmored is the character's base AC (10 unless raised by an effect like
+ * Mage Armor) + full DEX. Shields add a flat +2, and every other equipped
+ * item adds its flat acBonus. DEX here includes equipped stat buffs.
  * @param {Character} character
  * @returns {number}
  */
 export function armorClass(character) {
-  const base = 10 + abilityModifier(character.stats.DEX ?? 10);
-  return EQUIPMENT_SLOTS.reduce(
-    (ac, slot) => ac + (getEquipped(character, slot.key)?.acBonus ?? 0),
-    base,
-  );
+  const dexMod = abilityModifier(effectiveStats(character).DEX ?? 10);
+  const body = getEquipped(character, 'chest');
+  let ac;
+  if (body && body.baseAC !== undefined) {
+    const weight = ARMOR_WEIGHTS.find((w) => w.key === (body.armorWeight ?? 'light')) ?? ARMOR_WEIGHTS[0];
+    // Heavy armor ignores DEX outright (a negative modifier doesn't hurt);
+    // otherwise the modifier applies up to the weight's cap.
+    ac = body.baseAC + (weight.dexCap === 0 ? 0 : Math.min(dexMod, weight.dexCap));
+  } else {
+    ac = (character.baseAC ?? 10) + dexMod;
+  }
+  for (const item of equippedItems(character)) {
+    if (item === body) continue;
+    ac += itemType(item) === 'shield' ? SHIELD_AC : item.acBonus ?? 0;
+  }
+  return ac;
+}
+
+/**
+ * A short human-readable summary of an item's mechanical effects, for the
+ * inventory list and slot pickers: "light armor, AC 12 + DEX", "+2 AC",
+ * "+2 STR"... Empty string for a plain item.
+ * @param {InventoryItem} item
+ * @returns {string}
+ */
+export function itemSummary(item) {
+  /** @type {string[]} */
+  const parts = [];
+  const type = itemType(item);
+  if (type === 'armor' && item.baseAC !== undefined) {
+    const weight = ARMOR_WEIGHTS.find((w) => w.key === (item.armorWeight ?? 'light')) ?? ARMOR_WEIGHTS[0];
+    const dex = weight.dexCap === 0 ? '' : weight.dexCap === Infinity ? ' + DEX' : ` + DEX (max ${weight.dexCap})`;
+    parts.push(`${weight.key} armor, AC ${item.baseAC}${dex}`);
+  } else if (type === 'shield') {
+    parts.push(`+${SHIELD_AC} AC`);
+  } else if (item.acBonus) {
+    parts.push(`+${item.acBonus} AC`);
+  }
+  for (const [stat, delta] of Object.entries(item.statBonuses ?? {})) {
+    if (delta !== 0) parts.push(`${delta > 0 ? '+' : ''}${delta} ${stat}`);
+  }
+  return parts.join(', ');
 }
 
 /**

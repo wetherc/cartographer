@@ -189,6 +189,15 @@
   font-family: var(--font-mono);
 }
 
+/* Equipped-item buff riding on a score (a ring's +2 STR), shown beside the
+   modifier like the HP bar's bonus readout. */
+.character-sheet__stat-buff {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: 700;
+  color: var(--mana);
+}
+
 /* The derived ability modifier shown beside each score. */
 .character-sheet__stat-mod {
   font-family: var(--font-mono);
@@ -319,8 +328,8 @@
 }
 
 .inventory-panel__field-label:has(.inventory-panel__type-select) {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 7rem;
+  min-width: 7rem;
 }
 
 .inventory-panel__type-select {
@@ -336,6 +345,16 @@
 .inventory-panel__ac-input {
   width: 3.5rem;
   text-align: center;
+}
+
+/* Fixed-value readouts in the add form (a shield's non-negotiable +2 AC),
+   sized to sit level with the neighboring inputs. */
+.inventory-panel__note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2rem;
+  font-family: var(--font-mono);
+  color: var(--text);
 }
 
 .inventory-panel__type-select {

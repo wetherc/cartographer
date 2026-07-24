@@ -367,14 +367,27 @@ write themselves into the travelogue: pickups record who found what, where,
 and at what in-game time; consuming or discarding logs a shorter line.
 
 Items carry a **type** (gear, weapon, armor, helmet, gloves, greaves, shield,
-bow, or consumable), picked when adding one, and the Inventory panel opens
-with seven **equipment slots** — Helmet, Chest, Gloves, Greaves, Main hand,
-Off hand, and Ranged. Each picker lists only the items its slot accepts (a
-potion can't be worn as armor; the off hand takes a shield or a weapon), so
-armor is worn piecewise. Defensive types take an **AC bonus** when added;
-equipped bonuses feed the character's **armor class** — 10 + DEX modifier +
-every equipped bonus — shown as a derived readout in the sheet's header.
-Removing the last of a stack unequips it automatically.
+bow, ring, or consumable), picked when adding one, and the Inventory panel
+opens with eight **equipment slots** — Helmet, Armor, Gloves, Greaves, Main
+hand, Off hand, Ranged, and Accessory. Each picker lists only the items its
+slot accepts (a potion can't be worn as armor; the off hand takes a shield or
+a weapon; the accessory slot takes a ring).
+
+Armor class follows 5e. Body armor (the **armor** type, worn in the Armor
+slot) is created with a **weight class** and a configurable **base AC** that
+replaces the unarmored baseline; the weight class alone fixes how DEX scales
+it — **light** adds the full DEX modifier, **medium** caps it at +2, **heavy**
+ignores DEX entirely — and isn't overridable per item. **Shields** always
+grant a flat +2. Other equippables (helmets, rings, bows, weapons...) can
+carry a flat **AC bonus** and/or an **ability-score buff** (say, +2 STR),
+both set when adding the item and applied only while equipped — a buffed
+score shows the boost beside its modifier on the sheet, and the modifier
+reflects the buffed total. Unarmored characters use their **Base AC** (a
+sheet field, normally 10) + full DEX, so effects like Mage Armor are a
+one-field change. The derived **AC readout** in the sheet's header sums all
+of this. Removing the last of a stack unequips it automatically, and saves
+from the flat-bonus armor era migrate on load (old body armor reads as light
+armor with the same total).
 
 The sheet also carries two HP controls beyond the bar's steppers: **Max HP**
 (GM-only) overrides the pool's maximum per character, clamping current HP down
