@@ -103,9 +103,13 @@ function buildEquipment(character, commit, playable) {
  * member and a count, and the panel hands the stack over through
  * `transfer.send` — the caller owns moving the items and re-rendering, since
  * both characters change.
+ * Item stats are GM-adjudicated: the per-row edit form only appears when
+ * `canEdit` also returns true, so a player tab can use, give, and discard its
+ * items but never rewrite what they do.
  * @param {(character: Character) => void} [onChange]
  * @param {(event: InventoryEvent, character: Character) => void} [onEvent]
  * @param {() => boolean} [canPlay]
+ * @param {() => boolean} [canEdit]
  * @param {{ recipients: () => { id: string, name: string }[],
  *   send: (item: InventoryItem, count: number, recipientId: string) => void }} [transfer]
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
@@ -116,6 +120,7 @@ export function mountInventoryPanel(
   onChange = () => {},
   onEvent = () => {},
   canPlay = () => true,
+  canEdit = () => true,
   transfer = undefined,
 ) {
   let current = initial;
@@ -208,17 +213,19 @@ export function mountInventoryPanel(
 
     if (!playable) return row;
 
-    const editButton = document.createElement('button');
-    editButton.type = 'button';
-    editButton.className = 'btn btn--icon';
-    editButton.setAttribute('aria-label', `Edit ${item.name}`);
-    editButton.appendChild(icon('edit'));
-    editButton.addEventListener('click', () => {
-      editingId = item.id;
-      givingId = null;
-      render();
-    });
-    row.appendChild(editButton);
+    if (canEdit()) {
+      const editButton = document.createElement('button');
+      editButton.type = 'button';
+      editButton.className = 'btn btn--icon';
+      editButton.setAttribute('aria-label', `Edit ${item.name}`);
+      editButton.appendChild(icon('edit'));
+      editButton.addEventListener('click', () => {
+        editingId = item.id;
+        givingId = null;
+        render();
+      });
+      row.appendChild(editButton);
+    }
 
     // Hand-off to another party member; only offered when someone else exists
     // to receive. The give form opens inline under the row.

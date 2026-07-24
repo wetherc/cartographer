@@ -433,6 +433,7 @@ export function wireParty(app) {
       );
     },
     () => selectedPermissions().play,
+    () => selectedPermissions().editBase,
     {
       recipients: () => state.characters.map((c) => ({ id: c.id, name: c.name })),
       send: (item, count, recipientId) => {
