@@ -615,9 +615,15 @@ export function wireEncounters(app) {
         : hit
           ? 'hit'
           : 'miss';
+    // An advantage/disadvantage attack notes the discarded d20 so the log
+    // shows both dice, matching the tray's own readout.
+    const d20 = result.results.find((r) => r.die === 'd20');
+    const modeNote = d20?.dropped?.length
+      ? ` at ${result.selection.mode} (dropped ${d20.dropped.join(',')})`
+      : '';
     app.actions.logEvent(
       'combat',
-      `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(attacker.level)}): ${result.total} to hit vs AC ${defender.ac} — ${outcome}.`,
+      `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(attacker.level)}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
     );
     if (!hit) {
       app.toasts.show(

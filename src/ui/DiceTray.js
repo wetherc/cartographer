@@ -102,6 +102,48 @@ export function mountDiceTray(container, opts = {}) {
     ),
   );
 
+  // Advantage/disadvantage segmented toggle: rolls every d20 twice, keeping
+  // the higher (advantage) or lower (disadvantage) die. The choice is sticky
+  // until changed, so a GM can set it once and attack through it.
+  const modeRow = document.createElement('div');
+  modeRow.className = 'dice-tray__row';
+  const modeName = document.createElement('span');
+  modeName.className = 'dice-tray__label';
+  modeName.textContent = 'd20 mode';
+  const modeGroup = document.createElement('div');
+  modeGroup.className = 'dice-tray__modes';
+  modeGroup.setAttribute('role', 'group');
+  modeGroup.setAttribute('aria-label', 'Roll d20s normally, with advantage, or with disadvantage');
+  /** @type {{ mode: import('../types/dice.js').RollMode, button: HTMLButtonElement }[]} */
+  const modeButtons = [];
+  const syncModes = () => {
+    for (const entry of modeButtons) {
+      const active = (selection.mode ?? 'normal') === entry.mode;
+      entry.button.setAttribute('aria-pressed', String(active));
+      entry.button.classList.toggle('dice-tray__mode--active', active);
+    }
+  };
+  for (const mode of /** @type {import('../types/dice.js').RollMode[]} */ ([
+    'normal',
+    'advantage',
+    'disadvantage',
+  ])) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn dice-tray__mode';
+    button.textContent = mode === 'normal' ? 'Normal' : mode[0].toUpperCase() + mode.slice(1);
+    button.addEventListener('click', () => {
+      selection.mode = mode;
+      syncModes();
+    });
+    modeButtons.push({ mode, button });
+    modeGroup.appendChild(button);
+  }
+  syncModes();
+  refreshers.push(syncModes);
+  modeRow.append(modeName, modeGroup);
+  root.appendChild(modeRow);
+
   // Optional difficulty target: when set, each roll also reports success or
   // failure against it (meets-it-beats-it), in the tray and travelogue alike.
   const targetRow = document.createElement('div');
@@ -148,6 +190,9 @@ export function mountDiceTray(container, opts = {}) {
     rollSelection: (next, target = null) => {
       for (const die of DIE_TYPES) selection.counts[die] = next.counts[die] ?? 0;
       selection.modifier = next.modifier ?? 0;
+      // Callers that don't name a mode inherit the tray's toggle, so weapon
+      // attacks respect a standing advantage/disadvantage choice.
+      selection.mode = next.mode ?? selection.mode ?? 'normal';
       targetInput.value = target === null ? '' : String(target);
       for (const refresh of refreshers) refresh();
       disclosure.setExpanded(true);

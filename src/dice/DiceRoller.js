@@ -20,12 +20,16 @@ export const DIE_TYPES = /** @type {DieType[]} */ (Object.keys(DIE_SIDES));
 
 /**
  * Roll a structured dice selection (counts per die type + flat modifier).
- * No text parsing — counts come from UI state.
+ * No text parsing — counts come from UI state. With advantage or
+ * disadvantage set, each d20 rolls twice and keeps the higher (or lower)
+ * die, recording the discarded one in `dropped`; other die types are
+ * unaffected, matching the 5e rule.
  * @param {DiceSelection} selection
  * @param {RandomFn} [rng] injectable RNG for testing, defaults to Math.random
  * @returns {DiceResult}
  */
 export function roll(selection, rng = Math.random) {
+  const mode = selection.mode ?? 'normal';
   /** @type {DieTypeResult[]} */
   const results = [];
 
@@ -33,9 +37,23 @@ export function roll(selection, rng = Math.random) {
     const count = selection.counts[die] ?? 0;
     if (count <= 0) continue;
     const sides = DIE_SIDES[die];
-    const rolls = Array.from({ length: count }, () => Math.floor(rng() * sides) + 1);
+    /** @type {number[]} */
+    const rolls = [];
+    /** @type {number[]} */
+    const dropped = [];
+    for (let i = 0; i < count; i++) {
+      const first = Math.floor(rng() * sides) + 1;
+      if (die !== 'd20' || mode === 'normal') {
+        rolls.push(first);
+        continue;
+      }
+      const second = Math.floor(rng() * sides) + 1;
+      const kept = mode === 'advantage' ? Math.max(first, second) : Math.min(first, second);
+      rolls.push(kept);
+      dropped.push(kept === first ? second : first);
+    }
     const subtotal = rolls.reduce((sum, value) => sum + value, 0);
-    results.push({ die, rolls, subtotal });
+    results.push(dropped.length > 0 ? { die, rolls, subtotal, dropped } : { die, rolls, subtotal });
   }
 
   const diceTotal = results.reduce((sum, result) => sum + result.subtotal, 0);
@@ -54,7 +72,7 @@ export function roll(selection, rng = Math.random) {
  * @returns {DiceSelection}
  */
 export function emptySelection() {
-  return { counts: {}, modifier: 0 };
+  return { counts: {}, modifier: 0, mode: /** @type {const} */ ('normal') };
 }
 
 /**
@@ -96,12 +114,17 @@ export function rollDamage(parts, modifier = 0, rng = Math.random) {
 
 /**
  * Render a roll result as a one-line readout, e.g.
- * "d20[14]=14 + modifier=2 -> total: 16".
+ * "d20[14]=14 + modifier=2 -> total: 16". Rolls made at advantage or
+ * disadvantage name the mode and the discarded d20s so the readout shows
+ * both dice, e.g. "d20[17]=17 -> total: 17 (advantage, dropped 5)".
  * @param {import('../types/dice.js').DiceResult} result
  * @returns {string}
  */
 export function formatResult(result) {
   const parts = result.results.map((r) => `${r.die}[${r.rolls.join(',')}]=${r.subtotal}`);
   if (result.modifier !== 0) parts.push(`modifier=${result.modifier}`);
-  return `${parts.join(' + ')} -> total: ${result.total}`;
+  const dropped = result.results.flatMap((r) => r.dropped ?? []);
+  const suffix =
+    dropped.length > 0 ? ` (${result.selection.mode}, dropped ${dropped.join(',')})` : '';
+  return `${parts.join(' + ')} -> total: ${result.total}${suffix}`;
 }

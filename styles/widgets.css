@@ -81,6 +81,34 @@
   text-align: center;
 }
 
+/* Advantage/disadvantage segmented toggle, sharing the mode-switch look. */
+.dice-tray__modes {
+  display: inline-flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.dice-tray__mode {
+  border: none;
+  border-radius: 0;
+  background: var(--surface);
+  font-size: var(--text-label);
+}
+
+.dice-tray__mode + .dice-tray__mode {
+  border-left: 1px solid var(--border-strong);
+}
+
+.dice-tray__mode--active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.dice-tray__mode--active:hover {
+  background: var(--accent-hover);
+}
+
 .dice-tray__roll {
   margin-top: var(--space-3);
   width: 100%;

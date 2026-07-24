@@ -65,6 +65,51 @@ test('formatResult lists each die group, the nonzero modifier, and the total', (
   assert.equal(formatResult(roll(selection, () => 0.5)), 'd6[4,4]=8 -> total: 8');
 });
 
+test('advantage rolls each d20 twice and keeps the higher die', () => {
+  const selection = emptySelection();
+  selection.counts.d20 = 1;
+  selection.mode = 'advantage';
+  const values = [0.2, 0.8]; // 5 then 17
+  const result = roll(selection, () => values.shift() ?? 0);
+  assert.deepEqual(result.results[0].rolls, [17]);
+  assert.deepEqual(result.results[0].dropped, [5]);
+  assert.equal(result.total, 17);
+});
+
+test('disadvantage keeps the lower die; other die types roll once', () => {
+  const selection = emptySelection();
+  selection.counts.d20 = 1;
+  selection.counts.d6 = 1;
+  selection.mode = 'disadvantage';
+  const values = [0.5, 0.8, 0.2]; // d6 rolls 4; d20 rolls 17 then 5
+  const result = roll(selection, () => values.shift() ?? 0);
+  const d20 = result.results.find((r) => r.die === 'd20');
+  const d6 = result.results.find((r) => r.die === 'd6');
+  assert.deepEqual(d20?.rolls, [5]);
+  assert.deepEqual(d20?.dropped, [17]);
+  assert.deepEqual(d6?.rolls, [4]);
+  assert.equal(d6?.dropped, undefined);
+  assert.equal(values.length, 0, 'exactly three rng draws');
+});
+
+test('normal mode leaves dropped unset', () => {
+  const selection = emptySelection();
+  selection.counts.d20 = 2;
+  const result = roll(selection, () => 0.5);
+  assert.equal(result.results[0].rolls.length, 2);
+  assert.equal(result.results[0].dropped, undefined);
+});
+
+test('formatResult names the mode and the discarded d20', () => {
+  const selection = emptySelection();
+  selection.counts.d20 = 1;
+  selection.modifier = 2;
+  selection.mode = 'advantage';
+  const values = [0.2, 0.8];
+  const result = roll(selection, () => values.shift() ?? 0);
+  assert.equal(formatResult(result), 'd20[17]=17 + modifier=2 -> total: 19 (advantage, dropped 5)');
+});
+
 test('emptySelection rolls to just the modifier', () => {
   const selection = emptySelection();
   selection.modifier = 5;
