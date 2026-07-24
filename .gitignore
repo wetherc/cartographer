@@ -1,2 +1,7 @@
 .playwright-mcp/
 .DS_Store
+
+# GM library customizations: portable JSON kept with the working copy, never committed.
+# (src/library/ is source code, not GM data — keep it tracked.)
+library/
+!src/library/

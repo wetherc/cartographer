@@ -18,6 +18,7 @@ import { wireGenerateAction } from './app/generateAction.js';
 import { wireParty } from './app/partyWiring.js';
 import { wireEncounters } from './app/encounterWiring.js';
 import { wireStory } from './app/storyWiring.js';
+import { wireLibrary } from './app/libraryWiring.js';
 import { wireSessionControls } from './app/sessionControls.js';
 import { wireShortcuts } from './app/shortcuts.js';
 import { maybeShowOnboarding } from './app/onboarding.js';
@@ -58,6 +59,9 @@ const app = /** @type {import('./types/app.js').AppContext} */ (
 );
 
 wireCampaignActions(app); // dirty flag + header campaign controls; provides markDirty
+// The library loads before anything that offers its presets (the item form,
+// the enemy gear pickers), so the merged lists are live from the first open.
+wireLibrary(app); // Library mode: equipment/bestiary/NPC templates + custom-library file
 wireMapView(app); // canvas, trees, inspector, palette, fog, map tools
 wireGenerateAction(app);
 wireParty(app); // roster, sheet, inventory, time

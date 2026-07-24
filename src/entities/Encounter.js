@@ -46,13 +46,15 @@ export function defaultEnemyGear(level, tier) {
 /**
  * Create an encounter at full health, optionally staged at a map location.
  * The stat block is closed over the fixed stat set (six abilities + AC), and
- * the enemy is armed: absent weapon/armor read as the level/tier defaults.
+ * the enemy is armed by default: an absent weapon/armor reads as the
+ * level/tier default, while an explicit null means deliberately unarmed or
+ * unarmored (a beast, an ooze) and stays null.
  * @param {string} id
  * @param {string} name
  * @param {number} maxHP
  * @param {Record<string, number>} [statBlock]
  * @param {EncounterLocation | null} [location]
- * @param {{ level?: number, tier?: EnemyTier, weapon?: EnemyWeapon, armor?: EnemyArmor }} [options]
+ * @param {{ level?: number, tier?: EnemyTier, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null }} [options]
  * @returns {Encounter}
  */
 export function createEncounter(id, name, maxHP, statBlock = {}, location = null, options = {}) {
@@ -70,8 +72,8 @@ export function createEncounter(id, name, maxHP, statBlock = {}, location = null
     location,
     conditions: [],
     statMods: [],
-    weapon: options.weapon ?? gear.weapon,
-    armor: options.armor ?? gear.armor,
+    weapon: options.weapon === undefined ? gear.weapon : options.weapon,
+    armor: options.armor === undefined ? gear.armor : options.armor,
   };
 }
 
@@ -79,7 +81,9 @@ export function createEncounter(id, name, maxHP, statBlock = {}, location = null
  * Fill in fields a loaded encounter may predate: encounters saved before
  * location binding existed stay unbound (always shown); ones saved before
  * levels and tiers read as level-1 mobs. The stat block is re-closed over the
- * fixed stat set, so custom stats from older saves drop away.
+ * fixed stat set, so custom stats from older saves drop away. Gear only
+ * backfills when absent — a stored null means deliberately unarmed/unarmored
+ * and survives the reload.
  * @param {Encounter} encounter
  * @returns {Encounter}
  */
@@ -95,8 +99,8 @@ export function withDefaults(encounter) {
     statMods: encounter.statMods ?? [],
     level,
     tier,
-    weapon: encounter.weapon ?? gear.weapon,
-    armor: encounter.armor ?? gear.armor,
+    weapon: encounter.weapon === undefined ? gear.weapon : encounter.weapon,
+    armor: encounter.armor === undefined ? gear.armor : encounter.armor,
   };
 }
 
@@ -148,7 +152,7 @@ export function effectiveStatBlock(encounter) {
  * doesn't reset it. Moving the encounter clears the `noticed` flag, so the
  * party walking into its new spot logs a fresh meeting.
  * @param {Encounter} encounter
- * @param {{ name: string, maxHP: number, level: number, tier: EnemyTier, location: EncounterLocation | null, weapon?: EnemyWeapon, armor?: EnemyArmor }} edits
+ * @param {{ name: string, maxHP: number, level: number, tier: EnemyTier, location: EncounterLocation | null, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null }} edits
  * @returns {Encounter}
  */
 export function editEncounter(encounter, edits) {
@@ -164,8 +168,8 @@ export function editEncounter(encounter, edits) {
     level: edits.level,
     tier: edits.tier,
     location: edits.location,
-    weapon: edits.weapon ?? encounter.weapon,
-    armor: edits.armor ?? encounter.armor,
+    weapon: edits.weapon === undefined ? encounter.weapon : edits.weapon,
+    armor: edits.armor === undefined ? encounter.armor : edits.armor,
     noticed: moved ? false : encounter.noticed,
   };
 }

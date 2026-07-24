@@ -39,8 +39,9 @@ export function wireSessionControls(app) {
     document.body.classList.add('role-locked');
   }
 
-  // Play/Build mode drives which rails the layout shows (a body class toggled
-  // by CSS), and defaults to Play so a first-run visitor lands on the live view.
+  // Play/Build/Library mode drives which rails the layout shows (a body class
+  // toggled by CSS), and defaults to Play so a first-run visitor lands on the
+  // live view.
   const modeSwitch = mountModeSwitch(
     mustGetElement('mode-switch-container'),
     app.state.mode,
@@ -48,6 +49,7 @@ export function wireSessionControls(app) {
       app.state.mode = mode;
       document.body.classList.toggle('mode-play', mode === 'play');
       document.body.classList.toggle('mode-build', mode === 'build');
+      document.body.classList.toggle('mode-library', mode === 'library');
       app.actions.onModeChanged(mode);
     },
   );

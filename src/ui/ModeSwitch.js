@@ -1,12 +1,14 @@
 import { icon } from './icons.js';
 
-/** @typedef {'play' | 'build'} AppMode */
+/** @typedef {'play' | 'build' | 'library'} AppMode */
 
 /**
- * Mount a Play/Build segmented toggle in the header. The two modes are the same
- * app over the same campaign data: Play is the live-session view, Build is the
- * authoring view. The active button carries aria-pressed so assistive tech and
- * the eye both read which mode is current.
+ * Mount a Play/Build/Library segmented toggle in the header. The modes are
+ * the same app over the same campaign data: Play is the live-session view,
+ * Build is the campaign-authoring view, and Library edits the reusable
+ * equipment/bestiary/NPC template collection that lives outside any campaign.
+ * The active button carries aria-pressed so assistive tech and the eye both
+ * read which mode is current.
  * @param {HTMLElement} container
  * @param {AppMode} initialMode
  * @param {(mode: AppMode) => void} onChange
@@ -38,6 +40,7 @@ export function mountModeSwitch(container, initialMode, onChange) {
 
   make('play', 'dice', 'Play');
   make('build', 'edit', 'Build');
+  make('library', 'scroll', 'Library');
 
   /** @param {AppMode} next */
   function setMode(next) {

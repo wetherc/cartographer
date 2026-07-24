@@ -20,6 +20,7 @@ import { formatDamage } from '../entities/Equipment.js';
  * @param {{
  *   getEncounters: () => Encounter[],
  *   onAdd: () => Promise<unknown>,
+ *   onAddFromTemplate?: () => Promise<unknown>,
  *   onEdit: (encounter: Encounter) => Promise<unknown>,
  *   onDelete: (encounter: Encounter) => Promise<unknown>,
  *   onUpdate: (encounter: Encounter) => void,
@@ -48,6 +49,20 @@ export function mountBuildEncounterPanel(container, callbacks) {
       if (await callbacks.onAdd()) render();
     });
     actions.appendChild(addButton);
+
+    // Spawning from a saved template (the campaign bestiary + the library)
+    // sits beside New encounter — authoring belongs to the Build rail.
+    const onAddFromTemplate = callbacks.onAddFromTemplate;
+    if (onAddFromTemplate) {
+      const bestiaryButton = document.createElement('button');
+      bestiaryButton.type = 'button';
+      bestiaryButton.className = 'btn';
+      bestiaryButton.append(icon('scroll'), document.createTextNode('From bestiary'));
+      bestiaryButton.addEventListener('click', async () => {
+        if (await onAddFromTemplate()) render();
+      });
+      actions.appendChild(bestiaryButton);
+    }
     root.appendChild(actions);
 
     if (encounters.length === 0) {

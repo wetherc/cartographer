@@ -53,13 +53,18 @@ export interface Encounter {
    * records the first meeting exactly once. Absent on older saves. */
   noticed?: boolean;
   /** The enemy's weapon; stamped with a level/tier default on creation and on
-   * older saves, so every enemy can attack. */
-  weapon?: EnemyWeapon;
-  /** The enemy's armor; stamped with a level/tier default like the weapon. */
-  armor?: EnemyArmor;
+   * older saves, so every enemy can attack. An explicit null means the enemy
+   * is deliberately weaponless (a non-bipedal beast, an ooze) and gets no
+   * default and no attack button. */
+  weapon?: EnemyWeapon | null;
+  /** The enemy's armor; stamped with a level/tier default like the weapon,
+   * with the same null = deliberately unarmored escape hatch. */
+  armor?: EnemyArmor | null;
 }
 
-/** A reusable encounter blueprint saved to the campaign's bestiary. */
+/** A reusable encounter blueprint saved to the campaign's bestiary (or to the
+ * campaign-independent library). Weapon/armor carry the same null semantics
+ * as Encounter: null = deliberately none, absent = stamp a default. */
 export interface EncounterTemplate {
   id: string;
   name: string;
@@ -67,8 +72,8 @@ export interface EncounterTemplate {
   statBlock: Record<string, number>;
   level: number;
   tier: EnemyTier;
-  weapon?: EnemyWeapon;
-  armor?: EnemyArmor;
+  weapon?: EnemyWeapon | null;
+  armor?: EnemyArmor | null;
 }
 
 export type ResourceType = 'item-count' | 'mana' | 'custom';

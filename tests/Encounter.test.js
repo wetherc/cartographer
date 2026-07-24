@@ -406,3 +406,52 @@ test('editEncounter swaps gear and keeps it when the edit omits gear', () => {
   const untouched = editEncounter(rearmed, edits);
   assert.equal(untouched.weapon?.name, 'Spear');
 });
+
+test('explicit null gear means deliberately unarmed and survives every path', () => {
+  const ooze = createEncounter('e1', 'Gray Ooze', 22, {}, null, { weapon: null, armor: null });
+  assert.equal(ooze.weapon, null);
+  assert.equal(ooze.armor, null);
+
+  // Reloading keeps the null (only an absent field gets a default stamped).
+  const reloaded = withDefaults(ooze);
+  assert.equal(reloaded.weapon, null);
+  assert.equal(reloaded.armor, null);
+
+  // Edits that omit gear keep the null; an explicit null edit disarms.
+  const edits = {
+    name: 'Gray Ooze',
+    maxHP: 22,
+    level: 1,
+    tier: /** @type {const} */ ('mob'),
+    location: null,
+  };
+  assert.equal(editEncounter(ooze, edits).weapon, null);
+  const armed = createEncounter('e2', 'Guard', 11);
+  const disarmed = editEncounter(armed, { ...edits, name: 'Guard', maxHP: 11, weapon: null });
+  assert.equal(disarmed.weapon, null);
+  assert.equal(disarmed.armor?.name, armed.armor?.name, 'armor untouched when omitted');
+});
+
+test('null armor contributes nothing to the effective stat block', () => {
+  const ooze = createEncounter('e1', 'Gray Ooze', 22, { AC: 8 }, null, {
+    weapon: null,
+    armor: null,
+  });
+  assert.equal(effectiveStatBlock(ooze).AC, 8);
+});
+
+test('a template with null gear spawns an unarmed encounter', () => {
+  const template = {
+    id: 't1',
+    name: 'Gray Ooze',
+    maxHP: 22,
+    statBlock: { AC: 8 },
+    level: 1,
+    tier: /** @type {const} */ ('mob'),
+    weapon: null,
+    armor: null,
+  };
+  const spawned = fromTemplate(template, 'e9');
+  assert.equal(spawned.weapon, null);
+  assert.equal(spawned.armor, null);
+});

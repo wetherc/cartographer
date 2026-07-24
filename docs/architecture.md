@@ -11,8 +11,9 @@ src/
   map/                 tile grid, hierarchy, canvas rendering, region grouping, fog of war
   dice/                dice roll logic
   entities/            encounter/resource/character models
+  library/             built-in default templates (equipment/bestiary/NPCs) + custom-library merge logic
   party/               party position tracking, triggers fog reveal
-  storage/             whole-campaign serialization + localStorage/file persistence
+  storage/             whole-campaign serialization + localStorage/file persistence; the custom library's own store
   ui/                  thin DOM-wiring widgets (DiceTray, Breadcrumb, CharacterSheet, InventoryPanel, EncounterPanel)
 ```
 
@@ -31,7 +32,8 @@ One module per feature area, each a `wireX(app)` factory:
 - `partyWiring.js` — roster, character sheet, inventory, Time panel; provides `refreshSelectedCharacter`.
 - `encounterWiring.js` — Encounters and Initiative panels, the Build-rail encounter authoring list, bestiary, walked-into-an-encounter alert; owns transient combat state. A shared create/edit dialog (name, HP, level/tier, placement via `locationFields`) backs both panels' add and edit actions; edits go through the pure `Encounter.editEncounter`, which keeps live state (current HP clamped to a new max, stat block, conditions) and resets the `noticed` flag when the encounter moves.
 - `storyWiring.js` — travelogue (provides `logEvent`), NPCs, quests, handouts.
-- `sessionControls.js` — mode/role switches (role guarded by the cross-tab GM lock), sidebar tabs and collapse; provides `setMode`.
+- `libraryWiring.js` — the Library mode's three template lists (equipment, bestiary, NPCs) and the custom-library file controls (export/import/reset, startup auto-load). The custom library is deliberately not campaign state: `library/Library.js` holds the built-in defaults, the pure merge logic (a custom entry whose name — and for equipment, type — matches a default overrides it in place; others append), and a small module-level "active library" registry that the preset consumers (the item form's pickers, the enemy gear selects, "From bestiary") read at call time, since they mount far from the wiring that loads customizations.
+- `sessionControls.js` — mode/role switches (role guarded by the cross-tab GM lock), sidebar tabs and collapse; provides `setMode`. Mode is a three-way Play / Build / Library toggle; Library mode hides the map column entirely and shows only the template lists.
 - `shortcuts.js`, `onboarding.js` — global keyboard shortcuts and the first-run overlay.
 
 Per-module UI state (selected tile, active brush, fog tool, edit history, selected character, combat, dirty) stays private inside the module that owns it; only the campaign data lives on `app.state`.
@@ -82,6 +84,8 @@ All of that individual movement sits behind the persisted `splitParty` flag (on 
 ## Persistence
 
 `storage/SaveManager.js` serializes an entire campaign as one JSON blob, per `types/storage.ts`'s `CampaignState` (a flat `nodes` array — `TileGrid`'s node map flattened — plus `party`, `characters`, `encounters`). `buildState`/`serialize`/`deserialize`/`toTileGrid` are pure: `toTileGrid` rebuilds a working hierarchy by re-adding each node, since a `MapNode` already carries its own `parentId`, and `deserialize` defaults any missing top-level field to an empty value instead of throwing, so an older/smaller save shape still loads. `saveToLocalStorage`/`loadFromLocalStorage`/`downloadState`/`readStateFromFile` are thin wrappers around those pure functions using the actual browser APIs (`localStorage`, `Blob`, `FileReader`).
+
+The GM's custom library persists separately in `storage/LibraryStore.js`, under its own localStorage key (`campaign-builder:library`) so New/Import/Load example never touch it. The browser copy is the working state; `downloadLibrary`/`readLibraryFromFile` round-trip it through a portable JSON file, and `fetchLibraryFile` seeds an empty browser from `library/campaign-library.json` (a gitignored path served from the project root) at startup. `normalizeLibrary` (in `library/Library.js`) makes every load tolerant, dropping invalid entries instead of throwing.
 
 ## Testability pattern
 

@@ -17,10 +17,13 @@ With Campaign Builder, you can:
   - Add resource tracking (items, D&D-style spell slots, and other expendable character-based resources)
   - Add character sheets with full character stats, level/progression tracking, etc.
   - Simulate dice rolls and their results for any combination of dice needed in an interaction
+  - Curate a campaign-independent library of equipment, enemies, and NPC templates (the Library mode in the header): the built-in 5e defaults are all listed and individually customizable, and your overrides and additions export to a portable JSON file — kept as the gitignored `library/campaign-library.json` it stays out of version control and auto-loads into any fresh browser or clone
 
 ## Development
 
 No build step. Plain HTML/CSS/JS served as native ES modules; the app is `index.html` + `style.css` + `src/main.js`. `style.css` is an import manifest for the feature-scoped sheets under `styles/`, listed in cascade order.
+
+The `library/` directory at the project root is gitignored: it holds the GM's exported `campaign-library.json` (custom equipment/bestiary/NPC templates), which the app fetches at startup when the browser has no stored library.
 
 Serve the project root over HTTP (module imports don't work over `file://`) and open it in a browser, e.g.:
 

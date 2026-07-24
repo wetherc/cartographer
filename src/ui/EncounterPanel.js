@@ -13,7 +13,9 @@ import { isGM, hpBand } from '../view/ViewRole.js';
  * tile — what the party has walked into — and carries the GM's "Start combat"
  * button; stepping onto such a tile switches to it, and leaving (or defeating
  * the last one) switches back to Nearby, which lists everything else in range
- * plus the authoring buttons. Either tab shows an empty state when it has
+ * (authoring buttons only render when the caller passes onAdd /
+ * onAddFromTemplate — the Build rail owns authoring now, so the Play mount
+ * passes neither). Either tab shows an empty state when it has
  * nothing to list, and both stay freely selectable. Each row
  * shows an HP readout and a damage/heal amount applied via two buttons;
  * defeated encounters (currentHP <= 0) render with a distinguishing class
@@ -211,8 +213,8 @@ export function mountEncounterPanel(container, callbacks) {
   }
 
   /**
-   * The Nearby tab's panel: everything in range but not underfoot, plus the
-   * GM's authoring buttons.
+   * The Nearby tab's panel: everything in range but not underfoot, plus any
+   * authoring buttons the caller supplied.
    * @param {Encounter[]} nearby
    * @param {boolean} gm
    * @returns {HTMLElement}

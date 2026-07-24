@@ -41,10 +41,13 @@ no server and no account.
 
 Two independent switches in the header change what you see:
 
-- **Mode — Play / Build.** Build mode is for authoring the world (drawing maps,
-  placing points of interest, defining regions). Play mode is for running a
-  session (moving the party, revealing fog, tracking encounters). You'll build in
-  Build mode, then flip to Play mode at the table.
+- **Mode — Play / Build / Library.** Build mode is for authoring the world
+  (drawing maps, placing points of interest, defining regions). Play mode is
+  for running a session (moving the party, revealing fog, tracking
+  encounters). You'll build in Build mode, then flip to Play mode at the
+  table. Library mode is a map-less view for curating the reusable template
+  collection — equipment, bestiary enemies, NPC archetypes — that feeds the
+  preset pickers everywhere else; see "The library" below.
 - **Role — GM / Player.** GM sees everything: exact enemy HP, secret tile notes,
   the full map. Player sees a safe subset: enemy health as a coarse band
   (Unharmed / Bloodied / Down, not exact numbers), no secret notes, and only the
@@ -215,6 +218,50 @@ tile by tile as usual.
 When the party zooms into a region, it lands on a sensible border tile computed
 from the direction of approach, rather than dropping into a fully fogged interior.
 
+## The library (Library mode)
+
+The third header mode opens the **library**: a map-less, GM-only view of the
+reusable templates that feed the preset pickers everywhere else. It has three
+tabs:
+
+- **Equipment** — every weapon, armor, gear, and consumable the item form's
+  preset picker offers. These are the 5e defaults built into the app, all
+  listed, split across category subtabs (Weapons, Armor, Rings, Consumables,
+  Gear) with type headings inside the multi-type categories.
+- **Bestiary** — the built-in stock enemies (goblin, wolf, bandit, skeleton,
+  orc, ogre) that the Build rail's From bestiary picker offers alongside your
+  campaign's own saved templates.
+- **NPCs** — stock townsfolk archetypes (innkeeper, guard, merchant, elder,
+  cultist). The hand-off icon on a row opens the normal New NPC dialog
+  pre-filled from the template, so you can drop one into the campaign and
+  place it in one step.
+
+Every entry is editable. Editing a **built-in default** doesn't destroy it — it
+stores an *override* in your custom library (the row gains a "customized"
+badge, and a revert button restores the default). New entries you add carry a
+"custom" badge and a delete button. A custom entry overrides a default when
+the names match (for equipment, name and type); anything else is added
+alongside. Filter boxes narrow each list by name.
+
+Customizations live outside the campaign: New, Import, and Load example
+replace the campaign but never touch the library, so a tuned equipment list
+follows you into every world you build. They persist in the browser, and the
+**Library file** card round-trips them through a portable JSON file:
+
+- **Export** downloads `campaign-library.json`. Keep it as
+  `library/campaign-library.json` in the project directory — that path is
+  gitignored, so your homebrew stays out of version control — and a fresh
+  browser (or a fresh clone) auto-loads it at startup.
+- **Import** hot-loads any exported library file into the current browser,
+  replacing your customizations after a confirmation.
+- **Reset** removes all customizations, restoring the pure built-in defaults
+  (export first if you want a copy).
+
+The merged lists apply immediately: the item form's preset picker, the
+encounter dialog's weapon/armor selects, and From bestiary all read the
+library live, so an overridden Longsword or a homebrew monster shows up the
+next time any of those open.
+
 ## Running a session (Play mode)
 
 Switch to **Play** mode. The map is the primary element; a sidebar holds the
@@ -269,23 +316,26 @@ see these controls.
 
 ### Encounters
 
-Build an encounter roster in the **Encounters** panel (name, max HP, level, and a
-**tier** — a rank-and-file *mob* or an above-normal *legend*), and bind each to a
-tile. The tier and level stamp a reasonable default stat block — the six ability
-scores plus AC, the only stats an enemy carries (legends always out-stat a
-level-matched mob) — and arm the enemy with generic **gear**: a weapon picked
-from the 5e preset list and a named armor whose flat AC bonus adds on top of
-the stat block's base AC. Both are editable in the same create/edit dialog
-(Weapon, Armor, and Armor AC bonus fields), and the Build rail's Encounters
-tab shows each enemy's gear under its name. Bestiary templates carry gear
-along with the stat block. In Play mode the panel splits into two tabs. **Active
-encounter** lists the live encounters on the party's tile — what the party has
-walked into — and carries the **Start combat** button; stepping onto such a
-tile switches to it, and leaving switches back. **Nearby encounters** lists
-the rest in range — within four times the fog reveal radius of the party's
-tile — along with the New encounter and From bestiary buttons. Both tabs are
-always present and freely selectable; an empty one says so. Players see less
-still — a
+Build an encounter roster in the Build rail's **Encounters** tab (name, max HP,
+level, and a **tier** — a rank-and-file *mob* or an above-normal *legend*), and
+bind each to a tile. The tier and level stamp a reasonable default stat block —
+the six ability scores plus AC, the only stats an enemy carries (legends always
+out-stat a level-matched mob) — and arm the enemy with generic **gear**: a
+weapon picked from the library's weapon list and a named armor whose flat AC
+bonus adds on top of the stat block's base AC. Both pickers also offer
+**None** — for a non-bipedal beast, an ooze, anything that carries no weapon or
+wears no armor — which leaves the enemy deliberately unarmed (no attack button
+in combat) or unarmored, with no default stamped back in. Both stay editable in
+the same create/edit dialog, and the Build rail's Encounters tab shows each
+enemy's gear under its name. Bestiary templates carry gear along with the stat
+block. In Play mode the sidebar's Encounters panel splits into two tabs.
+**Active encounter** lists the live encounters on the party's tile — what the
+party has walked into — and carries the **Start combat** button; stepping onto
+such a tile switches to it, and leaving switches back. **Nearby encounters**
+lists the rest in range — within four times the fog reveal radius of the
+party's tile. Authoring (New encounter, From bestiary) lives in Build mode's
+rail, not the Play sidebar. Both tabs are always present and freely
+selectable; an empty one says so. Players see less still — a
 nearby encounter enters their sidebar only once it's been discovered, its tile
 revealed through the fog (or, for an unplaced one, once the party has walked
 into it).
@@ -319,10 +369,14 @@ clicking one applies a **timed adjustment** (+2 STR for 3 rounds, say), shown as
 math (initiative's DEX modifier) uses the adjusted values while they last.
 
 Recurring foes go in the **bestiary**: the save icon on an encounter row stores
-its blueprint (name, max HP, stat block) as a template, and **From bestiary**
-spawns a fresh, full-health copy at the party's location — so the fourth goblin
-isn't typed from scratch. Templates are snapshots (later edits to the live
-encounter don't change them) and the same dialog can delete a stale one.
+its blueprint (name, max HP, stat block, gear) as a campaign template, and the
+Build rail's **From bestiary** button spawns a fresh, full-health copy at a
+chosen tile (defaulting to the selected one) — so the fourth goblin isn't typed
+from scratch. The picker lists your campaign's saved templates alongside the
+**library** bestiary (the built-in stock enemies plus anything you added in
+Library mode), labeled by origin. Campaign templates are snapshots (later
+edits to the live encounter don't change them) and the same dialog can delete
+a stale one; library entries are managed in the Library tab instead.
 
 ### Initiative and conditions
 

@@ -32,36 +32,42 @@ const readStats = (values) =>
 
 /**
  * The shared create/edit dialog behind every NPC authoring flow — the Story
- * sidebar, the Build rail's NPC list, and the Build-mode right-click menu.
- * With an existing NPC it edits in place; without one it creates at the given
- * default placement. Either way the change lands in `state.npcs`, the map
- * markers and both NPC lists refresh, and an NPC put on the party's own tile
- * is met on the spot. Returns the stored NPC, or null on cancel/blank name.
+ * sidebar, the Build rail's NPC list, the Build-mode right-click menu, and
+ * the Library rail's "Add to campaign". With an existing NPC it edits in
+ * place; without one it creates at the given default placement, optionally
+ * pre-filled from a library template. Either way the change lands in
+ * `state.npcs`, the map markers and both NPC lists refresh, and an NPC put on
+ * the party's own tile is met on the spot. Returns the stored NPC, or null on
+ * cancel/blank name.
  * @param {AppContext} app
  * @param {NPC | null} existing
  * @param {import('../types/entities.js').EncounterLocation | null} defaultLocation
  *   placement preset for a new NPC
+ * @param {import('../types/library.js').NPCTemplate | null} [template]
+ *   blueprint pre-filling a new NPC's fields (ignored when editing)
  * @returns {Promise<NPC | null>}
  */
-export async function npcForm(app, existing, defaultLocation) {
+export async function npcForm(app, existing, defaultLocation, template = null) {
   const { state } = app;
+  /** Whatever seeds the dialog's fields: the NPC being edited, or a template. */
+  const seed = existing ?? template;
   // Two-column layout matching the encounter dialog: identity (name/role),
   // then disposition, full-width notes, the stat block, then placement — the
   // map picker's breadcrumb labels run long, so it spans the full width.
   const values = await promptModal(
     existing ? 'Edit NPC' : 'New NPC',
     [
-      { name: 'name', label: 'Name', value: existing?.name ?? '' },
-      { name: 'role', label: 'Role / faction', value: existing?.role ?? '' },
+      { name: 'name', label: 'Name', value: seed?.name ?? '' },
+      { name: 'role', label: 'Role / faction', value: seed?.role ?? '' },
       {
         name: 'disposition',
         label: 'Disposition',
         type: 'select',
-        value: existing?.disposition ?? 'neutral',
+        value: seed?.disposition ?? 'neutral',
         options: dispositionOptions,
       },
-      { name: 'notes', label: 'Notes', value: existing?.notes ?? '', full: true },
-      ...statFields(existing?.stats ?? {}),
+      { name: 'notes', label: 'Notes', value: seed?.notes ?? '', full: true },
+      ...statFields(seed?.stats ?? {}),
       // Defaults to the caller's placement (the party's tile, the Build-mode
       // selected tile, the right-clicked tile), but any map/tile can be chosen.
       ...locationFields(app, existing ? existing.location : defaultLocation).map((field) =>

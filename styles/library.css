@@ -1,0 +1,104 @@
+/* ==========================================================================
+   Library mode: the equipment / bestiary / NPC template rail.
+   ========================================================================== */
+
+/* The Library view shows only in Library mode; build.css's mode-play rule
+   already hides every .app-buildrail in Play, and the id selector here beats
+   the class-based show rules in Build. Library mode is an equipment/character
+   view with no map: it hides the sidebar, the other rails, and the whole map
+   column, and the template lists take the full width (capped for reading). */
+#library-tools {
+  display: none;
+  width: auto;
+  flex: 1;
+  max-width: 64rem;
+  margin: 0 auto;
+}
+
+body.mode-library #library-tools {
+  display: flex;
+}
+
+body.mode-library .app-sidebar,
+body.mode-library .app-center {
+  display: none;
+}
+
+body.mode-library .app-buildrail:not(#library-tools) {
+  display: none;
+}
+
+/* The equipment category subtab strip, between the actions and the filter. */
+.library-panel__subtabs {
+  margin-bottom: var(--space-2);
+}
+
+.library-panel__filter {
+  width: 100%;
+  margin-bottom: var(--space-2);
+}
+
+.library-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.library-panel__group {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-label);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.library-panel__row {
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.library-panel__row:last-child {
+  border-bottom: none;
+}
+
+.library-panel__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.library-panel__name {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.library-panel__badge {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-label);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.library-panel__badge--custom {
+  color: var(--accent);
+}
+
+.library-panel__summary {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.library-io__hint {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.library-io__actions {
+  display: flex;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}

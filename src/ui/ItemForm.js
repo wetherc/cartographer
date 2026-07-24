@@ -2,21 +2,19 @@ import { ABILITY_SCORES } from '../entities/Character.js';
 import {
   ITEM_TYPES,
   ARMOR_WEIGHTS,
-  ARMOR_PRESETS,
-  GEAR_PRESETS,
-  CONSUMABLE_PRESETS,
   SHIELD_AC,
   WEAPON_TYPES,
-  WEAPON_PRESETS,
   WEAPON_HANDLING,
   DIE_SIZES,
   DAMAGE_TYPES,
 } from '../entities/Equipment.js';
+import { activeEquipment } from '../library/Library.js';
 import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
+/** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
 
 /** Item types that may carry a flat AC bonus while equipped. */
 const FLAT_AC_TYPES = ['weapon', 'helmet', 'gloves', 'greaves', 'bow', 'ring'];
@@ -70,15 +68,25 @@ function fieldRow(...children) {
  * riders like + 1d4 fire), and inflicted status effects. Submitting calls
  * `onSubmit` with the assembled fields (no id — the caller owns identity) and
  * clears the form only when adding (editing keeps the values on screen).
+ * With `template` the form describes a reusable blueprint (the Library rail's
+ * editor) rather than a stack in someone's pack, so the quantity field is
+ * hidden and submits report quantity 1.
  * @param {{
  *   item?: InventoryItem | null,
  *   submitLabel: string,
  *   onSubmit: (fields: Omit<InventoryItem, 'id'>) => void,
  *   onCancel?: (() => void) | null,
+ *   template?: boolean,
  * }} options
  * @returns {HTMLElement}
  */
-export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = null }) {
+export function buildItemForm({
+  item = null,
+  submitLabel,
+  onSubmit,
+  onCancel = null,
+  template = false,
+}) {
   const form = document.createElement('div');
   form.className = 'inventory-panel__form';
 
@@ -182,27 +190,22 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
   const buffStatField = labeled('Buff', buffStatSelect);
   const buffAmountField = labeled('Amount', buffAmountInput);
 
-  // A 5e-standard preset to start from, offered for every type with a library
-  // (weapons, bows, armor, gear, consumables): picking one fills the type's
-  // mechanical fields — and the name and description when still blank — all
-  // of which stay editable after.
+  // A library preset to start from — the 5e defaults merged with the GM's
+  // Library-tab overrides and custom entries — offered for every type with at
+  // least one entry: picking one fills the type's mechanical fields — and the
+  // name and description when still blank — all of which stay editable after.
   const presetSelect = document.createElement('select');
   presetSelect.className = 'field';
   const customOption = document.createElement('option');
   customOption.value = '';
   customOption.textContent = 'Custom';
   presetSelect.appendChild(customOption);
-  const presetField = labeled('5e preset', presetSelect);
+  const presetField = labeled('Preset', presetSelect);
 
-  /** The preset library backing a type's picker; empty hides the picker.
-   * @param {string} type */
-  const presetsFor = (type) => {
-    if (WEAPON_TYPES.includes(type)) return WEAPON_PRESETS.filter((p) => p.type === type);
-    if (type === 'armor') return ARMOR_PRESETS;
-    if (type === 'gear') return GEAR_PRESETS;
-    if (type === 'consumable') return CONSUMABLE_PRESETS;
-    return [];
-  };
+  /** The merged library entries backing a type's picker; empty hides the picker.
+   * @param {string} type
+   * @returns {EquipmentTemplate[]} */
+  const presetsFor = (type) => activeEquipment(/** @type {ItemType} */ (type));
 
   const handlingSelect = document.createElement('select');
   handlingSelect.className = 'field';
@@ -306,15 +309,31 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
     const type = typeSelect.value;
     const preset = presetsFor(type).find((p) => p.name === presetSelect.value);
     if (!preset) return;
-    if ('handling' in preset) {
-      handlingSelect.value = preset.handling;
+    // Fill whichever mechanical fields the template carries; custom library
+    // entries may also bring an AC bonus, a stat buff, or inflicted effects.
+    if (preset.damage?.length) {
+      handlingSelect.value = preset.handling ?? 'melee';
       damageParts = preset.damage.map((p) => ({ ...p }));
       renderDamage();
-    } else if ('armorWeight' in preset) {
-      weightSelect.value = preset.armorWeight;
-      baseACInput.value = String(preset.baseAC);
-    } else if (!descriptionInput.value.trim()) {
+    }
+    if (preset.armorWeight !== undefined || preset.baseAC !== undefined) {
+      weightSelect.value = preset.armorWeight ?? 'light';
+      baseACInput.value = String(preset.baseAC ?? 10);
+    }
+    if (preset.description && !descriptionInput.value.trim()) {
       descriptionInput.value = preset.description;
+    }
+    if (preset.acBonus !== undefined) acInput.value = String(preset.acBonus);
+    if (preset.statusEffects) {
+      statusEffects.length = 0;
+      statusEffects.push(...preset.statusEffects);
+      renderEffects();
+    }
+    const [buff] = Object.entries(preset.statBonuses ?? {});
+    if (buff) {
+      buffStatSelect.value = buff[0];
+      buffAmountInput.value = String(buff[1]);
+      syncTypeFields();
     }
     if (!nameInput.value.trim()) nameInput.value = preset.name;
   });
@@ -380,14 +399,12 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
   const bonusRow = fieldRow(acField, buffStatField, buffAmountField);
 
   /** One picker option's label, from whichever fields the preset carries.
-   * @param {ReturnType<typeof presetsFor>[number]} preset */
+   * @param {EquipmentTemplate} preset */
   const presetLabel = (preset) => {
-    if ('handling' in preset) {
-      const base = preset.damage[0];
-      return `${preset.name} (${base.count}d${base.sides})`;
-    }
-    if ('armorWeight' in preset)
-      return `${preset.name} (AC ${preset.baseAC}, ${preset.armorWeight})`;
+    const base = preset.damage?.[0];
+    if (base) return `${preset.name} (${base.count}d${base.sides})`;
+    if (preset.baseAC !== undefined)
+      return `${preset.name} (AC ${preset.baseAC}, ${preset.armorWeight ?? 'light'})`;
     return preset.name;
   };
 
@@ -482,7 +499,10 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
   form.append(
     nameInput,
     descriptionInput,
-    fieldRow(labeled('Type', typeSelect), labeled('Qty', quantityInput)),
+    // A library template is a blueprint, not a stack — no quantity to set.
+    template
+      ? fieldRow(labeled('Type', typeSelect))
+      : fieldRow(labeled('Type', typeSelect), labeled('Qty', quantityInput)),
     presetRow,
     armorRow,
     weaponRow,

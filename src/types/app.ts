@@ -24,7 +24,7 @@ import type { MapNavigator } from '../map/MapNavigator.js';
 import type { MapCanvas } from '../map/MapCanvas.js';
 import type { PartyTracker } from '../party/PartyTracker.js';
 
-export type AppMode = 'play' | 'build';
+export type AppMode = 'play' | 'build' | 'library';
 
 /** The campaign data a save serializes, plus the two view switches. */
 export interface AppState {
@@ -57,6 +57,10 @@ export interface AppViews {
   buildEncounters: Updatable;
   /** Build-rail NPC authoring list, scoped to the node being viewed. */
   buildNPCs: Updatable;
+  /** Library-rail template lists (merged built-in defaults + customizations). */
+  libraryEquipment: Updatable;
+  libraryBestiary: Updatable;
+  libraryNPCs: Updatable;
   initiativePanel: Updatable;
   npcPanel: Updatable;
   questPanel: Updatable;

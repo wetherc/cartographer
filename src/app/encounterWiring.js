@@ -27,10 +27,13 @@ import {
   equippedWeapons,
   effectiveStats,
   weaponAbility,
-  enemyArmor,
-  ARMOR_PRESETS,
-  WEAPON_PRESETS,
 } from '../entities/Equipment.js';
+import {
+  activeWeapons,
+  activeArmors,
+  activeEnemyArmor,
+  activeBestiary,
+} from '../library/Library.js';
 import { damageCharacter, getHP } from '../entities/Character.js';
 import {
   abilityModifier,
@@ -125,13 +128,17 @@ export function wireEncounters(app) {
    * @returns {Promise<import('../types/entities.js').Encounter | null>}
    */
   async function encounterForm(existing, defaultLocation) {
-    // Weapon choice is the 5e preset list (structured damage, no dice text);
-    // an existing weapon whose name isn't a preset (a hand-tuned save) stays
-    // offered as-is so editing other fields doesn't clobber it.
+    // Weapon choice is the merged library list — the 5e presets plus the GM's
+    // overrides and custom entries (structured damage, no dice text); an
+    // existing weapon whose name isn't in it (a hand-tuned save) stays offered
+    // as-is so editing other fields doesn't clobber it. "None" (the empty
+    // value) marks a deliberately weaponless creature — a non-bipedal beast,
+    // an ooze — which then gets no attack button in combat.
+    const weaponChoices = activeWeapons();
     const currentWeapon = existing?.weapon;
-    const customWeapon =
-      currentWeapon && !WEAPON_PRESETS.some((p) => p.name === currentWeapon.name);
+    const customWeapon = currentWeapon && !weaponChoices.some((p) => p.name === currentWeapon.name);
     const weaponOptions = [
+      { value: '', label: 'None (unarmed)' },
       ...(customWeapon
         ? [
             {
@@ -140,14 +147,16 @@ export function wireEncounters(app) {
             },
           ]
         : []),
-      ...WEAPON_PRESETS.map((p) => ({ value: p.name, label: p.name })),
+      ...weaponChoices.map((p) => ({ value: p.name, label: p.name })),
     ];
-    // Armor mirrors the weapon picker: the 5e preset list (bonus = the
-    // preset's margin over the unarmored 10), with an existing non-preset
-    // armor kept offered as-is.
+    // Armor mirrors the weapon picker: the merged library's body armors
+    // (bonus = the armor's margin over the unarmored 10), an existing
+    // non-library armor kept offered as-is, and "None" for the unarmored.
     const currentArmor = existing?.armor;
-    const customArmor = currentArmor && !ARMOR_PRESETS.some((p) => p.name === currentArmor.name);
+    const armorChoices = activeArmors();
+    const customArmor = currentArmor && !armorChoices.some((a) => a.name === currentArmor.name);
     const armorOptions = [
+      { value: '', label: 'None (unarmored)' },
       ...(customArmor
         ? [
             {
@@ -156,7 +165,7 @@ export function wireEncounters(app) {
             },
           ]
         : []),
-      ...ARMOR_PRESETS.map((p) => ({ value: p.name, label: `${p.name} (+${p.baseAC - 10} AC)` })),
+      ...armorChoices.map((a) => ({ value: a.name, label: `${a.name} (+${a.acBonus} AC)` })),
     ];
     // Creation shows the stat block too, pre-filled with the tier's
     // level-appropriate defaults so a plain mob needs no stat typing but every
@@ -210,18 +219,16 @@ export function wireEncounters(app) {
           name: 'weapon',
           label: 'Weapon',
           type: 'select',
-          value:
-            currentWeapon?.name ??
-            defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').weapon.name,
+          // Editing an unarmed enemy (weapon null) shows None; a new enemy
+          // still defaults to armed, the common humanoid case.
+          value: existing ? (currentWeapon?.name ?? '') : defaultEnemyGear(1, 'mob').weapon.name,
           options: weaponOptions,
         },
         {
           name: 'armor',
           label: 'Armor',
           type: 'select',
-          value:
-            currentArmor?.name ??
-            defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').armor.name,
+          value: existing ? (currentArmor?.name ?? '') : defaultEnemyGear(1, 'mob').armor.name,
           options: armorOptions,
         },
         ...statFields,
@@ -255,15 +262,23 @@ export function wireEncounters(app) {
     const level = Math.max(1, Number(values.level) || 1);
     const tier = /** @type {import('../types/entities.js').EnemyTier} */ (values.tier);
     const location = readLocation(app, values);
-    const preset = WEAPON_PRESETS.find((p) => p.name === values.weapon);
-    const weapon = preset
-      ? {
-          name: preset.name,
-          handling: preset.handling,
-          damage: preset.damage.map((d) => ({ ...d })),
-        }
-      : (currentWeapon ?? defaultEnemyGear(level, tier).weapon);
-    const armor = enemyArmor(values.armor) ?? currentArmor ?? defaultEnemyGear(level, tier).armor;
+    const preset = weaponChoices.find((p) => p.name === values.weapon);
+    // The empty value is the explicit "None" choice and stores null, which
+    // suppresses the default-gear stamping downstream.
+    const weapon =
+      values.weapon === ''
+        ? null
+        : preset
+          ? {
+              name: preset.name,
+              handling: preset.handling ?? /** @type {const} */ ('melee'),
+              damage: (preset.damage ?? []).map((d) => ({ ...d })),
+            }
+          : (currentWeapon ?? defaultEnemyGear(level, tier).weapon);
+    const armor =
+      values.armor === ''
+        ? null
+        : (activeEnemyArmor(values.armor) ?? currentArmor ?? defaultEnemyGear(level, tier).armor);
     let stored;
     if (existing) {
       // Level/tier edits don't re-stamp the stat block — the GM may have tuned
@@ -356,10 +371,9 @@ export function wireEncounters(app) {
       app.views.initiativePanel.update();
       app.actions.markDirty();
     },
-    // New encounters default to where the party currently is (the common
-    // case), but the shared form's placement fields let the GM stage one
-    // anywhere — or leave it unplaced.
-    onAdd: () => encounterForm(null, { ...app.partyTracker.getPosition() }),
+    // Authoring (new encounters, spawning from the bestiary) lives in the
+    // Build rail; the Play panel keeps editing an existing encounter (HP,
+    // placement) and snapshotting one as a template mid-session.
     onEdit: (encounter) => encounterForm(encounter, null),
     // Save an encounter's blueprint (name, max HP, stat block) to the bestiary,
     // so the next Goblin isn't typed from scratch. Same-named saves stack as
@@ -378,69 +392,6 @@ export function wireEncounters(app) {
       app.actions.markDirty();
       app.toasts.show(`Saved "${encounter.name}" to the bestiary.`);
     },
-    // Spawn a fresh, full-health encounter from a saved template at a chosen
-    // map/tile (defaulting to where the party stands); the same dialog can
-    // also prune a stale template instead.
-    onAddFromTemplate: async () => {
-      if (state.bestiary.length === 0) {
-        await alertModal(
-          'The bestiary is empty. Save an encounter as a template first (the save icon on its row).',
-          {
-            title: 'Bestiary',
-          },
-        );
-        return null;
-      }
-      const values = await promptModal(
-        'Add from bestiary',
-        [
-          {
-            name: 'template',
-            label: 'Template',
-            type: 'select',
-            options: state.bestiary.map((t) => ({
-              value: t.id,
-              label: `${t.name} (${t.maxHP} HP)`,
-            })),
-          },
-          {
-            name: 'action',
-            label: 'Action',
-            type: 'select',
-            value: 'spawn',
-            options: [
-              { value: 'spawn', label: 'Spawn at the location below' },
-              { value: 'delete', label: 'Delete this template' },
-            ],
-          },
-          // Same node-picker + tile X/Y group the NPC dialogs use; defaults to
-          // the party's position so the common case is unchanged.
-          ...locationFields(app, { ...app.partyTracker.getPosition() }),
-        ],
-        { submitLabel: 'Apply' },
-      );
-      const template = values ? state.bestiary.find((t) => t.id === values.template) : undefined;
-      if (!values || !template) return null;
-      if (values.action === 'delete') {
-        state.bestiary = removeById(state.bestiary, template.id);
-        app.actions.markDirty();
-        app.toasts.show(`Deleted "${template.name}" from the bestiary.`);
-        return null;
-      }
-      const created = fromTemplate(
-        template,
-        slugId(
-          template.name,
-          state.encounters.map((e) => e.id),
-        ),
-        readLocation(app, values),
-      );
-      state.encounters = [...state.encounters, created];
-      app.actions.syncEncounterMarkers();
-      app.views.initiativePanel.update(); // a spawn on the party's tile starts an encounter
-      app.actions.markDirty();
-      return created;
-    },
     confirmDelete: (encounter) =>
       confirmModal(`Delete "${encounter.name}"?`, {
         danger: true,
@@ -457,6 +408,96 @@ export function wireEncounters(app) {
   // the GM is looking at (plus unplaced ones), editable without moving the
   // party there. New encounters default onto the Build-mode selected tile of
   // the viewed node, so "select a tile, add an encounter" places it there.
+  /**
+   * Spawn a fresh, full-health encounter from a saved template — the
+   * campaign's bestiary plus the built-in/custom library — at a chosen
+   * map/tile, defaulting to the Build-mode selected tile of the viewed node.
+   * The same dialog can prune a stale campaign template; library entries are
+   * managed in the Library tab instead.
+   * @returns {Promise<import('../types/entities.js').Encounter | null>}
+   */
+  async function addFromBestiary() {
+    const library = activeBestiary();
+    if (state.bestiary.length === 0 && library.length === 0) {
+      await alertModal(
+        'The bestiary is empty. Save an encounter as a template first (the save icon on its row).',
+        { title: 'Bestiary' },
+      );
+      return null;
+    }
+    const values = await promptModal(
+      'Add from bestiary',
+      [
+        {
+          name: 'template',
+          label: 'Template',
+          type: 'select',
+          options: [
+            ...state.bestiary.map((t) => ({
+              value: `campaign:${t.id}`,
+              label: `${t.name} (${t.maxHP} HP) — campaign`,
+            })),
+            ...library.map((t) => ({
+              value: `library:${t.id}`,
+              label: `${t.name} (${t.maxHP} HP) — library`,
+            })),
+          ],
+        },
+        {
+          name: 'action',
+          label: 'Action',
+          type: 'select',
+          value: 'spawn',
+          options: [
+            { value: 'spawn', label: 'Spawn at the location below' },
+            { value: 'delete', label: 'Delete this template' },
+          ],
+        },
+        // Same node-picker + tile X/Y group the NPC dialogs use; defaults to
+        // the tile the GM has selected in the node being viewed.
+        ...locationFields(app, {
+          nodeId: app.navigator.getCurrentNode().id,
+          tileId: app.actions.getSelectedTileId() ?? '0,0',
+        }),
+      ],
+      { submitLabel: 'Apply' },
+    );
+    if (!values) return null;
+    const [source, templateId] = [
+      values.template.slice(0, values.template.indexOf(':')),
+      values.template.slice(values.template.indexOf(':') + 1),
+    ];
+    const template =
+      source === 'campaign'
+        ? state.bestiary.find((t) => t.id === templateId)
+        : library.find((t) => t.id === templateId);
+    if (!template) return null;
+    if (values.action === 'delete') {
+      if (source === 'library') {
+        app.toasts.show('Built-in and custom library entries are managed in the Library tab.');
+        return null;
+      }
+      state.bestiary = removeById(state.bestiary, template.id);
+      app.actions.markDirty();
+      app.toasts.show(`Deleted "${template.name}" from the bestiary.`);
+      return null;
+    }
+    const created = fromTemplate(
+      template,
+      slugId(
+        template.name,
+        state.encounters.map((e) => e.id),
+      ),
+      readLocation(app, values),
+    );
+    state.encounters = [...state.encounters, created];
+    app.actions.syncEncounterMarkers();
+    app.views.encounterPanel.update();
+    app.views.initiativePanel.update(); // a spawn on the party's tile starts an encounter
+    app.actions.markDirty();
+    return created;
+  }
+
   app.views.buildEncounters = mountBuildEncounterPanel(
     mustGetElement('build-encounters-container'),
     {
@@ -469,6 +510,7 @@ export function wireEncounters(app) {
           nodeId: app.navigator.getCurrentNode().id,
           tileId: app.actions.getSelectedTileId() ?? '0,0',
         }),
+      onAddFromTemplate: addFromBestiary,
       onEdit: (encounter) => encounterForm(encounter, null),
       onDelete: deleteEncounter,
       // Base stat edits from the Build rail's chips: persist and let the Play
