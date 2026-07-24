@@ -78,6 +78,9 @@ export interface AppActions {
   // encounterWiring: defaults to the party's position and "The party"; a
   // player moving their own token passes that character's tile and name.
   maybeTriggerEncounter(position?: PartyPosition, subject?: string): void;
+  // encounterWiring: the Build-mode right-click dialog for a tile of the
+  // viewed node — create an encounter there, or edit one already staged there.
+  openEncounterContextMenu(x: number, y: number): void;
   // mapWiring
   syncPartyMarker(): void;
   syncEncounterMarkers(): void;

@@ -24,7 +24,7 @@ export class MapCanvas {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {TilePalette} palette
-   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, markerRange?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, onStrokeCell?: (x: number, y: number, tile: Tile | null, first: boolean) => void, onStrokeEnd?: () => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void }} [options]
+   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, markerRange?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, onCellContextMenu?: (x: number, y: number, tile: Tile | null) => void, onStrokeCell?: (x: number, y: number, tile: Tile | null, first: boolean) => void, onStrokeEnd?: () => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void }} [options]
    */
   constructor(canvas, palette, options = {}) {
     this.canvas = canvas;
@@ -39,6 +39,7 @@ export class MapCanvas {
      * party or a character token (conventionally twice the fog reveal radius). */
     this.markerRange = options.markerRange ?? 4;
     this.onCellClick = options.onCellClick;
+    this.onCellContextMenu = options.onCellContextMenu;
     this.onStrokeCell = options.onStrokeCell;
     this.onStrokeEnd = options.onStrokeEnd;
     this.getNodeName = options.getNodeName;
@@ -717,6 +718,17 @@ export class MapCanvas {
     }
     if (this._panning) {
       this._panning = false;
+      // A right press released without dragging is a context click on the cell
+      // under it. Detected here on pointerup rather than in the contextmenu
+      // handler because macOS fires contextmenu on press, before a drag could
+      // disqualify it — and the pan gesture must never pop the dialog.
+      if (this._dragDistance < 4 && this.onCellContextMenu && this.node) {
+        const coords = this._eventCell(event);
+        if (coords) {
+          const tile = this.node.tiles.find((t) => t.id === `${coords.x},${coords.y}`) ?? null;
+          this.onCellContextMenu(coords.x, coords.y, tile);
+        }
+      }
       return; // a pan (right-drag) never acts as a click
     }
     const wasClick = this._pendingClick && this._dragDistance < 4;

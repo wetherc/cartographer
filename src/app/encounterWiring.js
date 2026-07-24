@@ -432,6 +432,44 @@ export function wireEncounters(app) {
     },
   );
 
+  /**
+   * The Build-mode right-click dialog for a tile of the viewed node: create a
+   * new encounter placed there, or pick one already staged on that tile to
+   * edit. With nothing staged there the create form opens directly — the
+   * chooser would have only one option.
+   * @param {number} x
+   * @param {number} y
+   */
+  app.actions.openEncounterContextMenu = async (x, y) => {
+    const location = {
+      nodeId: app.navigator.getCurrentNode().id,
+      tileId: `${x},${y}`,
+    };
+    const here = encountersOnTile(state.encounters, location);
+    if (here.length === 0) {
+      await encounterForm(null, location);
+      return;
+    }
+    const values = await promptModal(
+      `Tile (${location.tileId})`,
+      [
+        {
+          name: 'action',
+          label: 'Action',
+          type: 'select',
+          options: [
+            { value: '', label: 'New encounter here' },
+            ...here.map((e) => ({ value: e.id, label: `Edit: ${e.name}` })),
+          ],
+        },
+      ],
+      { submitLabel: 'Open' },
+    );
+    if (!values) return;
+    const existing = here.find((e) => e.id === values.action);
+    await encounterForm(existing ?? null, existing ? null : location);
+  };
+
   // "In an encounter" means the party stands on a tile with at least one live
   // encounter bound to it — the same trigger the walked-into-it alert uses.
   function encountersHere() {
