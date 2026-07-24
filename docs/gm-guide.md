@@ -349,10 +349,13 @@ only): set up the roll in the dice tray as usual, then click it to roll as that
 enemy — the result lands in the travelogue under the enemy's name, and in a
 toast, without disturbing the tray's own readout.
 
-On a **party member's turn**, their equipped weapons line up under the
-highlighted row as one-click **attack buttons** — visible to the GM and, on a
-bound tab, to the player driving that character. Clicking one picks the
-defender (automatic with a single live foe, a quick dialog otherwise), loads
+On the **active combatant's turn**, their weapons line up under the
+highlighted row as one-click **attack buttons**: a party member's equipped
+weapons — visible to the GM and, on a bound tab, to the player driving that
+character — or a foe's assigned weapon, GM only. Clicking one picks the
+defender from the opposite side (automatic with a single one standing, a
+quick dialog otherwise; a foe's targets are the party characters, with AC
+computed from their equipped armor, and any friendly NPCs on the tile), loads
 the dice tray with 1d20 plus the weapon's ability modifier (STR for melee, DEX
 for finesse and ranged — the same rule the weapon was created under) plus the
 attacker's level-based **proficiency bonus**, against the defender's AC, and
@@ -362,10 +365,12 @@ hits regardless of AC and is a **critical hit** — every damage die rolls twice
 too, ability modifier folded into the base term (proficiency never adds to
 damage), and the total lands in the travelogue and a toast by damage type
 ("12 slashing + 3 fire"), along with any status effects the weapon inflicts.
-The damage is **applied to the defender automatically** — its HP drops on the
-spot, defeat is logged, and downing the last foe ends the combat. The
-damage/heal steppers on the encounter row remain for adjustments (resistances,
-temporary HP rulings, or undoing a roll).
+The damage is **applied to the defender automatically** — an encounter's HP
+drops on the spot, defeat is logged, and downing the last foe ends the combat;
+a character hit by a foe loses bonus HP first, then real HP, with a travelogue
+line when they drop to 0. NPCs carry no HP, so a hit on one stays a log line.
+The damage/heal steppers on the encounter row and character card remain for
+adjustments (resistances, temporary HP rulings, or undoing a roll).
 
 ### Characters, HP, and resources
 
