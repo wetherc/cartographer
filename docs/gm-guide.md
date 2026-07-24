@@ -366,12 +366,31 @@ last potion and throwing it away are different stories. Inventory changes
 write themselves into the travelogue: pickups record who found what, where,
 and at what in-game time; consuming or discarding logs a shorter line.
 
+The panel splits into two tabs. **Equipment** (the default) holds nine
+**equipment slots** — Helmet, Armor, Gloves, Greaves, Main hand, Off hand,
+Ranged, and two ring slots (Ring 1 and Ring 2, so a character can wear two
+rings at once). Each picker lists only the items its slot accepts (a potion
+can't be worn as armor; the off hand takes a shield or a weapon). The
+**Inventory** tab holds the item list with a **search box** (matching names
+and descriptions), a **type filter**, and a **sort** control (by name, type,
+or largest stack).
+
 Items carry a **type** (gear, weapon, armor, helmet, gloves, greaves, shield,
-bow, ring, or consumable), picked when adding one, and the Inventory panel
-opens with eight **equipment slots** — Helmet, Armor, Gloves, Greaves, Main
-hand, Off hand, Ranged, and Accessory. Each picker lists only the items its
-slot accepts (a potion can't be worn as armor; the off hand takes a shield or
-a weapon; the accessory slot takes a ring).
+bow, ring, or consumable) and an optional **description**, both set when
+adding one — and every field stays **editable afterward** via the pencil
+button on the item's row, which opens the same form pre-filled. Edits keep
+the item equipped (it's the same item), except that changing its type to
+something its slot can't hold takes it off automatically.
+
+Weapons and bows carry a **damage roll** as structured dice terms — a base
+roll plus optional permanent riders, so a burning blade can deal 2d6 slashing
++ 1d4 fire. A **5e preset** picker fills standard values (a greatsword is 2d6
+slashing, melee) which the GM may then adjust freely. The weapon's
+**handling** alone fixes which ability modifies its damage — **melee** uses
+STR, **finesse** and **ranged** use DEX — and the summary line shows the full
+roll with its ability, e.g. "2d6 slashing + 1d4 fire (STR)". Weapons can also
+list **status effects** they inflict (burning, poisoned...), added as tags on
+the form.
 
 Armor class follows 5e. Body armor (the **armor** type, worn in the Armor
 slot) is created with a **weight class** and a configurable **base AC** that
