@@ -8,12 +8,21 @@ import { icon } from './icons.js';
  * per die type, +/- modifier, roll button, result display). Only the latest
  * result shows in the tray; past rolls are the caller's to keep — `onRoll`
  * fires with each formatted result (the app records them in the travelogue).
+ * `rollSelection` rolls programmatically (e.g. a weapon attack from the
+ * initiative panel): it loads the given counts/modifier/target into the tray,
+ * expands it so the result is visible, and rolls — without firing `onRoll`,
+ * since such callers log under their own name.
  * @param {HTMLElement} container
  * @param {{ onRoll?: (text: string) => void }} [opts]
- * @returns {{ getSelection: () => import('../types/dice.js').DiceSelection }}
+ * @returns {{
+ *   getSelection: () => import('../types/dice.js').DiceSelection,
+ *   rollSelection: (next: import('../types/dice.js').DiceSelection, target?: number | null) => { result: import('../types/dice.js').DiceResult, text: string },
+ * }}
  */
 export function mountDiceTray(container, opts = {}) {
   const selection = emptySelection();
+  /** @type {(() => void)[]} re-syncs each stepper's count readout to the selection */
+  const refreshers = [];
 
   const summary = document.createElement('button');
   summary.type = 'button';
@@ -27,7 +36,7 @@ export function mountDiceTray(container, opts = {}) {
 
   const root = document.createElement('div');
   root.className = 'dice-tray';
-  wireDisclosure(summary, root);
+  const disclosure = wireDisclosure(summary, root);
 
   /** @param {string} label @param {number} delta @param {() => number} read @param {(n: number) => void} apply */
   const stepper = (label, delta, read, apply) => {
@@ -63,6 +72,9 @@ export function mountDiceTray(container, opts = {}) {
     });
 
     row.append(name, minus, count, plus);
+    refreshers.push(() => {
+      count.textContent = String(read());
+    });
     return row;
   };
 
@@ -113,7 +125,7 @@ export function mountDiceTray(container, opts = {}) {
   const resultEl = document.createElement('div');
   resultEl.className = 'dice-tray__result';
 
-  rollButton.addEventListener('click', () => {
+  function performRoll() {
     const result = roll(selection);
     let text = formatResult(result);
     const target = targetInput.value === '' ? null : Number(targetInput.value);
@@ -121,11 +133,25 @@ export function mountDiceTray(container, opts = {}) {
       text += ` vs target ${target}: ${result.total >= target ? 'success' : 'failure'}`;
     }
     resultEl.textContent = text;
-    opts.onRoll?.(text);
+    return { result, text };
+  }
+
+  rollButton.addEventListener('click', () => {
+    opts.onRoll?.(performRoll().text);
   });
 
   root.append(rollButton, resultEl);
   container.appendChild(root);
 
-  return { getSelection: () => selection };
+  return {
+    getSelection: () => selection,
+    rollSelection: (next, target = null) => {
+      for (const die of DIE_TYPES) selection.counts[die] = next.counts[die] ?? 0;
+      selection.modifier = next.modifier ?? 0;
+      targetInput.value = target === null ? '' : String(target);
+      for (const refresh of refreshers) refresh();
+      disclosure.setExpanded(true);
+      return performRoll();
+    },
+  };
 }

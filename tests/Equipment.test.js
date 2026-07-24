@@ -23,6 +23,7 @@ import {
   weaponAbility,
   formatDamage,
   filterItems,
+  equippedWeapons,
 } from '../src/entities/Equipment.js';
 import { createCharacter, withDefaults, addItem, removeItem, updateItem } from '../src/entities/Character.js';
 
@@ -318,4 +319,22 @@ test('updateItem replaces fields, keeps the id, and unequips a slot that no long
 
   const retyped = updateItem(renamed, 'band', { id: 'band', name: 'Band of Vigor', quantity: 1, notes: '', type: 'gear' });
   assert.equal(retyped.equipment?.accessory, null, 'gear cannot stay worn as a ring');
+});
+
+test('equippedWeapons lists the wielded damage-carrying items in slot order', () => {
+  let hero = createCharacter('c1', 'Hero');
+  hero = addItem(hero, { id: 'sword', name: 'Sword', quantity: 1, notes: '', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 8, damageType: 'slashing' }] });
+  hero = addItem(hero, { id: 'bow', name: 'Bow', quantity: 1, notes: '', type: 'bow', handling: 'ranged', damage: [{ count: 1, sides: 6, damageType: 'piercing' }] });
+  hero = addItem(hero, { id: 'shield', name: 'Shield', quantity: 1, notes: '', type: 'shield' });
+  hero = equip(hero, 'ranged', 'bow');
+  hero = equip(hero, 'mainHand', 'sword');
+  hero = equip(hero, 'offHand', 'shield');
+  assert.deepEqual(equippedWeapons(hero).map((w) => w.id), ['sword', 'bow'], 'main hand first, shield never');
+});
+
+test('equippedWeapons skips weapons without a damage roll and empty hands', () => {
+  let hero = heroWithSword(); // sword has no damage field
+  assert.deepEqual(equippedWeapons(hero), []);
+  hero = equip(hero, 'mainHand', 'sword');
+  assert.deepEqual(equippedWeapons(hero), [], 'a damage-less weapon is not attackable');
 });

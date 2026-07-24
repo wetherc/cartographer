@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { roll, emptySelection, formatResult, DIE_SIDES } from '../src/dice/DiceRoller.js';
+import { roll, rollDamage, emptySelection, formatResult, DIE_SIDES } from '../src/dice/DiceRoller.js';
 
 test('rolls correct count of dice per die type', () => {
   const selection = emptySelection();
@@ -65,4 +65,45 @@ test('emptySelection rolls to just the modifier', () => {
   const result = roll(selection, () => 0.5);
   assert.equal(result.total, 5);
   assert.equal(result.results.length, 0);
+});
+
+test('rollDamage rolls each term and groups totals by damage type', () => {
+  const result = rollDamage(
+    [
+      { count: 2, sides: 6, damageType: 'slashing' },
+      { count: 1, sides: 4, damageType: 'fire' },
+    ],
+    0,
+    () => 0.5,
+  );
+  assert.equal(result.byType.length, 2);
+  assert.deepEqual(result.byType[0], { damageType: 'slashing', rolls: [4, 4], subtotal: 8 });
+  assert.deepEqual(result.byType[1], { damageType: 'fire', rolls: [3], subtotal: 3 });
+  assert.equal(result.total, 11);
+  assert.equal(result.text, '8 slashing + 3 fire');
+});
+
+test('rollDamage folds the modifier into the first term, never below zero', () => {
+  const boosted = rollDamage([{ count: 1, sides: 6, damageType: 'piercing' }], 3, () => 0.5);
+  assert.equal(boosted.byType[0].subtotal, 7);
+  assert.equal(boosted.total, 7);
+
+  const floored = rollDamage([{ count: 1, sides: 6, damageType: 'piercing' }], -10, () => 0.5);
+  assert.equal(floored.byType[0].subtotal, 0);
+  assert.equal(floored.total, 0);
+});
+
+test('rollDamage merges terms sharing a damage type and skips empty terms', () => {
+  const result = rollDamage(
+    [
+      { count: 1, sides: 6, damageType: 'slashing' },
+      { count: 1, sides: 4, damageType: 'slashing' },
+      { count: 0, sides: 12, damageType: 'fire' },
+    ],
+    0,
+    () => 0.5,
+  );
+  assert.equal(result.byType.length, 1);
+  assert.deepEqual(result.byType[0].rolls, [4, 3]);
+  assert.equal(result.text, '7 slashing');
 });

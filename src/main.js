@@ -76,6 +76,9 @@ const diceTray = mountDiceTray(mustGetElement('dice-tray-container'), {
 });
 // Lets the initiative panel roll the tray's current selection as an enemy.
 app.actions.getDiceSelection = () => diceTray.getSelection();
+// Lets a weapon attack load and roll the tray (d20 + modifier vs the
+// defender's AC) so the roll is visible where every other roll happens.
+app.actions.rollDice = (selection, target) => diceTray.rollSelection(selection, target);
 wireSessionControls(app); // mode/role switches (applies the initial role), tabs, sidebar
 wireShortcuts(app);
 

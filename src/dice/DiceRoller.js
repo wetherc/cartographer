@@ -58,6 +58,39 @@ export function emptySelection() {
 }
 
 /**
+ * Roll a weapon's damage terms (each `count` dice of `sides` per damage type)
+ * with a flat modifier folded into the first term's type, 5e-style — the
+ * ability modifier boosts the weapon's own damage, not its riders. Terms
+ * sharing a damage type merge into one group; a negative modifier can't take
+ * the base group below zero.
+ * @param {{ count: number, sides: number, damageType: string }[]} parts
+ * @param {number} [modifier]
+ * @param {RandomFn} [rng]
+ * @returns {{ total: number, byType: { damageType: string, rolls: number[], subtotal: number }[], text: string }}
+ */
+export function rollDamage(parts, modifier = 0, rng = Math.random) {
+  /** @type {Map<string, { damageType: string, rolls: number[], subtotal: number }>} */
+  const byType = new Map();
+  for (const part of parts) {
+    if (part.count <= 0) continue;
+    const group = byType.get(part.damageType) ?? { damageType: part.damageType, rolls: [], subtotal: 0 };
+    for (let i = 0; i < part.count; i++) {
+      const value = Math.floor(rng() * part.sides) + 1;
+      group.rolls.push(value);
+      group.subtotal += value;
+    }
+    byType.set(part.damageType, group);
+  }
+  const groups = [...byType.values()];
+  if (groups.length > 0) groups[0].subtotal = Math.max(0, groups[0].subtotal + modifier);
+  return {
+    total: groups.reduce((sum, g) => sum + g.subtotal, 0),
+    byType: groups,
+    text: groups.map((g) => `${g.subtotal} ${g.damageType}`).join(' + '),
+  };
+}
+
+/**
  * Render a roll result as a one-line readout, e.g.
  * "d20[14]=14 + modifier=2 -> total: 16".
  * @param {import('../types/dice.js').DiceResult} result

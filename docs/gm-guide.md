@@ -273,11 +273,16 @@ Build an encounter roster in the **Encounters** panel (name, max HP, level, and 
 **tier** — a rank-and-file *mob* or an above-normal *legend*), and bind each to a
 tile. The tier and level stamp a reasonable default stat block — the six ability
 scores plus AC, the only stats an enemy carries (legends always out-stat a
-level-matched mob). In Play mode the panel shows only the encounters near the
-party: within four times the fog reveal radius of its tile. Players see less
-still — an encounter enters their sidebar only once it's been discovered, its
-tile revealed through the fog (or, for an unplaced one, once the party has
-walked into it).
+level-matched mob). In Play mode the panel splits into two tabs. **Active
+encounter** exists only while the party stands on a tile with a live encounter:
+it lists what the party has walked into and carries the **Start combat**
+button; stepping onto such a tile switches to it. **Nearby encounters** lists
+the rest in range — within four times the fog reveal radius of the party's
+tile — along with the New encounter and From bestiary buttons; with nothing
+underfoot the tabs collapse to this plain list. Players see less still — a
+nearby encounter enters their sidebar only once it's been discovered, its tile
+revealed through the fog (or, for an unplaced one, once the party has walked
+into it).
 
 When the party **steps onto a tile with an encounter**, it pops up as a modal over
 the map, naming the encounter, its region, and its coordinates. Fleeing or
@@ -316,8 +321,8 @@ encounter don't change them) and the same dialog can delete a stale one.
 ### Initiative and conditions
 
 Opening combat is a GM-only action. While the party stands on a tile with at
-least one live encounter, the GM's Encounters panel shows a **Start combat**
-button; it opens a setup dialog listing exactly who is involved: the party,
+least one live encounter, the GM's Active encounter tab shows a **Start
+combat** button; it opens a setup dialog listing exactly who is involved: the party,
 that tile's encounters, and any NPCs placed on the same tile (hostile NPCs line
 up as foes, friendly and neutral ones with the party). Each combatant's **DEX
 modifier** (`floor((DEX - 10) / 2)`, so a DEX of 20 is +5) is shown beside
@@ -337,6 +342,18 @@ While a foe holds the turn, its highlighted row shows a dice button (GM view
 only): set up the roll in the dice tray as usual, then click it to roll as that
 enemy — the result lands in the travelogue under the enemy's name, and in a
 toast, without disturbing the tray's own readout.
+
+On a **party member's turn**, their equipped weapons line up under the
+highlighted row as one-click **attack buttons** — visible to the GM and, on a
+bound tab, to the player driving that character. Clicking one picks the
+defender (automatic with a single live foe, a quick dialog otherwise), loads
+the dice tray with 1d20 plus the weapon's ability modifier (STR for melee, DEX
+for finesse and ranged — the same rule the weapon was created under) against
+the defender's AC, and rolls it right in the tray. On a hit the weapon's
+damage dice roll too, ability modifier folded into the base term, and the
+total lands in the travelogue and a toast by damage type ("12 slashing + 3
+fire"), along with any status effects the weapon inflicts. Applying the damage
+stays your call — use the damage field on the defender's encounter row.
 
 ### Characters, HP, and resources
 

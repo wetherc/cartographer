@@ -2,6 +2,12 @@
    Encounters
    ========================================================================== */
 
+/* The Active encounter / Nearby encounters tab strip; present only while the
+   party stands on a live encounter's tile. */
+.encounter-panel__tabs {
+  margin-bottom: var(--space-2);
+}
+
 .encounter-panel__row {
   display: flex;
   flex-direction: column;
@@ -198,5 +204,18 @@
 
 .initiative-panel__actions .btn {
   white-space: nowrap;
+}
+
+/* The active party member's equipped weapons, as one-click attack rolls
+   directly under their highlighted row. */
+.initiative-panel__attacks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2) var(--space-1) calc(var(--space-2) + 3px);
+}
+
+.initiative-panel__attack {
+  font-size: var(--text-label);
 }
 
