@@ -14,6 +14,9 @@ import {
   restoreResource,
   addItem,
   removeItem,
+  setMaxHP,
+  setBonusHP,
+  damageCharacter,
 } from '../src/entities/Character.js';
 import { getSlotPools } from '../src/entities/SpellSlots.js';
 import { createResource } from '../src/entities/Resource.js';
@@ -166,4 +169,41 @@ test('removeItem reduces quantity and drops the stack once it hits 0', () => {
   assert.equal(hero.inventory[0].quantity, 3);
   hero = removeItem(hero, 'arrow', 3);
   assert.equal(hero.inventory.length, 0);
+});
+
+test('setMaxHP overrides the pool maximum, clamping current down when needed', () => {
+  const hero = withHP(createCharacter('c1', 'Hero'), 20);
+  const raised = setMaxHP(hero, 30);
+  assert.equal(getHP(raised)?.max, 30);
+  assert.equal(getHP(raised)?.current, 20, 'raising the max does not heal');
+  const lowered = setMaxHP(hero, 12);
+  assert.equal(getHP(lowered)?.max, 12);
+  assert.equal(getHP(lowered)?.current, 12, 'current clamps to the new max');
+  assert.equal(getHP(setMaxHP(hero, 0))?.max, 1, 'max never drops below 1');
+  const poolless = createCharacter('c2', 'Ghost');
+  assert.deepEqual(setMaxHP(poolless, 10).resources, [], 'no pool is invented');
+});
+
+test('setBonusHP tracks temporary points, never negative', () => {
+  const hero = withHP(createCharacter('c1', 'Hero'), 20);
+  assert.equal(setBonusHP(hero, 5).bonusHP, 5);
+  assert.equal(setBonusHP(hero, -3).bonusHP, 0);
+});
+
+test('damageCharacter drains bonus HP before the pool', () => {
+  let hero = setBonusHP(withHP(createCharacter('c1', 'Hero'), 20), 3);
+  hero = damageCharacter(hero, 2);
+  assert.equal(hero.bonusHP, 1);
+  assert.equal(getHP(hero)?.current, 20, 'bonus absorbed the whole hit');
+  hero = damageCharacter(hero, 5);
+  assert.equal(hero.bonusHP, 0);
+  assert.equal(getHP(hero)?.current, 16, 'remainder spills into the pool');
+  hero = damageCharacter(hero, 100);
+  assert.equal(getHP(hero)?.current, 0, 'pool clamps at zero');
+});
+
+test('withDefaults backfills bonusHP as 0', () => {
+  const legacy = { ...createCharacter('c1', 'Hero') };
+  delete legacy.bonusHP;
+  assert.equal(withDefaults(legacy).bonusHP, 0);
 });

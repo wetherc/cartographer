@@ -373,12 +373,21 @@ export function buildExampleCampaign(palette, rng = Math.random) {
   aldric = withHP({ ...aldric, level: 3 }, 28);
   aldric.inventory = [
     { id: 'longsword', name: 'Longsword', quantity: 1, notes: '', type: 'weapon' },
-    { id: 'oak-shield', name: 'Oak Shield', quantity: 1, notes: '', type: 'shield' },
-    { id: 'chain-mail', name: 'Chain Mail', quantity: 1, notes: '', type: 'armor' },
+    { id: 'oak-shield', name: 'Oak Shield', quantity: 1, notes: '', type: 'shield', acBonus: 2 },
+    { id: 'chain-mail', name: 'Chain Mail', quantity: 1, notes: '', type: 'armor', acBonus: 4 },
+    { id: 'steel-helm', name: 'Steel Helm', quantity: 1, notes: '', type: 'helmet', acBonus: 1 },
     { id: 'healing-potion', name: 'Potion of Healing', quantity: 2, notes: 'Restores 2d4+2 HP.', type: 'consumable' },
     { id: 'torch', name: 'Torch', quantity: 5, notes: '', type: 'gear' },
   ];
-  aldric.equipment = { armor: 'chain-mail', mainHand: 'longsword', offHand: 'oak-shield', ranged: null };
+  aldric.equipment = {
+    helmet: 'steel-helm',
+    chest: 'chain-mail',
+    gloves: null,
+    greaves: null,
+    mainHand: 'longsword',
+    offHand: 'oak-shield',
+    ranged: null,
+  };
 
   let mirelle = createCharacter('mirelle', 'Mirelle', { WIS: 16, CHA: 13, CON: 12 }, 'Half-elf');
   mirelle = withSpellSlots(withHP({ ...mirelle, level: 3 }, 21));
@@ -387,7 +396,15 @@ export function buildExampleCampaign(palette, rng = Math.random) {
     { id: 'holy-symbol', name: 'Symbol of the Dawn', quantity: 1, notes: '', type: 'gear' },
     { id: 'healing-herbs', name: 'Healing Herbs', quantity: 3, notes: 'Poultice; stabilizes a downed ally.', type: 'consumable' },
   ];
-  mirelle.equipment = { armor: null, mainHand: 'mace', offHand: null, ranged: null };
+  mirelle.equipment = {
+    helmet: null,
+    chest: null,
+    gloves: null,
+    greaves: null,
+    mainHand: 'mace',
+    offHand: null,
+    ranged: null,
+  };
 
   /**
    * A placed enemy: tiered default ability scores for its level, plus the

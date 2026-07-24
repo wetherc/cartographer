@@ -59,8 +59,18 @@ export interface ResourcePool {
   max: number;
 }
 
-/** Broad item classification — advisory only, no slot enforcement. */
-export type ItemType = 'weapon' | 'armor' | 'shield' | 'bow' | 'consumable' | 'gear';
+/** Item classification; each equipment slot accepts only compatible types.
+ * 'armor' is chest armor — helmets, gloves, and greaves are their own types. */
+export type ItemType =
+  | 'weapon'
+  | 'armor'
+  | 'helmet'
+  | 'gloves'
+  | 'greaves'
+  | 'shield'
+  | 'bow'
+  | 'consumable'
+  | 'gear';
 
 export interface InventoryItem {
   id: string;
@@ -69,10 +79,19 @@ export interface InventoryItem {
   notes: string;
   /** Absent on older saves; treated as 'gear'. */
   type?: ItemType;
+  /** Armor-class bonus granted while equipped (armor pieces and shields). */
+  acBonus?: number;
 }
 
-/** The wearable slots on a character. */
-export type EquipmentSlot = 'armor' | 'mainHand' | 'offHand' | 'ranged';
+/** The wearable slots on a character. Older saves' 'armor' slot reads as 'chest'. */
+export type EquipmentSlot =
+  | 'helmet'
+  | 'chest'
+  | 'gloves'
+  | 'greaves'
+  | 'mainHand'
+  | 'offHand'
+  | 'ranged';
 
 /** Inventory item id equipped in each slot; null = slot empty. */
 export type Equipment = Record<EquipmentSlot, string | null>;
@@ -90,6 +109,9 @@ export interface Character {
   conditions: Condition[];
   /** Equipped items by slot (absent on older saves; all slots empty). */
   equipment?: Equipment;
+  /** Temporary hit points from items/boons, absorbed before the HP pool when
+   * taking damage. Tracked separately from intrinsic HP; absent reads as 0. */
+  bonusHP?: number;
   /** Own map position; null (and older saves' absence) = with the party. */
   location?: EncounterLocation | null;
 }
