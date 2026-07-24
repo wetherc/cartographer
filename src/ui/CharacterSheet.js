@@ -6,7 +6,7 @@ import {
   restoreResource,
   XP_PER_LEVEL,
 } from '../entities/Character.js';
-import { getSlotPools, slotLevelOf } from '../entities/SpellSlots.js';
+import { getSlotPools, isSlotPool, slotLevelOf } from '../entities/SpellSlots.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { wireDisclosure } from './Disclosure.js';
 import { mountConditionsBar } from './ConditionsBar.js';
@@ -53,22 +53,28 @@ function buildStatBar(pool, opts) {
 }
 
 /**
- * Compact spell-slot readout for the collapsed card: a column per spell level,
- * the ordinal centered above a two-wide grid of pips, filled pips being the
- * slots still unspent. Columns wrap under the pip area (not the label) when a
- * high-level caster outgrows the card width.
- * Replaces the old mana bar; a non-caster (no slot pools) renders nothing.
+ * Compact spell-slot readout: a column per spell level, the ordinal centered
+ * above a two-wide grid of pips, filled pips being the slots still unspent.
+ * Columns wrap under the pip area (not the label) when a high-level caster
+ * outgrows the card width. With `onToggle` each pip is a button: clicking a
+ * filled pip spends a slot of that level, clicking an empty one restores one
+ * (slots drain and refill left to right, so it reads as toggling that pip).
+ * Without it (a spectator's view) the line is a plain readout.
+ * A non-caster (no slot pools) renders nothing.
  * @param {import('../types/entities.js').ResourcePool[]} pools
+ * @param {((pool: import('../types/entities.js').ResourcePool, spent: boolean) => void) | null} onToggle
  * @returns {HTMLElement}
  */
-function buildSlotLine(pools) {
+function buildSlotLine(pools, onToggle) {
   const wrap = document.createElement('span');
   wrap.className = 'stat-bar slot-line';
-  const readout = pools
-    .map((p) => `level ${slotLevelOf(p)}: ${p.current} of ${p.max}`)
-    .join(', ');
-  wrap.setAttribute('role', 'img');
-  wrap.setAttribute('aria-label', `Spell slots — ${readout}`);
+  if (!onToggle) {
+    const readout = pools
+      .map((p) => `level ${slotLevelOf(p)}: ${p.current} of ${p.max}`)
+      .join(', ');
+    wrap.setAttribute('role', 'img');
+    wrap.setAttribute('aria-label', `Spell slots — ${readout}`);
+  }
 
   const label = document.createElement('span');
   label.className = 'stat-bar__label';
@@ -88,8 +94,25 @@ function buildSlotLine(pools) {
     const pips = document.createElement('span');
     pips.className = 'slot-line__pips';
     for (let i = 0; i < pool.max; i += 1) {
-      const pip = document.createElement('span');
-      pip.textContent = i < pool.current ? '●' : '○';
+      const available = i < pool.current;
+      /** @type {HTMLElement} */
+      let pip;
+      if (onToggle) {
+        pip = document.createElement('button');
+        pip.setAttribute('type', 'button');
+        pip.className = 'slot-line__pip';
+        pip.setAttribute(
+          'aria-label',
+          available
+            ? `Spend a level ${slotLevelOf(pool)} slot`
+            : `Restore a level ${slotLevelOf(pool)} slot`,
+        );
+        pip.title = available ? 'Click to spend' : 'Click to restore';
+        pip.addEventListener('click', () => onToggle(pool, available));
+      } else {
+        pip = document.createElement('span');
+      }
+      pip.textContent = available ? '●' : '○';
       pips.appendChild(pip);
     }
     group.append(level, pips);
@@ -174,35 +197,85 @@ export function mountCharacterSheet(
     summaryTop.appendChild(icon('chevron', { className: 'disclosure__chevron' }));
     summary.appendChild(summaryTop);
 
-    const hp = getHP(character);
-    if (hp) summary.appendChild(buildStatBar(hp, { modifier: 'hp', label: 'HP', critical: true }));
-
-    const slots = getSlotPools(character);
-    if (slots.length > 0) summary.appendChild(buildSlotLine(slots));
-
+    // The HP bar and slot pips live outside the disclosure button (buttons
+    // can't nest), so they stay visible AND operable whether the card is
+    // collapsed or expanded — no scrolling to the bottom of the sheet to
+    // apply damage or spend a slot. Only the name row toggles the card.
     const head = document.createElement('div');
     head.className = 'character-sheet__head';
     head.appendChild(summary);
 
+    const hp = getHP(character);
+    if (hp) {
+      const hpLine = document.createElement('div');
+      hpLine.className = 'character-sheet__hp-line';
+      const bar = buildStatBar(hp, { modifier: 'hp', label: 'HP', critical: true });
+      if (perms.play) {
+        const damageButton = document.createElement('button');
+        damageButton.type = 'button';
+        damageButton.className = 'btn btn--icon btn--danger character-sheet__hp-step';
+        damageButton.setAttribute('aria-label', `Damage ${character.name} by 1`);
+        damageButton.appendChild(icon('minus'));
+        damageButton.addEventListener('click', () => commit(spendResource(character, 'hp', 1)));
+
+        const healButton = document.createElement('button');
+        healButton.type = 'button';
+        healButton.className = 'btn btn--icon btn--success character-sheet__hp-step';
+        healButton.setAttribute('aria-label', `Heal ${character.name} by 1`);
+        healButton.appendChild(icon('plus'));
+        healButton.addEventListener('click', () => commit(restoreResource(character, 'hp', 1)));
+
+        hpLine.append(damageButton, bar, healButton);
+      } else {
+        hpLine.appendChild(bar);
+      }
+      head.appendChild(hpLine);
+    }
+
+    const slots = getSlotPools(character);
+    if (slots.length > 0) {
+      head.appendChild(
+        buildSlotLine(
+          slots,
+          perms.play
+            ? (pool, spent) =>
+                commit(
+                  spent
+                    ? spendResource(character, pool.id, 1)
+                    : restoreResource(character, pool.id, 1),
+                )
+            : null,
+        ),
+      );
+    }
+
     const body = document.createElement('div');
     body.className = 'character-sheet__body';
 
+    // Level and XP progress share the section header line; the award control
+    // below is laid out like a stat row, so its input lines up with the
+    // ability-score inputs underneath it.
     const header = document.createElement('div');
     header.className = 'character-sheet__header';
-    header.textContent = `Level ${character.level}`;
+    const levelText = document.createElement('span');
+    levelText.textContent = `Level ${character.level}`;
+    const xpProgress = document.createElement('span');
+    xpProgress.className = 'character-sheet__xp-progress';
+    xpProgress.textContent = `XP ${character.xp} / ${character.level * XP_PER_LEVEL}`;
+    header.append(levelText, xpProgress);
     body.appendChild(header);
 
-    const xpRow = document.createElement('div');
-    xpRow.className = 'character-sheet__xp';
-
-    const xpLabel = document.createElement('span');
-    xpLabel.textContent = `XP: ${character.xp} / ${character.level * XP_PER_LEVEL}`;
-    xpRow.appendChild(xpLabel);
-
     if (perms.editBase) {
+      const xpRow = document.createElement('div');
+      xpRow.className = 'character-sheet__xp';
+
+      const xpKey = document.createElement('span');
+      xpKey.className = 'character-sheet__stat-key';
+      xpKey.textContent = 'XP';
+
       const xpInput = document.createElement('input');
       xpInput.type = 'number';
-      xpInput.className = 'field character-sheet__xp-input';
+      xpInput.className = 'field character-sheet__stat-input';
       xpInput.value = '0';
       xpInput.min = '0';
       xpInput.setAttribute('aria-label', 'XP to add');
@@ -216,9 +289,9 @@ export function mountCharacterSheet(
         if (amount > 0) commit(addXP(character, amount));
       });
 
-      xpRow.append(xpInput, xpButton);
+      xpRow.append(xpKey, xpInput, xpButton);
+      body.appendChild(xpRow);
     }
-    body.appendChild(xpRow);
 
     const statsList = document.createElement('div');
     statsList.className = 'character-sheet__stats';
@@ -261,10 +334,13 @@ export function mountCharacterSheet(
     }
     body.appendChild(statsList);
 
-    if (character.resources.length > 0) {
+    // HP and spell slots are managed on the always-visible head lines, so the
+    // stepper list at the bottom only carries the custom pools.
+    const customPools = character.resources.filter((r) => r.id !== 'hp' && !isSlotPool(r));
+    if (customPools.length > 0) {
       const resources = document.createElement('div');
       resources.className = 'character-sheet__resources';
-      for (const pool of character.resources) {
+      for (const pool of customPools) {
         const row = document.createElement('div');
         row.className = 'character-sheet__resource-row';
 
