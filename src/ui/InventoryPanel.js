@@ -212,20 +212,35 @@ export function mountInventoryPanel(
     nameInput.placeholder = 'Item name';
     nameInput.className = 'field inventory-panel__name-input';
 
+    /**
+     * A small captioned wrapper so each control in the add form names itself.
+     * @param {string} caption
+     * @param {HTMLElement} control
+     * @returns {HTMLLabelElement}
+     */
+    function labeled(caption, control) {
+      const label = document.createElement('label');
+      label.className = 'inventory-panel__field-label';
+      const text = document.createElement('span');
+      text.textContent = caption;
+      label.append(text, control);
+      return label;
+    }
+
     const quantityInput = document.createElement('input');
     quantityInput.type = 'number';
     quantityInput.value = '1';
     quantityInput.min = '1';
     quantityInput.className = 'field inventory-panel__quantity-input';
-    quantityInput.setAttribute('aria-label', 'Quantity to add');
 
     const typeSelect = document.createElement('select');
     typeSelect.className = 'field inventory-panel__type-select';
-    typeSelect.setAttribute('aria-label', 'Item type');
     for (const t of ITEM_TYPES) {
       const option = document.createElement('option');
       option.value = t;
-      option.textContent = t;
+      // "gear" is the catch-all for miscellaneous, non-equippable items
+      // (rope, rations, trinkets); say so where the GM picks it.
+      option.textContent = t === 'gear' ? 'gear (misc.)' : t;
       typeSelect.appendChild(option);
     }
 
@@ -237,10 +252,10 @@ export function mountInventoryPanel(
     acInput.value = '1';
     acInput.min = '0';
     acInput.className = 'field inventory-panel__ac-input';
-    acInput.setAttribute('aria-label', 'AC bonus while equipped');
     acInput.title = 'AC bonus while equipped';
+    const acField = labeled('AC bonus', acInput);
     const syncACVisibility = () => {
-      acInput.hidden = !AC_TYPES.includes(typeSelect.value);
+      acField.hidden = !AC_TYPES.includes(typeSelect.value);
     };
     typeSelect.addEventListener('change', syncACVisibility);
     syncACVisibility();
@@ -271,7 +286,13 @@ export function mountInventoryPanel(
       quantityInput.value = '1';
     });
 
-    form.append(nameInput, typeSelect, acInput, quantityInput, addButton);
+    form.append(
+      nameInput,
+      labeled('Type', typeSelect),
+      acField,
+      labeled('Qty', quantityInput),
+      addButton,
+    );
     body.appendChild(form);
 
     wireDisclosure(summary, body, { expanded, onToggle: (next) => { expanded = next; } });
