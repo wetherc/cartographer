@@ -2,8 +2,7 @@
    Encounters
    ========================================================================== */
 
-/* The Active encounter / Nearby encounters tab strip; present only while the
-   party stands on a live encounter's tile. */
+/* The Active encounter / Nearby encounters tab strip. */
 .encounter-panel__tabs {
   margin-bottom: var(--space-2);
 }

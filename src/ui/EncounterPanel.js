@@ -9,11 +9,12 @@ import { isGM, hpBand } from '../view/ViewRole.js';
 
 /**
  * Mount the encounter panel: an "Active encounter" / "Nearby encounters" tab
- * pair. The Active tab exists only while the party stands on a tile with a
- * live encounter — it lists what the party has walked into and carries the
- * GM's "Start combat" button; stepping onto such a tile switches to it. The
- * Nearby tab lists everything else in range plus the authoring buttons. With
- * no active encounter the tabs collapse to the plain nearby list. Each row
+ * pair, always shown. The Active tab lists the live encounters on the party's
+ * tile — what the party has walked into — and carries the GM's "Start combat"
+ * button; stepping onto such a tile switches to it, and leaving (or defeating
+ * the last one) switches back to Nearby, which lists everything else in range
+ * plus the authoring buttons. Either tab shows an empty state when it has
+ * nothing to list, and both stay freely selectable. Each row
  * shows an HP readout and a damage/heal amount applied via two buttons;
  * defeated encounters (currentHP <= 0) render with a distinguishing class
  * instead of being removed, so a GM can still see what died.
@@ -186,6 +187,12 @@ export function mountEncounterPanel(container, callbacks) {
    */
   function buildActivePanel(active, gm) {
     const panel = document.createElement('div');
+    if (active.length === 0) {
+      const empty = document.createElement('p');
+      empty.className = 'empty-state';
+      empty.textContent = 'No active encounter.';
+      panel.appendChild(empty);
+    }
     for (const encounter of active) panel.appendChild(buildRow(encounter, gm));
 
     const onStartCombat = callbacks.onStartCombat;
@@ -261,22 +268,17 @@ export function mountEncounterPanel(container, callbacks) {
     // and the full damage/heal/condition/roster machinery.
     const gm = !callbacks.getRole || isGM(callbacks.getRole());
 
-    // The Active tab exists only while something is underfoot. Gaining an
-    // active encounter jumps to it; losing the last one falls back to Nearby.
+    // Gaining an active encounter jumps to its tab exactly once; losing the
+    // last one falls back to Nearby. In between, the selection is the user's —
+    // either tab stays selectable even when empty.
     const hasActive = active.length > 0;
-    if (!hasActive) activeTab = 'nearby';
-    else if (!hadActive) activeTab = 'active';
+    if (hasActive && !hadActive) activeTab = 'active';
+    else if (!hasActive && hadActive) activeTab = 'nearby';
     hadActive = hasActive;
-
-    const nearbyPanel = buildNearbyPanel(nearby, gm);
-    if (!hasActive) {
-      root.appendChild(nearbyPanel);
-      return;
-    }
 
     const panels = {
       active: buildActivePanel(active, gm),
-      nearby: nearbyPanel,
+      nearby: buildNearbyPanel(nearby, gm),
     };
     const tablist = document.createElement('div');
     tablist.className = 'tabs encounter-panel__tabs';
