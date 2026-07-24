@@ -61,46 +61,32 @@
   gap: var(--space-1);
 }
 
+/* Chips are buttons: click to set the base value (Build) or apply a timed
+   adjustment (Play). AC rides in the seventh cell after the six abilities. */
 .statblock-bar__chip {
   display: inline-flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: var(--space-1);
-  padding: 0.1rem var(--space-1) 0.1rem var(--space-2);
+  padding: 0.1rem var(--space-2);
   border-radius: var(--radius-sm);
   background: var(--surface-sunken);
   border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  font: inherit;
   font-size: var(--text-label);
   line-height: 1.4;
-}
-
-.statblock-bar__remove {
-  border: none;
-  background: none;
-  cursor: pointer;
   color: inherit;
-  font-size: 1rem;
-  line-height: 1;
-  padding: 0 0.15rem;
-  opacity: 0.65;
+  cursor: pointer;
 }
 
-.statblock-bar__remove:hover {
-  opacity: 1;
-  color: var(--danger);
+.statblock-bar__chip:hover {
+  border-color: var(--accent, currentColor);
 }
 
-.statblock-bar__add {
-  padding: 0.1rem;
-  justify-self: start;
-}
-
-.statblock-bar__add--labeled {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 0.1rem var(--space-2) 0.1rem var(--space-1);
-  font-size: var(--text-label);
+/* A stat under an active timed modifier stands out from its neighbors. */
+.statblock-bar__chip--modified {
+  border-color: var(--accent, currentColor);
+  font-weight: 600;
 }
 
 /* Build-rail map tools (stroke undo, PNG export). */

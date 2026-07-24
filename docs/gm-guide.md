@@ -271,10 +271,13 @@ see these controls.
 
 Build an encounter roster in the **Encounters** panel (name, max HP, level, and a
 **tier** — a rank-and-file *mob* or an above-normal *legend*), and bind each to a
-tile. The tier and level stamp a reasonable default set of the six ability scores
-into the stat block (legends always out-stat a level-matched mob); every score
-stays editable afterwards. In Play mode the panel shows only the encounters at
-the party's current location — no active encounter, no clutter.
+tile. The tier and level stamp a reasonable default stat block — the six ability
+scores plus AC, the only stats an enemy carries (legends always out-stat a
+level-matched mob). In Play mode the panel shows only the encounters near the
+party: within four times the fog reveal radius of its tile. Players see less
+still — an encounter enters their sidebar only once it's been discovered, its
+tile revealed through the fog (or, for an unplaced one, once the party has
+walked into it).
 
 When the party **steps onto a tile with an encounter**, it pops up as a modal over
 the map, naming the encounter, its region, and its coordinates. Fleeing or
@@ -291,12 +294,18 @@ and the stat block and conditions stay as you tuned them. Build mode gets its
 own **Encounters** card in the right rail, scoped to whatever map you're
 looking at, with the same edit/delete actions plus a New encounter button that
 defaults onto the selected tile — so you can stage a region's fights while
-authoring it, without walking the party there.
+authoring it, without walking the party there. This card is also where **base
+stats are edited**: every row carries the full set of stat chips, and clicking
+one sets its value. Clicking a placed encounter's name **focuses the map** on
+its tile, so you can find a staged fight without hunting for coordinates.
 
 Damage and heal from the panel; a defeated encounter is styled as such rather than
 deleted, so you keep a record of what died. Each encounter row tracks its own
-status **conditions** (poisoned, prone, …) and a **stat block** — chips like
-"AC 13" added right on the row, GM-only.
+status **conditions** (poisoned, prone, …) and shows its **stat block** as chips
+("AC 13"), GM-only. In Play mode the chips aren't for editing base values —
+clicking one applies a **timed adjustment** (+2 STR for 3 rounds, say), shown as
+"STR 14→16 (3r)" and ticked down automatically as combat rounds pass. Combat
+math (initiative's DEX modifier) uses the adjusted values while they last.
 
 Recurring foes go in the **bestiary**: the save icon on an encounter row stores
 its blueprint (name, max HP, stat block) as a template, and **From bestiary**

@@ -3,7 +3,7 @@ import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
-import { createEncounter, editEncounter, encountersAt, encountersOnTile, isDefeated, toTemplate, fromTemplate } from '../entities/Encounter.js';
+import { createEncounter, editEncounter, effectiveStatBlock, encountersAt, encountersNear, encountersOnTile, discoveredEncounters, isDefeated, tickStatModifiers, toTemplate, fromTemplate } from '../entities/Encounter.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
 import { roll, formatResult } from '../dice/DiceRoller.js';
@@ -138,9 +138,18 @@ export function wireEncounters(app) {
   }
 
   app.views.encounterPanel = mountEncounterPanel(mustGetElement('encounter-container'), {
-    // The panel shows only what's relevant where the party stands: encounters
-    // staged in the current node, plus unbound ones from older saves.
-    getEncounters: () => encountersAt(state.encounters, app.partyTracker.getPosition()),
+    // The panel shows only what's relevant where the party stands. The GM
+    // sees encounters within four times the fog reveal radius of the party
+    // (plus unbound ones); players see only what's been discovered — an
+    // encounter whose tile the fog has revealed, or an unbound one the party
+    // has already walked into.
+    getEncounters: () => {
+      const position = app.partyTracker.getPosition();
+      if (isGM(state.role)) {
+        return encountersNear(state.encounters, position, app.partyTracker.revealRadius * 4);
+      }
+      return discoveredEncounters(state.encounters, position, app.grid.getNode(position.nodeId) ?? null);
+    },
     onUpdate: (next) => {
       // Log the transition into defeat exactly once (damage that keeps it down
       // shouldn't re-log), by comparing against the pre-update encounter.
@@ -246,6 +255,17 @@ export function wireEncounters(app) {
       }),
     onEdit: (encounter) => encounterForm(encounter, null),
     onDelete: deleteEncounter,
+    // Base stat edits from the Build rail's chips: persist and let the Play
+    // panel (which shows the same encounter) pick the change up.
+    onUpdate: (next) => {
+      state.encounters = replaceById(state.encounters, next);
+      app.views.encounterPanel.update();
+      app.actions.markDirty();
+    },
+    // Selecting a placed encounter jumps the map to where it's staged.
+    onFocus: (encounter) => {
+      if (encounter.location) app.actions.focusLocation(encounter.location);
+    },
   });
 
   // "In an encounter" means the party stands on a tile with at least one live
@@ -268,7 +288,7 @@ export function wireEncounters(app) {
     };
     return [
       ...state.characters.map((c) => withDex(c.id, c.name, 'party', c.stats)),
-      ...encountersHere().map((e) => withDex(e.id, e.name, 'foe', e.statBlock)),
+      ...encountersHere().map((e) => withDex(e.id, e.name, 'foe', effectiveStatBlock(e))),
       ...npcsOnTile(state.npcs, app.partyTracker.getPosition()).map((n) =>
         withDex(n.id, n.name, n.disposition === 'hostile' ? 'foe' : 'party', n.stats),
       ),
@@ -299,10 +319,15 @@ export function wireEncounters(app) {
       if (!combat) return;
       const result = advanceTurn(combat);
       combat = result.state;
-      // A new round elapsed, so tick every combatant's timed conditions down.
+      // A new round elapsed, so tick every combatant's timed conditions down,
+      // along with the enemies' timed stat modifiers.
       if (result.wrapped) {
         state.characters = state.characters.map((c) => ({ ...c, conditions: tickConditions(c.conditions) }));
-        state.encounters = state.encounters.map((e) => ({ ...e, conditions: tickConditions(e.conditions) }));
+        state.encounters = state.encounters.map((e) => ({
+          ...e,
+          conditions: tickConditions(e.conditions),
+          statMods: tickStatModifiers(e.statMods ?? []),
+        }));
         app.actions.refreshSelectedCharacter();
         app.views.encounterPanel.update();
       }

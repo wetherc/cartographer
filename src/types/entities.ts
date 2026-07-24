@@ -12,6 +12,14 @@ export interface Condition {
 /** Enemy authoring tier: mobs are rank-and-file, legends run above-normal stats for their level. */
 export type EnemyTier = 'mob' | 'legend';
 
+/** A timed adjustment to one stat, applied on top of the base stat block for
+ * a set number of combat rounds. */
+export interface StatModifier {
+  stat: string;
+  delta: number;
+  rounds: number;
+}
+
 export interface Encounter {
   id: string;
   name: string;
@@ -24,6 +32,8 @@ export interface Encounter {
   location: EncounterLocation | null;
   /** Active status conditions (empty on older saves). */
   conditions: Condition[];
+  /** Timed stat adjustments, ticked down each combat round (empty on older saves). */
+  statMods?: StatModifier[];
   /** True once the party has walked into this encounter, so the travelogue
    * records the first meeting exactly once. Absent on older saves. */
   noticed?: boolean;

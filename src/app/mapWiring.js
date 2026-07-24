@@ -528,6 +528,26 @@ export function wireMapView(app) {
   }
 
   /**
+   * Bring a staged location into view: navigate to its node if the GM is
+   * looking elsewhere, centre the canvas on its tile, and select the tile so
+   * it reads highlighted — without stealing the Build rail's active tab the
+   * way selectTile does. How "click an encounter in the Build list" lands on
+   * the encounter.
+   * @param {import('../types/entities.js').EncounterLocation} location
+   */
+  function focusLocation(location) {
+    if (navigator.getCurrentNode().id !== location.nodeId) {
+      if (!grid.getNode(location.nodeId)) return;
+      goToNode(location.nodeId);
+    }
+    selectedTileId = location.tileId;
+    mapCanvas.setSelectedTile(location.tileId);
+    inspector.setTile(getTile(navigator.getCurrentNode(), location.tileId) ?? null, true);
+    mapCanvas.centerOnTile(location.tileId);
+  }
+  app.actions.focusLocation = focusLocation;
+
+  /**
    * Apply a pure node transform (paint/erase) to the current node, persist it,
    * re-render the canvas, and keep the inspector in sync if it was showing the
    * affected tile.
