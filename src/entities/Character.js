@@ -1,6 +1,6 @@
 import { createResource, spend as spendPool, restore as restorePool } from './Resource.js';
 import { isSlotPool, syncSlotsToLevel, migrateManaToSlots } from './SpellSlots.js';
-import { emptyEquipment, pruneEquipment } from './Equipment.js';
+import { emptyEquipment, migrateEquipment, pruneEquipment } from './Equipment.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -45,11 +45,57 @@ export function withHP(character, maxHP) {
 }
 
 /**
+ * Set the HP pool's maximum (the GM's per-character override), keeping current
+ * HP but clamping it down if it now exceeds the new maximum. At least 1. A
+ * character without an HP pool is returned unchanged.
+ * @param {Character} character
+ * @param {number} max
+ * @returns {Character}
+ */
+export function setMaxHP(character, max) {
+  const clamped = Math.max(1, Math.floor(max) || 1);
+  return {
+    ...character,
+    resources: character.resources.map((r) =>
+      r.id === HP_RESOURCE_ID ? { ...r, max: clamped, current: Math.min(r.current, clamped) } : r,
+    ),
+  };
+}
+
+/**
+ * Set the character's bonus HP — temporary hit points granted by items or
+ * boons, tracked on top of the intrinsic HP pool. Never negative. Pure.
+ * @param {Character} character
+ * @param {number} amount
+ * @returns {Character}
+ */
+export function setBonusHP(character, amount) {
+  return { ...character, bonusHP: Math.max(0, Math.floor(amount) || 0) };
+}
+
+/**
+ * Apply damage: bonus HP absorbs it first (temporary points are lost before
+ * real ones), and only the remainder drains the HP pool. Healing is separate
+ * (restoreResource) and never refills bonus HP — that's granted, not healed.
+ * @param {Character} character
+ * @param {number} amount
+ * @returns {Character}
+ */
+export function damageCharacter(character, amount) {
+  const bonus = character.bonusHP ?? 0;
+  const absorbed = Math.min(bonus, amount);
+  const next = absorbed > 0 ? { ...character, bonusHP: bonus - absorbed } : character;
+  const remainder = amount - absorbed;
+  return remainder > 0 ? spendResource(next, HP_RESOURCE_ID, remainder) : next;
+}
+
+/**
  * Fill in fields a loaded character may predate: any missing ability score at
  * the neutral 10 (keeping existing values) and an empty-string race. No HP
  * pool is invented — its absence legitimately means "no HP tracking". A
  * mana-era save's mana pool is migrated to spell slots for the character's
- * level (see SpellSlots.js), and a pre-equipment save gets empty slots.
+ * level (see SpellSlots.js), and a pre-equipment save gets empty slots — with
+ * the pre-piecewise 'armor' slot carrying over into 'chest'.
  * @param {Character} character
  * @returns {Character}
  */
@@ -59,7 +105,8 @@ export function withDefaults(character) {
     race: character.race ?? '',
     stats: { ...defaultStats(), ...character.stats },
     conditions: character.conditions ?? [],
-    equipment: { ...emptyEquipment(), ...character.equipment },
+    equipment: migrateEquipment(character.equipment),
+    bonusHP: character.bonusHP ?? 0,
     location: character.location ?? null,
   });
 }
@@ -74,7 +121,7 @@ export function withDefaults(character) {
  * @returns {Character}
  */
 export function createCharacter(id, name, stats = {}, race = '') {
-  return { id, name, race, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [], conditions: [], equipment: emptyEquipment(), location: null };
+  return { id, name, race, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [], conditions: [], equipment: emptyEquipment(), bonusHP: 0, location: null };
 }
 
 /**

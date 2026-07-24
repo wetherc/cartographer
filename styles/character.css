@@ -71,6 +71,21 @@
   margin-bottom: var(--space-3);
 }
 
+/* Derived AC and XP progress readouts on the header's right. */
+.character-sheet__header-meta {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  font-size: var(--text-label);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.character-sheet__ac {
+  font-weight: 700;
+  color: var(--text);
+}
+
 .character-sheet__xp-progress {
   font-size: var(--text-label);
   font-weight: 400;
@@ -96,9 +111,10 @@
   margin-right: auto;
 }
 
-/* The XP award control, laid out like a stat row (same key width and input
-   size) so its input lines up with the ability-score inputs below it. */
-.character-sheet__xp {
+/* Labeled numeric rows (XP award, max HP, bonus HP), laid out like stat rows
+   (same key width and input size) so their inputs line up with the
+   ability-score inputs below them. */
+.character-sheet__field-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -107,6 +123,10 @@
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
+}
+
+.character-sheet__field-row .character-sheet__stat-key {
+  white-space: nowrap;
 }
 
 /* A wide gutter between the two stat columns, so one column's modifier
@@ -154,13 +174,12 @@
   gap: var(--space-1);
 }
 
-/* Shrinks with the card so the modifier after it never clips — slimmer
-   padding keeps two digits legible at the minimum width. The XP award input
-   shares the class, keeping the two aligned. */
+/* One fixed size shared by every numeric input on the sheet (ability scores,
+   XP award, HP fields), so they all align and match exactly; the stats grid
+   collapses to one column before this would ever clip. */
 .character-sheet__stat-input {
-  width: 100%;
-  min-width: 3rem;
-  max-width: 3.5rem;
+  width: 3.5rem;
+  flex-shrink: 0;
   padding-left: 0.25rem;
   padding-right: 0.25rem;
   text-align: center;
@@ -285,6 +304,12 @@
 }
 
 .inventory-panel__quantity-input {
+  width: 3.5rem;
+  text-align: center;
+}
+
+/* AC bonus for defensive item types; hidden for the rest. */
+.inventory-panel__ac-input {
   width: 3.5rem;
   text-align: center;
 }

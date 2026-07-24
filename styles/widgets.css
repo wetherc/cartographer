@@ -175,6 +175,14 @@
   color: var(--text-muted);
 }
 
+/* Temporary points riding on top of the pool (bonus HP). */
+.stat-bar__bonus {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  font-weight: 700;
+  color: var(--mana);
+}
+
 /* Spell-slot readout on the collapsed card: a column per spell level — the
    ordinal centered over a two-wide pip grid. Shares .stat-bar's label column;
    overflow wraps inside __groups, so continuation rows stay indented past the

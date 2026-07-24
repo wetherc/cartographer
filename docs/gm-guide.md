@@ -366,13 +366,21 @@ last potion and throwing it away are different stories. Inventory changes
 write themselves into the travelogue: pickups record who found what, where,
 and at what in-game time; consuming or discarding logs a shorter line.
 
-Items carry a broad **type** (gear, weapon, armor, shield, bow, or consumable),
-picked when adding one, and the Inventory panel opens with four **equipment
-slots** — Armor, Main hand, Off hand, and Ranged — each a picker over that
-character's inventory. Slot pickers list the slot's natural types first (a
-shield tops the off-hand list) but nothing is enforced: any item can go in any
-slot; the party is trusted not to equip boots as a hat. Removing the last of a
-stack unequips it automatically.
+Items carry a **type** (gear, weapon, armor, helmet, gloves, greaves, shield,
+bow, or consumable), picked when adding one, and the Inventory panel opens
+with seven **equipment slots** — Helmet, Chest, Gloves, Greaves, Main hand,
+Off hand, and Ranged. Each picker lists only the items its slot accepts (a
+potion can't be worn as armor; the off hand takes a shield or a weapon), so
+armor is worn piecewise. Defensive types take an **AC bonus** when added;
+equipped bonuses feed the character's **armor class** — 10 + DEX modifier +
+every equipped bonus — shown as a derived readout in the sheet's header.
+Removing the last of a stack unequips it automatically.
+
+The sheet also carries two HP controls beyond the bar's steppers: **Max HP**
+(GM-only) overrides the pool's maximum per character, clamping current HP down
+if needed, and **Bonus HP** tracks temporary points from items or boons on top
+of intrinsic HP — shown as a "+N" beside the bar, drained before real HP when
+damage lands, and never refilled by healing (it's granted, not healed).
 
 For combat speed, the Party roster's **Award XP** grants the same amount to
 every character at once.

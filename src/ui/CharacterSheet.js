@@ -2,10 +2,14 @@ import {
   setStat,
   addXP,
   getHP,
+  setMaxHP,
+  setBonusHP,
+  damageCharacter,
   spendResource,
   restoreResource,
   XP_PER_LEVEL,
 } from '../entities/Character.js';
+import { armorClass } from '../entities/Equipment.js';
 import { getSlotPools, isSlotPool, slotLevelOf } from '../entities/SpellSlots.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { wireDisclosure } from './Disclosure.js';
@@ -20,15 +24,18 @@ import { icon } from './icons.js';
  * pool: a visible label, the fill track, and the numbers. Absence of the pool
  * (older saves) renders no bar rather than a fake full one.
  * @param {ResourcePool} pool
- * @param {{ modifier: string, label: string, critical?: boolean }} opts
- *   `modifier` selects the fill colour; `critical` arms the low-fill red state.
+ * @param {{ modifier: string, label: string, critical?: boolean, bonus?: number }} opts
+ *   `modifier` selects the fill colour; `critical` arms the low-fill red
+ *   state; `bonus` appends a "+N" readout for temporary points on top of the
+ *   pool (bonus HP).
  * @returns {HTMLElement}
  */
 function buildStatBar(pool, opts) {
   const wrap = document.createElement('span');
   wrap.className = 'stat-bar';
   wrap.setAttribute('role', 'img');
-  wrap.setAttribute('aria-label', `${opts.label} ${pool.current} of ${pool.max}`);
+  const bonusReadout = opts.bonus ? `, plus ${opts.bonus} bonus` : '';
+  wrap.setAttribute('aria-label', `${opts.label} ${pool.current} of ${pool.max}${bonusReadout}`);
 
   const label = document.createElement('span');
   label.className = 'stat-bar__label';
@@ -47,8 +54,15 @@ function buildStatBar(pool, opts) {
   const text = document.createElement('span');
   text.className = 'stat-bar__text';
   text.textContent = `${pool.current}/${pool.max}`;
-
   wrap.append(track, text);
+
+  if (opts.bonus) {
+    const bonus = document.createElement('span');
+    bonus.className = 'stat-bar__bonus';
+    bonus.textContent = `+${opts.bonus}`;
+    bonus.title = 'Bonus HP';
+    wrap.appendChild(bonus);
+  }
   return wrap;
 }
 
@@ -209,14 +223,20 @@ export function mountCharacterSheet(
     if (hp) {
       const hpLine = document.createElement('div');
       hpLine.className = 'character-sheet__hp-line';
-      const bar = buildStatBar(hp, { modifier: 'hp', label: 'HP', critical: true });
+      const bar = buildStatBar(hp, {
+        modifier: 'hp',
+        label: 'HP',
+        critical: true,
+        bonus: character.bonusHP ?? 0,
+      });
       if (perms.play) {
         const damageButton = document.createElement('button');
         damageButton.type = 'button';
         damageButton.className = 'btn btn--icon btn--danger character-sheet__hp-step';
         damageButton.setAttribute('aria-label', `Damage ${character.name} by 1`);
         damageButton.appendChild(icon('minus'));
-        damageButton.addEventListener('click', () => commit(spendResource(character, 'hp', 1)));
+        // Bonus HP absorbs the hit before the pool does.
+        damageButton.addEventListener('click', () => commit(damageCharacter(character, 1)));
 
         const healButton = document.createElement('button');
         healButton.type = 'button';
@@ -252,34 +272,53 @@ export function mountCharacterSheet(
     const body = document.createElement('div');
     body.className = 'character-sheet__body';
 
-    // Level and XP progress share the section header line; the award control
-    // below is laid out like a stat row, so its input lines up with the
-    // ability-score inputs underneath it.
+    // Level, derived AC, and XP progress share the section header line; the
+    // controls below are laid out like stat rows, so their inputs line up
+    // with the ability-score inputs underneath them.
     const header = document.createElement('div');
     header.className = 'character-sheet__header';
     const levelText = document.createElement('span');
     levelText.textContent = `Level ${character.level}`;
+    const headerMeta = document.createElement('span');
+    headerMeta.className = 'character-sheet__header-meta';
+    const acBadge = document.createElement('span');
+    acBadge.className = 'character-sheet__ac';
+    acBadge.textContent = `AC ${armorClass(character)}`;
+    acBadge.title = 'Armor class: 10 + DEX modifier + equipped armor and shield bonuses';
     const xpProgress = document.createElement('span');
     xpProgress.className = 'character-sheet__xp-progress';
     xpProgress.textContent = `XP ${character.xp} / ${character.level * XP_PER_LEVEL}`;
-    header.append(levelText, xpProgress);
+    headerMeta.append(acBadge, xpProgress);
+    header.append(levelText, headerMeta);
     body.appendChild(header);
 
+    /**
+     * A labeled numeric row sharing the stat rows' key/input geometry.
+     * @param {string} key
+     * @param {number} value
+     * @param {string} ariaLabel
+     * @param {(value: number) => void} onCommit fires on change with the parsed value
+     * @returns {{ row: HTMLElement, input: HTMLInputElement }}
+     */
+    function buildFieldRow(key, value, ariaLabel, onCommit) {
+      const row = document.createElement('div');
+      row.className = 'character-sheet__field-row';
+      const keyText = document.createElement('span');
+      keyText.className = 'character-sheet__stat-key';
+      keyText.textContent = key;
+      const input = document.createElement('input');
+      input.type = 'number';
+      input.className = 'field character-sheet__stat-input';
+      input.value = String(value);
+      input.min = '0';
+      input.setAttribute('aria-label', ariaLabel);
+      input.addEventListener('change', () => onCommit(Number(input.value)));
+      row.append(keyText, input);
+      return { row, input };
+    }
+
     if (perms.editBase) {
-      const xpRow = document.createElement('div');
-      xpRow.className = 'character-sheet__xp';
-
-      const xpKey = document.createElement('span');
-      xpKey.className = 'character-sheet__stat-key';
-      xpKey.textContent = 'XP';
-
-      const xpInput = document.createElement('input');
-      xpInput.type = 'number';
-      xpInput.className = 'field character-sheet__stat-input';
-      xpInput.value = '0';
-      xpInput.min = '0';
-      xpInput.setAttribute('aria-label', 'XP to add');
-
+      const { row: xpRow, input: xpInput } = buildFieldRow('XP', 0, 'XP to add', () => {});
       const xpButton = document.createElement('button');
       xpButton.type = 'button';
       xpButton.className = 'btn';
@@ -288,9 +327,29 @@ export function mountCharacterSheet(
         const amount = Number(xpInput.value);
         if (amount > 0) commit(addXP(character, amount));
       });
-
-      xpRow.append(xpKey, xpInput, xpButton);
+      xpRow.appendChild(xpButton);
       body.appendChild(xpRow);
+
+      // The GM's per-character max HP override; current HP clamps down if the
+      // new maximum is below it.
+      if (hp) {
+        const { row } = buildFieldRow('MAX HP', hp.max, `Maximum HP for ${character.name}`, (value) =>
+          commit(setMaxHP(character, value)),
+        );
+        body.appendChild(row);
+      }
+    }
+
+    // Bonus HP from items/boons, tracked on top of the intrinsic pool; damage
+    // drains it first. Editable by anyone who can play the character.
+    if (perms.play && hp) {
+      const { row } = buildFieldRow(
+        'BONUS HP',
+        character.bonusHP ?? 0,
+        `Bonus HP for ${character.name}`,
+        (value) => commit(setBonusHP(character, value)),
+      );
+      body.appendChild(row);
     }
 
     const statsList = document.createElement('div');

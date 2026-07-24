@@ -1,5 +1,5 @@
 import { addItem, removeItem } from '../entities/Character.js';
-import { EQUIPMENT_SLOTS, ITEM_TYPES, itemType, equip, getEquipped } from '../entities/Equipment.js';
+import { EQUIPMENT_SLOTS, ITEM_TYPES, itemType, equip, getEquipped, slotAccepts } from '../entities/Equipment.js';
 import { wireDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
 
@@ -18,9 +18,11 @@ function idFromName(name) {
 }
 
 /**
- * Equipment slot rows: a labeled select per slot, its options drawn from the
- * character's inventory with the slot's suggested item types listed first.
- * No type enforcement — any item can go in any slot.
+ * Equipment slot rows: a labeled select per slot, its options limited to the
+ * inventory items whose type the slot accepts (a potion never appears in the
+ * armor pickers), ordered by the slot's preference then name. An already-
+ * equipped item that no longer passes the filter (a legacy save) still shows,
+ * so it can be seen and unequipped.
  * @param {Character} character
  * @param {(next: Character) => void} commit
  * @param {boolean} playable false renders the pickers disabled (read-only view)
@@ -43,20 +45,23 @@ function buildEquipment(character, commit, playable) {
     empty.value = '';
     empty.textContent = '—';
     select.appendChild(empty);
-    const ranked = [...character.inventory].sort((a, b) => {
-      const rank = (/** @type {typeof a} */ i) => {
-        const at = slot.suggests.indexOf(itemType(i));
-        return at === -1 ? slot.suggests.length : at;
-      };
-      return rank(a) - rank(b) || a.name.localeCompare(b.name);
-    });
-    for (const item of ranked) {
+    const equippedId = getEquipped(character, slot.key)?.id ?? '';
+    const eligible = character.inventory
+      .filter((i) => slotAccepts(slot.key, i) || i.id === equippedId)
+      .sort((a, b) => {
+        const rank = (/** @type {typeof a} */ i) => {
+          const at = slot.accepts.indexOf(itemType(i));
+          return at === -1 ? slot.accepts.length : at;
+        };
+        return rank(a) - rank(b) || a.name.localeCompare(b.name);
+      });
+    for (const item of eligible) {
       const option = document.createElement('option');
       option.value = item.id;
-      option.textContent = item.name;
+      option.textContent = item.acBonus ? `${item.name} (+${item.acBonus} AC)` : item.name;
       select.appendChild(option);
     }
-    select.value = getEquipped(character, slot.key)?.id ?? '';
+    select.value = equippedId;
     select.disabled = !playable;
     select.addEventListener('change', () =>
       commit(equip(character, slot.key, select.value === '' ? null : select.value)),
@@ -154,7 +159,7 @@ export function mountInventoryPanel(
 
       const type = document.createElement('span');
       type.className = 'inventory-panel__type';
-      type.textContent = itemType(item);
+      type.textContent = item.acBonus ? `${itemType(item)} +${item.acBonus} AC` : itemType(item);
 
       row.append(label, type);
 
@@ -224,6 +229,22 @@ export function mountInventoryPanel(
       typeSelect.appendChild(option);
     }
 
+    // Defensive items carry an AC bonus, applied while equipped; the field
+    // only shows for types that can grant one.
+    const AC_TYPES = ['armor', 'helmet', 'gloves', 'greaves', 'shield'];
+    const acInput = document.createElement('input');
+    acInput.type = 'number';
+    acInput.value = '1';
+    acInput.min = '0';
+    acInput.className = 'field inventory-panel__ac-input';
+    acInput.setAttribute('aria-label', 'AC bonus while equipped');
+    acInput.title = 'AC bonus while equipped';
+    const syncACVisibility = () => {
+      acInput.hidden = !AC_TYPES.includes(typeSelect.value);
+    };
+    typeSelect.addEventListener('change', syncACVisibility);
+    syncACVisibility();
+
     const addButton = document.createElement('button');
     addButton.type = 'button';
     addButton.className = 'btn btn--primary';
@@ -234,16 +255,23 @@ export function mountInventoryPanel(
       const quantity = Number(quantityInput.value);
       if (!name || quantity <= 0) return;
       const type = /** @type {ItemType} */ (typeSelect.value);
-      commit(addItem(character, { id: idFromName(name), name, quantity, notes: '', type }), {
-        verb: 'pickup',
-        itemName: name,
-        count: quantity,
-      });
+      const acBonus = AC_TYPES.includes(type) ? Math.max(0, Number(acInput.value) || 0) : 0;
+      commit(
+        addItem(character, {
+          id: idFromName(name),
+          name,
+          quantity,
+          notes: '',
+          type,
+          ...(acBonus > 0 ? { acBonus } : {}),
+        }),
+        { verb: 'pickup', itemName: name, count: quantity },
+      );
       nameInput.value = '';
       quantityInput.value = '1';
     });
 
-    form.append(nameInput, typeSelect, quantityInput, addButton);
+    form.append(nameInput, typeSelect, acInput, quantityInput, addButton);
     body.appendChild(form);
 
     wireDisclosure(summary, body, { expanded, onToggle: (next) => { expanded = next; } });
