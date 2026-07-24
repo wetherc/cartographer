@@ -25,18 +25,11 @@ test('buildWorldTree nests children under parents with depth', () => {
 
 test('buildWorldTree treats an orphan (missing parent) as a root', () => {
   const tree = buildWorldTree([node('a', 'ghost'), node('b', null)]);
-  assert.deepEqual(
-    tree.map((t) => t.node.id).sort(),
-    ['a', 'b'],
-  );
+  assert.deepEqual(tree.map((t) => t.node.id).sort(), ['a', 'b']);
 });
 
 test('buildWorldTree preserves child input order', () => {
-  const tree = buildWorldTree([
-    node('world', null),
-    node('c2', 'world'),
-    node('c1', 'world'),
-  ]);
+  const tree = buildWorldTree([node('world', null), node('c2', 'world'), node('c1', 'world')]);
   assert.deepEqual(
     tree[0].children.map((c) => c.node.id),
     ['c2', 'c1'],
@@ -64,14 +57,13 @@ test('collectSubtreeIds includes the root and every descendant', () => {
     node('sub', 'region'),
     node('other', 'world'),
   ];
-  assert.deepEqual(
-    [...collectSubtreeIds(nodes, 'region')].sort(),
-    ['region', 'sub'],
-  );
-  assert.deepEqual(
-    [...collectSubtreeIds(nodes, 'world')].sort(),
-    ['other', 'region', 'sub', 'world'],
-  );
+  assert.deepEqual([...collectSubtreeIds(nodes, 'region')].sort(), ['region', 'sub']);
+  assert.deepEqual([...collectSubtreeIds(nodes, 'world')].sort(), [
+    'other',
+    'region',
+    'sub',
+    'world',
+  ]);
 });
 
 test('TileGrid.removeNode deletes the subtree and clears dangling child links', () => {

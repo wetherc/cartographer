@@ -27,14 +27,20 @@ test('pushEdit drops the oldest entry past the limit', () => {
   let history = [];
   for (const node of nodes) history = pushEdit(history, [node], 3);
   assert.equal(history.length, 3);
-  assert.deepEqual(history.map(([n]) => n.id), ['n2', 'n3', 'n4']);
+  assert.deepEqual(
+    history.map(([n]) => n.id),
+    ['n2', 'n3', 'n4'],
+  );
 });
 
 test('an entry can snapshot several nodes at once (e.g. node + parent on generate)', () => {
   const parent = createMapNode('p', 'Parent', null, 8, 8);
   const child = createMapNode('c', 'Child', 'p', 4, 4);
   const { nodes } = popEdit(pushEdit([], [child, parent]));
-  assert.deepEqual(nodes?.map((n) => n.id), ['c', 'p']);
+  assert.deepEqual(
+    nodes?.map((n) => n.id),
+    ['c', 'p'],
+  );
 });
 
 test('the default limit is generous enough for a painting session', () => {

@@ -64,9 +64,18 @@ const RIVER_KINDS = [...ROAD_KINDS, 'bridge-h', 'bridge-v'];
  * @type {string[]}
  */
 const COAST_KINDS = [
-  'n', 's', 'e', 'w',
-  'corner-ne', 'corner-nw', 'corner-se', 'corner-sw',
-  'inner-ne', 'inner-nw', 'inner-se', 'inner-sw',
+  'n',
+  's',
+  'e',
+  'w',
+  'corner-ne',
+  'corner-nw',
+  'corner-se',
+  'corner-sw',
+  'inner-ne',
+  'inner-nw',
+  'inner-se',
+  'inner-sw',
 ];
 
 /**

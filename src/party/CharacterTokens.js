@@ -29,7 +29,11 @@ export function characterTokens(characters, partyPosition, nodeId) {
         tokens.push({ tileId: location.tileId, name: character.name, characterId: character.id });
       }
     } else if (partyPosition.nodeId === nodeId) {
-      tokens.push({ tileId: partyPosition.tileId, name: character.name, characterId: character.id });
+      tokens.push({
+        tileId: partyPosition.tileId,
+        name: character.name,
+        characterId: character.id,
+      });
     }
   }
   return tokens;

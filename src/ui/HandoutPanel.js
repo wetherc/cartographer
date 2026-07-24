@@ -43,7 +43,12 @@ export function mountHandoutPanel(container, callbacks) {
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'btn btn--icon';
-    toggle.setAttribute('aria-label', handout.revealed ? `Hide ${handout.title} from players` : `Reveal ${handout.title} to players`);
+    toggle.setAttribute(
+      'aria-label',
+      handout.revealed
+        ? `Hide ${handout.title} from players`
+        : `Reveal ${handout.title} to players`,
+    );
     toggle.setAttribute('aria-pressed', String(handout.revealed));
     toggle.appendChild(icon(handout.revealed ? 'eye' : 'eye-off'));
     toggle.addEventListener('click', () => {

@@ -33,7 +33,10 @@ export function wireStory(app) {
    */
   app.actions.logEvent = (kind, message) => {
     const now = Date.now();
-    state.travelog = appendEntry(state.travelog, createEntry(`log-${now}-${logSeq++}`, kind, message, now));
+    state.travelog = appendEntry(
+      state.travelog,
+      createEntry(`log-${now}-${logSeq++}`, kind, message, now),
+    );
     app.views.travelogPanel.update();
     app.actions.markDirty();
   };
@@ -54,16 +57,27 @@ export function wireStory(app) {
     },
   });
 
-  const dispositionOptions = DISPOSITIONS.map((d) => ({ value: d, label: d[0].toUpperCase() + d.slice(1) }));
+  const dispositionOptions = DISPOSITIONS.map((d) => ({
+    value: d,
+    label: d[0].toUpperCase() + d.slice(1),
+  }));
 
   // One number field per ability score, so an NPC's modifiers (initiative,
   // future checks) derive from real stats rather than a flat default.
   /** @type {(stats: Record<string, number>) => import('../ui/Modal.js').ModalField[]} */
   const statFields = (stats) =>
-    ABILITY_SCORES.map((key) => ({ name: `stat-${key}`, label: key, type: 'number', value: stats[key] ?? 10, min: 1 }));
+    ABILITY_SCORES.map((key) => ({
+      name: `stat-${key}`,
+      label: key,
+      type: 'number',
+      value: stats[key] ?? 10,
+      min: 1,
+    }));
   /** @type {(values: Record<string, string>) => Record<string, number>} */
   const readStats = (values) =>
-    Object.fromEntries(ABILITY_SCORES.map((key) => [key, Math.max(1, Number(values[`stat-${key}`]) || 10)]));
+    Object.fromEntries(
+      ABILITY_SCORES.map((key) => [key, Math.max(1, Number(values[`stat-${key}`]) || 10)]),
+    );
 
   app.views.npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
     getNPCs: () => npcsAt(state.npcs, app.partyTracker.getPosition()),
@@ -77,7 +91,13 @@ export function wireStory(app) {
       const values = await promptModal('New NPC', [
         { name: 'name', label: 'Name', value: '' },
         { name: 'role', label: 'Role / faction', value: '' },
-        { name: 'disposition', label: 'Disposition', type: 'select', value: 'neutral', options: dispositionOptions },
+        {
+          name: 'disposition',
+          label: 'Disposition',
+          type: 'select',
+          value: 'neutral',
+          options: dispositionOptions,
+        },
         { name: 'notes', label: 'Notes', value: '' },
         ...statFields({}),
         // Defaults to where the party stands, but any map/tile can be chosen.
@@ -85,13 +105,20 @@ export function wireStory(app) {
       ]);
       const name = values?.name.trim();
       if (!values || !name) return null;
-      const created = createNPC(slugId(name, state.npcs.map((n) => n.id)), name, {
-        role: values.role.trim(),
-        disposition: /** @type {import('../types/npc.js').Disposition} */ (values.disposition),
-        notes: values.notes.trim(),
-        stats: readStats(values),
-        location: readLocation(app, values),
-      });
+      const created = createNPC(
+        slugId(
+          name,
+          state.npcs.map((n) => n.id),
+        ),
+        name,
+        {
+          role: values.role.trim(),
+          disposition: /** @type {import('../types/npc.js').Disposition} */ (values.disposition),
+          notes: values.notes.trim(),
+          stats: readStats(values),
+          location: readLocation(app, values),
+        },
+      );
       state.npcs = [...state.npcs, created];
       app.actions.syncNPCMarkers();
       app.actions.markDirty();
@@ -103,7 +130,13 @@ export function wireStory(app) {
         [
           { name: 'name', label: 'Name', value: npc.name },
           { name: 'role', label: 'Role / faction', value: npc.role },
-          { name: 'disposition', label: 'Disposition', type: 'select', value: npc.disposition, options: dispositionOptions },
+          {
+            name: 'disposition',
+            label: 'Disposition',
+            type: 'select',
+            value: npc.disposition,
+            options: dispositionOptions,
+          },
           { name: 'notes', label: 'Notes', value: npc.notes },
           ...statFields(npc.stats ?? {}),
           ...locationFields(app, npc.location),
@@ -125,7 +158,8 @@ export function wireStory(app) {
       app.actions.markDirty();
       return true;
     },
-    confirmDelete: (npc) => confirmModal(`Delete "${npc.name}"?`, { danger: true, confirmLabel: 'Delete' }),
+    confirmDelete: (npc) =>
+      confirmModal(`Delete "${npc.name}"?`, { danger: true, confirmLabel: 'Delete' }),
     getRole: () => state.role,
   });
 
@@ -142,7 +176,14 @@ export function wireStory(app) {
       ]);
       const title = values?.title.trim();
       if (!values || !title) return null;
-      const created = createQuest(slugId(title, state.quests.map((q) => q.id)), title, values.notes.trim());
+      const created = createQuest(
+        slugId(
+          title,
+          state.quests.map((q) => q.id),
+        ),
+        title,
+        values.notes.trim(),
+      );
       state.quests = [...state.quests, created];
       app.actions.markDirty();
       return created;
@@ -161,7 +202,10 @@ export function wireStory(app) {
     onDelete: async (id) => {
       const quest = state.quests.find((q) => q.id === id);
       if (!quest) return false;
-      const ok = await confirmModal(`Delete "${quest.title}"?`, { danger: true, confirmLabel: 'Delete' });
+      const ok = await confirmModal(`Delete "${quest.title}"?`, {
+        danger: true,
+        confirmLabel: 'Delete',
+      });
       if (ok) {
         state.quests = removeById(state.quests, id);
         app.actions.markDirty();
@@ -187,7 +231,10 @@ export function wireStory(app) {
       if (!values || !title) return null;
       // Bound to the node the party stands in, so it surfaces at that location.
       const created = createHandout(
-        slugId(title, state.handouts.map((h) => h.id)),
+        slugId(
+          title,
+          state.handouts.map((h) => h.id),
+        ),
         title,
         values.body.trim(),
         app.partyTracker.getPosition().nodeId,
@@ -204,7 +251,12 @@ export function wireStory(app) {
         [
           { name: 'title', label: 'Title', value: handout.title },
           { name: 'body', label: 'Read-aloud / lore', value: handout.body },
-          { name: 'image', label: 'Image (leave empty to keep)', type: 'file', value: handout.image ?? '' },
+          {
+            name: 'image',
+            label: 'Image (leave empty to keep)',
+            type: 'file',
+            value: handout.image ?? '',
+          },
         ],
         { submitLabel: 'Save' },
       );
@@ -222,7 +274,10 @@ export function wireStory(app) {
     onDelete: async (id) => {
       const handout = state.handouts.find((h) => h.id === id);
       if (!handout) return false;
-      const ok = await confirmModal(`Delete "${handout.title}"?`, { danger: true, confirmLabel: 'Delete' });
+      const ok = await confirmModal(`Delete "${handout.title}"?`, {
+        danger: true,
+        confirmLabel: 'Delete',
+      });
       if (ok) {
         state.handouts = removeById(state.handouts, id);
         app.actions.markDirty();

@@ -42,7 +42,10 @@ export function findRegionGroups(node) {
     const stack = [entry];
     visited.add(key);
     const members = [];
-    let minX = entry.x, maxX = entry.x, minY = entry.y, maxY = entry.y;
+    let minX = entry.x,
+      maxX = entry.x,
+      minY = entry.y,
+      maxY = entry.y;
 
     while (stack.length) {
       const current = stack.pop();

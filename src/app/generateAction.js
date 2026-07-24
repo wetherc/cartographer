@@ -57,7 +57,11 @@ export function wireGenerateAction(app) {
         } else {
           candidate = {
             key,
-            gen: generateNodeTiles(palette, { kind: node.kind, archetype: choice.archetype, size: choice.size }, rng),
+            gen: generateNodeTiles(
+              palette,
+              { kind: node.kind, archetype: choice.archetype, size: choice.size },
+              rng,
+            ),
             levels: null,
           };
         }

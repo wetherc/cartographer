@@ -16,7 +16,10 @@ function mulberry32(seed) {
 
 /** Build a cells array from rows of single-char codes: ~ water, . grass. */
 function cellsFrom(rows) {
-  return rows.join('').split('').map((c) => (c === '~' ? 'water' : 'grass'));
+  return rows
+    .join('')
+    .split('')
+    .map((c) => (c === '~' ? 'water' : 'grass'));
 }
 
 test('smoothCoastline drowns isthmuses and spits the coast pieces cannot draw', () => {
@@ -41,12 +44,7 @@ test('coastKind names the water edges: straights, outer corners, inner corners',
 });
 
 test('coastOverlays rings a lake with matching shoreline pieces', () => {
-  const cells = cellsFrom([
-    '....',
-    '.~~.',
-    '.~~.',
-    '....',
-  ]);
+  const cells = cellsFrom(['....', '.~~.', '.~~.', '....']);
   const coast = coastOverlays(cells, 4, 4);
   assert.equal(coast.get('1,0'), 's'); // water below
   assert.equal(coast.get('0,1'), 'e'); // water to the east
@@ -67,7 +65,14 @@ test('riverCourse runs edge to edge as a connected channel', () => {
     assert.equal(Math.max(...ys), size - 1, `seed ${seed}: reaches the south edge`);
     // Every piece's open edges point at another river cell or off the map, so
     // the channel never breaks: check each cell connects onward as named.
-    const opens = { v: ['n', 's'], h: ['e', 'w'], 'corner-ne': ['n', 'e'], 'corner-nw': ['n', 'w'], 'corner-se': ['s', 'e'], 'corner-sw': ['s', 'w'] };
+    const opens = {
+      v: ['n', 's'],
+      h: ['e', 'w'],
+      'corner-ne': ['n', 'e'],
+      'corner-nw': ['n', 'w'],
+      'corner-se': ['s', 'e'],
+      'corner-sw': ['s', 'w'],
+    };
     const step = { n: [0, -1], e: [1, 0], s: [0, 1], w: [-1, 0] };
     for (const [id, kind] of river) {
       const [x, y] = id.split(',').map(Number);
@@ -76,7 +81,10 @@ test('riverCourse runs edge to edge as a connected channel', () => {
         const nx = x + dx;
         const ny = y + dy;
         const offMap = nx < 0 || ny < 0 || nx >= size || ny >= size;
-        assert.ok(offMap || river.has(`${nx},${ny}`), `seed ${seed}: ${id} (${kind}) opens ${edge} onto river`);
+        assert.ok(
+          offMap || river.has(`${nx},${ny}`),
+          `seed ${seed}: ${id} (${kind}) opens ${edge} onto river`,
+        );
       }
     }
   }

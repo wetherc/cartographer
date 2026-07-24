@@ -21,6 +21,7 @@ export function formatInventoryEvent(name, { verb, itemName, count }, context = 
     const when = context.time ? ` (${context.time})` : '';
     return `${name} picks up ${itemName} x${count}${where}${when}.`;
   }
-  if (verb === 'use') return count === 1 ? `${name} uses a ${itemName}.` : `${name} uses ${count} ${itemName}.`;
+  if (verb === 'use')
+    return count === 1 ? `${name} uses a ${itemName}.` : `${name} uses ${count} ${itemName}.`;
   return `${name} discards ${itemName} x${count}.`;
 }

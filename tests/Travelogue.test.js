@@ -11,7 +11,10 @@ test('appendEntry adds to the end, keeping oldest-first order', () => {
   let log = [];
   log = appendEntry(log, createEntry('e1', 'travel', 'A', 1));
   log = appendEntry(log, createEntry('e2', 'combat', 'B', 2));
-  assert.deepEqual(log.map((e) => e.id), ['e1', 'e2']);
+  assert.deepEqual(
+    log.map((e) => e.id),
+    ['e1', 'e2'],
+  );
 });
 
 test('appendEntry does not mutate the input list', () => {
@@ -35,5 +38,8 @@ test('appendEntry trims the oldest entries once past the limit', () => {
 test('appendEntry honors a custom limit', () => {
   let log = [];
   for (let i = 0; i < 4; i++) log = appendEntry(log, createEntry(`e${i}`, 'note', 'x', i), 2);
-  assert.deepEqual(log.map((e) => e.id), ['e2', 'e3']);
+  assert.deepEqual(
+    log.map((e) => e.id),
+    ['e2', 'e3'],
+  );
 });

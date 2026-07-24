@@ -67,7 +67,10 @@ export function npcsAt(npcs, position) {
 export function npcsOnTile(npcs, position) {
   if (!position) return [];
   return npcs.filter(
-    (n) => n.location !== null && n.location.nodeId === position.nodeId && n.location.tileId === position.tileId,
+    (n) =>
+      n.location !== null &&
+      n.location.nodeId === position.nodeId &&
+      n.location.tileId === position.tileId,
   );
 }
 

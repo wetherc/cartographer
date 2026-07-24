@@ -23,16 +23,32 @@ export function defaultEnemyGear(level, tier) {
     return {
       weapon:
         lvl < 5
-          ? { name: 'Longsword', handling: 'melee', damage: [{ count: 1, sides: 8, damageType: 'slashing' }] }
-          : { name: 'Greatsword', handling: 'melee', damage: [{ count: 2, sides: 6, damageType: 'slashing' }] },
+          ? {
+              name: 'Longsword',
+              handling: 'melee',
+              damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
+            }
+          : {
+              name: 'Greatsword',
+              handling: 'melee',
+              damage: [{ count: 2, sides: 6, damageType: 'slashing' }],
+            },
       armor: lvl < 5 ? { name: 'Chain Mail', acBonus: 4 } : { name: 'Plate', acBonus: 6 },
     };
   }
   return {
     weapon:
       lvl < 5
-        ? { name: 'Shortsword', handling: 'finesse', damage: [{ count: 1, sides: 6, damageType: 'piercing' }] }
-        : { name: 'Longsword', handling: 'melee', damage: [{ count: 1, sides: 8, damageType: 'slashing' }] },
+        ? {
+            name: 'Shortsword',
+            handling: 'finesse',
+            damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
+          }
+        : {
+            name: 'Longsword',
+            handling: 'melee',
+            damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
+          },
     armor: lvl < 5 ? { name: 'Leather Armor', acBonus: 1 } : { name: 'Chain Shirt', acBonus: 3 },
   };
 }

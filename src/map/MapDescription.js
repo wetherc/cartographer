@@ -46,9 +46,7 @@ export function describeNode(node, party, options = {}) {
     if (coords) parts.push(`Party at column ${coords.x + 1}, row ${coords.y + 1}.`);
   }
 
-  const pois = gridTiles.filter(
-    (t) => t.metadata.poiType && (revealAll || t.revealed),
-  );
+  const pois = gridTiles.filter((t) => t.metadata.poiType && (revealAll || t.revealed));
   if (pois.length) {
     const listed = pois.map((t) => {
       const coords = parseCoords(t.id);

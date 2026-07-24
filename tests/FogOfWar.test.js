@@ -1,7 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
-import { revealAround, withinRadius, hideAll, revealAll, setTileRevealed, revealedCount, discoveredNodes } from '../src/map/FogOfWar.js';
+import {
+  revealAround,
+  withinRadius,
+  hideAll,
+  revealAll,
+  setTileRevealed,
+  revealedCount,
+  discoveredNodes,
+} from '../src/map/FogOfWar.js';
 
 function grid5x5() {
   let node = createMapNode('n', 'Node', null, 5, 5);
@@ -57,13 +65,19 @@ test('discoveredNodes keeps nodes with at least one revealed tile', () => {
   const visited = revealAround({ ...grid5x5(), id: 'a' }, '2,2', 1);
   const unvisited = { ...grid5x5(), id: 'b' };
   const result = discoveredNodes([visited, unvisited], { nodeId: 'a', tileId: '2,2' });
-  assert.deepEqual(result.map((n) => n.id), ['a']);
+  assert.deepEqual(
+    result.map((n) => n.id),
+    ['a'],
+  );
 });
 
 test('discoveredNodes always includes the node the party stands in, even with no revealed tiles', () => {
   const emptyWorld = createMapNode('world', 'World', null, 8, 6);
   const result = discoveredNodes([emptyWorld], { nodeId: 'world', tileId: '0,0' });
-  assert.deepEqual(result.map((n) => n.id), ['world']);
+  assert.deepEqual(
+    result.map((n) => n.id),
+    ['world'],
+  );
 });
 
 test('discoveredNodes preserves input order across multiple discovered nodes', () => {
@@ -71,7 +85,10 @@ test('discoveredNodes preserves input order across multiple discovered nodes', (
   const b = revealAround({ ...grid5x5(), id: 'b' }, '0,0', 0);
   const fogged = { ...grid5x5(), id: 'c' };
   const result = discoveredNodes([a, fogged, b], { nodeId: 'b', tileId: '0,0' });
-  assert.deepEqual(result.map((n) => n.id), ['a', 'b']);
+  assert.deepEqual(
+    result.map((n) => n.id),
+    ['a', 'b'],
+  );
 });
 
 test('revealAll reveals every tile', () => {

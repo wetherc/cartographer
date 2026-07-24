@@ -97,7 +97,8 @@ export function mountBuildEncounterPanel(container, callbacks) {
         const gear = document.createElement('div');
         gear.className = 'build-encounters__gear';
         const parts = [];
-        if (encounter.weapon) parts.push(`${encounter.weapon.name} ${formatDamage(encounter.weapon.damage)}`);
+        if (encounter.weapon)
+          parts.push(`${encounter.weapon.name} ${formatDamage(encounter.weapon.damage)}`);
         if (encounter.armor) parts.push(`${encounter.armor.name} +${encounter.armor.acBonus} AC`);
         gear.textContent = parts.join(' | ');
         row.appendChild(gear);
@@ -109,7 +110,10 @@ export function mountBuildEncounterPanel(container, callbacks) {
         mode: 'base',
         getStatBlock: () => encounter.statBlock ?? {},
         onSetStat: (stat, value) => {
-          callbacks.onUpdate({ ...encounter, statBlock: { ...encounter.statBlock, [stat]: value } });
+          callbacks.onUpdate({
+            ...encounter,
+            statBlock: { ...encounter.statBlock, [stat]: value },
+          });
           render();
         },
       });

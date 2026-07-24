@@ -30,7 +30,10 @@ export function wireSessionControls(app) {
   // control) can never show the GM's truth: the role is forced to player, the
   // role switch is hidden, and the switch callback refuses GM as a backstop.
   // Meant for a shared table display that a stray tap must not flip.
-  let playerLocked = isPlayerLocked(location.search, sessionStorage.getItem(PLAYER_LOCK_SESSION_KEY));
+  let playerLocked = isPlayerLocked(
+    location.search,
+    sessionStorage.getItem(PLAYER_LOCK_SESSION_KEY),
+  );
   if (playerLocked) {
     app.state.role = 'player';
     document.body.classList.add('role-locked');
@@ -38,12 +41,16 @@ export function wireSessionControls(app) {
 
   // Play/Build mode drives which rails the layout shows (a body class toggled
   // by CSS), and defaults to Play so a first-run visitor lands on the live view.
-  const modeSwitch = mountModeSwitch(mustGetElement('mode-switch-container'), app.state.mode, (mode) => {
-    app.state.mode = mode;
-    document.body.classList.toggle('mode-play', mode === 'play');
-    document.body.classList.toggle('mode-build', mode === 'build');
-    app.actions.onModeChanged(mode);
-  });
+  const modeSwitch = mountModeSwitch(
+    mustGetElement('mode-switch-container'),
+    app.state.mode,
+    (mode) => {
+      app.state.mode = mode;
+      document.body.classList.toggle('mode-play', mode === 'play');
+      document.body.classList.toggle('mode-build', mode === 'build');
+      app.actions.onModeChanged(mode);
+    },
+  );
   app.actions.setMode = (mode) => modeSwitch.setMode(mode);
 
   // Viewer role (GM vs player) is orthogonal to Play/Build: it changes what the
@@ -92,26 +99,30 @@ export function wireSessionControls(app) {
 
   // The change callback references roleSwitch, but only via queueMicrotask /
   // later events, so the const is initialized before any read.
-  const roleSwitch = mountRoleSwitch(mustGetElement('role-switch-container'), app.state.role, (role) => {
-    if (role === 'gm' && playerLocked) {
-      // Backstop: the switch is hidden while locked, but nothing else may
-      // claim GM in this tab either (e.g. a programmatic setRole).
-      role = 'player';
-      queueMicrotask(() => roleSwitch.setRole('player'));
-    }
-    if (role === 'gm' && !tryClaimGM()) {
-      app.toasts.show('Another tab is running the GM view; this one stays on the Player view.');
-      role = 'player';
-      // During the initial mount the switch is still being constructed; sync its
-      // buttons to the forced role once it exists. setRole re-enters this
-      // callback, which settles immediately on the player branch.
-      queueMicrotask(() => roleSwitch.setRole('player'));
-    }
-    if (role === 'player') dropGMClaim();
-    app.state.role = role;
-    sessionStorage.setItem('campaign-builder:role', role);
-    applyRole();
-  });
+  const roleSwitch = mountRoleSwitch(
+    mustGetElement('role-switch-container'),
+    app.state.role,
+    (role) => {
+      if (role === 'gm' && playerLocked) {
+        // Backstop: the switch is hidden while locked, but nothing else may
+        // claim GM in this tab either (e.g. a programmatic setRole).
+        role = 'player';
+        queueMicrotask(() => roleSwitch.setRole('player'));
+      }
+      if (role === 'gm' && !tryClaimGM()) {
+        app.toasts.show('Another tab is running the GM view; this one stays on the Player view.');
+        role = 'player';
+        // During the initial mount the switch is still being constructed; sync its
+        // buttons to the forced role once it exists. setRole re-enters this
+        // callback, which settles immediately on the player branch.
+        queueMicrotask(() => roleSwitch.setRole('player'));
+      }
+      if (role === 'player') dropGMClaim();
+      app.state.role = role;
+      sessionStorage.setItem('campaign-builder:role', role);
+      applyRole();
+    },
+  );
 
   // A settled Player tab (a shared table display) can be locked so a stray tap
   // can't flip it to GM once the GM tab closes and frees the GM lock. Per-tab

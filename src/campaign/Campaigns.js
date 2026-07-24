@@ -3,10 +3,7 @@ import { generateNodeTiles } from '../map/MapGenerator.js';
 import { coastOverlays, smoothCoastline } from '../map/Autotile.js';
 import { createCharacter, withDefaults, withHP } from '../entities/Character.js';
 import { withSpellSlots } from '../entities/SpellSlots.js';
-import {
-  createEncounter,
-  withDefaults as withEncounterDefaults,
-} from '../entities/Encounter.js';
+import { createEncounter, withDefaults as withEncounterDefaults } from '../entities/Encounter.js';
 import { loadFromLocalStorage, toTileGrid } from '../storage/SaveManager.js';
 import { createClock } from '../time/GameClock.js';
 import { createNPC, withDefaults as withNPCDefaults } from '../entities/NPC.js';
@@ -210,17 +207,30 @@ export function buildExampleCampaign(palette, rng = Math.random) {
   // town.
   /** @type {Record<string, { nodeId: string, poi?: { tileId: string, imageId: string, poiType: import('../types/map.js').POIType, notes?: string } }>} */
   const links = {};
-  for (let y = 2; y <= 5; y++) for (let x = 4; x <= 7; x++) links[`${x},${y}`] = { nodeId: 'northmarch' };
-  for (let y = 7; y <= 10; y++) for (let x = 26; x <= 29; x++) links[`${x},${y}`] = { nodeId: 'graypeak' };
-  for (const [x, y] of [[11, 23], [12, 23], [11, 24], [12, 24]]) links[`${x},${y}`] = { nodeId: 'briarwick' };
+  for (let y = 2; y <= 5; y++)
+    for (let x = 4; x <= 7; x++) links[`${x},${y}`] = { nodeId: 'northmarch' };
+  for (let y = 7; y <= 10; y++)
+    for (let x = 26; x <= 29; x++) links[`${x},${y}`] = { nodeId: 'graypeak' };
+  for (const [x, y] of [
+    [11, 23],
+    [12, 23],
+    [11, 24],
+    [12, 24],
+  ])
+    links[`${x},${y}`] = { nodeId: 'briarwick' };
   links['12,23'].poi = {
-    tileId: '12,23', imageId: 'settlement', poiType: 'settlement',
-    notes: 'Briarwick, a farming town on the south road. The Waystation inn is the region\'s clearing-house for news.',
+    tileId: '12,23',
+    imageId: 'settlement',
+    poiType: 'settlement',
+    notes:
+      "Briarwick, a farming town on the south road. The Waystation inn is the region's clearing-house for news.",
   };
   links['22,10'] = {
     nodeId: 'barrow',
     poi: {
-      tileId: '22,10', imageId: 'dungeon', poiType: 'dungeon',
+      tileId: '22,10',
+      imageId: 'dungeon',
+      poiType: 'dungeon',
       notes: 'The Barrow of the Old King. Warded shut for four hundred years; the ward is failing.',
     },
   };
@@ -231,11 +241,12 @@ export function buildExampleCampaign(palette, rng = Math.random) {
   const worldPOIs = {
     '9,12': {
       imageId: 'ruins',
-      notes: 'The shell of an old watchtower from Ostrand\'s reign. A pale crown is carved over the fallen door.',
+      notes:
+        "The shell of an old watchtower from Ostrand's reign. A pale crown is carved over the fallen door.",
     },
     '14,24': {
       imageId: 'graveyard',
-      notes: 'Briarwick\'s burial ground. Three graves stand open — dug out from the inside.',
+      notes: "Briarwick's burial ground. Three graves stand open — dug out from the inside.",
     },
   };
 
@@ -269,12 +280,23 @@ export function buildExampleCampaign(palette, rng = Math.random) {
       // mouth tile stacks the channel over the shoreline overlay.
       const onHighway = y === 16 && x >= 3;
       const onBranch = x === 12 && y > 16 && y <= 22;
-      const onRiver = (x === RIVER_X && y <= RIVER_BEND_Y) || (y === RIVER_BEND_Y && x >= 10 && x < RIVER_X);
+      const onRiver =
+        (x === RIVER_X && y <= RIVER_BEND_Y) || (y === RIVER_BEND_Y && x >= 10 && x < RIVER_X);
       if (!link && (onHighway || onBranch || onRiver)) {
         const overlay = onRiver
-          ? palette.getRiverPiece(x === RIVER_X ? (y === 16 ? 'bridge-h' : y === RIVER_BEND_Y ? 'corner-nw' : 'v') : 'h')
+          ? palette.getRiverPiece(
+              x === RIVER_X
+                ? y === 16
+                  ? 'bridge-h'
+                  : y === RIVER_BEND_Y
+                    ? 'corner-nw'
+                    : 'v'
+                : 'h',
+            )
           : onHighway
-            ? palette.getRoadPiece(x === 3 ? 'end-e' : x === last ? 'end-w' : x === 12 ? 'tee-s' : 'h')
+            ? palette.getRoadPiece(
+                x === 3 ? 'end-e' : x === last ? 'end-w' : x === 12 ? 'tee-s' : 'h',
+              )
             : palette.getRoadPiece(y === 22 ? 'end-n' : 'v');
         if (!overlay) continue;
         const shoreline = coast.get(id);
@@ -290,7 +312,10 @@ export function buildExampleCampaign(palette, rng = Math.random) {
         if (!marker) continue;
         const tile = createTile(id, marker.imageRef, { childNodeId: link.nodeId });
         tile.metadata = {
-          ...tile.metadata, poiType: link.poi.poiType, discoverable: true, notes: link.poi.notes ?? '',
+          ...tile.metadata,
+          poiType: link.poi.poiType,
+          discoverable: true,
+          notes: link.poi.notes ?? '',
         };
         world = setTile(world, tile);
         continue;
@@ -307,7 +332,9 @@ export function buildExampleCampaign(palette, rng = Math.random) {
         }
       }
 
-      const terrain = link ? { northmarch: 'forest', graypeak: 'mountain', briarwick: 'grass' }[link.nodeId] : terrainAt(x, y);
+      const terrain = link
+        ? { northmarch: 'forest', graypeak: 'mountain', briarwick: 'grass' }[link.nodeId]
+        : terrainAt(x, y);
       /** @type {Partial<import('../types/map.js').Tile>} */
       const opts = link ? { childNodeId: link.nodeId } : {};
       const shoreline = !link && coast.get(id);
@@ -325,10 +352,30 @@ export function buildExampleCampaign(palette, rng = Math.random) {
   // lairs, the hermit's shelter, NPC posts) is staged onto the generated
   // tiles afterwards rather than at fixed coordinates.
   const regions = [
-    { id: 'northmarch', name: 'Northmarch Region', kind: /** @type {const} */ ('region'), archetype: 'wilderness' },
-    { id: 'graypeak', name: 'Graypeak Highlands', kind: /** @type {const} */ ('region'), archetype: 'wilderness' },
-    { id: 'briarwick', name: 'Briarwick', kind: /** @type {const} */ ('region'), archetype: 'town' },
-    { id: 'barrow', name: 'Barrow of the Old King', kind: /** @type {const} */ ('interior'), archetype: 'dungeon' },
+    {
+      id: 'northmarch',
+      name: 'Northmarch Region',
+      kind: /** @type {const} */ ('region'),
+      archetype: 'wilderness',
+    },
+    {
+      id: 'graypeak',
+      name: 'Graypeak Highlands',
+      kind: /** @type {const} */ ('region'),
+      archetype: 'wilderness',
+    },
+    {
+      id: 'briarwick',
+      name: 'Briarwick',
+      kind: /** @type {const} */ ('region'),
+      archetype: 'town',
+    },
+    {
+      id: 'barrow',
+      name: 'Barrow of the Old King',
+      kind: /** @type {const} */ ('interior'),
+      archetype: 'dungeon',
+    },
   ];
   /** @type {Record<string, { width: number, height: number, tiles: Tile[], entry: string }>} */
   const gens = {};
@@ -340,19 +387,34 @@ export function buildExampleCampaign(palette, rng = Math.random) {
   // and two raiders picketed between the camp and the way in.
   const northSpots = makeSpotPicker(gens.northmarch, isOpenGround);
   const campTile = northSpots();
-  stampMarker(gens.northmarch, palette, campTile, 'camp',
-    'Snagtooth\'s raiding camp. Too orderly for goblins: dug latrines, posted watches, written orders.');
+  stampMarker(
+    gens.northmarch,
+    palette,
+    campTile,
+    'camp',
+    "Snagtooth's raiding camp. Too orderly for goblins: dug latrines, posted watches, written orders.",
+  );
   const raiderTiles = [northSpots(), northSpots()];
 
   // Graypeak: Skalvyr's eyrie on the high ground, and Odo's hermitage pinned
   // beneath it.
   const graySpots = makeSpotPicker(gens.graypeak, isOpenGround, 4);
   const eyrieTile = graySpots();
-  stampMarker(gens.graypeak, palette, eyrieTile, 'cave-entrance',
-    'Skalvyr\'s eyrie. Gnawed livestock bones on the scree; the wyvern circles anything that moves below.');
+  stampMarker(
+    gens.graypeak,
+    palette,
+    eyrieTile,
+    'cave-entrance',
+    "Skalvyr's eyrie. Gnawed livestock bones on the scree; the wyvern circles anything that moves below.",
+  );
   const hermitTile = graySpots();
-  stampMarker(gens.graypeak, palette, hermitTile, 'ruins',
-    'Odo\'s hermitage, built into a fallen shrine. The warding key hangs at his belt.');
+  stampMarker(
+    gens.graypeak,
+    palette,
+    hermitTile,
+    'ruins',
+    "Odo's hermitage, built into a fallen shrine. The warding key hangs at his belt.",
+  );
 
   // The barrow: King Ostrand at the deepest chamber, his wight seneschal one
   // room out, and skeleton pickets between the door and the tomb.
@@ -372,13 +434,55 @@ export function buildExampleCampaign(palette, rng = Math.random) {
   let aldric = createCharacter('aldric', 'Ser Aldric', { STR: 16, DEX: 12, CON: 14 }, 'Human');
   aldric = withHP({ ...aldric, level: 3 }, 28);
   aldric.inventory = [
-    { id: 'longsword', name: 'Longsword', quantity: 1, notes: '', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 8, damageType: 'slashing' }] },
-    { id: 'ember-blade', name: 'Ember Blade', quantity: 1, notes: '', type: 'weapon', handling: 'melee', description: 'A greatsword with a smoldering edge.', damage: [{ count: 2, sides: 6, damageType: 'slashing' }, { count: 1, sides: 4, damageType: 'fire' }], statusEffects: ['burning'] },
+    {
+      id: 'longsword',
+      name: 'Longsword',
+      quantity: 1,
+      notes: '',
+      type: 'weapon',
+      handling: 'melee',
+      damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
+    },
+    {
+      id: 'ember-blade',
+      name: 'Ember Blade',
+      quantity: 1,
+      notes: '',
+      type: 'weapon',
+      handling: 'melee',
+      description: 'A greatsword with a smoldering edge.',
+      damage: [
+        { count: 2, sides: 6, damageType: 'slashing' },
+        { count: 1, sides: 4, damageType: 'fire' },
+      ],
+      statusEffects: ['burning'],
+    },
     { id: 'oak-shield', name: 'Oak Shield', quantity: 1, notes: '', type: 'shield' },
-    { id: 'chain-mail', name: 'Chain Mail', quantity: 1, notes: '', type: 'armor', armorWeight: 'heavy', baseAC: 16 },
+    {
+      id: 'chain-mail',
+      name: 'Chain Mail',
+      quantity: 1,
+      notes: '',
+      type: 'armor',
+      armorWeight: 'heavy',
+      baseAC: 16,
+    },
     { id: 'steel-helm', name: 'Steel Helm', quantity: 1, notes: '', type: 'helmet', acBonus: 1 },
-    { id: 'ring-of-vigor', name: 'Ring of Vigor', quantity: 1, notes: '', type: 'ring', statBonuses: { STR: 2 } },
-    { id: 'healing-potion', name: 'Potion of Healing', quantity: 2, notes: 'Restores 2d4+2 HP.', type: 'consumable' },
+    {
+      id: 'ring-of-vigor',
+      name: 'Ring of Vigor',
+      quantity: 1,
+      notes: '',
+      type: 'ring',
+      statBonuses: { STR: 2 },
+    },
+    {
+      id: 'healing-potion',
+      name: 'Potion of Healing',
+      quantity: 2,
+      notes: 'Restores 2d4+2 HP.',
+      type: 'consumable',
+    },
     { id: 'torch', name: 'Torch', quantity: 5, notes: '', type: 'gear' },
   ];
   aldric.equipment = {
@@ -396,9 +500,23 @@ export function buildExampleCampaign(palette, rng = Math.random) {
   let mirelle = createCharacter('mirelle', 'Mirelle', { WIS: 16, CHA: 13, CON: 12 }, 'Half-elf');
   mirelle = withSpellSlots(withHP({ ...mirelle, level: 3 }, 21));
   mirelle.inventory = [
-    { id: 'mace', name: 'Mace', quantity: 1, notes: '', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }] },
+    {
+      id: 'mace',
+      name: 'Mace',
+      quantity: 1,
+      notes: '',
+      type: 'weapon',
+      handling: 'melee',
+      damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }],
+    },
     { id: 'holy-symbol', name: 'Symbol of the Dawn', quantity: 1, notes: '', type: 'gear' },
-    { id: 'healing-herbs', name: 'Healing Herbs', quantity: 3, notes: 'Poultice; stabilizes a downed ally.', type: 'consumable' },
+    {
+      id: 'healing-herbs',
+      name: 'Healing Herbs',
+      quantity: 3,
+      notes: 'Poultice; stabilizes a downed ally.',
+      type: 'consumable',
+    },
   ];
   mirelle.equipment = {
     helmet: null,
@@ -421,7 +539,14 @@ export function buildExampleCampaign(palette, rng = Math.random) {
    * @param {Record<string, number>} extras
    */
   const enemy = (id, name, hp, level, tier, nodeId, tileId, extras) =>
-    createEncounter(id, name, hp, { ...defaultEnemyStats(level, tier), ...extras }, { nodeId, tileId }, { level, tier });
+    createEncounter(
+      id,
+      name,
+      hp,
+      { ...defaultEnemyStats(level, tier), ...extras },
+      { nodeId, tileId },
+      { level, tier },
+    );
 
   /**
    * A reusable bestiary blueprint for the campaign's rank-and-file enemies.
@@ -430,8 +555,14 @@ export function buildExampleCampaign(palette, rng = Math.random) {
    * @param {Record<string, number>} extras
    * @returns {import('../types/entities.js').EncounterTemplate}
    */
-  const template = (id, name, hp, level, tier, extras) =>
-    ({ id, name, maxHP: hp, statBlock: { ...defaultEnemyStats(level, tier), ...extras }, level, tier });
+  const template = (id, name, hp, level, tier, extras) => ({
+    id,
+    name,
+    maxHP: hp,
+    statBlock: { ...defaultEnemyStats(level, tier), ...extras },
+    level,
+    tier,
+  });
 
   return {
     grid,
@@ -447,63 +578,101 @@ export function buildExampleCampaign(palette, rng = Math.random) {
       enemy('bog-zombie-1', 'Bog Zombie', 22, 2, 'mob', 'world', '16,28', { AC: 8, Speed: 20 }),
       enemy('bog-zombie-2', 'Bog Zombie', 22, 2, 'mob', 'world', '19,29', { AC: 8, Speed: 20 }),
       enemy('hill-harpy', 'Harpy', 24, 2, 'mob', 'world', '23,12', { AC: 11, Speed: 20 }),
-      enemy('giant-scorpion', 'Giant Scorpion', 26, 3, 'mob', 'world', '27,29', { AC: 15, Speed: 40 }),
+      enemy('giant-scorpion', 'Giant Scorpion', 26, 3, 'mob', 'world', '27,29', {
+        AC: 15,
+        Speed: 40,
+      }),
       enemy('winter-wolf', 'Winter Wolf', 34, 3, 'mob', 'world', '26,3', { AC: 13, Speed: 50 }),
       // Minor bosses: the mire hag in the southern marsh, the goblin chieftain
       // at his camp, and the wyvern over the hermitage.
-      enemy('grelka', 'Grelka the Mire Hag', 45, 4, 'legend', 'world', '20,29', { AC: 15, Speed: 30 }),
-      enemy('goblin-raider-1', 'Goblin Raider', 7, 1, 'mob', 'northmarch', raiderTiles[0], { AC: 13, Speed: 30 }),
-      enemy('goblin-raider-2', 'Goblin Raider', 7, 1, 'mob', 'northmarch', raiderTiles[1], { AC: 13, Speed: 30 }),
-      enemy('snagtooth', 'Chieftain Snagtooth', 36, 3, 'legend', 'northmarch', campTile, { AC: 16, Speed: 30 }),
-      enemy('skalvyr', 'Skalvyr the Wyvern', 68, 5, 'legend', 'graypeak', eyrieTile, { AC: 16, Speed: 20, Fly: 80 }),
+      enemy('grelka', 'Grelka the Mire Hag', 45, 4, 'legend', 'world', '20,29', {
+        AC: 15,
+        Speed: 30,
+      }),
+      enemy('goblin-raider-1', 'Goblin Raider', 7, 1, 'mob', 'northmarch', raiderTiles[0], {
+        AC: 13,
+        Speed: 30,
+      }),
+      enemy('goblin-raider-2', 'Goblin Raider', 7, 1, 'mob', 'northmarch', raiderTiles[1], {
+        AC: 13,
+        Speed: 30,
+      }),
+      enemy('snagtooth', 'Chieftain Snagtooth', 36, 3, 'legend', 'northmarch', campTile, {
+        AC: 16,
+        Speed: 30,
+      }),
+      enemy('skalvyr', 'Skalvyr the Wyvern', 68, 5, 'legend', 'graypeak', eyrieTile, {
+        AC: 16,
+        Speed: 20,
+        Fly: 80,
+      }),
       // The barrow: pickets, the seneschal, and the major boss at the tomb.
-      enemy('barrow-skeleton-1', 'Barrow Skeleton', 13, 1, 'mob', 'barrow', boneTiles[0], { AC: 13, Speed: 30 }),
-      enemy('barrow-skeleton-2', 'Barrow Skeleton', 13, 1, 'mob', 'barrow', boneTiles[1], { AC: 13, Speed: 30 }),
-      enemy('grave-wight', 'Grave Wight', 45, 4, 'legend', 'barrow', wightTile, { AC: 14, Speed: 30 }),
-      enemy('ostrand', 'King Ostrand the Risen', 110, 8, 'legend', 'barrow', tombTile, { AC: 18, Speed: 30 }),
+      enemy('barrow-skeleton-1', 'Barrow Skeleton', 13, 1, 'mob', 'barrow', boneTiles[0], {
+        AC: 13,
+        Speed: 30,
+      }),
+      enemy('barrow-skeleton-2', 'Barrow Skeleton', 13, 1, 'mob', 'barrow', boneTiles[1], {
+        AC: 13,
+        Speed: 30,
+      }),
+      enemy('grave-wight', 'Grave Wight', 45, 4, 'legend', 'barrow', wightTile, {
+        AC: 14,
+        Speed: 30,
+      }),
+      enemy('ostrand', 'King Ostrand the Risen', 110, 8, 'legend', 'barrow', tombTile, {
+        AC: 18,
+        Speed: 30,
+      }),
     ],
     travelog: [],
     quests: [
       {
         id: 'rumors-at-the-waystation',
         title: 'Rumors at the Waystation',
-        notes: 'Dorn\'s caravan is stuck at the crossroads until the roads are safe. Ask Bram at the Waystation inn in Briarwick what has the north country spooked.',
+        notes:
+          "Dorn's caravan is stuck at the crossroads until the roads are safe. Ask Bram at the Waystation inn in Briarwick what has the north country spooked.",
         status: 'active',
       },
       {
         id: 'wolves-on-the-highway',
         title: 'Wolves on the Highway',
-        notes: 'A wolf pack has been running down travelers on the east highway below the Graypeak foothills. Drive it off so the caravans can move again.',
+        notes:
+          'A wolf pack has been running down travelers on the east highway below the Graypeak foothills. Drive it off so the caravans can move again.',
         status: 'active',
       },
       {
         id: 'the-goblin-raids',
         title: 'The Goblin Raids',
-        notes: 'Goblins out of the Northmarch have burned two farms. Find their camp in the deep forest and deal with Chieftain Snagtooth — then search the camp. The raids are far too organized for goblins.',
+        notes:
+          'Goblins out of the Northmarch have burned two farms. Find their camp in the deep forest and deal with Chieftain Snagtooth — then search the camp. The raids are far too organized for goblins.',
         status: 'active',
       },
       {
         id: 'the-pale-seal',
-        title: 'The Pale King\'s Seal',
-        notes: 'Snagtooth\'s orders bear a pale crown pressed into gray wax. Bring them to Reeve Maera in Briarwick; she keeps the shire records of the barrow and the king inside it.',
+        title: "The Pale King's Seal",
+        notes:
+          "Snagtooth's orders bear a pale crown pressed into gray wax. Bring them to Reeve Maera in Briarwick; she keeps the shire records of the barrow and the king inside it.",
         status: 'active',
       },
       {
         id: 'the-hermit-of-graypeak',
         title: 'The Hermit of Graypeak',
-        notes: 'Odo the hermit keeps the warding key that seals the barrow\'s door. He hasn\'t come down for supplies since the wyvern Skalvyr nested above his hermitage.',
+        notes:
+          "Odo the hermit keeps the warding key that seals the barrow's door. He hasn't come down for supplies since the wyvern Skalvyr nested above his hermitage.",
         status: 'active',
       },
       {
         id: 'the-mire-hags-bargain',
-        title: 'The Mire Hag\'s Bargain (optional)',
-        notes: 'Grelka the mire hag brews a grave-ward that turns a wight\'s chill. She trades fair, but never for coin — she names her price when asked, and it is always strange.',
+        title: "The Mire Hag's Bargain (optional)",
+        notes:
+          "Grelka the mire hag brews a grave-ward that turns a wight's chill. She trades fair, but never for coin — she names her price when asked, and it is always strange.",
         status: 'active',
       },
       {
         id: 'the-barrow-king',
         title: 'The Barrow of the Old King',
-        notes: 'King Ostrand has risen and his reach is spreading. Take the warding key into the barrow, put down his risen court, and end him at his tomb.',
+        notes:
+          'King Ostrand has risen and his reach is spreading. Take the warding key into the barrow, put down his risen court, and end him at his tomb.',
         status: 'active',
       },
     ],
@@ -512,21 +681,24 @@ export function buildExampleCampaign(palette, rng = Math.random) {
       createNPC('caravan-master-dorn', 'Dorn', {
         role: 'Caravan master, stranded at the crossroads',
         disposition: 'neutral',
-        notes: 'Blunt and impatient. Pays for road news, and points anyone who looks capable at Bram in Briarwick.',
+        notes:
+          'Blunt and impatient. Pays for road news, and points anyone who looks capable at Bram in Briarwick.',
         stats: { STR: 12, CON: 14, CHA: 12 },
         location: { nodeId: 'world', tileId: '15,16' },
       }),
       createNPC('innkeeper-bram', 'Bram', {
         role: 'Innkeeper, the Waystation at Briarwick',
         disposition: 'friendly',
-        notes: 'Knows every road north and gossips freely for a warm meal. First to mention the raids, the open graves, and the hermit Odo.',
+        notes:
+          'Knows every road north and gossips freely for a warm meal. First to mention the raids, the open graves, and the hermit Odo.',
         stats: { INT: 12, WIS: 14, CHA: 13 },
         location: { nodeId: 'briarwick', tileId: buildingTile(gens.briarwick, palette, 'inn') },
       }),
       createNPC('reeve-maera', 'Reeve Maera', {
         role: 'Reeve of Briarwick',
         disposition: 'neutral',
-        notes: 'Keeps the shire records. Recognizes the pale crown as King Ostrand\'s seal — and knows the barrow was warded shut for a reason.',
+        notes:
+          "Keeps the shire records. Recognizes the pale crown as King Ostrand's seal — and knows the barrow was warded shut for a reason.",
         stats: { INT: 14, WIS: 15, CHA: 12 },
         location: {
           nodeId: 'briarwick',
@@ -536,21 +708,27 @@ export function buildExampleCampaign(palette, rng = Math.random) {
       createNPC('sella-the-smith', 'Sella', {
         role: 'Blacksmith of Briarwick',
         disposition: 'friendly',
-        notes: 'Buys ore, sells and repairs arms. Can reforge the warding key if it comes back from the barrow broken.',
+        notes:
+          'Buys ore, sells and repairs arms. Can reforge the warding key if it comes back from the barrow broken.',
         stats: { STR: 15, CON: 14 },
-        location: { nodeId: 'briarwick', tileId: buildingTile(gens.briarwick, palette, 'blacksmith') },
+        location: {
+          nodeId: 'briarwick',
+          tileId: buildingTile(gens.briarwick, palette, 'blacksmith'),
+        },
       }),
       createNPC('sister-alwyn', 'Sister Alwyn', {
         role: 'Priestess of the Dawn, Briarwick temple',
         disposition: 'friendly',
-        notes: 'Blesses weapons against the risen dead once the party learns what walks in the barrow. Quietly terrified of the open graves.',
+        notes:
+          'Blesses weapons against the risen dead once the party learns what walks in the barrow. Quietly terrified of the open graves.',
         stats: { INT: 12, WIS: 16, CHA: 14 },
         location: { nodeId: 'briarwick', tileId: buildingTile(gens.briarwick, palette, 'temple') },
       }),
       createNPC('hermit-odo', 'Odo', {
         role: 'Hermit, keeper of the warding key',
         disposition: 'neutral',
-        notes: 'Half-deaf and stubborn. Won\'t leave the hermitage while Skalvyr circles; hands over the key once the wyvern is dealt with.',
+        notes:
+          "Half-deaf and stubborn. Won't leave the hermitage while Skalvyr circles; hands over the key once the wyvern is dealt with.",
         stats: { CON: 13, INT: 13, WIS: 16 },
         location: { nodeId: 'graypeak', tileId: hermitTile },
       }),
@@ -566,7 +744,7 @@ export function buildExampleCampaign(palette, rng = Math.random) {
       },
       {
         id: 'snagtooth-orders',
-        title: 'Snagtooth\'s Orders',
+        title: "Snagtooth's Orders",
         body: 'A crumpled writ in a cramped, elegant hand: "Burn the farms. Keep the road watched. Let none reach the mountain hermit before my crown is brought to me." It is sealed with a pale crown pressed into gray wax.',
         nodeId: 'northmarch',
         revealed: false,
@@ -574,7 +752,7 @@ export function buildExampleCampaign(palette, rng = Math.random) {
       },
       {
         id: 'odos-warning',
-        title: 'Odo\'s Warning',
+        title: "Odo's Warning",
         body: '"The key turns a lock, not a king. Ostrand was buried with his sword, his crown, and his pride — the ward kept folk out, but it kept him in just as well. Break it, go down, and finish what the old rites could not."',
         nodeId: 'graypeak',
         revealed: false,

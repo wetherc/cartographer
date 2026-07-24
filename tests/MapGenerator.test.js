@@ -33,7 +33,11 @@ test('ARCHETYPES lists region and interior options', () => {
 
 test('size preset sets square dimensions and fills every cell for wilderness', () => {
   const n = GENERATOR_SIZES.medium;
-  const gen = generateNodeTiles(palette, { kind: 'region', archetype: 'wilderness', size: 'medium' }, mulberry32(1));
+  const gen = generateNodeTiles(
+    palette,
+    { kind: 'region', archetype: 'wilderness', size: 'medium' },
+    mulberry32(1),
+  );
   assert.equal(gen.width, n);
   assert.equal(gen.height, n);
   assert.equal(gen.tiles.length, n * n);
@@ -41,47 +45,98 @@ test('size preset sets square dimensions and fills every cell for wilderness', (
 });
 
 test('generation is deterministic for a given seed', () => {
-  const a = generateNodeTiles(palette, { kind: 'region', archetype: 'wilderness', size: 'small' }, mulberry32(42));
-  const b = generateNodeTiles(palette, { kind: 'region', archetype: 'wilderness', size: 'small' }, mulberry32(42));
-  assert.deepEqual(a.tiles.map((t) => t.imageRef), b.tiles.map((t) => t.imageRef));
+  const a = generateNodeTiles(
+    palette,
+    { kind: 'region', archetype: 'wilderness', size: 'small' },
+    mulberry32(42),
+  );
+  const b = generateNodeTiles(
+    palette,
+    { kind: 'region', archetype: 'wilderness', size: 'small' },
+    mulberry32(42),
+  );
+  assert.deepEqual(
+    a.tiles.map((t) => t.imageRef),
+    b.tiles.map((t) => t.imageRef),
+  );
 });
 
 test('town lays roads as overlays and scatters building markers', () => {
-  const gen = generateNodeTiles(palette, { kind: 'region', archetype: 'town', size: 'medium' }, mulberry32(7));
-  assert.ok(gen.tiles.some((t) => t.overlayRef), 'has at least one road overlay');
-  assert.ok(gen.tiles.some((t) => t.metadata.poiType === 'settlement'), 'has at least one building POI');
+  const gen = generateNodeTiles(
+    palette,
+    { kind: 'region', archetype: 'town', size: 'medium' },
+    mulberry32(7),
+  );
+  assert.ok(
+    gen.tiles.some((t) => t.overlayRef),
+    'has at least one road overlay',
+  );
+  assert.ok(
+    gen.tiles.some((t) => t.metadata.poiType === 'settlement'),
+    'has at least one building POI',
+  );
 });
 
 test('town runs a bridged river past the crossroads', () => {
   for (const seed of [7, 13, 40]) {
-    const gen = generateNodeTiles(palette, { kind: 'region', archetype: 'town', size: 'medium' }, mulberry32(seed));
+    const gen = generateNodeTiles(
+      palette,
+      { kind: 'region', archetype: 'town', size: 'medium' },
+      mulberry32(seed),
+    );
     const river = gen.tiles.filter((t) => t.overlayRef?.includes('/river/'));
-    assert.equal(river.length, GENERATOR_SIZES.medium, `seed ${seed}: river spans the map north-south`);
+    assert.equal(
+      river.length,
+      GENERATOR_SIZES.medium,
+      `seed ${seed}: river spans the map north-south`,
+    );
     const bridges = river.filter((t) => t.overlayRef.includes('bridge-h'));
     assert.equal(bridges.length, 1, `seed ${seed}: exactly one bridge where the road crosses`);
-    assert.ok(!river.some((t) => t.metadata.poiType), `seed ${seed}: no building sits in the channel`);
+    assert.ok(
+      !river.some((t) => t.metadata.poiType),
+      `seed ${seed}: no building sits in the channel`,
+    );
   }
 });
 
 test('wilderness places a river, coastlines around water, and landmark POIs', () => {
   let sawCoast = false;
   for (const seed of [1, 2, 3, 4, 5]) {
-    const gen = generateNodeTiles(palette, { kind: 'region', archetype: 'wilderness', size: 'medium' }, mulberry32(seed));
-    assert.ok(gen.tiles.some((t) => overlayList(t).some((r) => r.includes('/river/'))), `seed ${seed}: has a river`);
-    assert.ok(gen.tiles.some((t) => t.metadata.poiType === 'landmark'), `seed ${seed}: has a landmark`);
+    const gen = generateNodeTiles(
+      palette,
+      { kind: 'region', archetype: 'wilderness', size: 'medium' },
+      mulberry32(seed),
+    );
+    assert.ok(
+      gen.tiles.some((t) => overlayList(t).some((r) => r.includes('/river/'))),
+      `seed ${seed}: has a river`,
+    );
+    assert.ok(
+      gen.tiles.some((t) => t.metadata.poiType === 'landmark'),
+      `seed ${seed}: has a landmark`,
+    );
     // Coast overlays only appear next to water; every land tile beside water
     // must carry one (the smoothing pass guarantees a piece exists for it),
     // stacked under the river channel where the two meet.
     const n = gen.width;
-    const isWater = new Set(gen.tiles.filter((t) => t.imageRef.includes('/water/')).map((t) => t.id));
+    const isWater = new Set(
+      gen.tiles.filter((t) => t.imageRef.includes('/water/')).map((t) => t.id),
+    );
     for (const t of gen.tiles) {
       if (isWater.has(t.id) || t.metadata.poiType) continue;
       const [x, y] = t.id.split(',').map(Number);
-      const orthWater = [[0, -1], [1, 0], [0, 1], [-1, 0]]
-        .some(([dx, dy]) => isWater.has(`${x + dx},${y + dy}`));
+      const orthWater = [
+        [0, -1],
+        [1, 0],
+        [0, 1],
+        [-1, 0],
+      ].some(([dx, dy]) => isWater.has(`${x + dx},${y + dy}`));
       if (orthWater) {
         sawCoast = true;
-        assert.ok(overlayList(t).some((r) => r.includes('/coast/')), `seed ${seed}: shore tile ${t.id} has a coast overlay`);
+        assert.ok(
+          overlayList(t).some((r) => r.includes('/coast/')),
+          `seed ${seed}: shore tile ${t.id} has a coast overlay`,
+        );
       }
     }
     assert.ok(n * n === gen.tiles.length, 'wilderness fills the grid');
@@ -94,31 +149,51 @@ test('a wilderness river draining into a lake stacks its channel over the shorel
   // PRNG makes the found seed stable.
   let mouth = null;
   for (let seed = 1; seed <= 60 && !mouth; seed++) {
-    const gen = generateNodeTiles(palette, { kind: 'region', archetype: 'wilderness', size: 'medium' }, mulberry32(seed));
-    mouth = gen.tiles.find((t) => {
-      const refs = overlayList(t);
-      return refs.some((r) => r.includes('/river/')) && refs.some((r) => r.includes('/coast/'));
-    }) ?? null;
+    const gen = generateNodeTiles(
+      palette,
+      { kind: 'region', archetype: 'wilderness', size: 'medium' },
+      mulberry32(seed),
+    );
+    mouth =
+      gen.tiles.find((t) => {
+        const refs = overlayList(t);
+        return refs.some((r) => r.includes('/river/')) && refs.some((r) => r.includes('/coast/'));
+      }) ?? null;
   }
   assert.ok(mouth, 'some seed produced a river mouth');
   const refs = overlayList(mouth);
-  assert.ok(refs[0].includes('/coast/') && refs[1].includes('/river/'), 'shoreline draws under the channel');
+  assert.ok(
+    refs[0].includes('/coast/') && refs[1].includes('/river/'),
+    'shoreline draws under the channel',
+  );
 });
 
 test('dungeon floors are fully enclosed by placed tiles, with stairs up', () => {
   const n = GENERATOR_SIZES.medium;
-  const gen = generateNodeTiles(palette, { kind: 'interior', archetype: 'dungeon', size: 'medium' }, mulberry32(3));
+  const gen = generateNodeTiles(
+    palette,
+    { kind: 'interior', archetype: 'dungeon', size: 'medium' },
+    mulberry32(3),
+  );
   const placed = new Set(gen.tiles.map((t) => t.id));
   const floors = gen.tiles.filter((t) => /floor|stairs/.test(t.imageRef));
   assert.ok(floors.length > 0, 'carved some floor');
   assert.ok(gen.tiles.length <= n * n, 'no more tiles than the grid holds');
   for (const f of floors) {
     const [x, y] = f.id.split(',').map(Number);
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+    for (const [dx, dy] of [
+      [1, 0],
+      [-1, 0],
+      [0, 1],
+      [0, -1],
+    ]) {
       const nx = x + dx;
       const ny = y + dy;
       if (nx < 0 || ny < 0 || nx >= n || ny >= n) continue;
-      assert.ok(placed.has(`${nx},${ny}`), `floor ${f.id} neighbor ${nx},${ny} is walled/floored, not void`);
+      assert.ok(
+        placed.has(`${nx},${ny}`),
+        `floor ${f.id} neighbor ${nx},${ny} is walled/floored, not void`,
+      );
     }
   }
   assert.ok(gen.tiles.some((t) => t.imageRef.includes('stairs-up')));
@@ -130,17 +205,29 @@ test('multi-level dungeon links each stairs-down to the level below, none on the
   for (const seed of [5, 21]) {
     const ids = ['lvl-2', 'lvl-3', 'lvl-4'];
     let next = 0;
-    const levels = generateDungeonLevels(palette, { size: 'medium', levels: 3 }, mulberry32(seed), () => ids[next++]);
+    const levels = generateDungeonLevels(
+      palette,
+      { size: 'medium', levels: 3 },
+      mulberry32(seed),
+      () => ids[next++],
+    );
     assert.equal(levels.length, 3, `seed ${seed}: three levels`);
     assert.equal(levels[0].id, null, 'first level fills the existing node');
-    assert.deepEqual(levels.slice(1).map((l) => l.id), ['lvl-2', 'lvl-3']);
+    assert.deepEqual(
+      levels.slice(1).map((l) => l.id),
+      ['lvl-2', 'lvl-3'],
+    );
     for (let i = 0; i < levels.length; i++) {
       const down = levels[i].tiles.filter((t) => t.imageRef.includes('stairs-down'));
       const up = levels[i].tiles.filter((t) => t.imageRef.includes('stairs-up'));
       assert.equal(up.length, 1, `seed ${seed} level ${i + 1}: one stairs-up`);
       if (i < levels.length - 1) {
         assert.equal(down.length, 1, `seed ${seed} level ${i + 1}: one stairs-down`);
-        assert.equal(down[0].childNodeId, levels[i + 1].id, `seed ${seed} level ${i + 1}: stairs-down links to the level below`);
+        assert.equal(
+          down[0].childNodeId,
+          levels[i + 1].id,
+          `seed ${seed} level ${i + 1}: stairs-down links to the level below`,
+        );
       } else {
         assert.equal(down.length, 0, `seed ${seed}: bottom level has no stairs-down`);
       }
@@ -150,7 +237,10 @@ test('multi-level dungeon links each stairs-down to the level below, none on the
     for (const level of levels.slice(1)) {
       const up = level.tiles.find((t) => t.imageRef.includes('stairs-up'));
       assert.equal(level.entry, up.id, `seed ${seed}: deep level entry is its stairs-up`);
-      assert.ok(!level.tiles.some((t) => t.imageRef.includes('door')), `seed ${seed}: deep level has no surface door`);
+      assert.ok(
+        !level.tiles.some((t) => t.imageRef.includes('door')),
+        `seed ${seed}: deep level has no surface door`,
+      );
     }
   }
 });
@@ -171,7 +261,11 @@ test('wallKind picks pieces by connected wall arms', () => {
 
 test('dungeon wall pieces match their neighbors, junctions included', () => {
   for (const seed of [3, 11, 27, 42]) {
-    const gen = generateNodeTiles(palette, { kind: 'interior', archetype: 'dungeon', size: 'medium' }, mulberry32(seed));
+    const gen = generateNodeTiles(
+      palette,
+      { kind: 'interior', archetype: 'dungeon', size: 'medium' },
+      mulberry32(seed),
+    );
     const byId = new Map(gen.tiles.map((t) => [t.id, t]));
     // A cell continues the wall if it holds a wall piece or a door set in it.
     const wallish = (id) => {
@@ -181,15 +275,27 @@ test('dungeon wall pieces match their neighbors, junctions included', () => {
     for (const t of gen.tiles) {
       if (!t.imageRef.includes('wall-')) continue;
       const [x, y] = t.id.split(',').map(Number);
-      const expected = wallKind(wallish(`${x},${y - 1}`), wallish(`${x + 1},${y}`), wallish(`${x},${y + 1}`), wallish(`${x - 1},${y}`));
-      assert.ok(t.imageRef.includes(expected), `seed ${seed}: wall ${t.id} is ${expected} (got ${t.imageRef})`);
+      const expected = wallKind(
+        wallish(`${x},${y - 1}`),
+        wallish(`${x + 1},${y}`),
+        wallish(`${x},${y + 1}`),
+        wallish(`${x - 1},${y}`),
+      );
+      assert.ok(
+        t.imageRef.includes(expected),
+        `seed ${seed}: wall ${t.id} is ${expected} (got ${t.imageRef})`,
+      );
     }
   }
 });
 
 test('castle is a walled ring with a floored interior and doors', () => {
   const n = GENERATOR_SIZES.small;
-  const gen = generateNodeTiles(palette, { kind: 'interior', archetype: 'castle', size: 'small' }, mulberry32(9));
+  const gen = generateNodeTiles(
+    palette,
+    { kind: 'interior', archetype: 'castle', size: 'small' },
+    mulberry32(9),
+  );
   const byId = new Map(gen.tiles.map((t) => [t.id, t]));
   assert.equal(gen.tiles.length, n * n, 'castle fills the whole grid');
   // Every border cell is a wall/corner/door, never bare floor.
@@ -198,9 +304,18 @@ test('castle is a walled ring with a floored interior and doors', () => {
       assert.ok(!byId.get(id).imageRef.includes('floor'), `border ${id} is not floor`);
     }
   }
-  assert.ok(gen.tiles.some((t) => t.imageRef.includes('floor')), 'has interior floor');
-  assert.ok(gen.tiles.some((t) => t.imageRef.includes('door')), 'has a door');
-  assert.ok(gen.tiles.some((t) => t.imageRef.includes('stairs')), 'has stairs');
+  assert.ok(
+    gen.tiles.some((t) => t.imageRef.includes('floor')),
+    'has interior floor',
+  );
+  assert.ok(
+    gen.tiles.some((t) => t.imageRef.includes('door')),
+    'has a door',
+  );
+  assert.ok(
+    gen.tiles.some((t) => t.imageRef.includes('stairs')),
+    'has stairs',
+  );
   // Ring corners connect inward (NW corner continues east and south), and the
   // partition tees into both side walls.
   const py = Math.floor(n / 2);
@@ -235,7 +350,11 @@ test('every archetype returns a border entry that exists and is walkable', () =>
 test('dungeon entry connects to the whole floor network', () => {
   for (const seed of [3, 11, 27]) {
     const n = GENERATOR_SIZES.medium;
-    const gen = generateNodeTiles(palette, { kind: 'interior', archetype: 'dungeon', size: 'medium' }, mulberry32(seed));
+    const gen = generateNodeTiles(
+      palette,
+      { kind: 'interior', archetype: 'dungeon', size: 'medium' },
+      mulberry32(seed),
+    );
     const walkable = new Set(
       gen.tiles.filter((t) => !t.imageRef.includes('wall-')).map((t) => t.id),
     );
@@ -244,7 +363,12 @@ test('dungeon entry connects to the whole floor network', () => {
     const queue = [gen.entry];
     while (queue.length) {
       const [x, y] = queue.pop().split(',').map(Number);
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (const [dx, dy] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
         const id = `${x + dx},${y + dy}`;
         if (walkable.has(id) && !seen.has(id)) {
           seen.add(id);
@@ -252,7 +376,11 @@ test('dungeon entry connects to the whole floor network', () => {
         }
       }
     }
-    assert.equal(seen.size, walkable.size, `seed ${seed}: every walkable tile reachable from the entry (${seen.size}/${walkable.size})`);
+    assert.equal(
+      seen.size,
+      walkable.size,
+      `seed ${seed}: every walkable tile reachable from the entry (${seen.size}/${walkable.size})`,
+    );
     assert.ok(n * n > walkable.size, 'sanity: dungeon is sparse');
   }
 });

@@ -14,7 +14,10 @@ test('sortInitiative orders highest first, ties broken by name then id', () => {
     createParticipant('b', 'Ana', 'party', 18),
     createParticipant('c', 'Bob', 'party', 12),
   ];
-  assert.deepEqual(sortInitiative(list).map((p) => p.id), ['b', 'c', 'a']);
+  assert.deepEqual(
+    sortInitiative(list).map((p) => p.id),
+    ['b', 'c', 'a'],
+  );
 });
 
 test('startCombat sorts and starts at round 1, first turn', () => {

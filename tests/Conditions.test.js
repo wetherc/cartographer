@@ -33,7 +33,11 @@ test('removeCondition drops by name case-insensitively', () => {
 });
 
 test('tickConditions decrements timed conditions and drops the expired', () => {
-  const list = [createCondition('Frightened', 2), createCondition('Poisoned', 1), createCondition('Prone', null)];
+  const list = [
+    createCondition('Frightened', 2),
+    createCondition('Poisoned', 1),
+    createCondition('Prone', null),
+  ];
   const next = tickConditions(list);
   assert.deepEqual(next, [createCondition('Frightened', 1), createCondition('Prone', null)]);
 });

@@ -19,7 +19,16 @@ import { icon } from './icons.js';
 const FLAT_AC_TYPES = ['weapon', 'helmet', 'gloves', 'greaves', 'bow', 'ring'];
 
 /** Item types that can be equipped somewhere, and so may buff a stat. */
-const EQUIPPABLE_TYPES = ['weapon', 'armor', 'helmet', 'gloves', 'greaves', 'shield', 'bow', 'ring'];
+const EQUIPPABLE_TYPES = [
+  'weapon',
+  'armor',
+  'helmet',
+  'gloves',
+  'greaves',
+  'shield',
+  'bow',
+  'ring',
+];
 
 /**
  * A small captioned wrapper so each control in the form names itself.
@@ -98,7 +107,7 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
     option.textContent = t === 'gear' ? 'gear (misc.)' : t;
     typeSelect.appendChild(option);
   }
-  typeSelect.value = item ? item.type ?? 'gear' : ITEM_TYPES[0];
+  typeSelect.value = item ? (item.type ?? 'gear') : ITEM_TYPES[0];
 
   // Body armor: its 5e weight class (which alone fixes the DEX scaling —
   // never the GM's input) and a configurable base AC defaulting to a
@@ -109,9 +118,11 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
     const option = document.createElement('option');
     option.value = w.key;
     option.textContent =
-      w.dexCap === 0 ? `${w.label} (no DEX)`
-      : w.dexCap === Infinity ? `${w.label} (+ DEX)`
-      : `${w.label} (+ DEX, max ${w.dexCap})`;
+      w.dexCap === 0
+        ? `${w.label} (no DEX)`
+        : w.dexCap === Infinity
+          ? `${w.label} (+ DEX)`
+          : `${w.label} (+ DEX, max ${w.dexCap})`;
     weightSelect.appendChild(option);
   }
   weightSelect.value = item?.armorWeight ?? ARMOR_WEIGHTS[0].key;
@@ -191,7 +202,9 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
   const handlingField = labeled('Handling', handlingSelect);
 
   /** @type {DamagePart[]} */
-  let damageParts = (item?.damage ?? [{ count: 1, sides: 6, damageType: 'slashing' }]).map((p) => ({ ...p }));
+  let damageParts = (item?.damage ?? [{ count: 1, sides: 6, damageType: 'slashing' }]).map((p) => ({
+    ...p,
+  }));
   const damageEditor = document.createElement('div');
   damageEditor.className = 'inventory-panel__damage';
   const damageField = labeled('Damage', damageEditor);
@@ -236,7 +249,9 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
         option.textContent = damageType;
         typeSelectEl.appendChild(option);
       }
-      typeSelectEl.value = DAMAGE_TYPES.includes(part.damageType) ? part.damageType : DAMAGE_TYPES[0];
+      typeSelectEl.value = DAMAGE_TYPES.includes(part.damageType)
+        ? part.damageType
+        : DAMAGE_TYPES[0];
       typeSelectEl.addEventListener('change', () => {
         part.damageType = typeSelectEl.value;
       });
@@ -349,7 +364,11 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
     acField.hidden = !FLAT_AC_TYPES.includes(type);
     buffStatField.hidden = !EQUIPPABLE_TYPES.includes(type);
     buffAmountField.hidden = buffStatField.hidden || buffStatSelect.value === '';
-    presetField.hidden = handlingField.hidden = damageField.hidden = effectsField.hidden = !weaponish;
+    presetField.hidden =
+      handlingField.hidden =
+      damageField.hidden =
+      effectsField.hidden =
+        !weaponish;
     armorRow.hidden = weightField.hidden && shieldField.hidden;
     weaponRow.hidden = damageRow.hidden = effectsRow.hidden = !weaponish;
     bonusRow.hidden = acField.hidden && buffStatField.hidden;
@@ -393,7 +412,9 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
       ...(description ? { description } : {}),
       ...(type === 'armor'
         ? {
-            armorWeight: /** @type {import('../types/entities.js').ArmorWeight} */ (weightSelect.value),
+            armorWeight: /** @type {import('../types/entities.js').ArmorWeight} */ (
+              weightSelect.value
+            ),
             baseAC: Math.max(1, Number(baseACInput.value) || 10),
           }
         : {}),
@@ -401,7 +422,9 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
       ...(buffStat && buffAmount !== 0 ? { statBonuses: { [buffStat]: buffAmount } } : {}),
       ...(WEAPON_TYPES.includes(type)
         ? {
-            handling: /** @type {import('../types/entities.js').WeaponHandling} */ (handlingSelect.value),
+            handling: /** @type {import('../types/entities.js').WeaponHandling} */ (
+              handlingSelect.value
+            ),
             damage: damageParts.map((p) => ({ ...p })),
             ...(statusEffects.length ? { statusEffects: [...statusEffects] } : {}),
           }

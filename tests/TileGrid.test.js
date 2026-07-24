@@ -24,9 +24,23 @@ test('createTile has default unrevealed metadata', () => {
 
 test('withNodeDefaults backfills discovered on tiles from older saves', () => {
   const legacy = {
-    id: 'n', name: 'Old', parentId: null, width: 1, height: 1, kind: 'region', environ: null,
-    tiles: [{ id: '0,0', imageRef: 'g.svg', overlayRef: null, revealed: true, childNodeId: null,
-      metadata: { poiType: 'dungeon', discoverable: true, notes: '' } }],
+    id: 'n',
+    name: 'Old',
+    parentId: null,
+    width: 1,
+    height: 1,
+    kind: 'region',
+    environ: null,
+    tiles: [
+      {
+        id: '0,0',
+        imageRef: 'g.svg',
+        overlayRef: null,
+        revealed: true,
+        childNodeId: null,
+        metadata: { poiType: 'dungeon', discoverable: true, notes: '' },
+      },
+    ],
   };
   const node = withNodeDefaults(/** @type {any} */ (legacy));
   assert.equal(node.tiles[0].metadata.discovered, false);
@@ -78,7 +92,10 @@ test('resizeNode shrink prunes tiles outside the new bounds', () => {
   node = setTile(node, createTile('0,0', 'grass.png'));
   node = setTile(node, createTile('3,3', 'grass.png'));
   const shrunk = resizeNode(node, 2, 2);
-  assert.deepEqual(shrunk.tiles.map((t) => t.id), ['0,0']);
+  assert.deepEqual(
+    shrunk.tiles.map((t) => t.id),
+    ['0,0'],
+  );
 });
 
 test('resizeNode clamps dimensions to at least 1x1', () => {
@@ -117,7 +134,9 @@ test('TileGrid resolves a tile zoom target through childNodeId', () => {
 
 test('overlayList normalizes none, one, and stacked overlays to a draw-ordered list', () => {
   assert.deepEqual(overlayList(createTile('0,0', 'g.svg')), []);
-  assert.deepEqual(overlayList(createTile('0,0', 'g.svg', { overlayRef: 'road.svg' })), ['road.svg']);
+  assert.deepEqual(overlayList(createTile('0,0', 'g.svg', { overlayRef: 'road.svg' })), [
+    'road.svg',
+  ]);
   assert.deepEqual(
     overlayList(createTile('0,0', 'g.svg', { overlayRef: ['coast.svg', 'river.svg'] })),
     ['coast.svg', 'river.svg'],

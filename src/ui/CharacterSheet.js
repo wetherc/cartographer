@@ -298,9 +298,9 @@ export function mountCharacterSheet(
     acBadge.className = 'character-sheet__ac';
     acBadge.textContent = `AC ${armorClass(character)}`;
     acBadge.title =
-      'Armor class: equipped body armor sets base AC + DEX per its weight class '
-      + '(light: full, medium: max +2, heavy: none); unarmored is base AC + DEX. '
-      + 'Shields add +2; other equipped items add their flat bonuses.';
+      'Armor class: equipped body armor sets base AC + DEX per its weight class ' +
+      '(light: full, medium: max +2, heavy: none); unarmored is base AC + DEX. ' +
+      'Shields add +2; other equipped items add their flat bonuses.';
     const xpProgress = document.createElement('span');
     xpProgress.className = 'character-sheet__xp-progress';
     xpProgress.textContent = `XP ${character.xp} / ${character.level * XP_PER_LEVEL}`;
@@ -349,8 +349,11 @@ export function mountCharacterSheet(
       // The GM's per-character max HP override; current HP clamps down if the
       // new maximum is below it.
       if (hp) {
-        const { row } = buildFieldRow('MAX HP', hp.max, `Maximum HP for ${character.name}`, (value) =>
-          commit(setMaxHP(character, value)),
+        const { row } = buildFieldRow(
+          'MAX HP',
+          hp.max,
+          `Maximum HP for ${character.name}`,
+          (value) => commit(setMaxHP(character, value)),
         );
         body.appendChild(row);
       }
@@ -462,7 +465,9 @@ export function mountCharacterSheet(
           restoreButton.className = 'btn btn--icon btn--success';
           restoreButton.setAttribute('aria-label', `Restore one ${pool.name}`);
           restoreButton.appendChild(icon('plus'));
-          restoreButton.addEventListener('click', () => commit(restoreResource(character, pool.id, 1)));
+          restoreButton.addEventListener('click', () =>
+            commit(restoreResource(character, pool.id, 1)),
+          );
 
           row.append(spendButton, restoreButton);
         }
@@ -484,7 +489,12 @@ export function mountCharacterSheet(
     });
     body.appendChild(conditions);
 
-    wireDisclosure(summary, body, { expanded, onToggle: (next) => { expanded = next; } });
+    wireDisclosure(summary, body, {
+      expanded,
+      onToggle: (next) => {
+        expanded = next;
+      },
+    });
     root.append(head, body);
   }
 

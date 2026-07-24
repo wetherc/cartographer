@@ -51,8 +51,8 @@
   --space-6: 2rem;
 
   /* Type */
-  --font-sans: system-ui, "Segoe UI", Roboto, sans-serif;
-  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   --text-display: 1.5rem;
   --text-heading: 1.125rem;
   --text-body: 1rem;
@@ -142,7 +142,10 @@ body {
   font-size: var(--text-label);
   line-height: 1;
   cursor: pointer;
-  transition: background-color 0.12s ease, border-color 0.12s ease, transform 0.04s ease;
+  transition:
+    background-color 0.12s ease,
+    border-color 0.12s ease,
+    transform 0.04s ease;
 }
 
 .btn:hover {
@@ -228,4 +231,3 @@ body {
   text-transform: uppercase;
   color: var(--text-muted);
 }
-

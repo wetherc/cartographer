@@ -1,7 +1,15 @@
 import { getTile, updateTileMetadata } from '../map/TileGrid.js';
 import { MapCanvas } from '../map/MapCanvas.js';
 import { clientToBuffer, screenToTile } from '../map/MapGeometry.js';
-import { paintTile, eraseTile, erasePath, normalizeRect, tilesInRect, linkTilesInRect, stampRegionLink } from '../map/TilePaint.js';
+import {
+  paintTile,
+  eraseTile,
+  erasePath,
+  normalizeRect,
+  tilesInRect,
+  linkTilesInRect,
+  stampRegionLink,
+} from '../map/TilePaint.js';
 import { isOverlayType } from '../map/TilePalette.js';
 import { computeRegionEntryTile, resolveEntryTile } from '../map/EntryPoint.js';
 import { discoveredNodes, revealAll, revealAround, setTileRevealed } from '../map/FogOfWar.js';
@@ -116,7 +124,10 @@ export function wireMapView(app) {
     mapCanvas.setEncounterTiles(
       state.encounters
         .filter((e) => e.location && e.location.nodeId === nodeId && !isDefeated(e))
-        .map((e) => /** @type {import('../types/entities.js').EncounterLocation} */ (e.location).tileId),
+        .map(
+          (e) =>
+            /** @type {import('../types/entities.js').EncounterLocation} */ (e.location).tileId,
+        ),
     );
     // The Build-rail authoring list shows the same node scope, so it refreshes
     // wherever the markers do (navigation and every encounter mutation).
@@ -131,7 +142,10 @@ export function wireMapView(app) {
     mapCanvas.setNPCTiles(
       state.npcs
         .filter((n) => n.location && n.location.nodeId === nodeId)
-        .map((n) => /** @type {import('../types/entities.js').EncounterLocation} */ (n.location).tileId),
+        .map(
+          (n) =>
+            /** @type {import('../types/entities.js').EncounterLocation} */ (n.location).tileId,
+        ),
     );
   }
   app.actions.syncNPCMarkers = syncNPCMarkers;
@@ -139,7 +153,11 @@ export function wireMapView(app) {
   /** Re-narrate the current map for the screen-reader live region. Called wherever
    * the node, party, fog, or tiles change (the same events that redraw). */
   function refreshMapDescription() {
-    mapDescription.update(navigator.getCurrentNode(), partyTracker.getPosition(), state.mode === 'build');
+    mapDescription.update(
+      navigator.getCurrentNode(),
+      partyTracker.getPosition(),
+      state.mode === 'build',
+    );
   }
   app.actions.refreshMapDescription = refreshMapDescription;
 
@@ -236,7 +254,10 @@ export function wireMapView(app) {
     partyTracker.moveTo(nodeId, target);
     state.characters = recallAll(state.characters); // the whole party teleports
     goToNode(nodeId);
-    app.actions.logEvent('travel', firstVisit ? `Discovered ${node.name}.` : `Traveled to ${node.name}.`);
+    app.actions.logEvent(
+      'travel',
+      firstVisit ? `Discovered ${node.name}.` : `Traveled to ${node.name}.`,
+    );
     refreshLocationPanels();
     app.actions.maybeTriggerEncounter();
   }
@@ -418,7 +439,10 @@ export function wireMapView(app) {
               );
               state.characters = recallAll(state.characters);
             }
-            app.actions.logEvent('travel', firstVisit ? `Discovered ${child.name}.` : `Entered ${child.name}.`);
+            app.actions.logEvent(
+              'travel',
+              firstVisit ? `Discovered ${child.name}.` : `Entered ${child.name}.`,
+            );
             app.actions.markDirty(); // party position and fog changed
           }
           // Re-read the node: moveTo wrote a new, fog-revealed node into the grid,
@@ -479,7 +503,8 @@ export function wireMapView(app) {
       app.actions.markDirty();
     },
     linking: {
-      getOptions: () => grid.getChildren(navigator.currentNodeId).map((n) => ({ id: n.id, name: n.name })),
+      getOptions: () =>
+        grid.getChildren(navigator.currentNodeId).map((n) => ({ id: n.id, name: n.name })),
       onChange: (childNodeId) => linkSelectedTile(childNodeId),
       onCreateNew: async () => {
         const id = await nodeActions.addChildNode(navigator.currentNodeId);
@@ -577,7 +602,10 @@ export function wireMapView(app) {
     const node = navigator.getCurrentNode();
     grid.updateNode(updateTileMetadata(node, tile.id, { discovered: true }));
     const what = tile.metadata.poiType ?? 'a hidden location';
-    app.actions.logEvent('travel', `Discovered ${what}${tile.metadata.notes ? `: ${tile.metadata.notes}` : ''}.`);
+    app.actions.logEvent(
+      'travel',
+      `Discovered ${what}${tile.metadata.notes ? `: ${tile.metadata.notes}` : ''}.`,
+    );
   }
 
   /**
@@ -598,7 +626,11 @@ export function wireMapView(app) {
     const nodeId = navigator.getCurrentNode().id;
     const party = partyTracker.getPosition();
     const rejoined = party.nodeId === nodeId && party.tileId === tile.id;
-    state.characters = moveCharacter(state.characters, character.id, rejoined ? null : { nodeId, tileId: tile.id });
+    state.characters = moveCharacter(
+      state.characters,
+      character.id,
+      rejoined ? null : { nodeId, tileId: tile.id },
+    );
     grid.updateNode(revealAround(navigator.getCurrentNode(), tile.id, partyTracker.revealRadius));
     discoverTile(tile);
     mapCanvas.refreshNode(navigator.getCurrentNode());
@@ -632,8 +664,21 @@ export function wireMapView(app) {
     const entry = id ? palette.get(id) : undefined;
     if (!entry) return;
     const rect = canvasEl.getBoundingClientRect();
-    const buffer = clientToBuffer(event.clientX, event.clientY, rect, canvasEl.width, canvasEl.height);
-    const coords = screenToTile(buffer.x, buffer.y, mapCanvas.tileSize, mapCanvas.offsetX, mapCanvas.offsetY, mapCanvas.scale);
+    const buffer = clientToBuffer(
+      event.clientX,
+      event.clientY,
+      rect,
+      canvasEl.width,
+      canvasEl.height,
+    );
+    const coords = screenToTile(
+      buffer.x,
+      buffer.y,
+      mapCanvas.tileSize,
+      mapCanvas.offsetX,
+      mapCanvas.offsetY,
+      mapCanvas.scale,
+    );
     const tileId = `${coords.x},${coords.y}`;
     snapshotEdit(navigator.getCurrentNode());
     const overlay = isOverlayType(entry.type);

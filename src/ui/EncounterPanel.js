@@ -308,7 +308,9 @@ export function mountEncounterPanel(container, callbacks) {
       event.preventDefault();
       activeTab = activeTab === 'active' ? 'nearby' : 'active';
       render();
-      const nextTab = /** @type {HTMLElement | null} */ (root.querySelector('[role=tab][aria-selected=true]'));
+      const nextTab = /** @type {HTMLElement | null} */ (
+        root.querySelector('[role=tab][aria-selected=true]')
+      );
       nextTab?.focus();
     });
     tablist.append(...tabs);

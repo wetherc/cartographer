@@ -1,7 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
-import { findRegionGroups, isFilledRect, groupImageRef, groupImageChunks } from '../src/map/RegionGroups.js';
+import {
+  findRegionGroups,
+  isFilledRect,
+  groupImageRef,
+  groupImageChunks,
+} from '../src/map/RegionGroups.js';
 
 function nodeFromLayout(rows, childNodeIdFor) {
   let node = createMapNode('n', 'Node', null, rows[0].length, rows.length);
@@ -108,7 +113,10 @@ test('groupImageChunks splits a 4x4 block into four 2x2 chunks with their own im
   let node = createMapNode('n', 'Node', null, 4, 4);
   for (let y = 0; y < 4; y++) {
     for (let x = 0; x < 4; x++) {
-      node = setTile(node, createTile(`${x},${y}`, `forest-${x},${y}.svg`, { childNodeId: 'region' }));
+      node = setTile(
+        node,
+        createTile(`${x},${y}`, `forest-${x},${y}.svg`, { childNodeId: 'region' }),
+      );
     }
   }
   const chunks = groupImageChunks(node, findRegionGroups(node)[0]);

@@ -56,7 +56,9 @@ export function mountTileInspector(container, opts) {
     typeSelect.appendChild(option);
   }
   typeSelect.addEventListener('change', () => {
-    opts.onChange({ poiType: typeSelect.value === '' ? null : /** @type {POIType} */ (typeSelect.value) });
+    opts.onChange({
+      poiType: typeSelect.value === '' ? null : /** @type {POIType} */ (typeSelect.value),
+    });
   });
   typeField.appendChild(typeSelect);
 

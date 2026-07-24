@@ -1,10 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  shouldAutosave,
-  AUTOSAVE_IDLE_MS,
-  AUTOSAVE_MAX_WAIT_MS,
-} from '../src/storage/Autosave.js';
+import { shouldAutosave, AUTOSAVE_IDLE_MS, AUTOSAVE_MAX_WAIT_MS } from '../src/storage/Autosave.js';
 
 test('never autosaves a clean campaign', () => {
   assert.equal(

@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { roll, rollDamage, emptySelection, formatResult, DIE_SIDES } from '../src/dice/DiceRoller.js';
+import {
+  roll,
+  rollDamage,
+  emptySelection,
+  formatResult,
+  DIE_SIDES,
+} from '../src/dice/DiceRoller.js';
 
 test('rolls correct count of dice per die type', () => {
   const selection = emptySelection();

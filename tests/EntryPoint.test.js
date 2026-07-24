@@ -51,7 +51,13 @@ test('a single-tile block projects a head-on approach to the wall midpoint', () 
 
 test('resolveEntryTile keeps a real, walkable preferred tile', () => {
   const node = {
-    id: 'n', name: 'N', parentId: null, width: 4, height: 4, kind: 'interior', environ: null,
+    id: 'n',
+    name: 'N',
+    parentId: null,
+    width: 4,
+    height: 4,
+    kind: 'interior',
+    environ: null,
     tiles: [createTile('1,1', 'assets/tiles/interior/interior-floor-1.svg')],
   };
   assert.equal(resolveEntryTile(node, '1,1'), '1,1');
@@ -59,7 +65,13 @@ test('resolveEntryTile keeps a real, walkable preferred tile', () => {
 
 test('resolveEntryTile snaps a void or wall preferred tile to the nearest walkable one, doors first', () => {
   const node = {
-    id: 'n', name: 'N', parentId: null, width: 6, height: 6, kind: 'interior', environ: null,
+    id: 'n',
+    name: 'N',
+    parentId: null,
+    width: 6,
+    height: 6,
+    kind: 'interior',
+    environ: null,
     tiles: [
       createTile('2,0', 'assets/tiles/interior/interior-wall-h.svg'),
       createTile('2,1', 'assets/tiles/interior/interior-floor-2.svg'),
@@ -74,21 +86,42 @@ test('resolveEntryTile snaps a void or wall preferred tile to the nearest walkab
 });
 
 test('resolveEntryTile returns the preferred id for an empty node', () => {
-  const node = { id: 'n', name: 'N', parentId: null, width: 4, height: 4, kind: 'region', environ: null, tiles: [] };
+  const node = {
+    id: 'n',
+    name: 'N',
+    parentId: null,
+    width: 4,
+    height: 4,
+    kind: 'region',
+    environ: null,
+    tiles: [],
+  };
   assert.equal(resolveEntryTile(node, '2,2'), '2,2');
 });
 
 test('computeRegionEntryTile lands a stairs descent on the child level stairs-up', async () => {
   const { computeRegionEntryTile } = await import('../src/map/EntryPoint.js');
   const parent = {
-    id: 'lvl-1', name: 'Crypt', parentId: null, width: 6, height: 6, kind: 'interior', environ: null,
+    id: 'lvl-1',
+    name: 'Crypt',
+    parentId: null,
+    width: 6,
+    height: 6,
+    kind: 'interior',
+    environ: null,
     tiles: [
       createTile('4,4', 'assets/tiles/interior/interior-stairs-down.svg', { childNodeId: 'lvl-2' }),
       createTile('1,1', 'assets/tiles/interior/interior-floor-1.svg'),
     ],
   };
   const child = {
-    id: 'lvl-2', name: 'Crypt (level 2)', parentId: 'lvl-1', width: 6, height: 6, kind: 'interior', environ: null,
+    id: 'lvl-2',
+    name: 'Crypt (level 2)',
+    parentId: 'lvl-1',
+    width: 6,
+    height: 6,
+    kind: 'interior',
+    environ: null,
     tiles: [
       createTile('2,3', 'assets/tiles/interior/interior-stairs-up.svg'),
       createTile('0,0', 'assets/tiles/interior/interior-floor-2.svg'),

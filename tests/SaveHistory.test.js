@@ -43,7 +43,19 @@ test('loadHistory tolerates a missing or corrupt entry', () => {
 });
 
 test('snapshotHistory then undoHistory round-trips a state and shrinks the ring', () => {
-  const state = { nodes: [], party: null, characters: [], encounters: [], travelog: [], quests: [], clock: null, npcs: [], handouts: [], bestiary: [], splitParty: false };
+  const state = {
+    nodes: [],
+    party: null,
+    characters: [],
+    encounters: [],
+    travelog: [],
+    quests: [],
+    clock: null,
+    npcs: [],
+    handouts: [],
+    bestiary: [],
+    splitParty: false,
+  };
   snapshotHistory(state);
   assert.equal(loadHistory().length, 1);
   const restored = undoHistory();
@@ -54,7 +66,14 @@ test('snapshotHistory then undoHistory round-trips a state and shrinks the ring'
 });
 
 test('snapshotHistory enforces the ring limit across successive pushes', () => {
-  const mk = (n) => ({ nodes: [], party: null, characters: [], encounters: [], travelog: [], quests: [{ id: String(n), title: String(n), notes: '', status: 'active' }] });
+  const mk = (n) => ({
+    nodes: [],
+    party: null,
+    characters: [],
+    encounters: [],
+    travelog: [],
+    quests: [{ id: String(n), title: String(n), notes: '', status: 'active' }],
+  });
   for (let i = 0; i < 25; i++) snapshotHistory(mk(i), 'campaign-builder:history', 20);
   assert.equal(loadHistory().length, 20);
   // The most recent undo returns the last pushed state.

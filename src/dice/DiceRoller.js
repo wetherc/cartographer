@@ -73,7 +73,11 @@ export function rollDamage(parts, modifier = 0, rng = Math.random) {
   const byType = new Map();
   for (const part of parts) {
     if (part.count <= 0) continue;
-    const group = byType.get(part.damageType) ?? { damageType: part.damageType, rolls: [], subtotal: 0 };
+    const group = byType.get(part.damageType) ?? {
+      damageType: part.damageType,
+      rolls: [],
+      subtotal: 0,
+    };
     for (let i = 0; i < part.count; i++) {
       const value = Math.floor(rng() * part.sides) + 1;
       group.rolls.push(value);

@@ -25,7 +25,8 @@ export function mountConditionsBar(container, callbacks) {
   function buildChip(condition) {
     const chip = document.createElement('span');
     chip.className = 'conditions-bar__chip';
-    const label = condition.rounds === null ? condition.name : `${condition.name} (${condition.rounds})`;
+    const label =
+      condition.rounds === null ? condition.name : `${condition.name} (${condition.rounds})`;
     const text = document.createElement('span');
     text.textContent = label;
     chip.appendChild(text);

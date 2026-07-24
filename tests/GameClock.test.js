@@ -7,7 +7,14 @@ import {
   advanceToDawn,
   formatClock,
 } from '../src/time/GameClock.js';
-import { withHP, getHP, shortRest, longRest, createCharacter, spendResource } from '../src/entities/Character.js';
+import {
+  withHP,
+  getHP,
+  shortRest,
+  longRest,
+  createCharacter,
+  spendResource,
+} from '../src/entities/Character.js';
 
 test('createClock starts at dawn of day 1', () => {
   assert.deepEqual(createClock(), { day: 1, watch: 0 });

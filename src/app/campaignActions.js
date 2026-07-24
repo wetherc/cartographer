@@ -85,11 +85,15 @@ export function wireCampaignActions(app) {
   function persistState(state) {
     const result = trySaveToLocalStorage(state);
     if (!result.ok) {
-      app.toasts.show('Save failed: browser storage is full. Export the campaign, then remove large handout images or custom tiles.');
+      app.toasts.show(
+        'Save failed: browser storage is full. Export the campaign, then remove large handout images or custom tiles.',
+      );
       return false;
     }
     if (result.nearQuota) {
-      app.toasts.show(`Warning: the campaign uses ${(result.bytes / (1024 * 1024)).toFixed(1)} MB of the browser's ~5 MB storage limit. Export a backup and trim large images.`);
+      app.toasts.show(
+        `Warning: the campaign uses ${(result.bytes / (1024 * 1024)).toFixed(1)} MB of the browser's ~5 MB storage limit. Export a backup and trim large images.`,
+      );
     }
     return true;
   }
@@ -97,13 +101,21 @@ export function wireCampaignActions(app) {
   /** Assemble the live campaign into a serializable state for save/export. */
   function buildCurrentState() {
     const { state } = app;
-    return buildState(app.grid, app.partyTracker.getPosition(), state.characters, state.encounters, state.travelog, state.quests, {
-      clock: state.clock,
-      npcs: state.npcs,
-      handouts: state.handouts,
-      bestiary: state.bestiary,
-      splitParty: state.splitParty,
-    });
+    return buildState(
+      app.grid,
+      app.partyTracker.getPosition(),
+      state.characters,
+      state.encounters,
+      state.travelog,
+      state.quests,
+      {
+        clock: state.clock,
+        npcs: state.npcs,
+        handouts: state.handouts,
+        bestiary: state.bestiary,
+        splitParty: state.splitParty,
+      },
+    );
   }
 
   /**
@@ -123,7 +135,12 @@ export function wireCampaignActions(app) {
         campaign.encounters,
         campaign.travelog,
         campaign.quests,
-        { clock: campaign.clock, npcs: campaign.npcs, handouts: campaign.handouts, bestiary: campaign.bestiary },
+        {
+          clock: campaign.clock,
+          npcs: campaign.npcs,
+          handouts: campaign.handouts,
+          bestiary: campaign.bestiary,
+        },
       ),
     );
     if (!ok) return; // the error toast already explained; don't reload onto stale state
@@ -205,7 +222,9 @@ export function wireCampaignActions(app) {
     }
     if (syncPromptOpen) return;
     if (syncPromptDeclined) {
-      app.toasts.show('Another tab saved again. Save here to overwrite it, or reload to take its version.');
+      app.toasts.show(
+        'Another tab saved again. Save here to overwrite it, or reload to take its version.',
+      );
       return;
     }
     syncPromptOpen = true;

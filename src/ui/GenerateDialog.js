@@ -54,7 +54,11 @@ export function generateDialog(options) {
     field('Archetype', archetypeSelect);
 
     const sizeSelect = document.createElement('select');
-    for (const [value, label] of [['small', 'Small'], ['medium', 'Medium'], ['large', 'Large']]) {
+    for (const [value, label] of [
+      ['small', 'Small'],
+      ['medium', 'Medium'],
+      ['large', 'Large'],
+    ]) {
       const el = document.createElement('option');
       el.value = value;
       el.textContent = label;
@@ -116,7 +120,10 @@ export function generateDialog(options) {
     function renderPreview() {
       if (closed) return;
       const candidate = options.makeCandidate(readChoice());
-      const tileSize = Math.max(1, Math.floor(canvas.width / Math.max(candidate.width, candidate.height)));
+      const tileSize = Math.max(
+        1,
+        Math.floor(canvas.width / Math.max(candidate.width, candidate.height)),
+      );
       const renderer = new MapRenderer(ctx, { tileSize, onImageLoad: renderPreview });
       renderer.imageCache = imageCache; // share loads across re-renders
       ctx.clearRect(0, 0, canvas.width, canvas.height);

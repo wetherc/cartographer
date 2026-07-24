@@ -62,7 +62,8 @@ export function wireParty(app) {
     saveLock(next, key);
     if (bindingHeartbeat === null) {
       bindingHeartbeat = setInterval(() => {
-        if (boundCharacterId) saveLock({ id: bindingTabId, at: Date.now() }, characterLockKey(boundCharacterId));
+        if (boundCharacterId)
+          saveLock({ id: bindingTabId, at: Date.now() }, characterLockKey(boundCharacterId));
       }, GM_LOCK_HEARTBEAT);
     }
     return true;
@@ -94,11 +95,13 @@ export function wireParty(app) {
     return id;
   }
 
-  setBinding(initialBinding(
-    location.search,
-    sessionStorage.getItem(BOUND_CHARACTER_SESSION_KEY),
-    state.characters,
-  ));
+  setBinding(
+    initialBinding(
+      location.search,
+      sessionStorage.getItem(BOUND_CHARACTER_SESSION_KEY),
+      state.characters,
+    ),
+  );
 
   // Free the claim when the tab goes away so another tab can pick the
   // character up without waiting out the TTL.
@@ -109,7 +112,8 @@ export function wireParty(app) {
   window.addEventListener('storage', (event) => {
     if (!boundCharacterId || event.key !== characterLockKey(boundCharacterId)) return;
     if (isHeldByOther(loadLock(event.key), bindingTabId, Date.now())) {
-      const name = state.characters.find((c) => c.id === boundCharacterId)?.name ?? boundCharacterId;
+      const name =
+        state.characters.find((c) => c.id === boundCharacterId)?.name ?? boundCharacterId;
       if (bindingHeartbeat !== null) clearInterval(bindingHeartbeat);
       bindingHeartbeat = null;
       boundCharacterId = null;
@@ -314,7 +318,10 @@ export function wireParty(app) {
       app.actions.markDirty();
       if (location) {
         const node = app.grid.getNode(location.nodeId);
-        app.actions.logEvent('travel', `${character.name} moves to ${node?.name ?? location.nodeId} (tile ${location.tileId}).`);
+        app.actions.logEvent(
+          'travel',
+          `${character.name} moves to ${node?.name ?? location.nodeId} (tile ${location.tileId}).`,
+        );
         app.actions.maybeTriggerEncounter(location, character.name);
       } else {
         app.actions.logEvent('travel', `${character.name} rejoins the party.`);
@@ -340,7 +347,15 @@ export function wireParty(app) {
       if (!values || !name) return;
       const maxHP = Math.max(1, Number(values.maxHP) || 1);
       let created = withHP(
-        createCharacter(slugId(name, state.characters.map((c) => c.id)), name, {}, values.race.trim()),
+        createCharacter(
+          slugId(
+            name,
+            state.characters.map((c) => c.id),
+          ),
+          name,
+          {},
+          values.race.trim(),
+        ),
         maxHP,
       );
       if (values.caster === 'yes') created = withSpellSlots(created);
@@ -357,7 +372,9 @@ export function wireParty(app) {
       });
       if (!ok) return;
       state.characters = removeById(state.characters, id);
-      selectCharacter(id === selectedCharacterId ? (state.characters[0]?.id ?? null) : selectedCharacterId);
+      selectCharacter(
+        id === selectedCharacterId ? (state.characters[0]?.id ?? null) : selectedCharacterId,
+      );
       app.actions.markDirty();
     },
     // Grant the same XP to the whole party at once — the common post-encounter
@@ -402,7 +419,10 @@ export function wireParty(app) {
       const node = app.grid.getNode(app.partyTracker.getPosition().nodeId);
       app.actions.logEvent(
         'note',
-        formatInventoryEvent(character.name, event, { region: node?.name, time: formatClock(state.clock) }),
+        formatInventoryEvent(character.name, event, {
+          region: node?.name,
+          time: formatClock(state.clock),
+        }),
       );
     },
     () => selectedPermissions().play,
@@ -418,7 +438,10 @@ export function wireParty(app) {
       state.characters = state.characters.map(shortRest);
       state.clock = advanceWatches(state.clock, 1);
       selectCharacter(selectedCharacterId);
-      app.actions.logEvent('rest', `The party takes a short rest. Now ${formatClock(state.clock)}.`);
+      app.actions.logEvent(
+        'rest',
+        `The party takes a short rest. Now ${formatClock(state.clock)}.`,
+      );
     },
     onLongRest: () => {
       state.characters = state.characters.map(longRest);

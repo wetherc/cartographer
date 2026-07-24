@@ -11,18 +11,30 @@ test('pickup reads as picks up with the added count', () => {
 
 test('pickup context appends region and in-game time when supplied', () => {
   assert.equal(
-    formatInventoryEvent('Hero', { verb: 'pickup', itemName: 'Rope', count: 1 }, { region: 'Emberfall Vale', time: 'Day 3, Morning' }),
+    formatInventoryEvent(
+      'Hero',
+      { verb: 'pickup', itemName: 'Rope', count: 1 },
+      { region: 'Emberfall Vale', time: 'Day 3, Morning' },
+    ),
     'Hero picks up Rope x1 in Emberfall Vale (Day 3, Morning).',
   );
   assert.equal(
-    formatInventoryEvent('Hero', { verb: 'pickup', itemName: 'Rope', count: 1 }, { time: 'Day 3, Morning' }),
+    formatInventoryEvent(
+      'Hero',
+      { verb: 'pickup', itemName: 'Rope', count: 1 },
+      { time: 'Day 3, Morning' },
+    ),
     'Hero picks up Rope x1 (Day 3, Morning).',
   );
 });
 
 test('use and discard ignore context and stay short', () => {
   assert.equal(
-    formatInventoryEvent('Hero', { verb: 'use', itemName: 'Potion', count: 1 }, { region: 'Vale', time: 'Day 3' }),
+    formatInventoryEvent(
+      'Hero',
+      { verb: 'use', itemName: 'Potion', count: 1 },
+      { region: 'Vale', time: 'Day 3' },
+    ),
     'Hero uses a Potion.',
   );
 });

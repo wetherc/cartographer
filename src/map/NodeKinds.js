@@ -13,8 +13,29 @@ export const NODE_KINDS = ['region', 'interior'];
  * @type {Record<NodeKind, string[]>}
  */
 export const ENVIRONS = {
-  region: ['grassland', 'forest', 'mountain', 'desert', 'water', 'coast', 'swamp', 'tundra', 'cave'],
-  interior: ['shop', 'inn', 'tavern', 'temple', 'academy', 'castle', 'barracks', 'dungeon', 'guildhall', 'warehouse'],
+  region: [
+    'grassland',
+    'forest',
+    'mountain',
+    'desert',
+    'water',
+    'coast',
+    'swamp',
+    'tundra',
+    'cave',
+  ],
+  interior: [
+    'shop',
+    'inn',
+    'tavern',
+    'temple',
+    'academy',
+    'castle',
+    'barracks',
+    'dungeon',
+    'guildhall',
+    'warehouse',
+  ],
 };
 
 /**

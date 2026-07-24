@@ -7,6 +7,17 @@
 set -e
 cd "$(git rev-parse --show-toplevel)"
 
+# Auto-format staged code before the checks run. Prettier is fetched on demand
+# like the other tools; scope (js/ts/css only) comes from .prettierignore. The
+# re-add means a partially staged file gets its unstaged hunks staged too —
+# stash working-tree changes first if that matters for a given commit.
+echo "pre-commit: prettier"
+staged=$(git diff --cached --name-only --diff-filter=ACMR -- '*.js' '*.ts' '*.css')
+if [ -n "$staged" ]; then
+  echo "$staged" | tr '\n' '\0' | xargs -0 pnpm --package=prettier dlx prettier --write --ignore-unknown
+  echo "$staged" | tr '\n' '\0' | xargs -0 git add
+fi
+
 echo "pre-commit: eslint"
 pnpm --package=eslint dlx eslint .
 

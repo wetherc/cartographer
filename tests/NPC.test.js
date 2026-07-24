@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createNPC, npcsAt, npcsOnTile, withDefaults, formatLocation } from '../src/entities/NPC.js';
+import {
+  createNPC,
+  npcsAt,
+  npcsOnTile,
+  withDefaults,
+  formatLocation,
+} from '../src/entities/NPC.js';
 
 test('createNPC defaults role/notes empty, disposition neutral, unplaced, neutral stats', () => {
   const npc = createNPC('n1', 'Bram');
@@ -48,7 +54,10 @@ test('npcsOnTile matches only NPCs standing exactly on the tile', () => {
     createNPC('b', 'Guard', { location: { nodeId: 'world', tileId: '4,2' } }),
     createNPC('c', 'Narrator'), // unplaced NPCs never join a tile's fight
   ];
-  assert.deepEqual(npcsOnTile(npcs, { nodeId: 'world', tileId: '3,2' }).map((n) => n.id), ['a']);
+  assert.deepEqual(
+    npcsOnTile(npcs, { nodeId: 'world', tileId: '3,2' }).map((n) => n.id),
+    ['a'],
+  );
   assert.deepEqual(npcsOnTile(npcs, { nodeId: 'region', tileId: '3,2' }), []);
   assert.deepEqual(npcsOnTile(npcs, null), []);
 });

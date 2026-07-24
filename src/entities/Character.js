@@ -136,7 +136,21 @@ export function withDefaults(character) {
  * @returns {Character}
  */
 export function createCharacter(id, name, stats = {}, race = '') {
-  return { id, name, race, level: 1, xp: 0, stats: { ...defaultStats(), ...stats }, resources: [], inventory: [], conditions: [], equipment: emptyEquipment(), bonusHP: 0, baseAC: 10, location: null };
+  return {
+    id,
+    name,
+    race,
+    level: 1,
+    xp: 0,
+    stats: { ...defaultStats(), ...stats },
+    resources: [],
+    inventory: [],
+    conditions: [],
+    equipment: emptyEquipment(),
+    bonusHP: 0,
+    baseAC: 10,
+    location: null,
+  };
 }
 
 /**

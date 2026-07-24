@@ -80,8 +80,14 @@ export function coastOverlays(cells, width, height) {
     for (let x = 0; x < width; x++) {
       if (water(x, y)) continue;
       const kind = coastKind(
-        water(x, y - 1), water(x + 1, y), water(x, y + 1), water(x - 1, y),
-        water(x + 1, y - 1), water(x + 1, y + 1), water(x - 1, y + 1), water(x - 1, y - 1),
+        water(x, y - 1),
+        water(x + 1, y),
+        water(x, y + 1),
+        water(x - 1, y),
+        water(x + 1, y - 1),
+        water(x + 1, y + 1),
+        water(x - 1, y + 1),
+        water(x - 1, y - 1),
       );
       if (kind) out.set(`${x},${y}`, kind);
     }
@@ -124,9 +130,16 @@ export function riverCourse(width, height, rng, isWater = () => false) {
     if (to === 'e' && (x + 1 >= width || isWater(x + 1, y))) to = 's';
     if (to === 'w' && (x - 1 < 0 || isWater(x - 1, y))) to = 's';
     out.set(`${x},${y}`, RIVER_PIECES[[from, to].sort().join(',')]);
-    if (to === 's') { y++; from = 'n'; }
-    else if (to === 'e') { x++; from = 'w'; }
-    else { x--; from = 'e'; }
+    if (to === 's') {
+      y++;
+      from = 'n';
+    } else if (to === 'e') {
+      x++;
+      from = 'w';
+    } else {
+      x--;
+      from = 'e';
+    }
   }
   return out;
 }

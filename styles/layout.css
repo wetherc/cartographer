@@ -188,8 +188,14 @@ body.mode-build .map-controls__fog {
 }
 
 @keyframes toast-in {
-  from { opacity: 0; transform: translateY(0.5rem); }
-  to { opacity: 1; transform: none; }
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 .tile-tooltip {
@@ -293,4 +299,3 @@ body.sidebar-collapsed .sidebar-panels {
 body.sidebar-collapsed .app-sidebar {
   width: auto;
 }
-

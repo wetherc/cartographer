@@ -8,7 +8,16 @@ test('TilePalette ships with built-in terrain variants', () => {
   assert.equal(grassVariants.length, 3);
   assert.equal(palette.get('grass-1').custom, false);
   assert.equal(palette.get('grass-1').imageRef, 'assets/tiles/grass/grass-1.svg');
-  for (const type of ['forest', 'mountain', 'water', 'desert', 'swamp', 'snow', 'hills', 'farmland']) {
+  for (const type of [
+    'forest',
+    'mountain',
+    'water',
+    'desert',
+    'swamp',
+    'snow',
+    'hills',
+    'farmland',
+  ]) {
     assert.equal(palette.listVariants(type).length, 3, `expected 3 variants of "${type}"`);
   }
 });
@@ -24,7 +33,10 @@ test('TilePalette ships with built-in road connector pieces', () => {
 test('TilePalette ships with river connector and bridge pieces', () => {
   const palette = new TilePalette();
   assert.equal(palette.getRiverPiece('h').imageRef, 'assets/tiles/river/river-h.svg');
-  assert.equal(palette.getRiverPiece('corner-ne').imageRef, 'assets/tiles/river/river-corner-ne.svg');
+  assert.equal(
+    palette.getRiverPiece('corner-ne').imageRef,
+    'assets/tiles/river/river-corner-ne.svg',
+  );
   assert.equal(palette.getRiverPiece('bridge-h').imageRef, 'assets/tiles/river/river-bridge-h.svg');
   assert.equal(palette.getRiverPiece('bridge-v').type, 'river');
   assert.equal(palette.listVariants('river').length, 17);
@@ -34,7 +46,10 @@ test('TilePalette ships with coast transition pieces', () => {
   const palette = new TilePalette();
   assert.equal(palette.getCoastPiece('n').imageRef, 'assets/tiles/coast/coast-n.svg');
   assert.equal(palette.getCoastPiece('w').id, 'coast-w');
-  assert.equal(palette.getCoastPiece('corner-nw').imageRef, 'assets/tiles/coast/coast-corner-nw.svg');
+  assert.equal(
+    palette.getCoastPiece('corner-nw').imageRef,
+    'assets/tiles/coast/coast-corner-nw.svg',
+  );
   assert.equal(palette.getCoastPiece('inner-se').type, 'coast');
   assert.equal(palette.listVariants('coast').length, 12);
 });
@@ -47,9 +62,26 @@ test('TilePalette ships with single-image POI markers', () => {
   assert.equal(palette.get('wizard-tower').label, 'Wizard Tower');
   assert.equal(palette.get('general-store').label, 'General Store');
   assert.equal(palette.get('cave-entrance').label, 'Cave Entrance');
-  assert.equal(palette.get('standing-stones').imageRef, 'assets/tiles/standing-stones/standing-stones.svg');
-  for (const type of ['tavern', 'inn', 'blacksmith', 'alchemist', 'temple', 'shrine', 'academy', 'barracks',
-    'ruins', 'mine', 'port', 'farm', 'graveyard', 'camp']) {
+  assert.equal(
+    palette.get('standing-stones').imageRef,
+    'assets/tiles/standing-stones/standing-stones.svg',
+  );
+  for (const type of [
+    'tavern',
+    'inn',
+    'blacksmith',
+    'alchemist',
+    'temple',
+    'shrine',
+    'academy',
+    'barracks',
+    'ruins',
+    'mine',
+    'port',
+    'farm',
+    'graveyard',
+    'camp',
+  ]) {
     assert.ok(palette.get(type), `missing marker "${type}"`);
   }
 });

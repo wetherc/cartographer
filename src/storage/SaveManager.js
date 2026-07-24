@@ -24,7 +24,15 @@ export const STORAGE_KEY = DEFAULT_STORAGE_KEY;
  * @param {Partial<CampaignState>} [extra] later-added top-level fields (clock, npcs, ...)
  * @returns {CampaignState}
  */
-export function buildState(grid, party, characters, encounters, travelog = [], quests = [], extra = {}) {
+export function buildState(
+  grid,
+  party,
+  characters,
+  encounters,
+  travelog = [],
+  quests = [],
+  extra = {},
+) {
   return {
     nodes: [...grid.nodes.values()],
     party,

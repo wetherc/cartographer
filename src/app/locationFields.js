@@ -23,7 +23,10 @@ export function locationFields(app, location, options = {}) {
         { value: '', label: options.unplacedLabel ?? 'Unplaced (appears everywhere)' },
         ...[...app.grid.nodes.values()].map((n) => ({
           value: n.id,
-          label: app.grid.getBreadcrumb(n.id).map((b) => b.name).join(' / '),
+          label: app.grid
+            .getBreadcrumb(n.id)
+            .map((b) => b.name)
+            .join(' / '),
         })),
       ],
     },
@@ -44,5 +47,8 @@ export function readLocation(app, values) {
   if (!node) return null;
   const clamp = (/** @type {string} */ raw, /** @type {number} */ max) =>
     Math.min(Math.max(0, Math.floor(Number(raw) || 0)), max - 1);
-  return { nodeId: node.id, tileId: `${clamp(values.tileX, node.width)},${clamp(values.tileY, node.height)}` };
+  return {
+    nodeId: node.id,
+    tileId: `${clamp(values.tileX, node.width)},${clamp(values.tileY, node.height)}`,
+  };
 }

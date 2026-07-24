@@ -17,22 +17,13 @@ test('isExternalSaveEvent ignores writes to a different key (e.g. the history ri
 });
 
 test('isExternalSaveEvent ignores a cleared key (newValue null)', () => {
-  assert.equal(
-    isExternalSaveEvent({ key: STORAGE_KEY, newValue: null, oldValue: '{}' }),
-    false,
-  );
+  assert.equal(isExternalSaveEvent({ key: STORAGE_KEY, newValue: null, oldValue: '{}' }), false);
 });
 
 test('isExternalSaveEvent ignores a no-op write (value unchanged)', () => {
-  assert.equal(
-    isExternalSaveEvent({ key: STORAGE_KEY, newValue: '{}', oldValue: '{}' }),
-    false,
-  );
+  assert.equal(isExternalSaveEvent({ key: STORAGE_KEY, newValue: '{}', oldValue: '{}' }), false);
 });
 
 test('isExternalSaveEvent honors an explicit key override', () => {
-  assert.equal(
-    isExternalSaveEvent({ key: 'other', newValue: 'x', oldValue: null }, 'other'),
-    true,
-  );
+  assert.equal(isExternalSaveEvent({ key: 'other', newValue: 'x', oldValue: null }, 'other'), true);
 });

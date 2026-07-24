@@ -75,9 +75,23 @@ export function defaultEnemyStats(level, tier) {
   const lvl = Math.max(1, Math.floor(level) || 1);
   if (tier === 'legend') {
     const score = Math.min(26, 14 + Math.floor(lvl / 2));
-    return normalizeStatBlock({ STR: score, DEX: score, CON: score, INT: score, WIS: score, CHA: score });
+    return normalizeStatBlock({
+      STR: score,
+      DEX: score,
+      CON: score,
+      INT: score,
+      WIS: score,
+      CHA: score,
+    });
   }
   const physical = Math.min(18, 10 + Math.floor(lvl / 3));
   const mental = physical - 2;
-  return normalizeStatBlock({ STR: physical, DEX: physical, CON: physical, INT: mental, WIS: mental, CHA: mental });
+  return normalizeStatBlock({
+    STR: physical,
+    DEX: physical,
+    CON: physical,
+    INT: mental,
+    WIS: mental,
+    CHA: mental,
+  });
 }

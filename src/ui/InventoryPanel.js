@@ -277,7 +277,11 @@ export function mountInventoryPanel(
     const sortSelect = document.createElement('select');
     sortSelect.className = 'field';
     sortSelect.setAttribute('aria-label', 'Sort items');
-    for (const [value, text] of [['name', 'by name'], ['type', 'by type'], ['quantity', 'by quantity']]) {
+    for (const [value, text] of [
+      ['name', 'by name'],
+      ['type', 'by type'],
+      ['quantity', 'by quantity'],
+    ]) {
       const option = document.createElement('option');
       option.value = value;
       option.textContent = text;
@@ -292,7 +296,11 @@ export function mountInventoryPanel(
     list.className = 'inventory-panel__list';
     const fillList = () => {
       list.innerHTML = '';
-      const visible = filterItems(character.inventory, { query: searchQuery, type: typeFilter, sort: sortKey });
+      const visible = filterItems(character.inventory, {
+        query: searchQuery,
+        type: typeFilter,
+        sort: sortKey,
+      });
       if (visible.length === 0) {
         const empty = document.createElement('p');
         empty.className = 'empty-state';
@@ -324,10 +332,11 @@ export function mountInventoryPanel(
           submitLabel: 'Add item',
           onSubmit: (fields) => {
             const id = idFromName(fields.name);
-            commit(
-              addItem(character, { ...fields, id }),
-              { verb: 'pickup', itemName: fields.name, count: fields.quantity },
-            );
+            commit(addItem(character, { ...fields, id }), {
+              verb: 'pickup',
+              itemName: fields.name,
+              count: fields.quantity,
+            });
           },
         }),
       );
@@ -396,14 +405,21 @@ export function mountInventoryPanel(
       event.preventDefault();
       activeTab = activeTab === 'equipment' ? 'inventory' : 'equipment';
       render();
-      const nextTab = /** @type {HTMLElement | null} */ (root.querySelector('[role=tab][aria-selected=true]'));
+      const nextTab = /** @type {HTMLElement | null} */ (
+        root.querySelector('[role=tab][aria-selected=true]')
+      );
       nextTab?.focus();
     });
     tablist.append(...tabs);
 
     body.append(tablist, panels.equipment, panels.inventory);
 
-    wireDisclosure(summary, body, { expanded, onToggle: (next) => { expanded = next; } });
+    wireDisclosure(summary, body, {
+      expanded,
+      onToggle: (next) => {
+        expanded = next;
+      },
+    });
     root.append(summary, body);
   }
 

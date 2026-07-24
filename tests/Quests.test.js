@@ -37,6 +37,12 @@ test('groupByStatus splits into active and completed, preserving order', () => {
     createQuest('q3', 'C'),
   ];
   const { active, completed } = groupByStatus(quests);
-  assert.deepEqual(active.map((q) => q.id), ['q1', 'q3']);
-  assert.deepEqual(completed.map((q) => q.id), ['q2']);
+  assert.deepEqual(
+    active.map((q) => q.id),
+    ['q1', 'q3'],
+  );
+  assert.deepEqual(
+    completed.map((q) => q.id),
+    ['q2'],
+  );
 });

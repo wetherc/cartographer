@@ -25,7 +25,10 @@ function installLocalStorage() {
 test('claimLock succeeds on a free, own, or expired lock and refreshes the timestamp', () => {
   assert.deepEqual(claimLock(null, 'a', 100), { id: 'a', at: 100 });
   assert.deepEqual(claimLock({ id: 'a', at: 100 }, 'a', 200), { id: 'a', at: 200 });
-  assert.deepEqual(claimLock({ id: 'b', at: 0 }, 'a', GM_LOCK_TTL + 1), { id: 'a', at: GM_LOCK_TTL + 1 });
+  assert.deepEqual(claimLock({ id: 'b', at: 0 }, 'a', GM_LOCK_TTL + 1), {
+    id: 'a',
+    at: GM_LOCK_TTL + 1,
+  });
 });
 
 test('claimLock is refused while another tab holds a live lock', () => {

@@ -61,7 +61,10 @@ test('example campaign placements land on real tiles across seeds', () => {
       const node = campaign.grid.getNode(location.nodeId);
       assert.ok(node, `seed ${seed}: ${what} in missing node ${location.nodeId}`);
       const tile = getTile(node, location.tileId);
-      assert.ok(tile, `seed ${seed}: ${what} on missing tile ${location.nodeId}/${location.tileId}`);
+      assert.ok(
+        tile,
+        `seed ${seed}: ${what} on missing tile ${location.nodeId}/${location.tileId}`,
+      );
       return tile;
     };
 
@@ -74,7 +77,8 @@ test('example campaign placements land on real tiles across seeds', () => {
       assertPlaced(n.location, `NPC ${n.id}`);
     }
     for (const h of campaign.handouts) {
-      if (h.nodeId !== null) assert.ok(campaign.grid.getNode(h.nodeId), `seed ${seed}: handout ${h.id}`);
+      if (h.nodeId !== null)
+        assert.ok(campaign.grid.getNode(h.nodeId), `seed ${seed}: handout ${h.id}`);
     }
 
     // Story bosses stand on their stamped landmarks, and the barrow boss on

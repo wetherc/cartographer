@@ -119,7 +119,10 @@ export class MapCanvas {
     // announced (pan/zoom/cursor handled in _onKeyDown).
     canvas.tabIndex = 0;
     canvas.setAttribute('role', 'application');
-    canvas.setAttribute('aria-label', 'Campaign map. Arrow keys move the cursor, Enter acts, plus and minus zoom.');
+    canvas.setAttribute(
+      'aria-label',
+      'Campaign map. Arrow keys move the cursor, Enter acts, plus and minus zoom.',
+    );
 
     canvas.addEventListener('pointerdown', this._onPointerDown);
     canvas.addEventListener('pointermove', this._onPointerMove);
@@ -431,7 +434,14 @@ export class MapCanvas {
     if (!coords) return;
     const tile = this.node.tiles.find((t) => t.id === this.cursorCellId) ?? null;
     const rect = this.canvas.getBoundingClientRect();
-    const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+    const { sx, sy, size } = tileRect(
+      coords.x,
+      coords.y,
+      this.tileSize,
+      this.offsetX,
+      this.offsetY,
+      this.scale,
+    );
     const scaleX = rect.width === 0 ? 1 : rect.width / this.canvas.width;
     const scaleY = rect.height === 0 ? 1 : rect.height / this.canvas.height;
     this.onCellHover(
@@ -449,9 +459,11 @@ export class MapCanvas {
     this._userView = true;
     const margin = size;
     if (sx < margin) this.offsetX += margin - sx;
-    else if (sx + size > this.canvas.width - margin) this.offsetX -= sx + size - (this.canvas.width - margin);
+    else if (sx + size > this.canvas.width - margin)
+      this.offsetX -= sx + size - (this.canvas.width - margin);
     if (sy < margin) this.offsetY += margin - sy;
-    else if (sy + size > this.canvas.height - margin) this.offsetY -= sy + size - (this.canvas.height - margin);
+    else if (sy + size > this.canvas.height - margin)
+      this.offsetY -= sy + size - (this.canvas.height - margin);
   }
 
   /** @param {PointerEvent} event */
@@ -521,8 +533,21 @@ export class MapCanvas {
   _eventCell(event) {
     if (!this.node) return null;
     const rect = this.canvas.getBoundingClientRect();
-    const buffer = clientToBuffer(event.clientX, event.clientY, rect, this.canvas.width, this.canvas.height);
-    const coords = screenToTile(buffer.x, buffer.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+    const buffer = clientToBuffer(
+      event.clientX,
+      event.clientY,
+      rect,
+      this.canvas.width,
+      this.canvas.height,
+    );
+    const coords = screenToTile(
+      buffer.x,
+      buffer.y,
+      this.tileSize,
+      this.offsetX,
+      this.offsetY,
+      this.scale,
+    );
     const inBounds =
       coords.x >= 0 && coords.y >= 0 && coords.x < this.node.width && coords.y < this.node.height;
     return inBounds ? coords : null;
@@ -561,7 +586,8 @@ export class MapCanvas {
       // Track movement so a left-drag doesn't count as a click; no pan —
       // except on touch, where a moved finger promotes the tap into a pan
       // (touch has no second button to dedicate to panning).
-      this._dragDistance += Math.abs(event.clientX - this._lastX) + Math.abs(event.clientY - this._lastY);
+      this._dragDistance +=
+        Math.abs(event.clientX - this._lastX) + Math.abs(event.clientY - this._lastY);
       if (event.pointerType === 'touch' && this._dragDistance >= 8) {
         this._pendingClick = false;
         this._panning = true;
@@ -600,8 +626,21 @@ export class MapCanvas {
   _trackHover(event) {
     if (!this.onCellHover || !this.node) return;
     const rect = this.canvas.getBoundingClientRect();
-    const buffer = clientToBuffer(event.clientX, event.clientY, rect, this.canvas.width, this.canvas.height);
-    const coords = screenToTile(buffer.x, buffer.y, this.tileSize, this.offsetX, this.offsetY, this.scale);
+    const buffer = clientToBuffer(
+      event.clientX,
+      event.clientY,
+      rect,
+      this.canvas.width,
+      this.canvas.height,
+    );
+    const coords = screenToTile(
+      buffer.x,
+      buffer.y,
+      this.tileSize,
+      this.offsetX,
+      this.offsetY,
+      this.scale,
+    );
     const inBounds =
       coords.x >= 0 && coords.y >= 0 && coords.x < this.node.width && coords.y < this.node.height;
     const cellId = inBounds ? `${coords.x},${coords.y}` : null;
@@ -696,7 +735,13 @@ export class MapCanvas {
   _onWheel(event) {
     event.preventDefault();
     const rect = this.canvas.getBoundingClientRect();
-    const buffer = clientToBuffer(event.clientX, event.clientY, rect, this.canvas.width, this.canvas.height);
+    const buffer = clientToBuffer(
+      event.clientX,
+      event.clientY,
+      rect,
+      this.canvas.width,
+      this.canvas.height,
+    );
     const pointerX = buffer.x;
     const pointerY = buffer.y;
 

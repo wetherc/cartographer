@@ -30,9 +30,36 @@ export const ARCHETYPES = {
   ],
 };
 
-const TERRAIN_BLOBS = ['forest', 'water', 'mountain', 'desert', 'swamp', 'snow', 'hills', 'farmland'];
-const TOWN_BUILDINGS = ['tavern', 'inn', 'blacksmith', 'general-store', 'alchemist', 'temple', 'shrine', 'wizard-tower', 'academy', 'barracks'];
-const WILDERNESS_LANDMARKS = ['ruins', 'camp', 'standing-stones', 'mine', 'cave-entrance', 'graveyard'];
+const TERRAIN_BLOBS = [
+  'forest',
+  'water',
+  'mountain',
+  'desert',
+  'swamp',
+  'snow',
+  'hills',
+  'farmland',
+];
+const TOWN_BUILDINGS = [
+  'tavern',
+  'inn',
+  'blacksmith',
+  'general-store',
+  'alchemist',
+  'temple',
+  'shrine',
+  'wizard-tower',
+  'academy',
+  'barracks',
+];
+const WILDERNESS_LANDMARKS = [
+  'ruins',
+  'camp',
+  'standing-stones',
+  'mine',
+  'cave-entrance',
+  'graveyard',
+];
 const FLOOR_KINDS = ['floor-1', 'floor-2', 'floor-3'];
 
 /** @param {TilePalette} palette @param {string} type @param {() => number} rng */
@@ -92,7 +119,12 @@ function generateWilderness(palette, size, rng) {
       if (cells[idx] === type) continue;
       cells[idx] = type;
       placed++;
-      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      for (const [dx, dy] of [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ]) {
         if (rng() < 0.6) frontier.push([x + dx, y + dy]);
       }
     }
@@ -110,30 +142,41 @@ function generateWilderness(palette, size, rng) {
       // Shoreline draws under the channel, so a river drains through the
       // beach into the water instead of one overlay displacing the other.
       const refs = [];
-      const coastPiece = coast.get(id) && palette.getCoastPiece(/** @type {string} */ (coast.get(id)));
-      const riverPiece = river.get(id) && palette.getRiverPiece(/** @type {string} */ (river.get(id)));
+      const coastPiece =
+        coast.get(id) && palette.getCoastPiece(/** @type {string} */ (coast.get(id)));
+      const riverPiece =
+        river.get(id) && palette.getRiverPiece(/** @type {string} */ (river.get(id)));
       if (coastPiece) refs.push(coastPiece.imageRef);
       if (riverPiece) refs.push(riverPiece.imageRef);
-      tiles.push(createTile(id, terrainRef(palette, cells[y * size + x], rng),
-        refs.length ? { overlayRef: refs.length > 1 ? refs : refs[0] } : {}));
+      tiles.push(
+        createTile(
+          id,
+          terrainRef(palette, cells[y * size + x], rng),
+          refs.length ? { overlayRef: refs.length > 1 ? refs : refs[0] } : {},
+        ),
+      );
     }
   }
   // Landmark markers on plain grass away from the border, so generated wilds
   // offer something to discover. Grass keeps markers off water/river cells.
-  const grassIds = tiles.filter((t) => {
-    const [x, y] = t.id.split(',').map(Number);
-    const inner = x > 0 && y > 0 && x < size - 1 && y < size - 1;
-    return inner && !t.overlayRef && cells[y * size + x] === 'grass';
-  }).map((t) => t.id);
+  const grassIds = tiles
+    .filter((t) => {
+      const [x, y] = t.id.split(',').map(Number);
+      const inner = x > 0 && y > 0 && x < size - 1 && y < size - 1;
+      return inner && !t.overlayRef && cells[y * size + x] === 'grass';
+    })
+    .map((t) => t.id);
   const landmarkCount = Math.min(grassIds.length, Math.max(1, Math.round(size / 7)));
   const spots = shuffle(grassIds, rng);
-  shuffle(WILDERNESS_LANDMARKS, rng).slice(0, landmarkCount).forEach((type, i) => {
-    const ref = palette.get(type)?.imageRef;
-    const tile = tiles.find((t) => t.id === spots[i]);
-    if (!ref || !tile) return;
-    tile.imageRef = ref;
-    tile.metadata = { ...tile.metadata, poiType: 'landmark' };
-  });
+  shuffle(WILDERNESS_LANDMARKS, rng)
+    .slice(0, landmarkCount)
+    .forEach((type, i) => {
+      const ref = palette.get(type)?.imageRef;
+      const tile = tiles.find((t) => t.id === spots[i]);
+      if (!ref || !tile) return;
+      tile.imageRef = ref;
+      tile.metadata = { ...tile.metadata, poiType: 'landmark' };
+    });
   return { tiles, entry: `${Math.floor(size / 2)},${size - 1}` };
 }
 
@@ -178,7 +221,12 @@ function generateTown(palette, size, rng) {
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       if (isRoad(x, y) || x === rx) continue;
-      const touchesRoad = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => isRoad(x + dx, y + dy));
+      const touchesRoad = [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+      ].some(([dx, dy]) => isRoad(x + dx, y + dy));
       if (touchesRoad) sites.push(`${x},${y}`);
     }
   }
@@ -298,7 +346,14 @@ function generateDungeon(palette, size, rng, options = {}) {
     else if (side === 1) for (let y = ey; y < size; y++) carve(ex, y);
     else if (side === 2) for (let x = 0; x <= ex; x++) carve(x, ey);
     else for (let x = ex; x < size; x++) carve(x, ey);
-    entry = side === 0 ? `${ex},0` : side === 1 ? `${ex},${size - 1}` : side === 2 ? `0,${ey}` : `${size - 1},${ey}`;
+    entry =
+      side === 0
+        ? `${ex},0`
+        : side === 1
+          ? `${ex},${size - 1}`
+          : side === 2
+            ? `0,${ey}`
+            : `${size - 1},${ey}`;
     entryDoor = side <= 1 ? 'door-h' : 'door-v';
   }
 
@@ -310,22 +365,42 @@ function generateDungeon(palette, size, rng, options = {}) {
   const walls = new Set();
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      if (!isFloor(x, y) && [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]].some(([dx, dy]) => isFloor(x + dx, y + dy))) {
+      if (
+        !isFloor(x, y) &&
+        [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+          [1, 1],
+          [1, -1],
+          [-1, 1],
+          [-1, -1],
+        ].some(([dx, dy]) => isFloor(x + dx, y + dy))
+      ) {
         walls.add(`${x},${y}`);
       }
     }
   }
   /** @param {number} x @param {number} y */
-  const continuesWall = (x, y) => walls.has(`${x},${y}`) || (entrance === 'edge' && `${x},${y}` === entry);
+  const continuesWall = (x, y) =>
+    walls.has(`${x},${y}`) || (entrance === 'edge' && `${x},${y}` === entry);
   /** @type {Tile[]} */
   const tiles = [];
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const id = `${x},${y}`;
       if (isFloor(x, y)) {
-        tiles.push(createTile(id, interiorRef(palette, FLOOR_KINDS[randInt(rng, FLOOR_KINDS.length)])));
+        tiles.push(
+          createTile(id, interiorRef(palette, FLOOR_KINDS[randInt(rng, FLOOR_KINDS.length)])),
+        );
       } else if (walls.has(id)) {
-        const kind = wallKind(continuesWall(x, y - 1), continuesWall(x + 1, y), continuesWall(x, y + 1), continuesWall(x - 1, y));
+        const kind = wallKind(
+          continuesWall(x, y - 1),
+          continuesWall(x + 1, y),
+          continuesWall(x, y + 1),
+          continuesWall(x - 1, y),
+        );
         tiles.push(createTile(id, interiorRef(palette, kind)));
       }
     }
@@ -348,7 +423,12 @@ function generateDungeon(palette, size, rng, options = {}) {
       if (stairsDown === `${up[0]},${up[1]}`) {
         // Single-room level: shift the descent off the stairs-up cell onto an
         // adjacent floor tile so both stairs exist.
-        const neighbor = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+        const neighbor = [
+          [1, 0],
+          [-1, 0],
+          [0, 1],
+          [0, -1],
+        ]
           .map(([dx, dy]) => [down[0] + dx, down[1] + dy])
           .find(([x, y]) => isFloor(x, y));
         stairsDown = neighbor ? `${neighbor[0]},${neighbor[1]}` : null;

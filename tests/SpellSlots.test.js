@@ -39,9 +39,18 @@ test('withSpellSlots creates full pools per the table, ordered HP then slots the
     ['hp', 'slots-1', 'slots-2', 'ki'],
   );
   const pools = getSlotPools(mage);
-  assert.deepEqual(pools.map((p) => p.max), [4, 2]);
-  assert.deepEqual(pools.map((p) => p.current), [4, 2]);
-  assert.equal(pools.every((p) => isSlotPool(p)), true);
+  assert.deepEqual(
+    pools.map((p) => p.max),
+    [4, 2],
+  );
+  assert.deepEqual(
+    pools.map((p) => p.current),
+    [4, 2],
+  );
+  assert.equal(
+    pools.every((p) => isSlotPool(p)),
+    true,
+  );
 });
 
 test('syncSlotsToLevel grows maxima by the gained capacity, keeping spent slots spent', () => {
@@ -51,10 +60,13 @@ test('syncSlotsToLevel grows maxima by the gained capacity, keeping spent slots 
   mage = syncSlotsToLevel(mage);
   const pools = getSlotPools(mage);
   // Level 3: [4, 2]. L1 grew 2 -> 4 (+2 capacity onto 1 remaining = 3); L2 is new, full.
-  assert.deepEqual(pools.map((p) => ({ max: p.max, current: p.current })), [
-    { max: 4, current: 3 },
-    { max: 2, current: 2 },
-  ]);
+  assert.deepEqual(
+    pools.map((p) => ({ max: p.max, current: p.current })),
+    [
+      { max: 4, current: 3 },
+      { max: 2, current: 2 },
+    ],
+  );
 });
 
 test('syncSlotsToLevel leaves a non-caster untouched', () => {
@@ -65,7 +77,10 @@ test('syncSlotsToLevel leaves a non-caster untouched', () => {
 test('addXP levels a caster into new slot pools', () => {
   let mage = withSpellSlots(withHP(createCharacter('c1', 'Mage'), 10));
   mage = addXP(mage, 320); // level 1 -> 3
-  assert.deepEqual(getSlotPools(mage).map((p) => p.max), [4, 2]);
+  assert.deepEqual(
+    getSlotPools(mage).map((p) => p.max),
+    [4, 2],
+  );
 });
 
 test('a short rest heals HP but leaves spent slots spent; a long rest refills them', () => {
@@ -86,7 +101,13 @@ test('migrateManaToSlots swaps the mana pool for level-appropriate slots, once',
   let mage = withHP(createCharacter('c1', 'Mage'), 10);
   mage = addResource(mage, createResource('mana', 'Mana', 'mana', 8));
   const migrated = migrateManaToSlots(mage);
-  assert.equal(migrated.resources.some((r) => r.id === 'mana'), false);
-  assert.deepEqual(getSlotPools(migrated).map((p) => p.max), [2]);
+  assert.equal(
+    migrated.resources.some((r) => r.id === 'mana'),
+    false,
+  );
+  assert.deepEqual(
+    getSlotPools(migrated).map((p) => p.max),
+    [2],
+  );
   assert.equal(migrateManaToSlots(migrated), migrated, 'no mana pool: untouched');
 });

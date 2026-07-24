@@ -32,13 +32,16 @@ function overlayFamily(ref) {
 export function stackOverlay(existing, imageRef) {
   const family = overlayFamily(imageRef);
   if (!family) return imageRef;
-  const kept = overlayList(/** @type {import('../types/map.js').Tile} */ ({ overlayRef: existing }))
-    .filter((ref) => {
-      const f = overlayFamily(ref);
-      return f !== null && f !== family;
-    });
+  const kept = overlayList(
+    /** @type {import('../types/map.js').Tile} */ ({ overlayRef: existing }),
+  ).filter((ref) => {
+    const f = overlayFamily(ref);
+    return f !== null && f !== family;
+  });
   const stack = [...kept, imageRef].sort(
-    (a, b) => OVERLAY_ORDER.indexOf(/** @type {string} */ (overlayFamily(a))) - OVERLAY_ORDER.indexOf(/** @type {string} */ (overlayFamily(b))),
+    (a, b) =>
+      OVERLAY_ORDER.indexOf(/** @type {string} */ (overlayFamily(a))) -
+      OVERLAY_ORDER.indexOf(/** @type {string} */ (overlayFamily(b))),
   );
   return stack.length === 1 ? stack[0] : stack;
 }
@@ -194,7 +197,10 @@ export function tilesInRect(node, rect) {
     const coords = parseCoords(tile.id);
     if (!coords) return false;
     return (
-      coords.x >= rect.minX && coords.x <= rect.maxX && coords.y >= rect.minY && coords.y <= rect.maxY
+      coords.x >= rect.minX &&
+      coords.x <= rect.maxX &&
+      coords.y >= rect.minY &&
+      coords.y <= rect.maxY
     );
   });
 }

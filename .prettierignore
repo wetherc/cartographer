@@ -1,0 +1,8 @@
+# The formatter covers code only. Markdown and HTML hold prose and hand-laid
+# structure that Prettier's reflow would churn without improving; assets and
+# Playwright output are generated.
+*.md
+*.html
+*.json
+assets/
+.playwright-mcp/

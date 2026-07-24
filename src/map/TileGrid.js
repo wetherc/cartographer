@@ -110,7 +110,7 @@ export function getTile(node, tileId) {
  */
 export function updateTileMetadata(node, tileId, metadata) {
   const tiles = node.tiles.map((t) =>
-    t.id === tileId ? { ...t, metadata: { ...t.metadata, ...metadata } } : t
+    t.id === tileId ? { ...t, metadata: { ...t.metadata, ...metadata } } : t,
   );
   return { ...node, tiles };
 }
@@ -199,7 +199,7 @@ export class TileGrid {
     for (const node of this.nodes.values()) {
       if (node.tiles.some((t) => t.childNodeId && removed.has(t.childNodeId))) {
         const tiles = node.tiles.map((t) =>
-          t.childNodeId && removed.has(t.childNodeId) ? { ...t, childNodeId: null } : t
+          t.childNodeId && removed.has(t.childNodeId) ? { ...t, childNodeId: null } : t,
         );
         this.nodes.set(node.id, { ...node, tiles });
       }

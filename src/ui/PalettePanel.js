@@ -131,12 +131,26 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   // rivers, coasts), buildings, and interior pieces aren't commingled in one
   // grid. Terrain starts open (the most common brush); the rest start collapsed.
   const TERRAIN_TYPES = new Set([
-    'grass', 'forest', 'mountain', 'water', 'desert',
-    'swamp', 'snow', 'hills', 'farmland', 'custom',
+    'grass',
+    'forest',
+    'mountain',
+    'water',
+    'desert',
+    'swamp',
+    'snow',
+    'hills',
+    'farmland',
+    'custom',
   ]);
   /** @param {PaletteEntry} entry */
   const sectionFor = (entry) =>
-    TERRAIN_TYPES.has(entry.type) ? 'Terrain' : isOverlayType(entry.type) ? 'Overlays' : entry.type === 'interior' ? 'Interior' : 'Buildings';
+    TERRAIN_TYPES.has(entry.type)
+      ? 'Terrain'
+      : isOverlayType(entry.type)
+        ? 'Overlays'
+        : entry.type === 'interior'
+          ? 'Interior'
+          : 'Buildings';
 
   const sectionsEl = document.createElement('div');
   sectionsEl.className = 'palette__sections';
@@ -191,7 +205,9 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
 
     bindSelect(swatch, entry);
     swatchEntries.push({ el: swatch, type: entry.type });
-    const section = /** @type {NonNullable<ReturnType<typeof sections.get>>} */ (sections.get(sectionFor(entry)));
+    const section = /** @type {NonNullable<ReturnType<typeof sections.get>>} */ (
+      sections.get(sectionFor(entry))
+    );
     section.swatches.push(swatch);
     section.grid.appendChild(swatch);
   }
@@ -213,7 +229,13 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
     for (const { wrap, swatches } of sections.values()) {
       wrap.hidden = swatches.every((el) => el.hidden);
     }
-    if (brush && brush !== 'erase' && brush !== 'erase-path' && brush !== 'region' && !allowsPaletteType(kind, brush.type)) {
+    if (
+      brush &&
+      brush !== 'erase' &&
+      brush !== 'erase-path' &&
+      brush !== 'region' &&
+      !allowsPaletteType(kind, brush.type)
+    ) {
       if (inspectBtnRef.el) select(null, inspectBtnRef.el);
     }
   }

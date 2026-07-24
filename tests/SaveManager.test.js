@@ -10,7 +10,9 @@ function sampleGrid() {
   let world = createMapNode('world', 'World', null, 2, 2);
   world = setTile(world, createTile('0,0', 'grass.svg', { childNodeId: 'region', revealed: true }));
   grid.addNode(world);
-  grid.addNode(createMapNode('hall', 'Great Hall', 'world', 1, 1, { kind: 'interior', environ: 'castle' }));
+  grid.addNode(
+    createMapNode('hall', 'Great Hall', 'world', 1, 1, { kind: 'interior', environ: 'castle' }),
+  );
   grid.addNode(createMapNode('region', 'Region', 'world', 1, 1));
   return grid;
 }

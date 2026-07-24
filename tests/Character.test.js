@@ -42,10 +42,7 @@ test('withDefaults backfills missing scores and race on a loaded character', () 
   const legacy = { ...createCharacter('c1', 'Hero'), stats: { STR: 16, DEX: 8 } };
   delete legacy.race;
   const filled = withDefaults(legacy);
-  assert.deepEqual(
-    filled.stats,
-    { STR: 16, DEX: 8, CON: 10, INT: 10, WIS: 10, CHA: 10 },
-  );
+  assert.deepEqual(filled.stats, { STR: 16, DEX: 8, CON: 10, INT: 10, WIS: 10, CHA: 10 });
   assert.equal(filled.race, '');
   assert.deepEqual(legacy.stats, { STR: 16, DEX: 8 }, 'input untouched');
 });
@@ -80,7 +77,10 @@ test('withDefaults migrates a mana-era save to spell slots for its level', () =>
   mage = addResource(mage, createResource('mana', 'Mana', 'mana', 8));
   mage = { ...mage, level: 3 };
   const migrated = withDefaults(mage);
-  assert.equal(migrated.resources.some((r) => r.id === 'mana'), false);
+  assert.equal(
+    migrated.resources.some((r) => r.id === 'mana'),
+    false,
+  );
   assert.deepEqual(
     getSlotPools(migrated).map((p) => ({ id: p.id, max: p.max, current: p.current })),
     [
@@ -150,7 +150,12 @@ test('addResource, spendResource, and restoreResource operate on the matching po
 });
 
 test('addItem creates a new stack for an unseen item id', () => {
-  const hero = addItem(createCharacter('c1', 'Hero'), { id: 'rope', name: 'Rope', quantity: 1, notes: '' });
+  const hero = addItem(createCharacter('c1', 'Hero'), {
+    id: 'rope',
+    name: 'Rope',
+    quantity: 1,
+    notes: '',
+  });
   assert.equal(hero.inventory.length, 1);
   assert.equal(hero.inventory[0].quantity, 1);
 });

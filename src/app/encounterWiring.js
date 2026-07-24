@@ -3,13 +3,39 @@ import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
-import { applyDamage, createEncounter, defaultEnemyGear, editEncounter, effectiveStatBlock, encountersAt, encountersNear, encountersOnTile, discoveredEncounters, isDefeated, tickStatModifiers, toTemplate, fromTemplate } from '../entities/Encounter.js';
+import {
+  applyDamage,
+  createEncounter,
+  defaultEnemyGear,
+  editEncounter,
+  effectiveStatBlock,
+  encountersAt,
+  encountersNear,
+  encountersOnTile,
+  discoveredEncounters,
+  isDefeated,
+  tickStatModifiers,
+  toTemplate,
+  fromTemplate,
+} from '../entities/Encounter.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
 import { roll, rollDamage, formatResult } from '../dice/DiceRoller.js';
-import { armorClass, equippedWeapons, effectiveStats, weaponAbility, WEAPON_PRESETS } from '../entities/Equipment.js';
+import {
+  armorClass,
+  equippedWeapons,
+  effectiveStats,
+  weaponAbility,
+  WEAPON_PRESETS,
+} from '../entities/Equipment.js';
 import { damageCharacter, getHP } from '../entities/Character.js';
-import { abilityModifier, formatModifier, proficiencyBonus, defaultEnemyStats, ENEMY_TIERS } from '../entities/Modifiers.js';
+import {
+  abilityModifier,
+  formatModifier,
+  proficiencyBonus,
+  defaultEnemyStats,
+  ENEMY_TIERS,
+} from '../entities/Modifiers.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { tickConditions } from '../entities/Conditions.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
@@ -42,7 +68,10 @@ export function wireEncounters(app) {
    * @param {import('../types/map.js').PartyPosition} [position]
    * @param {string} [subject]
    */
-  app.actions.maybeTriggerEncounter = (position = app.partyTracker.getPosition(), subject = 'The party') => {
+  app.actions.maybeTriggerEncounter = (
+    position = app.partyTracker.getPosition(),
+    subject = 'The party',
+  ) => {
     const here = encountersOnTile(state.encounters, position);
     if (here.length === 0) return;
     const node = app.grid.getNode(position.nodeId);
@@ -55,15 +84,23 @@ export function wireEncounters(app) {
         fresh.some((f) => f.id === e.id) ? { ...e, noticed: true } : e,
       );
       for (const e of fresh) {
-        app.actions.logEvent('combat', `${subject} encounters ${e.name} in ${region} (tile ${position.tileId}).`);
+        app.actions.logEvent(
+          'combat',
+          `${subject} encounters ${e.name} in ${region} (tile ${position.tileId}).`,
+        );
       }
       app.actions.markDirty();
     }
     const gm = isGM(state.role);
     const names = here.map((e) =>
-      gm ? `${e.name} (${e.currentHP}/${e.maxHP} HP)` : `${e.name} (${hpBand(e.currentHP, e.maxHP)})`,
+      gm
+        ? `${e.name} (${e.currentHP}/${e.maxHP} HP)`
+        : `${e.name} (${hpBand(e.currentHP, e.maxHP)})`,
     );
-    const list = names.length > 1 ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}` : names[0];
+    const list =
+      names.length > 1
+        ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+        : names[0];
     alertModal(`${subject} has come upon ${list} here in ${region}.`, {
       title: here.length > 1 ? 'Encounters!' : 'Encounter!',
       label: 'Continue',
@@ -87,33 +124,76 @@ export function wireEncounters(app) {
     // an existing weapon whose name isn't a preset (a hand-tuned save) stays
     // offered as-is so editing other fields doesn't clobber it.
     const currentWeapon = existing?.weapon;
-    const customWeapon = currentWeapon && !WEAPON_PRESETS.some((p) => p.name === currentWeapon.name);
+    const customWeapon =
+      currentWeapon && !WEAPON_PRESETS.some((p) => p.name === currentWeapon.name);
     const weaponOptions = [
-      ...(customWeapon ? [{ value: currentWeapon.name, label: `${currentWeapon.name} (custom)` }] : []),
+      ...(customWeapon
+        ? [
+            {
+              value: currentWeapon.name,
+              label: `${currentWeapon.name} (custom)`,
+            },
+          ]
+        : []),
       ...WEAPON_PRESETS.map((p) => ({ value: p.name, label: p.name })),
     ];
-    const values = await promptModal(existing ? 'Edit encounter' : 'New encounter', [
-      { name: 'name', label: 'Name', value: existing?.name ?? '' },
-      { name: 'maxHP', label: 'Max HP', type: 'number', value: existing?.maxHP ?? 10, min: 1 },
-      { name: 'level', label: 'Level', type: 'number', value: existing?.level ?? 1, min: 1 },
-      {
-        name: 'tier',
-        label: 'Tier',
-        type: 'select',
-        value: existing?.tier ?? 'mob',
-        options: ENEMY_TIERS.map((t) => ({ value: t, label: t === 'mob' ? 'Mob' : 'Legend' })),
-      },
-      {
-        name: 'weapon',
-        label: 'Weapon',
-        type: 'select',
-        value: currentWeapon?.name ?? defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').weapon.name,
-        options: weaponOptions,
-      },
-      { name: 'armorName', label: 'Armor', value: existing?.armor?.name ?? defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').armor.name },
-      { name: 'armorBonus', label: 'Armor AC bonus', type: 'number', value: existing?.armor?.acBonus ?? defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').armor.acBonus, min: 0 },
-      ...locationFields(app, existing ? existing.location : defaultLocation),
-    ], { submitLabel: existing ? 'Save' : 'Add' });
+    const values = await promptModal(
+      existing ? 'Edit encounter' : 'New encounter',
+      [
+        { name: 'name', label: 'Name', value: existing?.name ?? '' },
+        {
+          name: 'maxHP',
+          label: 'Max HP',
+          type: 'number',
+          value: existing?.maxHP ?? 10,
+          min: 1,
+        },
+        {
+          name: 'level',
+          label: 'Level',
+          type: 'number',
+          value: existing?.level ?? 1,
+          min: 1,
+        },
+        {
+          name: 'tier',
+          label: 'Tier',
+          type: 'select',
+          value: existing?.tier ?? 'mob',
+          options: ENEMY_TIERS.map((t) => ({
+            value: t,
+            label: t === 'mob' ? 'Mob' : 'Legend',
+          })),
+        },
+        {
+          name: 'weapon',
+          label: 'Weapon',
+          type: 'select',
+          value:
+            currentWeapon?.name ??
+            defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').weapon.name,
+          options: weaponOptions,
+        },
+        {
+          name: 'armorName',
+          label: 'Armor',
+          value:
+            existing?.armor?.name ??
+            defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').armor.name,
+        },
+        {
+          name: 'armorBonus',
+          label: 'Armor AC bonus',
+          type: 'number',
+          value:
+            existing?.armor?.acBonus ??
+            defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').armor.acBonus,
+          min: 0,
+        },
+        ...locationFields(app, existing ? existing.location : defaultLocation),
+      ],
+      { submitLabel: existing ? 'Save' : 'Add' },
+    );
     if (!values) return null;
     const name = values.name.trim();
     if (!name) return null;
@@ -123,18 +203,36 @@ export function wireEncounters(app) {
     const location = readLocation(app, values);
     const preset = WEAPON_PRESETS.find((p) => p.name === values.weapon);
     const weapon = preset
-      ? { name: preset.name, handling: preset.handling, damage: preset.damage.map((d) => ({ ...d })) }
-      : currentWeapon ?? defaultEnemyGear(level, tier).weapon;
-    const armor = { name: values.armorName.trim() || 'Unarmored', acBonus: Math.max(0, Number(values.armorBonus) || 0) };
+      ? {
+          name: preset.name,
+          handling: preset.handling,
+          damage: preset.damage.map((d) => ({ ...d })),
+        }
+      : (currentWeapon ?? defaultEnemyGear(level, tier).weapon);
+    const armor = {
+      name: values.armorName.trim() || 'Unarmored',
+      acBonus: Math.max(0, Number(values.armorBonus) || 0),
+    };
     let stored;
     if (existing) {
       // Level/tier edits don't re-stamp the stat block — the GM may have tuned
       // it by hand on the row, and it stays editable there.
-      stored = editEncounter(existing, { name, maxHP, level, tier, location, weapon, armor });
+      stored = editEncounter(existing, {
+        name,
+        maxHP,
+        level,
+        tier,
+        location,
+        weapon,
+        armor,
+      });
       state.encounters = replaceById(state.encounters, stored);
     } else {
       stored = createEncounter(
-        slugId(name, state.encounters.map((e) => e.id)),
+        slugId(
+          name,
+          state.encounters.map((e) => e.id),
+        ),
         name,
         maxHP,
         defaultEnemyStats(level, tier),
@@ -151,8 +249,13 @@ export function wireEncounters(app) {
   }
 
   /** Confirm-and-delete shared by both encounter lists. Resolves true if deleted. */
-  async function deleteEncounter(/** @type {import('../types/entities.js').Encounter} */ encounter) {
-    const ok = await confirmModal(`Delete "${encounter.name}"?`, { danger: true, confirmLabel: 'Delete' });
+  async function deleteEncounter(
+    /** @type {import('../types/entities.js').Encounter} */ encounter,
+  ) {
+    const ok = await confirmModal(`Delete "${encounter.name}"?`, {
+      danger: true,
+      confirmLabel: 'Delete',
+    });
     if (!ok) return false;
     state.encounters = removeById(state.encounters, encounter.id);
     app.actions.syncEncounterMarkers();
@@ -176,14 +279,19 @@ export function wireEncounters(app) {
       const hereIds = new Set(encountersOnTile(state.encounters, position).map((e) => e.id));
       const list = isGM(state.role)
         ? encountersNear(state.encounters, position, app.partyTracker.revealRadius * 4)
-        : discoveredEncounters(state.encounters, position, app.grid.getNode(position.nodeId) ?? null);
+        : discoveredEncounters(
+            state.encounters,
+            position,
+            app.grid.getNode(position.nodeId) ?? null,
+          );
       return list.filter((e) => !hereIds.has(e.id));
     },
     onUpdate: (next) => {
       // Log the transition into defeat exactly once (damage that keeps it down
       // shouldn't re-log), by comparing against the pre-update encounter.
       const prev = state.encounters.find((e) => e.id === next.id);
-      if (prev && !isDefeated(prev) && isDefeated(next)) app.actions.logEvent('combat', `Defeated ${next.name}.`);
+      if (prev && !isDefeated(prev) && isDefeated(next))
+        app.actions.logEvent('combat', `Defeated ${next.name}.`);
       state.encounters = replaceById(state.encounters, next);
       app.actions.syncEncounterMarkers(); // a defeat or move should update the map marker
       app.views.initiativePanel.update(); // defeating the last one here ends the encounter
@@ -204,7 +312,16 @@ export function wireEncounters(app) {
     // so the next Goblin isn't typed from scratch. Same-named saves stack as
     // separate templates — a template is a snapshot, not a live link.
     onSaveTemplate: (encounter) => {
-      state.bestiary = [...state.bestiary, toTemplate(slugId(encounter.name, state.bestiary.map((t) => t.id)), encounter)];
+      state.bestiary = [
+        ...state.bestiary,
+        toTemplate(
+          slugId(
+            encounter.name,
+            state.bestiary.map((t) => t.id),
+          ),
+          encounter,
+        ),
+      ];
       app.actions.markDirty();
       app.toasts.show(`Saved "${encounter.name}" to the bestiary.`);
     },
@@ -213,9 +330,12 @@ export function wireEncounters(app) {
     // also prune a stale template instead.
     onAddFromTemplate: async () => {
       if (state.bestiary.length === 0) {
-        await alertModal('The bestiary is empty. Save an encounter as a template first (the save icon on its row).', {
-          title: 'Bestiary',
-        });
+        await alertModal(
+          'The bestiary is empty. Save an encounter as a template first (the save icon on its row).',
+          {
+            title: 'Bestiary',
+          },
+        );
         return null;
       }
       const values = await promptModal(
@@ -225,7 +345,10 @@ export function wireEncounters(app) {
             name: 'template',
             label: 'Template',
             type: 'select',
-            options: state.bestiary.map((t) => ({ value: t.id, label: `${t.name} (${t.maxHP} HP)` })),
+            options: state.bestiary.map((t) => ({
+              value: t.id,
+              label: `${t.name} (${t.maxHP} HP)`,
+            })),
           },
           {
             name: 'action',
@@ -253,7 +376,10 @@ export function wireEncounters(app) {
       }
       const created = fromTemplate(
         template,
-        slugId(template.name, state.encounters.map((e) => e.id)),
+        slugId(
+          template.name,
+          state.encounters.map((e) => e.id),
+        ),
         readLocation(app, values),
       );
       state.encounters = [...state.encounters, created];
@@ -263,7 +389,10 @@ export function wireEncounters(app) {
       return created;
     },
     confirmDelete: (encounter) =>
-      confirmModal(`Delete "${encounter.name}"?`, { danger: true, confirmLabel: 'Delete' }),
+      confirmModal(`Delete "${encounter.name}"?`, {
+        danger: true,
+        confirmLabel: 'Delete',
+      }),
     // Opening combat is the GM's call: the button shows only to the GM, only
     // while the party stands on a live encounter's tile with no fight running.
     canStartCombat: () => isGM(state.role) && combat === null && encountersHere().length > 0,
@@ -275,27 +404,33 @@ export function wireEncounters(app) {
   // the GM is looking at (plus unplaced ones), editable without moving the
   // party there. New encounters default onto the Build-mode selected tile of
   // the viewed node, so "select a tile, add an encounter" places it there.
-  app.views.buildEncounters = mountBuildEncounterPanel(mustGetElement('build-encounters-container'), {
-    getEncounters: () => encountersAt(state.encounters, { nodeId: app.navigator.getCurrentNode().id }),
-    onAdd: () =>
-      encounterForm(null, {
-        nodeId: app.navigator.getCurrentNode().id,
-        tileId: app.actions.getSelectedTileId() ?? '0,0',
-      }),
-    onEdit: (encounter) => encounterForm(encounter, null),
-    onDelete: deleteEncounter,
-    // Base stat edits from the Build rail's chips: persist and let the Play
-    // panel (which shows the same encounter) pick the change up.
-    onUpdate: (next) => {
-      state.encounters = replaceById(state.encounters, next);
-      app.views.encounterPanel.update();
-      app.actions.markDirty();
+  app.views.buildEncounters = mountBuildEncounterPanel(
+    mustGetElement('build-encounters-container'),
+    {
+      getEncounters: () =>
+        encountersAt(state.encounters, {
+          nodeId: app.navigator.getCurrentNode().id,
+        }),
+      onAdd: () =>
+        encounterForm(null, {
+          nodeId: app.navigator.getCurrentNode().id,
+          tileId: app.actions.getSelectedTileId() ?? '0,0',
+        }),
+      onEdit: (encounter) => encounterForm(encounter, null),
+      onDelete: deleteEncounter,
+      // Base stat edits from the Build rail's chips: persist and let the Play
+      // panel (which shows the same encounter) pick the change up.
+      onUpdate: (next) => {
+        state.encounters = replaceById(state.encounters, next);
+        app.views.encounterPanel.update();
+        app.actions.markDirty();
+      },
+      // Selecting a placed encounter jumps the map to where it's staged.
+      onFocus: (encounter) => {
+        if (encounter.location) app.actions.focusLocation(encounter.location);
+      },
     },
-    // Selecting a placed encounter jumps the map to where it's staged.
-    onFocus: (encounter) => {
-      if (encounter.location) app.actions.focusLocation(encounter.location);
-    },
-  });
+  );
 
   // "In an encounter" means the party stands on a tile with at least one live
   // encounter bound to it — the same trigger the walked-into-it alert uses.
@@ -329,11 +464,15 @@ export function wireEncounters(app) {
   // Start that flips the initiative panel from hidden to the running order.
   async function startCombatSetup() {
     const participants = await combatSetupModal(combatRoster(), {
-      rollInitiative: (participant) => Math.floor(Math.random() * 20) + 1 + (participant.modifier ?? 0),
+      rollInitiative: (participant) =>
+        Math.floor(Math.random() * 20) + 1 + (participant.modifier ?? 0),
       // One travelogue line per "Roll initiative" press, recording every
       // result; hand-edited overrides before Start aren't re-logged.
       onRolled: (results) =>
-        app.actions.logEvent('roll', `Initiative rolled: ${results.map((r) => `${r.name} ${r.value}`).join(', ')}.`),
+        app.actions.logEvent(
+          'roll',
+          `Initiative rolled: ${results.map((r) => `${r.name} ${r.value}`).join(', ')}.`,
+        ),
     });
     if (!participants) return;
     combat = startCombat(participants);
@@ -377,12 +516,20 @@ export function wireEncounters(app) {
         if (encounter) {
           return isDefeated(encounter)
             ? []
-            : [{ id: p.id, name: encounter.name, ac: effectiveStatBlock(encounter).AC ?? 10 }];
+            : [
+                {
+                  id: p.id,
+                  name: encounter.name,
+                  ac: effectiveStatBlock(encounter).AC ?? 10,
+                },
+              ];
         }
         const character = state.characters.find((c) => c.id === p.id);
         if (character) {
           const hp = getHP(character);
-          return hp && hp.current <= 0 ? [] : [{ id: p.id, name: character.name, ac: armorClass(character) }];
+          return hp && hp.current <= 0
+            ? []
+            : [{ id: p.id, name: character.name, ac: armorClass(character) }];
         }
         const npc = npcs.find((n) => n.id === p.id);
         return npc ? [{ id: p.id, name: npc.name, ac: npc.stats?.AC ?? 10 }] : [];
@@ -400,7 +547,10 @@ export function wireEncounters(app) {
             name: 'target',
             label: 'Defender',
             type: 'select',
-            options: defenders.map((d) => ({ value: d.id, label: `${d.name} (AC ${d.ac})` })),
+            options: defenders.map((d) => ({
+              value: d.id,
+              label: `${d.name} (AC ${d.ac})`,
+            })),
           },
         ],
         { submitLabel: 'Attack' },
@@ -412,20 +562,31 @@ export function wireEncounters(app) {
     const stats = 'statBlock' in attacker ? effectiveStatBlock(attacker) : effectiveStats(attacker);
     const abilityMod = abilityModifier(stats[ability] ?? 10);
     const attackBonus = abilityMod + proficiencyBonus(attacker.level);
-    const { result } = app.actions.rollDice({ counts: { d20: 1 }, modifier: attackBonus }, defender.ac);
+    const { result } = app.actions.rollDice(
+      { counts: { d20: 1 }, modifier: attackBonus },
+      defender.ac,
+    );
     const natural = result.results.find((r) => r.die === 'd20')?.rolls[0] ?? 0;
     // 5e attack resolution: a natural 1 always misses and a natural 20 always
     // hits (and crits, doubling the damage dice); anything else compares the
     // modified total against the defender's AC.
     const crit = natural === 20;
     const hit = natural !== 1 && (crit || result.total >= defender.ac);
-    const outcome = crit ? 'critical hit' : natural === 1 ? 'natural 1, miss' : hit ? 'hit' : 'miss';
+    const outcome = crit
+      ? 'critical hit'
+      : natural === 1
+        ? 'natural 1, miss'
+        : hit
+          ? 'hit'
+          : 'miss';
     app.actions.logEvent(
       'combat',
       `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(attacker.level)}): ${result.total} to hit vs AC ${defender.ac} — ${outcome}.`,
     );
     if (!hit) {
-      app.toasts.show(`${result.total} vs AC ${defender.ac}: ${attacker.name} misses ${defender.name}.`);
+      app.toasts.show(
+        `${result.total} vs AC ${defender.ac}: ${attacker.name} misses ${defender.name}.`,
+      );
       return;
     }
     // A crit rolls every damage die twice; the ability modifier is still
@@ -437,14 +598,18 @@ export function wireEncounters(app) {
         ? `, inflicting ${weapon.statusEffects.join(', ')}`
         : '';
     const blow = crit ? 'critically hits' : 'hits';
-    app.actions.logEvent('combat', `${weapon.name} ${blow} ${defender.name} for ${damage.text || '0 damage'}${inflicts}.`);
+    app.actions.logEvent(
+      'combat',
+      `${weapon.name} ${blow} ${defender.name} for ${damage.text || '0 damage'}${inflicts}.`,
+    );
     // Apply the damage on the spot. Encounters and characters track HP; a
     // defender that's an HP-less NPC keeps the log line only. Defeat is
     // logged once, matching the manual-damage path on the encounter row.
     const target = state.encounters.find((e) => e.id === defender.id);
     if (target && damage.total > 0) {
       const next = applyDamage(target, damage.total);
-      if (!isDefeated(target) && isDefeated(next)) app.actions.logEvent('combat', `Defeated ${next.name}.`);
+      if (!isDefeated(target) && isDefeated(next))
+        app.actions.logEvent('combat', `Defeated ${next.name}.`);
       state.encounters = replaceById(state.encounters, next);
       app.actions.syncEncounterMarkers();
       app.views.encounterPanel.update();
@@ -463,7 +628,9 @@ export function wireEncounters(app) {
       app.actions.refreshSelectedCharacter();
       app.actions.markDirty();
     }
-    app.toasts.show(`${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${damage.text || 'no damage'}${inflicts}.`);
+    app.toasts.show(
+      `${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${damage.text || 'no damage'}${inflicts}.`,
+    );
   }
 
   const initiativeContainer = mustGetElement('initiative-container');
@@ -476,7 +643,10 @@ export function wireEncounters(app) {
       // A new round elapsed, so tick every combatant's timed conditions down,
       // along with the enemies' timed stat modifiers.
       if (result.wrapped) {
-        state.characters = state.characters.map((c) => ({ ...c, conditions: tickConditions(c.conditions) }));
+        state.characters = state.characters.map((c) => ({
+          ...c,
+          conditions: tickConditions(c.conditions),
+        }));
         state.encounters = state.encounters.map((e) => ({
           ...e,
           conditions: tickConditions(e.conditions),

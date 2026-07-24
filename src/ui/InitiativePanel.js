@@ -72,7 +72,13 @@ export function mountInitiativePanel(container, callbacks) {
 
       // On a foe's turn the GM can roll the dice tray's selection as that
       // enemy, so the travelogue attributes the roll to it.
-      if (gm && active && i === state.index && participant.side === 'foe' && callbacks.onEnemyRoll) {
+      if (
+        gm &&
+        active &&
+        i === state.index &&
+        participant.side === 'foe' &&
+        callbacks.onEnemyRoll
+      ) {
         const rollBtn = document.createElement('button');
         rollBtn.type = 'button';
         rollBtn.className = 'btn btn--icon';
@@ -101,7 +107,9 @@ export function mountInitiativePanel(container, callbacks) {
             attackBtn.setAttribute('aria-label', `Attack with ${weapon.name}`);
             attackBtn.title = `Roll an attack with ${weapon.name} (${formatDamage(weapon.damage ?? [])})`;
             attackBtn.append(icon('sword'), document.createTextNode(weapon.name));
-            attackBtn.addEventListener('click', () => callbacks.onWeaponAttack?.(participant, weapon));
+            attackBtn.addEventListener('click', () =>
+              callbacks.onWeaponAttack?.(participant, weapon),
+            );
             attacks.appendChild(attackBtn);
           }
           root.appendChild(attacks);

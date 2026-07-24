@@ -200,11 +200,31 @@ export class MapRenderer {
         if (revealedIds && !chunk.tileIds.some((id) => revealedIds.has(id))) continue;
         for (const id of chunk.tileIds) covered.add(id);
 
-        const topLeft = tileRect(chunk.minX, chunk.minY, this.tileSize, view.offsetX, view.offsetY, view.scale);
-        const bottomRight = tileRect(chunk.maxX, chunk.maxY, this.tileSize, view.offsetX, view.offsetY, view.scale);
+        const topLeft = tileRect(
+          chunk.minX,
+          chunk.minY,
+          this.tileSize,
+          view.offsetX,
+          view.offsetY,
+          view.scale,
+        );
+        const bottomRight = tileRect(
+          chunk.maxX,
+          chunk.maxY,
+          this.tileSize,
+          view.offsetX,
+          view.offsetY,
+          view.scale,
+        );
         const w = bottomRight.sx + bottomRight.size - topLeft.sx;
         const h = bottomRight.sy + bottomRight.size - topLeft.sy;
-        if (topLeft.sx + w < 0 || topLeft.sy + h < 0 || topLeft.sx > view.canvasWidth || topLeft.sy > view.canvasHeight) continue;
+        if (
+          topLeft.sx + w < 0 ||
+          topLeft.sy + h < 0 ||
+          topLeft.sx > view.canvasWidth ||
+          topLeft.sy > view.canvasHeight
+        )
+          continue;
 
         const img = this._getImage(chunk.imageRef);
         if (img.complete && img.naturalWidth > 0) {
@@ -238,11 +258,31 @@ export class MapRenderer {
       if (revealedIds && !block.tileIds.some((id) => revealedIds.has(id))) continue;
       for (const id of block.tileIds) cover.add(id);
 
-      const topLeft = tileRect(block.minX, block.minY, this.tileSize, view.offsetX, view.offsetY, view.scale);
-      const bottomRight = tileRect(block.maxX, block.maxY, this.tileSize, view.offsetX, view.offsetY, view.scale);
+      const topLeft = tileRect(
+        block.minX,
+        block.minY,
+        this.tileSize,
+        view.offsetX,
+        view.offsetY,
+        view.scale,
+      );
+      const bottomRight = tileRect(
+        block.maxX,
+        block.maxY,
+        this.tileSize,
+        view.offsetX,
+        view.offsetY,
+        view.scale,
+      );
       const w = bottomRight.sx + bottomRight.size - topLeft.sx;
       const h = bottomRight.sy + bottomRight.size - topLeft.sy;
-      if (topLeft.sx + w < 0 || topLeft.sy + h < 0 || topLeft.sx > view.canvasWidth || topLeft.sy > view.canvasHeight) continue;
+      if (
+        topLeft.sx + w < 0 ||
+        topLeft.sy + h < 0 ||
+        topLeft.sx > view.canvasWidth ||
+        topLeft.sy > view.canvasHeight
+      )
+        continue;
       if (!block.tile.imageRef) continue;
 
       const img = this._getImage(block.tile.imageRef);
@@ -270,8 +310,16 @@ export class MapRenderer {
     for (const tile of node.tiles) {
       const coords = parseCoords(tile.id);
       if (!coords) continue;
-      const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
-      if (sx + size < 0 || sy + size < 0 || sx > view.canvasWidth || sy > view.canvasHeight) continue;
+      const { sx, sy, size } = tileRect(
+        coords.x,
+        coords.y,
+        this.tileSize,
+        view.offsetX,
+        view.offsetY,
+        view.scale,
+      );
+      if (sx + size < 0 || sy + size < 0 || sx > view.canvasWidth || sy > view.canvasHeight)
+        continue;
 
       if (!tile.revealed && !view.revealAll) {
         // A distinctly lighter fill than the map backdrop and the empty-canvas
@@ -346,7 +394,14 @@ export class MapRenderer {
     const coords = parseCoords(view.cursorCellId);
     if (!coords) return;
     const { ctx } = this;
-    const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
+    const { sx, sy, size } = tileRect(
+      coords.x,
+      coords.y,
+      this.tileSize,
+      view.offsetX,
+      view.offsetY,
+      view.scale,
+    );
     ctx.save();
     ctx.strokeStyle = '#5ec8ff';
     ctx.lineWidth = 3;
@@ -360,8 +415,22 @@ export class MapRenderer {
   _renderMarquee(view) {
     if (!view.marquee) return;
     const { ctx } = this;
-    const topLeft = tileRect(view.marquee.minX, view.marquee.minY, this.tileSize, view.offsetX, view.offsetY, view.scale);
-    const bottomRight = tileRect(view.marquee.maxX, view.marquee.maxY, this.tileSize, view.offsetX, view.offsetY, view.scale);
+    const topLeft = tileRect(
+      view.marquee.minX,
+      view.marquee.minY,
+      this.tileSize,
+      view.offsetX,
+      view.offsetY,
+      view.scale,
+    );
+    const bottomRight = tileRect(
+      view.marquee.maxX,
+      view.marquee.maxY,
+      this.tileSize,
+      view.offsetX,
+      view.offsetY,
+      view.scale,
+    );
     const w = bottomRight.sx + bottomRight.size - topLeft.sx;
     const h = bottomRight.sy + bottomRight.size - topLeft.sy;
     ctx.save();
@@ -382,7 +451,14 @@ export class MapRenderer {
     const coords = parseCoords(view.selectedTileId);
     if (!coords) return;
     const { ctx } = this;
-    const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
+    const { sx, sy, size } = tileRect(
+      coords.x,
+      coords.y,
+      this.tileSize,
+      view.offsetX,
+      view.offsetY,
+      view.scale,
+    );
     ctx.save();
     ctx.strokeStyle = '#e0c14b';
     ctx.lineWidth = 3;
@@ -459,7 +535,14 @@ export class MapRenderer {
       if (!this._markerVisible(view, id)) continue;
       const coords = parseCoords(id);
       if (!coords) continue;
-      const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
+      const { sx, sy, size } = tileRect(
+        coords.x,
+        coords.y,
+        this.tileSize,
+        view.offsetX,
+        view.offsetY,
+        view.scale,
+      );
       const cx = sx + size * 0.74;
       const cy = sy + size * 0.26;
       const r = size * 0.16;
@@ -493,7 +576,14 @@ export class MapRenderer {
       if (!this._markerVisible(view, id)) continue;
       const coords = parseCoords(id);
       if (!coords) continue;
-      const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
+      const { sx, sy, size } = tileRect(
+        coords.x,
+        coords.y,
+        this.tileSize,
+        view.offsetX,
+        view.offsetY,
+        view.scale,
+      );
       ctx.save();
       ctx.fillStyle = '#3563a5';
       ctx.strokeStyle = '#101f36';
@@ -517,7 +607,14 @@ export class MapRenderer {
     const coords = parseCoords(view.partyTileId);
     if (!coords) return;
     const { ctx } = this;
-    const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
+    const { sx, sy, size } = tileRect(
+      coords.x,
+      coords.y,
+      this.tileSize,
+      view.offsetX,
+      view.offsetY,
+      view.scale,
+    );
 
     ctx.save();
     ctx.fillStyle = '#e0c14b';
@@ -551,8 +648,16 @@ export class MapRenderer {
     for (const [tileId, names] of byTile) {
       const coords = parseCoords(tileId);
       if (!coords) continue;
-      const { sx, sy, size } = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
-      if (sx + size < 0 || sy + size < 0 || sx > view.canvasWidth || sy > view.canvasHeight) continue;
+      const { sx, sy, size } = tileRect(
+        coords.x,
+        coords.y,
+        this.tileSize,
+        view.offsetX,
+        view.offsetY,
+        view.scale,
+      );
+      if (sx + size < 0 || sy + size < 0 || sx > view.canvasWidth || sy > view.canvasHeight)
+        continue;
 
       ctx.save();
       // Dots spread evenly along the tile's midline; a lone token sits centred.
@@ -597,8 +702,22 @@ export class MapRenderer {
     const revealedIds = this._revealedIds(view);
     for (const group of view.regionGroups) {
       if (revealedIds && !group.tileIds.some((id) => revealedIds.has(id))) continue;
-      const topLeft = tileRect(group.minX, group.minY, this.tileSize, view.offsetX, view.offsetY, view.scale);
-      const bottomRight = tileRect(group.maxX, group.maxY, this.tileSize, view.offsetX, view.offsetY, view.scale);
+      const topLeft = tileRect(
+        group.minX,
+        group.minY,
+        this.tileSize,
+        view.offsetX,
+        view.offsetY,
+        view.scale,
+      );
+      const bottomRight = tileRect(
+        group.maxX,
+        group.maxY,
+        this.tileSize,
+        view.offsetX,
+        view.offsetY,
+        view.scale,
+      );
       const x = topLeft.sx;
       const y = topLeft.sy;
       const w = bottomRight.sx + bottomRight.size - topLeft.sx;
@@ -615,7 +734,14 @@ export class MapRenderer {
           if (!revealedIds.has(id)) continue;
           const coords = parseCoords(id);
           if (!coords) continue;
-          const r = tileRect(coords.x, coords.y, this.tileSize, view.offsetX, view.offsetY, view.scale);
+          const r = tileRect(
+            coords.x,
+            coords.y,
+            this.tileSize,
+            view.offsetX,
+            view.offsetY,
+            view.scale,
+          );
           clip.rect(r.sx, r.sy, r.size, r.size);
         }
         ctx.clip(clip);

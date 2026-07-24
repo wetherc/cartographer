@@ -29,7 +29,18 @@ export const EQUIPMENT_SLOTS = [
 /** The item classifications, in the add-form's display order. 'armor' is
  * body armor; consumables and gear can't be equipped anywhere.
  * @type {ItemType[]} */
-export const ITEM_TYPES = ['gear', 'weapon', 'armor', 'helmet', 'gloves', 'greaves', 'shield', 'bow', 'ring', 'consumable'];
+export const ITEM_TYPES = [
+  'gear',
+  'weapon',
+  'armor',
+  'helmet',
+  'gloves',
+  'greaves',
+  'shield',
+  'bow',
+  'ring',
+  'consumable',
+];
 
 /**
  * The 5e armor weight classes. The weight alone fixes how DEX scales the
@@ -55,9 +66,19 @@ export const DIE_SIZES = [4, 6, 8, 10, 12];
 
 /** The 5e damage types, physical first. */
 export const DAMAGE_TYPES = [
-  'slashing', 'piercing', 'bludgeoning',
-  'acid', 'cold', 'fire', 'force', 'lightning',
-  'necrotic', 'poison', 'psychic', 'radiant', 'thunder',
+  'slashing',
+  'piercing',
+  'bludgeoning',
+  'acid',
+  'cold',
+  'fire',
+  'force',
+  'lightning',
+  'necrotic',
+  'poison',
+  'psychic',
+  'radiant',
+  'thunder',
 ];
 
 /**
@@ -77,23 +98,108 @@ export const WEAPON_HANDLING = [
  * @type {{ name: string, type: ItemType, handling: import('../types/entities.js').WeaponHandling, damage: import('../types/entities.js').DamagePart[] }[]}
  */
 export const WEAPON_PRESETS = [
-  { name: 'Dagger', type: 'weapon', handling: 'finesse', damage: [{ count: 1, sides: 4, damageType: 'piercing' }] },
-  { name: 'Shortsword', type: 'weapon', handling: 'finesse', damage: [{ count: 1, sides: 6, damageType: 'piercing' }] },
-  { name: 'Rapier', type: 'weapon', handling: 'finesse', damage: [{ count: 1, sides: 8, damageType: 'piercing' }] },
-  { name: 'Quarterstaff', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }] },
-  { name: 'Mace', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }] },
-  { name: 'Spear', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 6, damageType: 'piercing' }] },
-  { name: 'Longsword', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 8, damageType: 'slashing' }] },
-  { name: 'Battleaxe', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 8, damageType: 'slashing' }] },
-  { name: 'Warhammer', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 8, damageType: 'bludgeoning' }] },
-  { name: 'Glaive', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 10, damageType: 'slashing' }] },
-  { name: 'Greataxe', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 12, damageType: 'slashing' }] },
-  { name: 'Greatsword', type: 'weapon', handling: 'melee', damage: [{ count: 2, sides: 6, damageType: 'slashing' }] },
-  { name: 'Maul', type: 'weapon', handling: 'melee', damage: [{ count: 2, sides: 6, damageType: 'bludgeoning' }] },
-  { name: 'Shortbow', type: 'bow', handling: 'ranged', damage: [{ count: 1, sides: 6, damageType: 'piercing' }] },
-  { name: 'Longbow', type: 'bow', handling: 'ranged', damage: [{ count: 1, sides: 8, damageType: 'piercing' }] },
-  { name: 'Light Crossbow', type: 'bow', handling: 'ranged', damage: [{ count: 1, sides: 8, damageType: 'piercing' }] },
-  { name: 'Heavy Crossbow', type: 'bow', handling: 'ranged', damage: [{ count: 1, sides: 10, damageType: 'piercing' }] },
+  {
+    name: 'Dagger',
+    type: 'weapon',
+    handling: 'finesse',
+    damage: [{ count: 1, sides: 4, damageType: 'piercing' }],
+  },
+  {
+    name: 'Shortsword',
+    type: 'weapon',
+    handling: 'finesse',
+    damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
+  },
+  {
+    name: 'Rapier',
+    type: 'weapon',
+    handling: 'finesse',
+    damage: [{ count: 1, sides: 8, damageType: 'piercing' }],
+  },
+  {
+    name: 'Quarterstaff',
+    type: 'weapon',
+    handling: 'melee',
+    damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }],
+  },
+  {
+    name: 'Mace',
+    type: 'weapon',
+    handling: 'melee',
+    damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }],
+  },
+  {
+    name: 'Spear',
+    type: 'weapon',
+    handling: 'melee',
+    damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
+  },
+  {
+    name: 'Longsword',
+    type: 'weapon',
+    handling: 'melee',
+    damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
+  },
+  {
+    name: 'Battleaxe',
+    type: 'weapon',
+    handling: 'melee',
+    damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
+  },
+  {
+    name: 'Warhammer',
+    type: 'weapon',
+    handling: 'melee',
+    damage: [{ count: 1, sides: 8, damageType: 'bludgeoning' }],
+  },
+  {
+    name: 'Glaive',
+    type: 'weapon',
+    handling: 'melee',
+    damage: [{ count: 1, sides: 10, damageType: 'slashing' }],
+  },
+  {
+    name: 'Greataxe',
+    type: 'weapon',
+    handling: 'melee',
+    damage: [{ count: 1, sides: 12, damageType: 'slashing' }],
+  },
+  {
+    name: 'Greatsword',
+    type: 'weapon',
+    handling: 'melee',
+    damage: [{ count: 2, sides: 6, damageType: 'slashing' }],
+  },
+  {
+    name: 'Maul',
+    type: 'weapon',
+    handling: 'melee',
+    damage: [{ count: 2, sides: 6, damageType: 'bludgeoning' }],
+  },
+  {
+    name: 'Shortbow',
+    type: 'bow',
+    handling: 'ranged',
+    damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
+  },
+  {
+    name: 'Longbow',
+    type: 'bow',
+    handling: 'ranged',
+    damage: [{ count: 1, sides: 8, damageType: 'piercing' }],
+  },
+  {
+    name: 'Light Crossbow',
+    type: 'bow',
+    handling: 'ranged',
+    damage: [{ count: 1, sides: 8, damageType: 'piercing' }],
+  },
+  {
+    name: 'Heavy Crossbow',
+    type: 'bow',
+    handling: 'ranged',
+    damage: [{ count: 1, sides: 10, damageType: 'piercing' }],
+  },
 ];
 
 /**
@@ -202,7 +308,7 @@ export function equip(character, slot, itemId) {
  */
 export function getEquipped(character, slot) {
   const id = character.equipment?.[slot] ?? null;
-  return id === null ? null : character.inventory.find((i) => i.id === id) ?? null;
+  return id === null ? null : (character.inventory.find((i) => i.id === id) ?? null);
 }
 
 /**
@@ -282,7 +388,8 @@ export function armorClass(character) {
   const body = getEquipped(character, 'chest');
   let ac;
   if (body && body.baseAC !== undefined) {
-    const weight = ARMOR_WEIGHTS.find((w) => w.key === (body.armorWeight ?? 'light')) ?? ARMOR_WEIGHTS[0];
+    const weight =
+      ARMOR_WEIGHTS.find((w) => w.key === (body.armorWeight ?? 'light')) ?? ARMOR_WEIGHTS[0];
     // Heavy armor ignores DEX outright (a negative modifier doesn't hurt);
     // otherwise the modifier applies up to the weight's cap.
     ac = body.baseAC + (weight.dexCap === 0 ? 0 : Math.min(dexMod, weight.dexCap));
@@ -291,7 +398,7 @@ export function armorClass(character) {
   }
   for (const item of equippedItems(character)) {
     if (item === body) continue;
-    ac += itemType(item) === 'shield' ? SHIELD_AC : item.acBonus ?? 0;
+    ac += itemType(item) === 'shield' ? SHIELD_AC : (item.acBonus ?? 0);
   }
   return ac;
 }
@@ -308,8 +415,14 @@ export function itemSummary(item) {
   const parts = [];
   const type = itemType(item);
   if (type === 'armor' && item.baseAC !== undefined) {
-    const weight = ARMOR_WEIGHTS.find((w) => w.key === (item.armorWeight ?? 'light')) ?? ARMOR_WEIGHTS[0];
-    const dex = weight.dexCap === 0 ? '' : weight.dexCap === Infinity ? ' + DEX' : ` + DEX (max ${weight.dexCap})`;
+    const weight =
+      ARMOR_WEIGHTS.find((w) => w.key === (item.armorWeight ?? 'light')) ?? ARMOR_WEIGHTS[0];
+    const dex =
+      weight.dexCap === 0
+        ? ''
+        : weight.dexCap === Infinity
+          ? ' + DEX'
+          : ` + DEX (max ${weight.dexCap})`;
     parts.push(`${weight.key} armor, AC ${item.baseAC}${dex}`);
   } else if (type === 'shield') {
     parts.push(`+${SHIELD_AC} AC`);
@@ -349,7 +462,8 @@ export function filterItems(items, view = {}) {
   const sort = view.sort ?? 'name';
   return matches.sort((a, b) => {
     if (sort === 'quantity') return b.quantity - a.quantity || a.name.localeCompare(b.name);
-    if (sort === 'type') return itemType(a).localeCompare(itemType(b)) || a.name.localeCompare(b.name);
+    if (sort === 'type')
+      return itemType(a).localeCompare(itemType(b)) || a.name.localeCompare(b.name);
     return a.name.localeCompare(b.name);
   });
 }
