@@ -7,7 +7,7 @@ This project is a self-contained suite for creating and managing the world of a 
 With Campaign Builder, you can:
 
   - Visually construct a tiled world, with regions, sub-regions, and major and minor points of interest
-    - You can use a suite of pre-built tiled images, or supply your own
+    - You can use a suite of pre-built tiled images, or supply your own [WIP]
     - All tiles have metadata associated with them to allow you to specify major features that players can discover and interact with
     - Groups of tiles can be hierarchical, with a world containing regions, regions containing sub-regions, and so on
     - You can visually zoom into and out of different hierarchical levels (e.g., from a region you can zoom into a particular sub-region and show the point of interest tiles)
@@ -66,5 +66,3 @@ See [`docs/gm-guide.md`](docs/gm-guide.md) for a GM-facing walkthrough of runnin
 - Match the existing module shape: pure, dependency-injected logic (e.g. `roll(selection, rng)`, `MapNavigator`, `RegionGroups.findRegionGroups`) separated from thin DOM-wiring code (`ui/*.js`, `MapCanvas`'s event handlers). Pure logic gets unit tests; DOM/canvas rendering gets checked visually instead.
 - Add unit tests for new pure logic and run `tsc --noEmit` before committing; both are expected to pass cleanly.
 - For any UI/canvas change, visually verify it in a browser (Playwright against the running dev server, or by hand) — passing tests confirm correctness, not that a feature looks or feels right.
-- Commit messages are full sentences explaining the motivation and mechanism of a change, not a bullet list of what changed.
-- Update `PLAN.md`'s status checklist alongside any change to the build order it tracks.

@@ -2,6 +2,9 @@ import { ABILITY_SCORES } from '../entities/Character.js';
 import {
   ITEM_TYPES,
   ARMOR_WEIGHTS,
+  ARMOR_PRESETS,
+  GEAR_PRESETS,
+  CONSUMABLE_PRESETS,
   SHIELD_AC,
   WEAPON_TYPES,
   WEAPON_PRESETS,
@@ -179,9 +182,10 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
   const buffStatField = labeled('Buff', buffStatSelect);
   const buffAmountField = labeled('Amount', buffAmountInput);
 
-  // Weapon fields: a 5e preset to start from, the handling (melee uses STR,
-  // finesse and ranged use DEX — never the GM's input), and the damage roll
-  // as editable dice terms: the base roll first, then permanent riders.
+  // A 5e-standard preset to start from, offered for every type with a library
+  // (weapons, bows, armor, gear, consumables): picking one fills the type's
+  // mechanical fields — and the name and description when still blank — all
+  // of which stay editable after.
   const presetSelect = document.createElement('select');
   presetSelect.className = 'field';
   const customOption = document.createElement('option');
@@ -189,6 +193,16 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
   customOption.textContent = 'Custom';
   presetSelect.appendChild(customOption);
   const presetField = labeled('5e preset', presetSelect);
+
+  /** The preset library backing a type's picker; empty hides the picker.
+   * @param {string} type */
+  const presetsFor = (type) => {
+    if (WEAPON_TYPES.includes(type)) return WEAPON_PRESETS.filter((p) => p.type === type);
+    if (type === 'armor') return ARMOR_PRESETS;
+    if (type === 'gear') return GEAR_PRESETS;
+    if (type === 'consumable') return CONSUMABLE_PRESETS;
+    return [];
+  };
 
   const handlingSelect = document.createElement('select');
   handlingSelect.className = 'field';
@@ -289,11 +303,19 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
   renderDamage();
 
   presetSelect.addEventListener('change', () => {
-    const preset = WEAPON_PRESETS.find((p) => p.name === presetSelect.value);
+    const type = typeSelect.value;
+    const preset = presetsFor(type).find((p) => p.name === presetSelect.value);
     if (!preset) return;
-    handlingSelect.value = preset.handling;
-    damageParts = preset.damage.map((p) => ({ ...p }));
-    renderDamage();
+    if ('handling' in preset) {
+      handlingSelect.value = preset.handling;
+      damageParts = preset.damage.map((p) => ({ ...p }));
+      renderDamage();
+    } else if ('armorWeight' in preset) {
+      weightSelect.value = preset.armorWeight;
+      baseACInput.value = String(preset.baseAC);
+    } else if (!descriptionInput.value.trim()) {
+      descriptionInput.value = preset.description;
+    }
     if (!nameInput.value.trim()) nameInput.value = preset.name;
   });
 
@@ -350,11 +372,24 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
   // The form lays out as fixed rows (name, description, type/qty, then the
   // type-specific rows) so toggling a type only shows or hides whole rows —
   // the shared controls never reflow around appearing fields.
+  const presetRow = fieldRow(presetField);
   const armorRow = fieldRow(weightField, baseACField, shieldField);
-  const weaponRow = fieldRow(presetField, handlingField);
+  const weaponRow = fieldRow(handlingField);
   const damageRow = fieldRow(damageField);
   const effectsRow = fieldRow(effectsField);
   const bonusRow = fieldRow(acField, buffStatField, buffAmountField);
+
+  /** One picker option's label, from whichever fields the preset carries.
+   * @param {ReturnType<typeof presetsFor>[number]} preset */
+  const presetLabel = (preset) => {
+    if ('handling' in preset) {
+      const base = preset.damage[0];
+      return `${preset.name} (${base.count}d${base.sides})`;
+    }
+    if ('armorWeight' in preset)
+      return `${preset.name} (AC ${preset.baseAC}, ${preset.armorWeight})`;
+    return preset.name;
+  };
 
   const syncTypeFields = () => {
     const type = typeSelect.value;
@@ -364,22 +399,19 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
     acField.hidden = !FLAT_AC_TYPES.includes(type);
     buffStatField.hidden = !EQUIPPABLE_TYPES.includes(type);
     buffAmountField.hidden = buffStatField.hidden || buffStatSelect.value === '';
-    presetField.hidden =
-      handlingField.hidden =
-      damageField.hidden =
-      effectsField.hidden =
-        !weaponish;
+    handlingField.hidden = damageField.hidden = effectsField.hidden = !weaponish;
     armorRow.hidden = weightField.hidden && shieldField.hidden;
     weaponRow.hidden = damageRow.hidden = effectsRow.hidden = !weaponish;
     bonusRow.hidden = acField.hidden && buffStatField.hidden;
-    if (weaponish) {
+    const presets = presetsFor(type);
+    presetRow.hidden = presetField.hidden = presets.length === 0;
+    if (presets.length > 0) {
       presetSelect.replaceChildren(
         customOption,
-        ...WEAPON_PRESETS.filter((p) => p.type === type).map((p) => {
+        ...presets.map((p) => {
           const option = document.createElement('option');
           option.value = p.name;
-          const base = p.damage[0];
-          option.textContent = `${p.name} (${base.count}d${base.sides})`;
+          option.textContent = presetLabel(p);
           return option;
         }),
       );
@@ -451,6 +483,7 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
     nameInput,
     descriptionInput,
     fieldRow(labeled('Type', typeSelect), labeled('Qty', quantityInput)),
+    presetRow,
     armorRow,
     weaponRow,
     damageRow,

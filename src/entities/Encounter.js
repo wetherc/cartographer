@@ -1,4 +1,5 @@
 import { normalizeStatBlock } from './Modifiers.js';
+import { WEAPON_PRESETS, enemyArmor } from './Equipment.js';
 import { withinRadius } from '../map/FogOfWar.js';
 
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
@@ -12,44 +13,33 @@ import { withinRadius } from '../map/FogOfWar.js';
 /**
  * A generic weapon and armor for an enemy of a given level and tier, so every
  * enemy can attack out of the box. Mobs carry simple arms that step up with
- * level; legends carry heavy ones. All of it stays editable on the encounter.
+ * level; legends carry heavy ones. Both come from the shared 5e preset lists
+ * (armor bonuses read as the preset's margin over the unarmored 10), and all
+ * of it stays editable on the encounter.
  * @param {number} level
  * @param {EnemyTier} tier
  * @returns {{ weapon: EnemyWeapon, armor: EnemyArmor }}
  */
 export function defaultEnemyGear(level, tier) {
   const lvl = Math.max(1, Math.floor(level) || 1);
-  if (tier === 'legend') {
-    return {
-      weapon:
-        lvl < 5
-          ? {
-              name: 'Longsword',
-              handling: 'melee',
-              damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
-            }
-          : {
-              name: 'Greatsword',
-              handling: 'melee',
-              damage: [{ count: 2, sides: 6, damageType: 'slashing' }],
-            },
-      armor: lvl < 5 ? { name: 'Chain Mail', acBonus: 4 } : { name: 'Plate', acBonus: 6 },
-    };
-  }
+  const names =
+    tier === 'legend'
+      ? lvl < 5
+        ? { weapon: 'Longsword', armor: 'Chain Mail' }
+        : { weapon: 'Greatsword', armor: 'Plate' }
+      : lvl < 5
+        ? { weapon: 'Shortsword', armor: 'Leather Armor' }
+        : { weapon: 'Longsword', armor: 'Chain Shirt' };
+  const preset = /** @type {(typeof WEAPON_PRESETS)[number]} */ (
+    WEAPON_PRESETS.find((p) => p.name === names.weapon)
+  );
   return {
-    weapon:
-      lvl < 5
-        ? {
-            name: 'Shortsword',
-            handling: 'finesse',
-            damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
-          }
-        : {
-            name: 'Longsword',
-            handling: 'melee',
-            damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
-          },
-    armor: lvl < 5 ? { name: 'Leather Armor', acBonus: 1 } : { name: 'Chain Shirt', acBonus: 3 },
+    weapon: {
+      name: preset.name,
+      handling: preset.handling,
+      damage: preset.damage.map((d) => ({ ...d })),
+    },
+    armor: /** @type {EnemyArmor} */ (enemyArmor(names.armor)),
   };
 }
 

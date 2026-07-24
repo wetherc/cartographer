@@ -316,7 +316,7 @@ test('defaultEnemyGear arms by tier and level', () => {
   assert.equal(defaultEnemyGear(1, 'legend').weapon.name, 'Longsword');
   const bigLegend = defaultEnemyGear(10, 'legend');
   assert.equal(bigLegend.weapon.name, 'Greatsword');
-  assert.deepEqual(bigLegend.armor, { name: 'Plate', acBonus: 6 });
+  assert.deepEqual(bigLegend.armor, { name: 'Plate', acBonus: 8 });
 });
 
 test('createEncounter stamps default gear; explicit gear wins', () => {

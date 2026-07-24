@@ -17,6 +17,10 @@ import {
   effectiveStats,
   pruneEquipment,
   WEAPON_PRESETS,
+  ARMOR_PRESETS,
+  GEAR_PRESETS,
+  CONSUMABLE_PRESETS,
+  enemyArmor,
   WEAPON_HANDLING,
   DIE_SIZES,
   DAMAGE_TYPES,
@@ -438,6 +442,37 @@ test('weapon presets follow 5e: valid dice, handling, and damage types', () => {
   const greatsword = WEAPON_PRESETS.find((p) => p.name === 'Greatsword');
   assert.deepEqual(greatsword?.damage, [{ count: 2, sides: 6, damageType: 'slashing' }]);
   assert.equal(greatsword?.handling, 'melee');
+});
+
+test('armor presets carry a valid weight class and a plausible base AC', () => {
+  assert.ok(ARMOR_PRESETS.length > 0);
+  for (const preset of ARMOR_PRESETS) {
+    assert.ok(
+      ARMOR_WEIGHTS.some((w) => w.key === preset.armorWeight),
+      preset.name,
+    );
+    assert.ok(preset.baseAC >= 11 && preset.baseAC <= 18, preset.name);
+  }
+  const plate = ARMOR_PRESETS.find((p) => p.name === 'Plate');
+  assert.deepEqual(plate, { name: 'Plate', armorWeight: 'heavy', baseAC: 18 });
+});
+
+test('gear and consumable presets are named and described', () => {
+  for (const list of [GEAR_PRESETS, CONSUMABLE_PRESETS]) {
+    assert.ok(list.length > 0);
+    for (const preset of list) {
+      assert.ok(preset.name.trim().length > 0);
+      assert.ok(preset.description.trim().length > 0, preset.name);
+    }
+  }
+  assert.ok(CONSUMABLE_PRESETS.some((p) => p.name === 'Potion of Healing'));
+});
+
+test('enemyArmor reads a preset as a flat bonus over the unarmored 10', () => {
+  assert.deepEqual(enemyArmor('Leather Armor'), { name: 'Leather Armor', acBonus: 1 });
+  assert.deepEqual(enemyArmor('Chain Mail'), { name: 'Chain Mail', acBonus: 6 });
+  assert.deepEqual(enemyArmor('Plate'), { name: 'Plate', acBonus: 8 });
+  assert.equal(enemyArmor('Cursed Robes'), null, 'unknown names return null');
 });
 
 test('formatDamage and itemSummary describe a weapon damage roll with riders', () => {

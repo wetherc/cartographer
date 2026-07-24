@@ -27,6 +27,8 @@ import {
   equippedWeapons,
   effectiveStats,
   weaponAbility,
+  enemyArmor,
+  ARMOR_PRESETS,
   WEAPON_PRESETS,
 } from '../entities/Equipment.js';
 import { damageCharacter, getHP } from '../entities/Character.js';
@@ -138,6 +140,22 @@ export function wireEncounters(app) {
         : []),
       ...WEAPON_PRESETS.map((p) => ({ value: p.name, label: p.name })),
     ];
+    // Armor mirrors the weapon picker: the 5e preset list (bonus = the
+    // preset's margin over the unarmored 10), with an existing non-preset
+    // armor kept offered as-is.
+    const currentArmor = existing?.armor;
+    const customArmor = currentArmor && !ARMOR_PRESETS.some((p) => p.name === currentArmor.name);
+    const armorOptions = [
+      ...(customArmor
+        ? [
+            {
+              value: currentArmor.name,
+              label: `${currentArmor.name} (+${currentArmor.acBonus} AC) (custom)`,
+            },
+          ]
+        : []),
+      ...ARMOR_PRESETS.map((p) => ({ value: p.name, label: `${p.name} (+${p.baseAC - 10} AC)` })),
+    ];
     const values = await promptModal(
       existing ? 'Edit encounter' : 'New encounter',
       [
@@ -176,20 +194,13 @@ export function wireEncounters(app) {
           options: weaponOptions,
         },
         {
-          name: 'armorName',
+          name: 'armor',
           label: 'Armor',
+          type: 'select',
           value:
-            existing?.armor?.name ??
+            currentArmor?.name ??
             defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').armor.name,
-        },
-        {
-          name: 'armorBonus',
-          label: 'Armor AC bonus',
-          type: 'number',
-          value:
-            existing?.armor?.acBonus ??
-            defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').armor.acBonus,
-          min: 0,
+          options: armorOptions,
         },
         ...locationFields(app, existing ? existing.location : defaultLocation),
       ],
@@ -210,10 +221,7 @@ export function wireEncounters(app) {
           damage: preset.damage.map((d) => ({ ...d })),
         }
       : (currentWeapon ?? defaultEnemyGear(level, tier).weapon);
-    const armor = {
-      name: values.armorName.trim() || 'Unarmored',
-      acBonus: Math.max(0, Number(values.armorBonus) || 0),
-    };
+    const armor = enemyArmor(values.armor) ?? currentArmor ?? defaultEnemyGear(level, tier).armor;
     let stored;
     if (existing) {
       // Level/tier edits don't re-stamp the stat block — the GM may have tuned
