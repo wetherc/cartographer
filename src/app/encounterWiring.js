@@ -3,12 +3,12 @@ import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
-import { createEncounter, editEncounter, effectiveStatBlock, encountersAt, encountersNear, encountersOnTile, discoveredEncounters, isDefeated, tickStatModifiers, toTemplate, fromTemplate } from '../entities/Encounter.js';
+import { applyDamage, createEncounter, editEncounter, effectiveStatBlock, encountersAt, encountersNear, encountersOnTile, discoveredEncounters, isDefeated, tickStatModifiers, toTemplate, fromTemplate } from '../entities/Encounter.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
 import { roll, rollDamage, formatResult } from '../dice/DiceRoller.js';
 import { equippedWeapons, effectiveStats, weaponAbility } from '../entities/Equipment.js';
-import { abilityModifier, defaultEnemyStats, ENEMY_TIERS } from '../entities/Modifiers.js';
+import { abilityModifier, formatModifier, proficiencyBonus, defaultEnemyStats, ENEMY_TIERS } from '../entities/Modifiers.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { tickConditions } from '../entities/Conditions.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
@@ -318,12 +318,16 @@ export function wireEncounters(app) {
   }
 
   /**
-   * Roll a weapon attack for the active party member: pick a defender among
-   * the live foes (automatic when only one stands), load 1d20 + the weapon's
-   * ability modifier and the defender's AC into the dice tray, and roll. On a
-   * hit the weapon's damage dice roll too (ability modifier folded into the
-   * base term, 5e-style). Everything lands in the travelogue and a toast;
-   * applying the damage to the defender stays the GM's call on its row.
+   * Roll a weapon attack for the active party member, 5e-style: pick a
+   * defender among the live foes (automatic when only one stands), then load
+   * 1d20 + the attacker's ability modifier + proficiency bonus and the
+   * defender's AC into the dice tray and roll. A natural 20 hits regardless
+   * of AC and doubles the damage dice (a critical hit); a natural 1 always
+   * misses; otherwise the total is compared against AC. On a hit the weapon's
+   * damage dice roll too — ability modifier folded into the base term,
+   * proficiency never added to damage — and the result is applied to the
+   * defender automatically (encounters lose HP on the spot; HP-less NPCs just
+   * get the log line). Everything lands in the travelogue and a toast.
    * @param {import('../types/combat.js').Participant} participant
    * @param {import('../types/entities.js').InventoryItem} weapon
    */
@@ -367,21 +371,45 @@ export function wireEncounters(app) {
       defender = defenders.find((d) => d.id === values.target) ?? defenders[0];
     }
     const ability = weaponAbility(weapon);
-    const modifier = abilityModifier(effectiveStats(character)[ability] ?? 10);
-    const { result } = app.actions.rollDice({ counts: { d20: 1 }, modifier }, defender.ac);
-    const hit = result.total >= defender.ac;
+    const abilityMod = abilityModifier(effectiveStats(character)[ability] ?? 10);
+    const attackBonus = abilityMod + proficiencyBonus(character.level);
+    const { result } = app.actions.rollDice({ counts: { d20: 1 }, modifier: attackBonus }, defender.ac);
+    const natural = result.results.find((r) => r.die === 'd20')?.rolls[0] ?? 0;
+    // 5e attack resolution: a natural 1 always misses and a natural 20 always
+    // hits (and crits, doubling the damage dice); anything else compares the
+    // modified total against the defender's AC.
+    const crit = natural === 20;
+    const hit = natural !== 1 && (crit || result.total >= defender.ac);
+    const outcome = crit ? 'critical hit' : natural === 1 ? 'natural 1, miss' : hit ? 'hit' : 'miss';
     app.actions.logEvent(
       'combat',
-      `${character.name} attacks ${defender.name} with ${weapon.name} (${ability} ${modifier >= 0 ? '+' : ''}${modifier}): ${result.total} to hit vs AC ${defender.ac} — ${hit ? 'hit' : 'miss'}.`,
+      `${character.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(character.level)}): ${result.total} to hit vs AC ${defender.ac} — ${outcome}.`,
     );
     if (!hit) {
       app.toasts.show(`${result.total} vs AC ${defender.ac}: ${character.name} misses ${defender.name}.`);
       return;
     }
-    const damage = rollDamage(weapon.damage ?? [], modifier);
+    // A crit rolls every damage die twice; the ability modifier is still
+    // added only once, and proficiency never reaches damage.
+    const parts = (weapon.damage ?? []).map((p) => (crit ? { ...p, count: p.count * 2 } : p));
+    const damage = rollDamage(parts, abilityMod);
     const inflicts = weapon.statusEffects?.length ? `, inflicting ${weapon.statusEffects.join(', ')}` : '';
-    app.actions.logEvent('combat', `${weapon.name} hits ${defender.name} for ${damage.text || '0 damage'}${inflicts}.`);
-    app.toasts.show(`Hit! ${defender.name} takes ${damage.text || 'no damage'}${inflicts}.`);
+    const blow = crit ? 'critically hits' : 'hits';
+    app.actions.logEvent('combat', `${weapon.name} ${blow} ${defender.name} for ${damage.text || '0 damage'}${inflicts}.`);
+    // Apply the damage on the spot. Encounters track HP; a defender that's an
+    // HP-less NPC keeps the log line only. Defeat is logged once, matching
+    // the manual-damage path on the encounter row.
+    const target = state.encounters.find((e) => e.id === defender.id);
+    if (target && damage.total > 0) {
+      const next = applyDamage(target, damage.total);
+      if (!isDefeated(target) && isDefeated(next)) app.actions.logEvent('combat', `Defeated ${next.name}.`);
+      state.encounters = replaceById(state.encounters, next);
+      app.actions.syncEncounterMarkers();
+      app.views.encounterPanel.update();
+      app.views.initiativePanel.update(); // defeating the last foe here ends the combat
+      app.actions.markDirty();
+    }
+    app.toasts.show(`${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${damage.text || 'no damage'}${inflicts}.`);
   }
 
   const initiativeContainer = mustGetElement('initiative-container');

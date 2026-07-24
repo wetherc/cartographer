@@ -348,12 +348,18 @@ highlighted row as one-click **attack buttons** — visible to the GM and, on a
 bound tab, to the player driving that character. Clicking one picks the
 defender (automatic with a single live foe, a quick dialog otherwise), loads
 the dice tray with 1d20 plus the weapon's ability modifier (STR for melee, DEX
-for finesse and ranged — the same rule the weapon was created under) against
-the defender's AC, and rolls it right in the tray. On a hit the weapon's
-damage dice roll too, ability modifier folded into the base term, and the
-total lands in the travelogue and a toast by damage type ("12 slashing + 3
-fire"), along with any status effects the weapon inflicts. Applying the damage
-stays your call — use the damage field on the defender's encounter row.
+for finesse and ranged — the same rule the weapon was created under) plus the
+attacker's level-based **proficiency bonus**, against the defender's AC, and
+rolls it right in the tray. The natural d20 matters, 5e-style: a **natural 20**
+hits regardless of AC and is a **critical hit** — every damage die rolls twice
+— while a **natural 1** always misses. On a hit the weapon's damage dice roll
+too, ability modifier folded into the base term (proficiency never adds to
+damage), and the total lands in the travelogue and a toast by damage type
+("12 slashing + 3 fire"), along with any status effects the weapon inflicts.
+The damage is **applied to the defender automatically** — its HP drops on the
+spot, defeat is logged, and downing the last foe ends the combat. The
+damage/heal steppers on the encounter row remain for adjustments (resistances,
+temporary HP rulings, or undoing a roll).
 
 ### Characters, HP, and resources
 
