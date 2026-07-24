@@ -37,6 +37,20 @@ function labeled(caption, control) {
 }
 
 /**
+ * A horizontal grouping of related fields. Type-specific fields toggle in and
+ * out per row, so appearing controls extend their own line instead of
+ * reflowing the whole form.
+ * @param {...HTMLElement} children
+ * @returns {HTMLDivElement}
+ */
+function fieldRow(...children) {
+  const row = document.createElement('div');
+  row.className = 'inventory-panel__form-row';
+  row.append(...children);
+  return row;
+}
+
+/**
  * The item create/edit form, shared by the add row and the per-item editor.
  * Every mechanical field is here: type-specific armor/shield/AC/buff controls,
  * and for weapons and bows a 5e preset picker, handling (which fixes the
@@ -318,6 +332,15 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
   }
   renderEffects();
 
+  // The form lays out as fixed rows (name, description, type/qty, then the
+  // type-specific rows) so toggling a type only shows or hides whole rows —
+  // the shared controls never reflow around appearing fields.
+  const armorRow = fieldRow(weightField, baseACField, shieldField);
+  const weaponRow = fieldRow(presetField, handlingField);
+  const damageRow = fieldRow(damageField);
+  const effectsRow = fieldRow(effectsField);
+  const bonusRow = fieldRow(acField, buffStatField, buffAmountField);
+
   const syncTypeFields = () => {
     const type = typeSelect.value;
     const weaponish = WEAPON_TYPES.includes(type);
@@ -327,6 +350,9 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
     buffStatField.hidden = !EQUIPPABLE_TYPES.includes(type);
     buffAmountField.hidden = buffStatField.hidden || buffStatSelect.value === '';
     presetField.hidden = handlingField.hidden = damageField.hidden = effectsField.hidden = !weaponish;
+    armorRow.hidden = weightField.hidden && shieldField.hidden;
+    weaponRow.hidden = damageRow.hidden = effectsRow.hidden = !weaponish;
+    bonusRow.hidden = acField.hidden && buffStatField.hidden;
     if (weaponish) {
       presetSelect.replaceChildren(
         customOption,
@@ -388,32 +414,27 @@ export function buildItemForm({ item = null, submitLabel, onSubmit, onCancel = n
     }
   });
 
-  form.append(
-    nameInput,
-    descriptionInput,
-    labeled('Type', typeSelect),
-    weightField,
-    baseACField,
-    shieldField,
-    presetField,
-    handlingField,
-    damageField,
-    effectsField,
-    acField,
-    buffStatField,
-    buffAmountField,
-    labeled('Qty', quantityInput),
-    submitButton,
-  );
-
+  const actionsRow = fieldRow(submitButton);
   if (onCancel) {
     const cancelButton = document.createElement('button');
     cancelButton.type = 'button';
     cancelButton.className = 'btn';
     cancelButton.textContent = 'Cancel';
     cancelButton.addEventListener('click', onCancel);
-    form.appendChild(cancelButton);
+    actionsRow.appendChild(cancelButton);
   }
+
+  form.append(
+    nameInput,
+    descriptionInput,
+    fieldRow(labeled('Type', typeSelect), labeled('Qty', quantityInput)),
+    armorRow,
+    weaponRow,
+    damageRow,
+    effectsRow,
+    bonusRow,
+    actionsRow,
+  );
 
   return form;
 }
