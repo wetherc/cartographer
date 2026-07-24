@@ -372,7 +372,8 @@ export function buildExampleCampaign(palette, rng = Math.random) {
   let aldric = createCharacter('aldric', 'Ser Aldric', { STR: 16, DEX: 12, CON: 14 }, 'Human');
   aldric = withHP({ ...aldric, level: 3 }, 28);
   aldric.inventory = [
-    { id: 'longsword', name: 'Longsword', quantity: 1, notes: '', type: 'weapon' },
+    { id: 'longsword', name: 'Longsword', quantity: 1, notes: '', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 8, damageType: 'slashing' }] },
+    { id: 'ember-blade', name: 'Ember Blade', quantity: 1, notes: '', type: 'weapon', handling: 'melee', description: 'A greatsword with a smoldering edge.', damage: [{ count: 2, sides: 6, damageType: 'slashing' }, { count: 1, sides: 4, damageType: 'fire' }], statusEffects: ['burning'] },
     { id: 'oak-shield', name: 'Oak Shield', quantity: 1, notes: '', type: 'shield' },
     { id: 'chain-mail', name: 'Chain Mail', quantity: 1, notes: '', type: 'armor', armorWeight: 'heavy', baseAC: 16 },
     { id: 'steel-helm', name: 'Steel Helm', quantity: 1, notes: '', type: 'helmet', acBonus: 1 },
@@ -389,12 +390,13 @@ export function buildExampleCampaign(palette, rng = Math.random) {
     offHand: 'oak-shield',
     ranged: null,
     accessory: 'ring-of-vigor',
+    accessory2: null,
   };
 
   let mirelle = createCharacter('mirelle', 'Mirelle', { WIS: 16, CHA: 13, CON: 12 }, 'Half-elf');
   mirelle = withSpellSlots(withHP({ ...mirelle, level: 3 }, 21));
   mirelle.inventory = [
-    { id: 'mace', name: 'Mace', quantity: 1, notes: '', type: 'weapon' },
+    { id: 'mace', name: 'Mace', quantity: 1, notes: '', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }] },
     { id: 'holy-symbol', name: 'Symbol of the Dawn', quantity: 1, notes: '', type: 'gear' },
     { id: 'healing-herbs', name: 'Healing Herbs', quantity: 3, notes: 'Poultice; stabilizes a downed ally.', type: 'consumable' },
   ];
@@ -407,6 +409,7 @@ export function buildExampleCampaign(palette, rng = Math.random) {
     offHand: null,
     ranged: null,
     accessory: null,
+    accessory2: null,
   };
 
   /**

@@ -282,6 +282,23 @@ export function addItem(character, item) {
 }
 
 /**
+ * Replace an inventory item's fields wholesale (the GM's post-creation edit),
+ * keeping its id so equipment references survive. The replacement is the
+ * edited item as a whole, not a patch — a field absent from `next` is gone.
+ * Any slot that no longer accepts the edited item unequips it. Pure.
+ * @param {Character} character
+ * @param {string} itemId
+ * @param {InventoryItem} next
+ * @returns {Character}
+ */
+export function updateItem(character, itemId, next) {
+  return pruneEquipment({
+    ...character,
+    inventory: character.inventory.map((i) => (i.id === itemId ? { ...next, id: i.id } : i)),
+  });
+}
+
+/**
  * Remove quantity from a stack, dropping it from the inventory entirely once
  * it hits 0 — and unequipping it from any slot it occupied.
  * @param {Character} character
