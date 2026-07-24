@@ -291,6 +291,19 @@ body.mode-build .app-sidebar {
   text-decoration: underline;
 }
 
+/* "New encounter" leads the list and pins to the top of the viewport while a
+   long roster scrolls under it. The opaque card background (plus a hairline
+   under-border) keeps rows from showing through while stuck. */
+.build-encounters__actions {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-top: 0;
+  padding: var(--space-2) 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
 /* The enemy's weapon and armor at a glance, under the header line. */
 .build-encounters__gear {
   font-size: var(--text-label);

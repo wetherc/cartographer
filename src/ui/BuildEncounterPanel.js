@@ -36,6 +36,20 @@ export function mountBuildEncounterPanel(container, callbacks) {
     root.innerHTML = '';
     const encounters = callbacks.getEncounters();
 
+    // "New encounter" leads the panel and stays pinned while the list
+    // scrolls, so staging another enemy never means scrolling past the roster.
+    const actions = document.createElement('div');
+    actions.className = 'panel-actions build-encounters__actions';
+    const addButton = document.createElement('button');
+    addButton.type = 'button';
+    addButton.className = 'btn';
+    addButton.append(icon('add'), document.createTextNode('New encounter'));
+    addButton.addEventListener('click', async () => {
+      if (await callbacks.onAdd()) render();
+    });
+    actions.appendChild(addButton);
+    root.appendChild(actions);
+
     if (encounters.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'empty-state';
@@ -120,18 +134,6 @@ export function mountBuildEncounterPanel(container, callbacks) {
 
       root.appendChild(row);
     }
-
-    const actions = document.createElement('div');
-    actions.className = 'panel-actions';
-    const addButton = document.createElement('button');
-    addButton.type = 'button';
-    addButton.className = 'btn';
-    addButton.append(icon('add'), document.createTextNode('New encounter'));
-    addButton.addEventListener('click', async () => {
-      if (await callbacks.onAdd()) render();
-    });
-    actions.appendChild(addButton);
-    root.appendChild(actions);
   }
 
   render();
