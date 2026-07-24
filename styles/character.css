@@ -255,6 +255,27 @@
   padding-top: var(--space-2);
 }
 
+/* The Equipment / Inventory tab strip inside the panel. */
+.inventory-panel__tabs {
+  margin-bottom: var(--space-2);
+}
+
+/* Search / type filter / sort row above the item list. */
+.inventory-panel__controls {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.inventory-panel__controls select {
+  font-size: var(--text-label);
+}
+
+.inventory-panel__search {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Equipment slots: label + item picker per wearable slot, above the item list. */
 .inventory-panel__equipment {
   display: grid;
@@ -264,6 +285,12 @@
   padding-bottom: var(--space-2);
   margin-bottom: var(--space-2);
   border-bottom: 1px solid var(--border);
+}
+
+/* The display:grid above would otherwise defeat the hidden attribute the
+   Equipment/Inventory tabs toggle with. */
+.inventory-panel__equipment[hidden] {
+  display: none;
 }
 
 .inventory-panel__slot {
@@ -285,6 +312,36 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) 0;
+}
+
+/* Name/type line stacked over the optional description. */
+.inventory-panel__item {
+  flex: 1;
+  min-width: 0;
+}
+
+.inventory-panel__item-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.inventory-panel__description {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* An item's open edit form, boxed so it reads as one unit inside the list. */
+.inventory-panel__editor {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: var(--space-2);
+  margin: var(--space-1) 0;
+}
+
+.inventory-panel__editor .inventory-panel__form {
+  margin-top: 0;
 }
 
 /* Broad item-type tag on each inventory row. */
@@ -359,5 +416,59 @@
 
 .inventory-panel__type-select {
   font-size: var(--text-label);
+}
+
+/* Weapon damage editor: one row per dice term (count, die, damage type),
+   the base roll first, riders after, then the add-a-term button. */
+.inventory-panel__damage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.inventory-panel__damage-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.inventory-panel__dice-count {
+  width: 3rem;
+  text-align: center;
+}
+
+/* Inflicted status effects: removable chips plus the add row. */
+.inventory-panel__effects {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.inventory-panel__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: var(--text-label);
+}
+
+.inventory-panel__chip-remove {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.inventory-panel__chip-remove:hover {
+  color: var(--danger);
+}
+
+.inventory-panel__effect-input {
+  width: 8rem;
 }
 

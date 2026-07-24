@@ -1,20 +1,21 @@
-import { addItem, removeItem, ABILITY_SCORES } from '../entities/Character.js';
+import { addItem, removeItem, updateItem } from '../entities/Character.js';
 import {
   EQUIPMENT_SLOTS,
   ITEM_TYPES,
-  ARMOR_WEIGHTS,
-  SHIELD_AC,
   itemType,
   itemSummary,
+  filterItems,
   equip,
   getEquipped,
   slotAccepts,
 } from '../entities/Equipment.js';
+import { buildItemForm } from './ItemForm.js';
 import { wireDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
+/** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../entities/InventoryLog.js').InventoryEvent} InventoryEvent */
 
 /**
@@ -85,20 +86,19 @@ function buildEquipment(character, commit, playable) {
 }
 
 /**
- * Mount an inventory panel for the currently selected character, collapsed by
- * default to a one-line item count behind an accessible disclosure button.
- * Expanded, it lists items with a consume-one control (stacks of 2+) and a
- * remove-whole-stack button, plus a small form to add new items (or add
- * quantity to an existing one, keyed by name).
+ * Mount the character's kit as two tabs behind a collapsed disclosure:
+ * Equipment (the default — slot pickers for what's worn and wielded) and
+ * Inventory (a searchable, type-filterable, sortable item list with add,
+ * consume, discard, and full post-creation editing via the shared item form).
  * Renders an empty state when no character is selected (`null`).
  * Item interactions (add, consume, discard) are reported through `onEvent`
  * with the acting character, so the caller can log them; equipment changes
- * commit silently.
+ * and edits commit silently.
  * @param {HTMLElement} container
  * @param {Character | null} initial
  * With a `canPlay` callback returning false the panel renders read-only: no
- * equipment changes, no consume/remove controls, no add form (a spectator's
- * or another player's view of this character).
+ * equipment changes, no consume/remove/edit controls, no add form (a
+ * spectator's or another player's view of this character).
  * @param {(character: Character) => void} [onChange]
  * @param {(event: InventoryEvent, character: Character) => void} [onEvent]
  * @param {() => boolean} [canPlay]
@@ -112,9 +112,19 @@ export function mountInventoryPanel(
   canPlay = () => true,
 ) {
   let current = initial;
-  // Survives re-renders (every edit re-renders) but stays per-mount, so the
-  // panel doesn't snap shut after each item change.
+  // All view state survives re-renders (every edit re-renders) but stays
+  // per-mount: the disclosure stays open, the active tab holds, and the
+  // search/filter/sort choices persist while the GM works through the list.
   let expanded = false;
+  /** @type {'equipment' | 'inventory'} */
+  let activeTab = 'equipment';
+  let searchQuery = '';
+  /** @type {ItemType | ''} */
+  let typeFilter = '';
+  /** @type {'name' | 'type' | 'quantity'} */
+  let sortKey = 'name';
+  /** @type {string | null} id of the item whose edit form is open */
+  let editingId = null;
 
   const root = document.createElement('div');
   root.className = 'inventory-panel';
@@ -129,6 +139,200 @@ export function mountInventoryPanel(
     onChange(next);
     if (event) onEvent(event, next);
     render();
+  }
+
+  /**
+   * One inventory row: name, stack count, description, and the mechanical
+   * summary — plus edit/consume/discard controls when playable. The open edit
+   * form (shared with the add form) renders in the row's place.
+   * @param {Character} character
+   * @param {InventoryItem} item
+   * @param {boolean} playable
+   * @returns {HTMLElement}
+   */
+  function buildRow(character, item, playable) {
+    if (item.id === editingId) {
+      const editor = document.createElement('div');
+      editor.className = 'inventory-panel__editor';
+      editor.appendChild(
+        buildItemForm({
+          item,
+          submitLabel: `Save ${item.name}`,
+          onSubmit: (fields) => {
+            editingId = null;
+            commit(updateItem(character, item.id, { ...fields, id: item.id }));
+          },
+          onCancel: () => {
+            editingId = null;
+            render();
+          },
+        }),
+      );
+      return editor;
+    }
+
+    const row = document.createElement('div');
+    row.className = 'inventory-panel__row';
+
+    const main = document.createElement('div');
+    main.className = 'inventory-panel__item';
+
+    const line = document.createElement('div');
+    line.className = 'inventory-panel__item-line';
+    const label = document.createElement('span');
+    label.className = 'inventory-panel__label';
+    label.textContent = `${item.name} x${item.quantity}`;
+    const type = document.createElement('span');
+    type.className = 'inventory-panel__type';
+    const effects = itemSummary(item);
+    type.textContent = effects ? `${itemType(item)} — ${effects}` : itemType(item);
+    line.append(label, type);
+    main.appendChild(line);
+
+    if (item.description) {
+      const description = document.createElement('div');
+      description.className = 'inventory-panel__description';
+      description.textContent = item.description;
+      main.appendChild(description);
+    }
+    row.appendChild(main);
+
+    if (!playable) return row;
+
+    const editButton = document.createElement('button');
+    editButton.type = 'button';
+    editButton.className = 'btn btn--icon';
+    editButton.setAttribute('aria-label', `Edit ${item.name}`);
+    editButton.appendChild(icon('edit'));
+    editButton.addEventListener('click', () => {
+      editingId = item.id;
+      render();
+    });
+    row.appendChild(editButton);
+
+    // Present even on 1-stacks: consuming the last of an item and discarding
+    // it are the same state change but different travelogue lines.
+    const consumeButton = document.createElement('button');
+    consumeButton.type = 'button';
+    consumeButton.className = 'btn btn--icon';
+    consumeButton.setAttribute('aria-label', `Consume one ${item.name}`);
+    consumeButton.appendChild(icon('minus'));
+    consumeButton.addEventListener('click', () =>
+      commit(removeItem(character, item.id, 1), { verb: 'use', itemName: item.name, count: 1 }),
+    );
+    row.appendChild(consumeButton);
+
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'btn btn--icon btn--danger';
+    removeButton.setAttribute('aria-label', `Remove all ${item.name}`);
+    removeButton.appendChild(icon('remove'));
+    removeButton.addEventListener('click', () =>
+      commit(removeItem(character, item.id, item.quantity), {
+        verb: 'discard',
+        itemName: item.name,
+        count: item.quantity,
+      }),
+    );
+    row.appendChild(removeButton);
+    return row;
+  }
+
+  /**
+   * The Inventory tab: search/filter/sort controls over the item list, plus
+   * the add form when playable. The controls re-fill only the list on input,
+   * so typing in the search box never loses focus to a re-render.
+   * @param {Character} character
+   * @param {boolean} playable
+   * @returns {HTMLElement}
+   */
+  function buildInventoryTab(character, playable) {
+    const panel = document.createElement('div');
+
+    const controls = document.createElement('div');
+    controls.className = 'inventory-panel__controls';
+
+    const searchInput = document.createElement('input');
+    searchInput.type = 'search';
+    searchInput.placeholder = 'Search items';
+    searchInput.className = 'field inventory-panel__search';
+    searchInput.value = searchQuery;
+    searchInput.setAttribute('aria-label', 'Search items by name or description');
+
+    const filterSelect = document.createElement('select');
+    filterSelect.className = 'field';
+    filterSelect.setAttribute('aria-label', 'Filter by item type');
+    const allTypes = document.createElement('option');
+    allTypes.value = '';
+    allTypes.textContent = 'all types';
+    filterSelect.appendChild(allTypes);
+    for (const t of ITEM_TYPES) {
+      const option = document.createElement('option');
+      option.value = t;
+      option.textContent = t;
+      filterSelect.appendChild(option);
+    }
+    filterSelect.value = typeFilter;
+
+    const sortSelect = document.createElement('select');
+    sortSelect.className = 'field';
+    sortSelect.setAttribute('aria-label', 'Sort items');
+    for (const [value, text] of [['name', 'by name'], ['type', 'by type'], ['quantity', 'by quantity']]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = text;
+      sortSelect.appendChild(option);
+    }
+    sortSelect.value = sortKey;
+
+    controls.append(searchInput, filterSelect, sortSelect);
+    panel.appendChild(controls);
+
+    const list = document.createElement('div');
+    list.className = 'inventory-panel__list';
+    const fillList = () => {
+      list.innerHTML = '';
+      const visible = filterItems(character.inventory, { query: searchQuery, type: typeFilter, sort: sortKey });
+      if (visible.length === 0) {
+        const empty = document.createElement('p');
+        empty.className = 'empty-state';
+        empty.textContent = character.inventory.length === 0 ? 'No items yet.' : 'No items match.';
+        list.appendChild(empty);
+        return;
+      }
+      for (const item of visible) list.appendChild(buildRow(character, item, playable));
+    };
+    fillList();
+    panel.appendChild(list);
+
+    searchInput.addEventListener('input', () => {
+      searchQuery = searchInput.value;
+      fillList();
+    });
+    filterSelect.addEventListener('change', () => {
+      typeFilter = /** @type {ItemType | ''} */ (filterSelect.value);
+      fillList();
+    });
+    sortSelect.addEventListener('change', () => {
+      sortKey = /** @type {typeof sortKey} */ (sortSelect.value);
+      fillList();
+    });
+
+    if (playable) {
+      panel.appendChild(
+        buildItemForm({
+          submitLabel: 'Add item',
+          onSubmit: (fields) => {
+            const id = idFromName(fields.name);
+            commit(
+              addItem(character, { ...fields, id }),
+              { verb: 'pickup', itemName: fields.name, count: fields.quantity },
+            );
+          },
+        }),
+      );
+    }
+    return panel;
   }
 
   function render() {
@@ -156,230 +360,48 @@ export function mountInventoryPanel(
     body.className = 'inventory-panel__body';
 
     const playable = canPlay();
-    body.appendChild(buildEquipment(character, commit, playable));
 
-    const list = document.createElement('div');
-    list.className = 'inventory-panel__list';
-    for (const item of character.inventory) {
-      const row = document.createElement('div');
-      row.className = 'inventory-panel__row';
+    // The two tabs, wired directly (state lives in this mount, not the DOM,
+    // so the active tab survives the full re-render every commit triggers).
+    const tablist = document.createElement('div');
+    tablist.className = 'tabs inventory-panel__tabs';
+    tablist.setAttribute('role', 'tablist');
+    tablist.setAttribute('aria-label', 'Equipment and inventory');
 
-      const label = document.createElement('span');
-      label.className = 'inventory-panel__label';
-      label.textContent = `${item.name} x${item.quantity}`;
-
-      const type = document.createElement('span');
-      type.className = 'inventory-panel__type';
-      const effects = itemSummary(item);
-      type.textContent = effects ? `${itemType(item)} — ${effects}` : itemType(item);
-
-      row.append(label, type);
-
-      if (!playable) {
-        list.appendChild(row);
-        continue;
-      }
-
-      // Present even on 1-stacks: consuming the last of an item and discarding
-      // it are the same state change but different travelogue lines.
-      const consumeButton = document.createElement('button');
-      consumeButton.type = 'button';
-      consumeButton.className = 'btn btn--icon';
-      consumeButton.setAttribute('aria-label', `Consume one ${item.name}`);
-      consumeButton.appendChild(icon('minus'));
-      consumeButton.addEventListener('click', () =>
-        commit(removeItem(character, item.id, 1), { verb: 'use', itemName: item.name, count: 1 }),
-      );
-      row.appendChild(consumeButton);
-
-      const removeButton = document.createElement('button');
-      removeButton.type = 'button';
-      removeButton.className = 'btn btn--icon btn--danger';
-      removeButton.setAttribute('aria-label', `Remove all ${item.name}`);
-      removeButton.appendChild(icon('remove'));
-      removeButton.addEventListener('click', () =>
-        commit(removeItem(character, item.id, item.quantity), {
-          verb: 'discard',
-          itemName: item.name,
-          count: item.quantity,
-        }),
-      );
-
-      row.appendChild(removeButton);
-      list.appendChild(row);
-    }
-    body.appendChild(list);
-
-    if (!playable) {
-      wireDisclosure(summary, body, { expanded, onToggle: (next) => { expanded = next; } });
-      root.append(summary, body);
-      return;
-    }
-
-    const form = document.createElement('div');
-    form.className = 'inventory-panel__form';
-
-    const nameInput = document.createElement('input');
-    nameInput.type = 'text';
-    nameInput.placeholder = 'Item name';
-    nameInput.className = 'field inventory-panel__name-input';
-
-    /**
-     * A small captioned wrapper so each control in the add form names itself.
-     * @param {string} caption
-     * @param {HTMLElement} control
-     * @returns {HTMLLabelElement}
-     */
-    function labeled(caption, control) {
-      const label = document.createElement('label');
-      label.className = 'inventory-panel__field-label';
-      const text = document.createElement('span');
-      text.textContent = caption;
-      label.append(text, control);
-      return label;
-    }
-
-    const quantityInput = document.createElement('input');
-    quantityInput.type = 'number';
-    quantityInput.value = '1';
-    quantityInput.min = '1';
-    quantityInput.className = 'field inventory-panel__quantity-input';
-
-    const typeSelect = document.createElement('select');
-    typeSelect.className = 'field inventory-panel__type-select';
-    for (const t of ITEM_TYPES) {
-      const option = document.createElement('option');
-      option.value = t;
-      // "gear" is the catch-all for miscellaneous, non-equippable items
-      // (rope, rations, trinkets); say so where the GM picks it.
-      option.textContent = t === 'gear' ? 'gear (misc.)' : t;
-      typeSelect.appendChild(option);
-    }
-
-    // Body armor: its 5e weight class (which alone fixes the DEX scaling —
-    // never the GM's input) and a configurable base AC defaulting to a
-    // representative value for the chosen weight.
-    const weightSelect = document.createElement('select');
-    weightSelect.className = 'field';
-    for (const w of ARMOR_WEIGHTS) {
-      const option = document.createElement('option');
-      option.value = w.key;
-      option.textContent =
-        w.dexCap === 0 ? `${w.label} (no DEX)`
-        : w.dexCap === Infinity ? `${w.label} (+ DEX)`
-        : `${w.label} (+ DEX, max ${w.dexCap})`;
-      weightSelect.appendChild(option);
-    }
-    const baseACInput = document.createElement('input');
-    baseACInput.type = 'number';
-    baseACInput.value = String(ARMOR_WEIGHTS[0].defaultBaseAC);
-    baseACInput.min = '1';
-    baseACInput.className = 'field inventory-panel__ac-input';
-    weightSelect.addEventListener('change', () => {
-      const weight = ARMOR_WEIGHTS.find((w) => w.key === weightSelect.value);
-      if (weight) baseACInput.value = String(weight.defaultBaseAC);
-    });
-    const weightField = labeled('Weight', weightSelect);
-    const baseACField = labeled('Base AC', baseACInput);
-
-    // Shields are always +2 AC (5e), so no input — just say so.
-    const shieldNote = document.createElement('span');
-    shieldNote.className = 'inventory-panel__note';
-    shieldNote.textContent = `+${SHIELD_AC} AC`;
-    const shieldField = labeled('Shield', shieldNote);
-
-    // Non-armor equippables (helmets, rings, bows...) may carry a flat AC
-    // bonus while equipped.
-    const FLAT_AC_TYPES = ['weapon', 'helmet', 'gloves', 'greaves', 'bow', 'ring'];
-    const acInput = document.createElement('input');
-    acInput.type = 'number';
-    acInput.value = '0';
-    acInput.min = '0';
-    acInput.className = 'field inventory-panel__ac-input';
-    acInput.title = 'Flat AC bonus while equipped';
-    const acField = labeled('AC bonus', acInput);
-
-    // Any equippable may buff an ability score while worn (e.g. +2 STR).
-    const EQUIPPABLE_TYPES = ['weapon', 'armor', 'helmet', 'gloves', 'greaves', 'shield', 'bow', 'ring'];
-    const buffStatSelect = document.createElement('select');
-    buffStatSelect.className = 'field';
-    const noBuff = document.createElement('option');
-    noBuff.value = '';
-    noBuff.textContent = '—';
-    buffStatSelect.appendChild(noBuff);
-    for (const stat of ABILITY_SCORES) {
-      const option = document.createElement('option');
-      option.value = stat;
-      option.textContent = stat;
-      buffStatSelect.appendChild(option);
-    }
-    const buffAmountInput = document.createElement('input');
-    buffAmountInput.type = 'number';
-    buffAmountInput.value = '1';
-    buffAmountInput.className = 'field inventory-panel__ac-input';
-    const buffStatField = labeled('Buff', buffStatSelect);
-    const buffAmountField = labeled('Amount', buffAmountInput);
-
-    const syncTypeFields = () => {
-      const type = typeSelect.value;
-      weightField.hidden = baseACField.hidden = type !== 'armor';
-      shieldField.hidden = type !== 'shield';
-      acField.hidden = !FLAT_AC_TYPES.includes(type);
-      buffStatField.hidden = !EQUIPPABLE_TYPES.includes(type);
-      buffAmountField.hidden = buffStatField.hidden || buffStatSelect.value === '';
+    const panels = {
+      equipment: buildEquipment(character, commit, playable),
+      inventory: buildInventoryTab(character, playable),
     };
-    typeSelect.addEventListener('change', syncTypeFields);
-    buffStatSelect.addEventListener('change', syncTypeFields);
-    syncTypeFields();
-
-    const addButton = document.createElement('button');
-    addButton.type = 'button';
-    addButton.className = 'btn btn--primary';
-    addButton.setAttribute('aria-label', 'Add item');
-    addButton.appendChild(icon('add'));
-    addButton.addEventListener('click', () => {
-      const name = nameInput.value.trim();
-      const quantity = Number(quantityInput.value);
-      if (!name || quantity <= 0) return;
-      const type = /** @type {ItemType} */ (typeSelect.value);
-      const acBonus = FLAT_AC_TYPES.includes(type) ? Math.max(0, Number(acInput.value) || 0) : 0;
-      const buffStat = EQUIPPABLE_TYPES.includes(type) ? buffStatSelect.value : '';
-      const buffAmount = Number(buffAmountInput.value) || 0;
-      commit(
-        addItem(character, {
-          id: idFromName(name),
-          name,
-          quantity,
-          notes: '',
-          type,
-          ...(type === 'armor'
-            ? {
-                armorWeight: /** @type {import('../types/entities.js').ArmorWeight} */ (weightSelect.value),
-                baseAC: Math.max(1, Number(baseACInput.value) || 10),
-              }
-            : {}),
-          ...(acBonus > 0 ? { acBonus } : {}),
-          ...(buffStat && buffAmount !== 0 ? { statBonuses: { [buffStat]: buffAmount } } : {}),
-        }),
-        { verb: 'pickup', itemName: name, count: quantity },
-      );
-      nameInput.value = '';
-      quantityInput.value = '1';
+    const tabs = /** @type {const} */ ([
+      ['equipment', 'Equipment'],
+      ['inventory', 'Inventory'],
+    ]).map(([key, text]) => {
+      const tab = document.createElement('button');
+      tab.type = 'button';
+      tab.className = 'tabs__tab';
+      tab.setAttribute('role', 'tab');
+      tab.textContent = text;
+      const selected = activeTab === key;
+      tab.setAttribute('aria-selected', String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      panels[key].hidden = !selected;
+      tab.addEventListener('click', () => {
+        activeTab = key;
+        render();
+      });
+      return tab;
     });
+    tablist.addEventListener('keydown', (event) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      event.preventDefault();
+      activeTab = activeTab === 'equipment' ? 'inventory' : 'equipment';
+      render();
+      const nextTab = /** @type {HTMLElement | null} */ (root.querySelector('[role=tab][aria-selected=true]'));
+      nextTab?.focus();
+    });
+    tablist.append(...tabs);
 
-    form.append(
-      nameInput,
-      labeled('Type', typeSelect),
-      weightField,
-      baseACField,
-      shieldField,
-      acField,
-      buffStatField,
-      buffAmountField,
-      labeled('Qty', quantityInput),
-      addButton,
-    );
-    body.appendChild(form);
+    body.append(tablist, panels.equipment, panels.inventory);
 
     wireDisclosure(summary, body, { expanded, onToggle: (next) => { expanded = next; } });
     root.append(summary, body);
