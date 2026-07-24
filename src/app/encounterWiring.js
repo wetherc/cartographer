@@ -1,5 +1,6 @@
 import { mustGetElement } from '../ui/dom.js';
 import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
+import { openContextMenu } from '../ui/ContextMenu.js';
 import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
@@ -433,41 +434,30 @@ export function wireEncounters(app) {
   );
 
   /**
-   * The Build-mode right-click dialog for a tile of the viewed node: create a
-   * new encounter placed there, or pick one already staged on that tile to
-   * edit. With nothing staged there the create form opens directly — the
-   * chooser would have only one option.
+   * The Build-mode right-click menu for a tile of the viewed node, floated at
+   * the pointer: create a new encounter placed there, or edit one already
+   * staged on that tile. Each choice opens the shared encounter form.
    * @param {number} x
    * @param {number} y
+   * @param {number} clientX
+   * @param {number} clientY
    */
-  app.actions.openEncounterContextMenu = async (x, y) => {
+  app.actions.openEncounterContextMenu = (x, y, clientX, clientY) => {
     const location = {
       nodeId: app.navigator.getCurrentNode().id,
       tileId: `${x},${y}`,
     };
     const here = encountersOnTile(state.encounters, location);
-    if (here.length === 0) {
-      await encounterForm(null, location);
-      return;
-    }
-    const values = await promptModal(
-      `Tile (${location.tileId})`,
+    openContextMenu(
       [
-        {
-          name: 'action',
-          label: 'Action',
-          type: 'select',
-          options: [
-            { value: '', label: 'New encounter here' },
-            ...here.map((e) => ({ value: e.id, label: `Edit: ${e.name}` })),
-          ],
-        },
+        { label: 'New encounter here', onSelect: () => encounterForm(null, location) },
+        ...here.map((e) => ({
+          label: `Edit ${e.name}`,
+          onSelect: () => encounterForm(e, null),
+        })),
       ],
-      { submitLabel: 'Open' },
+      { clientX, clientY },
     );
-    if (!values) return;
-    const existing = here.find((e) => e.id === values.action);
-    await encounterForm(existing ?? null, existing ? null : location);
   };
 
   // "In an encounter" means the party stands on a tile with at least one live

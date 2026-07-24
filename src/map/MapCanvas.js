@@ -24,7 +24,7 @@ export class MapCanvas {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {TilePalette} palette
-   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, markerRange?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, onCellContextMenu?: (x: number, y: number, tile: Tile | null) => void, onStrokeCell?: (x: number, y: number, tile: Tile | null, first: boolean) => void, onStrokeEnd?: () => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void }} [options]
+   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, markerRange?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, onCellContextMenu?: (x: number, y: number, tile: Tile | null, clientX: number, clientY: number) => void, onStrokeCell?: (x: number, y: number, tile: Tile | null, first: boolean) => void, onStrokeEnd?: () => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void }} [options]
    */
   constructor(canvas, palette, options = {}) {
     this.canvas = canvas;
@@ -726,7 +726,7 @@ export class MapCanvas {
         const coords = this._eventCell(event);
         if (coords) {
           const tile = this.node.tiles.find((t) => t.id === `${coords.x},${coords.y}`) ?? null;
-          this.onCellContextMenu(coords.x, coords.y, tile);
+          this.onCellContextMenu(coords.x, coords.y, tile, event.clientX, event.clientY);
         }
       }
       return; // a pan (right-drag) never acts as a click

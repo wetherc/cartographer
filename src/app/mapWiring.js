@@ -415,10 +415,10 @@ export function wireMapView(app) {
     // Build-mode GM right-click (without dragging into a pan): select the cell
     // and open the encounter context dialog for it. Encounter authoring lives
     // in encounterWiring; the action is late-bound like the rest of app.actions.
-    onCellContextMenu: (x, y, _tile) => {
+    onCellContextMenu: (x, y, _tile, clientX, clientY) => {
       if (state.mode !== 'build' || !isGM(state.role)) return;
       selectTile(`${x},${y}`);
-      app.actions.openEncounterContextMenu(x, y);
+      app.actions.openEncounterContextMenu(x, y, clientX, clientY);
     },
     onCellClick: (x, y, tile) => {
       // Fires only outside authoring mode: Play-mode navigation and moves.
