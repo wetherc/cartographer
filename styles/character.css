@@ -355,17 +355,31 @@
   font-size: var(--text-label);
 }
 
+/* A column of fixed rows: name, description, type/qty, then whole
+   type-specific rows toggling below — appearing fields extend their own row
+   instead of reflowing the controls around them. */
 .inventory-panel__form {
   display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
+  flex-direction: column;
+  align-items: stretch;
   gap: var(--space-2);
   margin-top: var(--space-3);
 }
 
-/* Full first row to itself; the type/AC/quantity/add controls wrap below. */
+.inventory-panel__form-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+/* The display:flex above would otherwise defeat the hidden attribute the
+   type-specific rows toggle with. */
+.inventory-panel__form-row[hidden] {
+  display: none;
+}
+
 .inventory-panel__name-input {
-  flex: 1 1 100%;
   min-width: 0;
 }
 
