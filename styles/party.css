@@ -188,6 +188,20 @@
   margin-top: var(--space-2);
 }
 
+/* Pinned variant: leads its list and sticks to the top of the viewport while
+   a long roster scrolls under it (the Build rail's "New encounter" / "New
+   NPC"). The opaque card background plus a hairline under-border keeps rows
+   from showing through while stuck. */
+.panel-actions--pinned {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin-top: 0;
+  padding: var(--space-2) 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
 /* Shared "nothing here yet" copy for panels with no content. */
 .empty-state {
   margin: 0;

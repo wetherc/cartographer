@@ -11,10 +11,17 @@
  * Show a form modal. Resolves to a record of field name -> string value on
  * submit, or null if cancelled/dismissed. With `wide` the form lays fields
  * out two per row (a field marked `full` spans both columns), for dialogs
- * with too many fields to read comfortably as one tall stack.
+ * with too many fields to read comfortably as one tall stack. `onChange`
+ * fires on every edit with the changed field's name and a get/set handle on
+ * the whole form, so one field can drive another (e.g. re-stamping default
+ * stats when an enemy's tier changes).
  * @param {string} title
  * @param {ModalField[]} fields
- * @param {{ submitLabel?: string, wide?: boolean }} [options]
+ * @param {{
+ *   submitLabel?: string,
+ *   wide?: boolean,
+ *   onChange?: (name: string, form: { get: (name: string) => string, set: (name: string, value: string | number) => void }) => void,
+ * }} [options]
  * @returns {Promise<Record<string, string> | null>}
  */
 export function promptModal(title, fields, options = {}) {
@@ -85,6 +92,19 @@ export function promptModal(title, fields, options = {}) {
       label.appendChild(input);
       form.appendChild(label);
       inputs[field.name] = input;
+    }
+
+    const onChange = options.onChange;
+    if (onChange) {
+      const handle = {
+        get: (/** @type {string} */ name) => getters[name](),
+        set: (/** @type {string} */ name, /** @type {string | number} */ value) => {
+          inputs[name].value = String(value);
+        },
+      };
+      for (const [name, input] of Object.entries(inputs)) {
+        input.addEventListener('input', () => onChange(name, handle));
+      }
     }
 
     const actions = document.createElement('div');

@@ -102,6 +102,7 @@ export function wireStory(app) {
     onEdit: (npc) => npcForm(app, npc, null),
     confirmDelete: confirmDeleteNPC,
     getRole: () => state.role,
+    pinAdd: true, // lead with "New NPC", matching the Mobs subtab
   });
 
   app.views.questPanel = mountQuestPanel(mustGetElement('quest-container'), {

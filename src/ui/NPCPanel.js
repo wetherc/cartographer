@@ -11,7 +11,8 @@ import { isGM } from '../view/ViewRole.js';
  * roster state — `getNPCs` supplies the visible rows and every mutation flows
  * back through a callback; modals live in main.js. When `getRole` reports a
  * player view, the roster is read-only: rows render without edit/delete and
- * the add control is omitted.
+ * the add control is omitted. With `pinAdd` the add button leads the list and
+ * stays pinned while it scrolls (the Build rail), instead of trailing it.
  * @param {HTMLElement} container
  * @param {{
  *   getNPCs: () => NPC[],
@@ -21,6 +22,7 @@ import { isGM } from '../view/ViewRole.js';
  *   confirmDelete?: (npc: NPC) => Promise<boolean>,
  *   getLocationLabel?: (npc: NPC) => string,
  *   getRole?: () => ViewRole,
+ *   pinAdd?: boolean,
  * }} callbacks
  * @returns {{ update: () => void }}
  */
@@ -110,6 +112,17 @@ export function mountNPCPanel(container, callbacks) {
     root.innerHTML = '';
     const gm = gmView();
     const npcs = callbacks.getNPCs();
+
+    const onAdd = callbacks.onAdd;
+    // Pinned mode leads with "New NPC" so a long roster never buries it,
+    // matching the Build rail's encounter list.
+    if (onAdd && gm && callbacks.pinAdd) {
+      const actions = document.createElement('div');
+      actions.className = 'panel-actions panel-actions--pinned';
+      actions.appendChild(buildAddButton(onAdd));
+      root.appendChild(actions);
+    }
+
     if (npcs.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'empty-state';
@@ -118,17 +131,23 @@ export function mountNPCPanel(container, callbacks) {
     }
     for (const npc of npcs) root.appendChild(buildRow(npc, gm));
 
-    const onAdd = callbacks.onAdd;
-    if (onAdd && gm) {
-      const addButton = document.createElement('button');
-      addButton.type = 'button';
-      addButton.className = 'btn npc-panel__add';
-      addButton.append(icon('add'), document.createTextNode('New NPC'));
-      addButton.addEventListener('click', async () => {
-        if (await onAdd()) render();
-      });
+    if (onAdd && gm && !callbacks.pinAdd) {
+      const addButton = buildAddButton(onAdd);
+      addButton.classList.add('npc-panel__add');
       root.appendChild(addButton);
     }
+  }
+
+  /** @param {() => Promise<unknown>} onAdd */
+  function buildAddButton(onAdd) {
+    const addButton = document.createElement('button');
+    addButton.type = 'button';
+    addButton.className = 'btn';
+    addButton.append(icon('add'), document.createTextNode('New NPC'));
+    addButton.addEventListener('click', async () => {
+      if (await onAdd()) render();
+    });
+    return addButton;
   }
 
   render();

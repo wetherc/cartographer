@@ -38,6 +38,7 @@ import {
   proficiencyBonus,
   defaultEnemyStats,
   ENEMY_TIERS,
+  STAT_KEYS,
 } from '../entities/Modifiers.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { tickConditions } from '../entities/Conditions.js';
@@ -116,9 +117,9 @@ export function wireEncounters(app) {
    * HP, level/tier, and the same map/tile placement fields the NPC dialogs
    * use. With an existing encounter it edits in place — live state (current
    * HP, stat block, conditions) survives, so placement is finally editable
-   * without deleting and recreating. Without one it creates, stamping the
-   * tier's level-appropriate default stats. Returns the stored encounter, or
-   * null on cancel/blank name.
+   * without deleting and recreating. Without one it creates, with a stat
+   * block pre-filled from the tier's level-appropriate defaults and editable
+   * in place. Returns the stored encounter, or null on cancel/blank name.
    * @param {import('../types/entities.js').Encounter | null} existing
    * @param {import('../types/entities.js').EncounterLocation | null} defaultLocation placement preset for a new encounter
    * @returns {Promise<import('../types/entities.js').Encounter | null>}
@@ -157,9 +158,26 @@ export function wireEncounters(app) {
         : []),
       ...ARMOR_PRESETS.map((p) => ({ value: p.name, label: `${p.name} (+${p.baseAC - 10} AC)` })),
     ];
+    // Creation shows the stat block too, pre-filled with the tier's
+    // level-appropriate defaults so a plain mob needs no stat typing but every
+    // score stays overridable. Changing level or tier re-stamps the defaults
+    // until a stat is hand-edited, after which the GM's numbers stand. Edits
+    // omit the block — it lives on the Build-rail row's chips.
+    const defaults = defaultEnemyStats(1, 'mob');
+    const statFields = existing
+      ? []
+      : STAT_KEYS.map((key) => ({
+          name: `stat-${key}`,
+          label: key,
+          type: /** @type {'number'} */ ('number'),
+          value: defaults[key],
+          min: 1,
+        }));
+    let statsTouched = false;
     // Two-column layout, fields paired by theme: identity (name/tier), then
-    // vitals (HP/level), then gear (weapon/armor), then placement — the map
-    // picker's breadcrumb labels run long, so it spans the full width.
+    // vitals (HP/level), then gear (weapon/armor), then stats, then placement
+    // — the map picker's breadcrumb labels run long, so it spans the full
+    // width.
     const values = await promptModal(
       existing ? 'Edit encounter' : 'New encounter',
       [
@@ -206,11 +224,29 @@ export function wireEncounters(app) {
             defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').armor.name,
           options: armorOptions,
         },
+        ...statFields,
         ...locationFields(app, existing ? existing.location : defaultLocation).map((field) =>
           field.name === 'nodeId' ? { ...field, full: true } : field,
         ),
       ],
-      { submitLabel: existing ? 'Save' : 'Add', wide: true },
+      {
+        submitLabel: existing ? 'Save' : 'Add',
+        wide: true,
+        onChange: existing
+          ? undefined
+          : (name, form) => {
+              if (name.startsWith('stat-')) {
+                statsTouched = true;
+                return;
+              }
+              if (statsTouched || (name !== 'level' && name !== 'tier')) return;
+              const stats = defaultEnemyStats(
+                Math.max(1, Number(form.get('level')) || 1),
+                /** @type {import('../types/entities.js').EnemyTier} */ (form.get('tier')),
+              );
+              for (const key of STAT_KEYS) form.set(`stat-${key}`, stats[key]);
+            },
+      },
     );
     if (!values) return null;
     const name = values.name.trim();
@@ -250,7 +286,9 @@ export function wireEncounters(app) {
         ),
         name,
         maxHP,
-        defaultEnemyStats(level, tier),
+        Object.fromEntries(
+          STAT_KEYS.map((key) => [key, Math.max(1, Number(values[`stat-${key}`]) || 10)]),
+        ),
         location,
         { level, tier, weapon, armor },
       );

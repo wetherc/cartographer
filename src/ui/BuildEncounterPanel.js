@@ -39,7 +39,7 @@ export function mountBuildEncounterPanel(container, callbacks) {
     // "New encounter" leads the panel and stays pinned while the list
     // scrolls, so staging another enemy never means scrolling past the roster.
     const actions = document.createElement('div');
-    actions.className = 'panel-actions build-encounters__actions';
+    actions.className = 'panel-actions panel-actions--pinned';
     const addButton = document.createElement('button');
     addButton.type = 'button';
     addButton.className = 'btn';

@@ -45,6 +45,9 @@ const readStats = (values) =>
  */
 export async function npcForm(app, existing, defaultLocation) {
   const { state } = app;
+  // Two-column layout matching the encounter dialog: identity (name/role),
+  // then disposition, full-width notes, the stat block, then placement — the
+  // map picker's breadcrumb labels run long, so it spans the full width.
   const values = await promptModal(
     existing ? 'Edit NPC' : 'New NPC',
     [
@@ -57,13 +60,15 @@ export async function npcForm(app, existing, defaultLocation) {
         value: existing?.disposition ?? 'neutral',
         options: dispositionOptions,
       },
-      { name: 'notes', label: 'Notes', value: existing?.notes ?? '' },
+      { name: 'notes', label: 'Notes', value: existing?.notes ?? '', full: true },
       ...statFields(existing?.stats ?? {}),
       // Defaults to the caller's placement (the party's tile, the Build-mode
       // selected tile, the right-clicked tile), but any map/tile can be chosen.
-      ...locationFields(app, existing ? existing.location : defaultLocation),
+      ...locationFields(app, existing ? existing.location : defaultLocation).map((field) =>
+        field.name === 'nodeId' ? { ...field, full: true } : field,
+      ),
     ],
-    { submitLabel: existing ? 'Save' : 'Add' },
+    { submitLabel: existing ? 'Save' : 'Add', wide: true },
   );
   const name = values?.name.trim();
   if (!values || !name) return null;
