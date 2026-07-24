@@ -213,3 +213,19 @@
   color: var(--mana);
 }
 
+/* Interactive pip: click a filled one to spend the slot, an empty one to
+   restore it. A bare text button so the pip glyph stays the whole control. */
+.slot-line__pip {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  line-height: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.slot-line__pip:hover {
+  transform: scale(1.25);
+}
+

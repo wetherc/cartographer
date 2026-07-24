@@ -346,8 +346,11 @@ each character has its own inventory.
 
 The character card is collapsed by default to the name and race with a
 full-width HP bar and, for spellcasters, a **spell slots** line — one pip group
-per spell level, filled pips being the slots still unspent. Expand it for
-stats, XP, and resource pools (where the HP and per-level slot steppers live).
+per spell level, filled pips being the slots still unspent. Both lines are live
+controls without expanding the card: the HP bar carries **damage/heal steppers**
+on either side, and each slot **pip is clickable** — a filled pip spends that
+slot, an empty one restores it. Expand the card for stats, the XP award
+control, and any custom resource pools.
 Each ability score shows its derived modifier beside it (DEX 20 is +5) — the
 same modifier initiative uses. NPCs carry the six scores too, editable in
 their dialogs. HP and spell slots are modeled as resource pools; creation asks
