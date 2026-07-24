@@ -228,7 +228,12 @@ export function mountCharacterSheet(
 
       const label = document.createElement('label');
       label.className = 'character-sheet__stat-label';
-      label.textContent = key;
+
+      // Fixed-width key so the score inputs align down the column.
+      const keyText = document.createElement('span');
+      keyText.className = 'character-sheet__stat-key';
+      keyText.textContent = key;
+      label.appendChild(keyText);
 
       const input = document.createElement('input');
       input.type = 'number';
@@ -245,8 +250,13 @@ export function mountCharacterSheet(
       modifier.textContent = formatModifier(abilityModifier(value));
       modifier.title = `${key} modifier`;
 
-      label.appendChild(input);
-      row.append(label, modifier);
+      // Score and its modifier read as one unit, visually separated from the
+      // next column's label by the stats grid's gutter.
+      const valueGroup = document.createElement('span');
+      valueGroup.className = 'character-sheet__stat-value';
+      valueGroup.append(input, modifier);
+      label.appendChild(valueGroup);
+      row.appendChild(label);
       statsList.appendChild(row);
     }
     body.appendChild(statsList);
