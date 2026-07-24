@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { abilityModifier, formatModifier, defaultEnemyStats, normalizeStatBlock, ENEMY_TIERS, STAT_KEYS } from '../src/entities/Modifiers.js';
+import { abilityModifier, formatModifier, proficiencyBonus, defaultEnemyStats, normalizeStatBlock, ENEMY_TIERS, STAT_KEYS } from '../src/entities/Modifiers.js';
 
 test('abilityModifier follows the standard step table', () => {
   assert.equal(abilityModifier(20), 5);
@@ -9,6 +9,18 @@ test('abilityModifier follows the standard step table', () => {
   assert.equal(abilityModifier(12), 1);
   assert.equal(abilityModifier(7), -2);
   assert.equal(abilityModifier(1), -5);
+});
+
+test('proficiencyBonus follows the 5e level table and clamps bad levels to 1', () => {
+  assert.equal(proficiencyBonus(1), 2);
+  assert.equal(proficiencyBonus(4), 2);
+  assert.equal(proficiencyBonus(5), 3);
+  assert.equal(proficiencyBonus(9), 4);
+  assert.equal(proficiencyBonus(13), 5);
+  assert.equal(proficiencyBonus(17), 6);
+  assert.equal(proficiencyBonus(20), 6);
+  assert.equal(proficiencyBonus(0), 2);
+  assert.equal(proficiencyBonus(NaN), 2);
 });
 
 test('formatModifier signs positives and zero, leaves negatives', () => {

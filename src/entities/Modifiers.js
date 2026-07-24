@@ -42,6 +42,16 @@ export function abilityModifier(score) {
 }
 
 /**
+ * The 5e proficiency bonus for a character level: +2 at levels 1-4, stepping
+ * up one every four levels (+3 at 5, +4 at 9, +5 at 13, +6 at 17+).
+ * @param {number} level
+ * @returns {number}
+ */
+export function proficiencyBonus(level) {
+  return 2 + Math.floor((Math.max(1, Math.floor(level) || 1) - 1) / 4);
+}
+
+/**
  * Render a modifier with its sign, as character sheets conventionally do.
  * @param {number} modifier
  * @returns {string}
