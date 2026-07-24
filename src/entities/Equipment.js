@@ -22,7 +22,8 @@ export const EQUIPMENT_SLOTS = [
   { key: 'mainHand', label: 'Main hand', accepts: ['weapon'] },
   { key: 'offHand', label: 'Off hand', accepts: ['shield', 'weapon'] },
   { key: 'ranged', label: 'Ranged', accepts: ['bow'] },
-  { key: 'accessory', label: 'Accessory', accepts: ['ring'] },
+  { key: 'accessory', label: 'Ring 1', accepts: ['ring'] },
+  { key: 'accessory2', label: 'Ring 2', accepts: ['ring'] },
 ];
 
 /** The item classifications, in the add-form's display order. 'armor' is
@@ -46,6 +47,78 @@ export const ARMOR_WEIGHTS = [
 /** Shields always grant a flat +2 AC, per 5e; not configurable. */
 export const SHIELD_AC = 2;
 
+/** The item types that carry weapon fields (handling, damage, status effects). */
+export const WEAPON_TYPES = ['weapon', 'bow'];
+
+/** Die sizes a damage term may roll, smallest to largest. */
+export const DIE_SIZES = [4, 6, 8, 10, 12];
+
+/** The 5e damage types, physical first. */
+export const DAMAGE_TYPES = [
+  'slashing', 'piercing', 'bludgeoning',
+  'acid', 'cold', 'fire', 'force', 'lightning',
+  'necrotic', 'poison', 'psychic', 'radiant', 'thunder',
+];
+
+/**
+ * How a weapon is wielded, which alone fixes the ability behind its damage
+ * roll: melee uses STR; finesse and ranged use DEX.
+ * @type {{ key: import('../types/entities.js').WeaponHandling, label: string, ability: 'STR' | 'DEX' }[]}
+ */
+export const WEAPON_HANDLING = [
+  { key: 'melee', label: 'Melee', ability: 'STR' },
+  { key: 'finesse', label: 'Finesse', ability: 'DEX' },
+  { key: 'ranged', label: 'Ranged', ability: 'DEX' },
+];
+
+/**
+ * 5e-standard weapon presets: picking one fills a new weapon's base damage
+ * and handling, which the GM may then adjust freely.
+ * @type {{ name: string, type: ItemType, handling: import('../types/entities.js').WeaponHandling, damage: import('../types/entities.js').DamagePart[] }[]}
+ */
+export const WEAPON_PRESETS = [
+  { name: 'Dagger', type: 'weapon', handling: 'finesse', damage: [{ count: 1, sides: 4, damageType: 'piercing' }] },
+  { name: 'Shortsword', type: 'weapon', handling: 'finesse', damage: [{ count: 1, sides: 6, damageType: 'piercing' }] },
+  { name: 'Rapier', type: 'weapon', handling: 'finesse', damage: [{ count: 1, sides: 8, damageType: 'piercing' }] },
+  { name: 'Quarterstaff', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }] },
+  { name: 'Mace', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }] },
+  { name: 'Spear', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 6, damageType: 'piercing' }] },
+  { name: 'Longsword', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 8, damageType: 'slashing' }] },
+  { name: 'Battleaxe', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 8, damageType: 'slashing' }] },
+  { name: 'Warhammer', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 8, damageType: 'bludgeoning' }] },
+  { name: 'Glaive', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 10, damageType: 'slashing' }] },
+  { name: 'Greataxe', type: 'weapon', handling: 'melee', damage: [{ count: 1, sides: 12, damageType: 'slashing' }] },
+  { name: 'Greatsword', type: 'weapon', handling: 'melee', damage: [{ count: 2, sides: 6, damageType: 'slashing' }] },
+  { name: 'Maul', type: 'weapon', handling: 'melee', damage: [{ count: 2, sides: 6, damageType: 'bludgeoning' }] },
+  { name: 'Shortbow', type: 'bow', handling: 'ranged', damage: [{ count: 1, sides: 6, damageType: 'piercing' }] },
+  { name: 'Longbow', type: 'bow', handling: 'ranged', damage: [{ count: 1, sides: 8, damageType: 'piercing' }] },
+  { name: 'Light Crossbow', type: 'bow', handling: 'ranged', damage: [{ count: 1, sides: 8, damageType: 'piercing' }] },
+  { name: 'Heavy Crossbow', type: 'bow', handling: 'ranged', damage: [{ count: 1, sides: 10, damageType: 'piercing' }] },
+];
+
+/**
+ * The ability score modifying a weapon's damage roll, from its handling:
+ * melee (and absent handling) reads STR, finesse and ranged read DEX.
+ * @param {InventoryItem} item
+ * @returns {'STR' | 'DEX'}
+ */
+export function weaponAbility(item) {
+  const handling = WEAPON_HANDLING.find((h) => h.key === (item.handling ?? 'melee'));
+  return handling?.ability ?? 'STR';
+}
+
+/**
+ * A damage roll's dice terms as text: "2d6 slashing + 1d4 fire".
+ * @param {import('../types/entities.js').DamagePart[]} parts
+ * @returns {string}
+ */
+export function formatDamage(parts) {
+  return parts
+    .filter((p) => p.count > 0)
+    .map((p) => `${p.count}d${p.sides} ${p.damageType}`.trim())
+    .join(' + ');
+}
+
 /** @returns {Equipment} every slot empty */
 export function emptyEquipment() {
   return {
@@ -57,6 +130,7 @@ export function emptyEquipment() {
     offHand: null,
     ranged: null,
     accessory: null,
+    accessory2: null,
   };
 }
 
@@ -226,29 +300,68 @@ export function itemSummary(item) {
   } else if (item.acBonus) {
     parts.push(`+${item.acBonus} AC`);
   }
+  if (WEAPON_TYPES.includes(type) && item.damage?.length) {
+    const dice = formatDamage(item.damage);
+    if (dice) parts.push(`${dice} (${weaponAbility(item)})`);
+  }
   for (const [stat, delta] of Object.entries(item.statBonuses ?? {})) {
     if (delta !== 0) parts.push(`${delta > 0 ? '+' : ''}${delta} ${stat}`);
   }
+  if (item.statusEffects?.length) parts.push(`inflicts ${item.statusEffects.join(', ')}`);
   return parts.join(', ');
 }
 
 /**
- * Clear any slot referencing an item no longer in the inventory, so removing
- * the last of a stack also unequips it. Returns the character unchanged when
- * nothing dangles. Pure.
+ * Filter and order an inventory for display: a case-insensitive text query
+ * matched against name and description, an optional type to keep, and a sort
+ * key — by name, by type (then name), or by quantity (largest stacks first).
+ * Pure; never mutates the input.
+ * @param {InventoryItem[]} items
+ * @param {{ query?: string, type?: ItemType | '', sort?: 'name' | 'type' | 'quantity' }} [view]
+ * @returns {InventoryItem[]}
+ */
+export function filterItems(items, view = {}) {
+  const query = (view.query ?? '').trim().toLowerCase();
+  const matches = items.filter((item) => {
+    if (view.type && itemType(item) !== view.type) return false;
+    if (!query) return true;
+    return (
+      item.name.toLowerCase().includes(query) ||
+      (item.description ?? '').toLowerCase().includes(query)
+    );
+  });
+  const sort = view.sort ?? 'name';
+  return matches.sort((a, b) => {
+    if (sort === 'quantity') return b.quantity - a.quantity || a.name.localeCompare(b.name);
+    if (sort === 'type') return itemType(a).localeCompare(itemType(b)) || a.name.localeCompare(b.name);
+    return a.name.localeCompare(b.name);
+  });
+}
+
+/**
+ * Clear any slot referencing an item no longer in the inventory (removing the
+ * last of a stack also unequips it) or one the slot no longer accepts (editing
+ * a worn ring into gear also takes it off). Returns the character unchanged
+ * when nothing dangles. Pure.
  * @param {Character} character
  * @returns {Character}
  */
 export function pruneEquipment(character) {
   const equipment = character.equipment;
   if (!equipment) return character;
-  const ids = new Set(character.inventory.map((i) => i.id));
+  const items = new Map(character.inventory.map((i) => [i.id, i]));
+  /** @param {string} slot @param {string | null} id */
+  const valid = (slot, id) => {
+    if (id === null) return true;
+    const item = items.get(id);
+    return item !== undefined && slotAccepts(/** @type {EquipmentSlot} */ (slot), item);
+  };
   const entries = Object.entries(equipment);
-  if (entries.every(([, id]) => id === null || ids.has(id))) return character;
+  if (entries.every(([slot, id]) => valid(slot, id))) return character;
   return {
     ...character,
     equipment: /** @type {Equipment} */ (
-      Object.fromEntries(entries.map(([slot, id]) => [slot, id !== null && ids.has(id) ? id : null]))
+      Object.fromEntries(entries.map(([slot, id]) => [slot, valid(slot, id) ? id : null]))
     ),
   };
 }

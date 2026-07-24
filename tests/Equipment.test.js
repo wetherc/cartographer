@@ -16,8 +16,15 @@ import {
   armorClass,
   effectiveStats,
   pruneEquipment,
+  WEAPON_PRESETS,
+  WEAPON_HANDLING,
+  DIE_SIZES,
+  DAMAGE_TYPES,
+  weaponAbility,
+  formatDamage,
+  filterItems,
 } from '../src/entities/Equipment.js';
-import { createCharacter, withDefaults, addItem, removeItem } from '../src/entities/Character.js';
+import { createCharacter, withDefaults, addItem, removeItem, updateItem } from '../src/entities/Character.js';
 
 /** @returns {import('../src/types/entities.js').Character} */
 function heroWithSword() {
@@ -225,4 +232,90 @@ test('withDefaults backfills empty equipment on an older save, migrating armor t
   const filled = withDefaults(partial);
   assert.equal(filled.equipment?.mainHand, 'sword');
   assert.equal(filled.equipment?.chest, 'mail', 'legacy armor slot reads as chest');
+});
+
+test('two ring slots: both equipped rings contribute their effects', () => {
+  let hero = createCharacter('c1', 'Hero');
+  hero = addItem(hero, { id: 'ward-ring', name: 'Ward Ring', quantity: 1, notes: '', type: 'ring', acBonus: 1 });
+  hero = addItem(hero, { id: 'might-ring', name: 'Might Ring', quantity: 1, notes: '', type: 'ring', statBonuses: { STR: 2 } });
+  hero = equip(hero, 'accessory', 'ward-ring');
+  hero = equip(hero, 'accessory2', 'might-ring');
+  assert.equal(armorClass(hero), 11, '10 base + ring AC bonus');
+  assert.equal(effectiveStats(hero).STR, 12, 'second ring buffs STR');
+  assert.equal(slotAccepts('accessory2', { id: 's', name: 'S', quantity: 1, notes: '', type: 'weapon' }), false);
+});
+
+test('migrateEquipment backfills the second ring slot on an older save', () => {
+  const migrated = migrateEquipment({ accessory: 'ring-of-vigor' });
+  assert.equal(migrated.accessory, 'ring-of-vigor');
+  assert.equal(migrated.accessory2, null);
+});
+
+test('weaponAbility: melee reads STR; finesse and ranged read DEX; absent handling is melee', () => {
+  const weapon = (handling) => ({ id: 'w', name: 'W', quantity: 1, notes: '', type: /** @type {const} */ ('weapon'), ...(handling ? { handling } : {}) });
+  assert.equal(weaponAbility(weapon('melee')), 'STR');
+  assert.equal(weaponAbility(weapon('finesse')), 'DEX');
+  assert.equal(weaponAbility(weapon('ranged')), 'DEX');
+  assert.equal(weaponAbility(weapon(null)), 'STR', 'older saves default to melee');
+});
+
+test('weapon presets follow 5e: valid dice, handling, and damage types', () => {
+  assert.ok(WEAPON_PRESETS.length > 0);
+  for (const preset of WEAPON_PRESETS) {
+    assert.ok(WEAPON_HANDLING.some((h) => h.key === preset.handling), preset.name);
+    assert.ok(preset.damage.length > 0, preset.name);
+    for (const part of preset.damage) {
+      assert.ok(part.count >= 1, preset.name);
+      assert.ok(DIE_SIZES.includes(part.sides), preset.name);
+      assert.ok(DAMAGE_TYPES.includes(part.damageType), preset.name);
+    }
+  }
+  const greatsword = WEAPON_PRESETS.find((p) => p.name === 'Greatsword');
+  assert.deepEqual(greatsword?.damage, [{ count: 2, sides: 6, damageType: 'slashing' }]);
+  assert.equal(greatsword?.handling, 'melee');
+});
+
+test('formatDamage and itemSummary describe a weapon damage roll with riders', () => {
+  const blade = {
+    id: 'ember', name: 'Ember Blade', quantity: 1, notes: '',
+    type: /** @type {const} */ ('weapon'), handling: /** @type {const} */ ('melee'),
+    damage: [
+      { count: 2, sides: 6, damageType: 'slashing' },
+      { count: 1, sides: 4, damageType: 'fire' },
+    ],
+    statusEffects: ['burning'],
+  };
+  assert.equal(formatDamage(blade.damage), '2d6 slashing + 1d4 fire');
+  assert.equal(itemSummary(blade), '2d6 slashing + 1d4 fire (STR), inflicts burning');
+  const bow = { ...blade, id: 'bow', name: 'Longbow', type: /** @type {const} */ ('bow'), handling: /** @type {const} */ ('ranged'), damage: [{ count: 1, sides: 8, damageType: 'piercing' }], statusEffects: [] };
+  assert.equal(itemSummary(bow), '1d8 piercing (DEX)');
+});
+
+test('filterItems searches name and description, filters by type, and sorts', () => {
+  const items = [
+    { id: 'torch', name: 'Torch', quantity: 5, notes: '', type: /** @type {const} */ ('gear') },
+    { id: 'ember', name: 'Ember Blade', quantity: 1, notes: '', type: /** @type {const} */ ('weapon'), description: 'A greatsword with a smoldering edge.' },
+    { id: 'mace', name: 'Mace', quantity: 1, notes: '', type: /** @type {const} */ ('weapon') },
+  ];
+  assert.deepEqual(filterItems(items).map((i) => i.id), ['ember', 'mace', 'torch'], 'name sort default');
+  assert.deepEqual(filterItems(items, { query: 'SMOLDER' }).map((i) => i.id), ['ember'], 'description match, case-insensitive');
+  assert.deepEqual(filterItems(items, { type: 'weapon' }).map((i) => i.id), ['ember', 'mace']);
+  assert.deepEqual(filterItems(items, { sort: 'quantity' }).map((i) => i.id), ['torch', 'ember', 'mace']);
+  assert.deepEqual(filterItems(items, { sort: 'type' }).map((i) => i.id), ['torch', 'ember', 'mace'], 'gear before weapon');
+  assert.deepEqual(items.map((i) => i.id), ['torch', 'ember', 'mace'], 'input order untouched');
+});
+
+test('updateItem replaces fields, keeps the id, and unequips a slot that no longer accepts the item', () => {
+  let hero = createCharacter('c1', 'Hero');
+  hero = addItem(hero, { id: 'band', name: 'Plain Band', quantity: 1, notes: '', type: 'ring' });
+  hero = equip(hero, 'accessory', 'band');
+
+  const renamed = updateItem(hero, 'band', { id: 'ignored', name: 'Band of Vigor', quantity: 1, notes: '', type: 'ring', statBonuses: { STR: 2 } });
+  assert.equal(renamed.inventory[0].name, 'Band of Vigor');
+  assert.equal(renamed.inventory[0].id, 'band', 'id survives the edit');
+  assert.equal(renamed.equipment?.accessory, 'band', 'still equipped');
+  assert.equal(effectiveStats(renamed).STR, 12);
+
+  const retyped = updateItem(renamed, 'band', { id: 'band', name: 'Band of Vigor', quantity: 1, notes: '', type: 'gear' });
+  assert.equal(retyped.equipment?.accessory, null, 'gear cannot stay worn as a ring');
 });

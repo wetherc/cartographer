@@ -78,13 +78,34 @@ export type ItemType =
  * DEX entirely. */
 export type ArmorWeight = 'light' | 'medium' | 'heavy';
 
+/** How a weapon is wielded, which alone fixes the ability behind its damage:
+ * melee weapons use STR; finesse and ranged weapons use DEX. */
+export type WeaponHandling = 'melee' | 'finesse' | 'ranged';
+
+/** One dice term of a weapon's damage roll, e.g. 2d6 slashing. */
+export interface DamagePart {
+  count: number;
+  sides: number;
+  damageType: string;
+}
+
 export interface InventoryItem {
   id: string;
   name: string;
   quantity: number;
   notes: string;
+  /** Optional flavor/rules text shown with the item. */
+  description?: string;
   /** Absent on older saves; treated as 'gear'. */
   type?: ItemType;
+  /** Weapons and bows: how the weapon is wielded, fixing whether STR or DEX
+   * modifies its damage. Absent reads as melee. */
+  handling?: WeaponHandling;
+  /** Weapons and bows: the damage roll as dice terms — the base damage first,
+   * then any permanent riders (a burning blade's + 1d4 fire). */
+  damage?: DamagePart[];
+  /** Weapons and bows: status effects the weapon inflicts on a hit. */
+  statusEffects?: string[];
   /** Body armor only: its weight class, fixing the DEX scaling rule. */
   armorWeight?: ArmorWeight;
   /** Body armor only: the armor's base AC, replacing the unarmored 10. */
@@ -96,7 +117,8 @@ export interface InventoryItem {
   statBonuses?: Record<string, number>;
 }
 
-/** The wearable slots on a character. Older saves' 'armor' slot reads as 'chest'. */
+/** The wearable slots on a character. Older saves' 'armor' slot reads as
+ * 'chest'. The two accessory slots each hold a ring. */
 export type EquipmentSlot =
   | 'helmet'
   | 'chest'
@@ -105,7 +127,8 @@ export type EquipmentSlot =
   | 'mainHand'
   | 'offHand'
   | 'ranged'
-  | 'accessory';
+  | 'accessory'
+  | 'accessory2';
 
 /** Inventory item id equipped in each slot; null = slot empty. */
 export type Equipment = Record<EquipmentSlot, string | null>;
