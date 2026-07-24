@@ -29,6 +29,7 @@ import { mountTileTooltip } from '../ui/TileTooltip.js';
 import { wireTabs } from '../ui/Tabs.js';
 import { promptModal, confirmModal } from '../ui/Modal.js';
 import { isDefeated } from '../entities/Encounter.js';
+import { meetNPCs } from '../entities/NPC.js';
 import { isGM } from '../view/ViewRole.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -262,8 +263,21 @@ export function wireMapView(app) {
     app.actions.maybeTriggerEncounter();
   }
 
+  /** Landing where a placed NPC stands is the introduction: mark it met so it
+   * starts appearing in the players' Story sidebar, and log the meeting. Only
+   * the GM's tab moves the party, so only it mutates the roster. */
+  function meetNPCsHere() {
+    if (!isGM(state.role)) return;
+    const { npcs, met } = meetNPCs(state.npcs, partyTracker.getPosition());
+    if (met.length === 0) return;
+    state.npcs = npcs;
+    for (const npc of met) app.actions.logEvent('travel', `The party meets ${npc.name}.`);
+  }
+  app.actions.meetNPCs = meetNPCsHere;
+
   /** The party may have changed nodes; re-filter every location-scoped panel. */
   function refreshLocationPanels() {
+    meetNPCsHere();
     app.views.encounterPanel.update();
     app.views.initiativePanel.update();
     app.views.npcPanel.update();

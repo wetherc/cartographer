@@ -3,7 +3,8 @@ import { promptModal, confirmModal } from '../ui/Modal.js';
 import { mountTravelogPanel } from '../ui/TravelogPanel.js';
 import { appendEntry, createEntry } from '../log/Travelogue.js';
 import { mountNPCPanel } from '../ui/NPCPanel.js';
-import { createNPC, npcsAt, formatLocation, DISPOSITIONS } from '../entities/NPC.js';
+import { createNPC, npcsAt, knownNpcsAt, formatLocation, DISPOSITIONS } from '../entities/NPC.js';
+import { isGM } from '../view/ViewRole.js';
 import { ABILITY_SCORES } from '../entities/Character.js';
 import { mountQuestPanel } from '../ui/QuestPanel.js';
 import { createQuest, toggleQuestStatus } from '../quest/Quests.js';
@@ -80,8 +81,16 @@ export function wireStory(app) {
     );
 
   app.views.npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
-    getNPCs: () => npcsAt(state.npcs, app.partyTracker.getPosition()),
-    getLocationLabel: (npc) => formatLocation(npc.location, (id) => app.grid.getNode(id)?.name),
+    // Players only learn of a placed NPC once the party has landed on its
+    // tile; the GM sees the whole node's roster, with unmet ones flagged.
+    getNPCs: () =>
+      isGM(state.role)
+        ? npcsAt(state.npcs, app.partyTracker.getPosition())
+        : knownNpcsAt(state.npcs, app.partyTracker.getPosition()),
+    getLocationLabel: (npc) => {
+      const label = formatLocation(npc.location, (id) => app.grid.getNode(id)?.name);
+      return npc.location && !npc.met ? `${label} — not yet met` : label;
+    },
     onDelete: (id) => {
       state.npcs = removeById(state.npcs, id);
       app.actions.syncNPCMarkers();
@@ -120,6 +129,8 @@ export function wireStory(app) {
         },
       );
       state.npcs = [...state.npcs, created];
+      // An NPC dropped on the party's own tile is met on the spot.
+      app.actions.meetNPCs();
       app.actions.syncNPCMarkers();
       app.actions.markDirty();
       return created;
@@ -154,6 +165,8 @@ export function wireStory(app) {
         stats: readStats(values),
         location: readLocation(app, values),
       });
+      // Moving an NPC onto the party's own tile meets it on the spot.
+      app.actions.meetNPCs();
       app.actions.syncNPCMarkers();
       app.actions.markDirty();
       return true;

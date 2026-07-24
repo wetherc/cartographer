@@ -86,6 +86,9 @@ export interface AppActions {
   syncPartyMarker(): void;
   syncEncounterMarkers(): void;
   syncNPCMarkers(): void;
+  // mapWiring: mark placed NPCs on the party's tile as met (GM tabs only),
+  // logging each introduction; run wherever the party lands somewhere new.
+  meetNPCs(): void;
   refreshMapDescription(): void;
   clearSelection(): void;
   // mapWiring: the Build-mode selected tile id, or null — the default spot

@@ -12,7 +12,7 @@ export const DISPOSITIONS = /** @type {Disposition[]} */ (['friendly', 'neutral'
  * named, placed, dispositioned campaign figure, not a fight.
  * @param {string} id
  * @param {string} name
- * @param {{ role?: string, disposition?: Disposition, notes?: string, stats?: Record<string, number>, location?: EncounterLocation | null }} [options]
+ * @param {{ role?: string, disposition?: Disposition, notes?: string, stats?: Record<string, number>, location?: EncounterLocation | null, met?: boolean }} [options]
  * @returns {NPC}
  */
 export function createNPC(id, name, options = {}) {
@@ -24,6 +24,7 @@ export function createNPC(id, name, options = {}) {
     notes: options.notes ?? '',
     stats: { ...defaultStats(), ...options.stats },
     location: options.location ?? null,
+    met: options.met ?? false,
   };
 }
 
@@ -40,6 +41,7 @@ export function withDefaults(npc) {
     notes: npc.notes ?? '',
     stats: { ...defaultStats(), ...npc.stats },
     location: npc.location ?? null,
+    met: npc.met ?? false,
   };
 }
 
@@ -54,6 +56,47 @@ export function npcsAt(npcs, position) {
   return npcs.filter(
     (n) => n.location === null || (position !== null && n.location.nodeId === position.nodeId),
   );
+}
+
+/**
+ * The NPCs the players know about at the party's position: unplaced NPCs plus
+ * placed ones the party has already met. The GM-facing list uses `npcsAt`
+ * unfiltered; this is the player-facing view of the same roster. Pure.
+ * @param {NPC[]} npcs
+ * @param {{ nodeId: string } | null} position
+ * @returns {NPC[]}
+ */
+export function knownNpcsAt(npcs, position) {
+  return npcsAt(npcs, position).filter((n) => n.location === null || n.met);
+}
+
+/**
+ * Mark as met every placed NPC standing on the party's exact tile — landing
+ * there is the introduction that reveals the NPC to the players. Returns the
+ * (possibly unchanged) roster and the NPCs newly met by this landing, so the
+ * caller can log each introduction. Pure.
+ * @param {NPC[]} npcs
+ * @param {EncounterLocation | null} position
+ * @returns {{ npcs: NPC[], met: NPC[] }}
+ */
+export function meetNPCs(npcs, position) {
+  /** @type {NPC[]} */
+  const met = [];
+  if (!position) return { npcs, met };
+  const next = npcs.map((n) => {
+    if (
+      n.met ||
+      n.location === null ||
+      n.location.nodeId !== position.nodeId ||
+      n.location.tileId !== position.tileId
+    ) {
+      return n;
+    }
+    const introduced = { ...n, met: true };
+    met.push(introduced);
+    return introduced;
+  });
+  return met.length > 0 ? { npcs: next, met } : { npcs, met };
 }
 
 /**
