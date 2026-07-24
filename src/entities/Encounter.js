@@ -6,30 +6,66 @@ import { withinRadius } from '../map/FogOfWar.js';
 /** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
 /** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
 /** @typedef {import('../types/entities.js').StatModifier} StatModifier */
+/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
+/** @typedef {import('../types/entities.js').EnemyArmor} EnemyArmor */
+
+/**
+ * A generic weapon and armor for an enemy of a given level and tier, so every
+ * enemy can attack out of the box. Mobs carry simple arms that step up with
+ * level; legends carry heavy ones. All of it stays editable on the encounter.
+ * @param {number} level
+ * @param {EnemyTier} tier
+ * @returns {{ weapon: EnemyWeapon, armor: EnemyArmor }}
+ */
+export function defaultEnemyGear(level, tier) {
+  const lvl = Math.max(1, Math.floor(level) || 1);
+  if (tier === 'legend') {
+    return {
+      weapon:
+        lvl < 5
+          ? { name: 'Longsword', handling: 'melee', damage: [{ count: 1, sides: 8, damageType: 'slashing' }] }
+          : { name: 'Greatsword', handling: 'melee', damage: [{ count: 2, sides: 6, damageType: 'slashing' }] },
+      armor: lvl < 5 ? { name: 'Chain Mail', acBonus: 4 } : { name: 'Plate', acBonus: 6 },
+    };
+  }
+  return {
+    weapon:
+      lvl < 5
+        ? { name: 'Shortsword', handling: 'finesse', damage: [{ count: 1, sides: 6, damageType: 'piercing' }] }
+        : { name: 'Longsword', handling: 'melee', damage: [{ count: 1, sides: 8, damageType: 'slashing' }] },
+    armor: lvl < 5 ? { name: 'Leather Armor', acBonus: 1 } : { name: 'Chain Shirt', acBonus: 3 },
+  };
+}
 
 /**
  * Create an encounter at full health, optionally staged at a map location.
- * The stat block is closed over the fixed stat set (six abilities + AC).
+ * The stat block is closed over the fixed stat set (six abilities + AC), and
+ * the enemy is armed: absent weapon/armor read as the level/tier defaults.
  * @param {string} id
  * @param {string} name
  * @param {number} maxHP
  * @param {Record<string, number>} [statBlock]
  * @param {EncounterLocation | null} [location]
- * @param {{ level?: number, tier?: EnemyTier }} [options]
+ * @param {{ level?: number, tier?: EnemyTier, weapon?: EnemyWeapon, armor?: EnemyArmor }} [options]
  * @returns {Encounter}
  */
 export function createEncounter(id, name, maxHP, statBlock = {}, location = null, options = {}) {
+  const level = options.level ?? 1;
+  const tier = options.tier ?? 'mob';
+  const gear = defaultEnemyGear(level, tier);
   return {
     id,
     name,
     maxHP,
     currentHP: maxHP,
     statBlock: normalizeStatBlock(statBlock),
-    level: options.level ?? 1,
-    tier: options.tier ?? 'mob',
+    level,
+    tier,
     location,
     conditions: [],
     statMods: [],
+    weapon: options.weapon ?? gear.weapon,
+    armor: options.armor ?? gear.armor,
   };
 }
 
@@ -42,14 +78,19 @@ export function createEncounter(id, name, maxHP, statBlock = {}, location = null
  * @returns {Encounter}
  */
 export function withDefaults(encounter) {
+  const level = encounter.level ?? 1;
+  const tier = encounter.tier ?? 'mob';
+  const gear = defaultEnemyGear(level, tier);
   return {
     ...encounter,
     statBlock: normalizeStatBlock(encounter.statBlock ?? {}),
     location: encounter.location ?? null,
     conditions: encounter.conditions ?? [],
     statMods: encounter.statMods ?? [],
-    level: encounter.level ?? 1,
-    tier: encounter.tier ?? 'mob',
+    level,
+    tier,
+    weapon: encounter.weapon ?? gear.weapon,
+    armor: encounter.armor ?? gear.armor,
   };
 }
 
@@ -79,13 +120,15 @@ export function tickStatModifiers(mods) {
 }
 
 /**
- * The stat block as it currently reads: base values plus every active timed
- * modifier. This is what combat math and the Play view display should use.
+ * The stat block as it currently reads: base values, plus the worn armor's
+ * flat AC bonus, plus every active timed modifier. This is what combat math
+ * and the Play view display should use.
  * @param {Encounter} encounter
  * @returns {Record<string, number>}
  */
 export function effectiveStatBlock(encounter) {
   const block = { ...normalizeStatBlock(encounter.statBlock ?? {}) };
+  block.AC += encounter.armor?.acBonus ?? 0;
   for (const mod of encounter.statMods ?? []) {
     if (mod.stat in block) block[mod.stat] += mod.delta;
   }
@@ -99,7 +142,7 @@ export function effectiveStatBlock(encounter) {
  * doesn't reset it. Moving the encounter clears the `noticed` flag, so the
  * party walking into its new spot logs a fresh meeting.
  * @param {Encounter} encounter
- * @param {{ name: string, maxHP: number, level: number, tier: EnemyTier, location: EncounterLocation | null }} edits
+ * @param {{ name: string, maxHP: number, level: number, tier: EnemyTier, location: EncounterLocation | null, weapon?: EnemyWeapon, armor?: EnemyArmor }} edits
  * @returns {Encounter}
  */
 export function editEncounter(encounter, edits) {
@@ -115,6 +158,8 @@ export function editEncounter(encounter, edits) {
     level: edits.level,
     tier: edits.tier,
     location: edits.location,
+    weapon: edits.weapon ?? encounter.weapon,
+    armor: edits.armor ?? encounter.armor,
     noticed: moved ? false : encounter.noticed,
   };
 }
@@ -208,6 +253,8 @@ export function toTemplate(id, encounter) {
     statBlock: normalizeStatBlock(encounter.statBlock ?? {}),
     level: encounter.level ?? 1,
     tier: encounter.tier ?? 'mob',
+    weapon: encounter.weapon,
+    armor: encounter.armor,
   };
 }
 
@@ -222,6 +269,8 @@ export function fromTemplate(template, id, location = null) {
   return createEncounter(id, template.name, template.maxHP, { ...template.statBlock }, location, {
     level: template.level ?? 1,
     tier: template.tier ?? 'mob',
+    weapon: template.weapon,
+    armor: template.armor,
   });
 }
 

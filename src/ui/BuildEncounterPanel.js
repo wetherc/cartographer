@@ -1,5 +1,6 @@
 import { icon } from './icons.js';
 import { mountStatBlockBar } from './StatBlockBar.js';
+import { formatDamage } from '../entities/Equipment.js';
 
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
 
@@ -89,6 +90,18 @@ export function mountBuildEncounterPanel(container, callbacks) {
       head.className = 'build-encounters__head';
       head.append(label, editButton, deleteButton);
       row.appendChild(head);
+
+      // The enemy's gear at a glance; both pieces are edited through the same
+      // form the edit button opens.
+      if (encounter.weapon || encounter.armor) {
+        const gear = document.createElement('div');
+        gear.className = 'build-encounters__gear';
+        const parts = [];
+        if (encounter.weapon) parts.push(`${encounter.weapon.name} ${formatDamage(encounter.weapon.damage)}`);
+        if (encounter.armor) parts.push(`${encounter.armor.name} +${encounter.armor.acBonus} AC`);
+        gear.textContent = parts.join(' | ');
+        row.appendChild(gear);
+      }
 
       // Base stat authoring lives here: every stat (the six abilities + AC)
       // is a chip that sets its value; edits write back through onUpdate.

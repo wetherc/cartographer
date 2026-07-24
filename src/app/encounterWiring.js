@@ -3,11 +3,11 @@ import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
-import { applyDamage, createEncounter, editEncounter, effectiveStatBlock, encountersAt, encountersNear, encountersOnTile, discoveredEncounters, isDefeated, tickStatModifiers, toTemplate, fromTemplate } from '../entities/Encounter.js';
+import { applyDamage, createEncounter, defaultEnemyGear, editEncounter, effectiveStatBlock, encountersAt, encountersNear, encountersOnTile, discoveredEncounters, isDefeated, tickStatModifiers, toTemplate, fromTemplate } from '../entities/Encounter.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
 import { roll, rollDamage, formatResult } from '../dice/DiceRoller.js';
-import { equippedWeapons, effectiveStats, weaponAbility } from '../entities/Equipment.js';
+import { equippedWeapons, effectiveStats, weaponAbility, WEAPON_PRESETS } from '../entities/Equipment.js';
 import { abilityModifier, formatModifier, proficiencyBonus, defaultEnemyStats, ENEMY_TIERS } from '../entities/Modifiers.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { tickConditions } from '../entities/Conditions.js';
@@ -82,6 +82,15 @@ export function wireEncounters(app) {
    * @returns {Promise<import('../types/entities.js').Encounter | null>}
    */
   async function encounterForm(existing, defaultLocation) {
+    // Weapon choice is the 5e preset list (structured damage, no dice text);
+    // an existing weapon whose name isn't a preset (a hand-tuned save) stays
+    // offered as-is so editing other fields doesn't clobber it.
+    const currentWeapon = existing?.weapon;
+    const customWeapon = currentWeapon && !WEAPON_PRESETS.some((p) => p.name === currentWeapon.name);
+    const weaponOptions = [
+      ...(customWeapon ? [{ value: currentWeapon.name, label: `${currentWeapon.name} (custom)` }] : []),
+      ...WEAPON_PRESETS.map((p) => ({ value: p.name, label: p.name })),
+    ];
     const values = await promptModal(existing ? 'Edit encounter' : 'New encounter', [
       { name: 'name', label: 'Name', value: existing?.name ?? '' },
       { name: 'maxHP', label: 'Max HP', type: 'number', value: existing?.maxHP ?? 10, min: 1 },
@@ -93,6 +102,15 @@ export function wireEncounters(app) {
         value: existing?.tier ?? 'mob',
         options: ENEMY_TIERS.map((t) => ({ value: t, label: t === 'mob' ? 'Mob' : 'Legend' })),
       },
+      {
+        name: 'weapon',
+        label: 'Weapon',
+        type: 'select',
+        value: currentWeapon?.name ?? defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').weapon.name,
+        options: weaponOptions,
+      },
+      { name: 'armorName', label: 'Armor', value: existing?.armor?.name ?? defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').armor.name },
+      { name: 'armorBonus', label: 'Armor AC bonus', type: 'number', value: existing?.armor?.acBonus ?? defaultEnemyGear(existing?.level ?? 1, existing?.tier ?? 'mob').armor.acBonus, min: 0 },
       ...locationFields(app, existing ? existing.location : defaultLocation),
     ], { submitLabel: existing ? 'Save' : 'Add' });
     if (!values) return null;
@@ -102,11 +120,16 @@ export function wireEncounters(app) {
     const level = Math.max(1, Number(values.level) || 1);
     const tier = /** @type {import('../types/entities.js').EnemyTier} */ (values.tier);
     const location = readLocation(app, values);
+    const preset = WEAPON_PRESETS.find((p) => p.name === values.weapon);
+    const weapon = preset
+      ? { name: preset.name, handling: preset.handling, damage: preset.damage.map((d) => ({ ...d })) }
+      : currentWeapon ?? defaultEnemyGear(level, tier).weapon;
+    const armor = { name: values.armorName.trim() || 'Unarmored', acBonus: Math.max(0, Number(values.armorBonus) || 0) };
     let stored;
     if (existing) {
       // Level/tier edits don't re-stamp the stat block — the GM may have tuned
       // it by hand on the row, and it stays editable there.
-      stored = editEncounter(existing, { name, maxHP, level, tier, location });
+      stored = editEncounter(existing, { name, maxHP, level, tier, location, weapon, armor });
       state.encounters = replaceById(state.encounters, stored);
     } else {
       stored = createEncounter(
@@ -115,7 +138,7 @@ export function wireEncounters(app) {
         maxHP,
         defaultEnemyStats(level, tier),
         location,
-        { level, tier },
+        { level, tier, weapon, armor },
       );
       state.encounters = [...state.encounters, stored];
     }

@@ -291,3 +291,9 @@ body.mode-build .app-sidebar {
   color: var(--accent);
   text-decoration: underline;
 }
+
+/* The enemy's weapon and armor at a glance, under the header line. */
+.build-encounters__gear {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
