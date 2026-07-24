@@ -98,8 +98,9 @@ export const WEAPON_PRESETS = [
 
 /**
  * The ability score modifying a weapon's damage roll, from its handling:
- * melee (and absent handling) reads STR, finesse and ranged read DEX.
- * @param {InventoryItem} item
+ * melee (and absent handling) reads STR, finesse and ranged read DEX. Also
+ * accepts an enemy's assigned weapon, which carries the same handling field.
+ * @param {InventoryItem | import('../types/entities.js').EnemyWeapon} item
  * @returns {'STR' | 'DEX'}
  */
 export function weaponAbility(item) {

@@ -6,6 +6,7 @@ import { icon } from './icons.js';
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
 /** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
+/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**
@@ -21,17 +22,18 @@ import { icon } from './icons.js';
  *   onNext: () => void,
  *   onEnd: () => void,
  *   onEnemyRoll?: (participant: Participant) => void,
- *   getWeapons?: (participant: Participant) => InventoryItem[],
- *   onWeaponAttack?: (participant: Participant, weapon: InventoryItem) => void,
+ *   getWeapons?: (participant: Participant) => (InventoryItem | EnemyWeapon)[],
+ *   onWeaponAttack?: (participant: Participant, weapon: InventoryItem | EnemyWeapon) => void,
  *   canAttack?: (participant: Participant) => boolean,
  *   getRole?: () => ViewRole,
  * }} callbacks
  * With `onEnemyRoll`, a GM viewer gets a dice button on the active row while a
  * foe holds the turn, to roll on that enemy's behalf (the app rolls the dice
- * tray's current selection and logs it under the enemy's name). On a party
- * member's turn, `getWeapons` lists that character's equipped weapons under
- * the row as attack buttons — one click rolls the attack via `onWeaponAttack`
- * — for the GM and (via `canAttack`) the player bound to that character.
+ * tray's current selection and logs it under the enemy's name). On any
+ * combatant's turn, `getWeapons` lists their weapons under the row as attack
+ * buttons — a party member's equipped weapons, a foe's assigned weapon — and
+ * one click rolls the attack via `onWeaponAttack`. `canAttack` gates who may
+ * press them: the GM anywhere, a player only on their bound character.
  * Advancing and ending combat are GM actions; a player viewer sees the order
  * read-only.
  * @returns {{ update: () => void }}
@@ -82,11 +84,12 @@ export function mountInitiativePanel(container, callbacks) {
       }
       root.appendChild(row);
 
-      // On a party member's turn, their equipped weapons line up under the
-      // row: one click rolls the attack against a defender's AC. Shown to the
-      // GM and to the player driving that character.
+      // On the active combatant's turn, their weapons line up under the row:
+      // one click rolls the attack against a defender's AC. `canAttack`
+      // decides who sees them — the GM for anyone (including foes), a player
+      // only for their bound character.
       const mayAttack = callbacks.canAttack ? callbacks.canAttack(participant) : gm;
-      if (active && i === state.index && participant.side === 'party' && callbacks.onWeaponAttack && mayAttack) {
+      if (active && i === state.index && callbacks.onWeaponAttack && mayAttack) {
         const weapons = callbacks.getWeapons?.(participant) ?? [];
         if (weapons.length > 0) {
           const attacks = document.createElement('div');

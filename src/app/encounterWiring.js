@@ -7,7 +7,8 @@ import { applyDamage, createEncounter, defaultEnemyGear, editEncounter, effectiv
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
 import { roll, rollDamage, formatResult } from '../dice/DiceRoller.js';
-import { equippedWeapons, effectiveStats, weaponAbility, WEAPON_PRESETS } from '../entities/Equipment.js';
+import { armorClass, equippedWeapons, effectiveStats, weaponAbility, WEAPON_PRESETS } from '../entities/Equipment.js';
+import { damageCharacter, getHP } from '../entities/Character.js';
 import { abilityModifier, formatModifier, proficiencyBonus, defaultEnemyStats, ENEMY_TIERS } from '../entities/Modifiers.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { tickConditions } from '../entities/Conditions.js';
@@ -341,33 +342,47 @@ export function wireEncounters(app) {
   }
 
   /**
-   * Roll a weapon attack for the active party member, 5e-style: pick a
-   * defender among the live foes (automatic when only one stands), then load
-   * 1d20 + the attacker's ability modifier + proficiency bonus and the
-   * defender's AC into the dice tray and roll. A natural 20 hits regardless
-   * of AC and doubles the damage dice (a critical hit); a natural 1 always
-   * misses; otherwise the total is compared against AC. On a hit the weapon's
-   * damage dice roll too — ability modifier folded into the base term,
-   * proficiency never added to damage — and the result is applied to the
-   * defender automatically (encounters lose HP on the spot; HP-less NPCs just
-   * get the log line). Everything lands in the travelogue and a toast.
+   * Roll a weapon attack for the active combatant, 5e-style: pick a defender
+   * on the opposite side (automatic when only one stands), then load 1d20 +
+   * the attacker's ability modifier + proficiency bonus and the defender's AC
+   * into the dice tray and roll. A natural 20 hits regardless of AC and
+   * doubles the damage dice (a critical hit); a natural 1 always misses;
+   * otherwise the total is compared against AC. On a hit the weapon's damage
+   * dice roll too — ability modifier folded into the base term, proficiency
+   * never added to damage — and the result is applied to the defender
+   * automatically: encounters lose HP on the spot, party characters take it
+   * through bonus HP first, and HP-less NPCs just get the log line. Party
+   * members attack with their equipped weapons; foes with the encounter's
+   * assigned weapon. Everything lands in the travelogue and a toast.
    * @param {import('../types/combat.js').Participant} participant
-   * @param {import('../types/entities.js').InventoryItem} weapon
+   * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} weapon
    */
   async function weaponAttack(participant, weapon) {
-    const character = state.characters.find((c) => c.id === participant.id);
-    if (!character || !combat) return;
-    // Defenders come from the running combat's foe side: encounters by id,
-    // plus any hostile NPCs standing on the tile. Downed ones drop out.
+    if (!combat) return;
+    // The attacker is a party character or an armed encounter; either way the
+    // roll is d20 + the weapon ability's modifier + proficiency for its level.
+    const attacker =
+      participant.side === 'party'
+        ? state.characters.find((c) => c.id === participant.id)
+        : state.encounters.find((e) => e.id === participant.id);
+    if (!attacker) return;
+    // Defenders come from the opposite side of the running order: encounters
+    // by id, party characters (AC from armor), and NPCs standing on the tile.
+    // Downed ones drop out.
     const npcs = npcsOnTile(state.npcs, app.partyTracker.getPosition());
     const defenders = combat.order
-      .filter((p) => p.side === 'foe')
+      .filter((p) => p.side !== participant.side)
       .flatMap((p) => {
         const encounter = state.encounters.find((e) => e.id === p.id);
         if (encounter) {
           return isDefeated(encounter)
             ? []
             : [{ id: p.id, name: encounter.name, ac: effectiveStatBlock(encounter).AC ?? 10 }];
+        }
+        const character = state.characters.find((c) => c.id === p.id);
+        if (character) {
+          const hp = getHP(character);
+          return hp && hp.current <= 0 ? [] : [{ id: p.id, name: character.name, ac: armorClass(character) }];
         }
         const npc = npcs.find((n) => n.id === p.id);
         return npc ? [{ id: p.id, name: npc.name, ac: npc.stats?.AC ?? 10 }] : [];
@@ -394,8 +409,9 @@ export function wireEncounters(app) {
       defender = defenders.find((d) => d.id === values.target) ?? defenders[0];
     }
     const ability = weaponAbility(weapon);
-    const abilityMod = abilityModifier(effectiveStats(character)[ability] ?? 10);
-    const attackBonus = abilityMod + proficiencyBonus(character.level);
+    const stats = 'statBlock' in attacker ? effectiveStatBlock(attacker) : effectiveStats(attacker);
+    const abilityMod = abilityModifier(stats[ability] ?? 10);
+    const attackBonus = abilityMod + proficiencyBonus(attacker.level);
     const { result } = app.actions.rollDice({ counts: { d20: 1 }, modifier: attackBonus }, defender.ac);
     const natural = result.results.find((r) => r.die === 'd20')?.rolls[0] ?? 0;
     // 5e attack resolution: a natural 1 always misses and a natural 20 always
@@ -406,22 +422,25 @@ export function wireEncounters(app) {
     const outcome = crit ? 'critical hit' : natural === 1 ? 'natural 1, miss' : hit ? 'hit' : 'miss';
     app.actions.logEvent(
       'combat',
-      `${character.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(character.level)}): ${result.total} to hit vs AC ${defender.ac} — ${outcome}.`,
+      `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(attacker.level)}): ${result.total} to hit vs AC ${defender.ac} — ${outcome}.`,
     );
     if (!hit) {
-      app.toasts.show(`${result.total} vs AC ${defender.ac}: ${character.name} misses ${defender.name}.`);
+      app.toasts.show(`${result.total} vs AC ${defender.ac}: ${attacker.name} misses ${defender.name}.`);
       return;
     }
     // A crit rolls every damage die twice; the ability modifier is still
     // added only once, and proficiency never reaches damage.
     const parts = (weapon.damage ?? []).map((p) => (crit ? { ...p, count: p.count * 2 } : p));
     const damage = rollDamage(parts, abilityMod);
-    const inflicts = weapon.statusEffects?.length ? `, inflicting ${weapon.statusEffects.join(', ')}` : '';
+    const inflicts =
+      'statusEffects' in weapon && weapon.statusEffects?.length
+        ? `, inflicting ${weapon.statusEffects.join(', ')}`
+        : '';
     const blow = crit ? 'critically hits' : 'hits';
     app.actions.logEvent('combat', `${weapon.name} ${blow} ${defender.name} for ${damage.text || '0 damage'}${inflicts}.`);
-    // Apply the damage on the spot. Encounters track HP; a defender that's an
-    // HP-less NPC keeps the log line only. Defeat is logged once, matching
-    // the manual-damage path on the encounter row.
+    // Apply the damage on the spot. Encounters and characters track HP; a
+    // defender that's an HP-less NPC keeps the log line only. Defeat is
+    // logged once, matching the manual-damage path on the encounter row.
     const target = state.encounters.find((e) => e.id === defender.id);
     if (target && damage.total > 0) {
       const next = applyDamage(target, damage.total);
@@ -430,6 +449,18 @@ export function wireEncounters(app) {
       app.actions.syncEncounterMarkers();
       app.views.encounterPanel.update();
       app.views.initiativePanel.update(); // defeating the last foe here ends the combat
+      app.actions.markDirty();
+    }
+    const victim = state.characters.find((c) => c.id === defender.id);
+    if (victim && damage.total > 0) {
+      const next = damageCharacter(victim, damage.total);
+      // Log the drop to 0 exactly once — further damage on a downed character
+      // shouldn't repeat it.
+      if ((getHP(victim)?.current ?? 0) > 0 && (getHP(next)?.current ?? 0) <= 0) {
+        app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
+      }
+      state.characters = replaceById(state.characters, next);
+      app.actions.refreshSelectedCharacter();
       app.actions.markDirty();
     }
     app.toasts.show(`${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${damage.text || 'no damage'}${inflicts}.`);
@@ -468,15 +499,23 @@ export function wireEncounters(app) {
       app.actions.logEvent('roll', `${participant.name} rolls ${text}.`);
       app.toasts.show(`${participant.name}: ${text}`);
     },
-    // The active party member's equipped weapons, as one-click attack rolls.
-    // The GM can drive anyone's turn; a player only their bound character's.
+    // The active combatant's weapons, as one-click attack rolls: a party
+    // member's equipped weapons, or a foe encounter's assigned weapon. The GM
+    // can drive anyone's turn; a player only their bound character's; foe
+    // turns are the GM's alone.
     getWeapons: (participant) => {
+      if (participant.side === 'foe') {
+        const encounter = state.encounters.find((e) => e.id === participant.id);
+        return encounter?.weapon ? [encounter.weapon] : [];
+      }
       const character = state.characters.find((c) => c.id === participant.id);
       return character ? equippedWeapons(character) : [];
     },
     onWeaponAttack: weaponAttack,
     canAttack: (participant) =>
-      isGM(state.role) || app.actions.getBoundCharacterId() === participant.id,
+      participant.side === 'foe'
+        ? isGM(state.role)
+        : isGM(state.role) || app.actions.getBoundCharacterId() === participant.id,
     getRole: () => state.role,
   });
 
