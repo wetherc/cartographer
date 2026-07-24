@@ -1,6 +1,7 @@
 import { mustGetElement } from '../ui/dom.js';
 import { mountModeSwitch } from '../ui/ModeSwitch.js';
 import { mountRoleSwitch } from '../ui/RoleSwitch.js';
+import { mountThemeToggle } from '../ui/ThemeToggle.js';
 import { wireTabs } from '../ui/Tabs.js';
 import {
   GM_LOCK_KEY,
@@ -54,6 +55,10 @@ export function wireSessionControls(app) {
     },
   );
   app.actions.setMode = (mode) => modeSwitch.setMode(mode);
+
+  // The light/dark toggle is a per-browser viewer preference, so it lives
+  // outside the GM-only header actions and stays visible in the Player role.
+  mountThemeToggle(mustGetElement('theme-toggle-container'));
 
   // Viewer role (GM vs player) is orthogonal to Play/Build: it changes what the
   // panels reveal, not what the operator can do. Player role is read-only, so it

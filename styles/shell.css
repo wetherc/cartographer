@@ -9,9 +9,9 @@
   margin-bottom: var(--space-4);
 }
 
-/* The GM/Player switch stays pinned to the far right, so it doesn't shift when
-   the role change hides or shows the other header controls. */
-#role-switch-container {
+/* The theme toggle and GM/Player switch stay pinned to the far right, so they
+   don't shift when the role change hides or shows the other header controls. */
+#theme-toggle-container {
   margin-left: auto;
 }
 
@@ -41,7 +41,7 @@
 }
 
 .modal::backdrop {
-  background: rgb(var(--shadow-color) / 0.45);
+  background: color-mix(in srgb, var(--shadow-tint) 45%, transparent);
 }
 
 .modal__title {
@@ -161,8 +161,35 @@
   background: var(--accent-hover);
 }
 
-/* The role switch (GM/Player) shares the segmented-toggle look of the mode
-   switch. */
+/* The theme switch (System/Light/Dark) and role switch (GM/Player) share the
+   segmented-toggle look of the mode switch. */
+.theme-switch {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+
+.theme-switch__btn {
+  border: none;
+  border-radius: 0;
+  background: var(--surface);
+}
+
+.theme-switch__btn + .theme-switch__btn {
+  border-left: 1px solid var(--border-strong);
+}
+
+.theme-switch__btn--active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.theme-switch__btn--active:hover {
+  background: var(--accent-hover);
+}
+
 .role-switch {
   display: inline-flex;
   gap: 0;

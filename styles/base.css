@@ -1,8 +1,9 @@
 /* ==========================================================================
    Design tokens
    Single source of truth for color, spacing, type, radius, and elevation.
-   Light values are the default; the prefers-color-scheme block below overrides
-   the color tokens for dark. Everything else references these custom
+   Every color token is a light-dark() pair resolved by the root color-scheme:
+   by default that follows the OS preference, and the header's theme toggle
+   pins it via data-theme on <html>. Everything else references these custom
    properties so components never hand-pick raw values.
    ========================================================================== */
 
@@ -22,25 +23,25 @@
 :root {
   color-scheme: light dark;
 
-  /* Color — light theme */
-  --bg: #f4f1ea;
-  --surface: #fbf9f4;
-  --surface-raised: #ffffff;
-  --surface-sunken: #ebe6db;
-  --border: #d8d0be;
-  --border-strong: #b9ae95;
-  --text: #2b2620;
-  --text-muted: #6b6355;
-  --accent: #7b4a2f;
-  --accent-hover: #653c26;
-  --accent-contrast: #fbf9f4;
-  --danger: #a5352b;
-  --danger-contrast: #fbf9f4;
-  --success: #3f7a3f;
-  --success-contrast: #fbf9f4;
-  --mana: #3a5fa8;
-  --focus-ring: #b8783f;
-  --shadow-color: 30 25 15;
+  /* Color — light-dark(light value, dark value) */
+  --bg: light-dark(#f4f1ea, #191712);
+  --surface: light-dark(#fbf9f4, #221f19);
+  --surface-raised: light-dark(#ffffff, #2b271f);
+  --surface-sunken: light-dark(#ebe6db, #14120e);
+  --border: light-dark(#d8d0be, #3a352b);
+  --border-strong: light-dark(#b9ae95, #544c3d);
+  --text: light-dark(#2b2620, #ece5d6);
+  --text-muted: light-dark(#6b6355, #a89e8a);
+  --accent: light-dark(#7b4a2f, #c98a5a);
+  --accent-hover: light-dark(#653c26, #d99a6a);
+  --accent-contrast: light-dark(#fbf9f4, #191712);
+  --danger: light-dark(#a5352b, #d4655a);
+  --danger-contrast: light-dark(#fbf9f4, #191712);
+  --success: light-dark(#3f7a3f, #6faa6f);
+  --success-contrast: light-dark(#fbf9f4, #191712);
+  --mana: light-dark(#3a5fa8, #6f8fd0);
+  --focus-ring: light-dark(#b8783f, #d99a6a);
+  --shadow-tint: light-dark(rgb(30 25 15), rgb(0 0 0));
 
   /* Spacing scale */
   --space-1: 0.25rem;
@@ -64,33 +65,20 @@
   --radius: 0.5rem;
   --radius-lg: 0.75rem;
 
-  /* Elevation */
-  --shadow-1: 0 1px 2px rgb(var(--shadow-color) / 0.08);
-  --shadow-2: 0 2px 8px rgb(var(--shadow-color) / 0.12);
-  --shadow-3: 0 8px 24px rgb(var(--shadow-color) / 0.18);
+  /* Elevation (color-mix fades the theme's shadow tint to the wanted alpha) */
+  --shadow-1: 0 1px 2px color-mix(in srgb, var(--shadow-tint) 8%, transparent);
+  --shadow-2: 0 2px 8px color-mix(in srgb, var(--shadow-tint) 12%, transparent);
+  --shadow-3: 0 8px 24px color-mix(in srgb, var(--shadow-tint) 18%, transparent);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #191712;
-    --surface: #221f19;
-    --surface-raised: #2b271f;
-    --surface-sunken: #14120e;
-    --border: #3a352b;
-    --border-strong: #544c3d;
-    --text: #ece5d6;
-    --text-muted: #a89e8a;
-    --accent: #c98a5a;
-    --accent-hover: #d99a6a;
-    --accent-contrast: #191712;
-    --danger: #d4655a;
-    --danger-contrast: #191712;
-    --success: #6faa6f;
-    --success-contrast: #191712;
-    --mana: #6f8fd0;
-    --focus-ring: #d99a6a;
-    --shadow-color: 0 0 0;
-  }
+/* The theme toggle pins the scheme; without data-theme the OS preference wins.
+   Set before first paint by the inline script in index.html's <head>. */
+:root[data-theme='light'] {
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
 }
 
 /* ==========================================================================

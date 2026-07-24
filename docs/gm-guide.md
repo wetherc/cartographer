@@ -71,6 +71,13 @@ click the padlock next to the role switch while in the Player view and confirm.
 A locked tab hides the switch entirely and can never show the GM view; unlock it
 by closing the tab (or removing `?role=player` from the URL).
 
+Independent of mode and role, the **theme switch** at the right of the header
+(monitor / sun / moon) pins the whole UI to a light or dark scheme; the default,
+System, follows the operating system's preference. The choice is saved per
+browser, so a dark GM laptop and a light table display can coexist.
+
+![Play mode in the dark theme](images/play-mode-dark.png)
+
 A Player tab can also **play as one character**. Pick one from the "Playing as"
 dropdown at the top of the Party panel, or open the tab with `?character=<id>`
 on the URL (combine with `?role=player&character=hero` for a bookmarked
@@ -88,6 +95,8 @@ d20..."); a spectator tab's rolls stay anonymous ("A player rolls...").
 
 Switch to **Build** mode. The layout reflows to a world-tree rail on the left, the
 editable map in the center, and a palette + tile inspector on the right.
+
+![Build mode: world tree, editable map, and the paint palette](images/build-mode.png)
 
 ### Nodes and the world tree
 
@@ -224,6 +233,8 @@ The third header mode opens the **library**: a map-less, GM-only view of the
 reusable templates that feed the preset pickers everywhere else. It has three
 tabs:
 
+![Library mode: the Equipment tab with its category subtabs and a customized override](images/library-mode.png)
+
 - **Equipment** — every weapon, armor, gear, and consumable the item form's
   preset picker offers. These are the 5e defaults built into the app, all
   listed, split across category subtabs (Weapons, Armor, Rings, Consumables,
@@ -268,6 +279,8 @@ Switch to **Play** mode. The map is the primary element; a sidebar holds the
 session panels in three tabs: **Session** (world, time, encounters, initiative),
 **Story** (quests, NPCs, handouts), and **Log** (the travelogue). Collapse the
 sidebar with **Hide panels** to give the map the full width.
+
+![Play mode: the fog-revealed map with the session panels alongside](images/play-mode-light.png)
 
 ### Moving the party and fog of war
 

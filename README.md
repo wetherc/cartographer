@@ -2,6 +2,8 @@
 
 This project is a self-contained suite for creating and managing the world of a D&D (or equivalent) campaign. Notably, this is not intended to GM for you; only to visualize the world that the players are interacting with in a dynamic and engaging way.
 
+![Play mode: the fog-revealed map with the session panels alongside](docs/images/play-mode-light.png)
+
 ## Features
 
 With Campaign Builder, you can:
@@ -18,6 +20,13 @@ With Campaign Builder, you can:
   - Add character sheets with full character stats, level/progression tracking, etc.
   - Simulate dice rolls and their results for any combination of dice needed in an interaction
   - Curate a campaign-independent library of equipment, enemies, and NPC templates (the Library mode in the header): the built-in 5e defaults are all listed and individually customizable, and your overrides and additions export to a portable JSON file — kept as the gitignored `library/campaign-library.json` it stays out of version control and auto-loads into any fresh browser or clone
+  - Switch the whole UI between light and dark with the header's theme switch — or leave it on System to follow the operating system's preference; the choice persists per browser
+
+![Build mode: world tree, editable map, and the paint palette](docs/images/build-mode.png)
+
+![Play mode in the dark theme](docs/images/play-mode-dark.png)
+
+See [`docs/gm-guide.md`](docs/gm-guide.md) for more, including the Library mode.
 
 ## Development
 

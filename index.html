@@ -6,6 +6,16 @@
   <title>Campaign Builder</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b4a2f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2l8.5 5v10L12 22l-8.5-5V7z'/%3E%3Cpath d='M12 8L6 17h12z'/%3E%3Cpath d='M12 2v6'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="style.css" />
+  <script>
+    // Pin the saved theme before first paint so a reload never flashes the
+    // wrong scheme. Key and values mirror src/view/Theme.js.
+    try {
+      var theme = localStorage.getItem('campaign-builder:theme');
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+    } catch (error) {
+      /* storage unavailable: fall back to the OS preference */
+    }
+  </script>
 </head>
 <body>
   <header class="app-header">
@@ -20,6 +30,7 @@
       <button id="import-btn" class="btn" type="button">Import</button>
       <input id="import-input" type="file" accept="application/json" hidden />
     </div>
+    <div id="theme-toggle-container"></div>
     <div id="role-switch-container"></div>
   </header>
 

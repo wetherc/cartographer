@@ -7,7 +7,7 @@
  * (aria-hidden); give the surrounding control its own accessible label.
  */
 
-/** @typedef {'plus'|'minus'|'damage'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'} IconName */
+/** @typedef {'plus'|'minus'|'damage'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -61,6 +61,20 @@ const PATHS = {
     'M9.5 9.5a3 3 0 004.2 4.2',
   ],
   fit: ['M9 4H4v5', 'M15 4h5v5', 'M20 15v5h-5', 'M9 20H4v-5'],
+  // Theme toggle: sun = light, moon = dark, monitor = follow the OS.
+  sun: [
+    'M12 8a4 4 0 100 8 4 4 0 000-8z',
+    'M12 2v2',
+    'M12 20v2',
+    'M4.9 4.9l1.4 1.4',
+    'M17.7 17.7l1.4 1.4',
+    'M2 12h2',
+    'M20 12h2',
+    'M4.9 19.1l1.4-1.4',
+    'M17.7 6.3l1.4-1.4',
+  ],
+  moon: ['M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z'],
+  monitor: ['M4 5h16v11H4z', 'M9 20h6', 'M12 16v4'],
 };
 
 /**
