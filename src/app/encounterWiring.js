@@ -6,7 +6,8 @@ import { combatSetupModal } from '../ui/CombatSetup.js';
 import { createEncounter, editEncounter, effectiveStatBlock, encountersAt, encountersNear, encountersOnTile, discoveredEncounters, isDefeated, tickStatModifiers, toTemplate, fromTemplate } from '../entities/Encounter.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
-import { roll, formatResult } from '../dice/DiceRoller.js';
+import { roll, rollDamage, formatResult } from '../dice/DiceRoller.js';
+import { equippedWeapons, effectiveStats, weaponAbility } from '../entities/Equipment.js';
 import { abilityModifier, defaultEnemyStats, ENEMY_TIERS } from '../entities/Modifiers.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { tickConditions } from '../entities/Conditions.js';
@@ -138,17 +139,21 @@ export function wireEncounters(app) {
   }
 
   app.views.encounterPanel = mountEncounterPanel(mustGetElement('encounter-container'), {
-    // The panel shows only what's relevant where the party stands. The GM
-    // sees encounters within four times the fog reveal radius of the party
-    // (plus unbound ones); players see only what's been discovered — an
-    // encounter whose tile the fog has revealed, or an unbound one the party
-    // has already walked into.
-    getEncounters: () => {
+    // The panel shows only what's relevant where the party stands, split into
+    // the panel's two tabs. Active: the live encounters on the party's exact
+    // tile — what a step just walked into (both roles; the alert already
+    // announced it). Nearby: the rest in range — for the GM, encounters
+    // within four times the fog reveal radius of the party (plus unbound
+    // ones); for players, only what's been discovered — an encounter whose
+    // tile the fog has revealed, or an unbound one the party walked into.
+    getActiveEncounters: () => encountersOnTile(state.encounters, app.partyTracker.getPosition()),
+    getNearbyEncounters: () => {
       const position = app.partyTracker.getPosition();
-      if (isGM(state.role)) {
-        return encountersNear(state.encounters, position, app.partyTracker.revealRadius * 4);
-      }
-      return discoveredEncounters(state.encounters, position, app.grid.getNode(position.nodeId) ?? null);
+      const hereIds = new Set(encountersOnTile(state.encounters, position).map((e) => e.id));
+      const list = isGM(state.role)
+        ? encountersNear(state.encounters, position, app.partyTracker.revealRadius * 4)
+        : discoveredEncounters(state.encounters, position, app.grid.getNode(position.nodeId) ?? null);
+      return list.filter((e) => !hereIds.has(e.id));
     },
     onUpdate: (next) => {
       // Log the transition into defeat exactly once (damage that keeps it down
@@ -312,6 +317,73 @@ export function wireEncounters(app) {
     app.views.encounterPanel.update(); // hides the Start combat button
   }
 
+  /**
+   * Roll a weapon attack for the active party member: pick a defender among
+   * the live foes (automatic when only one stands), load 1d20 + the weapon's
+   * ability modifier and the defender's AC into the dice tray, and roll. On a
+   * hit the weapon's damage dice roll too (ability modifier folded into the
+   * base term, 5e-style). Everything lands in the travelogue and a toast;
+   * applying the damage to the defender stays the GM's call on its row.
+   * @param {import('../types/combat.js').Participant} participant
+   * @param {import('../types/entities.js').InventoryItem} weapon
+   */
+  async function weaponAttack(participant, weapon) {
+    const character = state.characters.find((c) => c.id === participant.id);
+    if (!character || !combat) return;
+    // Defenders come from the running combat's foe side: encounters by id,
+    // plus any hostile NPCs standing on the tile. Downed ones drop out.
+    const npcs = npcsOnTile(state.npcs, app.partyTracker.getPosition());
+    const defenders = combat.order
+      .filter((p) => p.side === 'foe')
+      .flatMap((p) => {
+        const encounter = state.encounters.find((e) => e.id === p.id);
+        if (encounter) {
+          return isDefeated(encounter)
+            ? []
+            : [{ id: p.id, name: encounter.name, ac: effectiveStatBlock(encounter).AC ?? 10 }];
+        }
+        const npc = npcs.find((n) => n.id === p.id);
+        return npc ? [{ id: p.id, name: npc.name, ac: npc.stats?.AC ?? 10 }] : [];
+      });
+    if (defenders.length === 0) {
+      app.toasts.show('No defender left standing.');
+      return;
+    }
+    let defender = defenders[0];
+    if (defenders.length > 1) {
+      const values = await promptModal(
+        `Attack with ${weapon.name}`,
+        [
+          {
+            name: 'target',
+            label: 'Defender',
+            type: 'select',
+            options: defenders.map((d) => ({ value: d.id, label: `${d.name} (AC ${d.ac})` })),
+          },
+        ],
+        { submitLabel: 'Attack' },
+      );
+      if (!values) return;
+      defender = defenders.find((d) => d.id === values.target) ?? defenders[0];
+    }
+    const ability = weaponAbility(weapon);
+    const modifier = abilityModifier(effectiveStats(character)[ability] ?? 10);
+    const { result } = app.actions.rollDice({ counts: { d20: 1 }, modifier }, defender.ac);
+    const hit = result.total >= defender.ac;
+    app.actions.logEvent(
+      'combat',
+      `${character.name} attacks ${defender.name} with ${weapon.name} (${ability} ${modifier >= 0 ? '+' : ''}${modifier}): ${result.total} to hit vs AC ${defender.ac} — ${hit ? 'hit' : 'miss'}.`,
+    );
+    if (!hit) {
+      app.toasts.show(`${result.total} vs AC ${defender.ac}: ${character.name} misses ${defender.name}.`);
+      return;
+    }
+    const damage = rollDamage(weapon.damage ?? [], modifier);
+    const inflicts = weapon.statusEffects?.length ? `, inflicting ${weapon.statusEffects.join(', ')}` : '';
+    app.actions.logEvent('combat', `${weapon.name} hits ${defender.name} for ${damage.text || '0 damage'}${inflicts}.`);
+    app.toasts.show(`Hit! ${defender.name} takes ${damage.text || 'no damage'}${inflicts}.`);
+  }
+
   const initiativeContainer = mustGetElement('initiative-container');
   const initiativePanel = mountInitiativePanel(initiativeContainer, {
     getState: () => combat,
@@ -345,6 +417,15 @@ export function wireEncounters(app) {
       app.actions.logEvent('roll', `${participant.name} rolls ${text}.`);
       app.toasts.show(`${participant.name}: ${text}`);
     },
+    // The active party member's equipped weapons, as one-click attack rolls.
+    // The GM can drive anyone's turn; a player only their bound character's.
+    getWeapons: (participant) => {
+      const character = state.characters.find((c) => c.id === participant.id);
+      return character ? equippedWeapons(character) : [];
+    },
+    onWeaponAttack: weaponAttack,
+    canAttack: (participant) =>
+      isGM(state.role) || app.actions.getBoundCharacterId() === participant.id,
     getRole: () => state.role,
   });
 

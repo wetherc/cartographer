@@ -236,6 +236,21 @@ function equippedItems(character) {
 }
 
 /**
+ * The equipped items a character can attack with: whatever occupies the main
+ * hand, off hand, and ranged slots and carries a damage roll (a shield in the
+ * off hand doesn't qualify). Order follows the slots, so the main weapon
+ * lists first.
+ * @param {Character} character
+ * @returns {InventoryItem[]}
+ */
+export function equippedWeapons(character) {
+  return ['mainHand', 'offHand', 'ranged'].flatMap((slot) => {
+    const item = getEquipped(character, /** @type {EquipmentSlot} */ (slot));
+    return item && WEAPON_TYPES.includes(itemType(item)) && item.damage?.length ? [item] : [];
+  });
+}
+
+/**
  * The character's ability scores with equipped-item buffs (e.g. a ring's
  * +2 STR) folded in. Unknown stats pass through untouched.
  * @param {Character} character

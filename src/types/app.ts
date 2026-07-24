@@ -17,7 +17,7 @@ import type { NPC } from './npc.js';
 import type { Handout } from './handout.js';
 import type { ViewRole } from './view.js';
 import type { MapNode, PartyPosition } from './map.js';
-import type { DiceSelection } from './dice.js';
+import type { DiceResult, DiceSelection } from './dice.js';
 import type { TilePalette } from '../map/TilePalette.js';
 import type { TileGrid } from '../map/TileGrid.js';
 import type { MapNavigator } from '../map/MapNavigator.js';
@@ -100,6 +100,10 @@ export interface AppActions {
   // main.js: the dice tray's live selection, for rolls made outside the tray
   // (e.g. the GM rolling as the active enemy from the initiative panel).
   getDiceSelection(): DiceSelection;
+  // main.js: load a selection (and optional target number) into the dice tray
+  // and roll it there — weapon attacks route through this so the roll shows
+  // where every other roll happens.
+  rollDice(selection: DiceSelection, target?: number | null): { result: DiceResult; text: string };
 }
 
 export interface AppContext {
