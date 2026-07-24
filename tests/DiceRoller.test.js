@@ -5,6 +5,7 @@ import {
   rollDamage,
   emptySelection,
   formatResult,
+  attackTweak,
   DIE_SIDES,
 } from '../src/dice/DiceRoller.js';
 
@@ -158,6 +159,40 @@ test('rollDamage folds the modifier into the first term, never below zero', () =
   const floored = rollDamage([{ count: 1, sides: 6, damageType: 'piercing' }], -10, () => 0.5);
   assert.equal(floored.byType[0].subtotal, 0);
   assert.equal(floored.total, 0);
+});
+
+test('attackTweak with bonus dice returns them as counts, unrolled', () => {
+  const tweak = attackTweak(1, 'd4', 0, () => {
+    throw new Error('bonus dice must not roll here');
+  });
+  assert.deepEqual(tweak.counts, { d4: 1 });
+  assert.equal(tweak.modifier, 0);
+  assert.equal(tweak.note, '+1d4');
+});
+
+test('attackTweak rolls penalty dice and folds them into the modifier', () => {
+  const tweak = attackTweak(-2, 'd4', 0, () => 0.5);
+  assert.deepEqual(tweak.counts, {});
+  assert.equal(tweak.modifier, -6);
+  assert.equal(tweak.note, '-2d4 [3,3]');
+});
+
+test('attackTweak carries the flat bonus and notes it, signed', () => {
+  const boosted = attackTweak(1, 'd6', 2, () => 0.5);
+  assert.equal(boosted.modifier, 2);
+  assert.equal(boosted.note, '+1d6 +2');
+
+  const penalty = attackTweak(0, 'd4', -1, () => 0.5);
+  assert.deepEqual(penalty.counts, {});
+  assert.equal(penalty.modifier, -1);
+  assert.equal(penalty.note, '-1');
+});
+
+test('attackTweak with nothing to apply is a no-op with an empty note', () => {
+  const tweak = attackTweak(0, 'd4', 0, () => 0.5);
+  assert.deepEqual(tweak.counts, {});
+  assert.equal(tweak.modifier, 0);
+  assert.equal(tweak.note, '');
 });
 
 test('rollDamage merges terms sharing a damage type and skips empty terms', () => {

@@ -1,4 +1,5 @@
 /** @typedef {import('../types/dice.js').DieType} DieType */
+/** @typedef {import('../types/dice.js').DiceCounts} DiceCounts */
 /** @typedef {import('../types/dice.js').DiceSelection} DiceSelection */
 /** @typedef {import('../types/dice.js').DieTypeResult} DieTypeResult */
 /** @typedef {import('../types/dice.js').DiceResult} DiceResult */
@@ -73,6 +74,39 @@ export function roll(selection, rng = Math.random) {
  */
 export function emptySelection() {
   return { counts: {}, modifier: 0, mode: /** @type {const} */ ('normal') };
+}
+
+/**
+ * Resolve a pre-roll attack tweak — bonus or penalty dice plus a flat bonus,
+ * e.g. Bless's +1d4 or Bane's -1d4 — into pieces a d20 attack roll can
+ * absorb. Bonus dice ride along in the returned counts so the roll shows
+ * them live; penalty dice can't (selection counts are non-negative), so
+ * they're rolled here and folded into the modifier, with the rolled values
+ * preserved in the note. The note reads like "+1d4" or "-1d4 [3] +2" and is
+ * empty when there's nothing to apply.
+ * @param {number} count bonus (positive) or penalty (negative) dice
+ * @param {DieType} die
+ * @param {number} flat
+ * @param {RandomFn} [rng]
+ * @returns {{ counts: DiceCounts, modifier: number, note: string }}
+ */
+export function attackTweak(count, die, flat, rng = Math.random) {
+  /** @type {DiceCounts} */
+  const counts = {};
+  const notes = [];
+  let modifier = flat;
+  if (count > 0) {
+    counts[die] = count;
+    notes.push(`+${count}${die}`);
+  } else if (count < 0) {
+    /** @type {number[]} */
+    const rolls = [];
+    for (let i = 0; i < -count; i++) rolls.push(Math.floor(rng() * DIE_SIDES[die]) + 1);
+    modifier -= rolls.reduce((sum, value) => sum + value, 0);
+    notes.push(`-${-count}${die} [${rolls.join(',')}]`);
+  }
+  if (flat !== 0) notes.push(`${flat > 0 ? '+' : ''}${flat}`);
+  return { counts, modifier, note: notes.join(' ') };
 }
 
 /**

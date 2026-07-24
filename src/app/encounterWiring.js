@@ -21,7 +21,7 @@ import {
 } from '../entities/Encounter.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
-import { roll, rollDamage, formatResult } from '../dice/DiceRoller.js';
+import { roll, rollDamage, formatResult, attackTweak, DIE_SIDES } from '../dice/DiceRoller.js';
 import {
   armorClass,
   equippedWeapons,
@@ -567,10 +567,12 @@ export function wireEncounters(app) {
   }
 
   /**
-   * Roll a weapon attack for the active combatant, 5e-style: pick a defender
-   * on the opposite side (automatic when only one stands), then load 1d20 +
-   * the attacker's ability modifier + proficiency bonus and the defender's AC
-   * into the dice tray and roll. A natural 20 hits regardless of AC and
+   * Roll a weapon attack for the active combatant, 5e-style: a pre-roll
+   * dialog picks the defender and takes situational overrides — bonus or
+   * penalty dice on the attack roll (Bless +1d4, Bane -1d4), extra damage
+   * dice (a smite), and flat bonuses on either — then loads 1d20 + the
+   * attacker's ability modifier + proficiency bonus (+ overrides) and the
+   * defender's AC into the dice tray and rolls. A natural 20 hits regardless of AC and
    * doubles the damage dice (a critical hit); a natural 1 always misses;
    * otherwise the total is compared against AC. On a hit the weapon's damage
    * dice roll too — ability modifier folded into the base term, proficiency
@@ -624,32 +626,67 @@ export function wireEncounters(app) {
       app.toasts.show('No defender left standing.');
       return;
     }
-    let defender = defenders[0];
-    if (defenders.length > 1) {
-      const values = await promptModal(
-        `Attack with ${weapon.name}`,
-        [
-          {
-            name: 'target',
-            label: 'Defender',
-            type: 'select',
-            options: defenders.map((d) => ({
-              value: d.id,
-              label: `${d.name} (AC ${d.ac})`,
-            })),
-          },
-        ],
-        { submitLabel: 'Attack' },
-      );
-      if (!values) return;
-      defender = defenders.find((d) => d.id === values.target) ?? defenders[0];
-    }
+    // Every attack pauses at a pre-roll dialog: pick the defender and apply
+    // any situational overrides — bonus or penalty dice on the attack roll
+    // (Bless +1d4, Bane -1d4) and extra damage (a smite's dice, a flat
+    // rider). Everything defaults to zero, so plain Enter rolls the
+    // unmodified attack. Bonus damage folds into the weapon's own damage
+    // type and, like all damage dice, doubles on a crit; the attack-roll
+    // dice don't (they modify the d20, not the damage).
+    const bonusDieOptions = ['d4', 'd6', 'd8', 'd10', 'd12'].map((d) => ({
+      value: d,
+      label: d,
+    }));
+    const values = await promptModal(
+      `Attack with ${weapon.name}`,
+      [
+        {
+          name: 'target',
+          label: 'Defender',
+          type: 'select',
+          options: defenders.map((d) => ({
+            value: d.id,
+            label: `${d.name} (AC ${d.ac})`,
+          })),
+          full: true,
+        },
+        { name: 'atk-count', label: 'Attack: bonus dice', type: 'number', value: 0 },
+        {
+          name: 'atk-die',
+          label: 'Attack: die',
+          type: 'select',
+          value: 'd4',
+          options: bonusDieOptions,
+        },
+        { name: 'dmg-count', label: 'Damage: bonus dice', type: 'number', value: 0, min: 0 },
+        {
+          name: 'dmg-die',
+          label: 'Damage: die',
+          type: 'select',
+          value: 'd4',
+          options: bonusDieOptions,
+        },
+        { name: 'atk-flat', label: 'Attack: flat bonus', type: 'number', value: 0 },
+        { name: 'dmg-flat', label: 'Damage: flat bonus', type: 'number', value: 0 },
+      ],
+      { submitLabel: 'Roll attack', wide: true },
+    );
+    if (!values) return;
+    const defender = defenders.find((d) => d.id === values.target) ?? defenders[0];
     const ability = weaponAbility(weapon);
     const stats = 'statBlock' in attacker ? effectiveStatBlock(attacker) : effectiveStats(attacker);
     const abilityMod = abilityModifier(stats[ability] ?? 10);
     const attackBonus = abilityMod + proficiencyBonus(attacker.level);
+    // Bonus attack dice join the d20 in the tray's selection so they roll in
+    // view; penalty dice are rolled by attackTweak and folded into the
+    // modifier (with the values kept in its note for the log).
+    const tweak = attackTweak(
+      Number(values['atk-count']) || 0,
+      /** @type {import('../types/dice.js').DieType} */ (values['atk-die']),
+      Number(values['atk-flat']) || 0,
+    );
     const { result } = app.actions.rollDice(
-      { counts: { d20: 1 }, modifier: attackBonus },
+      { counts: { d20: 1, ...tweak.counts }, modifier: attackBonus + tweak.modifier },
       defender.ac,
     );
     const natural = result.results.find((r) => r.die === 'd20')?.rolls[0] ?? 0;
@@ -671,9 +708,10 @@ export function wireEncounters(app) {
     const modeNote = d20?.dropped?.length
       ? ` at ${result.selection.mode} (dropped ${d20.dropped.join(',')})`
       : '';
+    const tweakNote = tweak.note ? `, ${tweak.note}` : '';
     app.actions.logEvent(
       'combat',
-      `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(attacker.level)}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
+      `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(attacker.level)}${tweakNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
     );
     if (!hit) {
       app.toasts.show(
@@ -684,7 +722,18 @@ export function wireEncounters(app) {
     // A crit rolls every damage die twice; the ability modifier is still
     // added only once, and proficiency never reaches damage.
     const parts = (weapon.damage ?? []).map((p) => (crit ? { ...p, count: p.count * 2 } : p));
-    const damage = rollDamage(parts, abilityMod);
+    // Dialog-added damage dice count as damage dice, so they double on a crit
+    // too; typed as the weapon's own damage so rollDamage folds them into its
+    // group. The flat damage rider joins the ability modifier.
+    const bonusDice = Math.max(0, Number(values['dmg-count']) || 0);
+    if (bonusDice > 0) {
+      parts.push({
+        count: crit ? bonusDice * 2 : bonusDice,
+        sides: DIE_SIDES[/** @type {import('../types/dice.js').DieType} */ (values['dmg-die'])],
+        damageType: parts[0]?.damageType ?? 'bonus',
+      });
+    }
+    const damage = rollDamage(parts, abilityMod + (Number(values['dmg-flat']) || 0));
     const inflicts =
       'statusEffects' in weapon && weapon.statusEffects?.length
         ? `, inflicting ${weapon.statusEffects.join(', ')}`
