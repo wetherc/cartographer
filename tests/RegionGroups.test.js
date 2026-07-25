@@ -183,3 +183,21 @@ test('groupImageRef returns null when no member tile carries an image', () => {
   const group = findRegionGroups(node)[0];
   assert.equal(groupImageRef(node, group), null);
 });
+
+test('findRegionGroups and groupImageChunks are memoized per node', () => {
+  const node = nodeFromLayout(
+    [
+      ['R', 'R'],
+      ['R', 'R'],
+    ],
+    (cell) => (cell === 'R' ? 'region' : null),
+  );
+  const groups = findRegionGroups(node);
+  assert.equal(findRegionGroups(node), groups, 'same node yields the cached group array');
+  const chunks = groupImageChunks(node, groups[0]);
+  assert.equal(
+    groupImageChunks(node, groups[0]),
+    chunks,
+    'same (node, group) yields cached chunks',
+  );
+});

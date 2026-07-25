@@ -447,3 +447,12 @@ test('spanBlocks lists each scaled tile with its clamped rect and covered ids', 
   assert.equal(blocks[0].tileIds.length, 9);
   assert.ok(blocks[0].tileIds.includes('2,2'));
 });
+
+test('spanBlocks is memoized per node', () => {
+  let node = createMapNode('n', 'N', null, 5, 5);
+  node = paintTile(node, '0,0', 'academy.svg', false, 2);
+  const blocks = spanBlocks(node);
+  assert.equal(spanBlocks(node), blocks, 'same node yields the cached block array');
+  const repainted = paintTile(node, '3,3', 'keep.svg', false, 2);
+  assert.notEqual(spanBlocks(repainted), blocks, 'a mutated (replaced) node recomputes');
+});

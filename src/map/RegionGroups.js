@@ -14,14 +14,25 @@ import { getTile } from './TileGrid.js';
  */
 
 /**
+ * Cached region groups per node, keyed by the node object — safe because every
+ * tile mutation replaces the node immutably (the TileIndex contract). Group
+ * objects are therefore stable per node, which the chunk cache below keys on.
+ * @type {WeakMap<MapNode, RegionGroup[]>}
+ */
+const groupCache = new WeakMap();
+
+/**
  * Groups a node's tiles into contiguous (4-neighbor) blocks that share the
  * same non-null childNodeId, so a region can be entered from any tile in a
  * multi-tile block instead of a single point. Tiles with no childNodeId, or
- * ids that don't parse as "x,y" grid coordinates, are ignored.
+ * ids that don't parse as "x,y" grid coordinates, are ignored. Memoized per
+ * node; treat the returned array as read-only.
  * @param {MapNode} node
  * @returns {RegionGroup[]}
  */
 export function findRegionGroups(node) {
+  const cached = groupCache.get(node);
+  if (cached) return cached;
   /** @type {Map<string, { tile: import('../types/map.js').Tile, x: number, y: number }>} */
   const byCoord = new Map();
   for (const tile of node.tiles) {
@@ -75,6 +86,7 @@ export function findRegionGroups(node) {
     groups.push({ childNodeId, tileIds: members, minX, minY, maxX, maxY });
   }
 
+  groupCache.set(node, groups);
   return groups;
 }
 
@@ -127,18 +139,45 @@ export function groupImageRef(node, group) {
  */
 
 /**
+ * Cached chunks per (node, group) pair — the renderer partitions every group
+ * every frame, and both keys are stable per node (findRegionGroups memoizes
+ * its group objects), so the inner WeakMap hits on every frame after the first.
+ * @type {WeakMap<MapNode, WeakMap<RegionGroup, GroupImageChunk[]>>}
+ */
+const chunkCache = new WeakMap();
+
+/**
  * Partition a filled-rectangle region group into blocks of at most 2x2 tiles,
  * each carrying its own representative image — so a 4x4 region entrance reads
  * as four distinct 2x2 landmarks rather than one image stretched 4x, and odd
  * edges fall back to 1-wide strips. Chunks whose tiles are all imageless are
  * omitted (nothing to draw). A ragged (non-rectangular) group returns no
  * chunks: its bounding box would overlap tiles outside the group, so it keeps
- * per-tile rendering.
+ * per-tile rendering. Memoized per (node, group); treat the result as
+ * read-only.
  * @param {MapNode} node
  * @param {RegionGroup} group
  * @returns {GroupImageChunk[]}
  */
 export function groupImageChunks(node, group) {
+  let byGroup = chunkCache.get(node);
+  if (!byGroup) {
+    byGroup = new WeakMap();
+    chunkCache.set(node, byGroup);
+  }
+  const cached = byGroup.get(group);
+  if (cached) return cached;
+  const chunks = computeChunks(node, group);
+  byGroup.set(group, chunks);
+  return chunks;
+}
+
+/**
+ * @param {MapNode} node
+ * @param {RegionGroup} group
+ * @returns {GroupImageChunk[]}
+ */
+function computeChunks(node, group) {
   if (!isFilledRect(group)) return [];
   /** @type {GroupImageChunk[]} */
   const chunks = [];

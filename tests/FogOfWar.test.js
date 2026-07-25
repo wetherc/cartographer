@@ -55,6 +55,12 @@ test('revealAround leaves a non-coordinate tile untouched while revealing around
   assert.equal(after.tiles.find((t) => t.id === '2,2').revealed, true);
 });
 
+test('revealAround returns the same node object when nothing new is revealed', () => {
+  const once = revealAround(grid5x5(), '2,2', 1);
+  const again = revealAround(once, '2,2', 1);
+  assert.equal(again, once, 'an all-revealed step keeps the node identity (and its caches)');
+});
+
 test('revealAround is a no-op for a center id that is not a grid coordinate', () => {
   const before = grid5x5();
   const after = revealAround(before, 'not-a-coord', 5);

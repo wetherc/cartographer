@@ -71,19 +71,26 @@ export function createMapAuthoring(app, env) {
   /**
    * Apply a pure node transform (paint/erase) to the current node, persist it,
    * re-render the canvas, and keep the inspector in sync if it was showing the
-   * affected tile.
+   * affected tile. Per-cell derived work (region groups, the screen-reader map
+   * description) is deferred to the stroke's end — a drag calls this once per
+   * cell crossed, and nobody reads either mid-drag.
    * @param {string} tileId
    * @param {(node: import('../types/map.js').MapNode) => import('../types/map.js').MapNode} transform
    */
   function applyToTile(tileId, transform) {
     const updated = transform(navigator.getCurrentNode());
     grid.updateNode(updated);
-    env.mapCanvas.refreshNode(updated);
+    env.mapCanvas.refreshNodeTiles(updated);
     if (tileId === env.selectedTileId) {
       env.inspector.setTile(getTile(updated, tileId) ?? null, true);
     }
-    env.refreshMapDescription();
     app.actions.markDirty();
+  }
+
+  /** Recompute the stroke-deferred derived state: region groups + description. */
+  function settleAfterStroke() {
+    env.mapCanvas.refreshNode(navigator.getCurrentNode());
+    env.refreshMapDescription();
   }
 
   /**
@@ -158,6 +165,9 @@ export function createMapAuthoring(app, env) {
   // brush to every cell it crosses (a click is a one-cell stroke), so painting
   // a row is one gesture instead of one click per tile. The Region brush
   // instead drags out a marquee block, resolved to a child-node link on release.
+  /** Whether the in-progress stroke mutated any cell, so the stroke's end
+   * knows to settle deferred derived state (an inspect click never does). */
+  let strokeTouched = false;
   /** @type {(x: number, y: number, tile: import('../types/map.js').Tile | null, first: boolean) => void} */
   const onStrokeCell = (x, y, tile, first) => {
     const id = `${x},${y}`;
@@ -166,6 +176,7 @@ export function createMapAuthoring(app, env) {
     // canvas in authoring mode outside Build).
     if (state.mode === 'play') {
       if (env.fogTool) {
+        strokeTouched = true;
         applyToTile(id, (node) => setTileRevealed(node, id, env.fogTool === 'reveal'));
       }
       return;
@@ -180,8 +191,10 @@ export function createMapAuthoring(app, env) {
       if (first) env.regionAnchor = { x, y };
       if (env.regionAnchor) env.mapCanvas.setMarquee(normalizeRect(env.regionAnchor, { x, y }));
     } else if (env.activeBrush === 'erase') {
+      strokeTouched = true;
       applyToTile(id, (node) => eraseTile(node, id));
     } else if (env.activeBrush === 'erase-path') {
+      strokeTouched = true;
       applyToTile(id, (node) => erasePath(node, id));
     } else if (env.activeBrush) {
       // Captured so the closure below keeps the non-null narrowing.
@@ -192,6 +205,7 @@ export function createMapAuthoring(app, env) {
       // 2x/3x size would litter overlapping blocks, so only the first cell
       // paints.
       if (scale > 1 && !first) return;
+      strokeTouched = true;
       applyToTile(id, (node) => paintTile(node, id, brush.imageRef, overlay, scale));
     } else if (first) {
       // Inspect acts on the pressed cell only; dragging doesn't re-select.
@@ -201,6 +215,10 @@ export function createMapAuthoring(app, env) {
 
   const onStrokeEnd = () => {
     if (env.regionAnchor) finishRegionStroke();
+    if (strokeTouched) {
+      strokeTouched = false;
+      settleAfterStroke();
+    }
   };
 
   /**
@@ -274,6 +292,7 @@ export function createMapAuthoring(app, env) {
       const overlay = isOverlayType(entry.type);
       const scale = overlay ? 1 : env.palettePanel.getScale();
       applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef, overlay, scale));
+      settleAfterStroke();
     });
   }
 

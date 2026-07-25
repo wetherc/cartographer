@@ -214,6 +214,19 @@ export class MapCanvas {
   }
 
   /**
+   * Mid-stroke variant of refreshNode: swap the node and redraw without
+   * recomputing region groups, so a paint/erase/fog drag does O(cells) work
+   * instead of a full group flood-fill per cell crossed. Callers must settle
+   * with a full refreshNode when the stroke ends — an erase can remove a
+   * region-linked tile, which this variant leaves visually stale until then.
+   * @param {MapNode} node
+   */
+  refreshNodeTiles(node) {
+    this.node = node;
+    this.render();
+  }
+
+  /**
    * Show (or clear, with null) the party marker at a tile id within the
    * current node. Does not reset pan/zoom, unlike setNode.
    * @param {string | null} tileId

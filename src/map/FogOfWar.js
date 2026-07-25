@@ -17,16 +17,33 @@ export function revealAround(node, centerId, radius) {
   const center = parseCoords(centerId);
   if (!center) return node;
 
-  const tiles = node.tiles.map((tile) => {
-    if (tile.revealed) return tile;
-    const coords = parseCoords(tile.id);
-    if (!coords) return tile;
-    const dx = coords.x - center.x;
-    const dy = coords.y - center.y;
-    if (Math.sqrt(dx * dx + dy * dy) > radius) return tile;
-    return { ...tile, revealed: true };
-  });
+  // Walk the disc's bounding square via the tile index instead of mapping the
+  // whole tile array: O(radius^2) per party step, not O(total tiles) — and a
+  // step that reveals nothing new returns the same node, keeping the WeakMap
+  // caches (TileIndex, region groups, span blocks) warm.
+  const byId = tileIndex(node);
+  const r = Math.ceil(radius);
+  const radiusSq = radius * radius;
+  /** @type {Map<number, import('../types/map.js').Tile> | null} */
+  let changed = null;
+  for (let y = center.y - r; y <= center.y + r; y++) {
+    for (let x = center.x - r; x <= center.x + r; x++) {
+      const dx = x - center.x;
+      const dy = y - center.y;
+      if (dx * dx + dy * dy > radiusSq) continue;
+      const id = `${x},${y}`;
+      const tile = byId.get(id);
+      if (!tile || tile.revealed) continue;
+      (changed ??= new Map()).set(/** @type {number} */ (tilePosition(node, id)), {
+        ...tile,
+        revealed: true,
+      });
+    }
+  }
+  if (!changed) return node;
 
+  const tiles = node.tiles.slice();
+  for (const [pos, tile] of changed) tiles[pos] = tile;
   return { ...node, tiles };
 }
 

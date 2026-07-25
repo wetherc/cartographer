@@ -2,11 +2,20 @@ import { parseCoords, tileRect } from './MapGeometry.js';
 import { groupImageChunks } from './RegionGroups.js';
 import { spanBlocks } from './TilePaint.js';
 import { overlayList } from './TileGrid.js';
+import { tileIndex } from './TileIndex.js';
 import { MapMarkers } from './MapMarkers.js';
 import { MapDecorations } from './MapDecorations.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
+
+/**
+ * Cached revealed-id sets per node, keyed by the node object — the same
+ * immutable-replacement invariant TileIndex relies on. Rebuilding this Set per
+ * frame was a full tile scan on every pan/zoom frame.
+ * @type {WeakMap<MapNode, Set<string>>}
+ */
+const revealedCache = new WeakMap();
 
 /**
  * A snapshot of everything the renderer needs to draw a frame. MapCanvas owns
@@ -61,6 +70,10 @@ export class MapRenderer {
   }
 
   /**
+   * The decoded image for a tile ref, loaded once and kept for the session.
+   * Unbounded is fine while refs are the built-in SVG set (small, finite);
+   * add eviction before large custom raster tiles land. A `data:` URL ref
+   * (GM-supplied art) is used as-is — prefixing it with `/` would mangle it.
    * @param {string} imageRef
    * @returns {HTMLImageElement}
    */
@@ -68,7 +81,7 @@ export class MapRenderer {
     let img = this.imageCache.get(imageRef);
     if (!img) {
       img = new Image();
-      img.src = `/${imageRef}`;
+      img.src = imageRef.startsWith('data:') ? imageRef : `/${imageRef}`;
       img.onload = () => this.onImageLoad?.();
       this.imageCache.set(imageRef, img);
     }
@@ -116,8 +129,14 @@ export class MapRenderer {
    * @returns {Set<string> | null}
    */
   _revealedIds(view) {
-    if (view.revealAll) return null;
-    return new Set((view.node?.tiles ?? []).filter((t) => t.revealed).map((t) => t.id));
+    if (view.revealAll || !view.node) return null;
+    let ids = revealedCache.get(view.node);
+    if (!ids) {
+      ids = new Set();
+      for (const t of view.node.tiles) if (t.revealed) ids.add(t.id);
+      revealedCache.set(view.node, ids);
+    }
+    return ids;
   }
 
   /**
@@ -252,66 +271,81 @@ export class MapRenderer {
    * @param {Set<string>} groupCover
    */
   _renderTiles(view, groupCover) {
-    const { ctx } = this;
     const node = view.node;
     if (!node) return;
-    for (const tile of node.tiles) {
-      const coords = parseCoords(tile.id);
-      if (!coords) continue;
-      const { sx, sy, size } = tileRect(
-        coords.x,
-        coords.y,
-        this.tileSize,
-        view.offsetX,
-        view.offsetY,
-        view.scale,
-      );
-      if (sx + size < 0 || sy + size < 0 || sx > view.canvasWidth || sy > view.canvasHeight)
-        continue;
-
-      if (!tile.revealed && !view.revealAll) {
-        // A distinctly lighter fill than the map backdrop and the empty-canvas
-        // background, so an unexplored-but-real tile reads as fog, not void.
-        ctx.fillStyle = '#48412f';
-        ctx.fillRect(sx, sy, size, size);
-        continue;
+    // Invert the view transform once and walk only the visible cell range,
+    // looking tiles up by id — O(visible cells), where iterating node.tiles
+    // was O(total tiles) with a regex parse per tile per frame.
+    const size = this.tileSize * view.scale;
+    const byId = tileIndex(node);
+    const minX = Math.max(0, Math.floor(-view.offsetX / size));
+    const minY = Math.max(0, Math.floor(-view.offsetY / size));
+    const maxX = Math.min(node.width - 1, Math.floor((view.canvasWidth - view.offsetX) / size));
+    const maxY = Math.min(node.height - 1, Math.floor((view.canvasHeight - view.offsetY) / size));
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        const tile = byId.get(`${x},${y}`);
+        if (!tile) continue;
+        const sx = x * size + view.offsetX;
+        const sy = y * size + view.offsetY;
+        this._renderTile(view, tile, sx, sy, size, groupCover);
       }
-
-      // A tile carrying only an overlay (a path on an as-yet-unpainted cell)
-      // has an empty base, so let the map backdrop show through rather than
-      // drawing a placeholder under the path.
-      if (tile.imageRef && !groupCover.has(tile.id)) {
-        const img = this._getImage(tile.imageRef);
-        if (img.complete && img.naturalWidth > 0) {
-          ctx.drawImage(img, sx, sy, size, size);
-        } else {
-          ctx.fillStyle = '#333';
-          ctx.fillRect(sx, sy, size, size);
-        }
-      }
-
-      // Path/road overlays draw on top of the base terrain, so a road can sit
-      // on sand, snow, etc. rather than replacing the tile beneath it. A stack
-      // draws bottom-up (e.g. a river channel over its shoreline).
-      for (const ref of overlayList(tile)) {
-        const overlay = this._getImage(ref);
-        if (overlay.complete && overlay.naturalWidth > 0) {
-          ctx.drawImage(overlay, sx, sy, size, size);
-        }
-      }
-
-      // A drawn tile carrying a POI type gets a prominent outline. A POI marked
-      // discoverable stays hidden until the party reaches it (unless authoring,
-      // where the GM sees everything), so secret sites aren't given away by fog
-      // reveal alone — and like the encounter/NPC markers, an outline only
-      // shows within detection range of the party or a character token.
-      const poiVisible =
-        tile.metadata.poiType &&
-        (view.revealAll ||
-          ((!tile.metadata.discoverable || tile.metadata.discovered) &&
-            this._markers.markerVisible(view, tile.id)));
-      if (poiVisible) this._decorations.renderPoiOutline(sx, sy, size);
     }
+  }
+
+  /**
+   * Draw one visible tile — the per-cell body of _renderTiles.
+   * @param {MapView} view
+   * @param {import('../types/map.js').Tile} tile
+   * @param {number} sx
+   * @param {number} sy
+   * @param {number} size
+   * @param {Set<string>} groupCover
+   */
+  _renderTile(view, tile, sx, sy, size, groupCover) {
+    const { ctx } = this;
+    if (!tile.revealed && !view.revealAll) {
+      // A distinctly lighter fill than the map backdrop and the empty-canvas
+      // background, so an unexplored-but-real tile reads as fog, not void.
+      ctx.fillStyle = '#48412f';
+      ctx.fillRect(sx, sy, size, size);
+      return;
+    }
+
+    // A tile carrying only an overlay (a path on an as-yet-unpainted cell)
+    // has an empty base, so let the map backdrop show through rather than
+    // drawing a placeholder under the path.
+    if (tile.imageRef && !groupCover.has(tile.id)) {
+      const img = this._getImage(tile.imageRef);
+      if (img.complete && img.naturalWidth > 0) {
+        ctx.drawImage(img, sx, sy, size, size);
+      } else {
+        ctx.fillStyle = '#333';
+        ctx.fillRect(sx, sy, size, size);
+      }
+    }
+
+    // Path/road overlays draw on top of the base terrain, so a road can sit
+    // on sand, snow, etc. rather than replacing the tile beneath it. A stack
+    // draws bottom-up (e.g. a river channel over its shoreline).
+    for (const ref of overlayList(tile)) {
+      const overlay = this._getImage(ref);
+      if (overlay.complete && overlay.naturalWidth > 0) {
+        ctx.drawImage(overlay, sx, sy, size, size);
+      }
+    }
+
+    // A drawn tile carrying a POI type gets a prominent outline. A POI marked
+    // discoverable stays hidden until the party reaches it (unless authoring,
+    // where the GM sees everything), so secret sites aren't given away by fog
+    // reveal alone — and like the encounter/NPC markers, an outline only
+    // shows within detection range of the party or a character token.
+    const poiVisible =
+      tile.metadata.poiType &&
+      (view.revealAll ||
+        ((!tile.metadata.discoverable || tile.metadata.discovered) &&
+          this._markers.markerVisible(view, tile.id)));
+    if (poiVisible) this._decorations.renderPoiOutline(sx, sy, size);
   }
 
   /**

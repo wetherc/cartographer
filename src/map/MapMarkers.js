@@ -1,5 +1,4 @@
 import { parseCoords, tileRect } from './MapGeometry.js';
-import { withinRadius } from './FogOfWar.js';
 
 /** @typedef {import('./MapRenderer.js').MapRenderer} MapRenderer */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
@@ -15,32 +14,58 @@ export class MapMarkers {
   /** @param {MapRenderer} host */
   constructor(host) {
     this.host = host;
+    /** @type {MapView | null} the view the parsed anchors below belong to */
+    this._anchorsView = null;
+    /** @type {{ x: number, y: number }[]} */
+    this._anchors = [];
   }
 
   /**
-   * The tiles markers are detected from: the party's tile plus every
-   * character token's tile, so a scout who wandered off senses danger around
-   * their own position, not just the party's.
+   * The parsed grid coordinates markers are detected from: the party's tile
+   * plus every character token's tile, so a scout who wandered off senses
+   * danger around their own position, not just the party's. Parsed once per
+   * frame — MapCanvas hands the renderer a fresh view snapshot per draw, so
+   * the snapshot object doubles as the memo key; markerVisible is called per
+   * marker and per POI tile within one frame.
    * @param {MapView} view
-   * @returns {string[]}
+   * @returns {{ x: number, y: number }[]}
    */
   _markerAnchors(view) {
-    const anchors = (view.characterTokens ?? []).map((t) => t.tileId);
-    if (view.partyTileId) anchors.push(view.partyTileId);
+    if (this._anchorsView === view) return this._anchors;
+    /** @type {{ x: number, y: number }[]} */
+    const anchors = [];
+    for (const token of view.characterTokens ?? []) {
+      const coords = parseCoords(token.tileId);
+      if (coords) anchors.push(coords);
+    }
+    if (view.partyTileId) {
+      const coords = parseCoords(view.partyTileId);
+      if (coords) anchors.push(coords);
+    }
+    this._anchorsView = view;
+    this._anchors = anchors;
     return anchors;
   }
 
   /**
-   * Whether a marker at a tile is within detection range of the party or a
-   * character token. Build mode sees everything; in Play a node the party
-   * isn't in has no anchors, so its markers stay hidden.
+   * Whether a marker at a tile is within detection range (Euclidean, the same
+   * rule as FogOfWar.withinRadius) of the party or a character token. Build
+   * mode sees everything; in Play a node the party isn't in has no anchors, so
+   * its markers stay hidden.
    * @param {MapView} view
    * @param {string} tileId
    * @returns {boolean}
    */
   markerVisible(view, tileId) {
     if (view.revealAll) return true;
-    return this._markerAnchors(view).some((a) => withinRadius(tileId, a, view.markerRange));
+    const coords = parseCoords(tileId);
+    if (!coords) return false;
+    const rangeSq = view.markerRange * view.markerRange;
+    return this._markerAnchors(view).some((a) => {
+      const dx = coords.x - a.x;
+      const dy = coords.y - a.y;
+      return dx * dx + dy * dy <= rangeSq;
+    });
   }
 
   /**

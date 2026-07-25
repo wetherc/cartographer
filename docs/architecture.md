@@ -92,16 +92,18 @@ The GM's custom library persists separately in `storage/LibraryStore.js`, under 
 The performance posture is deliberate minimalism: most collections (characters,
 encounters, NPCs, quests, handouts, library templates) are small-n, and their
 linear scans are cheap in absolute terms — leave them alone rather than
-optimizing preemptively. Cost concentrates in four places, each with an
+optimizing preemptively. Cost concentrates in a handful of places, each with an
 established pattern that new code touching the same area should follow:
 
 - **Canvas redraws coalesce through one `requestAnimationFrame`.**
   `MapCanvas.render()` only schedules a frame; bursts of pointermove/wheel
   events and multi-setter updates (e.g. the party-marker sync) collapse into a
-  single redraw. Within a frame, `MapRenderer` computes derived data that needs
-  a full tile scan (revealed-id set, span blocks) once into a shared `frame`
-  object that every render pass reads. A new render pass should pull from that
-  object — or extend it — rather than re-scanning `node.tiles`.
+  single redraw. Within a frame, `MapRenderer` gathers shared derived data
+  into one `frame` object that every render pass reads. A new render pass
+  should pull from that object — or extend it — rather than re-scanning
+  `node.tiles`. Per-frame DOM chrome hanging off the render loop
+  (`MapControls.update` via `onViewChange`) compares against what it last
+  wrote and bails before touching the DOM when nothing changed.
 - **Per-tile lookups go through `TileIndex`** (`src/map/TileIndex.js`), a
   WeakMap-cached id-to-tile/position index per node. The cache is safe because
   nodes are replaced immutably on every tile mutation — a stale node object can
@@ -109,6 +111,27 @@ established pattern that new code touching the same area should follow:
   (painting, fog, hit-testing) should use it instead of scanning the flat
   `tiles` array; conversely, any new mutation path must keep replacing the node
   rather than mutating tiles in place, or the index breaks.
+- **Per-node derived data is WeakMap-cached, never recomputed per frame.**
+  The revealed-id set (`MapRenderer.js`), span blocks (`TilePaint.spanBlocks`),
+  region groups (`RegionGroups.findRegionGroups`), and group image chunks
+  (`groupImageChunks`, keyed `(node, group)` — group objects are stable because
+  the group cache makes them so) all follow the TileIndex pattern: a pure
+  function of an immutable node caches its result keyed by the node object.
+  Anything derivable from a node alone that a hot path recomputes should join
+  this pattern; the returned arrays/sets are shared, so treat them as
+  read-only. The tile pass itself iterates only the visible cell range (invert
+  the view transform once, look cells up by id) — O(visible), never O(total
+  tiles), and never a regex parse per tile per frame.
+- **Strokes defer derived work to the stroke's end.** A paint/erase/fog drag
+  updates per cell through `MapCanvas.refreshNodeTiles` (node swap + redraw
+  only); region-group recompute and the screen-reader map description settle
+  once in `onStrokeEnd` (`mapAuthoring.js`). New per-cell gesture work should
+  ask whether anyone can observe it mid-drag; if not, defer it the same way.
+- **Fog reveals walk the disc, not the map.** `revealAround` iterates the
+  radius's bounding square via TileIndex and copies the tile array once — and
+  returns the *same* node object when nothing newly revealed, so the WeakMap
+  caches above stay warm on a party step through explored ground. Mutation
+  helpers on hot paths should preserve identity on no-op the same way.
 - **Persistence never re-serializes what it already has.** The autosave history
   ring (`snapshotRawHistory`, `src/storage/SaveManager.js`) stores one raw
   snapshot string per localStorage key with a small numeric index; a push
@@ -126,10 +149,12 @@ established pattern that new code touching the same area should follow:
   library's `active*` getters cache their merged defaults+customs lists in
   module state, invalidated only by `setActiveLibrary`
   (`src/library/Library.js`), which every mutation path already routes
-  through. New derived collections (the planned spell corpus, feat catalog)
-  should hang off the same cache-and-invalidate point rather than re-merging
-  per call — and callers must treat the returned arrays as read-only, since
-  they are shared.
+  through — and the projections over them (entry-only lists, per-type filters,
+  the spell id index) live in the same cache object, so a getter never
+  re-allocates on a repeat call. New derived collections (the planned feat
+  catalog) should hang off the same cache-and-invalidate point rather than
+  re-merging per call — and callers must treat the returned arrays as
+  read-only, since they are shared.
 
 ## UI and style conventions
 

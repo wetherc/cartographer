@@ -51,9 +51,21 @@ export function mountMapControls(container, callbacks) {
   /** @type {{ el: HTMLButtonElement, tool: 'reveal' | 'hide' }[]} */
   const fogToggles = [];
 
+  /** @type {string} */
+  let lastZoom = '';
+  /** @type {'reveal' | 'hide' | null | undefined} */
+  let lastTool;
+
+  // Called from the canvas's per-frame view-change hook, so bail before any
+  // DOM write when nothing shown here changed — a pan otherwise rewrites the
+  // readout and toggle attributes at frame rate.
   function update() {
-    readout.textContent = `${Math.round(callbacks.getZoom() * 100)}%`;
+    const zoom = `${Math.round(callbacks.getZoom() * 100)}%`;
     const active = callbacks.fog?.getTool() ?? null;
+    if (zoom === lastZoom && active === lastTool) return;
+    lastZoom = zoom;
+    lastTool = active;
+    readout.textContent = zoom;
     for (const { el, tool } of fogToggles) {
       el.classList.toggle('map-controls__btn--active', active === tool);
       el.setAttribute('aria-pressed', String(active === tool));

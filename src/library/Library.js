@@ -492,11 +492,15 @@ let active = emptyLibrary();
  * re-ran the merge.
  * @type {{
  *   equipment?: { entry: EquipmentTemplate, source: LibrarySource }[],
+ *   equipmentAll?: EquipmentTemplate[],
+ *   equipmentByType?: Map<string, EquipmentTemplate[]>,
  *   weapons?: EquipmentTemplate[],
  *   armors?: import('../types/entities.js').EnemyArmor[],
  *   bestiary?: { entry: EncounterTemplate, source: LibrarySource }[],
+ *   bestiaryList?: EncounterTemplate[],
  *   npcs?: { entry: NPCTemplate, source: LibrarySource }[],
  *   spells?: { entry: Spell, source: LibrarySource }[],
+ *   spellList?: Spell[],
  *   spellIndex?: Map<string, Spell>,
  * }}
  */
@@ -529,8 +533,15 @@ export function activeEquipmentEntries() {
  * @param {import('../types/entities.js').ItemType} [type]
  * @returns {EquipmentTemplate[]} */
 export function activeEquipment(type) {
-  const all = activeEquipmentEntries().map((e) => e.entry);
-  return type === undefined ? all : all.filter((e) => e.type === type);
+  const all = (cache.equipmentAll ??= activeEquipmentEntries().map((e) => e.entry));
+  if (type === undefined) return all;
+  const byType = (cache.equipmentByType ??= new Map());
+  let list = byType.get(type);
+  if (!list) {
+    list = all.filter((e) => e.type === type);
+    byType.set(type, list);
+  }
+  return list;
 }
 
 /** Every merged template usable as an enemy weapon: weapon-typed with a
@@ -570,7 +581,7 @@ export function activeBestiaryEntries() {
 /** The merged bestiary templates, for spawn pickers.
  * @returns {EncounterTemplate[]} */
 export function activeBestiary() {
-  return activeBestiaryEntries().map((e) => e.entry);
+  return (cache.bestiaryList ??= activeBestiaryEntries().map((e) => e.entry));
 }
 
 /** The merged NPC templates, tagged by source.
@@ -589,7 +600,7 @@ export function activeSpellEntries() {
 /** The merged spells, for spellbook pickers and the casting resolver.
  * @returns {Spell[]} */
 export function activeSpells() {
-  return activeSpellEntries().map((e) => e.entry);
+  return (cache.spellList ??= activeSpellEntries().map((e) => e.entry));
 }
 
 /** The merged spells indexed by id, memoized alongside the merge so casting and
