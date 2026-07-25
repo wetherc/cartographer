@@ -1,8 +1,9 @@
 import { parseCoords, tileRect } from './MapGeometry.js';
-import { withinRadius } from './FogOfWar.js';
 import { groupImageChunks } from './RegionGroups.js';
 import { spanBlocks } from './TilePaint.js';
 import { overlayList } from './TileGrid.js';
+import { MapMarkers } from './MapMarkers.js';
+import { MapDecorations } from './MapDecorations.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
@@ -38,7 +39,10 @@ import { overlayList } from './TileGrid.js';
  * reads a MapView and paints, keeping no pan/zoom or selection state itself, so
  * MapCanvas stays the single owner of interaction state. The one piece of
  * mutable state it keeps is an image cache; a freshly-loaded image calls back
- * so the canvas can re-render once the bytes arrive.
+ * so the canvas can re-render once the bytes arrive. This class owns the
+ * terrain passes (bounds, group/span images, tiles + fog, region overlays);
+ * the marker and decoration passes live in MapMarkers and MapDecorations,
+ * which read this instance's ctx and tileSize through a host reference.
  */
 export class MapRenderer {
   /**
@@ -52,6 +56,8 @@ export class MapRenderer {
     this.onImageLoad = options.onImageLoad;
     /** @type {Map<string, HTMLImageElement>} */
     this.imageCache = new Map();
+    this._markers = new MapMarkers(this);
+    this._decorations = new MapDecorations(this);
   }
 
   /**
@@ -89,81 +95,15 @@ export class MapRenderer {
     this._renderSpanImages(view, frame, groupCover);
     this._renderTiles(view, groupCover);
     this._renderRegionGroups(view, frame);
-    this._renderMarquee(view);
-    this._renderSelection(view);
-    this._renderEncounterMarkers(view);
-    this._renderNPCMarkers(view);
-    this._renderPartyMarker(view);
-    this._renderCharacterTokens(view);
-    this._renderCursor(view);
+    this._decorations.renderMarquee(view);
+    this._decorations.renderSelection(view);
+    this._markers.renderEncounterMarkers(view);
+    this._markers.renderNPCMarkers(view);
+    this._markers.renderPartyMarker(view);
+    this._markers.renderCharacterTokens(view);
+    this._decorations.renderCursor(view);
     this._renderMapBoundsBorder(view);
-    this._renderCoordinates(view);
-  }
-
-  /**
-   * Draw column (x) numbers above the top row and row (y) numbers left of the
-   * first column, so a GM can read a tile's coordinate off the grid. Labels
-   * hang off the grid edge and pan with it, but once the edge scrolls out of
-   * the viewport (zoomed/panned in) they pin to the viewport edge at partial
-   * opacity, over a translucent backing, so coordinates stay readable over
-   * map art. Skipped when tiles are too small to label without clutter.
-   * @param {MapView} view
-   */
-  _renderCoordinates(view) {
-    if (!view.node) return;
-    const size = this.tileSize * view.scale;
-    if (size < 20) return; // too dense to be legible
-    const { ctx } = this;
-    ctx.save();
-    // Font is in buffer pixels, which are devicePixelRatio-times denser than CSS
-    // pixels, so a small cap renders illegibly on a HiDPI canvas. Scale with the
-    // tile and only cap generously.
-    const fontSize = Math.round(Math.max(14, Math.min(size * 0.3, 42)));
-    ctx.font = `600 ${fontSize}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    const pad = fontSize * 0.9;
-    const colPinned = view.offsetY - pad < pad;
-    const colY = colPinned ? pad : view.offsetY - pad;
-    const rowPinned = view.offsetX - pad < pad;
-    const rowX = rowPinned ? pad : view.offsetX - pad;
-    for (let x = 0; x < view.node.width; x++) {
-      const cx = view.offsetX + (x + 0.5) * size;
-      if (cx < 0 || cx > view.canvasWidth) continue;
-      this._drawCoordLabel(String(x), cx, colY, fontSize, colPinned);
-    }
-    for (let y = 0; y < view.node.height; y++) {
-      const cy = view.offsetY + (y + 0.5) * size;
-      if (cy < 0 || cy > view.canvasHeight) continue;
-      this._drawCoordLabel(String(y), rowX, cy, fontSize, rowPinned);
-    }
-    ctx.restore();
-  }
-
-  /**
-   * Draw one coordinate number. Pinned labels sit over map art, so they get a
-   * translucent dark pill behind the digits and render at reduced opacity;
-   * unpinned labels float on the empty canvas around the grid and need neither.
-   * @param {string} text
-   * @param {number} x
-   * @param {number} y
-   * @param {number} fontSize
-   * @param {boolean} pinned
-   */
-  _drawCoordLabel(text, x, y, fontSize, pinned) {
-    const { ctx } = this;
-    if (pinned) {
-      ctx.globalAlpha = 0.65;
-      const w = ctx.measureText(text).width + fontSize * 0.5;
-      const h = fontSize * 1.2;
-      ctx.fillStyle = 'rgba(20, 16, 10, 0.7)';
-      ctx.beginPath();
-      ctx.roundRect(x - w / 2, y - h / 2, w, h, h / 4);
-      ctx.fill();
-    }
-    ctx.fillStyle = 'rgba(230, 215, 180, 0.8)';
-    ctx.fillText(text, x, y);
-    if (pinned) ctx.globalAlpha = 1;
+    this._decorations.renderCoordinates(view);
   }
 
   /**
@@ -369,109 +309,9 @@ export class MapRenderer {
         tile.metadata.poiType &&
         (view.revealAll ||
           ((!tile.metadata.discoverable || tile.metadata.discovered) &&
-            this._markerVisible(view, tile.id)));
-      if (poiVisible) this._renderPoiOutline(sx, sy, size);
+            this._markers.markerVisible(view, tile.id)));
+      if (poiVisible) this._decorations.renderPoiOutline(sx, sy, size);
     }
-  }
-
-  /**
-   * Outline a discovered point-of-interest tile with a glowing gold border, so
-   * it reads as special against surrounding terrain. Drawn per tile inside the
-   * tile loop rather than as an overlay pass, so it sits directly on the tile.
-   * @param {number} sx
-   * @param {number} sy
-   * @param {number} size
-   */
-  _renderPoiOutline(sx, sy, size) {
-    const { ctx } = this;
-    ctx.save();
-    ctx.strokeStyle = '#ffd24a';
-    ctx.lineWidth = Math.max(2, size * 0.06);
-    ctx.shadowColor = 'rgba(255, 190, 60, 0.9)';
-    ctx.shadowBlur = size * 0.18;
-    const inset = ctx.lineWidth / 2 + 1;
-    ctx.strokeRect(sx + inset, sy + inset, size - inset * 2, size - inset * 2);
-    ctx.restore();
-  }
-
-  /** Draw the keyboard cursor cell while the canvas is focused, distinct from
-   * the Build selection (solid gold) and party marker (dot).
-   * @param {MapView} view */
-  _renderCursor(view) {
-    if (!view.focused || !view.cursorCellId) return;
-    const coords = parseCoords(view.cursorCellId);
-    if (!coords) return;
-    const { ctx } = this;
-    const { sx, sy, size } = tileRect(
-      coords.x,
-      coords.y,
-      this.tileSize,
-      view.offsetX,
-      view.offsetY,
-      view.scale,
-    );
-    ctx.save();
-    ctx.strokeStyle = '#5ec8ff';
-    ctx.lineWidth = 3;
-    ctx.setLineDash([4, 3]);
-    ctx.strokeRect(sx + 1.5, sy + 1.5, size - 3, size - 3);
-    ctx.restore();
-  }
-
-  /** Dashed outline + tint over the region tool's in-progress drag block.
-   * @param {MapView} view */
-  _renderMarquee(view) {
-    if (!view.marquee) return;
-    const { ctx } = this;
-    const topLeft = tileRect(
-      view.marquee.minX,
-      view.marquee.minY,
-      this.tileSize,
-      view.offsetX,
-      view.offsetY,
-      view.scale,
-    );
-    const bottomRight = tileRect(
-      view.marquee.maxX,
-      view.marquee.maxY,
-      this.tileSize,
-      view.offsetX,
-      view.offsetY,
-      view.scale,
-    );
-    const w = bottomRight.sx + bottomRight.size - topLeft.sx;
-    const h = bottomRight.sy + bottomRight.size - topLeft.sy;
-    ctx.save();
-    ctx.fillStyle = 'rgba(224, 193, 75, 0.18)';
-    ctx.fillRect(topLeft.sx, topLeft.sy, w, h);
-    ctx.strokeStyle = '#e0c14b';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
-    ctx.strokeRect(topLeft.sx + 1, topLeft.sy + 1, w - 2, h - 2);
-    ctx.restore();
-  }
-
-  /** Outline the Build-mode selected tile so the GM sees which tile the
-   * inspector and palette act on.
-   * @param {MapView} view */
-  _renderSelection(view) {
-    if (!view.selectedTileId) return;
-    const coords = parseCoords(view.selectedTileId);
-    if (!coords) return;
-    const { ctx } = this;
-    const { sx, sy, size } = tileRect(
-      coords.x,
-      coords.y,
-      this.tileSize,
-      view.offsetX,
-      view.offsetY,
-      view.scale,
-    );
-    ctx.save();
-    ctx.strokeStyle = '#e0c14b';
-    ctx.lineWidth = 3;
-    ctx.strokeRect(sx + 1.5, sy + 1.5, size - 3, size - 3);
-    ctx.restore();
   }
 
   /**
@@ -499,206 +339,6 @@ export class MapRenderer {
     ctx.lineWidth = 2;
     ctx.strokeRect(view.offsetX, view.offsetY, view.node.width * size, view.node.height * size);
     ctx.restore();
-  }
-
-  /**
-   * The tiles markers are detected from: the party's tile plus every
-   * character token's tile, so a scout who wandered off senses danger around
-   * their own position, not just the party's.
-   * @param {MapView} view
-   * @returns {string[]}
-   */
-  _markerAnchors(view) {
-    const anchors = (view.characterTokens ?? []).map((t) => t.tileId);
-    if (view.partyTileId) anchors.push(view.partyTileId);
-    return anchors;
-  }
-
-  /**
-   * Whether a marker at a tile is within detection range of the party or a
-   * character token. Build mode sees everything; in Play a node the party
-   * isn't in has no anchors, so its markers stay hidden.
-   * @param {MapView} view
-   * @param {string} tileId
-   * @returns {boolean}
-   */
-  _markerVisible(view, tileId) {
-    if (view.revealAll) return true;
-    return this._markerAnchors(view).some((a) => withinRadius(tileId, a, view.markerRange));
-  }
-
-  /**
-   * Mark tiles carrying a live encounter with a red diamond in the tile's upper
-   * corner, so a point of danger reads distinctly from the gold party dot and a
-   * POI outline. Markers respect the fog of war loosely: a danger is sensed out
-   * to the detection range (twice the fog reveal radius) around the party and
-   * any split-off character, even on still-fogged tiles, but never further.
-   * @param {MapView} view
-   */
-  _renderEncounterMarkers(view) {
-    const ids = view.encounterTileIds;
-    if (!ids || ids.length === 0 || !view.node) return;
-    const { ctx } = this;
-    for (const id of ids) {
-      if (!this._markerVisible(view, id)) continue;
-      const coords = parseCoords(id);
-      if (!coords) continue;
-      const { sx, sy, size } = tileRect(
-        coords.x,
-        coords.y,
-        this.tileSize,
-        view.offsetX,
-        view.offsetY,
-        view.scale,
-      );
-      const cx = sx + size * 0.74;
-      const cy = sy + size * 0.26;
-      const r = size * 0.16;
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(Math.PI / 4);
-      ctx.fillStyle = '#a5352b';
-      ctx.strokeStyle = '#2a0f0c';
-      ctx.lineWidth = Math.max(1.5, size * 0.03);
-      ctx.beginPath();
-      ctx.rect(-r, -r, r * 2, r * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-
-  /**
-   * Mark tiles holding a placed NPC with a blue circle in the tile's upper-left
-   * corner — mirroring the encounter diamond's upper-right spot, so a tile can
-   * carry both without overlap, and reading as a person rather than a threat.
-   * Same detection rule as encounters: marked only within the detection range
-   * of the party or a character token (Build marks all).
-   * @param {MapView} view
-   */
-  _renderNPCMarkers(view) {
-    const ids = view.npcTileIds;
-    if (!ids || ids.length === 0 || !view.node) return;
-    const { ctx } = this;
-    for (const id of ids) {
-      if (!this._markerVisible(view, id)) continue;
-      const coords = parseCoords(id);
-      if (!coords) continue;
-      const { sx, sy, size } = tileRect(
-        coords.x,
-        coords.y,
-        this.tileSize,
-        view.offsetX,
-        view.offsetY,
-        view.scale,
-      );
-      ctx.save();
-      ctx.fillStyle = '#3563a5';
-      ctx.strokeStyle = '#101f36';
-      ctx.lineWidth = Math.max(1.5, size * 0.03);
-      ctx.beginPath();
-      ctx.arc(sx + size * 0.26, sy + size * 0.26, size * 0.15, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    }
-  }
-
-  /** Gold dot for the party's tile. Skipped when a character token stands on
-   * that tile — the tokens carry the presence, so the dot underneath would
-   * only add clutter. It still draws for an empty roster (or a party tile all
-   * of whose members wandered off), keeping the anchor visible.
-   * @param {MapView} view */
-  _renderPartyMarker(view) {
-    if (!view.partyTileId) return;
-    if (view.characterTokens?.some((t) => t.tileId === view.partyTileId)) return;
-    const coords = parseCoords(view.partyTileId);
-    if (!coords) return;
-    const { ctx } = this;
-    const { sx, sy, size } = tileRect(
-      coords.x,
-      coords.y,
-      this.tileSize,
-      view.offsetX,
-      view.offsetY,
-      view.scale,
-    );
-
-    ctx.save();
-    ctx.fillStyle = '#e0c14b';
-    ctx.strokeStyle = '#3a2f0a';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(sx + size / 2, sy + size / 2, size * 0.22, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  /**
-   * Per-character tokens: a small gold dot per character, spread across their
-   * tile when several share it, with the characters' names stacked above the
-   * tile. Same palette as the party dot so a token reads as "one of ours",
-   * distinct from the blue NPC circle and the red encounter diamond.
-   * @param {MapView} view
-   */
-  _renderCharacterTokens(view) {
-    const tokens = view.characterTokens;
-    if (!tokens || tokens.length === 0 || !view.node) return;
-    const { ctx } = this;
-    /** @type {Map<string, string[]>} tile id -> names standing there */
-    const byTile = new Map();
-    for (const token of tokens) {
-      const names = byTile.get(token.tileId) ?? [];
-      names.push(token.name);
-      byTile.set(token.tileId, names);
-    }
-    for (const [tileId, names] of byTile) {
-      const coords = parseCoords(tileId);
-      if (!coords) continue;
-      const { sx, sy, size } = tileRect(
-        coords.x,
-        coords.y,
-        this.tileSize,
-        view.offsetX,
-        view.offsetY,
-        view.scale,
-      );
-      if (sx + size < 0 || sy + size < 0 || sx > view.canvasWidth || sy > view.canvasHeight)
-        continue;
-
-      ctx.save();
-      // Dots spread evenly along the tile's midline; a lone token sits centred.
-      const r = Math.min(size * 0.14, (size * 0.8) / (names.length * 2));
-      names.forEach((_, i) => {
-        const cx = sx + (size * (i + 1)) / (names.length + 1);
-        ctx.fillStyle = '#e0c14b';
-        ctx.strokeStyle = '#3a2f0a';
-        ctx.lineWidth = Math.max(1.5, size * 0.03);
-        ctx.beginPath();
-        ctx.arc(cx, sy + size / 2, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-      });
-
-      // Names stack above the tile, nearest name closest to it. Skipped when
-      // tiles get too small for the label to be legible.
-      if (size >= 24) {
-        const fontSize = Math.round(Math.max(11, Math.min(size * 0.24, 26)));
-        ctx.font = `600 ${fontSize}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        names.forEach((name, i) => {
-          const ty = sy - 3 - (names.length - 1 - i) * (fontSize + 2);
-          const width = ctx.measureText(name).width;
-          ctx.fillStyle = 'rgba(20, 16, 8, 0.72)';
-          ctx.fillRect(sx + size / 2 - width / 2 - 3, ty - fontSize - 1, width + 6, fontSize + 4);
-          ctx.fillStyle = '#f2e4bd';
-          ctx.fillText(name, sx + size / 2, ty);
-        });
-      }
-      ctx.restore();
-    }
   }
 
   /** @param {MapView} view
