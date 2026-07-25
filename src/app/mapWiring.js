@@ -1,46 +1,61 @@
-import { getTile, updateTileMetadata } from '../map/TileGrid.js';
+import { getTile } from '../map/TileGrid.js';
 import { MapCanvas } from '../map/MapCanvas.js';
-import { clientToBuffer, screenToTile } from '../map/MapGeometry.js';
-import {
-  paintTile,
-  eraseTile,
-  erasePath,
-  normalizeRect,
-  tilesInRect,
-  linkTilesInRect,
-  stampRegionLink,
-} from '../map/TilePaint.js';
-import { isOverlayType } from '../map/TilePalette.js';
-import { computeRegionEntryTile, resolveEntryTile } from '../map/EntryPoint.js';
-import { discoveredNodes, revealAll, revealAround, setTileRevealed } from '../map/FogOfWar.js';
-import { characterTokens, moveCharacter, recallAll } from '../party/CharacterTokens.js';
-import { pushEdit, popEdit } from '../map/EditHistory.js';
+import { revealAll, discoveredNodes } from '../map/FogOfWar.js';
+import { characterTokens } from '../party/CharacterTokens.js';
 import { renderNodeToCanvas, downloadCanvasPNG, exportFilename } from '../map/MapExport.js';
 import { findRegionGroups } from '../map/RegionGroups.js';
 import { createNodeActions } from './nodeActions.js';
+import { createMapAuthoring } from './mapAuthoring.js';
+import { createMapTravel } from './mapTravel.js';
 import { mustGetElement } from '../ui/dom.js';
 import { mountBreadcrumb } from '../ui/Breadcrumb.js';
 import { mountWorldTree } from '../ui/WorldTree.js';
-import { mountTileInspector } from '../ui/TileInspector.js';
 import { mountPalettePanel } from '../ui/PalettePanel.js';
 import { mountMapControls } from '../ui/MapControls.js';
 import { mountMapDescription } from '../ui/MapDescription.js';
 import { mountTileTooltip } from '../ui/TileTooltip.js';
 import { wireTabs } from '../ui/Tabs.js';
-import { promptModal, confirmModal } from '../ui/Modal.js';
 import { isDefeated } from '../entities/Encounter.js';
-import { meetNPCs } from '../entities/NPC.js';
 import { isGM } from '../view/ViewRole.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
 /**
+ * The mutable context shared between the map wiring and its two gesture
+ * modules (mapAuthoring, mapTravel): the mounted views and the Build/Play UI
+ * state. Wiring fills the view fields in mount order; the gesture handlers
+ * only run on user events, long after wiring completes, so reading them late
+ * is safe (the same late-binding the wiring already relies on for
+ * mapControls and nodeActions).
+ * @typedef {{
+ *   mapCanvas: import('../map/MapCanvas.js').MapCanvas,
+ *   inspector: ReturnType<typeof import('../ui/TileInspector.js').mountTileInspector>,
+ *   palettePanel: ReturnType<typeof mountPalettePanel>,
+ *   tileTooltip: ReturnType<typeof mountTileTooltip>,
+ *   breadcrumb: ReturnType<typeof mountBreadcrumb>,
+ *   worldTree: ReturnType<typeof mountWorldTree>,
+ *   regionTree: ReturnType<typeof mountWorldTree>,
+ *   nodeActions: ReturnType<typeof createNodeActions>,
+ *   selectedTileId: string | null,
+ *   activeBrush: import('../ui/PalettePanel.js').Brush,
+ *   fogTool: 'reveal' | 'hide' | null,
+ *   regionAnchor: { x: number, y: number } | null,
+ *   goToNode: (nodeId: string) => void,
+ *   selectTile: (tileId: string) => void,
+ *   clearSelection: () => void,
+ *   syncPartyMarker: () => void,
+ *   refreshMapDescription: () => void,
+ * }} MapEnv
+ */
+
+/**
  * Everything on and around the map: the canvas and its stroke/click gestures,
  * the breadcrumb and both world trees, the tile inspector, the palette and its
  * drag-drop, fog controls, the screen-reader map description, stroke-level
- * undo, and the Build-rail tools (Undo stroke, Export PNG). Owns the
- * Build-mode UI state (selection, brush, fog tool, marquee, edit history);
- * registers the map-facing actions the other modules call.
+ * undo, and the Build-rail tools (Undo stroke, Export PNG). Owns the mounts
+ * and the location-sync actions; the Build-mode authoring gestures live in
+ * mapAuthoring.js and the Play-mode movement in mapTravel.js, sharing state
+ * through a MapEnv object.
  * @param {AppContext} app
  */
 export function wireMapView(app) {
@@ -55,52 +70,27 @@ export function wireMapView(app) {
   // The Encounters tab's nested Mobs / NPCs strip, splitting the two rosters.
   wireTabs(mustGetElement('build-encounter-tabs'));
 
-  /** @type {string | null} tile id selected for inspection/editing in Build mode */
-  let selectedTileId = null;
-  /** @type {import('../ui/PalettePanel.js').Brush} active Build-mode paint brush */
-  let activeBrush = null;
-  /** @type {'reveal' | 'hide' | null} active Play-mode GM fog brush */
-  let fogTool = null;
-  /** @type {{ x: number, y: number } | null} first cell of an in-progress region-tool drag */
-  let regionAnchor = null;
+  // The shared context the gesture modules read; view fields are assigned as
+  // each mount completes below.
+  const env = /** @type {MapEnv} */ (
+    /** @type {unknown} */ ({
+      selectedTileId: null, // tile id selected for inspection/editing in Build mode
+      activeBrush: null, // active Build-mode paint brush
+      fogTool: null, // active Play-mode GM fog brush
+      regionAnchor: null, // first cell of an in-progress region-tool drag
+      goToNode,
+      selectTile,
+      clearSelection,
+      syncPartyMarker,
+      refreshMapDescription,
+    })
+  );
 
-  /**
-   * Build-mode stroke-level undo: an in-memory ring of node snapshots taken
-   * before each paint/erase stroke, region link, tile link, drop-paint, and
-   * generate, so one bad edit is reversible without reloading a whole earlier
-   * save. Session-only — the persisted Undo button stays the save-level story.
-   * @type {import('../types/map.js').MapNode[][]}
-   */
-  let editHistory = [];
-
-  /** Snapshot the given nodes' pre-edit state onto the stroke-undo ring.
-   * @param {...import('../types/map.js').MapNode} nodes */
-  function snapshotEdit(...nodes) {
-    editHistory = pushEdit(editHistory, nodes);
-  }
-  app.actions.snapshotEdit = snapshotEdit;
-
-  /** Restore the most recent stroke-undo snapshot, skipping nodes deleted since. */
-  function undoStroke() {
-    const popped = popEdit(editHistory);
-    editHistory = popped.history;
-    if (!popped.nodes) {
-      toasts.show('Nothing to undo.');
-      return;
-    }
-    for (const node of popped.nodes) {
-      if (grid.getNode(node.id)) grid.updateNode(node);
-    }
-    mapCanvas.setNode(navigator.getCurrentNode());
-    clearSelection();
-    syncPartyMarker();
-    worldTree.update();
-    regionTree.update();
-    refreshMapDescription();
-    app.actions.markDirty();
-    toasts.show('Undid the last edit.');
-  }
-  app.actions.undoStroke = undoStroke;
+  const authoring = createMapAuthoring(app, env);
+  const travel = createMapTravel(app, env);
+  app.actions.snapshotEdit = authoring.snapshotEdit;
+  app.actions.undoStroke = authoring.undoStroke;
+  app.actions.meetNPCs = travel.meetNPCsHere;
 
   /** Show the party marker only on the node the party is actually standing in,
    * and resolve each character's named token for the node being viewed (their
@@ -190,14 +180,47 @@ export function wireMapView(app) {
 
   /** Drop any Build-mode tile selection and its inspector/canvas highlight. */
   function clearSelection() {
-    selectedTileId = null;
+    env.selectedTileId = null;
     mapCanvas.setSelectedTile(null);
     inspector.setTile(null);
   }
   app.actions.clearSelection = clearSelection;
-  app.actions.getSelectedTileId = () => selectedTileId;
+  app.actions.getSelectedTileId = () => env.selectedTileId;
+
+  /**
+   * Select a tile within the current node and point the inspector at it,
+   * bringing the Tile tab forward so the inspector is actually visible.
+   * @param {string} tileId
+   */
+  function selectTile(tileId) {
+    env.selectedTileId = tileId;
+    mapCanvas.setSelectedTile(tileId);
+    inspector.setTile(getTile(navigator.getCurrentNode(), tileId) ?? null, true);
+    buildTabs.select('build-tab-tile');
+  }
+
+  /**
+   * Bring a staged location into view: navigate to its node if the GM is
+   * looking elsewhere, centre the canvas on its tile, and select the tile so
+   * it reads highlighted — without stealing the Build rail's active tab the
+   * way selectTile does. How "click an encounter in the Build list" lands on
+   * the encounter.
+   * @param {import('../types/entities.js').EncounterLocation} location
+   */
+  function focusLocation(location) {
+    if (navigator.getCurrentNode().id !== location.nodeId) {
+      if (!grid.getNode(location.nodeId)) return;
+      goToNode(location.nodeId);
+    }
+    env.selectedTileId = location.tileId;
+    mapCanvas.setSelectedTile(location.tileId);
+    inspector.setTile(getTile(navigator.getCurrentNode(), location.tileId) ?? null, true);
+    mapCanvas.centerOnTile(location.tileId);
+  }
+  app.actions.focusLocation = focusLocation;
 
   const breadcrumb = mountBreadcrumb(mustGetElement('breadcrumb-container'), goToNode);
+  env.breadcrumb = breadcrumb;
 
   const worldTree = mountWorldTree(mustGetElement('world-tree-container'), {
     getNodes: () => [...grid.nodes.values()],
@@ -208,6 +231,7 @@ export function wireMapView(app) {
     onDelete: (id) => nodeActions.deleteNode(id),
   });
   app.views.worldTree = worldTree;
+  env.worldTree = worldTree;
 
   // The Play-mode counterpart to the Build-mode world tree: the same hierarchy,
   // but read-only (no add/delete affordances). Players only see nodes the party
@@ -220,124 +244,11 @@ export function wireMapView(app) {
         ? [...grid.nodes.values()]
         : discoveredNodes([...grid.nodes.values()], partyTracker.getPosition()),
     getCurrentId: () => navigator.getCurrentNode().id,
-    onSelect: teleportToNode,
+    onSelect: travel.teleportToNode,
     collapsible: true,
   });
   app.views.regionTree = regionTree;
-
-  /**
-   * Offer to teleport the party to a discovered node. Clicking the node the
-   * party already occupies just brings the view back to it; otherwise a confirm
-   * dialog gates the move. The party lands on the node's first revealed tile
-   * (there is always one for a discovered node with tiles), falling back to the
-   * grid centre for a tile-less node.
-   * @param {string} nodeId
-   */
-  async function teleportToNode(nodeId) {
-    const node = grid.getNode(nodeId);
-    if (!node) return;
-    // Teleporting the party is the GM's call; a player selecting a node just
-    // brings it into view without moving anyone.
-    if (!isGM(state.role) || partyTracker.getPosition().nodeId === nodeId) {
-      goToNode(nodeId);
-      return;
-    }
-    const ok = await confirmModal(`Would you like to teleport to "${node.name}"?`, {
-      confirmLabel: 'Teleport',
-    });
-    if (!ok) return;
-    // Resolve the landing spot against the node's real tiles, so a teleport into
-    // a sparse or walled node (e.g. a generated dungeon) never strands the party
-    // on a wall or an empty cell.
-    const target = resolveEntryTile(
-      node,
-      node.tiles.find((t) => t.revealed)?.id ??
-        `${Math.floor(node.width / 2)},${Math.floor(node.height / 2)}`,
-    );
-    // No revealed tile yet means the party has never set foot here, so this
-    // teleport is the region's discovery (checked before moveTo reveals fog).
-    const firstVisit = !node.tiles.some((t) => t.revealed);
-    partyTracker.moveTo(nodeId, target);
-    state.characters = recallAll(state.characters); // the whole party teleports
-    goToNode(nodeId);
-    app.actions.logEvent(
-      'travel',
-      firstVisit ? `Discovered ${node.name}.` : `Traveled to ${node.name}.`,
-    );
-    refreshLocationPanels();
-    app.actions.maybeTriggerEncounter();
-  }
-
-  /** Landing where a placed NPC stands is the introduction: mark it met so it
-   * starts appearing in the players' Story sidebar, and log the meeting. Only
-   * the GM's tab moves the party, so only it mutates the roster. */
-  function meetNPCsHere() {
-    if (!isGM(state.role)) return;
-    const { npcs, met } = meetNPCs(state.npcs, partyTracker.getPosition());
-    if (met.length === 0) return;
-    state.npcs = npcs;
-    for (const npc of met) app.actions.logEvent('travel', `The party meets ${npc.name}.`);
-  }
-  app.actions.meetNPCs = meetNPCsHere;
-
-  /** The party may have changed nodes; re-filter every location-scoped panel. */
-  function refreshLocationPanels() {
-    meetNPCsHere();
-    app.views.encounterPanel.update();
-    app.views.initiativePanel.update();
-    app.views.npcPanel.update();
-    app.views.handoutPanel.update();
-  }
-
-  /**
-   * Resolve a completed region-tool drag: link every existing tile in the
-   * marquee block to a child node chosen from the current node's children, or to
-   * a newly created one — the area counterpart to the inspector's per-tile link.
-   */
-  async function finishRegionStroke() {
-    const rect = mapCanvas.marquee;
-    regionAnchor = null;
-    mapCanvas.setMarquee(null);
-    if (!rect) return;
-    const node = navigator.getCurrentNode();
-    if (!tilesInRect(node, rect).length) {
-      await confirmModal('No tiles in the selected block. Paint tiles first, then link them.', {
-        confirmLabel: 'OK',
-      });
-      return;
-    }
-    const children = grid.getChildren(node.id);
-    /** @type {string | null} */
-    let childId;
-    if (children.length) {
-      const values = await promptModal(
-        'Link region block',
-        [
-          {
-            name: 'target',
-            label: 'Link to',
-            type: 'select',
-            options: [
-              ...children.map((c) => ({ value: c.id, label: c.name })),
-              { value: '', label: 'Create new region...' },
-            ],
-          },
-        ],
-        { submitLabel: 'Link' },
-      );
-      if (!values) return;
-      childId = values.target || (await nodeActions.addChildNode(node.id));
-    } else {
-      childId = await nodeActions.addChildNode(node.id);
-    }
-    if (!childId) return;
-    snapshotEdit(navigator.getCurrentNode());
-    const updated = linkTilesInRect(navigator.getCurrentNode(), rect, childId);
-    grid.updateNode(updated);
-    mapCanvas.refreshNode(updated);
-    if (selectedTileId) inspector.setTile(getTile(updated, selectedTileId) ?? null, true);
-    app.actions.markDirty();
-  }
+  env.regionTree = regionTree;
 
   /** @type {{ update: () => void } | null} assigned right after mapCanvas exists */
   let mapControls = null;
@@ -349,88 +260,9 @@ export function wireMapView(app) {
     markerRange: partyTracker.revealRadius * 2,
     getNodeName: (nodeId) => grid.getNode(nodeId)?.name,
     onViewChange: () => mapControls?.update(),
-    // Play-mode read side of the Build-mode tile inspector: hovering a revealed
-    // tile with metadata shows what the GM authored there. Build mode already
-    // surfaces the same data through the inspector, so hover stays quiet there.
-    onCellHover: (tile, clientX, clientY) => {
-      if (
-        state.mode !== 'play' ||
-        !tile ||
-        !tile.revealed ||
-        (tile.metadata.discoverable && !tile.metadata.discovered)
-      ) {
-        tileTooltip.hide();
-        return;
-      }
-      const nodeId = navigator.getCurrentNode().id;
-      const npcNames = state.npcs
-        .filter((n) => n.location && n.location.nodeId === nodeId && n.location.tileId === tile.id)
-        .map((n) => n.name);
-      const poiType = tile.metadata.poiType;
-      // Notes are the GM's secret; players see the POI type and who stands
-      // here (the marker is already visible once the tile is revealed).
-      const gm = isGM(state.role);
-      const visible = poiType || npcNames.length > 0 || (gm && tile.metadata.notes);
-      if (!visible) {
-        tileTooltip.hide();
-        return;
-      }
-      tileTooltip.show(
-        {
-          title: poiType ? poiType.charAt(0).toUpperCase() + poiType.slice(1) : '',
-          npcs: npcNames.join(', '),
-          notes: gm ? tile.metadata.notes : '',
-        },
-        clientX,
-        clientY,
-      );
-    },
-    // Build-mode authoring arrives as strokes: a left-drag applies the active
-    // brush to every cell it crosses (a click is a one-cell stroke), so painting
-    // a row is one gesture instead of one click per tile. The Region brush
-    // instead drags out a marquee block, resolved to a child-node link on release.
-    onStrokeCell: (x, y, tile, first) => {
-      const id = `${x},${y}`;
-      // Play-mode GM fog brush: strokes reveal/hide fog instead of authoring
-      // tiles. Only active while a fog tool is toggled on (which is what put the
-      // canvas in authoring mode outside Build).
-      if (state.mode === 'play') {
-        if (fogTool) {
-          applyToTile(id, (node) => setTileRevealed(node, id, fogTool === 'reveal'));
-        }
-        return;
-      }
-      // A whole drag coalesces into one stroke, so one snapshot on its first
-      // cell makes the stroke the unit of undo. Inspect (no brush) and the
-      // region marquee don't mutate here; the region tool snapshots on link.
-      if (first && activeBrush && activeBrush !== 'region') {
-        snapshotEdit(navigator.getCurrentNode());
-      }
-      if (activeBrush === 'region') {
-        if (first) regionAnchor = { x, y };
-        if (regionAnchor) mapCanvas.setMarquee(normalizeRect(regionAnchor, { x, y }));
-      } else if (activeBrush === 'erase') {
-        applyToTile(id, (node) => eraseTile(node, id));
-      } else if (activeBrush === 'erase-path') {
-        applyToTile(id, (node) => erasePath(node, id));
-      } else if (activeBrush) {
-        // Captured so the closure below keeps the non-null narrowing.
-        const brush = activeBrush;
-        const overlay = isOverlayType(brush.type);
-        const scale = overlay ? 1 : palettePanel.getScale();
-        // A scaled stamp is a single placement, not a stroke: dragging with a
-        // 2x/3x size would litter overlapping blocks, so only the first cell
-        // paints.
-        if (scale > 1 && !first) return;
-        applyToTile(id, (node) => paintTile(node, id, brush.imageRef, overlay, scale));
-      } else if (first) {
-        // Inspect acts on the pressed cell only; dragging doesn't re-select.
-        selectTile(id);
-      }
-    },
-    onStrokeEnd: () => {
-      if (regionAnchor) finishRegionStroke();
-    },
+    onCellHover: travel.onCellHover,
+    onStrokeCell: authoring.onStrokeCell,
+    onStrokeEnd: authoring.onStrokeEnd,
     // Build-mode GM right-click (without dragging into a pan): select the cell
     // and open the encounter context dialog for it. Encounter authoring lives
     // in encounterWiring; the action is late-bound like the rest of app.actions.
@@ -439,67 +271,10 @@ export function wireMapView(app) {
       selectTile(`${x},${y}`);
       app.actions.openEncounterContextMenu(x, y, clientX, clientY);
     },
-    onCellClick: (x, y, tile) => {
-      // Fires only outside authoring mode: Play-mode navigation and moves.
-      // Empty cells are inert. Who moves depends on the tab: the GM's clicks
-      // move the whole party (recalling any individually placed character), a
-      // bound player tab's clicks move only that player's own character, and a
-      // spectator tab moves no one (region tiles still navigate the view).
-      if (!tile) return;
-      const gm = isGM(state.role);
-      if (tile.childNodeId) {
-        const parent = navigator.getCurrentNode();
-        if (navigator.zoomIn(tile.id)) {
-          const child = navigator.getCurrentNode();
-          if (gm) {
-            // Checked before moveTo reveals entry fog: an all-fogged child has
-            // never been visited, so stepping in now is its discovery.
-            const firstVisit = !child.tiles.some((t) => t.revealed);
-            // Zooming into a region moves the party into it. Unless the party
-            // has already been placed in this child before, drop them at the
-            // edge they approached from and reveal fog around it, so the child
-            // doesn't render as a blank fog field with no party marker.
-            if (partyTracker.getPosition().nodeId !== child.id) {
-              partyTracker.moveTo(
-                child.id,
-                computeRegionEntryTile(parent, child, tile.childNodeId, partyTracker.getPosition()),
-              );
-              state.characters = recallAll(state.characters);
-            }
-            app.actions.logEvent(
-              'travel',
-              firstVisit ? `Discovered ${child.name}.` : `Entered ${child.name}.`,
-            );
-            app.actions.markDirty(); // party position and fog changed
-          }
-          // Re-read the node: moveTo wrote a new, fog-revealed node into the grid,
-          // so the `child` captured above is stale and still fully fogged.
-          mapCanvas.setNode(navigator.getCurrentNode());
-          breadcrumb.update(navigator.getBreadcrumb());
-          worldTree.update();
-          // Entering a node for the first time discovers it.
-          regionTree.update();
-          syncPartyMarker();
-          refreshLocationPanels();
-          if (gm) app.actions.maybeTriggerEncounter();
-        }
-        return;
-      }
-      if (gm) {
-        partyTracker.moveTo(navigator.getCurrentNode().id, tile.id);
-        state.characters = recallAll(state.characters);
-        discoverTile(tile);
-        mapCanvas.refreshNode(navigator.getCurrentNode());
-        syncPartyMarker();
-        app.actions.markDirty(); // party position and fog changed
-        refreshLocationPanels();
-        app.actions.maybeTriggerEncounter();
-        return;
-      }
-      moveBoundCharacter(tile);
-    },
+    onCellClick: travel.onCellClick,
   });
   app.views.mapCanvas = mapCanvas;
+  env.mapCanvas = mapCanvas;
 
   // The node create/edit/delete actions live in their own module; they resync
   // the views above, which now all exist, so their context can be handed over.
@@ -519,199 +294,26 @@ export function wireMapView(app) {
     syncPartyMarker,
     markDirty: () => app.actions.markDirty(),
   });
+  env.nodeActions = nodeActions;
 
-  const inspector = mountTileInspector(mustGetElement('inspector-container'), {
-    onChange: (patch) => {
-      if (!selectedTileId) return;
-      const updated = updateTileMetadata(navigator.getCurrentNode(), selectedTileId, patch);
-      grid.updateNode(updated);
-      mapCanvas.refreshNode(updated);
-      inspector.setTile(getTile(updated, selectedTileId) ?? null, true);
-      app.actions.markDirty();
-    },
-    linking: {
-      getOptions: () =>
-        grid.getChildren(navigator.currentNodeId).map((n) => ({ id: n.id, name: n.name })),
-      onChange: (childNodeId) => linkSelectedTile(childNodeId),
-      onCreateNew: async () => {
-        const id = await nodeActions.addChildNode(navigator.currentNodeId);
-        if (id) linkSelectedTile(id);
-      },
-    },
-    // Build-mode spawn placement: make the selected tile the party's start.
-    onSetSpawn: (tileId) => {
-      partyTracker.moveTo(navigator.getCurrentNode().id, tileId);
-      state.characters = recallAll(state.characters);
-      mapCanvas.refreshNode(navigator.getCurrentNode());
-      syncPartyMarker();
-      app.actions.markDirty();
-    },
-  });
-
-  /**
-   * Point the selected tile's childNodeId at a node (or null to unlink), so
-   * zooming that tile enters the linked node. On outdoor maps the link stamps
-   * a 2x2 block (and unlinking clears the whole block); interiors stay
-   * single-tile. Re-derives region groups via the canvas refresh so the block
-   * outline updates immediately.
-   * @param {string | null} childNodeId
-   */
-  function linkSelectedTile(childNodeId) {
-    if (!selectedTileId) return;
-    const node = navigator.getCurrentNode();
-    snapshotEdit(node);
-    const updated = stampRegionLink(node, selectedTileId, childNodeId);
-    grid.updateNode(updated);
-    mapCanvas.refreshNode(updated);
-    inspector.setTile(getTile(updated, selectedTileId) ?? null, true);
-    app.actions.markDirty();
-  }
-
-  /**
-   * Select a tile within the current node and point the inspector at it,
-   * bringing the Tile tab forward so the inspector is actually visible.
-   * @param {string} tileId
-   */
-  function selectTile(tileId) {
-    selectedTileId = tileId;
-    mapCanvas.setSelectedTile(tileId);
-    inspector.setTile(getTile(navigator.getCurrentNode(), tileId) ?? null, true);
-    buildTabs.select('build-tab-tile');
-  }
-
-  /**
-   * Bring a staged location into view: navigate to its node if the GM is
-   * looking elsewhere, centre the canvas on its tile, and select the tile so
-   * it reads highlighted — without stealing the Build rail's active tab the
-   * way selectTile does. How "click an encounter in the Build list" lands on
-   * the encounter.
-   * @param {import('../types/entities.js').EncounterLocation} location
-   */
-  function focusLocation(location) {
-    if (navigator.getCurrentNode().id !== location.nodeId) {
-      if (!grid.getNode(location.nodeId)) return;
-      goToNode(location.nodeId);
-    }
-    selectedTileId = location.tileId;
-    mapCanvas.setSelectedTile(location.tileId);
-    inspector.setTile(getTile(navigator.getCurrentNode(), location.tileId) ?? null, true);
-    mapCanvas.centerOnTile(location.tileId);
-  }
-  app.actions.focusLocation = focusLocation;
-
-  /**
-   * Apply a pure node transform (paint/erase) to the current node, persist it,
-   * re-render the canvas, and keep the inspector in sync if it was showing the
-   * affected tile.
-   * @param {string} tileId
-   * @param {(node: import('../types/map.js').MapNode) => import('../types/map.js').MapNode} transform
-   */
-  function applyToTile(tileId, transform) {
-    const updated = transform(navigator.getCurrentNode());
-    grid.updateNode(updated);
-    mapCanvas.refreshNode(updated);
-    if (tileId === selectedTileId) {
-      inspector.setTile(getTile(updated, tileId) ?? null, true);
-    }
-    refreshMapDescription();
-    app.actions.markDirty();
-  }
-
-  /**
-   * Mark a discoverable POI discovered once the party reaches it, persisting the
-   * flag and logging the find. A non-discoverable or already-found tile is a
-   * no-op. Read the node fresh from the navigator since the party's move just
-   * rewrote it in the grid.
-   * @param {import('../types/map.js').Tile} tile
-   */
-  function discoverTile(tile) {
-    if (!tile.metadata.discoverable || tile.metadata.discovered) return;
-    const node = navigator.getCurrentNode();
-    grid.updateNode(updateTileMetadata(node, tile.id, { discovered: true }));
-    const what = tile.metadata.poiType ?? 'a hidden location';
-    app.actions.logEvent(
-      'travel',
-      `Discovered ${what}${tile.metadata.notes ? `: ${tile.metadata.notes}` : ''}.`,
-    );
-  }
-
-  /**
-   * A bound player tab moving its own character: the character takes their own
-   * location on the current node's tile (rejoining the party when the click
-   * lands on the party's tile), their step reveals fog around them, and an
-   * encounter on that tile alerts under the character's name. A spectator tab
-   * (no binding) moves no one.
-   * @param {import('../types/map.js').Tile} tile
-   */
-  function moveBoundCharacter(tile) {
-    // Individual movement exists only while the GM's split-party toggle is on;
-    // otherwise the party moves simultaneously, by GM clicks alone.
-    if (!state.splitParty) return;
-    const boundId = app.actions.getBoundCharacterId();
-    const character = state.characters.find((c) => c.id === boundId);
-    if (!character) return;
-    const nodeId = navigator.getCurrentNode().id;
-    const party = partyTracker.getPosition();
-    const rejoined = party.nodeId === nodeId && party.tileId === tile.id;
-    state.characters = moveCharacter(
-      state.characters,
-      character.id,
-      rejoined ? null : { nodeId, tileId: tile.id },
-    );
-    grid.updateNode(revealAround(navigator.getCurrentNode(), tile.id, partyTracker.revealRadius));
-    discoverTile(tile);
-    mapCanvas.refreshNode(navigator.getCurrentNode());
-    syncPartyMarker();
-    regionTree.update();
-    app.actions.markDirty();
-    app.actions.maybeTriggerEncounter({ nodeId, tileId: tile.id }, character.name);
-  }
+  const inspector = authoring.mountInspector(mustGetElement('inspector-container'));
+  env.inspector = inspector;
 
   const tileTooltip = mountTileTooltip(document.body);
+  env.tileTooltip = tileTooltip;
 
   // The tooltip doubles as the palette's hover label, naming each image-only swatch.
   const palettePanel = mountPalettePanel(
     mustGetElement('palette-container'),
     palette,
     (brush) => {
-      activeBrush = brush;
+      env.activeBrush = brush;
     },
     tileTooltip,
   );
+  env.palettePanel = palettePanel;
 
-  // The canvas is a drop target for palette swatches: dragging a tile onto a grid
-  // cell paints it there, an alternative to selecting a brush and clicking.
-  canvasEl.addEventListener('dragover', (event) => {
-    if (state.mode === 'build') event.preventDefault();
-  });
-  canvasEl.addEventListener('drop', (event) => {
-    if (state.mode !== 'build') return;
-    event.preventDefault();
-    const id = event.dataTransfer?.getData('text/tile-id');
-    const entry = id ? palette.get(id) : undefined;
-    if (!entry) return;
-    const rect = canvasEl.getBoundingClientRect();
-    const buffer = clientToBuffer(
-      event.clientX,
-      event.clientY,
-      rect,
-      canvasEl.width,
-      canvasEl.height,
-    );
-    const coords = screenToTile(
-      buffer.x,
-      buffer.y,
-      mapCanvas.tileSize,
-      mapCanvas.offsetX,
-      mapCanvas.offsetY,
-      mapCanvas.scale,
-    );
-    const tileId = `${coords.x},${coords.y}`;
-    snapshotEdit(navigator.getCurrentNode());
-    const overlay = isOverlayType(entry.type);
-    const scale = overlay ? 1 : palettePanel.getScale();
-    applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef, overlay, scale));
-  });
+  authoring.wireCanvasDrop(canvasEl);
 
   mapControls = mountMapControls(mustGetElement('map-viewport'), {
     onZoomIn: () => mapCanvas.zoomBy(1.25),
@@ -721,12 +323,12 @@ export function wireMapView(app) {
     // GM fog controls (hidden from the player role via CSS): brushes stroke fog
     // on/off, reveal-all lights the whole current node.
     fog: {
-      getTool: () => fogTool,
+      getTool: () => env.fogTool,
       onToolChange: (tool) => {
-        fogTool = state.mode === 'play' ? tool : null;
+        env.fogTool = state.mode === 'play' ? tool : null;
         // A fog brush needs the stroke gesture, which only fires in authoring
         // mode; Build mode keeps authoring on regardless.
-        mapCanvas.setAuthoring(state.mode === 'build' || fogTool !== null);
+        mapCanvas.setAuthoring(state.mode === 'build' || env.fogTool !== null);
       },
       onRevealAll: () => {
         const node = revealAll(navigator.getCurrentNode());
@@ -748,8 +350,8 @@ export function wireMapView(app) {
     mapCanvas.setRevealAll(mode === 'build');
     mapCanvas.setAuthoring(mode === 'build');
     tileTooltip.hide();
-    regionAnchor = null;
-    fogTool = null; // the fog brush is a Play-mode tool; changing modes drops it
+    env.regionAnchor = null;
+    env.fogTool = null; // the fog brush is a Play-mode tool; changing modes drops it
     mapControls?.update();
     if (mode !== 'build') clearSelection();
     worldTree.update();
@@ -761,7 +363,7 @@ export function wireMapView(app) {
   // authoring gesture, and any open tooltip may now show too much.
   app.actions.onRoleChanged = (role) => {
     if (role === 'player') {
-      fogTool = null;
+      env.fogTool = null;
       mapCanvas.setAuthoring(false);
       mapControls?.update();
     }
@@ -785,7 +387,7 @@ export function wireMapView(app) {
 
   // Build-rail map tools: stroke-level undo and a fog-free PNG export of the
   // current node (Build rail, so GM/Build only — a player never sees these).
-  mustGetElement('stroke-undo-btn').addEventListener('click', undoStroke);
+  mustGetElement('stroke-undo-btn').addEventListener('click', authoring.undoStroke);
   mustGetElement('export-png-btn').addEventListener('click', async () => {
     const node = navigator.getCurrentNode();
     const canvas = await renderNodeToCanvas(node, {

@@ -67,7 +67,7 @@ existing manual view fan-out stays.
 ### 1. Coalesce and batch canvas redraws — done
 
 `MapCanvas.render()` used to fire on every `pointermove` during a pan and every
-wheel tick, and `syncPartyMarker` (`src/app/mapWiring.js:110-120`) fires four
+wheel tick, and `syncPartyMarker` (`src/app/mapWiring.js:100-110`) fires four
 setters per party move.
 
 - Done: `render()` coalesces through a single `requestAnimationFrame`

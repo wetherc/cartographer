@@ -26,7 +26,7 @@ src/
 One module per feature area, each a `wireX(app)` factory:
 
 - `campaignActions.js` — the dirty flag (Save indicator, leave-page guard), header campaign controls (Save/Undo/New/Load example/Export/Import), cross-tab reload-on-save; provides `markDirty`/`setDirty`.
-- `mapWiring.js` — the canvas and its gestures, breadcrumb, both world trees, tile inspector, palette + drag-drop, fog controls, stroke-level undo, Build-rail tools; provides the map-facing actions (`goTo`-style syncs, `snapshotEdit`, `undoStroke`, `onModeChanged`/`onRoleChanged`).
+- `mapWiring.js` — the map mounts and location syncs: the canvas, breadcrumb, both world trees, palette, fog controls, Build-rail tools; provides the map-facing actions (`goTo`-style syncs, `onModeChanged`/`onRoleChanged`) and the shared `MapEnv` context. The gesture layers live beside it: `mapAuthoring.js` (Build-mode paint/erase/region strokes, drop-paint, the tile inspector, `snapshotEdit`/`undoStroke`) and `mapTravel.js` (Play-mode cell clicks, teleports, POI discovery, NPC meets, the hover tooltip).
 - `generateAction.js` — the Generate dialog flow and its non-destructive apply.
 - `nodeActions.js` — node create/edit/delete (predates the split; same context-object pattern).
 - `partyWiring.js` — roster, character sheet, inventory, Time panel; provides `refreshSelectedCharacter`.
