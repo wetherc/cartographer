@@ -214,6 +214,13 @@
   padding: var(--space-1) var(--space-2) var(--space-1) calc(var(--space-2) + 3px);
 }
 
-.initiative-panel__attack {
+.initiative-panel__attack,
+.initiative-panel__cast {
   font-size: var(--text-label);
+}
+
+/* Cast buttons echo the attack row but tint their icon with the mana accent so
+   spells read apart from weapon strikes at a glance. */
+.initiative-panel__cast .icon {
+  color: var(--mana);
 }

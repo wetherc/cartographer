@@ -24,6 +24,8 @@ import { icon } from './icons.js';
  *   onEnemyRoll?: (participant: Participant) => void,
  *   getWeapons?: (participant: Participant) => (InventoryItem | EnemyWeapon)[],
  *   onWeaponAttack?: (participant: Participant, weapon: InventoryItem | EnemyWeapon) => void,
+ *   getSpells?: (participant: Participant) => import('../types/spell.js').Spell[],
+ *   onCastSpell?: (participant: Participant, spell: import('../types/spell.js').Spell) => void,
  *   canAttack?: (participant: Participant) => boolean,
  *   getRole?: () => ViewRole,
  * }} callbacks
@@ -113,6 +115,27 @@ export function mountInitiativePanel(container, callbacks) {
             attacks.appendChild(attackBtn);
           }
           root.appendChild(attacks);
+        }
+      }
+
+      // A caster's known cantrips and prepared/known spells line up under the
+      // weapons as one-click Cast buttons, gated by the same `canAttack` rule.
+      if (active && i === state.index && callbacks.onCastSpell && mayAttack) {
+        const spells = callbacks.getSpells?.(participant) ?? [];
+        if (spells.length > 0) {
+          const casts = document.createElement('div');
+          casts.className = 'initiative-panel__attacks';
+          for (const spell of spells) {
+            const castBtn = document.createElement('button');
+            castBtn.type = 'button';
+            castBtn.className = 'btn initiative-panel__cast';
+            castBtn.setAttribute('aria-label', `Cast ${spell.name}`);
+            castBtn.title = `Cast ${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`})`;
+            castBtn.append(icon('sparkles'), document.createTextNode(spell.name));
+            castBtn.addEventListener('click', () => callbacks.onCastSpell?.(participant, spell));
+            casts.appendChild(castBtn);
+          }
+          root.appendChild(casts);
         }
       }
     });

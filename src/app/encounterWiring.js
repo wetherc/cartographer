@@ -25,6 +25,9 @@ import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
 import { encounterForm, deleteEncounter, addFromBestiary } from './encounterForm.js';
 import { weaponAttack } from './weaponAttack.js';
+import { castSpellAction } from './spellCast.js';
+import { getSpellbook } from '../entities/Character.js';
+import { activeSpellIndex } from '../library/Library.js';
 import { npcForm } from './npcForm.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -329,6 +332,22 @@ export function wireEncounters(app) {
     },
     onWeaponAttack: (participant, weapon) => {
       if (combat) weaponAttack(app, combat, participant, weapon);
+    },
+    // A party caster's castable spells: its known cantrips and prepared/known
+    // leveled spells, resolved from the spellbook's ids through the merged
+    // library's memoized index. Foes/NPCs carry no spellbook yet (a later
+    // phase), so they list nothing.
+    getSpells: (participant) => {
+      if (participant.side === 'foe') return [];
+      const character = state.characters.find((c) => c.id === participant.id);
+      if (!character) return [];
+      const book = getSpellbook(character);
+      const index = activeSpellIndex();
+      const ids = [...new Set([...book.cantrips, ...book.prepared, ...book.known])];
+      return ids.map((id) => index.get(id)).filter((s) => s !== undefined);
+    },
+    onCastSpell: (participant, spell) => {
+      if (combat) castSpellAction(app, combat, participant, spell);
     },
     canAttack: (participant) =>
       participant.side === 'foe'

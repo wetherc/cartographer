@@ -1,0 +1,297 @@
+import { promptModal } from '../ui/Modal.js';
+import { castSpell } from '../entities/Casting.js';
+import { spellSaveDC, spellAttackBonus } from '../entities/Classes.js';
+import { applyDamage, effectiveStatBlock, isDefeated, heal } from '../entities/Encounter.js';
+import { damageCharacter, restoreResource, getHP, HP_RESOURCE_ID } from '../entities/Character.js';
+import { armorClass } from '../entities/Equipment.js';
+import { npcsOnTile } from '../entities/NPC.js';
+import { getSlotPools, slotLevelOf } from '../entities/SpellSlots.js';
+import { replaceById } from '../entities/Roster.js';
+
+/** @typedef {import('../types/app.js').AppContext} AppContext */
+/** @typedef {import('../types/combat.js').CombatState} CombatState */
+/** @typedef {import('../types/combat.js').Participant} Participant */
+/** @typedef {import('../types/spell.js').Spell} Spell */
+
+/**
+ * The combatants a spell can target, by effect kind: an attack or a save spell
+ * reaches the caster's foes; a heal reaches its own side (allies, including the
+ * caster). Utility spells target no one. Each candidate carries the numbers the
+ * resolver needs — AC for an attack, name for the log — assembled from combat's
+ * running order: encounters by id (their effective AC), party characters (AC
+ * from armor), and NPCs on the party's tile. Downed combatants drop out of a
+ * damaging spell's list but stay eligible for healing.
+ * @param {AppContext} app
+ * @param {CombatState} combat
+ * @param {Participant} caster
+ * @param {Spell} spell
+ * @returns {{ id: string, name: string, ac: number }[]}
+ */
+function castTargets(app, combat, caster, spell) {
+  const { state } = app;
+  const kind = spell.effect.kind;
+  if (kind === 'utility') return [];
+  const allies = kind === 'heal';
+  const npcs = npcsOnTile(state.npcs, app.partyTracker.getPosition());
+  return combat.order
+    .filter((p) => (allies ? p.side === caster.side : p.side !== caster.side))
+    .flatMap((p) => {
+      const encounter = state.encounters.find((e) => e.id === p.id);
+      if (encounter) {
+        if (!allies && isDefeated(encounter)) return [];
+        return [{ id: p.id, name: encounter.name, ac: effectiveStatBlock(encounter).AC ?? 10 }];
+      }
+      const character = state.characters.find((c) => c.id === p.id);
+      if (character) {
+        const hp = getHP(character);
+        if (!allies && hp && hp.current <= 0) return [];
+        return [{ id: p.id, name: character.name, ac: armorClass(character) }];
+      }
+      const npc = npcs.find((n) => n.id === p.id);
+      return npc ? [{ id: p.id, name: npc.name, ac: npc.stats?.AC ?? 10 }] : [];
+    });
+}
+
+/**
+ * The pre-roll dialog fields for a cast: a slot-level picker (leveled spells
+ * cast at or above their level from a slot the caster still has), the target,
+ * an advantage/disadvantage mode, and — for a save spell — the DC and the
+ * target's save bonus. Cantrips omit the slot picker; utility spells add no
+ * target. Returns null when the caster has no usable slot for a leveled spell.
+ * @param {Spell} spell
+ * @param {{ id: string, name: string, ac: number }[]} targets
+ * @param {number[]} slotLevels available slot levels at or above the spell's
+ * @param {number} saveDC
+ * @returns {import('../ui/Modal.js').ModalField[] | null}
+ */
+function castFields(spell, targets, slotLevels, saveDC) {
+  const kind = spell.effect.kind;
+  /** @type {import('../ui/Modal.js').ModalField[]} */
+  const fields = [];
+  if (spell.level > 0) {
+    if (slotLevels.length === 0) return null;
+    fields.push({
+      name: 'slot',
+      label: 'Cast at level',
+      type: 'select',
+      value: String(slotLevels[0]),
+      options: slotLevels.map((l) => ({ value: String(l), label: `Level ${l}` })),
+    });
+  }
+  if (kind !== 'utility') {
+    fields.push({
+      name: 'target',
+      label: kind === 'heal' ? 'Recipient' : 'Target',
+      type: 'select',
+      full: true,
+      options: targets.map((t) => ({
+        value: t.id,
+        label: kind === 'heal' ? t.name : `${t.name} (AC ${t.ac})`,
+      })),
+    });
+  }
+  if (kind === 'attack') {
+    fields.push({
+      name: 'mode',
+      label: 'Attack roll',
+      type: 'select',
+      value: 'normal',
+      options: [
+        { value: 'normal', label: 'Normal' },
+        { value: 'advantage', label: 'Advantage' },
+        { value: 'disadvantage', label: 'Disadvantage' },
+      ],
+    });
+  }
+  if (kind === 'save') {
+    fields.push({ name: 'dc', label: 'Save DC', type: 'number', value: saveDC, min: 1 });
+    fields.push({ name: 'save-bonus', label: 'Target save bonus', type: 'number', value: 0 });
+    fields.push({
+      name: 'mode',
+      label: 'Save roll',
+      type: 'select',
+      value: 'normal',
+      options: [
+        { value: 'normal', label: 'Normal' },
+        { value: 'advantage', label: 'Advantage' },
+        { value: 'disadvantage', label: 'Disadvantage' },
+      ],
+    });
+  }
+  return fields;
+}
+
+/**
+ * Cast a spell for the active combatant, mirroring `weaponAttack`: a pre-roll
+ * dialog picks the slot level, target, and situational modes, then the pure
+ * `castSpell` resolver rolls the effect and this wiring applies the result and
+ * logs it. Only party characters cast for now (foes/NPCs gain spellbooks in a
+ * later phase); a caster with no spell ability falls back to a flat DC 10 /
+ * +0 attack. The spent slot is written back to the character, and damage or
+ * healing lands on each target the same way a weapon hit does — encounters and
+ * characters track HP, an HP-less NPC keeps the log line only.
+ * @param {AppContext} app
+ * @param {CombatState} combat
+ * @param {Participant} participant
+ * @param {Spell} spell
+ */
+export async function castSpellAction(app, combat, participant, spell) {
+  const { state } = app;
+  const caster = state.characters.find((c) => c.id === participant.id);
+  if (!caster) return; // foe/NPC casting is a later phase
+
+  const targets = castTargets(app, combat, participant, spell);
+  if (spell.effect.kind !== 'utility' && targets.length === 0) {
+    app.toasts.show('No target available.');
+    return;
+  }
+
+  // Leveled spells cast from a slot at or above their level that still has a
+  // charge; the picker offers each such level.
+  const slotLevels =
+    spell.level > 0
+      ? getSlotPools(caster)
+          .filter((p) => slotLevelOf(p) >= spell.level && p.current > 0)
+          .map(slotLevelOf)
+      : [];
+  const dc = spellSaveDC(caster) ?? 10;
+  const fields = castFields(spell, targets, slotLevels, dc);
+  if (!fields) {
+    app.toasts.show(`No level ${spell.level}+ slot left for ${spell.name}.`);
+    return;
+  }
+
+  const values = await promptModal(`Cast ${spell.name}`, fields, {
+    submitLabel: 'Cast',
+    wide: true,
+  });
+  if (!values) return;
+
+  const slotLevel = spell.level > 0 ? Number(values.slot) || spell.level : spell.level;
+  const target = targets.find((t) => t.id === values.target) ?? targets[0];
+  const mode = /** @type {import('../types/dice.js').RollMode} */ (values.mode ?? 'normal');
+  const saveDC = Number(values.dc) || dc;
+  const castTarget =
+    spell.effect.kind === 'save'
+      ? { ...target, saveBonus: Number(values['save-bonus']) || 0, saveMode: mode }
+      : target;
+
+  const result = castSpell(caster, spell, {
+    slotLevel,
+    casterLevel: caster.level ?? 1,
+    targets: target ? [castTarget] : [],
+    spellAttackBonus: spellAttackBonus(caster) ?? 0,
+    saveDC,
+    attackMode: spell.effect.kind === 'attack' ? mode : 'normal',
+  });
+  if (!result.ok) {
+    app.toasts.show(`Can't cast ${spell.name}.`);
+    return;
+  }
+
+  // Write the spent slot back to the caster before applying effects, so a slot
+  // never lingers if the effect application throws.
+  if (result.spent) {
+    state.characters = replaceById(state.characters, result.caster);
+    app.actions.refreshSelectedCharacter();
+    app.actions.markDirty();
+  }
+  const at = result.slotLevel > 0 ? ` at level ${result.slotLevel}` : '';
+  app.actions.logEvent('combat', `${caster.name} casts ${spell.name}${at}.`);
+
+  applyOutcomes(app, spell, result, target?.name ?? '');
+}
+
+/**
+ * Apply and log a resolved cast's outcomes: attack hits/misses, save results
+ * with full/half/no damage, and healing. Damage and healing route to the same
+ * HP models the weapon path uses. A short toast summarizes the cast.
+ * @param {AppContext} app
+ * @param {Spell} spell
+ * @param {{ outcomes: object[] }} result
+ * @param {string} targetName
+ */
+function applyOutcomes(app, spell, result, targetName) {
+  const kind = spell.effect.kind;
+  if (kind === 'attack') {
+    for (const o of /** @type {any[]} */ (result.outcomes)) {
+      const verb = o.crit ? 'critically hits' : o.hit ? 'hits' : 'misses';
+      if (!o.hit) {
+        app.actions.logEvent(
+          'combat',
+          `${spell.name}: ${o.attack.total} to hit vs AC ${o.ac} — ${verb} ${o.target.name}.`,
+        );
+        continue;
+      }
+      app.actions.logEvent(
+        'combat',
+        `${spell.name} ${verb} ${o.target.name} for ${o.damage?.detail || '0 damage'}.`,
+      );
+      applyToTarget(app, o.target.id, o.damage?.total ?? 0, false);
+    }
+    app.toasts.show(`${spell.name} on ${targetName}.`);
+    return;
+  }
+  if (kind === 'save') {
+    for (const o of /** @type {any[]} */ (result.outcomes)) {
+      const verdict = o.saved ? 'saves' : 'fails';
+      const cond = o.condition ? `, ${o.condition}` : '';
+      app.actions.logEvent(
+        'combat',
+        `${o.target.name} ${verdict} DC ${o.dc} (${o.save.total}) — takes ${o.taken} damage${cond}.`,
+      );
+      applyToTarget(app, o.target.id, o.taken, false);
+    }
+    app.toasts.show(`${spell.name} on ${targetName}.`);
+    return;
+  }
+  if (kind === 'heal') {
+    for (const o of /** @type {any[]} */ (result.outcomes)) {
+      app.actions.logEvent(
+        'combat',
+        `${spell.name} heals ${o.target.name} for ${o.healing.total} HP.`,
+      );
+      applyToTarget(app, o.target.id, o.healing.total, true);
+    }
+    app.toasts.show(`${spell.name} heals ${targetName}.`);
+    return;
+  }
+  app.toasts.show(`${spell.name} cast.`);
+}
+
+/**
+ * Apply a spell's damage or healing to a combatant by id, mirroring the weapon
+ * path: encounters and party characters track HP (defeat and drops-to-0 logged
+ * once), an HP-less NPC just keeps its log line. Refreshes the affected panels.
+ * @param {AppContext} app
+ * @param {string} targetId
+ * @param {number} amount
+ * @param {boolean} isHeal
+ */
+function applyToTarget(app, targetId, amount, isHeal) {
+  const { state } = app;
+  if (amount <= 0) return;
+  const encounter = state.encounters.find((e) => e.id === targetId);
+  if (encounter) {
+    const next = isHeal ? heal(encounter, amount) : applyDamage(encounter, amount);
+    if (!isHeal && !isDefeated(encounter) && isDefeated(next))
+      app.actions.logEvent('combat', `Defeated ${next.name}.`);
+    state.encounters = replaceById(state.encounters, next);
+    app.actions.syncEncounterMarkers();
+    app.views.encounterPanel.update();
+    app.views.initiativePanel.update();
+    app.actions.markDirty();
+    return;
+  }
+  const character = state.characters.find((c) => c.id === targetId);
+  if (character) {
+    const next = isHeal
+      ? restoreResource(character, HP_RESOURCE_ID, amount)
+      : damageCharacter(character, amount);
+    if (!isHeal && (getHP(character)?.current ?? 0) > 0 && (getHP(next)?.current ?? 0) <= 0)
+      app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
+    state.characters = replaceById(state.characters, next);
+    app.actions.refreshSelectedCharacter();
+    app.actions.markDirty();
+  }
+}

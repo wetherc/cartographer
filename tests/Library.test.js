@@ -24,6 +24,7 @@ import {
   activeNPCEntries,
   activeSpells,
   activeSpellEntries,
+  activeSpellIndex,
 } from '../src/library/Library.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
 
@@ -306,6 +307,20 @@ test('with no customizations activeSpells returns the curated defaults, memoized
   setActiveLibrary(emptyLibrary());
   assert.equal(activeSpells().length, DEFAULT_SPELLS.length);
   assert.equal(activeSpellEntries(), activeSpellEntries());
+});
+
+test('activeSpellIndex maps ids to spells and is memoized until the library changes', () => {
+  setActiveLibrary(emptyLibrary());
+  const index = activeSpellIndex();
+  assert.equal(index, activeSpellIndex()); // same Map back: built once
+  const first = DEFAULT_SPELLS[0];
+  assert.equal(
+    index.get(first.id),
+    activeSpells().find((s) => s.id === first.id),
+  );
+  assert.equal(index.get('no-such-spell'), undefined);
+  setActiveLibrary(emptyLibrary()); // reset invalidates the memo
+  assert.notEqual(index, activeSpellIndex());
 });
 
 test('getActiveLibrary reflects the library last set, empty by default', () => {

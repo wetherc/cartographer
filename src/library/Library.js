@@ -14,6 +14,7 @@ import {
 import { normalizeStatBlock } from '../entities/Modifiers.js';
 import { DISPOSITIONS } from '../entities/NPC.js';
 import { slugId } from '../entities/Roster.js';
+import { indexById } from '../util/indexById.js';
 
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
 /** @typedef {import('../types/library.js').NPCTemplate} NPCTemplate */
@@ -460,6 +461,7 @@ let active = emptyLibrary();
  *   bestiary?: { entry: EncounterTemplate, source: LibrarySource }[],
  *   npcs?: { entry: NPCTemplate, source: LibrarySource }[],
  *   spells?: { entry: Spell, source: LibrarySource }[],
+ *   spellIndex?: Map<string, Spell>,
  * }}
  */
 let cache = {};
@@ -552,4 +554,11 @@ export function activeSpellEntries() {
  * @returns {Spell[]} */
 export function activeSpells() {
   return activeSpellEntries().map((e) => e.entry);
+}
+
+/** The merged spells indexed by id, memoized alongside the merge so casting and
+ * spellbook rendering resolve spell ids in O(1) instead of a linear scan.
+ * @returns {Map<string, Spell>} */
+export function activeSpellIndex() {
+  return (cache.spellIndex ??= indexById(activeSpells()));
 }
