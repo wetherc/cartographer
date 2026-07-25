@@ -197,6 +197,18 @@ body {
   color: var(--text);
   font: inherit;
   font-size: var(--text-label);
+  line-height: 1.5;
+}
+
+/* Pin single-line controls to one explicit height so a native <select> and a
+   text/number <input> sharing a form row line up. A bare <select> ignores
+   line-height for its box metrics and renders ~2.5px shorter than an <input>
+   otherwise. box-sizing is border-box globally, so the height covers padding
+   and border: 1.5em line box + the top/bottom padding + the 1px borders.
+   Textareas are excluded — they size to their `rows`. */
+input.field,
+select.field {
+  height: calc(1.5em + 2 * var(--space-2) + 2px);
 }
 
 .field:focus {
