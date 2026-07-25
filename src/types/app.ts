@@ -61,6 +61,7 @@ export interface AppViews {
   libraryEquipment: Updatable;
   libraryBestiary: Updatable;
   libraryNPCs: Updatable;
+  librarySpells: Updatable;
   initiativePanel: Updatable;
   npcPanel: Updatable;
   questPanel: Updatable;

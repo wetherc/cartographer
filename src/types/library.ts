@@ -6,6 +6,7 @@ import type {
   EncounterTemplate,
 } from './entities.js';
 import type { Disposition } from './npc.js';
+import type { Spell } from './spell.js';
 
 /** A reusable item blueprint: an InventoryItem minus identity and stack
  * fields. The built-in 5e preset lists and the GM's custom entries share this
@@ -42,6 +43,7 @@ export interface CustomLibrary {
   equipment: EquipmentTemplate[];
   bestiary: EncounterTemplate[];
   npcs: NPCTemplate[];
+  spells: Spell[];
 }
 
 /** Where a merged library entry comes from: a built-in default, a custom

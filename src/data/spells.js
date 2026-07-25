@@ -9,6 +9,25 @@
  * @typedef {import('../types/spell.js').Spell} Spell
  */
 
+/** The eight schools of magic, in the order the authoring form lists them.
+ * @type {import('../types/spell.js').SpellSchool[]} */
+export const SPELL_SCHOOLS = [
+  'abjuration',
+  'conjuration',
+  'divination',
+  'enchantment',
+  'evocation',
+  'illusion',
+  'necromancy',
+  'transmutation',
+];
+
+/** The six abilities a save-based spell can key off. @type {import('../types/spell.js').Ability[]} */
+export const SPELL_ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+
+/** The effect kinds a spell resolves as. @type {import('../types/spell.js').SpellEffect['kind'][]} */
+export const SPELL_EFFECT_KINDS = ['attack', 'save', 'heal', 'utility'];
+
 /** @type {Spell[]} */
 export const DEFAULT_SPELLS = [
   // ---- Cantrips (level 0) ----

@@ -1,4 +1,10 @@
-import { WEAPON_TYPES, ITEM_TYPES } from '../entities/Equipment.js';
+import { WEAPON_TYPES, ITEM_TYPES, DIE_SIZES, DAMAGE_TYPES } from '../entities/Equipment.js';
+import {
+  DEFAULT_SPELLS,
+  SPELL_SCHOOLS,
+  SPELL_ABILITIES,
+  SPELL_EFFECT_KINDS,
+} from '../data/spells.js';
 import {
   WEAPON_PRESETS,
   ARMOR_PRESETS,
@@ -14,6 +20,8 @@ import { slugId } from '../entities/Roster.js';
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
 /** @typedef {import('../types/library.js').LibrarySource} LibrarySource */
 /** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
+/** @typedef {import('../types/spell.js').Spell} Spell */
+/** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 
 /**
  * The application's built-in equipment, one flat template list assembled from
@@ -186,7 +194,7 @@ export const DEFAULT_NPC_TEMPLATES = [
 
 /** @returns {CustomLibrary} no customizations */
 export function emptyLibrary() {
-  return { equipment: [], bestiary: [], npcs: [] };
+  return { equipment: [], bestiary: [], npcs: [], spells: [] };
 }
 
 /** Whether a custom library holds any entries at all.
@@ -194,7 +202,10 @@ export function emptyLibrary() {
  * @returns {boolean} */
 export function isLibraryEmpty(library) {
   return (
-    library.equipment.length === 0 && library.bestiary.length === 0 && library.npcs.length === 0
+    library.equipment.length === 0 &&
+    library.bestiary.length === 0 &&
+    library.npcs.length === 0 &&
+    library.spells.length === 0
   );
 }
 
@@ -205,7 +216,8 @@ export function isLibraryEmpty(library) {
  * @returns {string} */
 export const equipmentKey = (entry) => `${entry.type}:${entry.name.trim().toLowerCase()}`;
 
-/** The merge key for bestiary and NPC templates: the name, case-insensitive.
+/** The merge key for bestiary, NPC, and spell templates: the name,
+ * case-insensitive.
  * @param {{ name: string }} entry
  * @returns {string} */
 export const nameKey = (entry) => entry.name.trim().toLowerCase();
@@ -269,12 +281,95 @@ export function removeEntry(customs, key, keyOf) {
 }
 
 /**
+ * Coerce an unknown value into a clean DamagePart array, dropping terms that
+ * aren't well-formed dice and clamping the rest onto the supported die sizes
+ * and damage types. Pure.
+ * @param {unknown} value
+ * @returns {DamagePart[]}
+ */
+function normalizeDamageParts(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((p) => p && typeof p === 'object')
+    .map((p) => ({
+      count: Math.max(1, Math.floor(Number(p.count)) || 1),
+      sides: DIE_SIZES.includes(Number(p.sides)) ? Number(p.sides) : DIE_SIZES[0],
+      damageType: DAMAGE_TYPES.includes(p.damageType) ? p.damageType : DAMAGE_TYPES[0],
+    }));
+}
+
+/**
+ * Normalize one parsed spell into a valid Spell, defaulting descriptive fields
+ * and repairing the effect into one of the four discriminated shapes. An
+ * unrecognized effect kind falls back to a text-only utility effect, so a
+ * malformed import still round-trips as a castable-nothing spell rather than
+ * being dropped. Pure.
+ * @param {Record<string, any>} raw
+ * @param {string} id
+ * @returns {Spell}
+ */
+function normalizeSpell(raw, id) {
+  const kind = SPELL_EFFECT_KINDS.includes(raw.effect?.kind) ? raw.effect.kind : 'utility';
+  /** @type {import('../types/spell.js').SpellEffect} */
+  let effect;
+  if (kind === 'attack') {
+    effect = { kind: 'attack', damage: normalizeDamageParts(raw.effect.damage) };
+  } else if (kind === 'save') {
+    effect = {
+      kind: 'save',
+      saveAbility: SPELL_ABILITIES.includes(raw.effect.saveAbility)
+        ? raw.effect.saveAbility
+        : 'DEX',
+      damage: normalizeDamageParts(raw.effect.damage),
+      halfOnSave: !!raw.effect.halfOnSave,
+      ...(typeof raw.effect.condition === 'string' && raw.effect.condition
+        ? { condition: raw.effect.condition }
+        : {}),
+    };
+  } else if (kind === 'heal') {
+    effect = { kind: 'heal', healing: normalizeDamageParts(raw.effect.healing) };
+  } else {
+    effect = { kind: 'utility' };
+  }
+
+  const scalingDamage = normalizeDamageParts(raw.scaling?.damagePerLevel);
+  const scalingTargets = Math.floor(Number(raw.scaling?.targetsPerLevel));
+  const scaling =
+    scalingDamage.length > 0 || scalingTargets > 0
+      ? {
+          ...(scalingDamage.length > 0 ? { damagePerLevel: scalingDamage } : {}),
+          ...(scalingTargets > 0 ? { targetsPerLevel: scalingTargets } : {}),
+        }
+      : undefined;
+
+  return {
+    id,
+    name: raw.name.trim(),
+    level: Math.min(9, Math.max(0, Math.floor(Number(raw.level)) || 0)),
+    school: SPELL_SCHOOLS.includes(raw.school) ? raw.school : SPELL_SCHOOLS[0],
+    classes: Array.isArray(raw.classes) ? raw.classes.filter((c) => typeof c === 'string') : [],
+    castingTime: typeof raw.castingTime === 'string' ? raw.castingTime : '1 action',
+    range: typeof raw.range === 'string' ? raw.range : 'Self',
+    components: Array.isArray(raw.components)
+      ? raw.components.filter((c) => typeof c === 'string')
+      : [],
+    duration: typeof raw.duration === 'string' ? raw.duration : 'Instantaneous',
+    concentration: !!raw.concentration,
+    ritual: !!raw.ritual,
+    description: typeof raw.description === 'string' ? raw.description : '',
+    effect,
+    ...(scaling ? { scaling } : {}),
+  };
+}
+
+/**
  * Normalize a parsed custom-library JSON of any provenance (an exported file,
  * a hand-edited one, garbage) into a valid CustomLibrary, dropping entries
  * missing their essentials rather than throwing. Bestiary templates get an id
  * (sluggified from the name when absent), a positive max HP, and a stat block
  * closed over the fixed stat set; NPC templates get every field defaulted and
- * an unknown disposition read as neutral.
+ * an unknown disposition read as neutral; spells get an id, defaulted
+ * descriptive fields, and a repaired effect (see normalizeSpell).
  * @param {unknown} parsed
  * @returns {CustomLibrary}
  */
@@ -327,7 +422,17 @@ export function normalizeLibrary(parsed) {
         }),
     );
 
-  return { equipment, bestiary, npcs };
+  /** @type {string[]} */
+  const spellIds = [];
+  const spells = arrayOf(source.spells)
+    .filter((e) => typeof e.name === 'string' && e.name.trim())
+    .map((e) => {
+      const id = typeof e.id === 'string' && e.id ? e.id : slugId(e.name.trim(), spellIds);
+      spellIds.push(id);
+      return normalizeSpell(e, id);
+    });
+
+  return { equipment, bestiary, npcs, spells };
 }
 
 /* --------------------------------------------------------------------------
@@ -354,6 +459,7 @@ let active = emptyLibrary();
  *   armors?: import('../types/entities.js').EnemyArmor[],
  *   bestiary?: { entry: EncounterTemplate, source: LibrarySource }[],
  *   npcs?: { entry: NPCTemplate, source: LibrarySource }[],
+ *   spells?: { entry: Spell, source: LibrarySource }[],
  * }}
  */
 let cache = {};
@@ -433,4 +539,17 @@ export function activeBestiary() {
  * @returns {{ entry: NPCTemplate, source: LibrarySource }[]} */
 export function activeNPCEntries() {
   return (cache.npcs ??= mergedEntries(DEFAULT_NPC_TEMPLATES, active.npcs, nameKey));
+}
+
+/** The merged spell corpus (curated built-ins + the active customizations),
+ * tagged by source.
+ * @returns {{ entry: Spell, source: LibrarySource }[]} */
+export function activeSpellEntries() {
+  return (cache.spells ??= mergedEntries(DEFAULT_SPELLS, active.spells, nameKey));
+}
+
+/** The merged spells, for spellbook pickers and the casting resolver.
+ * @returns {Spell[]} */
+export function activeSpells() {
+  return activeSpellEntries().map((e) => e.entry);
 }

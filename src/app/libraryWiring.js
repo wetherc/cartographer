@@ -3,6 +3,7 @@ import { promptModal, confirmModal } from '../ui/Modal.js';
 import { wireTabs } from '../ui/Tabs.js';
 import { mountLibraryPanel } from '../ui/LibraryPanel.js';
 import { buildItemForm } from '../ui/ItemForm.js';
+import { buildSpellForm } from '../ui/SpellForm.js';
 import {
   emptyLibrary,
   isLibraryEmpty,
@@ -12,6 +13,7 @@ import {
   activeEquipmentEntries,
   activeBestiaryEntries,
   activeNPCEntries,
+  activeSpellEntries,
   activeWeapons,
   activeArmors,
   activeEnemyArmor,
@@ -40,6 +42,18 @@ import { npcForm } from './npcForm.js';
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
 /** @typedef {import('../types/library.js').NPCTemplate} NPCTemplate */
 /** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
+/** @typedef {import('../types/spell.js').Spell} Spell */
+
+/** A spell's one-line summary for its library row: level/school and its effect
+ * kind, plus a concentration marker.
+ * @param {Spell} spell
+ * @returns {string} */
+function spellSummary(spell) {
+  const level = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
+  return [`${level} ${spell.school}`, spell.effect.kind, spell.concentration ? 'concentration' : '']
+    .filter(Boolean)
+    .join(' | ');
+}
 
 /** Section headings for the equipment list, in display order. */
 const TYPE_GROUPS = /** @type {Record<string, string>} */ ({
@@ -83,6 +97,7 @@ export function wireLibrary(app) {
     app.views.libraryEquipment.update();
     app.views.libraryBestiary.update();
     app.views.libraryNPCs.update();
+    app.views.librarySpells.update();
   };
 
   /** Apply, persist, and re-render a new custom library. @param {CustomLibrary} next */
@@ -446,6 +461,61 @@ export function wireLibrary(app) {
     },
   });
 
+  // --- Spells ----------------------------------------------------------------
+
+  /** Store a spell edit under its (possibly renamed) key.
+   * @param {string | null} key @param {Omit<Spell, 'id'>} fields */
+  const storeSpell = (key, fields) => {
+    // A spell's id is derived from its name (the merge key); an existing entry
+    // keeps its id unless renamed. Editing a built-in stores a custom override.
+    const existing = key
+      ? activeSpellEntries().find(({ entry }) => nameKey(entry) === key)?.entry
+      : null;
+    const id = existing && key === nameKey(fields) ? existing.id : slugId(nameKey(fields), []);
+    /** @type {Spell} */
+    const spell = { ...fields, id };
+    let next = custom.spells;
+    if (key && key !== nameKey(spell)) next = removeEntry(next, key, nameKey);
+    setCustom({ ...custom, spells: upsertEntry(next, spell, nameKey) });
+  };
+
+  app.views.librarySpells = mountLibraryPanel(mustGetElement('library-spells-container'), {
+    addLabel: 'New spell',
+    getEntries: () =>
+      activeSpellEntries()
+        .slice()
+        .sort((a, b) => a.entry.level - b.entry.level || a.entry.name.localeCompare(b.entry.name))
+        .map(({ entry, source }) => ({
+          key: nameKey(entry),
+          name: entry.name,
+          summary: spellSummary(entry),
+          source,
+          group: entry.level === 0 ? 'Cantrips' : `Level ${entry.level}`,
+        })),
+    buildEditor: (key, close) => {
+      const found = key ? activeSpellEntries().find(({ entry }) => nameKey(entry) === key) : null;
+      return buildSpellForm({
+        spell: found?.entry ?? null,
+        submitLabel: found ? 'Save' : 'Add',
+        onCancel: close,
+        onSubmit: (fields) => {
+          storeSpell(key, fields);
+          close();
+        },
+      });
+    },
+    onRemove: async (key, source) => {
+      const ok = await confirmModal(
+        source === 'override'
+          ? 'Revert this spell to the built-in default?'
+          : 'Delete this custom spell?',
+        { danger: source === 'custom', confirmLabel: source === 'override' ? 'Revert' : 'Delete' },
+      );
+      if (ok) setCustom({ ...custom, spells: removeEntry(custom.spells, key, nameKey) });
+      return ok;
+    },
+  });
+
   // --- Library file controls -------------------------------------------------
 
   mustGetElement('library-export-btn').addEventListener('click', () => {
@@ -476,7 +546,7 @@ export function wireLibrary(app) {
     }
     setCustom(imported);
     app.toasts.show(
-      `Library loaded: ${imported.equipment.length} equipment, ${imported.bestiary.length} bestiary, ${imported.npcs.length} NPC entries.`,
+      `Library loaded: ${imported.equipment.length} equipment, ${imported.bestiary.length} bestiary, ${imported.npcs.length} NPC, ${imported.spells.length} spell entries.`,
     );
   });
 

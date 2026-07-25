@@ -22,7 +22,10 @@ import {
   activeBestiaryEntries,
   activeEquipmentEntries,
   activeNPCEntries,
+  activeSpells,
+  activeSpellEntries,
 } from '../src/library/Library.js';
+import { DEFAULT_SPELLS } from '../src/data/spells.js';
 
 test('defaultEquipmentTemplates covers every built-in preset list', () => {
   const defaults = defaultEquipmentTemplates();
@@ -237,6 +240,72 @@ test('the active registry merges customs into every getter', () => {
   } finally {
     setActiveLibrary(emptyLibrary());
   }
+});
+
+test('an empty library carries an empty spells list; isLibraryEmpty counts spells', () => {
+  assert.deepEqual(emptyLibrary().spells, []);
+  assert.equal(isLibraryEmpty(emptyLibrary()), true);
+  assert.equal(isLibraryEmpty({ ...emptyLibrary(), spells: [DEFAULT_SPELLS[0]] }), false);
+});
+
+test('normalizeLibrary repairs spells: id, defaults, effect shape, and drops nameless', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      // A minimal save spell with a bogus school/ability and a garbage damage term.
+      {
+        name: ' Scorch ',
+        level: '2',
+        school: 'pyromancy',
+        effect: {
+          kind: 'save',
+          saveAbility: 'LUCK',
+          damage: [{ count: 0, sides: 7, damageType: 'psychic' }, 'junk'],
+          halfOnSave: true,
+        },
+      },
+      // An unknown effect kind collapses to utility.
+      { name: 'Mystery', effect: { kind: 'bogus' } },
+      // Nameless -> dropped.
+      { level: 1 },
+    ],
+  });
+  assert.equal(lib.spells.length, 2);
+  const scorch = lib.spells[0];
+  assert.equal(scorch.name, 'Scorch');
+  assert.equal(scorch.id, 'scorch');
+  assert.equal(scorch.level, 2);
+  assert.equal(scorch.school, 'abjuration', 'unknown school falls back to the first');
+  assert.equal(scorch.effect.kind, 'save');
+  assert.equal(scorch.effect.saveAbility, 'DEX', 'unknown ability falls back to DEX');
+  assert.deepEqual(
+    scorch.effect.damage,
+    [{ count: 1, sides: 4, damageType: 'psychic' }],
+    'the bad die repairs, the non-object term drops',
+  );
+  assert.equal(lib.spells[1].effect.kind, 'utility');
+});
+
+test('a custom spell shadows a built-in of the same name; new names append', () => {
+  const firebolt = DEFAULT_SPELLS.find((s) => s.name === 'Fire Bolt');
+  const override = { ...firebolt, description: 'Homebrewed hotter.' };
+  const brandNew = { ...firebolt, id: 'chill-touch-x', name: 'Frost Lance' };
+  try {
+    setActiveLibrary({ ...emptyLibrary(), spells: [override, brandNew] });
+    const merged = activeSpellEntries();
+    const bolt = merged.find((e) => e.entry.name === 'Fire Bolt');
+    assert.equal(bolt?.source, 'override');
+    assert.equal(bolt?.entry.description, 'Homebrewed hotter.');
+    assert.equal(merged.find((e) => e.entry.name === 'Frost Lance')?.source, 'custom');
+    assert.equal(activeSpells().length, DEFAULT_SPELLS.length + 1);
+  } finally {
+    setActiveLibrary(emptyLibrary());
+  }
+});
+
+test('with no customizations activeSpells returns the curated defaults, memoized', () => {
+  setActiveLibrary(emptyLibrary());
+  assert.equal(activeSpells().length, DEFAULT_SPELLS.length);
+  assert.equal(activeSpellEntries(), activeSpellEntries());
 });
 
 test('getActiveLibrary reflects the library last set, empty by default', () => {

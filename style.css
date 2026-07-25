@@ -14,4 +14,5 @@
 @import url('styles/party.css'); /* status conditions, party roster */
 @import url('styles/story.css'); /* travelogue, quest log */
 @import url('styles/library.css'); /* Library mode: template lists, custom-library file controls */
+@import url('styles/spells.css'); /* spell authoring form, spellbook, cast modal */
 @import url('styles/responsive.css'); /* narrow-viewport stacking; keep last */

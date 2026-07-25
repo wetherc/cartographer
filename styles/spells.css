@@ -1,0 +1,34 @@
+/* ==========================================================================
+   Spells: the Library-rail authoring form. The spellbook section and cast
+   modal styles arrive with later spellcasting phases; this sheet starts with
+   the form so the spell library reads cleanly.
+   ========================================================================== */
+
+/* The spell form reuses the item form's row/field primitives; these rules only
+   cover the controls the item form doesn't have. */
+
+.spell-form__description {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+}
+
+/* Inline checkbox groups (classes, components, flags): wrap onto multiple rows
+   at narrow widths, each option a compact tappable label. */
+.spell-form__checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+.spell-form__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.spell-form__check input {
+  margin: 0;
+}
