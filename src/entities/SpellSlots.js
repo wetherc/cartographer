@@ -41,13 +41,92 @@ const SLOT_TABLE = [
 ];
 
 /**
- * Slot counts per spell level for a character level (1-based both ways).
+ * Half-caster slot progression (Paladin, Ranger): no slots at level 1, then
+ * first slots at 2 and topping out at 5th-level slots. Same row semantics as
+ * SLOT_TABLE.
+ * @type {number[][]}
+ */
+const HALF_SLOT_TABLE = [
+  [],
+  [2],
+  [3],
+  [3],
+  [4, 2],
+  [4, 2],
+  [4, 3],
+  [4, 3],
+  [4, 3, 2],
+  [4, 3, 2],
+  [4, 3, 3],
+  [4, 3, 3],
+  [4, 3, 3, 1],
+  [4, 3, 3, 1],
+  [4, 3, 3, 2],
+  [4, 3, 3, 2],
+  [4, 3, 3, 3, 1],
+  [4, 3, 3, 3, 1],
+  [4, 3, 3, 3, 2],
+  [4, 3, 3, 3, 2],
+];
+
+/**
+ * Third-caster slot progression (Eldritch Knight, Arcane Trickster): no slots
+ * until level 3, topping out at 4th-level slots.
+ * @type {number[][]}
+ */
+const THIRD_SLOT_TABLE = [
+  [],
+  [],
+  [2],
+  [3],
+  [3],
+  [3],
+  [4, 2],
+  [4, 2],
+  [4, 2],
+  [4, 3],
+  [4, 3],
+  [4, 3],
+  [4, 3, 2],
+  [4, 3, 2],
+  [4, 3, 2],
+  [4, 3, 3],
+  [4, 3, 3],
+  [4, 3, 3],
+  [4, 3, 3, 1],
+  [4, 3, 3, 1],
+];
+
+/** The slot table for each caster type; pact and none carry no leveled-slot
+ * table here (pact magic is special-cased, none has no slots).
+ * @type {Record<string, number[][] | undefined>} */
+const CASTER_TABLES = {
+  full: SLOT_TABLE,
+  half: HALF_SLOT_TABLE,
+  third: THIRD_SLOT_TABLE,
+};
+
+/**
+ * Slot counts per spell level for a full caster of the given character level
+ * (1-based both ways). Retained for the full-caster default path.
  * @param {number} characterLevel
  * @returns {number[]} index 0 = spell level 1; empty for level < 1
  */
 export function slotsForLevel(characterLevel) {
-  if (characterLevel < 1) return [];
-  return SLOT_TABLE[Math.min(characterLevel, SLOT_TABLE.length) - 1];
+  return slotsForCaster('full', characterLevel);
+}
+
+/**
+ * Slot counts per spell level for a caster of the given type and character
+ * level. Non-slot caster types (pact, none, or any unknown) get no slots.
+ * @param {import('../types/class.js').CasterType} casterType
+ * @param {number} characterLevel
+ * @returns {number[]} index 0 = spell level 1; empty when the caster has none
+ */
+export function slotsForCaster(casterType, characterLevel) {
+  const table = CASTER_TABLES[casterType];
+  if (!table || characterLevel < 1) return [];
+  return table[Math.min(characterLevel, table.length) - 1];
 }
 
 /**

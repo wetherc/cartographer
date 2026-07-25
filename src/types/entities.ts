@@ -160,10 +160,24 @@ export type EquipmentSlot =
 /** Inventory item id equipped in each slot; null = slot empty. */
 export type Equipment = Record<EquipmentSlot, string | null>;
 
+/** A character's spellbook: the ids of the cantrips and leveled spells it has
+ * learned, and (for prepared casters) which of the known leveled spells are
+ * currently prepared. Absent on non-casters and older saves. */
+export interface Spellbook {
+  cantrips: string[];
+  known: string[];
+  prepared: string[];
+}
+
 export interface Character {
   id: string;
   name: string;
   race: string;
+  /** The character's class id (see Classes.js); absent on older saves and
+   * classless characters, which cast nothing. */
+  class?: string;
+  /** The chosen subclass id, if any. */
+  subclass?: string;
   level: number;
   xp: number;
   stats: Record<string, number>;
@@ -181,4 +195,7 @@ export interface Character {
   baseAC?: number;
   /** Own map position; null (and older saves' absence) = with the party. */
   location?: EncounterLocation | null;
+  /** Learned cantrips/spells (spell ids); absent on non-casters and older
+   * saves. */
+  spellbook?: Spellbook;
 }
