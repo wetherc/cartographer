@@ -1,9 +1,13 @@
-import { test } from 'node:test';
+import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildBlankCampaign, buildExampleCampaign } from '../src/campaign/Campaigns.js';
+import {
+  buildBlankCampaign,
+  buildExampleCampaign,
+  loadInitialCampaign,
+} from '../src/campaign/Campaigns.js';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { getTile } from '../src/map/TileGrid.js';
-import { getHP } from '../src/entities/Character.js';
+import { createCharacter, getHP } from '../src/entities/Character.js';
 
 /** @param {number} seed @returns {() => number} deterministic rng */
 function mulberry32(seed) {
@@ -15,6 +19,55 @@ function mulberry32(seed) {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+/** Minimal in-memory localStorage so the boot path runs under Node. */
+function installLocalStorage() {
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: (k) => (store.has(k) ? store.get(k) : null),
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: (k) => store.delete(k),
+    clear: () => store.clear(),
+  };
+}
+
+beforeEach(installLocalStorage);
+
+test('loadInitialCampaign boots a blank campaign when nothing is saved', () => {
+  const campaign = loadInitialCampaign();
+  assert.deepEqual(campaign, buildBlankCampaign());
+});
+
+test('loadInitialCampaign restores a save and default-fills fields older saves lack', () => {
+  localStorage.setItem(
+    'campaign-builder:save',
+    JSON.stringify({
+      nodes: [{ id: 'world', name: 'World', parentId: null, width: 2, height: 2, tiles: [] }],
+      party: { nodeId: 'world', tileId: '1,1' },
+      characters: [createCharacter('c1', 'Hero')],
+      encounters: [],
+      // No travelog/quests/clock/npcs/handouts/bestiary: a pre-feature save.
+    }),
+  );
+  const campaign = loadInitialCampaign();
+  assert.equal(campaign.grid.getNode('world').name, 'World');
+  assert.deepEqual(campaign.party, { nodeId: 'world', tileId: '1,1' });
+  assert.equal(campaign.characters[0].name, 'Hero');
+  assert.ok(Array.isArray(campaign.characters[0].inventory), 'characters are default-filled');
+  assert.deepEqual(campaign.travelog, []);
+  assert.deepEqual(campaign.quests, []);
+  assert.ok(campaign.clock, 'a missing clock is created, not left null');
+  assert.deepEqual(campaign.npcs, []);
+  assert.deepEqual(campaign.handouts, []);
+  assert.deepEqual(campaign.bestiary, []);
+  assert.equal(campaign.splitParty, false);
+  // No demo character is injected into an authored-empty roster.
+  localStorage.setItem(
+    'campaign-builder:save',
+    JSON.stringify({ nodes: [], party: null, characters: [], encounters: [] }),
+  );
+  assert.equal(loadInitialCampaign().characters.length, 0);
+});
 
 test('blank campaign has no demo content', () => {
   const campaign = buildBlankCampaign();

@@ -13,6 +13,7 @@ import {
   removeEntry,
   normalizeLibrary,
   setActiveLibrary,
+  getActiveLibrary,
   activeEquipment,
   activeWeapons,
   activeArmors,
@@ -161,6 +162,17 @@ test('the active registry merges customs into every getter', () => {
     assert.equal(innkeeper?.source, 'override');
     assert.equal(innkeeper?.entry.role, 'Spy');
     assert.equal(activeNPCEntries().length, DEFAULT_NPC_TEMPLATES.length);
+  } finally {
+    setActiveLibrary(emptyLibrary());
+  }
+});
+
+test('getActiveLibrary reflects the library last set, empty by default', () => {
+  assert.deepEqual(getActiveLibrary(), emptyLibrary());
+  const custom = { ...emptyLibrary(), equipment: [{ name: 'Rope', type: 'gear' }] };
+  try {
+    setActiveLibrary(custom);
+    assert.equal(getActiveLibrary(), custom);
   } finally {
     setActiveLibrary(emptyLibrary());
   }

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TilePalette } from '../src/map/TilePalette.js';
+import { TilePalette, isOverlayType } from '../src/map/TilePalette.js';
 
 test('TilePalette ships with built-in terrain variants', () => {
   const palette = new TilePalette();
@@ -143,4 +143,21 @@ test('listAll returns both built-in and custom entries', () => {
   const before = palette.listAll().length;
   palette.addCustom('my-tile', 'My Tile', 'data:x');
   assert.equal(palette.listAll().length, before + 1);
+});
+
+test('listBuiltins excludes custom entries, and listCustom the built-ins', () => {
+  const palette = new TilePalette();
+  const builtins = palette.listBuiltins().length;
+  assert.ok(builtins > 0);
+  palette.addCustom('my-tile', 'My Tile', 'data:x');
+  assert.equal(palette.listBuiltins().length, builtins, 'custom tiles are not built-ins');
+  assert.deepEqual(
+    palette.listCustom().map((e) => e.id),
+    ['my-tile'],
+  );
+});
+
+test('isOverlayType flags the terrain-crossing overlay types only', () => {
+  for (const type of ['road', 'river', 'coast']) assert.equal(isOverlayType(type), true);
+  for (const type of ['grass', 'poi-town', 'interior']) assert.equal(isOverlayType(type), false);
 });

@@ -130,3 +130,48 @@ test('computeRegionEntryTile lands a stairs descent on the child level stairs-up
   const landed = computeRegionEntryTile(parent, child, 'lvl-2', { nodeId: 'lvl-1', tileId: '1,1' });
   assert.equal(landed, '2,3');
 });
+
+test('computeRegionEntryTile reads the approach geometry when no stairs connect the nodes', async () => {
+  const { computeRegionEntryTile } = await import('../src/map/EntryPoint.js');
+  // A 2x2 region block at parent coords x 2..3, y 2..3.
+  const parentTiles = [
+    createTile('2,2', 'grass.svg', { childNodeId: 'town' }),
+    createTile('3,2', 'grass.svg', { childNodeId: 'town' }),
+    createTile('2,3', 'grass.svg', { childNodeId: 'town' }),
+    createTile('3,3', 'grass.svg', { childNodeId: 'town' }),
+  ];
+  const parent = {
+    id: 'world',
+    name: 'World',
+    parentId: null,
+    width: 6,
+    height: 6,
+    kind: 'region',
+    environ: null,
+    tiles: parentTiles,
+  };
+  const childTiles = [];
+  for (let y = 0; y < 4; y++)
+    for (let x = 0; x < 4; x++) childTiles.push(createTile(`${x},${y}`, 'grass.svg'));
+  const child = {
+    id: 'town',
+    name: 'Town',
+    parentId: 'world',
+    width: 4,
+    height: 4,
+    kind: 'region',
+    environ: null,
+    tiles: childTiles,
+  };
+
+  // Head-on from the west, aligned with the block's top row.
+  assert.equal(
+    computeRegionEntryTile(parent, child, 'town', { nodeId: 'world', tileId: '0,2' }),
+    '0,0',
+  );
+  // Party elsewhere in the world: no approach to read, land at the centre.
+  assert.equal(
+    computeRegionEntryTile(parent, child, 'town', { nodeId: 'somewhere-else', tileId: '0,0' }),
+    '2,2',
+  );
+});

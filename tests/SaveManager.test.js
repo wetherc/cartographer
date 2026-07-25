@@ -1,9 +1,31 @@
-import { test } from 'node:test';
+import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMapNode, createTile, setTile, TileGrid } from '../src/map/TileGrid.js';
 import { createCharacter, addXP, withHP, getHP } from '../src/entities/Character.js';
 import { createEncounter, applyDamage } from '../src/entities/Encounter.js';
-import { buildState, serialize, deserialize, toTileGrid } from '../src/storage/SaveManager.js';
+import {
+  buildState,
+  serialize,
+  deserialize,
+  toTileGrid,
+  saveToLocalStorage,
+  trySaveToLocalStorage,
+  loadFromLocalStorage,
+  onExternalSave,
+} from '../src/storage/SaveManager.js';
+
+/** Minimal in-memory localStorage so the storage wrappers run under Node. */
+function installLocalStorage() {
+  const store = new Map();
+  globalThis.localStorage = {
+    getItem: (k) => (store.has(k) ? store.get(k) : null),
+    setItem: (k, v) => store.set(k, String(v)),
+    removeItem: (k) => store.delete(k),
+    clear: () => store.clear(),
+  };
+}
+
+beforeEach(installLocalStorage);
 
 function sampleGrid() {
   const grid = new TileGrid();
@@ -127,4 +149,67 @@ test('isNearQuota flags sizes at or past the warning threshold', async () => {
   assert.equal(isNearQuota(QUOTA_WARN_BYTES - 1), false);
   assert.equal(isNearQuota(QUOTA_WARN_BYTES), true);
   assert.equal(isNearQuota(100, 100), true);
+});
+
+test('saveToLocalStorage then loadFromLocalStorage round-trips a campaign', () => {
+  assert.equal(loadFromLocalStorage(), null, 'no save stored yet');
+  const state = buildState(sampleGrid(), { nodeId: 'world', tileId: '0,0' }, [], []);
+  saveToLocalStorage(state);
+  assert.deepEqual(loadFromLocalStorage(), state);
+});
+
+test('trySaveToLocalStorage reports success, byte cost, and quota headroom', () => {
+  const state = buildState(sampleGrid(), null, [], []);
+  const result = trySaveToLocalStorage(state);
+  assert.deepEqual(result, { ok: true, nearQuota: false, bytes: serialize(state).length * 2 });
+  assert.deepEqual(loadFromLocalStorage(), state);
+});
+
+test('trySaveToLocalStorage reports a quota failure instead of throwing', () => {
+  globalThis.localStorage.setItem = () => {
+    throw new Error('QuotaExceededError');
+  };
+  const result = trySaveToLocalStorage(buildState(sampleGrid(), null, [], []));
+  assert.equal(result.ok, false);
+  assert.equal(result.nearQuota, true);
+});
+
+test('trySaveToLocalStorage flags a save approaching the quota even when it lands', () => {
+  // ~3.2 MB serialized (UTF-16), past the 3 MB warning threshold.
+  const state = buildState(sampleGrid(), null, [], [], [], [], {
+    handouts: [{ id: 'h1', title: 'Map', body: 'x'.repeat(1_600_000), revealed: false }],
+  });
+  const result = trySaveToLocalStorage(state);
+  assert.equal(result.ok, true);
+  assert.equal(result.nearQuota, true);
+});
+
+test('onExternalSave fires only for another tab writing a new save, until unsubscribed', () => {
+  /** @type {Map<string, Set<(event: any) => void>>} */
+  const listeners = new Map();
+  globalThis.window = {
+    addEventListener: (type, handler) => {
+      if (!listeners.has(type)) listeners.set(type, new Set());
+      listeners.get(type).add(handler);
+    },
+    removeEventListener: (type, handler) => listeners.get(type)?.delete(handler),
+  };
+  const dispatch = (event) => listeners.get('storage')?.forEach((h) => h(event));
+
+  let calls = 0;
+  const unsubscribe = onExternalSave(() => calls++);
+
+  dispatch({ key: 'campaign-builder:save', oldValue: null, newValue: '{"a":1}' });
+  assert.equal(calls, 1, 'a new save from another tab fires the callback');
+
+  dispatch({ key: 'campaign-builder:history', oldValue: null, newValue: '[]' });
+  dispatch({ key: 'campaign-builder:save', oldValue: '{"a":1}', newValue: null });
+  dispatch({ key: 'campaign-builder:save', oldValue: '{"a":1}', newValue: '{"a":1}' });
+  assert.equal(calls, 1, 'history writes, clears, and no-ops are ignored');
+
+  unsubscribe();
+  dispatch({ key: 'campaign-builder:save', oldValue: null, newValue: '{"b":2}' });
+  assert.equal(calls, 1, 'unsubscribed listener no longer fires');
+
+  delete globalThis.window;
 });

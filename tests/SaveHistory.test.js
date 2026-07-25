@@ -65,6 +65,31 @@ test('snapshotHistory then undoHistory round-trips a state and shrinks the ring'
   assert.equal(undoHistory(), null);
 });
 
+test('snapshotHistory falls back to a single-snapshot ring when the full ring blows the quota', () => {
+  const mk = (note) => ({ nodes: [], party: null, characters: [], encounters: [], note });
+  snapshotHistory(mk('first'));
+  // A two-entry ring no longer fits; the retry with just the newest must land.
+  const realSetItem = localStorage.setItem;
+  localStorage.setItem = (k, v) => {
+    if (JSON.parse(v).length > 1) throw new Error('QuotaExceededError');
+    realSetItem(k, v);
+  };
+  snapshotHistory(mk('second'));
+  const history = loadHistory();
+  assert.equal(history.length, 1, 'ring shortened to the newest snapshot');
+  assert.equal(JSON.parse(history[0]).note, 'second');
+});
+
+test('snapshotHistory drops the ring entirely when even one snapshot cannot be stored', () => {
+  snapshotHistory({ nodes: [], party: null, characters: [], encounters: [] });
+  assert.equal(loadHistory().length, 1);
+  localStorage.setItem = () => {
+    throw new Error('QuotaExceededError');
+  };
+  snapshotHistory({ nodes: [], party: null, characters: [], encounters: [] });
+  assert.deepEqual(loadHistory(), [], 'unstorable history removed rather than left stale');
+});
+
 test('snapshotHistory enforces the ring limit across successive pushes', () => {
   const mk = (n) => ({
     nodes: [],
