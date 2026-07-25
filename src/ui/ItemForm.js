@@ -8,7 +8,6 @@ import {
 } from '../entities/Equipment.js';
 import { activeEquipment } from '../library/Library.js';
 import { buildDamageEditor, buildEffectsEditor } from './ItemFormEditors.js';
-import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
@@ -262,7 +261,11 @@ export function buildItemForm({
   const weaponRow = fieldRow(handlingField);
   const damageRow = fieldRow(damageField);
   const effectsRow = fieldRow(effectsField);
-  const bonusRow = fieldRow(acField, buffStatField, buffAmountField);
+  // AC bonus is its own row; the stat buff pairs its select with its amount.
+  // Keeping them apart avoids a number input and a select sharing a row with
+  // mismatched heights, which misaligned their captions.
+  const acRow = fieldRow(acField);
+  const buffRow = fieldRow(buffStatField, buffAmountField);
 
   /** One picker option's label, from whichever fields the preset carries.
    * @param {EquipmentTemplate} preset */
@@ -285,7 +288,8 @@ export function buildItemForm({
     handlingField.hidden = damageField.hidden = effectsField.hidden = !weaponish;
     armorRow.hidden = weightField.hidden && shieldField.hidden;
     weaponRow.hidden = damageRow.hidden = effectsRow.hidden = !weaponish;
-    bonusRow.hidden = acField.hidden && buffStatField.hidden;
+    acRow.hidden = acField.hidden;
+    buffRow.hidden = buffStatField.hidden;
     const presets = presetsFor(type);
     presetRow.hidden = presetField.hidden = presets.length === 0;
     if (presets.length > 0) {
@@ -308,8 +312,7 @@ export function buildItemForm({
   const submitButton = document.createElement('button');
   submitButton.type = 'button';
   submitButton.className = 'btn btn--primary';
-  submitButton.setAttribute('aria-label', submitLabel);
-  submitButton.appendChild(icon(item ? 'check' : 'add'));
+  submitButton.textContent = submitLabel;
   submitButton.addEventListener('click', () => {
     const name = nameInput.value.trim();
     const quantity = Number(quantityInput.value);
@@ -374,7 +377,8 @@ export function buildItemForm({
     weaponRow,
     damageRow,
     effectsRow,
-    bonusRow,
+    acRow,
+    buffRow,
     actionsRow,
   );
 
