@@ -9,7 +9,38 @@ import {
   spellbookFromIds,
   readCasterOptions,
   refilterSpellsOnChange,
+  casterFields,
 } from '../src/app/casterFields.js';
+
+test('casterFields seeds class, level, and pre-checked spells from a caster', () => {
+  const fields = casterFields({
+    class: 'wizard',
+    casterLevel: 5,
+    spellbook: { cantrips: ['fire-bolt'], known: ['magic-missile'], prepared: ['magic-missile'] },
+  });
+  const [cls, level, spells] = fields;
+  assert.equal(cls.name, 'casterClass');
+  assert.equal(cls.value, 'wizard');
+  assert.equal(level.value, 5);
+  assert.equal(spells.type, 'multiselect');
+  assert.deepEqual(spells.value.split(',').sort(), ['fire-bolt', 'magic-missile']);
+  assert.ok(
+    spells.options.some((o) => o.value === 'fireball'),
+    'options are filtered to a level-5 wizard',
+  );
+});
+
+test('casterFields falls back to defaults for a null seed', () => {
+  const [cls, level, spells] = casterFields(null);
+  assert.equal(cls.value, '');
+  assert.equal(level.value, 1);
+  assert.equal(spells.value, '', 'no spellbook means nothing pre-checked');
+});
+
+test('casterFields reads a mob level when caster level is absent', () => {
+  const [, level] = casterFields({ class: 'cleric', level: 3 });
+  assert.equal(level.value, 3, 'the entity level seeds the caster level field');
+});
 
 test('casterClassOptions offers None plus caster classes only', () => {
   const options = casterClassOptions();

@@ -287,6 +287,66 @@ test('normalizeLibrary repairs spells: id, defaults, effect shape, and drops nam
   assert.equal(lib.spells[1].effect.kind, 'utility');
 });
 
+test('normalizeLibrary repairs attack/heal effects, save conditions, and scaling', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      {
+        name: 'Bolt',
+        effect: { kind: 'attack', damage: [{ count: 2, sides: 6, damageType: 'fire' }] },
+        scaling: {
+          damagePerLevel: [{ count: 1, sides: 6, damageType: 'fire' }],
+          targetsPerLevel: 1,
+        },
+      },
+      {
+        name: 'Mend',
+        effect: { kind: 'heal', healing: [{ count: 1, sides: 8, damageType: 'none' }] },
+      },
+      {
+        name: 'Hold',
+        effect: {
+          kind: 'save',
+          saveAbility: 'WIS',
+          damage: [],
+          halfOnSave: false,
+          condition: 'paralyzed',
+        },
+      },
+    ],
+  });
+  const bolt = lib.spells.find((s) => s.name === 'Bolt');
+  assert.equal(bolt.effect.kind, 'attack');
+  assert.equal(bolt.effect.damage[0].count, 2);
+  assert.deepEqual(bolt.scaling.damagePerLevel, [{ count: 1, sides: 6, damageType: 'fire' }]);
+  assert.equal(bolt.scaling.targetsPerLevel, 1);
+  const mend = lib.spells.find((s) => s.name === 'Mend');
+  assert.equal(mend.effect.kind, 'heal');
+  assert.equal(mend.effect.healing[0].sides, 8);
+  const hold = lib.spells.find((s) => s.name === 'Hold');
+  assert.equal(hold.effect.condition, 'paralyzed');
+});
+
+test('normalizeLibrary carries caster fields (subclass, level, spellbook) onto a template', () => {
+  const lib = normalizeLibrary({
+    bestiary: [
+      {
+        name: 'Cult Priest',
+        class: 'cleric',
+        subclass: 'death',
+        casterLevel: 5,
+        spellbook: { cantrips: ['sacred-flame'], known: ['cure-wounds', 7], prepared: 'nope' },
+      },
+    ],
+  });
+  const priest = lib.bestiary[0];
+  assert.equal(priest.class, 'cleric');
+  assert.equal(priest.subclass, 'death');
+  assert.equal(priest.casterLevel, 5);
+  assert.deepEqual(priest.spellbook.cantrips, ['sacred-flame']);
+  assert.deepEqual(priest.spellbook.known, ['cure-wounds'], 'non-string ids drop');
+  assert.deepEqual(priest.spellbook.prepared, [], 'a non-array list reads empty');
+});
+
 test('a custom spell shadows a built-in of the same name; new names append', () => {
   const firebolt = DEFAULT_SPELLS.find((s) => s.name === 'Fire Bolt');
   const override = { ...firebolt, description: 'Homebrewed hotter.' };

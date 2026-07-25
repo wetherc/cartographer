@@ -85,17 +85,20 @@ export function buildExampleCampaign(palette, rng = Math.random) {
 export function loadInitialCampaign() {
   const saved = loadFromLocalStorage();
   if (!saved) return buildBlankCampaign();
+  // deserialize (SaveManager) already defaults every missing top-level field, so
+  // saved is a complete CampaignState here; only party and clock, which it fills
+  // with null, still need a runtime default.
   return {
     grid: toTileGrid(saved),
     party: saved.party ?? { nodeId: 'world', tileId: '0,0' },
     characters: saved.characters.map(withDefaults),
     encounters: saved.encounters.map(withEncounterDefaults),
-    travelog: saved.travelog ?? [],
-    quests: saved.quests ?? [],
+    travelog: saved.travelog,
+    quests: saved.quests,
     clock: saved.clock ?? createClock(),
-    npcs: (saved.npcs ?? []).map(withNPCDefaults),
-    handouts: (saved.handouts ?? []).map(withHandoutDefaults),
-    bestiary: saved.bestiary ?? [],
-    splitParty: saved.splitParty ?? false,
+    npcs: saved.npcs.map(withNPCDefaults),
+    handouts: saved.handouts.map(withHandoutDefaults),
+    bestiary: saved.bestiary,
+    splitParty: saved.splitParty,
   };
 }

@@ -8,7 +8,16 @@ import {
   npcsOnTile,
   withDefaults,
   formatLocation,
+  dispositionOptions,
 } from '../src/entities/NPC.js';
+
+test('dispositionOptions offers every disposition, capitalized', () => {
+  assert.deepEqual(dispositionOptions(), [
+    { value: 'friendly', label: 'Friendly' },
+    { value: 'neutral', label: 'Neutral' },
+    { value: 'hostile', label: 'Hostile' },
+  ]);
+});
 
 test('createNPC defaults role/notes empty, disposition neutral, unplaced, unmet, neutral stats', () => {
   const npc = createNPC('n1', 'Bram');

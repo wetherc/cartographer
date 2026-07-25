@@ -73,6 +73,31 @@ test('findCombatant store writes back to the owning collection', () => {
   assert.ok(app.refreshes.includes('character'));
 });
 
+test('findCombatant store writes an NPC back to its collection', () => {
+  const { sage } = fixtures();
+  const app = stubApp({ npcs: [sage] });
+  findCombatant(app, 'sage').store({ ...sage, name: 'Sage the Wise' });
+  assert.equal(app.state.npcs[0].name, 'Sage the Wise');
+});
+
+test('combatantsAsTargets drops a downed character on the hostile side', () => {
+  const { goblin } = fixtures();
+  const fallen = damageCharacter(withHP(createCharacter('foe', 'Turncoat'), 8), 999);
+  const app = stubApp({ characters: [fallen], encounters: [goblin] });
+  const combat = {
+    order: [
+      { id: 'goblin', name: 'Goblin', side: 'foe' },
+      { id: 'foe', name: 'Turncoat', side: 'party' },
+    ],
+  };
+  const targets = combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[0]);
+  assert.deepEqual(
+    targets.map((t) => t.id),
+    [],
+    'the only foe is a downed character and drops out',
+  );
+});
+
 test('findCombatant sees an updated entity after the collection is replaced', () => {
   const { goblin } = fixtures();
   const app = stubApp({ encounters: [goblin] });
@@ -87,6 +112,35 @@ test('asTarget projects AC by kind', () => {
   const heroTarget = asTarget(hero, 'character');
   assert.equal(heroTarget.name, 'Hero');
   assert.equal(typeof heroTarget.ac, 'number');
+});
+
+test('asTarget defaults an NPC with no stat block to AC 10', () => {
+  assert.equal(asTarget(/** @type {any} */ ({ id: 'x', name: 'Wisp' }), 'npc').ac, 10);
+});
+
+test('combatantsAsTargets skips a participant absent from every roster', () => {
+  const { goblin } = fixtures();
+  const app = stubApp({ encounters: [goblin] });
+  const combat = {
+    order: [
+      { id: 'ghost', name: 'Ghost', side: 'party' },
+      { id: 'goblin', name: 'Goblin', side: 'foe' },
+    ],
+  };
+  const targets = combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[0]);
+  assert.deepEqual(
+    targets.map((t) => t.id),
+    ['goblin'],
+    'the unresolved party actor sees only the goblin foe',
+  );
+});
+
+test('applyToTarget damages an HP-less character without logging a drop', () => {
+  const ghost = createCharacter('ghost', 'Ghost');
+  const app = stubApp({ characters: [ghost] });
+  applyToTarget(app, 'ghost', 5, false);
+  assert.equal(app.logs.length, 0, 'no HP pool means no drop-to-0 line');
+  assert.equal(app.dirty, true, 'the write still lands');
 });
 
 test('combatantsAsTargets lists foes and drops downed ones', () => {

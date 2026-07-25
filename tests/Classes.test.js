@@ -9,7 +9,26 @@ import {
   spellAbilityModifier,
   spellSaveDC,
   spellAttackBonus,
+  casterSlots,
+  cantripLimit,
+  preparedLimit,
 } from '../src/entities/Classes.js';
+
+test('casterSlots is empty for an unknown class', () => {
+  assert.deepEqual(casterSlots('bogus', 5), []);
+  assert.deepEqual(casterSlots(undefined, 5), []);
+});
+
+test('cantripLimit and preparedLimit default a missing level to 1', () => {
+  const c = character({ class: 'wizard', level: undefined, stats: { INT: 16 } });
+  assert.equal(cantripLimit(c), cantripsKnownForClass('wizard', 1));
+  // prepared = INT mod (+3) + level (1), floored at 1.
+  assert.equal(preparedLimit(c), 4);
+});
+
+test('preparedLimit is 0 for a non-caster', () => {
+  assert.equal(preparedLimit(character({ class: 'fighter' })), 0);
+});
 
 /** @param {Partial<import('../src/types/entities.js').Character>} over */
 function character(over = {}) {

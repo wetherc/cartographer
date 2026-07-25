@@ -65,6 +65,40 @@ test('withCasterFields stamps caster-type-aware slots and an empty spellbook', (
   assert.equal(slot(cleric, 2).max, 2);
 });
 
+test('withCasterFields honors an explicit subclass and casterLevel over the default', () => {
+  const c = withCasterFields(
+    { id: 'e', name: 'C' },
+    { class: 'wizard', subclass: 'evocation', casterLevel: 7 },
+    1,
+  );
+  assert.equal(c.subclass, 'evocation');
+  assert.equal(c.casterLevel, 7, 'the option level wins over the default');
+});
+
+test('withCasterFields floors a zero/garbage caster level to 1', () => {
+  const c = withCasterFields({ id: 'e', name: 'C' }, { class: 'cleric', casterLevel: 0 }, 5);
+  assert.equal(c.casterLevel, 1);
+});
+
+test('toCaster falls back to an empty stat map with neither stats nor statBlock', () => {
+  const view = toCaster({ id: 'x', name: 'Blank', class: 'wizard' });
+  assert.deepEqual(view.stats, {});
+});
+
+test('withCasterState tolerates an entity with no resources array', () => {
+  const next = withCasterState(
+    { id: 'e', name: 'C' },
+    { resources: [{ id: 'slots-1', name: 'L1', type: 'mana', current: 2, max: 4 }] },
+  );
+  assert.equal(slot(next, 1).current, 2);
+});
+
+test('casterTemplateFields carries a subclass and omits an absent caster level', () => {
+  const fields = casterTemplateFields({ class: 'wizard', subclass: 'evocation' });
+  assert.equal(fields.subclass, 'evocation');
+  assert.ok(!('casterLevel' in fields), 'no caster level is carried when the entity has none');
+});
+
 test('withCasterFields respects half-caster tables (paladin has no level-1 slots)', () => {
   const pal1 = withCasterFields({ id: 'e', name: 'P' }, { class: 'paladin' }, 1);
   assert.equal(getSlotPools(pal1).length, 0);

@@ -10,6 +10,15 @@ import {
   STAT_KEYS,
 } from '../src/entities/Modifiers.js';
 
+test('normalizeStatBlock derives AC from DEX when AC is absent', () => {
+  // No AC and no DEX: AC = 10 + mod(DEX default 10) = 10.
+  assert.equal(normalizeStatBlock({}).AC, 10);
+  // DEX 14 with no AC: AC = 10 + 2.
+  assert.equal(normalizeStatBlock({ DEX: 14 }).AC, 12);
+  // An explicit AC wins over the derivation.
+  assert.equal(normalizeStatBlock({ AC: 18, DEX: 14 }).AC, 18);
+});
+
 test('abilityModifier follows the standard step table', () => {
   assert.equal(abilityModifier(20), 5);
   assert.equal(abilityModifier(10), 0);

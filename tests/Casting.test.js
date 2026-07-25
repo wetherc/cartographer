@@ -98,6 +98,43 @@ const cureWounds = {
   scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'healing' }] },
 };
 
+test('castSpell reports no-slot when the caster has no pool at that level', () => {
+  // The default caster carries only a 1st-level pool; casting at 2nd finds none.
+  const result = castSpell(caster(), burningHands, { slotLevel: 2, rng: seq([0]) });
+  assert.deepEqual(result, { ok: false, reason: 'no-slot' });
+});
+
+test('castSpell defaults a missing caster level when casting a cantrip', () => {
+  const result = castSpell(caster({ level: undefined }), firebolt, {
+    targets: [{ id: 't', name: 'Orc', ac: 5 }],
+    rng: seq([0.99]),
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.spent, false, 'a cantrip spends no slot');
+});
+
+test('castSpell defaults a target with no AC to 10', () => {
+  const result = castSpell(caster(), firebolt, {
+    targets: [{ id: 't', name: 'Blob' }],
+    spellAttackBonus: 20,
+    rng: seq([0.5]),
+  });
+  assert.equal(result.outcomes[0].ac, 10);
+});
+
+test('castSpell defaults a target with no save bonus or mode, and negates on a full save', () => {
+  const noHalf = { ...burningHands, effect: { ...burningHands.effect, halfOnSave: false } };
+  const result = castSpell(caster(), noHalf, {
+    slotLevel: 1,
+    saveDC: 1, // any d20 clears this, so the target saves
+    targets: [{ id: 't', name: 'Nimble' }],
+    rng: seq([0.99, 0, 0, 0]),
+  });
+  const outcome = result.outcomes[0];
+  assert.equal(outcome.saved, true);
+  assert.equal(outcome.taken, 0, 'a full save negates a non-halving spell');
+});
+
 test('cantripStep follows the 5/11/17 breakpoints', () => {
   assert.equal(cantripStep(1), 0);
   assert.equal(cantripStep(4), 0);

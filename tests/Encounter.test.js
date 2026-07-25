@@ -18,6 +18,31 @@ import {
   toTemplate,
   fromTemplate,
 } from '../src/entities/Encounter.js';
+import { slotLevelOf } from '../src/entities/SpellSlots.js';
+
+test('editEncounter keeps spent slots when the caster class and level are unchanged', () => {
+  const enc = createEncounter('e1', 'Acolyte', 20, { WIS: 14 }, null, {
+    level: 3,
+    class: 'cleric',
+  });
+  const spent = {
+    ...enc,
+    resources: enc.resources.map((r) => (slotLevelOf(r) === 1 ? { ...r, current: 0 } : r)),
+  };
+  const edited = editEncounter(spent, {
+    name: 'Acolyte',
+    maxHP: 20,
+    level: 3,
+    tier: 'mob',
+    location: null,
+    class: 'cleric',
+    casterLevel: 3,
+    subclass: 'life',
+  });
+  assert.equal(edited.subclass, 'life');
+  const l1 = edited.resources.find((r) => slotLevelOf(r) === 1);
+  assert.equal(l1.current, 0, 'spent slot survives an unrelated edit');
+});
 
 /** The normalized stat block createEncounter stamps from partial input. */
 const fullBlock = (/** @type {Record<string, number>} */ overrides = {}) => ({
