@@ -60,11 +60,25 @@ export interface Encounter {
   /** The enemy's armor; stamped with a level/tier default like the weapon,
    * with the same null = deliberately unarmored escape hatch. */
   armor?: EnemyArmor | null;
+  /** Spellcaster class id (see Classes.js). Present (and a caster class) makes
+   * this a spellcasting foe; absent = a non-caster. */
+  class?: string;
+  /** The chosen subclass id, if any. */
+  subclass?: string;
+  /** Caster level driving slot maxima and save DC; defaults to `level` when a
+   * caster class is assigned without an explicit value. */
+  casterLevel?: number;
+  /** Learned cantrips/spells (spell ids); present only on casters. */
+  spellbook?: Spellbook;
+  /** Spell-slot pools (`slots-1` .. `slots-9`); present only on casters. */
+  resources?: ResourcePool[];
 }
 
 /** A reusable encounter blueprint saved to the campaign's bestiary (or to the
  * campaign-independent library). Weapon/armor carry the same null semantics
- * as Encounter: null = deliberately none, absent = stamp a default. */
+ * as Encounter: null = deliberately none, absent = stamp a default. Caster
+ * fields persist a spellcasting foe; slot pools are rebuilt from
+ * class/casterLevel on spawn, so the template stores no resources. */
 export interface EncounterTemplate {
   id: string;
   name: string;
@@ -74,6 +88,10 @@ export interface EncounterTemplate {
   tier: EnemyTier;
   weapon?: EnemyWeapon | null;
   armor?: EnemyArmor | null;
+  class?: string;
+  subclass?: string;
+  casterLevel?: number;
+  spellbook?: Spellbook;
 }
 
 export type ResourceType = 'item-count' | 'mana' | 'custom';

@@ -1,5 +1,5 @@
 import { abilityModifier, proficiencyBonus } from './Modifiers.js';
-import { slotsForCaster } from './SpellSlots.js';
+import { slotsForCaster, slotPoolsForCaster } from './SpellSlots.js';
 
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
 /** @typedef {import('../types/class.js').CasterType} CasterType */
@@ -181,6 +181,20 @@ export function slotsForClass(classId, characterLevel) {
   const def = getClass(classId);
   if (!def) return [];
   return slotsForCaster(def.casterType, characterLevel);
+}
+
+/**
+ * The full spell-slot pools for a class at a character level, all at full —
+ * caster-type-aware (full/half/third), so a foe or NPC caster gets exactly the
+ * slots its class grants. Empty for a non-caster, pact caster, or unknown class.
+ * @param {string | undefined | null} classId
+ * @param {number} characterLevel
+ * @returns {import('../types/entities.js').ResourcePool[]}
+ */
+export function casterSlots(classId, characterLevel) {
+  const def = getClass(classId);
+  if (!def) return [];
+  return slotPoolsForCaster(def.casterType, characterLevel);
 }
 
 /**

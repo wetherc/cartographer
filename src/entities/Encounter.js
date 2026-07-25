@@ -1,6 +1,9 @@
 import { normalizeStatBlock } from './Modifiers.js';
 import { WEAPON_PRESETS, enemyArmor } from './EquipmentPresets.js';
 import { withinRadius } from '../map/FogOfWar.js';
+import { withCasterFields, ensureCasterFields, casterTemplateFields } from './Caster.js';
+import { isCasterClass } from './Classes.js';
+import { isSlotPool } from './SpellSlots.js';
 
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
@@ -54,14 +57,14 @@ export function defaultEnemyGear(level, tier) {
  * @param {number} maxHP
  * @param {Record<string, number>} [statBlock]
  * @param {EncounterLocation | null} [location]
- * @param {{ level?: number, tier?: EnemyTier, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null }} [options]
+ * @param {{ level?: number, tier?: EnemyTier, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: import('../types/entities.js').Spellbook }} [options]
  * @returns {Encounter}
  */
 export function createEncounter(id, name, maxHP, statBlock = {}, location = null, options = {}) {
   const level = options.level ?? 1;
   const tier = options.tier ?? 'mob';
   const gear = defaultEnemyGear(level, tier);
-  return {
+  const encounter = {
     id,
     name,
     maxHP,
@@ -75,6 +78,9 @@ export function createEncounter(id, name, maxHP, statBlock = {}, location = null
     weapon: options.weapon === undefined ? gear.weapon : options.weapon,
     armor: options.armor === undefined ? gear.armor : options.armor,
   };
+  // A caster class stamps spell slots (rebuilt for its level) and an empty
+  // spellbook; a non-caster leaves the encounter untouched.
+  return withCasterFields(encounter, options, level);
 }
 
 /**
@@ -91,17 +97,20 @@ export function withDefaults(encounter) {
   const level = encounter.level ?? 1;
   const tier = encounter.tier ?? 'mob';
   const gear = defaultEnemyGear(level, tier);
-  return {
-    ...encounter,
-    statBlock: normalizeStatBlock(encounter.statBlock ?? {}),
-    location: encounter.location ?? null,
-    conditions: encounter.conditions ?? [],
-    statMods: encounter.statMods ?? [],
+  return ensureCasterFields(
+    {
+      ...encounter,
+      statBlock: normalizeStatBlock(encounter.statBlock ?? {}),
+      location: encounter.location ?? null,
+      conditions: encounter.conditions ?? [],
+      statMods: encounter.statMods ?? [],
+      level,
+      tier,
+      weapon: encounter.weapon === undefined ? gear.weapon : encounter.weapon,
+      armor: encounter.armor === undefined ? gear.armor : encounter.armor,
+    },
     level,
-    tier,
-    weapon: encounter.weapon === undefined ? gear.weapon : encounter.weapon,
-    armor: encounter.armor === undefined ? gear.armor : encounter.armor,
-  };
+  );
 }
 
 /**
@@ -151,8 +160,11 @@ export function effectiveStatBlock(encounter) {
  * stat block and conditions are untouched, so re-tuning a fight in progress
  * doesn't reset it. Moving the encounter clears the `noticed` flag, so the
  * party walking into its new spot logs a fresh meeting.
+ * A caster edit that changes the class or caster level rebuilds the slot pools
+ * (at full); dropping the caster class (or setting a non-caster) strips the
+ * spell fields. An unchanged class/level keeps the current slots, spent and all.
  * @param {Encounter} encounter
- * @param {{ name: string, maxHP: number, level: number, tier: EnemyTier, location: EncounterLocation | null, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null }} edits
+ * @param {{ name: string, maxHP: number, level: number, tier: EnemyTier, location: EncounterLocation | null, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: import('../types/entities.js').Spellbook }} edits
  * @returns {Encounter}
  */
 export function editEncounter(encounter, edits) {
@@ -160,7 +172,7 @@ export function editEncounter(encounter, edits) {
   const moved =
     (encounter.location?.nodeId ?? null) !== (edits.location?.nodeId ?? null) ||
     (encounter.location?.tileId ?? null) !== (edits.location?.tileId ?? null);
-  return {
+  const base = {
     ...encounter,
     name: edits.name,
     maxHP,
@@ -172,6 +184,44 @@ export function editEncounter(encounter, edits) {
     armor: edits.armor === undefined ? encounter.armor : edits.armor,
     noticed: moved ? false : encounter.noticed,
   };
+  return applyCasterEdit(base, encounter, edits);
+}
+
+/**
+ * Reconcile an encounter's caster fields against an edit. Keeps the spellbook
+ * across a class/level change (the GM re-picks spells separately) but rebuilds
+ * slot pools when either changes; strips all spell fields when the edit clears
+ * the caster class. Shared by editEncounter.
+ * @param {Encounter} base the edited encounter (non-caster fields applied)
+ * @param {Encounter} prior the encounter before the edit
+ * @param {{ level: number, class?: string, subclass?: string, casterLevel?: number, spellbook?: import('../types/entities.js').Spellbook }} edits
+ * @returns {Encounter}
+ */
+function applyCasterEdit(base, prior, edits) {
+  const wasCaster = isCasterClass(prior.class);
+  const level = edits.casterLevel ?? edits.level;
+  const changed =
+    edits.class !== prior.class || (edits.casterLevel ?? edits.level) !== prior.casterLevel;
+  if (!isCasterClass(edits.class)) {
+    // Dropped to a non-caster: shed the spell fields and slot pools.
+    if (!wasCaster) return { ...base, class: edits.class, subclass: edits.subclass };
+    const { casterLevel: _lvl, spellbook: _book, ...rest } = base;
+    return {
+      ...rest,
+      class: edits.class,
+      subclass: edits.subclass,
+      resources: (base.resources ?? []).filter((r) => !isSlotPool(r)),
+    };
+  }
+  if (!changed && wasCaster) {
+    // Same caster class and level: keep current (possibly spent) slots.
+    return {
+      ...base,
+      spellbook: edits.spellbook ?? base.spellbook,
+      subclass: edits.subclass,
+    };
+  }
+  return withCasterFields({ ...base, spellbook: edits.spellbook ?? prior.spellbook }, edits, level);
 }
 
 /**
@@ -265,6 +315,7 @@ export function toTemplate(id, encounter) {
     tier: encounter.tier ?? 'mob',
     weapon: encounter.weapon,
     armor: encounter.armor,
+    ...casterTemplateFields(encounter),
   };
 }
 
@@ -281,6 +332,10 @@ export function fromTemplate(template, id, location = null) {
     tier: template.tier ?? 'mob',
     weapon: template.weapon,
     armor: template.armor,
+    class: template.class,
+    subclass: template.subclass,
+    casterLevel: template.casterLevel,
+    spellbook: template.spellbook,
   });
 }
 

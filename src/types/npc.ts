@@ -1,4 +1,4 @@
-import { EncounterLocation } from './entities';
+import { EncounterLocation, ResourcePool, Spellbook } from './entities';
 
 export type Disposition = 'friendly' | 'neutral' | 'hostile';
 
@@ -19,4 +19,14 @@ export interface NPC {
    * from the players' Story sidebar until met; unplaced NPCs are always known.
    */
   met: boolean;
+  /** Spellcaster class id (see Classes.js). Present (and a caster class) makes
+   * this NPC able to cast; absent = a non-caster. */
+  class?: string;
+  /** Caster level driving slot maxima and save DC; defaults to 1 when a caster
+   * class is assigned without an explicit value (an NPC has no fighting level). */
+  casterLevel?: number;
+  /** Learned cantrips/spells (spell ids); present only on casters. */
+  spellbook?: Spellbook;
+  /** Spell-slot pools (`slots-1` .. `slots-9`); present only on casters. */
+  resources?: ResourcePool[];
 }

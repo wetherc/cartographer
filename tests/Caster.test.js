@@ -1,0 +1,209 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+  toCaster,
+  isCaster,
+  withCasterFields,
+  ensureCasterFields,
+  withCasterState,
+  casterTemplateFields,
+} from '../src/entities/Caster.js';
+import {
+  createEncounter,
+  toTemplate,
+  fromTemplate,
+  editEncounter,
+} from '../src/entities/Encounter.js';
+import { createNPC } from '../src/entities/NPC.js';
+import { getSlotPools, slotLevelOf } from '../src/entities/SpellSlots.js';
+
+/** The slot pool for a spell level, or undefined. */
+function slot(entity, level) {
+  return getSlotPools(entity).find((p) => slotLevelOf(p) === level);
+}
+
+test('toCaster maps a character straight through', () => {
+  const view = toCaster({
+    id: 'c1',
+    name: 'Mira',
+    class: 'wizard',
+    level: 5,
+    stats: { INT: 16 },
+    resources: [],
+  });
+  assert.equal(view.level, 5);
+  assert.equal(view.stats.INT, 16);
+  assert.equal(view.class, 'wizard');
+});
+
+test('toCaster reads an encounter statBlock as stats and casterLevel as level', () => {
+  const view = toCaster({
+    id: 'e1',
+    name: 'Cultist',
+    class: 'cleric',
+    casterLevel: 3,
+    level: 2,
+    statBlock: { WIS: 14, AC: 15 },
+    resources: [],
+  });
+  assert.equal(view.level, 3, 'casterLevel wins over the mob level');
+  assert.equal(view.stats.WIS, 14);
+});
+
+test('toCaster defaults an NPC with no level to 1', () => {
+  const view = toCaster({ id: 'n1', name: 'Seer', class: 'bard', stats: { CHA: 12 } });
+  assert.equal(view.level, 1);
+  assert.equal(view.stats.CHA, 12);
+});
+
+test('withCasterFields stamps caster-type-aware slots and an empty spellbook', () => {
+  const cleric = withCasterFields({ id: 'e', name: 'C' }, { class: 'cleric' }, 3);
+  assert.equal(cleric.casterLevel, 3);
+  assert.deepEqual(cleric.spellbook, { cantrips: [], known: [], prepared: [] });
+  assert.equal(slot(cleric, 1).max, 4, 'full caster level 3: four 1st-level slots');
+  assert.equal(slot(cleric, 2).max, 2);
+});
+
+test('withCasterFields respects half-caster tables (paladin has no level-1 slots)', () => {
+  const pal1 = withCasterFields({ id: 'e', name: 'P' }, { class: 'paladin' }, 1);
+  assert.equal(getSlotPools(pal1).length, 0);
+  const pal2 = withCasterFields({ id: 'e', name: 'P' }, { class: 'paladin' }, 2);
+  assert.equal(slot(pal2, 1).max, 2);
+});
+
+test('withCasterFields is a no-op for a non-caster class or none', () => {
+  const base = { id: 'e', name: 'Brute' };
+  assert.equal(withCasterFields(base, { class: 'fighter' }, 5), base);
+  assert.equal(withCasterFields(base, {}, 5), base);
+});
+
+test('withCasterFields keeps non-slot resources and replaces stale slots', () => {
+  const rage = { id: 'x', name: 'X', current: 2, max: 2 };
+  const first = withCasterFields({ id: 'e', name: 'C', resources: [rage] }, { class: 'cleric' }, 1);
+  const second = withCasterFields(first, { class: 'cleric' }, 5);
+  assert.ok(second.resources.includes(rage), 'the custom pool survives');
+  assert.equal(
+    getSlotPools(second).filter((p) => slotLevelOf(p) === 1).length,
+    1,
+    'no duplicate slot pool',
+  );
+  assert.equal(slot(second, 3).max, 2, 'slots rebuilt for the new level');
+});
+
+test('ensureCasterFields keeps spent slots but backfills a missing spellbook', () => {
+  const caster = withCasterFields({ id: 'e', name: 'C' }, { class: 'cleric' }, 3);
+  const spent = {
+    ...caster,
+    spellbook: undefined,
+    resources: caster.resources.map((p) => (slotLevelOf(p) === 1 ? { ...p, current: 1 } : p)),
+  };
+  const restored = ensureCasterFields(spent, 3);
+  assert.deepEqual(restored.spellbook, { cantrips: [], known: [], prepared: [] });
+  assert.equal(slot(restored, 1).current, 1, 'spent slots are preserved, not refilled');
+});
+
+test('ensureCasterFields stamps slots when none are stored', () => {
+  const noSlots = ensureCasterFields({ id: 'e', name: 'C', class: 'druid' }, 4);
+  assert.equal(slot(noSlots, 2).max, 3, 'full caster level 4');
+});
+
+test('isCaster requires a caster class and a spellbook', () => {
+  assert.equal(
+    isCaster({ class: 'wizard', spellbook: { cantrips: [], known: [], prepared: [] } }),
+    true,
+  );
+  assert.equal(isCaster({ class: 'wizard' }), false);
+  assert.equal(
+    isCaster({ class: 'fighter', spellbook: { cantrips: [], known: [], prepared: [] } }),
+    false,
+  );
+});
+
+test("withCasterState splices a resolved cast's slots back onto the entity", () => {
+  const rage = { id: 'rage', name: 'Rage', current: 1, max: 2 };
+  const entity = {
+    id: 'e',
+    name: 'C',
+    resources: [rage, { id: 'slots-1', name: 'L1', type: 'mana', current: 4, max: 4 }],
+  };
+  const casterResult = {
+    resources: [{ id: 'slots-1', name: 'L1', type: 'mana', current: 3, max: 4 }],
+  };
+  const next = withCasterState(entity, casterResult);
+  assert.ok(next.resources.includes(rage), 'non-slot resources kept');
+  assert.equal(slot(next, 1).current, 3, 'spent slot written back');
+});
+
+test('casterTemplateFields carries the caster identity, not its live slots', () => {
+  const book = { cantrips: ['light'], known: ['cure-wounds'], prepared: ['cure-wounds'] };
+  const fields = casterTemplateFields({ class: 'cleric', casterLevel: 4, spellbook: book });
+  assert.deepEqual(fields, { class: 'cleric', casterLevel: 4, spellbook: book });
+  assert.ok(!('resources' in fields));
+  assert.deepEqual(casterTemplateFields({ class: 'fighter' }), {});
+});
+
+test('createEncounter with a caster class stamps slots and a spellbook', () => {
+  const enc = createEncounter('e1', 'Acolyte', 20, { WIS: 14 }, null, {
+    level: 3,
+    class: 'cleric',
+  });
+  assert.equal(enc.casterLevel, 3);
+  assert.deepEqual(enc.spellbook, { cantrips: [], known: [], prepared: [] });
+  assert.equal(slot(enc, 1).max, 4);
+});
+
+test('encounter caster round-trips through a bestiary template', () => {
+  const enc = createEncounter('e1', 'Acolyte', 20, { WIS: 14 }, null, {
+    level: 3,
+    class: 'cleric',
+  });
+  enc.spellbook = { cantrips: ['light'], known: ['cure-wounds'], prepared: ['cure-wounds'] };
+  const tmpl = toTemplate('t1', enc);
+  assert.equal(tmpl.class, 'cleric');
+  assert.deepEqual(tmpl.spellbook.prepared, ['cure-wounds']);
+  assert.ok(!('resources' in tmpl), 'templates carry no slot pools');
+  const spawned = fromTemplate(tmpl, 'e2');
+  assert.equal(spawned.class, 'cleric');
+  assert.equal(slot(spawned, 1).max, 4, 'slots rebuilt on spawn');
+  assert.deepEqual(spawned.spellbook.prepared, ['cure-wounds']);
+});
+
+test('editEncounter rebuilds slots on a caster-level change and clears them when dropped', () => {
+  const enc = createEncounter('e1', 'Acolyte', 20, { WIS: 14 }, null, {
+    level: 3,
+    class: 'cleric',
+  });
+  const leveled = editEncounter(enc, {
+    name: 'Acolyte',
+    maxHP: 20,
+    level: 3,
+    tier: 'mob',
+    location: null,
+    class: 'cleric',
+    casterLevel: 5,
+  });
+  assert.equal(slot(leveled, 3).max, 2, 'level-5 full caster gains 3rd-level slots');
+  const dropped = editEncounter(leveled, {
+    name: 'Acolyte',
+    maxHP: 20,
+    level: 3,
+    tier: 'mob',
+    location: null,
+    class: 'fighter',
+  });
+  assert.equal(getSlotPools(dropped).length, 0, 'non-caster class sheds slot pools');
+  assert.equal(dropped.casterLevel, undefined);
+  assert.equal(dropped.class, 'fighter', 'the new non-caster class is applied');
+});
+
+test('createNPC with a caster class builds slots at caster level', () => {
+  const npc = createNPC('n1', 'Hedge Witch', {
+    class: 'druid',
+    casterLevel: 4,
+    stats: { WIS: 15 },
+  });
+  assert.equal(npc.casterLevel, 4);
+  assert.equal(slot(npc, 2).max, 3);
+  assert.deepEqual(npc.spellbook, { cantrips: [], known: [], prepared: [] });
+});

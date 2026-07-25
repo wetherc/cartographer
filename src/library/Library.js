@@ -13,6 +13,7 @@ import {
 } from '../entities/EquipmentPresets.js';
 import { normalizeStatBlock } from '../entities/Modifiers.js';
 import { DISPOSITIONS } from '../entities/NPC.js';
+import { isCasterClass } from '../entities/Classes.js';
 import { slugId } from '../entities/Roster.js';
 import { indexById } from '../util/indexById.js';
 
@@ -364,6 +365,39 @@ function normalizeSpell(raw, id) {
 }
 
 /**
+ * Repair a parsed spellbook into `{ cantrips, known, prepared }` of string ids,
+ * dropping anything non-string. A missing/garbage spellbook reads as empty.
+ * @param {unknown} raw
+ * @returns {import('../types/entities.js').Spellbook}
+ */
+function normalizeSpellbook(raw) {
+  const list = (/** @type {unknown} */ v) =>
+    Array.isArray(v) ? v.filter((x) => typeof x === 'string') : [];
+  const s = /** @type {Record<string, unknown>} */ (raw && typeof raw === 'object' ? raw : {});
+  return { cantrips: list(s.cantrips), known: list(s.known), prepared: list(s.prepared) };
+}
+
+/**
+ * The caster fields to carry onto a bestiary/NPC template from parsed JSON: the
+ * class, an optional caster level, and a repaired spellbook — but only when the
+ * class is a real caster class, so a non-caster template stays clean. Returns an
+ * object to spread into the template literal.
+ * @param {Record<string, any>} e
+ * @returns {{ class?: string, subclass?: string, casterLevel?: number, spellbook?: import('../types/entities.js').Spellbook }}
+ */
+function casterTemplateFrom(e) {
+  if (!isCasterClass(e.class)) return {};
+  return {
+    class: e.class,
+    ...(typeof e.subclass === 'string' ? { subclass: e.subclass } : {}),
+    ...(Number.isFinite(Number(e.casterLevel))
+      ? { casterLevel: Math.max(1, Math.floor(Number(e.casterLevel))) }
+      : {}),
+    spellbook: normalizeSpellbook(e.spellbook),
+  };
+}
+
+/**
  * Normalize a parsed custom-library JSON of any provenance (an exported file,
  * a hand-edited one, garbage) into a valid CustomLibrary, dropping entries
  * missing their essentials rather than throwing. Bestiary templates get an id
@@ -407,6 +441,7 @@ export function normalizeLibrary(parsed) {
           ? { weapon: e.weapon }
           : {}),
         ...(e.armor === null || (e.armor && typeof e.armor === 'object') ? { armor: e.armor } : {}),
+        ...casterTemplateFrom(e),
       });
     });
 
@@ -420,6 +455,7 @@ export function normalizeLibrary(parsed) {
           disposition: DISPOSITIONS.includes(e.disposition) ? e.disposition : 'neutral',
           notes: typeof e.notes === 'string' ? e.notes : '',
           stats: e.stats && typeof e.stats === 'object' ? e.stats : {},
+          ...casterTemplateFrom(e),
         }),
     );
 

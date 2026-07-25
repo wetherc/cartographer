@@ -5,6 +5,7 @@ import type {
   ArmorWeight,
   EncounterTemplate,
 } from './entities.js';
+import type { Spellbook } from './entities.js';
 import type { Disposition } from './npc.js';
 import type { Spell } from './spell.js';
 
@@ -25,13 +26,18 @@ export interface EquipmentTemplate {
   statBonuses?: Record<string, number>;
 }
 
-/** A reusable NPC blueprint: an NPC minus identity, placement, and met state. */
+/** A reusable NPC blueprint: an NPC minus identity, placement, and met state.
+ * Caster fields persist a spellcasting NPC; slot pools are rebuilt from
+ * class/casterLevel when the NPC is created, so the template stores none. */
 export interface NPCTemplate {
   name: string;
   role: string;
   disposition: Disposition;
   notes: string;
   stats: Record<string, number>;
+  class?: string;
+  casterLevel?: number;
+  spellbook?: Spellbook;
 }
 
 /**

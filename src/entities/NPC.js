@@ -1,4 +1,5 @@
 import { defaultStats } from './Character.js';
+import { withCasterFields, ensureCasterFields } from './Caster.js';
 
 /** @typedef {import('../types/npc.js').NPC} NPC */
 /** @typedef {import('../types/npc.js').Disposition} Disposition */
@@ -12,11 +13,11 @@ export const DISPOSITIONS = /** @type {Disposition[]} */ (['friendly', 'neutral'
  * named, placed, dispositioned campaign figure, not a fight.
  * @param {string} id
  * @param {string} name
- * @param {{ role?: string, disposition?: Disposition, notes?: string, stats?: Record<string, number>, location?: EncounterLocation | null, met?: boolean }} [options]
+ * @param {{ role?: string, disposition?: Disposition, notes?: string, stats?: Record<string, number>, location?: EncounterLocation | null, met?: boolean, class?: string, casterLevel?: number, spellbook?: import('../types/entities.js').Spellbook }} [options]
  * @returns {NPC}
  */
 export function createNPC(id, name, options = {}) {
-  return {
+  const npc = {
     id,
     name,
     role: options.role ?? '',
@@ -26,6 +27,9 @@ export function createNPC(id, name, options = {}) {
     location: options.location ?? null,
     met: options.met ?? false,
   };
+  // A caster class stamps spell slots and an empty spellbook; an NPC has no
+  // fighting level, so its caster level defaults to 1.
+  return withCasterFields(npc, options, options.casterLevel ?? 1);
 }
 
 /**
@@ -34,15 +38,18 @@ export function createNPC(id, name, options = {}) {
  * @returns {NPC}
  */
 export function withDefaults(npc) {
-  return {
-    ...npc,
-    role: npc.role ?? '',
-    disposition: npc.disposition ?? 'neutral',
-    notes: npc.notes ?? '',
-    stats: { ...defaultStats(), ...npc.stats },
-    location: npc.location ?? null,
-    met: npc.met ?? false,
-  };
+  return ensureCasterFields(
+    {
+      ...npc,
+      role: npc.role ?? '',
+      disposition: npc.disposition ?? 'neutral',
+      notes: npc.notes ?? '',
+      stats: { ...defaultStats(), ...npc.stats },
+      location: npc.location ?? null,
+      met: npc.met ?? false,
+    },
+    npc.casterLevel ?? 1,
+  );
 }
 
 /**

@@ -202,6 +202,18 @@ function slotPool(spellLevel, max) {
 }
 
 /**
+ * The slot pools for a caster of the given type and level, all at full — the
+ * standalone builder used for foes and NPCs, which (unlike characters) carry no
+ * HP pool to order around. A non-slot caster type gets an empty list.
+ * @param {import('../types/class.js').CasterType} casterType
+ * @param {number} level
+ * @returns {ResourcePool[]}
+ */
+export function slotPoolsForCaster(casterType, level) {
+  return slotsForCaster(casterType, level).map((max, i) => slotPool(i + 1, max));
+}
+
+/**
  * Make a character a spellcaster: replace any existing slot pools with the
  * full-caster table's pools for their level, all at full. Ordered after HP so
  * the card reads HP-then-slots.
