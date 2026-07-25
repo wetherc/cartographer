@@ -5,15 +5,13 @@ import {
   SHIELD_AC,
   WEAPON_TYPES,
   WEAPON_HANDLING,
-  DIE_SIZES,
-  DAMAGE_TYPES,
 } from '../entities/Equipment.js';
 import { activeEquipment } from '../library/Library.js';
+import { buildDamageEditor, buildEffectsEditor } from './ItemFormEditors.js';
 import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
-/** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
 
 /** Item types that may carry a flat AC bonus while equipped. */
@@ -65,7 +63,8 @@ function fieldRow(...children) {
  * Every mechanical field is here: type-specific armor/shield/AC/buff controls,
  * and for weapons and bows a 5e preset picker, handling (which fixes the
  * damage ability), a structured damage-dice editor (base roll plus permanent
- * riders like + 1d4 fire), and inflicted status effects. Submitting calls
+ * riders like + 1d4 fire), and inflicted status effects — the last two built
+ * as widgets in ItemFormEditors.js. Submitting calls
  * `onSubmit` with the assembled fields (no id — the caller owns identity) and
  * clears the form only when adding (editing keeps the values on screen).
  * With `template` the form describes a reusable blueprint (the Library rail's
@@ -218,92 +217,14 @@ export function buildItemForm({
   handlingSelect.value = item?.handling ?? 'melee';
   const handlingField = labeled('Handling', handlingSelect);
 
-  /** @type {DamagePart[]} */
-  let damageParts = (item?.damage ?? [{ count: 1, sides: 6, damageType: 'slashing' }]).map((p) => ({
-    ...p,
-  }));
-  const damageEditor = document.createElement('div');
-  damageEditor.className = 'inventory-panel__damage';
-  const damageField = labeled('Damage', damageEditor);
+  const damage = buildDamageEditor(
+    item?.damage ?? [{ count: 1, sides: 6, damageType: 'slashing' }],
+  );
+  const damageField = labeled('Damage', damage.element);
 
-  function renderDamage() {
-    damageEditor.innerHTML = '';
-    damageParts.forEach((part, index) => {
-      const row = document.createElement('div');
-      row.className = 'inventory-panel__damage-row';
-
-      const countInput = document.createElement('input');
-      countInput.type = 'number';
-      countInput.min = '1';
-      countInput.value = String(part.count);
-      countInput.className = 'field inventory-panel__dice-count';
-      countInput.setAttribute('aria-label', 'Number of dice');
-      countInput.addEventListener('change', () => {
-        part.count = Math.max(1, Math.floor(Number(countInput.value)) || 1);
-        countInput.value = String(part.count);
-      });
-
-      const dieSelect = document.createElement('select');
-      dieSelect.className = 'field';
-      dieSelect.setAttribute('aria-label', 'Die size');
-      for (const sides of DIE_SIZES) {
-        const option = document.createElement('option');
-        option.value = String(sides);
-        option.textContent = `d${sides}`;
-        dieSelect.appendChild(option);
-      }
-      dieSelect.value = String(part.sides);
-      dieSelect.addEventListener('change', () => {
-        part.sides = Number(dieSelect.value);
-      });
-
-      const typeSelectEl = document.createElement('select');
-      typeSelectEl.className = 'field';
-      typeSelectEl.setAttribute('aria-label', 'Damage type');
-      for (const damageType of DAMAGE_TYPES) {
-        const option = document.createElement('option');
-        option.value = damageType;
-        option.textContent = damageType;
-        typeSelectEl.appendChild(option);
-      }
-      typeSelectEl.value = DAMAGE_TYPES.includes(part.damageType)
-        ? part.damageType
-        : DAMAGE_TYPES[0];
-      typeSelectEl.addEventListener('change', () => {
-        part.damageType = typeSelectEl.value;
-      });
-
-      row.append(countInput, dieSelect, typeSelectEl);
-
-      // The first term is the weapon's base roll and always present; later
-      // terms are removable riders.
-      if (index > 0) {
-        const removeRider = document.createElement('button');
-        removeRider.type = 'button';
-        removeRider.className = 'btn btn--icon';
-        removeRider.setAttribute('aria-label', 'Remove damage term');
-        removeRider.appendChild(icon('minus'));
-        removeRider.addEventListener('click', () => {
-          damageParts.splice(index, 1);
-          renderDamage();
-        });
-        row.appendChild(removeRider);
-      }
-      damageEditor.appendChild(row);
-    });
-
-    const addRider = document.createElement('button');
-    addRider.type = 'button';
-    addRider.className = 'btn';
-    addRider.textContent = '+ damage';
-    addRider.title = 'Add a permanent extra damage term (e.g. + 1d4 fire)';
-    addRider.addEventListener('click', () => {
-      damageParts.push({ count: 1, sides: 4, damageType: 'fire' });
-      renderDamage();
-    });
-    damageEditor.appendChild(addRider);
-  }
-  renderDamage();
+  // Status effects the weapon inflicts, as removable chips plus an add row.
+  const effects = buildEffectsEditor(item?.statusEffects ?? []);
+  const effectsField = labeled('Inflicts', effects.element);
 
   presetSelect.addEventListener('change', () => {
     const type = typeSelect.value;
@@ -313,8 +234,7 @@ export function buildItemForm({
     // entries may also bring an AC bonus, a stat buff, or inflicted effects.
     if (preset.damage?.length) {
       handlingSelect.value = preset.handling ?? 'melee';
-      damageParts = preset.damage.map((p) => ({ ...p }));
-      renderDamage();
+      damage.set(preset.damage);
     }
     if (preset.armorWeight !== undefined || preset.baseAC !== undefined) {
       weightSelect.value = preset.armorWeight ?? 'light';
@@ -324,11 +244,7 @@ export function buildItemForm({
       descriptionInput.value = preset.description;
     }
     if (preset.acBonus !== undefined) acInput.value = String(preset.acBonus);
-    if (preset.statusEffects) {
-      statusEffects.length = 0;
-      statusEffects.push(...preset.statusEffects);
-      renderEffects();
-    }
+    if (preset.statusEffects) effects.set(preset.statusEffects);
     const [buff] = Object.entries(preset.statBonuses ?? {});
     if (buff) {
       buffStatSelect.value = buff[0];
@@ -337,56 +253,6 @@ export function buildItemForm({
     }
     if (!nameInput.value.trim()) nameInput.value = preset.name;
   });
-
-  // Status effects the weapon inflicts, as removable chips plus an add row.
-  /** @type {string[]} */
-  const statusEffects = [...(item?.statusEffects ?? [])];
-  const effectsEditor = document.createElement('div');
-  effectsEditor.className = 'inventory-panel__effects';
-  const effectsField = labeled('Inflicts', effectsEditor);
-
-  function renderEffects() {
-    effectsEditor.innerHTML = '';
-    for (const effect of statusEffects) {
-      const chip = document.createElement('span');
-      chip.className = 'inventory-panel__chip';
-      chip.textContent = effect;
-      const removeChip = document.createElement('button');
-      removeChip.type = 'button';
-      removeChip.className = 'inventory-panel__chip-remove';
-      removeChip.setAttribute('aria-label', `Remove ${effect}`);
-      removeChip.textContent = '×';
-      removeChip.addEventListener('click', () => {
-        statusEffects.splice(statusEffects.indexOf(effect), 1);
-        renderEffects();
-      });
-      chip.appendChild(removeChip);
-      effectsEditor.appendChild(chip);
-    }
-    const effectInput = document.createElement('input');
-    effectInput.type = 'text';
-    effectInput.placeholder = 'e.g. burning';
-    effectInput.className = 'field inventory-panel__effect-input';
-    const addEffect = () => {
-      const effect = effectInput.value.trim();
-      if (!effect || statusEffects.includes(effect)) return;
-      statusEffects.push(effect);
-      renderEffects();
-    };
-    effectInput.addEventListener('keydown', (event) => {
-      if (event.key !== 'Enter') return;
-      event.preventDefault();
-      addEffect();
-    });
-    const addButton = document.createElement('button');
-    addButton.type = 'button';
-    addButton.className = 'btn btn--icon';
-    addButton.setAttribute('aria-label', 'Add status effect');
-    addButton.appendChild(icon('plus'));
-    addButton.addEventListener('click', addEffect);
-    effectsEditor.append(effectInput, addButton);
-  }
-  renderEffects();
 
   // The form lays out as fixed rows (name, description, type/qty, then the
   // type-specific rows) so toggling a type only shows or hides whole rows —
@@ -474,8 +340,8 @@ export function buildItemForm({
             handling: /** @type {import('../types/entities.js').WeaponHandling} */ (
               handlingSelect.value
             ),
-            damage: damageParts.map((p) => ({ ...p })),
-            ...(statusEffects.length ? { statusEffects: [...statusEffects] } : {}),
+            damage: damage.get(),
+            ...(effects.get().length ? { statusEffects: effects.get() } : {}),
           }
         : {}),
     });
