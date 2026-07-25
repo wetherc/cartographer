@@ -14,6 +14,7 @@ import { armorClass, effectiveStats } from '../entities/Equipment.js';
 import { getSlotPools, isSlotPool, slotLevelOf } from '../entities/SpellSlots.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { mountConditionsBar } from './ConditionsBar.js';
+import { buildSpellsSection } from './CharacterSpells.js';
 import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -158,6 +159,14 @@ function buildSlotLine(pools, onToggle) {
  * @param {Character | null} initial
  * @param {(character: Character) => void} [onChange]
  * @param {() => { editBase: boolean, play: boolean, hp: boolean }} [getPermissions]
+ * @param {{
+ *   resolveSpells: (ids: string[]) => import('../types/spell.js').Spell[],
+ *   learnable: (character: Character) => import('../types/spell.js').Spell[],
+ *   onCast: (character: Character, spell: import('../types/spell.js').Spell) => void,
+ * } | null} [spells]
+ *   When provided, the sheet renders a spellbook section (cantrips, prepared,
+ *   and known spells with cast/learn/prepare controls); omitted, no such
+ *   section appears.
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountCharacterSheet(
@@ -165,6 +174,7 @@ export function mountCharacterSheet(
   initial,
   onChange = () => {},
   getPermissions = () => ({ editBase: true, play: true, hp: true }),
+  spells = null,
 ) {
   let current = initial;
 
@@ -475,6 +485,20 @@ export function mountCharacterSheet(
         resources.appendChild(row);
       }
       body.appendChild(resources);
+    }
+
+    // The spellbook: cantrips, prepared, and known spells with cast/learn/
+    // prepare controls. Only for casters (the builder returns null otherwise)
+    // and only when the host wired spell callbacks in.
+    if (spells) {
+      const spellsSection = buildSpellsSection(character, {
+        play: perms.play,
+        commit,
+        resolveSpells: spells.resolveSpells,
+        learnable: spells.learnable,
+        onCast: (spell) => spells.onCast(character, spell),
+      });
+      if (spellsSection) body.appendChild(spellsSection);
     }
 
     const conditions = document.createElement('div');

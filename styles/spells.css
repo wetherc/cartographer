@@ -46,3 +46,81 @@
   height: 1rem;
   margin: 0;
 }
+
+/* ==========================================================================
+   Character-sheet spellbook: cantrips, prepared, and known spells with cast
+   and learn/prepare controls, sitting between the resource pools and the
+   conditions bar on the sheet.
+   ========================================================================== */
+
+.character-sheet__spells {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.character-sheet__spell-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.character-sheet__spell-group-title {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.character-sheet__spell-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+
+.character-sheet__spell-empty {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* A cast button and its forget/unprepare control read as one unit. */
+.character-sheet__spell-chip {
+  display: inline-flex;
+  align-items: center;
+}
+
+.character-sheet__spell-cast {
+  font-size: var(--text-label);
+}
+
+.character-sheet__spell-cast .icon {
+  color: var(--mana);
+}
+
+.character-sheet__spell-forget {
+  margin-left: calc(-1 * var(--space-1));
+}
+
+.character-sheet__spell-known {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.character-sheet__spell-known-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-label);
+}
+
+.character-sheet__spell-known-name {
+  flex: 1;
+}
+
+.character-sheet__spell-picker {
+  font-size: var(--text-label);
+  align-self: flex-start;
+  max-width: 100%;
+}

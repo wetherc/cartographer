@@ -8,7 +8,10 @@ import {
   addXP,
   transferItem,
 } from '../entities/Character.js';
-import { withSpellSlots } from '../entities/SpellSlots.js';
+import { withSpellSlots, getSlotPools, slotLevelOf } from '../entities/SpellSlots.js';
+import { CLASS_LIST, isCasterClass } from '../entities/Classes.js';
+import { activeSpells, activeSpellIndex } from '../library/Library.js';
+import { castSpellOutOfCombat } from './spellCast.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { mountCharacterRoster } from '../ui/CharacterRoster.js';
@@ -341,13 +344,13 @@ export function wireParty(app) {
         { name: 'race', label: 'Race', value: '' },
         { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1 },
         {
-          name: 'caster',
-          label: 'Spellcaster',
+          name: 'class',
+          label: 'Class',
           type: 'select',
-          value: 'no',
+          value: '',
           options: [
-            { value: 'no', label: 'No' },
-            { value: 'yes', label: 'Yes (spell slots by level)' },
+            { value: '', label: 'None (no class)' },
+            ...CLASS_LIST.map((c) => ({ value: c.id, label: c.name })),
           ],
         },
       ]);
@@ -366,7 +369,11 @@ export function wireParty(app) {
         ),
         maxHP,
       );
-      if (values.caster === 'yes') created = withSpellSlots(created);
+      // The class drives spellcasting: a caster class gets the class field plus
+      // slot pools for its level; a non-caster class carries the field only.
+      const classId = values.class || undefined;
+      if (classId) created = { ...created, class: classId };
+      if (isCasterClass(classId)) created = withSpellSlots(created);
       state.characters = [...state.characters, created];
       selectCharacter(state.characters[state.characters.length - 1].id);
       app.actions.markDirty();
@@ -414,6 +421,25 @@ export function wireParty(app) {
       inventoryPanel.setCharacter(next);
     },
     selectedPermissions,
+    {
+      // Resolve the spellbook's ids through the memoized active-library index.
+      resolveSpells: (ids) => {
+        const index = activeSpellIndex();
+        return ids.map((id) => index.get(id)).filter((s) => s !== undefined);
+      },
+      // Every spell the character's class may learn, cantrips and leveled
+      // spells up to its highest available slot level, so the pickers can't
+      // offer a spell it could never cast.
+      learnable: (character) => {
+        const maxSlot = getSlotPools(character).reduce((m, p) => Math.max(m, slotLevelOf(p)), 0);
+        return activeSpells().filter(
+          (spell) =>
+            spell.classes.includes(character.class ?? '') &&
+            (spell.level === 0 || spell.level <= maxSlot),
+        );
+      },
+      onCast: (character, spell) => castSpellOutOfCombat(app, character, spell),
+    },
   );
 
   const inventoryPanel = mountInventoryPanel(

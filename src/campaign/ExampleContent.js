@@ -117,7 +117,14 @@ function exampleParty() {
   };
 
   let mirelle = createCharacter('mirelle', 'Mirelle', { WIS: 16, CHA: 13, CON: 12 }, 'Half-elf');
-  mirelle = withSpellSlots(withHP({ ...mirelle, level: 3 }, 21));
+  mirelle = withSpellSlots(withHP({ ...mirelle, level: 3, class: 'cleric' }, 21));
+  // A ready-made Cleric spellbook so the sheet's spell section and combat Cast
+  // buttons have something to show in the example campaign.
+  mirelle.spellbook = {
+    cantrips: ['sacred-flame', 'guidance', 'light'],
+    known: ['cure-wounds', 'healing-word', 'guiding-bolt', 'hold-person'],
+    prepared: ['cure-wounds', 'guiding-bolt', 'hold-person'],
+  };
   mirelle.inventory = [
     {
       id: 'mace',

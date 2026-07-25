@@ -27,7 +27,7 @@ import { replaceById } from '../entities/Roster.js';
  * @param {Spell} spell
  * @returns {{ id: string, name: string, ac: number }[]}
  */
-function castTargets(app, combat, caster, spell) {
+function combatTargets(app, combat, caster, spell) {
   const { state } = app;
   const kind = spell.effect.kind;
   if (kind === 'utility') return [];
@@ -50,6 +50,33 @@ function castTargets(app, combat, caster, spell) {
       const npc = npcs.find((n) => n.id === p.id);
       return npc ? [{ id: p.id, name: npc.name, ac: npc.stats?.AC ?? 10 }] : [];
     });
+}
+
+/**
+ * The combatants an out-of-combat cast can reach, with no initiative order to
+ * scope by: a heal reaches the whole party (allies, caster included); an attack
+ * or save reaches every undefeated encounter plus the NPCs on the party's tile.
+ * Utility spells target no one. Same target shape as `combatTargets`.
+ * @param {AppContext} app
+ * @param {Spell} spell
+ * @returns {{ id: string, name: string, ac: number }[]}
+ */
+function rosterTargets(app, spell) {
+  const { state } = app;
+  const kind = spell.effect.kind;
+  if (kind === 'utility') return [];
+  if (kind === 'heal') {
+    return state.characters.map((c) => ({ id: c.id, name: c.name, ac: armorClass(c) }));
+  }
+  const foes = state.encounters
+    .filter((e) => !isDefeated(e))
+    .map((e) => ({ id: e.id, name: e.name, ac: effectiveStatBlock(e).AC ?? 10 }));
+  const npcs = npcsOnTile(state.npcs, app.partyTracker.getPosition()).map((n) => ({
+    id: n.id,
+    name: n.name,
+    ac: n.stats?.AC ?? 10,
+  }));
+  return [...foes, ...npcs];
 }
 
 /**
@@ -122,25 +149,48 @@ function castFields(spell, targets, slotLevels, saveDC) {
 }
 
 /**
- * Cast a spell for the active combatant, mirroring `weaponAttack`: a pre-roll
- * dialog picks the slot level, target, and situational modes, then the pure
- * `castSpell` resolver rolls the effect and this wiring applies the result and
- * logs it. Only party characters cast for now (foes/NPCs gain spellbooks in a
- * later phase); a caster with no spell ability falls back to a flat DC 10 /
- * +0 attack. The spent slot is written back to the character, and damage or
- * healing lands on each target the same way a weapon hit does — encounters and
- * characters track HP, an HP-less NPC keeps the log line only.
+ * Cast a spell for the active combatant, mirroring `weaponAttack`: the targets
+ * come from the initiative order (foes for attack/save, the party for heal),
+ * then `runCast` runs the pre-roll dialog, resolves, and applies. Only party
+ * characters cast for now — foes/NPCs gain spellbooks in a later phase.
  * @param {AppContext} app
  * @param {CombatState} combat
  * @param {Participant} participant
  * @param {Spell} spell
  */
 export async function castSpellAction(app, combat, participant, spell) {
-  const { state } = app;
-  const caster = state.characters.find((c) => c.id === participant.id);
+  const caster = app.state.characters.find((c) => c.id === participant.id);
   if (!caster) return; // foe/NPC casting is a later phase
+  await runCast(app, caster, spell, combatTargets(app, combat, participant, spell));
+}
 
-  const targets = castTargets(app, combat, participant, spell);
+/**
+ * Cast a spell from a character's sheet outside of combat: the targets come
+ * from the roster and nearby foes (no initiative order), then `runCast` handles
+ * the dialog, resolution, and application exactly as the combat path does.
+ * @param {AppContext} app
+ * @param {import('../types/entities.js').Character} caster
+ * @param {Spell} spell
+ */
+export async function castSpellOutOfCombat(app, caster, spell) {
+  await runCast(app, caster, spell, rosterTargets(app, spell));
+}
+
+/**
+ * The shared cast pipeline behind both entry points, mirroring `weaponAttack`:
+ * a pre-roll dialog picks the slot level, target, and situational modes, then
+ * the pure `castSpell` resolver rolls the effect and this wiring applies the
+ * result and logs it. A caster with no spell ability falls back to a flat DC 10
+ * / +0 attack. The spent slot is written back to the character, and damage or
+ * healing lands on each target the same way a weapon hit does — encounters and
+ * characters track HP, an HP-less NPC keeps the log line only.
+ * @param {AppContext} app
+ * @param {import('../types/entities.js').Character} caster
+ * @param {Spell} spell
+ * @param {{ id: string, name: string, ac: number }[]} targets
+ */
+async function runCast(app, caster, spell, targets) {
+  const { state } = app;
   if (spell.effect.kind !== 'utility' && targets.length === 0) {
     app.toasts.show('No target available.');
     return;
