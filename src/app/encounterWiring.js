@@ -333,15 +333,20 @@ export function wireEncounters(app) {
     onWeaponAttack: (participant, weapon) => {
       if (combat) weaponAttack(app, combat, participant, weapon);
     },
-    // A party caster's castable spells: its known cantrips and prepared/known
+    // Any combatant's castable spells: its known cantrips and prepared/known
     // leveled spells, resolved from the spellbook's ids through the merged
-    // library's memoized index. Foes/NPCs carry no spellbook yet (a later
-    // phase), so they list nothing.
+    // library's memoized index. A party character, a foe encounter, or an NPC
+    // on the tile — each reads its own stored spellbook; a non-caster's empty
+    // spellbook lists nothing.
     getSpells: (participant) => {
-      if (participant.side === 'foe') return [];
-      const character = state.characters.find((c) => c.id === participant.id);
-      if (!character) return [];
-      const book = getSpellbook(character);
+      const entity =
+        state.characters.find((c) => c.id === participant.id) ??
+        state.encounters.find((e) => e.id === participant.id) ??
+        npcsOnTile(state.npcs, app.partyTracker.getPosition()).find((n) => n.id === participant.id);
+      if (!entity) return [];
+      // Any combatant's spellbook is read structurally — `getSpellbook` only
+      // touches `.spellbook`, which an encounter or NPC caster carries too.
+      const book = getSpellbook(/** @type {any} */ (entity));
       const index = activeSpellIndex();
       const ids = [...new Set([...book.cantrips, ...book.prepared, ...book.known])];
       return ids.map((id) => index.get(id)).filter((s) => s !== undefined);

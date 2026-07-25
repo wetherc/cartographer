@@ -6,6 +6,7 @@ import { damageCharacter, restoreResource, getHP, HP_RESOURCE_ID } from '../enti
 import { armorClass } from '../entities/Equipment.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { getSlotPools, slotLevelOf } from '../entities/SpellSlots.js';
+import { toCaster, withCasterState } from '../entities/Caster.js';
 import { replaceById } from '../entities/Roster.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -151,17 +152,44 @@ function castFields(spell, targets, slotLevels, saveDC) {
 /**
  * Cast a spell for the active combatant, mirroring `weaponAttack`: the targets
  * come from the initiative order (foes for attack/save, the party for heal),
- * then `runCast` runs the pre-roll dialog, resolves, and applies. Only party
- * characters cast for now — foes/NPCs gain spellbooks in a later phase.
+ * then `runCast` runs the pre-roll dialog, resolves, and applies. The caster is
+ * whichever combatant holds the participant's id — a party character, a foe
+ * encounter, or an NPC on the party's tile — and the spent slot is written back
+ * to that combatant's own collection.
  * @param {AppContext} app
  * @param {CombatState} combat
  * @param {Participant} participant
  * @param {Spell} spell
  */
 export async function castSpellAction(app, combat, participant, spell) {
-  const caster = app.state.characters.find((c) => c.id === participant.id);
-  if (!caster) return; // foe/NPC casting is a later phase
-  await runCast(app, caster, spell, combatTargets(app, combat, participant, spell));
+  const { state } = app;
+  const targets = combatTargets(app, combat, participant, spell);
+  const character = state.characters.find((c) => c.id === participant.id);
+  if (character) {
+    await runCast(app, character, spell, targets, (next) => {
+      state.characters = replaceById(state.characters, next);
+      app.actions.refreshSelectedCharacter();
+    });
+    return;
+  }
+  const encounter = state.encounters.find((e) => e.id === participant.id);
+  if (encounter) {
+    await runCast(app, encounter, spell, targets, (next) => {
+      state.encounters = replaceById(state.encounters, next);
+      app.actions.syncEncounterMarkers();
+      app.views.encounterPanel.update();
+      app.views.initiativePanel.update();
+    });
+    return;
+  }
+  const npc = npcsOnTile(state.npcs, app.partyTracker.getPosition()).find(
+    (n) => n.id === participant.id,
+  );
+  if (npc) {
+    await runCast(app, npc, spell, targets, (next) => {
+      state.npcs = replaceById(state.npcs, next);
+    });
+  }
 }
 
 /**
@@ -173,7 +201,10 @@ export async function castSpellAction(app, combat, participant, spell) {
  * @param {Spell} spell
  */
 export async function castSpellOutOfCombat(app, caster, spell) {
-  await runCast(app, caster, spell, rosterTargets(app, spell));
+  await runCast(app, caster, spell, rosterTargets(app, spell), (next) => {
+    app.state.characters = replaceById(app.state.characters, next);
+    app.actions.refreshSelectedCharacter();
+  });
 }
 
 /**
@@ -181,16 +212,28 @@ export async function castSpellOutOfCombat(app, caster, spell) {
  * a pre-roll dialog picks the slot level, target, and situational modes, then
  * the pure `castSpell` resolver rolls the effect and this wiring applies the
  * result and logs it. A caster with no spell ability falls back to a flat DC 10
- * / +0 attack. The spent slot is written back to the character, and damage or
- * healing lands on each target the same way a weapon hit does — encounters and
+ * / +0 attack. The caster entity is read through `toCaster` so a party
+ * Character, a foe Encounter, and an NPC all resolve the same way; when a slot
+ * is spent, `withCasterState` splices it back onto the real entity and the
+ * caller's `writeBack` stores it in the right collection. Damage or healing
+ * lands on each target the same way a weapon hit does — encounters and
  * characters track HP, an HP-less NPC keeps the log line only.
+ * @template {import('../types/entities.js').Character
+ *   | import('../types/entities.js').Encounter
+ *   | import('../types/npc.js').NPC} T
  * @param {AppContext} app
- * @param {import('../types/entities.js').Character} caster
+ * @param {T} entity the real combatant casting
  * @param {Spell} spell
  * @param {{ id: string, name: string, ac: number }[]} targets
+ * @param {(next: T) => void} writeBack stores the slot-spent entity
  */
-async function runCast(app, caster, spell, targets) {
-  const { state } = app;
+async function runCast(app, entity, spell, targets, writeBack) {
+  // The pure spell helpers read a caster's class/level/stats/resources/
+  // spellbook — exactly the fields `toCaster` surfaces — so the view stands in
+  // for a Character at the type level; runtime only ever touches those fields.
+  const caster = /** @type {import('../types/entities.js').Character} */ (
+    /** @type {unknown} */ (toCaster(entity))
+  );
   if (spell.effect.kind !== 'utility' && targets.length === 0) {
     app.toasts.show('No target available.');
     return;
@@ -240,10 +283,10 @@ async function runCast(app, caster, spell, targets) {
   }
 
   // Write the spent slot back to the caster before applying effects, so a slot
-  // never lingers if the effect application throws.
+  // never lingers if the effect application throws. `withCasterState` splices
+  // the decremented slot pools onto the real entity; the caller stores it.
   if (result.spent) {
-    state.characters = replaceById(state.characters, result.caster);
-    app.actions.refreshSelectedCharacter();
+    writeBack(withCasterState(entity, result.caster));
     app.actions.markDirty();
   }
   const at = result.slotLevel > 0 ? ` at level ${result.slotLevel}` : '';
