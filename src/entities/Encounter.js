@@ -1,5 +1,5 @@
 import { normalizeStatBlock } from './Modifiers.js';
-import { WEAPON_PRESETS, enemyArmor } from './Equipment.js';
+import { WEAPON_PRESETS, enemyArmor } from './EquipmentPresets.js';
 import { withinRadius } from '../map/FogOfWar.js';
 
 /** @typedef {import('../types/entities.js').Encounter} Encounter */

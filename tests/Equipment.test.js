@@ -17,11 +17,6 @@ import {
   armorClass,
   effectiveStats,
   pruneEquipment,
-  WEAPON_PRESETS,
-  ARMOR_PRESETS,
-  GEAR_PRESETS,
-  CONSUMABLE_PRESETS,
-  enemyArmor,
   WEAPON_HANDLING,
   DIE_SIZES,
   DAMAGE_TYPES,
@@ -30,6 +25,13 @@ import {
   filterItems,
   equippedWeapons,
 } from '../src/entities/Equipment.js';
+import {
+  WEAPON_PRESETS,
+  ARMOR_PRESETS,
+  GEAR_PRESETS,
+  CONSUMABLE_PRESETS,
+  enemyArmor,
+} from '../src/entities/EquipmentPresets.js';
 import {
   createCharacter,
   withDefaults,

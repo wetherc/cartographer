@@ -1,11 +1,10 @@
+import { WEAPON_TYPES, ITEM_TYPES } from '../entities/Equipment.js';
 import {
   WEAPON_PRESETS,
   ARMOR_PRESETS,
   GEAR_PRESETS,
   CONSUMABLE_PRESETS,
-  WEAPON_TYPES,
-  ITEM_TYPES,
-} from '../entities/Equipment.js';
+} from '../entities/EquipmentPresets.js';
 import { normalizeStatBlock } from '../entities/Modifiers.js';
 import { DISPOSITIONS } from '../entities/NPC.js';
 import { slugId } from '../entities/Roster.js';
