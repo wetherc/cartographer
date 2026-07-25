@@ -6,8 +6,12 @@ import { icon } from './icons.js';
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/spell.js').SpellEffect} SpellEffect */
 
-/** The component letters a spell may require. */
-const COMPONENTS = ['V', 'S', 'M'];
+/** The component letters a spell may require, with their 5e meanings. */
+const COMPONENTS = [
+  { letter: 'V', title: 'Verbal' },
+  { letter: 'S', title: 'Somatic' },
+  { letter: 'M', title: 'Material' },
+];
 
 /**
  * A captioned wrapper so each control names itself — the item form's `labeled`,
@@ -106,15 +110,23 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     input.value = cls.id;
     return { label, input };
   });
-  const classesField = labeled('Classes', wrapChecks(classChecks.map((c) => c.label)));
+  const classesField = labeled(
+    'Classes',
+    wrapChecks(
+      classChecks.map((c) => c.label),
+      true,
+    ),
+  );
 
   const castingTimeInput = textField(spell?.castingTime ?? '1 action', '1 action');
   const rangeInput = textField(spell?.range ?? 'Self', '60 feet');
   const durationInput = textField(spell?.duration ?? 'Instantaneous', 'Instantaneous');
 
-  const componentChecks = COMPONENTS.map((letter) =>
-    checkbox(letter, spell?.components.includes(letter) ?? false),
-  );
+  const componentChecks = COMPONENTS.map(({ letter, title }) => {
+    const check = checkbox(letter, spell?.components.includes(letter) ?? false);
+    check.label.title = title;
+    return check;
+  });
   const componentsField = labeled('Components', wrapChecks(componentChecks.map((c) => c.label)));
 
   const concentration = checkbox('Concentration', spell?.concentration ?? false);
@@ -162,16 +174,21 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const targetsField = labeled('Extra targets / level', targetsInput);
 
   const effectRow = fieldRow(labeled('Effect', kindSelect), abilityField);
-  const saveOptsRow = fieldRow(halfOnSave.label, conditionField);
-  const damageToggleRow = fieldRow(dealsDamage.label);
+  // The save's two toggles share a row; the freeform condition gets its own.
+  const saveTogglesRow = fieldRow(halfOnSave.label, dealsDamage.label);
+  const conditionRow = fieldRow(conditionField);
   const scalingRow = fieldRow(scales.label);
-  const scalingBodyRow = fieldRow(scalingDamageField, targetsField);
+  // Keep the multi-line dice editor and the lone targets number on separate
+  // rows; sharing a flex row leaves the small number field floating beside the
+  // taller editor.
+  const scalingDamageRow = fieldRow(scalingDamageField);
+  const scalingTargetsRow = fieldRow(targetsField);
 
   function syncEffectFields() {
     const kind = kindSelect.value;
     abilityField.hidden = kind !== 'save';
-    saveOptsRow.hidden = kind !== 'save';
-    damageToggleRow.hidden = kind !== 'save';
+    saveTogglesRow.hidden = kind !== 'save';
+    conditionRow.hidden = kind !== 'save';
     // Attack always shows damage; save shows it when "Deals damage" is on; heal
     // shows healing; utility shows neither.
     const showDamage = kind === 'attack' || (kind === 'save' && dealsDamage.input.checked);
@@ -186,7 +203,9 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   dealsDamage.input.addEventListener('change', syncEffectFields);
 
   function syncScaling() {
-    scalingBodyRow.hidden = !scales.input.checked;
+    const hide = !scales.input.checked;
+    scalingDamageRow.hidden = hide;
+    scalingTargetsRow.hidden = hide;
   }
   scales.input.addEventListener('change', syncScaling);
 
@@ -247,7 +266,9 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       classes: classChecks.filter((c) => c.input.checked).map((c) => c.input.value),
       castingTime: castingTimeInput.value.trim() || '1 action',
       range: rangeInput.value.trim() || 'Self',
-      components: COMPONENTS.filter((_, i) => componentChecks[i].input.checked),
+      components: COMPONENTS.filter((_, i) => componentChecks[i].input.checked).map(
+        (c) => c.letter,
+      ),
       duration: durationInput.value.trim() || 'Instantaneous',
       concentration: concentration.input.checked,
       ritual: ritual.input.checked,
@@ -266,12 +287,13 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     fieldRow(concentration.label, ritual.label),
     labeled('Description', descriptionInput),
     effectRow,
-    saveOptsRow,
-    damageToggleRow,
+    saveTogglesRow,
+    conditionRow,
     damageField,
     healField,
     scalingRow,
-    scalingBodyRow,
+    scalingDamageRow,
+    scalingTargetsRow,
     actionsRow,
   );
 
@@ -280,10 +302,12 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   return form;
 }
 
-/** Wrap a set of checkbox labels into an inline group. @param {HTMLElement[]} labels */
-function wrapChecks(labels) {
+/** Wrap a set of checkbox labels into a group — inline by default, or a
+ * multi-column grid when `grid` is set (used for the long class list).
+ * @param {HTMLElement[]} labels @param {boolean} [grid] */
+function wrapChecks(labels, grid = false) {
   const group = document.createElement('div');
-  group.className = 'spell-form__checks';
+  group.className = grid ? 'spell-form__checks spell-form__checks--grid' : 'spell-form__checks';
   group.append(...labels);
   return group;
 }
