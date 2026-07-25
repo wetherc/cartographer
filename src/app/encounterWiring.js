@@ -10,7 +10,6 @@ import {
   encountersNear,
   encountersOnTile,
   discoveredEncounters,
-  isDefeated,
   tickStatModifiers,
   toTemplate,
 } from '../entities/Encounter.js';
@@ -26,6 +25,7 @@ import { isGM, hpBand } from '../view/ViewRole.js';
 import { encounterForm, deleteEncounter, addFromBestiary } from './encounterForm.js';
 import { weaponAttack } from './weaponAttack.js';
 import { castSpellAction } from './spellCast.js';
+import { findCombatant, logDefeatTransition } from './combatants.js';
 import { getSpellbook } from '../entities/Character.js';
 import { activeSpellIndex } from '../library/Library.js';
 import { npcForm } from './npcForm.js';
@@ -122,8 +122,7 @@ export function wireEncounters(app) {
       // Log the transition into defeat exactly once (damage that keeps it down
       // shouldn't re-log), by comparing against the pre-update encounter.
       const prev = state.encounters.find((e) => e.id === next.id);
-      if (prev && !isDefeated(prev) && isDefeated(next))
-        app.actions.logEvent('combat', `Defeated ${next.name}.`);
+      if (prev) logDefeatTransition(app, prev, next);
       state.encounters = replaceById(state.encounters, next);
       app.actions.syncEncounterMarkers(); // a defeat or move should update the map marker
       app.views.initiativePanel.update(); // defeating the last one here ends the encounter
@@ -323,12 +322,11 @@ export function wireEncounters(app) {
     // can drive anyone's turn; a player only their bound character's; foe
     // turns are the GM's alone.
     getWeapons: (participant) => {
-      if (participant.side === 'foe') {
-        const encounter = state.encounters.find((e) => e.id === participant.id);
-        return encounter?.weapon ? [encounter.weapon] : [];
-      }
-      const character = state.characters.find((c) => c.id === participant.id);
-      return character ? equippedWeapons(character) : [];
+      const found = findCombatant(app, participant.id);
+      if (!found) return [];
+      if (found.kind === 'encounter') return found.entity.weapon ? [found.entity.weapon] : [];
+      if (found.kind === 'character') return equippedWeapons(found.entity);
+      return []; // NPCs carry no weapons yet
     },
     onWeaponAttack: (participant, weapon) => {
       if (combat) weaponAttack(app, combat, participant, weapon);
@@ -339,14 +337,11 @@ export function wireEncounters(app) {
     // on the tile — each reads its own stored spellbook; a non-caster's empty
     // spellbook lists nothing.
     getSpells: (participant) => {
-      const entity =
-        state.characters.find((c) => c.id === participant.id) ??
-        state.encounters.find((e) => e.id === participant.id) ??
-        npcsOnTile(state.npcs, app.partyTracker.getPosition()).find((n) => n.id === participant.id);
-      if (!entity) return [];
+      const found = findCombatant(app, participant.id);
+      if (!found) return [];
       // Any combatant's spellbook is read structurally — `getSpellbook` only
       // touches `.spellbook`, which an encounter or NPC caster carries too.
-      const book = getSpellbook(/** @type {any} */ (entity));
+      const book = getSpellbook(/** @type {any} */ (found.entity));
       const index = activeSpellIndex();
       const ids = [...new Set([...book.cantrips, ...book.prepared, ...book.known])];
       return ids.map((id) => index.get(id)).filter((s) => s !== undefined);

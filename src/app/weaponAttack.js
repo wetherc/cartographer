@@ -1,11 +1,9 @@
 import { promptModal } from '../ui/Modal.js';
-import { applyDamage, effectiveStatBlock, isDefeated } from '../entities/Encounter.js';
+import { effectiveStatBlock } from '../entities/Encounter.js';
 import { rollDamage, attackTweak, DIE_SIDES } from '../dice/DiceRoller.js';
-import { armorClass, effectiveStats, weaponAbility } from '../entities/Equipment.js';
-import { damageCharacter, getHP } from '../entities/Character.js';
+import { effectiveStats, weaponAbility } from '../entities/Equipment.js';
 import { abilityModifier, formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
-import { npcsOnTile } from '../entities/NPC.js';
-import { replaceById } from '../entities/Roster.js';
+import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -30,43 +28,16 @@ import { replaceById } from '../entities/Roster.js';
  * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} weapon
  */
 export async function weaponAttack(app, combat, participant, weapon) {
-  const { state } = app;
   // The attacker is a party character or an armed encounter; either way the
   // roll is d20 + the weapon ability's modifier + proficiency for its level.
-  const attacker =
-    participant.side === 'party'
-      ? state.characters.find((c) => c.id === participant.id)
-      : state.encounters.find((e) => e.id === participant.id);
+  // NPCs carry no weapons yet, so an NPC participant never reaches here.
+  const found = findCombatant(app, participant.id);
+  const attacker = found && found.kind !== 'npc' ? found.entity : null;
   if (!attacker) return;
   // Defenders come from the opposite side of the running order: encounters
   // by id, party characters (AC from armor), and NPCs standing on the tile.
   // Downed ones drop out.
-  const npcs = npcsOnTile(state.npcs, app.partyTracker.getPosition());
-  const defenders = combat.order
-    .filter((p) => p.side !== participant.side)
-    .flatMap((p) => {
-      const encounter = state.encounters.find((e) => e.id === p.id);
-      if (encounter) {
-        return isDefeated(encounter)
-          ? []
-          : [
-              {
-                id: p.id,
-                name: encounter.name,
-                ac: effectiveStatBlock(encounter).AC ?? 10,
-              },
-            ];
-      }
-      const character = state.characters.find((c) => c.id === p.id);
-      if (character) {
-        const hp = getHP(character);
-        return hp && hp.current <= 0
-          ? []
-          : [{ id: p.id, name: character.name, ac: armorClass(character) }];
-      }
-      const npc = npcs.find((n) => n.id === p.id);
-      return npc ? [{ id: p.id, name: npc.name, ac: npc.stats?.AC ?? 10 }] : [];
-    });
+  const defenders = combatantsAsTargets(app, combat, participant);
   if (defenders.length === 0) {
     app.toasts.show('No defender left standing.');
     return;
@@ -184,32 +155,10 @@ export async function weaponAttack(app, combat, participant, weapon) {
     'combat',
     `${weapon.name} ${blow} ${defender.name} for ${damage.detail || '0 damage'}${inflicts}.`,
   );
-  // Apply the damage on the spot. Encounters and characters track HP; a
-  // defender that's an HP-less NPC keeps the log line only. Defeat is
-  // logged once, matching the manual-damage path on the encounter row.
-  const target = state.encounters.find((e) => e.id === defender.id);
-  if (target && damage.total > 0) {
-    const next = applyDamage(target, damage.total);
-    if (!isDefeated(target) && isDefeated(next))
-      app.actions.logEvent('combat', `Defeated ${next.name}.`);
-    state.encounters = replaceById(state.encounters, next);
-    app.actions.syncEncounterMarkers();
-    app.views.encounterPanel.update();
-    app.views.initiativePanel.update(); // defeating the last foe here ends the combat
-    app.actions.markDirty();
-  }
-  const victim = state.characters.find((c) => c.id === defender.id);
-  if (victim && damage.total > 0) {
-    const next = damageCharacter(victim, damage.total);
-    // Log the drop to 0 exactly once — further damage on a downed character
-    // shouldn't repeat it.
-    if ((getHP(victim)?.current ?? 0) > 0 && (getHP(next)?.current ?? 0) <= 0) {
-      app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
-    }
-    state.characters = replaceById(state.characters, next);
-    app.actions.refreshSelectedCharacter();
-    app.actions.markDirty();
-  }
+  // Apply the damage on the spot through the shared write path: encounters
+  // and characters track HP with defeat/drop-to-0 logged once; a defender
+  // that's an HP-less NPC keeps the log line only.
+  applyToTarget(app, defender.id, damage.total, false);
   app.toasts.show(
     `${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${damage.text || 'no damage'}${inflicts}.`,
   );

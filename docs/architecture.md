@@ -30,7 +30,7 @@ One module per feature area, each a `wireX(app)` factory:
 - `generateAction.js` — the Generate dialog flow and its non-destructive apply.
 - `nodeActions.js` — node create/edit/delete (predates the split; same context-object pattern).
 - `partyWiring.js` — roster, character sheet, inventory, Time panel; provides `refreshSelectedCharacter`.
-- `encounterWiring.js` — Encounters and Initiative panels, the Build-rail encounter authoring list, walked-into-an-encounter alert; owns transient combat state. The shared create/edit dialog (name, HP, level/tier, placement via `locationFields`) lives in `encounterForm.js` and backs both panels' add and edit actions; edits go through the pure `Encounter.editEncounter`, which keeps live state (current HP clamped to a new max, stat block, conditions) and resets the `noticed` flag when the encounter moves. The bestiary spawn dialog is `encounterForm.js`'s `addFromBestiary`; the 5e attack resolution the Initiative panel triggers is `weaponAttack.js`.
+- `encounterWiring.js` — Encounters and Initiative panels, the Build-rail encounter authoring list, walked-into-an-encounter alert; owns transient combat state. The shared create/edit dialog (name, HP, level/tier, placement via `locationFields`) lives in `encounterForm.js` and backs both panels' add and edit actions; edits go through the pure `Encounter.editEncounter`, which keeps live state (current HP clamped to a new max, stat block, conditions) and resets the `noticed` flag when the encounter moves. The bestiary spawn dialog is `encounterForm.js`'s `addFromBestiary`; the 5e attack resolution the Initiative panel triggers is `weaponAttack.js`, and spell resolution is `spellCast.js`. Both build on `combatants.js`, the one place that resolves a participant id across the three combatant collections: `findCombatant(app, id)` returns `{ entity, kind, store }` (the `store` writes an update back to the owning collection with its panel refreshes), `combatantsAsTargets` assembles a foe/ally target list from the running order, and `applyToTarget` is the single damage/heal write path with the defeat and drop-to-0 transitions each logged exactly once. New combat features should route entity resolution and HP application through these rather than re-writing the character/encounter/NPC cascade — phase 9's NPC HP/AC lands by extending `combatants.js`, not by finding every copy.
 - `storyWiring.js` — travelogue (provides `logEvent`), NPCs, quests, handouts.
 - `libraryWiring.js` — the Library mode's three template lists (equipment, bestiary, NPCs) and the custom-library file controls (export/import/reset, startup auto-load). The custom library is deliberately not campaign state: `library/Library.js` holds the built-in defaults, the pure merge logic (a custom entry whose name — and for equipment, type — matches a default overrides it in place; others append), and a small module-level "active library" registry that the preset consumers (the item form's pickers, the enemy gear selects, "From bestiary") read at call time, since they mount far from the wiring that loads customizations.
 - `sessionControls.js` — mode/role switches (role guarded by the cross-tab GM lock), sidebar tabs and collapse; provides `setMode`. Mode is a three-way Play / Build / Library toggle; Library mode hides the map column entirely and shows only the template lists.
@@ -121,7 +121,11 @@ established pattern that new code touching the same area should follow:
   this pattern; the returned arrays/sets are shared, so treat them as
   read-only. The tile pass itself iterates only the visible cell range (invert
   the view transform once, look cells up by id) — O(visible), never O(total
-  tiles), and never a regex parse per tile per frame.
+  tiles), and never a regex parse per tile per frame. The same pattern covers
+  the combat rosters: `combatants.js` memoizes an id-index Map per
+  characters/encounters array (safe because every mutation goes through
+  `replaceById`, which replaces the array), so participant lookups during a
+  fight are O(1) without any explicit invalidation.
 - **Strokes defer derived work to the stroke's end.** A paint/erase/fog drag
   updates per cell through `MapCanvas.refreshNodeTiles` (node swap + redraw
   only); region-group recompute and the screen-reader map description settle

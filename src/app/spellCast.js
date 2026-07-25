@@ -1,13 +1,12 @@
 import { promptModal } from '../ui/Modal.js';
 import { castSpell } from '../entities/Casting.js';
 import { spellSaveDC, spellAttackBonus } from '../entities/Classes.js';
-import { applyDamage, effectiveStatBlock, isDefeated, heal } from '../entities/Encounter.js';
-import { damageCharacter, restoreResource, getHP, HP_RESOURCE_ID } from '../entities/Character.js';
-import { armorClass } from '../entities/Equipment.js';
+import { isDefeated } from '../entities/Encounter.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { getSlotPools, slotLevelOf } from '../entities/SpellSlots.js';
 import { toCaster, withCasterState } from '../entities/Caster.js';
 import { replaceById } from '../entities/Roster.js';
+import { findCombatant, combatantsAsTargets, asTarget, applyToTarget } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
@@ -17,11 +16,8 @@ import { replaceById } from '../entities/Roster.js';
 /**
  * The combatants a spell can target, by effect kind: an attack or a save spell
  * reaches the caster's foes; a heal reaches its own side (allies, including the
- * caster). Utility spells target no one. Each candidate carries the numbers the
- * resolver needs — AC for an attack, name for the log — assembled from combat's
- * running order: encounters by id (their effective AC), party characters (AC
- * from armor), and NPCs on the party's tile. Downed combatants drop out of a
- * damaging spell's list but stay eligible for healing.
+ * caster). Utility spells target no one. The list itself comes from the shared
+ * `combatantsAsTargets` assembly over combat's running order.
  * @param {AppContext} app
  * @param {CombatState} combat
  * @param {Participant} caster
@@ -29,28 +25,9 @@ import { replaceById } from '../entities/Roster.js';
  * @returns {{ id: string, name: string, ac: number }[]}
  */
 function combatTargets(app, combat, caster, spell) {
-  const { state } = app;
   const kind = spell.effect.kind;
   if (kind === 'utility') return [];
-  const allies = kind === 'heal';
-  const npcs = npcsOnTile(state.npcs, app.partyTracker.getPosition());
-  return combat.order
-    .filter((p) => (allies ? p.side === caster.side : p.side !== caster.side))
-    .flatMap((p) => {
-      const encounter = state.encounters.find((e) => e.id === p.id);
-      if (encounter) {
-        if (!allies && isDefeated(encounter)) return [];
-        return [{ id: p.id, name: encounter.name, ac: effectiveStatBlock(encounter).AC ?? 10 }];
-      }
-      const character = state.characters.find((c) => c.id === p.id);
-      if (character) {
-        const hp = getHP(character);
-        if (!allies && hp && hp.current <= 0) return [];
-        return [{ id: p.id, name: character.name, ac: armorClass(character) }];
-      }
-      const npc = npcs.find((n) => n.id === p.id);
-      return npc ? [{ id: p.id, name: npc.name, ac: npc.stats?.AC ?? 10 }] : [];
-    });
+  return combatantsAsTargets(app, combat, caster, { allies: kind === 'heal' });
 }
 
 /**
@@ -67,16 +44,12 @@ function rosterTargets(app, spell) {
   const kind = spell.effect.kind;
   if (kind === 'utility') return [];
   if (kind === 'heal') {
-    return state.characters.map((c) => ({ id: c.id, name: c.name, ac: armorClass(c) }));
+    return state.characters.map((c) => asTarget(c, 'character'));
   }
-  const foes = state.encounters
-    .filter((e) => !isDefeated(e))
-    .map((e) => ({ id: e.id, name: e.name, ac: effectiveStatBlock(e).AC ?? 10 }));
-  const npcs = npcsOnTile(state.npcs, app.partyTracker.getPosition()).map((n) => ({
-    id: n.id,
-    name: n.name,
-    ac: n.stats?.AC ?? 10,
-  }));
+  const foes = state.encounters.filter((e) => !isDefeated(e)).map((e) => asTarget(e, 'encounter'));
+  const npcs = npcsOnTile(state.npcs, app.partyTracker.getPosition()).map((n) =>
+    asTarget(n, 'npc'),
+  );
   return [...foes, ...npcs];
 }
 
@@ -153,43 +126,25 @@ function castFields(spell, targets, slotLevels, saveDC) {
  * Cast a spell for the active combatant, mirroring `weaponAttack`: the targets
  * come from the initiative order (foes for attack/save, the party for heal),
  * then `runCast` runs the pre-roll dialog, resolves, and applies. The caster is
- * whichever combatant holds the participant's id — a party character, a foe
- * encounter, or an NPC on the party's tile — and the spent slot is written back
- * to that combatant's own collection.
+ * whichever combatant holds the participant's id — resolved by the shared
+ * `findCombatant`, whose `store` writes the spent slot back to that
+ * combatant's own collection.
  * @param {AppContext} app
  * @param {CombatState} combat
  * @param {Participant} participant
  * @param {Spell} spell
  */
 export async function castSpellAction(app, combat, participant, spell) {
-  const { state } = app;
   const targets = combatTargets(app, combat, participant, spell);
-  const character = state.characters.find((c) => c.id === participant.id);
-  if (character) {
-    await runCast(app, character, spell, targets, (next) => {
-      state.characters = replaceById(state.characters, next);
-      app.actions.refreshSelectedCharacter();
-    });
-    return;
-  }
-  const encounter = state.encounters.find((e) => e.id === participant.id);
-  if (encounter) {
-    await runCast(app, encounter, spell, targets, (next) => {
-      state.encounters = replaceById(state.encounters, next);
-      app.actions.syncEncounterMarkers();
-      app.views.encounterPanel.update();
-      app.views.initiativePanel.update();
-    });
-    return;
-  }
-  const npc = npcsOnTile(state.npcs, app.partyTracker.getPosition()).find(
-    (n) => n.id === participant.id,
+  const found = findCombatant(app, participant.id);
+  if (!found) return;
+  await runCast(
+    app,
+    found.entity,
+    spell,
+    targets,
+    /** @type {(next: any) => void} */ (found.store),
   );
-  if (npc) {
-    await runCast(app, npc, spell, targets, (next) => {
-      state.npcs = replaceById(state.npcs, next);
-    });
-  }
 }
 
 /**
@@ -350,41 +305,4 @@ function applyOutcomes(app, spell, result, targetName) {
     return;
   }
   app.toasts.show(`${spell.name} cast.`);
-}
-
-/**
- * Apply a spell's damage or healing to a combatant by id, mirroring the weapon
- * path: encounters and party characters track HP (defeat and drops-to-0 logged
- * once), an HP-less NPC just keeps its log line. Refreshes the affected panels.
- * @param {AppContext} app
- * @param {string} targetId
- * @param {number} amount
- * @param {boolean} isHeal
- */
-function applyToTarget(app, targetId, amount, isHeal) {
-  const { state } = app;
-  if (amount <= 0) return;
-  const encounter = state.encounters.find((e) => e.id === targetId);
-  if (encounter) {
-    const next = isHeal ? heal(encounter, amount) : applyDamage(encounter, amount);
-    if (!isHeal && !isDefeated(encounter) && isDefeated(next))
-      app.actions.logEvent('combat', `Defeated ${next.name}.`);
-    state.encounters = replaceById(state.encounters, next);
-    app.actions.syncEncounterMarkers();
-    app.views.encounterPanel.update();
-    app.views.initiativePanel.update();
-    app.actions.markDirty();
-    return;
-  }
-  const character = state.characters.find((c) => c.id === targetId);
-  if (character) {
-    const next = isHeal
-      ? restoreResource(character, HP_RESOURCE_ID, amount)
-      : damageCharacter(character, amount);
-    if (!isHeal && (getHP(character)?.current ?? 0) > 0 && (getHP(next)?.current ?? 0) <= 0)
-      app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
-    state.characters = replaceById(state.characters, next);
-    app.actions.refreshSelectedCharacter();
-    app.actions.markDirty();
-  }
 }

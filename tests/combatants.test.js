@@ -1,0 +1,187 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  findCombatant,
+  asTarget,
+  combatantsAsTargets,
+  applyToTarget,
+  logDefeatTransition,
+} from '../src/app/combatants.js';
+import { createCharacter, withHP, getHP, damageCharacter } from '../src/entities/Character.js';
+import { createEncounter, applyDamage, effectiveStatBlock } from '../src/entities/Encounter.js';
+import { createNPC } from '../src/entities/NPC.js';
+
+const HERE = { nodeId: 'n1', tileId: '0,0' };
+
+/**
+ * A minimal AppContext stand-in with just the surface combatants.js touches:
+ * the three rosters, the party position, and stub actions/views that record
+ * log lines and refresh calls.
+ */
+function stubApp({ characters = [], encounters = [], npcs = [] } = {}) {
+  const app = {
+    state: { characters, encounters, npcs },
+    partyTracker: { getPosition: () => HERE },
+    logs: [],
+    dirty: false,
+    refreshes: [],
+    actions: {},
+    views: {
+      encounterPanel: { update: () => app.refreshes.push('encounterPanel') },
+      initiativePanel: { update: () => app.refreshes.push('initiativePanel') },
+    },
+  };
+  app.actions.logEvent = (kind, message) => app.logs.push(message);
+  app.actions.markDirty = () => {
+    app.dirty = true;
+  };
+  app.actions.refreshSelectedCharacter = () => app.refreshes.push('character');
+  app.actions.syncEncounterMarkers = () => app.refreshes.push('markers');
+  return /** @type {any} */ (app);
+}
+
+function fixtures() {
+  const hero = withHP(createCharacter('hero', 'Hero', { STR: 14 }), 12);
+  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
+  const sage = createNPC('sage', 'Sage', { location: HERE, stats: { AC: 12 } });
+  const farAway = createNPC('hermit', 'Hermit', {
+    location: { nodeId: 'n1', tileId: '5,5' },
+  });
+  return { hero, goblin, sage, farAway };
+}
+
+test('findCombatant resolves each collection with the right kind', () => {
+  const { hero, goblin, sage, farAway } = fixtures();
+  const app = stubApp({ characters: [hero], encounters: [goblin], npcs: [sage, farAway] });
+  assert.equal(findCombatant(app, 'hero')?.kind, 'character');
+  assert.equal(findCombatant(app, 'goblin')?.kind, 'encounter');
+  assert.equal(findCombatant(app, 'sage')?.kind, 'npc');
+  assert.equal(findCombatant(app, 'hermit'), null, 'an NPC off the party tile is not a combatant');
+  assert.equal(findCombatant(app, 'nobody'), null);
+});
+
+test('findCombatant store writes back to the owning collection', () => {
+  const { hero, goblin, sage } = fixtures();
+  const app = stubApp({ characters: [hero], encounters: [goblin], npcs: [sage] });
+  const found = findCombatant(app, 'goblin');
+  found.store({ ...goblin, currentHP: 3 });
+  assert.equal(app.state.encounters[0].currentHP, 3);
+  assert.ok(app.refreshes.includes('markers'), 'encounter store syncs the map markers');
+  const character = findCombatant(app, 'hero');
+  character.store({ ...hero, name: 'Hero II' });
+  assert.equal(app.state.characters[0].name, 'Hero II');
+  assert.ok(app.refreshes.includes('character'));
+});
+
+test('findCombatant sees an updated entity after the collection is replaced', () => {
+  const { goblin } = fixtures();
+  const app = stubApp({ encounters: [goblin] });
+  findCombatant(app, 'goblin').store(applyDamage(goblin, 4));
+  assert.equal(findCombatant(app, 'goblin').entity.currentHP, 6);
+});
+
+test('asTarget projects AC by kind', () => {
+  const { hero, goblin, sage } = fixtures();
+  assert.equal(asTarget(goblin, 'encounter').ac, effectiveStatBlock(goblin).AC);
+  assert.equal(asTarget(sage, 'npc').ac, 12);
+  const heroTarget = asTarget(hero, 'character');
+  assert.equal(heroTarget.name, 'Hero');
+  assert.equal(typeof heroTarget.ac, 'number');
+});
+
+test('combatantsAsTargets lists foes and drops downed ones', () => {
+  const { hero, goblin, sage } = fixtures();
+  const downed = applyDamage(createEncounter('orc', 'Orc', 8, {}, HERE), 8);
+  const app = stubApp({ characters: [hero], encounters: [goblin, downed], npcs: [sage] });
+  const combat = {
+    order: [
+      { id: 'hero', name: 'Hero', side: 'party' },
+      { id: 'goblin', name: 'Goblin', side: 'foe' },
+      { id: 'orc', name: 'Orc', side: 'foe' },
+      { id: 'sage', name: 'Sage', side: 'foe' },
+    ],
+  };
+  const targets = combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[0]);
+  assert.deepEqual(
+    targets.map((t) => t.id),
+    ['goblin', 'sage'],
+    'the defeated orc drops out; the HP-less NPC stays',
+  );
+});
+
+test('combatantsAsTargets with allies keeps downed allies targetable', () => {
+  const { hero, goblin } = fixtures();
+  const fallen = damageCharacter(withHP(createCharacter('mage', 'Mage'), 8), 999);
+  const app = stubApp({ characters: [hero, fallen], encounters: [goblin] });
+  const combat = {
+    order: [
+      { id: 'hero', name: 'Hero', side: 'party' },
+      { id: 'mage', name: 'Mage', side: 'party' },
+      { id: 'goblin', name: 'Goblin', side: 'foe' },
+    ],
+  };
+  const allies = combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[0], {
+    allies: true,
+  });
+  assert.deepEqual(
+    allies.map((t) => t.id),
+    ['hero', 'mage'],
+    'a heal reaches the caster and the downed ally, never the foe',
+  );
+});
+
+test('applyToTarget damages an encounter and logs its defeat exactly once', () => {
+  const { goblin } = fixtures();
+  const app = stubApp({ encounters: [goblin] });
+  applyToTarget(app, 'goblin', 4, false);
+  assert.equal(app.state.encounters[0].currentHP, 6);
+  assert.equal(app.logs.length, 0);
+  applyToTarget(app, 'goblin', 10, false);
+  assert.deepEqual(app.logs, ['Defeated Goblin.']);
+  applyToTarget(app, 'goblin', 5, false);
+  assert.deepEqual(app.logs, ['Defeated Goblin.'], 'damage on a downed encounter stays quiet');
+  assert.equal(app.dirty, true);
+});
+
+test('applyToTarget heals an encounter without a defeat log', () => {
+  const { goblin } = fixtures();
+  const hurt = applyDamage(goblin, 6);
+  const app = stubApp({ encounters: [hurt] });
+  applyToTarget(app, 'goblin', 3, true);
+  assert.equal(app.state.encounters[0].currentHP, 7);
+  assert.equal(app.logs.length, 0);
+});
+
+test('applyToTarget logs a character dropping to 0 HP exactly once and heals back', () => {
+  const hero = withHP(createCharacter('hero', 'Hero'), 10);
+  const app = stubApp({ characters: [hero] });
+  applyToTarget(app, 'hero', 999, false);
+  assert.equal(getHP(app.state.characters[0]).current, 0);
+  assert.deepEqual(app.logs, ['Hero drops to 0 HP.']);
+  applyToTarget(app, 'hero', 5, false);
+  assert.deepEqual(app.logs, ['Hero drops to 0 HP.'], 'no re-log while already down');
+  applyToTarget(app, 'hero', 4, true);
+  assert.equal(getHP(app.state.characters[0]).current, 4);
+});
+
+test('applyToTarget ignores non-positive amounts, unknown ids, and HP-less NPCs', () => {
+  const { sage } = fixtures();
+  const app = stubApp({ npcs: [sage] });
+  applyToTarget(app, 'sage', 5, false);
+  applyToTarget(app, 'nobody', 5, false);
+  applyToTarget(app, 'sage', 0, false);
+  assert.equal(app.dirty, false);
+  assert.equal(app.logs.length, 0);
+});
+
+test('logDefeatTransition fires only on the standing-to-defeated edge', () => {
+  const { goblin } = fixtures();
+  const down = applyDamage(goblin, 99);
+  const app = stubApp();
+  logDefeatTransition(app, goblin, applyDamage(goblin, 2));
+  assert.equal(app.logs.length, 0, 'still standing');
+  logDefeatTransition(app, down, down);
+  assert.equal(app.logs.length, 0, 'already down');
+  logDefeatTransition(app, goblin, down);
+  assert.deepEqual(app.logs, ['Defeated Goblin.']);
+});
