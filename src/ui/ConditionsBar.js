@@ -1,6 +1,6 @@
 import { CONDITIONS, addCondition, removeCondition } from '../entities/Conditions.js';
 import { promptModal } from './Modal.js';
-import { icon } from './icons.js';
+import { iconButton, textButton } from './buttons.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
 
@@ -71,15 +71,13 @@ export function mountConditionsBar(container, callbacks) {
     for (const condition of conditions) root.appendChild(buildChip(condition));
     if (!canEdit()) return;
     // With no chips to give it context, a bare "+" is cryptic — spell it out.
-    const addButton = document.createElement('button');
-    addButton.type = 'button';
-    addButton.className = conditions.length
-      ? 'btn btn--icon conditions-bar__add'
-      : 'btn conditions-bar__add conditions-bar__add--labeled';
-    addButton.setAttribute('aria-label', 'Add condition');
-    addButton.appendChild(icon('add'));
-    if (!conditions.length) addButton.appendChild(document.createTextNode('Condition'));
-    addButton.addEventListener('click', add);
+    const addButton = conditions.length
+      ? iconButton('add', 'Add condition', add, { className: 'conditions-bar__add' })
+      : textButton('Condition', add, {
+          icon: 'add',
+          className: 'conditions-bar__add conditions-bar__add--labeled',
+          ariaLabel: 'Add condition',
+        });
     root.appendChild(addButton);
   }
 

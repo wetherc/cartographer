@@ -1,4 +1,4 @@
-import { icon } from './icons.js';
+import { emptyState, iconButton, textButton } from './buttons.js';
 
 /** @typedef {import('../types/library.js').LibrarySource} LibrarySource */
 
@@ -72,18 +72,18 @@ export function mountLibraryPanel(container, callbacks) {
 
     const actions = document.createElement('div');
     actions.className = 'panel-actions panel-actions--pinned';
-    const addButton = document.createElement('button');
-    addButton.type = 'button';
-    addButton.className = 'btn';
-    addButton.append(icon('add'), document.createTextNode(callbacks.addLabel));
-    addButton.addEventListener('click', async () => {
-      if (callbacks.buildEditor) {
-        editing = 'new';
-        render();
-      } else if (callbacks.onAdd) {
-        if (await callbacks.onAdd()) render();
-      }
-    });
+    const addButton = textButton(
+      callbacks.addLabel,
+      async () => {
+        if (callbacks.buildEditor) {
+          editing = 'new';
+          render();
+        } else if (callbacks.onAdd) {
+          if (await callbacks.onAdd()) render();
+        }
+      },
+      { icon: 'add' },
+    );
     actions.appendChild(addButton);
     root.appendChild(actions);
 
@@ -149,10 +149,7 @@ export function mountLibraryPanel(container, callbacks) {
         .filter((e) => !query || e.name.toLowerCase().includes(query));
 
       if (entries.length === 0) {
-        const empty = document.createElement('p');
-        empty.className = 'empty-state';
-        empty.textContent = query ? 'No entries match.' : 'No entries.';
-        list.appendChild(empty);
+        list.appendChild(emptyState(query ? 'No entries match.' : 'No entries.'));
         return;
       }
 
@@ -191,47 +188,44 @@ export function mountLibraryPanel(container, callbacks) {
       }
 
       if (callbacks.onSpawn) {
-        const spawnButton = document.createElement('button');
-        spawnButton.type = 'button';
-        spawnButton.className = 'btn btn--icon';
-        const spawnLabel = `${callbacks.spawnLabel ?? 'Add to campaign'}: ${entry.name}`;
-        spawnButton.setAttribute('aria-label', spawnLabel);
-        spawnButton.title = callbacks.spawnLabel ?? 'Add to campaign';
-        spawnButton.appendChild(icon('give'));
-        spawnButton.addEventListener('click', () => callbacks.onSpawn?.(entry.key));
+        const spawnButton = iconButton(
+          'give',
+          `${callbacks.spawnLabel ?? 'Add to campaign'}: ${entry.name}`,
+          () => callbacks.onSpawn?.(entry.key),
+          { title: callbacks.spawnLabel ?? 'Add to campaign' },
+        );
         head.appendChild(spawnButton);
       }
 
-      const editButton = document.createElement('button');
-      editButton.type = 'button';
-      editButton.className = 'btn btn--icon';
-      editButton.setAttribute('aria-label', `Edit ${entry.name}`);
-      // Editing a default doesn't touch the built-in list — it stores an
-      // override in the custom library; say so on the control.
-      editButton.title = entry.source === 'default' ? 'Customize' : 'Edit';
-      editButton.appendChild(icon('edit'));
-      editButton.addEventListener('click', async () => {
-        if (callbacks.buildEditor) {
-          editing = entry.key;
-          render();
-        } else if (callbacks.onEdit) {
-          if (await callbacks.onEdit(entry.key)) render();
-        }
-      });
+      const editButton = iconButton(
+        'edit',
+        `Edit ${entry.name}`,
+        async () => {
+          if (callbacks.buildEditor) {
+            editing = entry.key;
+            render();
+          } else if (callbacks.onEdit) {
+            if (await callbacks.onEdit(entry.key)) render();
+          }
+        },
+        // Editing a default doesn't touch the built-in list — it stores an
+        // override in the custom library; say so on the control.
+        { title: entry.source === 'default' ? 'Customize' : 'Edit' },
+      );
       head.appendChild(editButton);
 
       if (entry.source !== 'default') {
-        const removeButton = document.createElement('button');
-        removeButton.type = 'button';
-        removeButton.className = 'btn btn--icon';
-        const removeLabel =
-          entry.source === 'override' ? `Revert ${entry.name} to default` : `Delete ${entry.name}`;
-        removeButton.setAttribute('aria-label', removeLabel);
-        removeButton.title = entry.source === 'override' ? 'Revert to default' : 'Delete';
-        removeButton.appendChild(icon('remove'));
-        removeButton.addEventListener('click', async () => {
-          if (await callbacks.onRemove(entry.key, entry.source)) render();
-        });
+        const removeButton = iconButton(
+          'remove',
+          entry.source === 'override' ? `Revert ${entry.name} to default` : `Delete ${entry.name}`,
+          async () => {
+            if (await callbacks.onRemove(entry.key, entry.source)) render();
+          },
+          {
+            variant: 'danger',
+            title: entry.source === 'override' ? 'Revert to default' : 'Delete',
+          },
+        );
         head.appendChild(removeButton);
       }
 

@@ -1,4 +1,4 @@
-import { icon } from './icons.js';
+import { iconButton, textButton, emptyState } from './buttons.js';
 import { isGM } from '../view/ViewRole.js';
 
 /** @typedef {import('../types/npc.js').NPC} NPC */
@@ -80,28 +80,23 @@ export function mountNPCPanel(container, callbacks) {
     controls.className = 'npc-panel__controls';
 
     if (callbacks.onEdit) {
-      const edit = document.createElement('button');
-      edit.type = 'button';
-      edit.className = 'btn btn--icon';
-      edit.setAttribute('aria-label', `Edit ${npc.name}`);
-      edit.appendChild(icon('edit'));
-      edit.addEventListener('click', async () => {
+      const edit = iconButton('edit', `Edit ${npc.name}`, async () => {
         if (await callbacks.onEdit?.(npc)) render();
       });
       controls.appendChild(edit);
     }
 
-    const del = document.createElement('button');
-    del.type = 'button';
-    del.className = 'btn btn--icon';
-    del.setAttribute('aria-label', `Delete ${npc.name}`);
-    del.appendChild(icon('remove'));
-    del.addEventListener('click', async () => {
-      const ok = callbacks.confirmDelete ? await callbacks.confirmDelete(npc) : true;
-      if (!ok) return;
-      callbacks.onDelete(npc.id);
-      render();
-    });
+    const del = iconButton(
+      'remove',
+      `Delete ${npc.name}`,
+      async () => {
+        const ok = callbacks.confirmDelete ? await callbacks.confirmDelete(npc) : true;
+        if (!ok) return;
+        callbacks.onDelete(npc.id);
+        render();
+      },
+      { variant: 'danger' },
+    );
     controls.appendChild(del);
 
     row.append(body, controls);
@@ -124,10 +119,7 @@ export function mountNPCPanel(container, callbacks) {
     }
 
     if (npcs.length === 0) {
-      const empty = document.createElement('p');
-      empty.className = 'empty-state';
-      empty.textContent = 'No one of note here.';
-      root.appendChild(empty);
+      root.appendChild(emptyState('No one of note here.'));
     }
     for (const npc of npcs) root.appendChild(buildRow(npc, gm));
 
@@ -140,14 +132,13 @@ export function mountNPCPanel(container, callbacks) {
 
   /** @param {() => Promise<unknown>} onAdd */
   function buildAddButton(onAdd) {
-    const addButton = document.createElement('button');
-    addButton.type = 'button';
-    addButton.className = 'btn';
-    addButton.append(icon('add'), document.createTextNode('New NPC'));
-    addButton.addEventListener('click', async () => {
-      if (await onAdd()) render();
-    });
-    return addButton;
+    return textButton(
+      'New NPC',
+      async () => {
+        if (await onAdd()) render();
+      },
+      { icon: 'add' },
+    );
   }
 
   render();

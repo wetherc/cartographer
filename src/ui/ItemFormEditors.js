@@ -93,8 +93,9 @@ export function buildDamageEditor(initial) {
 
     const addRider = document.createElement('button');
     addRider.type = 'button';
-    addRider.className = 'btn inventory-panel__damage-add';
-    addRider.textContent = '+ damage';
+    addRider.className = 'btn btn--icon inventory-panel__damage-add';
+    addRider.setAttribute('aria-label', 'Add damage term');
+    addRider.appendChild(icon('plus'));
     addRider.title = 'Add a permanent extra damage term (e.g. + 1d4 fire)';
     addRider.addEventListener('click', () => {
       damageParts.push({ count: 1, sides: 4, damageType: 'fire' });

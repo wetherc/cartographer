@@ -184,6 +184,25 @@ least once; new code should follow them rather than re-deciding locally:
   the affected thing named in the message (`Delete "Goblin camp"?`). Anything
   that throws away more state than one click created qualifies — including
   bulk variants (remove-all, clear) of otherwise safe single-step actions.
+- **Buttons and empty states build through `src/ui/buttons.js`, never by
+  hand.** `iconButton` and `textButton` own the `btn` class assembly, always
+  set an aria-label on icon-only buttons, and default the hover `title` to it —
+  the ~40 hand-rolled copies they replaced had drifted on exactly those
+  attributes. `emptyState(message)` is the one "nothing here" paragraph. A new
+  panel should have no `document.createElement('button')` of its own unless it
+  is genuinely a different control (a tab, a chip, a select-like row).
+- **Destructive controls are danger-styled and always visible.** A delete/
+  discard/clear button passes `variant: 'danger'` and is never hover-revealed —
+  hiding a destructive control until hover just makes it undiscoverable
+  without making it safer (the confirm dialog is the safety).
+- **Dismiss-left, primary-right, everywhere a dismiss exists.** Modals, inline
+  forms (`formFields.formActions`), the spell-detail action bar, and the
+  inventory give form all order Cancel/Close on the left and the affirmative
+  action on the right. A new form surface must not invent a third ordering.
+- **Damage is a sword, healing is a cross** (`icon('damage')`/`icon('heal')`),
+  wherever HP moves — the character sheet's steppers and the encounter panel's
+  amount buttons share the pair. Plus/minus is reserved for non-HP quantity
+  steppers (resources, counts).
 
 ## Testability pattern
 

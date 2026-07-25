@@ -1,7 +1,7 @@
 import { currentParticipant } from '../combat/Initiative.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { isGM } from '../view/ViewRole.js';
-import { icon } from './icons.js';
+import { iconButton, textButton } from './buttons.js';
 
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
 /** @typedef {import('../types/combat.js').Participant} Participant */
@@ -81,64 +81,72 @@ export function mountInitiativePanel(container, callbacks) {
         participant.side === 'foe' &&
         callbacks.onEnemyRoll
       ) {
-        const rollBtn = document.createElement('button');
-        rollBtn.type = 'button';
-        rollBtn.className = 'btn btn--icon';
-        rollBtn.setAttribute('aria-label', `Roll dice as ${participant.name}`);
-        rollBtn.title = `Roll the dice tray's selection as ${participant.name}`;
-        rollBtn.appendChild(icon('dice'));
-        rollBtn.addEventListener('click', () => callbacks.onEnemyRoll?.(participant));
-        row.appendChild(rollBtn);
+        row.appendChild(
+          iconButton(
+            'dice',
+            `Roll dice as ${participant.name}`,
+            () => callbacks.onEnemyRoll?.(participant),
+            { title: `Roll the dice tray's selection as ${participant.name}` },
+          ),
+        );
       }
       root.appendChild(row);
 
-      // On the active combatant's turn, their weapons line up under the row:
-      // one click rolls the attack against a defender's AC. `canAttack`
-      // decides who sees them — the GM for anyone (including foes), a player
-      // only for their bound character.
+      // On the active combatant's turn, their weapons line up under the row
+      // as one-click attack buttons, and a caster's known cantrips and
+      // prepared/known spells follow as Cast buttons — the same strip shape,
+      // differing only in icon, class, and labeling. `canAttack` decides who
+      // sees them — the GM for anyone (including foes), a player only for
+      // their bound character.
       const mayAttack = callbacks.canAttack ? callbacks.canAttack(participant) : gm;
-      if (active && i === state.index && callbacks.onWeaponAttack && mayAttack) {
-        const weapons = callbacks.getWeapons?.(participant) ?? [];
-        if (weapons.length > 0) {
-          const attacks = document.createElement('div');
-          attacks.className = 'initiative-panel__attacks';
-          for (const weapon of weapons) {
-            const attackBtn = document.createElement('button');
-            attackBtn.type = 'button';
-            attackBtn.className = 'btn initiative-panel__attack';
-            attackBtn.setAttribute('aria-label', `Attack with ${weapon.name}`);
-            attackBtn.title = `Roll an attack with ${weapon.name} (${formatDamage(weapon.damage ?? [])})`;
-            attackBtn.append(icon('sword'), document.createTextNode(weapon.name));
-            attackBtn.addEventListener('click', () =>
-              callbacks.onWeaponAttack?.(participant, weapon),
-            );
-            attacks.appendChild(attackBtn);
-          }
-          root.appendChild(attacks);
+      if (active && i === state.index && mayAttack) {
+        if (callbacks.onWeaponAttack) {
+          actionStrip(callbacks.getWeapons?.(participant) ?? [], {
+            icon: 'sword',
+            className: 'initiative-panel__attack',
+            ariaLabel: (weapon) => `Attack with ${weapon.name}`,
+            title: (weapon) =>
+              `Roll an attack with ${weapon.name} (${formatDamage(weapon.damage ?? [])})`,
+            onPick: (weapon) => callbacks.onWeaponAttack?.(participant, weapon),
+          });
         }
-      }
-
-      // A caster's known cantrips and prepared/known spells line up under the
-      // weapons as one-click Cast buttons, gated by the same `canAttack` rule.
-      if (active && i === state.index && callbacks.onCastSpell && mayAttack) {
-        const spells = callbacks.getSpells?.(participant) ?? [];
-        if (spells.length > 0) {
-          const casts = document.createElement('div');
-          casts.className = 'initiative-panel__attacks';
-          for (const spell of spells) {
-            const castBtn = document.createElement('button');
-            castBtn.type = 'button';
-            castBtn.className = 'btn initiative-panel__cast';
-            castBtn.setAttribute('aria-label', `Cast ${spell.name}`);
-            castBtn.title = `Cast ${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`})`;
-            castBtn.append(icon('sparkles'), document.createTextNode(spell.name));
-            castBtn.addEventListener('click', () => callbacks.onCastSpell?.(participant, spell));
-            casts.appendChild(castBtn);
-          }
-          root.appendChild(casts);
+        if (callbacks.onCastSpell) {
+          actionStrip(callbacks.getSpells?.(participant) ?? [], {
+            icon: 'sparkles',
+            className: 'initiative-panel__cast',
+            ariaLabel: (spell) => `Cast ${spell.name}`,
+            title: (spell) =>
+              `Cast ${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`})`,
+            onPick: (spell) => callbacks.onCastSpell?.(participant, spell),
+          });
         }
       }
     });
+
+    /**
+     * One strip of named action buttons under the active row; weapons and
+     * spells share it. Appends nothing when there are no items.
+     * @template T
+     * @param {(T & { name: string })[]} items
+     * @param {{ icon: import('./icons.js').IconName, className: string, ariaLabel: (item: T) => string,
+     *   title: (item: T) => string, onPick: (item: T) => void }} strip
+     */
+    function actionStrip(items, strip) {
+      if (items.length === 0) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'initiative-panel__attacks';
+      for (const item of items) {
+        wrap.appendChild(
+          textButton(item.name, () => strip.onPick(item), {
+            icon: strip.icon,
+            className: strip.className,
+            ariaLabel: strip.ariaLabel(item),
+            title: strip.title(item),
+          }),
+        );
+      }
+      root.appendChild(wrap);
+    }
 
     // Turn flow is the GM's to drive; a player tab just watches the order.
     if (!gm) return;
@@ -146,23 +154,23 @@ export function mountInitiativePanel(container, callbacks) {
     const actions = document.createElement('div');
     actions.className = 'initiative-panel__actions';
 
-    const next = document.createElement('button');
-    next.type = 'button';
-    next.className = 'btn btn--primary';
-    next.append(icon('chevron'), document.createTextNode('Next turn'));
-    next.addEventListener('click', () => {
-      callbacks.onNext();
-      render();
-    });
+    const next = textButton(
+      'Next turn',
+      () => {
+        callbacks.onNext();
+        render();
+      },
+      { icon: 'chevron', variant: 'primary' },
+    );
 
-    const end = document.createElement('button');
-    end.type = 'button';
-    end.className = 'btn';
-    end.append(icon('flag'), document.createTextNode('End combat'));
-    end.addEventListener('click', () => {
-      callbacks.onEnd();
-      render();
-    });
+    const end = textButton(
+      'End combat',
+      () => {
+        callbacks.onEnd();
+        render();
+      },
+      { icon: 'flag' },
+    );
 
     actions.append(next, end);
     root.appendChild(actions);

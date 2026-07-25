@@ -1,4 +1,5 @@
 import { icon } from './icons.js';
+import { iconButton } from './buttons.js';
 import { buildWorldTree } from '../map/WorldTree.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -83,33 +84,33 @@ export function mountWorldTree(container, opts) {
     row.appendChild(select);
 
     if (opts.onAddChild) {
-      const add = document.createElement('button');
-      add.type = 'button';
-      add.className = 'btn btn--icon world-tree__action';
-      add.setAttribute('aria-label', `Add a child under ${treeNode.node.name}`);
-      add.appendChild(icon('add'));
-      add.addEventListener('click', () => opts.onAddChild?.(treeNode.node.id));
-      row.appendChild(add);
+      row.appendChild(
+        iconButton(
+          'add',
+          `Add a child under ${treeNode.node.name}`,
+          () => opts.onAddChild?.(treeNode.node.id),
+          { className: 'world-tree__action' },
+        ),
+      );
     }
 
     if (opts.onEdit) {
-      const edit = document.createElement('button');
-      edit.type = 'button';
-      edit.className = 'btn btn--icon world-tree__action';
-      edit.setAttribute('aria-label', `Edit ${treeNode.node.name}`);
-      edit.appendChild(icon('edit'));
-      edit.addEventListener('click', () => opts.onEdit?.(treeNode.node.id));
-      row.appendChild(edit);
+      row.appendChild(
+        iconButton('edit', `Edit ${treeNode.node.name}`, () => opts.onEdit?.(treeNode.node.id), {
+          className: 'world-tree__action',
+        }),
+      );
     }
 
     if (opts.onDelete) {
-      const del = document.createElement('button');
-      del.type = 'button';
-      del.className = 'btn btn--icon btn--danger world-tree__action';
-      del.setAttribute('aria-label', `Delete ${treeNode.node.name}`);
-      del.appendChild(icon('remove'));
-      del.addEventListener('click', () => opts.onDelete?.(treeNode.node.id));
-      row.appendChild(del);
+      row.appendChild(
+        iconButton(
+          'remove',
+          `Delete ${treeNode.node.name}`,
+          () => opts.onDelete?.(treeNode.node.id),
+          { variant: 'danger', className: 'world-tree__action' },
+        ),
+      );
     }
 
     li.appendChild(row);

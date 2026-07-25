@@ -146,11 +146,13 @@ export function labeledButton(label, className) {
 export function formActions({ submitLabel, onSubmit, onCancel = null }) {
   const submit = labeledButton(submitLabel, 'btn btn--primary');
   submit.addEventListener('click', onSubmit);
-  const row = fieldRow(submit);
+  // Dismiss-left, primary-right — the same ordering as every modal.
+  const row = fieldRow();
   if (onCancel) {
     const cancel = labeledButton('Cancel', 'btn');
     cancel.addEventListener('click', onCancel);
     row.appendChild(cancel);
   }
+  row.appendChild(submit);
   return row;
 }

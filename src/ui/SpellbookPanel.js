@@ -9,6 +9,7 @@ import {
 } from '../entities/Character.js';
 import { isCasterClass, getClass, cantripLimit, preparedLimit } from '../entities/Classes.js';
 import { groupSpellsByLevel, spellStatus } from '../entities/SpellView.js';
+import { emptyState } from './buttons.js';
 import { promptSpellDetail } from './SpellDetail.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -189,13 +190,5 @@ function badge(text, kind) {
   const el = document.createElement('span');
   el.className = `spellbook__badge spellbook__badge--${kind}`;
   el.textContent = text;
-  return el;
-}
-
-/** @param {string} message @returns {HTMLElement} the panel's empty state. */
-function emptyState(message) {
-  const el = document.createElement('p');
-  el.className = 'empty-state';
-  el.textContent = message;
   return el;
 }

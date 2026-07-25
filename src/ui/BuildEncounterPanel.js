@@ -1,4 +1,4 @@
-import { icon } from './icons.js';
+import { iconButton, textButton, emptyState } from './buttons.js';
 import { mountStatBlockBar } from './StatBlockBar.js';
 import { formatDamage } from '../entities/Equipment.js';
 
@@ -41,36 +41,31 @@ export function mountBuildEncounterPanel(container, callbacks) {
     // scrolls, so staging another enemy never means scrolling past the roster.
     const actions = document.createElement('div');
     actions.className = 'panel-actions panel-actions--pinned';
-    const addButton = document.createElement('button');
-    addButton.type = 'button';
-    addButton.className = 'btn';
-    addButton.append(icon('add'), document.createTextNode('New encounter'));
-    addButton.addEventListener('click', async () => {
-      if (await callbacks.onAdd()) render();
-    });
+    const addButton = textButton(
+      'New encounter',
+      async () => {
+        if (await callbacks.onAdd()) render();
+      },
+      { icon: 'add' },
+    );
     actions.appendChild(addButton);
 
     // Spawning from a saved template (the campaign bestiary + the library)
     // sits beside New encounter — authoring belongs to the Build rail.
     const onAddFromTemplate = callbacks.onAddFromTemplate;
     if (onAddFromTemplate) {
-      const bestiaryButton = document.createElement('button');
-      bestiaryButton.type = 'button';
-      bestiaryButton.className = 'btn';
-      bestiaryButton.append(icon('scroll'), document.createTextNode('From bestiary'));
-      bestiaryButton.addEventListener('click', async () => {
-        if (await onAddFromTemplate()) render();
-      });
+      const bestiaryButton = textButton(
+        'From bestiary',
+        async () => {
+          if (await onAddFromTemplate()) render();
+        },
+        { icon: 'scroll' },
+      );
       actions.appendChild(bestiaryButton);
     }
     root.appendChild(actions);
 
-    if (encounters.length === 0) {
-      const empty = document.createElement('p');
-      empty.className = 'empty-state';
-      empty.textContent = 'No encounters on this map.';
-      root.appendChild(empty);
-    }
+    if (encounters.length === 0) root.appendChild(emptyState('No encounters on this map.'));
 
     for (const encounter of encounters) {
       const row = document.createElement('div');
@@ -95,25 +90,23 @@ export function mountBuildEncounterPanel(container, callbacks) {
       }
       label.textContent = text;
 
-      const editButton = document.createElement('button');
-      editButton.type = 'button';
-      editButton.className = 'btn btn--icon';
-      editButton.setAttribute('aria-label', `Edit ${encounter.name}`);
-      editButton.title = 'Edit';
-      editButton.appendChild(icon('edit'));
-      editButton.addEventListener('click', async () => {
-        if (await callbacks.onEdit(encounter)) render();
-      });
+      const editButton = iconButton(
+        'edit',
+        `Edit ${encounter.name}`,
+        async () => {
+          if (await callbacks.onEdit(encounter)) render();
+        },
+        { title: 'Edit' },
+      );
 
-      const deleteButton = document.createElement('button');
-      deleteButton.type = 'button';
-      deleteButton.className = 'btn btn--icon';
-      deleteButton.setAttribute('aria-label', `Delete ${encounter.name}`);
-      deleteButton.title = 'Delete';
-      deleteButton.appendChild(icon('remove'));
-      deleteButton.addEventListener('click', async () => {
-        if (await callbacks.onDelete(encounter)) render();
-      });
+      const deleteButton = iconButton(
+        'remove',
+        `Delete ${encounter.name}`,
+        async () => {
+          if (await callbacks.onDelete(encounter)) render();
+        },
+        { variant: 'danger', title: 'Delete' },
+      );
 
       const head = document.createElement('div');
       head.className = 'build-encounters__head';

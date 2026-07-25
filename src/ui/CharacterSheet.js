@@ -15,7 +15,7 @@ import { getSlotPools, isSlotPool, slotLevelOf } from '../entities/SpellSlots.js
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { buildSpellsSection } from './CharacterSpells.js';
-import { icon } from './icons.js';
+import { iconButton, textButton, emptyState } from './buttons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -194,10 +194,7 @@ export function mountCharacterSheet(
     // Captured non-null so listeners created below keep the narrowing.
     const character = current;
     if (!character) {
-      const empty = document.createElement('p');
-      empty.className = 'empty-state';
-      empty.textContent = 'No character selected.';
-      root.appendChild(empty);
+      root.appendChild(emptyState('No character selected.'));
       return;
     }
     const perms = getPermissions();
@@ -237,21 +234,19 @@ export function mountCharacterSheet(
       /** @type {{ before: HTMLElement, after: HTMLElement } | undefined} */
       let flank;
       if (perms.hp) {
-        const damageButton = document.createElement('button');
-        damageButton.type = 'button';
-        damageButton.className = 'btn btn--icon btn--danger character-sheet__hp-step';
-        damageButton.setAttribute('aria-label', `Damage ${character.name} by 1`);
-        damageButton.appendChild(icon('minus'));
         // Bonus HP absorbs the hit before the pool does.
-        damageButton.addEventListener('click', () => commit(damageCharacter(character, 1)));
-
-        const healButton = document.createElement('button');
-        healButton.type = 'button';
-        healButton.className = 'btn btn--icon btn--success character-sheet__hp-step';
-        healButton.setAttribute('aria-label', `Heal ${character.name} by 1`);
-        healButton.appendChild(icon('plus'));
-        healButton.addEventListener('click', () => commit(restoreResource(character, 'hp', 1)));
-
+        const damageButton = iconButton(
+          'damage',
+          `Damage ${character.name} by 1`,
+          () => commit(damageCharacter(character, 1)),
+          { variant: 'danger', className: 'character-sheet__hp-step' },
+        );
+        const healButton = iconButton(
+          'heal',
+          `Heal ${character.name} by 1`,
+          () => commit(restoreResource(character, 'hp', 1)),
+          { variant: 'success', className: 'character-sheet__hp-step' },
+        );
         flank = { before: damageButton, after: healButton };
       }
       // Reads "HP  - [bar] +  current/max +bonus": steppers hug the track,
@@ -341,14 +336,14 @@ export function mountCharacterSheet(
     if (perms.editBase) {
       const { row: xpRow, input: xpInput } = buildFieldRow('XP', 0, 'XP to add', () => {});
       xpRow.classList.add('character-sheet__xp-row');
-      const xpButton = document.createElement('button');
-      xpButton.type = 'button';
-      xpButton.className = 'btn';
-      xpButton.append(icon('add'), document.createTextNode('XP'));
-      xpButton.addEventListener('click', () => {
-        const amount = Number(xpInput.value);
-        if (amount > 0) commit(addXP(character, amount));
-      });
+      const xpButton = textButton(
+        'XP',
+        () => {
+          const amount = Number(xpInput.value);
+          if (amount > 0) commit(addXP(character, amount));
+        },
+        { icon: 'add' },
+      );
       xpRow.appendChild(xpButton);
       body.appendChild(xpRow);
     }
@@ -463,23 +458,20 @@ export function mountCharacterSheet(
         row.appendChild(label);
 
         if (perms.play) {
-          const spendButton = document.createElement('button');
-          spendButton.type = 'button';
-          spendButton.className = 'btn btn--icon btn--danger';
-          spendButton.setAttribute('aria-label', `Spend one ${pool.name}`);
-          spendButton.appendChild(icon('minus'));
-          spendButton.addEventListener('click', () => commit(spendResource(character, pool.id, 1)));
-
-          const restoreButton = document.createElement('button');
-          restoreButton.type = 'button';
-          restoreButton.className = 'btn btn--icon btn--success';
-          restoreButton.setAttribute('aria-label', `Restore one ${pool.name}`);
-          restoreButton.appendChild(icon('plus'));
-          restoreButton.addEventListener('click', () =>
-            commit(restoreResource(character, pool.id, 1)),
+          row.append(
+            iconButton(
+              'minus',
+              `Spend one ${pool.name}`,
+              () => commit(spendResource(character, pool.id, 1)),
+              { variant: 'danger' },
+            ),
+            iconButton(
+              'plus',
+              `Restore one ${pool.name}`,
+              () => commit(restoreResource(character, pool.id, 1)),
+              { variant: 'success' },
+            ),
           );
-
-          row.append(spendButton, restoreButton);
         }
         resources.appendChild(row);
       }

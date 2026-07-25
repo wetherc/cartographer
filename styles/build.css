@@ -89,15 +89,6 @@
   cursor: default;
 }
 
-.world-tree__action {
-  opacity: 0;
-}
-
-.world-tree__row:hover .world-tree__action,
-.world-tree__action:focus-visible {
-  opacity: 1;
-}
-
 /* Layout reflow by mode: Build shows the world tree, Play shows the sidebar. */
 body.mode-play .app-buildrail {
   display: none;

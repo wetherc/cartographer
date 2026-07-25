@@ -1,4 +1,4 @@
-import { icon } from './icons.js';
+import { iconButton, textButton, emptyState } from './buttons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -44,10 +44,7 @@ export function mountCharacterRoster(container, options) {
     const selectedId = options.getSelectedId();
 
     if (characters.length === 0) {
-      const empty = document.createElement('p');
-      empty.className = 'empty-state';
-      empty.textContent = 'No characters yet.';
-      root.appendChild(empty);
+      root.appendChild(emptyState('No characters yet.'));
     }
 
     for (const character of characters) {
@@ -66,22 +63,21 @@ export function mountCharacterRoster(container, options) {
 
       row.appendChild(select);
       if (canManage() && options.onPlace && (options.canPlace?.() ?? true)) {
-        const place = document.createElement('button');
-        place.type = 'button';
-        place.className = 'btn btn--icon character-roster__place';
-        place.setAttribute('aria-label', `Place ${character.name} on the map`);
-        place.title = 'Place on map';
-        place.appendChild(icon('map'));
-        place.addEventListener('click', () => options.onPlace?.(character.id));
+        const place = iconButton(
+          'map',
+          `Place ${character.name} on the map`,
+          () => options.onPlace?.(character.id),
+          { className: 'character-roster__place', title: 'Place on map' },
+        );
         row.appendChild(place);
       }
       if (canManage()) {
-        const del = document.createElement('button');
-        del.type = 'button';
-        del.className = 'btn btn--icon character-roster__delete';
-        del.setAttribute('aria-label', `Delete ${character.name}`);
-        del.appendChild(icon('remove'));
-        del.addEventListener('click', () => options.onDelete(character.id));
+        const del = iconButton(
+          'remove',
+          `Delete ${character.name}`,
+          () => options.onDelete(character.id),
+          { variant: 'danger', className: 'character-roster__delete' },
+        );
         row.appendChild(del);
       }
       root.appendChild(row);
@@ -92,19 +88,17 @@ export function mountCharacterRoster(container, options) {
     const actions = document.createElement('div');
     actions.className = 'panel-actions';
 
-    const add = document.createElement('button');
-    add.type = 'button';
-    add.className = 'btn character-roster__add';
-    add.append(icon('add'), document.createTextNode('New character'));
-    add.addEventListener('click', () => options.onAdd());
+    const add = textButton('New character', () => options.onAdd(), {
+      icon: 'add',
+      className: 'character-roster__add',
+    });
     actions.appendChild(add);
 
     if (options.onAwardXP && characters.length > 0) {
-      const award = document.createElement('button');
-      award.type = 'button';
-      award.className = 'btn character-roster__award';
-      award.append(icon('sparkles'), document.createTextNode('Award XP'));
-      award.addEventListener('click', () => options.onAwardXP?.());
+      const award = textButton('Award XP', () => options.onAwardXP?.(), {
+        icon: 'sparkles',
+        className: 'character-roster__award',
+      });
       actions.appendChild(award);
     }
 

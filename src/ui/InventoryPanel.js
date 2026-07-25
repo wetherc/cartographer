@@ -1,5 +1,6 @@
 import { addItem } from '../entities/Character.js';
 import { ITEM_TYPES, filterItems } from '../entities/Equipment.js';
+import { emptyState } from './buttons.js';
 import { buildItemForm } from './ItemForm.js';
 import { buildEquipment } from './InventoryEquipment.js';
 import { buildRow } from './InventoryRows.js';
@@ -154,10 +155,9 @@ export function mountInventoryPanel(
         sort: sortKey,
       });
       if (visible.length === 0) {
-        const empty = document.createElement('p');
-        empty.className = 'empty-state';
-        empty.textContent = character.inventory.length === 0 ? 'No items yet.' : 'No items match.';
-        list.appendChild(empty);
+        list.appendChild(
+          emptyState(character.inventory.length === 0 ? 'No items yet.' : 'No items match.'),
+        );
         return;
       }
       for (const item of visible) list.appendChild(buildRow(character, item, playable, rowContext));
@@ -204,10 +204,7 @@ export function mountInventoryPanel(
     const character = current;
     if (!character) {
       for (const host of [equipmentHost, inventoryHost]) {
-        const empty = document.createElement('p');
-        empty.className = 'empty-state';
-        empty.textContent = 'No character selected.';
-        host.appendChild(empty);
+        host.appendChild(emptyState('No character selected.'));
       }
       return;
     }

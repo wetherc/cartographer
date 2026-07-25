@@ -1,4 +1,4 @@
-import { icon } from './icons.js';
+import { emptyState, iconButton, textButton } from './buttons.js';
 import { isGM } from '../view/ViewRole.js';
 
 /** @typedef {import('../types/handout.js').Handout} Handout */
@@ -40,43 +40,34 @@ export function mountHandoutPanel(container, callbacks) {
     const head = document.createElement('div');
     head.className = 'handout-panel__head';
 
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'btn btn--icon';
-    toggle.setAttribute(
-      'aria-label',
+    const toggle = iconButton(
+      handout.revealed ? 'eye' : 'eye-off',
       handout.revealed
         ? `Hide ${handout.title} from players`
         : `Reveal ${handout.title} to players`,
+      () => {
+        callbacks.onToggle(handout);
+        render();
+      },
     );
     toggle.setAttribute('aria-pressed', String(handout.revealed));
-    toggle.appendChild(icon(handout.revealed ? 'eye' : 'eye-off'));
-    toggle.addEventListener('click', () => {
-      callbacks.onToggle(handout);
-      render();
-    });
 
     const title = document.createElement('span');
     title.className = 'handout-panel__title';
     title.textContent = handout.title;
 
-    const editButton = document.createElement('button');
-    editButton.type = 'button';
-    editButton.className = 'btn btn--icon';
-    editButton.setAttribute('aria-label', `Edit ${handout.title}`);
-    editButton.appendChild(icon('edit'));
-    editButton.addEventListener('click', async () => {
+    const editButton = iconButton('edit', `Edit ${handout.title}`, async () => {
       if (await callbacks.onEdit(handout)) render();
     });
 
-    const deleteButton = document.createElement('button');
-    deleteButton.type = 'button';
-    deleteButton.className = 'btn btn--icon';
-    deleteButton.setAttribute('aria-label', `Delete ${handout.title}`);
-    deleteButton.appendChild(icon('remove'));
-    deleteButton.addEventListener('click', async () => {
-      if (await callbacks.onDelete(handout.id)) render();
-    });
+    const deleteButton = iconButton(
+      'remove',
+      `Delete ${handout.title}`,
+      async () => {
+        if (await callbacks.onDelete(handout.id)) render();
+      },
+      { variant: 'danger' },
+    );
 
     head.append(toggle, title, editButton, deleteButton);
     row.appendChild(head);
@@ -129,10 +120,7 @@ export function mountHandoutPanel(container, callbacks) {
     if (!gm) {
       const shown = callbacks.getHandouts().filter((h) => h.revealed);
       if (shown.length === 0) {
-        const empty = document.createElement('p');
-        empty.className = 'empty-state';
-        empty.textContent = 'Nothing to show yet.';
-        root.appendChild(empty);
+        root.appendChild(emptyState('Nothing to show yet.'));
         return;
       }
       for (const handout of shown) root.appendChild(buildPlayerRow(handout));
@@ -141,20 +129,17 @@ export function mountHandoutPanel(container, callbacks) {
 
     const handouts = callbacks.getHandouts();
     if (handouts.length === 0) {
-      const empty = document.createElement('p');
-      empty.className = 'empty-state';
-      empty.textContent = 'No handouts here.';
-      root.appendChild(empty);
+      root.appendChild(emptyState('No handouts here.'));
     }
     for (const handout of handouts) root.appendChild(buildRow(handout));
 
-    const addButton = document.createElement('button');
-    addButton.type = 'button';
-    addButton.className = 'btn handout-panel__add';
-    addButton.append(icon('add'), document.createTextNode('New handout'));
-    addButton.addEventListener('click', async () => {
-      if (await callbacks.onAdd()) render();
-    });
+    const addButton = textButton(
+      'New handout',
+      async () => {
+        if (await callbacks.onAdd()) render();
+      },
+      { icon: 'add', className: 'handout-panel__add' },
+    );
     root.appendChild(addButton);
   }
 

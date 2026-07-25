@@ -166,15 +166,6 @@
   font-weight: 700;
 }
 
-.character-roster__delete {
-  opacity: 0;
-}
-
-.character-roster__row:hover .character-roster__delete,
-.character-roster__delete:focus-visible {
-  opacity: 1;
-}
-
 .character-roster__add,
 .character-roster__award {
   font-size: var(--text-label);

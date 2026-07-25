@@ -1,7 +1,7 @@
 import { removeItem, updateItem } from '../entities/Character.js';
 import { itemType, itemEffects } from '../entities/Equipment.js';
 import { buildItemForm } from './ItemForm.js';
-import { icon } from './icons.js';
+import { iconButton, textButton } from './buttons.js';
 import { confirmModal } from './Modal.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -103,70 +103,57 @@ export function buildRow(character, item, playable, ctx) {
   if (!playable) return row;
 
   if (canEdit()) {
-    const editButton = document.createElement('button');
-    editButton.type = 'button';
-    editButton.className = 'btn btn--icon';
-    editButton.setAttribute('aria-label', `Edit ${item.name}`);
-    editButton.appendChild(icon('edit'));
-    editButton.addEventListener('click', () => {
-      view.editingId = item.id;
-      view.givingId = null;
-      render();
-    });
-    row.appendChild(editButton);
+    row.appendChild(
+      iconButton('edit', `Edit ${item.name}`, () => {
+        view.editingId = item.id;
+        view.givingId = null;
+        render();
+      }),
+    );
   }
 
   // Hand-off to another party member; only offered when someone else exists
   // to receive. The give form opens inline under the row.
   const recipients = transfer ? transfer.recipients().filter((r) => r.id !== character.id) : [];
   if (recipients.length > 0) {
-    const giveButton = document.createElement('button');
-    giveButton.type = 'button';
-    giveButton.className = 'btn btn--icon';
-    giveButton.setAttribute('aria-label', `Give ${item.name} to another character`);
-    giveButton.appendChild(icon('give'));
-    giveButton.addEventListener('click', () => {
-      view.givingId = view.givingId === item.id ? null : item.id;
-      view.editingId = null;
-      render();
-    });
-    row.appendChild(giveButton);
+    row.appendChild(
+      iconButton('give', `Give ${item.name} to another character`, () => {
+        view.givingId = view.givingId === item.id ? null : item.id;
+        view.editingId = null;
+        render();
+      }),
+    );
   }
 
   // Present even on 1-stacks: consuming the last of an item and discarding
   // it are the same state change but different travelogue lines.
-  const consumeButton = document.createElement('button');
-  consumeButton.type = 'button';
-  consumeButton.className = 'btn btn--icon';
-  consumeButton.setAttribute('aria-label', `Consume one ${item.name}`);
-  consumeButton.appendChild(icon('minus'));
-  consumeButton.addEventListener('click', () =>
+  const consumeButton = iconButton('minus', `Consume one ${item.name}`, () =>
     commit(removeItem(character, item.id, 1), { verb: 'use', itemName: item.name, count: 1 }),
   );
   row.appendChild(consumeButton);
 
-  const removeButton = document.createElement('button');
-  removeButton.type = 'button';
-  removeButton.className = 'btn btn--icon btn--danger';
-  removeButton.setAttribute('aria-label', `Remove all ${item.name}`);
-  removeButton.appendChild(icon('remove'));
-  removeButton.addEventListener('click', async () => {
-    // Discarding one item is as recoverable as consuming it; a multi-stack
-    // discard destroys state the GM cannot rebuild with one click, so it
-    // gets the same confirm treatment as every other destructive action.
-    if (item.quantity > 1) {
-      const ok = await confirmModal(`Discard all ${item.quantity} ${item.name}?`, {
-        danger: true,
-        confirmLabel: 'Discard',
+  const removeButton = iconButton(
+    'remove',
+    `Remove all ${item.name}`,
+    async () => {
+      // Discarding one item is as recoverable as consuming it; a multi-stack
+      // discard destroys state the GM cannot rebuild with one click, so it
+      // gets the same confirm treatment as every other destructive action.
+      if (item.quantity > 1) {
+        const ok = await confirmModal(`Discard all ${item.quantity} ${item.name}?`, {
+          danger: true,
+          confirmLabel: 'Discard',
+        });
+        if (!ok) return;
+      }
+      commit(removeItem(character, item.id, item.quantity), {
+        verb: 'discard',
+        itemName: item.name,
+        count: item.quantity,
       });
-      if (!ok) return;
-    }
-    commit(removeItem(character, item.id, item.quantity), {
-      verb: 'discard',
-      itemName: item.name,
-      count: item.quantity,
-    });
-  });
+    },
+    { variant: 'danger' },
+  );
   row.appendChild(removeButton);
   if (item.id !== view.givingId || recipients.length === 0) return row;
 
@@ -209,25 +196,18 @@ function buildGiveForm(item, recipients, { view, render, transfer }) {
   // A 1-stack has nothing to choose; skip the input and give the one.
   countInput.hidden = item.quantity === 1;
 
-  const giveButton = document.createElement('button');
-  giveButton.type = 'button';
-  giveButton.className = 'btn';
-  giveButton.textContent = 'Give';
-  giveButton.addEventListener('click', () => {
+  const giveButton = textButton('Give', () => {
     const count = Math.min(item.quantity, Math.max(1, Math.floor(Number(countInput.value)) || 1));
     view.givingId = null;
     transfer?.send(item, count, recipientSelect.value);
   });
 
-  const cancelButton = document.createElement('button');
-  cancelButton.type = 'button';
-  cancelButton.className = 'btn';
-  cancelButton.textContent = 'Cancel';
-  cancelButton.addEventListener('click', () => {
+  const cancelButton = textButton('Cancel', () => {
     view.givingId = null;
     render();
   });
 
-  form.append(recipientSelect, countInput, giveButton, cancelButton);
+  // Dismiss-left, affirmative-right — the same ordering as every modal.
+  form.append(recipientSelect, countInput, cancelButton, giveButton);
   return form;
 }

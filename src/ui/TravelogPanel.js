@@ -1,4 +1,4 @@
-import { icon } from './icons.js';
+import { textButton, emptyState } from './buttons.js';
 import { entriesAfter, TRAVELOG_LIMIT } from '../log/Travelogue.js';
 
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
@@ -44,20 +44,18 @@ export function mountTravelogPanel(container, callbacks) {
   const root = document.createElement('div');
   root.className = 'travelog';
 
-  const empty = document.createElement('p');
-  empty.className = 'empty-state';
-  empty.textContent = 'No events logged yet.';
+  const empty = emptyState('No events logged yet.');
 
   const list = document.createElement('ul');
   list.className = 'travelog__list';
 
-  const clearButton = document.createElement('button');
-  clearButton.type = 'button';
-  clearButton.className = 'btn travelog__clear';
-  clearButton.append(icon('remove'), document.createTextNode('Clear log'));
-  clearButton.addEventListener('click', async () => {
-    if (await callbacks.onClear()) update();
-  });
+  const clearButton = textButton(
+    'Clear log',
+    async () => {
+      if (await callbacks.onClear()) update();
+    },
+    { icon: 'remove', variant: 'danger', className: 'travelog__clear' },
+  );
 
   root.append(empty, list, clearButton);
   container.appendChild(root);

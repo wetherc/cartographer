@@ -118,8 +118,15 @@ export function promptSpellDetail(spell, actions, options = {}) {
       dialog.appendChild(description);
     }
 
+    // Dismiss-left, primary-right — the same ordering as every modal.
     const bar = document.createElement('div');
     bar.className = 'modal__actions';
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'btn';
+    close.textContent = 'Close';
+    close.addEventListener('click', () => dialog.close('close'));
+    bar.appendChild(close);
     for (const action of actions) {
       const button = document.createElement('button');
       button.type = 'button';
@@ -128,12 +135,6 @@ export function promptSpellDetail(spell, actions, options = {}) {
       button.addEventListener('click', () => dialog.close(action.id));
       bar.appendChild(button);
     }
-    const close = document.createElement('button');
-    close.type = 'button';
-    close.className = 'btn';
-    close.textContent = 'Close';
-    close.addEventListener('click', () => dialog.close('close'));
-    bar.appendChild(close);
     dialog.appendChild(bar);
 
     document.body.appendChild(dialog);
@@ -145,6 +146,6 @@ export function promptSpellDetail(spell, actions, options = {}) {
     });
 
     dialog.showModal();
-    /** @type {HTMLElement} */ (actions.length ? bar.firstElementChild : close).focus();
+    /** @type {HTMLElement} */ (actions.length ? bar.lastElementChild : close).focus();
   });
 }

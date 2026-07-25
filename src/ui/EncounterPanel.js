@@ -1,7 +1,7 @@
 import { addStatModifier, applyDamage, heal, isDefeated } from '../entities/Encounter.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { mountStatBlockBar } from './StatBlockBar.js';
-import { icon } from './icons.js';
+import { iconButton, textButton, emptyState } from './buttons.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
 
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
@@ -102,55 +102,53 @@ export function mountEncounterPanel(container, callbacks) {
     amountInput.className = 'field encounter-panel__amount';
     amountInput.setAttribute('aria-label', `Damage/heal amount for ${encounter.name}`);
 
-    const damageButton = document.createElement('button');
-    damageButton.type = 'button';
-    damageButton.className = 'btn btn--icon btn--danger';
-    damageButton.setAttribute('aria-label', `Damage ${encounter.name}`);
-    damageButton.appendChild(icon('damage'));
-    damageButton.addEventListener('click', () => {
-      updateOne(encounter, (e) => applyDamage(e, Number(amountInput.value)));
-    });
+    const damageButton = iconButton(
+      'damage',
+      `Damage ${encounter.name}`,
+      () => {
+        updateOne(encounter, (e) => applyDamage(e, Number(amountInput.value)));
+      },
+      { variant: 'danger' },
+    );
 
-    const healButton = document.createElement('button');
-    healButton.type = 'button';
-    healButton.className = 'btn btn--icon btn--success';
-    healButton.setAttribute('aria-label', `Heal ${encounter.name}`);
-    healButton.appendChild(icon('heal'));
-    healButton.addEventListener('click', () => {
-      updateOne(encounter, (e) => heal(e, Number(amountInput.value)));
-    });
+    const healButton = iconButton(
+      'heal',
+      `Heal ${encounter.name}`,
+      () => {
+        updateOne(encounter, (e) => heal(e, Number(amountInput.value)));
+      },
+      { variant: 'success' },
+    );
 
     // The full edit dialog (name, HP, level/tier, and crucially placement),
     // so relocating an encounter doesn't mean deleting and recreating it.
-    const editButton = document.createElement('button');
-    editButton.type = 'button';
-    editButton.className = 'btn btn--icon';
-    editButton.setAttribute('aria-label', `Edit ${encounter.name}`);
-    editButton.title = 'Edit';
-    editButton.appendChild(icon('edit'));
-    editButton.addEventListener('click', async () => {
-      if (await callbacks.onEdit?.(encounter)) render();
-    });
+    const editButton = iconButton(
+      'edit',
+      `Edit ${encounter.name}`,
+      async () => {
+        if (await callbacks.onEdit?.(encounter)) render();
+      },
+      { title: 'Edit' },
+    );
 
-    const templateButton = document.createElement('button');
-    templateButton.type = 'button';
-    templateButton.className = 'btn btn--icon';
-    templateButton.setAttribute('aria-label', `Save ${encounter.name} as a bestiary template`);
-    templateButton.title = 'Save as template';
-    templateButton.appendChild(icon('save'));
-    templateButton.addEventListener('click', () => callbacks.onSaveTemplate?.(encounter));
+    const templateButton = iconButton(
+      'save',
+      `Save ${encounter.name} as a bestiary template`,
+      () => callbacks.onSaveTemplate?.(encounter),
+      { title: 'Save as template' },
+    );
 
-    const deleteButton = document.createElement('button');
-    deleteButton.type = 'button';
-    deleteButton.className = 'btn btn--icon';
-    deleteButton.setAttribute('aria-label', `Delete ${encounter.name}`);
-    deleteButton.appendChild(icon('remove'));
-    deleteButton.addEventListener('click', async () => {
-      const ok = callbacks.confirmDelete ? await callbacks.confirmDelete(encounter) : true;
-      if (!ok) return;
-      callbacks.onDelete(encounter.id);
-      render();
-    });
+    const deleteButton = iconButton(
+      'remove',
+      `Delete ${encounter.name}`,
+      async () => {
+        const ok = callbacks.confirmDelete ? await callbacks.confirmDelete(encounter) : true;
+        if (!ok) return;
+        callbacks.onDelete(encounter.id);
+        render();
+      },
+      { variant: 'danger' },
+    );
 
     const head = document.createElement('div');
     head.className = 'encounter-panel__head';
@@ -189,23 +187,18 @@ export function mountEncounterPanel(container, callbacks) {
    */
   function buildActivePanel(active, gm) {
     const panel = document.createElement('div');
-    if (active.length === 0) {
-      const empty = document.createElement('p');
-      empty.className = 'empty-state';
-      empty.textContent = 'No active encounter.';
-      panel.appendChild(empty);
-    }
+    if (active.length === 0) panel.appendChild(emptyState('No active encounter.'));
     for (const encounter of active) panel.appendChild(buildRow(encounter, gm));
 
     const onStartCombat = callbacks.onStartCombat;
     if (onStartCombat && gm && (callbacks.canStartCombat?.() ?? true)) {
       const actions = document.createElement('div');
       actions.className = 'panel-actions';
-      const startButton = document.createElement('button');
-      startButton.type = 'button';
-      startButton.className = 'btn btn--primary encounter-panel__start-combat';
-      startButton.append(icon('sword'), document.createTextNode('Start combat'));
-      startButton.addEventListener('click', () => onStartCombat());
+      const startButton = textButton('Start combat', () => onStartCombat(), {
+        icon: 'sword',
+        variant: 'primary',
+        className: 'encounter-panel__start-combat',
+      });
       actions.appendChild(startButton);
       panel.appendChild(actions);
     }
@@ -221,12 +214,7 @@ export function mountEncounterPanel(container, callbacks) {
    */
   function buildNearbyPanel(nearby, gm) {
     const panel = document.createElement('div');
-    if (nearby.length === 0) {
-      const empty = document.createElement('p');
-      empty.className = 'empty-state';
-      empty.textContent = 'No encounters nearby.';
-      panel.appendChild(empty);
-    }
+    if (nearby.length === 0) panel.appendChild(emptyState('No encounters nearby.'));
     for (const encounter of nearby) panel.appendChild(buildRow(encounter, gm));
 
     const actions = document.createElement('div');
@@ -234,27 +222,27 @@ export function mountEncounterPanel(container, callbacks) {
 
     const onAdd = callbacks.onAdd;
     if (onAdd && gm) {
-      const addButton = document.createElement('button');
-      addButton.type = 'button';
-      addButton.className = 'btn encounter-panel__add';
-      addButton.append(icon('add'), document.createTextNode('New encounter'));
-      addButton.addEventListener('click', async () => {
-        // The caller creates and stores the encounter; a non-null return just
-        // signals that the visible list may have changed.
-        if (await onAdd()) render();
-      });
+      // The caller creates and stores the encounter; a non-null return just
+      // signals that the visible list may have changed.
+      const addButton = textButton(
+        'New encounter',
+        async () => {
+          if (await onAdd()) render();
+        },
+        { icon: 'add', className: 'encounter-panel__add' },
+      );
       actions.appendChild(addButton);
     }
 
     const onAddFromTemplate = callbacks.onAddFromTemplate;
     if (onAddFromTemplate && gm) {
-      const bestiaryButton = document.createElement('button');
-      bestiaryButton.type = 'button';
-      bestiaryButton.className = 'btn encounter-panel__add';
-      bestiaryButton.append(icon('scroll'), document.createTextNode('From bestiary'));
-      bestiaryButton.addEventListener('click', async () => {
-        if (await onAddFromTemplate()) render();
-      });
+      const bestiaryButton = textButton(
+        'From bestiary',
+        async () => {
+          if (await onAddFromTemplate()) render();
+        },
+        { icon: 'scroll', className: 'encounter-panel__add' },
+      );
       actions.appendChild(bestiaryButton);
     }
 

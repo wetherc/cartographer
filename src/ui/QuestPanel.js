@@ -1,4 +1,5 @@
 import { groupByStatus } from '../quest/Quests.js';
+import { iconButton, textButton, emptyState } from './buttons.js';
 import { icon } from './icons.js';
 import { isGM } from '../view/ViewRole.js';
 
@@ -41,18 +42,17 @@ export function mountQuestPanel(container, callbacks) {
     /** @type {HTMLElement} */
     let toggle;
     if (gm) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn btn--icon';
-      btn.setAttribute('aria-label', done ? `Reopen ${quest.title}` : `Complete ${quest.title}`);
-      btn.setAttribute('aria-pressed', String(done));
       // A completed quest's toggle shows a check; an active one shows a plus to
       // add/mark-done, so the glyph tracks the quest's state.
-      btn.appendChild(icon(done ? 'check' : 'add'));
-      btn.addEventListener('click', () => {
-        callbacks.onToggle(quest);
-        render();
-      });
+      const btn = iconButton(
+        done ? 'check' : 'add',
+        done ? `Reopen ${quest.title}` : `Complete ${quest.title}`,
+        () => {
+          callbacks.onToggle(quest);
+          render();
+        },
+      );
+      btn.setAttribute('aria-pressed', String(done));
       toggle = btn;
     } else {
       // Players see the status glyph without the affordance to flip it.
@@ -79,23 +79,18 @@ export function mountQuestPanel(container, callbacks) {
       return row;
     }
 
-    const editButton = document.createElement('button');
-    editButton.type = 'button';
-    editButton.className = 'btn btn--icon';
-    editButton.setAttribute('aria-label', `Edit ${quest.title}`);
-    editButton.appendChild(icon('edit'));
-    editButton.addEventListener('click', async () => {
+    const editButton = iconButton('edit', `Edit ${quest.title}`, async () => {
       if (await callbacks.onEdit(quest)) render();
     });
 
-    const deleteButton = document.createElement('button');
-    deleteButton.type = 'button';
-    deleteButton.className = 'btn btn--icon';
-    deleteButton.setAttribute('aria-label', `Delete ${quest.title}`);
-    deleteButton.appendChild(icon('remove'));
-    deleteButton.addEventListener('click', async () => {
-      if (await callbacks.onDelete(quest.id)) render();
-    });
+    const deleteButton = iconButton(
+      'remove',
+      `Delete ${quest.title}`,
+      async () => {
+        if (await callbacks.onDelete(quest.id)) render();
+      },
+      { variant: 'danger' },
+    );
 
     row.append(toggle, body, editButton, deleteButton);
     return row;
@@ -119,10 +114,7 @@ export function mountQuestPanel(container, callbacks) {
     const quests = callbacks.getQuests();
 
     if (quests.length === 0) {
-      const empty = document.createElement('p');
-      empty.className = 'empty-state';
-      empty.textContent = 'No quests yet.';
-      root.appendChild(empty);
+      root.appendChild(emptyState('No quests yet.'));
     } else {
       const { active, completed } = groupByStatus(quests);
       if (active.length > 0) root.appendChild(buildGroup('Active', active, gm));
@@ -130,13 +122,13 @@ export function mountQuestPanel(container, callbacks) {
     }
 
     if (!gm) return;
-    const addButton = document.createElement('button');
-    addButton.type = 'button';
-    addButton.className = 'btn quest-panel__add';
-    addButton.append(icon('add'), document.createTextNode('New quest'));
-    addButton.addEventListener('click', async () => {
-      if (await callbacks.onAdd()) render();
-    });
+    const addButton = textButton(
+      'New quest',
+      async () => {
+        if (await callbacks.onAdd()) render();
+      },
+      { icon: 'add', className: 'quest-panel__add' },
+    );
     root.appendChild(addButton);
   }
 
