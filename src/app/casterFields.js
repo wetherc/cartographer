@@ -1,4 +1,4 @@
-import { CLASS_LIST, isCasterClass } from '../entities/Classes.js';
+import { CLASS_LIST, isCasterClass, getClass, slotsForClass } from '../entities/Classes.js';
 import { activeSpells, activeSpellIndex } from '../library/Library.js';
 import { emptySpellbook } from '../entities/Character.js';
 
@@ -22,13 +22,42 @@ export function casterClassOptions() {
 }
 
 /**
- * Every library spell as a multiselect option, ordered by level then name and
- * labelled with its level (cantrips first). The value is the spell id, so the
- * multiselect's comma-joined result is a set of spell ids.
+ * The highest spell level a class can cast at a caster level, so the picker
+ * hides spells the caster couldn't slot. Read from the class's slot table
+ * (its length is the top slot level); pact casters (Warlock) have no table
+ * entry, so their pact-slot progression — one spell level every two caster
+ * levels, capping at 5 — is computed directly. 0 for a non-caster or unknown
+ * class (and, e.g., a level-1 half-caster with no slots yet).
+ * @param {string | undefined | null} classId
+ * @param {number} casterLevel
+ * @returns {number}
+ */
+export function maxSpellLevelForClass(classId, casterLevel) {
+  const def = getClass(classId);
+  if (!def || def.casterType === 'none') return 0;
+  const level = Math.max(1, Math.floor(casterLevel) || 1);
+  const slots = slotsForClass(classId, level);
+  if (slots.length > 0) return slots.length;
+  if (def.casterType === 'pact') return Math.min(5, Math.ceil(level / 2));
+  return 0;
+}
+
+/**
+ * Library spells as multiselect options, ordered by level then name and
+ * labelled with their level (cantrips first). The value is the spell id, so the
+ * multiselect's comma-joined result is a set of spell ids. A caster class
+ * filters the list to that class's spell list and the spell levels it can slot
+ * at `casterLevel`; with no caster class (None/non-caster) the whole library is
+ * offered, since the field is discarded downstream anyway.
+ * @param {string} [classId]
+ * @param {number} [casterLevel]
  * @returns {{ value: string, label: string }[]}
  */
-export function spellPickerOptions() {
+export function spellPickerOptions(classId = '', casterLevel = 1) {
+  const filtered = isCasterClass(classId);
+  const max = filtered ? maxSpellLevelForClass(classId, casterLevel) : 0;
   return activeSpells()
+    .filter((s) => !filtered || (s.classes.includes(classId) && s.level <= max))
     .slice()
     .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name))
     .map((s) => ({
@@ -77,7 +106,9 @@ export function casterFields(seed) {
       type: 'multiselect',
       value: spellbookIds(seed?.spellbook).join(','),
       full: true,
-      options: spellPickerOptions(),
+      // Seed the list filtered to the seed's class/level; the dialog's onChange
+      // refilters it live as the caster class or level change.
+      options: spellPickerOptions(seed?.class ?? '', seed?.casterLevel ?? seed?.level ?? 1),
     },
   ];
 }

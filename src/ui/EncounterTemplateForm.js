@@ -102,14 +102,30 @@ export function buildEncounterTemplateForm({
   // and a spellbook so a spawned foe can cast. "None" keeps it a plain fighter.
   const classSelect = select(casterClassOptions(), template?.class ?? '');
   const casterLevelInput = numberField(template?.casterLevel ?? template?.level ?? 1, { min: 1 });
-  const preselectedSpells = new Set(spellbookIds(template?.spellbook));
-  const spellChecks = spellPickerOptions().map((option) => ({
-    id: option.value,
-    ...checkbox(option.label, preselectedSpells.has(option.value)),
-  }));
   const spellBox = document.createElement('div');
   spellBox.className = 'inventory-panel__spell-picker';
-  for (const { label } of spellChecks) spellBox.appendChild(label);
+  /** @type {{ id: string, label: HTMLElement, input: HTMLInputElement }[]} */
+  let spellChecks = [];
+  // Rebuild the spell checkboxes filtered to the current caster class and
+  // level, keeping `selected` checked. Rebuilt live when either changes.
+  function renderSpellChecks(/** @type {Set<string>} */ selected) {
+    spellChecks = spellPickerOptions(
+      classSelect.value,
+      Math.max(1, Number(casterLevelInput.value) || 1),
+    ).map((option) => ({
+      id: option.value,
+      ...checkbox(option.label, selected.has(option.value)),
+    }));
+    spellBox.textContent = '';
+    for (const { label } of spellChecks) spellBox.appendChild(label);
+  }
+  renderSpellChecks(new Set(spellbookIds(template?.spellbook)));
+  const refilterSpells = () =>
+    renderSpellChecks(
+      new Set(spellChecks.filter(({ input }) => input.checked).map(({ id }) => id)),
+    );
+  classSelect.addEventListener('change', refilterSpells);
+  casterLevelInput.addEventListener('change', refilterSpells);
 
   // The stat block: one number field per key, pre-filled from the template or
   // the tier's level-appropriate defaults.

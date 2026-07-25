@@ -20,7 +20,7 @@
  * @param {{
  *   submitLabel?: string,
  *   wide?: boolean,
- *   onChange?: (name: string, form: { get: (name: string) => string, set: (name: string, value: string | number) => void }) => void,
+ *   onChange?: (name: string, form: { get: (name: string) => string, set: (name: string, value: string | number) => void, setOptions: (name: string, options: { value: string, label: string }[]) => void }) => void,
  * }} [options]
  * @returns {Promise<Record<string, string> | null>}
  */
@@ -47,6 +47,10 @@ export function promptModal(title, fields, options = {}) {
      * than the input's fakepath value. */
     /** @type {Record<string, () => string>} */
     const getters = {};
+    /** Option rebuilders per multiselect field, so onChange can refilter a
+     * checkbox group in place (preserving what's checked). */
+    /** @type {Record<string, (options: { value: string, label: string }[]) => void>} */
+    const rebuilders = {};
     for (const field of fields) {
       const label = document.createElement('label');
       label.className = field.full ? 'modal__field modal__field--full' : 'modal__field';
@@ -87,30 +91,44 @@ export function promptModal(title, fields, options = {}) {
         // Preselect from a comma-joined `value`.
         const box = document.createElement('div');
         box.className = 'field modal__multiselect';
-        const preselected = new Set(
-          field.value !== undefined ? String(field.value).split(',').filter(Boolean) : [],
-        );
         /** @type {HTMLInputElement[]} */
-        const checks = [];
-        for (const option of field.options ?? []) {
-          const row = document.createElement('label');
-          row.className = 'modal__multiselect-option';
-          const check = document.createElement('input');
-          check.type = 'checkbox';
-          check.value = option.value;
-          check.checked = preselected.has(option.value);
-          const text = document.createElement('span');
-          text.textContent = option.label;
-          row.append(check, text);
-          box.appendChild(row);
-          checks.push(check);
-        }
+        let checks = [];
+        // Rebuild the checkbox rows for a fresh option set, checking those in
+        // `selected`. Reused by the initial render and by onChange refilters.
+        const render = (
+          /** @type {{ value: string, label: string }[]} */ opts,
+          /** @type {Set<string>} */ selected,
+        ) => {
+          box.textContent = '';
+          checks = [];
+          for (const option of opts) {
+            const row = document.createElement('label');
+            row.className = 'modal__multiselect-option';
+            const check = document.createElement('input');
+            check.type = 'checkbox';
+            check.value = option.value;
+            check.checked = selected.has(option.value);
+            const text = document.createElement('span');
+            text.textContent = option.label;
+            row.append(check, text);
+            box.appendChild(row);
+            checks.push(check);
+          }
+        };
+        render(
+          field.options ?? [],
+          new Set(field.value !== undefined ? String(field.value).split(',').filter(Boolean) : []),
+        );
         input = /** @type {HTMLInputElement} */ (/** @type {unknown} */ (box));
         getters[field.name] = () =>
           checks
             .filter((c) => c.checked)
             .map((c) => c.value)
             .join(',');
+        // Refilter keeps whatever is currently checked, even if it drops out of
+        // the new option set (so a valid pick isn't silently lost mid-edit).
+        rebuilders[field.name] = (opts) =>
+          render(opts, new Set(checks.filter((c) => c.checked).map((c) => c.value)));
       } else {
         input = document.createElement('input');
         input.type = field.type ?? 'text';
@@ -131,6 +149,10 @@ export function promptModal(title, fields, options = {}) {
         set: (/** @type {string} */ name, /** @type {string | number} */ value) => {
           inputs[name].value = String(value);
         },
+        setOptions: (
+          /** @type {string} */ name,
+          /** @type {{ value: string, label: string }[]} */ opts,
+        ) => rebuilders[name]?.(opts),
       };
       for (const [name, input] of Object.entries(inputs)) {
         input.addEventListener('input', () => onChange(name, handle));

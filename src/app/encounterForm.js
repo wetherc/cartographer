@@ -14,7 +14,7 @@ import {
 import { defaultEnemyStats, ENEMY_TIERS, STAT_KEYS } from '../entities/Modifiers.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
-import { casterFields, readCasterOptions } from './casterFields.js';
+import { casterFields, readCasterOptions, spellPickerOptions } from './casterFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -147,20 +147,30 @@ export async function encounterForm(app, existing, defaultLocation) {
     {
       submitLabel: existing ? 'Save' : 'Add',
       wide: true,
-      onChange: existing
-        ? undefined
-        : (name, form) => {
-            if (name.startsWith('stat-')) {
-              statsTouched = true;
-              return;
-            }
-            if (statsTouched || (name !== 'level' && name !== 'tier')) return;
-            const stats = defaultEnemyStats(
-              Math.max(1, Number(form.get('level')) || 1),
-              /** @type {import('../types/entities.js').EnemyTier} */ (form.get('tier')),
-            );
-            for (const key of STAT_KEYS) form.set(`stat-${key}`, stats[key]);
-          },
+      onChange: (name, form) => {
+        // Refilter the spell picker to the chosen caster class and level (both
+        // when creating and editing).
+        if (name === 'casterClass' || name === 'casterLevel') {
+          form.setOptions(
+            'spells',
+            spellPickerOptions(form.get('casterClass'), Number(form.get('casterLevel')) || 1),
+          );
+          return;
+        }
+        // Re-stamp the stat defaults on level/tier change, but only for a new
+        // encounter and only until a stat is hand-edited.
+        if (existing) return;
+        if (name.startsWith('stat-')) {
+          statsTouched = true;
+          return;
+        }
+        if (statsTouched || (name !== 'level' && name !== 'tier')) return;
+        const stats = defaultEnemyStats(
+          Math.max(1, Number(form.get('level')) || 1),
+          /** @type {import('../types/entities.js').EnemyTier} */ (form.get('tier')),
+        );
+        for (const key of STAT_KEYS) form.set(`stat-${key}`, stats[key]);
+      },
     },
   );
   if (!values) return null;

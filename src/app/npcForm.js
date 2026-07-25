@@ -6,7 +6,7 @@ import { isCasterClass } from '../entities/Classes.js';
 import { isSlotPool } from '../entities/SpellSlots.js';
 import { slugId, replaceById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
-import { casterFields, readCasterOptions } from './casterFields.js';
+import { casterFields, readCasterOptions, spellPickerOptions } from './casterFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/npc.js').NPC} NPC */
@@ -81,7 +81,19 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
         field.name === 'nodeId' ? { ...field, full: true } : field,
       ),
     ],
-    { submitLabel: existing ? 'Save' : 'Add', wide: true },
+    {
+      submitLabel: existing ? 'Save' : 'Add',
+      wide: true,
+      // Refilter the spell picker to the chosen caster class and level.
+      onChange: (name, form) => {
+        if (name === 'casterClass' || name === 'casterLevel') {
+          form.setOptions(
+            'spells',
+            spellPickerOptions(form.get('casterClass'), Number(form.get('casterLevel')) || 1),
+          );
+        }
+      },
+    },
   );
   const name = values?.name.trim();
   if (!values || !name) return null;
