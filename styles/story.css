@@ -58,12 +58,9 @@
   margin-bottom: var(--space-2);
 }
 
+/* Typography comes from .section-label (base.css); only the margin is local. */
 .quest-panel__group-title {
   margin: 0 0 var(--space-1);
-  font-size: var(--text-label);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
 }
 
 .quest-panel__row {
@@ -78,7 +75,7 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
 }
 
 .quest-panel__title {

@@ -103,7 +103,7 @@ export function mountEncounterPanel(container, callbacks) {
     amountInput.setAttribute('aria-label', `Damage/heal amount for ${encounter.name}`);
 
     const damageButton = iconButton(
-      'damage',
+      'minus',
       `Damage ${encounter.name}`,
       () => {
         updateOne(encounter, (e) => applyDamage(e, Number(amountInput.value)));

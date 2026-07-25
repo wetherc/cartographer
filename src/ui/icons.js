@@ -7,7 +7,7 @@
  * (aria-hidden); give the surrounding control its own accessible label.
  */
 
-/** @typedef {'plus'|'minus'|'damage'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'} IconName */
+/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -21,9 +21,7 @@ const PATHS = {
   minus: ['M5 12h14'],
   add: ['M12 5v14', 'M5 12h14'],
   remove: ['M4 7h16', 'M10 11v6', 'M14 11v6', 'M6 7l1 13h10l1-13', 'M9 7V4h6v3'],
-  // An upright sword (pointed blade, crossguard, grip, pommel): reads as
-  // "attack/damage" at a glance where the previous diagonal glyph did not.
-  damage: ['M12 2l1.6 12h-3.2z', 'M7 14h10', 'M12 14v6', 'M9.5 20h5'],
+  // An upright sword (pointed blade, crossguard, grip, pommel).
   sword: ['M12 2l1.6 12h-3.2z', 'M7 14h10', 'M12 14v6', 'M9.5 20h5'],
   give: ['M5 12h14', 'M13 6l6 6-6 6'],
   check: ['M5 12l5 5L20 6'],

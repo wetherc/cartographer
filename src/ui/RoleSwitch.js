@@ -17,7 +17,7 @@ export function mountRoleSwitch(container, initialRole, onChange) {
   let role = initialRole;
 
   const root = document.createElement('div');
-  root.className = 'role-switch';
+  root.className = 'seg-switch';
   root.setAttribute('role', 'group');
   root.setAttribute('aria-label', 'Viewer');
 
@@ -28,7 +28,7 @@ export function mountRoleSwitch(container, initialRole, onChange) {
   function make(value, iconName, label) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'btn role-switch__btn';
+    button.className = 'btn seg-switch__btn';
     button.appendChild(icon(iconName));
     button.appendChild(document.createTextNode(label));
     button.addEventListener('click', () => setRole(value));
@@ -45,7 +45,7 @@ export function mountRoleSwitch(container, initialRole, onChange) {
     role = next;
     for (const [value, button] of Object.entries(buttons)) {
       const active = value === role;
-      button.classList.toggle('role-switch__btn--active', active);
+      button.classList.toggle('seg-switch__btn--active', active);
       button.setAttribute('aria-pressed', String(active));
     }
     onChange(role);

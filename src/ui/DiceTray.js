@@ -111,7 +111,7 @@ export function mountDiceTray(container, opts = {}) {
   modeName.className = 'dice-tray__label';
   modeName.textContent = 'd20 mode';
   const modeGroup = document.createElement('div');
-  modeGroup.className = 'dice-tray__modes';
+  modeGroup.className = 'seg-switch';
   modeGroup.setAttribute('role', 'group');
   modeGroup.setAttribute('aria-label', 'Roll d20s normally, with advantage, or with disadvantage');
   /** @type {{ mode: import('../types/dice.js').RollMode, button: HTMLButtonElement }[]} */
@@ -120,7 +120,7 @@ export function mountDiceTray(container, opts = {}) {
     for (const entry of modeButtons) {
       const active = (selection.mode ?? 'normal') === entry.mode;
       entry.button.setAttribute('aria-pressed', String(active));
-      entry.button.classList.toggle('dice-tray__mode--active', active);
+      entry.button.classList.toggle('seg-switch__btn--active', active);
     }
   };
   for (const mode of /** @type {import('../types/dice.js').RollMode[]} */ ([
@@ -130,7 +130,7 @@ export function mountDiceTray(container, opts = {}) {
   ])) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'btn dice-tray__mode';
+    button.className = 'btn seg-switch__btn';
     button.textContent = mode === 'normal' ? 'Normal' : mode[0].toUpperCase() + mode.slice(1);
     button.addEventListener('click', () => {
       selection.mode = mode;

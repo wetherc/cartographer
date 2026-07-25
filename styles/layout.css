@@ -75,7 +75,7 @@ body.mode-build .app-belowmap {
   height: min(70vh, 48rem);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
-  background: #0f0d0a;
+  background: var(--overlay-bg);
   box-shadow: var(--shadow-2);
   touch-action: none;
 }
@@ -94,11 +94,11 @@ body.mode-build .app-belowmap {
   gap: var(--space-1);
   padding: var(--space-1);
   border-radius: var(--radius-sm);
-  background: rgba(15, 13, 10, 0.65);
+  background: color-mix(in srgb, var(--overlay-bg) 65%, transparent);
 }
 
 .map-controls__btn {
-  color: #e6d7b4;
+  color: var(--overlay-text);
   border-color: transparent;
   background: transparent;
 }
@@ -110,7 +110,7 @@ body.mode-build .app-belowmap {
   gap: var(--space-1);
   margin-left: var(--space-2);
   padding-left: var(--space-2);
-  border-left: 1px solid rgba(230, 215, 180, 0.35);
+  border-left: 1px solid color-mix(in srgb, var(--overlay-text) 35%, transparent);
 }
 
 body.role-player .map-controls__fog,
@@ -121,7 +121,7 @@ body.mode-build .map-controls__fog {
 .map-controls__btn--active {
   outline: 2px solid var(--accent);
   outline-offset: -1px;
-  background: rgba(230, 215, 180, 0.15);
+  background: color-mix(in srgb, var(--overlay-text) 15%, transparent);
 }
 
 .map-controls__zoom {
@@ -129,7 +129,7 @@ body.mode-build .map-controls__fog {
   padding: 0 var(--space-1);
   font-family: var(--font-mono);
   font-size: var(--text-label);
-  color: #e6d7b4;
+  color: var(--overlay-text);
 }
 
 .handout-panel__image {
@@ -152,7 +152,7 @@ body.mode-build .map-controls__fog {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 13, 10, 0.55);
+  background: color-mix(in srgb, var(--overlay-bg) 55%, transparent);
   border-radius: var(--radius);
   z-index: 5;
 }
@@ -176,7 +176,9 @@ body.mode-build .map-controls__fog {
   font-size: var(--text-label);
 }
 
-/* Transient action-feedback toasts, bottom center, above everything. */
+/* Transient action-feedback toasts, bottom center, above everything. They
+   often land over the map, so they use the pinned-dark overlay palette in
+   both themes rather than following the page surface. */
 .toast-stack {
   position: fixed;
   bottom: var(--space-4);
@@ -193,8 +195,8 @@ body.mode-build .map-controls__fog {
 .toast {
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius);
-  background: rgba(15, 13, 10, 0.9);
-  color: #e6d7b4;
+  background: color-mix(in srgb, var(--overlay-bg) 90%, transparent);
+  color: var(--overlay-text);
   font-size: var(--text-label);
   box-shadow: var(--shadow-2);
   pointer-events: auto;
@@ -224,8 +226,8 @@ body.mode-build .map-controls__fog {
   max-width: 18rem;
   padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-sm);
-  background: rgba(15, 13, 10, 0.9);
-  color: #e6d7b4;
+  background: color-mix(in srgb, var(--overlay-bg) 90%, transparent);
+  color: var(--overlay-text);
   font-size: var(--text-label);
   pointer-events: none;
   box-shadow: var(--shadow-2);
@@ -241,7 +243,7 @@ body.mode-build .map-controls__fog {
 
 /* Who stands on the tile: tinted to match the blue NPC map marker. */
 .tile-tooltip__npcs {
-  color: #9fc3f0;
+  color: var(--overlay-npc);
 }
 
 .tile-tooltip__title + .tile-tooltip__npcs {

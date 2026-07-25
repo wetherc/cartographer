@@ -125,7 +125,7 @@ export function buildEffectsEditor(initial) {
   /** @type {string[]} */
   const statusEffects = [...initial];
   const element = document.createElement('div');
-  element.className = 'inventory-panel__effects';
+  element.className = 'inventory-panel__effect-editor';
 
   function render() {
     element.innerHTML = '';

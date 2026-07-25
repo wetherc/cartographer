@@ -1,6 +1,7 @@
 import { getSpellbook } from '../entities/Character.js';
 import { isCasterClass, getClass } from '../entities/Classes.js';
 import { icon } from './icons.js';
+import { emptyState } from './buttons.js';
 import { promptSpellDetail } from './SpellDetail.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -31,7 +32,7 @@ export function buildSpellsSection(character, opts) {
   section.className = 'character-sheet__spells';
 
   const label = document.createElement('span');
-  label.className = 'character-sheet__section-label';
+  label.className = 'section-label';
   const className = getClass(character.class)?.name;
   label.textContent = className ? `Spells (${className})` : 'Spells';
   section.appendChild(label);
@@ -57,18 +58,13 @@ function buildGroup(title, spells, opts) {
   group.className = 'character-sheet__spell-group';
 
   const heading = document.createElement('span');
-  heading.className = 'character-sheet__spell-group-title';
+  heading.className = 'section-label';
   heading.textContent = title;
   group.appendChild(heading);
 
   const list = document.createElement('div');
   list.className = 'character-sheet__spell-chips';
-  if (spells.length === 0) {
-    const empty = document.createElement('span');
-    empty.className = 'character-sheet__spell-empty';
-    empty.textContent = 'None';
-    list.appendChild(empty);
-  }
+  if (spells.length === 0) list.appendChild(emptyState('None'));
   for (const spell of spells) {
     const chip = document.createElement('button');
     chip.type = 'button';

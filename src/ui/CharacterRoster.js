@@ -53,9 +53,9 @@ export function mountCharacterRoster(container, options) {
 
       const select = document.createElement('button');
       select.type = 'button';
-      select.className = 'character-roster__select';
+      select.className = 'row-select';
       if (character.id === selectedId) {
-        select.classList.add('character-roster__select--current');
+        select.classList.add('row-select--current');
         select.setAttribute('aria-current', 'true');
       }
       select.textContent = `${character.name} (Lv ${character.level})`;

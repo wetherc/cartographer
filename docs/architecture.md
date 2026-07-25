@@ -199,10 +199,27 @@ least once; new code should follow them rather than re-deciding locally:
   forms (`formFields.formActions`), the spell-detail action bar, and the
   inventory give form all order Cancel/Close on the left and the affirmative
   action on the right. A new form surface must not invent a third ordering.
-- **Damage is a sword, healing is a cross** (`icon('damage')`/`icon('heal')`),
+- **Damage is a minus, healing is a cross** (`icon('minus')`/`icon('heal')`),
   wherever HP moves — the character sheet's steppers and the encounter panel's
-  amount buttons share the pair. Plus/minus is reserved for non-HP quantity
-  steppers (resources, counts).
+  amount buttons share the pair, danger-red and success-green respectively. A
+  pictorial glyph (a sword) was tried for damage and reverted: subtract/add
+  reads instantly, iconography doesn't. The sword stays reserved for attack
+  actions (the initiative panel's weapon strip), not HP arithmetic.
+- **Recurring widget shapes are shared classes in `base.css`, not per-feature
+  copies.** `.seg-switch` is the segmented toggle (mode/theme/role switches,
+  the dice tray's d20 mode), `.row-select` the selectable list row (world
+  tree, roster), `.section-label` the in-panel sub-heading (uppercase,
+  tracked, muted — the one treatment for the role), `.empty-state` the
+  "nothing here" paragraph. Each replaced two to four byte-identical or
+  drifted per-feature blocks; a new switch, list row, or group heading should
+  reuse the class and keep only layout (margins, grid placement) in its own
+  component class. Badges everywhere pad `0 var(--space-1)`.
+- **Over-map chrome uses the `--overlay-*` tokens** (`--overlay-bg`,
+  `--overlay-text`, `--overlay-npc` in `base.css`), which are deliberately
+  pinned dark in both themes: map controls, toasts, tooltips, and the
+  onboarding scrim float over map art, not the page surface, so they don't
+  follow `light-dark()`. Translucent variants derive via `color-mix` from the
+  same tokens rather than restating the hex.
 
 ## Testability pattern
 

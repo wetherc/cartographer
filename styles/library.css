@@ -44,12 +44,9 @@ body.mode-library .app-buildrail:not(#library-tools) {
   gap: var(--space-1);
 }
 
+/* Typography comes from .section-label (base.css); only the margin is local. */
 .library-panel__group {
   margin: var(--space-2) 0 0;
-  font-size: var(--text-label);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
 }
 
 .library-panel__row {

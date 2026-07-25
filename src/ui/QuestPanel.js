@@ -101,7 +101,7 @@ export function mountQuestPanel(container, callbacks) {
     const group = document.createElement('div');
     group.className = 'quest-panel__group';
     const heading = document.createElement('h3');
-    heading.className = 'quest-panel__group-title';
+    heading.className = 'section-label quest-panel__group-title';
     heading.textContent = label;
     group.appendChild(heading);
     for (const quest of quests) group.appendChild(buildRow(quest, gm));

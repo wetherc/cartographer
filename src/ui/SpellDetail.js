@@ -43,7 +43,7 @@ function metaCell(term, value) {
   const cell = document.createElement('div');
   cell.className = 'spell-detail__meta-cell';
   const dt = document.createElement('span');
-  dt.className = 'spell-detail__meta-term';
+  dt.className = 'section-label';
   dt.textContent = term;
   const dd = document.createElement('span');
   dd.className = 'spell-detail__meta-value';

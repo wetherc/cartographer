@@ -162,7 +162,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
 
     const head = document.createElement('button');
     head.type = 'button';
-    head.className = 'disclosure palette__section-head';
+    head.className = 'disclosure section-label';
     const title = document.createElement('span');
     title.textContent = label;
     head.append(title, icon('chevron', { className: 'disclosure__chevron' }));

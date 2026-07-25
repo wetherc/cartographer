@@ -18,7 +18,7 @@ export function mountModeSwitch(container, initialMode, onChange) {
   let mode = initialMode;
 
   const root = document.createElement('div');
-  root.className = 'mode-switch';
+  root.className = 'seg-switch';
   root.setAttribute('role', 'group');
   root.setAttribute('aria-label', 'App mode');
 
@@ -29,7 +29,7 @@ export function mountModeSwitch(container, initialMode, onChange) {
   function make(value, iconName, label) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'btn mode-switch__btn';
+    button.className = 'btn seg-switch__btn';
     button.appendChild(icon(iconName));
     button.appendChild(document.createTextNode(label));
     button.addEventListener('click', () => setMode(value));
@@ -47,7 +47,7 @@ export function mountModeSwitch(container, initialMode, onChange) {
     mode = next;
     for (const [value, button] of Object.entries(buttons)) {
       const active = value === mode;
-      button.classList.toggle('mode-switch__btn--active', active);
+      button.classList.toggle('seg-switch__btn--active', active);
       button.setAttribute('aria-pressed', String(active));
     }
     onChange(mode);

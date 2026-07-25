@@ -134,7 +134,7 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
       const section = document.createElement('div');
       section.className = 'spellbook__group';
       const label = document.createElement('span');
-      label.className = 'spellbook__group-title';
+      label.className = 'section-label';
       label.textContent = group.label;
       section.appendChild(label);
 

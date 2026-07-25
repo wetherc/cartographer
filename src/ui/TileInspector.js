@@ -1,3 +1,5 @@
+import { emptyState } from './buttons.js';
+
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').TileMetadata} TileMetadata */
 /** @typedef {import('../types/map.js').POIType} POIType */
@@ -33,9 +35,7 @@ export function mountTileInspector(container, opts) {
   let tile = null;
   let editable = true;
 
-  const empty = document.createElement('p');
-  empty.className = 'tile-inspector__empty';
-  empty.textContent = 'Select a tile to inspect it.';
+  const empty = emptyState('Select a tile to inspect it.');
 
   const form = document.createElement('div');
   form.className = 'tile-inspector__form';

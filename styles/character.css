@@ -336,7 +336,7 @@
 /* An item's open edit form, boxed so it reads as one unit inside the list. */
 .inventory-panel__editor {
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   padding: var(--space-2);
   margin: var(--space-1) 0;
 }
@@ -424,7 +424,7 @@
 .inventory-panel__field-label {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
   font-size: var(--text-label);
   color: var(--text-muted);
 }
@@ -442,6 +442,7 @@
 
 .inventory-panel__type-select {
   width: 100%;
+  font-size: var(--text-label);
 }
 
 .inventory-panel__quantity-input {
@@ -463,10 +464,6 @@
   min-height: 2rem;
   font-family: var(--font-mono);
   color: var(--text);
-}
-
-.inventory-panel__type-select {
-  font-size: var(--text-label);
 }
 
 /* Weapon damage editor: one row per dice term (count, die, damage type),
@@ -494,8 +491,9 @@
   align-self: flex-start;
 }
 
-/* Inflicted status effects: removable chips plus the add row. */
-.inventory-panel__effects {
+/* Inflicted status effects: removable chips plus the add row. Named apart
+   from .inventory-panel__effects, the read-only pill row on an item row. */
+.inventory-panel__effect-editor {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -505,8 +503,8 @@
 .inventory-panel__chip {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px var(--space-1);
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
   border: 1px solid var(--border);
   border-radius: 999px;
   font-size: var(--text-label);

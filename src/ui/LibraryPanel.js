@@ -157,7 +157,7 @@ export function mountLibraryPanel(container, callbacks) {
       for (const entry of entries) {
         if (entry.group && entry.group !== lastGroup) {
           const heading = document.createElement('h3');
-          heading.className = 'library-panel__group';
+          heading.className = 'section-label library-panel__group';
           heading.textContent = entry.group;
           list.appendChild(heading);
           lastGroup = entry.group;

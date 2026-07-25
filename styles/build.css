@@ -38,28 +38,7 @@
   padding: var(--space-1) 0;
 }
 
-.world-tree__select {
-  flex: 1;
-  text-align: left;
-  background: none;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  padding: var(--space-1) var(--space-2);
-  font: inherit;
-  font-size: var(--text-label);
-  color: var(--text);
-  cursor: pointer;
-}
-
-.world-tree__select:hover {
-  background: var(--surface-sunken);
-}
-
-.world-tree__select--current {
-  background: var(--surface-sunken);
-  border-color: var(--border-strong);
-  font-weight: 700;
-}
+/* The node rows are .row-select buttons (base.css). */
 
 /* Collapsible trees: a fixed-width chevron slot on every row keeps labels
    aligned; leaf rows render an empty spacer in the same slot. */
@@ -159,12 +138,6 @@ body.mode-build .app-sidebar {
   scrollbar-gutter: stable;
 }
 
-.palette__section-head {
-  font-size: var(--text-label);
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
 .palette__grid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -199,12 +172,6 @@ body.mode-build .app-sidebar {
 /* ==========================================================================
    Tile inspector (Build-mode right rail)
    ========================================================================== */
-
-.tile-inspector__empty {
-  margin: 0;
-  color: var(--text-muted);
-  font-size: var(--text-label);
-}
 
 .tile-inspector__form {
   display: flex;

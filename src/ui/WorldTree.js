@@ -74,10 +74,10 @@ export function mountWorldTree(container, opts) {
 
     const select = document.createElement('button');
     select.type = 'button';
-    select.className = 'world-tree__select';
+    select.className = 'row-select';
     select.textContent = treeNode.node.name;
     if (treeNode.node.id === opts.getCurrentId()) {
-      select.classList.add('world-tree__select--current');
+      select.classList.add('row-select--current');
       select.setAttribute('aria-current', 'true');
     }
     select.addEventListener('click', () => opts.onSelect(treeNode.node.id));

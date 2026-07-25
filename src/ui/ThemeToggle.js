@@ -21,7 +21,7 @@ export function mountThemeToggle(container) {
   let theme = normalizeTheme(localStorage.getItem(THEME_STORAGE_KEY));
 
   const root = document.createElement('div');
-  root.className = 'theme-switch';
+  root.className = 'seg-switch';
   root.setAttribute('role', 'group');
   root.setAttribute('aria-label', 'Color theme');
   container.appendChild(root);
@@ -31,7 +31,7 @@ export function mountThemeToggle(container) {
   for (const value of THEMES) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'btn theme-switch__btn';
+    button.className = 'btn seg-switch__btn';
     const label = `${themeLabel(value)} theme`;
     button.title = label;
     button.setAttribute('aria-label', label);
@@ -51,7 +51,7 @@ export function mountThemeToggle(container) {
     else document.documentElement.dataset.theme = theme;
     for (const [value, button] of buttons) {
       const active = value === theme;
-      button.classList.toggle('theme-switch__btn--active', active);
+      button.classList.toggle('seg-switch__btn--active', active);
       button.setAttribute('aria-pressed', String(active));
     }
   }

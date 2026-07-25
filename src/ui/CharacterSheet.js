@@ -236,7 +236,7 @@ export function mountCharacterSheet(
       if (perms.hp) {
         // Bonus HP absorbs the hit before the pool does.
         const damageButton = iconButton(
-          'damage',
+          'minus',
           `Damage ${character.name} by 1`,
           () => commit(damageCharacter(character, 1)),
           { variant: 'danger', className: 'character-sheet__hp-step' },
@@ -493,7 +493,7 @@ export function mountCharacterSheet(
     const conditions = document.createElement('div');
     conditions.className = 'character-sheet__conditions';
     const conditionsLabel = document.createElement('span');
-    conditionsLabel.className = 'character-sheet__section-label';
+    conditionsLabel.className = 'section-label';
     conditionsLabel.textContent = 'Conditions';
     conditions.appendChild(conditionsLabel);
     mountConditionsBar(conditions, {
