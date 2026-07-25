@@ -16,6 +16,7 @@ import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { mountCharacterRoster } from '../ui/CharacterRoster.js';
 import { mountCharacterSheet } from '../ui/CharacterSheet.js';
+import { mountSpellbookPanel } from '../ui/SpellbookPanel.js';
 import { mountInventoryPanel } from '../ui/InventoryPanel.js';
 import { wireTabs } from '../ui/Tabs.js';
 import { mountTimePanel } from '../ui/TimePanel.js';
@@ -158,6 +159,7 @@ export function wireParty(app) {
     const character = selectedCharacter();
     characterSheet.setCharacter(character);
     inventoryPanel.setCharacter(character);
+    spellbookPanel.setCharacter(character);
     characterRoster.update();
     updateBindingPicker();
   }
@@ -413,33 +415,53 @@ export function wireParty(app) {
     },
   });
 
+  // Resolve a spellbook's stored ids through the memoized active-library index.
+  /** @param {string[]} ids @returns {import('../types/spell.js').Spell[]} */
+  const resolveSpells = (ids) => {
+    const index = activeSpellIndex();
+    return ids.map((id) => index.get(id)).filter((s) => s !== undefined);
+  };
+  // Every spell the character's class may learn: cantrips and leveled spells up
+  // to its highest available slot level, so the Spellbook can't offer a spell it
+  // could never cast.
+  /** @param {Character} character @returns {import('../types/spell.js').Spell[]} */
+  const learnableSpells = (character) => {
+    const maxSlot = getSlotPools(character).reduce((m, p) => Math.max(m, slotLevelOf(p)), 0);
+    return activeSpells().filter(
+      (spell) =>
+        spell.classes.includes(character.class ?? '') &&
+        (spell.level === 0 || spell.level <= maxSlot),
+    );
+  };
+
   const characterSheet = mountCharacterSheet(
     mustGetElement('character-sheet-container'),
     selectedCharacter(),
     (next) => {
       commitCharacter(next);
       inventoryPanel.setCharacter(next);
+      spellbookPanel.setCharacter(next);
     },
     selectedPermissions,
     {
-      // Resolve the spellbook's ids through the memoized active-library index.
-      resolveSpells: (ids) => {
-        const index = activeSpellIndex();
-        return ids.map((id) => index.get(id)).filter((s) => s !== undefined);
-      },
-      // Every spell the character's class may learn, cantrips and leveled
-      // spells up to its highest available slot level, so the pickers can't
-      // offer a spell it could never cast.
-      learnable: (character) => {
-        const maxSlot = getSlotPools(character).reduce((m, p) => Math.max(m, slotLevelOf(p)), 0);
-        return activeSpells().filter(
-          (spell) =>
-            spell.classes.includes(character.class ?? '') &&
-            (spell.level === 0 || spell.level <= maxSlot),
-        );
-      },
+      resolveSpells,
       onCast: (character, spell) => castSpellOutOfCombat(app, character, spell),
     },
+  );
+
+  // The Spellbook tab: learn/prepare/forget management for the selected
+  // character, writing edits back through the shared commit path so the sheet's
+  // castable-spell view stays in sync.
+  const spellbookPanel = mountSpellbookPanel(
+    mustGetElement('spellbook-container'),
+    selectedCharacter(),
+    (next) => {
+      commitCharacter(next);
+      characterSheet.setCharacter(next);
+      inventoryPanel.setCharacter(next);
+    },
+    () => ({ play: selectedPermissions().play }),
+    { learnable: learnableSpells, resolveSpells },
   );
 
   const inventoryPanel = mountInventoryPanel(
@@ -449,6 +471,7 @@ export function wireParty(app) {
     (next) => {
       commitCharacter(next);
       characterSheet.setCharacter(next);
+      spellbookPanel.setCharacter(next);
     },
     (event, character) => {
       const node = app.grid.getNode(app.partyTracker.getPosition().nodeId);

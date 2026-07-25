@@ -161,12 +161,11 @@ function buildSlotLine(pools, onToggle) {
  * @param {() => { editBase: boolean, play: boolean, hp: boolean }} [getPermissions]
  * @param {{
  *   resolveSpells: (ids: string[]) => import('../types/spell.js').Spell[],
- *   learnable: (character: Character) => import('../types/spell.js').Spell[],
  *   onCast: (character: Character, spell: import('../types/spell.js').Spell) => void,
  * } | null} [spells]
- *   When provided, the sheet renders a spellbook section (cantrips, prepared,
- *   and known spells with cast/learn/prepare controls); omitted, no such
- *   section appears.
+ *   When provided, the sheet renders a read-only castable-spells section
+ *   (cantrips and prepared spells, each opening a Cast/Close detail); learning
+ *   and preparing live in the Spellbook tab. Omitted, no such section appears.
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountCharacterSheet(
@@ -487,15 +486,13 @@ export function mountCharacterSheet(
       body.appendChild(resources);
     }
 
-    // The spellbook: cantrips, prepared, and known spells with cast/learn/
-    // prepare controls. Only for casters (the builder returns null otherwise)
+    // Read-only castable spells: cantrips and prepared spells, each opening a
+    // Cast/Close detail. Only for casters (the builder returns null otherwise)
     // and only when the host wired spell callbacks in.
     if (spells) {
       const spellsSection = buildSpellsSection(character, {
         play: perms.play,
-        commit,
         resolveSpells: spells.resolveSpells,
-        learnable: spells.learnable,
         onCast: (spell) => spells.onCast(character, spell),
       });
       if (spellsSection) body.appendChild(spellsSection);

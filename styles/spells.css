@@ -48,9 +48,10 @@
 }
 
 /* ==========================================================================
-   Character-sheet spellbook: cantrips, prepared, and known spells with cast
-   and learn/prepare controls, sitting between the resource pools and the
-   conditions bar on the sheet.
+   Character-sheet spells: a read-only view of the castable set (cantrips and
+   prepared spells), sitting between the resource pools and the conditions bar.
+   Each chip opens the spell's detail, where casting happens; learning and
+   preparing live in the Spellbook tab.
    ========================================================================== */
 
 .character-sheet__spells {
@@ -84,43 +85,170 @@
   opacity: 0.7;
 }
 
-/* A cast button and its forget/unprepare control read as one unit. */
 .character-sheet__spell-chip {
   display: inline-flex;
   align-items: center;
-}
-
-.character-sheet__spell-cast {
+  gap: var(--space-1);
   font-size: var(--text-label);
 }
 
-.character-sheet__spell-cast .icon {
+.character-sheet__spell-chip .icon {
   color: var(--mana);
 }
 
-.character-sheet__spell-forget {
-  margin-left: calc(-1 * var(--space-1));
+/* ==========================================================================
+   Spellbook tab: a browsable, per-level list of the class's spells with
+   known/prepared badges. Rows open the detail modal to learn/prepare/forget.
+   ========================================================================== */
+
+.spellbook {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-.character-sheet__spell-known {
+.spellbook__heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-2);
+}
+
+.spellbook__class {
+  font-weight: 600;
+}
+
+.spellbook__prepared-count {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.spellbook__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.spellbook__group-title {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.spellbook__list {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
 }
 
-.character-sheet__spell-known-row {
+/* Each spell is a full-width button: name left, badges right. Known spells sit
+   slightly brighter so the class list reads as "have / could learn". */
+.spellbook__row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--space-2);
-  font-size: var(--text-label);
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text-muted);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
-.character-sheet__spell-known-name {
+.spellbook__row:hover,
+.spellbook__row:focus-visible {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.spellbook__row--known {
+  color: var(--text);
+  background: var(--surface-raised, var(--surface));
+}
+
+.spellbook__row-name {
   flex: 1;
 }
 
-.character-sheet__spell-picker {
+.spellbook__row-badges {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.spellbook__badge {
   font-size: var(--text-label);
-  align-self: flex-start;
-  max-width: 100%;
+  padding: 0 0.4em;
+  border-radius: var(--radius-sm);
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.spellbook__badge--known {
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+.spellbook__badge--prepared {
+  background: var(--mana);
+  color: var(--on-accent, #fff);
+}
+
+/* ==========================================================================
+   Spell detail modal: a read-only card (school/level, casting meta, effect,
+   description) with the caller's action buttons, opened from a sheet chip or a
+   Spellbook row.
+   ========================================================================== */
+
+.spell-detail__subtitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+}
+
+.spell-detail__tag {
+  font-size: var(--text-label);
+  padding: 0 0.4em;
+  border-radius: var(--radius-sm);
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+.spell-detail__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.spell-detail__meta-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.spell-detail__meta-term {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.spell-detail__effect {
+  margin: 0 0 var(--space-2);
+  font-weight: 600;
+  color: var(--mana);
+}
+
+.spell-detail__description {
+  margin: 0 0 var(--space-2);
+  line-height: 1.5;
+  white-space: pre-wrap;
 }
