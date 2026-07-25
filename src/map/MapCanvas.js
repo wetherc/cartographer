@@ -1,4 +1,5 @@
 import { findRegionGroups } from './RegionGroups.js';
+import { getTile } from './TileGrid.js';
 import { isCursorKey, nextCursor } from './MapCursor.js';
 import { MapRenderer } from './MapRenderer.js';
 import {
@@ -431,7 +432,7 @@ export class MapCanvas {
     if (!this.cursorCellId || !this.node) return;
     const coords = parseCoords(this.cursorCellId);
     if (!coords) return;
-    const tile = this.node.tiles.find((t) => t.id === this.cursorCellId) ?? null;
+    const tile = getTile(this.node, this.cursorCellId) ?? null;
     if (this.authoring) {
       this.onStrokeCell?.(coords.x, coords.y, tile, true);
       this.onStrokeEnd?.();
@@ -446,7 +447,7 @@ export class MapCanvas {
     if (!this.onCellHover || !this.cursorCellId || !this.node) return;
     const coords = parseCoords(this.cursorCellId);
     if (!coords) return;
-    const tile = this.node.tiles.find((t) => t.id === this.cursorCellId) ?? null;
+    const tile = getTile(this.node, this.cursorCellId) ?? null;
     const rect = this.canvas.getBoundingClientRect();
     const { sx, sy, size } = tileRect(
       coords.x,
@@ -579,7 +580,7 @@ export class MapCanvas {
     const cellId = `${coords.x},${coords.y}`;
     if (cellId === this._lastStrokeCellId) return;
     this._lastStrokeCellId = cellId;
-    const tile = this.node.tiles.find((t) => t.id === cellId) ?? null;
+    const tile = getTile(this.node, cellId) ?? null;
     this.onStrokeCell?.(coords.x, coords.y, tile, first);
   }
 
@@ -660,7 +661,7 @@ export class MapCanvas {
     const cellId = inBounds ? `${coords.x},${coords.y}` : null;
     if (cellId === this._hoverCellId) return;
     this._hoverCellId = cellId;
-    const tile = cellId ? (this.node.tiles.find((t) => t.id === cellId) ?? null) : null;
+    const tile = cellId ? (getTile(this.node, cellId) ?? null) : null;
     this.onCellHover(tile, event.clientX, event.clientY);
   }
 
@@ -737,7 +738,7 @@ export class MapCanvas {
       if (this._dragDistance < 4 && this.onCellContextMenu && this.node) {
         const coords = this._eventCell(event);
         if (coords) {
-          const tile = this.node.tiles.find((t) => t.id === `${coords.x},${coords.y}`) ?? null;
+          const tile = getTile(this.node, `${coords.x},${coords.y}`) ?? null;
           this.onCellContextMenu(coords.x, coords.y, tile, event.clientX, event.clientY);
         }
       }
@@ -751,7 +752,7 @@ export class MapCanvas {
     // The handler gets the tile if one exists, or null.
     const coords = this._eventCell(event);
     if (!coords) return;
-    const tile = this.node.tiles.find((t) => t.id === `${coords.x},${coords.y}`) ?? null;
+    const tile = getTile(this.node, `${coords.x},${coords.y}`) ?? null;
     this.onCellClick(coords.x, coords.y, tile);
   }
 

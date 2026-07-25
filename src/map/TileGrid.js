@@ -1,5 +1,6 @@
 import { collectSubtreeIds } from './WorldTree.js';
 import { parseCoords } from './MapGeometry.js';
+import { tileIndex, tilePosition } from './TileIndex.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').TileMetadata} TileMetadata */
@@ -80,14 +81,17 @@ export function overlayList(tile) {
 }
 
 /**
- * Return a new node with the tile added, replacing any existing tile with the same id.
+ * Return a new node with the tile added, replacing any existing tile with the
+ * same id in place (an existing tile keeps its array position).
  * @param {MapNode} node
  * @param {Tile} tile
  * @returns {MapNode}
  */
 export function setTile(node, tile) {
-  const tiles = node.tiles.filter((t) => t.id !== tile.id);
-  tiles.push(tile);
+  const pos = tilePosition(node, tile.id);
+  const tiles = node.tiles.slice();
+  if (pos === undefined) tiles.push(tile);
+  else tiles[pos] = tile;
   return { ...node, tiles };
 }
 
@@ -98,21 +102,21 @@ export function setTile(node, tile) {
  * @returns {Tile | undefined}
  */
 export function getTile(node, tileId) {
-  return node.tiles.find((t) => t.id === tileId);
+  return tileIndex(node).get(tileId);
 }
 
 /**
  * Update an existing tile's metadata within a node, returning a new node.
+ * No-op (same node) when no tile has the id.
  * @param {MapNode} node
  * @param {string} tileId
  * @param {Partial<TileMetadata>} metadata
  * @returns {MapNode}
  */
 export function updateTileMetadata(node, tileId, metadata) {
-  const tiles = node.tiles.map((t) =>
-    t.id === tileId ? { ...t, metadata: { ...t.metadata, ...metadata } } : t,
-  );
-  return { ...node, tiles };
+  const existing = getTile(node, tileId);
+  if (!existing) return node;
+  return setTile(node, { ...existing, metadata: { ...existing.metadata, ...metadata } });
 }
 
 /**

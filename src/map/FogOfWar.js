@@ -1,4 +1,5 @@
 import { parseCoords } from './MapGeometry.js';
+import { tileIndex, tilePosition } from './TileIndex.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
@@ -76,11 +77,11 @@ export function revealAll(node) {
  * @returns {MapNode}
  */
 export function setTileRevealed(node, tileId, revealed) {
-  if (!node.tiles.some((t) => t.id === tileId && t.revealed !== revealed)) return node;
-  return {
-    ...node,
-    tiles: node.tiles.map((t) => (t.id === tileId ? { ...t, revealed } : t)),
-  };
+  const existing = tileIndex(node).get(tileId);
+  if (!existing || existing.revealed === revealed) return node;
+  const tiles = node.tiles.slice();
+  tiles[/** @type {number} */ (tilePosition(node, tileId))] = { ...existing, revealed };
+  return { ...node, tiles };
 }
 
 /**
