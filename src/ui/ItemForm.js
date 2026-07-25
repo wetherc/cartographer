@@ -8,6 +8,7 @@ import {
 } from '../entities/Equipment.js';
 import { activeEquipment } from '../library/Library.js';
 import { buildDamageEditor, buildEffectsEditor } from './ItemFormEditors.js';
+import { labeled, fieldRow, formActions } from './formFields.js';
 
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
@@ -27,35 +28,6 @@ const EQUIPPABLE_TYPES = [
   'bow',
   'ring',
 ];
-
-/**
- * A small captioned wrapper so each control in the form names itself.
- * @param {string} caption
- * @param {HTMLElement} control
- * @returns {HTMLLabelElement}
- */
-function labeled(caption, control) {
-  const label = document.createElement('label');
-  label.className = 'inventory-panel__field-label';
-  const text = document.createElement('span');
-  text.textContent = caption;
-  label.append(text, control);
-  return label;
-}
-
-/**
- * A horizontal grouping of related fields. Type-specific fields toggle in and
- * out per row, so appearing controls extend their own line instead of
- * reflowing the whole form.
- * @param {...HTMLElement} children
- * @returns {HTMLDivElement}
- */
-function fieldRow(...children) {
-  const row = document.createElement('div');
-  row.className = 'inventory-panel__form-row';
-  row.append(...children);
-  return row;
-}
 
 /**
  * The item create/edit form, shared by the add row and the per-item editor.
@@ -309,11 +281,7 @@ export function buildItemForm({
   buffStatSelect.addEventListener('change', syncTypeFields);
   syncTypeFields();
 
-  const submitButton = document.createElement('button');
-  submitButton.type = 'button';
-  submitButton.className = 'btn btn--primary';
-  submitButton.textContent = submitLabel;
-  submitButton.addEventListener('click', () => {
+  const submit = () => {
     const name = nameInput.value.trim();
     const quantity = Number(quantityInput.value);
     if (!name || quantity <= 0) return;
@@ -353,17 +321,9 @@ export function buildItemForm({
       descriptionInput.value = '';
       quantityInput.value = '1';
     }
-  });
+  };
 
-  const actionsRow = fieldRow(submitButton);
-  if (onCancel) {
-    const cancelButton = document.createElement('button');
-    cancelButton.type = 'button';
-    cancelButton.className = 'btn';
-    cancelButton.textContent = 'Cancel';
-    cancelButton.addEventListener('click', onCancel);
-    actionsRow.appendChild(cancelButton);
-  }
+  const actionsRow = formActions({ submitLabel, onSubmit: submit, onCancel });
 
   form.append(
     nameInput,

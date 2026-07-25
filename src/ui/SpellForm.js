@@ -1,6 +1,7 @@
 import { CLASS_LIST } from '../entities/Classes.js';
 import { SPELL_SCHOOLS, SPELL_ABILITIES, SPELL_EFFECT_KINDS } from '../data/spells.js';
 import { buildDamageEditor } from './ItemFormEditors.js';
+import { labeled, fieldRow, checkbox, textField, select, formActions } from './formFields.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/spell.js').SpellEffect} SpellEffect */
@@ -11,79 +12,6 @@ const COMPONENTS = [
   { letter: 'S', title: 'Somatic' },
   { letter: 'M', title: 'Material' },
 ];
-
-/**
- * A captioned wrapper so each control names itself — the item form's `labeled`,
- * reusing its class so spell and item forms look the same.
- * @param {string} caption
- * @param {HTMLElement} control
- * @returns {HTMLLabelElement}
- */
-function labeled(caption, control) {
-  const label = document.createElement('label');
-  label.className = 'inventory-panel__field-label';
-  const text = document.createElement('span');
-  text.textContent = caption;
-  label.append(text, control);
-  return label;
-}
-
-/** A horizontal grouping of related fields. @param {...HTMLElement} children */
-function fieldRow(...children) {
-  const row = document.createElement('div');
-  row.className = 'inventory-panel__form-row';
-  row.append(...children);
-  return row;
-}
-
-/** A labeled checkbox returning its wrapper and the input. @param {string} caption @param {boolean} checked */
-function checkbox(caption, checked) {
-  const label = document.createElement('label');
-  label.className = 'spell-form__check';
-  const input = document.createElement('input');
-  input.type = 'checkbox';
-  input.checked = checked;
-  const text = document.createElement('span');
-  text.textContent = caption;
-  label.append(input, text);
-  return { label, input };
-}
-
-/** A text-labelled button, so the form's submit and cancel actions share one
- * size and label scheme (no icon set has a non-destructive "cancel" glyph).
- * @param {string} label @param {string} className
- * @returns {HTMLButtonElement} */
-function labeledButton(label, className) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = className;
-  button.textContent = label;
-  return button;
-}
-
-/** A text input pre-filled and classed as a form field. @param {string} value @param {string} placeholder */
-function textField(value, placeholder) {
-  const input = document.createElement('input');
-  input.type = 'text';
-  input.className = 'field';
-  input.value = value;
-  input.placeholder = placeholder;
-  return input;
-}
-
-/** A <select> over the given options, pre-selected. @param {string[]} options @param {string} value */
-function select(options, value) {
-  const el = document.createElement('select');
-  el.className = 'field';
-  for (const opt of options) {
-    const option = document.createElement('option');
-    option.value = opt;
-    option.textContent = opt;
-    el.appendChild(option);
-  }
-  el.value = value;
-  return el;
-}
 
 /**
  * The spell create/edit form, inline in the Library rail like the item form.
@@ -220,18 +148,15 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   }
   scales.input.addEventListener('change', syncScaling);
 
-  const submitButton = labeledButton(submitLabel, 'btn btn--primary');
-  submitButton.addEventListener('click', () => {
-    const name = nameInput.value.trim();
-    if (!name) return;
-    onSubmit(assemble());
+  const actionsRow = formActions({
+    submitLabel,
+    onSubmit: () => {
+      const name = nameInput.value.trim();
+      if (!name) return;
+      onSubmit(assemble());
+    },
+    onCancel,
   });
-  const actionsRow = fieldRow(submitButton);
-  if (onCancel) {
-    const cancelButton = labeledButton('Cancel', 'btn');
-    cancelButton.addEventListener('click', onCancel);
-    actionsRow.appendChild(cancelButton);
-  }
 
   /** @returns {Omit<Spell, 'id'>} */
   function assemble() {
