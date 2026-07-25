@@ -50,9 +50,9 @@ production-deployment plan.
 
 ## Efficiency foundation (do first)
 
-Status: **items 1-4 shipped** (rAF batching + per-frame derived data in
-`5e81fcb`, coord-indexed tiles in `e4603de`, localStorage write reduction
-below); items 5-6 remain.
+Status: **items 1-5 shipped** (rAF batching + per-frame derived data in
+`5e81fcb`, coord-indexed tiles in `e4603de`, localStorage write reduction in
+`c8c31ed`, append-only travelog below); item 6 remains.
 
 Rationale: most collections (characters, encounters, NPCs, quests, handouts,
 library templates) are small-n; their O(n)/O(n^2) scans are cheap in absolute
@@ -110,12 +110,19 @@ single-key history ring.
   packaged target by the production-deployment plan's file-based persistence
   (section 3 there); revisit only if the browser build hits quota in practice.
 
-### 5. Stop rebuilding the whole travelog per event
+### 5. Stop rebuilding the whole travelog per event — done
 
-`TravelogPanel` does `innerHTML = ''` plus a reversed copy of the entire list on
-every `logEvent` (`src/ui/TravelogPanel.js:25-40`); the list grows unbounded.
+`TravelogPanel` used to do `innerHTML = ''` plus a reversed copy of the entire
+list on every `logEvent`. (The master list was already capped at
+`TRAVELOG_LIMIT = 200` by `appendEntry`, so the real cost was the per-event
+full rebuild, not unbounded growth.)
 
-- Append-only DOM, or cap/virtualize the rendered rows.
+- Done: the panel builds its skeleton (empty state, list, Clear button) once;
+  `update` prepends only the entries logged since the last call — computed by
+  the pure `entriesAfter` helper (`src/log/Travelogue.js:48`) — and rebuilds
+  from scratch only when the tracked newest id is gone (log cleared or
+  replaced). Rendered rows are trimmed to `TRAVELOG_LIMIT`
+  (`src/ui/TravelogPanel.js:74`).
 
 ### 6. Memoize the library `active*` getters
 

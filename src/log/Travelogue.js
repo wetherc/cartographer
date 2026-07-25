@@ -34,3 +34,21 @@ export function appendEntry(log, entry, limit = TRAVELOG_LIMIT) {
   const next = [...log, entry];
   return next.length > limit ? next.slice(next.length - limit) : next;
 }
+
+/**
+ * The entries newer than `lastId`, for append-only rendering: the whole log
+ * when `lastId` is null (nothing rendered yet), or null when `lastId` is no
+ * longer in the log (it was cleared or replaced) so the caller knows to
+ * re-render from scratch. Searches newest-first, since `lastId` is normally
+ * at or near the end.
+ * @param {LogEntry[]} log
+ * @param {string | null} lastId
+ * @returns {LogEntry[] | null}
+ */
+export function entriesAfter(log, lastId) {
+  if (lastId === null) return log;
+  for (let i = log.length - 1; i >= 0; i--) {
+    if (log[i].id === lastId) return log.slice(i + 1);
+  }
+  return null;
+}
