@@ -1,16 +1,8 @@
-import { addItem, removeItem, updateItem } from '../entities/Character.js';
-import {
-  EQUIPMENT_SLOTS,
-  ITEM_TYPES,
-  itemType,
-  itemSummary,
-  itemEffects,
-  filterItems,
-  equip,
-  getEquipped,
-  slotAccepts,
-} from '../entities/Equipment.js';
+import { addItem } from '../entities/Character.js';
+import { ITEM_TYPES, filterItems } from '../entities/Equipment.js';
 import { buildItemForm } from './ItemForm.js';
+import { buildEquipment } from './InventoryEquipment.js';
+import { buildRow } from './InventoryRows.js';
 import { wireDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
 
@@ -30,68 +22,13 @@ function idFromName(name) {
 }
 
 /**
- * Equipment slot rows: a labeled select per slot, its options limited to the
- * inventory items whose type the slot accepts (a potion never appears in the
- * armor pickers), ordered by the slot's preference then name. An already-
- * equipped item that no longer passes the filter (a legacy save) still shows,
- * so it can be seen and unequipped.
- * @param {Character} character
- * @param {(next: Character) => void} commit
- * @param {boolean} playable false renders the pickers disabled (read-only view)
- * @returns {HTMLElement}
- */
-function buildEquipment(character, commit, playable) {
-  const section = document.createElement('div');
-  section.className = 'inventory-panel__equipment';
-  for (const slot of EQUIPMENT_SLOTS) {
-    const row = document.createElement('label');
-    row.className = 'inventory-panel__slot';
-
-    const label = document.createElement('span');
-    label.className = 'inventory-panel__slot-label';
-    label.textContent = slot.label;
-
-    const select = document.createElement('select');
-    select.className = 'field';
-    const empty = document.createElement('option');
-    empty.value = '';
-    empty.textContent = '—';
-    select.appendChild(empty);
-    const equippedId = getEquipped(character, slot.key)?.id ?? '';
-    const eligible = character.inventory
-      .filter((i) => slotAccepts(slot.key, i) || i.id === equippedId)
-      .sort((a, b) => {
-        const rank = (/** @type {typeof a} */ i) => {
-          const at = slot.accepts.indexOf(itemType(i));
-          return at === -1 ? slot.accepts.length : at;
-        };
-        return rank(a) - rank(b) || a.name.localeCompare(b.name);
-      });
-    for (const item of eligible) {
-      const option = document.createElement('option');
-      option.value = item.id;
-      const summary = itemSummary(item);
-      option.textContent = summary ? `${item.name} (${summary})` : item.name;
-      select.appendChild(option);
-    }
-    select.value = equippedId;
-    select.disabled = !playable;
-    select.addEventListener('change', () =>
-      commit(equip(character, slot.key, select.value === '' ? null : select.value)),
-    );
-
-    row.append(label, select);
-    section.appendChild(row);
-  }
-  return section;
-}
-
-/**
  * Mount the character's kit as two tabs behind a collapsed disclosure:
- * Equipment (the default — slot pickers for what's worn and wielded) and
- * Inventory (a searchable, type-filterable, sortable item list with add,
- * consume, discard, and full post-creation editing via the shared item form).
- * Renders an empty state when no character is selected (`null`).
+ * Equipment (the default — slot pickers for what's worn and wielded, built in
+ * InventoryEquipment.js) and Inventory (a searchable, type-filterable,
+ * sortable item list with add, consume, discard, and full post-creation
+ * editing via the shared item form; the rows themselves are built in
+ * InventoryRows.js). Renders an empty state when no character is selected
+ * (`null`).
  * Item interactions (add, consume, discard) are reported through `onEvent`
  * with the acting character, so the caller can log them; equipment changes
  * and edits commit silently.
@@ -136,10 +73,11 @@ export function mountInventoryPanel(
   let typeFilter = '';
   /** @type {'name' | 'type' | 'quantity'} */
   let sortKey = 'name';
-  /** @type {string | null} id of the item whose edit form is open */
-  let editingId = null;
-  /** @type {string | null} id of the item whose give form is open */
-  let givingId = null;
+  /** Which item's edit or give form is open; shared with the row builders. */
+  const view = {
+    /** @type {string | null} */ editingId: null,
+    /** @type {string | null} */ givingId: null,
+  };
 
   const root = document.createElement('div');
   root.className = 'inventory-panel';
@@ -156,196 +94,8 @@ export function mountInventoryPanel(
     render();
   }
 
-  /**
-   * One inventory row: name, stack count, description, and the mechanical
-   * summary — plus edit/consume/discard controls when playable. The open edit
-   * form (shared with the add form) renders in the row's place.
-   * @param {Character} character
-   * @param {InventoryItem} item
-   * @param {boolean} playable
-   * @returns {HTMLElement}
-   */
-  function buildRow(character, item, playable) {
-    if (item.id === editingId) {
-      const editor = document.createElement('div');
-      editor.className = 'inventory-panel__editor';
-      editor.appendChild(
-        buildItemForm({
-          item,
-          submitLabel: `Save ${item.name}`,
-          onSubmit: (fields) => {
-            editingId = null;
-            commit(updateItem(character, item.id, { ...fields, id: item.id }));
-          },
-          onCancel: () => {
-            editingId = null;
-            render();
-          },
-        }),
-      );
-      return editor;
-    }
-
-    const row = document.createElement('div');
-    row.className = 'inventory-panel__row';
-
-    const main = document.createElement('div');
-    main.className = 'inventory-panel__item';
-
-    const line = document.createElement('div');
-    line.className = 'inventory-panel__item-line';
-    const label = document.createElement('span');
-    label.className = 'inventory-panel__label';
-    label.textContent = `${item.name} x${item.quantity}`;
-    const type = document.createElement('span');
-    type.className = 'inventory-panel__type';
-    type.textContent = itemType(item);
-    line.append(label, type);
-    main.appendChild(line);
-
-    // One badge per effect, so a modifier-heavy item (damage riders, stat
-    // bonuses, inflicted statuses) wraps into pills instead of one long line.
-    const effects = itemEffects(item);
-    if (effects.length > 0) {
-      const badges = document.createElement('div');
-      badges.className = 'inventory-panel__effects';
-      for (const effect of effects) {
-        const badge = document.createElement('span');
-        badge.className = 'inventory-panel__effect';
-        badge.textContent = effect;
-        badges.appendChild(badge);
-      }
-      main.appendChild(badges);
-    }
-
-    if (item.description) {
-      const description = document.createElement('div');
-      description.className = 'inventory-panel__description';
-      description.textContent = item.description;
-      main.appendChild(description);
-    }
-    row.appendChild(main);
-
-    if (!playable) return row;
-
-    if (canEdit()) {
-      const editButton = document.createElement('button');
-      editButton.type = 'button';
-      editButton.className = 'btn btn--icon';
-      editButton.setAttribute('aria-label', `Edit ${item.name}`);
-      editButton.appendChild(icon('edit'));
-      editButton.addEventListener('click', () => {
-        editingId = item.id;
-        givingId = null;
-        render();
-      });
-      row.appendChild(editButton);
-    }
-
-    // Hand-off to another party member; only offered when someone else exists
-    // to receive. The give form opens inline under the row.
-    const recipients = transfer ? transfer.recipients().filter((r) => r.id !== character.id) : [];
-    if (recipients.length > 0) {
-      const giveButton = document.createElement('button');
-      giveButton.type = 'button';
-      giveButton.className = 'btn btn--icon';
-      giveButton.setAttribute('aria-label', `Give ${item.name} to another character`);
-      giveButton.appendChild(icon('give'));
-      giveButton.addEventListener('click', () => {
-        givingId = givingId === item.id ? null : item.id;
-        editingId = null;
-        render();
-      });
-      row.appendChild(giveButton);
-    }
-
-    // Present even on 1-stacks: consuming the last of an item and discarding
-    // it are the same state change but different travelogue lines.
-    const consumeButton = document.createElement('button');
-    consumeButton.type = 'button';
-    consumeButton.className = 'btn btn--icon';
-    consumeButton.setAttribute('aria-label', `Consume one ${item.name}`);
-    consumeButton.appendChild(icon('minus'));
-    consumeButton.addEventListener('click', () =>
-      commit(removeItem(character, item.id, 1), { verb: 'use', itemName: item.name, count: 1 }),
-    );
-    row.appendChild(consumeButton);
-
-    const removeButton = document.createElement('button');
-    removeButton.type = 'button';
-    removeButton.className = 'btn btn--icon btn--danger';
-    removeButton.setAttribute('aria-label', `Remove all ${item.name}`);
-    removeButton.appendChild(icon('remove'));
-    removeButton.addEventListener('click', () =>
-      commit(removeItem(character, item.id, item.quantity), {
-        verb: 'discard',
-        itemName: item.name,
-        count: item.quantity,
-      }),
-    );
-    row.appendChild(removeButton);
-    if (item.id !== givingId || recipients.length === 0) return row;
-
-    const wrap = document.createElement('div');
-    wrap.appendChild(row);
-    wrap.appendChild(buildGiveForm(item, recipients));
-    return wrap;
-  }
-
-  /**
-   * The inline give form under a row: recipient picker, a count clamped to
-   * the stack, and confirm/cancel. Confirming defers to `transfer.send` —
-   * the caller updates both characters and syncs this panel back in.
-   * @param {InventoryItem} item
-   * @param {{ id: string, name: string }[]} recipients
-   * @returns {HTMLElement}
-   */
-  function buildGiveForm(item, recipients) {
-    const form = document.createElement('div');
-    form.className = 'inventory-panel__give';
-
-    const recipientSelect = document.createElement('select');
-    recipientSelect.className = 'field';
-    recipientSelect.setAttribute('aria-label', `Give ${item.name} to`);
-    for (const r of recipients) {
-      const option = document.createElement('option');
-      option.value = r.id;
-      option.textContent = r.name;
-      recipientSelect.appendChild(option);
-    }
-
-    const countInput = document.createElement('input');
-    countInput.type = 'number';
-    countInput.className = 'field inventory-panel__give-count';
-    countInput.min = '1';
-    countInput.max = String(item.quantity);
-    countInput.value = '1';
-    countInput.setAttribute('aria-label', `How many ${item.name} to give`);
-    // A 1-stack has nothing to choose; skip the input and give the one.
-    countInput.hidden = item.quantity === 1;
-
-    const giveButton = document.createElement('button');
-    giveButton.type = 'button';
-    giveButton.className = 'btn';
-    giveButton.textContent = 'Give';
-    giveButton.addEventListener('click', () => {
-      const count = Math.min(item.quantity, Math.max(1, Math.floor(Number(countInput.value)) || 1));
-      givingId = null;
-      transfer?.send(item, count, recipientSelect.value);
-    });
-
-    const cancelButton = document.createElement('button');
-    cancelButton.type = 'button';
-    cancelButton.className = 'btn';
-    cancelButton.textContent = 'Cancel';
-    cancelButton.addEventListener('click', () => {
-      givingId = null;
-      render();
-    });
-
-    form.append(recipientSelect, countInput, giveButton, cancelButton);
-    return form;
-  }
+  /** @type {import('./InventoryRows.js').RowContext} */
+  const rowContext = { view, commit, render, canEdit, transfer };
 
   /**
    * The Inventory tab: search/filter/sort controls over the item list, plus
@@ -417,7 +167,7 @@ export function mountInventoryPanel(
         list.appendChild(empty);
         return;
       }
-      for (const item of visible) list.appendChild(buildRow(character, item, playable));
+      for (const item of visible) list.appendChild(buildRow(character, item, playable, rowContext));
     };
     fillList();
     panel.appendChild(list);
