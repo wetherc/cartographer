@@ -144,9 +144,9 @@
   padding: var(--space-2);
   font-size: var(--text-label);
   line-height: 1.5;
-  background: var(--surface-2);
+  background: var(--surface-sunken);
   border-left: 3px solid var(--accent);
-  border-radius: var(--radius-1);
+  border-radius: var(--radius-sm);
 }
 
 .handout-panel__add {

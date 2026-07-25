@@ -2,7 +2,7 @@ import { createMapNode, resizeNode, tilesOutsideBounds } from '../map/TileGrid.j
 import { collectSubtreeIds } from '../map/WorldTree.js';
 import { NODE_KINDS, ENVIRONS } from '../map/NodeKinds.js';
 import { parseCoords } from '../map/MapGeometry.js';
-import { promptModal, confirmModal } from '../ui/Modal.js';
+import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
@@ -120,7 +120,7 @@ export function createNodeActions(ctx) {
     if (!node) return;
     const doomed = collectSubtreeIds([...ctx.grid.nodes.values()], nodeId);
     if (doomed.size >= ctx.grid.nodes.size) {
-      await confirmModal('Cannot delete the last node in the campaign.', { confirmLabel: 'OK' });
+      await alertModal('Cannot delete the last node in the campaign.');
       return;
     }
     const ok = await confirmModal(`Delete "${node.name}" and everything inside it?`, {

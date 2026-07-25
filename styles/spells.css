@@ -200,7 +200,7 @@
 
 .spellbook__row--known {
   color: var(--text);
-  background: var(--surface-raised, var(--surface));
+  background: var(--surface-raised);
 }
 
 .spellbook__row-name {
@@ -227,7 +227,7 @@
 
 .spellbook__badge--prepared {
   background: var(--mana);
-  color: var(--on-accent, #fff);
+  color: var(--mana-contrast);
 }
 
 /* ==========================================================================

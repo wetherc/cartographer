@@ -14,7 +14,7 @@ import { setTileRevealed } from '../map/FogOfWar.js';
 import { recallAll } from '../party/CharacterTokens.js';
 import { pushEdit, popEdit } from '../map/EditHistory.js';
 import { mountTileInspector } from '../ui/TileInspector.js';
-import { promptModal, confirmModal } from '../ui/Modal.js';
+import { promptModal, alertModal } from '../ui/Modal.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
@@ -117,9 +117,7 @@ export function createMapAuthoring(app, env) {
     if (!rect) return;
     const node = navigator.getCurrentNode();
     if (!tilesInRect(node, rect).length) {
-      await confirmModal('No tiles in the selected block. Paint tiles first, then link them.', {
-        confirmLabel: 'OK',
-      });
+      await alertModal('No tiles in the selected block. Paint tiles first, then link them.');
       return;
     }
     const children = grid.getChildren(node.id);

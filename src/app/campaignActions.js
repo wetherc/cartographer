@@ -195,7 +195,7 @@ export function wireCampaignActions(app) {
   mustGetElement('undo-btn').addEventListener('click', async () => {
     const restored = undoHistory();
     if (!restored) {
-      await confirmModal('Nothing to undo.', { confirmLabel: 'OK' });
+      app.toasts.show('Nothing to undo.');
       return;
     }
     if (!persistState(restored)) return;

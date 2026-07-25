@@ -2,6 +2,7 @@ import { removeItem, updateItem } from '../entities/Character.js';
 import { itemType, itemEffects } from '../entities/Equipment.js';
 import { buildItemForm } from './ItemForm.js';
 import { icon } from './icons.js';
+import { confirmModal } from './Modal.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
@@ -149,13 +150,23 @@ export function buildRow(character, item, playable, ctx) {
   removeButton.className = 'btn btn--icon btn--danger';
   removeButton.setAttribute('aria-label', `Remove all ${item.name}`);
   removeButton.appendChild(icon('remove'));
-  removeButton.addEventListener('click', () =>
+  removeButton.addEventListener('click', async () => {
+    // Discarding one item is as recoverable as consuming it; a multi-stack
+    // discard destroys state the GM cannot rebuild with one click, so it
+    // gets the same confirm treatment as every other destructive action.
+    if (item.quantity > 1) {
+      const ok = await confirmModal(`Discard all ${item.quantity} ${item.name}?`, {
+        danger: true,
+        confirmLabel: 'Discard',
+      });
+      if (!ok) return;
+    }
     commit(removeItem(character, item.id, item.quantity), {
       verb: 'discard',
       itemName: item.name,
       count: item.quantity,
-    }),
-  );
+    });
+  });
   row.appendChild(removeButton);
   if (item.id !== view.givingId || recipients.length === 0) return row;
 

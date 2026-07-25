@@ -16,7 +16,7 @@
   padding: 0.1rem var(--space-1) 0.1rem var(--space-2);
   border-radius: var(--radius-sm);
   background: var(--surface-sunken);
-  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  border: 1px solid var(--border);
   font-size: var(--text-label);
   line-height: 1.4;
 }
@@ -71,7 +71,7 @@
   padding: 0.1rem var(--space-2);
   border-radius: var(--radius-sm);
   background: var(--surface-sunken);
-  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  border: 1px solid var(--border);
   font: inherit;
   font-size: var(--text-label);
   line-height: 1.4;
@@ -80,12 +80,12 @@
 }
 
 .statblock-bar__chip:hover {
-  border-color: var(--accent, currentColor);
+  border-color: var(--accent);
 }
 
 /* A stat under an active timed modifier stands out from its neighbors. */
 .statblock-bar__chip--modified {
-  border-color: var(--accent, currentColor);
+  border-color: var(--accent);
   font-weight: 600;
 }
 
@@ -115,7 +115,7 @@
   width: 100%;
   aspect-ratio: 1;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border, rgba(0, 0, 0, 0.12));
+  border: 1px solid var(--border);
   background: var(--surface-sunken);
 }
 

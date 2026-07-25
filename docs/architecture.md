@@ -131,6 +131,31 @@ established pattern that new code touching the same area should follow:
   per call — and callers must treat the returned arrays as read-only, since
   they are shared.
 
+## UI and style conventions
+
+Patterns that keep the UI consistent. Each earned its place by drifting at
+least once; new code should follow them rather than re-deciding locally:
+
+- **CSS custom properties are the only source of color, spacing, radius, and
+  type values, and they all live in `styles/base.css`.** Never write an inline
+  fallback (`var(--border, rgba(...))`): a fallback silently masks a typo'd or
+  missing token — a `var(--surface-2)` that doesn't exist renders as *nothing*,
+  and a fallback would have hidden that bug instead of surfacing it. If a
+  needed token doesn't exist (e.g. a contrast color for a new accent), add it
+  to `base.css` as a `light-dark()` pair next to its relatives; every `*`
+  accent token has a matching `*-contrast` token for text drawn on top of it.
+- **Dialog discipline.** `confirmModal` is only for questions with two real
+  answers. Pure notifications use `alertModal` (blocking, needs
+  acknowledgment) or `app.toasts.show` (non-blocking, self-dismissing) — never
+  a confirm with a dead Cancel button. The same event should get the same
+  surface everywhere: a no-op undo is a toast, whichever undo stack it came
+  from.
+- **Every destructive action confirms first**, via `confirmModal` with
+  `danger: true` and an imperative `confirmLabel` (`Delete`, `Discard`), with
+  the affected thing named in the message (`Delete "Goblin camp"?`). Anything
+  that throws away more state than one click created qualifies — including
+  bulk variants (remove-all, clear) of otherwise safe single-step actions.
+
 ## Testability pattern
 
 The recurring split across this codebase: **pure logic takes its side effects (RNG, current time, etc.) as arguments and returns data**, so it can be unit tested with `node --test` and no DOM. Thin wrapper code then wires that logic to the DOM/canvas and is verified visually instead of via unit test. Examples: `roll(selection, rng)` vs `ui/DiceTray.js`; `MapNavigator`/`RegionGroups`/`FogOfWar`/`PartyTracker` vs `MapCanvas`'s event handlers; `Encounter`/`Resource`/`Character` vs `ui/CharacterSheet.js`/`ui/InventoryPanel.js`/`ui/EncounterPanel.js`; `SaveManager`'s serialize/deserialize/toTileGrid vs its localStorage/download/file wrappers.
