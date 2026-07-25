@@ -1,15 +1,8 @@
 import { findRegionGroups } from './RegionGroups.js';
-import { getTile } from './TileGrid.js';
-import { isCursorKey, nextCursor } from './MapCursor.js';
 import { MapRenderer } from './MapRenderer.js';
-import {
-  parseCoords,
-  tileRect,
-  screenToTile,
-  clampZoom,
-  clientToBuffer,
-  fitToExtent,
-} from './MapGeometry.js';
+import { MapCanvasPointer } from './MapCanvasPointer.js';
+import { MapCanvasKeyboard } from './MapCanvasKeyboard.js';
+import { parseCoords, clampZoom, fitToExtent } from './MapGeometry.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -20,6 +13,11 @@ import {
  * Renders a MapNode's tile grid onto a canvas, with mouse-drag pan and
  * wheel zoom. Unrevealed tiles draw as a flat fog rect instead of their
  * imageRef, matching the fog-of-war model on Tile.revealed.
+ *
+ * This class owns the view state (node, pan/zoom, markers, selection) and the
+ * render loop; input is delegated to MapCanvasPointer (pointer/touch/wheel)
+ * and MapCanvasKeyboard (cursor keys, focus), which mutate that state back
+ * through the host reference.
  */
 export class MapCanvas {
   /**
@@ -46,8 +44,6 @@ export class MapCanvas {
     this.getNodeName = options.getNodeName;
     this.onViewChange = options.onViewChange;
     this.onCellHover = options.onCellHover;
-    /** @type {string | null} last hovered cell id, so hover fires per cell, not per pixel */
-    this._hoverCellId = null;
 
     /** @type {MapNode | null} */
     this.node = null;
@@ -92,35 +88,12 @@ export class MapCanvas {
       onImageLoad: () => this.render(),
     });
 
-    /** Right-drag pan is active (both modes). */
-    this._panning = false;
-    /** Play-mode left button is down and may resolve to a click. */
-    this._pendingClick = false;
-    this._lastX = 0;
-    this._lastY = 0;
-    this._dragDistance = 0;
-    this._stroking = false;
-    /** @type {string | null} last cell a stroke touched, so a stroke applies once per cell */
-    this._lastStrokeCellId = null;
-    /** @type {Map<number, { x: number, y: number }>} live touch points, for pan/pinch */
-    this._touches = new Map();
-    /** @type {{ cx: number, cy: number, dist: number } | null} previous two-finger frame */
-    this._pinch = null;
     /** @type {number | null} pending requestAnimationFrame id for a coalesced redraw */
     this._rafId = null;
 
-    this._onPointerDown = this._onPointerDown.bind(this);
-    this._onPointerMove = this._onPointerMove.bind(this);
-    this._onPointerUp = this._onPointerUp.bind(this);
-    this._onWheel = this._onWheel.bind(this);
-    this._onContextMenu = this._onContextMenu.bind(this);
-    this._onKeyDown = this._onKeyDown.bind(this);
-    this._onFocus = this._onFocus.bind(this);
-    this._onBlur = this._onBlur.bind(this);
-
     // The map is the app's primary content and was previously mouse/wheel-only;
     // make it a focusable widget so it's keyboard-operable and screen-reader
-    // announced (pan/zoom/cursor handled in _onKeyDown).
+    // announced (pan/zoom/cursor handled in MapCanvasKeyboard).
     canvas.tabIndex = 0;
     canvas.setAttribute('role', 'application');
     canvas.setAttribute(
@@ -128,16 +101,10 @@ export class MapCanvas {
       'Campaign map. Arrow keys move the cursor, Enter acts, plus and minus zoom.',
     );
 
-    canvas.addEventListener('pointerdown', this._onPointerDown);
-    canvas.addEventListener('pointermove', this._onPointerMove);
-    canvas.addEventListener('pointerup', this._onPointerUp);
-    canvas.addEventListener('pointerleave', this._onPointerUp);
-    canvas.addEventListener('pointercancel', this._onPointerUp);
-    canvas.addEventListener('wheel', this._onWheel, { passive: false });
-    canvas.addEventListener('contextmenu', this._onContextMenu);
-    canvas.addEventListener('keydown', this._onKeyDown);
-    canvas.addEventListener('focus', this._onFocus);
-    canvas.addEventListener('blur', this._onBlur);
+    this._pointer = new MapCanvasPointer(this);
+    this._keyboard = new MapCanvasKeyboard(this);
+    this._pointer.attach();
+    this._keyboard.attach();
   }
 
   /**
@@ -316,9 +283,7 @@ export class MapCanvas {
    */
   setAuthoring(value) {
     this.authoring = value;
-    this._stroking = false;
-    this._panning = false;
-    this._pendingClick = false;
+    this._pointer.cancel();
     this.setMarquee(null);
   }
 
@@ -377,427 +342,12 @@ export class MapCanvas {
     });
   }
 
-  /** Right-drag pans in both modes now, so its context menu must never pop.
-   * @param {MouseEvent} event */
-  _onContextMenu(event) {
-    event.preventDefault();
-  }
-
-  _onFocus() {
-    this._focused = true;
-    this.render();
-  }
-
-  _onBlur() {
-    this._focused = false;
-    this.render();
-  }
-
-  /**
-   * Keyboard equivalent of the pointer interactions, so the map is operable
-   * without a mouse: arrows move a cursor cell, Enter/Space acts on it (the same
-   * paths a click takes), and +/- zoom. Panning is via arrows moving the cursor,
-   * which scrolls the view to keep the cursor in frame.
-   * @param {KeyboardEvent} event
-   */
-  _onKeyDown(event) {
-    if (!this.node) return;
-    if (isCursorKey(event.key)) {
-      event.preventDefault();
-      const current = this.cursorCellId ? parseCoords(this.cursorCellId) : null;
-      const next = nextCursor(current, event.key, this.node.width, this.node.height);
-      this.cursorCellId = `${next.x},${next.y}`;
-      this._ensureCellVisible(next.x, next.y);
-      this.render();
-      this._announceCursor();
-      return;
-    }
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      this._activateCursor();
-      return;
-    }
-    if (event.key === '+' || event.key === '=') {
-      event.preventDefault();
-      this.zoomBy(1.25);
-    } else if (event.key === '-' || event.key === '_') {
-      event.preventDefault();
-      this.zoomBy(1 / 1.25);
-    }
-  }
-
-  /** Act on the cursor cell exactly as a click would: author in Build mode
-   * (a one-cell stroke), navigate/move the party in Play mode. */
-  _activateCursor() {
-    if (!this.cursorCellId || !this.node) return;
-    const coords = parseCoords(this.cursorCellId);
-    if (!coords) return;
-    const tile = getTile(this.node, this.cursorCellId) ?? null;
-    if (this.authoring) {
-      this.onStrokeCell?.(coords.x, coords.y, tile, true);
-      this.onStrokeEnd?.();
-    } else {
-      this.onCellClick?.(coords.x, coords.y, tile);
-    }
-  }
-
-  /** Fire onCellHover for the cursor cell so keyboard users get the same
-   * tooltip a mouse hover shows, positioned at the cell's screen centre. */
-  _announceCursor() {
-    if (!this.onCellHover || !this.cursorCellId || !this.node) return;
-    const coords = parseCoords(this.cursorCellId);
-    if (!coords) return;
-    const tile = getTile(this.node, this.cursorCellId) ?? null;
-    const rect = this.canvas.getBoundingClientRect();
-    const { sx, sy, size } = tileRect(
-      coords.x,
-      coords.y,
-      this.tileSize,
-      this.offsetX,
-      this.offsetY,
-      this.scale,
-    );
-    const scaleX = rect.width === 0 ? 1 : rect.width / this.canvas.width;
-    const scaleY = rect.height === 0 ? 1 : rect.height / this.canvas.height;
-    this.onCellHover(
-      tile,
-      rect.left + (sx + size / 2) * scaleX,
-      rect.top + (sy + size / 2) * scaleY,
-    );
-  }
-
-  /** Pan the view so a cell sits inside the visible buffer, used when the
-   * keyboard cursor moves toward or past an edge.
-   * @param {number} x @param {number} y */
-  _ensureCellVisible(x, y) {
-    const { sx, sy, size } = tileRect(x, y, this.tileSize, this.offsetX, this.offsetY, this.scale);
-    this._userView = true;
-    const margin = size;
-    if (sx < margin) this.offsetX += margin - sx;
-    else if (sx + size > this.canvas.width - margin)
-      this.offsetX -= sx + size - (this.canvas.width - margin);
-    if (sy < margin) this.offsetY += margin - sy;
-    else if (sy + size > this.canvas.height - margin)
-      this.offsetY -= sy + size - (this.canvas.height - margin);
-  }
-
-  /** @param {PointerEvent} event */
-  _onPointerDown(event) {
-    if (event.pointerType === 'touch') {
-      this._touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      this.canvas.setPointerCapture?.(event.pointerId);
-      if (this._touches.size >= 2) {
-        // A second finger turns any in-flight gesture into a pan/pinch: cancel
-        // the stroke/tap so lifting a finger doesn't fire a stray action.
-        this._stroking = false;
-        this._lastStrokeCellId = null;
-        this._pendingClick = false;
-        this._panning = false;
-        this._pinch = null; // seeded by the first two-finger move
-        return;
-      }
-      if (this.authoring) {
-        // One finger authors, like the mouse's left button.
-        this._stroking = true;
-        this._lastStrokeCellId = null;
-        this._strokeCell(event, true);
-        return;
-      }
-      // Play mode: a tap acts, a drag pans (there's no second button on touch,
-      // so the single finger has to do both; _onPointerMove promotes it).
-      this._pendingClick = true;
-      this._dragDistance = 0;
-      this._lastX = event.clientX;
-      this._lastY = event.clientY;
-      return;
-    }
-    if (this.authoring && event.button === 0) {
-      // Left button authors: begin a stroke and apply it to the pressed cell.
-      // Capture the pointer so a stroke that wanders off the canvas mid-drag
-      // keeps applying and still gets its pointerup.
-      this._stroking = true;
-      this._lastStrokeCellId = null;
-      this.canvas.setPointerCapture?.(event.pointerId);
-      this._strokeCell(event, true);
-      return;
-    }
-    // Panning is the right button in both modes, so Play and Build share one
-    // navigation gesture and the left button is free to act (click) or author.
-    if (event.button === 2) {
-      this._panning = true;
-      this._dragDistance = 0;
-      this._lastX = event.clientX;
-      this._lastY = event.clientY;
-      return;
-    }
-    // Play-mode left button: a click candidate (navigate/move on release if it
-    // didn't turn into a drag). No left-drag pan, matching Build mode.
-    if (!this.authoring && event.button === 0) {
-      this._pendingClick = true;
-      this._dragDistance = 0;
-      this._lastX = event.clientX;
-      this._lastY = event.clientY;
-    }
-  }
-
-  /**
-   * The grid cell under a pointer event, or null when it's outside the node.
-   * @param {PointerEvent} event
-   * @returns {{ x: number, y: number } | null}
-   */
-  _eventCell(event) {
-    if (!this.node) return null;
-    const rect = this.canvas.getBoundingClientRect();
-    const buffer = clientToBuffer(
-      event.clientX,
-      event.clientY,
-      rect,
-      this.canvas.width,
-      this.canvas.height,
-    );
-    const coords = screenToTile(
-      buffer.x,
-      buffer.y,
-      this.tileSize,
-      this.offsetX,
-      this.offsetY,
-      this.scale,
-    );
-    const inBounds =
-      coords.x >= 0 && coords.y >= 0 && coords.x < this.node.width && coords.y < this.node.height;
-    return inBounds ? coords : null;
-  }
-
-  /**
-   * Fire onStrokeCell for the cell under the pointer, once per distinct cell,
-   * skipping out-of-bounds cells so a stroke can't author past the map edge.
-   * @param {PointerEvent} event
-   * @param {boolean} first
-   */
-  _strokeCell(event, first) {
-    const coords = this._eventCell(event);
-    if (!coords || !this.node) return;
-    const cellId = `${coords.x},${coords.y}`;
-    if (cellId === this._lastStrokeCellId) return;
-    this._lastStrokeCellId = cellId;
-    const tile = getTile(this.node, cellId) ?? null;
-    this.onStrokeCell?.(coords.x, coords.y, tile, first);
-  }
-
-  /** @param {PointerEvent} event */
-  _onPointerMove(event) {
-    if (event.pointerType === 'touch' && this._touches.has(event.pointerId)) {
-      this._touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
-      if (this._touches.size >= 2) {
-        this._updatePinch();
-        return;
-      }
-    }
-    if (this._stroking) {
-      this._strokeCell(event, false);
-      return;
-    }
-    if (this._pendingClick) {
-      // Track movement so a left-drag doesn't count as a click; no pan —
-      // except on touch, where a moved finger promotes the tap into a pan
-      // (touch has no second button to dedicate to panning).
-      this._dragDistance +=
-        Math.abs(event.clientX - this._lastX) + Math.abs(event.clientY - this._lastY);
-      if (event.pointerType === 'touch' && this._dragDistance >= 8) {
-        this._pendingClick = false;
-        this._panning = true;
-      }
-      this._lastX = event.clientX;
-      this._lastY = event.clientY;
-      return;
-    }
-    if (!this._panning) {
-      this._trackHover(event);
-      return;
-    }
-    // Panning: any tooltip anchored to the old position is stale.
-    this._clearHover();
-    // Drag deltas are measured in client (CSS) px but pan offsets live in
-    // buffer px, so scale the delta by the buffer/CSS ratio.
-    const rect = this.canvas.getBoundingClientRect();
-    const scaleX = rect.width === 0 ? 1 : this.canvas.width / rect.width;
-    const scaleY = rect.height === 0 ? 1 : this.canvas.height / rect.height;
-    const dx = (event.clientX - this._lastX) * scaleX;
-    const dy = (event.clientY - this._lastY) * scaleY;
-    this._userView = true;
-    this.offsetX += dx;
-    this.offsetY += dy;
-    this._dragDistance += Math.abs(dx) + Math.abs(dy);
-    this._lastX = event.clientX;
-    this._lastY = event.clientY;
-    this.render();
-  }
-
-  /**
-   * Fire onCellHover when the pointer crosses into a different grid cell
-   * (or leaves the grid), passing the tile there if one exists.
-   * @param {PointerEvent} event
-   */
-  _trackHover(event) {
-    if (!this.onCellHover || !this.node) return;
-    const rect = this.canvas.getBoundingClientRect();
-    const buffer = clientToBuffer(
-      event.clientX,
-      event.clientY,
-      rect,
-      this.canvas.width,
-      this.canvas.height,
-    );
-    const coords = screenToTile(
-      buffer.x,
-      buffer.y,
-      this.tileSize,
-      this.offsetX,
-      this.offsetY,
-      this.scale,
-    );
-    const inBounds =
-      coords.x >= 0 && coords.y >= 0 && coords.x < this.node.width && coords.y < this.node.height;
-    const cellId = inBounds ? `${coords.x},${coords.y}` : null;
-    if (cellId === this._hoverCellId) return;
-    this._hoverCellId = cellId;
-    const tile = cellId ? (getTile(this.node, cellId) ?? null) : null;
-    this.onCellHover(tile, event.clientX, event.clientY);
-  }
-
-  /** Reset hover state and tell the handler the pointer is off the grid. */
-  _clearHover() {
-    if (this._hoverCellId === null) return;
-    this._hoverCellId = null;
-    this.onCellHover?.(null, 0, 0);
-  }
-
-  /**
-   * Two-finger pan + pinch-zoom: the centroid delta pans, the finger-distance
-   * ratio zooms anchored at the centroid, matching the wheel's anchored zoom.
-   */
-  _updatePinch() {
-    const [a, b] = [...this._touches.values()];
-    const cx = (a.x + b.x) / 2;
-    const cy = (a.y + b.y) / 2;
-    const dist = Math.hypot(a.x - b.x, a.y - b.y);
-    if (!this._pinch) {
-      this._pinch = { cx, cy, dist };
-      return;
-    }
-    this._clearHover();
-    this._userView = true;
-    const rect = this.canvas.getBoundingClientRect();
-    const scaleX = rect.width === 0 ? 1 : this.canvas.width / rect.width;
-    const scaleY = rect.height === 0 ? 1 : this.canvas.height / rect.height;
-    this.offsetX += (cx - this._pinch.cx) * scaleX;
-    this.offsetY += (cy - this._pinch.cy) * scaleY;
-    if (this._pinch.dist > 0 && dist > 0) {
-      const buffer = clientToBuffer(cx, cy, rect, this.canvas.width, this.canvas.height);
-      // Anchor the exact world point under the centroid, same as the wheel.
-      const worldX = (buffer.x - this.offsetX) / this.scale;
-      const worldY = (buffer.y - this.offsetY) / this.scale;
-      this.scale = clampZoom(this.scale * (dist / this._pinch.dist), this.minZoom, this.maxZoom);
-      this.offsetX = buffer.x - worldX * this.scale;
-      this.offsetY = buffer.y - worldY * this.scale;
-    }
-    this._pinch = { cx, cy, dist };
-    this.render();
-  }
-
-  /** @param {PointerEvent} event */
-  _onPointerUp(event) {
-    if (event.pointerType === 'touch') {
-      this._touches.delete(event.pointerId);
-      if (this._touches.size < 2) this._pinch = null;
-      if (event.type === 'pointercancel') {
-        this._stroking = false;
-        this._lastStrokeCellId = null;
-        this._pendingClick = false;
-        this._panning = false;
-        return;
-      }
-      // A tap that acts should also surface the tile tooltip, since touch has
-      // no hover: report the tapped cell before the click handler runs.
-      if (this._pendingClick && this._dragDistance < 4) this._trackHover(event);
-    }
-    if (event.type === 'pointerleave') this._clearHover();
-    if (this._stroking) {
-      if (event.type === 'pointerleave') return; // captured pointer: stroke ends on pointerup
-      this._stroking = false;
-      this._lastStrokeCellId = null;
-      this.onStrokeEnd?.();
-      return;
-    }
-    if (this._panning) {
-      this._panning = false;
-      // A right press released without dragging is a context click on the cell
-      // under it. Detected here on pointerup rather than in the contextmenu
-      // handler because macOS fires contextmenu on press, before a drag could
-      // disqualify it — and the pan gesture must never pop the dialog.
-      if (this._dragDistance < 4 && this.onCellContextMenu && this.node) {
-        const coords = this._eventCell(event);
-        if (coords) {
-          const tile = getTile(this.node, `${coords.x},${coords.y}`) ?? null;
-          this.onCellContextMenu(coords.x, coords.y, tile, event.clientX, event.clientY);
-        }
-      }
-      return; // a pan (right-drag) never acts as a click
-    }
-    const wasClick = this._pendingClick && this._dragDistance < 4;
-    this._pendingClick = false;
-    if (!wasClick || this.authoring || !this.onCellClick || !this.node) return;
-
-    // Fire for any in-bounds cell, whether or not a tile currently sits there.
-    // The handler gets the tile if one exists, or null.
-    const coords = this._eventCell(event);
-    if (!coords) return;
-    const tile = getTile(this.node, `${coords.x},${coords.y}`) ?? null;
-    this.onCellClick(coords.x, coords.y, tile);
-  }
-
-  /** @param {WheelEvent} event */
-  _onWheel(event) {
-    event.preventDefault();
-    const rect = this.canvas.getBoundingClientRect();
-    const buffer = clientToBuffer(
-      event.clientX,
-      event.clientY,
-      rect,
-      this.canvas.width,
-      this.canvas.height,
-    );
-    const pointerX = buffer.x;
-    const pointerY = buffer.y;
-
-    // Anchor the exact world point under the pointer (not the nearest tile
-    // corner) so repeated wheel ticks zoom smoothly instead of snapping.
-    const worldX = (pointerX - this.offsetX) / this.scale;
-    const worldY = (pointerY - this.offsetY) / this.scale;
-    const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
-    this._userView = true;
-    this.scale = clampZoom(this.scale * factor, this.minZoom, this.maxZoom);
-
-    this.offsetX = pointerX - worldX * this.scale;
-    this.offsetY = pointerY - worldY * this.scale;
-
-    this.render();
-  }
-
   destroy() {
     if (this._rafId !== null) {
       cancelAnimationFrame(this._rafId);
       this._rafId = null;
     }
-    this.canvas.removeEventListener('pointerdown', this._onPointerDown);
-    this.canvas.removeEventListener('pointermove', this._onPointerMove);
-    this.canvas.removeEventListener('pointerup', this._onPointerUp);
-    this.canvas.removeEventListener('pointerleave', this._onPointerUp);
-    this.canvas.removeEventListener('pointercancel', this._onPointerUp);
-    this.canvas.removeEventListener('wheel', this._onWheel);
-    this.canvas.removeEventListener('contextmenu', this._onContextMenu);
-    this.canvas.removeEventListener('keydown', this._onKeyDown);
-    this.canvas.removeEventListener('focus', this._onFocus);
-    this.canvas.removeEventListener('blur', this._onBlur);
+    this._pointer.detach();
+    this._keyboard.detach();
   }
 }

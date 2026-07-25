@@ -71,7 +71,7 @@ wheel tick, and `syncPartyMarker` (`src/app/mapWiring.js:100-110`) fires four
 setters per party move.
 
 - Done: `render()` coalesces through a single `requestAnimationFrame`
-  (`src/map/MapCanvas.js:373`), so pointermove/wheel bursts and the four
+  (`src/map/MapCanvas.js:337`), so pointermove/wheel bursts and the four
   party-marker setters collapse into one redraw per frame.
 
 ### 2. Compute per-frame derived data once — done
