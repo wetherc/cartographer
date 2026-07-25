@@ -10,8 +10,8 @@ import { icon } from './icons.js';
 /**
  * The per-item rows of the inventory panel's Inventory tab — the row itself,
  * its inline edit form, and the give form — split out of InventoryPanel.js,
- * which keeps the mount, tabs, and disclosure shell; the Equipment tab lives
- * in InventoryEquipment.js.
+ * which keeps the mount and render plumbing; the Equipment tab lives in
+ * InventoryEquipment.js.
  *
  * The panel's per-mount view state (which row is being edited or given away)
  * and its commit/render plumbing arrive through a context object, so these

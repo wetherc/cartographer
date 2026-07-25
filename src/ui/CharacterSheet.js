@@ -13,7 +13,6 @@ import {
 import { armorClass, effectiveStats } from '../entities/Equipment.js';
 import { getSlotPools, isSlotPool, slotLevelOf } from '../entities/SpellSlots.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
-import { wireDisclosure } from './Disclosure.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { icon } from './icons.js';
 
@@ -145,10 +144,10 @@ function buildSlotLine(pools, onToggle) {
 }
 
 /**
- * Mount a character card: collapsed by default to a glanceable summary
- * (name / race / HP healthbar) behind an accessible disclosure button,
- * expanding to the full sheet — XP control, ability scores, and resource
- * pools (HP included) with spend/restore steppers.
+ * Mount a character card: a glanceable head (name / race / HP healthbar / spell
+ * slots) over the full sheet — XP control, ability scores, and resource pools
+ * (HP included) with spend/restore steppers. The card does not collapse; the
+ * head and body always read top to bottom.
  * Renders an empty state when no character is selected (`null`).
  * `getPermissions` scopes what the viewer may touch: without `editBase` the
  * stats and XP render read-only, without `play` the pool steppers and
@@ -168,9 +167,6 @@ export function mountCharacterSheet(
   getPermissions = () => ({ editBase: true, play: true, hp: true }),
 ) {
   let current = initial;
-  // Survives re-renders (every edit re-renders) but stays per-mount, so the
-  // card the GM opened doesn't snap shut after each stat change.
-  let expanded = false;
 
   const root = document.createElement('div');
   root.className = 'character-sheet';
@@ -197,12 +193,11 @@ export function mountCharacterSheet(
     }
     const perms = getPermissions();
 
-    const summary = document.createElement('button');
-    summary.type = 'button';
-    summary.className = 'disclosure character-sheet__summary';
+    const summary = document.createElement('div');
+    summary.className = 'character-sheet__summary';
 
-    // Top line: name / race / chevron. The HP bar and the spell-slot pips get
-    // a full-width line each below it, so both read at a glance.
+    // Top line: name / race. The HP bar and the spell-slot pips get a
+    // full-width line each below it, so both read at a glance.
     const summaryTop = document.createElement('span');
     summaryTop.className = 'character-sheet__summary-top';
 
@@ -218,13 +213,10 @@ export function mountCharacterSheet(
       summaryTop.appendChild(race);
     }
 
-    summaryTop.appendChild(icon('chevron', { className: 'disclosure__chevron' }));
     summary.appendChild(summaryTop);
 
-    // The HP bar and slot pips live outside the disclosure button (buttons
-    // can't nest), so they stay visible AND operable whether the card is
-    // collapsed or expanded — no scrolling to the bottom of the sheet to
-    // apply damage or spend a slot. Only the name row toggles the card.
+    // Name, HP bar, and slot pips sit in the always-visible head; the sheet no
+    // longer collapses, so the body's stats follow directly beneath.
     const head = document.createElement('div');
     head.className = 'character-sheet__head';
     head.appendChild(summary);
@@ -335,8 +327,11 @@ export function mountCharacterSheet(
       return { row, input };
     }
 
+    // The XP award is an action (input + button), so it stays on its own full
+    // width row above the aligned field grid rather than in it.
     if (perms.editBase) {
       const { row: xpRow, input: xpInput } = buildFieldRow('XP', 0, 'XP to add', () => {});
+      xpRow.classList.add('character-sheet__xp-row');
       const xpButton = document.createElement('button');
       xpButton.type = 'button';
       xpButton.className = 'btn';
@@ -347,18 +342,20 @@ export function mountCharacterSheet(
       });
       xpRow.appendChild(xpButton);
       body.appendChild(xpRow);
+    }
 
-      // The GM's per-character max HP override; current HP clamps down if the
-      // new maximum is below it.
-      if (hp) {
-        const { row } = buildFieldRow(
-          'MAX HP',
-          hp.max,
-          `Maximum HP for ${character.name}`,
-          (value) => commit(setMaxHP(character, value)),
-        );
-        body.appendChild(row);
-      }
+    // The editable HP/AC fields sit in a grid that mirrors the ability-score
+    // grid below, so their keys and inputs line up in the same columns.
+    const fields = document.createElement('div');
+    fields.className = 'character-sheet__fields';
+
+    // The GM's per-character max HP override; current HP clamps down if the
+    // new maximum is below it.
+    if (perms.editBase && hp) {
+      const { row } = buildFieldRow('MAX HP', hp.max, `Maximum HP for ${character.name}`, (value) =>
+        commit(setMaxHP(character, value)),
+      );
+      fields.appendChild(row);
     }
 
     // Bonus HP from items/boons, tracked on top of the intrinsic pool; damage
@@ -370,7 +367,7 @@ export function mountCharacterSheet(
         `Bonus HP for ${character.name}`,
         (value) => commit(setBonusHP(character, value)),
       );
-      body.appendChild(row);
+      fields.appendChild(row);
     }
 
     // Unarmored base AC, normally 10; effects like Mage Armor raise it. Only
@@ -382,8 +379,10 @@ export function mountCharacterSheet(
         `Unarmored base AC for ${character.name}`,
         (value) => commit(setBaseAC(character, value)),
       );
-      body.appendChild(row);
+      fields.appendChild(row);
     }
+
+    if (fields.children.length > 0) body.appendChild(fields);
 
     const statsList = document.createElement('div');
     statsList.className = 'character-sheet__stats';
@@ -491,12 +490,6 @@ export function mountCharacterSheet(
     });
     body.appendChild(conditions);
 
-    wireDisclosure(summary, body, {
-      expanded,
-      onToggle: (next) => {
-        expanded = next;
-      },
-    });
     root.append(head, body);
   }
 

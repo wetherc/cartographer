@@ -2,10 +2,9 @@
    Character sheet
    ========================================================================== */
 
-/* Card head: the disclosure summary (name row) stacked over the always-live
-   HP and spell-slot lines, which sit outside the disclosure button so their
-   own controls (damage/heal steppers, slot pips) stay clickable whether the
-   card is collapsed or expanded. */
+/* Card head: the summary (name row) stacked over the always-live HP and
+   spell-slot lines. The sheet no longer collapses, so these read top to bottom
+   with the body's stats following directly beneath. */
 .character-sheet__head {
   display: flex;
   flex-direction: column;
@@ -13,14 +12,12 @@
   gap: var(--space-1);
 }
 
-.character-sheet__head .disclosure {
-  min-width: 0;
-}
-
 .character-sheet__summary {
+  display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: var(--space-1);
+  min-width: 0;
 }
 
 /* The HP bar flanked by its damage/heal steppers. */
@@ -111,35 +108,51 @@
   margin-right: auto;
 }
 
-/* Labeled numeric rows (XP award, max HP, bonus HP), laid out like stat rows
-   (same key width and input size) so their inputs line up with the
-   ability-score inputs below them. */
+/* Labeled numeric rows (XP award, max HP, bonus HP, base AC). Each carries a
+   fixed-width key so its input starts at the same offset as every other row's
+   — and, because the field grid and the stats grid share this key width, at
+   the same offset as the ability-score inputs too. */
 .character-sheet__field-row {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  gap: var(--space-1);
+  margin: 0;
   font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
 }
 
-/* One shared key width across the field rows (sized for the longest key,
-   "BONUS HP") so the XP / max HP / bonus HP inputs line up in a column. */
-.character-sheet__field-row .character-sheet__stat-key {
-  white-space: nowrap;
-  flex: 0 0 5rem;
+/* One shared key column width (`--sheet-key-w`, sized for the longest key,
+   "BONUS HP") used by both the field rows and the ability-score rows, so every
+   numeric input on the sheet aligns to a single column. */
+.character-sheet {
+  --sheet-key-w: 5rem;
 }
 
-/* A wide gutter between the two stat columns, so one column's modifier
-   doesn't crowd the next column's label. */
-/* Two columns when the card is wide enough for each stat to keep its own
+.character-sheet__field-row .character-sheet__stat-key {
+  white-space: nowrap;
+}
+
+/* The XP award is a standalone action row above the field grid; it needs the
+   inter-row spacing the grid gap otherwise supplies. */
+.character-sheet__xp-row {
+  margin-bottom: var(--space-3);
+}
+
+/* The editable HP/AC field grid and the ability-score grid share one template
+   and one key width, so their boxes and inputs align cleanly into shared
+   columns. Two-plus columns when wide enough for each box to keep its own
    breathing room, collapsing to one when it isn't — never a squeezed pair. */
+.character-sheet__fields,
 .character-sheet__stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
   gap: var(--space-2) var(--space-3);
+}
+
+.character-sheet__fields {
+  margin-bottom: var(--space-3);
 }
 
 .character-sheet__stat-row {
@@ -164,8 +177,10 @@
   color: var(--text-muted);
 }
 
+/* Fixed key column, shared with the field rows, so score inputs align down a
+   single column across both grids. */
 .character-sheet__stat-key {
-  min-width: 3.5ch;
+  flex: 0 0 var(--sheet-key-w);
 }
 
 /* The score input and its derived modifier, kept tight as one unit. */
@@ -245,20 +260,6 @@
 /* ==========================================================================
    Inventory
    ========================================================================== */
-
-.inventory-panel__summary {
-  font-size: var(--text-label);
-  color: var(--text-muted);
-}
-
-.inventory-panel__body {
-  padding-top: var(--space-2);
-}
-
-/* The Equipment / Inventory tab strip inside the panel. */
-.inventory-panel__tabs {
-  margin-bottom: var(--space-2);
-}
 
 /* Search / type filter / sort row above the item list. */
 .inventory-panel__controls {

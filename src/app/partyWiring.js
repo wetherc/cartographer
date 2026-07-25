@@ -14,6 +14,7 @@ import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { mountCharacterRoster } from '../ui/CharacterRoster.js';
 import { mountCharacterSheet } from '../ui/CharacterSheet.js';
 import { mountInventoryPanel } from '../ui/InventoryPanel.js';
+import { wireTabs } from '../ui/Tabs.js';
 import { mountTimePanel } from '../ui/TimePanel.js';
 import { advanceWatches, advanceToDawn, formatClock } from '../time/GameClock.js';
 import { isGM } from '../view/ViewRole.js';
@@ -416,6 +417,7 @@ export function wireParty(app) {
   );
 
   const inventoryPanel = mountInventoryPanel(
+    mustGetElement('equipment-container'),
     mustGetElement('inventory-container'),
     selectedCharacter(),
     (next) => {
@@ -456,6 +458,8 @@ export function wireParty(app) {
       },
     },
   );
+
+  wireTabs(mustGetElement('sheet-tabs'));
 
   mountTimePanel(mustGetElement('time-container'), {
     getClock: () => state.clock,

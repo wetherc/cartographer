@@ -32,9 +32,29 @@
   gap: var(--space-4);
 }
 
-.app-belowmap > .card {
-  flex: 1 1 14rem;
+/* Left stack: party roster with the dice tray tucked beneath it. */
+.belowmap-side {
+  flex: 1 1 16rem;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.belowmap-side > .card {
+  min-width: 0;
+}
+
+/* Combined character/equipment/inventory card, widened to fill the freed
+   dice-tray room. */
+.belowmap-sheet {
+  flex: 2 1 26rem;
+  min-width: 0;
+}
+
+/* Breathing room between the tab strip and the first line of tab content. */
+.belowmap-sheet .tabs__panel {
+  margin-top: var(--space-3);
 }
 
 body.mode-build .app-belowmap {
@@ -284,6 +304,13 @@ body.mode-build .map-controls__fog {
 
 .tabs__panel[hidden] {
   display: none;
+}
+
+/* The Character and Equipment tabs are form-like: on a wide hiDPI display
+   their rows stretch uncomfortably, so cap their measure. Inventory keeps the
+   full width for its dense, multi-column item rows. */
+.tabs__panel--narrow {
+  max-width: 34rem;
 }
 
 .sidebar-toggle {

@@ -10,6 +10,7 @@
 </head>
 <body>
   <section id="character-sheet-container" class="panel"></section>
+  <section id="equipment-container" class="panel"></section>
   <section id="inventory-container" class="panel"></section>
   <section id="encounter-container" class="panel"></section>
 
@@ -28,9 +29,14 @@
       hero = next;
     });
 
-    mountInventoryPanel(document.getElementById('inventory-container'), hero, (next) => {
-      hero = next;
-    });
+    mountInventoryPanel(
+      document.getElementById('equipment-container'),
+      document.getElementById('inventory-container'),
+      hero,
+      (next) => {
+        hero = next;
+      },
+    );
 
     mountEncounterPanel(document.getElementById('encounter-container'), [
       createEncounter('e1', 'Goblin', 7),

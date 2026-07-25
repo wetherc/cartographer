@@ -50,15 +50,29 @@
       <!-- The party's character boxes and the dice tray sit below the map so
            they don't compete with the map for the sidebar's narrow width. -->
       <div id="below-map" class="app-belowmap">
-        <section id="party-container" class="card" aria-label="Party roster">
-          <h2 class="card__title">Party</h2>
-        </section>
-        <section id="character-sheet-container" class="card" aria-label="Character sheet"></section>
-        <section id="inventory-container" class="card" aria-label="Inventory">
-          <h2 class="card__title">Inventory</h2>
-        </section>
-        <section id="dice-tray-container" class="card" aria-label="Dice tray">
-          <h2 class="card__title">Dice Tray</h2>
+        <div class="belowmap-side">
+          <section id="party-container" class="card" aria-label="Party roster">
+            <h2 class="card__title">Party</h2>
+          </section>
+          <section id="dice-tray-container" class="card" aria-label="Dice tray">
+            <h2 class="card__title">Dice Tray</h2>
+          </section>
+        </div>
+        <section class="card belowmap-sheet" aria-label="Character detail">
+          <div id="sheet-tabs" class="tabs" role="tablist" aria-label="Character detail">
+            <button class="tabs__tab" type="button" role="tab" id="tab-sheet" aria-controls="panel-sheet" aria-selected="true">Character</button>
+            <button class="tabs__tab" type="button" role="tab" id="tab-equipment" aria-controls="panel-equipment" aria-selected="false" tabindex="-1">Equipment</button>
+            <button class="tabs__tab" type="button" role="tab" id="tab-inventory" aria-controls="panel-inventory" aria-selected="false" tabindex="-1">Inventory</button>
+          </div>
+          <div id="panel-sheet" class="tabs__panel tabs__panel--narrow" role="tabpanel" aria-labelledby="tab-sheet">
+            <div id="character-sheet-container"></div>
+          </div>
+          <div id="panel-equipment" class="tabs__panel tabs__panel--narrow" role="tabpanel" aria-labelledby="tab-equipment" hidden>
+            <div id="equipment-container"></div>
+          </div>
+          <div id="panel-inventory" class="tabs__panel" role="tabpanel" aria-labelledby="tab-inventory" hidden>
+            <div id="inventory-container"></div>
+          </div>
         </section>
       </div>
     </div>

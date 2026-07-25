@@ -3,8 +3,6 @@ import { ITEM_TYPES, filterItems } from '../entities/Equipment.js';
 import { buildItemForm } from './ItemForm.js';
 import { buildEquipment } from './InventoryEquipment.js';
 import { buildRow } from './InventoryRows.js';
-import { wireDisclosure } from './Disclosure.js';
-import { icon } from './icons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
@@ -22,17 +20,19 @@ function idFromName(name) {
 }
 
 /**
- * Mount the character's kit as two tabs behind a collapsed disclosure:
- * Equipment (the default — slot pickers for what's worn and wielded, built in
- * InventoryEquipment.js) and Inventory (a searchable, type-filterable,
- * sortable item list with add, consume, discard, and full post-creation
- * editing via the shared item form; the rows themselves are built in
- * InventoryRows.js). Renders an empty state when no character is selected
- * (`null`).
+ * Mount the character's kit across two separate host elements — Equipment
+ * (slot pickers for what's worn and wielded, built in InventoryEquipment.js)
+ * and Inventory (a searchable, type-filterable, sortable item list with add,
+ * consume, discard, and full post-creation editing via the shared item form;
+ * the rows themselves are built in InventoryRows.js). The two hosts live under
+ * separate top-level tabs, so the panel renders each into its own element and
+ * owns neither the tab strip nor any collapse behaviour. Renders an empty state
+ * in both hosts when no character is selected (`null`).
  * Item interactions (add, consume, discard) are reported through `onEvent`
  * with the acting character, so the caller can log them; equipment changes
  * and edits commit silently.
- * @param {HTMLElement} container
+ * @param {HTMLElement} equipmentHost the Equipment tab's panel element
+ * @param {HTMLElement} inventoryHost the Inventory tab's panel element
  * @param {Character | null} initial
  * With a `canPlay` callback returning false the panel renders read-only: no
  * equipment changes, no consume/remove/edit controls, no add form (a
@@ -53,7 +53,8 @@ function idFromName(name) {
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountInventoryPanel(
-  container,
+  equipmentHost,
+  inventoryHost,
   initial,
   onChange = () => {},
   onEvent = () => {},
@@ -62,12 +63,8 @@ export function mountInventoryPanel(
   transfer = undefined,
 ) {
   let current = initial;
-  // All view state survives re-renders (every edit re-renders) but stays
-  // per-mount: the disclosure stays open, the active tab holds, and the
-  // search/filter/sort choices persist while the GM works through the list.
-  let expanded = false;
-  /** @type {'equipment' | 'inventory'} */
-  let activeTab = 'equipment';
+  // The search/filter/sort choices survive re-renders (every edit re-renders)
+  // but stay per-mount, so they persist while the GM works through the list.
   let searchQuery = '';
   /** @type {ItemType | ''} */
   let typeFilter = '';
@@ -78,10 +75,6 @@ export function mountInventoryPanel(
     /** @type {string | null} */ editingId: null,
     /** @type {string | null} */ givingId: null,
   };
-
-  const root = document.createElement('div');
-  root.className = 'inventory-panel';
-  container.appendChild(root);
 
   /**
    * @param {Character} next
@@ -204,82 +197,24 @@ export function mountInventoryPanel(
   }
 
   function render() {
-    root.innerHTML = '';
+    equipmentHost.innerHTML = '';
+    inventoryHost.innerHTML = '';
 
     // Captured non-null so listeners created below keep the narrowing.
     const character = current;
     if (!character) {
-      const empty = document.createElement('p');
-      empty.className = 'empty-state';
-      empty.textContent = 'No character selected.';
-      root.appendChild(empty);
+      for (const host of [equipmentHost, inventoryHost]) {
+        const empty = document.createElement('p');
+        empty.className = 'empty-state';
+        empty.textContent = 'No character selected.';
+        host.appendChild(empty);
+      }
       return;
     }
 
-    const itemCount = character.inventory.reduce((sum, item) => sum + item.quantity, 0);
-    const summary = document.createElement('button');
-    summary.type = 'button';
-    summary.className = 'disclosure inventory-panel__summary';
-    const summaryLabel = document.createElement('span');
-    summaryLabel.textContent = itemCount === 1 ? '1 item' : `${itemCount} items`;
-    summary.append(summaryLabel, icon('chevron', { className: 'disclosure__chevron' }));
-
-    const body = document.createElement('div');
-    body.className = 'inventory-panel__body';
-
     const playable = canPlay();
-
-    // The two tabs, wired directly (state lives in this mount, not the DOM,
-    // so the active tab survives the full re-render every commit triggers).
-    const tablist = document.createElement('div');
-    tablist.className = 'tabs inventory-panel__tabs';
-    tablist.setAttribute('role', 'tablist');
-    tablist.setAttribute('aria-label', 'Equipment and inventory');
-
-    const panels = {
-      equipment: buildEquipment(character, commit, playable),
-      inventory: buildInventoryTab(character, playable),
-    };
-    const tabs = /** @type {const} */ ([
-      ['equipment', 'Equipment'],
-      ['inventory', 'Inventory'],
-    ]).map(([key, text]) => {
-      const tab = document.createElement('button');
-      tab.type = 'button';
-      tab.className = 'tabs__tab';
-      tab.setAttribute('role', 'tab');
-      tab.textContent = text;
-      const selected = activeTab === key;
-      tab.setAttribute('aria-selected', String(selected));
-      tab.tabIndex = selected ? 0 : -1;
-      panels[key].hidden = !selected;
-      tab.addEventListener('click', () => {
-        activeTab = key;
-        render();
-      });
-      return tab;
-    });
-    tablist.addEventListener('keydown', (event) => {
-      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-      event.preventDefault();
-      activeTab = activeTab === 'equipment' ? 'inventory' : 'equipment';
-      render();
-      const nextTab = /** @type {HTMLElement | null} */ (
-        root.querySelector('[role=tab][aria-selected=true]')
-      );
-      nextTab?.focus();
-    });
-    tablist.append(...tabs);
-
-    body.append(tablist, panels.equipment, panels.inventory);
-
-    wireDisclosure(summary, body, {
-      expanded,
-      onToggle: (next) => {
-        expanded = next;
-      },
-    });
-    root.append(summary, body);
+    equipmentHost.appendChild(buildEquipment(character, commit, playable));
+    inventoryHost.appendChild(buildInventoryTab(character, playable));
   }
 
   render();
