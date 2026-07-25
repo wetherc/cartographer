@@ -5,7 +5,7 @@
  * it to <body>, and removes it on close, resolving a Promise with the result.
  */
 
-/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file', value?: string | number, min?: number, options?: { value: string, label: string }[], full?: boolean }} ModalField */
+/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file' | 'multiselect', value?: string | number, min?: number, options?: { value: string, label: string }[], full?: boolean }} ModalField */
 
 /**
  * Show a form modal. Resolves to a record of field name -> string value on
@@ -81,6 +81,36 @@ export function promptModal(title, fields, options = {}) {
           reader.readAsDataURL(file);
         });
         getters[field.name] = () => dataUrl;
+      } else if (field.type === 'multiselect') {
+        // A scrollable checkbox group: the value is the comma-joined set of
+        // checked option values (slug ids, so the separator is unambiguous).
+        // Preselect from a comma-joined `value`.
+        const box = document.createElement('div');
+        box.className = 'field modal__multiselect';
+        const preselected = new Set(
+          field.value !== undefined ? String(field.value).split(',').filter(Boolean) : [],
+        );
+        /** @type {HTMLInputElement[]} */
+        const checks = [];
+        for (const option of field.options ?? []) {
+          const row = document.createElement('label');
+          row.className = 'modal__multiselect-option';
+          const check = document.createElement('input');
+          check.type = 'checkbox';
+          check.value = option.value;
+          check.checked = preselected.has(option.value);
+          const text = document.createElement('span');
+          text.textContent = option.label;
+          row.append(check, text);
+          box.appendChild(row);
+          checks.push(check);
+        }
+        input = /** @type {HTMLInputElement} */ (/** @type {unknown} */ (box));
+        getters[field.name] = () =>
+          checks
+            .filter((c) => c.checked)
+            .map((c) => c.value)
+            .join(',');
       } else {
         input = document.createElement('input');
         input.type = field.type ?? 'text';
@@ -88,7 +118,7 @@ export function promptModal(title, fields, options = {}) {
         if (field.min !== undefined) input.min = String(field.min);
         getters[field.name] = () => input.value;
       }
-      input.className = 'field';
+      if (field.type !== 'multiselect') input.className = 'field';
       label.appendChild(input);
       form.appendChild(label);
       inputs[field.name] = input;

@@ -1,7 +1,22 @@
 import { activeWeapons, activeArmors, activeEnemyArmor } from '../library/Library.js';
 import { defaultEnemyStats, ENEMY_TIERS, STAT_KEYS } from '../entities/Modifiers.js';
 import { formatDamage } from '../entities/Equipment.js';
-import { labeled, fieldRow, textField, numberField, select, formActions } from './formFields.js';
+import { isCasterClass } from '../entities/Classes.js';
+import {
+  casterClassOptions,
+  spellPickerOptions,
+  spellbookIds,
+  spellbookFromIds,
+} from '../app/casterFields.js';
+import {
+  labeled,
+  fieldRow,
+  checkbox,
+  textField,
+  numberField,
+  select,
+  formActions,
+} from './formFields.js';
 
 /** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
 /** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
@@ -83,6 +98,19 @@ export function buildEncounterTemplateForm({
   const weaponSelect = select(weaponOptions, currentWeapon?.name ?? '');
   const armorSelect = select(armorOptions, currentArmor?.name ?? '');
 
+  // Optional spellcaster section: a caster class gives the template spell slots
+  // and a spellbook so a spawned foe can cast. "None" keeps it a plain fighter.
+  const classSelect = select(casterClassOptions(), template?.class ?? '');
+  const casterLevelInput = numberField(template?.casterLevel ?? template?.level ?? 1, { min: 1 });
+  const preselectedSpells = new Set(spellbookIds(template?.spellbook));
+  const spellChecks = spellPickerOptions().map((option) => ({
+    id: option.value,
+    ...checkbox(option.label, preselectedSpells.has(option.value)),
+  }));
+  const spellBox = document.createElement('div');
+  spellBox.className = 'inventory-panel__spell-picker';
+  for (const { label } of spellChecks) spellBox.appendChild(label);
+
   // The stat block: one number field per key, pre-filled from the template or
   // the tier's level-appropriate defaults.
   const defaults = template?.statBlock ?? defaultEnemyStats(1, 'mob');
@@ -157,6 +185,18 @@ export function buildEncounterTemplateForm({
       tier: /** @type {EnemyTier} */ (tierSelect.value),
       weapon,
       armor,
+      ...casterFields(),
+    };
+  }
+
+  /** The caster fields to fold into the template, or empty for a non-caster. */
+  function casterFields() {
+    if (!isCasterClass(classSelect.value)) return {};
+    const ids = spellChecks.filter(({ input }) => input.checked).map(({ id }) => id);
+    return {
+      class: classSelect.value,
+      casterLevel: Math.max(1, Number(casterLevelInput.value) || 1),
+      spellbook: spellbookFromIds(ids),
     };
   }
 
@@ -166,6 +206,8 @@ export function buildEncounterTemplateForm({
     fieldRow(labeled('Max HP', hpInput)),
     fieldRow(labeled('Weapon', weaponSelect), labeled('Armor', armorSelect)),
     ...statRows,
+    fieldRow(labeled('Caster class', classSelect), labeled('Caster level', casterLevelInput)),
+    labeled('Spells', spellBox),
     actionsRow,
   );
 

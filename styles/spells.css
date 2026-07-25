@@ -47,6 +47,37 @@
   margin: 0;
 }
 
+/* The caster spell picker on the encounter/NPC/bestiary forms: a scrollable
+   checkbox column so a long library stays a fixed-height block rather than a
+   page-long list. Shared by the modal multiselect and the inline template
+   form. */
+.modal__multiselect,
+.inventory-panel__spell-picker {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 12rem;
+  overflow-y: auto;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.modal__multiselect-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-label);
+  cursor: pointer;
+}
+
+.modal__multiselect-option input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+
 /* ==========================================================================
    Character-sheet spells: a read-only view of the castable set (cantrips and
    prepared spells), sitting between the resource pools and the conditions bar.

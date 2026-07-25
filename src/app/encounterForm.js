@@ -14,6 +14,7 @@ import {
 import { defaultEnemyStats, ENEMY_TIERS, STAT_KEYS } from '../entities/Modifiers.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
+import { casterFields, readCasterOptions } from './casterFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -136,6 +137,9 @@ export async function encounterForm(app, existing, defaultLocation) {
         options: armorOptions,
       },
       ...statFields,
+      // Optional spellcaster section: a caster class turns the mob into a
+      // combatant that can cast in initiative; "None" leaves it a plain fighter.
+      ...casterFields(existing),
       ...locationFields(app, existing ? existing.location : defaultLocation).map((field) =>
         field.name === 'nodeId' ? { ...field, full: true } : field,
       ),
@@ -195,6 +199,7 @@ export async function encounterForm(app, existing, defaultLocation) {
       location,
       weapon,
       armor,
+      ...readCasterOptions(values),
     });
     state.encounters = replaceById(state.encounters, stored);
   } else {
@@ -209,7 +214,7 @@ export async function encounterForm(app, existing, defaultLocation) {
         STAT_KEYS.map((key) => [key, Math.max(1, Number(values[`stat-${key}`]) || 10)]),
       ),
       location,
-      { level, tier, weapon, armor },
+      { level, tier, weapon, armor, ...readCasterOptions(values) },
     );
     state.encounters = [...state.encounters, stored];
   }

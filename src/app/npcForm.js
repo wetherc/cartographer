@@ -1,8 +1,12 @@
 import { promptModal } from '../ui/Modal.js';
 import { createNPC, DISPOSITIONS } from '../entities/NPC.js';
 import { ABILITY_SCORES } from '../entities/Character.js';
+import { withCasterFields } from '../entities/Caster.js';
+import { isCasterClass } from '../entities/Classes.js';
+import { isSlotPool } from '../entities/SpellSlots.js';
 import { slugId, replaceById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
+import { casterFields, readCasterOptions } from './casterFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/npc.js').NPC} NPC */
@@ -68,6 +72,9 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
       },
       { name: 'notes', label: 'Notes', value: seed?.notes ?? '', full: true },
       ...statFields(seed?.stats ?? {}),
+      // Optional spellcaster section: a caster class gives the NPC spell slots
+      // and a spellbook so it can cast in an encounter it joins.
+      ...casterFields(seed),
       // Defaults to the caller's placement (the party's tile, the Build-mode
       // selected tile, the right-clicked tile), but any map/tile can be chosen.
       ...locationFields(app, existing ? existing.location : defaultLocation).map((field) =>
@@ -78,10 +85,11 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
   );
   const name = values?.name.trim();
   if (!values || !name) return null;
+  const caster = readCasterOptions(values);
   /** @type {NPC} */
   let stored;
   if (existing) {
-    stored = {
+    const base = {
       ...existing,
       name,
       role: values.role.trim(),
@@ -90,6 +98,14 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
       stats: readStats(values),
       location: readLocation(app, values),
     };
+    // A caster class rebuilds slots at full and stamps the picked spellbook;
+    // choosing "None" sheds the caster fields and any slot pools.
+    if (isCasterClass(caster.class)) {
+      stored = withCasterFields(base, caster, caster.casterLevel);
+    } else {
+      const { class: _c, casterLevel: _l, spellbook: _b, ...rest } = base;
+      stored = { ...rest, resources: (base.resources ?? []).filter((r) => !isSlotPool(r)) };
+    }
     state.npcs = replaceById(state.npcs, stored);
   } else {
     stored = createNPC(
@@ -104,6 +120,7 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
         notes: values.notes.trim(),
         stats: readStats(values),
         location: readLocation(app, values),
+        ...caster,
       },
     );
     state.npcs = [...state.npcs, stored];
