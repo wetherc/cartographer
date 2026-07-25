@@ -5,8 +5,7 @@ import { queueToastAfterReload } from '../ui/Toast.js';
 import {
   buildState,
   trySaveToLocalStorage,
-  loadFromLocalStorage,
-  snapshotHistory,
+  snapshotPersistedSave,
   undoHistory,
   downloadState,
   readStateFromFile,
@@ -68,10 +67,10 @@ export function wireCampaignActions(app) {
   /**
    * Push the currently-persisted campaign onto the undo history ring, so the
    * next save/replace/import is reversible. No-op on a first run with no save.
+   * Works on the raw persisted string — no parse/re-serialize of the campaign.
    */
   function snapshotCurrentSave() {
-    const current = loadFromLocalStorage();
-    if (current) snapshotHistory(current);
+    snapshotPersistedSave();
   }
 
   /**

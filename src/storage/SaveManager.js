@@ -7,7 +7,7 @@ import { TileGrid, withNodeDefaults } from '../map/TileGrid.js';
 
 const DEFAULT_STORAGE_KEY = 'campaign-builder:save';
 const DEFAULT_HISTORY_KEY = 'campaign-builder:history';
-const DEFAULT_HISTORY_LIMIT = 20;
+const DEFAULT_HISTORY_LIMIT = 10;
 
 /** The localStorage key the campaign save lives under, exposed for cross-tab sync. */
 export const STORAGE_KEY = DEFAULT_STORAGE_KEY;
@@ -173,12 +173,13 @@ export function downloadState(state, filename = 'campaign.json') {
 }
 
 /**
- * Append a serialized snapshot to a bounded history ring, dropping the oldest
- * entries once it exceeds `limit`. Pure: returns a new array, newest last.
- * @param {string[]} history
- * @param {string} snapshot
+ * Append a value to a bounded ring, dropping the oldest entries once it
+ * exceeds `limit`. Pure: returns a new array, newest last.
+ * @template T
+ * @param {T[]} history
+ * @param {T} snapshot
  * @param {number} [limit]
- * @returns {string[]}
+ * @returns {T[]}
  */
 export function pushSnapshot(history, snapshot, limit = DEFAULT_HISTORY_LIMIT) {
   const next = [...history, snapshot];
@@ -186,58 +187,148 @@ export function pushSnapshot(history, snapshot, limit = DEFAULT_HISTORY_LIMIT) {
 }
 
 /**
- * Read the undo history ring (newest last), tolerating a missing or corrupt
- * entry by returning an empty list.
- * @param {string} [key]
- * @returns {string[]}
+ * The undo history ring is stored as one snapshot per localStorage key
+ * (`<key>:<seq>`, each holding a raw serialized save) plus a small index of
+ * sequence numbers (oldest first) at `<key>`. Pushing a snapshot therefore
+ * writes only the new save string and the tiny index — it never re-serializes
+ * the older snapshots, which the previous single-array format did on every
+ * push (re-stringifying up to `limit` full campaigns, quote-escaping included).
+ * @param {string} key
+ * @param {number} seq
+ * @returns {string}
  */
-export function loadHistory(key = DEFAULT_HISTORY_KEY) {
+function historyEntryKey(key, seq) {
+  return `${key}:${seq}`;
+}
+
+/**
+ * Read the history index: the sequence numbers of stored snapshots, oldest
+ * first. A missing, corrupt, or legacy-format (array-of-strings) entry reads
+ * as an empty history rather than throwing.
+ * @param {string} [key]
+ * @returns {number[]}
+ */
+function loadHistoryIndex(key = DEFAULT_HISTORY_KEY) {
   const json = localStorage.getItem(key);
   if (!json) return [];
   try {
     const parsed = JSON.parse(json);
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) && parsed.every((n) => typeof n === 'number') ? parsed : [];
   } catch {
     return [];
   }
 }
 
 /**
+ * The stored snapshots (raw serialized saves), oldest first, skipping any
+ * whose entry key is missing.
+ * @param {string} [key]
+ * @returns {string[]}
+ */
+export function loadHistory(key = DEFAULT_HISTORY_KEY) {
+  return loadHistoryIndex(key)
+    .map((seq) => localStorage.getItem(historyEntryKey(key, seq)))
+    .filter((snapshot) => snapshot !== null);
+}
+
+/**
+ * Remove every stored snapshot and the index itself.
+ * @param {string} [key]
+ */
+export function clearHistory(key = DEFAULT_HISTORY_KEY) {
+  for (const seq of loadHistoryIndex(key)) localStorage.removeItem(historyEntryKey(key, seq));
+  localStorage.removeItem(key);
+}
+
+/**
+ * Push an already-serialized save onto the undo history ring. This is the
+ * fast path the save/autosave flows use: the persisted save string is pushed
+ * as-is, with no JSON parse or re-serialize of the campaign at all. A snapshot
+ * identical to the newest stored one is skipped, so saving twice without
+ * changes doesn't burn a ring slot.
+ * @param {string} snapshot raw serialized CampaignState
+ * @param {string} [key]
+ * @param {number} [limit]
+ */
+export function snapshotRawHistory(
+  snapshot,
+  key = DEFAULT_HISTORY_KEY,
+  limit = DEFAULT_HISTORY_LIMIT,
+) {
+  const seqs = loadHistoryIndex(key);
+  const newestSeq = seqs[seqs.length - 1];
+  if (seqs.length && snapshot === localStorage.getItem(historyEntryKey(key, newestSeq))) return;
+  const seq = seqs.length ? newestSeq + 1 : 0;
+  const next = pushSnapshot(seqs, seq, limit);
+  const evicted = seqs.filter((s) => !next.includes(s));
+  // The ring holds up to `limit` full saves, so it hits the storage quota long
+  // before the save itself does. Degrade rather than throw: retry with only
+  // this snapshot, and as a last resort drop the history — an unsaveable
+  // campaign is worse than a shortened undo trail.
+  try {
+    localStorage.setItem(historyEntryKey(key, seq), snapshot);
+    localStorage.setItem(key, JSON.stringify(next));
+  } catch {
+    clearHistory(key);
+    try {
+      localStorage.setItem(historyEntryKey(key, seq), snapshot);
+      localStorage.setItem(key, JSON.stringify([seq]));
+    } catch {
+      localStorage.removeItem(historyEntryKey(key, seq));
+      clearHistory(key);
+    }
+    return;
+  }
+  for (const s of evicted) localStorage.removeItem(historyEntryKey(key, s));
+}
+
+/**
  * Push the current state onto the undo history ring, so a later `undoHistory`
  * can restore it. Call this with the state that is about to be replaced.
+ * Callers that already hold the persisted save string should prefer
+ * `snapshotPersistedSave`, which skips this serialize.
  * @param {CampaignState} state
  * @param {string} [key]
  * @param {number} [limit]
  */
 export function snapshotHistory(state, key = DEFAULT_HISTORY_KEY, limit = DEFAULT_HISTORY_LIMIT) {
-  const snapshot = serialize(state);
-  // The history ring holds up to `limit` full saves, so it hits the storage
-  // quota long before the save itself does. Degrade rather than throw: retry
-  // with only the newest snapshot, and as a last resort drop the history — an
-  // unsaveable campaign is worse than a shortened undo trail.
-  try {
-    localStorage.setItem(key, JSON.stringify(pushSnapshot(loadHistory(key), snapshot, limit)));
-  } catch {
-    try {
-      localStorage.setItem(key, JSON.stringify([snapshot]));
-    } catch {
-      localStorage.removeItem(key);
-    }
-  }
+  snapshotRawHistory(serialize(state), key, limit);
+}
+
+/**
+ * Push the currently-persisted save (the raw string in localStorage) onto the
+ * undo history ring, without parsing or re-serializing it. No-op when nothing
+ * is saved yet.
+ * @param {string} [saveKey]
+ * @param {string} [historyKey]
+ * @param {number} [limit]
+ */
+export function snapshotPersistedSave(
+  saveKey = DEFAULT_STORAGE_KEY,
+  historyKey = DEFAULT_HISTORY_KEY,
+  limit = DEFAULT_HISTORY_LIMIT,
+) {
+  const raw = localStorage.getItem(saveKey);
+  if (raw) snapshotRawHistory(raw, historyKey, limit);
 }
 
 /**
  * Pop the most recent snapshot, persist the shortened ring, and return the
- * restored state, or null when there's nothing to undo.
+ * restored state, or null when there's nothing to undo. Entries whose stored
+ * snapshot has gone missing are skipped and cleaned out of the index.
  * @param {string} [key]
  * @returns {CampaignState | null}
  */
 export function undoHistory(key = DEFAULT_HISTORY_KEY) {
-  const history = loadHistory(key);
-  const snapshot = history.pop();
-  if (snapshot === undefined) return null;
-  localStorage.setItem(key, JSON.stringify(history));
-  return deserialize(snapshot);
+  const seqs = loadHistoryIndex(key);
+  while (seqs.length) {
+    const seq = /** @type {number} */ (seqs.pop());
+    const snapshot = localStorage.getItem(historyEntryKey(key, seq));
+    localStorage.removeItem(historyEntryKey(key, seq));
+    localStorage.setItem(key, JSON.stringify(seqs));
+    if (snapshot !== null) return deserialize(snapshot);
+  }
+  return null;
 }
 
 /**
