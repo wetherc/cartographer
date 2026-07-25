@@ -370,6 +370,70 @@ test('paintTile at 1x clears a previous span, and overlays ignore span', () => {
   assert.equal(getTile(node, '2,2').span, undefined);
 });
 
+test('spanBlocks skips a scaled tile whose id does not parse to coordinates', () => {
+  let node = createMapNode('n', 'N', null, 4, 4);
+  node = setTile(node, createTile('poi', 'academy.svg'));
+  // Force a span onto the unparseable-id tile so the loop reaches the coords guard.
+  node = { ...node, tiles: node.tiles.map((t) => ({ ...t, span: 3 })) };
+  assert.deepEqual(spanBlocks(node), [], 'no block for a tile with no coordinates');
+});
+
+test('stampRegionLink with null on an unlinked tile clears just that tile, leaving others', () => {
+  let node = createMapNode('world', 'World', null, 4, 4);
+  node = setTile(node, createTile('0,0', 'grass.svg')); // unlinked: no region group
+  node = setTile(node, createTile('3,3', 'grass.svg', { childNodeId: 'keep' }));
+  const cleared = stampRegionLink(node, '0,0', null);
+  assert.equal(getTile(cleared, '0,0').childNodeId, null);
+  assert.equal(getTile(cleared, '3,3').childNodeId, 'keep', 'unrelated tile untouched');
+});
+
+test('stampRegionLink re-points a linked block while leaving outside tiles alone', () => {
+  let node = createMapNode('world', 'World', null, 5, 5);
+  for (const id of ['1,1', '2,1', '1,2', '2,2']) node = setTile(node, createTile(id, 'grass.svg'));
+  node = setTile(node, createTile('4,4', 'grass.svg', { childNodeId: 'other' }));
+  node = stampRegionLink(node, '1,1', 'vale');
+  const relinked = stampRegionLink(node, '1,1', 'moor');
+  for (const id of ['1,1', '2,1', '1,2', '2,2']) {
+    assert.equal(getTile(relinked, id).childNodeId, 'moor', id);
+  }
+  assert.equal(getTile(relinked, '4,4').childNodeId, 'other', 'tile outside the block untouched');
+});
+
+test('ensureChildLink treats a candidate with an unparseable id as infinitely far', () => {
+  let node = createMapNode('world', 'World', null, 5, 5);
+  node = setTile(node, createTile('weird', 'grass.svg')); // plain candidate, no coordinates
+  node = setTile(node, createTile('2,2', 'grass.svg')); // the real centre candidate
+  const result = ensureChildLink(node, 'crypt', {
+    markerRef: 'dungeon.svg',
+    createRef: 'grass.svg',
+  });
+  assert.equal(result.tileId, '2,2', 'the coordinate tile wins over the unparseable one');
+});
+
+test('ensureChildLink returns a null tileId when the grid is full with nothing eligible', () => {
+  let node = createMapNode('world', 'World', null, 2, 2);
+  const wall = 'assets/tiles/interior/interior-wall-h.svg';
+  for (const id of ['0,0', '1,0', '0,1', '1,1']) node = setTile(node, createTile(id, wall));
+  const result = ensureChildLink(node, 'crypt', {
+    markerRef: 'dungeon.svg',
+    createRef: 'grass.svg',
+  });
+  assert.equal(result.tileId, null, 'no candidate and no empty cell to place a link');
+  assert.equal(result.node, node);
+});
+
+test('ensureChildLink places a link on the lone empty cell of an otherwise walled grid', () => {
+  let node = createMapNode('world', 'World', null, 2, 2);
+  const wall = 'assets/tiles/interior/interior-wall-h.svg';
+  for (const id of ['0,0', '1,0', '0,1']) node = setTile(node, createTile(id, wall));
+  const result = ensureChildLink(node, 'crypt', {
+    markerRef: 'dungeon.svg',
+    createRef: 'grass.svg',
+  });
+  assert.equal(result.tileId, '1,1', 'the only unoccupied cell takes the link');
+  assert.equal(getTile(result.node, '1,1').childNodeId, 'crypt');
+});
+
 test('spanBlocks lists each scaled tile with its clamped rect and covered ids', () => {
   let node = createMapNode('n', 'N', null, 4, 4);
   node = paintTile(node, '0,0', 'academy.svg', false, 3);

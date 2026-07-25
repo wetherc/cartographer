@@ -99,6 +99,75 @@ test('resolveEntryTile returns the preferred id for an empty node', () => {
   assert.equal(resolveEntryTile(node, '2,2'), '2,2');
 });
 
+test('resolveEntryTile returns the first pool tile when the preferred id is unparseable', () => {
+  const node = {
+    id: 'n',
+    name: 'N',
+    parentId: null,
+    width: 4,
+    height: 4,
+    kind: 'interior',
+    environ: null,
+    tiles: [
+      createTile('1,1', 'assets/tiles/interior/interior-floor-1.svg'),
+      createTile('2,2', 'assets/tiles/interior/interior-floor-2.svg'),
+    ],
+  };
+  // No coords to score against: the first walkable tile is taken as-is.
+  assert.equal(resolveEntryTile(node, 'not-a-coord'), '1,1');
+});
+
+test('resolveEntryTile skips pool tiles whose ids do not parse when scoring', () => {
+  const node = {
+    id: 'n',
+    name: 'N',
+    parentId: null,
+    width: 4,
+    height: 4,
+    kind: 'interior',
+    environ: null,
+    tiles: [
+      createTile('bogus', 'assets/tiles/interior/interior-floor-1.svg'),
+      createTile('3,3', 'assets/tiles/interior/interior-floor-2.svg'),
+    ],
+  };
+  // Preferred '3,3' is a wall/void miss here; the malformed-id tile is skipped
+  // in scoring, leaving the one real coord as the nearest.
+  assert.equal(resolveEntryTile(node, '3,3'), '3,3');
+});
+
+test('computeRegionEntryTile falls back to centre when no region group matches', async () => {
+  const { computeRegionEntryTile } = await import('../src/map/EntryPoint.js');
+  const parent = {
+    id: 'world',
+    name: 'World',
+    parentId: null,
+    width: 6,
+    height: 6,
+    kind: 'region',
+    environ: null,
+    tiles: [createTile('0,0', 'grass.svg')], // no tile links to 'ghost'
+  };
+  const childTiles = [];
+  for (let y = 0; y < 4; y++)
+    for (let x = 0; x < 4; x++) childTiles.push(createTile(`${x},${y}`, 'grass.svg'));
+  const child = {
+    id: 'ghost',
+    name: 'Ghost',
+    parentId: 'world',
+    width: 4,
+    height: 4,
+    kind: 'region',
+    environ: null,
+    tiles: childTiles,
+  };
+  // No group -> null block -> centre of the child.
+  assert.equal(
+    computeRegionEntryTile(parent, child, 'ghost', { nodeId: 'world', tileId: '5,5' }),
+    '2,2',
+  );
+});
+
 test('computeRegionEntryTile lands a stairs descent on the child level stairs-up', async () => {
   const { computeRegionEntryTile } = await import('../src/map/EntryPoint.js');
   const parent = {

@@ -14,6 +14,7 @@ import {
   restoreResource,
   addItem,
   removeItem,
+  updateItem,
   transferItem,
   setMaxHP,
   setBonusHP,
@@ -267,6 +268,81 @@ test('setBaseAC sets the unarmored baseline, never below 1', () => {
   const hero = createCharacter('c1', 'Hero');
   assert.equal(setBaseAC(hero, 13).baseAC, 13, 'Mage Armor');
   assert.equal(setBaseAC(hero, 0).baseAC, 1);
+});
+
+test('setMaxHP leaves non-HP resource pools untouched', () => {
+  let hero = withHP(createCharacter('c1', 'Hero'), 20);
+  hero = addResource(hero, createResource('mana', 'Mana', 'mana', 10));
+  const raised = setMaxHP(hero, 30);
+  assert.equal(getHP(raised)?.max, 30);
+  assert.deepEqual(
+    raised.resources.find((r) => r.id === 'mana'),
+    hero.resources.find((r) => r.id === 'mana'),
+    'the mana pool passes through unchanged',
+  );
+});
+
+test('setBonusHP coerces a non-numeric amount to 0', () => {
+  const hero = createCharacter('c1', 'Hero');
+  assert.equal(setBonusHP(hero, NaN).bonusHP, 0, 'NaN floors to the || 0 fallback');
+});
+
+test('setBaseAC falls back to 10 for a non-finite value', () => {
+  const hero = createCharacter('c1', 'Hero');
+  assert.equal(setBaseAC(hero, Infinity).baseAC, 10);
+  assert.equal(setBaseAC(hero, NaN).baseAC, 10);
+});
+
+test('damageCharacter treats an absent bonusHP as zero', () => {
+  const legacy = { ...withHP(createCharacter('c1', 'Hero'), 20) };
+  delete legacy.bonusHP;
+  const hurt = damageCharacter(legacy, 5);
+  assert.equal(getHP(hurt)?.current, 15, 'the whole hit lands on the pool');
+});
+
+test('withDefaults backfills missing conditions and inventory arrays', () => {
+  const legacy = { ...createCharacter('c1', 'Hero') };
+  delete legacy.conditions;
+  delete legacy.inventory;
+  const filled = withDefaults(legacy);
+  assert.deepEqual(filled.conditions, []);
+  assert.deepEqual(filled.inventory, []);
+});
+
+test('restoreResource leaves non-matching pools untouched', () => {
+  let hero = createCharacter('c1', 'Hero');
+  hero = addResource(hero, createResource('mana', 'Mana', 'mana', 10));
+  hero = addResource(hero, createResource('ki', 'Ki', 'custom', 5));
+  hero = spendResource(hero, 'mana', 4);
+  const restored = restoreResource(hero, 'mana', 100);
+  assert.equal(restored.resources.find((r) => r.id === 'mana').current, 10);
+  assert.equal(restored.resources.find((r) => r.id === 'ki').current, 5, 'ki pool untouched');
+});
+
+test('addItem merges one stack while leaving other stacks alone', () => {
+  let hero = createCharacter('c1', 'Hero');
+  hero = addItem(hero, { id: 'arrow', name: 'Arrow', quantity: 5, notes: '' });
+  hero = addItem(hero, { id: 'rope', name: 'Rope', quantity: 1, notes: '' });
+  hero = addItem(hero, { id: 'arrow', name: 'Arrow', quantity: 3, notes: '' });
+  assert.equal(hero.inventory.find((i) => i.id === 'arrow').quantity, 8);
+  assert.equal(hero.inventory.find((i) => i.id === 'rope').quantity, 1, 'other stack untouched');
+});
+
+test('updateItem replaces one item wholesale, keeping its id and other items', () => {
+  let hero = createCharacter('c1', 'Hero');
+  hero = addItem(hero, { id: 'sword', name: 'Sword', quantity: 1, notes: '', type: 'weapon' });
+  hero = addItem(hero, { id: 'rope', name: 'Rope', quantity: 1, notes: '' });
+  const edited = updateItem(hero, 'sword', {
+    id: 'ignored',
+    name: 'Flame Sword',
+    quantity: 1,
+    notes: 'burns',
+    type: 'weapon',
+  });
+  const sword = edited.inventory.find((i) => i.id === 'sword');
+  assert.equal(sword.name, 'Flame Sword', 'fields replaced');
+  assert.equal(sword.id, 'sword', 'id preserved despite the replacement carrying another id');
+  assert.equal(edited.inventory.find((i) => i.id === 'rope').name, 'Rope', 'other item untouched');
 });
 
 test('withDefaults backfills baseAC as 10 and migrates bonus-era armor items', () => {

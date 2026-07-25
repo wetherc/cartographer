@@ -8,7 +8,7 @@ import {
   generateNodeTiles,
   generateDungeonLevels,
 } from '../src/map/MapGenerator.js';
-import { wallKind } from '../src/map/GeneratorInteriors.js';
+import { wallKind, generateDungeon } from '../src/map/GeneratorInteriors.js';
 
 /** Deterministic PRNG so a seed reproduces a generation exactly. */
 function mulberry32(seed) {
@@ -23,6 +23,33 @@ function mulberry32(seed) {
 }
 
 const palette = new TilePalette();
+
+test('an unknown size preset falls back to the medium dimensions', () => {
+  const med = GENERATOR_SIZES.medium;
+  const gen = generateNodeTiles(
+    palette,
+    { kind: 'region', archetype: 'wilderness', size: 'gargantuan' },
+    mulberry32(1),
+  );
+  assert.equal(gen.width, med);
+  assert.equal(gen.height, med);
+  // generateDungeonLevels shares the same size lookup and clamps the count.
+  const levels = generateDungeonLevels(
+    palette,
+    { size: 'gargantuan', levels: 0 },
+    mulberry32(1),
+    () => 'x',
+  );
+  assert.equal(levels.length, 1, 'levels count clamps up to at least one');
+  assert.equal(levels[0].width, med);
+});
+
+test('generateDungeon defaults entrance to edge and descend to true', () => {
+  const gen = generateDungeon(palette, GENERATOR_SIZES.small, mulberry32(3));
+  assert.ok(gen.tiles.length > 0);
+  // descend defaulted true, so a stairs-down seam is placed.
+  assert.ok(gen.stairsDown, 'default descend places a stairs-down tile');
+});
 
 test('ARCHETYPES lists region and interior options', () => {
   assert.ok(ARCHETYPES.region.some((a) => a.value === 'wilderness'));

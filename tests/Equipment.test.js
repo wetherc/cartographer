@@ -634,3 +634,116 @@ test('equippedWeapons skips weapons without a damage roll and empty hands', () =
   hero = equip(hero, 'mainHand', 'sword');
   assert.deepEqual(equippedWeapons(hero), [], 'a damage-less weapon is not attackable');
 });
+
+test('weaponAbility falls back to STR when the handling value is unknown', () => {
+  // An out-of-vocabulary handling finds no entry, so the ability defaults.
+  const exotic = /** @type {any} */ ({
+    id: 'w',
+    name: 'Odd',
+    quantity: 1,
+    notes: '',
+    type: 'weapon',
+    handling: 'thrown',
+  });
+  assert.equal(weaponAbility(exotic), 'STR');
+});
+
+test('migrateItem keeps an explicit weight and defaults a missing bonus to zero', () => {
+  const migrated = migrateItem({
+    id: 'brig',
+    name: 'Brigandine',
+    quantity: 1,
+    notes: '',
+    type: /** @type {const} */ ('armor'),
+    armorWeight: /** @type {const} */ ('medium'),
+  });
+  assert.deepEqual(
+    { armorWeight: migrated.armorWeight, baseAC: migrated.baseAC },
+    { armorWeight: 'medium', baseAC: 10 },
+    'stored weight survives; a missing acBonus reads as +0',
+  );
+});
+
+test('effectiveStats treats a buff to an unlisted stat as starting from 10', () => {
+  let hero = createCharacter('c1', 'Hero');
+  hero = addItem(hero, {
+    id: 'charm',
+    name: 'Lucky Charm',
+    quantity: 1,
+    notes: '',
+    type: 'ring',
+    statBonuses: /** @type {any} */ ({ LUK: 3 }),
+  });
+  hero = equip(hero, 'accessory', 'charm');
+  assert.equal(effectiveStats(hero).LUK, 13, 'absent stat starts at 10, +3 buff');
+});
+
+test('armorClass defaults a missing DEX score to 10 (no modifier)', () => {
+  const hero = createCharacter('c1', 'Hero');
+  const noDex = /** @type {any} */ ({ ...hero, stats: { STR: 12 } });
+  assert.equal(armorClass(noDex), 10, '10 base + DEX mod of a defaulted 10 (=0)');
+});
+
+test('armorClass reads an unknown armor weight as light (full DEX)', () => {
+  let hero = createCharacter('c1', 'Hero', { DEX: 18 }); // +4
+  hero = addItem(hero, {
+    id: 'weird',
+    name: 'Voidmail',
+    quantity: 1,
+    notes: '',
+    type: 'armor',
+    armorWeight: /** @type {any} */ ('void'),
+    baseAC: 12,
+  });
+  hero = equip(hero, 'chest', 'weird');
+  assert.equal(armorClass(hero), 16, 'unknown weight falls back to light: 12 + full DEX (+4)');
+});
+
+test('itemEffects: light armor reports "+ DEX"; an unknown weight also reads as light', () => {
+  assert.equal(
+    itemSummary({
+      id: 'a',
+      name: 'A',
+      quantity: 1,
+      notes: '',
+      type: 'armor',
+      armorWeight: 'light',
+      baseAC: 12,
+    }),
+    'light armor, AC 12 + DEX',
+  );
+  assert.equal(
+    itemSummary({
+      id: 'b',
+      name: 'B',
+      quantity: 1,
+      notes: '',
+      type: 'armor',
+      armorWeight: /** @type {any} */ ('void'),
+      baseAC: 13,
+    }),
+    'light armor, AC 13 + DEX',
+    'an unrecognized weight is reported and scaled as light',
+  );
+});
+
+test('itemEffects renders a negative stat penalty without a leading plus', () => {
+  assert.deepEqual(
+    itemEffects({
+      id: 'curse',
+      name: 'Cursed Band',
+      quantity: 1,
+      notes: '',
+      type: 'ring',
+      statBonuses: { STR: -2, DEX: 0 },
+    }),
+    ['-2 STR'],
+    'negative shows its sign; a zero delta is dropped',
+  );
+});
+
+test('pruneEquipment returns a pre-equipment character untouched', () => {
+  const legacy = { ...createCharacter('c1', 'Hero') };
+  delete legacy.equipment;
+  assert.equal(pruneEquipment(legacy), legacy, 'no equipment record: nothing to prune');
+});

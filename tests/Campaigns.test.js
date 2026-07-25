@@ -69,6 +69,41 @@ test('loadInitialCampaign restores a save and default-fills fields older saves l
   assert.equal(loadInitialCampaign().characters.length, 0);
 });
 
+test('loadInitialCampaign passes through every present field of a full save', () => {
+  const clock = { day: 3, minutes: 42 };
+  localStorage.setItem(
+    'campaign-builder:save',
+    JSON.stringify({
+      nodes: [{ id: 'world', name: 'World', parentId: null, width: 2, height: 2, tiles: [] }],
+      party: { nodeId: 'world', tileId: '0,1' },
+      characters: [createCharacter('c1', 'Hero')],
+      encounters: [],
+      travelog: [{ id: 'e1', text: 'moved', at: 1 }],
+      quests: [{ id: 'q1', title: 'Find it', status: 'active', notes: '' }],
+      clock,
+      npcs: [{ id: 'n1', name: 'Barkeep', location: null, notes: '' }],
+      handouts: [{ id: 'h1', title: 'Map', nodeId: null, revealed: false }],
+      bestiary: [{ id: 'b1', name: 'Goblin' }],
+      splitParty: true,
+    }),
+  );
+  const campaign = loadInitialCampaign();
+  assert.deepEqual(campaign.party, { nodeId: 'world', tileId: '0,1' });
+  assert.equal(campaign.travelog.length, 1);
+  assert.equal(campaign.quests[0].id, 'q1');
+  assert.deepEqual(campaign.clock, clock);
+  assert.equal(campaign.npcs[0].name, 'Barkeep');
+  assert.equal(campaign.handouts[0].title, 'Map');
+  assert.equal(campaign.bestiary[0].id, 'b1');
+  assert.equal(campaign.splitParty, true);
+});
+
+test('buildExampleCampaign defaults rng to Math.random when none is given', () => {
+  const campaign = buildExampleCampaign(new TilePalette());
+  assert.ok(campaign.grid.getNode('world'), 'built an overworld without an injected rng');
+  assert.ok(campaign.encounters.length > 0);
+});
+
 test('blank campaign has no demo content', () => {
   const campaign = buildBlankCampaign();
   assert.equal(campaign.characters.length, 0);

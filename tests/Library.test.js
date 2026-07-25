@@ -76,6 +76,76 @@ test('upsertEntry replaces by key or appends; removeEntry drops by key', () => {
   assert.deepEqual(removeEntry(appended, 'goblin', nameKey), [{ name: 'Orc', maxHP: 15 }]);
 });
 
+test('upsertEntry replacing one of several entries leaves the others in place', () => {
+  const customs = [
+    { name: 'A', v: 1 },
+    { name: 'B', v: 2 },
+    { name: 'C', v: 3 },
+  ];
+  const replaced = upsertEntry(customs, { name: 'b', v: 20 }, nameKey);
+  assert.deepEqual(replaced, [
+    { name: 'A', v: 1 },
+    { name: 'b', v: 20 },
+    { name: 'C', v: 3 },
+  ]);
+});
+
+test('normalizeLibrary keeps a supplied id, valid tier, and an armor object', () => {
+  const lib = normalizeLibrary({
+    bestiary: [
+      {
+        name: 'Wyvern',
+        id: 'wyvern-alpha',
+        tier: 'legend',
+        armor: { name: 'Scales', acBonus: 3 },
+      },
+    ],
+  });
+  const wyvern = lib.bestiary[0];
+  assert.equal(wyvern.id, 'wyvern-alpha', 'a present string id is kept, not sluggified');
+  assert.equal(wyvern.tier, 'legend', 'a valid tier survives');
+  assert.deepEqual(wyvern.armor, { name: 'Scales', acBonus: 3 }, 'an armor object is kept');
+});
+
+test('normalizeLibrary keeps a fully-specified NPC verbatim', () => {
+  const lib = normalizeLibrary({
+    npcs: [
+      {
+        name: 'Smith',
+        role: 'Blacksmith',
+        disposition: 'friendly',
+        notes: 'Forges blades and gossip alike.',
+        stats: { STR: 15 },
+      },
+    ],
+  });
+  assert.deepEqual(lib.npcs, [
+    {
+      name: 'Smith',
+      role: 'Blacksmith',
+      disposition: 'friendly',
+      notes: 'Forges blades and gossip alike.',
+      stats: { STR: 15 },
+    },
+  ]);
+});
+
+test('activeWeapons excludes a weapon-typed template that carries no damage', () => {
+  try {
+    setActiveLibrary({
+      ...emptyLibrary(),
+      equipment: [{ name: 'Broken Hilt', type: 'weapon' }],
+    });
+    assert.equal(
+      activeWeapons().some((w) => w.name === 'Broken Hilt'),
+      false,
+      'a damage-less weapon is not offered as an enemy weapon',
+    );
+  } finally {
+    setActiveLibrary(emptyLibrary());
+  }
+});
+
 test('normalizeLibrary turns garbage into an empty library', () => {
   assert.deepEqual(normalizeLibrary(null), emptyLibrary());
   assert.deepEqual(normalizeLibrary('nope'), emptyLibrary());

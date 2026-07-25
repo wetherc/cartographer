@@ -66,6 +66,14 @@ test('collectSubtreeIds includes the root and every descendant', () => {
   ]);
 });
 
+test('collectSubtreeIds is safe against a parentId cycle', () => {
+  // a<->b point at each other; the traversal must visit each once and stop.
+  assert.deepEqual([...collectSubtreeIds([node('a', 'b'), node('b', 'a')], 'a')].sort(), [
+    'a',
+    'b',
+  ]);
+});
+
 test('TileGrid.removeNode deletes the subtree and clears dangling child links', () => {
   const grid = new TileGrid();
   let world = createMapNode('world', 'World', null, 2, 1);

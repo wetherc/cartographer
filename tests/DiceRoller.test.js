@@ -93,6 +93,25 @@ test('disadvantage keeps the lower die; other die types roll once', () => {
   assert.equal(values.length, 0, 'exactly three rng draws');
 });
 
+test('roll defaults mode to normal and modifier to 0 for a bare selection', () => {
+  // A raw selection object with neither `mode` nor `modifier` set.
+  const result = roll({ counts: { d6: 1 } }, () => 0.5);
+  assert.equal(result.results[0].rolls[0], 4);
+  assert.equal(result.results[0].dropped, undefined, 'no mode -> rolled once');
+  assert.equal(result.modifier, 0);
+  assert.equal(result.total, 4);
+});
+
+test('advantage drops the second die when the first is the higher roll', () => {
+  const selection = emptySelection();
+  selection.counts.d20 = 1;
+  selection.mode = 'advantage';
+  const values = [0.8, 0.2]; // 17 then 5: the first die is kept
+  const result = roll(selection, () => values.shift() ?? 0);
+  assert.deepEqual(result.results[0].rolls, [17]);
+  assert.deepEqual(result.results[0].dropped, [5], 'the kept die was first, so second is dropped');
+});
+
 test('normal mode leaves dropped unset', () => {
   const selection = emptySelection();
   selection.counts.d20 = 2;

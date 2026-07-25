@@ -47,6 +47,14 @@ test('revealAround does not un-reveal already-revealed tiles outside the new rad
   assert.equal(revealedCount(node), 2);
 });
 
+test('revealAround leaves a non-coordinate tile untouched while revealing around a valid center', () => {
+  let node = grid5x5();
+  node = setTile(node, createTile('poi', 'town.svg')); // no grid coordinate
+  const after = revealAround(node, '2,2', 5);
+  assert.equal(after.tiles.find((t) => t.id === 'poi').revealed, false);
+  assert.equal(after.tiles.find((t) => t.id === '2,2').revealed, true);
+});
+
 test('revealAround is a no-op for a center id that is not a grid coordinate', () => {
   const before = grid5x5();
   const after = revealAround(before, 'not-a-coord', 5);

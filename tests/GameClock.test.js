@@ -39,6 +39,10 @@ test('formatClock reads day and watch name', () => {
   assert.equal(formatClock({ day: 3, watch: 4 }), `Day 3, ${WATCHES[4]}`);
 });
 
+test('formatClock falls back to the first watch for an out-of-range index', () => {
+  assert.equal(formatClock({ day: 2, watch: 99 }), `Day 2, ${WATCHES[0]}`);
+});
+
 test('longRest fully restores every pool; shortRest restores half', () => {
   let hero = withHP(createCharacter('h', 'Hero'), 20);
   hero = spendResource(hero, 'hp', 16); // down to 4/20

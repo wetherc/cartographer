@@ -26,6 +26,11 @@ test('MapNavigator starts at the given root node', () => {
   assert.equal(nav.getCurrentNode().id, 'world');
 });
 
+test('getCurrentNode throws when the current node id is unknown', () => {
+  const nav = new MapNavigator(buildGrid(), 'ghost');
+  assert.throws(() => nav.getCurrentNode(), /unknown node "ghost"/);
+});
+
 test("zoomIn moves to the tile's child node", () => {
   const nav = new MapNavigator(buildGrid(), 'world');
   const zoomed = nav.zoomIn('0,0');

@@ -20,6 +20,36 @@ test('sortInitiative orders highest first, ties broken by name then id', () => {
   );
 });
 
+test('sortInitiative orders an equal-initiative pair by name in either input order', () => {
+  const zed = createParticipant('z', 'Zed', 'foe', 12);
+  const ana = createParticipant('a', 'Ana', 'party', 12);
+  // Both input orders sort by name — exercising the comparator both directions.
+  assert.deepEqual(
+    sortInitiative([zed, ana]).map((p) => p.name),
+    ['Ana', 'Zed'],
+  );
+  assert.deepEqual(
+    sortInitiative([ana, zed]).map((p) => p.name),
+    ['Ana', 'Zed'],
+  );
+});
+
+test('sortInitiative breaks a same-name, same-initiative tie by id', () => {
+  const list = [
+    createParticipant('z', 'Twin', 'foe', 10),
+    createParticipant('a', 'Twin', 'party', 10),
+  ];
+  assert.deepEqual(
+    sortInitiative(list).map((p) => p.id),
+    ['a', 'z'],
+  );
+  // Reversed input sorts identically — the id tie-break is total and stable.
+  assert.deepEqual(
+    sortInitiative([...list].reverse()).map((p) => p.id),
+    ['a', 'z'],
+  );
+});
+
 test('startCombat sorts and starts at round 1, first turn', () => {
   const state = startCombat([
     createParticipant('a', 'Goblin', 'foe', 8),

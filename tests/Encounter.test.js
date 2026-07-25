@@ -319,6 +319,39 @@ test('defaultEnemyGear arms by tier and level', () => {
   assert.deepEqual(bigLegend.armor, { name: 'Plate', acBonus: 8 });
 });
 
+test('defaultEnemyGear floors a zero/NaN level up to 1', () => {
+  assert.equal(defaultEnemyGear(0, 'mob').weapon.name, 'Shortsword', 'level 0 reads as level 1');
+  assert.equal(defaultEnemyGear(NaN, 'legend').weapon.name, 'Longsword', 'NaN reads as level 1');
+});
+
+test('withDefaults backfills a wholly legacy encounter missing block, statMods, level, and tier', () => {
+  const legacy = /** @type {any} */ ({ id: 'e1', name: 'Wolf', maxHP: 5, currentHP: 5 });
+  const filled = withDefaults(legacy);
+  assert.deepEqual(filled.statBlock, fullBlock(), 'absent stat block normalizes to defaults');
+  assert.deepEqual(filled.statMods, []);
+  assert.equal(filled.level, 1);
+  assert.equal(filled.tier, 'mob');
+});
+
+test('addStatModifier seeds statMods when the encounter has none', () => {
+  const legacy = /** @type {any} */ ({ id: 'e1', name: 'Wolf', maxHP: 5, currentHP: 5 });
+  const buffed = addStatModifier(legacy, 'STR', 2, 3);
+  assert.deepEqual(buffed.statMods, [{ stat: 'STR', delta: 2, rounds: 3 }]);
+});
+
+test('effectiveStatBlock tolerates an encounter with no stat block or statMods', () => {
+  const legacy = /** @type {any} */ ({ id: 'e1', name: 'Wolf', maxHP: 5, currentHP: 5 });
+  assert.deepEqual(effectiveStatBlock(legacy), fullBlock());
+});
+
+test('toTemplate defaults block, level, and tier from a legacy encounter', () => {
+  const legacy = /** @type {any} */ ({ id: 'e1', name: 'Wolf', maxHP: 5, currentHP: 5 });
+  const template = toTemplate('wolf', legacy);
+  assert.deepEqual(template.statBlock, fullBlock());
+  assert.equal(template.level, 1);
+  assert.equal(template.tier, 'mob');
+});
+
 test('createEncounter stamps default gear; explicit gear wins', () => {
   const goblin = createEncounter('e1', 'Goblin', 7);
   assert.equal(goblin.weapon?.name, 'Shortsword');

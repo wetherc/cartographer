@@ -118,6 +118,16 @@ test('TileGrid tracks parent/child hierarchy and breadcrumb', () => {
   assert.deepEqual(breadcrumb, ['world', 'region', 'subregion']);
 });
 
+test('getBreadcrumb stops at a node whose parentId points at a missing node', () => {
+  const grid = new TileGrid();
+  // 'region' claims a parent that was never added — the walk stops there.
+  grid.addNode(createMapNode('region', 'Region', 'ghost', 1, 1));
+  assert.deepEqual(
+    grid.getBreadcrumb('region').map((n) => n.id),
+    ['region'],
+  );
+});
+
 test('TileGrid resolves a tile zoom target through childNodeId', () => {
   const grid = new TileGrid();
   grid.addNode(createMapNode('world', 'World', null, 1, 1));

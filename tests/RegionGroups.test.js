@@ -109,6 +109,14 @@ test('groupImageRef prefers a POI-marked tile, else the top-left-most image', ()
   assert.equal(groupImageRef(marked, group), 'village.svg');
 });
 
+test('groupImageRef tie-breaks two tiles on the same row by the smaller x', () => {
+  let node = createMapNode('n', 'Node', null, 2, 1);
+  node = setTile(node, createTile('0,0', 'left.svg', { childNodeId: 'region' }));
+  node = setTile(node, createTile('1,0', 'right.svg', { childNodeId: 'region' }));
+  // Feed the ids right-first so the reduce meets the same-row/smaller-x case.
+  assert.equal(groupImageRef(node, { tileIds: ['1,0', '0,0'] }), 'left.svg');
+});
+
 test('groupImageChunks splits a 4x4 block into four 2x2 chunks with their own images', () => {
   let node = createMapNode('n', 'Node', null, 4, 4);
   for (let y = 0; y < 4; y++) {

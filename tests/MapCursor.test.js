@@ -22,6 +22,12 @@ test('nextCursor moves one cell in the arrow direction', () => {
   assert.deepEqual(nextCursor({ x: 2, y: 2 }, 'ArrowRight', 5, 5), { x: 3, y: 2 });
 });
 
+test('nextCursor returns the start cell unchanged for a non-direction key', () => {
+  assert.deepEqual(nextCursor({ x: 2, y: 2 }, 'Enter', 5, 5), { x: 2, y: 2 });
+  // A null cursor with a bad key still resolves to the grid centre, unmoved.
+  assert.deepEqual(nextCursor(null, 'Enter', 8, 6), { x: 4, y: 3 });
+});
+
 test('nextCursor clamps at the grid edges rather than leaving the map', () => {
   assert.deepEqual(nextCursor({ x: 0, y: 0 }, 'ArrowLeft', 4, 4), { x: 0, y: 0 });
   assert.deepEqual(nextCursor({ x: 0, y: 0 }, 'ArrowUp', 4, 4), { x: 0, y: 0 });
