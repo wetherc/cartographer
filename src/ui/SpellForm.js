@@ -1,7 +1,6 @@
 import { CLASS_LIST } from '../entities/Classes.js';
 import { SPELL_SCHOOLS, SPELL_ABILITIES, SPELL_EFFECT_KINDS } from '../data/spells.js';
 import { buildDamageEditor } from './ItemFormEditors.js';
-import { icon } from './icons.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/spell.js').SpellEffect} SpellEffect */
@@ -48,6 +47,18 @@ function checkbox(caption, checked) {
   text.textContent = caption;
   label.append(input, text);
   return { label, input };
+}
+
+/** A text-labelled button, so the form's submit and cancel actions share one
+ * size and label scheme (no icon set has a non-destructive "cancel" glyph).
+ * @param {string} label @param {string} className
+ * @returns {HTMLButtonElement} */
+function labeledButton(label, className) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = className;
+  button.textContent = label;
+  return button;
 }
 
 /** A text input pre-filled and classed as a form field. @param {string} value @param {string} placeholder */
@@ -209,11 +220,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   }
   scales.input.addEventListener('change', syncScaling);
 
-  const submitButton = document.createElement('button');
-  submitButton.type = 'button';
-  submitButton.className = 'btn btn--primary';
-  submitButton.setAttribute('aria-label', submitLabel);
-  submitButton.appendChild(icon(spell ? 'check' : 'add'));
+  const submitButton = labeledButton(submitLabel, 'btn btn--primary');
   submitButton.addEventListener('click', () => {
     const name = nameInput.value.trim();
     if (!name) return;
@@ -221,10 +228,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   });
   const actionsRow = fieldRow(submitButton);
   if (onCancel) {
-    const cancelButton = document.createElement('button');
-    cancelButton.type = 'button';
-    cancelButton.className = 'btn';
-    cancelButton.textContent = 'Cancel';
+    const cancelButton = labeledButton('Cancel', 'btn');
     cancelButton.addEventListener('click', onCancel);
     actionsRow.appendChild(cancelButton);
   }

@@ -488,6 +488,12 @@
   text-align: center;
 }
 
+/* The damage editor stacks its rows in a stretch flex column; keep the add
+   button sized to its label instead of spanning the full width. */
+.inventory-panel__damage-add {
+  align-self: flex-start;
+}
+
 /* Inflicted status effects: removable chips plus the add row. */
 .inventory-panel__effects {
   display: flex;
