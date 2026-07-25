@@ -241,6 +241,58 @@ select.field {
   cursor: pointer;
 }
 
+/* Opt into the customizable-<select> model so the opened option list is drawn
+   with app CSS instead of the OS popup. This is a progressive enhancement: an
+   engine without customizable-select support treats `base-select` as an invalid
+   appearance value and drops it, falling back to the `appearance: none` rule
+   above — so the closed control stays themed everywhere, and only a supporting
+   engine (Chromium today; WebKit/Firefox as they ship it) also themes the
+   popup. The auto-generated picker chevron is hidden because the closed control
+   already carries our own `--select-chevron`, and every browser shows that one;
+   letting the native icon through too would double the arrow where base-select
+   is active. */
+select.field,
+select.field::picker(select) {
+  appearance: base-select;
+}
+
+select.field::picker-icon {
+  display: none;
+}
+
+/* The popped-open list: the app's raised surface, border, and elevation, with
+   comfortable option rows that highlight on hover and mark the current choice
+   with the accent rather than the platform's selection color. */
+select.field::picker(select) {
+  padding: var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-3);
+}
+
+select.field option {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+select.field option:hover,
+select.field option:focus {
+  background: var(--surface-sunken);
+}
+
+select.field option:checked {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* The per-option checkmark the customizable model adds for the current choice;
+   the accent-colored, bolded label already reads as "selected". */
+select.field option::checkmark {
+  display: none;
+}
+
 .field:focus {
   border-color: var(--focus-ring);
 }
