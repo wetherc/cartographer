@@ -105,6 +105,8 @@ export class MapCanvas {
     this._touches = new Map();
     /** @type {{ cx: number, cy: number, dist: number } | null} previous two-finger frame */
     this._pinch = null;
+    /** @type {number | null} pending requestAnimationFrame id for a coalesced redraw */
+    this._rafId = null;
 
     this._onPointerDown = this._onPointerDown.bind(this);
     this._onPointerMove = this._onPointerMove.bind(this);
@@ -358,9 +360,20 @@ export class MapCanvas {
     };
   }
 
+  /**
+   * Request a redraw, coalesced through a single requestAnimationFrame: a
+   * pointermove/wheel burst or a run of state setters (e.g. the party-marker
+   * sync touching four fields) yields one draw per display frame, not one per
+   * call. The view snapshot is taken when the frame fires, so it reflects the
+   * latest state.
+   */
   render() {
-    this.onViewChange?.();
-    this.renderer.render(this._view());
+    if (this._rafId !== null) return;
+    this._rafId = requestAnimationFrame(() => {
+      this._rafId = null;
+      this.onViewChange?.();
+      this.renderer.render(this._view());
+    });
   }
 
   /** Right-drag pans in both modes now, so its context menu must never pop.
@@ -689,7 +702,6 @@ export class MapCanvas {
     }
     this._pinch = { cx, cy, dist };
     this.render();
-    this.onViewChange?.();
   }
 
   /** @param {PointerEvent} event */
@@ -772,6 +784,10 @@ export class MapCanvas {
   }
 
   destroy() {
+    if (this._rafId !== null) {
+      cancelAnimationFrame(this._rafId);
+      this._rafId = null;
+    }
     this.canvas.removeEventListener('pointerdown', this._onPointerDown);
     this.canvas.removeEventListener('pointermove', this._onPointerMove);
     this.canvas.removeEventListener('pointerup', this._onPointerUp);

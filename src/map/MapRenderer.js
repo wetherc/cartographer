@@ -79,10 +79,16 @@ export class MapRenderer {
     if (!view.node) return;
 
     this._renderMapBounds(view);
-    const groupCover = this._renderGroupImages(view);
-    this._renderSpanImages(view, groupCover);
+    // Derived data shared by the passes below, computed once per frame instead
+    // of once per pass (fog set three times, span blocks re-scanned, etc.).
+    const frame = {
+      revealedIds: this._revealedIds(view),
+      spanBlocks: spanBlocks(view.node),
+    };
+    const groupCover = this._renderGroupImages(view, frame);
+    this._renderSpanImages(view, frame, groupCover);
     this._renderTiles(view, groupCover);
-    this._renderRegionGroups(view);
+    this._renderRegionGroups(view, frame);
     this._renderMarquee(view);
     this._renderSelection(view);
     this._renderEncounterMarkers(view);
@@ -185,14 +191,15 @@ export class MapRenderer {
    * explored block reveals the scaled image piecewise and a road through a
    * region stays 1x1. Returns the covered tile ids for that skip.
    * @param {MapView} view
+   * @param {{ revealedIds: Set<string> | null }} frame
    * @returns {Set<string>}
    */
-  _renderGroupImages(view) {
+  _renderGroupImages(view, frame) {
     /** @type {Set<string>} */
     const covered = new Set();
     if (!view.node || view.node.kind !== 'region') return covered;
     const { ctx } = this;
-    const revealedIds = this._revealedIds(view);
+    const revealedIds = frame.revealedIds;
     for (const group of view.regionGroups) {
       if (group.tileIds.length < 2) continue;
       for (const chunk of groupImageChunks(view.node, group)) {
@@ -247,13 +254,14 @@ export class MapRenderer {
    * reveals piecewise; roads across it stay 1x1), matching region-block
    * chunks. Unlike those, span art draws on interiors too.
    * @param {MapView} view
+   * @param {{ revealedIds: Set<string> | null, spanBlocks: import('./TilePaint.js').SpanBlock[] }} frame
    * @param {Set<string>} cover accumulates covered tile ids
    */
-  _renderSpanImages(view, cover) {
+  _renderSpanImages(view, frame, cover) {
     if (!view.node) return;
     const { ctx } = this;
-    const revealedIds = this._revealedIds(view);
-    for (const block of spanBlocks(view.node)) {
+    const revealedIds = frame.revealedIds;
+    for (const block of frame.spanBlocks) {
       // A fully-fogged block draws nothing — see _revealedIds.
       if (revealedIds && !block.tileIds.some((id) => revealedIds.has(id))) continue;
       for (const id of block.tileIds) cover.add(id);
@@ -693,13 +701,14 @@ export class MapRenderer {
     }
   }
 
-  /** @param {MapView} view */
-  _renderRegionGroups(view) {
+  /** @param {MapView} view
+   * @param {{ revealedIds: Set<string> | null }} frame */
+  _renderRegionGroups(view, frame) {
     const { ctx } = this;
     // Outside Build mode, a region stays hidden until the party has discovered
     // at least one of its tiles through the fog, so the overworld doesn't
     // reveal where every unexplored region sits.
-    const revealedIds = this._revealedIds(view);
+    const revealedIds = frame.revealedIds;
     for (const group of view.regionGroups) {
       if (revealedIds && !group.tileIds.some((id) => revealedIds.has(id))) continue;
       const topLeft = tileRect(
