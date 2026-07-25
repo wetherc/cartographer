@@ -242,7 +242,7 @@ helper and reuse it:
 - Extend the same helper to the other id-keyed collections it fits:
   - Combat: build id -> entity `Map`s for `state.encounters/characters/npcs`
     once at combat start, so the O(order * entities) defender assembly and the
-    per-participant lookups in `weaponAttack` (`src/app/encounterWiring.js:645-664`)
+    per-participant lookups in `weaponAttack` (`src/app/weaponAttack.js:45-69`)
     and the new `castSpellAction` become O(1). Small-n today, but adding NPC/mob
     casters grows the participant set and the fix is free once the helper exists.
 - Not applied to the small top-level `.find` scans in the `*Wiring.js` files
@@ -281,7 +281,7 @@ helper and reuse it:
 
 ### NPC / mob casting
 
-- The encounter dialog (`encounterWiring.js`) and `npcForm.js` gain an optional
+- The encounter dialog (`encounterForm.js`) and `npcForm.js` gain an optional
   caster section: pick a class, derive slots from level, pick spells from the
   library.
 - `createEncounter`/`createNPC` and `toTemplate`/`fromTemplate` carry the
@@ -398,7 +398,7 @@ passive scores anywhere (`src/entities/Modifiers.js` offers only
 Today weapons collapse to `handling: 'melee'|'finesse'|'ranged'`, whose only
 effect is picking STR vs DEX (`src/entities/Equipment.js:84-93`,
 `src/types/entities.ts:110`). Finesse hard-selects DEX rather than "higher of
-STR/DEX"; proficiency is assumed for everyone (`encounterWiring.js:721`).
+STR/DEX"; proficiency is assumed for everyone (`weaponAttack.js:124`).
 
 - Replace `handling` with a `properties` set on the weapon type: `finesse`
   (use higher of STR/DEX), `versatile` (alt damage die two-handed),
@@ -407,7 +407,7 @@ STR/DEX"; proficiency is assumed for everyone (`encounterWiring.js:721`).
   long }`. Keep `damage: DamagePart[]` (already type-aware) and migrate presets
   (`WEAPON_PRESETS`, `Equipment.js:100-203`) to the new shape with a back-compat
   reader for saved custom weapons.
-- Attack resolution (`weaponAttack`, `encounterWiring.js:629-819`): finesse =
+- Attack resolution (`weaponAttack`, `src/app/weaponAttack.js`): finesse =
   higher mod; add proficiency only if the attacker is proficient with the
   weapon's category/type (phase 2 lists), else ability mod only; long-range
   imposes disadvantage; `light` enables the phase-7 two-weapon path.
@@ -451,7 +451,7 @@ distance.
 
 ### Phase 8 — Survival mechanics
 
-Dropping to 0 HP only logs a message today (`encounterWiring.js:809-811`); no
+Dropping to 0 HP only logs a message today (`weaponAttack.js:211-214`); no
 death saves, concentration checks, or exhaustion effects.
 
 - **Death saves** — a 3-success/3-failure tracker on `Character` triggered at 0
@@ -469,7 +469,7 @@ death saves, concentration checks, or exhaustion effects.
 ### Phase 9 — NPC/mob depth
 
 `NPC` has no HP or AC (attack code falls back to AC 10,
-`encounterWiring.js:665`); `Encounter` has a flat stat block with no CR, class,
+`weaponAttack.js:68`); `Encounter` has a flat stat block with no CR, class,
 or saves (`src/types/entities.ts:38-63`, `src/entities/Modifiers.js:10-12`).
 
 - Give `NPC` HP, AC, optional weapon/armor, and conditions so NPCs are

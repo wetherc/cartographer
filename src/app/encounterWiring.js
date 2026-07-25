@@ -1,14 +1,10 @@
 import { mustGetElement } from '../ui/dom.js';
-import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
+import { confirmModal, alertModal } from '../ui/Modal.js';
 import { openContextMenu } from '../ui/ContextMenu.js';
 import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
 import {
-  applyDamage,
-  createEncounter,
-  defaultEnemyGear,
-  editEncounter,
   effectiveStatBlock,
   encountersAt,
   encountersNear,
@@ -17,37 +13,18 @@ import {
   isDefeated,
   tickStatModifiers,
   toTemplate,
-  fromTemplate,
 } from '../entities/Encounter.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
-import { roll, rollDamage, formatResult, attackTweak, DIE_SIDES } from '../dice/DiceRoller.js';
-import {
-  armorClass,
-  equippedWeapons,
-  effectiveStats,
-  weaponAbility,
-} from '../entities/Equipment.js';
-import {
-  activeWeapons,
-  activeArmors,
-  activeEnemyArmor,
-  activeBestiary,
-} from '../library/Library.js';
-import { damageCharacter, getHP } from '../entities/Character.js';
-import {
-  abilityModifier,
-  formatModifier,
-  proficiencyBonus,
-  defaultEnemyStats,
-  ENEMY_TIERS,
-  STAT_KEYS,
-} from '../entities/Modifiers.js';
+import { roll, formatResult } from '../dice/DiceRoller.js';
+import { equippedWeapons } from '../entities/Equipment.js';
+import { abilityModifier } from '../entities/Modifiers.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { tickConditions } from '../entities/Conditions.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
-import { locationFields, readLocation } from './locationFields.js';
+import { encounterForm, deleteEncounter, addFromBestiary } from './encounterForm.js';
+import { weaponAttack } from './weaponAttack.js';
 import { npcForm } from './npcForm.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -55,7 +32,9 @@ import { npcForm } from './npcForm.js';
 /**
  * The Encounters and Initiative panels, the bestiary workflow, and the
  * walked-into-an-encounter alert. Owns the transient combat state; registers
- * `maybeTriggerEncounter` on `app.actions` for the party-move paths.
+ * `maybeTriggerEncounter` on `app.actions` for the party-move paths. The
+ * authoring dialogs live in encounterForm.js and the attack resolution in
+ * weaponAttack.js; this module wires them to the panels.
  * @param {AppContext} app
  */
 export function wireEncounters(app) {
@@ -115,224 +94,6 @@ export function wireEncounters(app) {
     });
   };
 
-  /**
-   * The shared create/edit dialog behind every encounter authoring flow: name,
-   * HP, level/tier, and the same map/tile placement fields the NPC dialogs
-   * use. With an existing encounter it edits in place — live state (current
-   * HP, stat block, conditions) survives, so placement is finally editable
-   * without deleting and recreating. Without one it creates, with a stat
-   * block pre-filled from the tier's level-appropriate defaults and editable
-   * in place. Returns the stored encounter, or null on cancel/blank name.
-   * @param {import('../types/entities.js').Encounter | null} existing
-   * @param {import('../types/entities.js').EncounterLocation | null} defaultLocation placement preset for a new encounter
-   * @returns {Promise<import('../types/entities.js').Encounter | null>}
-   */
-  async function encounterForm(existing, defaultLocation) {
-    // Weapon choice is the merged library list — the 5e presets plus the GM's
-    // overrides and custom entries (structured damage, no dice text); an
-    // existing weapon whose name isn't in it (a hand-tuned save) stays offered
-    // as-is so editing other fields doesn't clobber it. "None" (the empty
-    // value) marks a deliberately weaponless creature — a non-bipedal beast,
-    // an ooze — which then gets no attack button in combat.
-    const weaponChoices = activeWeapons();
-    const currentWeapon = existing?.weapon;
-    const customWeapon = currentWeapon && !weaponChoices.some((p) => p.name === currentWeapon.name);
-    const weaponOptions = [
-      { value: '', label: 'None (unarmed)' },
-      ...(customWeapon
-        ? [
-            {
-              value: currentWeapon.name,
-              label: `${currentWeapon.name} (custom)`,
-            },
-          ]
-        : []),
-      ...weaponChoices.map((p) => ({ value: p.name, label: p.name })),
-    ];
-    // Armor mirrors the weapon picker: the merged library's body armors
-    // (bonus = the armor's margin over the unarmored 10), an existing
-    // non-library armor kept offered as-is, and "None" for the unarmored.
-    const currentArmor = existing?.armor;
-    const armorChoices = activeArmors();
-    const customArmor = currentArmor && !armorChoices.some((a) => a.name === currentArmor.name);
-    const armorOptions = [
-      { value: '', label: 'None (unarmored)' },
-      ...(customArmor
-        ? [
-            {
-              value: currentArmor.name,
-              label: `${currentArmor.name} (+${currentArmor.acBonus} AC) (custom)`,
-            },
-          ]
-        : []),
-      ...armorChoices.map((a) => ({ value: a.name, label: `${a.name} (+${a.acBonus} AC)` })),
-    ];
-    // Creation shows the stat block too, pre-filled with the tier's
-    // level-appropriate defaults so a plain mob needs no stat typing but every
-    // score stays overridable. Changing level or tier re-stamps the defaults
-    // until a stat is hand-edited, after which the GM's numbers stand. Edits
-    // omit the block — it lives on the Build-rail row's chips.
-    const defaults = defaultEnemyStats(1, 'mob');
-    const statFields = existing
-      ? []
-      : STAT_KEYS.map((key) => ({
-          name: `stat-${key}`,
-          label: key,
-          type: /** @type {'number'} */ ('number'),
-          value: defaults[key],
-          min: 1,
-        }));
-    let statsTouched = false;
-    // Two-column layout, fields paired by theme: identity (name/tier), then
-    // vitals (HP/level), then gear (weapon/armor), then stats, then placement
-    // — the map picker's breadcrumb labels run long, so it spans the full
-    // width.
-    const values = await promptModal(
-      existing ? 'Edit encounter' : 'New encounter',
-      [
-        { name: 'name', label: 'Name', value: existing?.name ?? '' },
-        {
-          name: 'tier',
-          label: 'Tier',
-          type: 'select',
-          value: existing?.tier ?? 'mob',
-          options: ENEMY_TIERS.map((t) => ({
-            value: t,
-            label: t === 'mob' ? 'Mob' : 'Legend',
-          })),
-        },
-        {
-          name: 'maxHP',
-          label: 'Max HP',
-          type: 'number',
-          value: existing?.maxHP ?? 10,
-          min: 1,
-        },
-        {
-          name: 'level',
-          label: 'Level',
-          type: 'number',
-          value: existing?.level ?? 1,
-          min: 1,
-        },
-        {
-          name: 'weapon',
-          label: 'Weapon',
-          type: 'select',
-          // Editing an unarmed enemy (weapon null) shows None; a new enemy
-          // still defaults to armed, the common humanoid case.
-          value: existing ? (currentWeapon?.name ?? '') : defaultEnemyGear(1, 'mob').weapon.name,
-          options: weaponOptions,
-        },
-        {
-          name: 'armor',
-          label: 'Armor',
-          type: 'select',
-          value: existing ? (currentArmor?.name ?? '') : defaultEnemyGear(1, 'mob').armor.name,
-          options: armorOptions,
-        },
-        ...statFields,
-        ...locationFields(app, existing ? existing.location : defaultLocation).map((field) =>
-          field.name === 'nodeId' ? { ...field, full: true } : field,
-        ),
-      ],
-      {
-        submitLabel: existing ? 'Save' : 'Add',
-        wide: true,
-        onChange: existing
-          ? undefined
-          : (name, form) => {
-              if (name.startsWith('stat-')) {
-                statsTouched = true;
-                return;
-              }
-              if (statsTouched || (name !== 'level' && name !== 'tier')) return;
-              const stats = defaultEnemyStats(
-                Math.max(1, Number(form.get('level')) || 1),
-                /** @type {import('../types/entities.js').EnemyTier} */ (form.get('tier')),
-              );
-              for (const key of STAT_KEYS) form.set(`stat-${key}`, stats[key]);
-            },
-      },
-    );
-    if (!values) return null;
-    const name = values.name.trim();
-    if (!name) return null;
-    const maxHP = Math.max(1, Number(values.maxHP) || 1);
-    const level = Math.max(1, Number(values.level) || 1);
-    const tier = /** @type {import('../types/entities.js').EnemyTier} */ (values.tier);
-    const location = readLocation(app, values);
-    const preset = weaponChoices.find((p) => p.name === values.weapon);
-    // The empty value is the explicit "None" choice and stores null, which
-    // suppresses the default-gear stamping downstream.
-    const weapon =
-      values.weapon === ''
-        ? null
-        : preset
-          ? {
-              name: preset.name,
-              handling: preset.handling ?? /** @type {const} */ ('melee'),
-              damage: (preset.damage ?? []).map((d) => ({ ...d })),
-            }
-          : (currentWeapon ?? defaultEnemyGear(level, tier).weapon);
-    const armor =
-      values.armor === ''
-        ? null
-        : (activeEnemyArmor(values.armor) ?? currentArmor ?? defaultEnemyGear(level, tier).armor);
-    let stored;
-    if (existing) {
-      // Level/tier edits don't re-stamp the stat block — the GM may have tuned
-      // it by hand on the row, and it stays editable there.
-      stored = editEncounter(existing, {
-        name,
-        maxHP,
-        level,
-        tier,
-        location,
-        weapon,
-        armor,
-      });
-      state.encounters = replaceById(state.encounters, stored);
-    } else {
-      stored = createEncounter(
-        slugId(
-          name,
-          state.encounters.map((e) => e.id),
-        ),
-        name,
-        maxHP,
-        Object.fromEntries(
-          STAT_KEYS.map((key) => [key, Math.max(1, Number(values[`stat-${key}`]) || 10)]),
-        ),
-        location,
-        { level, tier, weapon, armor },
-      );
-      state.encounters = [...state.encounters, stored];
-    }
-    app.actions.syncEncounterMarkers(); // also refreshes the Build-rail list
-    app.views.encounterPanel.update();
-    app.views.initiativePanel.update(); // authoring/moving one here starts or ends an encounter
-    app.actions.markDirty();
-    return stored;
-  }
-
-  /** Confirm-and-delete shared by both encounter lists. Resolves true if deleted. */
-  async function deleteEncounter(
-    /** @type {import('../types/entities.js').Encounter} */ encounter,
-  ) {
-    const ok = await confirmModal(`Delete "${encounter.name}"?`, {
-      danger: true,
-      confirmLabel: 'Delete',
-    });
-    if (!ok) return false;
-    state.encounters = removeById(state.encounters, encounter.id);
-    app.actions.syncEncounterMarkers();
-    app.views.encounterPanel.update();
-    app.views.initiativePanel.update();
-    app.actions.markDirty();
-    return true;
-  }
-
   app.views.encounterPanel = mountEncounterPanel(mustGetElement('encounter-container'), {
     // The panel shows only what's relevant where the party stands, split into
     // the panel's two tabs. Active: the live encounters on the party's exact
@@ -374,7 +135,7 @@ export function wireEncounters(app) {
     // Authoring (new encounters, spawning from the bestiary) lives in the
     // Build rail; the Play panel keeps editing an existing encounter (HP,
     // placement) and snapshotting one as a template mid-session.
-    onEdit: (encounter) => encounterForm(encounter, null),
+    onEdit: (encounter) => encounterForm(app, encounter, null),
     // Save an encounter's blueprint (name, max HP, stat block) to the bestiary,
     // so the next Goblin isn't typed from scratch. Same-named saves stack as
     // separate templates — a template is a snapshot, not a live link.
@@ -408,96 +169,6 @@ export function wireEncounters(app) {
   // the GM is looking at (plus unplaced ones), editable without moving the
   // party there. New encounters default onto the Build-mode selected tile of
   // the viewed node, so "select a tile, add an encounter" places it there.
-  /**
-   * Spawn a fresh, full-health encounter from a saved template — the
-   * campaign's bestiary plus the built-in/custom library — at a chosen
-   * map/tile, defaulting to the Build-mode selected tile of the viewed node.
-   * The same dialog can prune a stale campaign template; library entries are
-   * managed in the Library tab instead.
-   * @returns {Promise<import('../types/entities.js').Encounter | null>}
-   */
-  async function addFromBestiary() {
-    const library = activeBestiary();
-    if (state.bestiary.length === 0 && library.length === 0) {
-      await alertModal(
-        'The bestiary is empty. Save an encounter as a template first (the save icon on its row).',
-        { title: 'Bestiary' },
-      );
-      return null;
-    }
-    const values = await promptModal(
-      'Add from bestiary',
-      [
-        {
-          name: 'template',
-          label: 'Template',
-          type: 'select',
-          options: [
-            ...state.bestiary.map((t) => ({
-              value: `campaign:${t.id}`,
-              label: `${t.name} (${t.maxHP} HP) — campaign`,
-            })),
-            ...library.map((t) => ({
-              value: `library:${t.id}`,
-              label: `${t.name} (${t.maxHP} HP) — library`,
-            })),
-          ],
-        },
-        {
-          name: 'action',
-          label: 'Action',
-          type: 'select',
-          value: 'spawn',
-          options: [
-            { value: 'spawn', label: 'Spawn at the location below' },
-            { value: 'delete', label: 'Delete this template' },
-          ],
-        },
-        // Same node-picker + tile X/Y group the NPC dialogs use; defaults to
-        // the tile the GM has selected in the node being viewed.
-        ...locationFields(app, {
-          nodeId: app.navigator.getCurrentNode().id,
-          tileId: app.actions.getSelectedTileId() ?? '0,0',
-        }),
-      ],
-      { submitLabel: 'Apply' },
-    );
-    if (!values) return null;
-    const [source, templateId] = [
-      values.template.slice(0, values.template.indexOf(':')),
-      values.template.slice(values.template.indexOf(':') + 1),
-    ];
-    const template =
-      source === 'campaign'
-        ? state.bestiary.find((t) => t.id === templateId)
-        : library.find((t) => t.id === templateId);
-    if (!template) return null;
-    if (values.action === 'delete') {
-      if (source === 'library') {
-        app.toasts.show('Built-in and custom library entries are managed in the Library tab.');
-        return null;
-      }
-      state.bestiary = removeById(state.bestiary, template.id);
-      app.actions.markDirty();
-      app.toasts.show(`Deleted "${template.name}" from the bestiary.`);
-      return null;
-    }
-    const created = fromTemplate(
-      template,
-      slugId(
-        template.name,
-        state.encounters.map((e) => e.id),
-      ),
-      readLocation(app, values),
-    );
-    state.encounters = [...state.encounters, created];
-    app.actions.syncEncounterMarkers();
-    app.views.encounterPanel.update();
-    app.views.initiativePanel.update(); // a spawn on the party's tile starts an encounter
-    app.actions.markDirty();
-    return created;
-  }
-
   app.views.buildEncounters = mountBuildEncounterPanel(
     mustGetElement('build-encounters-container'),
     {
@@ -506,13 +177,13 @@ export function wireEncounters(app) {
           nodeId: app.navigator.getCurrentNode().id,
         }),
       onAdd: () =>
-        encounterForm(null, {
+        encounterForm(app, null, {
           nodeId: app.navigator.getCurrentNode().id,
           tileId: app.actions.getSelectedTileId() ?? '0,0',
         }),
-      onAddFromTemplate: addFromBestiary,
-      onEdit: (encounter) => encounterForm(encounter, null),
-      onDelete: deleteEncounter,
+      onAddFromTemplate: () => addFromBestiary(app),
+      onEdit: (encounter) => encounterForm(app, encounter, null),
+      onDelete: (encounter) => deleteEncounter(app, encounter),
       // Base stat edits from the Build rail's chips: persist and let the Play
       // panel (which shows the same encounter) pick the change up.
       onUpdate: (next) => {
@@ -545,11 +216,11 @@ export function wireEncounters(app) {
     const folkHere = npcsOnTile(state.npcs, location);
     openContextMenu(
       [
-        { label: 'New encounter here', onSelect: () => encounterForm(null, location) },
+        { label: 'New encounter here', onSelect: () => encounterForm(app, null, location) },
         { label: 'New NPC here', onSelect: () => npcForm(app, null, location) },
         ...here.map((e) => ({
           label: `Edit ${e.name}`,
-          onSelect: () => encounterForm(e, null),
+          onSelect: () => encounterForm(app, e, null),
         })),
         ...folkHere.map((n) => ({
           label: `Edit ${n.name}`,
@@ -608,216 +279,6 @@ export function wireEncounters(app) {
     app.views.encounterPanel.update(); // hides the Start combat button
   }
 
-  /**
-   * Roll a weapon attack for the active combatant, 5e-style: a pre-roll
-   * dialog picks the defender and takes situational overrides — bonus or
-   * penalty dice on the attack roll (Bless +1d4, Bane -1d4), extra damage
-   * dice (a smite), and flat bonuses on either — then loads 1d20 + the
-   * attacker's ability modifier + proficiency bonus (+ overrides) and the
-   * defender's AC into the dice tray and rolls. A natural 20 hits regardless of AC and
-   * doubles the damage dice (a critical hit); a natural 1 always misses;
-   * otherwise the total is compared against AC. On a hit the weapon's damage
-   * dice roll too — ability modifier folded into the base term, proficiency
-   * never added to damage — and the result is applied to the defender
-   * automatically: encounters lose HP on the spot, party characters take it
-   * through bonus HP first, and HP-less NPCs just get the log line. Party
-   * members attack with their equipped weapons; foes with the encounter's
-   * assigned weapon. Everything lands in the travelogue and a toast.
-   * @param {import('../types/combat.js').Participant} participant
-   * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} weapon
-   */
-  async function weaponAttack(participant, weapon) {
-    if (!combat) return;
-    // The attacker is a party character or an armed encounter; either way the
-    // roll is d20 + the weapon ability's modifier + proficiency for its level.
-    const attacker =
-      participant.side === 'party'
-        ? state.characters.find((c) => c.id === participant.id)
-        : state.encounters.find((e) => e.id === participant.id);
-    if (!attacker) return;
-    // Defenders come from the opposite side of the running order: encounters
-    // by id, party characters (AC from armor), and NPCs standing on the tile.
-    // Downed ones drop out.
-    const npcs = npcsOnTile(state.npcs, app.partyTracker.getPosition());
-    const defenders = combat.order
-      .filter((p) => p.side !== participant.side)
-      .flatMap((p) => {
-        const encounter = state.encounters.find((e) => e.id === p.id);
-        if (encounter) {
-          return isDefeated(encounter)
-            ? []
-            : [
-                {
-                  id: p.id,
-                  name: encounter.name,
-                  ac: effectiveStatBlock(encounter).AC ?? 10,
-                },
-              ];
-        }
-        const character = state.characters.find((c) => c.id === p.id);
-        if (character) {
-          const hp = getHP(character);
-          return hp && hp.current <= 0
-            ? []
-            : [{ id: p.id, name: character.name, ac: armorClass(character) }];
-        }
-        const npc = npcs.find((n) => n.id === p.id);
-        return npc ? [{ id: p.id, name: npc.name, ac: npc.stats?.AC ?? 10 }] : [];
-      });
-    if (defenders.length === 0) {
-      app.toasts.show('No defender left standing.');
-      return;
-    }
-    // Every attack pauses at a pre-roll dialog: pick the defender and apply
-    // any situational overrides — bonus or penalty dice on the attack roll
-    // (Bless +1d4, Bane -1d4) and extra damage (a smite's dice, a flat
-    // rider). Everything defaults to zero, so plain Enter rolls the
-    // unmodified attack. Bonus damage folds into the weapon's own damage
-    // type and, like all damage dice, doubles on a crit; the attack-roll
-    // dice don't (they modify the d20, not the damage).
-    const bonusDieOptions = ['d4', 'd6', 'd8', 'd10', 'd12'].map((d) => ({
-      value: d,
-      label: d,
-    }));
-    const values = await promptModal(
-      `Attack with ${weapon.name}`,
-      [
-        {
-          name: 'target',
-          label: 'Defender',
-          type: 'select',
-          options: defenders.map((d) => ({
-            value: d.id,
-            label: `${d.name} (AC ${d.ac})`,
-          })),
-          full: true,
-        },
-        { name: 'atk-count', label: 'Attack: bonus dice', type: 'number', value: 0 },
-        {
-          name: 'atk-die',
-          label: 'Attack: die',
-          type: 'select',
-          value: 'd4',
-          options: bonusDieOptions,
-        },
-        { name: 'dmg-count', label: 'Damage: bonus dice', type: 'number', value: 0, min: 0 },
-        {
-          name: 'dmg-die',
-          label: 'Damage: die',
-          type: 'select',
-          value: 'd4',
-          options: bonusDieOptions,
-        },
-        { name: 'atk-flat', label: 'Attack: flat bonus', type: 'number', value: 0 },
-        { name: 'dmg-flat', label: 'Damage: flat bonus', type: 'number', value: 0 },
-      ],
-      { submitLabel: 'Roll attack', wide: true },
-    );
-    if (!values) return;
-    const defender = defenders.find((d) => d.id === values.target) ?? defenders[0];
-    const ability = weaponAbility(weapon);
-    const stats = 'statBlock' in attacker ? effectiveStatBlock(attacker) : effectiveStats(attacker);
-    const abilityMod = abilityModifier(stats[ability] ?? 10);
-    const attackBonus = abilityMod + proficiencyBonus(attacker.level);
-    // Bonus attack dice join the d20 in the tray's selection so they roll in
-    // view; penalty dice are rolled by attackTweak and folded into the
-    // modifier (with the values kept in its note for the log).
-    const tweak = attackTweak(
-      Number(values['atk-count']) || 0,
-      /** @type {import('../types/dice.js').DieType} */ (values['atk-die']),
-      Number(values['atk-flat']) || 0,
-    );
-    const { result } = app.actions.rollDice(
-      { counts: { d20: 1, ...tweak.counts }, modifier: attackBonus + tweak.modifier },
-      defender.ac,
-    );
-    const natural = result.results.find((r) => r.die === 'd20')?.rolls[0] ?? 0;
-    // 5e attack resolution: a natural 1 always misses and a natural 20 always
-    // hits (and crits, doubling the damage dice); anything else compares the
-    // modified total against the defender's AC.
-    const crit = natural === 20;
-    const hit = natural !== 1 && (crit || result.total >= defender.ac);
-    const outcome = crit
-      ? 'critical hit'
-      : natural === 1
-        ? 'natural 1, miss'
-        : hit
-          ? 'hit'
-          : 'miss';
-    // An advantage/disadvantage attack notes the discarded d20 so the log
-    // shows both dice, matching the tray's own readout.
-    const d20 = result.results.find((r) => r.die === 'd20');
-    const modeNote = d20?.dropped?.length
-      ? ` at ${result.selection.mode} (dropped ${d20.dropped.join(',')})`
-      : '';
-    const tweakNote = tweak.note ? `, ${tweak.note}` : '';
-    app.actions.logEvent(
-      'combat',
-      `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(attacker.level)}${tweakNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
-    );
-    if (!hit) {
-      app.toasts.show(
-        `${result.total} vs AC ${defender.ac}: ${attacker.name} misses ${defender.name}.`,
-      );
-      return;
-    }
-    // A crit rolls every damage die twice; the ability modifier is still
-    // added only once, and proficiency never reaches damage.
-    const parts = (weapon.damage ?? []).map((p) => (crit ? { ...p, count: p.count * 2 } : p));
-    // Dialog-added damage dice count as damage dice, so they double on a crit
-    // too; typed as the weapon's own damage so rollDamage folds them into its
-    // group. The flat damage rider joins the ability modifier.
-    const bonusDice = Math.max(0, Number(values['dmg-count']) || 0);
-    if (bonusDice > 0) {
-      parts.push({
-        count: crit ? bonusDice * 2 : bonusDice,
-        sides: DIE_SIDES[/** @type {import('../types/dice.js').DieType} */ (values['dmg-die'])],
-        damageType: parts[0]?.damageType ?? 'bonus',
-      });
-    }
-    const damage = rollDamage(parts, abilityMod + (Number(values['dmg-flat']) || 0));
-    const inflicts =
-      'statusEffects' in weapon && weapon.statusEffects?.length
-        ? `, inflicting ${weapon.statusEffects.join(', ')}`
-        : '';
-    const blow = crit ? 'critically hits' : 'hits';
-    // The travelogue keeps the raw damage dice (detail), while the toast
-    // below stays with the short per-type totals (text).
-    app.actions.logEvent(
-      'combat',
-      `${weapon.name} ${blow} ${defender.name} for ${damage.detail || '0 damage'}${inflicts}.`,
-    );
-    // Apply the damage on the spot. Encounters and characters track HP; a
-    // defender that's an HP-less NPC keeps the log line only. Defeat is
-    // logged once, matching the manual-damage path on the encounter row.
-    const target = state.encounters.find((e) => e.id === defender.id);
-    if (target && damage.total > 0) {
-      const next = applyDamage(target, damage.total);
-      if (!isDefeated(target) && isDefeated(next))
-        app.actions.logEvent('combat', `Defeated ${next.name}.`);
-      state.encounters = replaceById(state.encounters, next);
-      app.actions.syncEncounterMarkers();
-      app.views.encounterPanel.update();
-      app.views.initiativePanel.update(); // defeating the last foe here ends the combat
-      app.actions.markDirty();
-    }
-    const victim = state.characters.find((c) => c.id === defender.id);
-    if (victim && damage.total > 0) {
-      const next = damageCharacter(victim, damage.total);
-      // Log the drop to 0 exactly once — further damage on a downed character
-      // shouldn't repeat it.
-      if ((getHP(victim)?.current ?? 0) > 0 && (getHP(next)?.current ?? 0) <= 0) {
-        app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
-      }
-      state.characters = replaceById(state.characters, next);
-      app.actions.refreshSelectedCharacter();
-      app.actions.markDirty();
-    }
-    app.toasts.show(
-      `${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${damage.text || 'no damage'}${inflicts}.`,
-    );
-  }
-
   const initiativeContainer = mustGetElement('initiative-container');
   const initiativePanel = mountInitiativePanel(initiativeContainer, {
     getState: () => combat,
@@ -866,7 +327,9 @@ export function wireEncounters(app) {
       const character = state.characters.find((c) => c.id === participant.id);
       return character ? equippedWeapons(character) : [];
     },
-    onWeaponAttack: weaponAttack,
+    onWeaponAttack: (participant, weapon) => {
+      if (combat) weaponAttack(app, combat, participant, weapon);
+    },
     canAttack: (participant) =>
       participant.side === 'foe'
         ? isGM(state.role)
