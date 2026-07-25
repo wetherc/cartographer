@@ -1,10 +1,13 @@
 import { createResource, spend as spendPool, restore as restorePool } from './Resource.js';
 import { isSlotPool, syncSlotsToLevel, migrateManaToSlots } from './SpellSlots.js';
+import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
+/** @typedef {import('../types/entities.js').Spellbook} Spellbook */
+/** @typedef {import('../types/class.js').ClassRef} ClassRef */
 
 /** XP required to go from level N to N+1 is N * XP_PER_LEVEL. */
 export const XP_PER_LEVEL = 100;
@@ -103,12 +106,139 @@ export function damageCharacter(character, amount) {
 }
 
 /**
+ * A character's classes as a list — one entry today, since a character carries
+ * a single `class`/`subclass`/`level`. Read classes through this accessor
+ * rather than the raw fields so the deferred multiclass work (a real class
+ * list) stays additive; see PLAN.md's multiclass design decision. A classless
+ * legacy character yields an empty list.
+ * @param {Character} character
+ * @returns {ClassRef[]}
+ */
+export function getClasses(character) {
+  if (!character.class) return [];
+  return [{ classId: character.class, level: character.level, subclass: character.subclass }];
+}
+
+/** @returns {Spellbook} an empty spellbook (no cantrips, known, or prepared). */
+export function emptySpellbook() {
+  return { cantrips: [], known: [], prepared: [] };
+}
+
+/**
+ * A character's spellbook, or an empty one for a character that predates
+ * spellbooks (so callers never guard against undefined).
+ * @param {Character} character
+ * @returns {Spellbook}
+ */
+export function getSpellbook(character) {
+  return character.spellbook ?? emptySpellbook();
+}
+
+/**
+ * Learn a cantrip, up to the class's cantrip limit. A duplicate, or a learn
+ * that would exceed the limit, leaves the character unchanged. Pure.
+ * @param {Character} character
+ * @param {string} spellId
+ * @returns {Character}
+ */
+export function learnCantrip(character, spellId) {
+  const book = getSpellbook(character);
+  if (book.cantrips.includes(spellId) || book.cantrips.length >= cantripLimit(character)) {
+    return character;
+  }
+  return { ...character, spellbook: { ...book, cantrips: [...book.cantrips, spellId] } };
+}
+
+/**
+ * Forget a cantrip. Absent from the list -> unchanged. Pure.
+ * @param {Character} character
+ * @param {string} spellId
+ * @returns {Character}
+ */
+export function unlearnCantrip(character, spellId) {
+  const book = getSpellbook(character);
+  return {
+    ...character,
+    spellbook: { ...book, cantrips: book.cantrips.filter((id) => id !== spellId) },
+  };
+}
+
+/**
+ * Add a leveled spell to the known list. A duplicate leaves the character
+ * unchanged. Known-list size is not capped here (no spells-known curve is
+ * modeled yet); the prepared set is what the prepared limit bounds. Pure.
+ * @param {Character} character
+ * @param {string} spellId
+ * @returns {Character}
+ */
+export function learnSpell(character, spellId) {
+  const book = getSpellbook(character);
+  if (book.known.includes(spellId)) return character;
+  return { ...character, spellbook: { ...book, known: [...book.known, spellId] } };
+}
+
+/**
+ * Forget a leveled spell, dropping it from both the known and prepared lists.
+ * Pure.
+ * @param {Character} character
+ * @param {string} spellId
+ * @returns {Character}
+ */
+export function unlearnSpell(character, spellId) {
+  const book = getSpellbook(character);
+  return {
+    ...character,
+    spellbook: {
+      cantrips: book.cantrips,
+      known: book.known.filter((id) => id !== spellId),
+      prepared: book.prepared.filter((id) => id !== spellId),
+    },
+  };
+}
+
+/**
+ * Prepare a known leveled spell, up to the prepared limit. A spell not in the
+ * known list, a duplicate, or a prepare that would exceed the limit leaves the
+ * character unchanged. Pure.
+ * @param {Character} character
+ * @param {string} spellId
+ * @returns {Character}
+ */
+export function prepareSpell(character, spellId) {
+  const book = getSpellbook(character);
+  if (
+    !book.known.includes(spellId) ||
+    book.prepared.includes(spellId) ||
+    book.prepared.length >= preparedLimit(character)
+  ) {
+    return character;
+  }
+  return { ...character, spellbook: { ...book, prepared: [...book.prepared, spellId] } };
+}
+
+/**
+ * Unprepare a spell, keeping it known. Absent from the prepared list ->
+ * unchanged. Pure.
+ * @param {Character} character
+ * @param {string} spellId
+ * @returns {Character}
+ */
+export function unprepareSpell(character, spellId) {
+  const book = getSpellbook(character);
+  return {
+    ...character,
+    spellbook: { ...book, prepared: book.prepared.filter((id) => id !== spellId) },
+  };
+}
+
+/**
  * Fill in fields a loaded character may predate: any missing ability score at
  * the neutral 10 (keeping existing values) and an empty-string race. No HP
  * pool is invented — its absence legitimately means "no HP tracking". A
  * mana-era save's mana pool is migrated to spell slots for the character's
  * level (see SpellSlots.js), and a pre-equipment save gets empty slots — with
- * the pre-piecewise 'armor' slot carrying over into 'chest'.
+ * the pre-piecewise 'armor' slot carrying over into 'chest'. A pre-spellbook
+ * save gains an empty spellbook.
  * @param {Character} character
  * @returns {Character}
  */
@@ -123,6 +253,7 @@ export function withDefaults(character) {
     bonusHP: character.bonusHP ?? 0,
     baseAC: character.baseAC ?? 10,
     location: character.location ?? null,
+    spellbook: character.spellbook ?? emptySpellbook(),
   });
 }
 
@@ -150,6 +281,7 @@ export function createCharacter(id, name, stats = {}, race = '') {
     bonusHP: 0,
     baseAC: 10,
     location: null,
+    spellbook: emptySpellbook(),
   };
 }
 

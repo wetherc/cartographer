@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   slotsForLevel,
   slotsForCaster,
+  slotsForCasterLevel,
+  casterLevelContribution,
   withSpellSlots,
   syncSlotsToLevel,
   migrateManaToSlots,
@@ -45,6 +47,23 @@ test('slotsForCaster covers full, half, third, and non-slot caster types', () =>
   assert.deepEqual(slotsForCaster('none', 5), []);
   assert.deepEqual(slotsForCaster(/** @type {any} */ ('bogus'), 5), []);
   assert.deepEqual(slotsForCaster('full', 0), []);
+});
+
+test('slotsForCasterLevel reads the multiclass (full-caster) table by combined level', () => {
+  assert.deepEqual(slotsForCasterLevel(5), slotsForCaster('full', 5));
+  assert.deepEqual(slotsForCasterLevel(0), []);
+  // A multiclassed paladin's combined-level slots differ from a single paladin's
+  // half-caster row — the seam the deferred multiclass path relies on.
+  assert.notDeepEqual(slotsForCasterLevel(2), slotsForCaster('half', 5));
+});
+
+test('casterLevelContribution weights each caster type for the combined level', () => {
+  assert.equal(casterLevelContribution('full', 5), 5);
+  assert.equal(casterLevelContribution('half', 5), 2); // floor(5/2)
+  assert.equal(casterLevelContribution('third', 5), 1); // floor(5/3)
+  assert.equal(casterLevelContribution('pact', 5), 0);
+  assert.equal(casterLevelContribution('none', 5), 0);
+  assert.equal(casterLevelContribution('full', 0), 0);
 });
 
 test('withSpellSlots creates full pools per the table, ordered HP then slots then custom', () => {

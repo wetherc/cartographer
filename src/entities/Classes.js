@@ -235,3 +235,27 @@ export function spellAttackBonus(character) {
   if (mod === null) return null;
   return proficiencyBonus(character.level) + mod;
 }
+
+/**
+ * How many cantrips a character may know, from its class's cantrip curve at its
+ * level; 0 for a non-caster or a classless character.
+ * @param {Character} character
+ * @returns {number}
+ */
+export function cantripLimit(character) {
+  return cantripsKnownForClass(character.class, character.level ?? 1);
+}
+
+/**
+ * How many leveled spells a character may have prepared: spell-ability modifier
+ * + character level, at least 1 (the 5e prepared-caster rule). 0 for a
+ * non-caster. Known-list casters don't prepare, but the same ceiling bounds the
+ * spellbook's active set here.
+ * @param {Character} character
+ * @returns {number}
+ */
+export function preparedLimit(character) {
+  const mod = spellAbilityModifier(character);
+  if (mod === null) return 0;
+  return Math.max(1, mod + (character.level ?? 1));
+}

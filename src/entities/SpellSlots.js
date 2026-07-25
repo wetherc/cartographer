@@ -130,6 +130,45 @@ export function slotsForCaster(casterType, characterLevel) {
 }
 
 /**
+ * Slot counts for a combined caster level, read from the full-caster table —
+ * which doubles as the 5e *multiclass* spellcaster table. The single-class
+ * paths above use the dedicated half/third tables (a lone paladin's slots
+ * differ from a multiclassed one's); this is the lookup the deferred multiclass
+ * path uses after summing per-class contributions. See PLAN.md's multiclass
+ * design decision.
+ * @param {number} combinedLevel
+ * @returns {number[]} index 0 = spell level 1; empty for level < 1
+ */
+export function slotsForCasterLevel(combinedLevel) {
+  return slotsForCaster('full', combinedLevel);
+}
+
+/**
+ * One class's contribution to a character's combined caster level: full casters
+ * count their whole level, half casters half (rounded down), third casters a
+ * third (rounded down), and pact/none contribute nothing to the shared slot
+ * pool (warlock pact slots stay a separate pool). The deferred multiclass work
+ * sums these across classes and feeds slotsForCasterLevel; single-class callers
+ * don't need it. Pure.
+ * @param {import('../types/class.js').CasterType} casterType
+ * @param {number} classLevel
+ * @returns {number} caster levels this class contributes
+ */
+export function casterLevelContribution(casterType, classLevel) {
+  if (classLevel < 1) return 0;
+  switch (casterType) {
+    case 'full':
+      return classLevel;
+    case 'half':
+      return Math.floor(classLevel / 2);
+    case 'third':
+      return Math.floor(classLevel / 3);
+    default:
+      return 0;
+  }
+}
+
+/**
  * @param {ResourcePool} pool
  * @returns {boolean} whether the pool is a reserved spell-slot pool
  */

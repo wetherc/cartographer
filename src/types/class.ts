@@ -30,3 +30,13 @@ export interface ClassDef {
    * that know no cantrips. Values past the array's end use the last entry. */
   cantripsKnown: number[];
 }
+
+/** One of a character's class memberships: which class, at what level, in which
+ * subclass. A single-class character has one of these; the list shape leaves
+ * room for the deferred multiclass work (see PLAN.md's multiclass design
+ * decision) without a later schema change. */
+export interface ClassRef {
+  classId: string;
+  level: number;
+  subclass?: string;
+}
