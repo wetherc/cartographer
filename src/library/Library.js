@@ -344,9 +344,25 @@ export function normalizeLibrary(parsed) {
 /** @type {CustomLibrary} */
 let active = emptyLibrary();
 
+/**
+ * Merged lists derived from `active`, built lazily and kept until the next
+ * setActiveLibrary. Every getter below is called repeatedly per library
+ * render and picker open; without this, each call rebuilt the defaults and
+ * re-ran the merge.
+ * @type {{
+ *   equipment?: { entry: EquipmentTemplate, source: LibrarySource }[],
+ *   weapons?: EquipmentTemplate[],
+ *   armors?: import('../types/entities.js').EnemyArmor[],
+ *   bestiary?: { entry: EncounterTemplate, source: LibrarySource }[],
+ *   npcs?: { entry: NPCTemplate, source: LibrarySource }[],
+ * }}
+ */
+let cache = {};
+
 /** @param {CustomLibrary} library */
 export function setActiveLibrary(library) {
   active = library;
+  cache = {};
 }
 
 /** @returns {CustomLibrary} */
@@ -358,7 +374,11 @@ export function getActiveLibrary() {
  * by source, in default order with new custom entries appended.
  * @returns {{ entry: EquipmentTemplate, source: LibrarySource }[]} */
 export function activeEquipmentEntries() {
-  return mergedEntries(defaultEquipmentTemplates(), active.equipment, equipmentKey);
+  return (cache.equipment ??= mergedEntries(
+    defaultEquipmentTemplates(),
+    active.equipment,
+    equipmentKey,
+  ));
 }
 
 /** The merged equipment templates of one item type, e.g. the weapon picker's
@@ -374,19 +394,19 @@ export function activeEquipment(type) {
  * damage roll.
  * @returns {EquipmentTemplate[]} */
 export function activeWeapons() {
-  return activeEquipmentEntries()
+  return (cache.weapons ??= activeEquipmentEntries()
     .map((e) => e.entry)
-    .filter((e) => WEAPON_TYPES.includes(e.type) && (e.damage?.length ?? 0) > 0);
+    .filter((e) => WEAPON_TYPES.includes(e.type) && (e.damage?.length ?? 0) > 0));
 }
 
 /** Every merged body-armor template as an enemy armor choice: name plus the
  * flat bonus its base AC carries over the unarmored 10.
  * @returns {import('../types/entities.js').EnemyArmor[]} */
 export function activeArmors() {
-  return activeEquipmentEntries()
+  return (cache.armors ??= activeEquipmentEntries()
     .map((e) => e.entry)
     .filter((e) => e.type === 'armor' && e.baseAC !== undefined)
-    .map((e) => ({ name: e.name, acBonus: /** @type {number} */ (e.baseAC) - 10 }));
+    .map((e) => ({ name: e.name, acBonus: /** @type {number} */ (e.baseAC) - 10 })));
 }
 
 /** A merged armor template as an enemy's worn armor, or null for an unknown
@@ -401,7 +421,7 @@ export function activeEnemyArmor(name) {
  * tagged by source.
  * @returns {{ entry: EncounterTemplate, source: LibrarySource }[]} */
 export function activeBestiaryEntries() {
-  return mergedEntries(DEFAULT_BESTIARY, active.bestiary, nameKey);
+  return (cache.bestiary ??= mergedEntries(DEFAULT_BESTIARY, active.bestiary, nameKey));
 }
 
 /** The merged bestiary templates, for spawn pickers.
@@ -413,5 +433,5 @@ export function activeBestiary() {
 /** The merged NPC templates, tagged by source.
  * @returns {{ entry: NPCTemplate, source: LibrarySource }[]} */
 export function activeNPCEntries() {
-  return mergedEntries(DEFAULT_NPC_TEMPLATES, active.npcs, nameKey);
+  return (cache.npcs ??= mergedEntries(DEFAULT_NPC_TEMPLATES, active.npcs, nameKey));
 }

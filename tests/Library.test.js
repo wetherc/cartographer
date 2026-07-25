@@ -19,6 +19,8 @@ import {
   activeArmors,
   activeEnemyArmor,
   activeBestiary,
+  activeBestiaryEntries,
+  activeEquipmentEntries,
   activeNPCEntries,
 } from '../src/library/Library.js';
 
@@ -184,4 +186,38 @@ test('with no customizations the active getters return the pure defaults', () =>
   assert.equal(activeBestiary().length, DEFAULT_BESTIARY.length);
   assert.equal(activeEnemyArmor('Nonesuch'), null);
   assert.deepEqual(activeEnemyArmor('Leather Armor'), { name: 'Leather Armor', acBonus: 1 });
+});
+
+test('the active getters memoize their merged lists until the library changes', () => {
+  try {
+    setActiveLibrary(emptyLibrary());
+    // Same object back on a repeat call: the merge ran once.
+    assert.equal(activeEquipmentEntries(), activeEquipmentEntries());
+    assert.equal(activeWeapons(), activeWeapons());
+    assert.equal(activeArmors(), activeArmors());
+    assert.equal(activeBestiaryEntries(), activeBestiaryEntries());
+    assert.equal(activeNPCEntries(), activeNPCEntries());
+
+    const before = activeEquipmentEntries();
+    const beforeWeapons = activeWeapons();
+    setActiveLibrary({
+      ...emptyLibrary(),
+      equipment: [
+        {
+          name: 'Sunforged Maul',
+          type: 'weapon',
+          damage: [{ count: 1, sides: 8, damageType: 'bludgeoning' }],
+        },
+      ],
+    });
+    // Setting a new library drops the cache; the fresh merge sees the custom.
+    const after = activeEquipmentEntries();
+    assert.notEqual(after, before);
+    assert.notEqual(activeWeapons(), beforeWeapons);
+    assert.ok(
+      after.some(({ entry, source }) => entry.name === 'Sunforged Maul' && source === 'custom'),
+    );
+  } finally {
+    setActiveLibrary(emptyLibrary());
+  }
 });

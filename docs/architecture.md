@@ -87,6 +87,50 @@ All of that individual movement sits behind the persisted `splitParty` flag (on 
 
 The GM's custom library persists separately in `storage/LibraryStore.js`, under its own localStorage key (`campaign-builder:library`) so New/Import/Load example never touch it. The browser copy is the working state; `downloadLibrary`/`readLibraryFromFile` round-trip it through a portable JSON file, and `fetchLibraryFile` seeds an empty browser from `library/campaign-library.json` (a gitignored path served from the project root) at startup. `normalizeLibrary` (in `library/Library.js`) makes every load tolerant, dropping invalid entries instead of throwing.
 
+## Efficiency practices
+
+The performance posture is deliberate minimalism: most collections (characters,
+encounters, NPCs, quests, handouts, library templates) are small-n, and their
+linear scans are cheap in absolute terms — leave them alone rather than
+optimizing preemptively. Cost concentrates in four places, each with an
+established pattern that new code touching the same area should follow:
+
+- **Canvas redraws coalesce through one `requestAnimationFrame`.**
+  `MapCanvas.render()` only schedules a frame; bursts of pointermove/wheel
+  events and multi-setter updates (e.g. the party-marker sync) collapse into a
+  single redraw. Within a frame, `MapRenderer` computes derived data that needs
+  a full tile scan (revealed-id set, span blocks) once into a shared `frame`
+  object that every render pass reads. A new render pass should pull from that
+  object — or extend it — rather than re-scanning `node.tiles`.
+- **Per-tile lookups go through `TileIndex`** (`src/map/TileIndex.js`), a
+  WeakMap-cached id-to-tile/position index per node. The cache is safe because
+  nodes are replaced immutably on every tile mutation — a stale node object can
+  never serve fresh reads. Any new code that resolves tile ids in a loop
+  (painting, fog, hit-testing) should use it instead of scanning the flat
+  `tiles` array; conversely, any new mutation path must keep replacing the node
+  rather than mutating tiles in place, or the index breaks.
+- **Persistence never re-serializes what it already has.** The autosave history
+  ring (`snapshotRawHistory`, `src/storage/SaveManager.js`) stores one raw
+  snapshot string per localStorage key with a small numeric index; a push
+  writes only the new string, skips a duplicate of the newest, and evicts old
+  keys. Code touching save/history paths should move strings around, not
+  parse-and-restringify a whole campaign, and should respect the quota
+  fallbacks (shrink the ring, then drop it) already in place.
+- **Growing lists render incrementally.** The travelogue panel builds its DOM
+  skeleton once and prepends only entries newer than the last-rendered id
+  (pure `entriesAfter`, `src/log/Travelogue.js`), rebuilding only when that
+  anchor id vanishes (log cleared or replaced). A future panel over an
+  append-mostly list should copy this diff-by-anchor-id pattern instead of
+  clearing and rebuilding per event.
+- **Derived merged lists are memoized at their single mutation point.** The
+  library's `active*` getters cache their merged defaults+customs lists in
+  module state, invalidated only by `setActiveLibrary`
+  (`src/library/Library.js`), which every mutation path already routes
+  through. New derived collections (the planned spell corpus, feat catalog)
+  should hang off the same cache-and-invalidate point rather than re-merging
+  per call — and callers must treat the returned arrays as read-only, since
+  they are shared.
+
 ## Testability pattern
 
 The recurring split across this codebase: **pure logic takes its side effects (RNG, current time, etc.) as arguments and returns data**, so it can be unit tested with `node --test` and no DOM. Thin wrapper code then wires that logic to the DOM/canvas and is verified visually instead of via unit test. Examples: `roll(selection, rng)` vs `ui/DiceTray.js`; `MapNavigator`/`RegionGroups`/`FogOfWar`/`PartyTracker` vs `MapCanvas`'s event handlers; `Encounter`/`Resource`/`Character` vs `ui/CharacterSheet.js`/`ui/InventoryPanel.js`/`ui/EncounterPanel.js`; `SaveManager`'s serialize/deserialize/toTileGrid vs its localStorage/download/file wrappers.

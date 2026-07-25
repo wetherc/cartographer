@@ -50,9 +50,11 @@ production-deployment plan.
 
 ## Efficiency foundation (do first)
 
-Status: **items 1-5 shipped** (rAF batching + per-frame derived data in
+Status: **all six items shipped** (rAF batching + per-frame derived data in
 `5e81fcb`, coord-indexed tiles in `e4603de`, localStorage write reduction in
-`c8c31ed`, append-only travelog below); item 6 remains.
+`c8c31ed`, append-only travelog in `0b12576`, library memoization below).
+The efficiency considerations future work should respect are summarized in
+`docs/architecture.md` ("Efficiency practices").
 
 Rationale: most collections (characters, encounters, NPCs, quests, handouts,
 library templates) are small-n; their O(n)/O(n^2) scans are cheap in absolute
@@ -124,15 +126,20 @@ full rebuild, not unbounded growth.)
   replaced). Rendered rows are trimmed to `TRAVELOG_LIMIT`
   (`src/ui/TravelogPanel.js:74`).
 
-### 6. Memoize the library `active*` getters
+### 6. Memoize the library `active*` getters — done
 
-Every `active*` getter rebuilds the defaults and re-runs the merge from scratch
-(`src/library/Library.js:360-417`) and is called multiple times per library
-render (`src/ui/LibraryPanel.js:145`).
+Every `active*` getter used to rebuild the defaults and re-run the merge from
+scratch on each call, and each is called multiple times per library render and
+picker open.
 
-- Cache the merged active lists; invalidate in `setCustom`
-  (`src/app/libraryWiring.js:89`). Done here so the spell corpus (added later)
-  is cheap from day one rather than re-merged on every render and picker open.
+- Done: the merged active lists are built lazily into a module-level cache
+  (`src/library/Library.js:360`) and reused until `setActiveLibrary`
+  (`src/library/Library.js:363`) replaces the active library, which every
+  mutation path (`setCustom` in `src/app/libraryWiring.js:89`, the reset
+  button) already goes through — one invalidation point instead of one per
+  caller. Covers `activeEquipmentEntries`, `activeWeapons`, `activeArmors`,
+  `activeBestiaryEntries`, and `activeNPCEntries`; done now so the spell
+  corpus (added later) is cheap from day one.
 
 ### Build order
 
