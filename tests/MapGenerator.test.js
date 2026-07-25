@@ -7,8 +7,8 @@ import {
   ARCHETYPES,
   generateNodeTiles,
   generateDungeonLevels,
-  wallKind,
 } from '../src/map/MapGenerator.js';
+import { wallKind } from '../src/map/GeneratorInteriors.js';
 
 /** Deterministic PRNG so a seed reproduces a generation exactly. */
 function mulberry32(seed) {
