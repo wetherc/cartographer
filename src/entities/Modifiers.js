@@ -7,9 +7,13 @@
 /** The tiers an enemy can be authored at; legends run above-normal for their level. */
 export const ENEMY_TIERS = /** @type {EnemyTier[]} */ (['mob', 'legend']);
 
+/** The six ability scores every creature carries, in conventional order.
+ * Character.js re-exports this so character code keeps its natural import. */
+export const ABILITY_SCORES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+
 /** The only stats an enemy carries: the six ability scores plus armor class.
  * Stat blocks are closed over this set — there are no custom stats. */
-export const STAT_KEYS = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA', 'AC'];
+export const STAT_KEYS = [...ABILITY_SCORES, 'AC'];
 
 /**
  * Close a stat block over STAT_KEYS: unknown stats (e.g. a "Speed" from an

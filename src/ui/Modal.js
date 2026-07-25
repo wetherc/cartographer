@@ -289,3 +289,16 @@ export function confirmModal(message, options = {}) {
     confirm.focus();
   });
 }
+
+/**
+ * The standard delete confirmation: `Delete "<name>"?` with the danger-styled
+ * Delete button, so every delete across the app reads and looks the same.
+ * `detail` appends a consequence sentence (e.g. what else is lost).
+ * @param {string} name what's being deleted, shown quoted in the message
+ * @param {string} [detail]
+ * @returns {Promise<boolean>}
+ */
+export function confirmDelete(name, detail = '') {
+  const message = `Delete "${name}"?${detail ? ` ${detail}` : ''}`;
+  return confirmModal(message, { danger: true, confirmLabel: 'Delete' });
+}

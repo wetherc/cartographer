@@ -2,6 +2,7 @@ import { createResource, spend as spendPool, restore as restorePool } from './Re
 import { isSlotPool, syncSlotsToLevel, migrateManaToSlots } from './SpellSlots.js';
 import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
+import { ABILITY_SCORES } from './Modifiers.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -12,8 +13,10 @@ import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from '.
 /** XP required to go from level N to N+1 is N * XP_PER_LEVEL. */
 export const XP_PER_LEVEL = 100;
 
-/** The six ability scores every character carries, in conventional order. */
-export const ABILITY_SCORES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+/** The six ability scores every character carries, in conventional order.
+ * Defined beside STAT_KEYS in Modifiers.js so the enemy stat set derives from
+ * it; re-exported here because character code is its natural import site. */
+export { ABILITY_SCORES } from './Modifiers.js';
 
 /** @returns {Record<string, number>} every ability score at the neutral 10 */
 export function defaultStats() {

@@ -8,6 +8,7 @@ import {
   spellbookIds,
   spellbookFromIds,
   readCasterOptions,
+  refilterSpellsOnChange,
 } from '../src/app/casterFields.js';
 
 test('casterClassOptions offers None plus caster classes only', () => {
@@ -113,4 +114,28 @@ test('readCasterOptions returns nothing for a non-caster or None', () => {
 test('readCasterOptions floors caster level to at least 1', () => {
   const opts = readCasterOptions({ casterClass: 'cleric', casterLevel: '0', spells: '' });
   assert.equal(opts.casterLevel, 1);
+});
+
+test('refilterSpellsOnChange refilters the spell picker only on caster field changes', () => {
+  const calls = [];
+  const form = {
+    values: { casterClass: 'wizard', casterLevel: '5' },
+    get(name) {
+      return this.values[name];
+    },
+    setOptions(name, options) {
+      calls.push({ name, options });
+    },
+  };
+  assert.equal(refilterSpellsOnChange('name', form), false, 'unrelated fields are not handled');
+  assert.equal(calls.length, 0);
+  assert.equal(refilterSpellsOnChange('casterClass', form), true);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].name, 'spells');
+  assert.ok(
+    calls[0].options.every((o) => o.label.startsWith('Cantrip') || /^L[1-3] /.test(o.label)),
+    'options are filtered to what a level-5 wizard can slot',
+  );
+  assert.equal(refilterSpellsOnChange('casterLevel', form), true);
+  assert.equal(calls.length, 2);
 });

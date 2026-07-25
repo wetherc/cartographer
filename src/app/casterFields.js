@@ -114,6 +114,24 @@ export function casterFields(seed) {
 }
 
 /**
+ * The modal `onChange` fragment behind the caster fields: when the caster class
+ * or level changes, refilter the spell multiselect to what that caster can
+ * slot. Returns whether the change was handled, so a dialog with its own
+ * onChange logic (the encounter form's stat re-stamping) can bail early.
+ * @param {string} name the changed field's name
+ * @param {{ get: (name: string) => string, setOptions: (name: string, options: { value: string, label: string }[]) => void }} form
+ * @returns {boolean}
+ */
+export function refilterSpellsOnChange(name, form) {
+  if (name !== 'casterClass' && name !== 'casterLevel') return false;
+  form.setOptions(
+    'spells',
+    spellPickerOptions(form.get('casterClass'), Number(form.get('casterLevel')) || 1),
+  );
+  return true;
+}
+
+/**
  * Partition a flat set of picked spell ids into a spellbook: cantrips (level 0)
  * into `cantrips`, leveled spells into both `known` and `prepared` so a foe can
  * cast them straight away. Unknown ids (a spell removed from the library) are

@@ -25,6 +25,7 @@ import {
   activeSpells,
   activeSpellEntries,
   activeSpellIndex,
+  resolveSpellIds,
 } from '../src/library/Library.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
 
@@ -321,6 +322,19 @@ test('activeSpellIndex maps ids to spells and is memoized until the library chan
   assert.equal(index.get('no-such-spell'), undefined);
   setActiveLibrary(emptyLibrary()); // reset invalidates the memo
   assert.notEqual(index, activeSpellIndex());
+});
+
+test('resolveSpellIds resolves through the index, deduplicating and dropping unknowns', () => {
+  setActiveLibrary(emptyLibrary());
+  const first = DEFAULT_SPELLS[0];
+  const second = DEFAULT_SPELLS[1];
+  const spells = resolveSpellIds([first.id, 'no-such-spell', second.id, first.id]);
+  assert.deepEqual(
+    spells.map((s) => s.id),
+    [first.id, second.id],
+    'order kept, duplicate and unknown ids dropped',
+  );
+  assert.deepEqual(resolveSpellIds([]), []);
 });
 
 test('getActiveLibrary reflects the library last set, empty by default', () => {

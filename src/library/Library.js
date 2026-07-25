@@ -609,3 +609,19 @@ export function activeSpells() {
 export function activeSpellIndex() {
   return (cache.spellIndex ??= indexById(activeSpells()));
 }
+
+/**
+ * Resolve stored spell ids to Spell objects through the memoized index,
+ * deduplicating and dropping ids the library no longer knows (a spell removed
+ * from the custom library). The one id -> Spell path for spellbook rendering
+ * and casting, so every consumer agrees on ordering and unknown-id handling.
+ * @param {string[]} ids
+ * @returns {Spell[]}
+ */
+export function resolveSpellIds(ids) {
+  const index = activeSpellIndex();
+  return [...new Set(ids)].flatMap((id) => {
+    const spell = index.get(id);
+    return spell ? [spell] : [];
+  });
+}

@@ -1,5 +1,5 @@
 import { mustGetElement } from '../ui/dom.js';
-import { promptModal, confirmModal } from '../ui/Modal.js';
+import { promptModal, confirmDelete } from '../ui/Modal.js';
 import {
   createCharacter,
   withHP,
@@ -10,7 +10,7 @@ import {
 } from '../entities/Character.js';
 import { withSpellSlots, getSlotPools, slotLevelOf } from '../entities/SpellSlots.js';
 import { CLASS_LIST, isCasterClass } from '../entities/Classes.js';
-import { activeSpells, activeSpellIndex } from '../library/Library.js';
+import { activeSpells, resolveSpellIds } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
@@ -383,10 +383,7 @@ export function wireParty(app) {
     onDelete: async (id) => {
       const character = state.characters.find((c) => c.id === id);
       if (!character) return;
-      const ok = await confirmModal(`Delete "${character.name}"? Their inventory is lost too.`, {
-        danger: true,
-        confirmLabel: 'Delete',
-      });
+      const ok = await confirmDelete(character.name, 'Their inventory is lost too.');
       if (!ok) return;
       state.characters = removeById(state.characters, id);
       selectCharacter(
@@ -416,11 +413,7 @@ export function wireParty(app) {
   });
 
   // Resolve a spellbook's stored ids through the memoized active-library index.
-  /** @param {string[]} ids @returns {import('../types/spell.js').Spell[]} */
-  const resolveSpells = (ids) => {
-    const index = activeSpellIndex();
-    return ids.map((id) => index.get(id)).filter((s) => s !== undefined);
-  };
+  const resolveSpells = resolveSpellIds;
   // Every spell the character's class may learn: cantrips and leveled spells up
   // to its highest available slot level, so the Spellbook can't offer a spell it
   // could never cast.

@@ -1,38 +1,16 @@
 import { promptModal } from '../ui/Modal.js';
-import { createNPC, DISPOSITIONS } from '../entities/NPC.js';
+import { createNPC, dispositionOptions } from '../entities/NPC.js';
 import { ABILITY_SCORES } from '../entities/Character.js';
 import { withCasterFields } from '../entities/Caster.js';
 import { isCasterClass } from '../entities/Classes.js';
 import { isSlotPool } from '../entities/SpellSlots.js';
 import { slugId, replaceById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
-import { casterFields, readCasterOptions, spellPickerOptions } from './casterFields.js';
+import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
+import { statFields, readStats } from './statFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/npc.js').NPC} NPC */
-
-const dispositionOptions = DISPOSITIONS.map((d) => ({
-  value: d,
-  label: d[0].toUpperCase() + d.slice(1),
-}));
-
-// One number field per ability score, so an NPC's modifiers (initiative,
-// future checks) derive from real stats rather than a flat default.
-/** @type {(stats: Record<string, number>) => import('../ui/Modal.js').ModalField[]} */
-const statFields = (stats) =>
-  ABILITY_SCORES.map((key) => ({
-    name: `stat-${key}`,
-    label: key,
-    type: 'number',
-    value: stats[key] ?? 10,
-    min: 1,
-  }));
-
-/** @type {(values: Record<string, string>) => Record<string, number>} */
-const readStats = (values) =>
-  Object.fromEntries(
-    ABILITY_SCORES.map((key) => [key, Math.max(1, Number(values[`stat-${key}`]) || 10)]),
-  );
 
 /**
  * The shared create/edit dialog behind every NPC authoring flow — the Story
@@ -68,10 +46,12 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
         label: 'Disposition',
         type: 'select',
         value: seed?.disposition ?? 'neutral',
-        options: dispositionOptions,
+        options: dispositionOptions(),
       },
       { name: 'notes', label: 'Notes', value: seed?.notes ?? '', full: true },
-      ...statFields(seed?.stats ?? {}),
+      // One number field per ability score, so an NPC's modifiers (initiative,
+      // future checks) derive from real stats rather than a flat default.
+      ...statFields(ABILITY_SCORES, seed?.stats ?? {}),
       // Optional spellcaster section: a caster class gives the NPC spell slots
       // and a spellbook so it can cast in an encounter it joins.
       ...casterFields(seed),
@@ -85,14 +65,7 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
       submitLabel: existing ? 'Save' : 'Add',
       wide: true,
       // Refilter the spell picker to the chosen caster class and level.
-      onChange: (name, form) => {
-        if (name === 'casterClass' || name === 'casterLevel') {
-          form.setOptions(
-            'spells',
-            spellPickerOptions(form.get('casterClass'), Number(form.get('casterLevel')) || 1),
-          );
-        }
-      },
+      onChange: refilterSpellsOnChange,
     },
   );
   const name = values?.name.trim();
@@ -107,7 +80,7 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
       role: values.role.trim(),
       disposition: /** @type {import('../types/npc.js').Disposition} */ (values.disposition),
       notes: values.notes.trim(),
-      stats: readStats(values),
+      stats: readStats(ABILITY_SCORES, values),
       location: readLocation(app, values),
     };
     // A caster class rebuilds slots at full and stamps the picked spellbook;
@@ -130,7 +103,7 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
         role: values.role.trim(),
         disposition: /** @type {import('../types/npc.js').Disposition} */ (values.disposition),
         notes: values.notes.trim(),
-        stats: readStats(values),
+        stats: readStats(ABILITY_SCORES, values),
         location: readLocation(app, values),
         ...caster,
       },

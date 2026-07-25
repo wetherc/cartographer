@@ -1,4 +1,5 @@
 import { TileGrid, withNodeDefaults } from '../map/TileGrid.js';
+import { downloadJSON, readFileText } from './fileIO.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -163,13 +164,7 @@ export function loadFromLocalStorage(key = DEFAULT_STORAGE_KEY) {
  * @param {string} [filename]
  */
 export function downloadState(state, filename = 'campaign.json') {
-  const blob = new Blob([serialize(state)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadJSON(serialize(state), filename);
 }
 
 /**
@@ -366,10 +361,5 @@ export function onExternalSave(callback, key = DEFAULT_STORAGE_KEY) {
  * @returns {Promise<CampaignState>}
  */
 export function readStateFromFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(deserialize(String(reader.result)));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsText(file);
-  });
+  return readFileText(file).then(deserialize);
 }

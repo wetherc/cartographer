@@ -1,4 +1,5 @@
 import { formatDamage } from '../entities/Equipment.js';
+import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /**
@@ -6,11 +7,6 @@ import { formatDamage } from '../entities/Equipment.js';
  * clicked; `variant` picks the button style.
  * @typedef {{ id: string, label: string, variant?: 'primary' | 'danger' }} SpellAction
  */
-
-/** @param {string} school @returns {string} title-cased school name. */
-function schoolLabel(school) {
-  return school.charAt(0).toUpperCase() + school.slice(1);
-}
 
 /**
  * The one-line effect summary shown under the meta grid: a spell attack and its
@@ -78,7 +74,7 @@ export function promptSpellDetail(spell, actions, options = {}) {
     const subtitle = document.createElement('p');
     subtitle.className = 'spell-detail__subtitle';
     const levelText = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
-    subtitle.textContent = `${levelText} · ${schoolLabel(spell.school)}`;
+    subtitle.textContent = `${levelText} · ${capitalize(spell.school)}`;
     if (spell.concentration) {
       const tag = document.createElement('span');
       tag.className = 'spell-detail__tag';

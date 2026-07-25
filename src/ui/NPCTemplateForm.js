@@ -1,12 +1,12 @@
-import { DISPOSITIONS } from '../entities/NPC.js';
+import { dispositionOptions } from '../entities/NPC.js';
 import { ABILITY_SCORES } from '../entities/Character.js';
 import {
   labeled,
   fieldRow,
   textField,
-  numberField,
   textareaField,
   select,
+  statInputRows,
   formActions,
 } from './formFields.js';
 
@@ -33,23 +33,12 @@ export function buildNPCTemplateForm({ template = null, submitLabel, onSubmit, o
   nameInput.classList.add('inventory-panel__name-input');
 
   const roleInput = textField(template?.role ?? '', 'Role / faction');
-  const dispositionSelect = select(
-    DISPOSITIONS.map((d) => ({ value: d, label: d[0].toUpperCase() + d.slice(1) })),
-    template?.disposition ?? 'neutral',
-  );
+  const dispositionSelect = select(dispositionOptions(), template?.disposition ?? 'neutral');
   const notesInput = textareaField(template?.notes ?? '', { placeholder: 'Notes', rows: 3 });
 
   // One number field per ability score, so an NPC's modifiers derive from real
   // stats rather than a flat default.
-  const statInputs = ABILITY_SCORES.map((key) => ({
-    key,
-    input: numberField(template?.stats[key] ?? 10, { min: 1 }),
-  }));
-  const statRows = [];
-  for (let i = 0; i < statInputs.length; i += 2) {
-    const pair = statInputs.slice(i, i + 2).map(({ key, input }) => labeled(key, input));
-    statRows.push(fieldRow(...pair));
-  }
+  const statBlock = statInputRows(ABILITY_SCORES, template?.stats ?? {});
 
   const actionsRow = formActions({
     submitLabel,
@@ -61,9 +50,7 @@ export function buildNPCTemplateForm({ template = null, submitLabel, onSubmit, o
         role: roleInput.value.trim(),
         disposition: /** @type {import('../types/npc.js').Disposition} */ (dispositionSelect.value),
         notes: notesInput.value.trim(),
-        stats: Object.fromEntries(
-          statInputs.map(({ key, input }) => [key, Math.max(1, Number(input.value) || 10)]),
-        ),
+        stats: statBlock.read(),
       });
     },
     onCancel,
@@ -73,7 +60,7 @@ export function buildNPCTemplateForm({ template = null, submitLabel, onSubmit, o
     nameInput,
     fieldRow(labeled('Role / faction', roleInput), labeled('Disposition', dispositionSelect)),
     labeled('Notes', notesInput),
-    ...statRows,
+    ...statBlock.rows,
     actionsRow,
   );
 

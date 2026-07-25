@@ -1,7 +1,6 @@
-import { activeWeapons, activeArmors, activeEnemyArmor } from '../library/Library.js';
 import { defaultEnemyStats, ENEMY_TIERS, STAT_KEYS } from '../entities/Modifiers.js';
-import { formatDamage } from '../entities/Equipment.js';
 import { isCasterClass } from '../entities/Classes.js';
+import { gearOptions, readGear } from '../app/gearFields.js';
 import {
   casterClassOptions,
   spellPickerOptions,
@@ -15,47 +14,12 @@ import {
   textField,
   numberField,
   select,
+  statInputRows,
   formActions,
 } from './formFields.js';
 
 /** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
 /** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
-
-/**
- * Build the weapon/armor pickers for the bestiary form: the merged library's
- * choices, "None" for a deliberately weaponless/unarmored creature, and — when
- * the template already carries a hand-tuned gear entry not in the library — that
- * entry kept offered as-is so editing other fields doesn't clobber it.
- * @param {EncounterTemplate | null} template
- */
-function gearOptions(template) {
-  const weaponChoices = activeWeapons();
-  const currentWeapon = template?.weapon;
-  const customWeapon = currentWeapon && !weaponChoices.some((p) => p.name === currentWeapon.name);
-  const weaponOptions = [
-    { value: '', label: 'None (unarmed)' },
-    ...(customWeapon
-      ? [
-          {
-            value: currentWeapon.name,
-            label: `${currentWeapon.name} (${formatDamage(currentWeapon.damage)})`,
-          },
-        ]
-      : []),
-    ...weaponChoices.map((p) => ({ value: p.name, label: p.name })),
-  ];
-  const armorChoices = activeArmors();
-  const currentArmor = template?.armor;
-  const customArmor = currentArmor && !armorChoices.some((a) => a.name === currentArmor.name);
-  const armorOptions = [
-    { value: '', label: 'None (unarmored)' },
-    ...(customArmor
-      ? [{ value: currentArmor.name, label: `${currentArmor.name} (+${currentArmor.acBonus} AC)` }]
-      : []),
-    ...armorChoices.map((a) => ({ value: a.name, label: `${a.name} (+${a.acBonus} AC)` })),
-  ];
-  return { weaponChoices, currentWeapon, currentArmor, weaponOptions, armorOptions };
-}
 
 /**
  * The bestiary template create/edit form, inline in the Library rail like the
@@ -83,8 +47,9 @@ export function buildEncounterTemplateForm({
   const form = document.createElement('div');
   form.className = 'inventory-panel__form';
 
-  const { weaponChoices, currentWeapon, currentArmor, weaponOptions, armorOptions } =
-    gearOptions(template);
+  // The weapon/armor pickers shared with the campaign encounter dialog.
+  const gear = gearOptions(template);
+  const { currentWeapon, currentArmor, weaponOptions, armorOptions } = gear;
 
   const nameInput = textField(template?.name ?? '', 'Enemy name');
   nameInput.classList.add('inventory-panel__name-input');
@@ -129,11 +94,8 @@ export function buildEncounterTemplateForm({
 
   // The stat block: one number field per key, pre-filled from the template or
   // the tier's level-appropriate defaults.
-  const defaults = template?.statBlock ?? defaultEnemyStats(1, 'mob');
-  const statInputs = STAT_KEYS.map((key) => ({
-    key,
-    input: numberField(defaults[key], { min: 1 }),
-  }));
+  const statBlock = statInputRows(STAT_KEYS, template?.statBlock ?? defaultEnemyStats(1, 'mob'));
+  const { statInputs } = statBlock;
 
   // Creating re-stamps the defaults as level/tier change until a stat is
   // hand-edited, after which the GM's numbers stand. Editing never re-stamps —
@@ -157,13 +119,6 @@ export function buildEncounterTemplateForm({
     tierSelect.addEventListener('change', restamp);
   }
 
-  // Stat fields laid out two per row so the block stays compact.
-  const statRows = [];
-  for (let i = 0; i < statInputs.length; i += 2) {
-    const pair = statInputs.slice(i, i + 2).map(({ key, input }) => labeled(key, input));
-    statRows.push(fieldRow(...pair));
-  }
-
   const actionsRow = formActions({
     submitLabel,
     onSubmit: () => {
@@ -176,27 +131,11 @@ export function buildEncounterTemplateForm({
 
   /** @returns {Omit<EncounterTemplate, 'id'>} */
   function assemble() {
-    const preset = weaponChoices.find((p) => p.name === weaponSelect.value);
-    const weapon =
-      weaponSelect.value === ''
-        ? null
-        : preset
-          ? {
-              name: preset.name,
-              handling: preset.handling ?? /** @type {const} */ ('melee'),
-              damage: (preset.damage ?? []).map((d) => ({ ...d })),
-            }
-          : (currentWeapon ?? null);
-    const armor =
-      armorSelect.value === ''
-        ? null
-        : (activeEnemyArmor(armorSelect.value) ?? currentArmor ?? null);
+    const { weapon, armor } = readGear(weaponSelect.value, armorSelect.value, gear);
     return {
       name: nameInput.value.trim(),
       maxHP: Math.max(1, Number(hpInput.value) || 1),
-      statBlock: Object.fromEntries(
-        statInputs.map(({ key, input }) => [key, Math.max(1, Number(input.value) || 10)]),
-      ),
+      statBlock: statBlock.read(),
       level: Math.max(1, Number(levelInput.value) || 1),
       tier: /** @type {EnemyTier} */ (tierSelect.value),
       weapon,
@@ -221,7 +160,7 @@ export function buildEncounterTemplateForm({
     fieldRow(labeled('Tier', tierSelect), labeled('Level', levelInput)),
     fieldRow(labeled('Max HP', hpInput)),
     fieldRow(labeled('Weapon', weaponSelect), labeled('Armor', armorSelect)),
-    ...statRows,
+    ...statBlock.rows,
     fieldRow(labeled('Caster class', classSelect), labeled('Caster level', casterLevelInput)),
     labeled('Spells', spellBox),
     actionsRow,

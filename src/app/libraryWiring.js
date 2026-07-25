@@ -108,6 +108,50 @@ export function wireLibrary(app) {
     refresh();
   };
 
+  /**
+   * The shared onRemove handler behind every library list: removing an
+   * override reverts the entry to its built-in default, removing a custom
+   * entry deletes it outright — one place for that wording and the
+   * danger-only-on-delete styling. `noun` names the entry kind in the
+   * confirm; `apply` removes the confirmed key from the custom library.
+   * @param {string} noun
+   * @param {(key: string) => void} apply
+   * @returns {(key: string, source: string) => Promise<boolean>}
+   */
+  const makeRemoveHandler = (noun, apply) => async (key, source) => {
+    const ok = await confirmModal(
+      source === 'override'
+        ? `Revert this ${noun} to the built-in default?`
+        : `Delete this custom ${noun}?`,
+      { danger: source === 'custom', confirmLabel: source === 'override' ? 'Revert' : 'Delete' },
+    );
+    if (ok) apply(key);
+    return ok;
+  };
+
+  /**
+   * Store an edited name-keyed entry (bestiary template or spell) under its
+   * possibly-renamed key, deriving the id from the name: an existing entry
+   * keeps its id unless renamed, a rename retires the old custom entry rather
+   * than leaving both behind, and editing a built-in stores a custom override.
+   * The form owns the fields; this owns identity and the merge key.
+   * @param {'bestiary' | 'spells'} list which custom-library list to write
+   * @param {() => { entry: { id: string, name: string } }[]} activeEntries
+   * @param {() => string[]} takenIds ids the derived slug must avoid
+   * @returns {(key: string | null, fields: { name: string }) => void}
+   */
+  const makeKeyedStore = (list, activeEntries, takenIds) => (key, fields) => {
+    const existing = key
+      ? activeEntries().find(({ entry }) => nameKey(entry) === key)?.entry
+      : null;
+    const id =
+      existing && key === nameKey(fields) ? existing.id : slugId(nameKey(fields), takenIds());
+    const entry = /** @type {any} */ ({ ...fields, id });
+    let next = /** @type {any[]} */ (custom[list]);
+    if (key && key !== nameKey(entry)) next = removeEntry(next, key, nameKey);
+    setCustom({ ...custom, [list]: upsertEntry(next, entry, nameKey) });
+  };
+
   setActiveLibrary(custom);
 
   // Seed an empty browser from the library file, so a fresh clone (or a
@@ -181,41 +225,16 @@ export function wireLibrary(app) {
         },
       });
     },
-    onRemove: async (key, source) => {
-      const ok = await confirmModal(
-        source === 'override'
-          ? 'Revert this entry to the built-in default?'
-          : 'Delete this custom entry?',
-        { danger: source === 'custom', confirmLabel: source === 'override' ? 'Revert' : 'Delete' },
-      );
-      if (ok) setCustom({ ...custom, equipment: removeEntry(custom.equipment, key, equipmentKey) });
-      return ok;
-    },
+    onRemove: makeRemoveHandler('entry', (key) =>
+      setCustom({ ...custom, equipment: removeEntry(custom.equipment, key, equipmentKey) }),
+    ),
   });
 
   // --- Bestiary ------------------------------------------------------------
 
-  /** Store a bestiary template edit under its (possibly renamed) key, deriving
-   * the id from the name like the spell list does — the form owns the fields,
-   * the caller owns identity and the merge key.
-   * @param {string | null} key @param {Omit<EncounterTemplate, 'id'>} fields */
-  const storeBestiary = (key, fields) => {
-    const existing = key
-      ? activeBestiaryEntries().find(({ entry }) => nameKey(entry) === key)?.entry
-      : null;
-    const id =
-      existing && key === nameKey(fields)
-        ? existing.id
-        : slugId(
-            nameKey(fields),
-            [...DEFAULT_BESTIARY, ...custom.bestiary].map((t) => t.id),
-          );
-    /** @type {EncounterTemplate} */
-    const template = { ...fields, id };
-    let next = custom.bestiary;
-    if (key && key !== nameKey(template)) next = removeEntry(next, key, nameKey);
-    setCustom({ ...custom, bestiary: upsertEntry(next, template, nameKey) });
-  };
+  const storeBestiary = makeKeyedStore('bestiary', activeBestiaryEntries, () =>
+    [...DEFAULT_BESTIARY, ...custom.bestiary].map((t) => t.id),
+  );
 
   app.views.libraryBestiary = mountLibraryPanel(mustGetElement('library-bestiary-container'), {
     addLabel: 'New enemy',
@@ -247,16 +266,9 @@ export function wireLibrary(app) {
         },
       });
     },
-    onRemove: async (key, source) => {
-      const ok = await confirmModal(
-        source === 'override'
-          ? 'Revert this enemy to the built-in default?'
-          : 'Delete this custom enemy?',
-        { danger: source === 'custom', confirmLabel: source === 'override' ? 'Revert' : 'Delete' },
-      );
-      if (ok) setCustom({ ...custom, bestiary: removeEntry(custom.bestiary, key, nameKey) });
-      return ok;
-    },
+    onRemove: makeRemoveHandler('enemy', (key) =>
+      setCustom({ ...custom, bestiary: removeEntry(custom.bestiary, key, nameKey) }),
+    ),
   });
 
   // --- NPC templates ---------------------------------------------------------
@@ -291,16 +303,9 @@ export function wireLibrary(app) {
         },
       });
     },
-    onRemove: async (key, source) => {
-      const ok = await confirmModal(
-        source === 'override'
-          ? 'Revert this NPC template to the built-in default?'
-          : 'Delete this custom NPC template?',
-        { danger: source === 'custom', confirmLabel: source === 'override' ? 'Revert' : 'Delete' },
-      );
-      if (ok) setCustom({ ...custom, npcs: removeEntry(custom.npcs, key, nameKey) });
-      return ok;
-    },
+    onRemove: makeRemoveHandler('NPC template', (key) =>
+      setCustom({ ...custom, npcs: removeEntry(custom.npcs, key, nameKey) }),
+    ),
     // Spawn a campaign NPC from a template: the normal NPC dialog, pre-filled
     // from the blueprint, defaulting placement to the party's position.
     spawnLabel: 'Add to campaign',
@@ -313,21 +318,7 @@ export function wireLibrary(app) {
 
   // --- Spells ----------------------------------------------------------------
 
-  /** Store a spell edit under its (possibly renamed) key.
-   * @param {string | null} key @param {Omit<Spell, 'id'>} fields */
-  const storeSpell = (key, fields) => {
-    // A spell's id is derived from its name (the merge key); an existing entry
-    // keeps its id unless renamed. Editing a built-in stores a custom override.
-    const existing = key
-      ? activeSpellEntries().find(({ entry }) => nameKey(entry) === key)?.entry
-      : null;
-    const id = existing && key === nameKey(fields) ? existing.id : slugId(nameKey(fields), []);
-    /** @type {Spell} */
-    const spell = { ...fields, id };
-    let next = custom.spells;
-    if (key && key !== nameKey(spell)) next = removeEntry(next, key, nameKey);
-    setCustom({ ...custom, spells: upsertEntry(next, spell, nameKey) });
-  };
+  const storeSpell = makeKeyedStore('spells', activeSpellEntries, () => []);
 
   app.views.librarySpells = mountLibraryPanel(mustGetElement('library-spells-container'), {
     addLabel: 'New spell',
@@ -354,16 +345,9 @@ export function wireLibrary(app) {
         },
       });
     },
-    onRemove: async (key, source) => {
-      const ok = await confirmModal(
-        source === 'override'
-          ? 'Revert this spell to the built-in default?'
-          : 'Delete this custom spell?',
-        { danger: source === 'custom', confirmLabel: source === 'override' ? 'Revert' : 'Delete' },
-      );
-      if (ok) setCustom({ ...custom, spells: removeEntry(custom.spells, key, nameKey) });
-      return ok;
-    },
+    onRemove: makeRemoveHandler('spell', (key) =>
+      setCustom({ ...custom, spells: removeEntry(custom.spells, key, nameKey) }),
+    ),
   });
 
   // --- Library file controls -------------------------------------------------

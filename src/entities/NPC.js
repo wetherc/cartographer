@@ -1,5 +1,6 @@
 import { defaultStats } from './Character.js';
 import { withCasterFields, ensureCasterFields } from './Caster.js';
+import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/npc.js').NPC} NPC */
 /** @typedef {import('../types/npc.js').Disposition} Disposition */
@@ -7,6 +8,12 @@ import { withCasterFields, ensureCasterFields } from './Caster.js';
 
 /** The dispositions an NPC can hold toward the party. */
 export const DISPOSITIONS = /** @type {Disposition[]} */ (['friendly', 'neutral', 'hostile']);
+
+/** The dispositions as select options, shared by every NPC form.
+ * @returns {{ value: Disposition, label: string }[]} */
+export function dispositionOptions() {
+  return DISPOSITIONS.map((d) => ({ value: d, label: capitalize(d) }));
+}
 
 /**
  * Create a non-combatant NPC. Unlike an Encounter it has no HP: an NPC is a

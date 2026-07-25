@@ -1,5 +1,5 @@
 import { mustGetElement } from '../ui/dom.js';
-import { confirmModal, alertModal } from '../ui/Modal.js';
+import { confirmDelete, alertModal } from '../ui/Modal.js';
 import { openContextMenu } from '../ui/ContextMenu.js';
 import { mountEncounterPanel } from '../ui/EncounterPanel.js';
 import { mountInitiativePanel } from '../ui/InitiativePanel.js';
@@ -27,7 +27,8 @@ import { weaponAttack } from './weaponAttack.js';
 import { castSpellAction } from './spellCast.js';
 import { findCombatant, logDefeatTransition } from './combatants.js';
 import { getSpellbook } from '../entities/Character.js';
-import { activeSpellIndex } from '../library/Library.js';
+import { resolveSpellIds } from '../library/Library.js';
+import { spellbookIds } from './casterFields.js';
 import { npcForm } from './npcForm.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -155,11 +156,7 @@ export function wireEncounters(app) {
       app.actions.markDirty();
       app.toasts.show(`Saved "${encounter.name}" to the bestiary.`);
     },
-    confirmDelete: (encounter) =>
-      confirmModal(`Delete "${encounter.name}"?`, {
-        danger: true,
-        confirmLabel: 'Delete',
-      }),
+    confirmDelete: (encounter) => confirmDelete(encounter.name),
     // Opening combat is the GM's call: the button shows only to the GM, only
     // while the party stands on a live encounter's tile with no fight running.
     canStartCombat: () => isGM(state.role) && combat === null && encountersHere().length > 0,
@@ -342,9 +339,7 @@ export function wireEncounters(app) {
       // Any combatant's spellbook is read structurally — `getSpellbook` only
       // touches `.spellbook`, which an encounter or NPC caster carries too.
       const book = getSpellbook(/** @type {any} */ (found.entity));
-      const index = activeSpellIndex();
-      const ids = [...new Set([...book.cantrips, ...book.prepared, ...book.known])];
-      return ids.map((id) => index.get(id)).filter((s) => s !== undefined);
+      return resolveSpellIds(spellbookIds(book));
     },
     onCastSpell: (participant, spell) => {
       if (combat) castSpellAction(app, combat, participant, spell);

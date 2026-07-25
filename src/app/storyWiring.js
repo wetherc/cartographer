@@ -1,5 +1,5 @@
 import { mustGetElement } from '../ui/dom.js';
-import { promptModal, confirmModal } from '../ui/Modal.js';
+import { promptModal, confirmModal, confirmDelete } from '../ui/Modal.js';
 import { mountTravelogPanel } from '../ui/TravelogPanel.js';
 import { appendEntry, createEntry } from '../log/Travelogue.js';
 import { mountNPCPanel } from '../ui/NPCPanel.js';
@@ -65,7 +65,7 @@ export function wireStory(app) {
     app.actions.markDirty();
   };
   const confirmDeleteNPC = (/** @type {import('../types/npc.js').NPC} */ npc) =>
-    confirmModal(`Delete "${npc.name}"?`, { danger: true, confirmLabel: 'Delete' });
+    confirmDelete(npc.name);
 
   app.views.npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
     // Players only learn of a placed NPC once the party has landed on its
@@ -144,10 +144,7 @@ export function wireStory(app) {
     onDelete: async (id) => {
       const quest = state.quests.find((q) => q.id === id);
       if (!quest) return false;
-      const ok = await confirmModal(`Delete "${quest.title}"?`, {
-        danger: true,
-        confirmLabel: 'Delete',
-      });
+      const ok = await confirmDelete(quest.title);
       if (ok) {
         state.quests = removeById(state.quests, id);
         app.actions.markDirty();
@@ -216,10 +213,7 @@ export function wireStory(app) {
     onDelete: async (id) => {
       const handout = state.handouts.find((h) => h.id === id);
       if (!handout) return false;
-      const ok = await confirmModal(`Delete "${handout.title}"?`, {
-        danger: true,
-        confirmLabel: 'Delete',
-      });
+      const ok = await confirmDelete(handout.title);
       if (ok) {
         state.handouts = removeById(state.handouts, id);
         app.actions.markDirty();

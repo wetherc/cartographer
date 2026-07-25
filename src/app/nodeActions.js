@@ -3,6 +3,7 @@ import { collectSubtreeIds } from '../map/WorldTree.js';
 import { NODE_KINDS, ENVIRONS } from '../map/NodeKinds.js';
 import { parseCoords } from '../map/MapGeometry.js';
 import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
+import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
@@ -45,7 +46,7 @@ function nodeKindFields(kind, environ) {
       label: 'Kind',
       type: 'select',
       value: kind,
-      options: NODE_KINDS.map((k) => ({ value: k, label: k[0].toUpperCase() + k.slice(1) })),
+      options: NODE_KINDS.map((k) => ({ value: k, label: capitalize(k) })),
     },
     {
       name: 'environ',
@@ -54,7 +55,7 @@ function nodeKindFields(kind, environ) {
       value: environ ?? '',
       options: [
         { value: '', label: '(none)' },
-        ...environs.map((e) => ({ value: e, label: e[0].toUpperCase() + e.slice(1) })),
+        ...environs.map((e) => ({ value: e, label: capitalize(e) })),
       ],
     },
   ];

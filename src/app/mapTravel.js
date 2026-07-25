@@ -5,6 +5,7 @@ import { moveCharacter, recallAll } from '../party/CharacterTokens.js';
 import { confirmModal } from '../ui/Modal.js';
 import { meetNPCs } from '../entities/NPC.js';
 import { isGM } from '../view/ViewRole.js';
+import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
@@ -224,7 +225,7 @@ export function createMapTravel(app, env) {
     }
     env.tileTooltip.show(
       {
-        title: poiType ? poiType.charAt(0).toUpperCase() + poiType.slice(1) : '',
+        title: poiType ? capitalize(poiType) : '',
         npcs: npcNames.join(', '),
         notes: gm ? tile.metadata.notes : '',
       },

@@ -1,6 +1,7 @@
 import { DIE_TYPES, roll, emptySelection, formatResult } from '../dice/DiceRoller.js';
 import { wireDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
+import { capitalize } from '../util/text.js';
 
 /**
  * Mount a dice tray widget, collapsed by default to a D20 icon behind an
@@ -131,7 +132,7 @@ export function mountDiceTray(container, opts = {}) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'btn seg-switch__btn';
-    button.textContent = mode === 'normal' ? 'Normal' : mode[0].toUpperCase() + mode.slice(1);
+    button.textContent = capitalize(mode);
     button.addEventListener('click', () => {
       selection.mode = mode;
       syncModes();

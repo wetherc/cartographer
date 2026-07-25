@@ -1,4 +1,5 @@
 import { normalizeLibrary } from '../library/Library.js';
+import { downloadJSON, readFileText } from './fileIO.js';
 
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
 
@@ -78,13 +79,7 @@ export async function fetchLibraryFile(url = LIBRARY_FILE) {
  * @param {string} [filename]
  */
 export function downloadLibrary(library, filename = 'campaign-library.json') {
-  const blob = new Blob([JSON.stringify(library, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadJSON(JSON.stringify(library, null, 2), filename);
 }
 
 /**
@@ -94,16 +89,5 @@ export function downloadLibrary(library, filename = 'campaign-library.json') {
  * @returns {Promise<CustomLibrary>}
  */
 export function readLibraryFromFile(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        resolve(normalizeLibrary(JSON.parse(String(reader.result))));
-      } catch (error) {
-        reject(error);
-      }
-    };
-    reader.onerror = () => reject(reader.error);
-    reader.readAsText(file);
-  });
+  return readFileText(file).then((text) => normalizeLibrary(JSON.parse(text)));
 }

@@ -1,20 +1,17 @@
-import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
+import { promptModal, confirmDelete, alertModal } from '../ui/Modal.js';
 import {
   createEncounter,
   defaultEnemyGear,
   editEncounter,
   fromTemplate,
 } from '../entities/Encounter.js';
-import {
-  activeWeapons,
-  activeArmors,
-  activeEnemyArmor,
-  activeBestiary,
-} from '../library/Library.js';
+import { activeBestiary } from '../library/Library.js';
 import { defaultEnemyStats, ENEMY_TIERS, STAT_KEYS } from '../entities/Modifiers.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
-import { casterFields, readCasterOptions, spellPickerOptions } from './casterFields.js';
+import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
+import { gearOptions, readGear } from './gearFields.js';
+import { statFields, readStats } from './statFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -33,60 +30,19 @@ import { casterFields, readCasterOptions, spellPickerOptions } from './casterFie
  */
 export async function encounterForm(app, existing, defaultLocation) {
   const { state } = app;
-  // Weapon choice is the merged library list — the 5e presets plus the GM's
-  // overrides and custom entries (structured damage, no dice text); an
-  // existing weapon whose name isn't in it (a hand-tuned save) stays offered
-  // as-is so editing other fields doesn't clobber it. "None" (the empty
-  // value) marks a deliberately weaponless creature — a non-bipedal beast,
-  // an ooze — which then gets no attack button in combat.
-  const weaponChoices = activeWeapons();
-  const currentWeapon = existing?.weapon;
-  const customWeapon = currentWeapon && !weaponChoices.some((p) => p.name === currentWeapon.name);
-  const weaponOptions = [
-    { value: '', label: 'None (unarmed)' },
-    ...(customWeapon
-      ? [
-          {
-            value: currentWeapon.name,
-            label: `${currentWeapon.name} (custom)`,
-          },
-        ]
-      : []),
-    ...weaponChoices.map((p) => ({ value: p.name, label: p.name })),
-  ];
-  // Armor mirrors the weapon picker: the merged library's body armors
-  // (bonus = the armor's margin over the unarmored 10), an existing
-  // non-library armor kept offered as-is, and "None" for the unarmored.
-  const currentArmor = existing?.armor;
-  const armorChoices = activeArmors();
-  const customArmor = currentArmor && !armorChoices.some((a) => a.name === currentArmor.name);
-  const armorOptions = [
-    { value: '', label: 'None (unarmored)' },
-    ...(customArmor
-      ? [
-          {
-            value: currentArmor.name,
-            label: `${currentArmor.name} (+${currentArmor.acBonus} AC) (custom)`,
-          },
-        ]
-      : []),
-    ...armorChoices.map((a) => ({ value: a.name, label: `${a.name} (+${a.acBonus} AC)` })),
-  ];
+  // Gear choice is the merged library list — the 5e presets plus the GM's
+  // overrides and custom entries; a hand-tuned entry not in the library stays
+  // offered as-is, and "None" marks a deliberately weaponless/unarmored
+  // creature (a non-bipedal beast, an ooze), which then gets no attack button
+  // in combat. Shared with the bestiary template form.
+  const gear = gearOptions(existing);
+  const { currentWeapon, currentArmor, weaponOptions, armorOptions } = gear;
   // Creation shows the stat block too, pre-filled with the tier's
   // level-appropriate defaults so a plain mob needs no stat typing but every
   // score stays overridable. Changing level or tier re-stamps the defaults
   // until a stat is hand-edited, after which the GM's numbers stand. Edits
   // omit the block — it lives on the Build-rail row's chips.
-  const defaults = defaultEnemyStats(1, 'mob');
-  const statFields = existing
-    ? []
-    : STAT_KEYS.map((key) => ({
-        name: `stat-${key}`,
-        label: key,
-        type: /** @type {'number'} */ ('number'),
-        value: defaults[key],
-        min: 1,
-      }));
+  const statBlockFields = existing ? [] : statFields(STAT_KEYS, defaultEnemyStats(1, 'mob'));
   let statsTouched = false;
   // Two-column layout, fields paired by theme: identity (name/tier), then
   // vitals (HP/level), then gear (weapon/armor), then stats, then placement
@@ -136,7 +92,7 @@ export async function encounterForm(app, existing, defaultLocation) {
         value: existing ? (currentArmor?.name ?? '') : defaultEnemyGear(1, 'mob').armor.name,
         options: armorOptions,
       },
-      ...statFields,
+      ...statBlockFields,
       // Optional spellcaster section: a caster class turns the mob into a
       // combatant that can cast in initiative; "None" leaves it a plain fighter.
       ...casterFields(existing),
@@ -150,13 +106,7 @@ export async function encounterForm(app, existing, defaultLocation) {
       onChange: (name, form) => {
         // Refilter the spell picker to the chosen caster class and level (both
         // when creating and editing).
-        if (name === 'casterClass' || name === 'casterLevel') {
-          form.setOptions(
-            'spells',
-            spellPickerOptions(form.get('casterClass'), Number(form.get('casterLevel')) || 1),
-          );
-          return;
-        }
+        if (refilterSpellsOnChange(name, form)) return;
         // Re-stamp the stat defaults on level/tier change, but only for a new
         // encounter and only until a stat is hand-edited.
         if (existing) return;
@@ -180,23 +130,14 @@ export async function encounterForm(app, existing, defaultLocation) {
   const level = Math.max(1, Number(values.level) || 1);
   const tier = /** @type {import('../types/entities.js').EnemyTier} */ (values.tier);
   const location = readLocation(app, values);
-  const preset = weaponChoices.find((p) => p.name === values.weapon);
   // The empty value is the explicit "None" choice and stores null, which
   // suppresses the default-gear stamping downstream.
-  const weapon =
-    values.weapon === ''
-      ? null
-      : preset
-        ? {
-            name: preset.name,
-            handling: preset.handling ?? /** @type {const} */ ('melee'),
-            damage: (preset.damage ?? []).map((d) => ({ ...d })),
-          }
-        : (currentWeapon ?? defaultEnemyGear(level, tier).weapon);
-  const armor =
-    values.armor === ''
-      ? null
-      : (activeEnemyArmor(values.armor) ?? currentArmor ?? defaultEnemyGear(level, tier).armor);
+  const { weapon, armor } = readGear(
+    values.weapon,
+    values.armor,
+    gear,
+    defaultEnemyGear(level, tier),
+  );
   let stored;
   if (existing) {
     // Level/tier edits don't re-stamp the stat block — the GM may have tuned
@@ -220,9 +161,7 @@ export async function encounterForm(app, existing, defaultLocation) {
       ),
       name,
       maxHP,
-      Object.fromEntries(
-        STAT_KEYS.map((key) => [key, Math.max(1, Number(values[`stat-${key}`]) || 10)]),
-      ),
+      readStats(STAT_KEYS, values),
       location,
       { level, tier, weapon, armor, ...readCasterOptions(values) },
     );
@@ -242,10 +181,7 @@ export async function encounterForm(app, existing, defaultLocation) {
  */
 export async function deleteEncounter(app, encounter) {
   const { state } = app;
-  const ok = await confirmModal(`Delete "${encounter.name}"?`, {
-    danger: true,
-    confirmLabel: 'Delete',
-  });
+  const ok = await confirmDelete(encounter.name);
   if (!ok) return false;
   state.encounters = removeById(state.encounters, encounter.id);
   app.actions.syncEncounterMarkers();

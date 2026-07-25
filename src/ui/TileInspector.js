@@ -1,4 +1,5 @@
 import { emptyState } from './buttons.js';
+import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').TileMetadata} TileMetadata */
@@ -52,7 +53,7 @@ export function mountTileInspector(container, opts) {
   for (const value of POI_TYPES) {
     const option = document.createElement('option');
     option.value = value;
-    option.textContent = value === '' ? 'None' : value[0].toUpperCase() + value.slice(1);
+    option.textContent = value === '' ? 'None' : capitalize(value);
     typeSelect.appendChild(option);
   }
   typeSelect.addEventListener('change', () => {

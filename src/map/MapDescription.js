@@ -1,4 +1,5 @@
 import { parseCoords } from './MapGeometry.js';
+import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -9,8 +10,7 @@ import { parseCoords } from './MapGeometry.js';
  * @returns {string}
  */
 function readablePoi(poiType) {
-  const words = poiType.replace(/-/g, ' ');
-  return words.charAt(0).toUpperCase() + words.slice(1);
+  return capitalize(poiType.replace(/-/g, ' '));
 }
 
 /**

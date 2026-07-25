@@ -121,6 +121,32 @@ export function select(options, value) {
 }
 
 /**
+ * The stat-block input group shared by the bestiary and NPC template forms:
+ * one number field per key, laid out two per row so the block stays compact,
+ * with the same clamped read-back the modal dialogs use. The caller keeps the
+ * `statInputs` handles for change listeners (the bestiary form's re-stamping).
+ * @param {string[]} keys
+ * @param {Record<string, number>} stats
+ * @returns {{
+ *   statInputs: { key: string, input: HTMLInputElement }[],
+ *   rows: HTMLDivElement[],
+ *   read: () => Record<string, number>,
+ * }}
+ */
+export function statInputRows(keys, stats) {
+  const statInputs = keys.map((key) => ({ key, input: numberField(stats[key] ?? 10, { min: 1 }) }));
+  const rows = [];
+  for (let i = 0; i < statInputs.length; i += 2) {
+    rows.push(fieldRow(...statInputs.slice(i, i + 2).map(({ key, input }) => labeled(key, input))));
+  }
+  const read = () =>
+    Object.fromEntries(
+      statInputs.map(({ key, input }) => [key, Math.max(1, Number(input.value) || 10)]),
+    );
+  return { statInputs, rows, read };
+}
+
+/**
  * A text-labelled button, so a form's submit and cancel actions share one size
  * and label scheme (no icon set has a non-destructive "cancel" glyph).
  * @param {string} label

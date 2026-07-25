@@ -1,3 +1,5 @@
+import { capitalize } from '../util/text.js';
+
 /** @typedef {{ id: string, type: string, label: string, imageRef: string, custom: boolean }} PaletteEntry */
 
 const TILE_ROOT = 'assets/tiles';
@@ -149,10 +151,7 @@ const INTERIOR_KINDS = [
  * @returns {string}
  */
 function titleCase(type) {
-  return type
-    .split('-')
-    .map((word) => word[0].toUpperCase() + word.slice(1))
-    .join(' ');
+  return type.split('-').map(capitalize).join(' ');
 }
 
 /** @returns {PaletteEntry[]} */
