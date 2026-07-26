@@ -295,6 +295,7 @@ test('re-picking point buy restores the 8-15 range and the number inputs', () =>
   for (const key of ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']) {
     assert.deepEqual(form.ranges[`stat-${key}`], { min: 8, max: 15 });
     assert.equal(form.hidden[`stat-${key}`], false);
+    assert.equal(form.disabled[`stat-${key}`], false);
   }
   assert.equal(form.hidden.statPills, true);
 });
@@ -309,6 +310,7 @@ test('the roll method stamps 4d6-drop-lowest scores and unlocks reroll', () => {
     assert.equal(state[`stat-${key}`], '15'); // 6+5+4, drop the 3
   }
   assert.equal(form.hidden.reroll, false);
+  assert.equal(form.disabled['stat-STR'], true); // rolled scores aren't editable
   characterFormChange('reroll', form, () => 0);
   assert.equal(state['stat-STR'], '3'); // all 1s rerolled
 });

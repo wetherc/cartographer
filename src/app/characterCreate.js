@@ -189,10 +189,12 @@ function applyStatMethod(form, rng) {
   form.setHidden('reroll', method !== 'roll');
   // Standard array swaps the number inputs out for the assignment pill grid;
   // every other method shows the inputs, with point buy hard-limited to its
-  // buyable 8-15 and the rest on the shared positive floor.
+  // buyable 8-15 and the rest on the shared positive floor. Rolled scores are
+  // the dice's call: the inputs display them but aren't editable.
   form.setHidden('statPills', method !== 'standard-array');
   for (const key of ABILITY_SCORES) {
     form.setHidden(`stat-${key}`, method === 'standard-array');
+    form.setDisabled(`stat-${key}`, method === 'roll');
     if (method === 'point-buy') form.setRange(`stat-${key}`, 8, 15);
     else form.setRange(`stat-${key}`, 1, undefined);
   }
