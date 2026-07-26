@@ -11,9 +11,24 @@ export type CasterType = 'full' | 'half' | 'third' | 'pact' | 'none';
  * (Bard, Ranger, Sorcerer, Warlock). Non-casters are 'none'. */
 export type SpellKnownRule = 'prepared' | 'known' | 'none';
 
+/** An armor proficiency category. */
+export type ArmorProficiency = 'light' | 'medium' | 'heavy' | 'shield';
+
+/** A weapon proficiency category (specific weapons are named individually). */
+export type WeaponCategory = 'simple' | 'martial';
+
+/** A "choose N skills from this list" grant. `from` holds skill ids from
+ * data/skills.js; an empty list means "choose from any skill". */
+export interface SkillChoice {
+  choose: number;
+  from: string[];
+}
+
 /** A playable class's mechanical spine: the fields the spell system reads to
- * gate learning, derive slots, and compute save DC / attack bonus. Non-caster
- * classes carry casterType 'none' and no spellAbility. */
+ * gate learning, derive slots, and compute save DC / attack bonus, plus the
+ * character-foundation fields (proficiencies, skill choices, subclass and ASI
+ * schedule, features-by-level). Non-caster classes carry casterType 'none'
+ * and no spellAbility. */
 export interface ClassDef {
   id: string;
   name: string;
@@ -29,6 +44,22 @@ export interface ClassDef {
   /** Cantrips known by character level (index 0 = level 1); empty for classes
    * that know no cantrips. Values past the array's end use the last entry. */
   cantripsKnown: number[];
+  /** The two abilities the class is proficient in saving with. */
+  savingThrows: Ability[];
+  armor: ArmorProficiency[];
+  weaponCategories: WeaponCategory[];
+  /** Specific weapon names granted beyond the categories (lowercase). */
+  weaponNamed: string[];
+  skillChoice: SkillChoice;
+  /** The level the class picks its subclass at. */
+  subclassLevel: number;
+  /** What the class calls its subclass ("Sacred Oath", "Arcane Tradition"). */
+  subclassLabel?: string;
+  /** The levels that grant an ability score improvement (or, later, a feat). */
+  asiLevels: number[];
+  /** Feature names unlocked at each level — a display scaffold, not yet
+   * mechanically interpreted. */
+  featuresByLevel: Record<number, string[]>;
 }
 
 /** One of a character's class memberships: which class, at what level, in which

@@ -1,5 +1,6 @@
 import { abilityModifier, proficiencyBonus } from './Modifiers.js';
 import { slotsForCaster, slotPoolsForCaster } from './SpellSlots.js';
+import { DEFAULT_CLASSES } from '../data/classes.js';
 
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
 /** @typedef {import('../types/class.js').CasterType} CasterType */
@@ -7,143 +8,12 @@ import { slotsForCaster, slotPoolsForCaster } from './SpellSlots.js';
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /**
- * Expand a sparse {level: count} breakpoint map into a 20-entry per-level
- * curve (index 0 = level 1), each entry carrying forward until the next
- * breakpoint. Lookups past level 20 read the last entry.
- * @param {Record<number, number>} breakpoints
- * @returns {number[]}
- */
-function curve(breakpoints) {
-  const out = [];
-  let value = 0;
-  for (let level = 1; level <= 20; level++) {
-    if (breakpoints[level] !== undefined) value = breakpoints[level];
-    out.push(value);
-  }
-  return out;
-}
-
-/**
- * The playable classes and their spellcasting-relevant spine. Non-casters
- * carry casterType 'none', knownRule 'none', and no cantrips, so they simply
- * never gain a spellbook. Cantrip curves follow the SRD breakpoints (3/4/5 for
- * Wizard and Cleric, 2/3/4 for Bard/Druid/Warlock, 4/5/6 for Sorcerer).
+ * The playable classes. The definitions themselves live in data/classes.js
+ * (library-kind shaped, stable id + name per entry); this module holds the
+ * logic that reads them.
  * @type {ClassDef[]}
  */
-export const CLASS_LIST = [
-  {
-    id: 'barbarian',
-    name: 'Barbarian',
-    hitDie: 12,
-    casterType: 'none',
-    knownRule: 'none',
-    cantripsKnown: [],
-  },
-  {
-    id: 'bard',
-    name: 'Bard',
-    hitDie: 8,
-    casterType: 'full',
-    spellAbility: 'CHA',
-    spellListId: 'bard',
-    knownRule: 'known',
-    cantripsKnown: curve({ 1: 2, 4: 3, 10: 4 }),
-  },
-  {
-    id: 'cleric',
-    name: 'Cleric',
-    hitDie: 8,
-    casterType: 'full',
-    spellAbility: 'WIS',
-    spellListId: 'cleric',
-    knownRule: 'prepared',
-    cantripsKnown: curve({ 1: 3, 4: 4, 10: 5 }),
-  },
-  {
-    id: 'druid',
-    name: 'Druid',
-    hitDie: 8,
-    casterType: 'full',
-    spellAbility: 'WIS',
-    spellListId: 'druid',
-    knownRule: 'prepared',
-    cantripsKnown: curve({ 1: 2, 4: 3, 10: 4 }),
-  },
-  {
-    id: 'fighter',
-    name: 'Fighter',
-    hitDie: 10,
-    casterType: 'none',
-    knownRule: 'none',
-    cantripsKnown: [],
-  },
-  {
-    id: 'monk',
-    name: 'Monk',
-    hitDie: 8,
-    casterType: 'none',
-    knownRule: 'none',
-    cantripsKnown: [],
-  },
-  {
-    id: 'paladin',
-    name: 'Paladin',
-    hitDie: 10,
-    casterType: 'half',
-    spellAbility: 'CHA',
-    spellListId: 'paladin',
-    knownRule: 'prepared',
-    cantripsKnown: [],
-  },
-  {
-    id: 'ranger',
-    name: 'Ranger',
-    hitDie: 10,
-    casterType: 'half',
-    spellAbility: 'WIS',
-    spellListId: 'ranger',
-    knownRule: 'known',
-    cantripsKnown: [],
-  },
-  {
-    id: 'rogue',
-    name: 'Rogue',
-    hitDie: 8,
-    casterType: 'none',
-    knownRule: 'none',
-    cantripsKnown: [],
-  },
-  {
-    id: 'sorcerer',
-    name: 'Sorcerer',
-    hitDie: 6,
-    casterType: 'full',
-    spellAbility: 'CHA',
-    spellListId: 'sorcerer',
-    knownRule: 'known',
-    cantripsKnown: curve({ 1: 4, 4: 5, 10: 6 }),
-  },
-  {
-    id: 'warlock',
-    name: 'Warlock',
-    hitDie: 8,
-    casterType: 'pact',
-    spellAbility: 'CHA',
-    spellListId: 'warlock',
-    knownRule: 'known',
-    cantripsKnown: curve({ 1: 2, 4: 3, 10: 4 }),
-  },
-  {
-    id: 'wizard',
-    name: 'Wizard',
-    hitDie: 6,
-    casterType: 'full',
-    spellAbility: 'INT',
-    spellListId: 'wizard',
-    knownRule: 'prepared',
-    cantripsKnown: curve({ 1: 3, 4: 4, 10: 5 }),
-  },
-];
+export const CLASS_LIST = DEFAULT_CLASSES;
 
 /** The classes indexed by id, for O(1) lookup.
  * @type {Map<string, ClassDef>} */
