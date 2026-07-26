@@ -108,8 +108,14 @@ export function characterFields() {
       ],
     },
     { name: 'reroll', label: 'Reroll scores', type: 'button', disabled: true },
-    ...statFields(ABILITY_SCORES, Object.fromEntries(ABILITY_SCORES.map((key) => [key, 8]))),
-    { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1 },
+    // The default method is point buy, so the stat inputs open range-limited
+    // to its buyable 8-15; applyStatMethod widens the range on a method change.
+    ...statFields(ABILITY_SCORES, Object.fromEntries(ABILITY_SCORES.map((key) => [key, 8]))).map(
+      (field) => ({ ...field, min: 8, max: 15 }),
+    ),
+    // Max HP is fully derived (class hit die + CON modifier, race included) and
+    // re-stamped by characterFormChange, so it displays read-only.
+    { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1, disabled: true },
     {
       name: 'skills',
       label: 'Class skills',
@@ -133,7 +139,8 @@ export function characterFields() {
 /** @typedef {{ get: (name: string) => string, set: (name: string, value: string | number) => void,
  *   setOptions: (name: string, options: { value: string, label: string }[], max?: number) => void,
  *   setDisabled: (name: string, disabled: boolean) => void,
- *   setLabel: (name: string, text: string) => void }} FormHandle */
+ *   setLabel: (name: string, text: string) => void,
+ *   setRange: (name: string, min?: number, max?: number) => void }} FormHandle */
 
 /** @param {FormHandle} form @returns {Record<string, number>} the six typed scores */
 function readFormScores(form) {
@@ -173,6 +180,12 @@ function statMethodCaption(method, scores) {
 function applyStatMethod(form, rng) {
   const method = form.get('statMethod');
   form.setDisabled('reroll', method !== 'roll');
+  // Point buy hard-limits each input to its buyable 8-15; the other methods
+  // only need the shared positive floor.
+  for (const key of ABILITY_SCORES) {
+    if (method === 'point-buy') form.setRange(`stat-${key}`, 8, 15);
+    else form.setRange(`stat-${key}`, 1, undefined);
+  }
   const stamp =
     method === 'point-buy'
       ? Object.fromEntries(ABILITY_SCORES.map((key) => [key, 8]))

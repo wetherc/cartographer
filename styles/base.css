@@ -381,6 +381,15 @@ select.field option::checkmark {
   border-color: var(--focus-ring);
 }
 
+/* A disabled control (e.g. the custom-race entry once a catalog race is
+   picked, or the derived max HP) reads as inert: sunken, dimmed, and the
+   cursor says why. */
+.field:disabled {
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);

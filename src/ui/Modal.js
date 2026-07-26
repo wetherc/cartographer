@@ -20,7 +20,7 @@
  * @param {{
  *   submitLabel?: string,
  *   wide?: boolean,
- *   onChange?: (name: string, form: { get: (name: string) => string, set: (name: string, value: string | number) => void, setOptions: (name: string, options: { value: string, label: string }[], max?: number) => void, setDisabled: (name: string, disabled: boolean) => void, setLabel: (name: string, text: string) => void }) => void,
+ *   onChange?: (name: string, form: { get: (name: string) => string, set: (name: string, value: string | number) => void, setOptions: (name: string, options: { value: string, label: string }[], max?: number) => void, setDisabled: (name: string, disabled: boolean) => void, setLabel: (name: string, text: string) => void, setRange: (name: string, min?: number, max?: number) => void }) => void,
  * }} [options]
  * @returns {Promise<Record<string, string> | null>}
  */
@@ -225,11 +225,29 @@ export function promptModal(title, fields, options = {}) {
         input = /** @type {HTMLInputElement} */ (/** @type {unknown} */ (button));
         getters[field.name] = () => '';
       } else {
-        input = document.createElement('input');
-        input.type = field.type ?? 'text';
-        if (field.value !== undefined) input.value = String(field.value);
-        if (field.min !== undefined) input.min = String(field.min);
-        getters[field.name] = () => input.value;
+        const plain = document.createElement('input');
+        plain.type = field.type ?? 'text';
+        if (field.value !== undefined) plain.value = String(field.value);
+        if (field.min !== undefined) plain.min = String(field.min);
+        if (field.max !== undefined && field.type === 'number') plain.max = String(field.max);
+        // min/max only constrain the spinner; a typed out-of-range number is
+        // clamped once the edit commits (blur/Enter), not per keystroke, so a
+        // "1" on the way to "12" isn't rewritten under the user.
+        if (field.type === 'number') {
+          plain.addEventListener('change', () => {
+            const value = Number(plain.value);
+            if (plain.value === '' || Number.isNaN(value)) return;
+            const min = plain.min === '' ? -Infinity : Number(plain.min);
+            const max = plain.max === '' ? Infinity : Number(plain.max);
+            const clamped = Math.min(max, Math.max(min, value));
+            if (clamped !== value) {
+              plain.value = String(clamped);
+              plain.dispatchEvent(new Event('input'));
+            }
+          });
+        }
+        input = plain;
+        getters[field.name] = () => plain.value;
       }
       // The composite fields (multiselect, tags) and buttons set their own
       // classes; everything else gets the shared input treatment.
@@ -257,6 +275,15 @@ export function promptModal(title, fields, options = {}) {
         },
         setLabel: (/** @type {string} */ name, /** @type {string} */ text) => {
           labelTexts[name].nodeValue = text;
+        },
+        setRange: (
+          /** @type {string} */ name,
+          /** @type {number | undefined} */ min,
+          /** @type {number | undefined} */ max,
+        ) => {
+          const input = /** @type {HTMLInputElement} */ (inputs[name]);
+          input.min = min === undefined ? '' : String(min);
+          input.max = max === undefined ? '' : String(max);
         },
       };
       for (const [name, input] of Object.entries(inputs)) {

@@ -135,7 +135,9 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-3) var(--space-4);
-  min-width: min(28rem, 85vw);
+  /* A fixed width, not a minimum: a caption that lengthens mid-edit (e.g. the
+     point-buy budget readout) wraps instead of resizing the whole dialog. */
+  width: min(30rem, 85vw);
 }
 
 .modal--wide .modal__title {

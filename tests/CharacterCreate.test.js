@@ -132,6 +132,8 @@ function fakeForm(/** @type {Record<string, string>} */ state) {
     disabled: {},
     /** @type {Record<string, string>} */
     labels: {},
+    /** @type {Record<string, { min?: number, max?: number }>} */
+    ranges: {},
     get: (/** @type {string} */ name) => state[name] ?? '',
     set: (/** @type {string} */ name, /** @type {string | number} */ value) => {
       state[name] = String(value);
@@ -149,6 +151,13 @@ function fakeForm(/** @type {Record<string, string>} */ state) {
     },
     setLabel: (/** @type {string} */ name, /** @type {string} */ text) => {
       form.labels[name] = text;
+    },
+    setRange: (
+      /** @type {string} */ name,
+      /** @type {number} */ min,
+      /** @type {number} */ max,
+    ) => {
+      form.ranges[name] = { min, max };
     },
   };
   return form;
@@ -225,7 +234,15 @@ test('the form defaults to point buy: scores at 8, reroll locked, budget caption
   assert.equal(method?.value, 'point-buy');
   assert.ok(String(method?.label).includes('27 points left'));
   assert.equal(fields.find((f) => f.name === 'reroll')?.disabled, true);
-  assert.equal(fields.find((f) => f.name === 'stat-STR')?.value, 8);
+  const str = fields.find((f) => f.name === 'stat-STR');
+  assert.equal(str?.value, 8);
+  // The stat inputs open range-limited to point buy's 8-15.
+  assert.equal(str?.min, 8);
+  assert.equal(str?.max, 15);
+});
+
+test('max HP is a derived read-only field', () => {
+  assert.equal(characterFields().find((f) => f.name === 'maxHP')?.disabled, true);
 });
 
 /** @param {Record<string, string>} state */
@@ -252,6 +269,17 @@ test('picking the standard array stamps it in stat order and re-stamps max HP', 
   assert.equal(form.disabled.reroll, true);
   assert.equal(form.labels.statMethod, 'Ability scores');
   assert.equal(state.maxHP, '11'); // d10 + CON 13's +1
+  // Leaving point buy lifts the 8-15 range back to the shared positive floor.
+  assert.deepEqual(form.ranges['stat-STR'], { min: 1, max: undefined });
+});
+
+test('re-picking point buy restores the 8-15 range on every stat input', () => {
+  const state = statState({ statMethod: 'point-buy' });
+  const form = fakeForm(state);
+  characterFormChange('statMethod', form);
+  for (const key of ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']) {
+    assert.deepEqual(form.ranges[`stat-${key}`], { min: 8, max: 15 });
+  }
 });
 
 test('the roll method stamps 4d6-drop-lowest scores and unlocks reroll', () => {
