@@ -199,7 +199,8 @@ test('an empty skill-choice list means any skill (bard)', () => {
 });
 
 test('characterFields covers the form surface once each', () => {
-  const names = characterFields().map((f) => f.name);
+  const fields = characterFields();
+  const names = fields.map((f) => f.name);
   assert.deepEqual(new Set(names).size, names.length);
   for (const expected of [
     'name',
@@ -207,6 +208,8 @@ test('characterFields covers the form surface once each', () => {
     'customRace',
     'class',
     'background',
+    'statMethod',
+    'reroll',
     'maxHP',
     'skills',
     'languages',
@@ -214,4 +217,99 @@ test('characterFields covers the form surface once each', () => {
   ]) {
     assert.ok(names.includes(expected), expected);
   }
+});
+
+test('the form defaults to point buy: scores at 8, reroll locked, budget captioned', () => {
+  const fields = characterFields();
+  const method = fields.find((f) => f.name === 'statMethod');
+  assert.equal(method?.value, 'point-buy');
+  assert.ok(String(method?.label).includes('27 points left'));
+  assert.equal(fields.find((f) => f.name === 'reroll')?.disabled, true);
+  assert.equal(fields.find((f) => f.name === 'stat-STR')?.value, 8);
+});
+
+/** @param {Record<string, string>} state */
+function statState(state) {
+  return {
+    'stat-STR': '8',
+    'stat-DEX': '8',
+    'stat-CON': '8',
+    'stat-INT': '8',
+    'stat-WIS': '8',
+    'stat-CHA': '8',
+    class: '',
+    race: '',
+    ...state,
+  };
+}
+
+test('picking the standard array stamps it in stat order and re-stamps max HP', () => {
+  const state = statState({ statMethod: 'standard-array', class: 'fighter' });
+  const form = fakeForm(state);
+  characterFormChange('statMethod', form);
+  assert.equal(state['stat-STR'], '15');
+  assert.equal(state['stat-CHA'], '8');
+  assert.equal(form.disabled.reroll, true);
+  assert.equal(form.labels.statMethod, 'Ability scores');
+  assert.equal(state.maxHP, '11'); // d10 + CON 13's +1
+});
+
+test('the roll method stamps 4d6-drop-lowest scores and unlocks reroll', () => {
+  const state = statState({ statMethod: 'roll' });
+  const form = fakeForm(state);
+  let call = 0;
+  const rng = () => [5, 4, 3, 2][call++ % 4] / 6; // always d6 faces 6,5,4,3
+  characterFormChange('statMethod', form, rng);
+  for (const key of ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']) {
+    assert.equal(state[`stat-${key}`], '15'); // 6+5+4, drop the 3
+  }
+  assert.equal(form.disabled.reroll, false);
+  characterFormChange('reroll', form, () => 0);
+  assert.equal(state['stat-STR'], '3'); // all 1s rerolled
+});
+
+test('point-buy stat edits track the budget in the caption', () => {
+  const state = statState({ statMethod: 'point-buy', 'stat-STR': '15' });
+  const form = fakeForm(state);
+  characterFormChange('stat-STR', form);
+  assert.equal(form.labels.statMethod, 'Ability scores (18 points left)');
+  state['stat-DEX'] = '15';
+  state['stat-CON'] = '15';
+  state['stat-INT'] = '9';
+  characterFormChange('stat-INT', form);
+  assert.equal(form.labels.statMethod, 'Ability scores (1 point over budget)');
+  state['stat-INT'] = '16';
+  characterFormChange('stat-INT', form);
+  assert.equal(form.labels.statMethod, 'Ability scores (point buy uses 8-15)');
+});
+
+test('standard-array stat edits swap with the duplicated holder', () => {
+  const state = statState({
+    statMethod: 'standard-array',
+    'stat-STR': '15',
+    'stat-DEX': '14',
+    'stat-CON': '13',
+    'stat-INT': '12',
+    'stat-WIS': '10',
+    'stat-CHA': '8',
+  });
+  const form = fakeForm(state);
+  state['stat-CHA'] = '15'; // the user types 15 over CHA's 8
+  characterFormChange('stat-CHA', form);
+  assert.equal(state['stat-STR'], '8'); // the old 15-holder takes the freed 8
+  assert.equal(state['stat-CHA'], '15');
+  assert.equal(form.labels.statMethod, 'Ability scores');
+  state['stat-CHA'] = '1'; // mid-typing: not an array value, nothing moves
+  characterFormChange('stat-CHA', form);
+  assert.equal(state['stat-STR'], '8');
+  assert.equal(form.labels.statMethod, 'Ability scores (use 15, 14, 13, 12, 10, 8 once each)');
+});
+
+test('the custom method leaves typed scores alone', () => {
+  const state = statState({ statMethod: 'custom', 'stat-STR': '20' });
+  const form = fakeForm(state);
+  characterFormChange('statMethod', form);
+  assert.equal(state['stat-STR'], '20');
+  assert.equal(form.labels.statMethod, 'Ability scores');
+  assert.equal(form.disabled.reroll, true);
 });

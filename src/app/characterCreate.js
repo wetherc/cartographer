@@ -10,6 +10,14 @@ import { abilityModifier, ABILITY_SCORES } from '../entities/Modifiers.js';
 import { skillName, SKILL_IDS } from '../data/skills.js';
 import { slugId } from '../entities/Roster.js';
 import { statFields, readStats } from './statFields.js';
+import {
+  POINT_BUY_BUDGET,
+  STANDARD_ARRAY,
+  pointBuyRemaining,
+  isStandardArray,
+  repairStandardArray,
+  rollScores,
+} from '../entities/StatGen.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../ui/Modal.js').ModalField} ModalField */
@@ -87,7 +95,20 @@ export function characterFields() {
       value: '',
       options: catalogOptions(BACKGROUND_LIST, 'None'),
     },
-    ...statFields(ABILITY_SCORES),
+    {
+      name: 'statMethod',
+      label: `Ability scores (${POINT_BUY_BUDGET} points left)`,
+      type: 'select',
+      value: 'point-buy',
+      options: [
+        { value: 'point-buy', label: 'Point buy' },
+        { value: 'standard-array', label: 'Standard array' },
+        { value: 'roll', label: 'Roll 4d6, drop lowest' },
+        { value: 'custom', label: 'Custom scores' },
+      ],
+    },
+    { name: 'reroll', label: 'Reroll scores', type: 'button', disabled: true },
+    ...statFields(ABILITY_SCORES, Object.fromEntries(ABILITY_SCORES.map((key) => [key, 8]))),
     { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1 },
     {
       name: 'skills',
@@ -109,25 +130,99 @@ export function characterFields() {
   ];
 }
 
+/** @typedef {{ get: (name: string) => string, set: (name: string, value: string | number) => void,
+ *   setOptions: (name: string, options: { value: string, label: string }[], max?: number) => void,
+ *   setDisabled: (name: string, disabled: boolean) => void,
+ *   setLabel: (name: string, text: string) => void }} FormHandle */
+
+/** @param {FormHandle} form @returns {Record<string, number>} the six typed scores */
+function readFormScores(form) {
+  return Object.fromEntries(ABILITY_SCORES.map((key) => [key, Number(form.get(`stat-${key}`))]));
+}
+
+/**
+ * The ability-scores caption for the current method and scores: point buy
+ * tracks the budget live, standard array flags a broken assignment. Purely
+ * advisory — the Custom method is always available, so nothing hard-blocks.
+ * @param {string} method
+ * @param {Record<string, number>} scores
+ * @returns {string}
+ */
+function statMethodCaption(method, scores) {
+  if (method === 'point-buy') {
+    const left = pointBuyRemaining(scores);
+    if (left === null) return 'Ability scores (point buy uses 8-15)';
+    const points = (/** @type {number} */ n) => `${n} point${n === 1 ? '' : 's'}`;
+    return left < 0
+      ? `Ability scores (${points(-left)} over budget)`
+      : `Ability scores (${points(left)} left)`;
+  }
+  if (method === 'standard-array' && !isStandardArray(scores)) {
+    return `Ability scores (use ${STANDARD_ARRAY.join(', ')} once each)`;
+  }
+  return 'Ability scores';
+}
+
+/**
+ * Stamp the scores a freshly picked generation method starts from: point buy
+ * begins at all 8s, the standard array lands in stat order, a roll (or a
+ * reroll) draws 4d6-drop-lowest per score. Custom keeps whatever is typed.
+ * @param {FormHandle} form
+ * @param {() => number} rng
+ */
+function applyStatMethod(form, rng) {
+  const method = form.get('statMethod');
+  form.setDisabled('reroll', method !== 'roll');
+  const stamp =
+    method === 'point-buy'
+      ? Object.fromEntries(ABILITY_SCORES.map((key) => [key, 8]))
+      : method === 'standard-array'
+        ? Object.fromEntries(ABILITY_SCORES.map((key, i) => [key, STANDARD_ARRAY[i]]))
+        : method === 'roll'
+          ? rollScores(ABILITY_SCORES, rng)
+          : null;
+  if (stamp) for (const key of ABILITY_SCORES) form.set(`stat-${key}`, stamp[key]);
+  form.setLabel('statMethod', statMethodCaption(method, stamp ?? readFormScores(form)));
+}
+
 /**
  * Keep the dependent fields in step as the form is edited: a race pick locks
  * the custom-race entry, the class pick refilters the skill multiselect to
- * that class's choices (capped and captioned at its pick count), and a class,
- * CON, or race change re-stamps the max HP default.
+ * that class's choices (capped and captioned at its pick count), the stat
+ * method stamps its starting scores (and under standard array an edited score
+ * swaps with the one it duplicates), and any change that can move CON
+ * re-stamps the max HP default.
  * @param {string} name the changed field
- * @param {{ get: (name: string) => string, set: (name: string, value: string | number) => void,
- *   setOptions: (name: string, options: { value: string, label: string }[], max?: number) => void,
- *   setDisabled: (name: string, disabled: boolean) => void,
- *   setLabel: (name: string, text: string) => void }} form
+ * @param {FormHandle} form
+ * @param {() => number} [rng]
  */
-export function characterFormChange(name, form) {
+export function characterFormChange(name, form, rng = Math.random) {
   if (name === 'race') form.setDisabled('customRace', form.get('race') !== '');
   if (name === 'class') {
     const choice = getClass(form.get('class'))?.skillChoice;
     form.setOptions('skills', skillOptions(form.get('class')), choice?.choose ?? 0);
     form.setLabel('skills', choice ? `Class skills (choose ${choice.choose})` : 'Class skills');
   }
-  if (name === 'class' || name === 'stat-CON' || name === 'race') {
+  if (name === 'statMethod' || name === 'reroll') applyStatMethod(form, rng);
+  if (name.startsWith('stat-')) {
+    const method = form.get('statMethod');
+    let scores = readFormScores(form);
+    if (method === 'standard-array') {
+      const repaired = repairStandardArray(scores, name.slice('stat-'.length));
+      for (const key of ABILITY_SCORES) {
+        if (repaired[key] !== scores[key]) form.set(`stat-${key}`, repaired[key]);
+      }
+      scores = repaired;
+    }
+    form.setLabel('statMethod', statMethodCaption(method, scores));
+  }
+  if (
+    name === 'class' ||
+    name === 'race' ||
+    name.startsWith('stat-') ||
+    name === 'statMethod' ||
+    name === 'reroll'
+  ) {
     form.set(
       'maxHP',
       defaultMaxHP(form.get('class'), Number(form.get('stat-CON')) || 10, form.get('race')),

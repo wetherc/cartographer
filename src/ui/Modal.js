@@ -5,7 +5,7 @@
  * it to <body>, and removes it on close, resolving a Promise with the result.
  */
 
-/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file' | 'multiselect' | 'tags', value?: string | number, min?: number, options?: { value: string, label: string }[], full?: boolean, max?: number, emptyText?: string, fixedHeight?: boolean }} ModalField */
+/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file' | 'multiselect' | 'tags' | 'button', value?: string | number, min?: number, options?: { value: string, label: string }[], full?: boolean, max?: number, emptyText?: string, fixedHeight?: boolean, disabled?: boolean }} ModalField */
 
 /**
  * Show a form modal. Resolves to a record of field name -> string value on
@@ -212,6 +212,18 @@ export function promptModal(title, fields, options = {}) {
         render();
         input = /** @type {HTMLInputElement} */ (/** @type {unknown} */ (box));
         getters[field.name] = () => [...tags, entry.value.trim()].filter(Boolean).join(',');
+      } else if (field.type === 'button') {
+        // An in-form action (e.g. "Reroll scores"): clicking it fires the
+        // form's onChange under the field's name; it contributes no value to
+        // the submitted record. The field's label sits on the button itself.
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'btn';
+        button.textContent = field.label;
+        labelText.nodeValue = '';
+        button.addEventListener('click', () => button.dispatchEvent(new Event('input')));
+        input = /** @type {HTMLInputElement} */ (/** @type {unknown} */ (button));
+        getters[field.name] = () => '';
       } else {
         input = document.createElement('input');
         input.type = field.type ?? 'text';
@@ -219,7 +231,10 @@ export function promptModal(title, fields, options = {}) {
         if (field.min !== undefined) input.min = String(field.min);
         getters[field.name] = () => input.value;
       }
-      if (field.type !== 'multiselect') input.className = 'field';
+      // The composite fields (multiselect, tags) and buttons set their own
+      // classes; everything else gets the shared input treatment.
+      if (!['multiselect', 'tags', 'button'].includes(field.type ?? '')) input.className = 'field';
+      if (field.disabled) input.disabled = true;
       label.appendChild(input);
       form.appendChild(label);
       inputs[field.name] = input;

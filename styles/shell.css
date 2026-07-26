@@ -75,6 +75,12 @@
   margin-top: var(--space-2);
 }
 
+/* A button field (e.g. the creation form's reroll) has no caption text, so
+   push the button down to sit level with its row-mate's input. */
+.modal__field:has(> .btn) {
+  justify-content: flex-end;
+}
+
 /* Tag fields (e.g. bonus languages): finalized pills plus an inline entry —
    Enter turns the typed text into a pill, the x removes one. The box carries
    the .field border; the entry inside is borderless. */
