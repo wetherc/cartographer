@@ -35,19 +35,18 @@ with their effects carried in the description text.
 ## Why the rest are missing
 
 Most omissions are not data-entry backlog; they wait on mechanics later
-roadmap phases add. Adding them today would produce entries whose printed
+development phases add. Adding them today would produce entries whose printed
 rules the app cannot honor:
 
 - **Condition-imposing spells** (Ray of Enfeeblement, Bane, Blindness/Deafness,
   Slow, Banishment, Dominate Person, ...). The save effect's `condition` field
-  is stored and displayed, but conditions are visual chips with no rule effect
-  until roadmap phase 6. Hold Person is included as the representative of this
-  family.
+  is stored and displayed, but conditions are visual chips with no rule effect.
+  Hold Person is included as the representative of this family.
 - **Concentration-dependent spells** (Bless and Hold Person ship, but the
   broader family — Haste, Invisibility, Spirit Guardians, walls and clouds —
   leans on concentration actually breaking). The `concentration` flag is
   stored and shown; enforcement (one effect at a time, CON saves on damage) is
-  roadmap phase 8.
+  planned for later implementation.
 - **Area/geometry spells** (Grease, Web, Sleep by HP total, Wall of Fire,
   Hunger of Hadar). Area targeting is reduced to multi-selecting combat
   participants; there is no map-geometry template, so shape, placement, and
@@ -55,7 +54,7 @@ rules the app cannot honor:
   blast" works; lingering zones do not.
 - **Buff/debuff riders on rolls** (Shield's +5 AC reaction, Haste's extra
   action, Enlarge/Reduce). These modify the action economy or later rolls,
-  which needs phases 6-7.
+  which needs further development.
 - **Summoning and companions** (Find Familiar, Conjure Animals, Animate Dead).
   No mechanism for spawning controlled combatants.
 - **Exploration/social utility** (Detect Magic, Identify, Charm Person,
