@@ -8,7 +8,6 @@ import {
   hitDieFor,
   characterHitDice,
   hpGainPerLevel,
-  levelHPGain,
   classMaxHP,
   getHitDicePools,
   withHitDice,
@@ -26,6 +25,7 @@ import {
   getHP,
 } from '../src/entities/Character.js';
 import { withSpellSlots } from '../src/entities/SpellSlots.js';
+import { assignLevel } from '../src/entities/LevelAssign.js';
 import { createResource } from '../src/entities/Resource.js';
 
 /** @param {number} [con] */
@@ -106,11 +106,6 @@ test('hpGainPerLevel is half the die plus one plus CON, floored at 1', () => {
   assert.equal(hpGainPerLevel(10, 0), 6);
   assert.equal(hpGainPerLevel(8, 2), 7);
   assert.equal(hpGainPerLevel(6, -5), 1);
-});
-
-test('levelHPGain derives from the character; null without a class', () => {
-  assert.equal(levelHPGain(fighter(14)), 8);
-  assert.equal(levelHPGain(createCharacter('c1', 'Nim')), null);
 });
 
 test('classMaxHP follows the average rule and clamps level 1 to at least 1', () => {
@@ -336,12 +331,15 @@ test('a short rest leaves hit dice spent; a long rest restores half of each pool
   assert.equal(getHitDicePools(longRest(one))[0].current, 1);
 });
 
-test('addXP grows HP by the class average rule and hit dice by levels gained', () => {
+test('addXP defers HP and hit-die growth until the levels are assigned', () => {
   const c = withHitDice(withHP(fighter(14), 12)); // level 1, d10, CON +2
-  const leveled = addXP(c, 320); // level 1 -> 3
-  assert.equal(getHP(leveled).max, 12 + 2 * 8);
-  assert.equal(getHP(leveled).current, 12 + 2 * 8);
-  assert.deepEqual(dicePools(leveled), [{ id: 'hit-dice-d10', max: 3, current: 3 }]);
+  const leveled = addXP(c, 320); // level 1 -> 3, both levels pending
+  assert.equal(getHP(leveled).max, 12);
+  assert.deepEqual(dicePools(leveled), [{ id: 'hit-dice-d10', max: 1, current: 1 }]);
+  const assigned = assignLevel(assignLevel(leveled, 'fighter'), 'fighter');
+  assert.equal(getHP(assigned).max, 12 + 2 * 8);
+  assert.equal(getHP(assigned).current, 12 + 2 * 8);
+  assert.deepEqual(dicePools(assigned), [{ id: 'hit-dice-d10', max: 3, current: 3 }]);
 });
 
 test('addXP leaves a multiclass character dice for pending levels unassigned', () => {

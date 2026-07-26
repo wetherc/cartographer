@@ -1,11 +1,11 @@
 import { createResource, spend as spendPool, restore as restorePool } from './Resource.js';
 import { isSlotPool, isPactPool, syncSlotsToLevel } from './SpellSlots.js';
-import { isHitDicePool, levelHPGain, syncHitDice } from './HitDice.js';
+import { isHitDicePool, syncHitDice } from './HitDice.js';
 import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { emptyProficiencies } from './Proficiencies.js';
-import { getClasses, syncSoleClassLevel } from './Multiclass.js';
+import { getClasses } from './Multiclass.js';
 import { migrateASIChoices } from './LevelUp.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -319,20 +319,14 @@ function defaultGrowth(max) {
 
 /**
  * Add XP, auto-leveling up (possibly multiple times) as thresholds are crossed.
- * Each level gained grows the HP pool's maximum (and current, so the gained
- * capacity is immediately usable) by a per-level amount — an explicit
- * `opts.hpGrowth` if given, else the class's average-rule hit-die + CON gain,
- * else a tenth of the pool's max for a classless character — re-derives a
- * caster's spell-slot pools from the new level (spent slots stay spent), and
- * re-derives the hit-dice pools from the class list. Characters with no HP pool
- * level up without any pool change. Ability-score-improvement slots and class
- * features need no granting here: both derive from class + level on read (see
- * LevelUp.js), so crossing an ASI level leaves a pending choice automatically.
- * A single-class character's sole class entry follows the new level; a
- * multiclass character's gained levels stay pending until assigned to a class
- * (see Multiclass.js's pendingLevels), and their HP grows only then — by the
- * assigned class's gain, in LevelAssign.assignLevel — so barring an explicit
- * `opts.hpGrowth` the pool is left untouched here.
+ * For a classed character every gained level stays pending until the player
+ * assigns it to a class (see Multiclass.js's pendingLevels): HP growth, the
+ * hit die, spell slots, and ASI/feature grants all follow the assigned class,
+ * so they land in LevelAssign.assignLevel rather than here, and barring an
+ * explicit `opts.hpGrowth` the HP pool is left untouched. A classless
+ * character has nothing to assign, so their HP pool grows immediately — by
+ * `opts.hpGrowth` if given, else a tenth of the pool's max per level — and
+ * characters with no HP pool level up without any pool change.
  * @param {Character} character
  * @param {number} amount
  * @param {{ hpGrowth?: number }} [opts]
@@ -349,15 +343,14 @@ export function addXP(character, amount, opts = {}) {
   const gained = level - startLevel;
   if (gained === 0) return { ...character, level, xp };
 
-  const multiclass = getClasses(character).length > 1;
+  const classed = getClasses(character).length > 0;
   const resources = character.resources.map((r) => {
     if (r.id !== HP_RESOURCE_ID) return r;
-    const perLevel =
-      opts.hpGrowth ?? (multiclass ? 0 : (levelHPGain(character) ?? defaultGrowth(r.max)));
+    const perLevel = opts.hpGrowth ?? (classed ? 0 : defaultGrowth(r.max));
     const added = perLevel * gained;
     return { ...r, max: r.max + added, current: Math.min(r.max + added, r.current + added) };
   });
-  return syncHitDice(syncSlotsToLevel(syncSoleClassLevel({ ...character, level, xp, resources })));
+  return syncHitDice(syncSlotsToLevel({ ...character, level, xp, resources }));
 }
 
 /**

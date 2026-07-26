@@ -94,20 +94,3 @@ export function withClasses(character, classes) {
   }
   return { ...character, classes: next };
 }
-
-/**
- * Keep a single-class character's sole class entry at the character level, so
- * an XP level-up needs no separate assignment step. A multiclass character is
- * returned unchanged — its new level stays pending until the player assigns it
- * — as is a classless one, and a single-class entry already at the level
- * (identity preserved).
- * @param {Character} character
- * @returns {Character}
- */
-export function syncSoleClassLevel(character) {
-  const classes = getClasses(character);
-  if (classes.length !== 1) return character;
-  const level = totalLevel(character);
-  if (classes[0].level === level) return character;
-  return { ...character, classes: [{ ...classes[0], level }] };
-}

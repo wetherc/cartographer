@@ -7,7 +7,6 @@ import {
   assignedLevel,
   pendingLevels,
   withClasses,
-  syncSoleClassLevel,
 } from '../src/entities/Multiclass.js';
 import { createCharacter, withDefaults, addXP, withHP, getHP } from '../src/entities/Character.js';
 
@@ -70,31 +69,13 @@ test('withClasses sanitizes: drops blank ids and duplicates, floors levels to 1'
   ]);
 });
 
-test('syncSoleClassLevel follows the total for a single class only', () => {
-  const single = withList([{ classId: 'fighter', level: 1 }], 4);
-  assert.deepEqual(syncSoleClassLevel(single).classes, [{ classId: 'fighter', level: 4 }]);
-
-  const multi = withList(
-    [
-      { classId: 'fighter', level: 2 },
-      { classId: 'wizard', level: 1 },
-    ],
-    5,
-  );
-  assert.equal(syncSoleClassLevel(multi), multi);
-  const classless = createCharacter('c1', 'Nim');
-  assert.equal(syncSoleClassLevel(classless), classless);
-  const synced = withList([{ classId: 'fighter', level: 4 }], 4);
-  assert.equal(syncSoleClassLevel(synced), synced);
-});
-
-test('addXP levels the sole class automatically but leaves multiclass levels pending', () => {
+test('addXP leaves every earned level pending for a classed character', () => {
   const single = withHP(withList([{ classId: 'fighter', level: 1 }], 1), 12);
   const leveled = addXP(single, 300); // 1 -> 3
   assert.equal(leveled.level, 3);
-  assert.deepEqual(leveled.classes, [{ classId: 'fighter', level: 3 }]);
-  assert.equal(pendingLevels(leveled), 0);
-  assert.equal(getHP(leveled).max, 12 + 2 * 6); // d10 average rule, CON +0
+  assert.deepEqual(leveled.classes, [{ classId: 'fighter', level: 1 }]);
+  assert.equal(pendingLevels(leveled), 2);
+  assert.equal(getHP(leveled).max, 12); // HP grows at assignment, not here
 
   const multi = withList(
     [

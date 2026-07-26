@@ -14,6 +14,7 @@ import {
   featuresGained,
 } from '../src/entities/LevelUp.js';
 import { createCharacter, addXP, withDefaults } from '../src/entities/Character.js';
+import { assignLevel } from '../src/entities/LevelAssign.js';
 
 /** @param {number} [level] */
 function fighter(level = 1) {
@@ -236,10 +237,12 @@ test('featuresGained lists only what the earlier snapshot lacked', () => {
   );
 });
 
-test('crossing an ASI level via addXP leaves a pending choice with no grant step', () => {
-  const leveled = addXP(fighter(3), 300); // level 3 -> 4
+test('crossing an ASI level leaves a pending choice once the level is assigned', () => {
+  const leveled = addXP(fighter(3), 300); // level 3 -> 4, pending
   assert.equal(leveled.level, 4);
-  assert.deepEqual(pendingASISlots(leveled), [{ classId: 'fighter', classLevel: 4 }]);
+  assert.deepEqual(pendingASISlots(leveled), []);
+  const assigned = assignLevel(leveled, 'fighter');
+  assert.deepEqual(pendingASISlots(assigned), [{ classId: 'fighter', classLevel: 4 }]);
 });
 
 test('a multiclass pending level earns no slot until assigned', () => {

@@ -84,18 +84,6 @@ export function hpGainPerLevel(hitDie, conModifier) {
 }
 
 /**
- * A character's per-level HP gain from their primary class and CON, or null
- * for a classless character (whose caller falls back to the generic growth).
- * @param {Character} character
- * @returns {number | null}
- */
-export function levelHPGain(character) {
-  const die = hitDieFor(character);
-  if (die === null) return null;
-  return hpGainPerLevel(die, conModifierOf(character));
-}
-
-/**
  * The class-derived maximum HP across the class list: the first class grants
  * a full hit die plus CON modifier at its first level (at least 1), and every
  * other assigned level — the first class's remaining levels and every other
