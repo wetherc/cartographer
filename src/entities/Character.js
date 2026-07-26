@@ -1,5 +1,6 @@
 import { createResource, spend as spendPool, restore as restorePool } from './Resource.js';
 import { isSlotPool, syncSlotsToLevel } from './SpellSlots.js';
+import { HIT_DICE_RESOURCE_ID, levelHPGain, syncHitDiceToLevel } from './HitDice.js';
 import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
@@ -295,7 +296,8 @@ export function createCharacter(id, name, stats = {}, race = '') {
 
 /**
  * Default per-level growth for a pool: a tenth of its maximum, at least 1, so a
- * bigger pool scales faster while a small one still grows each level.
+ * bigger pool scales faster while a small one still grows each level. The
+ * fallback for classless characters, whose growth can't come from a hit die.
  * @param {number} max
  * @returns {number}
  */
@@ -306,10 +308,12 @@ function defaultGrowth(max) {
 /**
  * Add XP, auto-leveling up (possibly multiple times) as thresholds are crossed.
  * Each level gained grows the HP pool's maximum (and current, so the gained
- * capacity is immediately usable) by a per-level amount — configurable via
- * `opts`, defaulting to a tenth of the pool's current max — and re-derives a
- * caster's spell-slot pools from the new level (spent slots stay spent).
- * Characters with no HP pool level up without any pool change.
+ * capacity is immediately usable) by a per-level amount — an explicit
+ * `opts.hpGrowth` if given, else the class's average-rule hit-die + CON gain,
+ * else a tenth of the pool's max for a classless character — re-derives a
+ * caster's spell-slot pools from the new level (spent slots stay spent), and
+ * grows the hit-dice pool by one die per level. Characters with no HP pool
+ * level up without any pool change.
  * @param {Character} character
  * @param {number} amount
  * @param {{ hpGrowth?: number }} [opts]
@@ -328,10 +332,10 @@ export function addXP(character, amount, opts = {}) {
 
   const resources = character.resources.map((r) => {
     if (r.id !== HP_RESOURCE_ID) return r;
-    const added = (opts.hpGrowth ?? defaultGrowth(r.max)) * gained;
+    const added = (opts.hpGrowth ?? levelHPGain(character) ?? defaultGrowth(r.max)) * gained;
     return { ...r, max: r.max + added, current: Math.min(r.max + added, r.current + added) };
   });
-  return syncSlotsToLevel({ ...character, level, xp, resources });
+  return syncHitDiceToLevel(syncSlotsToLevel({ ...character, level, xp, resources }));
 }
 
 /**
@@ -384,7 +388,9 @@ export function restoreResource(character, resourceId, amount) {
  * max, clamped to full. The rest model: a long rest restores everything
  * (fraction 1), a short rest restores half (fraction 0.5). Spell slots follow
  * the D&D rule instead: only a full rest (fraction 1) refills them; anything
- * less leaves them untouched. Pure.
+ * less leaves them untouched. Hit dice likewise ignore short rests (they're
+ * what a short rest spends), and a long rest restores half the total, at
+ * least one die. Pure.
  * @param {Character} character
  * @param {number} fraction 0..1
  * @returns {Character}
@@ -393,9 +399,13 @@ export function restAll(character, fraction) {
   const clamped = Math.max(0, Math.min(1, fraction));
   return {
     ...character,
-    resources: character.resources.map((r) =>
-      isSlotPool(r) && clamped < 1 ? r : restorePool(r, Math.ceil(r.max * clamped)),
-    ),
+    resources: character.resources.map((r) => {
+      if (isSlotPool(r)) return clamped < 1 ? r : restorePool(r, r.max);
+      if (r.id === HIT_DICE_RESOURCE_ID) {
+        return clamped < 1 ? r : restorePool(r, Math.max(1, Math.floor(r.max / 2)));
+      }
+      return restorePool(r, Math.ceil(r.max * clamped));
+    }),
   };
 }
 
