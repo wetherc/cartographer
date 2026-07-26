@@ -1,20 +1,13 @@
 import { mustGetElement } from '../ui/dom.js';
 import { promptModal, confirmDelete } from '../ui/Modal.js';
-import {
-  createCharacter,
-  withHP,
-  shortRest,
-  longRest,
-  addXP,
-  transferItem,
-} from '../entities/Character.js';
-import { withSpellSlots, highestSlotLevel } from '../entities/SpellSlots.js';
-import { CLASS_LIST, isCasterClass, casterClassRefs } from '../entities/Classes.js';
-import { withClasses } from '../entities/Multiclass.js';
+import { shortRest, longRest, addXP, transferItem } from '../entities/Character.js';
+import { highestSlotLevel } from '../entities/SpellSlots.js';
+import { casterClassRefs } from '../entities/Classes.js';
+import { characterFields, characterFormChange, buildCharacter } from './characterCreate.js';
 import { activeSpells, resolveSpellIds } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
-import { slugId, replaceById, removeById } from '../entities/Roster.js';
+import { replaceById, removeById } from '../entities/Roster.js';
 import { mountCharacterRoster } from '../ui/CharacterRoster.js';
 import { mountCharacterSheet } from '../ui/CharacterSheet.js';
 import { mountSpellbookPanel } from '../ui/SpellbookPanel.js';
@@ -347,43 +340,17 @@ export function wireParty(app) {
       }
     },
     onAdd: async () => {
-      const values = await promptModal('New character', [
-        { name: 'name', label: 'Name', value: '' },
-        { name: 'race', label: 'Race', value: '' },
-        { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1 },
-        {
-          name: 'class',
-          label: 'Class',
-          type: 'select',
-          value: '',
-          options: [
-            { value: '', label: 'None (no class)' },
-            ...CLASS_LIST.map((c) => ({ value: c.id, label: c.name })),
-          ],
-        },
-      ]);
-      const name = values?.name.trim();
-      if (!values || !name) return;
-      const maxHP = Math.max(1, Number(values.maxHP) || 1);
-      let created = withHP(
-        createCharacter(
-          slugId(
-            name,
-            state.characters.map((c) => c.id),
-          ),
-          name,
-          {},
-          values.race.trim(),
-        ),
-        maxHP,
+      const values = await promptModal('New character', characterFields(), {
+        wide: true,
+        onChange: characterFormChange,
+      });
+      if (!values || !values.name.trim()) return;
+      const created = buildCharacter(
+        values,
+        state.characters.map((c) => c.id),
       );
-      // The class drives spellcasting: a caster class gets a class-list entry
-      // plus slot pools for its level; a non-caster class the entry only.
-      const classId = values.class || undefined;
-      if (classId) created = withClasses(created, [{ classId, level: created.level }]);
-      if (isCasterClass(classId)) created = withSpellSlots(created);
       state.characters = [...state.characters, created];
-      selectCharacter(state.characters[state.characters.length - 1].id);
+      selectCharacter(created.id);
       app.actions.markDirty();
     },
     onDelete: async (id) => {
