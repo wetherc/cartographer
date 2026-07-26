@@ -1,6 +1,6 @@
 import { createResource, spend as spendPool, restore as restorePool } from './Resource.js';
 import { isSlotPool, isPactPool, syncSlotsToLevel } from './SpellSlots.js';
-import { HIT_DICE_RESOURCE_ID, levelHPGain, syncHitDiceToLevel } from './HitDice.js';
+import { isHitDicePool, levelHPGain, syncHitDice } from './HitDice.js';
 import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
@@ -322,7 +322,7 @@ function defaultGrowth(max) {
  * `opts.hpGrowth` if given, else the class's average-rule hit-die + CON gain,
  * else a tenth of the pool's max for a classless character — re-derives a
  * caster's spell-slot pools from the new level (spent slots stay spent), and
- * grows the hit-dice pool by one die per level. Characters with no HP pool
+ * re-derives the hit-dice pools from the class list. Characters with no HP pool
  * level up without any pool change. Ability-score-improvement slots and class
  * features need no granting here: both derive from class + level on read (see
  * LevelUp.js), so crossing an ASI level leaves a pending choice automatically.
@@ -350,9 +350,7 @@ export function addXP(character, amount, opts = {}) {
     const added = (opts.hpGrowth ?? levelHPGain(character) ?? defaultGrowth(r.max)) * gained;
     return { ...r, max: r.max + added, current: Math.min(r.max + added, r.current + added) };
   });
-  return syncHitDiceToLevel(
-    syncSlotsToLevel(syncSoleClassLevel({ ...character, level, xp, resources })),
-  );
+  return syncHitDice(syncSlotsToLevel(syncSoleClassLevel({ ...character, level, xp, resources })));
 }
 
 /**
@@ -407,8 +405,8 @@ export function restoreResource(character, resourceId, amount) {
  * the D&D rule instead: only a full rest (fraction 1) refills them; anything
  * less leaves them untouched. Pact slots refill in full on a short or long
  * rest (fraction 0.5 and up). Hit dice ignore short rests (they're what a
- * short rest spends), and a long rest restores half the total, at least one
- * die. Pure.
+ * short rest spends), and a long rest restores half of each die-size pool,
+ * at least one die. Pure.
  * @param {Character} character
  * @param {number} fraction 0..1
  * @returns {Character}
@@ -420,7 +418,7 @@ export function restAll(character, fraction) {
     resources: character.resources.map((r) => {
       if (isSlotPool(r)) return clamped < 1 ? r : restorePool(r, r.max);
       if (isPactPool(r)) return clamped < 0.5 ? r : restorePool(r, r.max);
-      if (r.id === HIT_DICE_RESOURCE_ID) {
+      if (isHitDicePool(r)) {
         return clamped < 1 ? r : restorePool(r, Math.max(1, Math.floor(r.max / 2)));
       }
       return restorePool(r, Math.ceil(r.max * clamped));

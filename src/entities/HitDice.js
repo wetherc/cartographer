@@ -1,21 +1,44 @@
 import { createResource, spend, restore } from './Resource.js';
 import { isSlotPool, isPactPool } from './SpellSlots.js';
 import { getClass } from './Classes.js';
-import { primaryClass } from './Multiclass.js';
+import { getClasses, primaryClass } from './Multiclass.js';
 import { abilityModifier } from './Modifiers.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
 /**
- * Hit dice are a regular resource pool under a reserved id (like HP and the
- * spell-slot pools), sized to the character's level — one die per level. The
- * die's size isn't stored on the pool; it derives from the class at spend
- * time, so a class change never strands stale data. Short rests spend them
- * for healing; a long rest restores half the total (see Character.js's
- * restAll).
+ * Hit dice are regular resource pools under reserved ids (like HP and the
+ * spell-slot pools), one pool per die size: `hit-dice-d8` holds a character's
+ * d8s, sized to their combined levels in d8 classes. A single-class character
+ * has one pool; a multiclass character has one per distinct die size, primary
+ * class first. Short rests spend them for healing; a long rest restores half
+ * of each pool (see Character.js's restAll). Older saves carried one generic
+ * `hit-dice` pool with no die size; syncHitDice converts it, carrying the
+ * spent count into the primary class's pool.
  */
-export const HIT_DICE_RESOURCE_ID = 'hit-dice';
+export const HIT_DICE_ID_PREFIX = 'hit-dice-d';
+export const LEGACY_HIT_DICE_ID = 'hit-dice';
+
+/** @param {ResourcePool} pool @returns {boolean} */
+export function isHitDicePool(pool) {
+  return pool.id === LEGACY_HIT_DICE_ID || pool.id.startsWith(HIT_DICE_ID_PREFIX);
+}
+
+/** @param {number} die @returns {string} the pool id for one die size */
+export function hitDicePoolId(die) {
+  return `${HIT_DICE_ID_PREFIX}${die}`;
+}
+
+/**
+ * The die size a hit-dice pool holds, or null for the legacy sizeless pool.
+ * @param {ResourcePool} pool
+ * @returns {number | null}
+ */
+export function hitDieOfPool(pool) {
+  if (!pool.id.startsWith(HIT_DICE_ID_PREFIX)) return null;
+  return Number(pool.id.slice(HIT_DICE_ID_PREFIX.length));
+}
 
 /**
  * The character's primary class's hit-die size (d6-d12), or null for a
@@ -25,6 +48,28 @@ export const HIT_DICE_RESOURCE_ID = 'hit-dice';
  */
 export function hitDieFor(character) {
   return getClass(primaryClass(character)?.classId)?.hitDie ?? null;
+}
+
+/**
+ * The hit dice the class list grants: one entry per distinct die size in
+ * class-list order (primary class first), counting one die per assigned class
+ * level. Unknown classes contribute nothing; pending (unassigned) levels grant
+ * their die only once assigned. Empty for a classless character.
+ * @param {Character} character
+ * @returns {{ die: number, count: number }[]}
+ */
+export function characterHitDice(character) {
+  /** @type {{ die: number, count: number }[]} */
+  const dice = [];
+  for (const ref of getClasses(character)) {
+    const die = getClass(ref.classId)?.hitDie;
+    const count = Math.max(0, Math.floor(ref.level));
+    if (die === undefined || count < 1) continue;
+    const existing = dice.find((d) => d.die === die);
+    if (existing) existing.count += count;
+    else dice.push({ die, count });
+  }
+  return dice;
 }
 
 /**
@@ -39,8 +84,8 @@ export function hpGainPerLevel(hitDie, conModifier) {
 }
 
 /**
- * A character's per-level HP gain from their class and CON, or null for a
- * classless character (whose caller falls back to the generic growth).
+ * A character's per-level HP gain from their primary class and CON, or null
+ * for a classless character (whose caller falls back to the generic growth).
  * @param {Character} character
  * @returns {number | null}
  */
@@ -51,86 +96,126 @@ export function levelHPGain(character) {
 }
 
 /**
- * The class-derived maximum HP at the character's level: a full hit die plus
- * CON modifier at level 1 (at least 1), then the average-rule gain per level
- * after. Null for a classless character.
+ * The class-derived maximum HP across the class list: the first class grants
+ * a full hit die plus CON modifier at its first level (at least 1), and every
+ * other assigned level — the first class's remaining levels and every other
+ * class's levels in full — adds that class's average-rule gain. Pending
+ * (unassigned) levels contribute nothing. Null for a classless character or
+ * one whose classes are all unknown.
  * @param {Character} character
  * @returns {number | null}
  */
 export function classMaxHP(character) {
-  const die = hitDieFor(character);
-  if (die === null) return null;
   const con = conModifierOf(character);
-  const level = Math.max(1, Math.floor(character.level) || 1);
-  return Math.max(1, die + con) + (level - 1) * hpGainPerLevel(die, con);
+  let total = null;
+  for (const ref of getClasses(character)) {
+    const die = getClass(ref.classId)?.hitDie;
+    const level = Math.max(1, Math.floor(ref.level) || 1);
+    if (die === undefined) continue;
+    if (total === null) {
+      total = Math.max(1, die + con) + (level - 1) * hpGainPerLevel(die, con);
+    } else {
+      total += level * hpGainPerLevel(die, con);
+    }
+  }
+  return total;
 }
 
 /**
  * @param {Character} character
- * @returns {ResourcePool | null} the character's hit-dice pool, if they have one
+ * @returns {ResourcePool[]} the character's hit-dice pools, in resource order
  */
-export function getHitDice(character) {
-  return character.resources.find((r) => r.id === HIT_DICE_RESOURCE_ID) ?? null;
+export function getHitDicePools(character) {
+  return character.resources.filter(isHitDicePool);
 }
 
 /**
- * Give a character a full hit-dice pool sized to their level, replacing any
- * existing one. Ordered after HP and spell slots so the card reads
- * HP-then-slots-then-hit-dice-then-custom.
+ * Give a character full hit-dice pools derived from their class list,
+ * replacing any existing ones (including a legacy sizeless pool). Ordered
+ * after HP and spell slots so the card reads
+ * HP-then-slots-then-hit-dice-then-custom. A classless character gets none.
  * @param {Character} character
  * @returns {Character}
  */
 export function withHitDice(character) {
-  const pool = createResource(
-    HIT_DICE_RESOURCE_ID,
-    'Hit Dice',
-    'custom',
-    Math.max(1, Math.floor(character.level) || 1),
+  const pools = characterHitDice(character).map(({ die, count }) =>
+    createResource(hitDicePoolId(die), `Hit Dice (d${die})`, 'custom', count),
   );
-  const rest = character.resources.filter((r) => r.id !== HIT_DICE_RESOURCE_ID);
+  const rest = character.resources.filter((r) => !isHitDicePool(r));
   const head = rest.filter((r) => r.id === 'hp' || isSlotPool(r) || isPactPool(r));
   const tail = rest.filter((r) => !head.includes(r));
-  return { ...character, resources: [...head, pool, ...tail] };
+  return { ...character, resources: [...head, ...pools, ...tail] };
 }
 
 /**
- * Re-size the hit-dice pool to the character's (possibly new) level, keeping
- * what's spent: current grows by exactly the dice gained. A character without
- * a pool is returned unchanged, identity preserved.
+ * Re-derive the hit-dice pools from the (possibly changed) class list, keeping
+ * what's spent: each pool's current grows by exactly the dice gained, a new
+ * die size arrives unspent, and a die size no longer granted drops. A legacy
+ * sizeless pool converts, carrying its spent count into the first pool. A
+ * character without any hit-dice pool is returned unchanged, as is one whose
+ * pools already match, identity preserved.
  * @param {Character} character
  * @returns {Character}
  */
-export function syncHitDiceToLevel(character) {
-  const pool = getHitDice(character);
-  if (!pool) return character;
-  const max = Math.max(1, Math.floor(character.level) || 1);
-  if (max === pool.max) return character;
-  const gained = Math.max(0, max - pool.max);
-  return {
-    ...character,
-    resources: character.resources.map((r) =>
-      r.id === HIT_DICE_RESOURCE_ID ? { ...r, max, current: Math.min(max, r.current + gained) } : r,
-    ),
-  };
+export function syncHitDice(character) {
+  const existing = getHitDicePools(character);
+  if (existing.length === 0) return character;
+  const legacy = existing.find((r) => r.id === LEGACY_HIT_DICE_ID) ?? null;
+
+  const next = characterHitDice(character).map(({ die, count }, index) => {
+    const old = existing.find((r) => r.id === hitDicePoolId(die)) ?? (index === 0 ? legacy : null);
+    const current =
+      old === null ? count : Math.min(count, old.current + Math.max(0, count - old.max));
+    return {
+      ...createResource(hitDicePoolId(die), `Hit Dice (d${die})`, 'custom', count),
+      current,
+    };
+  });
+
+  const unchanged =
+    legacy === null &&
+    existing.length === next.length &&
+    existing.every(
+      (r, i) => r.id === next[i].id && r.max === next[i].max && r.current === next[i].current,
+    );
+  if (unchanged) return character;
+
+  /** @type {ResourcePool[]} */
+  const resources = [];
+  let placed = false;
+  for (const r of character.resources) {
+    if (!isHitDicePool(r)) {
+      resources.push(r);
+    } else if (!placed) {
+      resources.push(...next);
+      placed = true;
+    }
+  }
+  return { ...character, resources };
 }
 
 /**
- * Spend one hit die for healing (the short-rest mechanic): roll the class hit
- * die, add the CON modifier (a heal never negative), restore that much HP, and
- * mark the die spent. A character with no dice left, no pool, or no class is
- * returned unchanged with 0 healed. RNG injected for testability.
+ * Spend one hit die for healing (the short-rest mechanic): roll the die, add
+ * the CON modifier (a heal never negative), restore that much HP, and mark the
+ * die spent. `die` picks which pool; omitted, the first pool with a die left
+ * is spent. A legacy sizeless pool rolls the primary class's die. A character
+ * with no matching charged pool (or no resolvable die size) is returned
+ * unchanged with 0 healed. RNG injected for testability.
  * @param {Character} character
+ * @param {number | null} [die]
  * @param {() => number} [rng]
  * @returns {{ character: Character, healed: number, rolled: number }}
  */
-export function spendHitDie(character, rng = Math.random) {
-  const pool = getHitDice(character);
-  const die = hitDieFor(character);
-  if (!pool || pool.current < 1 || die === null) return { character, healed: 0, rolled: 0 };
-  const rolled = 1 + Math.floor(rng() * die);
+export function spendHitDie(character, die = null, rng = Math.random) {
+  const pool = getHitDicePools(character).find(
+    (r) => r.current > 0 && (die === null || r.id === hitDicePoolId(die)),
+  );
+  const size = pool ? (hitDieOfPool(pool) ?? hitDieFor(character)) : null;
+  if (!pool || size === null) return { character, healed: 0, rolled: 0 };
+  const rolled = 1 + Math.floor(rng() * size);
   const healed = Math.max(0, rolled + conModifierOf(character));
   const resources = character.resources.map((r) => {
-    if (r.id === HIT_DICE_RESOURCE_ID) return spend(r, 1);
+    if (r.id === pool.id) return spend(r, 1);
     if (r.id === 'hp') return restore(r, healed);
     return r;
   });
