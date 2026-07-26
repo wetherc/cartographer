@@ -5,7 +5,7 @@ import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { emptyProficiencies } from './Proficiencies.js';
-import { syncSoleClassLevel } from './Multiclass.js';
+import { getClasses, syncSoleClassLevel } from './Multiclass.js';
 import { migrateASIChoices } from './LevelUp.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -330,7 +330,9 @@ function defaultGrowth(max) {
  * LevelUp.js), so crossing an ASI level leaves a pending choice automatically.
  * A single-class character's sole class entry follows the new level; a
  * multiclass character's gained levels stay pending until assigned to a class
- * (see Multiclass.js's pendingLevels).
+ * (see Multiclass.js's pendingLevels), and their HP grows only then — by the
+ * assigned class's gain, in LevelAssign.assignLevel — so barring an explicit
+ * `opts.hpGrowth` the pool is left untouched here.
  * @param {Character} character
  * @param {number} amount
  * @param {{ hpGrowth?: number }} [opts]
@@ -347,9 +349,12 @@ export function addXP(character, amount, opts = {}) {
   const gained = level - startLevel;
   if (gained === 0) return { ...character, level, xp };
 
+  const multiclass = getClasses(character).length > 1;
   const resources = character.resources.map((r) => {
     if (r.id !== HP_RESOURCE_ID) return r;
-    const added = (opts.hpGrowth ?? levelHPGain(character) ?? defaultGrowth(r.max)) * gained;
+    const perLevel =
+      opts.hpGrowth ?? (multiclass ? 0 : (levelHPGain(character) ?? defaultGrowth(r.max)));
+    const added = perLevel * gained;
     return { ...r, max: r.max + added, current: Math.min(r.max + added, r.current + added) };
   });
   return syncHitDice(syncSlotsToLevel(syncSoleClassLevel({ ...character, level, xp, resources })));

@@ -24,6 +24,24 @@ export interface SkillChoice {
   from: string[];
 }
 
+/** Ability-score minimums gating multiclassing into (or out of) a class, as
+ * alternatives: meeting every minimum in any one entry satisfies the
+ * prerequisite (Fighter is STR 13 or DEX 13; Paladin needs STR 13 and CHA 13).
+ * An empty list means no prerequisite. */
+export type ClassPrereq = Record<string, number>[];
+
+/** The reduced proficiency grant for taking this class as a class beyond the
+ * first (the PHB multiclassing table): no saving throws, and only a subset of
+ * the class's armor/weapon/tool grants. `skillChoice`, when present, is the
+ * grant's "choose one skill" pick, left to the player. */
+export interface MulticlassGrant {
+  armor: ArmorProficiency[];
+  weaponCategories: WeaponCategory[];
+  weaponNamed: string[];
+  tools: string[];
+  skillChoice?: SkillChoice;
+}
+
 /** A playable class's mechanical spine: the fields the spell system reads to
  * gate learning, derive slots, and compute save DC / attack bonus, plus the
  * character-foundation fields (proficiencies, skill choices, subclass and ASI
@@ -57,6 +75,11 @@ export interface ClassDef {
   subclassLabel?: string;
   /** The levels that grant an ability score improvement (or, later, a feat). */
   asiLevels: number[];
+  /** Ability-score minimums required to multiclass into or out of this class. */
+  multiclassPrereq: ClassPrereq;
+  /** The reduced proficiencies gained when this class is taken as a class
+   * beyond the first. */
+  multiclassGrant: MulticlassGrant;
   /** Feature names unlocked at each level — a display scaffold, not yet
    * mechanically interpreted. */
   featuresByLevel: Record<number, string[]>;

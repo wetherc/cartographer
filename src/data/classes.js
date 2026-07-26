@@ -20,6 +20,37 @@ function curve(breakpoints) {
 /** The standard ability-score-improvement levels most classes share. */
 const ASI = [4, 8, 12, 16, 19];
 
+/** @param {Partial<import('../types/class.js').MulticlassGrant>} [grant]
+ * @returns {import('../types/class.js').MulticlassGrant} */
+function multiclassGrant(grant = {}) {
+  return { armor: [], weaponCategories: [], weaponNamed: [], tools: [], ...grant };
+}
+
+const RANGER_SKILLS = [
+  'animal-handling',
+  'athletics',
+  'insight',
+  'investigation',
+  'nature',
+  'perception',
+  'stealth',
+  'survival',
+];
+
+const ROGUE_SKILLS = [
+  'acrobatics',
+  'athletics',
+  'deception',
+  'insight',
+  'intimidation',
+  'investigation',
+  'perception',
+  'performance',
+  'persuasion',
+  'sleight-of-hand',
+  'stealth',
+];
+
 /**
  * The playable classes: each entry carries the spellcasting spine the spell
  * system reads (caster type, spell ability, cantrip curve — non-casters carry
@@ -49,6 +80,11 @@ export const DEFAULT_CLASSES = [
     subclassLevel: 3,
     subclassLabel: 'Primal Path',
     asiLevels: ASI,
+    multiclassPrereq: [{ STR: 13 }],
+    multiclassGrant: multiclassGrant({
+      armor: ['shield'],
+      weaponCategories: ['simple', 'martial'],
+    }),
     featuresByLevel: {
       1: ['Rage', 'Unarmored Defense'],
       2: ['Reckless Attack', 'Danger Sense'],
@@ -78,6 +114,11 @@ export const DEFAULT_CLASSES = [
     subclassLevel: 3,
     subclassLabel: 'Bard College',
     asiLevels: ASI,
+    multiclassPrereq: [{ CHA: 13 }],
+    multiclassGrant: multiclassGrant({
+      armor: ['light'],
+      skillChoice: { choose: 1, from: [] },
+    }),
     featuresByLevel: {
       1: ['Bardic Inspiration'],
       2: ['Jack of All Trades', 'Song of Rest'],
@@ -105,6 +146,8 @@ export const DEFAULT_CLASSES = [
     subclassLevel: 1,
     subclassLabel: 'Divine Domain',
     asiLevels: ASI,
+    multiclassPrereq: [{ WIS: 13 }],
+    multiclassGrant: multiclassGrant({ armor: ['light', 'medium', 'shield'] }),
     featuresByLevel: {
       1: ['Divine Domain'],
       2: ['Channel Divinity'],
@@ -152,6 +195,8 @@ export const DEFAULT_CLASSES = [
     subclassLevel: 2,
     subclassLabel: 'Druid Circle',
     asiLevels: ASI,
+    multiclassPrereq: [{ WIS: 13 }],
+    multiclassGrant: multiclassGrant({ armor: ['light', 'medium', 'shield'] }),
     featuresByLevel: {
       1: ['Druidic'],
       2: ['Wild Shape', 'Druid Circle'],
@@ -186,6 +231,11 @@ export const DEFAULT_CLASSES = [
     subclassLevel: 3,
     subclassLabel: 'Martial Archetype',
     asiLevels: [4, 6, 8, 12, 14, 16, 19],
+    multiclassPrereq: [{ STR: 13 }, { DEX: 13 }],
+    multiclassGrant: multiclassGrant({
+      armor: ['light', 'medium', 'shield'],
+      weaponCategories: ['simple', 'martial'],
+    }),
     featuresByLevel: {
       1: ['Fighting Style', 'Second Wind'],
       2: ['Action Surge'],
@@ -214,6 +264,11 @@ export const DEFAULT_CLASSES = [
     subclassLevel: 3,
     subclassLabel: 'Monastic Tradition',
     asiLevels: ASI,
+    multiclassPrereq: [{ DEX: 13, WIS: 13 }],
+    multiclassGrant: multiclassGrant({
+      weaponCategories: ['simple'],
+      weaponNamed: ['shortsword'],
+    }),
     featuresByLevel: {
       1: ['Unarmored Defense', 'Martial Arts'],
       2: ['Ki', 'Unarmored Movement'],
@@ -245,6 +300,11 @@ export const DEFAULT_CLASSES = [
     subclassLevel: 3,
     subclassLabel: 'Sacred Oath',
     asiLevels: ASI,
+    multiclassPrereq: [{ STR: 13, CHA: 13 }],
+    multiclassGrant: multiclassGrant({
+      armor: ['light', 'medium', 'shield'],
+      weaponCategories: ['simple', 'martial'],
+    }),
     featuresByLevel: {
       1: ['Divine Sense', 'Lay on Hands'],
       2: ['Fighting Style', 'Divine Smite'],
@@ -268,22 +328,16 @@ export const DEFAULT_CLASSES = [
     armor: ['light', 'medium', 'shield'],
     weaponCategories: ['simple', 'martial'],
     weaponNamed: [],
-    skillChoice: {
-      choose: 3,
-      from: [
-        'animal-handling',
-        'athletics',
-        'insight',
-        'investigation',
-        'nature',
-        'perception',
-        'stealth',
-        'survival',
-      ],
-    },
+    skillChoice: { choose: 3, from: RANGER_SKILLS },
     subclassLevel: 3,
     subclassLabel: 'Ranger Archetype',
     asiLevels: ASI,
+    multiclassPrereq: [{ DEX: 13, WIS: 13 }],
+    multiclassGrant: multiclassGrant({
+      armor: ['light', 'medium', 'shield'],
+      weaponCategories: ['simple', 'martial'],
+      skillChoice: { choose: 1, from: RANGER_SKILLS },
+    }),
     featuresByLevel: {
       1: ['Favored Enemy', 'Natural Explorer'],
       2: ['Fighting Style'],
@@ -306,25 +360,16 @@ export const DEFAULT_CLASSES = [
     armor: ['light'],
     weaponCategories: ['simple'],
     weaponNamed: ['hand crossbow', 'longsword', 'rapier', 'shortsword'],
-    skillChoice: {
-      choose: 4,
-      from: [
-        'acrobatics',
-        'athletics',
-        'deception',
-        'insight',
-        'intimidation',
-        'investigation',
-        'perception',
-        'performance',
-        'persuasion',
-        'sleight-of-hand',
-        'stealth',
-      ],
-    },
+    skillChoice: { choose: 4, from: ROGUE_SKILLS },
     subclassLevel: 3,
     subclassLabel: 'Roguish Archetype',
     asiLevels: [4, 8, 10, 12, 16, 19],
+    multiclassPrereq: [{ DEX: 13 }],
+    multiclassGrant: multiclassGrant({
+      armor: ['light'],
+      tools: ["thieves' tools"],
+      skillChoice: { choose: 1, from: ROGUE_SKILLS },
+    }),
     featuresByLevel: {
       1: ['Expertise', 'Sneak Attack', "Thieves' Cant"],
       2: ['Cunning Action'],
@@ -358,6 +403,8 @@ export const DEFAULT_CLASSES = [
     subclassLevel: 1,
     subclassLabel: 'Sorcerous Origin',
     asiLevels: ASI,
+    multiclassPrereq: [{ CHA: 13 }],
+    multiclassGrant: multiclassGrant(),
     featuresByLevel: {
       1: ['Sorcerous Origin'],
       2: ['Font of Magic'],
@@ -393,6 +440,11 @@ export const DEFAULT_CLASSES = [
     subclassLevel: 1,
     subclassLabel: 'Otherworldly Patron',
     asiLevels: ASI,
+    multiclassPrereq: [{ CHA: 13 }],
+    multiclassGrant: multiclassGrant({
+      armor: ['light'],
+      weaponCategories: ['simple'],
+    }),
     featuresByLevel: {
       1: ['Otherworldly Patron', 'Pact Magic'],
       2: ['Eldritch Invocations'],
@@ -421,6 +473,8 @@ export const DEFAULT_CLASSES = [
     subclassLevel: 2,
     subclassLabel: 'Arcane Tradition',
     asiLevels: ASI,
+    multiclassPrereq: [{ INT: 13 }],
+    multiclassGrant: multiclassGrant(),
     featuresByLevel: {
       1: ['Arcane Recovery'],
       2: ['Arcane Tradition'],
