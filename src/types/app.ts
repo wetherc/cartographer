@@ -15,6 +15,7 @@ import type { Quest } from './quest.js';
 import type { GameClock } from './time.js';
 import type { NPC } from './npc.js';
 import type { Handout } from './handout.js';
+import type { CombatState } from './combat.js';
 import type { ViewRole } from './view.js';
 import type { MapNode, PartyPosition } from './map.js';
 import type { DiceResult, DiceSelection } from './dice.js';
@@ -38,6 +39,9 @@ export interface AppState {
   bestiary: EncounterTemplate[];
   /** GM toggle: whether characters may hold their own positions on the map. */
   splitParty: boolean;
+  /** The running fight (order, round, current turn), or null when none is
+   * active. Persisted so a page refresh resumes combat rather than dropping it. */
+  combat: CombatState | null;
   mode: AppMode;
   role: ViewRole;
 }
@@ -111,9 +115,6 @@ export interface AppActions {
   onRoleChanged(role: ViewRole): void;
   // sessionControls
   setMode(mode: AppMode): void;
-  // main.js: the dice tray's live selection, for rolls made outside the tray
-  // (e.g. the GM rolling as the active enemy from the initiative panel).
-  getDiceSelection(): DiceSelection;
   // main.js: load a selection (and optional target number) into the dice tray
   // and roll it there — weapon attacks route through this so the roll shows
   // where every other roll happens.

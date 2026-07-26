@@ -193,6 +193,10 @@ export function applyToTarget(app, targetId, amount, isHeal) {
     const next = isHeal ? heal(found.entity, amount) : applyDamage(found.entity, amount);
     if (!isHeal) logDefeatTransition(app, found.entity, next);
     found.store(next);
+    // A defeated encounter drops off the map's danger markers; a healed one
+    // that comes back up returns. Re-sync so the change shows without waiting
+    // for the next navigation or panel refresh.
+    app.actions.syncEncounterMarkers?.();
     app.actions.markDirty();
     return;
   }

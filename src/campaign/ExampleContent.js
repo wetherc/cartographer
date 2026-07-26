@@ -393,5 +393,6 @@ export function buildExampleContent(palette, world) {
       template('barrow-skeleton', 'Barrow Skeleton', 13, 1, 'mob', { AC: 13, Speed: 30 }),
     ],
     splitParty: false,
+    combat: null,
   };
 }

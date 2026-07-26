@@ -1,6 +1,35 @@
 import { iconButton, textButton, emptyState } from './buttons.js';
+import { getHP } from '../entities/Character.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
+
+/**
+ * A compact HP bar for a roster row: a filled track whose width and color band
+ * track current/max HP, with the numbers as an accessible label. Characters
+ * without an HP pool (none authored yet) get an empty, unlabeled track.
+ * @param {Character} character
+ * @returns {HTMLElement}
+ */
+function hpMeter(character) {
+  const hp = getHP(character);
+  const meter = document.createElement('span');
+  meter.className = 'character-roster__hp';
+  if (!hp || hp.max <= 0) return meter;
+  const ratio = Math.max(0, Math.min(1, hp.current / hp.max));
+  const band = ratio <= 0.25 ? 'low' : ratio <= 0.5 ? 'mid' : 'ok';
+  meter.dataset.band = band;
+  meter.setAttribute('role', 'img');
+  meter.setAttribute('aria-label', `HP ${hp.current}/${hp.max}`);
+  meter.title = `HP ${hp.current}/${hp.max}`;
+  const fill = document.createElement('span');
+  fill.className = 'character-roster__hp-fill';
+  fill.style.width = `${ratio * 100}%`;
+  const text = document.createElement('span');
+  text.className = 'character-roster__hp-text';
+  text.textContent = `${hp.current}/${hp.max}`;
+  meter.append(fill, text);
+  return meter;
+}
 
 /**
  * Mount the party roster: one row per character (select + delete) and a
@@ -53,12 +82,16 @@ export function mountCharacterRoster(container, options) {
 
       const select = document.createElement('button');
       select.type = 'button';
-      select.className = 'row-select';
+      select.className = 'row-select character-roster__select';
       if (character.id === selectedId) {
         select.classList.add('row-select--current');
         select.setAttribute('aria-current', 'true');
       }
-      select.textContent = `${character.name} (Lv ${character.level})`;
+      const label = document.createElement('span');
+      label.className = 'character-roster__label';
+      label.textContent = `${character.name} (Lv ${character.level})`;
+      select.appendChild(label);
+      select.appendChild(hpMeter(character));
       select.addEventListener('click', () => options.onSelect(character.id));
 
       row.appendChild(select);

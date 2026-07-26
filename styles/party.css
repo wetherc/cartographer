@@ -137,7 +137,60 @@
   padding: var(--space-1) 0;
 }
 
-/* The member rows are .row-select buttons (base.css). */
+/* The member rows are .row-select buttons (base.css). The select fills the
+   row and lays its name and HP meter out as one line. */
+.character-roster__select {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.character-roster__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* At-a-glance party health: a fixed-width track, filled proportionally and
+   banded by remaining fraction, with the raw numbers centered on top. */
+.character-roster__hp {
+  position: relative;
+  flex: 0 0 auto;
+  width: 4.5rem;
+  height: 0.9rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.character-roster__hp-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--success);
+}
+
+.character-roster__hp[data-band='mid'] .character-roster__hp-fill {
+  background: var(--warning);
+}
+
+.character-roster__hp[data-band='low'] .character-roster__hp-fill {
+  background: var(--danger);
+}
+
+.character-roster__hp-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
 
 .character-roster__add,
 .character-roster__award {

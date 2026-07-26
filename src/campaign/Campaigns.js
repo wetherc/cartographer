@@ -25,6 +25,7 @@ import { buildExampleContent } from './ExampleContent.js';
  *   handouts: import('../types/handout.js').Handout[],
  *   bestiary: import('../types/entities.js').EncounterTemplate[],
  *   splitParty: boolean,
+ *   combat: import('../types/combat.js').CombatState | null,
  * }} Campaign
  */
 
@@ -49,6 +50,7 @@ export function buildBlankCampaign() {
     handouts: [],
     bestiary: [],
     splitParty: false,
+    combat: null,
   };
 }
 
@@ -100,5 +102,6 @@ export function loadInitialCampaign() {
     handouts: saved.handouts.map(withHandoutDefaults),
     bestiary: saved.bestiary,
     splitParty: saved.splitParty,
+    combat: saved.combat ?? null,
   };
 }

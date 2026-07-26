@@ -80,7 +80,28 @@ test('deserialize defaults missing fields instead of throwing', () => {
     handouts: [],
     bestiary: [],
     splitParty: false,
+    combat: null,
   });
+});
+
+test('serialize/deserialize round-trips a running combat', () => {
+  const grid = sampleGrid();
+  const combat = {
+    round: 2,
+    index: 1,
+    order: [
+      { id: 'c1', name: 'Hero', side: 'party', initiative: 17, modifier: 2 },
+      { id: 'e1', name: 'Goblin', side: 'foe', initiative: 9, modifier: -1 },
+    ],
+  };
+  const state = buildState(grid, null, [], [], [], [], { combat });
+  const restored = deserialize(serialize(state));
+  assert.deepEqual(restored.combat, combat);
+});
+
+test('deserialize defaults a missing combat to null', () => {
+  const restored = deserialize(JSON.stringify({ nodes: [] }));
+  assert.equal(restored.combat, null);
 });
 
 test('serialize/deserialize round-trips the quest log', () => {

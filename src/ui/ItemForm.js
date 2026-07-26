@@ -222,7 +222,7 @@ export function buildItemForm({
       buffAmountInput.value = String(buff[1]);
       syncTypeFields();
     }
-    if (!nameInput.value.trim()) nameInput.value = preset.name;
+    nameInput.value = preset.name;
   });
 
   // The form lays out as fixed rows (name, description, type/qty, then the

@@ -63,6 +63,7 @@ test('snapshotHistory then undoHistory round-trips a state and shrinks the ring'
     handouts: [],
     bestiary: [],
     splitParty: false,
+    combat: null,
   };
   snapshotHistory(state);
   assert.equal(loadHistory().length, 1);

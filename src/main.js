@@ -48,6 +48,7 @@ const app = /** @type {import('./types/app.js').AppContext} */ (
       handouts: initial.handouts,
       bestiary: initial.bestiary,
       splitParty: initial.splitParty,
+      combat: initial.combat,
       mode: 'play',
       // Role is per-tab (sessionStorage, not the tab-shared localStorage) so a
       // follower tab can be Player while the GM's tab is GM.
@@ -78,8 +79,6 @@ function rollerName() {
 const diceTray = mountDiceTray(mustGetElement('dice-tray-container'), {
   onRoll: (text) => app.actions.logEvent('roll', `${rollerName()} rolls ${text}.`),
 });
-// Lets the initiative panel roll the tray's current selection as an enemy.
-app.actions.getDiceSelection = () => diceTray.getSelection();
 // Lets a weapon attack load and roll the tray (d20 + modifier vs the
 // defender's AC) so the roll is visible where every other roll happens.
 app.actions.rollDice = (selection, target) => diceTray.rollSelection(selection, target);

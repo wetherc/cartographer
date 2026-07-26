@@ -172,6 +172,11 @@ export function wireParty(app) {
   function commitCharacter(next) {
     state.characters = replaceById(state.characters, next);
     characterRoster.update();
+    // A mid-combat equipment change (swapping a weapon on the turn a haste
+    // potion bought a second action) must reach the initiative panel's attack
+    // strip, which is otherwise only redrawn on turn advance — the panel reads
+    // the character live, but its buttons are built at render time.
+    app.views.initiativePanel?.update();
     app.actions.markDirty();
   }
 

@@ -15,7 +15,6 @@ import {
 } from '../entities/Encounter.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
-import { roll, formatResult } from '../dice/DiceRoller.js';
 import { equippedWeapons } from '../entities/Equipment.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 import { npcsOnTile } from '../entities/NPC.js';
@@ -44,8 +43,18 @@ import { npcForm } from './npcForm.js';
 export function wireEncounters(app) {
   const { state } = app;
 
-  /** @type {import('../types/combat.js').CombatState | null} running combat, transient (not persisted) */
-  let combat = null;
+  // The running fight. Seeded from the persisted campaign state so a page
+  // refresh mid-combat resumes it, and mirrored back on every change (with a
+  // dirty mark) so the autosave keeps it.
+  /** @type {import('../types/combat.js').CombatState | null} */
+  let combat = state.combat;
+
+  /** @param {import('../types/combat.js').CombatState | null} next */
+  function setCombat(next) {
+    combat = next;
+    state.combat = next;
+    app.actions.markDirty();
+  }
 
   /**
    * If the party's current tile holds a live encounter, announce it in a modal
@@ -273,7 +282,7 @@ export function wireEncounters(app) {
         ),
     });
     if (!participants) return;
-    combat = startCombat(participants);
+    setCombat(startCombat(participants));
     app.views.initiativePanel.update(); // un-hides the panel
     app.views.encounterPanel.update(); // hides the Start combat button
   }
@@ -284,7 +293,7 @@ export function wireEncounters(app) {
     onNext: () => {
       if (!combat) return;
       const result = advanceTurn(combat);
-      combat = result.state;
+      setCombat(result.state);
       // A new round elapsed, so tick every combatant's timed conditions down,
       // along with the enemies' timed stat modifiers.
       if (result.wrapped) {
@@ -302,17 +311,9 @@ export function wireEncounters(app) {
       }
     },
     onEnd: () => {
-      combat = null;
+      setCombat(null);
       app.views.initiativePanel.update(); // re-hides the panel
       app.views.encounterPanel.update(); // brings the Start combat button back
-    },
-    // The GM rolls the dice tray's current selection on the active enemy's
-    // behalf; the result lands in the travelogue under the enemy's name (and
-    // in a toast, since the tray's own readout stays untouched).
-    onEnemyRoll: (participant) => {
-      const text = formatResult(roll(app.actions.getDiceSelection()));
-      app.actions.logEvent('roll', `${participant.name} rolls ${text}.`);
-      app.toasts.show(`${participant.name}: ${text}`);
     },
     // The active combatant's weapons, as one-click attack rolls: a party
     // member's equipped weapons, or a foe encounter's assigned weapon. The GM
@@ -359,7 +360,7 @@ export function wireEncounters(app) {
   // (party moves, role switches) gets the visibility sync for free.
   app.views.initiativePanel = {
     update: () => {
-      if (combat && encountersHere().length === 0) combat = null;
+      if (combat && encountersHere().length === 0) setCombat(null);
       initiativeContainer.hidden = combat === null;
       initiativePanel.update();
     },

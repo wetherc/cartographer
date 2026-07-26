@@ -1,7 +1,7 @@
 import { currentParticipant } from '../combat/Initiative.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { isGM } from '../view/ViewRole.js';
-import { iconButton, textButton } from './buttons.js';
+import { textButton } from './buttons.js';
 
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
 /** @typedef {import('../types/combat.js').Participant} Participant */
@@ -21,7 +21,6 @@ import { iconButton, textButton } from './buttons.js';
  *   getState: () => CombatState | null,
  *   onNext: () => void,
  *   onEnd: () => void,
- *   onEnemyRoll?: (participant: Participant) => void,
  *   getWeapons?: (participant: Participant) => (InventoryItem | EnemyWeapon)[],
  *   onWeaponAttack?: (participant: Participant, weapon: InventoryItem | EnemyWeapon) => void,
  *   getSpells?: (participant: Participant) => import('../types/spell.js').Spell[],
@@ -29,9 +28,7 @@ import { iconButton, textButton } from './buttons.js';
  *   canAttack?: (participant: Participant) => boolean,
  *   getRole?: () => ViewRole,
  * }} callbacks
- * With `onEnemyRoll`, a GM viewer gets a dice button on the active row while a
- * foe holds the turn, to roll on that enemy's behalf (the app rolls the dice
- * tray's current selection and logs it under the enemy's name). On any
+ * On any
  * combatant's turn, `getWeapons` lists their weapons under the row as attack
  * buttons — a party member's equipped weapons, a foe's assigned weapon — and
  * one click rolls the attack via `onWeaponAttack`. `canAttack` gates who may
@@ -71,25 +68,6 @@ export function mountInitiativePanel(container, callbacks) {
       init.textContent = String(participant.initiative);
 
       row.append(name, init);
-
-      // On a foe's turn the GM can roll the dice tray's selection as that
-      // enemy, so the travelogue attributes the roll to it.
-      if (
-        gm &&
-        active &&
-        i === state.index &&
-        participant.side === 'foe' &&
-        callbacks.onEnemyRoll
-      ) {
-        row.appendChild(
-          iconButton(
-            'dice',
-            `Roll dice as ${participant.name}`,
-            () => callbacks.onEnemyRoll?.(participant),
-            { title: `Roll the dice tray's selection as ${participant.name}` },
-          ),
-        );
-      }
       root.appendChild(row);
 
       // On the active combatant's turn, their weapons line up under the row

@@ -46,6 +46,7 @@ export function buildState(
     handouts: [],
     bestiary: [],
     splitParty: false,
+    combat: null,
     ...extra,
   };
 }
@@ -78,6 +79,7 @@ export function deserialize(json) {
     handouts: parsed.handouts ?? [],
     bestiary: parsed.bestiary ?? [],
     splitParty: parsed.splitParty ?? false,
+    combat: parsed.combat ?? null,
   };
 }
 

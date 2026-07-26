@@ -5,6 +5,7 @@ import { Quest } from './quest';
 import { GameClock } from './time';
 import { NPC } from './npc';
 import { Handout } from './handout';
+import { CombatState } from './combat';
 
 export interface CampaignState {
   nodes: MapNode[];
@@ -25,4 +26,7 @@ export interface CampaignState {
   bestiary: EncounterTemplate[];
   /** Whether the GM currently allows the party to split up (false on older saves). */
   splitParty: boolean;
+  /** A running combat (order, round, current turn), or null when none is
+   * active — so refreshing the page mid-fight resumes it. Null on older saves. */
+  combat: CombatState | null;
 }
