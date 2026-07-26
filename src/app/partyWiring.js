@@ -414,6 +414,7 @@ export function wireParty(app) {
       resolveSpells,
       onCast: (character, spell) => castSpellOutOfCombat(app, character, spell),
     },
+    (message) => app.toasts.show(message),
   );
 
   // The Spellbook tab: learn/prepare/forget management for the selected

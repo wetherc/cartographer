@@ -17,8 +17,10 @@ import {
   isPactPool,
   slotLevelOf,
 } from '../entities/SpellSlots.js';
+import { isHitDicePool } from '../entities/HitDice.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { mountConditionsBar } from './ConditionsBar.js';
+import { buildProgressSection } from './CharacterProgress.js';
 import { buildSpellsSection } from './CharacterSpells.js';
 import { iconButton, textButton, emptyState } from './buttons.js';
 
@@ -320,6 +322,9 @@ function buildSlotLine(pools, onToggle) {
  *   When provided, the sheet renders a read-only castable-spells section
  *   (cantrips and prepared spells, each opening a Cast/Close detail); learning
  *   and preparing live in the Spellbook tab. Omitted, no such section appears.
+ * @param {(message: string) => void} [notify]
+ *   Non-blocking surface for progression results (hit-die heals, level-up
+ *   feature announcements); the host passes its toast stack.
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountCharacterSheet(
@@ -328,6 +333,7 @@ export function mountCharacterSheet(
   onChange = () => {},
   getPermissions = () => ({ editBase: true, play: true, hp: true }),
   spells = null,
+  notify = () => {},
 ) {
   let current = initial;
 
@@ -556,10 +562,21 @@ export function mountCharacterSheet(
     }
     body.appendChild(statsList);
 
-    // HP and spell slots are managed on the always-visible head lines, so the
-    // stepper list at the bottom only carries the custom pools.
+    // Classes, pending levels/improvements, features, and hit dice: the
+    // progression section owns them (null for a classless legacy character).
+    const progress = buildProgressSection(character, {
+      editBase: perms.editBase,
+      play: perms.play,
+      onCommit: commit,
+      notify,
+    });
+    if (progress) body.appendChild(progress);
+
+    // HP and spell slots are managed on the always-visible head lines, and hit
+    // dice in the progression section, so the stepper list at the bottom only
+    // carries the custom pools.
     const customPools = character.resources.filter(
-      (r) => r.id !== 'hp' && !isSlotPool(r) && !isPactPool(r),
+      (r) => r.id !== 'hp' && !isSlotPool(r) && !isPactPool(r) && !isHitDicePool(r),
     );
     if (customPools.length > 0) {
       const resources = document.createElement('div');

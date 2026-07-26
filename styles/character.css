@@ -89,6 +89,49 @@
   color: var(--text-muted);
 }
 
+/* The progression section: class line, pending level/improvement rows (text
+   left, action buttons right), the features disclosure, and hit-dice rows. */
+.character-sheet__progress {
+  margin-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.character-sheet__progress-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.character-sheet__progress-row .character-sheet__progress-text {
+  margin-right: auto;
+}
+
+.character-sheet__classes .character-sheet__progress-text {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.character-sheet__features {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.character-sheet__features summary {
+  cursor: pointer;
+}
+
+.character-sheet__features ul {
+  margin: var(--space-1) 0 0;
+  padding-left: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
 .character-sheet__resources {
   margin-top: var(--space-4);
   display: flex;
