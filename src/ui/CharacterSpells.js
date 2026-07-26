@@ -1,5 +1,5 @@
 import { getSpellbook } from '../entities/Character.js';
-import { isCasterClass, getClass } from '../entities/Classes.js';
+import { getClass, casterClassRefs, primaryCasterClass } from '../entities/Classes.js';
 import { icon } from './icons.js';
 import { emptyState } from './buttons.js';
 import { promptSpellDetail } from './SpellDetail.js';
@@ -26,14 +26,14 @@ import { promptSpellDetail } from './SpellDetail.js';
 export function buildSpellsSection(character, opts) {
   const book = getSpellbook(character);
   const hasEntries = book.cantrips.length > 0 || book.known.length > 0;
-  if (!isCasterClass(character.class) && !hasEntries) return null;
+  if (casterClassRefs(character).length === 0 && !hasEntries) return null;
 
   const section = document.createElement('div');
   section.className = 'character-sheet__spells';
 
   const label = document.createElement('span');
   label.className = 'section-label';
-  const className = getClass(character.class)?.name;
+  const className = getClass(primaryCasterClass(character)?.classId)?.name;
   label.textContent = className ? `Spells (${className})` : 'Spells';
   section.appendChild(label);
 

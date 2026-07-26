@@ -1,4 +1,5 @@
 import type { RaceSnapshot } from './race.js';
+import type { ClassRef } from './class.js';
 
 export interface EncounterLocation {
   nodeId: string;
@@ -224,11 +225,12 @@ export interface Character {
   raceTraits?: RaceSnapshot;
   /** Background id (see Backgrounds.js); absent on older saves. */
   background?: string;
-  /** The character's class id (see Classes.js); absent on older saves and
-   * classless characters, which cast nothing. */
-  class?: string;
-  /** The chosen subclass id, if any. */
-  subclass?: string;
+  /** The character's class memberships (see Multiclass.js); one entry for a
+   * single-class character, empty for a classless one. Older saves carried
+   * scalar `class`/`subclass` fields instead; loading folds them into a
+   * one-entry list. Entry levels sum to at most `level` — any shortfall is a
+   * pending level awaiting assignment to a class. */
+  classes?: ClassRef[];
   /** Proficiency lists (see Proficiencies.js); absent on older saves, which
    * load as having none. */
   proficiencies?: Proficiencies;

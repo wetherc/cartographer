@@ -19,7 +19,7 @@ import { cantripLimit, preparedLimit } from '../src/entities/Classes.js';
 function wizard(over = {}) {
   return {
     ...createCharacter('c1', 'Mage', { INT: 16 }),
-    class: 'wizard',
+    classes: [{ classId: 'wizard', level: 3 }],
     level: 3,
     ...over,
   };
@@ -36,9 +36,10 @@ test('createCharacter and withDefaults both carry an empty spellbook', () => {
 });
 
 test('getClasses returns a single-entry list for a classed character, empty otherwise', () => {
-  assert.deepEqual(getClasses(wizard({ subclass: 'evocation' })), [
-    { classId: 'wizard', level: 3, subclass: 'evocation' },
-  ]);
+  assert.deepEqual(
+    getClasses(wizard({ classes: [{ classId: 'wizard', level: 3, subclass: 'evocation' }] })),
+    [{ classId: 'wizard', level: 3, subclass: 'evocation' }],
+  );
   assert.deepEqual(getClasses(createCharacter('c', 'C')), []);
 });
 
@@ -75,7 +76,7 @@ test('learnSpell adds to known once; unlearnSpell drops from known and prepared'
 
 test('prepareSpell requires the spell be known, rejects duplicates, honors the limit', () => {
   // Level-1 wizard, INT 16 (+3): prepared limit = max(1, 3 + 1) = 4.
-  const mage = wizard({ level: 1 });
+  const mage = wizard({ classes: [{ classId: 'wizard', level: 1 }], level: 1 });
   assert.equal(preparedLimit(mage), 4);
   // Preparing an unknown spell does nothing.
   assert.equal(prepareSpell(mage, 'magic-missile'), mage);

@@ -7,7 +7,14 @@ import {
   prepareSpell,
   unprepareSpell,
 } from '../entities/Character.js';
-import { isCasterClass, getClass, cantripLimit, preparedLimit } from '../entities/Classes.js';
+import {
+  getClass,
+  cantripLimit,
+  preparedLimit,
+  casterClassRefs,
+  primaryCasterClass,
+} from '../entities/Classes.js';
+import { primaryClass } from '../entities/Multiclass.js';
 import { groupSpellsByLevel, spellStatus } from '../entities/SpellView.js';
 import { emptyState } from './buttons.js';
 import { promptSpellDetail } from './SpellDetail.js';
@@ -104,10 +111,10 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
     const groups = groupSpellsByLevel(spells);
 
     if (groups.length === 0) {
-      const className = getClass(character.class)?.name;
+      const className = getClass(primaryClass(character)?.classId)?.name;
       root.appendChild(
         emptyState(
-          isCasterClass(character.class)
+          casterClassRefs(character).length > 0
             ? 'No spells available.'
             : `${className ? `${className} is not a spellcaster` : 'Not a spellcaster'} — spells granted by class or equipment appear here.`,
         ),
@@ -119,10 +126,12 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
     heading.className = 'spellbook__heading';
     const title = document.createElement('span');
     title.className = 'spellbook__class';
-    const className = getClass(character.class)?.name;
-    title.textContent = className ? `${className} spells` : 'Spells';
+    const casterNames = casterClassRefs(character)
+      .map((ref) => getClass(ref.classId)?.name)
+      .filter(Boolean);
+    title.textContent = casterNames.length > 0 ? `${casterNames.join(' / ')} spells` : 'Spells';
     heading.appendChild(title);
-    if (isCasterClass(character.class)) {
+    if (primaryCasterClass(character)) {
       const prep = document.createElement('span');
       prep.className = 'spellbook__prepared-count';
       prep.textContent = `Prepared ${book.prepared.length}/${preparedLimit(character)} · Cantrips ${book.cantrips.length}/${cantripLimit(character)}`;

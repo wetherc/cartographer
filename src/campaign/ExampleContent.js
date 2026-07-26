@@ -117,7 +117,9 @@ function exampleParty() {
   };
 
   let mirelle = createCharacter('mirelle', 'Mirelle', { WIS: 16, CHA: 13, CON: 12 }, 'Half-elf');
-  mirelle = withSpellSlots(withHP({ ...mirelle, level: 3, class: 'cleric' }, 21));
+  mirelle = withSpellSlots(
+    withHP({ ...mirelle, level: 3, classes: [{ classId: 'cleric', level: 3 }] }, 21),
+  );
   // A ready-made Cleric spellbook so the sheet's spell section and combat Cast
   // buttons have something to show in the example campaign.
   mirelle.spellbook = {

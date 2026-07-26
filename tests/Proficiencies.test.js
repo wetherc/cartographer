@@ -17,7 +17,7 @@ import { withBackground } from '../src/entities/Backgrounds.js';
 /** A rogue elf criminal — every grant source populated. */
 function rogueElf() {
   const base = withRace(createCharacter('c1', 'Vex'), 'elf');
-  return { ...withBackground(base, 'criminal'), class: 'rogue' };
+  return { ...withBackground(base, 'criminal'), classes: [{ classId: 'rogue', level: 1 }] };
 }
 
 test('assembleProficiencies gathers fixed grants from class, race, and background', () => {

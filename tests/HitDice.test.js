@@ -26,13 +26,19 @@ import { createResource } from '../src/entities/Resource.js';
 
 /** @param {number} [con] */
 function fighter(con = 10) {
-  return { ...createCharacter('c1', 'Bron', { CON: con }), class: 'fighter' };
+  return {
+    ...createCharacter('c1', 'Bron', { CON: con }),
+    classes: [{ classId: 'fighter', level: 1 }],
+  };
 }
 
 test('hitDieFor reads the class hit die; classless and unknown yield null', () => {
   assert.equal(hitDieFor(fighter()), 10);
   assert.equal(hitDieFor(createCharacter('c1', 'Nim')), null);
-  assert.equal(hitDieFor({ ...createCharacter('c1', 'Nim'), class: 'bogus' }), null);
+  assert.equal(
+    hitDieFor({ ...createCharacter('c1', 'Nim'), classes: [{ classId: 'bogus', level: 1 }] }),
+    null,
+  );
 });
 
 test('hpGainPerLevel is half the die plus one plus CON, floored at 1', () => {
@@ -50,13 +56,18 @@ test('classMaxHP follows the average rule and clamps level 1 to at least 1', () 
   assert.equal(classMaxHP(fighter()), 10);
   assert.equal(classMaxHP({ ...fighter(14), level: 3 }), 12 + 2 * 8);
   assert.equal(classMaxHP({ ...fighter(1), level: 2 }), 5 + 1);
-  const frail = { ...createCharacter('c1', 'Nim', { CON: 0 }), class: 'wizard' };
+  const frail = {
+    ...createCharacter('c1', 'Nim', { CON: 0 }),
+    classes: [{ classId: 'wizard', level: 1 }],
+  };
   assert.equal(classMaxHP(frail), 1);
   assert.equal(classMaxHP(createCharacter('c1', 'Nim')), null);
 });
 
 test('withHitDice sizes the pool to level and orders it after HP and slots', () => {
-  let c = withSpellSlots(withHP({ ...fighter(), class: 'wizard', level: 3 }, 10));
+  let c = withSpellSlots(
+    withHP({ ...fighter(), classes: [{ classId: 'wizard', level: 3 }], level: 3 }, 10),
+  );
   c = addResource(c, createResource('ki', 'Ki', 'custom', 3));
   c = withHitDice(c);
   assert.deepEqual(

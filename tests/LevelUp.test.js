@@ -16,7 +16,11 @@ import { createCharacter, addXP, withDefaults } from '../src/entities/Character.
 
 /** @param {number} [level] */
 function fighter(level = 1) {
-  return { ...createCharacter('c1', 'Bron', { STR: 16 }), class: 'fighter', level };
+  return {
+    ...createCharacter('c1', 'Bron', { STR: 16 }),
+    classes: [{ classId: 'fighter', level }],
+    level,
+  };
 }
 
 test('earnedASILevels lists reached class ASI levels; classless earns none', () => {
@@ -24,7 +28,10 @@ test('earnedASILevels lists reached class ASI levels; classless earns none', () 
   assert.deepEqual(earnedASILevels(fighter(6)), [4, 6]);
   assert.deepEqual(earnedASILevels(fighter(20)), [4, 6, 8, 12, 14, 16, 19]);
   assert.deepEqual(earnedASILevels(createCharacter('c1', 'Nim')), []);
-  assert.deepEqual(earnedASILevels({ ...fighter(), class: 'bogus' }), []);
+  assert.deepEqual(
+    earnedASILevels({ ...fighter(), classes: [{ classId: 'bogus', level: 1 }] }),
+    [],
+  );
 });
 
 test('malformed level falls back to 1', () => {

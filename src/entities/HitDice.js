@@ -1,6 +1,7 @@
 import { createResource, spend, restore } from './Resource.js';
 import { isSlotPool } from './SpellSlots.js';
 import { getClass } from './Classes.js';
+import { primaryClass } from './Multiclass.js';
 import { abilityModifier } from './Modifiers.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -17,13 +18,13 @@ import { abilityModifier } from './Modifiers.js';
 export const HIT_DICE_RESOURCE_ID = 'hit-dice';
 
 /**
- * The character's class hit-die size (d6-d12), or null for a classless
- * character.
+ * The character's primary class's hit-die size (d6-d12), or null for a
+ * classless character.
  * @param {Character} character
  * @returns {number | null}
  */
 export function hitDieFor(character) {
-  return getClass(character.class)?.hitDie ?? null;
+  return getClass(primaryClass(character)?.classId)?.hitDie ?? null;
 }
 
 /**

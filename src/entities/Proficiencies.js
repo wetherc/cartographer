@@ -1,4 +1,5 @@
 import { getClass } from './Classes.js';
+import { primaryClass } from './Multiclass.js';
 import { resolveRace } from './Races.js';
 import { resolveBackground } from './Backgrounds.js';
 
@@ -41,7 +42,7 @@ export function getProficiencies(character) {
  * @returns {Proficiencies}
  */
 export function assembleProficiencies(character, choices = {}) {
-  const cls = getClass(character.class);
+  const cls = getClass(primaryClass(character)?.classId);
   const race = resolveRace(character);
   const background = resolveBackground(character);
   return {

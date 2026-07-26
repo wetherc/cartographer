@@ -9,7 +9,8 @@ import {
   transferItem,
 } from '../entities/Character.js';
 import { withSpellSlots, getSlotPools, slotLevelOf } from '../entities/SpellSlots.js';
-import { CLASS_LIST, isCasterClass } from '../entities/Classes.js';
+import { CLASS_LIST, isCasterClass, casterClassRefs } from '../entities/Classes.js';
+import { withClasses } from '../entities/Multiclass.js';
 import { activeSpells, resolveSpellIds } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
@@ -376,10 +377,10 @@ export function wireParty(app) {
         ),
         maxHP,
       );
-      // The class drives spellcasting: a caster class gets the class field plus
-      // slot pools for its level; a non-caster class carries the field only.
+      // The class drives spellcasting: a caster class gets a class-list entry
+      // plus slot pools for its level; a non-caster class the entry only.
       const classId = values.class || undefined;
-      if (classId) created = { ...created, class: classId };
+      if (classId) created = withClasses(created, [{ classId, level: created.level }]);
       if (isCasterClass(classId)) created = withSpellSlots(created);
       state.characters = [...state.characters, created];
       selectCharacter(state.characters[state.characters.length - 1].id);
@@ -419,15 +420,16 @@ export function wireParty(app) {
 
   // Resolve a spellbook's stored ids through the memoized active-library index.
   const resolveSpells = resolveSpellIds;
-  // Every spell the character's class may learn: cantrips and leveled spells up
-  // to its highest available slot level, so the Spellbook can't offer a spell it
-  // could never cast.
+  // Every spell the character's classes may learn: cantrips and leveled spells
+  // up to its highest available slot level, so the Spellbook can't offer a
+  // spell it could never cast.
   /** @param {Character} character @returns {import('../types/spell.js').Spell[]} */
   const learnableSpells = (character) => {
     const maxSlot = getSlotPools(character).reduce((m, p) => Math.max(m, slotLevelOf(p)), 0);
+    const casterIds = casterClassRefs(character).map((ref) => ref.classId);
     return activeSpells().filter(
       (spell) =>
-        spell.classes.includes(character.class ?? '') &&
+        casterIds.some((id) => spell.classes.includes(id)) &&
         (spell.level === 0 || spell.level <= maxSlot),
     );
   };

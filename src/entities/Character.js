@@ -5,12 +5,12 @@ import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { emptyProficiencies } from './Proficiencies.js';
+import { syncSoleClassLevel } from './Multiclass.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').Spellbook} Spellbook */
-/** @typedef {import('../types/class.js').ClassRef} ClassRef */
 
 /** XP required to go from level N to N+1 is N * XP_PER_LEVEL. */
 export const XP_PER_LEVEL = 100;
@@ -110,19 +110,9 @@ export function damageCharacter(character, amount) {
   return remainder > 0 ? spendResource(next, HP_RESOURCE_ID, remainder) : next;
 }
 
-/**
- * A character's classes as a list — one entry today, since a character carries
- * a single `class`/`subclass`/`level`. Read classes through this accessor
- * rather than the raw fields so the deferred multiclass work (a real class
- * list) stays additive; see PLAN.md's multiclass design decision. A classless
- * legacy character yields an empty list.
- * @param {Character} character
- * @returns {ClassRef[]}
- */
-export function getClasses(character) {
-  if (!character.class) return [];
-  return [{ classId: character.class, level: character.level, subclass: character.subclass }];
-}
+/** The class-list accessor lives with the rest of the class-list mechanics;
+ * re-exported here because character code is its natural import site. */
+export { getClasses } from './Multiclass.js';
 
 /** @returns {Spellbook} an empty spellbook (no cantrips, known, or prepared). */
 export function emptySpellbook() {
@@ -242,14 +232,32 @@ export function unprepareSpell(character, spellId) {
  * pool is invented — its absence legitimately means "no HP tracking". A
  * pre-equipment save gets empty slots — with the pre-piecewise 'armor' slot
  * carrying over into 'chest'. A pre-spellbook save gains an empty spellbook,
- * and a pre-proficiency save gains empty proficiency and expertise lists.
+ * and a pre-proficiency save gains empty proficiency and expertise lists. A
+ * pre-multiclass save's scalar `class`/`subclass` fields fold into a one-entry
+ * class list at the character's level.
  * @param {Character} character
  * @returns {Character}
  */
 export function withDefaults(character) {
+  const {
+    class: legacyClass,
+    subclass: legacySubclass,
+    ...rest
+  } = /** @type {Character & { class?: string, subclass?: string }} */ (character);
   return {
-    ...character,
+    ...rest,
     race: character.race ?? '',
+    classes:
+      character.classes ??
+      (legacyClass
+        ? [
+            {
+              classId: legacyClass,
+              level: Math.max(1, Math.floor(character.level) || 1),
+              subclass: legacySubclass,
+            },
+          ]
+        : []),
     stats: { ...defaultStats(), ...character.stats },
     resources: character.resources ?? [],
     conditions: character.conditions ?? [],
@@ -279,6 +287,7 @@ export function createCharacter(id, name, stats = {}, race = '') {
     id,
     name,
     race,
+    classes: [],
     level: 1,
     xp: 0,
     stats: { ...defaultStats(), ...stats },
@@ -317,6 +326,9 @@ function defaultGrowth(max) {
  * level up without any pool change. Ability-score-improvement slots and class
  * features need no granting here: both derive from class + level on read (see
  * LevelUp.js), so crossing an ASI level leaves a pending choice automatically.
+ * A single-class character's sole class entry follows the new level; a
+ * multiclass character's gained levels stay pending until assigned to a class
+ * (see Multiclass.js's pendingLevels).
  * @param {Character} character
  * @param {number} amount
  * @param {{ hpGrowth?: number }} [opts]
@@ -338,7 +350,9 @@ export function addXP(character, amount, opts = {}) {
     const added = (opts.hpGrowth ?? levelHPGain(character) ?? defaultGrowth(r.max)) * gained;
     return { ...r, max: r.max + added, current: Math.min(r.max + added, r.current + added) };
   });
-  return syncHitDiceToLevel(syncSlotsToLevel({ ...character, level, xp, resources }));
+  return syncHitDiceToLevel(
+    syncSlotsToLevel(syncSoleClassLevel({ ...character, level, xp, resources })),
+  );
 }
 
 /**

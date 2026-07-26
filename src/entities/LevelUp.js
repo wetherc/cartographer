@@ -1,4 +1,5 @@
 import { getClass } from './Classes.js';
+import { primaryClass } from './Multiclass.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -16,11 +17,6 @@ import { ABILITY_SCORES } from './Modifiers.js';
 /** The 5e cap an ability score can't be raised past by an improvement. */
 export const ABILITY_MAX = 20;
 
-/** @param {Character} character @returns {number} */
-function levelOf(character) {
-  return Math.max(1, Math.floor(character.level) || 1);
-}
-
 /** @param {Character} character @returns {AsiChoice[]} */
 export function getASIChoices(character) {
   return character.asiChoices ?? [];
@@ -33,10 +29,10 @@ export function getASIChoices(character) {
  * @returns {number[]}
  */
 export function earnedASILevels(character) {
-  const def = getClass(character.class);
-  if (!def) return [];
-  const level = levelOf(character);
-  return def.asiLevels.filter((l) => l <= level);
+  const primary = primaryClass(character);
+  const def = getClass(primary?.classId);
+  if (!primary || !def) return [];
+  return def.asiLevels.filter((l) => l <= Math.max(1, Math.floor(primary.level) || 1));
 }
 
 /**
@@ -134,9 +130,10 @@ export function undoLastChoice(character) {
  * @returns {{ level: number, name: string }[]}
  */
 export function unlockedFeatures(character) {
-  const def = getClass(character.class);
-  if (!def) return [];
-  const level = levelOf(character);
+  const primary = primaryClass(character);
+  const def = getClass(primary?.classId);
+  if (!primary || !def) return [];
+  const level = Math.max(1, Math.floor(primary.level) || 1);
   return Object.entries(def.featuresByLevel)
     .map(([l, names]) => ({ level: Number(l), names }))
     .filter((entry) => entry.level <= level)

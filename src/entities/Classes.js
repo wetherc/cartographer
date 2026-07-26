@@ -1,9 +1,11 @@
 import { abilityModifier, proficiencyBonus } from './Modifiers.js';
 import { slotsForCaster, slotPoolsForCaster } from './SpellSlots.js';
+import { getClasses } from './Multiclass.js';
 import { DEFAULT_CLASSES } from '../data/classes.js';
 
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
 /** @typedef {import('../types/class.js').CasterType} CasterType */
+/** @typedef {import('../types/class.js').ClassRef} ClassRef */
 /** @typedef {import('../types/spell.js').Ability} Ability */
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -83,13 +85,35 @@ export function cantripsKnownForClass(classId, characterLevel) {
 }
 
 /**
- * The modifier of a caster's spell ability, or null when the character has no
- * caster class or lacks that ability score.
+ * The character's caster classes: every class-list entry whose class casts
+ * (full/half/third/pact). Empty for a martial or classless character.
  * @param {Character} character
+ * @returns {ClassRef[]}
+ */
+export function casterClassRefs(character) {
+  return getClasses(character).filter((ref) => isCasterClass(ref.classId));
+}
+
+/**
+ * The character's first caster class, or null — the class whose ability powers
+ * spells when a caller doesn't name one.
+ * @param {Character} character
+ * @returns {ClassRef | null}
+ */
+export function primaryCasterClass(character) {
+  return casterClassRefs(character)[0] ?? null;
+}
+
+/**
+ * The modifier of a caster's spell ability, or null when the character has no
+ * caster class or lacks that ability score. `classId` picks which class's
+ * ability to read; it defaults to the first caster class.
+ * @param {Character} character
+ * @param {string} [classId]
  * @returns {number | null}
  */
-export function spellAbilityModifier(character) {
-  const def = getClass(character.class);
+export function spellAbilityModifier(character, classId) {
+  const def = getClass(classId ?? primaryCasterClass(character)?.classId);
   if (!def || !def.spellAbility) return null;
   const score = character.stats?.[def.spellAbility];
   if (typeof score !== 'number') return null;
@@ -98,48 +122,57 @@ export function spellAbilityModifier(character) {
 
 /**
  * A caster's spell save DC: 8 + proficiency bonus + spell-ability modifier.
- * Null for a non-caster.
+ * Proficiency reads the total character level (the 5e multiclass rule); the
+ * ability comes from `classId`, defaulting to the first caster class. Null for
+ * a non-caster.
  * @param {Character} character
+ * @param {string} [classId]
  * @returns {number | null}
  */
-export function spellSaveDC(character) {
-  const mod = spellAbilityModifier(character);
+export function spellSaveDC(character, classId) {
+  const mod = spellAbilityModifier(character, classId);
   if (mod === null) return null;
   return 8 + proficiencyBonus(character.level) + mod;
 }
 
 /**
- * A caster's spell attack bonus: proficiency bonus + spell-ability modifier.
- * Null for a non-caster.
+ * A caster's spell attack bonus: proficiency bonus + spell-ability modifier,
+ * with the same class selection as `spellSaveDC`. Null for a non-caster.
  * @param {Character} character
+ * @param {string} [classId]
  * @returns {number | null}
  */
-export function spellAttackBonus(character) {
-  const mod = spellAbilityModifier(character);
+export function spellAttackBonus(character, classId) {
+  const mod = spellAbilityModifier(character, classId);
   if (mod === null) return null;
   return proficiencyBonus(character.level) + mod;
 }
 
 /**
- * How many cantrips a character may know, from its class's cantrip curve at its
- * level; 0 for a non-caster or a classless character.
+ * How many cantrips a character may know: each caster class's cantrip curve
+ * read at its own class level, summed. 0 for a non-caster or a classless
+ * character.
  * @param {Character} character
  * @returns {number}
  */
 export function cantripLimit(character) {
-  return cantripsKnownForClass(character.class, character.level ?? 1);
+  return casterClassRefs(character).reduce(
+    (sum, ref) => sum + cantripsKnownForClass(ref.classId, ref.level),
+    0,
+  );
 }
 
 /**
- * How many leveled spells a character may have prepared: spell-ability modifier
- * + character level, at least 1 (the 5e prepared-caster rule). 0 for a
- * non-caster. Known-list casters don't prepare, but the same ceiling bounds the
- * spellbook's active set here.
+ * How many leveled spells a character may have prepared: per caster class, its
+ * spell-ability modifier + its class level, at least 1 (the 5e prepared-caster
+ * rule), summed across classes. 0 for a non-caster. Known-list casters don't
+ * prepare, but the same ceiling bounds the spellbook's active set here.
  * @param {Character} character
  * @returns {number}
  */
 export function preparedLimit(character) {
-  const mod = spellAbilityModifier(character);
-  if (mod === null) return 0;
-  return Math.max(1, mod + (character.level ?? 1));
+  return casterClassRefs(character).reduce((sum, ref) => {
+    const mod = spellAbilityModifier(character, ref.classId);
+    return mod === null ? sum : sum + Math.max(1, mod + ref.level);
+  }, 0);
 }
