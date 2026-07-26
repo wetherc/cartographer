@@ -7,7 +7,6 @@ import {
   casterLevelContribution,
   withSpellSlots,
   syncSlotsToLevel,
-  migrateManaToSlots,
   getSlotPools,
   isSlotPool,
 } from '../src/entities/SpellSlots.js';
@@ -132,19 +131,4 @@ test('a short rest heals HP but leaves spent slots spent; a long rest refills th
   const slept = longRest(mage);
   assert.equal(getHP(slept).current, 10);
   assert.equal(getSlotPools(slept)[0].current, 2, 'long rest refills slots');
-});
-
-test('migrateManaToSlots swaps the mana pool for level-appropriate slots, once', () => {
-  let mage = withHP(createCharacter('c1', 'Mage'), 10);
-  mage = addResource(mage, createResource('mana', 'Mana', 'mana', 8));
-  const migrated = migrateManaToSlots(mage);
-  assert.equal(
-    migrated.resources.some((r) => r.id === 'mana'),
-    false,
-  );
-  assert.deepEqual(
-    getSlotPools(migrated).map((p) => p.max),
-    [2],
-  );
-  assert.equal(migrateManaToSlots(migrated), migrated, 'no mana pool: untouched');
 });

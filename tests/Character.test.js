@@ -75,25 +75,7 @@ test('HP damage/heal works through the generic resource spend/restore machinery'
   assert.equal(getHP(hero)?.current, 10);
 });
 
-test('withDefaults migrates a mana-era save to spell slots for its level', () => {
-  let mage = withHP(createCharacter('c1', 'Mage'), 10);
-  mage = addResource(mage, createResource('mana', 'Mana', 'mana', 8));
-  mage = { ...mage, level: 3 };
-  const migrated = withDefaults(mage);
-  assert.equal(
-    migrated.resources.some((r) => r.id === 'mana'),
-    false,
-  );
-  assert.deepEqual(
-    getSlotPools(migrated).map((p) => ({ id: p.id, max: p.max, current: p.current })),
-    [
-      { id: 'slots-1', max: 4, current: 4 },
-      { id: 'slots-2', max: 2, current: 2 },
-    ],
-  );
-});
-
-test('withDefaults leaves a mana-less character without slot pools', () => {
+test('withDefaults invents no slot pools for a non-caster', () => {
   const fighter = withDefaults(withHP(createCharacter('c1', 'Fighter'), 10));
   assert.deepEqual(getSlotPools(fighter), []);
 });

@@ -1,5 +1,5 @@
 import { createResource, spend as spendPool, restore as restorePool } from './Resource.js';
-import { isSlotPool, syncSlotsToLevel, migrateManaToSlots } from './SpellSlots.js';
+import { isSlotPool, syncSlotsToLevel } from './SpellSlots.js';
 import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
@@ -239,19 +239,18 @@ export function unprepareSpell(character, spellId) {
  * Fill in fields a loaded character may predate: any missing ability score at
  * the neutral 10 (keeping existing values) and an empty-string race. No HP
  * pool is invented — its absence legitimately means "no HP tracking". A
- * mana-era save's mana pool is migrated to spell slots for the character's
- * level (see SpellSlots.js), and a pre-equipment save gets empty slots — with
- * the pre-piecewise 'armor' slot carrying over into 'chest'. A pre-spellbook
- * save gains an empty spellbook, and a pre-proficiency save gains empty
- * proficiency and expertise lists.
+ * pre-equipment save gets empty slots — with the pre-piecewise 'armor' slot
+ * carrying over into 'chest'. A pre-spellbook save gains an empty spellbook,
+ * and a pre-proficiency save gains empty proficiency and expertise lists.
  * @param {Character} character
  * @returns {Character}
  */
 export function withDefaults(character) {
-  return migrateManaToSlots({
+  return {
     ...character,
     race: character.race ?? '',
     stats: { ...defaultStats(), ...character.stats },
+    resources: character.resources ?? [],
     conditions: character.conditions ?? [],
     equipment: migrateEquipment(character.equipment),
     inventory: (character.inventory ?? []).map(migrateItem),
@@ -261,7 +260,7 @@ export function withDefaults(character) {
     spellbook: character.spellbook ?? emptySpellbook(),
     proficiencies: character.proficiencies ?? emptyProficiencies(),
     expertise: character.expertise ?? [],
-  });
+  };
 }
 
 /**

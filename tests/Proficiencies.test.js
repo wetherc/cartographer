@@ -112,7 +112,7 @@ test('proficiency predicates read the lists, defaulting for legacy characters', 
 });
 
 test('withDefaults fills empty lists on a pre-proficiency save and keeps stored ones', () => {
-  const legacy = withDefaults({ id: 'c1', name: 'Old', level: 3, resources: [] });
+  const legacy = withDefaults({ id: 'c1', name: 'Old', level: 3 });
   assert.deepEqual(legacy.proficiencies, emptyProficiencies());
   assert.deepEqual(legacy.expertise, []);
 

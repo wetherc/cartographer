@@ -257,20 +257,3 @@ export function syncSlotsToLevel(character) {
   const resources = [...rest.slice(0, firstIdx), ...synced, ...rest.slice(firstIdx)];
   return { ...character, resources };
 }
-
-/**
- * Back-compat for saves from the mana era: a character carrying the old
- * `mana` pool becomes a caster with the slot pools for their level (fresh, at
- * full — spent mana doesn't map to spent slots), and the mana pool is dropped.
- * Characters without a mana pool are untouched.
- * @param {Character} character
- * @returns {Character}
- */
-export function migrateManaToSlots(character) {
-  if (!character.resources.some((r) => r.id === 'mana')) return character;
-  const withoutMana = {
-    ...character,
-    resources: character.resources.filter((r) => r.id !== 'mana'),
-  };
-  return withSpellSlots(withoutMana);
-}
