@@ -17,7 +17,7 @@ With Campaign Builder, you can:
     - Track your party's location on the map at all times
   - Add major enemies/encounters with life tracking
   - Add resource tracking (items, D&D-style spell slots, and other expendable character-based resources)
-  - Add character sheets with full character stats, level/progression tracking, etc.
+  - Add character sheets with full character stats, class (and subclass), race, background, assembled proficiencies, hit dice, spellcasting, and level/progression tracking with per-level class assignment, multiclassing, and ability-score-improvement/feat choices
   - Simulate dice rolls and their results for any combination of dice needed in an interaction
   - Curate a campaign-independent library of equipment, enemies, and NPC templates (the Library mode in the header): the built-in 5e defaults are all listed and individually customizable, and your overrides and additions export to a portable JSON file — kept as the gitignored `library/campaign-library.json` it stays out of version control and auto-loads into any fresh browser or clone
   - Switch the whole UI between light and dark with the header's theme switch — or leave it on System to follow the operating system's preference; the choice persists per browser

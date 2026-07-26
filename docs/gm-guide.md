@@ -454,13 +454,31 @@ slot, an empty one restores it. Expand the card for stats, the XP award
 control, and any custom resource pools.
 Each ability score shows its derived modifier beside it (DEX 20 is +5) — the
 same modifier initiative uses. NPCs carry the six scores too, editable in
-their dialogs. HP and spell slots are modeled as resource pools; creation asks
-for max HP and whether the character is a spellcaster, and a caster's slots
-follow the standard full-caster table for their level. Gaining enough XP
-levels the character up automatically (an N×100 curve): HP grows per level and
-a caster's slot maxima track the table, with newly unlocked spell levels
-arriving at full and already-spent slots staying spent. Every inventory stack
-gets a **consume one** control
+their dialogs.
+
+Creation picks a **class** (with a **subclass** where the class grants one by
+the character's level), a **race**, and a **background**, and offers the
+class's **skill choices**. From those three the sheet assembles the
+character's **proficiencies** — saving throws, skills, weapons, armor, tools,
+and languages — and every list stays hand-editable afterward. The class fixes
+the **hit die** and caster type, so max HP derives from that hit die plus the
+CON modifier per level and a caster's spell slots follow the 5e table (a
+multiclass character combines its casting classes on the combined-caster-level
+table). A **classless** character still works: HP then falls back to a flat
+N×100 growth curve and it gains no proficiencies.
+
+Expand the card for the **Progression** block, which lists each class with its
+level and subclass, the **hit-dice pool** (a spendable resource — spend a die
+on a short rest to heal the roll plus the CON modifier; a long rest restores
+half the pool), and the **class features** unlocked by level. Gaining enough
+XP no longer levels a classed character silently: each earned level waits as a
+**pending level** you assign to a class — their current one, or an eligible
+new class to multiclass into — and assigning it grows HP by that class's hit
+die, adds a hit die, and advances spell slots (newly unlocked spell levels
+arrive at full, already-spent slots stay spent). Crossing a class's **ASI
+level** leaves a pending **ability score improvement or feat**: apply +2 across
+one or two abilities (capped at 20) or take a feat by name, both undoable from
+the same block. Every inventory stack gets a **consume one** control
 distinct from the remove-whole-stack button — even 1-stacks, since using the
 last potion and throwing it away are different stories. Inventory changes
 write themselves into the travelogue: pickups record who found what, where,
