@@ -140,61 +140,22 @@
   margin-bottom: var(--space-3);
 }
 
-/* The editable HP/AC field grid and the ability-score grid share one template
-   and one key width, so their boxes and inputs align cleanly into shared
-   columns. Two-plus columns when wide enough for each box to keep its own
-   breathing room, collapsing to one when it isn't — never a squeezed pair. */
-.character-sheet__fields,
-.character-sheet__stats {
+/* The editable HP/AC field grid: two-plus columns when wide enough for each box
+   to keep its own breathing room, collapsing to one when it isn't. */
+.character-sheet__fields {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
   gap: var(--space-2) var(--space-3);
-}
-
-.character-sheet__fields {
   margin-bottom: var(--space-3);
 }
 
-.character-sheet__stat-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-/* Key, score, and modifier sit tight on the left of each cell; leftover width
-   stays empty on the right, so on wide layouts each stat still reads as one
-   group instead of the modifier drifting up against the next column's label. */
-.character-sheet__stat-label {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: var(--space-1);
-  font-size: var(--text-label);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--text-muted);
-}
-
-/* Fixed key column, shared with the field rows, so score inputs align down a
-   single column across both grids. */
+/* Fixed key column so the field inputs align down a single column. */
 .character-sheet__stat-key {
   flex: 0 0 var(--sheet-key-w);
 }
 
-/* The score input and its derived modifier, kept tight as one unit. */
-.character-sheet__stat-value {
-  flex: 1;
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
-/* One fixed size shared by every numeric input on the sheet (ability scores,
-   XP award, HP fields), so they all align and match exactly; the stats grid
-   collapses to one column before this would ever clip. */
+/* One fixed size shared by every numeric input on the sheet (XP award, HP/AC
+   fields), so they all align and match exactly. */
 .character-sheet__stat-input {
   width: 3.5rem;
   flex-shrink: 0;
@@ -204,22 +165,108 @@
   font-family: var(--font-mono);
 }
 
-/* Equipped-item buff riding on a score (a ring's +2 STR), shown beside the
-   modifier like the HP bar's bonus readout. */
-.character-sheet__stat-buff {
-  font-family: var(--font-mono);
-  font-size: var(--text-label);
-  font-weight: 700;
-  color: var(--mana);
+/* The six ability scores as d20-style badges: they flow across as many columns
+   as fit, wrapping to a fresh row rather than squeezing, so each die keeps its
+   size on any panel width. */
+.character-sheet__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
+  gap: var(--space-2);
 }
 
-/* The derived ability modifier shown beside each score. */
-.character-sheet__stat-mod {
+/* One ability badge: key label, a die shape holding the effective score, and
+   the derived modifier stacked below. The whole thing is a button opening the
+   breakdown popover. */
+.stat-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-1);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  border-radius: var(--radius);
+}
+.stat-badge:hover {
+  background: var(--surface-sunken);
+}
+
+.stat-badge__key {
+  font-size: var(--text-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* The d20-evoking octagon holding the effective score. */
+.stat-badge__die {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+  background: var(--surface-raised);
+  border: 2px solid var(--border);
+  color: var(--text);
+}
+.stat-badge--buffed .stat-badge__die {
+  border-color: var(--mana);
+  color: var(--mana);
+}
+.stat-badge--debuffed .stat-badge__die {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.stat-badge__score {
+  font-family: var(--font-mono);
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.stat-badge__mod {
   font-family: var(--font-mono);
   font-size: var(--text-label);
   color: var(--text-muted);
-  min-width: 2ch;
+}
+
+/* Ability-score breakdown popover: base + each source + the total. */
+.stat-breakdown__mod {
+  margin: 0 0 var(--space-2);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+.stat-breakdown__rows {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+}
+.stat-breakdown__rows dt {
+  color: var(--text-muted);
+}
+.stat-breakdown__rows dd {
+  margin: 0;
+  font-family: var(--font-mono);
   text-align: right;
+}
+.stat-breakdown__buff {
+  color: var(--mana);
+}
+.stat-breakdown__debuff {
+  color: var(--danger);
+}
+.stat-breakdown__total {
+  font-weight: 700;
+  color: var(--text);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-1);
+}
+.stat-breakdown__rows dt.stat-breakdown__total {
+  color: var(--text);
 }
 
 /* "Playing as" binding picker shown to player tabs above the roster. */

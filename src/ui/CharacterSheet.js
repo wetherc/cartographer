@@ -1,5 +1,4 @@
 import {
-  setStat,
   addXP,
   getHP,
   setMaxHP,
@@ -10,7 +9,7 @@ import {
   restoreResource,
   XP_PER_LEVEL,
 } from '../entities/Character.js';
-import { armorClass, effectiveStats } from '../entities/Equipment.js';
+import { armorClass, statBreakdown } from '../entities/Equipment.js';
 import { getSlotPools, isSlotPool, slotLevelOf } from '../entities/SpellSlots.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { mountConditionsBar } from './ConditionsBar.js';
@@ -19,6 +18,113 @@ import { iconButton, textButton, emptyState } from './buttons.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
+
+/**
+ * Open a popover breaking one ability score into its parts: the base value,
+ * each equipped item that shifts it (with its signed delta), and the resulting
+ * total and modifier. This is where the base score lives now that the badge
+ * shows only the effective total. Duration is not modeled yet — item buffs read
+ * "while equipped"; a future condition/spell source can add a real duration.
+ * @param {string} key
+ * @param {{ base: number, total: number, sources: { source: string, delta: number }[] }} breakdown
+ */
+function openStatBreakdown(key, breakdown) {
+  const { base, total, sources } = breakdown;
+  const opener = /** @type {HTMLElement | null} */ (document.activeElement);
+  const dialog = document.createElement('dialog');
+  dialog.className = 'modal stat-breakdown';
+
+  const heading = document.createElement('h2');
+  heading.className = 'modal__title';
+  heading.textContent = `${key} ${total}`;
+
+  const mod = document.createElement('p');
+  mod.className = 'stat-breakdown__mod';
+  mod.textContent = `Modifier ${formatModifier(abilityModifier(total))}`;
+
+  const rows = document.createElement('dl');
+  rows.className = 'stat-breakdown__rows';
+  /** @param {string} label @param {string} value @param {string} [ddCls] @param {string} [rowCls] */
+  const addRow = (label, value, ddCls, rowCls) => {
+    const dt = document.createElement('dt');
+    dt.textContent = label;
+    const dd = document.createElement('dd');
+    dd.textContent = value;
+    if (rowCls) dt.className = rowCls;
+    dd.className = [ddCls, rowCls].filter(Boolean).join(' ');
+    rows.append(dt, dd);
+  };
+  addRow('Base', String(base));
+  for (const { source, delta } of sources) {
+    addRow(
+      `${source} (while equipped)`,
+      `${delta > 0 ? '+' : ''}${delta}`,
+      delta < 0 ? 'stat-breakdown__debuff' : 'stat-breakdown__buff',
+    );
+  }
+  addRow('Total', String(total), undefined, 'stat-breakdown__total');
+
+  const actions = document.createElement('div');
+  actions.className = 'modal__actions';
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'btn btn--primary';
+  close.textContent = 'Close';
+  close.addEventListener('click', () => dialog.close());
+  actions.appendChild(close);
+
+  dialog.append(heading, mod, rows, actions);
+  document.body.appendChild(dialog);
+  dialog.addEventListener('close', () => {
+    dialog.remove();
+    opener?.focus?.();
+  });
+  dialog.showModal();
+  close.focus();
+}
+
+/**
+ * Build one ability-score badge: a d20-style die showing the effective score
+ * (base + equipped buffs) over its derived modifier, labeled with the ability
+ * key. The whole badge is a button opening {@link openStatBreakdown}. A buffed
+ * or debuffed total is tinted so a modified score is obvious at a glance.
+ * @param {Character} character
+ * @param {string} key
+ * @returns {HTMLElement}
+ */
+function statBadge(character, key) {
+  const breakdown = statBreakdown(character, key);
+  const { base, total } = breakdown;
+  const modText = formatModifier(abilityModifier(total));
+
+  const badge = document.createElement('button');
+  badge.type = 'button';
+  badge.className = 'stat-badge';
+  if (total > base) badge.classList.add('stat-badge--buffed');
+  else if (total < base) badge.classList.add('stat-badge--debuffed');
+  const note = total !== base ? ` (base ${base})` : '';
+  badge.setAttribute('aria-label', `${key} ${total}, modifier ${modText}${note}. Show breakdown.`);
+  badge.title = 'Show breakdown';
+
+  const keyEl = document.createElement('span');
+  keyEl.className = 'stat-badge__key';
+  keyEl.textContent = key;
+
+  const die = document.createElement('span');
+  die.className = 'stat-badge__die';
+  const score = document.createElement('span');
+  score.className = 'stat-badge__score';
+  score.textContent = String(total);
+  die.appendChild(score);
+
+  const modEl = document.createElement('span');
+  modEl.className = 'stat-badge__mod';
+  modEl.textContent = modText;
+
+  badge.append(keyEl, die, modEl);
+  badge.addEventListener('click', () => openStatBreakdown(key, breakdown));
+  return badge;
+}
 
 /**
  * Build a stat bar (HP) shown on the collapsed card, one full-width line per
@@ -390,55 +496,14 @@ export function mountCharacterSheet(
 
     const statsList = document.createElement('div');
     statsList.className = 'character-sheet__stats';
-    // Equipped-item buffs (a ring's +2 STR) ride on top of the base score:
-    // the input edits the base, the modifier reflects the buffed total.
-    const buffed = effectiveStats(character);
-    for (const [key, value] of Object.entries(character.stats)) {
-      const row = document.createElement('div');
-      row.className = 'character-sheet__stat-row';
-
-      const label = document.createElement('label');
-      label.className = 'character-sheet__stat-label';
-
-      // Fixed-width key so the score inputs align down the column.
-      const keyText = document.createElement('span');
-      keyText.className = 'character-sheet__stat-key';
-      keyText.textContent = key;
-      label.appendChild(keyText);
-
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.className = 'field character-sheet__stat-input';
-      input.value = String(value);
-      input.disabled = !perms.editBase;
-      input.addEventListener('change', () => {
-        commit(setStat(character, key, Number(input.value)));
-      });
-
-      // The derived modifier (DEX 20 = +5), which initiative and checks use;
-      // computed from the buffed total when equipment raises the score.
-      const total = buffed[key] ?? value;
-      const modifier = document.createElement('span');
-      modifier.className = 'character-sheet__stat-mod';
-      modifier.textContent = formatModifier(abilityModifier(total));
-      modifier.title = `${key} modifier`;
-
-      // Score and its modifier read as one unit, visually separated from the
-      // next column's label by the stats grid's gutter.
-      const valueGroup = document.createElement('span');
-      valueGroup.className = 'character-sheet__stat-value';
-      valueGroup.append(input, modifier);
-
-      if (total !== value) {
-        const buff = document.createElement('span');
-        buff.className = 'character-sheet__stat-buff';
-        buff.textContent = `${total > value ? '+' : ''}${total - value}`;
-        buff.title = `${key} buffed to ${total} by equipped items`;
-        valueGroup.appendChild(buff);
-      }
-      label.appendChild(valueGroup);
-      row.appendChild(label);
-      statsList.appendChild(row);
+    // Each ability reads as one d20-style badge showing the *effective* score
+    // (base plus equipped-item buffs) over its derived modifier — the number a
+    // player actually rolls with. The base and every contributing source live
+    // one click away in the breakdown popover, so the common "what's my STR?"
+    // question is answered at a glance without parsing "16 = 18 +4". Scores are
+    // no longer edited inline; a dedicated character/level-up editor owns that.
+    for (const key of Object.keys(character.stats)) {
+      statsList.appendChild(statBadge(character, key));
     }
     body.appendChild(statsList);
 

@@ -264,6 +264,27 @@ export function effectiveStats(character) {
 }
 
 /**
+ * The per-source composition of one ability score: its base value plus every
+ * equipped item that shifts it, and the resulting total. The character sheet's
+ * stat badges show only the total; this backs the breakdown popover behind
+ * them. Debuffs (negative deltas) and future non-item sources ride the same
+ * `sources` list, so a later condition/spell effect only has to append to it.
+ * @param {Character} character
+ * @param {string} stat
+ * @returns {{ base: number, total: number, sources: { source: string, delta: number }[] }}
+ */
+export function statBreakdown(character, stat) {
+  const base = character.stats[stat] ?? 10;
+  const sources = [];
+  for (const item of equippedItems(character)) {
+    const delta = item.statBonuses?.[stat];
+    if (delta) sources.push({ source: item.name, delta });
+  }
+  const total = sources.reduce((sum, s) => sum + s.delta, base);
+  return { base, total, sources };
+}
+
+/**
  * A character's armor class, 5e-style. Equipped body armor replaces the
  * unarmored baseline with its own base AC plus a DEX contribution fixed by
  * its weight class (light: full modifier, medium: capped at +2, heavy: none);
