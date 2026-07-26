@@ -10,7 +10,13 @@ import {
   XP_PER_LEVEL,
 } from '../entities/Character.js';
 import { armorClass, statBreakdown } from '../entities/Equipment.js';
-import { getSlotPools, isSlotPool, slotLevelOf } from '../entities/SpellSlots.js';
+import {
+  getSlotPools,
+  getPactPool,
+  isSlotPool,
+  isPactPool,
+  slotLevelOf,
+} from '../entities/SpellSlots.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { buildSpellsSection } from './CharacterSpells.js';
@@ -234,9 +240,11 @@ function buildStatBar(pool, opts) {
 function buildSlotLine(pools, onToggle) {
   const wrap = document.createElement('span');
   wrap.className = 'stat-bar slot-line';
+  /** @param {import('../types/entities.js').ResourcePool} p */
+  const slotNoun = (p) => (isPactPool(p) ? 'pact slot' : 'slot');
   if (!onToggle) {
     const readout = pools
-      .map((p) => `level ${slotLevelOf(p)}: ${p.current} of ${p.max}`)
+      .map((p) => `level ${slotLevelOf(p)} ${slotNoun(p)}s: ${p.current} of ${p.max}`)
       .join(', ');
     wrap.setAttribute('role', 'img');
     wrap.setAttribute('aria-label', `Spell slots — ${readout}`);
@@ -256,7 +264,9 @@ function buildSlotLine(pools, onToggle) {
     group.className = 'slot-line__group';
     const level = document.createElement('span');
     level.className = 'slot-line__level';
-    level.textContent = ordinal(slotLevelOf(pool));
+    level.textContent = isPactPool(pool)
+      ? `${ordinal(slotLevelOf(pool))} pact`
+      : ordinal(slotLevelOf(pool));
     const pips = document.createElement('span');
     pips.className = 'slot-line__pips';
     for (let i = 0; i < pool.max; i += 1) {
@@ -270,8 +280,8 @@ function buildSlotLine(pools, onToggle) {
         pip.setAttribute(
           'aria-label',
           available
-            ? `Spend a level ${slotLevelOf(pool)} slot`
-            : `Restore a level ${slotLevelOf(pool)} slot`,
+            ? `Spend a level ${slotLevelOf(pool)} ${slotNoun(pool)}`
+            : `Restore a level ${slotLevelOf(pool)} ${slotNoun(pool)}`,
         );
         pip.title = available ? 'Click to spend' : 'Click to restore';
         pip.addEventListener('click', () => onToggle(pool, available));
@@ -407,7 +417,8 @@ export function mountCharacterSheet(
       head.appendChild(hpLine);
     }
 
-    const slots = getSlotPools(character);
+    const pact = getPactPool(character);
+    const slots = [...getSlotPools(character), ...(pact ? [pact] : [])];
     if (slots.length > 0) {
       head.appendChild(
         buildSlotLine(
@@ -547,7 +558,9 @@ export function mountCharacterSheet(
 
     // HP and spell slots are managed on the always-visible head lines, so the
     // stepper list at the bottom only carries the custom pools.
-    const customPools = character.resources.filter((r) => r.id !== 'hp' && !isSlotPool(r));
+    const customPools = character.resources.filter(
+      (r) => r.id !== 'hp' && !isSlotPool(r) && !isPactPool(r),
+    );
     if (customPools.length > 0) {
       const resources = document.createElement('div');
       resources.className = 'character-sheet__resources';

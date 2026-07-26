@@ -3,7 +3,7 @@ import { castSpell } from '../entities/Casting.js';
 import { spellSaveDC, spellAttackBonus } from '../entities/Classes.js';
 import { isDefeated } from '../entities/Encounter.js';
 import { npcsOnTile } from '../entities/NPC.js';
-import { getSlotPools, slotLevelOf } from '../entities/SpellSlots.js';
+import { castableSlotLevels } from '../entities/SpellSlots.js';
 import { toCaster, withCasterState } from '../entities/Caster.js';
 import { replaceById } from '../entities/Roster.js';
 import { findCombatant, combatantsAsTargets, asTarget, applyToTarget } from './combatants.js';
@@ -195,13 +195,8 @@ async function runCast(app, entity, spell, targets, writeBack) {
   }
 
   // Leveled spells cast from a slot at or above their level that still has a
-  // charge; the picker offers each such level.
-  const slotLevels =
-    spell.level > 0
-      ? getSlotPools(caster)
-          .filter((p) => slotLevelOf(p) >= spell.level && p.current > 0)
-          .map(slotLevelOf)
-      : [];
+  // charge — leveled or pact; the picker offers each such level.
+  const slotLevels = spell.level > 0 ? castableSlotLevels(caster, spell.level) : [];
   const dc = spellSaveDC(caster) ?? 10;
   const fields = castFields(spell, targets, slotLevels, dc);
   if (!fields) {

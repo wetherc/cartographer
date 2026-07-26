@@ -1,5 +1,5 @@
 import { createResource, spend as spendPool, restore as restorePool } from './Resource.js';
-import { isSlotPool, syncSlotsToLevel } from './SpellSlots.js';
+import { isSlotPool, isPactPool, syncSlotsToLevel } from './SpellSlots.js';
 import { HIT_DICE_RESOURCE_ID, levelHPGain, syncHitDiceToLevel } from './HitDice.js';
 import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
@@ -405,9 +405,10 @@ export function restoreResource(character, resourceId, amount) {
  * max, clamped to full. The rest model: a long rest restores everything
  * (fraction 1), a short rest restores half (fraction 0.5). Spell slots follow
  * the D&D rule instead: only a full rest (fraction 1) refills them; anything
- * less leaves them untouched. Hit dice likewise ignore short rests (they're
- * what a short rest spends), and a long rest restores half the total, at
- * least one die. Pure.
+ * less leaves them untouched. Pact slots refill in full on a short or long
+ * rest (fraction 0.5 and up). Hit dice ignore short rests (they're what a
+ * short rest spends), and a long rest restores half the total, at least one
+ * die. Pure.
  * @param {Character} character
  * @param {number} fraction 0..1
  * @returns {Character}
@@ -418,6 +419,7 @@ export function restAll(character, fraction) {
     ...character,
     resources: character.resources.map((r) => {
       if (isSlotPool(r)) return clamped < 1 ? r : restorePool(r, r.max);
+      if (isPactPool(r)) return clamped < 0.5 ? r : restorePool(r, r.max);
       if (r.id === HIT_DICE_RESOURCE_ID) {
         return clamped < 1 ? r : restorePool(r, Math.max(1, Math.floor(r.max / 2)));
       }
@@ -436,7 +438,8 @@ export function longRest(character) {
 }
 
 /**
- * A short rest: restore half of each pool's maximum; spell slots stay spent.
+ * A short rest: restore half of each pool's maximum; spell slots stay spent,
+ * pact slots refill in full.
  * @param {Character} character
  * @returns {Character}
  */

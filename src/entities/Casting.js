@@ -1,6 +1,6 @@
 import { roll, rollDamage } from '../dice/DiceRoller.js';
 import { getSpellbook, spendResource } from './Character.js';
-import { SLOT_ID_PREFIX } from './SpellSlots.js';
+import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/spell.js').SpellScaling} SpellScaling */
@@ -86,15 +86,19 @@ export function canCast(caster, spell) {
 }
 
 /**
- * The current count of the caster's slot pool for a spell level, or 0 if it has
- * no such pool.
+ * The pool id a cast at this slot level draws from: the leveled slot pool when
+ * it has a charge, else the pact pool at that level (pact slots are cast at
+ * exactly their own level), else null when neither has one left.
  * @param {Character} caster
  * @param {number} slotLevel
- * @returns {number}
+ * @returns {string | null}
  */
-function slotsAvailable(caster, slotLevel) {
-  const pool = caster.resources.find((r) => r.id === `${SLOT_ID_PREFIX}${slotLevel}`);
-  return pool ? pool.current : 0;
+function slotPoolToSpend(caster, slotLevel) {
+  for (const id of [`${SLOT_ID_PREFIX}${slotLevel}`, `${PACT_ID_PREFIX}${slotLevel}`]) {
+    const pool = caster.resources.find((r) => r.id === id);
+    if (pool && pool.current > 0) return id;
+  }
+  return null;
 }
 
 /**
@@ -106,8 +110,10 @@ function slotsAvailable(caster, slotLevel) {
  * On failure returns `{ ok: false, reason }` with reason one of
  * `'not-known'` (the caster can't cast this spell), `'bad-slot-level'` (the
  * slot is below the spell's level), or `'no-slot'` (no slot of that level
- * left). On success returns the caster with the slot spent (cantrips spend
- * nothing) and an `outcomes` array whose shape follows the effect kind:
+ * left, counting the pact pool at that level). On success returns the caster
+ * with the slot spent — from the leveled pool first, then the pact pool;
+ * cantrips spend nothing — and an `outcomes` array whose shape follows the
+ * effect kind:
  * - `attack`: one entry per target — its d20 attack roll, whether it hit/crit,
  *   and the damage dealt on a hit (crit doubles the dice).
  * - `save`: the damage rolled once, plus one entry per target with its save
@@ -149,14 +155,15 @@ export function castSpell(caster, spell, options = {}) {
   // A cantrip uses no slot; a leveled spell must be cast at or above its own
   // level and have a slot of that level free.
   const cantrip = spell.level === 0;
+  const poolId = cantrip ? null : slotPoolToSpend(caster, slotLevel);
   if (!cantrip) {
     if (slotLevel < spell.level) return { ok: false, reason: 'bad-slot-level' };
-    if (slotsAvailable(caster, slotLevel) < 1) return { ok: false, reason: 'no-slot' };
+    if (!poolId) return { ok: false, reason: 'no-slot' };
   }
 
   const effectiveSlot = cantrip ? 0 : slotLevel;
   const steps = scalingSteps(spell, effectiveSlot, casterLevel);
-  const nextCaster = cantrip ? caster : spendResource(caster, `${SLOT_ID_PREFIX}${slotLevel}`, 1);
+  const nextCaster = poolId ? spendResource(caster, poolId, 1) : caster;
 
   const outcomes = resolveEffect(spell, {
     steps,

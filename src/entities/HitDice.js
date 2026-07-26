@@ -1,5 +1,5 @@
 import { createResource, spend, restore } from './Resource.js';
-import { isSlotPool } from './SpellSlots.js';
+import { isSlotPool, isPactPool } from './SpellSlots.js';
 import { getClass } from './Classes.js';
 import { primaryClass } from './Multiclass.js';
 import { abilityModifier } from './Modifiers.js';
@@ -88,8 +88,8 @@ export function withHitDice(character) {
     Math.max(1, Math.floor(character.level) || 1),
   );
   const rest = character.resources.filter((r) => r.id !== HIT_DICE_RESOURCE_ID);
-  const head = rest.filter((r) => r.id === 'hp' || isSlotPool(r));
-  const tail = rest.filter((r) => r.id !== 'hp' && !isSlotPool(r));
+  const head = rest.filter((r) => r.id === 'hp' || isSlotPool(r) || isPactPool(r));
+  const tail = rest.filter((r) => !head.includes(r));
   return { ...character, resources: [...head, pool, ...tail] };
 }
 

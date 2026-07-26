@@ -8,7 +8,7 @@ import {
   addXP,
   transferItem,
 } from '../entities/Character.js';
-import { withSpellSlots, getSlotPools, slotLevelOf } from '../entities/SpellSlots.js';
+import { withSpellSlots, highestSlotLevel } from '../entities/SpellSlots.js';
 import { CLASS_LIST, isCasterClass, casterClassRefs } from '../entities/Classes.js';
 import { withClasses } from '../entities/Multiclass.js';
 import { activeSpells, resolveSpellIds } from '../library/Library.js';
@@ -425,7 +425,7 @@ export function wireParty(app) {
   // spell it could never cast.
   /** @param {Character} character @returns {import('../types/spell.js').Spell[]} */
   const learnableSpells = (character) => {
-    const maxSlot = getSlotPools(character).reduce((m, p) => Math.max(m, slotLevelOf(p)), 0);
+    const maxSlot = highestSlotLevel(character);
     const casterIds = casterClassRefs(character).map((ref) => ref.classId);
     return activeSpells().filter(
       (spell) =>

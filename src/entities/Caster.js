@@ -1,6 +1,6 @@
 import { isCasterClass, casterSlots } from './Classes.js';
 import { emptySpellbook } from './Character.js';
-import { isSlotPool } from './SpellSlots.js';
+import { isSlotPool, isPactPool } from './SpellSlots.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
@@ -72,7 +72,7 @@ export function isCaster(entity) {
 /**
  * Write a resolved cast's spent slots back onto the real entity. `castSpell`
  * returns a caster view with the slot decremented; this splices those resources
- * (the slot pools) onto the entity, replacing its own slot pools and keeping
+ * (the slot and pact pools) onto the entity, replacing its own and keeping
  * any non-slot resources it may have. Pure.
  * @template T
  * @param {T} entity
@@ -81,8 +81,9 @@ export function isCaster(entity) {
  */
 export function withCasterState(entity, caster) {
   const e = /** @type {any} */ (entity);
-  const others = (e.resources ?? []).filter((/** @type {ResourcePool} */ r) => !isSlotPool(r));
-  const slots = caster.resources.filter(isSlotPool);
+  const isCasterPool = (/** @type {ResourcePool} */ r) => isSlotPool(r) || isPactPool(r);
+  const others = (e.resources ?? []).filter((/** @type {ResourcePool} */ r) => !isCasterPool(r));
+  const slots = caster.resources.filter(isCasterPool);
   return /** @type {T} */ ({ ...e, resources: [...others, ...slots] });
 }
 

@@ -287,6 +287,34 @@ test('rejects an unknown spell, a low slot level, and an empty slot pool', () =>
   });
 });
 
+test('a cast falls back to the pact pool when the leveled slot is drained', () => {
+  const drainedLeveled = { ...createResource('slots-1', 'L1', 'mana', 4), current: 0 };
+  const pact = createResource('pact-1', 'Pact slots (level 1)', 'mana', 2);
+  const lock = caster({ resources: [drainedLeveled, pact] });
+
+  const result = castSpell(lock, burningHands, { slotLevel: 1, rng: seq([]) });
+  assert.equal(result.ok, true);
+  const pools = /** @type {any} */ (result).caster.resources;
+  assert.equal(pools.find((/** @type {any} */ r) => r.id === 'pact-1').current, 1);
+  assert.equal(pools.find((/** @type {any} */ r) => r.id === 'slots-1').current, 0);
+
+  // With a leveled charge left, the leveled pool is preferred over pact.
+  const both = caster({
+    resources: [createResource('slots-1', 'L1', 'mana', 4), pact],
+  });
+  const preferred = castSpell(both, burningHands, { slotLevel: 1, rng: seq([]) });
+  const after = /** @type {any} */ (preferred).caster.resources;
+  assert.equal(after.find((/** @type {any} */ r) => r.id === 'slots-1').current, 3);
+  assert.equal(after.find((/** @type {any} */ r) => r.id === 'pact-1').current, 2);
+
+  // Both drained: no-slot.
+  const empty = caster({ resources: [drainedLeveled, { ...pact, current: 0 }] });
+  assert.deepEqual(castSpell(empty, burningHands, { slotLevel: 1 }), {
+    ok: false,
+    reason: 'no-slot',
+  });
+});
+
 test('utility spell resolves with no outcomes and spends its slot', () => {
   const spell = {
     ...burningHands,

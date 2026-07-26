@@ -5,10 +5,18 @@ import {
   slotsForCaster,
   slotsForCasterLevel,
   casterLevelContribution,
+  pactSlotsFor,
+  characterSlots,
+  characterPactSlots,
   withSpellSlots,
   syncSlotsToLevel,
   getSlotPools,
+  getPactPool,
   isSlotPool,
+  isPactPool,
+  slotLevelOf,
+  highestSlotLevel,
+  castableSlotLevels,
 } from '../src/entities/SpellSlots.js';
 import {
   createCharacter,
@@ -117,6 +125,167 @@ test('addXP levels a caster into new slot pools', () => {
     getSlotPools(mage).map((p) => p.max),
     [4, 2],
   );
+});
+
+/** @param {import('../src/types/class.js').ClassRef[]} classes @param {number} [level] */
+function classed(classes, level = classes.reduce((s, c) => s + c.level, 0)) {
+  return { ...withHP(createCharacter('c1', 'Vess'), 10), classes, level };
+}
+
+test('pactSlotsFor follows the warlock progression', () => {
+  assert.deepEqual(pactSlotsFor(1), { count: 1, level: 1 });
+  assert.deepEqual(pactSlotsFor(2), { count: 2, level: 1 });
+  assert.deepEqual(pactSlotsFor(3), { count: 2, level: 2 });
+  assert.deepEqual(pactSlotsFor(5), { count: 2, level: 3 });
+  assert.deepEqual(pactSlotsFor(7), { count: 2, level: 4 });
+  assert.deepEqual(pactSlotsFor(9), { count: 2, level: 5 });
+  assert.deepEqual(pactSlotsFor(10), { count: 2, level: 5 });
+  assert.deepEqual(pactSlotsFor(11), { count: 3, level: 5 });
+  assert.deepEqual(pactSlotsFor(17), { count: 4, level: 5 });
+  assert.deepEqual(pactSlotsFor(20), { count: 4, level: 5 });
+  assert.equal(pactSlotsFor(0), null);
+});
+
+test('characterSlots reads a lone caster class at its own class level', () => {
+  // A level-5 paladin uses the half-caster table, not the full one.
+  assert.deepEqual(characterSlots(classed([{ classId: 'paladin', level: 5 }])), [4, 2]);
+  // A wizard 3 / fighter 2 reads the wizard table at class level 3, not
+  // character level 5 — the fighter levels grant no slots.
+  const mixed = classed([
+    { classId: 'wizard', level: 3 },
+    { classId: 'fighter', level: 2 },
+  ]);
+  assert.deepEqual(characterSlots(mixed), [4, 2]);
+});
+
+test('characterSlots combines two slot classes on the multiclass table', () => {
+  // Cleric 3 + paladin 2: 3 + floor(2/2) = combined caster level 4 -> [4, 3].
+  const gish = classed([
+    { classId: 'cleric', level: 3 },
+    { classId: 'paladin', level: 2 },
+  ]);
+  assert.deepEqual(characterSlots(gish), [4, 3]);
+});
+
+test('characterSlots excludes pact casters; a classless character keeps the legacy table', () => {
+  assert.deepEqual(characterSlots(classed([{ classId: 'warlock', level: 5 }])), []);
+  // Warlock levels add nothing to a multiclass slot pool either.
+  const duo = classed([
+    { classId: 'wizard', level: 3 },
+    { classId: 'warlock', level: 2 },
+  ]);
+  assert.deepEqual(characterSlots(duo), slotsForCaster('full', 3));
+  const legacy = { ...createCharacter('c1', 'Old'), classes: undefined, level: 3 };
+  assert.deepEqual(characterSlots(legacy), slotsForLevel(3));
+});
+
+test('characterPactSlots reads the summed pact levels; null without a pact class', () => {
+  assert.deepEqual(characterPactSlots(classed([{ classId: 'warlock', level: 3 }])), {
+    count: 2,
+    level: 2,
+  });
+  assert.equal(characterPactSlots(classed([{ classId: 'wizard', level: 3 }])), null);
+});
+
+test('withSpellSlots gives a warlock a pact pool and no leveled slots', () => {
+  const lock = withSpellSlots(classed([{ classId: 'warlock', level: 3 }]));
+  assert.deepEqual(getSlotPools(lock), []);
+  const pact = getPactPool(lock);
+  assert.ok(pact);
+  assert.equal(pact.id, 'pact-2');
+  assert.equal(pact.max, 2);
+  assert.equal(isPactPool(pact), true);
+  assert.equal(isSlotPool(pact), false);
+  assert.equal(slotLevelOf(pact), 2);
+  assert.deepEqual(
+    lock.resources.map((r) => r.id),
+    ['hp', 'pact-2'],
+  );
+});
+
+test('withSpellSlots gives a wizard/warlock both leveled and pact pools', () => {
+  const duo = withSpellSlots(
+    classed([
+      { classId: 'wizard', level: 3 },
+      { classId: 'warlock', level: 2 },
+    ]),
+  );
+  assert.deepEqual(
+    getSlotPools(duo).map((p) => p.max),
+    [4, 2],
+  );
+  assert.equal(getPactPool(duo)?.id, 'pact-1');
+  assert.equal(getPactPool(duo)?.max, 2);
+});
+
+test('syncSlotsToLevel follows the pact pool up a slot level, keeping spent slots spent', () => {
+  let lock = withSpellSlots(classed([{ classId: 'warlock', level: 4 }]));
+  lock = spendResource(lock, 'pact-2', 1); // 1/2 left
+  lock = { ...lock, classes: [{ classId: 'warlock', level: 5 }], level: 5 };
+  lock = syncSlotsToLevel(lock);
+  const pact = getPactPool(lock);
+  assert.equal(pact?.id, 'pact-3', 'pact slot level rose with the class');
+  assert.equal(pact?.max, 2);
+  assert.equal(pact?.current, 1, 'the spent slot stays spent across the id change');
+});
+
+test('syncSlotsToLevel grows the pact count and syncs class-aware leveled slots', () => {
+  let lock = withSpellSlots(classed([{ classId: 'warlock', level: 1 }]));
+  lock = spendResource(lock, 'pact-1', 1); // 0/1 left
+  lock = { ...lock, classes: [{ classId: 'warlock', level: 2 }], level: 2 };
+  lock = syncSlotsToLevel(lock);
+  assert.equal(getPactPool(lock)?.max, 2);
+  assert.equal(getPactPool(lock)?.current, 1, 'gained capacity arrives unspent');
+
+  // A paladin's leveled slots re-derive from the half table, not the full one.
+  let pal = withSpellSlots(classed([{ classId: 'paladin', level: 2 }]));
+  pal = { ...pal, classes: [{ classId: 'paladin', level: 5 }], level: 5 };
+  pal = syncSlotsToLevel(pal);
+  assert.deepEqual(
+    getSlotPools(pal).map((p) => p.max),
+    [4, 2],
+  );
+});
+
+test('highestSlotLevel and castableSlotLevels cover leveled and pact pools', () => {
+  const duo = withSpellSlots(
+    classed([
+      { classId: 'wizard', level: 3 },
+      { classId: 'warlock', level: 5 },
+    ]),
+  );
+  // Wizard 3 leveled slots reach level 2; warlock 5 pact slots sit at level 3.
+  assert.equal(highestSlotLevel(duo), 3);
+  assert.deepEqual(castableSlotLevels(duo, 1), [1, 2, 3]);
+  assert.deepEqual(castableSlotLevels(duo, 3), [3]);
+
+  // Draining a pool drops its level from the castable list.
+  const drained = spendResource(duo, 'pact-3', 2);
+  assert.deepEqual(castableSlotLevels(drained, 3), []);
+  assert.equal(highestSlotLevel(drained), 3, 'capacity, not charge, sets the ceiling');
+
+  const martial = classed([{ classId: 'fighter', level: 5 }]);
+  assert.equal(highestSlotLevel(martial), 0);
+  assert.deepEqual(castableSlotLevels(martial, 1), []);
+});
+
+test('a short rest refills pact slots but not leveled ones; a long rest refills both', () => {
+  let duo = withSpellSlots(
+    classed([
+      { classId: 'wizard', level: 3 },
+      { classId: 'warlock', level: 2 },
+    ]),
+  );
+  duo = spendResource(duo, 'slots-1', 2);
+  duo = spendResource(duo, 'pact-1', 2);
+
+  const rested = shortRest(duo);
+  assert.equal(getSlotPools(rested)[0].current, 2, 'leveled slots stay spent');
+  assert.equal(getPactPool(rested)?.current, 2, 'pact slots refill on a short rest');
+
+  const slept = longRest(duo);
+  assert.equal(getSlotPools(slept)[0].current, 4);
+  assert.equal(getPactPool(slept)?.current, 2);
 });
 
 test('a short rest heals HP but leaves spent slots spent; a long rest refills them', () => {
