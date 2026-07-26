@@ -5,7 +5,7 @@
  * it to <body>, and removes it on close, resolving a Promise with the result.
  */
 
-/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file' | 'multiselect', value?: string | number, min?: number, options?: { value: string, label: string }[], full?: boolean }} ModalField */
+/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file' | 'multiselect' | 'tags', value?: string | number, min?: number, options?: { value: string, label: string }[], full?: boolean, max?: number, emptyText?: string, fixedHeight?: boolean }} ModalField */
 
 /**
  * Show a form modal. Resolves to a record of field name -> string value on
@@ -20,7 +20,7 @@
  * @param {{
  *   submitLabel?: string,
  *   wide?: boolean,
- *   onChange?: (name: string, form: { get: (name: string) => string, set: (name: string, value: string | number) => void, setOptions: (name: string, options: { value: string, label: string }[]) => void }) => void,
+ *   onChange?: (name: string, form: { get: (name: string) => string, set: (name: string, value: string | number) => void, setOptions: (name: string, options: { value: string, label: string }[], max?: number) => void, setDisabled: (name: string, disabled: boolean) => void, setLabel: (name: string, text: string) => void }) => void,
  * }} [options]
  * @returns {Promise<Record<string, string> | null>}
  */
@@ -49,12 +49,18 @@ export function promptModal(title, fields, options = {}) {
     const getters = {};
     /** Option rebuilders per multiselect field, so onChange can refilter a
      * checkbox group in place (preserving what's checked). */
-    /** @type {Record<string, (options: { value: string, label: string }[]) => void>} */
+    /** @type {Record<string, (options: { value: string, label: string }[], max?: number) => void>} */
     const rebuilders = {};
+    /** Label text nodes per field, so onChange can restate a caption (e.g.
+     * "Class skills (choose 2)"). */
+    /** @type {Record<string, Text>} */
+    const labelTexts = {};
     for (const field of fields) {
       const label = document.createElement('label');
       label.className = field.full ? 'modal__field modal__field--full' : 'modal__field';
-      label.textContent = field.label;
+      const labelText = document.createTextNode(field.label);
+      label.appendChild(labelText);
+      labelTexts[field.name] = labelText;
 
       /** @type {HTMLInputElement | HTMLSelectElement} */
       let input;
@@ -88,11 +94,21 @@ export function promptModal(title, fields, options = {}) {
       } else if (field.type === 'multiselect') {
         // A scrollable checkbox group: the value is the comma-joined set of
         // checked option values (slug ids, so the separator is unambiguous).
-        // Preselect from a comma-joined `value`.
+        // Preselect from a comma-joined `value`. `max` caps the picks by
+        // disabling the unchecked boxes once reached; `fixedHeight` pins the
+        // box so a refilter doesn't reflow the dialog, with `emptyText`
+        // filling it while there are no options.
         const box = document.createElement('div');
-        box.className = 'field modal__multiselect';
+        box.className = field.fixedHeight
+          ? 'field modal__multiselect modal__multiselect--fixed'
+          : 'field modal__multiselect';
         /** @type {HTMLInputElement[]} */
         let checks = [];
+        let max = field.max ?? Infinity;
+        const enforceMax = () => {
+          const full = checks.filter((c) => c.checked).length >= max;
+          for (const check of checks) check.disabled = full && !check.checked;
+        };
         // Rebuild the checkbox rows for a fresh option set, checking those in
         // `selected`. Reused by the initial render and by onChange refilters.
         const render = (
@@ -101,6 +117,12 @@ export function promptModal(title, fields, options = {}) {
         ) => {
           box.textContent = '';
           checks = [];
+          if (!opts.length && field.emptyText) {
+            const empty = document.createElement('p');
+            empty.className = 'empty-state';
+            empty.textContent = field.emptyText;
+            box.appendChild(empty);
+          }
           for (const option of opts) {
             const row = document.createElement('label');
             row.className = 'modal__multiselect-option';
@@ -114,11 +136,13 @@ export function promptModal(title, fields, options = {}) {
             box.appendChild(row);
             checks.push(check);
           }
+          enforceMax();
         };
         render(
           field.options ?? [],
           new Set(field.value !== undefined ? String(field.value).split(',').filter(Boolean) : []),
         );
+        box.addEventListener('input', enforceMax);
         input = /** @type {HTMLInputElement} */ (/** @type {unknown} */ (box));
         getters[field.name] = () =>
           checks
@@ -127,8 +151,67 @@ export function promptModal(title, fields, options = {}) {
             .join(',');
         // Refilter keeps whatever is currently checked, even if it drops out of
         // the new option set (so a valid pick isn't silently lost mid-edit).
-        rebuilders[field.name] = (opts) =>
+        rebuilders[field.name] = (opts, newMax) => {
+          if (newMax !== undefined) max = newMax;
           render(opts, new Set(checks.filter((c) => c.checked).map((c) => c.value)));
+        };
+      } else if (field.type === 'tags') {
+        // A pill list with an inline text entry: Enter finalizes the typed
+        // text as a pill, the x removes one, Backspace in an empty entry
+        // removes the last. The value is the comma-joined pills plus any
+        // un-finalized text, so nothing typed is lost on submit.
+        const box = document.createElement('div');
+        box.className = 'field modal__tags';
+        /** @type {string[]} */
+        let tags =
+          field.value !== undefined
+            ? String(field.value)
+                .split(',')
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : [];
+        const entry = document.createElement('input');
+        entry.type = 'text';
+        entry.className = 'modal__tags-input';
+        const render = () => {
+          box.textContent = '';
+          for (const tag of tags) {
+            const pill = document.createElement('span');
+            pill.className = 'modal__tag';
+            pill.textContent = tag;
+            const remove = document.createElement('button');
+            remove.type = 'button';
+            remove.className = 'modal__tag-remove';
+            remove.textContent = '×';
+            remove.setAttribute('aria-label', `Remove ${tag}`);
+            remove.addEventListener('click', () => {
+              tags = tags.filter((t) => t !== tag);
+              render();
+              entry.focus();
+            });
+            pill.appendChild(remove);
+            box.appendChild(pill);
+          }
+          box.appendChild(entry);
+        };
+        entry.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault(); // finalize the pill, don't submit the dialog
+            const text = entry.value.trim();
+            if (text && !tags.includes(text)) tags.push(text);
+            entry.value = '';
+            render();
+            entry.focus();
+          } else if (event.key === 'Backspace' && !entry.value && tags.length) {
+            tags.pop();
+            render();
+            entry.focus();
+          }
+        });
+        box.addEventListener('click', () => entry.focus());
+        render();
+        input = /** @type {HTMLInputElement} */ (/** @type {unknown} */ (box));
+        getters[field.name] = () => [...tags, entry.value.trim()].filter(Boolean).join(',');
       } else {
         input = document.createElement('input');
         input.type = field.type ?? 'text';
@@ -152,7 +235,14 @@ export function promptModal(title, fields, options = {}) {
         setOptions: (
           /** @type {string} */ name,
           /** @type {{ value: string, label: string }[]} */ opts,
-        ) => rebuilders[name]?.(opts),
+          /** @type {number} */ max = Infinity,
+        ) => rebuilders[name]?.(opts, max),
+        setDisabled: (/** @type {string} */ name, /** @type {boolean} */ disabled) => {
+          inputs[name].disabled = disabled;
+        },
+        setLabel: (/** @type {string} */ name, /** @type {string} */ text) => {
+          labelTexts[name].nodeValue = text;
+        },
       };
       for (const [name, input] of Object.entries(inputs)) {
         input.addEventListener('input', () => onChange(name, handle));

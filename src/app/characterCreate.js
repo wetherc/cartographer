@@ -7,7 +7,7 @@ import { assembleProficiencies, withProficiencies } from '../entities/Proficienc
 import { withHitDice } from '../entities/HitDice.js';
 import { withSpellSlots } from '../entities/SpellSlots.js';
 import { abilityModifier, ABILITY_SCORES } from '../entities/Modifiers.js';
-import { skillName } from '../data/skills.js';
+import { skillName, SKILL_IDS } from '../data/skills.js';
 import { slugId } from '../entities/Roster.js';
 import { statFields, readStats } from './statFields.js';
 
@@ -28,10 +28,21 @@ function catalogOptions(defs, noneLabel) {
   return [{ value: '', label: noneLabel }, ...defs.map((d) => ({ value: d.id, label: d.name }))];
 }
 
+/**
+ * The class's skill-choice list; an empty `from` means "choose from any
+ * skill" (e.g. the bard).
+ * @param {string | undefined} classId
+ * @returns {string[]}
+ */
+function skillChoiceList(classId) {
+  const choice = getClass(classId)?.skillChoice;
+  if (!choice) return [];
+  return choice.from.length ? choice.from : SKILL_IDS;
+}
+
 /** @param {string | undefined} classId @returns {{ value: string, label: string }[]} */
 function skillOptions(classId) {
-  const choice = getClass(classId)?.skillChoice;
-  return (choice?.from ?? []).map((id) => ({ value: id, label: skillName(id) }));
+  return skillChoiceList(classId).map((id) => ({ value: id, label: skillName(id) }));
 }
 
 /**
@@ -85,21 +96,37 @@ export function characterFields() {
       value: '',
       options: [],
       full: true,
+      fixedHeight: true,
+      emptyText: 'Pick a class to see its skill choices.',
     },
-    { name: 'languages', label: 'Bonus languages (comma-separated)', value: '', full: true },
+    {
+      name: 'languages',
+      label: 'Bonus languages (hit Enter to add)',
+      type: 'tags',
+      value: '',
+      full: true,
+    },
   ];
 }
 
 /**
- * Keep the dependent fields in step as the form is edited: the class pick
- * refilters the skill multiselect to that class's choices, and a class, CON,
- * or race change re-stamps the max HP default.
+ * Keep the dependent fields in step as the form is edited: a race pick locks
+ * the custom-race entry, the class pick refilters the skill multiselect to
+ * that class's choices (capped and captioned at its pick count), and a class,
+ * CON, or race change re-stamps the max HP default.
  * @param {string} name the changed field
  * @param {{ get: (name: string) => string, set: (name: string, value: string | number) => void,
- *   setOptions: (name: string, options: { value: string, label: string }[]) => void }} form
+ *   setOptions: (name: string, options: { value: string, label: string }[], max?: number) => void,
+ *   setDisabled: (name: string, disabled: boolean) => void,
+ *   setLabel: (name: string, text: string) => void }} form
  */
 export function characterFormChange(name, form) {
-  if (name === 'class') form.setOptions('skills', skillOptions(form.get('class')));
+  if (name === 'race') form.setDisabled('customRace', form.get('race') !== '');
+  if (name === 'class') {
+    const choice = getClass(form.get('class'))?.skillChoice;
+    form.setOptions('skills', skillOptions(form.get('class')), choice?.choose ?? 0);
+    form.setLabel('skills', choice ? `Class skills (choose ${choice.choose})` : 'Class skills');
+  }
   if (name === 'class' || name === 'stat-CON' || name === 'race') {
     form.set(
       'maxHP',
@@ -145,9 +172,10 @@ export function buildCharacter(values, existingIds) {
   if (classDef) character = withClasses(character, [{ classId: classDef.id, level: 1 }]);
 
   const choice = classDef?.skillChoice;
+  const from = skillChoiceList(classDef?.id);
   const skills = values.skills
     .split(',')
-    .filter((id) => choice?.from.includes(id))
+    .filter((id) => from.includes(id))
     .slice(0, choice?.choose ?? 0);
   const languages = values.languages
     .split(',')

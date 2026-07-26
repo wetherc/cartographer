@@ -75,6 +75,53 @@
   margin-top: var(--space-2);
 }
 
+/* Tag fields (e.g. bonus languages): finalized pills plus an inline entry —
+   Enter turns the typed text into a pill, the x removes one. The box carries
+   the .field border; the entry inside is borderless. */
+.modal__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  cursor: text;
+}
+
+.modal__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.modal__tag-remove {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.modal__tag-remove:hover {
+  color: var(--danger);
+}
+
+.modal__tags-input {
+  flex: 1;
+  min-width: 6rem;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-label);
+  outline: none;
+  padding: 0;
+}
+
 /* Two-column form dialogs (e.g. the encounter editor): fields flow two per
    row, with the title, any field marked full, and the actions spanning both
    columns. */

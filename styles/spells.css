@@ -78,6 +78,20 @@
   margin: 0;
 }
 
+/* Options locked out by a pick cap read as unavailable, not just unclickable. */
+.modal__multiselect-option:has(input:disabled) {
+  color: var(--text-muted);
+  cursor: default;
+}
+
+/* A pinned-height variant for pickers whose options refilter as another field
+   changes (the creation form's class skills), so the dialog doesn't reflow
+   with every class pick. */
+.modal__multiselect--fixed {
+  height: 12rem;
+  max-height: none;
+}
+
 /* ==========================================================================
    Character-sheet spells: a read-only view of the castable set (cantrips and
    prepared spells), sitting between the resource pools and the conditions bar.

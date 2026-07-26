@@ -121,12 +121,17 @@ test('defaultMaxHP folds in the race CON increase; classless reads 10', () => {
   assert.equal(defaultMaxHP('sorcerer', 1, ''), 1); // d6 - 5, clamped at the floor
 });
 
-test('characterFormChange refilters skills and re-stamps max HP on class change', () => {
-  /** @type {Record<string, string>} */
-  const state = { class: 'fighter', 'stat-CON': '14', race: '' };
-  /** @type {{ value: string, label: string }[]} */
-  let options = [];
+/** A fake modal form handle over a plain record, capturing the side calls. */
+function fakeForm(/** @type {Record<string, string>} */ state) {
   const form = {
+    /** @type {{ value: string, label: string }[]} */
+    options: [],
+    /** @type {number | undefined} */
+    max: undefined,
+    /** @type {Record<string, boolean>} */
+    disabled: {},
+    /** @type {Record<string, string>} */
+    labels: {},
     get: (/** @type {string} */ name) => state[name] ?? '',
     set: (/** @type {string} */ name, /** @type {string | number} */ value) => {
       state[name] = String(value);
@@ -134,17 +139,63 @@ test('characterFormChange refilters skills and re-stamps max HP on class change'
     setOptions: (
       /** @type {string} */ _name,
       /** @type {{ value: string, label: string }[]} */ opts,
+      /** @type {number} */ max,
     ) => {
-      options = opts;
+      form.options = opts;
+      form.max = max;
+    },
+    setDisabled: (/** @type {string} */ name, /** @type {boolean} */ value) => {
+      form.disabled[name] = value;
+    },
+    setLabel: (/** @type {string} */ name, /** @type {string} */ text) => {
+      form.labels[name] = text;
     },
   };
+  return form;
+}
+
+test('characterFormChange refilters skills and re-stamps max HP on class change', () => {
+  /** @type {Record<string, string>} */
+  const state = { class: 'fighter', 'stat-CON': '14', race: '' };
+  const form = fakeForm(state);
   characterFormChange('class', form);
-  assert.ok(options.some((o) => o.value === 'athletics' && o.label === 'Athletics'));
+  assert.ok(form.options.some((o) => o.value === 'athletics' && o.label === 'Athletics'));
+  assert.equal(form.max, 2); // fighter chooses 2
+  assert.equal(form.labels.skills, 'Class skills (choose 2)');
   assert.equal(state.maxHP, '12');
   characterFormChange('stat-CON', { ...form, get: (n) => (n === 'stat-CON' ? '18' : state[n]) });
   assert.equal(state.maxHP, '14');
   characterFormChange('name', form); // unrelated field: nothing recomputed
-  assert.equal(options.length > 0, true);
+  assert.equal(form.options.length > 0, true);
+});
+
+test('clearing the class empties the skill options and drops the caption count', () => {
+  const form = fakeForm({ class: '', 'stat-CON': '14', race: '' });
+  characterFormChange('class', form);
+  assert.deepEqual(form.options, []);
+  assert.equal(form.max, 0);
+  assert.equal(form.labels.skills, 'Class skills');
+});
+
+test('a race pick locks the custom-race entry; clearing it unlocks', () => {
+  /** @type {Record<string, string>} */
+  const state = { class: '', 'stat-CON': '14', race: 'dwarf' };
+  const form = fakeForm(state);
+  characterFormChange('race', form);
+  assert.equal(form.disabled.customRace, true);
+  state.race = '';
+  characterFormChange('race', form);
+  assert.equal(form.disabled.customRace, false);
+});
+
+test('an empty skill-choice list means any skill (bard)', () => {
+  const form = fakeForm({ class: 'bard', 'stat-CON': '14', race: '' });
+  characterFormChange('class', form);
+  assert.equal(form.options.length, 18);
+  assert.equal(form.max, 3);
+  const c = buildCharacter(values({ class: 'bard', skills: 'arcana,athletics,medicine' }), []);
+  const p = getProficiencies(c);
+  assert.ok(p.skills.includes('arcana') && p.skills.includes('medicine'));
 });
 
 test('characterFields covers the form surface once each', () => {
