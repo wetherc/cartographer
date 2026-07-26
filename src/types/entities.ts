@@ -203,6 +203,13 @@ export interface Proficiencies {
   languages: string[];
 }
 
+/** One claimed ability-score-improvement level: either a +2-total ability
+ * increase or a feat taken in its place. `level` is the class ASI level the
+ * choice claims, so each earned level is spent exactly once. */
+export type AsiChoice =
+  | { level: number; type: 'asi'; increases: Record<string, number> }
+  | { level: number; type: 'feat'; feat: string };
+
 export interface Character {
   id: string;
   name: string;
@@ -228,6 +235,9 @@ export interface Character {
   /** Skill ids rolled with double proficiency; always a subset of
    * `proficiencies.skills`. Absent on older saves. */
   expertise?: string[];
+  /** Ability-score-improvement choices already made, one per claimed class ASI
+   * level (see LevelUp.js). Absent on older saves, which load as none made. */
+  asiChoices?: AsiChoice[];
   level: number;
   xp: number;
   stats: Record<string, number>;

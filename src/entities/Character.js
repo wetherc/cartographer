@@ -261,6 +261,7 @@ export function withDefaults(character) {
     spellbook: character.spellbook ?? emptySpellbook(),
     proficiencies: character.proficiencies ?? emptyProficiencies(),
     expertise: character.expertise ?? [],
+    asiChoices: character.asiChoices ?? [],
   };
 }
 
@@ -313,7 +314,9 @@ function defaultGrowth(max) {
  * else a tenth of the pool's max for a classless character — re-derives a
  * caster's spell-slot pools from the new level (spent slots stay spent), and
  * grows the hit-dice pool by one die per level. Characters with no HP pool
- * level up without any pool change.
+ * level up without any pool change. Ability-score-improvement slots and class
+ * features need no granting here: both derive from class + level on read (see
+ * LevelUp.js), so crossing an ASI level leaves a pending choice automatically.
  * @param {Character} character
  * @param {number} amount
  * @param {{ hpGrowth?: number }} [opts]
