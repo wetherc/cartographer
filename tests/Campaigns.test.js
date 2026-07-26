@@ -7,7 +7,8 @@ import {
 } from '../src/campaign/Campaigns.js';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { getTile } from '../src/map/TileGrid.js';
-import { createCharacter, getHP } from '../src/entities/Character.js';
+import { createCharacter, getHP, getClasses } from '../src/entities/Character.js';
+import { isHitDicePool } from '../src/entities/HitDice.js';
 
 /** @param {number} seed @returns {() => number} deterministic rng */
 function mulberry32(seed) {
@@ -138,6 +139,16 @@ test('example campaign ships a full arc: quests, NPCs, bosses, field enemies', (
     const hp = getHP(character);
     assert.ok(hp && hp.current === hp.max && hp.max > 0, `${character.name} needs an HP pool`);
     assert.ok(character.inventory.length > 0, `${character.name} needs starting kit`);
+    // The example party exercises the phase-2 character foundation: each member
+    // is classed, has an origin, carries assembled proficiencies, and owns a
+    // spendable hit-dice pool sized to its class levels.
+    assert.ok(getClasses(character).length >= 1, `${character.name} needs a class`);
+    assert.ok(character.background, `${character.name} needs a background`);
+    assert.ok(
+      character.proficiencies && character.proficiencies.skills.length > 0,
+      `${character.name} needs skill proficiencies`,
+    );
+    assert.ok(character.resources.some(isHitDicePool), `${character.name} needs a hit-dice pool`);
   }
 });
 

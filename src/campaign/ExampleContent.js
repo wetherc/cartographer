@@ -1,4 +1,6 @@
 import { createCharacter, withHP } from '../entities/Character.js';
+import { assembleProficiencies, withProficiencies } from '../entities/Proficiencies.js';
+import { withHitDice } from '../entities/HitDice.js';
 import { withSpellSlots } from '../entities/SpellSlots.js';
 import { createEncounter } from '../entities/Encounter.js';
 import { createClock } from '../time/GameClock.js';
@@ -51,7 +53,22 @@ const template = (id, name, hp, level, tier, extras) => ({
  */
 function exampleParty() {
   let aldric = createCharacter('aldric', 'Ser Aldric', { STR: 16, DEX: 12, CON: 14 }, 'Human');
-  aldric = withHP({ ...aldric, level: 3 }, 28);
+  aldric = withHitDice(
+    withHP(
+      {
+        ...aldric,
+        level: 3,
+        raceId: 'human',
+        background: 'soldier',
+        classes: [{ classId: 'fighter', level: 3, subclass: 'Champion' }],
+      },
+      28,
+    ),
+  );
+  aldric = withProficiencies(
+    aldric,
+    assembleProficiencies(aldric, { skills: ['athletics', 'intimidation'] }),
+  );
   aldric.inventory = [
     {
       id: 'longsword',
@@ -117,8 +134,23 @@ function exampleParty() {
   };
 
   let mirelle = createCharacter('mirelle', 'Mirelle', { WIS: 16, CHA: 13, CON: 12 }, 'Half-elf');
-  mirelle = withSpellSlots(
-    withHP({ ...mirelle, level: 3, classes: [{ classId: 'cleric', level: 3 }] }, 21),
+  mirelle = withHitDice(
+    withSpellSlots(
+      withHP(
+        {
+          ...mirelle,
+          level: 3,
+          raceId: 'half-elf',
+          background: 'acolyte',
+          classes: [{ classId: 'cleric', level: 3, subclass: 'Life Domain' }],
+        },
+        21,
+      ),
+    ),
+  );
+  mirelle = withProficiencies(
+    mirelle,
+    assembleProficiencies(mirelle, { skills: ['insight', 'religion'] }),
   );
   // A ready-made Cleric spellbook so the sheet's spell section and combat Cast
   // buttons have something to show in the example campaign.
