@@ -5,7 +5,7 @@
  * it to <body>, and removes it on close, resolving a Promise with the result.
  */
 
-/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file' | 'multiselect' | 'tags' | 'button' | 'pillgrid', value?: string | number, min?: number, options?: { value: string, label: string }[], rows?: { value: string, label: string }[], full?: boolean, max?: number, emptyText?: string, fixedHeight?: boolean, disabled?: boolean, hidden?: boolean }} ModalField */
+/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file' | 'multiselect' | 'tags' | 'button' | 'pillgrid', value?: string | number, min?: number, options?: { value: string, label: string, disabled?: boolean }[], rows?: { value: string, label: string }[], full?: boolean, max?: number, emptyText?: string, fixedHeight?: boolean, disabled?: boolean, hidden?: boolean }} ModalField */
 
 /**
  * Show a form modal. Resolves to a record of field name -> string value on
@@ -79,6 +79,7 @@ export function promptModal(title, fields, options = {}) {
           const el = document.createElement('option');
           el.value = option.value;
           el.textContent = option.label;
+          if (option.disabled) el.disabled = true;
           input.appendChild(el);
         }
         if (field.value !== undefined) input.value = String(field.value);

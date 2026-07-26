@@ -2,7 +2,7 @@ import { promptModal } from './Modal.js';
 import { textButton } from './buttons.js';
 import { getClass, CLASS_LIST } from '../entities/Classes.js';
 import { getClasses, pendingLevels, classLevelOf } from '../entities/Multiclass.js';
-import { canMulticlass, assignLevel } from '../entities/LevelAssign.js';
+import { canMulticlass, meetsPrereq, assignLevel } from '../entities/LevelAssign.js';
 import {
   pendingASISlots,
   getASIChoices,
@@ -34,17 +34,38 @@ function className(classId) {
 }
 
 /**
+ * One class's multiclass prerequisite as text: each alternative's minimums
+ * joined with "and", alternatives with "or" (e.g. "STR 13 or DEX 13").
+ * @param {import('../types/class.js').ClassDef} def
+ * @returns {string}
+ */
+function prereqText(def) {
+  return def.multiclassPrereq
+    .map((minimums) =>
+      Object.entries(minimums)
+        .map(([key, min]) => `${key} ${min}`)
+        .join(' and '),
+    )
+    .join(' or ');
+}
+
+/**
  * The class picks the assign dialog offers: with a pending level, every held
- * class one level up plus every multiclass-eligible new class at level 1;
- * without one, only the new classes a single-class character of level 2+ can
- * move their newest level into (LevelAssign's donor path).
+ * class one level up plus every new class at level 1; without one, only the
+ * new classes a single-class character of level 2+ can move their newest
+ * level into (LevelAssign's donor path). A new class whose ability-score
+ * prerequisites aren't met still lists, disabled, naming the requirement —
+ * the new class's own, or a held class's when that is what blocks leaving.
  * @param {Character} character
- * @returns {{ value: string, label: string }[]}
+ * @returns {{ value: string, label: string, disabled?: boolean }[]}
  */
 function assignOptions(character) {
   const classes = getClasses(character);
   const pending = pendingLevels(character);
+  /** @type {{ value: string, label: string, disabled?: boolean }[]} */
   const options = [];
+  /** @type {{ value: string, label: string, disabled?: boolean }[]} */
+  const ineligible = [];
   if (pending > 0) {
     for (const ref of classes) {
       if (!getClass(ref.classId)) continue;
@@ -56,12 +77,26 @@ function assignOptions(character) {
   }
   if (pending > 0 || (classes.length === 1 && classes[0].level >= 2)) {
     for (const def of CLASS_LIST) {
+      if (classLevelOf(character, def.id) > 0) continue;
       if (canMulticlass(character, def.id)) {
         options.push({ value: def.id, label: `${def.name}: new class at level 1` });
+        continue;
       }
+      const blocker = !meetsPrereq(character, def.id)
+        ? def
+        : classes
+            .map((ref) => getClass(ref.classId))
+            .find((held) => held && !meetsPrereq(character, held.id));
+      if (!blocker) continue;
+      const via = blocker === def ? '' : ` (${blocker.name})`;
+      ineligible.push({
+        value: def.id,
+        label: `${def.name}: requires ${prereqText(blocker)}${via}`,
+        disabled: true,
+      });
     }
   }
-  return options;
+  return [...options, ...ineligible];
 }
 
 /**
@@ -152,13 +187,14 @@ export function buildProgressSection(character, opts) {
 
   async function runAssign() {
     const options = assignOptions(character);
-    if (options.length === 0) {
+    const first = options.find((option) => !option.disabled);
+    if (!first) {
       opts.notify('No class assignment is available.');
       return;
     }
     const values = await promptModal(
       'Assign a level',
-      [{ name: 'class', label: 'Class', type: 'select', options }],
+      [{ name: 'class', label: 'Class', type: 'select', options, value: first.value }],
       { submitLabel: 'Assign' },
     );
     if (!values) return;
@@ -176,7 +212,8 @@ export function buildProgressSection(character, opts) {
   }
 
   const pending = pendingLevels(character);
-  if (pending > 0 || (opts.editBase && assignOptions(character).length > 0)) {
+  const assignable = assignOptions(character).some((option) => !option.disabled);
+  if (pending > 0 || (opts.editBase && assignable)) {
     const row = addRow();
     if (pending > 0) {
       addText(row, `${pending} level${pending === 1 ? '' : 's'} to assign`);
