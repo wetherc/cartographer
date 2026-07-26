@@ -84,6 +84,43 @@ function openStatBreakdown(key, breakdown) {
 }
 
 /**
+ * Draw the face-on d20 wireframe behind an ability score: the hexagonal
+ * silhouette, the central point-down face the score sits in, and the facet
+ * edges out to the remaining corners. Strokes inherit currentColor so the
+ * buffed/debuffed tint colors the whole die.
+ * @returns {SVGSVGElement}
+ */
+function d20Face() {
+  const NS = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(NS, 'svg');
+  svg.setAttribute('class', 'stat-badge__d20');
+  svg.setAttribute('viewBox', '0 0 100 100');
+  svg.setAttribute('aria-hidden', 'true');
+  // Point-up hexagon corners; the central face joins the two upper-side
+  // corners to the bottom point, so its centroid is the badge's midpoint.
+  const A = '50,3';
+  const B = '90.7,26.5';
+  const C = '90.7,73.5';
+  const D = '50,97';
+  const E = '9.3,73.5';
+  const F = '9.3,26.5';
+  /** @param {string} tag @param {Record<string, string>} attrs */
+  const shape = (tag, attrs) => {
+    const el = document.createElementNS(NS, tag);
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    svg.appendChild(el);
+    return el;
+  };
+  shape('polygon', { class: 'stat-badge__d20-hull', points: `${A} ${B} ${C} ${D} ${E} ${F}` });
+  shape('path', {
+    class: 'stat-badge__d20-facets',
+    d: `M${A} L${F} M${A} L${B} M${C} L${B} M${C} L${D} M${E} L${F} M${E} L${D}`,
+  });
+  shape('polygon', { class: 'stat-badge__d20-face', points: `${F} ${B} ${D}` });
+  return svg;
+}
+
+/**
  * Build one ability-score badge: a d20-style die showing the effective score
  * (base + equipped buffs) over its derived modifier, labeled with the ability
  * key. The whole badge is a button opening {@link openStatBreakdown}. A buffed
@@ -112,6 +149,7 @@ function statBadge(character, key) {
 
   const die = document.createElement('span');
   die.className = 'stat-badge__die';
+  die.appendChild(d20Face());
   const score = document.createElement('span');
   score.className = 'stat-badge__score';
   score.textContent = String(total);

@@ -200,31 +200,50 @@
   letter-spacing: 0.06em;
 }
 
-/* The d20-evoking octagon holding the effective score. */
+/* The face-on d20 holding the effective score: an inline SVG wireframe
+   (hexagon hull, central face, facet edges) drawn in currentColor behind the
+   number, so the buffed/debuffed tint recolors the whole die. */
 .stat-badge__die {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 3.25rem;
-  height: 3.25rem;
-  clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
-  background: var(--surface-raised);
-  border: 2px solid var(--border);
+  width: 3.5rem;
+  height: 3.5rem;
   color: var(--text);
 }
+.stat-badge__d20 {
+  position: absolute;
+  inset: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-linejoin: round;
+}
+.stat-badge__d20-hull {
+  fill: var(--surface-raised);
+  stroke-width: 4;
+}
+.stat-badge__d20-facets {
+  stroke-width: 1.5;
+  opacity: 0.35;
+}
+.stat-badge__d20-face {
+  stroke-width: 1.5;
+  opacity: 0.55;
+}
 .stat-badge--buffed .stat-badge__die {
-  border-color: var(--mana);
   color: var(--mana);
 }
 .stat-badge--debuffed .stat-badge__die {
-  border-color: var(--danger);
   color: var(--danger);
 }
 
 .stat-badge__score {
+  position: relative;
   font-family: var(--font-mono);
-  font-size: 1.35rem;
+  font-size: 1.2rem;
   font-weight: 700;
+  color: var(--text);
 }
 
 .stat-badge__mod {
