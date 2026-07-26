@@ -3,6 +3,7 @@ import { isSlotPool, syncSlotsToLevel, migrateManaToSlots } from './SpellSlots.j
 import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
+import { emptyProficiencies } from './Proficiencies.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -241,7 +242,8 @@ export function unprepareSpell(character, spellId) {
  * mana-era save's mana pool is migrated to spell slots for the character's
  * level (see SpellSlots.js), and a pre-equipment save gets empty slots — with
  * the pre-piecewise 'armor' slot carrying over into 'chest'. A pre-spellbook
- * save gains an empty spellbook.
+ * save gains an empty spellbook, and a pre-proficiency save gains empty
+ * proficiency and expertise lists.
  * @param {Character} character
  * @returns {Character}
  */
@@ -257,6 +259,8 @@ export function withDefaults(character) {
     baseAC: character.baseAC ?? 10,
     location: character.location ?? null,
     spellbook: character.spellbook ?? emptySpellbook(),
+    proficiencies: character.proficiencies ?? emptyProficiencies(),
+    expertise: character.expertise ?? [],
   });
 }
 
@@ -285,6 +289,8 @@ export function createCharacter(id, name, stats = {}, race = '') {
     baseAC: 10,
     location: null,
     spellbook: emptySpellbook(),
+    proficiencies: emptyProficiencies(),
+    expertise: [],
   };
 }
 

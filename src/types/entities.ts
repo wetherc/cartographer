@@ -189,6 +189,20 @@ export interface Spellbook {
   prepared: string[];
 }
 
+/** A character's proficiencies, one list per kind. Saves hold ability keys
+ * (STR..CHA), skills hold skill ids (see data/skills.js), weapons mix the
+ * category words ('simple'/'martial') with named weapons (lowercase), armor
+ * holds the armor categories, tools and languages are free strings. Assembled
+ * from class + race + background and hand-editable afterwards. */
+export interface Proficiencies {
+  saves: string[];
+  skills: string[];
+  weapons: string[];
+  armor: string[];
+  tools: string[];
+  languages: string[];
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -208,6 +222,12 @@ export interface Character {
   class?: string;
   /** The chosen subclass id, if any. */
   subclass?: string;
+  /** Proficiency lists (see Proficiencies.js); absent on older saves, which
+   * load as having none. */
+  proficiencies?: Proficiencies;
+  /** Skill ids rolled with double proficiency; always a subset of
+   * `proficiencies.skills`. Absent on older saves. */
+  expertise?: string[];
   level: number;
   xp: number;
   stats: Record<string, number>;
