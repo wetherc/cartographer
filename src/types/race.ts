@@ -33,3 +33,9 @@ export interface RaceDef {
    * interpreted (same posture as ClassDef.featuresByLevel). */
   traits: string[];
 }
+
+/** The mechanical fields of a race as applied to a character — everything but
+ * the identity. Stored on the character when a catalog race is assigned, so a
+ * definition that is later edited or deleted leaves the character playable as
+ * built. */
+export type RaceSnapshot = Omit<RaceDef, 'id' | 'name'>;

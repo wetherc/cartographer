@@ -1,3 +1,5 @@
+import type { RaceSnapshot } from './race.js';
+
 export interface EncounterLocation {
   nodeId: string;
   tileId: string;
@@ -190,7 +192,17 @@ export interface Spellbook {
 export interface Character {
   id: string;
   name: string;
+  /** The race's display name. A hand-typed race carries only this; a race
+   * picked from the catalog also carries `raceId` and `raceTraits`. */
   race: string;
+  /** Catalog race id (see Races.js); absent = hand-typed race. */
+  raceId?: string;
+  /** Snapshot of the race definition's mechanical fields as applied, so a
+   * custom definition deleted from the library degrades gracefully. Resolution
+   * prefers the live catalog (edits propagate); this is the fallback. */
+  raceTraits?: RaceSnapshot;
+  /** Background id (see Backgrounds.js); absent on older saves. */
+  background?: string;
   /** The character's class id (see Classes.js); absent on older saves and
    * classless characters, which cast nothing. */
   class?: string;
