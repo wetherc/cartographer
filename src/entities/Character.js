@@ -6,6 +6,7 @@ import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from '.
 import { ABILITY_SCORES } from './Modifiers.js';
 import { emptyProficiencies } from './Proficiencies.js';
 import { syncSoleClassLevel } from './Multiclass.js';
+import { migrateASIChoices } from './LevelUp.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -244,20 +245,21 @@ export function withDefaults(character) {
     subclass: legacySubclass,
     ...rest
   } = /** @type {Character & { class?: string, subclass?: string }} */ (character);
+  const classes =
+    character.classes ??
+    (legacyClass
+      ? [
+          {
+            classId: legacyClass,
+            level: Math.max(1, Math.floor(character.level) || 1),
+            subclass: legacySubclass,
+          },
+        ]
+      : []);
   return {
     ...rest,
     race: character.race ?? '',
-    classes:
-      character.classes ??
-      (legacyClass
-        ? [
-            {
-              classId: legacyClass,
-              level: Math.max(1, Math.floor(character.level) || 1),
-              subclass: legacySubclass,
-            },
-          ]
-        : []),
+    classes,
     stats: { ...defaultStats(), ...character.stats },
     resources: character.resources ?? [],
     conditions: character.conditions ?? [],
@@ -269,7 +271,7 @@ export function withDefaults(character) {
     spellbook: character.spellbook ?? emptySpellbook(),
     proficiencies: character.proficiencies ?? emptyProficiencies(),
     expertise: character.expertise ?? [],
-    asiChoices: character.asiChoices ?? [],
+    asiChoices: migrateASIChoices(character.asiChoices ?? [], classes[0]?.classId ?? ''),
   };
 }
 

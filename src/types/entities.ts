@@ -204,10 +204,17 @@ export interface Proficiencies {
   languages: string[];
 }
 
-/** One claimed ability-score-improvement level: either a +2-total ability
- * increase or a feat taken in its place. `level` is the class ASI level the
- * choice claims, so each earned level is spent exactly once. */
+/** One claimed ability-score-improvement slot: either a +2-total ability
+ * increase or a feat taken in its place. `classId` + `classLevel` name the
+ * class ASI slot the choice claims — each class follows its own schedule — so
+ * each earned slot is spent exactly once. */
 export type AsiChoice =
+  | { classId: string; classLevel: number; type: 'asi'; increases: Record<string, number> }
+  | { classId: string; classLevel: number; type: 'feat'; feat: string };
+
+/** The pre-multiclass choice shape, keyed by bare character level. Loading
+ * migrates it to the primary class (see LevelUp.migrateASIChoices). */
+export type LegacyAsiChoice =
   | { level: number; type: 'asi'; increases: Record<string, number> }
   | { level: number; type: 'feat'; feat: string };
 
