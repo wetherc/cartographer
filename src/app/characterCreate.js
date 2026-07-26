@@ -14,8 +14,6 @@ import {
   POINT_BUY_BUDGET,
   STANDARD_ARRAY,
   pointBuyRemaining,
-  isStandardArray,
-  repairStandardArray,
   rollScores,
 } from '../entities/StatGen.js';
 
@@ -107,15 +105,28 @@ export function characterFields() {
         { value: 'custom', label: 'Custom scores' },
       ],
     },
-    { name: 'reroll', label: 'Reroll scores', type: 'button', disabled: true },
     // The default method is point buy, so the stat inputs open range-limited
     // to its buyable 8-15; applyStatMethod widens the range on a method change.
     ...statFields(ABILITY_SCORES, Object.fromEntries(ABILITY_SCORES.map((key) => [key, 8]))).map(
       (field) => ({ ...field, min: 8, max: 15 }),
     ),
-    // Max HP is fully derived (class hit die + CON modifier, race included) and
-    // re-stamped by characterFormChange, so it displays read-only.
-    { name: 'maxHP', label: 'Max HP', type: 'number', value: 10, min: 1, disabled: true },
+    // Standard array replaces the number inputs with this assignment grid: one
+    // pill row per ability, each array value assignable to at most one row.
+    // Pills start unassigned; clicking a held pill frees it, and clicking a
+    // value another row holds moves it. Hidden under the other methods; an
+    // unassigned ability submits at the array's floor of 8.
+    {
+      name: 'statPills',
+      label: 'Assign each value to one ability',
+      type: 'pillgrid',
+      rows: ABILITY_SCORES.map((key) => ({ value: key, label: key })),
+      options: STANDARD_ARRAY.map((v) => ({ value: String(v), label: String(v) })),
+      value: '',
+      full: true,
+      hidden: true,
+    },
+    // Shown only while the roll method is active, below the rolled scores.
+    { name: 'reroll', label: 'Reroll scores', type: 'button', hidden: true },
     {
       name: 'skills',
       label: 'Class skills',
@@ -140,7 +151,8 @@ export function characterFields() {
  *   setOptions: (name: string, options: { value: string, label: string }[], max?: number) => void,
  *   setDisabled: (name: string, disabled: boolean) => void,
  *   setLabel: (name: string, text: string) => void,
- *   setRange: (name: string, min?: number, max?: number) => void }} FormHandle */
+ *   setRange: (name: string, min?: number, max?: number) => void,
+ *   setHidden: (name: string, hidden: boolean) => void }} FormHandle */
 
 /** @param {FormHandle} form @returns {Record<string, number>} the six typed scores */
 function readFormScores(form) {
@@ -149,8 +161,8 @@ function readFormScores(form) {
 
 /**
  * The ability-scores caption for the current method and scores: point buy
- * tracks the budget live, standard array flags a broken assignment. Purely
- * advisory — the Custom method is always available, so nothing hard-blocks.
+ * tracks the remaining budget live (the inputs themselves keep the scores in
+ * range and under budget); the other methods need no readout.
  * @param {string} method
  * @param {Record<string, number>} scores
  * @returns {string}
@@ -160,12 +172,7 @@ function statMethodCaption(method, scores) {
     const left = pointBuyRemaining(scores);
     if (left === null) return 'Ability scores (point buy uses 8-15)';
     const points = (/** @type {number} */ n) => `${n} point${n === 1 ? '' : 's'}`;
-    return left < 0
-      ? `Ability scores (${points(-left)} over budget)`
-      : `Ability scores (${points(left)} left)`;
-  }
-  if (method === 'standard-array' && !isStandardArray(scores)) {
-    return `Ability scores (use ${STANDARD_ARRAY.join(', ')} once each)`;
+    return `Ability scores (${points(left)} left)`;
   }
   return 'Ability scores';
 }
@@ -179,21 +186,26 @@ function statMethodCaption(method, scores) {
  */
 function applyStatMethod(form, rng) {
   const method = form.get('statMethod');
-  form.setDisabled('reroll', method !== 'roll');
-  // Point buy hard-limits each input to its buyable 8-15; the other methods
-  // only need the shared positive floor.
+  form.setHidden('reroll', method !== 'roll');
+  // Standard array swaps the number inputs out for the assignment pill grid;
+  // every other method shows the inputs, with point buy hard-limited to its
+  // buyable 8-15 and the rest on the shared positive floor.
+  form.setHidden('statPills', method !== 'standard-array');
   for (const key of ABILITY_SCORES) {
+    form.setHidden(`stat-${key}`, method === 'standard-array');
     if (method === 'point-buy') form.setRange(`stat-${key}`, 8, 15);
     else form.setRange(`stat-${key}`, 1, undefined);
   }
+  if (method === 'standard-array') form.set('statPills', '');
+  // Point buy starts at all 8s; standard array starts unassigned, which the
+  // hidden inputs also record as 8s until pills are placed. Custom keeps
+  // whatever is typed.
   const stamp =
-    method === 'point-buy'
-      ? Object.fromEntries(ABILITY_SCORES.map((key) => [key, 8]))
-      : method === 'standard-array'
-        ? Object.fromEntries(ABILITY_SCORES.map((key, i) => [key, STANDARD_ARRAY[i]]))
-        : method === 'roll'
-          ? rollScores(ABILITY_SCORES, rng)
-          : null;
+    method === 'roll'
+      ? rollScores(ABILITY_SCORES, rng)
+      : method === 'custom'
+        ? null
+        : Object.fromEntries(ABILITY_SCORES.map((key) => [key, 8]));
   if (stamp) for (const key of ABILITY_SCORES) form.set(`stat-${key}`, stamp[key]);
   form.setLabel('statMethod', statMethodCaption(method, stamp ?? readFormScores(form)));
 }
@@ -201,10 +213,9 @@ function applyStatMethod(form, rng) {
 /**
  * Keep the dependent fields in step as the form is edited: a race pick locks
  * the custom-race entry, the class pick refilters the skill multiselect to
- * that class's choices (capped and captioned at its pick count), the stat
- * method stamps its starting scores (and under standard array an edited score
- * swaps with the one it duplicates), and any change that can move CON
- * re-stamps the max HP default.
+ * that class's choices (capped and captioned at its pick count), and the stat
+ * method stamps its starting scores (standard array through the pill grid,
+ * point buy under a hard budget).
  * @param {string} name the changed field
  * @param {FormHandle} form
  * @param {() => number} [rng]
@@ -217,29 +228,32 @@ export function characterFormChange(name, form, rng = Math.random) {
     form.setLabel('skills', choice ? `Class skills (choose ${choice.choose})` : 'Class skills');
   }
   if (name === 'statMethod' || name === 'reroll') applyStatMethod(form, rng);
+  if (name === 'statPills') {
+    // The pill grid is the visible control under standard array; the hidden
+    // number inputs stay the submitted source of truth, so copy the
+    // assignment through, with unassigned abilities at the array's floor.
+    const assigned = Object.fromEntries(
+      form
+        .get('statPills')
+        .split(',')
+        .filter(Boolean)
+        .map((pair) => pair.split(':')),
+    );
+    for (const key of ABILITY_SCORES) form.set(`stat-${key}`, assigned[key] ?? 8);
+  }
   if (name.startsWith('stat-')) {
     const method = form.get('statMethod');
-    let scores = readFormScores(form);
-    if (method === 'standard-array') {
-      const repaired = repairStandardArray(scores, name.slice('stat-'.length));
-      for (const key of ABILITY_SCORES) {
-        if (repaired[key] !== scores[key]) form.set(`stat-${key}`, repaired[key]);
+    const scores = readFormScores(form);
+    if (method === 'point-buy') {
+      // The budget is a hard limit: an edit that would overspend walks back
+      // down until it fits, so freeing points elsewhere must come first.
+      const key = name.slice('stat-'.length);
+      while (scores[key] > 8 && (pointBuyRemaining(scores) ?? 0) < 0) {
+        scores[key] -= 1;
+        form.set(name, scores[key]);
       }
-      scores = repaired;
     }
     form.setLabel('statMethod', statMethodCaption(method, scores));
-  }
-  if (
-    name === 'class' ||
-    name === 'race' ||
-    name.startsWith('stat-') ||
-    name === 'statMethod' ||
-    name === 'reroll'
-  ) {
-    form.set(
-      'maxHP',
-      defaultMaxHP(form.get('class'), Number(form.get('stat-CON')) || 10, form.get('race')),
-    );
   }
 }
 
@@ -249,8 +263,8 @@ export function characterFormChange(name, form, rng = Math.random) {
  * is just the display string); skill picks are filtered to the class's choice
  * list and capped at its count, bonus languages at the background's count. The
  * proficiency lists assemble from class + race + background plus those picks,
- * the HP pool takes the form's max, a classed character gets hit dice, and a
- * caster its spell slots. Pure.
+ * the HP pool derives from the class hit die and CON, a classed character gets
+ * hit dice, and a caster its spell slots. Pure.
  * @param {Record<string, string>} values
  * @param {string[]} existingIds roster ids the new character's id must avoid
  * @returns {Character}
@@ -292,11 +306,9 @@ export function buildCharacter(values, existingIds) {
     .slice(0, getBackground(values.background)?.languageCount ?? 0);
   character = withProficiencies(character, assembleProficiencies(character, { skills, languages }));
 
-  const maxHP = Math.max(
-    1,
-    Number(values.maxHP) || defaultMaxHP(values.class, character.stats.CON, ''),
-  );
-  character = withHP(character, maxHP);
+  // Max HP is fully derived, not asked for: the class hit die plus the CON
+  // modifier at level 1 (the race increase is already folded into stats here).
+  character = withHP(character, defaultMaxHP(values.class, character.stats.CON, ''));
   if (classDef) character = withHitDice(character);
   if (isCasterClass(classDef?.id)) character = withSpellSlots(character);
   return character;

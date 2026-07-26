@@ -26,18 +26,17 @@ function values(overrides = {}) {
     'stat-INT': '10',
     'stat-WIS': '10',
     'stat-CHA': '8',
-    maxHP: '12',
     skills: '',
     languages: '',
     ...overrides,
   };
 }
 
-test('buildCharacter reads the typed scores and HP; no class means no pools', () => {
+test('buildCharacter reads the typed scores; no class means 10 HP and no pools', () => {
   const c = buildCharacter(values(), []);
   assert.equal(c.name, 'Bron');
   assert.equal(c.stats.STR, 16);
-  assert.equal(getHP(c)?.max, 12);
+  assert.equal(getHP(c)?.max, 10);
   assert.deepEqual(getClasses(c), []);
   assert.deepEqual(getHitDicePools(c), []);
   assert.deepEqual(getSlotPools(c), []);
@@ -109,9 +108,9 @@ test('the id avoids existing roster ids', () => {
   assert.notEqual(c.id, 'bron');
 });
 
-test('a blank or garbage max HP falls back to the class default', () => {
-  const c = buildCharacter(values({ class: 'fighter', maxHP: '' }), []);
-  assert.equal(getHP(c)?.max, 12); // d10 + CON 2
+test('max HP derives from the class hit die and CON', () => {
+  const c = buildCharacter(values({ class: 'fighter' }), []);
+  assert.equal(getHP(c)?.max, 12); // d10 + CON 14's +2
 });
 
 test('defaultMaxHP folds in the race CON increase; classless reads 10', () => {
@@ -134,6 +133,8 @@ function fakeForm(/** @type {Record<string, string>} */ state) {
     labels: {},
     /** @type {Record<string, { min?: number, max?: number }>} */
     ranges: {},
+    /** @type {Record<string, boolean>} */
+    hidden: {},
     get: (/** @type {string} */ name) => state[name] ?? '',
     set: (/** @type {string} */ name, /** @type {string | number} */ value) => {
       state[name] = String(value);
@@ -159,11 +160,14 @@ function fakeForm(/** @type {Record<string, string>} */ state) {
     ) => {
       form.ranges[name] = { min, max };
     },
+    setHidden: (/** @type {string} */ name, /** @type {boolean} */ value) => {
+      form.hidden[name] = value;
+    },
   };
   return form;
 }
 
-test('characterFormChange refilters skills and re-stamps max HP on class change', () => {
+test('characterFormChange refilters skills on class change', () => {
   /** @type {Record<string, string>} */
   const state = { class: 'fighter', 'stat-CON': '14', race: '' };
   const form = fakeForm(state);
@@ -171,9 +175,6 @@ test('characterFormChange refilters skills and re-stamps max HP on class change'
   assert.ok(form.options.some((o) => o.value === 'athletics' && o.label === 'Athletics'));
   assert.equal(form.max, 2); // fighter chooses 2
   assert.equal(form.labels.skills, 'Class skills (choose 2)');
-  assert.equal(state.maxHP, '12');
-  characterFormChange('stat-CON', { ...form, get: (n) => (n === 'stat-CON' ? '18' : state[n]) });
-  assert.equal(state.maxHP, '14');
   characterFormChange('name', form); // unrelated field: nothing recomputed
   assert.equal(form.options.length > 0, true);
 });
@@ -219,7 +220,7 @@ test('characterFields covers the form surface once each', () => {
     'background',
     'statMethod',
     'reroll',
-    'maxHP',
+    'statPills',
     'skills',
     'languages',
     'stat-STR',
@@ -228,21 +229,28 @@ test('characterFields covers the form surface once each', () => {
   }
 });
 
-test('the form defaults to point buy: scores at 8, reroll locked, budget captioned', () => {
+test('the form defaults to point buy: scores at 8, reroll and pills hidden', () => {
   const fields = characterFields();
   const method = fields.find((f) => f.name === 'statMethod');
   assert.equal(method?.value, 'point-buy');
   assert.ok(String(method?.label).includes('27 points left'));
-  assert.equal(fields.find((f) => f.name === 'reroll')?.disabled, true);
+  assert.equal(fields.find((f) => f.name === 'reroll')?.hidden, true);
+  assert.equal(fields.find((f) => f.name === 'statPills')?.hidden, true);
   const str = fields.find((f) => f.name === 'stat-STR');
   assert.equal(str?.value, 8);
   // The stat inputs open range-limited to point buy's 8-15.
   assert.equal(str?.min, 8);
   assert.equal(str?.max, 15);
+  // Max HP is derived, so the form doesn't ask for it.
+  assert.equal(
+    fields.find((f) => f.name === 'maxHP'),
+    undefined,
+  );
 });
 
-test('max HP is a derived read-only field', () => {
-  assert.equal(characterFields().find((f) => f.name === 'maxHP')?.disabled, true);
+test('the reroll button sits after the ability-score fields', () => {
+  const names = characterFields().map((f) => f.name);
+  assert.ok(names.indexOf('reroll') > names.indexOf('stat-CHA'));
 });
 
 /** @param {Record<string, string>} state */
@@ -260,26 +268,35 @@ function statState(state) {
   };
 }
 
-test('picking the standard array stamps it in stat order and re-stamps max HP', () => {
-  const state = statState({ statMethod: 'standard-array', class: 'fighter' });
+test('picking the standard array shows the unassigned pill grid at the 8 floor', () => {
+  const state = statState({
+    statMethod: 'standard-array',
+    class: 'fighter',
+    'stat-STR': '15',
+    statPills: 'STR:15',
+  });
   const form = fakeForm(state);
   characterFormChange('statMethod', form);
-  assert.equal(state['stat-STR'], '15');
-  assert.equal(state['stat-CHA'], '8');
-  assert.equal(form.disabled.reroll, true);
+  assert.equal(state.statPills, ''); // pills start unassigned
+  assert.equal(state['stat-STR'], '8');
+  assert.equal(form.hidden.reroll, true);
   assert.equal(form.labels.statMethod, 'Ability scores');
-  assert.equal(state.maxHP, '11'); // d10 + CON 13's +1
   // Leaving point buy lifts the 8-15 range back to the shared positive floor.
   assert.deepEqual(form.ranges['stat-STR'], { min: 1, max: undefined });
+  // The pill grid replaces the number inputs.
+  assert.equal(form.hidden.statPills, false);
+  assert.equal(form.hidden['stat-STR'], true);
 });
 
-test('re-picking point buy restores the 8-15 range on every stat input', () => {
+test('re-picking point buy restores the 8-15 range and the number inputs', () => {
   const state = statState({ statMethod: 'point-buy' });
   const form = fakeForm(state);
   characterFormChange('statMethod', form);
   for (const key of ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']) {
     assert.deepEqual(form.ranges[`stat-${key}`], { min: 8, max: 15 });
+    assert.equal(form.hidden[`stat-${key}`], false);
   }
+  assert.equal(form.hidden.statPills, true);
 });
 
 test('the roll method stamps 4d6-drop-lowest scores and unlocks reroll', () => {
@@ -291,7 +308,7 @@ test('the roll method stamps 4d6-drop-lowest scores and unlocks reroll', () => {
   for (const key of ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']) {
     assert.equal(state[`stat-${key}`], '15'); // 6+5+4, drop the 3
   }
-  assert.equal(form.disabled.reroll, false);
+  assert.equal(form.hidden.reroll, false);
   characterFormChange('reroll', form, () => 0);
   assert.equal(state['stat-STR'], '3'); // all 1s rerolled
 });
@@ -301,36 +318,43 @@ test('point-buy stat edits track the budget in the caption', () => {
   const form = fakeForm(state);
   characterFormChange('stat-STR', form);
   assert.equal(form.labels.statMethod, 'Ability scores (18 points left)');
-  state['stat-DEX'] = '15';
-  state['stat-CON'] = '15';
-  state['stat-INT'] = '9';
-  characterFormChange('stat-INT', form);
-  assert.equal(form.labels.statMethod, 'Ability scores (1 point over budget)');
-  state['stat-INT'] = '16';
-  characterFormChange('stat-INT', form);
-  assert.equal(form.labels.statMethod, 'Ability scores (point buy uses 8-15)');
 });
 
-test('standard-array stat edits swap with the duplicated holder', () => {
+test('a point-buy edit that would overspend walks back down to what fits', () => {
+  // 15/15/15 spends the whole budget; raising INT must first free points.
   const state = statState({
-    statMethod: 'standard-array',
+    statMethod: 'point-buy',
     'stat-STR': '15',
-    'stat-DEX': '14',
-    'stat-CON': '13',
+    'stat-DEX': '15',
+    'stat-CON': '15',
     'stat-INT': '12',
-    'stat-WIS': '10',
-    'stat-CHA': '8',
   });
   const form = fakeForm(state);
-  state['stat-CHA'] = '15'; // the user types 15 over CHA's 8
-  characterFormChange('stat-CHA', form);
-  assert.equal(state['stat-STR'], '8'); // the old 15-holder takes the freed 8
+  characterFormChange('stat-INT', form);
+  assert.equal(state['stat-INT'], '8');
+  assert.equal(form.labels.statMethod, 'Ability scores (0 points left)');
+  // Dropping STR to 14 frees 2 points; a typed INT 15 then walks back to 10,
+  // the most those 2 points buy.
+  state['stat-STR'] = '14';
+  characterFormChange('stat-STR', form);
+  state['stat-INT'] = '15';
+  characterFormChange('stat-INT', form);
+  assert.equal(state['stat-INT'], '10');
+  assert.equal(form.labels.statMethod, 'Ability scores (0 points left)');
+});
+
+test('a partial pill assignment copies through, unassigned abilities at 8', () => {
+  const state = statState({
+    statMethod: 'standard-array',
+    statPills: 'CON:13,CHA:15',
+    class: 'fighter',
+    'stat-WIS': '10',
+  });
+  const form = fakeForm(state);
+  characterFormChange('statPills', form);
+  assert.equal(state['stat-CON'], '13');
   assert.equal(state['stat-CHA'], '15');
-  assert.equal(form.labels.statMethod, 'Ability scores');
-  state['stat-CHA'] = '1'; // mid-typing: not an array value, nothing moves
-  characterFormChange('stat-CHA', form);
-  assert.equal(state['stat-STR'], '8');
-  assert.equal(form.labels.statMethod, 'Ability scores (use 15, 14, 13, 12, 10, 8 once each)');
+  assert.equal(state['stat-WIS'], '8'); // de-assigned pills fall back
 });
 
 test('the custom method leaves typed scores alone', () => {
@@ -339,5 +363,5 @@ test('the custom method leaves typed scores alone', () => {
   characterFormChange('statMethod', form);
   assert.equal(state['stat-STR'], '20');
   assert.equal(form.labels.statMethod, 'Ability scores');
-  assert.equal(form.disabled.reroll, true);
+  assert.equal(form.hidden.reroll, true);
 });

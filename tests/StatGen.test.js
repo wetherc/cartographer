@@ -4,8 +4,6 @@ import {
   POINT_BUY_BUDGET,
   STANDARD_ARRAY,
   pointBuyRemaining,
-  isStandardArray,
-  repairStandardArray,
   rollAbility,
   rollScores,
 } from '../src/entities/StatGen.js';
@@ -28,32 +26,6 @@ test('pointBuyRemaining is null when a score is outside 8-15', () => {
   assert.equal(pointBuyRemaining({ STR: 7, DEX: 8 }), null);
   assert.equal(pointBuyRemaining({ STR: 16, DEX: 8 }), null);
   assert.equal(pointBuyRemaining({ STR: NaN, DEX: 8 }), null);
-});
-
-test('isStandardArray accepts exactly one of each array value', () => {
-  assert.ok(isStandardArray({ STR: 8, DEX: 10, CON: 12, INT: 13, WIS: 14, CHA: 15 }));
-  assert.ok(!isStandardArray({ STR: 8, DEX: 10, CON: 12, INT: 13, WIS: 14, CHA: 14 }));
-  assert.ok(!isStandardArray({ STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10 }));
-});
-
-test('repairStandardArray swaps the duplicated value to the missing one', () => {
-  const scores = { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 8 };
-  const repaired = repairStandardArray({ ...scores, STR: 14 }, 'STR');
-  assert.equal(repaired.STR, 14);
-  assert.equal(repaired.DEX, 15); // took the value STR gave up
-  assert.ok(isStandardArray(repaired));
-});
-
-test('repairStandardArray leaves non-array and ambiguous states alone', () => {
-  const scores = { STR: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, CHA: 8 };
-  // A half-typed "1" on the way to "14" must not be overwritten.
-  const midTyping = { ...scores, STR: 1 };
-  assert.equal(repairStandardArray(midTyping, 'STR'), midTyping);
-  // An array value with no duplicate holder has nothing to swap.
-  assert.equal(repairStandardArray(scores, 'STR'), scores);
-  // Two discrepancies (already-broken state) stay untouched.
-  const broken = { ...scores, DEX: 15, CON: 15 };
-  assert.equal(repairStandardArray(broken, 'DEX'), broken);
 });
 
 test('rollAbility sums 4d6 and drops the lowest', () => {

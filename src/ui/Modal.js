@@ -5,7 +5,7 @@
  * it to <body>, and removes it on close, resolving a Promise with the result.
  */
 
-/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file' | 'multiselect' | 'tags' | 'button', value?: string | number, min?: number, options?: { value: string, label: string }[], full?: boolean, max?: number, emptyText?: string, fixedHeight?: boolean, disabled?: boolean }} ModalField */
+/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file' | 'multiselect' | 'tags' | 'button' | 'pillgrid', value?: string | number, min?: number, options?: { value: string, label: string }[], rows?: { value: string, label: string }[], full?: boolean, max?: number, emptyText?: string, fixedHeight?: boolean, disabled?: boolean, hidden?: boolean }} ModalField */
 
 /**
  * Show a form modal. Resolves to a record of field name -> string value on
@@ -20,7 +20,7 @@
  * @param {{
  *   submitLabel?: string,
  *   wide?: boolean,
- *   onChange?: (name: string, form: { get: (name: string) => string, set: (name: string, value: string | number) => void, setOptions: (name: string, options: { value: string, label: string }[], max?: number) => void, setDisabled: (name: string, disabled: boolean) => void, setLabel: (name: string, text: string) => void, setRange: (name: string, min?: number, max?: number) => void }) => void,
+ *   onChange?: (name: string, form: { get: (name: string) => string, set: (name: string, value: string | number) => void, setOptions: (name: string, options: { value: string, label: string }[], max?: number) => void, setDisabled: (name: string, disabled: boolean) => void, setLabel: (name: string, text: string) => void, setRange: (name: string, min?: number, max?: number) => void, setHidden: (name: string, hidden: boolean) => void }) => void,
  * }} [options]
  * @returns {Promise<Record<string, string> | null>}
  */
@@ -55,12 +55,21 @@ export function promptModal(title, fields, options = {}) {
      * "Class skills (choose 2)"). */
     /** @type {Record<string, Text>} */
     const labelTexts = {};
+    /** Value setters for composite fields whose state isn't an input.value
+     * (the pill grid); plain fields fall through to the default assignment. */
+    /** @type {Record<string, (value: string) => void>} */
+    const setters = {};
+    /** The whole field wrapper per name, so onChange can show/hide a field. */
+    /** @type {Record<string, HTMLElement>} */
+    const wrappers = {};
     for (const field of fields) {
       const label = document.createElement('label');
       label.className = field.full ? 'modal__field modal__field--full' : 'modal__field';
+      if (field.hidden) label.classList.add('modal__field--hidden');
       const labelText = document.createTextNode(field.label);
       label.appendChild(labelText);
       labelTexts[field.name] = labelText;
+      wrappers[field.name] = label;
 
       /** @type {HTMLInputElement | HTMLSelectElement} */
       let input;
@@ -212,6 +221,72 @@ export function promptModal(title, fields, options = {}) {
         render();
         input = /** @type {HTMLInputElement} */ (/** @type {unknown} */ (box));
         getters[field.name] = () => [...tags, entry.value.trim()].filter(Boolean).join(',');
+      } else if (field.type === 'pillgrid') {
+        // An assignment grid: each row (e.g. an ability) holds at most one of
+        // the option values (e.g. the standard array), every value used at
+        // most once. Clicking assigns, clicking the held pill un-assigns, and
+        // clicking a pill another row already holds moves it here (the other
+        // row takes this row's old value, if any). The value is the
+        // comma-joined `row:value` pairs of the assigned rows.
+        const box = document.createElement('div');
+        box.className = 'modal__pillgrid';
+        const parse = (/** @type {string} */ value) =>
+          Object.fromEntries(
+            value
+              .split(',')
+              .filter(Boolean)
+              .map((pair) => pair.split(':')),
+          );
+        /** @type {Record<string, string>} */
+        let assigned = parse(field.value !== undefined ? String(field.value) : '');
+        const render = () => {
+          box.textContent = '';
+          for (const row of field.rows ?? []) {
+            const rowEl = document.createElement('div');
+            rowEl.className = 'modal__pillgrid-row';
+            const rowLabel = document.createElement('span');
+            rowLabel.className = 'modal__pillgrid-label';
+            rowLabel.textContent = row.label;
+            rowEl.appendChild(rowLabel);
+            for (const option of field.options ?? []) {
+              const pill = document.createElement('button');
+              pill.type = 'button';
+              pill.className =
+                assigned[row.value] === option.value
+                  ? 'modal__pill modal__pill--selected'
+                  : 'modal__pill';
+              pill.textContent = option.label;
+              pill.setAttribute('aria-pressed', String(assigned[row.value] === option.value));
+              pill.addEventListener('click', () => {
+                const prev = assigned[row.value];
+                if (prev === option.value) {
+                  delete assigned[row.value];
+                } else {
+                  const holder = Object.keys(assigned).find(
+                    (k) => k !== row.value && assigned[k] === option.value,
+                  );
+                  assigned[row.value] = option.value;
+                  if (holder && prev !== undefined) assigned[holder] = prev;
+                  else if (holder) delete assigned[holder];
+                }
+                render();
+                box.dispatchEvent(new Event('input'));
+              });
+              rowEl.appendChild(pill);
+            }
+            box.appendChild(rowEl);
+          }
+        };
+        render();
+        input = /** @type {HTMLInputElement} */ (/** @type {unknown} */ (box));
+        getters[field.name] = () =>
+          Object.entries(assigned)
+            .map(([k, v]) => `${k}:${v}`)
+            .join(',');
+        setters[field.name] = (value) => {
+          assigned = parse(value);
+          render();
+        };
       } else if (field.type === 'button') {
         // An in-form action (e.g. "Reroll scores"): clicking it fires the
         // form's onChange under the field's name; it contributes no value to
@@ -249,9 +324,10 @@ export function promptModal(title, fields, options = {}) {
         input = plain;
         getters[field.name] = () => plain.value;
       }
-      // The composite fields (multiselect, tags) and buttons set their own
-      // classes; everything else gets the shared input treatment.
-      if (!['multiselect', 'tags', 'button'].includes(field.type ?? '')) input.className = 'field';
+      // The composite fields (multiselect, tags, pillgrid) and buttons set
+      // their own classes; everything else gets the shared input treatment.
+      if (!['multiselect', 'tags', 'pillgrid', 'button'].includes(field.type ?? ''))
+        input.className = 'field';
       if (field.disabled) input.disabled = true;
       label.appendChild(input);
       form.appendChild(label);
@@ -263,7 +339,8 @@ export function promptModal(title, fields, options = {}) {
       const handle = {
         get: (/** @type {string} */ name) => getters[name](),
         set: (/** @type {string} */ name, /** @type {string | number} */ value) => {
-          inputs[name].value = String(value);
+          if (setters[name]) setters[name](String(value));
+          else inputs[name].value = String(value);
         },
         setOptions: (
           /** @type {string} */ name,
@@ -284,6 +361,9 @@ export function promptModal(title, fields, options = {}) {
           const input = /** @type {HTMLInputElement} */ (inputs[name]);
           input.min = min === undefined ? '' : String(min);
           input.max = max === undefined ? '' : String(max);
+        },
+        setHidden: (/** @type {string} */ name, /** @type {boolean} */ hidden) => {
+          wrappers[name].classList.toggle('modal__field--hidden', hidden);
         },
       };
       for (const [name, input] of Object.entries(inputs)) {

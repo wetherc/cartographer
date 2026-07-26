@@ -81,6 +81,53 @@
   justify-content: flex-end;
 }
 
+/* Fields another field's onChange has hidden (e.g. the stat inputs while the
+   standard-array pill grid is showing). */
+.modal__field--hidden {
+  display: none;
+}
+
+/* The assignment pill grid (e.g. standard-array scores): one row per target,
+   the value pills repeated across each row, the held value filled in. */
+.modal__pillgrid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.modal__pillgrid-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.modal__pillgrid-label {
+  width: 2.5rem;
+  flex: none;
+}
+
+.modal__pill {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: none;
+  padding: 0 var(--space-2);
+  font: inherit;
+  font-size: var(--text-label);
+  line-height: 1.5;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.modal__pill:hover {
+  border-color: var(--border-strong);
+}
+
+.modal__pill--selected {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
 /* Tag fields (e.g. bonus languages): finalized pills plus an inline entry —
    Enter turns the typed text into a pill, the x removes one. The box carries
    the .field border; the entry inside is borderless. */
