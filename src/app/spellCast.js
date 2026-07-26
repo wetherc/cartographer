@@ -1,5 +1,6 @@
 import { promptModal } from '../ui/Modal.js';
 import { castSpell } from '../entities/Casting.js';
+import { spellSource } from '../entities/Character.js';
 import { spellSaveDC, spellAttackBonus } from '../entities/Classes.js';
 import { isDefeated } from '../entities/Encounter.js';
 import { npcsOnTile } from '../entities/NPC.js';
@@ -197,7 +198,10 @@ async function runCast(app, entity, spell, targets, writeBack) {
   // Leveled spells cast from a slot at or above their level that still has a
   // charge — leveled or pact; the picker offers each such level.
   const slotLevels = spell.level > 0 ? castableSlotLevels(caster, spell.level) : [];
-  const dc = spellSaveDC(caster) ?? 10;
+  // A multiclass caster's DC/attack use the class the spell was learned
+  // under; without a recorded source they fall back to the first caster class.
+  const sourceClass = spellSource(caster, spell.id) ?? undefined;
+  const dc = spellSaveDC(caster, sourceClass) ?? 10;
   const fields = castFields(spell, targets, slotLevels, dc);
   if (!fields) {
     app.toasts.show(`No level ${spell.level}+ slot left for ${spell.name}.`);
@@ -223,7 +227,7 @@ async function runCast(app, entity, spell, targets, writeBack) {
     slotLevel,
     casterLevel: caster.level ?? 1,
     targets: target ? [castTarget] : [],
-    spellAttackBonus: spellAttackBonus(caster) ?? 0,
+    spellAttackBonus: spellAttackBonus(caster, sourceClass) ?? 0,
     saveDC,
     attackMode: spell.effect.kind === 'attack' ? mode : 'normal',
   });

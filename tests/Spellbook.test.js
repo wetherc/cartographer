@@ -12,6 +12,7 @@ import {
   unlearnSpell,
   prepareSpell,
   unprepareSpell,
+  spellSource,
 } from '../src/entities/Character.js';
 import { cantripLimit, preparedLimit } from '../src/entities/Classes.js';
 
@@ -104,4 +105,23 @@ test('spellbook mutators no-op cleanly for a classless (non-caster) character', 
   assert.equal(preparedLimit(npcish), 0);
   // No cantrip capacity, so a learn is refused.
   assert.equal(learnCantrip(npcish, 'fire-bolt'), npcish);
+});
+
+test('learning under a class records the source; forgetting drops it', () => {
+  let m = learnSpell(wizard(), 'bless', 'cleric');
+  m = learnCantrip(m, 'fire-bolt', 'wizard');
+  assert.equal(spellSource(m, 'bless'), 'cleric');
+  assert.equal(spellSource(m, 'fire-bolt'), 'wizard');
+  assert.deepEqual(getSpellbook(m).sources, { bless: 'cleric', 'fire-bolt': 'wizard' });
+  const dropped = unlearnCantrip(unlearnSpell(m, 'bless'), 'fire-bolt');
+  assert.deepEqual(getSpellbook(dropped).sources, {});
+  assert.equal(spellSource(dropped, 'bless'), null);
+});
+
+test('learning without a class leaves the source unrecorded', () => {
+  const m = learnSpell(wizard(), 'bless');
+  assert.equal(getSpellbook(m).sources, undefined);
+  assert.equal(spellSource(m, 'bless'), null);
+  // Forgetting a spell with no sources record keeps the book shape unchanged.
+  assert.equal(getSpellbook(unlearnSpell(m, 'bless')).sources, undefined);
 });

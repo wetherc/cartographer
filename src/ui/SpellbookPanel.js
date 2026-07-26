@@ -17,6 +17,7 @@ import {
 import { primaryClass } from '../entities/Multiclass.js';
 import { groupSpellsByLevel, spellStatus } from '../entities/SpellView.js';
 import { emptyState } from './buttons.js';
+import { promptModal } from './Modal.js';
 import { promptSpellDetail } from './SpellDetail.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -59,6 +60,40 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
   }
 
   /**
+   * The class a learn is recorded under: for a multiclass caster, a picker
+   * over the caster classes whose spell list carries the spell (all of them
+   * when none does — an out-of-class grant still needs an ability to cast
+   * with); a lone candidate is used silently. Null when the picker is
+   * cancelled, which aborts the learn.
+   * @param {Character} character
+   * @param {Spell} spell
+   * @returns {Promise<string | null | undefined>} undefined = no caster class.
+   */
+  async function pickSourceClass(character, spell) {
+    const refs = casterClassRefs(character);
+    const eligible = refs.filter((ref) => spell.classes.includes(ref.classId));
+    const pool = eligible.length > 0 ? eligible : refs;
+    if (pool.length <= 1) return pool[0]?.classId;
+    const values = await promptModal(
+      `Learn ${spell.name} as`,
+      [
+        {
+          name: 'class',
+          label: 'Class',
+          type: 'select',
+          options: pool.map((ref) => ({
+            value: ref.classId,
+            label: getClass(ref.classId)?.name ?? ref.classId,
+          })),
+          value: pool[0].classId,
+        },
+      ],
+      { submitLabel: 'Learn' },
+    );
+    return values ? values.class : null;
+  }
+
+  /**
    * The detail modal for one spell, with the management actions its current
    * standing allows, then applies the chosen one.
    * @param {Character} character
@@ -85,9 +120,15 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
     }
     const choice = await promptSpellDetail(spell, actions);
     if (!choice) return;
-    if (choice === 'learn')
-      commit(status.cantrip ? learnCantrip(character, spell.id) : learnSpell(character, spell.id));
-    else if (choice === 'forget')
+    if (choice === 'learn') {
+      const classId = await pickSourceClass(character, spell);
+      if (classId === null) return;
+      commit(
+        status.cantrip
+          ? learnCantrip(character, spell.id, classId)
+          : learnSpell(character, spell.id, classId),
+      );
+    } else if (choice === 'forget')
       commit(
         status.cantrip ? unlearnCantrip(character, spell.id) : unlearnSpell(character, spell.id),
       );

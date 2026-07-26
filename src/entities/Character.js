@@ -131,18 +131,59 @@ export function getSpellbook(character) {
 }
 
 /**
- * Learn a cantrip, up to the class's cantrip limit. A duplicate, or a learn
- * that would exceed the limit, leaves the character unchanged. Pure.
+ * Record which class a spell was learned under, when the caller names one.
+ * @param {Spellbook} book
+ * @param {string} spellId
+ * @param {string} [classId]
+ * @returns {Spellbook}
+ */
+function withSource(book, spellId, classId) {
+  if (!classId) return book;
+  return { ...book, sources: { ...book.sources, [spellId]: classId } };
+}
+
+/**
+ * Drop a forgotten spell's source record, if it had one.
+ * @param {Spellbook} book
+ * @param {string} spellId
+ * @returns {Spellbook}
+ */
+function withoutSource(book, spellId) {
+  if (!book.sources || !(spellId in book.sources)) return book;
+  const sources = { ...book.sources };
+  delete sources[spellId];
+  return { ...book, sources };
+}
+
+/**
+ * The class a spell was learned under, or null when none was recorded (a
+ * single-class book, or an older save) — casting falls back to the first
+ * caster class then.
  * @param {Character} character
  * @param {string} spellId
+ * @returns {string | null}
+ */
+export function spellSource(character, spellId) {
+  return getSpellbook(character).sources?.[spellId] ?? null;
+}
+
+/**
+ * Learn a cantrip, up to the class's cantrip limit. A duplicate, or a learn
+ * that would exceed the limit, leaves the character unchanged. `classId`
+ * (optional) records which class the cantrip is learned under, for a
+ * multiclass caster's per-class spell ability. Pure.
+ * @param {Character} character
+ * @param {string} spellId
+ * @param {string} [classId]
  * @returns {Character}
  */
-export function learnCantrip(character, spellId) {
+export function learnCantrip(character, spellId, classId) {
   const book = getSpellbook(character);
   if (book.cantrips.includes(spellId) || book.cantrips.length >= cantripLimit(character)) {
     return character;
   }
-  return { ...character, spellbook: { ...book, cantrips: [...book.cantrips, spellId] } };
+  const next = withSource({ ...book, cantrips: [...book.cantrips, spellId] }, spellId, classId);
+  return { ...character, spellbook: next };
 }
 
 /**
@@ -153,24 +194,28 @@ export function learnCantrip(character, spellId) {
  */
 export function unlearnCantrip(character, spellId) {
   const book = getSpellbook(character);
-  return {
-    ...character,
-    spellbook: { ...book, cantrips: book.cantrips.filter((id) => id !== spellId) },
-  };
+  const next = withoutSource(
+    { ...book, cantrips: book.cantrips.filter((id) => id !== spellId) },
+    spellId,
+  );
+  return { ...character, spellbook: next };
 }
 
 /**
  * Add a leveled spell to the known list. A duplicate leaves the character
  * unchanged. Known-list size is not capped here (no spells-known curve is
- * modeled yet); the prepared set is what the prepared limit bounds. Pure.
+ * modeled yet); the prepared set is what the prepared limit bounds. `classId`
+ * (optional) records which class the spell is learned under. Pure.
  * @param {Character} character
  * @param {string} spellId
+ * @param {string} [classId]
  * @returns {Character}
  */
-export function learnSpell(character, spellId) {
+export function learnSpell(character, spellId, classId) {
   const book = getSpellbook(character);
   if (book.known.includes(spellId)) return character;
-  return { ...character, spellbook: { ...book, known: [...book.known, spellId] } };
+  const next = withSource({ ...book, known: [...book.known, spellId] }, spellId, classId);
+  return { ...character, spellbook: next };
 }
 
 /**
@@ -182,14 +227,15 @@ export function learnSpell(character, spellId) {
  */
 export function unlearnSpell(character, spellId) {
   const book = getSpellbook(character);
-  return {
-    ...character,
-    spellbook: {
-      cantrips: book.cantrips,
+  const next = withoutSource(
+    {
+      ...book,
       known: book.known.filter((id) => id !== spellId),
       prepared: book.prepared.filter((id) => id !== spellId),
     },
-  };
+    spellId,
+  );
+  return { ...character, spellbook: next };
 }
 
 /**

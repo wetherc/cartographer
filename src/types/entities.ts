@@ -188,6 +188,10 @@ export interface Spellbook {
   cantrips: string[];
   known: string[];
   prepared: string[];
+  /** Which class each learned spell was learned under (spell id -> class id),
+   * recorded when a multiclass caster learns it so casting can use that
+   * class's ability. Absent entries fall back to the first caster class. */
+  sources?: Record<string, string>;
 }
 
 /** A character's proficiencies, one list per kind. Saves hold ability keys
