@@ -1,6 +1,6 @@
-import { iconButton, textButton, emptyState } from './buttons.js';
 import { mountStatBlockBar } from './StatBlockBar.js';
 import { formatDamage } from '../entities/Equipment.js';
+import { mountListPanel } from './listPanel.js';
 
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
 
@@ -29,48 +29,12 @@ import { formatDamage } from '../entities/Equipment.js';
  * @returns {{ update: () => void }}
  */
 export function mountBuildEncounterPanel(container, callbacks) {
-  const root = document.createElement('div');
-  root.className = 'build-encounters';
-  container.appendChild(root);
-
-  function render() {
-    root.innerHTML = '';
-    const encounters = callbacks.getEncounters();
-
-    // "New encounter" leads the panel and stays pinned while the list
-    // scrolls, so staging another enemy never means scrolling past the roster.
-    const actions = document.createElement('div');
-    actions.className = 'panel-actions panel-actions--pinned';
-    const addButton = textButton(
-      'New encounter',
-      async () => {
-        if (await callbacks.onAdd()) render();
-      },
-      { icon: 'add' },
-    );
-    actions.appendChild(addButton);
-
-    // Spawning from a saved template (the campaign bestiary + the library)
-    // sits beside New encounter — authoring belongs to the Build rail.
-    const onAddFromTemplate = callbacks.onAddFromTemplate;
-    if (onAddFromTemplate) {
-      const bestiaryButton = textButton(
-        'From bestiary',
-        async () => {
-          if (await onAddFromTemplate()) render();
-        },
-        { icon: 'scroll' },
-      );
-      actions.appendChild(bestiaryButton);
-    }
-    root.appendChild(actions);
-
-    if (encounters.length === 0) root.appendChild(emptyState('No encounters on this map.'));
-
-    for (const encounter of encounters) {
-      const row = document.createElement('div');
-      row.className = 'build-encounters__row';
-
+  return mountListPanel(container, {
+    className: 'build-encounters',
+    getRows: () => callbacks.getEncounters(),
+    emptyMessage: 'No encounters on this map.',
+    headClass: 'build-encounters__head',
+    buildBody: (encounter) => {
       const where = encounter.location ? `@ (${encounter.location.tileId})` : 'unplaced';
       const text = `${encounter.name} (${encounter.currentHP}/${encounter.maxHP}) ${where}`;
 
@@ -89,30 +53,24 @@ export function mountBuildEncounterPanel(container, callbacks) {
         label.className = 'build-encounters__label';
       }
       label.textContent = text;
-
-      const editButton = iconButton(
-        'edit',
-        `Edit ${encounter.name}`,
-        async () => {
-          if (await callbacks.onEdit(encounter)) render();
-        },
-        { title: 'Edit' },
-      );
-
-      const deleteButton = iconButton(
-        'remove',
-        `Delete ${encounter.name}`,
-        async () => {
-          if (await callbacks.onDelete(encounter)) render();
-        },
-        { variant: 'danger', title: 'Delete' },
-      );
-
-      const head = document.createElement('div');
-      head.className = 'build-encounters__head';
-      head.append(label, editButton, deleteButton);
-      row.appendChild(head);
-
+      return label;
+    },
+    actions: (encounter) => [
+      {
+        icon: 'edit',
+        label: `Edit ${encounter.name}`,
+        title: 'Edit',
+        onClick: () => callbacks.onEdit(encounter),
+      },
+      {
+        icon: 'remove',
+        label: `Delete ${encounter.name}`,
+        title: 'Delete',
+        variant: 'danger',
+        onClick: () => callbacks.onDelete(encounter),
+      },
+    ],
+    buildExtras: (encounter, row, ctx) => {
       // The enemy's gear at a glance; both pieces are edited through the same
       // form the edit button opens.
       if (encounter.weapon || encounter.armor) {
@@ -136,14 +94,20 @@ export function mountBuildEncounterPanel(container, callbacks) {
             ...encounter,
             statBlock: { ...encounter.statBlock, [stat]: value },
           });
-          render();
+          ctx.render();
         },
       });
-
-      root.appendChild(row);
-    }
-  }
-
-  render();
-  return { update: render };
+    },
+    // Spawning from a saved template (the campaign bestiary + the library)
+    // sits beside New encounter — authoring belongs to the Build rail.
+    addButtons: () => [
+      { label: 'New encounter', icon: 'add', onClick: callbacks.onAdd },
+      callbacks.onAddFromTemplate
+        ? { label: 'From bestiary', icon: 'scroll', onClick: callbacks.onAddFromTemplate }
+        : null,
+    ],
+    // "New encounter" leads the panel and stays pinned while the list
+    // scrolls, so staging another enemy never means scrolling past the roster.
+    addPinned: true,
+  });
 }

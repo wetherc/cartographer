@@ -1,5 +1,5 @@
-import { iconButton, textButton, emptyState } from './buttons.js';
 import { isGM } from '../view/ViewRole.js';
+import { mountListPanel } from './listPanel.js';
 
 /** @typedef {import('../types/npc.js').NPC} NPC */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
@@ -27,120 +27,69 @@ import { isGM } from '../view/ViewRole.js';
  * @returns {{ update: () => void }}
  */
 export function mountNPCPanel(container, callbacks) {
-  const root = document.createElement('div');
-  root.className = 'npc-panel';
-  container.appendChild(root);
+  return mountListPanel(container, {
+    className: 'npc-panel',
+    gate: () => !callbacks.getRole || isGM(callbacks.getRole()),
+    getRows: () => callbacks.getNPCs(),
+    emptyMessage: 'No one of note here.',
+    bodyClass: 'npc-panel__body',
+    actionsClass: 'npc-panel__controls',
+    buildBody: (npc) => {
+      const parts = [];
 
-  const gmView = () => !callbacks.getRole || isGM(callbacks.getRole());
+      const head = document.createElement('div');
+      head.className = 'npc-panel__head';
+      const name = document.createElement('span');
+      name.className = 'npc-panel__name';
+      name.textContent = npc.name;
+      const badge = document.createElement('span');
+      badge.className = `npc-panel__badge npc-panel__badge--${npc.disposition}`;
+      badge.textContent = npc.disposition;
+      head.append(name, badge);
+      parts.push(head);
 
-  /** @param {NPC} npc @param {boolean} gm */
-  function buildRow(npc, gm) {
-    const row = document.createElement('div');
-    row.className = 'npc-panel__row';
+      if (npc.role) {
+        const role = document.createElement('span');
+        role.className = 'npc-panel__role';
+        role.textContent = npc.role;
+        parts.push(role);
+      }
+      if (callbacks.getLocationLabel) {
+        const location = document.createElement('span');
+        location.className = 'npc-panel__location';
+        location.textContent = callbacks.getLocationLabel(npc);
+        parts.push(location);
+      }
+      if (npc.notes) {
+        const notes = document.createElement('span');
+        notes.className = 'npc-panel__notes';
+        notes.textContent = npc.notes;
+        parts.push(notes);
+      }
 
-    const body = document.createElement('div');
-    body.className = 'npc-panel__body';
-
-    const head = document.createElement('div');
-    head.className = 'npc-panel__head';
-    const name = document.createElement('span');
-    name.className = 'npc-panel__name';
-    name.textContent = npc.name;
-    const badge = document.createElement('span');
-    badge.className = `npc-panel__badge npc-panel__badge--${npc.disposition}`;
-    badge.textContent = npc.disposition;
-    head.append(name, badge);
-    body.appendChild(head);
-
-    if (npc.role) {
-      const role = document.createElement('span');
-      role.className = 'npc-panel__role';
-      role.textContent = npc.role;
-      body.appendChild(role);
-    }
-    if (callbacks.getLocationLabel) {
-      const location = document.createElement('span');
-      location.className = 'npc-panel__location';
-      location.textContent = callbacks.getLocationLabel(npc);
-      body.appendChild(location);
-    }
-    if (npc.notes) {
-      const notes = document.createElement('span');
-      notes.className = 'npc-panel__notes';
-      notes.textContent = npc.notes;
-      body.appendChild(notes);
-    }
-
-    if (!gm) {
-      row.appendChild(body);
-      return row;
-    }
-
-    const controls = document.createElement('div');
-    controls.className = 'npc-panel__controls';
-
-    if (callbacks.onEdit) {
-      const edit = iconButton('edit', `Edit ${npc.name}`, async () => {
-        if (await callbacks.onEdit?.(npc)) render();
-      });
-      controls.appendChild(edit);
-    }
-
-    const del = iconButton(
-      'remove',
-      `Delete ${npc.name}`,
-      async () => {
-        const ok = callbacks.confirmDelete ? await callbacks.confirmDelete(npc) : true;
-        if (!ok) return;
-        callbacks.onDelete(npc.id);
-        render();
-      },
-      { variant: 'danger' },
-    );
-    controls.appendChild(del);
-
-    row.append(body, controls);
-    return row;
-  }
-
-  function render() {
-    root.innerHTML = '';
-    const gm = gmView();
-    const npcs = callbacks.getNPCs();
-
-    const onAdd = callbacks.onAdd;
-    // Pinned mode leads with "New NPC" so a long roster never buries it,
-    // matching the Build rail's encounter list.
-    if (onAdd && gm && callbacks.pinAdd) {
-      const actions = document.createElement('div');
-      actions.className = 'panel-actions panel-actions--pinned';
-      actions.appendChild(buildAddButton(onAdd));
-      root.appendChild(actions);
-    }
-
-    if (npcs.length === 0) {
-      root.appendChild(emptyState('No one of note here.'));
-    }
-    for (const npc of npcs) root.appendChild(buildRow(npc, gm));
-
-    if (onAdd && gm && !callbacks.pinAdd) {
-      const addButton = buildAddButton(onAdd);
-      addButton.classList.add('npc-panel__add');
-      root.appendChild(addButton);
-    }
-  }
-
-  /** @param {() => Promise<unknown>} onAdd */
-  function buildAddButton(onAdd) {
-    return textButton(
-      'New NPC',
-      async () => {
-        if (await onAdd()) render();
-      },
-      { icon: 'add' },
-    );
-  }
-
-  render();
-  return { update: render };
+      return parts;
+    },
+    actions: (npc, ctx) => {
+      if (!ctx.gm) return [];
+      const onEdit = callbacks.onEdit;
+      return [
+        onEdit ? { icon: 'edit', label: `Edit ${npc.name}`, onClick: () => onEdit(npc) } : null,
+        {
+          icon: 'remove',
+          label: `Delete ${npc.name}`,
+          variant: 'danger',
+          onClick: async () => {
+            if (callbacks.confirmDelete && !(await callbacks.confirmDelete(npc))) return false;
+            callbacks.onDelete(npc.id);
+          },
+        },
+      ];
+    },
+    addButtons: () => {
+      const onAdd = callbacks.onAdd;
+      return onAdd ? [{ label: 'New NPC', icon: 'add', onClick: onAdd }] : [];
+    },
+    addPinned: callbacks.pinAdd,
+    addClass: 'npc-panel__add',
+  });
 }
