@@ -455,9 +455,17 @@ export function clearHistory(key = DEFAULT_HISTORY_KEY) {
  * as-is, with no JSON parse or re-serialize of the campaign at all. A snapshot
  * identical to the newest stored one is skipped, so saving twice without
  * changes doesn't burn a ring slot.
+ *
+ * Reports what became of the ring, because the quota fallbacks below cost the
+ * GM undo depth and used to do so silently: `ok` is whether this snapshot is
+ * stored and therefore undoable, and `evictedAll` is whether older snapshots
+ * were discarded to make room. `evictedAll` covers only the quota path — the
+ * ordinary eviction of the oldest entry once the ring is at `limit` is the
+ * design rather than a loss, and reports false.
  * @param {string} snapshot raw serialized CampaignState
  * @param {string} [key]
  * @param {number} [limit]
+ * @returns {{ ok: boolean, evictedAll: boolean }}
  */
 export function snapshotRawHistory(
   snapshot,
@@ -466,7 +474,10 @@ export function snapshotRawHistory(
 ) {
   const seqs = loadHistoryIndex(key);
   const newestSeq = seqs[seqs.length - 1];
-  if (seqs.length && snapshot === localStorage.getItem(historyEntryKey(key, newestSeq))) return;
+  if (seqs.length && snapshot === localStorage.getItem(historyEntryKey(key, newestSeq))) {
+    // The newest entry already holds this exact snapshot, so nothing is missing.
+    return { ok: true, evictedAll: false };
+  }
   const seq = seqs.length ? newestSeq + 1 : 0;
   const next = pushSnapshot(seqs, seq, limit);
   const evicted = seqs.filter((s) => !next.includes(s));
@@ -485,19 +496,23 @@ export function snapshotRawHistory(
     } catch {
       localStorage.removeItem(historyEntryKey(key, seq));
       clearHistory(key);
+      return { ok: false, evictedAll: true };
     }
-    return;
+    return { ok: true, evictedAll: true };
   }
   for (const s of evicted) localStorage.removeItem(historyEntryKey(key, s));
+  return { ok: true, evictedAll: false };
 }
 
 /**
  * Push the currently-persisted save (the raw string in localStorage) onto the
  * undo history ring, without parsing or re-serializing it. No-op when nothing
- * is saved yet.
+ * is saved yet, which reports as a clean push: nothing failed and no depth was
+ * lost, which is all the two fields claim.
  * @param {string} [saveKey]
  * @param {string} [historyKey]
  * @param {number} [limit]
+ * @returns {{ ok: boolean, evictedAll: boolean }}
  */
 export function snapshotPersistedSave(
   saveKey = DEFAULT_STORAGE_KEY,
@@ -505,7 +520,8 @@ export function snapshotPersistedSave(
   limit = DEFAULT_HISTORY_LIMIT,
 ) {
   const raw = localStorage.getItem(saveKey);
-  if (raw) snapshotRawHistory(raw, historyKey, limit);
+  if (!raw) return { ok: true, evictedAll: false };
+  return snapshotRawHistory(raw, historyKey, limit);
 }
 
 /**

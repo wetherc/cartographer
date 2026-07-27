@@ -95,8 +95,9 @@ test('a serialized state pushed onto the ring undoes back to itself', () => {
 });
 
 test('snapshotRawHistory stores the raw string and skips a duplicate of the newest', () => {
-  snapshotRawHistory('{"nodes":[1]}');
-  snapshotRawHistory('{"nodes":[1]}'); // unchanged save pushed again
+  assert.deepEqual(snapshotRawHistory('{"nodes":[1]}'), { ok: true, evictedAll: false });
+  // An unchanged save pushed again keeps the newest entry, so nothing is missing.
+  assert.deepEqual(snapshotRawHistory('{"nodes":[1]}'), { ok: true, evictedAll: false });
   assert.deepEqual(storedHistory(), ['{"nodes":[1]}']);
   snapshotRawHistory('{"nodes":[2]}');
   snapshotRawHistory('{"nodes":[1]}'); // same as an older entry, not the newest
@@ -104,17 +105,24 @@ test('snapshotRawHistory stores the raw string and skips a duplicate of the newe
 });
 
 test('snapshotPersistedSave pushes the persisted save string untouched', () => {
-  snapshotPersistedSave(); // nothing saved yet: no-op
+  // Nothing saved yet: a no-op, which loses no depth and so reports a clean push.
+  assert.deepEqual(snapshotPersistedSave(), { ok: true, evictedAll: false });
   assert.deepEqual(storedHistory(), []);
   localStorage.setItem('campaign-builder:save', '{"nodes":[],"party":null}');
-  snapshotPersistedSave();
+  assert.deepEqual(snapshotPersistedSave(), { ok: true, evictedAll: false });
   assert.deepEqual(storedHistory(), ['{"nodes":[],"party":null}']);
 });
 
 test('snapshotRawHistory enforces the ring limit and removes evicted entries', () => {
   const store = installLocalStorage();
-  for (let i = 0; i < 25; i++)
-    snapshotRawHistory(`{"quests":[${i}]}`, 'campaign-builder:history', 10);
+  for (let i = 0; i < 25; i++) {
+    // Dropping the oldest entry at the limit is the ring working, not a loss, so
+    // it never reports as one.
+    assert.deepEqual(snapshotRawHistory(`{"quests":[${i}]}`, 'campaign-builder:history', 10), {
+      ok: true,
+      evictedAll: false,
+    });
+  }
   const history = storedHistory();
   assert.equal(history.length, 10);
   assert.equal(history[history.length - 1], '{"quests":[24]}');
@@ -133,8 +141,9 @@ test('snapshotRawHistory falls back to a single-snapshot ring when the quota blo
     }
     realSetItem(k, v);
   };
-  snapshotRawHistory('{"note":"second"}');
+  const result = snapshotRawHistory('{"note":"second"}');
   assert.deepEqual(storedHistory(), ['{"note":"second"}'], 'ring shortened to the newest snapshot');
+  assert.deepEqual(result, { ok: true, evictedAll: true }, 'the lost depth is reported');
 });
 
 test('snapshotRawHistory drops the ring entirely when even one snapshot cannot be stored', () => {
@@ -144,8 +153,9 @@ test('snapshotRawHistory drops the ring entirely when even one snapshot cannot b
   localStorage.setItem = () => {
     throw new Error('QuotaExceededError');
   };
-  snapshotRawHistory('{"note":"second"}');
+  const result = snapshotRawHistory('{"note":"second"}');
   localStorage.setItem = (k, v) => store.set(k, String(v));
+  assert.deepEqual(result, { ok: false, evictedAll: true }, 'nothing is undoable and it says so');
   assert.deepEqual(storedHistory(), [], 'unstorable history removed rather than left stale');
   assert.equal(store.size, 0, 'no orphaned snapshot keys remain');
 });

@@ -36,6 +36,12 @@ export function wireCampaignActions(app) {
   /** Footprint at the last near-quota warning, so the toast doesn't repeat per autosave. */
   let warnedFootprint = 0;
   /**
+   * Which undo-history degradation was last reported, so the notice doesn't
+   * repeat per autosave while a full origin degrades every push.
+   * @type {'' | 'shortened' | 'cleared'}
+   */
+  let reportedHistoryLoss = '';
+  /**
    * The autosave poll, live only while there are unsaved changes to write.
    * @type {ReturnType<typeof setInterval> | null}
    */
@@ -98,9 +104,27 @@ export function wireCampaignActions(app) {
    * Push the currently-persisted campaign onto the undo history ring, so the
    * next save/replace/import is reversible. No-op on a first run with no save.
    * Works on the raw persisted string — no parse/re-serialize of the campaign.
+   *
+   * A full origin makes the ring degrade rather than throw, which costs the GM
+   * undo depth; report that instead of leaving Undo quietly single-step. The
+   * notice fires on entering a degraded state and again if it worsens, but not
+   * on every push: autosave pushes every ten seconds while dirty, and an
+   * over-quota origin degrades every one of them.
    */
   function snapshotCurrentSave() {
-    snapshotPersistedSave();
+    const { ok, evictedAll } = snapshotPersistedSave();
+    const loss = !ok ? 'cleared' : evictedAll ? 'shortened' : '';
+    if (!loss) {
+      reportedHistoryLoss = '';
+      return;
+    }
+    if (loss === reportedHistoryLoss) return;
+    reportedHistoryLoss = loss;
+    app.toasts.show(
+      loss === 'cleared'
+        ? 'Browser storage is full: the undo history was cleared, so the previous save can no longer be restored.'
+        : 'Browser storage is full: the undo history was shortened to a single step.',
+    );
   }
 
   /**
