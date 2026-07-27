@@ -15,31 +15,73 @@ import { isSlotPool } from './SpellSlots.js';
 /** @typedef {import('../types/entities.js').EnemyArmor} EnemyArmor */
 
 /**
+ * Resolve one default loadout against the shared preset lists. Called while
+ * this module loads rather than per encounter, so a rename in
+ * EquipmentPresets.js raises one named error at startup instead of a non-null
+ * cast crashing on `undefined.name` the first time a campaign loads.
+ * @param {string} weaponName
+ * @param {string} armorName
+ * @returns {{ weapon: (typeof WEAPON_PRESETS)[number], armor: EnemyArmor }}
+ */
+function requireLoadout(weaponName, armorName) {
+  const weapon = WEAPON_PRESETS.find((p) => p.name === weaponName);
+  const armor = enemyArmor(armorName);
+  if (!weapon) throw new Error(`Unknown weapon preset: ${weaponName}`);
+  if (!armor) throw new Error(`Unknown armor preset: ${armorName}`);
+  return { weapon, armor };
+}
+
+/**
+ * The arms an unequipped enemy defaults to, per tier and level band: mobs carry
+ * simple gear that steps up with level, legends carry heavy gear from the
+ * start. Read-only reference data — `defaultEnemyGear` hands out copies.
+ */
+const DEFAULT_LOADOUTS = {
+  mob: {
+    low: requireLoadout('Shortsword', 'Leather Armor'),
+    high: requireLoadout('Longsword', 'Chain Shirt'),
+  },
+  legend: {
+    low: requireLoadout('Longsword', 'Chain Mail'),
+    high: requireLoadout('Greatsword', 'Plate'),
+  },
+};
+
+/**
  * A generic weapon and armor for an enemy of a given level and tier, so every
- * enemy can attack out of the box. Mobs carry simple arms that step up with
- * level; legends carry heavy ones. Both come from the shared 5e preset lists
- * (armor bonuses read as the preset's margin over the unarmored 10), and all
- * of it stays editable on the encounter.
+ * enemy can attack out of the box. Both come from the shared 5e preset lists
+ * (armor bonuses read as the preset's margin over the unarmored 10) as fresh
+ * copies, so everything stays editable on the encounter without writing
+ * through to the presets.
  * @param {number} level
  * @param {EnemyTier} tier
  * @returns {{ weapon: EnemyWeapon, armor: EnemyArmor }}
  */
 export function defaultEnemyGear(level, tier) {
   const lvl = Math.max(1, Math.floor(level) || 1);
-  const names =
-    tier === 'legend'
-      ? lvl < 5
-        ? { weapon: 'Longsword', armor: 'Chain Mail' }
-        : { weapon: 'Greatsword', armor: 'Plate' }
-      : lvl < 5
-        ? { weapon: 'Shortsword', armor: 'Leather Armor' }
-        : { weapon: 'Longsword', armor: 'Chain Shirt' };
-  const preset = /** @type {(typeof WEAPON_PRESETS)[number]} */ (
-    WEAPON_PRESETS.find((p) => p.name === names.weapon)
-  );
+  const loadout = DEFAULT_LOADOUTS[tier === 'legend' ? 'legend' : 'mob'][lvl < 5 ? 'low' : 'high'];
+  return { weapon: copyEnemyWeapon(loadout.weapon), armor: { ...loadout.armor } };
+}
+
+/**
+ * The weapon and armor an encounter should carry: whatever it already stores,
+ * with the level/tier default filled in where a field is absent. A stored null
+ * means deliberately unarmed or unarmored and survives. The default is derived
+ * lazily, so an encounter that already carries both — every reload of an
+ * existing campaign — never touches the preset lists at all.
+ * @param {{ weapon?: EnemyWeapon | null, armor?: EnemyArmor | null }} source
+ * @param {number} level
+ * @param {EnemyTier} tier
+ * @returns {{ weapon: EnemyWeapon | null, armor: EnemyArmor | null }}
+ */
+function resolveGear(source, level, tier) {
+  if (source.weapon !== undefined && source.armor !== undefined) {
+    return { weapon: source.weapon, armor: source.armor };
+  }
+  const gear = defaultEnemyGear(level, tier);
   return {
-    weapon: copyEnemyWeapon(preset),
-    armor: /** @type {EnemyArmor} */ (enemyArmor(names.armor)),
+    weapon: source.weapon === undefined ? gear.weapon : source.weapon,
+    armor: source.armor === undefined ? gear.armor : source.armor,
   };
 }
 
@@ -60,7 +102,7 @@ export function defaultEnemyGear(level, tier) {
 export function createEncounter(id, name, maxHP, statBlock = {}, location = null, options = {}) {
   const level = options.level ?? 1;
   const tier = options.tier ?? 'mob';
-  const gear = defaultEnemyGear(level, tier);
+  const gear = resolveGear(options, level, tier);
   const encounter = {
     id,
     name,
@@ -72,8 +114,8 @@ export function createEncounter(id, name, maxHP, statBlock = {}, location = null
     location,
     conditions: [],
     statMods: [],
-    weapon: options.weapon === undefined ? gear.weapon : options.weapon,
-    armor: options.armor === undefined ? gear.armor : options.armor,
+    weapon: gear.weapon,
+    armor: gear.armor,
   };
   // A caster class stamps spell slots (rebuilt for its level) and an empty
   // spellbook; a non-caster leaves the encounter untouched.
@@ -93,7 +135,7 @@ export function createEncounter(id, name, maxHP, statBlock = {}, location = null
 export function withDefaults(encounter) {
   const level = encounter.level ?? 1;
   const tier = encounter.tier ?? 'mob';
-  const gear = defaultEnemyGear(level, tier);
+  const gear = resolveGear(encounter, level, tier);
   return ensureCasterFields(
     {
       ...encounter,
@@ -103,8 +145,8 @@ export function withDefaults(encounter) {
       statMods: encounter.statMods ?? [],
       level,
       tier,
-      weapon: encounter.weapon === undefined ? gear.weapon : encounter.weapon,
-      armor: encounter.armor === undefined ? gear.armor : encounter.armor,
+      weapon: gear.weapon,
+      armor: gear.armor,
     },
     level,
   );

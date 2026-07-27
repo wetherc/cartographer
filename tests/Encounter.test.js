@@ -400,6 +400,27 @@ test('defaultEnemyGear floors a zero/NaN level up to 1', () => {
   assert.equal(defaultEnemyGear(NaN, 'legend').weapon.name, 'Longsword', 'NaN reads as level 1');
 });
 
+test('defaultEnemyGear hands out copies, never the shared presets', () => {
+  const first = defaultEnemyGear(1, 'mob');
+  const second = defaultEnemyGear(1, 'mob');
+  assert.notEqual(first.weapon, second.weapon, 'a fresh weapon per call');
+  assert.notEqual(first.armor, second.armor, 'a fresh armor per call');
+  assert.notEqual(first.weapon.damage[0], second.weapon.damage[0], 'damage parts cloned too');
+  first.weapon.damage[0].sides = 99;
+  assert.equal(defaultEnemyGear(1, 'mob').weapon.damage[0].sides, 6, 'the preset is unchanged');
+});
+
+test('withDefaults keeps an already-geared encounter as-is, defaults only what is absent', () => {
+  const weapon = { name: 'Claw', handling: /** @type {const} */ ('melee'), damage: [] };
+  const armor = { name: 'Hide', acBonus: 2 };
+  const geared = withDefaults(/** @type {any} */ ({ id: 'e1', name: 'Bear', weapon, armor }));
+  assert.equal(geared.weapon, weapon, 'stored weapon passes through untouched');
+  assert.equal(geared.armor, armor, 'stored armor passes through untouched');
+  const halfGeared = withDefaults(/** @type {any} */ ({ id: 'e2', name: 'Thug', armor: null }));
+  assert.equal(halfGeared.armor, null, 'a stored null stays deliberately unarmored');
+  assert.equal(halfGeared.weapon?.name, 'Shortsword', 'the absent weapon takes the default');
+});
+
 test('withDefaults backfills a wholly legacy encounter missing block, statMods, level, and tier', () => {
   const legacy = /** @type {any} */ ({ id: 'e1', name: 'Wolf', maxHP: 5, currentHP: 5 });
   const filled = withDefaults(legacy);
