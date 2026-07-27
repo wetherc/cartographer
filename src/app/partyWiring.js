@@ -359,6 +359,10 @@ export function wireParty(app) {
       const ok = await confirmDelete(character.name, 'Their inventory is lost too.');
       if (!ok) return;
       state.characters = removeById(state.characters, id);
+      // A deleted character can't keep a slot in a running fight: nothing
+      // resolves the id any more, so the row would render as an unknown
+      // combatant whose turn can't be played.
+      app.actions.removeCombatant(id);
       selectCharacter(
         id === selectedCharacterId ? (state.characters[0]?.id ?? null) : selectedCharacterId,
       );

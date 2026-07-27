@@ -3,6 +3,7 @@ import { icon } from './icons.js';
 import { openDialog } from './Modal.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
+/** @typedef {import('../types/combat.js').ParticipantView} ParticipantView */
 
 /**
  * Show the combat setup dialog: one row per potential combatant with an
@@ -15,8 +16,11 @@ import { openDialog } from './Modal.js';
  * a running fight — so the caller gates who can open it. Resolves to the
  * participants with their final initiative values on Start, or null if
  * cancelled.
+ * Like the initiative panel, a row's name and side come from `describe`
+ * rather than the participant, which carries only the numbers.
  * @param {Participant[]} roster
  * @param {{
+ *   describe?: (participant: Participant) => ParticipantView | null,
  *   rollInitiative?: (participant: Participant) => number,
  *   onRolled?: (results: { name: string, value: number }[]) => void,
  * }} [callbacks]
@@ -26,6 +30,10 @@ export function combatSetupModal(roster, callbacks = {}) {
   /** @type {Map<string, HTMLInputElement>} */
   const inputs = new Map();
 
+  /** @param {Participant} participant @returns {ParticipantView} */
+  const describe = (participant) =>
+    callbacks.describe?.(participant) ?? { name: 'Unknown combatant', side: 'party' };
+
   return openDialog({
     title: 'Set up combat',
     form: true,
@@ -33,12 +41,13 @@ export function combatSetupModal(roster, callbacks = {}) {
       /** @type {Node[]} */
       const body = [];
       for (const participant of roster) {
+        const view = describe(participant);
         const row = document.createElement('div');
-        row.className = `initiative-panel__row initiative-panel__row--${participant.side}`;
+        row.className = `initiative-panel__row initiative-panel__row--${view.side}`;
 
         const name = document.createElement('span');
         name.className = 'initiative-panel__name';
-        name.textContent = participant.name;
+        name.textContent = view.name;
 
         const modifier = document.createElement('span');
         modifier.className = 'initiative-panel__modifier';
@@ -49,7 +58,7 @@ export function combatSetupModal(roster, callbacks = {}) {
         input.type = 'number';
         input.className = 'field initiative-panel__init';
         input.value = String(participant.initiative);
-        input.setAttribute('aria-label', `Initiative for ${participant.name}`);
+        input.setAttribute('aria-label', `Initiative for ${view.name}`);
         inputs.set(participant.id, input);
 
         row.append(name, modifier, input);
@@ -73,7 +82,7 @@ export function combatSetupModal(roster, callbacks = {}) {
             if (!input) continue;
             const value = rollInitiative(participant);
             input.value = String(value);
-            results.push({ name: participant.name, value });
+            results.push({ name: describe(participant).name, value });
           }
           if (results.length > 0) callbacks.onRolled?.(results);
         });

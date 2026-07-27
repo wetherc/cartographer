@@ -219,7 +219,21 @@ function combatState(value) {
   return {
     round: number(combat.round, 1),
     index: number(combat.index, 0),
-    order: records(combat.order),
+    // Participants are read down to the three fields the order owns. A save
+    // written before the name and side became derived carries them here too;
+    // dropping them is the whole migration, since both are now resolved from
+    // the entity holding the id. An entry with no id names nobody, so it goes.
+    order: records(combat.order).flatMap((entry) =>
+      typeof entry.id === 'string' && entry.id !== ''
+        ? [
+            {
+              id: entry.id,
+              initiative: number(entry.initiative, 10),
+              modifier: number(entry.modifier, 0),
+            },
+          ]
+        : [],
+    ),
   };
 }
 

@@ -108,6 +108,33 @@ export function findCombatant(app, id) {
 }
 
 /**
+ * Which side a resolved combatant fights on: the party's characters and its
+ * friendly or neutral NPCs against the encounters and the hostile NPCs.
+ * @param {Combatant} found
+ * @returns {'party' | 'foe'}
+ */
+function sideOf(found) {
+  if (found.kind === 'encounter') return 'foe';
+  if (found.kind === 'npc') return found.entity.disposition === 'hostile' ? 'foe' : 'party';
+  return 'party';
+}
+
+/**
+ * How to present a participant: the name and side of whatever entity holds its
+ * id, read fresh. Null when nothing holds it any more — an entity deleted
+ * mid-fight, or an NPC who has walked off the party's tile. The initiative
+ * order stores neither field precisely so that a rename or a disposition
+ * change during a fight shows up here on the next render.
+ * @param {AppContext} app
+ * @param {string} id
+ * @returns {import('../types/combat.js').ParticipantView | null}
+ */
+export function describeCombatant(app, id) {
+  const found = findCombatant(app, id);
+  return found ? { name: found.entity.name, side: sideOf(found) } : null;
+}
+
+/**
  * Project an entity into the shared target shape: an encounter's effective
  * AC, a character's armor AC, an NPC's raw stat (10 when absent).
  * @param {Character | Encounter | NPC} entity
@@ -146,6 +173,9 @@ function isDowned(found) {
  * acting participant's foes by default, or its own side (allies, including
  * the actor) for a heal. Downed combatants drop out of a hostile list but
  * stay eligible as allies — a heal's whole point may be the downed one.
+ * Sides are resolved per participant rather than read off the order, so an
+ * NPC who turns hostile mid-fight is targetable as one. An actor whose own
+ * entity is gone can target nothing.
  * @param {AppContext} app
  * @param {CombatState} combat
  * @param {Participant} actor
@@ -153,14 +183,16 @@ function isDowned(found) {
  * @returns {CombatTarget[]}
  */
 export function combatantsAsTargets(app, combat, actor, { allies = false } = {}) {
-  return combat.order
-    .filter((p) => (allies ? p.side === actor.side : p.side !== actor.side))
-    .flatMap((p) => {
-      const found = findCombatant(app, p.id);
-      if (!found) return [];
-      if (!allies && isDowned(found)) return [];
-      return [asTarget(found.entity, found.kind)];
-    });
+  const actorSide = describeCombatant(app, actor.id)?.side;
+  if (!actorSide) return [];
+  return combat.order.flatMap((p) => {
+    const found = findCombatant(app, p.id);
+    if (!found) return [];
+    const sameSide = sideOf(found) === actorSide;
+    if (sameSide !== allies) return [];
+    if (!allies && isDowned(found)) return [];
+    return [asTarget(found.entity, found.kind)];
+  });
 }
 
 /**

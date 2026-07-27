@@ -14,7 +14,12 @@ import {
   toTemplate,
 } from '../entities/Encounter.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
-import { createParticipant, startCombat, advanceTurn } from '../combat/Initiative.js';
+import {
+  createParticipant,
+  startCombat,
+  advanceTurn,
+  dropParticipant,
+} from '../combat/Initiative.js';
 import { equippedWeapons } from '../entities/Equipment.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 import { npcsOnTile } from '../entities/NPC.js';
@@ -24,7 +29,7 @@ import { isGM, hpBand } from '../view/ViewRole.js';
 import { encounterForm, deleteEncounter, addFromBestiary } from './encounterForm.js';
 import { weaponAttack } from './weaponAttack.js';
 import { castSpellAction } from './spellCast.js';
-import { findCombatant, logDefeatTransition } from './combatants.js';
+import { describeCombatant, findCombatant, logDefeatTransition } from './combatants.js';
 import { getSpellbook } from '../entities/Character.js';
 import { resolveSpellIds } from '../library/Library.js';
 import { spellbookIds } from './casterFields.js';
@@ -55,6 +60,22 @@ export function wireEncounters(app) {
     state.combat = next;
     app.actions.markDirty();
   }
+
+  /**
+   * Drop a deleted combatant out of the running order. Every delete path goes
+   * through here rather than writing `state.combat` itself, because this
+   * module holds the live copy of the combat and a direct write would leave it
+   * stale. A participant left behind resolves to nothing, so its row would sit
+   * in the order with buttons that quietly do nothing.
+   * @param {string} id
+   */
+  app.actions.removeCombatant = (id) => {
+    if (!combat) return;
+    const next = dropParticipant(combat, id);
+    if (next === combat) return;
+    setCombat(next);
+    app.views.initiativePanel.update();
+  };
 
   /**
    * If the party's current tile holds a live encounter, announce it in a modal
@@ -140,6 +161,7 @@ export function wireEncounters(app) {
     },
     onDelete: (id) => {
       state.encounters = removeById(state.encounters, id);
+      app.actions.removeCombatant(id);
       app.actions.syncEncounterMarkers();
       app.views.initiativePanel.update();
       app.actions.markDirty();
@@ -252,25 +274,33 @@ export function wireEncounters(app) {
   // (10 + mod, the passive baseline), added on top of the d20 by "Roll
   // initiative", and shown beside the name. Values stay hand-editable.
   function combatRoster() {
-    /** @type {(id: string, name: string, side: 'party' | 'foe', stats: Record<string, number> | undefined) => import('../types/combat.js').Participant} */
-    const withDex = (id, name, side, stats) => {
+    /** @type {(id: string, stats: Record<string, number> | undefined) => import('../types/combat.js').Participant} */
+    const withDex = (id, stats) => {
       const mod = abilityModifier(stats?.DEX ?? 10);
-      return createParticipant(id, name, side, 10 + mod, mod);
+      return createParticipant(id, 10 + mod, mod);
     };
     return [
-      ...state.characters.map((c) => withDex(c.id, c.name, 'party', c.stats)),
-      ...encountersHere().map((e) => withDex(e.id, e.name, 'foe', effectiveStatBlock(e))),
-      ...npcsOnTile(state.npcs, app.partyTracker.getPosition()).map((n) =>
-        withDex(n.id, n.name, n.disposition === 'hostile' ? 'foe' : 'party', n.stats),
-      ),
+      ...state.characters.map((c) => withDex(c.id, c.stats)),
+      ...encountersHere().map((e) => withDex(e.id, effectiveStatBlock(e))),
+      ...npcsOnTile(state.npcs, app.partyTracker.getPosition()).map((n) => withDex(n.id, n.stats)),
     ];
   }
+
+  /**
+   * The name and side to show for a participant, resolved from whatever holds
+   * its id right now. Both panels take this instead of reading the order, so
+   * renaming a combatant or flipping an NPC's disposition mid-fight shows up
+   * on the next render.
+   * @param {import('../types/combat.js').Participant} participant
+   */
+  const describe = (participant) => describeCombatant(app, participant.id);
 
   // The GM's entry into combat: a setup dialog over the map with the roster,
   // a "Roll initiative" fill (d20 + DEX modifier, hand-editable after), and a
   // Start that flips the initiative panel from hidden to the running order.
   async function startCombatSetup() {
     const participants = await combatSetupModal(combatRoster(), {
+      describe,
       rollInitiative: (participant) =>
         Math.floor(Math.random() * 20) + 1 + (participant.modifier ?? 0),
       // One travelogue line per "Roll initiative" press, recording every
@@ -282,7 +312,7 @@ export function wireEncounters(app) {
         ),
     });
     if (!participants) return;
-    setCombat(startCombat(participants));
+    setCombat(startCombat(participants, (p) => describe(p)?.name ?? ''));
     app.views.initiativePanel.update(); // un-hides the panel
     app.views.encounterPanel.update(); // hides the Start combat button
   }
@@ -290,6 +320,7 @@ export function wireEncounters(app) {
   const initiativeContainer = mustGetElement('initiative-container');
   const initiativePanel = mountInitiativePanel(initiativeContainer, {
     getState: () => combat,
+    describe,
     onNext: () => {
       if (!combat) return;
       const result = advanceTurn(combat);
@@ -346,7 +377,7 @@ export function wireEncounters(app) {
       if (combat) castSpellAction(app, combat, participant, spell);
     },
     canAttack: (participant) =>
-      participant.side === 'foe'
+      describe(participant)?.side === 'foe'
         ? isGM(state.role)
         : isGM(state.role) || app.actions.getBoundCharacterId() === participant.id,
     getRole: () => state.role,

@@ -184,6 +184,7 @@ export async function deleteEncounter(app, encounter) {
   const ok = await confirmDelete(encounter.name);
   if (!ok) return false;
   state.encounters = removeById(state.encounters, encounter.id);
+  app.actions.removeCombatant(encounter.id);
   app.actions.syncEncounterMarkers();
   app.views.encounterPanel.update();
   app.views.initiativePanel.update();

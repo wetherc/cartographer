@@ -95,6 +95,10 @@ export interface AppActions {
   // node — create an encounter there, or edit one already staged there —
   // floated at the pointer's screen position.
   openEncounterContextMenu(x: number, y: number, clientX: number, clientY: number): void;
+  // encounterWiring: drop a deleted entity out of the running initiative
+  // order. Every delete path calls this rather than writing `state.combat`,
+  // since encounterWiring holds the live copy of the combat.
+  removeCombatant(id: string): void;
   // mapWiring
   syncPartyMarker(): void;
   syncEncounterMarkers(): void;

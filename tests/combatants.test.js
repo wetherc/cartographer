@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   findCombatant,
   asTarget,
+  describeCombatant,
   combatantsAsTargets,
   applyToTarget,
   logDefeatTransition,
@@ -119,19 +120,27 @@ test('asTarget defaults an NPC with no stat block to AC 10', () => {
 });
 
 test('combatantsAsTargets skips a participant absent from every roster', () => {
-  const { goblin } = fixtures();
-  const app = stubApp({ encounters: [goblin] });
+  const { hero, goblin } = fixtures();
+  const app = stubApp({ characters: [hero], encounters: [goblin] });
   const combat = {
-    order: [
-      { id: 'ghost', name: 'Ghost', side: 'party' },
-      { id: 'goblin', name: 'Goblin', side: 'foe' },
-    ],
+    order: [{ id: 'hero' }, { id: 'ghost' }, { id: 'goblin' }],
   };
   const targets = combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[0]);
   assert.deepEqual(
     targets.map((t) => t.id),
     ['goblin'],
-    'the unresolved party actor sees only the goblin foe',
+    'the id nothing resolves is no target',
+  );
+});
+
+test('combatantsAsTargets gives an actor nobody resolves nothing to target', () => {
+  const { goblin } = fixtures();
+  const app = stubApp({ encounters: [goblin] });
+  const combat = { order: [{ id: 'ghost' }, { id: 'goblin' }] };
+  assert.deepEqual(
+    combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[0]),
+    [],
+    'a deleted actor has no side, so it has no foes',
   );
 });
 
@@ -146,21 +155,35 @@ test('applyToTarget damages an HP-less character without logging a drop', () => 
 test('combatantsAsTargets lists foes and drops downed ones', () => {
   const { hero, goblin, sage } = fixtures();
   const downed = applyDamage(createEncounter('orc', 'Orc', 8, {}, HERE), 8);
-  const app = stubApp({ characters: [hero], encounters: [goblin, downed], npcs: [sage] });
+  const brute = createNPC('brute', 'Brute', { location: HERE, disposition: 'hostile' });
+  const app = stubApp({
+    characters: [hero],
+    encounters: [goblin, downed],
+    npcs: [sage, brute],
+  });
   const combat = {
-    order: [
-      { id: 'hero', name: 'Hero', side: 'party' },
-      { id: 'goblin', name: 'Goblin', side: 'foe' },
-      { id: 'orc', name: 'Orc', side: 'foe' },
-      { id: 'sage', name: 'Sage', side: 'foe' },
-    ],
+    order: [{ id: 'hero' }, { id: 'goblin' }, { id: 'orc' }, { id: 'sage' }, { id: 'brute' }],
   };
   const targets = combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[0]);
   assert.deepEqual(
     targets.map((t) => t.id),
-    ['goblin', 'sage'],
-    'the defeated orc drops out; the HP-less NPC stays',
+    ['goblin', 'brute'],
+    'the defeated orc drops out, the hostile NPC is a foe, the neutral sage is not',
   );
+});
+
+test('describeCombatant reads the name and side off the live entity', () => {
+  const { hero, goblin, sage } = fixtures();
+  const brute = createNPC('brute', 'Brute', { location: HERE, disposition: 'hostile' });
+  const app = stubApp({ characters: [hero], encounters: [goblin], npcs: [sage, brute] });
+  assert.deepEqual(describeCombatant(app, 'hero'), { name: 'Hero', side: 'party' });
+  assert.deepEqual(describeCombatant(app, 'goblin'), { name: 'Goblin', side: 'foe' });
+  assert.deepEqual(describeCombatant(app, 'sage'), { name: 'Sage', side: 'party' });
+  assert.deepEqual(describeCombatant(app, 'brute'), { name: 'Brute', side: 'foe' });
+  assert.equal(describeCombatant(app, 'nobody'), null);
+  // A rename lands on the next read rather than being frozen into the order.
+  findCombatant(app, 'goblin').store({ ...goblin, name: 'Goblin Chief' });
+  assert.equal(describeCombatant(app, 'goblin')?.name, 'Goblin Chief');
 });
 
 test('combatantsAsTargets with allies keeps downed allies targetable', () => {

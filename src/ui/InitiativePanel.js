@@ -5,6 +5,7 @@ import { textButton } from './buttons.js';
 
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
 /** @typedef {import('../types/combat.js').Participant} Participant */
+/** @typedef {import('../types/combat.js').ParticipantView} ParticipantView */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
@@ -15,12 +16,15 @@ import { textButton } from './buttons.js';
  * the GM. There is no setup state here — the GM opens combat through the
  * setup dialog (`ui/CombatSetup.js`), and the panel's container stays hidden
  * until a fight is actually running. The panel owns no combat state — it
- * reads it via `getState` and reports actions back.
+ * reads it via `getState` and reports actions back, and a participant's name
+ * and side come from `describe` rather than the order, so both track the live
+ * entity.
  * @param {HTMLElement} container
  * @param {{
  *   getState: () => CombatState | null,
  *   onNext: () => void,
  *   onEnd: () => void,
+ *   describe?: (participant: Participant) => ParticipantView | null,
  *   getWeapons?: (participant: Participant) => (InventoryItem | EnemyWeapon)[],
  *   onWeaponAttack?: (participant: Participant, weapon: InventoryItem | EnemyWeapon) => void,
  *   getSpells?: (participant: Participant) => import('../types/spell.js').Spell[],
@@ -55,13 +59,16 @@ export function mountInitiativePanel(container, callbacks) {
 
     const active = currentParticipant(state);
     state.order.forEach((participant, i) => {
+      // An id nothing resolves any more still gets its row, so the order and
+      // the turn pointer keep lining up; it just has nothing to act with.
+      const view = callbacks.describe?.(participant) ?? null;
       const row = document.createElement('div');
-      row.className = `initiative-panel__row initiative-panel__row--${participant.side}`;
+      row.className = `initiative-panel__row initiative-panel__row--${view?.side ?? 'party'}`;
       if (active && i === state.index) row.classList.add('initiative-panel__row--active');
 
       const name = document.createElement('span');
       name.className = 'initiative-panel__name';
-      name.textContent = participant.name;
+      name.textContent = view?.name ?? 'Unknown combatant';
 
       const init = document.createElement('span');
       init.className = 'initiative-panel__init-readout';

@@ -454,13 +454,29 @@ test('serialize/deserialize round-trips a running combat', () => {
     round: 2,
     index: 1,
     order: [
-      { id: 'c1', name: 'Hero', side: 'party', initiative: 17, modifier: 2 },
-      { id: 'e1', name: 'Goblin', side: 'foe', initiative: 9, modifier: -1 },
+      { id: 'c1', initiative: 17, modifier: 2 },
+      { id: 'e1', initiative: 9, modifier: -1 },
     ],
   };
   const state = buildState(grid, null, [], [], [], [], { combat });
   const restored = deserialize(serialize(state));
   assert.deepEqual(restored.combat, combat);
+});
+
+test('deserialize strips the name and side an older save froze into the order', () => {
+  const grid = sampleGrid();
+  const combat = {
+    round: 1,
+    index: 0,
+    order: [
+      { id: 'c1', name: 'Hero', side: 'party', initiative: 17, modifier: 2 },
+      // No id names nobody, so the entry can only ever render as a blank row.
+      { name: 'Ghost', side: 'foe', initiative: 4 },
+    ],
+  };
+  const state = buildState(grid, null, [], [], [], [], { combat });
+  const restored = deserialize(serialize(state));
+  assert.deepEqual(restored.combat?.order, [{ id: 'c1', initiative: 17, modifier: 2 }]);
 });
 
 test('deserialize defaults a missing combat to null', () => {
