@@ -265,6 +265,90 @@ test('a save written before image payloads were hoisted still loads', () => {
   assert.equal(deserialize(json).nodes[0].tiles[0].imageRef, art);
 });
 
+test('serializing encodes a grid node positionally and loading reads it back', () => {
+  const grid = new TileGrid();
+  grid.addNode(variedNode());
+  const state = buildState(grid, null, [], []);
+  const json = serialize(state);
+
+  assert.ok(json.includes('"cells":'), 'the run-length index stream is written');
+  assert.equal(json.includes('"id":"1,0"'), false, 'a tile id is implicit in its position');
+  // Eight tiles use grass. A palette entry is the (imageRef, overlayRef) pair, so
+  // the path is restated once per distinct overlay combination and never per tile.
+  assert.equal(json.split('grass.svg').length - 1, 3);
+
+  const restored = deserialize(json).nodes[0];
+  // Every tile comes back as it went in, bar the explicit span of 1 collapsing to
+  // absent — the same asymmetry the tile packing already has, and the same value.
+  const expected = state.nodes[0].tiles.map((tile) =>
+    tile.span === 1 ? Object.fromEntries(Object.entries(tile).filter(([k]) => k !== 'span')) : tile,
+  );
+  const byId = (tiles) => [...tiles].sort((a, b) => a.id.localeCompare(b.id));
+  assert.deepEqual(byId(restored.tiles), byId(expected));
+  for (const field of ['refs', 'cells', 'fog']) {
+    assert.equal(field in restored, false, `${field} is on-disk only, never live state`);
+  }
+});
+
+test('the positional encoding shrinks a save of a fully explored map', () => {
+  const grid = new TileGrid();
+  let node = createMapNode('world', 'World', null, 40, 40);
+  for (let y = 0; y < 40; y += 1)
+    for (let x = 0; x < 40; x += 1)
+      node = setTile(
+        node,
+        createTile(`${x},${y}`, 'assets/tiles/grass/grass-1.svg', {
+          revealed: true,
+        }),
+      );
+  grid.addNode(node);
+  const state = buildState(grid, null, [], []);
+  const encoded = serialize(state).length;
+  // The same save one schema version back: tiles packed but written per cell.
+  const perTile = JSON.stringify({ ...state, version: 4 }).length;
+  assert.ok(encoded < perTile * 0.05, `encoded ${encoded} vs per-tile ${perTile}`);
+});
+
+test('a save written before tiles were encoded positionally still loads', () => {
+  const grid = new TileGrid();
+  grid.addNode(variedNode());
+  const state = buildState(grid, null, [], []);
+  // Version 4 carries no `cells`, so the decoder must take the unencoded branch.
+  const restored = deserialize(JSON.stringify({ ...state, version: 4 })).nodes[0];
+  assert.deepEqual(restored.tiles.length, state.nodes[0].tiles.length);
+  assert.equal(restored.tiles.find((tile) => tile.id === '1,1').metadata.poiType, 'shop');
+});
+
+test('a node whose tiles are not a canonical grid is stored unencoded', () => {
+  const grid = new TileGrid();
+  grid.addNode({
+    id: 'world',
+    name: 'World',
+    parentId: null,
+    width: 2,
+    height: 1,
+    tiles: [createTile('spawn', 'grass.svg')],
+  });
+  const json = serialize(buildState(grid, null, [], []));
+  assert.equal(json.includes('"cells":'), false, 'a non-grid tile id disqualifies the node');
+  assert.equal(deserialize(json).nodes[0].tiles[0].id, 'spawn');
+});
+
+test('encoding runs after the asset hoist, so the palette holds references', () => {
+  const art = `data:image/png;base64,${'Qk1'.repeat(2000)}`;
+  const grid = new TileGrid();
+  let node = createMapNode('world', 'World', null, 3, 1);
+  for (let x = 0; x < 3; x += 1) node = setTile(node, createTile(`${x},0`, art));
+  grid.addNode(node);
+  const json = serialize(buildState(grid, null, [], []));
+  assert.equal(json.split(art).length - 1, 1, 'one stored payload, referenced by the palette');
+  const restored = deserialize(json).nodes[0];
+  assert.deepEqual(
+    restored.tiles.map((tile) => tile.imageRef),
+    [art, art, art],
+  );
+});
+
 test('buildState stamps the current schema version, whatever extra claims', () => {
   const state = buildState(sampleGrid(), null, [], [], [], [], {
     version: 99,

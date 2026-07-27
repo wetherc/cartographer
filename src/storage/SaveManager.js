@@ -3,6 +3,7 @@ import { downloadJSON, readFileText } from './fileIO.js';
 import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
 import { hoistAssets, restoreAssets } from './Assets.js';
 import { packEntities } from './EntityPack.js';
+import { encodeNodeTiles, decodeNodeTiles } from './TileCodec.js';
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
 import { withDefaults as withEncounterDefaults } from '../entities/Encounter.js';
 import { withDefaults as withNPCDefaults } from '../entities/NPC.js';
@@ -121,9 +122,14 @@ const ENTITY_DEFAULTS = {
 
 /**
  * The campaign in its on-disk shape: as the state, with every node's tiles
- * packed, every entity's default-valued fields omitted, and every inline image
- * payload hoisted into an `assets` table. Pure — the state passed in is never
- * touched.
+ * packed, every entity's default-valued fields omitted, every inline image
+ * payload hoisted into an `assets` table, and every node whose tiles fill a grid
+ * encoded positionally. Pure — the state passed in is never touched.
+ *
+ * The tile codec runs last, after the asset hoist, and that order is what keeps
+ * `Assets.js` unaware of it: the hoist walks `node.tiles[].imageRef`, which an
+ * encoded node no longer has, and running the codec afterwards means its palette
+ * holds already-hoisted `asset:` references rather than the payloads themselves.
  * @param {CampaignState} state
  * @returns {Record<string, any>}
  */
@@ -137,7 +143,10 @@ function packState(state) {
     const list = packed[key];
     if (Array.isArray(list)) packed[key] = packEntities(list, withDefaults);
   }
-  return hoistAssets(packed);
+  const hoisted = hoistAssets(packed);
+  const nodes = hoisted.nodes;
+  if (Array.isArray(nodes)) hoisted.nodes = nodes.map(encodeNodeTiles);
+  return hoisted;
 }
 
 /**
@@ -258,7 +267,15 @@ export function deserialize(json) {
   // no step so far cares about image payloads, and restoring first would make
   // every step pay for inlining them.
   const migrated = record(migrateState(raw, stateVersion(raw))) ?? {};
-  const parsed = restoreAssets(migrated);
+  // Decoding the positional tile form comes before the asset restore, mirroring
+  // `packState`'s encode-last: the restore walks `node.tiles[].imageRef`, which
+  // an encoded node does not have, so a palette reference would otherwise never
+  // be resolved. It also leaves a decoded tile still *packed*, so
+  // `withNodeDefaults` below stays the one statement of what a tile default is.
+  // A node stored in the unencoded form passes through the decoder untouched.
+  const decoded = { ...migrated };
+  if (Array.isArray(decoded.nodes)) decoded.nodes = decoded.nodes.map(decodeNodeTiles);
+  const parsed = restoreAssets(decoded);
   return {
     version: CURRENT_VERSION,
     nodes: records(parsed.nodes)

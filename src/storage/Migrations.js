@@ -20,7 +20,7 @@
  * The schema version `buildState` stamps on every save it writes. Version 0 is
  * every save written before the field existed.
  */
-export const CURRENT_VERSION = 4;
+export const CURRENT_VERSION = 5;
 
 /**
  * Step transforms keyed by the version being migrated *from*: `MIGRATIONS[n]`
@@ -51,6 +51,15 @@ export const MIGRATIONS = {
   // every field explicitly, and the load path runs those same `withDefaults`
   // whether a field was omitted or not.
   3: (state) => state,
+  // 4 -> 5: version 5 encodes a grid-filling node's tiles positionally, as an art
+  // palette plus run-length streams of palette indices and fog. No payload
+  // transform is needed, but for a different reason than the steps above: this is
+  // the first change whose *reader* branches on a field's presence (`cells`)
+  // rather than filling a field from absence, so both forms are read
+  // indefinitely — a version-4 save simply carries no `cells` and takes the
+  // unencoded branch. A save is re-written in the new form the next time it is
+  // saved.
+  4: (state) => state,
 };
 
 /**
