@@ -478,7 +478,7 @@ export function wireParty(app) {
 
   wireTabs(mustGetElement('sheet-tabs'));
 
-  mountTimePanel(mustGetElement('time-container'), {
+  const timePanel = mountTimePanel(mustGetElement('time-container'), {
     getClock: () => state.clock,
     onAdvance: () => {
       state.clock = advanceWatches(state.clock, 1);
@@ -500,4 +500,19 @@ export function wireParty(app) {
       app.actions.logEvent('rest', `The party takes a long rest. Now ${formatClock(state.clock)}.`);
     },
   });
+
+  // One entry point for "the campaign under these panels was replaced", which is
+  // what a tab following another tab's saves needs: the clock, the split toggle's
+  // own checkbox, and — through selectCharacter — the roster, sheet, equipment,
+  // inventory, spellbook, and binding picker. The selection falls back to the
+  // first character, since the roster this tab was showing may no longer hold the
+  // one it had selected.
+  app.views.partyPanels = {
+    update: () => {
+      timePanel.update();
+      splitInput.checked = state.splitParty;
+      const stillThere = state.characters.some((c) => c.id === selectedCharacterId);
+      selectCharacter(stillThere ? selectedCharacterId : (state.characters[0]?.id ?? null));
+    },
+  };
 }

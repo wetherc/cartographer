@@ -71,6 +71,8 @@ export interface AppViews {
   questPanel: Updatable;
   handoutPanel: Updatable;
   travelogPanel: Updatable;
+  /** Roster, sheet, equipment, inventory, spellbook, clock, split toggle. */
+  partyPanels: Updatable;
 }
 
 /** Cross-module operations, registered by the module that owns the state they
@@ -101,6 +103,9 @@ export interface AppActions {
   // logging each introduction; run wherever the party lands somewhere new.
   meetNPCs(): void;
   refreshMapDescription(): void;
+  // mapWiring: re-read the node in view and every location view from the grid,
+  // for a caller that replaced the world underneath them.
+  resyncMap(): void;
   clearSelection(): void;
   // mapWiring: the Build-mode selected tile id, or null — the default spot
   // for authoring flows that place something "here".

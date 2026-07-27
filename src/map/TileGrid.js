@@ -237,6 +237,18 @@ export class TileGrid {
   }
 
   /**
+   * Swap the whole registry's contents for another world's nodes, keeping this
+   * grid object's identity. The navigator, the party tracker, and the map canvas
+   * each hold a reference to the grid they were constructed with, so adopting a
+   * freshly loaded campaign in a running tab has to write through the existing
+   * object rather than replace it.
+   * @param {MapNode[]} nodes
+   */
+  replaceNodes(nodes) {
+    this.nodes = new Map(nodes.map((node) => [node.id, node]));
+  }
+
+  /**
    * Remove a node and its entire subtree from the registry, and clear any tile
    * childNodeId in the remaining nodes that pointed at a removed node, so no
    * tile is left linking to a node that no longer exists. Returns the set of

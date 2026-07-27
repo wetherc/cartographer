@@ -172,6 +172,12 @@ export function wireMapView(app) {
     regionTree.update();
   }
 
+  // Re-read the node in view and every location view from the grid, for a caller
+  // that replaced the world underneath them: the node object, the party marker,
+  // the breadcrumb, and both trees are all derived from grid contents this tab
+  // did not change itself.
+  app.actions.resyncMap = () => goToNode(navigator.currentNodeId);
+
   /** Show the palette only the terrain the current node's kind can use. */
   function syncPaletteKind() {
     palettePanel.setKind(navigator.getCurrentNode().kind);

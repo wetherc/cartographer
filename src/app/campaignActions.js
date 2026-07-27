@@ -1,4 +1,9 @@
-import { buildBlankCampaign, buildExampleCampaign } from '../campaign/Campaigns.js';
+import {
+  buildBlankCampaign,
+  buildExampleCampaign,
+  loadInitialCampaign,
+} from '../campaign/Campaigns.js';
+import { rehydrateCampaign } from './rehydrate.js';
 import { mustGetElement } from '../ui/dom.js';
 import { confirmModal } from '../ui/Modal.js';
 import { queueToastAfterReload } from '../ui/Toast.js';
@@ -332,17 +337,45 @@ export function wireCampaignActions(app) {
 
   // Cross-tab live sync (the minimum-viable multi-device story): when another
   // tab of the same origin writes a new save — e.g. a GM laptop driving a
-  // second player-facing tab — reload so this tab re-initializes from it through
-  // the normal load path. The browser never fires this for our own saves, so
-  // there's no feedback loop. A tab with unsaved local changes is asked first
+  // second player-facing tab — this tab takes that campaign as its own. The
+  // browser never fires this for our own saves, so there's no feedback loop.
+  // Autosave is what keeps a follower current while the GM plays, so these writes
+  // are adopted rather than filtered out; what changed is that adopting one no
+  // longer costs a page load. A tab with unsaved local changes is asked first
   // instead of having them silently discarded — but only once: after a decline,
   // further external saves (autosaves especially, which recur every couple of
   // minutes) show a quiet toast instead of a storm of modals, until this tab
   // saves and its state is canonical again.
+  /**
+   * Take another tab's save without reloading the page: read it through the
+   * ordinary load path and write it over the live campaign. A reload would cost
+   * this tab its scroll position, its open panel, the map's pan and zoom, and
+   * anything staged in the dice tray, every ten seconds of GM editing.
+   *
+   * Only in Play mode. Build mode carries authoring state a re-hydrate would leave
+   * pointing at a world that is gone — the stroke history holds pre-stroke nodes by
+   * reference, the tile inspector holds a tile of one of them — and Library mode
+   * would come back to Play with stale panels. Both, and any failure to adopt the
+   * campaign at all, fall back to the reload this replaces, so the worst case is
+   * the behavior that was already there.
+   * @returns {boolean} whether the tab re-hydrated instead of reloading
+   */
+  function adoptExternalSave() {
+    if (app.state.mode !== 'play') return false;
+    try {
+      rehydrateCampaign(app, loadInitialCampaign());
+    } catch (error) {
+      console.error('Could not adopt the campaign another tab saved; reloading.', error);
+      return false;
+    }
+    refreshHistoryButtons();
+    return true;
+  }
+
   let syncPromptOpen = false;
   onExternalSave(async () => {
     if (!dirty) {
-      location.reload();
+      if (!adoptExternalSave()) location.reload();
       return;
     }
     if (syncPromptOpen) return;

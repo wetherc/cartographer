@@ -60,10 +60,12 @@ put it on a display facing the table. Only one tab at a time can hold the GM
 view: while a GM tab is open, every other tab of the same origin opens as (and
 is kept in) the Player view. Closing the GM tab frees the role for another tab
 to claim; if the GM tab crashes instead of closing, the claim expires on its
-own after a few seconds. When you click **Save** in your GM tab, any
-other tab of the same origin reloads to match — a minimal way to drive a
-player-facing screen from your laptop with no server. (The two tabs share one
-campaign; the role is the only thing that differs between them.)
+own after a few seconds. Every save in your GM tab — including an autosave — is
+picked up by the other tabs, which is a minimal way to drive a player-facing
+screen from your laptop with no server. A Play-mode tab takes the change without
+reloading, so the display keeps its scroll position, its open panel, and the zoom
+and pan you left the map at. (The two tabs share one campaign; the role is the
+only thing that differs between them.)
 
 A Player tab still shows the GM/Player switch, which would claim the GM view
 the moment your GM tab closes. You can lock it:
