@@ -114,21 +114,33 @@ export function meetNPCs(npcs, position) {
 }
 
 /**
+ * Whether an NPC stands exactly on a tile. Unplaced (appears-everywhere) NPCs
+ * are not on any tile: an NPC joins a fight only by standing on its own. The
+ * membership test behind `npcsOnTile`, exported so a caller resolving one NPC
+ * by id can ask the question without filtering the whole roster. Pure.
+ * @param {NPC} npc
+ * @param {EncounterLocation | null} position
+ * @returns {boolean}
+ */
+export function isOnTile(npc, position) {
+  return (
+    position !== null &&
+    npc.location !== null &&
+    npc.location.nodeId === position.nodeId &&
+    npc.location.tileId === position.tileId
+  );
+}
+
+/**
  * The NPCs placed exactly on a tile — participants when an encounter triggers
- * there. Unlike `npcsAt`, unplaced (appears-everywhere) NPCs are excluded: an
- * NPC joins a fight only by standing on its tile. Pure.
+ * there. Unlike `npcsAt`, unplaced (appears-everywhere) NPCs are excluded. Pure.
  * @param {NPC[]} npcs
  * @param {EncounterLocation | null} position
  * @returns {NPC[]}
  */
 export function npcsOnTile(npcs, position) {
   if (!position) return [];
-  return npcs.filter(
-    (n) =>
-      n.location !== null &&
-      n.location.nodeId === position.nodeId &&
-      n.location.tileId === position.tileId,
-  );
+  return npcs.filter((n) => isOnTile(n, position));
 }
 
 /**

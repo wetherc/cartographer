@@ -6,6 +6,7 @@ import {
   knownNpcsAt,
   meetNPCs,
   npcsOnTile,
+  isOnTile,
   withDefaults,
   formatLocation,
   dispositionOptions,
@@ -108,4 +109,14 @@ test('npcsOnTile matches only NPCs standing exactly on the tile', () => {
   );
   assert.deepEqual(npcsOnTile(npcs, { nodeId: 'region', tileId: '3,2' }), []);
   assert.deepEqual(npcsOnTile(npcs, null), []);
+});
+
+test('isOnTile is the same membership test for one NPC', () => {
+  const here = { nodeId: 'world', tileId: '3,2' };
+  const placed = createNPC('a', 'Bram', { location: here });
+  assert.equal(isOnTile(placed, here), true);
+  assert.equal(isOnTile(placed, { nodeId: 'world', tileId: '4,2' }), false, 'another tile');
+  assert.equal(isOnTile(placed, { nodeId: 'region', tileId: '3,2' }), false, 'another node');
+  assert.equal(isOnTile(placed, null), false, 'nowhere');
+  assert.equal(isOnTile(createNPC('c', 'Narrator'), here), false, 'unplaced is on no tile');
 });

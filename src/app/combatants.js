@@ -2,7 +2,7 @@ import { indexById } from '../util/indexById.js';
 import { applyDamage, effectiveStatBlock, heal, isDefeated } from '../entities/Encounter.js';
 import { armorClass } from '../entities/Equipment.js';
 import { damageCharacter, restoreResource, getHP, HP_RESOURCE_ID } from '../entities/Character.js';
-import { npcsOnTile } from '../entities/NPC.js';
+import { isOnTile } from '../entities/NPC.js';
 import { replaceById } from '../entities/Roster.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -91,8 +91,11 @@ export function findCombatant(app, id) {
       },
     };
   }
-  const npc = npcsOnTile(state.npcs, app.partyTracker.getPosition()).find((n) => n.id === id);
-  if (npc) {
+  // Resolved through the same memoized index as the other two branches, then
+  // gated on the tile, rather than re-filtering the whole roster per lookup:
+  // combatantsAsTargets calls this once per participant.
+  const npc = /** @type {NPC | undefined} */ (cachedIndex(state.npcs).get(id));
+  if (npc && isOnTile(npc, app.partyTracker.getPosition())) {
     return {
       kind: 'npc',
       entity: npc,
@@ -192,11 +195,11 @@ export function applyToTarget(app, targetId, amount, isHeal) {
   if (found.kind === 'encounter') {
     const next = isHeal ? heal(found.entity, amount) : applyDamage(found.entity, amount);
     if (!isHeal) logDefeatTransition(app, found.entity, next);
+    // `store` re-syncs the map markers itself, which is what a defeated
+    // encounter dropping off the danger layer (or a healed one returning)
+    // needs; doing it again here only re-filtered the encounter list and
+    // rebuilt the Build rail a second time per hit.
     found.store(next);
-    // A defeated encounter drops off the map's danger markers; a healed one
-    // that comes back up returns. Re-sync so the change shows without waiting
-    // for the next navigation or panel refresh.
-    app.actions.syncEncounterMarkers?.();
     app.actions.markDirty();
     return;
   }
