@@ -2,7 +2,7 @@ import { parseCoords, tileRect } from './MapGeometry.js';
 import { groupImageChunks } from './RegionGroups.js';
 import { spanBlocks } from './TilePaint.js';
 import { overlayList } from './TileGrid.js';
-import { tileIndex } from './TileIndex.js';
+import { tileAtXY } from './TileIndex.js';
 import { MapMarkers } from './MapMarkers.js';
 import { MapDecorations } from './MapDecorations.js';
 
@@ -287,17 +287,17 @@ export class MapRenderer {
     const node = view.node;
     if (!node) return;
     // Invert the view transform once and walk only the visible cell range,
-    // looking tiles up by id — O(visible cells), where iterating node.tiles
-    // was O(total tiles) with a regex parse per tile per frame.
+    // looking tiles up by coordinate — O(visible cells), where iterating
+    // node.tiles was O(total tiles) with a regex parse per tile per frame, and
+    // where an id lookup built and hashed a string per visible cell per frame.
     const size = this.tileSize * view.scale;
-    const byId = tileIndex(node);
     const minX = Math.max(0, Math.floor(-view.offsetX / size));
     const minY = Math.max(0, Math.floor(-view.offsetY / size));
     const maxX = Math.min(node.width - 1, Math.floor((view.canvasWidth - view.offsetX) / size));
     const maxY = Math.min(node.height - 1, Math.floor((view.canvasHeight - view.offsetY) / size));
     for (let y = minY; y <= maxY; y++) {
       for (let x = minX; x <= maxX; x++) {
-        const tile = byId.get(`${x},${y}`);
+        const tile = tileAtXY(node, x, y);
         if (!tile) continue;
         const sx = x * size + view.offsetX;
         const sy = y * size + view.offsetY;

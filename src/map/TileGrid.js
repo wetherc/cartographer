@@ -1,6 +1,6 @@
 import { collectSubtreeIds } from './WorldTree.js';
 import { parseCoords } from './MapGeometry.js';
-import { tileIndex, tilePosition } from './TileIndex.js';
+import { tileAt, tilePosition, withTileAppended, withTileReplaced } from './TileIndex.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').TileMetadata} TileMetadata */
@@ -136,10 +136,7 @@ export function overlayList(tile) {
  */
 export function setTile(node, tile) {
   const pos = tilePosition(node, tile.id);
-  const tiles = node.tiles.slice();
-  if (pos === undefined) tiles.push(tile);
-  else tiles[pos] = tile;
-  return { ...node, tiles };
+  return pos === undefined ? withTileAppended(node, tile) : withTileReplaced(node, pos, tile);
 }
 
 /**
@@ -149,7 +146,7 @@ export function setTile(node, tile) {
  * @returns {Tile | undefined}
  */
 export function getTile(node, tileId) {
-  return tileIndex(node).get(tileId);
+  return tileAt(node, tileId);
 }
 
 /**

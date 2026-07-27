@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tileIndex, tilePosition } from '../src/map/TileIndex.js';
+import {
+  cellPosition,
+  tileAt,
+  tileAtXY,
+  tilePosition,
+  withTileAppended,
+  withTileReplaced,
+  withTilesReplaced,
+} from '../src/map/TileIndex.js';
 import {
   createMapNode,
   createTile,
@@ -16,28 +24,10 @@ function nodeWith(...ids) {
   return node;
 }
 
-test('tileIndex maps every tile id to its tile', () => {
+test('tileAt resolves every tile id, undefined for one the node lacks', () => {
   const node = nodeWith('0,0', '1,2', '3,3');
-  const index = tileIndex(node);
-  assert.equal(index.size, 3);
-  assert.equal(index.get('1,2'), getTile(node, '1,2'));
-  assert.equal(index.get('9,9'), undefined);
-});
-
-test('tileIndex is cached per node object', () => {
-  const node = nodeWith('0,0');
-  assert.equal(tileIndex(node), tileIndex(node));
-});
-
-test('a tile mutation yields a new node with a fresh index', () => {
-  const node = nodeWith('0,0');
-  const before = tileIndex(node);
-  const updated = setTile(node, createTile('1,1', 'forest.png'));
-  assert.notEqual(updated, node);
-  const after = tileIndex(updated);
-  assert.notEqual(after, before);
-  assert.equal(before.size, 1); // the old node's index is untouched
-  assert.equal(after.size, 2);
+  assert.equal(tileAt(node, '1,2'), node.tiles[1]);
+  assert.equal(tileAt(node, '9,9'), undefined);
 });
 
 test('tilePosition reports the array position, undefined when absent', () => {
@@ -45,6 +35,38 @@ test('tilePosition reports the array position, undefined when absent', () => {
   assert.equal(tilePosition(node, '0,0'), 0);
   assert.equal(tilePosition(node, '1,1'), 1);
   assert.equal(tilePosition(node, '5,5'), undefined);
+});
+
+test('tileAtXY resolves by coordinate and rejects cells outside the extent', () => {
+  const node = nodeWith('0,0', '4,6');
+  assert.equal(tileAtXY(node, 4, 6), getTile(node, '4,6'));
+  assert.equal(tileAtXY(node, 1, 1), undefined); // empty cell
+  assert.equal(tileAtXY(node, 8, 0), undefined); // past the width
+  assert.equal(tileAtXY(node, 0, -1), undefined);
+});
+
+test('a tile whose id is not a grid coordinate has no cell position', () => {
+  const node = setTile(createMapNode('n', 'Node', null, 4, 4), createTile('loose', 'grass.png'));
+  assert.equal(tileAt(node, 'loose')?.imageRef, 'grass.png');
+  assert.equal(cellPosition(node, 0, 0), undefined);
+});
+
+test('a node with no usable extent still resolves coordinates through its ids', () => {
+  const node = setTile(createMapNode('n', 'Node', null, 0, 0), createTile('2,3', 'grass.png'));
+  // cellPosition's own bounds check rejects everything on a zero extent, so the
+  // fallback is exercised through a node whose extent is too large to map.
+  const huge = { ...createMapNode('h', 'Huge', null, 4000, 4000), tiles: node.tiles };
+  assert.equal(tileAtXY(huge, 2, 3)?.imageRef, 'grass.png');
+  assert.equal(tileAtXY(huge, 2, 4), undefined);
+});
+
+test('a tile mutation yields a new node whose lookups see the change', () => {
+  const node = nodeWith('0,0');
+  const updated = setTile(node, createTile('1,1', 'forest.png'));
+  assert.notEqual(updated, node);
+  assert.equal(tileAt(node, '1,1'), undefined); // the old node is untouched
+  assert.equal(tileAt(updated, '1,1')?.imageRef, 'forest.png');
+  assert.equal(tileAtXY(updated, 1, 1)?.imageRef, 'forest.png');
 });
 
 test('setTile replaces an existing tile in place, preserving order', () => {
@@ -55,6 +77,69 @@ test('setTile replaces an existing tile in place, preserving order', () => {
     ['0,0', '1,1', '2,2'],
   );
   assert.equal(getTile(node, '1,1').imageRef, 'water.png');
+  assert.equal(tileAtXY(node, 1, 1).imageRef, 'water.png');
+});
+
+test('a long run of appends stays correct past the flatten threshold', () => {
+  let node = createMapNode('n', 'Node', null, 30, 30);
+  for (let y = 0; y < 30; y++) {
+    for (let x = 0; x < 30; x++) {
+      node = setTile(node, createTile(`${x},${y}`, `t-${x}-${y}.png`));
+      // Read through the layout every step, so a stale override would surface
+      // here rather than only in the final state.
+      assert.equal(tileAtXY(node, x, y).imageRef, `t-${x}-${y}.png`);
+    }
+  }
+  assert.equal(node.tiles.length, 900);
+  assert.equal(tileAtXY(node, 7, 21).imageRef, 't-7-21.png');
+  assert.equal(tilePosition(node, '7,21'), 21 * 30 + 7);
+});
+
+test('two appends branching off one node do not see each other', () => {
+  const base = nodeWith('0,0');
+  const left = setTile(base, createTile('1,0', 'left.png'));
+  const right = setTile(base, createTile('2,0', 'right.png'));
+
+  assert.equal(tileAt(left, '1,0')?.imageRef, 'left.png');
+  assert.equal(tileAt(left, '2,0'), undefined);
+  assert.equal(tileAt(right, '2,0')?.imageRef, 'right.png');
+  assert.equal(tileAt(right, '1,0'), undefined);
+  assert.equal(tileAtXY(right, 1, 0), undefined);
+});
+
+test('an append after an erase re-indexes rather than reusing shifted positions', () => {
+  let node = nodeWith('0,0', '1,0', '2,0');
+  node = { ...node, tiles: node.tiles.filter((t) => t.id !== '1,0') };
+  node = setTile(node, createTile('3,0', 'new.png'));
+
+  assert.equal(tilePosition(node, '2,0'), 1);
+  assert.equal(tilePosition(node, '1,0'), undefined);
+  assert.equal(tileAtXY(node, 3, 0).imageRef, 'new.png');
+});
+
+test('withTileReplaced and withTilesReplaced write only the given positions', () => {
+  const node = nodeWith('0,0', '1,0', '2,0');
+  const one = withTileReplaced(node, 1, createTile('1,0', 'one.png'));
+  assert.equal(tileAt(one, '1,0')?.imageRef, 'one.png');
+  assert.equal(tileAt(one, '0,0')?.imageRef, 'grass.png');
+
+  const many = withTilesReplaced(
+    node,
+    new Map([
+      [0, createTile('0,0', 'a.png')],
+      [2, createTile('2,0', 'c.png')],
+    ]),
+  );
+  assert.equal(tileAtXY(many, 0, 0).imageRef, 'a.png');
+  assert.equal(tileAtXY(many, 1, 0).imageRef, 'grass.png');
+  assert.equal(tileAtXY(many, 2, 0).imageRef, 'c.png');
+});
+
+test('withTileAppended puts the tile last', () => {
+  const node = withTileAppended(nodeWith('0,0'), createTile('5,5', 'far.png'));
+  assert.equal(node.tiles.length, 2);
+  assert.equal(node.tiles[1].id, '5,5');
+  assert.equal(tileAtXY(node, 5, 5).imageRef, 'far.png');
 });
 
 test('updateTileMetadata is a no-op on a missing tile id', () => {

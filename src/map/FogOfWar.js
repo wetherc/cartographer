@@ -1,5 +1,11 @@
 import { parseCoords } from './MapGeometry.js';
-import { tileIndex, tilePosition } from './TileIndex.js';
+import {
+  cellPosition,
+  tileAt,
+  tilePosition,
+  withTileReplaced,
+  withTilesReplaced,
+} from './TileIndex.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
@@ -17,11 +23,11 @@ export function revealAround(node, centerId, radius) {
   const center = parseCoords(centerId);
   if (!center) return node;
 
-  // Walk the disc's bounding square via the tile index instead of mapping the
-  // whole tile array: O(radius^2) per party step, not O(total tiles) — and a
-  // step that reveals nothing new returns the same node, keeping the WeakMap
-  // caches (TileIndex, region groups, span blocks) warm.
-  const byId = tileIndex(node);
+  // Walk the disc's bounding square by coordinate instead of mapping the whole
+  // tile array: O(radius^2) per party step, not O(total tiles), and with no id
+  // string built per cell. A step that reveals nothing new returns the same
+  // node, keeping the WeakMap caches (tile layout, region groups, span blocks)
+  // warm.
   const r = Math.ceil(radius);
   const radiusSq = radius * radius;
   /** @type {Map<number, import('../types/map.js').Tile> | null} */
@@ -31,20 +37,15 @@ export function revealAround(node, centerId, radius) {
       const dx = x - center.x;
       const dy = y - center.y;
       if (dx * dx + dy * dy > radiusSq) continue;
-      const id = `${x},${y}`;
-      const tile = byId.get(id);
-      if (!tile || tile.revealed) continue;
-      (changed ??= new Map()).set(/** @type {number} */ (tilePosition(node, id)), {
-        ...tile,
-        revealed: true,
-      });
+      const pos = cellPosition(node, x, y);
+      if (pos === undefined) continue;
+      const tile = node.tiles[pos];
+      if (tile.revealed) continue;
+      (changed ??= new Map()).set(pos, { ...tile, revealed: true });
     }
   }
   if (!changed) return node;
-
-  const tiles = node.tiles.slice();
-  for (const [pos, tile] of changed) tiles[pos] = tile;
-  return { ...node, tiles };
+  return withTilesReplaced(node, changed);
 }
 
 /**
@@ -94,11 +95,10 @@ export function revealAll(node) {
  * @returns {MapNode}
  */
 export function setTileRevealed(node, tileId, revealed) {
-  const existing = tileIndex(node).get(tileId);
+  const existing = tileAt(node, tileId);
   if (!existing || existing.revealed === revealed) return node;
-  const tiles = node.tiles.slice();
-  tiles[/** @type {number} */ (tilePosition(node, tileId))] = { ...existing, revealed };
-  return { ...node, tiles };
+  const pos = /** @type {number} */ (tilePosition(node, tileId));
+  return withTileReplaced(node, pos, { ...existing, revealed });
 }
 
 /**

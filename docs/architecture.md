@@ -132,12 +132,29 @@ established pattern that new code touching the same area should follow:
   (`MapControls.update` via `onViewChange`) compares against what it last
   wrote and bails before touching the DOM when nothing changed.
 - **Per-tile lookups go through `TileIndex`** (`src/map/TileIndex.js`), a
-  WeakMap-cached id-to-tile/position index per node. The cache is safe because
-  nodes are replaced immutably on every tile mutation — a stale node object can
-  never serve fresh reads. Any new code that resolves tile ids in a loop
-  (painting, fog, hit-testing) should use it instead of scanning the flat
-  `tiles` array; conversely, any new mutation path must keep replacing the node
-  rather than mutating tiles in place, or the index breaks.
+  WeakMap-cached layout per node: `tileAt(node, id)` resolves an id and
+  `tileAtXY(node, x, y)` a grid coordinate, both O(1) and neither allocating.
+  The cache is safe because nodes are replaced immutably on every tile mutation
+  — a stale node object can never serve fresh reads. Any new code that resolves
+  tiles in a loop (painting, fog, hit-testing) should use these instead of
+  scanning the flat `tiles` array; conversely, any new mutation path must keep
+  replacing the node rather than mutating tiles in place, or the layout breaks.
+
+  What the layout holds is deliberately positional — an id-to-position map plus
+  a flat cell-to-position buffer over the node's extent — and holds no tiles at
+  all, because that is what lets a mutation hand the new node the previous
+  node's maps rather than re-index from scratch. `withTileReplaced`,
+  `withTilesReplaced`, and `withTileAppended` are the three helpers that carry
+  the layout forward, and `setTile` plus the fog writers are built on them, so a
+  paint or fog drag costs O(cells crossed) across the whole stroke instead of a
+  full re-index per cell — measured on a 40-cell drag, 1.74 ms to 0.05 ms at
+  30x30 and 30.0 ms to 0.10 ms at 100x100. A mutation that *removes* a tile
+  shifts every later position and so still rebuilds. Appends are recorded in
+  override maps private to the new node, never written into the shared base, so
+  two nodes branching off one parent (which is exactly what a stroke plus its
+  pre-stroke undo snapshot are) can never see each other's tiles. New mutation
+  helpers should either route through those three or leave the new node
+  uncached, which is always correct and merely costs one rebuild.
 - **Per-node derived data is WeakMap-cached, never recomputed per frame.**
   The revealed-id set (`MapRenderer.js`), span blocks (`TilePaint.spanBlocks`),
   region groups (`RegionGroups.findRegionGroups`), and group image chunks
@@ -147,8 +164,9 @@ established pattern that new code touching the same area should follow:
   Anything derivable from a node alone that a hot path recomputes should join
   this pattern; the returned arrays/sets are shared, so treat them as
   read-only. The tile pass itself iterates only the visible cell range (invert
-  the view transform once, look cells up by id) — O(visible), never O(total
-  tiles), and never a regex parse per tile per frame. The same pattern covers
+  the view transform once, look cells up by coordinate) — O(visible), never
+  O(total tiles), never a regex parse per tile per frame, and never an id string
+  built and hashed per visible cell per frame. The same pattern covers
   the combat rosters: `combatants.js` memoizes an id-index Map per
   characters/encounters array (safe because every mutation goes through
   `replaceById`, which replaces the array), so participant lookups during a
@@ -159,7 +177,7 @@ established pattern that new code touching the same area should follow:
   once in `onStrokeEnd` (`mapAuthoring.js`). New per-cell gesture work should
   ask whether anyone can observe it mid-drag; if not, defer it the same way.
 - **Fog reveals walk the disc, not the map.** `revealAround` iterates the
-  radius's bounding square via TileIndex and copies the tile array once — and
+  radius's bounding square by coordinate and copies the tile array once — and
   returns the *same* node object when nothing newly revealed, so the WeakMap
   caches above stay warm on a party step through explored ground. Mutation
   helpers on hot paths should preserve identity on no-op the same way.
