@@ -1,6 +1,7 @@
 import { TileGrid, withNodeDefaults } from '../map/TileGrid.js';
 import { downloadJSON, readFileText } from './fileIO.js';
 import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
+import { hoistAssets, restoreAssets } from './Assets.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -99,15 +100,16 @@ function packTile(tile) {
 
 /**
  * The campaign in its on-disk shape: as the state, with every node's tiles
- * packed. Pure — the state passed in is never touched.
+ * packed and every inline image payload hoisted into an `assets` table. Pure —
+ * the state passed in is never touched.
  * @param {CampaignState} state
  * @returns {Record<string, any>}
  */
 function packState(state) {
-  return {
+  return hoistAssets({
     ...state,
     nodes: state.nodes.map((node) => ({ ...node, tiles: node.tiles.map(packTile) })),
-  };
+  });
 }
 
 /**
@@ -191,9 +193,11 @@ function partyPosition(value) {
  * here becomes the stored save of an app that no longer boots. Nodes without an
  * id are dropped; `withNodeDefaults` (TileGrid) defends the tiles within and is
  * also what unpacks the tile fields `serialize` omits, so it runs here at the
- * seam rather than only in `toTileGrid`. A save stamped with an older schema
- * version passes through `Migrations.js`'s step chain first; one stamped newer
- * than this app is read best-effort.
+ * seam rather than only in `toTileGrid`, and `restoreAssets` puts the hoisted
+ * image payloads back before any of it, so nothing downstream ever sees a
+ * reference into the asset table. A save stamped with an older schema version
+ * passes through `Migrations.js`'s step chain first; one stamped newer than this
+ * app is read best-effort.
  * @param {string} json
  * @returns {CampaignState}
  */
@@ -203,7 +207,12 @@ export function deserialize(json) {
   // to repair a shape this validator would otherwise flatten or drop. The
   // validator stays last, so a step that returns something other than a record
   // reads as an empty campaign rather than corrupting the load.
-  const parsed = record(migrateState(raw, stateVersion(raw))) ?? {};
+  // Migrations run ahead of the asset restore, so a step reads a hoisted ref and
+  // has to look the payload up in the table itself. That is the cheaper order:
+  // no step so far cares about image payloads, and restoring first would make
+  // every step pay for inlining them.
+  const migrated = record(migrateState(raw, stateVersion(raw))) ?? {};
+  const parsed = restoreAssets(migrated);
   return {
     version: CURRENT_VERSION,
     nodes: records(parsed.nodes)

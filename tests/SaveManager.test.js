@@ -144,6 +144,43 @@ test('a save written before tiles were packed still loads whole', () => {
   assert.deepEqual(restored.tiles, state.nodes[0].tiles);
 });
 
+test('serializing hoists image payloads and loading puts them back', () => {
+  const art = `data:image/png;base64,${'Qk1'.repeat(2000)}`;
+  const grid = new TileGrid();
+  const tiles = [];
+  for (let i = 0; i < 12; i += 1) tiles.push(createTile(`${i},0`, art));
+  grid.addNode({ id: 'world', name: 'World', parentId: null, width: 12, height: 1, tiles });
+  const state = buildState(grid, null, [], [], [], [], {
+    handouts: [{ id: 'h1', title: 'Scrap', body: '', nodeId: null, revealed: false, image: art }],
+  });
+  const json = serialize(state);
+  assert.equal(json.split(art).length - 1, 1, 'thirteen references, one stored payload');
+  const restored = deserialize(json);
+  assert.deepEqual(
+    restored.nodes[0].tiles.map((tile) => tile.imageRef),
+    tiles.map(() => art),
+  );
+  assert.equal(restored.handouts[0].image, art);
+  assert.equal('assets' in restored, false, 'the table is on-disk only, never live state');
+});
+
+test('a save written before image payloads were hoisted still loads', () => {
+  const art = 'data:image/png;base64,AAAA';
+  const grid = new TileGrid();
+  grid.addNode({
+    id: 'world',
+    name: 'World',
+    parentId: null,
+    width: 1,
+    height: 1,
+    tiles: [createTile('0,0', art)],
+  });
+  const state = buildState(grid, null, [], []);
+  // Version 2 wrote the payload inline, with no table to resolve against.
+  const json = JSON.stringify({ ...state, version: 2 });
+  assert.equal(deserialize(json).nodes[0].tiles[0].imageRef, art);
+});
+
 test('buildState stamps the current schema version, whatever extra claims', () => {
   const state = buildState(sampleGrid(), null, [], [], [], [], {
     version: 99,

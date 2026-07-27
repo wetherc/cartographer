@@ -20,7 +20,7 @@
  * The schema version `buildState` stamps on every save it writes. Version 0 is
  * every save written before the field existed.
  */
-export const CURRENT_VERSION = 2;
+export const CURRENT_VERSION = 3;
 
 /**
  * Step transforms keyed by the version being migrated *from*: `MIGRATIONS[n]`
@@ -38,6 +38,13 @@ export const MIGRATIONS = {
   // tile-defaults backfill leaves it alone. The stamped version is what a later
   // step can read to tell a field omitted deliberately from one that was lost.
   1: (state) => state,
+  // 2 -> 3: version 3 hoists inline `data:` image payloads into an `assets`
+  // table, replacing each with a short reference. Omission-only again in both
+  // directions: a version-2 save carries no table and no reference, so the load
+  // path's restore pass finds nothing to do. Note that every step runs *before*
+  // that restore, so a future step reading an image payload has to resolve it
+  // through the table rather than expecting it inline.
+  2: (state) => state,
 };
 
 /**
