@@ -252,9 +252,9 @@ export function characterFormChange(name, form, rng = Math.random) {
 }
 
 /**
- * Build the level 1 character the submitted dialog values describe. The race
- * pick applies its ability increases on top of the typed scores (a custom race
- * is just the display string); skill picks are filtered to the class's choice
+ * Build the level 1 character the submitted dialog values describe. Assigning
+ * the race adds its ability increases to the typed scores (a custom race is
+ * just the display string); skill picks are filtered to the class's choice
  * list and capped at its count, bonus languages at the background's count. The
  * proficiency lists assemble from class + race + background plus those picks,
  * the HP pool derives from the class hit die and CON, a classed character gets
@@ -274,11 +274,6 @@ export function buildCharacter(values, existingIds) {
   const race = getRace(values.race);
   if (race) {
     character = withRace(character, race.id);
-    const stats = { ...character.stats };
-    for (const [key, gain] of Object.entries(race.abilityIncreases)) {
-      stats[key] = (stats[key] ?? 10) + gain;
-    }
-    character = { ...character, stats };
   } else if (values.customRace.trim()) {
     character = withCustomRace(character, values.customRace.trim());
   }

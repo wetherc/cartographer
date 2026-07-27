@@ -4,6 +4,7 @@ import {
   derive,
   withClasses,
   withRace,
+  withCustomRace,
   withProficiencies,
   applyASI,
   undoLastChoice,
@@ -119,11 +120,14 @@ test('setStat re-derives, so a CON edit moves the pool', () => {
 });
 
 test('withRace re-derives, so a racial CON increase moves the pool', () => {
-  const dwarf = withRace(classed([{ classId: 'fighter', level: 2 }]), 'dwarf');
+  const fighter = classed([{ classId: 'fighter', level: 2 }]);
+  assert.equal(getHP(fighter).max, 20);
+  const dwarf = withRace(fighter, 'dwarf');
   assert.equal(dwarf.raceId, 'dwarf');
-  // The increase itself is applied by the caller; derive still re-runs, and a
-  // race with no CON change leaves the pool where it was.
-  assert.equal(getHP(dwarf).max, 20);
+  assert.equal(dwarf.stats.CON, 16);
+  assert.equal(getHP(dwarf).max, 22, '+2 CON is one more modifier point at both levels');
+  // Dropping the race takes the increase, and the HP it was worth, back off.
+  assert.equal(getHP(withCustomRace(dwarf, 'Githzerai')).max, 20);
 });
 
 test('the deriving writers preserve identity when the underlying write is a no-op', () => {
