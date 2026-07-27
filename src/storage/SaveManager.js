@@ -1,5 +1,6 @@
 import { TileGrid, withNodeDefaults } from '../map/TileGrid.js';
 import { downloadJSON, readFileText } from './fileIO.js';
+import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -48,6 +49,9 @@ export function buildState(
     splitParty: false,
     combat: null,
     ...extra,
+    // After the spread: this is the writer, so the version it stamps is the
+    // format it actually produces, whatever a caller's leftover field claims.
+    version: CURRENT_VERSION,
   };
 }
 
@@ -130,13 +134,21 @@ function partyPosition(value) {
  * cannot. This is the only validation seam a save passes through: Import
  * persists what it reads and then reloads, so an unreadable field that survives
  * here becomes the stored save of an app that no longer boots. Nodes without an
- * id are dropped; `withNodeDefaults` (TileGrid) defends the tiles within.
+ * id are dropped; `withNodeDefaults` (TileGrid) defends the tiles within. A save
+ * stamped with an older schema version passes through `Migrations.js`'s step
+ * chain first; one stamped newer than this app is read best-effort.
  * @param {string} json
  * @returns {CampaignState}
  */
 export function deserialize(json) {
-  const parsed = record(JSON.parse(json)) ?? {};
+  const raw = record(JSON.parse(json)) ?? {};
+  // Migrations run on the raw object, ahead of the coercion below: a step exists
+  // to repair a shape this validator would otherwise flatten or drop. The
+  // validator stays last, so a step that returns something other than a record
+  // reads as an empty campaign rather than corrupting the load.
+  const parsed = record(migrateState(raw, stateVersion(raw))) ?? {};
   return {
+    version: CURRENT_VERSION,
     nodes: records(parsed.nodes).filter((node) => typeof node.id === 'string'),
     party: partyPosition(parsed.party),
     characters: records(parsed.characters),

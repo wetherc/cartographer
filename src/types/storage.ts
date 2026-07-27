@@ -7,7 +7,19 @@ import { NPC } from './npc';
 import { Handout } from './handout';
 import { CombatState } from './combat';
 
+/** A save as parsed from JSON, before validation: any shape at all. */
+export type RawSave = Record<string, any>;
+
+/** One migration step: a version-n raw save in, a version-n+1 one out. */
+export type MigrationStep = (state: RawSave) => RawSave;
+
 export interface CampaignState {
+  /**
+   * Schema version of the on-disk shape, stamped by `buildState` and read by
+   * `deserialize` to pick the migration steps a stored save still needs. Absent
+   * on saves written before it existed, which read as version 0.
+   */
+  version: number;
   nodes: MapNode[];
   party: PartyPosition | null;
   characters: Character[];

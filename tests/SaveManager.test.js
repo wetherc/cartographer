@@ -12,6 +12,7 @@ import {
   loadFromLocalStorage,
   onExternalSave,
 } from '../src/storage/SaveManager.js';
+import { CURRENT_VERSION } from '../src/storage/Migrations.js';
 
 /** Minimal in-memory localStorage so the storage wrappers run under Node. */
 function installLocalStorage() {
@@ -65,9 +66,34 @@ test('serialize/deserialize round-trips a full campaign state', () => {
   assert.equal(getHP(restored.characters[0])?.max, 12);
 });
 
+test('buildState stamps the current schema version, whatever extra claims', () => {
+  const state = buildState(sampleGrid(), null, [], [], [], [], {
+    version: 99,
+  });
+  assert.equal(state.version, CURRENT_VERSION);
+});
+
+test('deserialize loads a versionless save as the current version', () => {
+  const restored = deserialize(
+    JSON.stringify({ nodes: [{ id: 'world', tiles: [] }], splitParty: true }),
+  );
+  assert.equal(restored.version, CURRENT_VERSION);
+  assert.equal(restored.nodes.length, 1, 'the pre-version payload survives the chain');
+  assert.equal(restored.splitParty, true);
+});
+
+test('deserialize reads a save newer than the app best-effort', () => {
+  const restored = deserialize(
+    JSON.stringify({ version: 99, nodes: [{ id: 'world', tiles: [] }] }),
+  );
+  assert.equal(restored.version, CURRENT_VERSION, 're-stamped to the format this app writes');
+  assert.equal(restored.nodes.length, 1);
+});
+
 test('deserialize defaults missing fields instead of throwing', () => {
   const restored = deserialize(JSON.stringify({}));
   assert.deepEqual(restored, {
+    version: 1,
     nodes: [],
     party: null,
     characters: [],

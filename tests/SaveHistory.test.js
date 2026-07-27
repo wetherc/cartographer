@@ -8,6 +8,7 @@ import {
   snapshotPersistedSave,
   undoHistory,
 } from '../src/storage/SaveManager.js';
+import { CURRENT_VERSION } from '../src/storage/Migrations.js';
 
 /** Minimal in-memory localStorage so the ring-buffer wrappers run under Node. */
 function installLocalStorage() {
@@ -70,6 +71,7 @@ test('a missing, corrupt, or legacy-format index reads as an empty history', () 
 
 test('a serialized state pushed onto the ring undoes back to itself', () => {
   const state = {
+    version: CURRENT_VERSION,
     nodes: [],
     party: null,
     characters: [],
