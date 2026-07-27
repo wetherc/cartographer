@@ -176,12 +176,19 @@ established pattern that new code touching the same area should follow:
 - **Per-node derived data is WeakMap-cached, never recomputed per frame.**
   The revealed-id set (`MapRenderer.js`), span blocks (`TilePaint.spanBlocks`),
   region groups (`RegionGroups.findRegionGroups`), and group image chunks
-  (`groupImageChunks`, keyed `(node, group)` — group objects are stable because
-  the group cache makes them so) all follow the TileIndex pattern: a pure
+  (`groupImageChunks`) all follow the TileIndex pattern: a pure
   function of an immutable node caches its result keyed by the node object.
   Anything derivable from a node alone that a hot path recomputes should join
   this pattern; the returned arrays/sets are shared, so treat them as
-  read-only. The tile pass itself iterates only the visible cell range (invert
+  read-only. Chunks are the one entry keyed on something narrower than the
+  node — the group object, which the group cache makes stable per node, stamped
+  with `node.tiles` — because a chunk's contents depend on the group's geometry
+  and its member tiles' art and on nothing else the node carries. Keying them on
+  the node meant a stroke, which replaces the node per cell while deliberately
+  leaving the canvas's groups memoized against the pre-stroke node, could not
+  reuse a chunk for the whole stroke. A new derived value should likewise be
+  keyed on what it actually reads, and stamped rather than nested when part of
+  that is a node field. The tile pass itself iterates only the visible cell range (invert
   the view transform once, look cells up by coordinate) — O(visible), never
   O(total tiles), never a regex parse per tile per frame, and never an id string
   built and hashed per visible cell per frame. The same pattern covers

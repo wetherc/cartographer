@@ -195,9 +195,37 @@ test('findRegionGroups and groupImageChunks are memoized per node', () => {
   const groups = findRegionGroups(node);
   assert.equal(findRegionGroups(node), groups, 'same node yields the cached group array');
   const chunks = groupImageChunks(node, groups[0]);
-  assert.equal(
-    groupImageChunks(node, groups[0]),
-    chunks,
-    'same (node, group) yields cached chunks',
+  assert.equal(groupImageChunks(node, groups[0]), chunks, 'same group yields cached chunks');
+});
+
+test('chunks survive a node object replaced without a tile change', () => {
+  const node = nodeFromLayout(
+    [
+      ['R', 'R'],
+      ['R', 'R'],
+    ],
+    (cell) => (cell === 'R' ? 'region' : null),
   );
+  const group = findRegionGroups(node)[0];
+  const chunks = groupImageChunks(node, group);
+  // What a mid-stroke swap looks like from here: a fresh node object carrying
+  // the same group, which the previous (node, group) key could never hit on.
+  assert.equal(groupImageChunks({ ...node }, group), chunks);
+});
+
+test('chunks rebuild when a member tile is repainted', () => {
+  let node = nodeFromLayout(
+    [
+      ['R', 'R'],
+      ['R', 'R'],
+    ],
+    (cell) => (cell === 'R' ? 'region' : null),
+  );
+  const group = findRegionGroups(node)[0];
+  assert.equal(groupImageChunks(node, group)[0].imageRef, 'grass.svg');
+  node = setTile(node, createTile('0,0', 'water.svg', { childNodeId: 'region' }));
+  const rebuilt = groupImageChunks(node, group);
+  assert.equal(rebuilt[0].imageRef, 'water.svg', 'the repainted top-left tile wins');
+  // And the rebuilt chunks are then themselves cached against the new list.
+  assert.equal(groupImageChunks(node, group), rebuilt);
 });

@@ -219,6 +219,11 @@ export class MapCanvas {
    * instead of a full group flood-fill per cell crossed. Callers must settle
    * with a full refreshNode when the stroke ends — an erase can remove a
    * region-linked tile, which this variant leaves visually stale until then.
+   *
+   * Keeping the previous node's group objects is also what keeps the group image
+   * chunks cached across the frames within one cell: they are memoized per group
+   * against the tile list they were built from, so this swap costs a rebuild only
+   * when it actually carries changed tiles.
    * @param {MapNode} node
    */
   refreshNodeTiles(node) {

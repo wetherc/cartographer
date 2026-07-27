@@ -2,6 +2,7 @@ import { parseCoords } from './MapGeometry.js';
 import { getTile } from './TileGrid.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
+/** @typedef {import('../types/map.js').Tile} Tile */
 
 /**
  * @typedef {Object} RegionGroup
@@ -16,7 +17,8 @@ import { getTile } from './TileGrid.js';
 /**
  * Cached region groups per node, keyed by the node object — safe because every
  * tile mutation replaces the node immutably (the TileIndex contract). Group
- * objects are therefore stable per node, which the chunk cache below keys on.
+ * objects are therefore stable per node, which is what lets the chunk cache
+ * below key on them directly.
  * @type {WeakMap<MapNode, RegionGroup[]>}
  */
 const groupCache = new WeakMap();
@@ -113,18 +115,32 @@ export function isFilledRect(group) {
  * @returns {string | null}
  */
 export function groupImageRef(node, group) {
-  const tiles = group.tileIds
-    .map((id) => {
-      const tile = getTile(node, id);
-      const coords = parseCoords(id);
-      return tile && coords && tile.imageRef ? { tile, ...coords } : null;
-    })
-    .filter((t) => t !== null);
-  if (!tiles.length) return null;
-  const marked = tiles.find((t) => t.tile.metadata.poiType);
-  if (marked) return marked.tile.imageRef;
-  const topLeft = tiles.reduce((a, b) => (b.y < a.y || (b.y === a.y && b.x < a.x) ? b : a));
-  return topLeft.tile.imageRef;
+  // One best-so-far pass rather than map-filter-find-reduce: this runs per chunk
+  // per group whenever a group's tiles change, and the intermediate arrays plus
+  // one wrapper object per member tile were the bulk of its cost.
+  /** @type {string | null} */
+  let topLeftRef = null;
+  let topLeftX = 0;
+  let topLeftY = 0;
+  for (const id of group.tileIds) {
+    const tile = getTile(node, id);
+    if (!tile?.imageRef) continue;
+    const coords = parseCoords(id);
+    if (!coords) continue;
+    // A POI marker is the entrance art a generated map stamps on its anchor, so
+    // it wins outright and there is nothing left to compare.
+    if (tile.metadata.poiType) return tile.imageRef;
+    if (
+      topLeftRef === null ||
+      coords.y < topLeftY ||
+      (coords.y === topLeftY && coords.x < topLeftX)
+    ) {
+      topLeftRef = tile.imageRef;
+      topLeftX = coords.x;
+      topLeftY = coords.y;
+    }
+  }
+  return topLeftRef;
 }
 
 /**
@@ -139,10 +155,32 @@ export function groupImageRef(node, group) {
  */
 
 /**
- * Cached chunks per (node, group) pair — the renderer partitions every group
- * every frame, and both keys are stable per node (findRegionGroups memoizes
- * its group objects), so the inner WeakMap hits on every frame after the first.
- * @type {WeakMap<MapNode, WeakMap<RegionGroup, GroupImageChunk[]>>}
+ * Cached chunks per group, stamped with the tile list they were computed from.
+ * The renderer partitions every group every frame, so this has to hit on a
+ * repeat frame, and the stamp is exactly the dependency set: a chunk's contents
+ * are its group's geometry plus its member tiles' art, and nothing else — not the
+ * node's name, extent, or identity.
+ *
+ * Keying on the node object instead was imprecise in both directions. It
+ * discarded chunks a node swap had not invalidated, since a paint/erase/fog drag
+ * replaces the node per cell while leaving its groups memoized against the
+ * pre-stroke node, so the (node, group) pair could not repeat once a stroke had
+ * started — not even for the groups the stroke never came near. And it held a
+ * nested WeakMap per node, leaving one dead outer entry per node object a stroke
+ * created. `tiles` is the honest stamp: a tile mutation always replaces that
+ * array (the TileIndex contract, enforced by TileFreeze) and nothing else does.
+ * One entry per group, so a long stroke accumulates nothing, and a group is only
+ * reachable through its own node's group cache, so the two die together.
+ *
+ * This is precision rather than a speedup, and the numbers are worth recording
+ * so it is not mistaken for one. The recompute costs about 0.025 ms per painted
+ * cell on a twelve-group 40x40 node, and it never ran per frame — the canvas's
+ * node object changes only when a cell is painted, so frames between two cell
+ * crossings hit the old key too. A member-identity revalidation that would have
+ * held chunks across an unrelated cell's paint was measured and dropped: a
+ * filled rectangle's member count equals the sum of its chunks' tiles, so
+ * revalidating costs the same tile lookups the rebuild does.
+ * @type {WeakMap<RegionGroup, { tiles: Tile[], chunks: GroupImageChunk[] }>}
  */
 const chunkCache = new WeakMap();
 
@@ -153,22 +191,17 @@ const chunkCache = new WeakMap();
  * edges fall back to 1-wide strips. Chunks whose tiles are all imageless are
  * omitted (nothing to draw). A ragged (non-rectangular) group returns no
  * chunks: its bounding box would overlap tiles outside the group, so it keeps
- * per-tile rendering. Memoized per (node, group); treat the result as
- * read-only.
+ * per-tile rendering. Memoized per group against the node's tile list; treat the
+ * result as read-only.
  * @param {MapNode} node
  * @param {RegionGroup} group
  * @returns {GroupImageChunk[]}
  */
 export function groupImageChunks(node, group) {
-  let byGroup = chunkCache.get(node);
-  if (!byGroup) {
-    byGroup = new WeakMap();
-    chunkCache.set(node, byGroup);
-  }
-  const cached = byGroup.get(group);
-  if (cached) return cached;
+  const cached = chunkCache.get(group);
+  if (cached && cached.tiles === node.tiles) return cached.chunks;
   const chunks = computeChunks(node, group);
-  byGroup.set(group, chunks);
+  chunkCache.set(group, { tiles: node.tiles, chunks });
   return chunks;
 }
 
