@@ -250,8 +250,21 @@ export function wireCampaignActions(app) {
   mustGetElement('import-btn').addEventListener('click', () => importInput.click());
   importInput.addEventListener('change', async () => {
     const file = importInput.files?.[0];
+    // Clear the input before anything else can fail: a file input only fires
+    // `change` when the selection differs from its current value, so leaving the
+    // value set makes re-picking the same file a silent no-op — including the
+    // retry a GM reaches for after a failed import.
+    importInput.value = '';
     if (!file) return;
-    const state = await readStateFromFile(file);
+    /** @type {import('../types/storage.js').CampaignState} */
+    let state;
+    try {
+      state = await readStateFromFile(file);
+    } catch {
+      // Nothing has been written, so this only needs saying, not acknowledging.
+      app.toasts.show('That file is not a readable campaign JSON.');
+      return;
+    }
     // Simplest correct way to apply an imported campaign: persist it, then
     // reload so every module re-initializes from the same loadFromLocalStorage
     // path a normal page load takes, rather than re-wiring every closure above.
