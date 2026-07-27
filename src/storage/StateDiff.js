@@ -269,7 +269,7 @@ export function invertOps(ops) {
  * log outlives the state it was written against — a delta key can go missing, a
  * schema step can move a field — and a throw on the load path would be a save
  * that cannot boot.
- * @template {Record<string, unknown>} T
+ * @template {object} T
  * @param {T} state
  * @param {DiffOp[]} ops
  * @returns {T}

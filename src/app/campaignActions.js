@@ -5,13 +5,11 @@ import { queueToastAfterReload } from '../ui/Toast.js';
 import {
   buildState,
   isNearQuota,
-  trySaveToLocalStorage,
-  snapshotPersistedSave,
-  undoHistory,
   downloadState,
   readStateFromFile,
   onExternalSave,
 } from '../storage/SaveManager.js';
+import { saveCampaign, undoCampaign } from '../storage/HistoryLog.js';
 import { shouldAutosave, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -101,18 +99,14 @@ export function wireCampaignActions(app) {
   });
 
   /**
-   * Push the currently-persisted campaign onto the undo history ring, so the
-   * next save/replace/import is reversible. No-op on a first run with no save.
-   * Works on the raw persisted string — no parse/re-serialize of the campaign.
-   *
-   * A full origin makes the ring degrade rather than throw, which costs the GM
-   * undo depth; report that instead of leaving Undo quietly single-step. The
-   * notice fires on entering a degraded state and again if it worsens, but not
-   * on every push: autosave pushes every ten seconds while dirty, and an
+   * Report what became of the undo history, since a full origin degrades it
+   * rather than throwing and Undo silently becoming shallow is worse than being
+   * told. The notice fires on entering a degraded state and again if it worsens,
+   * but not on every write: autosave writes every ten seconds while dirty, and an
    * over-quota origin degrades every one of them.
+   * @param {{ ok: boolean, evictedAll: boolean }} history
    */
-  function snapshotCurrentSave() {
-    const { ok, evictedAll } = snapshotPersistedSave();
+  function reportHistory({ ok, evictedAll }) {
     const loss = !ok ? 'cleared' : evictedAll ? 'shortened' : '';
     if (!loss) {
       reportedHistoryLoss = '';
@@ -122,26 +116,25 @@ export function wireCampaignActions(app) {
     reportedHistoryLoss = loss;
     app.toasts.show(
       loss === 'cleared'
-        ? 'Browser storage is full: the undo history was cleared, so the previous save can no longer be restored.'
-        : 'Browser storage is full: the undo history was shortened to a single step.',
+        ? 'Browser storage is full: the undo history was cleared, so this change can no longer be undone.'
+        : 'Browser storage is full: the oldest undo steps were dropped.',
     );
   }
 
   /**
-   * Persist a campaign, surfacing the outcome instead of failing silently: a
-   * quota-full write gets an error toast (and reports failure so reload flows
-   * can abort), a near-quota write gets a warning nudging the GM to trim
-   * data:-URL images before saves start throwing.
+   * Surface the outcome of a write instead of failing silently: a quota-full
+   * write gets an error toast (and reports failure so reload flows can abort), a
+   * near-quota write gets a warning nudging the GM to trim data:-URL images
+   * before saves start throwing.
    *
    * Image payloads are stored apart from the campaign, so a full origin can lose
    * them while the campaign itself lands. That reports as a save, because it is
    * one — the map, the party, and every entity are stored — but the GM has to be
    * told the pictures are not, or a later load looks like corruption.
-   * @param {import('../types/storage.js').CampaignState} state
+   * @param {{ ok: boolean, assetsOk: boolean, footprint: number }} result
    * @returns {boolean} whether the write landed
    */
-  function persistState(state) {
-    const result = trySaveToLocalStorage(state);
+  function reportSave(result) {
     if (result.ok && !result.assetsOk) {
       app.toasts.show(
         'Saved, but browser storage is too full for the images: handout pictures were not stored.',
@@ -154,6 +147,20 @@ export function wireCampaignActions(app) {
       return false;
     }
     reportFootprint(result.footprint);
+    return true;
+  }
+
+  /**
+   * Persist a campaign and record the history step that produced it, reporting
+   * both outcomes. The step is recorded after the campaign write, so a failed
+   * write leaves the history describing exactly what is stored.
+   * @param {import('../types/storage.js').CampaignState} state
+   * @returns {boolean} whether the write landed
+   */
+  function persistState(state) {
+    const result = saveCampaign(state);
+    if (!reportSave(result)) return false;
+    reportHistory(result.history);
     return true;
   }
 
@@ -211,7 +218,6 @@ export function wireCampaignActions(app) {
    * @param {string} [toastMessage]
    */
   function replaceCampaign(campaign, toastMessage = 'Campaign replaced.') {
-    snapshotCurrentSave();
     const ok = persistState(
       buildState(
         campaign.grid,
@@ -251,8 +257,6 @@ export function wireCampaignActions(app) {
   });
 
   mustGetElement('save-btn').addEventListener('click', () => {
-    // Snapshot the previous save first so Undo can step back to it.
-    snapshotCurrentSave();
     if (!persistState(buildCurrentState())) return;
     setDirty(false);
     app.toasts.show('Campaign saved.');
@@ -268,22 +272,24 @@ export function wireCampaignActions(app) {
     // Don't autosave under an open dialog: the GM is mid-edit, and a modal's
     // pending form values aren't in the state yet.
     if (document.querySelector('dialog[open]')) return;
-    snapshotCurrentSave();
     if (!persistState(buildCurrentState())) return;
     setDirty(false);
     app.toasts.show('Autosaved.');
   }
 
-  // Undo restores the most recent snapshot (the state before the last save,
-  // New, Load example, or Import) and reloads so every module re-initializes
-  // from it — the same reload path those actions use.
-  mustGetElement('undo-btn').addEventListener('click', async () => {
-    const restored = undoHistory();
-    if (!restored) {
+  // Undo reverses the most recently recorded step (the state before the last
+  // save, New, Load example, or Import) and reloads so every module
+  // re-initializes from it — the same reload path those actions use. It persists
+  // through the history log rather than `persistState`, because stepping the
+  // cursor is not itself an edit: recording it would push the inverse of the undo
+  // and leave Undo toggling between two states forever.
+  mustGetElement('undo-btn').addEventListener('click', () => {
+    const step = undoCampaign();
+    if (!step) {
       app.toasts.show('Nothing to undo.');
       return;
     }
-    if (!persistState(restored)) return;
+    if (!reportSave(step.save)) return;
     queueToastAfterReload('Restored the previous save.');
     setDirty(false);
     location.reload();
@@ -352,7 +358,6 @@ export function wireCampaignActions(app) {
     // Simplest correct way to apply an imported campaign: persist it, then
     // reload so every module re-initializes from the same loadFromLocalStorage
     // path a normal page load takes, rather than re-wiring every closure above.
-    snapshotCurrentSave();
     if (!persistState(state)) return;
     queueToastAfterReload('Campaign imported.');
     setDirty(false);

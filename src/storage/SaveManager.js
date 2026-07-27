@@ -16,8 +16,6 @@ import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
 
 const DEFAULT_STORAGE_KEY = 'campaign-builder:save';
-const DEFAULT_HISTORY_KEY = 'campaign-builder:history';
-const DEFAULT_HISTORY_LIMIT = 10;
 
 /** The localStorage key the campaign save lives under, exposed for cross-tab sync. */
 export const STORAGE_KEY = DEFAULT_STORAGE_KEY;
@@ -320,8 +318,8 @@ export function toTileGrid(state) {
 }
 
 /**
- * Warn when a serialized save approaches the ~5 MB localStorage origin quota,
- * leaving headroom for the undo-history ring that shares it. localStorage
+ * Warn when stored data approaches the ~5 MB localStorage origin quota, leaving
+ * headroom for the history log and the image sidecar that share it. localStorage
  * stores UTF-16 code units, so the byte cost of a string is twice its length.
  */
 export const QUOTA_WARN_BYTES = 3 * 1024 * 1024;
@@ -398,9 +396,13 @@ export function localStorageFootprint() {
  * by then the payloads are already stored. `bytes` therefore measures the
  * payload-free save; only `footprint` speaks to the quota, and it counts every
  * key.
+ *
+ * `json` is the string that was written (or attempted). `HistoryLog.js` caches
+ * the state it just stored against it, so recording a history step costs a string
+ * compare rather than re-reading and re-parsing the save.
  * @param {CampaignState} state
  * @param {string} [key]
- * @returns {{ ok: boolean, assetsOk: boolean, nearQuota: boolean, bytes: number, footprint: number }}
+ * @returns {{ ok: boolean, assetsOk: boolean, nearQuota: boolean, bytes: number, footprint: number, json: string }}
  */
 export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY) {
   const { state: detached, assets } = detachAssets(packState(state));
@@ -410,10 +412,17 @@ export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY) {
   try {
     localStorage.setItem(key, json);
   } catch {
-    return { ok: false, assetsOk, nearQuota: true, bytes, footprint: localStorageFootprint() };
+    return {
+      ok: false,
+      assetsOk,
+      nearQuota: true,
+      bytes,
+      footprint: localStorageFootprint(),
+      json,
+    };
   }
   const footprint = localStorageFootprint();
-  return { ok: true, assetsOk, nearQuota: isNearQuota(footprint), bytes, footprint };
+  return { ok: true, assetsOk, nearQuota: isNearQuota(footprint), bytes, footprint, json };
 }
 
 /**
@@ -432,158 +441,6 @@ export function loadFromLocalStorage(key = DEFAULT_STORAGE_KEY) {
  */
 export function downloadState(state, filename = 'campaign.json') {
   downloadJSON(serialize(state), filename);
-}
-
-/**
- * Append a value to a bounded ring, dropping the oldest entries once it
- * exceeds `limit`. Pure: returns a new array, newest last.
- * @template T
- * @param {T[]} history
- * @param {T} snapshot
- * @param {number} [limit]
- * @returns {T[]}
- */
-export function pushSnapshot(history, snapshot, limit = DEFAULT_HISTORY_LIMIT) {
-  const next = [...history, snapshot];
-  return next.length > limit ? next.slice(next.length - limit) : next;
-}
-
-/**
- * The undo history ring is stored as one snapshot per localStorage key
- * (`<key>:<seq>`, each holding a raw serialized save) plus a small index of
- * sequence numbers (oldest first) at `<key>`. Pushing a snapshot therefore
- * writes only the new save string and the tiny index — it never re-serializes
- * the older snapshots, which the previous single-array format did on every
- * push (re-stringifying up to `limit` full campaigns, quote-escaping included).
- * @param {string} key
- * @param {number} seq
- * @returns {string}
- */
-function historyEntryKey(key, seq) {
-  return `${key}:${seq}`;
-}
-
-/**
- * Read the history index: the sequence numbers of stored snapshots, oldest
- * first. A missing, corrupt, or legacy-format (array-of-strings) entry reads
- * as an empty history rather than throwing.
- * @param {string} [key]
- * @returns {number[]}
- */
-function loadHistoryIndex(key = DEFAULT_HISTORY_KEY) {
-  const json = localStorage.getItem(key);
-  if (!json) return [];
-  try {
-    const parsed = JSON.parse(json);
-    return Array.isArray(parsed) && parsed.every((n) => typeof n === 'number') ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Remove every stored snapshot and the index itself.
- * @param {string} [key]
- */
-export function clearHistory(key = DEFAULT_HISTORY_KEY) {
-  for (const seq of loadHistoryIndex(key)) localStorage.removeItem(historyEntryKey(key, seq));
-  localStorage.removeItem(key);
-}
-
-/**
- * Push an already-serialized save onto the undo history ring. This is the
- * fast path the save/autosave flows use: the persisted save string is pushed
- * as-is, with no JSON parse or re-serialize of the campaign at all. A snapshot
- * identical to the newest stored one is skipped, so saving twice without
- * changes doesn't burn a ring slot.
- *
- * Reports what became of the ring, because the quota fallbacks below cost the
- * GM undo depth and used to do so silently: `ok` is whether this snapshot is
- * stored and therefore undoable, and `evictedAll` is whether older snapshots
- * were discarded to make room. `evictedAll` covers only the quota path — the
- * ordinary eviction of the oldest entry once the ring is at `limit` is the
- * design rather than a loss, and reports false.
- * @param {string} snapshot raw serialized CampaignState
- * @param {string} [key]
- * @param {number} [limit]
- * @returns {{ ok: boolean, evictedAll: boolean }}
- */
-export function snapshotRawHistory(
-  snapshot,
-  key = DEFAULT_HISTORY_KEY,
-  limit = DEFAULT_HISTORY_LIMIT,
-) {
-  const seqs = loadHistoryIndex(key);
-  const newestSeq = seqs[seqs.length - 1];
-  if (seqs.length && snapshot === localStorage.getItem(historyEntryKey(key, newestSeq))) {
-    // The newest entry already holds this exact snapshot, so nothing is missing.
-    return { ok: true, evictedAll: false };
-  }
-  const seq = seqs.length ? newestSeq + 1 : 0;
-  const next = pushSnapshot(seqs, seq, limit);
-  const evicted = seqs.filter((s) => !next.includes(s));
-  // The ring holds up to `limit` full saves, so it hits the storage quota long
-  // before the save itself does. Degrade rather than throw: retry with only
-  // this snapshot, and as a last resort drop the history — an unsaveable
-  // campaign is worse than a shortened undo trail.
-  try {
-    localStorage.setItem(historyEntryKey(key, seq), snapshot);
-    localStorage.setItem(key, JSON.stringify(next));
-  } catch {
-    clearHistory(key);
-    try {
-      localStorage.setItem(historyEntryKey(key, seq), snapshot);
-      localStorage.setItem(key, JSON.stringify([seq]));
-    } catch {
-      localStorage.removeItem(historyEntryKey(key, seq));
-      clearHistory(key);
-      return { ok: false, evictedAll: true };
-    }
-    return { ok: true, evictedAll: true };
-  }
-  for (const s of evicted) localStorage.removeItem(historyEntryKey(key, s));
-  return { ok: true, evictedAll: false };
-}
-
-/**
- * Push the currently-persisted save (the raw string in localStorage) onto the
- * undo history ring, without parsing or re-serializing it. No-op when nothing
- * is saved yet, which reports as a clean push: nothing failed and no depth was
- * lost, which is all the two fields claim.
- * @param {string} [saveKey]
- * @param {string} [historyKey]
- * @param {number} [limit]
- * @returns {{ ok: boolean, evictedAll: boolean }}
- */
-export function snapshotPersistedSave(
-  saveKey = DEFAULT_STORAGE_KEY,
-  historyKey = DEFAULT_HISTORY_KEY,
-  limit = DEFAULT_HISTORY_LIMIT,
-) {
-  const raw = localStorage.getItem(saveKey);
-  if (!raw) return { ok: true, evictedAll: false };
-  return snapshotRawHistory(raw, historyKey, limit);
-}
-
-/**
- * Pop the most recent snapshot, persist the shortened ring, and return the
- * restored state, or null when there's nothing to undo. Entries whose stored
- * snapshot has gone missing are skipped and cleaned out of the index.
- * @param {string} [key]
- * @returns {CampaignState | null}
- */
-export function undoHistory(key = DEFAULT_HISTORY_KEY) {
-  const seqs = loadHistoryIndex(key);
-  while (seqs.length) {
-    const seq = /** @type {number} */ (seqs.pop());
-    const snapshot = localStorage.getItem(historyEntryKey(key, seq));
-    localStorage.removeItem(historyEntryKey(key, seq));
-    localStorage.setItem(key, JSON.stringify(seqs));
-    // A snapshot is a stored campaign string, so its payloads live in the
-    // sidecar key rather than in the snapshot itself.
-    if (snapshot !== null) return deserialize(snapshot, loadAssetTable());
-  }
-  return null;
 }
 
 /**

@@ -14,10 +14,9 @@ import {
   deserialize,
   loadFromLocalStorage,
   serialize,
-  snapshotPersistedSave,
   trySaveToLocalStorage,
-  undoHistory,
 } from '../src/storage/SaveManager.js';
+import { saveCampaign, undoCampaign } from '../src/storage/HistoryLog.js';
 import { TileGrid, createTile } from '../src/map/TileGrid.js';
 
 const PAYLOAD = 'data:image/png;base64,AAAA';
@@ -132,15 +131,16 @@ test("a save's own table wins over the sidecar", () => {
   assert.notEqual(loaded.handouts[0].image, other);
 });
 
-test('a payload referenced only by a history snapshot survives the prune', () => {
-  trySaveToLocalStorage(stateWithHandoutImage());
-  // The order a save takes: the previous string goes onto the ring, then the new
-  // one is written. The image is gone from the campaign but not from history.
-  snapshotPersistedSave();
-  trySaveToLocalStorage(stateWithHandoutImage(null));
-  assert.deepEqual(Object.values(loadAssetTable()), [PAYLOAD], 'kept for the undo step');
-  const restored = /** @type {any} */ (undoHistory());
-  assert.equal(restored.handouts[0].image, PAYLOAD, 'and the undone state still has its image');
+test('an undone image travels in the history step, not the payload table', () => {
+  saveCampaign(stateWithHandoutImage());
+  saveCampaign(stateWithHandoutImage(null));
+  // A delta is computed over parsed state, where the payload is still inline, so
+  // the step that removed the image carries it as its own before-value. Nothing
+  // stored references the table key any more, so it is correctly dropped.
+  assert.equal(localStorage.getItem(ASSETS_KEY), null);
+  const undone = /** @type {any} */ (undoCampaign());
+  assert.equal(undone.state.handouts[0].image, PAYLOAD, 'the undone state has its image back');
+  assert.deepEqual(Object.values(loadAssetTable()), [PAYLOAD], 're-hoisted by the write');
 });
 
 test('a payload nothing references any more is dropped', () => {

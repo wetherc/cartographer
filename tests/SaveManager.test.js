@@ -578,6 +578,9 @@ test('trySaveToLocalStorage reports success, byte cost, and quota headroom', asy
     nearQuota: false,
     bytes: serialize(state).length * 2,
     footprint: localStorageFootprint(),
+    // The string that was written, so the history log can cache the state it
+    // just stored against it rather than re-reading and re-parsing the save.
+    json: /** @type {string} */ (localStorage.getItem('campaign-builder:save')),
   });
   assert.deepEqual(loadFromLocalStorage(), state);
 });
