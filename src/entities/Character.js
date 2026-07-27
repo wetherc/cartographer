@@ -6,7 +6,7 @@ import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { emptyProficiencies } from './Proficiencies.js';
-import { getClasses } from './Multiclass.js';
+import { getClasses, sanitizeClasses, totalLevel } from './Multiclass.js';
 import { migrateASIChoices } from './LevelUp.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -304,7 +304,9 @@ export function unprepareSpell(character, spellId) {
  * carrying over into 'chest'. A pre-spellbook save gains an empty spellbook,
  * and a pre-proficiency save gains empty proficiency and expertise lists. A
  * pre-multiclass save's scalar `class`/`subclass` fields fold into a one-entry
- * class list at the character's level.
+ * class list at the character's level. The class list is sanitized on the way
+ * in, so a hand-edited one whose levels oversell the character's level comes
+ * back trimmed to fit rather than hiding levels still to be assigned.
  *
  * Shape is only half the job. The loaded pools are also reconciled against the
  * class list, level, and CON through `Progression.derive`, so a save
@@ -320,17 +322,13 @@ export function withDefaults(character) {
     subclass: legacySubclass,
     ...rest
   } = /** @type {Character & { class?: string, subclass?: string }} */ (character);
-  const classes =
+  const classes = sanitizeClasses(
     character.classes ??
-    (legacyClass
-      ? [
-          {
-            classId: legacyClass,
-            level: Math.max(1, Math.floor(character.level) || 1),
-            subclass: legacySubclass,
-          },
-        ]
-      : []);
+      (legacyClass
+        ? [{ classId: legacyClass, level: totalLevel(character), subclass: legacySubclass }]
+        : []),
+    totalLevel(character),
+  );
   return derive({
     ...rest,
     race: character.race ?? '',

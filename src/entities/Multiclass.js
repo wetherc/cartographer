@@ -50,7 +50,7 @@ export function classLevelOf(character, classId) {
 }
 
 /** @param {Character} character @returns {number} the stored total, at least 1 */
-function totalLevel(character) {
+export function totalLevel(character) {
   return Math.max(1, Math.floor(character.level) || 1);
 }
 
@@ -76,21 +76,44 @@ export function pendingLevels(character) {
 }
 
 /**
- * Set the character's class list wholesale, sanitized: entries without a class
- * id drop out, levels floor to whole numbers of at least 1, and duplicate class
- * ids keep only their first entry. Pure.
+ * Sanitize a class list against a level budget: entries without a class id drop
+ * out, levels floor to whole numbers of at least 1, duplicate class ids keep
+ * only their first entry, and the levels sum to at most `cap`.
+ *
+ * The cap matters because nothing else enforces it. `pendingLevels` is the
+ * stored level minus this sum, so a list that oversells the level reports zero
+ * pending levels and quietly swallows the ones it has left to assign. Entries
+ * are taken in order until the budget runs out: the last entry that still fits
+ * is trimmed to what remains, and anything after it drops. That is only
+ * reachable from an imported or hand-edited save, since every writer in the
+ * app assigns one level at a time.
+ * @param {ClassRef[]} classes
+ * @param {number} cap total class levels allowed
+ * @returns {ClassRef[]}
+ */
+export function sanitizeClasses(classes, cap) {
+  /** @type {ClassRef[]} */
+  const next = [];
+  const seen = new Set();
+  let used = 0;
+  for (const ref of classes) {
+    if (!ref.classId || seen.has(ref.classId)) continue;
+    const level = Math.min(Math.max(1, Math.floor(ref.level) || 1), cap - used);
+    if (level < 1) break;
+    seen.add(ref.classId);
+    used += level;
+    next.push({ ...ref, level });
+  }
+  return next;
+}
+
+/**
+ * Set the character's class list wholesale, sanitized against the character's
+ * stored level. See `sanitizeClasses`. Pure.
  * @param {Character} character
  * @param {ClassRef[]} classes
  * @returns {Character}
  */
 export function withClasses(character, classes) {
-  /** @type {ClassRef[]} */
-  const next = [];
-  const seen = new Set();
-  for (const ref of classes) {
-    if (!ref.classId || seen.has(ref.classId)) continue;
-    seen.add(ref.classId);
-    next.push({ ...ref, level: Math.max(1, Math.floor(ref.level) || 1) });
-  }
-  return { ...character, classes: next };
+  return { ...character, classes: sanitizeClasses(classes, totalLevel(character)) };
 }

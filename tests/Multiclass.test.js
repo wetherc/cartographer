@@ -57,7 +57,7 @@ test('assignedLevel sums class levels; pendingLevels is the shortfall', () => {
 });
 
 test('withClasses sanitizes: drops blank ids and duplicates, floors levels to 1', () => {
-  const c = withClasses(createCharacter('c1', 'Bron'), [
+  const c = withClasses(withList([], 3), [
     { classId: 'fighter', level: 2.7 },
     { classId: '', level: 3 },
     { classId: 'fighter', level: 9 },
@@ -67,6 +67,48 @@ test('withClasses sanitizes: drops blank ids and duplicates, floors levels to 1'
     { classId: 'fighter', level: 2 },
     { classId: 'wizard', level: 1 },
   ]);
+});
+
+test('withClasses caps the class levels at the character level', () => {
+  const trimmed = withClasses(withList([], 3), [{ classId: 'fighter', level: 5 }]);
+  assert.deepEqual(trimmed.classes, [{ classId: 'fighter', level: 3 }]);
+
+  // The budget runs out mid-list: the entry that straddles it is trimmed to
+  // what is left and everything after it drops.
+  const spilled = withClasses(withList([], 4), [
+    { classId: 'fighter', level: 3 },
+    { classId: 'wizard', level: 3 },
+    { classId: 'rogue', level: 1 },
+  ]);
+  assert.deepEqual(spilled.classes, [
+    { classId: 'fighter', level: 3 },
+    { classId: 'wizard', level: 1 },
+  ]);
+});
+
+test('withDefaults trims a class list that oversells the level, exposing the pending levels', () => {
+  const overfull = withDefaults(
+    withList(
+      [
+        { classId: 'fighter', level: 4 },
+        { classId: 'wizard', level: 4 },
+      ],
+      5,
+    ),
+  );
+  assert.deepEqual(
+    overfull.classes,
+    [
+      { classId: 'fighter', level: 4 },
+      { classId: 'wizard', level: 1 },
+    ],
+    'the sum matches the level instead of exceeding it',
+  );
+  assert.equal(pendingLevels(overfull), 0);
+
+  // A shortfall is untouched: those levels are still the player's to assign.
+  const behind = withDefaults(withList([{ classId: 'fighter', level: 2 }], 5));
+  assert.equal(pendingLevels(behind), 3);
 });
 
 test('addXP leaves every earned level pending for a classed character', () => {
