@@ -1,4 +1,6 @@
 import { abilityModifier } from './Modifiers.js';
+import { indexById } from '../util/indexById.js';
+import { memoizeByIdentity } from '../util/memoize.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
@@ -190,6 +192,29 @@ export function equip(character, slot, itemId) {
 }
 
 /**
+ * The filled slots of a character, in `EQUIPMENT_SLOTS` order, resolved to the
+ * inventory items behind them. Memoized on the character: the sheet asks what
+ * is worn a dozen or more times per render (once per ability breakdown, again
+ * for AC), and every one of those was a scan of all nine slots against the
+ * whole inventory. Safe to cache because a character is never mutated in
+ * place — every writer hands back a new object.
+ * @type {(character: Character) => Map<EquipmentSlot, InventoryItem>}
+ */
+export const equippedIndex = memoizeByIdentity((/** @type {Character} */ character) => {
+  /** @type {Map<EquipmentSlot, InventoryItem>} */
+  const worn = new Map();
+  const equipment = character.equipment;
+  if (!equipment) return worn;
+  const items = indexById(character.inventory);
+  for (const slot of EQUIPMENT_SLOTS) {
+    const id = equipment[slot.key] ?? null;
+    const item = id === null ? undefined : items.get(id);
+    if (item) worn.set(slot.key, item);
+  }
+  return worn;
+});
+
+/**
  * The inventory item equipped in a slot, or null when the slot is empty or
  * the referenced stack has left the inventory.
  * @param {Character} character
@@ -197,8 +222,7 @@ export function equip(character, slot, itemId) {
  * @returns {InventoryItem | null}
  */
 export function getEquipped(character, slot) {
-  const id = character.equipment?.[slot] ?? null;
-  return id === null ? null : (character.inventory.find((i) => i.id === id) ?? null);
+  return equippedIndex(character).get(slot) ?? null;
 }
 
 /**
@@ -226,10 +250,7 @@ export function migrateItem(item) {
  * @param {Character} character
  * @returns {InventoryItem[]} */
 function equippedItems(character) {
-  return EQUIPMENT_SLOTS.flatMap((slot) => {
-    const item = getEquipped(character, slot.key);
-    return item ? [item] : [];
-  });
+  return [...equippedIndex(character).values()];
 }
 
 /**
@@ -241,8 +262,9 @@ function equippedItems(character) {
  * @returns {InventoryItem[]}
  */
 export function equippedWeapons(character) {
+  const worn = equippedIndex(character);
   return ['mainHand', 'offHand', 'ranged'].flatMap((slot) => {
-    const item = getEquipped(character, /** @type {EquipmentSlot} */ (slot));
+    const item = worn.get(/** @type {EquipmentSlot} */ (slot));
     return item && WEAPON_TYPES.includes(itemType(item)) && item.damage?.length ? [item] : [];
   });
 }

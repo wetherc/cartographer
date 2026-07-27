@@ -25,6 +25,7 @@ import {
   formatDamage,
   filterItems,
   equippedWeapons,
+  equippedIndex,
 } from '../src/entities/Equipment.js';
 import {
   WEAPON_PRESETS,
@@ -772,4 +773,24 @@ test('pruneEquipment returns a pre-equipment character untouched', () => {
   const legacy = { ...createCharacter('c1', 'Hero') };
   delete legacy.equipment;
   assert.equal(pruneEquipment(legacy), legacy, 'no equipment record: nothing to prune');
+});
+
+test('equippedIndex maps each filled slot to its item and skips dangling ids', () => {
+  let hero = heroWithSword();
+  hero = equip(hero, 'mainHand', 'sword');
+  assert.deepEqual([...equippedIndex(hero).keys()], ['mainHand']);
+  assert.equal(equippedIndex(hero).get('mainHand')?.name, 'Sword');
+  const dangling = { ...hero, equipment: { ...hero.equipment, offHand: 'ghost' } };
+  assert.deepEqual([...equippedIndex(dangling).keys()], ['mainHand'], 'a missing item is not worn');
+});
+
+test('equippedIndex follows a character through an edit rather than caching the old one', () => {
+  let hero = heroWithSword();
+  hero = equip(hero, 'mainHand', 'sword');
+  assert.equal(equippedIndex(hero).size, 1);
+  const renamed = updateItem(hero, 'sword', { ...hero.inventory[0], name: 'Longsword' });
+  assert.equal(equippedIndex(renamed).get('mainHand')?.name, 'Longsword');
+  const bare = equip(hero, 'mainHand', null);
+  assert.equal(equippedIndex(bare).size, 0);
+  assert.equal(equippedIndex(hero).size, 1, 'the earlier character keeps its own answer');
 });
