@@ -8,9 +8,10 @@
 import { TilePalette } from './map/TilePalette.js';
 import { MapNavigator } from './map/MapNavigator.js';
 import { PartyTracker } from './party/PartyTracker.js';
-import { loadInitialCampaign } from './campaign/Campaigns.js';
+import { loadInitialCampaignSafe } from './campaign/Campaigns.js';
 import { mustGetElement } from './ui/dom.js';
 import { mountToasts, flushQueuedToast } from './ui/Toast.js';
+import { alertModal } from './ui/Modal.js';
 import { mountDiceTray } from './ui/DiceTray.js';
 import { wireCampaignActions } from './app/campaignActions.js';
 import { wireMapView } from './app/mapWiring.js';
@@ -25,7 +26,7 @@ import { maybeShowOnboarding } from './app/onboarding.js';
 import { isGM } from './view/ViewRole.js';
 
 const palette = new TilePalette();
-const initial = loadInitialCampaign();
+const { campaign: initial, failed: loadFailed } = loadInitialCampaignSafe();
 const toasts = mountToasts(document.body);
 
 // The views/actions registries start empty and are populated synchronously by
@@ -87,5 +88,15 @@ wireShortcuts(app);
 
 // Show any confirmation queued by a pre-reload action (Undo, Import, New, ...).
 flushQueuedToast(toasts);
+
+// A save the loader could not read leaves the app running on a blank campaign,
+// which needs saying out loud — and Undo, which restores the previous save, is
+// the way back.
+if (loadFailed) {
+  void alertModal(
+    'The saved campaign could not be read, so this session started blank. Nothing has been overwritten: press Undo to restore the previous save, and export a backup before making changes.',
+    { title: 'Could not load the saved campaign' },
+  );
+}
 
 maybeShowOnboarding(app);

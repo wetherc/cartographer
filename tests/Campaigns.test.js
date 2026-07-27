@@ -4,6 +4,7 @@ import {
   buildBlankCampaign,
   buildExampleCampaign,
   loadInitialCampaign,
+  loadInitialCampaignSafe,
 } from '../src/campaign/Campaigns.js';
 import { TilePalette } from '../src/map/TilePalette.js';
 import { getTile } from '../src/map/TileGrid.js';
@@ -97,6 +98,31 @@ test('loadInitialCampaign passes through every present field of a full save', ()
   assert.equal(campaign.handouts[0].title, 'Map');
   assert.equal(campaign.bestiary[0].id, 'b1');
   assert.equal(campaign.splitParty, true);
+});
+
+test('loadInitialCampaignSafe falls back to a blank campaign when a save is unreadable', () => {
+  // Survives deserialize as a record, then throws in the character default-fill.
+  localStorage.setItem(
+    'campaign-builder:save',
+    JSON.stringify({
+      nodes: [{ id: 'world', name: 'World', parentId: null, width: 2, height: 2, tiles: [] }],
+      characters: [{ id: 'c1', name: 'Hero', inventory: 5 }],
+    }),
+  );
+  assert.throws(loadInitialCampaign, 'the strict loader still reports the problem');
+  const { campaign, failed } = loadInitialCampaignSafe();
+  assert.equal(failed, true);
+  assert.deepEqual(campaign, buildBlankCampaign());
+  assert.ok(
+    localStorage.getItem('campaign-builder:save'),
+    'the unreadable save is left alone, so Undo can still reach the one before it',
+  );
+});
+
+test('loadInitialCampaignSafe reports success for a readable save', () => {
+  const { campaign, failed } = loadInitialCampaignSafe();
+  assert.equal(failed, false);
+  assert.deepEqual(campaign, buildBlankCampaign());
 });
 
 test('buildExampleCampaign defaults rng to Math.random when none is given', () => {

@@ -47,6 +47,39 @@ test('withNodeDefaults backfills discovered on tiles from older saves', () => {
   assert.equal(node.tiles[0].metadata.poiType, 'dungeon');
 });
 
+test('withNodeDefaults survives a node whose tiles are missing or malformed', () => {
+  const node = withNodeDefaults(/** @type {any} */ ({ id: 'n' }));
+  assert.deepEqual(node.tiles, [], 'a node with no tile array loads empty');
+  assert.equal(node.name, 'n', 'a nameless node falls back to its id');
+  assert.equal(node.parentId, null);
+  assert.equal(node.width, 0);
+  assert.equal(node.kind, 'region');
+
+  const messy = withNodeDefaults(
+    /** @type {any} */ ({
+      id: 'n',
+      width: '4',
+      height: 3.7,
+      tiles: [null, 'grass', { imageRef: 'g.svg' }, { id: '0,0' }],
+    }),
+  );
+  assert.equal(messy.width, 0, 'a non-numeric width reads as zero, never NaN');
+  assert.equal(messy.height, 3, 'a fractional height floors to whole tiles');
+  assert.deepEqual(
+    messy.tiles.map((t) => t.id),
+    ['0,0'],
+    'tiles that are not records, or carry no id, are dropped',
+  );
+  assert.deepEqual(messy.tiles[0], {
+    id: '0,0',
+    imageRef: '',
+    overlayRef: null,
+    metadata: { poiType: null, discoverable: false, discovered: false, notes: '' },
+    revealed: false,
+    childNodeId: null,
+  });
+});
+
 test('setTile adds a new tile and replaces an existing one by id', () => {
   let node = createMapNode('n1', 'World', null, 2, 2);
   node = setTile(node, createTile('t1', 'grass.png'));

@@ -105,3 +105,22 @@ export function loadInitialCampaign() {
     combat: saved.combat ?? null,
   };
 }
+
+/**
+ * The boot entry point: `loadInitialCampaign`, but a save that cannot be read
+ * at all yields a blank campaign instead of an exception. Without this a single
+ * unreadable field white-screens the app, and because Import persists what it
+ * reads before reloading, the unreadable campaign is already the stored save —
+ * so the GM would be left with no app to press Undo in. `failed` lets the
+ * caller say so once the toasts are mounted; the previous save is still in the
+ * undo ring, and Undo restores it.
+ * @returns {{ campaign: Campaign, failed: boolean }}
+ */
+export function loadInitialCampaignSafe() {
+  try {
+    return { campaign: loadInitialCampaign(), failed: false };
+  } catch (error) {
+    console.error('Could not load the saved campaign; starting blank.', error);
+    return { campaign: buildBlankCampaign(), failed: true };
+  }
+}

@@ -84,6 +84,62 @@ test('deserialize defaults missing fields instead of throwing', () => {
   });
 });
 
+test('deserialize drops nodes and entities that are not records', () => {
+  const restored = deserialize(
+    JSON.stringify({
+      nodes: [{ id: 'world', tiles: [] }, {}, null, 7, 'world'],
+      characters: [null, { id: 'c1', name: 'Hero' }],
+      encounters: 'none',
+      npcs: 3,
+      quests: null,
+    }),
+  );
+  assert.deepEqual(
+    restored.nodes.map((n) => n.id),
+    ['world'],
+    'a node with no id has no place in the grid',
+  );
+  assert.equal(restored.characters.length, 1);
+  assert.deepEqual(restored.encounters, [], 'a non-array collection reads as empty');
+  assert.deepEqual(restored.npcs, []);
+  assert.deepEqual(restored.quests, []);
+});
+
+test('deserialize rejects a party position missing either id', () => {
+  assert.equal(deserialize(JSON.stringify({ party: { nodeId: 'world' } })).party, null);
+  assert.equal(deserialize(JSON.stringify({ party: 'world' })).party, null);
+  assert.deepEqual(deserialize(JSON.stringify({ party: { nodeId: 'w', tileId: '0,0' } })).party, {
+    nodeId: 'w',
+    tileId: '0,0',
+  });
+});
+
+test('deserialize repairs a combat missing its order or counters', () => {
+  const restored = deserialize(JSON.stringify({ combat: { round: 'two' } }));
+  assert.deepEqual(restored.combat, { round: 1, index: 0, order: [] });
+  assert.equal(deserialize(JSON.stringify({ combat: [] })).combat, null);
+});
+
+test('deserialize reads a save that is not an object at all as an empty campaign', () => {
+  assert.deepEqual(deserialize('null'), deserialize('{}'));
+  assert.deepEqual(deserialize('[]'), deserialize('{}'));
+  assert.deepEqual(deserialize('42'), deserialize('{}'));
+});
+
+test('deserialize coerces splitParty to a boolean', () => {
+  assert.equal(deserialize(JSON.stringify({ splitParty: 'yes' })).splitParty, false);
+  assert.equal(deserialize(JSON.stringify({ splitParty: true })).splitParty, true);
+});
+
+test('a malformed save loads as a grid instead of throwing', () => {
+  const state = deserialize(
+    JSON.stringify({ nodes: [{ id: 'world' }, { id: 'broken', tiles: 'many' }] }),
+  );
+  const grid = toTileGrid(state);
+  assert.deepEqual(grid.getNode('world').tiles, []);
+  assert.deepEqual(grid.getNode('broken').tiles, []);
+});
+
 test('serialize/deserialize round-trips a running combat', () => {
   const grid = sampleGrid();
   const combat = {

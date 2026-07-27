@@ -50,22 +50,65 @@ export function createMapNode(id, name, parentId, width, height, options = {}) {
 }
 
 /**
+ * A grid dimension as a non-negative integer. A missing or non-numeric width
+ * would otherwise reach the renderer's visible-range arithmetic as NaN.
+ * @param {unknown} value
+ * @returns {number}
+ */
+function dimension(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0 ? Math.floor(value) : 0;
+}
+
+/**
+ * Backfill one loaded tile: the `discovered` flag that saves predating
+ * discoverable POIs lack, and every other field of the closed `Tile` shape,
+ * since a hand-edited or truncated save can omit any of them. A tile whose
+ * metadata is missing entirely reads as a plain undiscoverable tile.
+ * @param {Tile} tile
+ * @returns {Tile}
+ */
+function withTileDefaults(tile) {
+  const raw = /** @type {any} */ (tile).metadata;
+  const metadata = raw !== null && typeof raw === 'object' ? raw : {};
+  return {
+    ...tile,
+    imageRef: typeof tile.imageRef === 'string' ? tile.imageRef : '',
+    overlayRef: tile.overlayRef ?? null,
+    revealed: tile.revealed === true,
+    childNodeId: tile.childNodeId ?? null,
+    metadata: {
+      poiType: metadata.poiType ?? null,
+      discoverable: metadata.discoverable ?? false,
+      discovered: metadata.discovered ?? false,
+      notes: metadata.notes ?? '',
+    },
+  };
+}
+
+/**
  * Backfill a loaded node with the kind/environ fields older saves predate, so
- * a node written before interiors existed loads as a plain region.
+ * a node written before interiors existed loads as a plain region, and defend
+ * the fields the rest of the map subsystem reads without checking: a node
+ * whose `tiles` is not an array, or which holds tiles that are not records,
+ * would otherwise throw here and take the whole app down at boot (an imported
+ * campaign file is enough to cause it). Unreadable tiles are dropped rather
+ * than repaired — a tile with no id has no place in the grid.
  * @param {MapNode} node
  * @returns {MapNode}
  */
 export function withNodeDefaults(node) {
+  const tiles = Array.isArray(node.tiles) ? node.tiles : [];
   return {
     ...node,
+    name: typeof node.name === 'string' ? node.name : node.id,
+    parentId: node.parentId ?? null,
+    width: dimension(node.width),
+    height: dimension(node.height),
     kind: node.kind ?? 'region',
     environ: node.environ ?? null,
-    // Backfill the `discovered` flag on tiles saved before discoverable POIs
-    // did anything, so an older tile's metadata reads cleanly.
-    tiles: node.tiles.map((t) => ({
-      ...t,
-      metadata: { ...t.metadata, discovered: t.metadata.discovered ?? false },
-    })),
+    tiles: tiles
+      .filter((t) => t !== null && typeof t === 'object' && typeof t.id === 'string')
+      .map(withTileDefaults),
   };
 }
 

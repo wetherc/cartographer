@@ -60,26 +60,95 @@ export function serialize(state) {
 }
 
 /**
- * Parse a serialized campaign, defaulting any missing field to an empty
- * value rather than throwing, so an older or hand-edited save still loads.
+ * A value only when it is a plain record, else null. Every non-collection
+ * field of a save is one, and the load path reads their members directly.
+ * @param {unknown} value
+ * @returns {any}
+ */
+function record(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : null;
+}
+
+/**
+ * A save collection as a list of records: anything that is not an array reads
+ * as empty, and entries that are not records are dropped. Every collection in
+ * a save is a list of entities whose `withDefaults` the load path maps over, so
+ * a scalar or null element is unreadable rather than merely odd — and left in
+ * place it throws during boot, with the malformed save already persisted.
+ * @param {unknown} value
+ * @returns {any[]}
+ */
+function records(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((entry) => record(entry) !== null);
+}
+
+/**
+ * A finite number, else the fallback. Guards the counters a malformed save can
+ * carry as a string or null.
+ * @param {unknown} value
+ * @param {number} fallback
+ * @returns {number}
+ */
+function number(value, fallback) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+/**
+ * A running combat, or null when the stored value cannot be one. The initiative
+ * panel walks `order` and indexes into it, so a combat missing that array is
+ * worse than no combat at all.
+ * @param {unknown} value
+ * @returns {import('../types/combat.js').CombatState | null}
+ */
+function combatState(value) {
+  const combat = record(value);
+  if (!combat) return null;
+  return {
+    round: number(combat.round, 1),
+    index: number(combat.index, 0),
+    order: records(combat.order),
+  };
+}
+
+/**
+ * The party's position, or null when the stored value cannot be one — both
+ * fields are read as tile/node ids without checking.
+ * @param {unknown} value
+ * @returns {PartyPosition | null}
+ */
+function partyPosition(value) {
+  const party = record(value);
+  if (!party || typeof party.nodeId !== 'string' || typeof party.tileId !== 'string') return null;
+  return { nodeId: party.nodeId, tileId: party.tileId };
+}
+
+/**
+ * Parse a serialized campaign, defaulting any missing field to an empty value
+ * rather than throwing, so an older or hand-edited save still loads — and
+ * coercing every field whose *shape* the load path trusts, so a malformed one
+ * cannot. This is the only validation seam a save passes through: Import
+ * persists what it reads and then reloads, so an unreadable field that survives
+ * here becomes the stored save of an app that no longer boots. Nodes without an
+ * id are dropped; `withNodeDefaults` (TileGrid) defends the tiles within.
  * @param {string} json
  * @returns {CampaignState}
  */
 export function deserialize(json) {
-  const parsed = JSON.parse(json);
+  const parsed = record(JSON.parse(json)) ?? {};
   return {
-    nodes: parsed.nodes ?? [],
-    party: parsed.party ?? null,
-    characters: parsed.characters ?? [],
-    encounters: parsed.encounters ?? [],
-    travelog: parsed.travelog ?? [],
-    quests: parsed.quests ?? [],
-    clock: parsed.clock ?? null,
-    npcs: parsed.npcs ?? [],
-    handouts: parsed.handouts ?? [],
-    bestiary: parsed.bestiary ?? [],
-    splitParty: parsed.splitParty ?? false,
-    combat: parsed.combat ?? null,
+    nodes: records(parsed.nodes).filter((node) => typeof node.id === 'string'),
+    party: partyPosition(parsed.party),
+    characters: records(parsed.characters),
+    encounters: records(parsed.encounters),
+    travelog: records(parsed.travelog),
+    quests: records(parsed.quests),
+    clock: record(parsed.clock),
+    npcs: records(parsed.npcs),
+    handouts: records(parsed.handouts),
+    bestiary: records(parsed.bestiary),
+    splitParty: parsed.splitParty === true,
+    combat: combatState(parsed.combat),
   };
 }
 
