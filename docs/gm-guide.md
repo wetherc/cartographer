@@ -29,10 +29,11 @@ Three ways to begin:
 
 Nothing is saved automatically. Click **Save** to write the campaign to the
 browser's local storage. **Export** downloads the whole campaign as a `.json`
-file you can back up or move to another machine. **Undo** steps back to the
-snapshot taken before your last Save/New/Load example/Import — a small history is
-kept, so it covers the most common "I didn't mean to do that" mistakes, but it is
-not unlimited.
+file you can back up or move to another machine. **Undo** steps back to the state
+before your last Save/New/Load example/Import, and **Redo** steps forward again;
+both grey out when there is nothing left in that direction. The history covers
+many steps but not unlimited ones, and saving from a stepped-back position
+discards anything you had left to redo.
 
 Everything lives in one browser's local storage under a single origin. There is
 no server and no account.
@@ -156,7 +157,7 @@ painting in Build and for acting in Play.
 Mistakes are cheap: **Undo stroke** (the Tools card, or Ctrl/Cmd+Z in Build
 mode) reverts the last edit — a whole paint or erase drag counts as one edit,
 as does a region link or a generation. This history is separate from the
-header's save-level Undo and lasts only until the page reloads.
+header's save-level Undo/Redo and lasts only until the page reloads.
 
 The Tools card also has **Export PNG**, which downloads the current map as a
 full-resolution image (fog ignored) — for printing, or dropping into a VTT.
@@ -584,9 +585,10 @@ their expanded state, and both light and dark themes are supported.
 - **Watch the Save button.** It reads "Save •" whenever you have unsaved
   changes; saving confirms with a toast, and closing the tab with unsaved work
   warns first. Press `?` anywhere for the keyboard-shortcut reference
-  (Ctrl/Cmd+S saves, Ctrl/Cmd+Z undoes, B/P switch modes).
-- **Save often.** Autosave doesn't exist; Undo history is small. Export a backup
-  before a big edit.
+  (Ctrl/Cmd+S saves, Ctrl/Cmd+Z undoes, Ctrl/Cmd+Shift+Z redoes, B/P switch
+  modes).
+- **Save often.** Autosave only runs once you pause editing, and the undo history
+  is finite. Export a backup before a big edit.
 - **Build discoverable POIs and secret notes for surprises.** Both stay hidden
   from players until the moment you want them revealed.
 - **Use a second Player-role tab on a shared screen.** Save in your GM tab to push

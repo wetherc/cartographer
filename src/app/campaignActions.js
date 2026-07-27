@@ -9,7 +9,7 @@ import {
   readStateFromFile,
   onExternalSave,
 } from '../storage/SaveManager.js';
-import { saveCampaign, undoCampaign } from '../storage/HistoryLog.js';
+import { saveCampaign, undoCampaign, redoCampaign, historyDepth } from '../storage/HistoryLog.js';
 import { shouldAutosave, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -161,7 +161,22 @@ export function wireCampaignActions(app) {
     const result = saveCampaign(state);
     if (!reportSave(result)) return false;
     reportHistory(result.history);
+    refreshHistoryButtons();
     return true;
+  }
+
+  /**
+   * Grey out Undo and Redo when there is nothing in that direction, so the
+   * history's depth is visible rather than something the GM discovers by
+   * clicking. Both keep their handlers' no-op message as a backstop: another tab
+   * can save between a refresh and a click.
+   */
+  function refreshHistoryButtons() {
+    const { undo, redo } = historyDepth();
+    const undoBtn = /** @type {HTMLButtonElement | null} */ (document.getElementById('undo-btn'));
+    const redoBtn = /** @type {HTMLButtonElement | null} */ (document.getElementById('redo-btn'));
+    if (undoBtn) undoBtn.disabled = undo === 0;
+    if (redoBtn) redoBtn.disabled = redo === 0;
   }
 
   /**
@@ -277,23 +292,43 @@ export function wireCampaignActions(app) {
     app.toasts.show('Autosaved.');
   }
 
-  // Undo reverses the most recently recorded step (the state before the last
-  // save, New, Load example, or Import) and reloads so every module
-  // re-initializes from it — the same reload path those actions use. It persists
-  // through the history log rather than `persistState`, because stepping the
-  // cursor is not itself an edit: recording it would push the inverse of the undo
-  // and leave Undo toggling between two states forever.
-  mustGetElement('undo-btn').addEventListener('click', () => {
-    const step = undoCampaign();
+  // Undo and Redo walk the recorded history one step at a time — a step being one
+  // save, New, Load example, or Import — and reload so every module
+  // re-initializes from the restored state, the same reload path those actions
+  // use. Both persist through the history log rather than `persistState`, because
+  // stepping the cursor is not itself an edit: recording it would push the
+  // inverse of the undo and leave Undo toggling between two states forever.
+  /**
+   * @param {() => { save: Parameters<typeof reportSave>[0] } | null} apply
+   * @param {string} nothingToDo
+   * @param {string} restored
+   */
+  function stepHistory(apply, nothingToDo, restored) {
+    const step = apply();
     if (!step) {
-      app.toasts.show('Nothing to undo.');
+      // Nothing in that direction, or the log turned out to be unreadable and was
+      // dropped. Either way there is nothing to restore and the campaign stands.
+      refreshHistoryButtons();
+      app.toasts.show(nothingToDo);
       return;
     }
     if (!reportSave(step.save)) return;
-    queueToastAfterReload('Restored the previous save.');
+    queueToastAfterReload(restored);
     setDirty(false);
     location.reload();
+  }
+
+  mustGetElement('undo-btn').addEventListener('click', () => {
+    stepHistory(undoCampaign, 'Nothing to undo.', 'Restored the previous save.');
   });
+
+  // Redo is only reachable straight after an Undo: saving from a stepped-back
+  // cursor is a new edit, which drops everything ahead of it.
+  mustGetElement('redo-btn').addEventListener('click', () => {
+    stepHistory(redoCampaign, 'Nothing to redo.', 'Reapplied the undone change.');
+  });
+
+  refreshHistoryButtons();
 
   // Cross-tab live sync (the minimum-viable multi-device story): when another
   // tab of the same origin writes a new save — e.g. a GM laptop driving a

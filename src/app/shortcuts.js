@@ -27,10 +27,13 @@ export function wireShortcuts(app) {
     }
     if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
       event.preventDefault();
+      // Shift is redo, and always the save-level one: strokes have no redo, so
+      // there is nothing for a Build-mode variant to do.
+      if (event.shiftKey) mustGetElement('redo-btn').click();
       // In Build mode, Ctrl+Z undoes the last stroke-level edit (the thing a GM
       // mid-painting reaches for); the header Undo button keeps the save-level
       // story, which Ctrl+Z still drives everywhere else.
-      if (app.state.mode === 'build') app.actions.undoStroke();
+      else if (app.state.mode === 'build') app.actions.undoStroke();
       else mustGetElement('undo-btn').click();
       return;
     }
@@ -44,6 +47,7 @@ export function wireShortcuts(app) {
         [
           'Ctrl/Cmd+S — save the campaign',
           'Ctrl/Cmd+Z — undo (Build: last edit; Play: previous save)',
+          'Ctrl/Cmd+Shift+Z — redo the last undone save',
           'B / P — switch to Build / Play mode',
           'On the map (click it first):',
           'Arrows — move the cursor · Enter/Space — act',
