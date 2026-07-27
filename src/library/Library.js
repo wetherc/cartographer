@@ -290,15 +290,26 @@ export function removeEntry(customs, key, keyOf) {
  * dropped as unknown. A renamed default or override instead takes a fresh id,
  * because its old id still belongs to the built-in entry that resurfaces once
  * the override stops matching it. Pure.
- * @param {{ entry: { id: string }, source: LibrarySource } | null | undefined} found
- *   the merged entry being edited, or null when this is a new entry
- * @param {string | null} oldKey the name key the edit started from
- * @param {string} newKey the submitted name key
- * @param {() => string[]} takenIds ids a freshly derived slug must avoid
+ * A name that lands on another merged entry takes that entry's id, because the
+ * stored result overrides it: an override and the default it hides must share
+ * one id, or the id index (last wins) leaves one of them unreachable. Only a
+ * name matching nothing derives a fresh slug, which must avoid every id in the
+ * list's namespace — including the ids of defaults currently hidden behind an
+ * override, since those resurface as soon as the override is renamed. Pure.
+ * @param {{
+ *   found?: { entry: { id: string }, source: LibrarySource } | null,
+ *   target?: { entry: { id: string } } | null,
+ *   renamed: boolean,
+ *   newKey: string,
+ *   takenIds: () => string[],
+ * }} args `found` is the merged entry being edited (null for a new entry),
+ *   `target` the merged entry the submitted name resolves to (null when the
+ *   name is new), `renamed` whether the name key changed.
  * @returns {string}
  */
-export function storedEntryId(found, oldKey, newKey, takenIds) {
-  if (found && (oldKey === newKey || found.source === 'custom')) return found.entry.id;
+export function storedEntryId({ found, target, renamed, newKey, takenIds }) {
+  if (found && (!renamed || found.source === 'custom')) return found.entry.id;
+  if (target) return target.entry.id;
   return slugId(newKey, takenIds());
 }
 

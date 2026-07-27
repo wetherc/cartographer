@@ -30,6 +30,7 @@ import {
   readLibraryFromFile,
   LIBRARY_FILE,
 } from '../storage/LibraryStore.js';
+import { DEFAULT_SPELLS } from '../data/spells.js';
 import { itemSummary, formatDamage } from '../entities/Equipment.js';
 import { npcForm } from './npcForm.js';
 
@@ -136,14 +137,25 @@ export function wireLibrary(app) {
    * id comes from `storedEntryId`, which keeps a custom entry's id stable
    * across a rename so campaign references to it survive. The form owns the
    * fields; this owns identity and the merge key.
+   * A freshly derived id avoids every id in the list's namespace — both the
+   * built-in defaults and the stored customs — rather than only the ids
+   * currently visible in the merged list: an overridden default's own id is
+   * hidden by its override but resurfaces the moment that override is renamed
+   * or removed, so a slug that reused it would make one of the two entries
+   * unreachable through the last-wins id index.
    * @param {'bestiary' | 'spells'} list which custom-library list to write
    * @param {() => { entry: { id: string, name: string }, source: import('../types/library.js').LibrarySource }[]} activeEntries
-   * @param {() => string[]} takenIds ids the derived slug must avoid
+   * @param {{ id: string }[]} defaults the list's built-in entries
    * @returns {(key: string | null, fields: { name: string }) => void}
    */
-  const makeKeyedStore = (list, activeEntries, takenIds) => (key, fields) => {
-    const found = key ? activeEntries().find(({ entry }) => nameKey(entry) === key) : null;
-    const id = storedEntryId(found, key, nameKey(fields), takenIds);
+  const makeKeyedStore = (list, activeEntries, defaults) => (key, fields) => {
+    const takenIds = () =>
+      [...defaults, .../** @type {{ id: string }[]} */ (custom[list])].map((entry) => entry.id);
+    const newKey = nameKey(fields);
+    const merged = activeEntries();
+    const found = key ? merged.find(({ entry }) => nameKey(entry) === key) : null;
+    const target = merged.find(({ entry }) => nameKey(entry) === newKey);
+    const id = storedEntryId({ found, target, renamed: key !== newKey, newKey, takenIds });
     const entry = /** @type {any} */ ({ ...fields, id });
     let next = /** @type {any[]} */ (custom[list]);
     if (key && key !== nameKey(entry)) next = removeEntry(next, key, nameKey);
@@ -230,9 +242,7 @@ export function wireLibrary(app) {
 
   // --- Bestiary ------------------------------------------------------------
 
-  const storeBestiary = makeKeyedStore('bestiary', activeBestiaryEntries, () =>
-    [...DEFAULT_BESTIARY, ...custom.bestiary].map((t) => t.id),
-  );
+  const storeBestiary = makeKeyedStore('bestiary', activeBestiaryEntries, DEFAULT_BESTIARY);
 
   app.views.libraryBestiary = mountLibraryPanel(mustGetElement('library-bestiary-container'), {
     addLabel: 'New enemy',
@@ -316,7 +326,7 @@ export function wireLibrary(app) {
 
   // --- Spells ----------------------------------------------------------------
 
-  const storeSpell = makeKeyedStore('spells', activeSpellEntries, () => []);
+  const storeSpell = makeKeyedStore('spells', activeSpellEntries, DEFAULT_SPELLS);
 
   app.views.librarySpells = mountLibraryPanel(mustGetElement('library-spells-container'), {
     addLabel: 'New spell',

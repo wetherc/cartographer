@@ -98,32 +98,56 @@ test('upsertEntry replacing one of several entries leaves the others in place', 
 
 test('storedEntryId keeps a custom entry id across a rename', () => {
   const found = { entry: { id: 'ember-dart', name: 'Ember Dart' }, source: 'custom' };
-  const taken = () => ['ember-dart'];
+  const takenIds = () => ['ember-dart'];
   // Unchanged name, and the rename case campaign references depend on.
-  assert.equal(storedEntryId(found, 'ember-dart', 'ember dart', taken), 'ember-dart');
-  assert.equal(storedEntryId(found, 'ember dart', 'cinder dart', taken), 'ember-dart');
-});
-
-test('storedEntryId gives a renamed default or override a fresh id', () => {
-  const taken = () => ['fire-bolt', 'ember-dart'];
-  for (const source of ['default', 'override']) {
-    const found = { entry: { id: 'fire-bolt', name: 'Fire Bolt' }, source };
-    // Editing in place stores the override under the default's own id.
-    assert.equal(storedEntryId(found, 'fire bolt', 'fire bolt', taken), 'fire-bolt');
-    // Renaming must not keep it: the built-in keeps that id and resurfaces.
-    assert.equal(storedEntryId(found, 'fire bolt', 'cinder bolt', taken), 'cinder-bolt');
-  }
-});
-
-test('storedEntryId slugs a new entry away from the taken ids', () => {
   assert.equal(
-    storedEntryId(null, null, 'ember dart', () => []),
+    storedEntryId({ found, target: found, renamed: false, newKey: 'ember dart', takenIds }),
     'ember-dart',
   );
   assert.equal(
-    storedEntryId(null, null, 'ember dart', () => ['ember-dart']),
-    'ember-dart-2',
+    storedEntryId({ found, target: null, renamed: true, newKey: 'cinder dart', takenIds }),
+    'ember-dart',
   );
+});
+
+test('storedEntryId gives a renamed default or override a fresh id', () => {
+  const takenIds = () => ['fire-bolt', 'ember-dart'];
+  for (const source of ['default', 'override']) {
+    const found = { entry: { id: 'fire-bolt', name: 'Fire Bolt' }, source };
+    // Editing in place stores the override under the default's own id.
+    assert.equal(
+      storedEntryId({ found, target: found, renamed: false, newKey: 'fire bolt', takenIds }),
+      'fire-bolt',
+    );
+    // Renaming must not keep it: the built-in keeps that id and resurfaces.
+    assert.equal(
+      storedEntryId({ found, target: null, renamed: true, newKey: 'cinder bolt', takenIds }),
+      'cinder-bolt',
+    );
+  }
+});
+
+test('storedEntryId adopts the id of the entry a submitted name overrides', () => {
+  const takenIds = () => ['fire-bolt'];
+  const target = { entry: { id: 'fire-bolt', name: 'Fire Bolt' }, source: 'default' };
+  // A new entry named after a built-in overrides it, so it must carry that id
+  // or the two share a name key while campaign references resolve to neither.
+  assert.equal(
+    storedEntryId({ found: null, target, renamed: true, newKey: 'fire bolt', takenIds }),
+    'fire-bolt',
+  );
+  // Same for a default renamed onto another default's name.
+  const found = { entry: { id: 'bless', name: 'Bless' }, source: 'default' };
+  assert.equal(
+    storedEntryId({ found, target, renamed: true, newKey: 'fire bolt', takenIds }),
+    'fire-bolt',
+  );
+});
+
+test('storedEntryId slugs a new entry away from the taken ids', () => {
+  const args = { found: null, target: null, renamed: true, newKey: 'ember dart' };
+  assert.equal(storedEntryId({ ...args, takenIds: () => [] }), 'ember-dart');
+  assert.equal(storedEntryId({ ...args, takenIds: () => ['ember-dart'] }), 'ember-dart-2');
 });
 
 test('normalizeLibrary keeps a supplied id, valid tier, and an armor object', () => {
