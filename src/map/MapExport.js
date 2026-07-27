@@ -1,5 +1,6 @@
 import { MapRenderer, imageSrcForRef } from './MapRenderer.js';
 import { overlayList } from './TileGrid.js';
+import { downloadBlob } from '../storage/fileIO.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
@@ -125,12 +126,6 @@ export async function renderNodeToCanvas(node, options = {}) {
  */
 export function downloadCanvasPNG(canvas, filename) {
   canvas.toBlob((blob) => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename;
-    link.click();
-    URL.revokeObjectURL(url);
+    if (blob) downloadBlob(blob, filename);
   }, 'image/png');
 }

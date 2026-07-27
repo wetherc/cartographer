@@ -6,19 +6,38 @@
  * with native dialogs.
  */
 
+/** How long to leave the object URL alive after the click, in milliseconds. */
+const REVOKE_DELAY_MS = 1000;
+
+/**
+ * Trigger a browser download of a Blob under a filename. The anchor is appended
+ * to the document before the click and removed after: a detached anchor's click
+ * is ignored outright by WebKit and WebKitGTK, which the packaged desktop build
+ * runs on. The object URL is revoked on a timeout rather than immediately,
+ * because revoking it in the same task can cancel a download the browser has
+ * only queued.
+ * @param {Blob} blob
+ * @param {string} filename
+ */
+export function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
+}
+
 /**
  * Trigger a browser download of an already-serialized JSON string.
  * @param {string} json
  * @param {string} filename
  */
 export function downloadJSON(json, filename) {
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = filename;
-  link.click();
-  URL.revokeObjectURL(url);
+  downloadBlob(new Blob([json], { type: 'application/json' }), filename);
 }
 
 /**
