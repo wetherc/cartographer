@@ -27,7 +27,10 @@ export function normalizeStatBlock(block) {
   const next = {};
   for (const key of STAT_KEYS) {
     if (key === 'AC') {
-      next.AC = block.AC ?? 10 + abilityModifier(next.DEX ?? 10);
+      // Derive from the *input* DEX, not the output being built: reading `next`
+      // here would only work while AC stays last in STAT_KEYS, silently
+      // deriving from a DEX of 10 the moment that order changed.
+      next.AC = block.AC ?? 10 + abilityModifier(block.DEX ?? 10);
     } else {
       next[key] = block[key] ?? 10;
     }
