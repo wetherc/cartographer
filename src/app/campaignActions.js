@@ -32,6 +32,29 @@ export function wireCampaignActions(app) {
   let dirtySince = 0;
   /** Whether this tab declined an external-save reload; suppresses re-prompts. */
   let syncPromptDeclined = false;
+  /**
+   * The autosave poll, live only while there are unsaved changes to write.
+   * @type {ReturnType<typeof setInterval> | null}
+   */
+  let autosaveTimer = null;
+
+  /**
+   * Begin polling the autosave policy. Driven by the dirty flag rather than
+   * started once at wiring time: a tab that never becomes dirty never polls,
+   * which covers every player tab (read-only, so nothing can mark it dirty)
+   * including one locked to the Player view, and a GM tab between saves. The
+   * poll also queries the DOM for an open dialog, so leaving it running in a
+   * tab that can never save was pure overhead.
+   */
+  function startAutosavePolling() {
+    if (autosaveTimer === null) autosaveTimer = setInterval(autosaveTick, AUTOSAVE_POLL_MS);
+  }
+
+  /** Stop the autosave poll; nothing is left to write. */
+  function stopAutosavePolling() {
+    if (autosaveTimer !== null) clearInterval(autosaveTimer);
+    autosaveTimer = null;
+  }
 
   /** @param {boolean} next */
   function setDirty(next) {
@@ -40,6 +63,10 @@ export function wireCampaignActions(app) {
     // again, so a future external save deserves a fresh prompt.
     if (!next) syncPromptDeclined = false;
     dirty = next;
+    // Autosave has nothing to do while the campaign is clean, so the poll only
+    // runs between the first unsaved change and the write that clears it.
+    if (dirty) startAutosavePolling();
+    else stopAutosavePolling();
     const saveBtn = document.getElementById('save-btn');
     if (saveBtn) {
       saveBtn.classList.toggle('btn--attention', dirty);
@@ -176,9 +203,8 @@ export function wireCampaignActions(app) {
   // Autosave: poll the pure policy and write through the same snapshot-then-
   // save path as the Save button once the GM pauses editing (or changes have
   // sat unsaved past the hard cap). Only ever fires while dirty, so an idle
-  // table doesn't rewrite the save — and follower tabs see nothing. Player
-  // tabs are read-only and never become dirty, so this no-ops there.
-  setInterval(() => {
+  // table doesn't rewrite the save — and follower tabs see nothing.
+  function autosaveTick() {
     const now = Date.now();
     if (!shouldAutosave({ dirty, now, lastMutationAt, dirtySince })) return;
     // Don't autosave under an open dialog: the GM is mid-edit, and a modal's
@@ -188,7 +214,7 @@ export function wireCampaignActions(app) {
     if (!persistState(buildCurrentState())) return;
     setDirty(false);
     app.toasts.show('Autosaved.');
-  }, AUTOSAVE_POLL_MS);
+  }
 
   // Undo restores the most recent snapshot (the state before the last save,
   // New, Load example, or Import) and reloads so every module re-initializes
