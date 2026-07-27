@@ -120,10 +120,44 @@ for the small lists most panels show. What keeps it cheap is that `update()` is
 allowed to do nothing: a panel built on `mountListPanel` compares the rows it
 would draw against the ones it last drew and returns early when they are the
 same objects. That is why a party step can fire five panel refreshes without
-five rebuilds. Two panels skip the rebuild differently: the travelogue diffs by
-anchor id and the tile inspector builds once and re-points. Copy those only when
-the list is large or grows continuously, and see
+five rebuilds. Three panels skip the rebuild differently: the travelogue diffs by
+anchor id, the tile inspector builds once and re-points, and the character sheet
+does the same behind a structure check (below). Copy those only when the panel is
+large or grows continuously, and see
 [Conventions](conventions.md#growing-lists-render-incrementally).
+
+### The character sheet's structure check
+
+The sheet is the one panel where clearing and rebuilding was expensive enough to
+be worth designing around. A single HP tick used to discard roughly two hundred
+elements — six ability badges with an inline SVG die each, every spell-slot pip,
+the progression and spell sections, the condition chips — to move one bar's
+width, and every tick commits, which fires the sibling panels too.
+
+So it splits in two. `build()` creates the DOM once and collects a list of small
+writers, each of which pushes one current value into an element it captured;
+`render()` runs only those writers when it can. Whether it can is decided by
+`sheetDeps(character, perms)` in `src/view/SheetStructure.js`: a flat list of
+everything the DOM's *shape* comes from, compared against the last one with
+`sameDeps`. Matching lists mean the only differences are values a writer can
+write — a pool level, bonus HP, base AC, the name, the conditions — so the DOM
+stays. Anything else (a class taken, an ability improved, an item equipped, a
+pool added or resized, a permission change) rebuilds.
+
+Two consequences are easy to get wrong if you extend the sheet:
+
+- **Event handlers must read the live character, not the one they were built
+  from.** They now outlive the change that follows them, so the sheet passes a
+  `live()` getter around and `buildProgressSection` takes a getter rather than a
+  character. A handler that closed over a build-time snapshot would silently undo
+  whatever had been written in place since.
+- **`sheetDeps` has to name every field the structural builders read.** Adding a
+  read to the sheet, the progression section, or the spell section without adding
+  it there gives you a stale display, and the compiler cannot catch it.
+
+Comparing those fields by reference is sound because the entity layer never
+mutates in place; see
+[Conventions](conventions.md#the-immutability-is-enforced-not-assumed).
 
 ### Handles that are not `{ update }`
 
@@ -303,8 +337,8 @@ which is what makes Enter submit and a submit button's `value` the return value.
 
 The four dialogs that live outside `Modal.js` are all built this way:
 `promptSpellDetail` (`SpellDetail.js`), `combatSetupModal` (`CombatSetup.js`),
-`generateDialog` (`GenerateDialog.js`), and the character sheet's stat
-breakdown. Focus restoration and dismissal semantics have one owner, so a fix
+`generateDialog` (`GenerateDialog.js`), and the ability-score breakdown
+(`CharacterStatBadge.js`). Focus restoration and dismissal semantics have one owner, so a fix
 there is a fix everywhere.
 
 Which one to use is a policy question, covered in

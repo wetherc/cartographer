@@ -132,10 +132,14 @@ async function pickMulticlassSkill(character, classId) {
 }
 
 /**
- * Build the progression section for one render of the sheet, or null when the
- * character has nothing progression-shaped (a classless character without
- * hit-dice pools). Rebuilt per render like the rest of the sheet.
- * @param {Character} character
+ * Build the progression section, or null when the character has nothing
+ * progression-shaped (a classless character without hit-dice pools).
+ *
+ * The section is laid out from the character as it is at build time, but every
+ * action reads `getCharacter()` again when it fires. The sheet keeps this DOM
+ * across changes it can write in place, so a hit-die spend that healed against a
+ * build-time snapshot would undo whatever the HP bar has done since.
+ * @param {() => Character} getCharacter
  * @param {{
  *   editBase: boolean,
  *   play: boolean,
@@ -146,7 +150,8 @@ async function pickMulticlassSkill(character, classId) {
  *   dead-end explanations as toasts.
  * @returns {HTMLElement | null}
  */
-export function buildProgressSection(character, opts) {
+export function buildProgressSection(getCharacter, opts) {
+  const character = getCharacter();
   const classes = getClasses(character);
   const hitDice = getHitDicePools(character);
   if (classes.length === 0 && hitDice.length === 0) return null;
@@ -184,7 +189,7 @@ export function buildProgressSection(character, opts) {
   }
 
   async function runAssign() {
-    const options = assignOptions(character);
+    const options = assignOptions(getCharacter());
     const first = options.find((option) => !option.disabled);
     if (!first) {
       opts.notify('No class assignment is available.');
@@ -196,14 +201,17 @@ export function buildProgressSection(character, opts) {
       { submitLabel: 'Assign' },
     );
     if (!values) return;
-    const isNew = classLevelOf(character, values.class) === 0;
-    let next = assignLevel(character, values.class);
-    if (next === character) return;
+    // Read again after the dialog: it was open long enough for the sheet's HP
+    // or slots to move underneath it.
+    const from = getCharacter();
+    const isNew = classLevelOf(from, values.class) === 0;
+    let next = assignLevel(from, values.class);
+    if (next === from) return;
     if (isNew) next = await pickMulticlassSkill(next, values.class);
-    const gained = featuresGained(next, character);
+    const gained = featuresGained(next, from);
     const gainedText = gained.length > 0 ? ` New: ${gained.map((f) => f.name).join(', ')}.` : '';
     opts.notify(
-      `${character.name} takes ${className(values.class)} ` +
+      `${from.name} takes ${className(values.class)} ` +
         `${classLevelOf(next, values.class)}.${gainedText}`,
     );
     opts.onCommit(next);
@@ -241,8 +249,9 @@ export function buildProgressSection(character, opts) {
     const increases = {};
     increases[values.first] = 1;
     increases[values.second] = (increases[values.second] ?? 0) + 1;
-    const next = applyASI(character, increases);
-    if (next === character) {
+    const from = getCharacter();
+    const next = applyASI(from, increases);
+    if (next === from) {
       opts.notify('That improvement is not valid: ability scores cap at 20.');
       return;
     }
@@ -256,8 +265,9 @@ export function buildProgressSection(character, opts) {
       { submitLabel: 'Take feat' },
     );
     if (!values) return;
-    const next = takeFeat(character, values.feat);
-    if (next !== character) opts.onCommit(next);
+    const from = getCharacter();
+    const next = takeFeat(from, values.feat);
+    if (next !== from) opts.onCommit(next);
   }
 
   const slots = pendingASISlots(character);
@@ -288,7 +298,7 @@ export function buildProgressSection(character, opts) {
     addText(row, line);
     if (opts.editBase) {
       row.appendChild(
-        textButton('Undo', () => opts.onCommit(undoLastChoice(character)), {
+        textButton('Undo', () => opts.onCommit(undoLastChoice(getCharacter())), {
           ariaLabel: 'Undo the last improvement choice',
         }),
       );
@@ -320,10 +330,11 @@ export function buildProgressSection(character, opts) {
         textButton(
           'Spend',
           () => {
-            const result = spendHitDie(character, hitDieOfPool(pool));
-            if (result.character === character) return;
+            const from = getCharacter();
+            const result = spendHitDie(from, hitDieOfPool(pool));
+            if (result.character === from) return;
             opts.notify(
-              `${character.name} spends a hit die: rolled ${result.rolled}, ` +
+              `${from.name} spends a hit die: rolled ${result.rolled}, ` +
                 `healed ${result.healed} HP.`,
             );
             opts.onCommit(result.character);

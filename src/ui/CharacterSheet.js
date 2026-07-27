@@ -9,284 +9,31 @@ import {
   restoreResource,
   XP_PER_LEVEL,
 } from '../entities/Character.js';
-import { armorClass, statBreakdown } from '../entities/Equipment.js';
-import {
-  getSlotPools,
-  getPactPool,
-  isSlotPool,
-  isPactPool,
-  slotLevelOf,
-} from '../entities/SpellSlots.js';
+import { armorClass } from '../entities/Equipment.js';
+import { getSlotPools, getPactPool, isSlotPool, isPactPool } from '../entities/SpellSlots.js';
 import { isHitDicePool } from '../entities/HitDice.js';
-import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
+import { sheetDeps, sameDeps } from '../view/SheetStructure.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { buildProgressSection } from './CharacterProgress.js';
 import { buildSpellsSection } from './CharacterSpells.js';
+import { buildStatBar, buildSlotLine } from './CharacterBars.js';
+import { statBadge } from './CharacterStatBadge.js';
 import { iconButton, textButton, emptyState } from './buttons.js';
-import { openDialog } from './Modal.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
 /**
- * Open a popover breaking one ability score into its parts: the base value,
- * each equipped item that shifts it (with its signed delta), and the resulting
- * total and modifier. This is where the base score lives now that the badge
- * shows only the effective total. Duration is not modeled yet — item buffs read
- * "while equipped"; a future condition/spell source can add a real duration.
- * @param {string} key
- * @param {{ base: number, total: number, sources: { source: string, delta: number }[] }} breakdown
- */
-function openStatBreakdown(key, breakdown) {
-  const { base, total, sources } = breakdown;
-  openDialog({
-    className: 'modal stat-breakdown',
-    title: `${key} ${total}`,
-    build: (close) => {
-      const mod = document.createElement('p');
-      mod.className = 'stat-breakdown__mod';
-      mod.textContent = `Modifier ${formatModifier(abilityModifier(total))}`;
-
-      const rows = document.createElement('dl');
-      rows.className = 'stat-breakdown__rows';
-      /** @param {string} label @param {string} value @param {string} [ddCls] @param {string} [rowCls] */
-      const addRow = (label, value, ddCls, rowCls) => {
-        const dt = document.createElement('dt');
-        dt.textContent = label;
-        const dd = document.createElement('dd');
-        dd.textContent = value;
-        if (rowCls) dt.className = rowCls;
-        dd.className = [ddCls, rowCls].filter(Boolean).join(' ');
-        rows.append(dt, dd);
-      };
-      addRow('Base', String(base));
-      for (const { source, delta } of sources) {
-        addRow(
-          `${source} (while equipped)`,
-          `${delta > 0 ? '+' : ''}${delta}`,
-          delta < 0 ? 'stat-breakdown__debuff' : 'stat-breakdown__buff',
-        );
-      }
-      addRow('Total', String(total), undefined, 'stat-breakdown__total');
-
-      const dismiss = document.createElement('button');
-      dismiss.type = 'button';
-      dismiss.className = 'btn btn--primary';
-      dismiss.textContent = 'Close';
-      dismiss.addEventListener('click', () => close());
-
-      return { body: [mod, rows], actions: [dismiss], initialFocus: dismiss };
-    },
-  });
-}
-
-/**
- * Draw the face-on d20 wireframe behind an ability score: the hexagonal
- * silhouette, the central point-down face the score sits in, and the facet
- * edges out to the remaining corners. Strokes inherit currentColor so the
- * buffed/debuffed tint colors the whole die.
- * @returns {SVGSVGElement}
- */
-function d20Face() {
-  const NS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('class', 'stat-badge__d20');
-  svg.setAttribute('viewBox', '0 0 100 100');
-  svg.setAttribute('aria-hidden', 'true');
-  // Point-up hexagon corners; the central face joins the two upper-side
-  // corners to the bottom point, so its centroid is the badge's midpoint.
-  const A = '50,3';
-  const B = '90.7,26.5';
-  const C = '90.7,73.5';
-  const D = '50,97';
-  const E = '9.3,73.5';
-  const F = '9.3,26.5';
-  /** @param {string} tag @param {Record<string, string>} attrs */
-  const shape = (tag, attrs) => {
-    const el = document.createElementNS(NS, tag);
-    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
-    svg.appendChild(el);
-    return el;
-  };
-  shape('polygon', { class: 'stat-badge__d20-hull', points: `${A} ${B} ${C} ${D} ${E} ${F}` });
-  shape('path', {
-    class: 'stat-badge__d20-facets',
-    d: `M${A} L${F} M${A} L${B} M${C} L${B} M${C} L${D} M${E} L${F} M${E} L${D}`,
-  });
-  shape('polygon', { class: 'stat-badge__d20-face', points: `${F} ${B} ${D}` });
-  return svg;
-}
-
-/**
- * Build one ability-score badge: a d20-style die showing the effective score
- * (base + equipped buffs) over its derived modifier, labeled with the ability
- * key. The whole badge is a button opening {@link openStatBreakdown}. A buffed
- * or debuffed total is tinted so a modified score is obvious at a glance.
+ * The pools the head and the stepper list own between them: HP on its bar,
+ * spell and pact slots on the pip line, and everything else as a stepper row.
+ * Hit dice are the exception, rendered by the progression section instead.
  * @param {Character} character
- * @param {string} key
- * @returns {HTMLElement}
+ * @returns {ResourcePool[]}
  */
-function statBadge(character, key) {
-  const breakdown = statBreakdown(character, key);
-  const { base, total } = breakdown;
-  const modText = formatModifier(abilityModifier(total));
-
-  const badge = document.createElement('button');
-  badge.type = 'button';
-  badge.className = 'stat-badge';
-  if (total > base) badge.classList.add('stat-badge--buffed');
-  else if (total < base) badge.classList.add('stat-badge--debuffed');
-  const note = total !== base ? ` (base ${base})` : '';
-  badge.setAttribute('aria-label', `${key} ${total}, modifier ${modText}${note}. Show breakdown.`);
-  badge.title = 'Show breakdown';
-
-  const keyEl = document.createElement('span');
-  keyEl.className = 'stat-badge__key';
-  keyEl.textContent = key;
-
-  const die = document.createElement('span');
-  die.className = 'stat-badge__die';
-  die.appendChild(d20Face());
-  const score = document.createElement('span');
-  score.className = 'stat-badge__score';
-  score.textContent = String(total);
-  die.appendChild(score);
-
-  const modEl = document.createElement('span');
-  modEl.className = 'stat-badge__mod';
-  modEl.textContent = modText;
-
-  badge.append(keyEl, die, modEl);
-  badge.addEventListener('click', () => openStatBreakdown(key, breakdown));
-  return badge;
-}
-
-/**
- * Build a stat bar (HP) shown on the collapsed card, one full-width line per
- * pool: a visible label, the fill track, and the numbers. Absence of the pool
- * (older saves) renders no bar rather than a fake full one.
- * @param {ResourcePool} pool
- * @param {{ modifier: string, label: string, critical?: boolean, bonus?: number,
- *   flank?: { before: HTMLElement, after: HTMLElement } }} opts
- *   `modifier` selects the fill colour; `critical` arms the low-fill red
- *   state; `bonus` appends a "+N" readout for temporary points on top of the
- *   pool (bonus HP); `flank` places a control on either side of the track
- *   (damage/heal steppers), keeping the numeric readout after them.
- * @returns {HTMLElement}
- */
-function buildStatBar(pool, opts) {
-  const wrap = document.createElement('span');
-  wrap.className = 'stat-bar';
-  if (!opts.flank) wrap.setAttribute('role', 'img');
-  const bonusReadout = opts.bonus ? `, plus ${opts.bonus} bonus` : '';
-  wrap.setAttribute('aria-label', `${opts.label} ${pool.current} of ${pool.max}${bonusReadout}`);
-
-  const label = document.createElement('span');
-  label.className = 'stat-bar__label';
-  label.textContent = opts.label;
-  wrap.appendChild(label);
-
-  if (opts.flank) wrap.appendChild(opts.flank.before);
-
-  const track = document.createElement('span');
-  track.className = 'stat-bar__track';
-  const fill = document.createElement('span');
-  fill.className = `stat-bar__fill stat-bar__fill--${opts.modifier}`;
-  const ratio = pool.max > 0 ? pool.current / pool.max : 0;
-  fill.style.width = `${Math.round(ratio * 100)}%`;
-  if (opts.critical && ratio <= 0.25) fill.classList.add('stat-bar__fill--critical');
-  track.appendChild(fill);
-  wrap.appendChild(track);
-
-  if (opts.flank) wrap.appendChild(opts.flank.after);
-
-  const text = document.createElement('span');
-  text.className = 'stat-bar__text';
-  text.textContent = `${pool.current}/${pool.max}`;
-  wrap.appendChild(text);
-
-  if (opts.bonus) {
-    const bonus = document.createElement('span');
-    bonus.className = 'stat-bar__bonus';
-    bonus.textContent = `+${opts.bonus}`;
-    bonus.title = 'Bonus HP';
-    wrap.appendChild(bonus);
-  }
-  return wrap;
-}
-
-/**
- * Compact spell-slot readout: a column per spell level, the ordinal centered
- * above a two-wide grid of pips, filled pips being the slots still unspent.
- * Columns wrap under the pip area (not the label) when a high-level caster
- * outgrows the card width. With `onToggle` each pip is a button: clicking a
- * filled pip spends a slot of that level, clicking an empty one restores one
- * (slots drain and refill left to right, so it reads as toggling that pip).
- * Without it (a spectator's view) the line is a plain readout.
- * A non-caster (no slot pools) renders nothing.
- * @param {import('../types/entities.js').ResourcePool[]} pools
- * @param {((pool: import('../types/entities.js').ResourcePool, spent: boolean) => void) | null} onToggle
- * @returns {HTMLElement}
- */
-function buildSlotLine(pools, onToggle) {
-  const wrap = document.createElement('span');
-  wrap.className = 'stat-bar slot-line';
-  /** @param {import('../types/entities.js').ResourcePool} p */
-  const slotNoun = (p) => (isPactPool(p) ? 'pact slot' : 'slot');
-  if (!onToggle) {
-    const readout = pools
-      .map((p) => `level ${slotLevelOf(p)} ${slotNoun(p)}s: ${p.current} of ${p.max}`)
-      .join(', ');
-    wrap.setAttribute('role', 'img');
-    wrap.setAttribute('aria-label', `Spell slots — ${readout}`);
-  }
-
-  const label = document.createElement('span');
-  label.className = 'stat-bar__label';
-  label.textContent = 'Slots';
-  wrap.appendChild(label);
-
-  /** @param {number} n */
-  const ordinal = (n) => `${n}${n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`;
-  const groups = document.createElement('span');
-  groups.className = 'slot-line__groups';
-  for (const pool of pools) {
-    const group = document.createElement('span');
-    group.className = 'slot-line__group';
-    const level = document.createElement('span');
-    level.className = 'slot-line__level';
-    level.textContent = isPactPool(pool)
-      ? `${ordinal(slotLevelOf(pool))} pact`
-      : ordinal(slotLevelOf(pool));
-    const pips = document.createElement('span');
-    pips.className = 'slot-line__pips';
-    for (let i = 0; i < pool.max; i += 1) {
-      const available = i < pool.current;
-      /** @type {HTMLElement} */
-      let pip;
-      if (onToggle) {
-        pip = document.createElement('button');
-        pip.setAttribute('type', 'button');
-        pip.className = 'slot-line__pip';
-        pip.setAttribute(
-          'aria-label',
-          available
-            ? `Spend a level ${slotLevelOf(pool)} ${slotNoun(pool)}`
-            : `Restore a level ${slotLevelOf(pool)} ${slotNoun(pool)}`,
-        );
-        pip.title = available ? 'Click to spend' : 'Click to restore';
-        pip.addEventListener('click', () => onToggle(pool, available));
-      } else {
-        pip = document.createElement('span');
-      }
-      pip.textContent = available ? '●' : '○';
-      pips.appendChild(pip);
-    }
-    group.append(level, pips);
-    groups.appendChild(group);
-  }
-  wrap.appendChild(groups);
-  return wrap;
+function customPools(character) {
+  return character.resources.filter(
+    (r) => r.id !== 'hp' && !isSlotPool(r) && !isPactPool(r) && !isHitDicePool(r),
+  );
 }
 
 /**
@@ -300,6 +47,11 @@ function buildSlotLine(pools, onToggle) {
  * condition controls disappear too (a spectator's view of the sheet), and the
  * HP damage/heal steppers additionally require `hp` (GM-only — damage and
  * healing are adjudicated, not self-served).
+ *
+ * The sheet is built once and then re-pointed: a change that leaves its shape
+ * alone (any pool level, bonus HP, base AC, the name, the conditions) writes
+ * into the elements already on screen, and only a change of shape rebuilds. See
+ * `view/SheetStructure.js` for what counts as shape.
  * @param {HTMLElement} container
  * @param {Character | null} initial
  * @param {(character: Character) => void} [onChange]
@@ -330,6 +82,14 @@ export function mountCharacterSheet(
   root.className = 'character-sheet';
   container.appendChild(root);
 
+  /**
+   * The character every event handler works from. Handlers outlive the render
+   * that created them now, so they must read the live value rather than close
+   * over the one that was current when they were built.
+   * @returns {Character}
+   */
+  const live = () => /** @type {Character} */ (current);
+
   /** @param {Character} next */
   function commit(next) {
     current = next;
@@ -337,16 +97,44 @@ export function mountCharacterSheet(
     render();
   }
 
-  function render() {
-    root.innerHTML = '';
+  /** The structure the DOM currently reflects, and how to re-point it. */
+  /** @type {unknown[] | null} */
+  let builtDeps = null;
+  /** @type {(() => void) | null} */
+  let repoint = null;
 
-    // Captured non-null so listeners created below keep the narrowing.
+  function render() {
     const character = current;
     if (!character) {
+      builtDeps = null;
+      repoint = null;
+      root.innerHTML = '';
       root.appendChild(emptyState('No character selected.'));
       return;
     }
     const perms = getPermissions();
+    const deps = sheetDeps(character, perms);
+    if (repoint && sameDeps(builtDeps, deps)) {
+      repoint();
+      return;
+    }
+    root.innerHTML = '';
+    repoint = build(character, perms);
+    builtDeps = deps;
+    repoint();
+  }
+
+  /**
+   * Build the whole card for a character whose shape is new, returning the
+   * function that writes the current values into it.
+   * @param {Character} character
+   * @param {{ editBase: boolean, play: boolean, hp: boolean }} perms
+   * @returns {() => void}
+   */
+  function build(character, perms) {
+    /** The value writers collected while building, run in order on every tick. */
+    /** @type {(() => void)[]} */
+    const writers = [];
 
     const summary = document.createElement('div');
     summary.className = 'character-sheet__summary';
@@ -358,8 +146,10 @@ export function mountCharacterSheet(
 
     const name = document.createElement('span');
     name.className = 'character-sheet__name';
-    name.textContent = character.name;
     summaryTop.appendChild(name);
+    writers.push(() => {
+      name.textContent = live().name;
+    });
 
     if (character.race) {
       const race = document.createElement('span');
@@ -387,47 +177,52 @@ export function mountCharacterSheet(
         const damageButton = iconButton(
           'minus',
           `Damage ${character.name} by 1`,
-          () => commit(damageCharacter(character, 1)),
+          () => commit(damageCharacter(live(), 1)),
           { variant: 'danger', className: 'character-sheet__hp-step' },
         );
         const healButton = iconButton(
           'heal',
           `Heal ${character.name} by 1`,
-          () => commit(restoreResource(character, 'hp', 1)),
+          () => commit(restoreResource(live(), 'hp', 1)),
           { variant: 'success', className: 'character-sheet__hp-step' },
         );
         flank = { before: damageButton, after: healButton };
       }
       // Reads "HP  - [bar] +  current/max +bonus": steppers hug the track,
       // the numbers sit after them on the right.
-      hpLine.appendChild(
-        buildStatBar(hp, {
-          modifier: 'hp',
-          label: 'HP',
-          critical: true,
-          bonus: character.bonusHP ?? 0,
-          flank,
-        }),
-      );
+      const bar = buildStatBar(hp, {
+        modifier: 'hp',
+        label: 'HP',
+        critical: true,
+        bonus: character.bonusHP ?? 0,
+        flank,
+      });
+      hpLine.appendChild(bar.element);
       head.appendChild(hpLine);
+      writers.push(() => {
+        const pool = getHP(live());
+        if (pool) bar.update(pool, live().bonusHP ?? 0);
+      });
     }
 
     const pact = getPactPool(character);
     const slots = [...getSlotPools(character), ...(pact ? [pact] : [])];
     if (slots.length > 0) {
-      head.appendChild(
-        buildSlotLine(
-          slots,
-          perms.play
-            ? (pool, spent) =>
-                commit(
-                  spent
-                    ? spendResource(character, pool.id, 1)
-                    : restoreResource(character, pool.id, 1),
-                )
-            : null,
-        ),
+      const line = buildSlotLine(
+        slots,
+        perms.play
+          ? (pool, spent) =>
+              commit(
+                spent ? spendResource(live(), pool.id, 1) : restoreResource(live(), pool.id, 1),
+              )
+          : null,
       );
+      head.appendChild(line.element);
+      writers.push(() => {
+        const next = live();
+        const nextPact = getPactPool(next);
+        line.update([...getSlotPools(next), ...(nextPact ? [nextPact] : [])]);
+      });
     }
 
     const body = document.createElement('div');
@@ -444,7 +239,6 @@ export function mountCharacterSheet(
     headerMeta.className = 'character-sheet__header-meta';
     const acBadge = document.createElement('span');
     acBadge.className = 'character-sheet__ac';
-    acBadge.textContent = `AC ${armorClass(character)}`;
     acBadge.title =
       'Armor class: equipped body armor sets base AC + DEX per its weight class ' +
       '(light: full, medium: max +2, heavy: none); unarmored is base AC + DEX. ' +
@@ -455,6 +249,11 @@ export function mountCharacterSheet(
     headerMeta.append(acBadge, xpProgress);
     header.append(levelText, headerMeta);
     body.appendChild(header);
+    // Base AC is edited without changing the sheet's shape, so the derived
+    // badge has to follow it.
+    writers.push(() => {
+      acBadge.textContent = `AC ${armorClass(live())}`;
+    });
 
     /**
      * A labeled numeric row sharing the stat rows' key/input geometry.
@@ -481,6 +280,19 @@ export function mountCharacterSheet(
       return { row, input };
     }
 
+    /**
+     * Follow a field's value when it changes elsewhere, without overwriting a
+     * number the viewer is part-way through typing.
+     * @param {HTMLInputElement} input
+     * @param {() => number} read
+     */
+    function followField(input, read) {
+      writers.push(() => {
+        if (document.activeElement === input) return;
+        input.value = String(read());
+      });
+    }
+
     // The XP award is an action (input + button), so it stays on its own full
     // width row above the aligned field grid rather than in it.
     if (perms.editBase) {
@@ -490,7 +302,7 @@ export function mountCharacterSheet(
         'XP',
         () => {
           const amount = Number(xpInput.value);
-          if (amount > 0) commit(addXP(character, amount));
+          if (amount > 0) commit(addXP(live(), amount));
         },
         { icon: 'add' },
       );
@@ -507,7 +319,7 @@ export function mountCharacterSheet(
     // new maximum is below it.
     if (perms.editBase && hp) {
       const { row } = buildFieldRow('MAX HP', hp.max, `Maximum HP for ${character.name}`, (value) =>
-        commit(setMaxHP(character, value)),
+        commit(setMaxHP(live(), value)),
       );
       fields.appendChild(row);
     }
@@ -515,25 +327,28 @@ export function mountCharacterSheet(
     // Bonus HP from items/boons, tracked on top of the intrinsic pool; damage
     // drains it first. Editable by anyone who can play the character.
     if (perms.play && hp) {
-      const { row } = buildFieldRow(
+      const { row, input } = buildFieldRow(
         'BONUS HP',
         character.bonusHP ?? 0,
         `Bonus HP for ${character.name}`,
-        (value) => commit(setBonusHP(character, value)),
+        (value) => commit(setBonusHP(live(), value)),
       );
       fields.appendChild(row);
+      // Damage drains bonus HP, so the field moves without being edited.
+      followField(input, () => live().bonusHP ?? 0);
     }
 
     // Unarmored base AC, normally 10; effects like Mage Armor raise it. Only
     // in play while no body armor is equipped.
     if (perms.play) {
-      const { row } = buildFieldRow(
+      const { row, input } = buildFieldRow(
         'BASE AC',
         character.baseAC ?? 10,
         `Unarmored base AC for ${character.name}`,
-        (value) => commit(setBaseAC(character, value)),
+        (value) => commit(setBaseAC(live(), value)),
       );
       fields.appendChild(row);
+      followField(input, () => live().baseAC ?? 10);
     }
 
     if (fields.children.length > 0) body.appendChild(fields);
@@ -546,6 +361,8 @@ export function mountCharacterSheet(
     // one click away in the breakdown popover, so the common "what's my STR?"
     // question is answered at a glance without parsing "16 = 18 +4". Scores are
     // no longer edited inline; a dedicated character/level-up editor owns that.
+    // Stats and equipment are both part of the sheet's shape, so a badge never
+    // has to be re-pointed: it is rebuilt when its score can have moved.
     for (const key of Object.keys(character.stats)) {
       statsList.appendChild(statBadge(character, key));
     }
@@ -553,7 +370,9 @@ export function mountCharacterSheet(
 
     // Classes, pending levels/improvements, features, and hit dice: the
     // progression section owns them (null for a classless legacy character).
-    const progress = buildProgressSection(character, {
+    // It reads the live character rather than a snapshot, because a hit-die
+    // spend has to heal the HP the head may have changed since.
+    const progress = buildProgressSection(live, {
       editBase: perms.editBase,
       play: perms.play,
       onCommit: commit,
@@ -564,39 +383,40 @@ export function mountCharacterSheet(
     // HP and spell slots are managed on the always-visible head lines, and hit
     // dice in the progression section, so the stepper list at the bottom only
     // carries the custom pools.
-    const customPools = character.resources.filter(
-      (r) => r.id !== 'hp' && !isSlotPool(r) && !isPactPool(r) && !isHitDicePool(r),
-    );
-    if (customPools.length > 0) {
+    const pools = customPools(character);
+    if (pools.length > 0) {
       const resources = document.createElement('div');
       resources.className = 'character-sheet__resources';
-      for (const pool of customPools) {
+      pools.forEach((pool, index) => {
         const row = document.createElement('div');
         row.className = 'character-sheet__resource-row';
 
         const label = document.createElement('span');
         label.className = 'character-sheet__resource-label';
-        label.textContent = `${pool.name} ${pool.current}/${pool.max}`;
         row.appendChild(label);
+        writers.push(() => {
+          const next = customPools(live())[index];
+          if (next) label.textContent = `${next.name} ${next.current}/${next.max}`;
+        });
 
         if (perms.play) {
           row.append(
             iconButton(
               'minus',
               `Spend one ${pool.name}`,
-              () => commit(spendResource(character, pool.id, 1)),
+              () => commit(spendResource(live(), pool.id, 1)),
               { variant: 'danger' },
             ),
             iconButton(
               'plus',
               `Restore one ${pool.name}`,
-              () => commit(restoreResource(character, pool.id, 1)),
+              () => commit(restoreResource(live(), pool.id, 1)),
               { variant: 'success' },
             ),
           );
         }
         resources.appendChild(row);
-      }
+      });
       body.appendChild(resources);
     }
 
@@ -607,7 +427,7 @@ export function mountCharacterSheet(
       const spellsSection = buildSpellsSection(character, {
         play: perms.play,
         resolveSpells: spells.resolveSpells,
-        onCast: (spell) => spells.onCast(character, spell),
+        onCast: (spell) => spells.onCast(live(), spell),
       });
       if (spellsSection) body.appendChild(spellsSection);
     }
@@ -618,14 +438,27 @@ export function mountCharacterSheet(
     conditionsLabel.className = 'section-label';
     conditionsLabel.textContent = 'Conditions';
     conditions.appendChild(conditionsLabel);
-    mountConditionsBar(conditions, {
+    // The bar reads and reports the whole list, so it stays mounted across
+    // ticks; only its chips are rebuilt, and only when they can have changed.
+    const conditionsBar = mountConditionsBar(conditions, {
       getConditions: () => current?.conditions ?? [],
-      onChange: (next) => commit({ ...character, conditions: next }),
+      onChange: (next) => commit({ ...live(), conditions: next }),
       canEdit: () => getPermissions().play,
     });
     body.appendChild(conditions);
+    /** @type {import('../types/entities.js').Condition[]} */
+    let shownConditions = character.conditions;
+    writers.push(() => {
+      const next = live().conditions;
+      if (next === shownConditions) return;
+      shownConditions = next;
+      conditionsBar.update();
+    });
 
     root.append(head, body);
+    return () => {
+      for (const write of writers) write();
+    };
   }
 
   render();

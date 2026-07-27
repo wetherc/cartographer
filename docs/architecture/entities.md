@@ -127,11 +127,16 @@ preserved. `campaign/Campaigns.js` maps every loaded character through it.
 the DOM-wiring layer over these modules, following the same mount-function
 pattern as `ui/DiceTray.js`: each holds a local mutable copy of its entity,
 re-renders after every interaction, and reports the updated value through an
-`onChange` callback for a caller to persist.
+`onChange` callback for a caller to persist. The sheet re-renders by writing
+values into the DOM it already has whenever the shape has not changed, which is
+described in
+[UI components](ui-components.md#the-character-sheets-structure-check).
 
-The sheet's progression surface (class rows with subclass, the pending-level
-class assignment, pending ASI/feat choices, unlocked features, and the
-hit-dice pool) is built by `ui/CharacterProgress.js` and mounted into the
-sheet. The background name and the assembled proficiency lists are stored but
+The sheet's parts live in their own modules: the ability badges and their
+breakdown popover in `ui/CharacterStatBadge.js`, the HP bar and slot pips in
+`ui/CharacterBars.js`, the castable-spell list in `ui/CharacterSpells.js`, and
+the progression surface (class rows with subclass, the pending-level class
+assignment, pending ASI/feat choices, unlocked features, and the hit-dice pool)
+in `ui/CharacterProgress.js`. The background name and the assembled proficiency lists are stored but
 not yet rendered there; they are deferred into later saving-throw and skill
 blocks rather than built as a static list first.
