@@ -18,6 +18,7 @@ import {
   activeSpellEntries,
   upsertEntry,
   removeEntry,
+  storedEntryId,
   DEFAULT_BESTIARY,
 } from '../library/Library.js';
 import {
@@ -30,7 +31,6 @@ import {
   LIBRARY_FILE,
 } from '../storage/LibraryStore.js';
 import { itemSummary, formatDamage } from '../entities/Equipment.js';
-import { slugId } from '../entities/Roster.js';
 import { npcForm } from './npcForm.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -131,21 +131,19 @@ export function wireLibrary(app) {
 
   /**
    * Store an edited name-keyed entry (bestiary template or spell) under its
-   * possibly-renamed key, deriving the id from the name: an existing entry
-   * keeps its id unless renamed, a rename retires the old custom entry rather
-   * than leaving both behind, and editing a built-in stores a custom override.
-   * The form owns the fields; this owns identity and the merge key.
+   * possibly-renamed key: a rename retires the old custom entry rather than
+   * leaving both behind, and editing a built-in stores a custom override. The
+   * id comes from `storedEntryId`, which keeps a custom entry's id stable
+   * across a rename so campaign references to it survive. The form owns the
+   * fields; this owns identity and the merge key.
    * @param {'bestiary' | 'spells'} list which custom-library list to write
-   * @param {() => { entry: { id: string, name: string } }[]} activeEntries
+   * @param {() => { entry: { id: string, name: string }, source: import('../types/library.js').LibrarySource }[]} activeEntries
    * @param {() => string[]} takenIds ids the derived slug must avoid
    * @returns {(key: string | null, fields: { name: string }) => void}
    */
   const makeKeyedStore = (list, activeEntries, takenIds) => (key, fields) => {
-    const existing = key
-      ? activeEntries().find(({ entry }) => nameKey(entry) === key)?.entry
-      : null;
-    const id =
-      existing && key === nameKey(fields) ? existing.id : slugId(nameKey(fields), takenIds());
+    const found = key ? activeEntries().find(({ entry }) => nameKey(entry) === key) : null;
+    const id = storedEntryId(found, key, nameKey(fields), takenIds);
     const entry = /** @type {any} */ ({ ...fields, id });
     let next = /** @type {any[]} */ (custom[list]);
     if (key && key !== nameKey(entry)) next = removeEntry(next, key, nameKey);

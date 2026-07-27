@@ -283,6 +283,26 @@ export function removeEntry(customs, key, keyOf) {
 }
 
 /**
+ * The id a stored name-keyed entry (bestiary template or spell) should carry.
+ * Ids are internal — only the name key merges — and campaign state stores them:
+ * characters, bestiary templates, and NPC templates all hold spell ids, so a
+ * custom entry keeps its id across a rename or every reference to it would be
+ * dropped as unknown. A renamed default or override instead takes a fresh id,
+ * because its old id still belongs to the built-in entry that resurfaces once
+ * the override stops matching it. Pure.
+ * @param {{ entry: { id: string }, source: LibrarySource } | null | undefined} found
+ *   the merged entry being edited, or null when this is a new entry
+ * @param {string | null} oldKey the name key the edit started from
+ * @param {string} newKey the submitted name key
+ * @param {() => string[]} takenIds ids a freshly derived slug must avoid
+ * @returns {string}
+ */
+export function storedEntryId(found, oldKey, newKey, takenIds) {
+  if (found && (oldKey === newKey || found.source === 'custom')) return found.entry.id;
+  return slugId(newKey, takenIds());
+}
+
+/**
  * Coerce an unknown value into a clean DamagePart array, dropping terms that
  * aren't well-formed dice and clamping the rest onto the supported die sizes
  * and damage types. Pure.
