@@ -132,11 +132,21 @@ export function wireCampaignActions(app) {
    * quota-full write gets an error toast (and reports failure so reload flows
    * can abort), a near-quota write gets a warning nudging the GM to trim
    * data:-URL images before saves start throwing.
+   *
+   * Image payloads are stored apart from the campaign, so a full origin can lose
+   * them while the campaign itself lands. That reports as a save, because it is
+   * one — the map, the party, and every entity are stored — but the GM has to be
+   * told the pictures are not, or a later load looks like corruption.
    * @param {import('../types/storage.js').CampaignState} state
    * @returns {boolean} whether the write landed
    */
   function persistState(state) {
     const result = trySaveToLocalStorage(state);
+    if (result.ok && !result.assetsOk) {
+      app.toasts.show(
+        'Saved, but browser storage is too full for the images: handout pictures were not stored.',
+      );
+    }
     if (!result.ok) {
       app.toasts.show(
         'Save failed: browser storage is full. Export the campaign, then remove large handout images or custom tiles.',

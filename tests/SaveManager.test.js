@@ -574,6 +574,7 @@ test('trySaveToLocalStorage reports success, byte cost, and quota headroom', asy
   const result = trySaveToLocalStorage(state);
   assert.deepEqual(result, {
     ok: true,
+    assetsOk: true,
     nearQuota: false,
     bytes: serialize(state).length * 2,
     footprint: localStorageFootprint(),

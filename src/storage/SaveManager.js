@@ -2,6 +2,7 @@ import { TileGrid, withNodeDefaults } from '../map/TileGrid.js';
 import { downloadJSON, readFileText } from './fileIO.js';
 import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
 import { hoistAssets, restoreAssets } from './Assets.js';
+import { detachAssets, loadAssetTable, persistAssets } from './AssetStore.js';
 import { packEntities } from './EntityPack.js';
 import { encodeNodeTiles, decodeNodeTiles } from './TileCodec.js';
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
@@ -253,10 +254,16 @@ function partyPosition(value) {
  * reference into the asset table. A save stamped with an older schema version
  * passes through `Migrations.js`'s step chain first; one stamped newer than this
  * app is read best-effort.
+ *
+ * `assets` supplies payloads the string does not carry, which is how the
+ * localStorage form is read: `AssetStore.js` keeps the table in its own key, so
+ * only the two readers of a stored string pass it. A table inside the string wins
+ * over it, so an exported file — which is always self-contained — is unaffected.
  * @param {string} json
+ * @param {Record<string, string>} [assets]
  * @returns {CampaignState}
  */
-export function deserialize(json) {
+export function deserialize(json, assets) {
   const raw = record(JSON.parse(json)) ?? {};
   // Migrations run on the raw object, ahead of the coercion below: a step exists
   // to repair a shape this validator would otherwise flatten or drop. The
@@ -275,6 +282,11 @@ export function deserialize(json) {
   // A node stored in the unencoded form passes through the decoder untouched.
   const decoded = { ...migrated };
   if (Array.isArray(decoded.nodes)) decoded.nodes = decoded.nodes.map(decodeNodeTiles);
+  if (assets && Object.keys(assets).length) {
+    // The sidecar is a fallback under whatever the string itself carries, so a
+    // save holding its own table resolves from that table alone.
+    decoded.assets = { ...assets, ...(record(decoded.assets) ?? {}) };
+  }
   const parsed = restoreAssets(decoded);
   return {
     version: CURRENT_VERSION,
@@ -376,20 +388,32 @@ export function localStorageFootprint() {
  * the write, which is exact — a pre-write measurement cannot know the new save's
  * size net of the old one it replaces — and the warning concerns the next write
  * either way.
+ *
+ * Image payloads go to their own key first, then the campaign, so structure and
+ * blobs fail independently: `assetsOk` false leaves the GM a saved map with a
+ * missing picture, where one blob inside the campaign string would have cost them
+ * both. Writing the payloads first is what makes that the only failure shape —
+ * the reverse order can persist structure referencing nothing — and it also
+ * settles the cross-tab race, since a follower tab wakes on the campaign key and
+ * by then the payloads are already stored. `bytes` therefore measures the
+ * payload-free save; only `footprint` speaks to the quota, and it counts every
+ * key.
  * @param {CampaignState} state
  * @param {string} [key]
- * @returns {{ ok: boolean, nearQuota: boolean, bytes: number, footprint: number }}
+ * @returns {{ ok: boolean, assetsOk: boolean, nearQuota: boolean, bytes: number, footprint: number }}
  */
 export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY) {
-  const json = serialize(state);
+  const { state: detached, assets } = detachAssets(packState(state));
+  const json = JSON.stringify(detached);
   const bytes = saveByteSize(json);
+  const assetsOk = persistAssets(assets, json, [key]);
   try {
     localStorage.setItem(key, json);
   } catch {
-    return { ok: false, nearQuota: true, bytes, footprint: localStorageFootprint() };
+    return { ok: false, assetsOk, nearQuota: true, bytes, footprint: localStorageFootprint() };
   }
   const footprint = localStorageFootprint();
-  return { ok: true, nearQuota: isNearQuota(footprint), bytes, footprint };
+  return { ok: true, assetsOk, nearQuota: isNearQuota(footprint), bytes, footprint };
 }
 
 /**
@@ -398,7 +422,7 @@ export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY) {
  */
 export function loadFromLocalStorage(key = DEFAULT_STORAGE_KEY) {
   const json = localStorage.getItem(key);
-  return json ? deserialize(json) : null;
+  return json ? deserialize(json, loadAssetTable()) : null;
 }
 
 /**
@@ -555,7 +579,9 @@ export function undoHistory(key = DEFAULT_HISTORY_KEY) {
     const snapshot = localStorage.getItem(historyEntryKey(key, seq));
     localStorage.removeItem(historyEntryKey(key, seq));
     localStorage.setItem(key, JSON.stringify(seqs));
-    if (snapshot !== null) return deserialize(snapshot);
+    // A snapshot is a stored campaign string, so its payloads live in the
+    // sidecar key rather than in the snapshot itself.
+    if (snapshot !== null) return deserialize(snapshot, loadAssetTable());
   }
   return null;
 }

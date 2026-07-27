@@ -26,6 +26,28 @@
  */
 const ASSET_PREFIX = 'asset:';
 
+/**
+ * Every asset reference in a serialized save, matched against the raw text
+ * rather than by walking parsed state. The text is deliberate: a tile's ref
+ * lives inside an encoded node's `refs` palette (`TileCodec.js`), which a state
+ * walk cannot see without decoding first, and the undo ring holds strings
+ * anyway. The pattern lives here because it has to match `assetKey`'s base36
+ * output and `createHoister`'s `~n` collision suffix, both directly above.
+ *
+ * It over-matches at worst — a literal `asset:` in a handout's body text pins a
+ * key no table holds, which costs nothing — and never under-matches, which is
+ * the direction that would drop a live payload.
+ * @param {string} text
+ * @returns {Set<string>}
+ */
+export function referencedAssetKeys(text) {
+  /** @type {Set<string>} */
+  const keys = new Set();
+  const pattern = new RegExp(`${ASSET_PREFIX}([0-9a-z]+(?:~[0-9]+)?)`, 'g');
+  for (const match of text.matchAll(pattern)) keys.add(match[1]);
+  return keys;
+}
+
 /** Whether a ref holds an inline image payload rather than a path. */
 function isPayload(/** @type {unknown} */ ref) {
   return typeof ref === 'string' && ref.startsWith('data:');
