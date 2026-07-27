@@ -1,6 +1,12 @@
 import { collectSubtreeIds } from './WorldTree.js';
 import { parseCoords } from './MapGeometry.js';
-import { tileAt, tilePosition, withTileAppended, withTileReplaced } from './TileIndex.js';
+import {
+  tileAt,
+  tilePosition,
+  withNodeTiles,
+  withTileAppended,
+  withTileReplaced,
+} from './TileIndex.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('../types/map.js').TileMetadata} TileMetadata */
@@ -102,18 +108,20 @@ export function withTileDefaults(tile) {
  */
 export function withNodeDefaults(node) {
   const tiles = Array.isArray(node.tiles) ? node.tiles : [];
-  return {
-    ...node,
-    name: typeof node.name === 'string' ? node.name : node.id,
-    parentId: node.parentId ?? null,
-    width: dimension(node.width),
-    height: dimension(node.height),
-    kind: node.kind ?? 'region',
-    environ: node.environ ?? null,
-    tiles: tiles
+  return withNodeTiles(
+    {
+      ...node,
+      name: typeof node.name === 'string' ? node.name : node.id,
+      parentId: node.parentId ?? null,
+      width: dimension(node.width),
+      height: dimension(node.height),
+      kind: node.kind ?? 'region',
+      environ: node.environ ?? null,
+    },
+    tiles
       .filter((t) => t !== null && typeof t === 'object' && typeof t.id === 'string')
       .map(withTileDefaults),
-  };
+  );
 }
 
 /**
@@ -193,12 +201,10 @@ export function resizeNode(node, width, height) {
   const w = Math.max(1, Math.floor(width));
   const h = Math.max(1, Math.floor(height));
   const pruned = new Set(tilesOutsideBounds(node, w, h).map((t) => t.id));
-  return {
-    ...node,
-    width: w,
-    height: h,
-    tiles: pruned.size ? node.tiles.filter((t) => !pruned.has(t.id)) : node.tiles,
-  };
+  return withNodeTiles(
+    { ...node, width: w, height: h },
+    pruned.size ? node.tiles.filter((t) => !pruned.has(t.id)) : node.tiles,
+  );
 }
 
 /**
@@ -261,7 +267,7 @@ export class TileGrid {
         const tiles = node.tiles.map((t) =>
           t.childNodeId && removed.has(t.childNodeId) ? { ...t, childNodeId: null } : t,
         );
-        this.nodes.set(node.id, { ...node, tiles });
+        this.nodes.set(node.id, withNodeTiles(node, tiles));
       }
     }
     return removed;

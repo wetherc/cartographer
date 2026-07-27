@@ -3,6 +3,7 @@ import {
   cellPosition,
   tileAt,
   tilePosition,
+  withNodeTiles,
   withTileReplaced,
   withTilesReplaced,
 } from './TileIndex.js';
@@ -73,7 +74,10 @@ export function withinRadius(tileId, centerId, radius) {
  * @returns {MapNode}
  */
 export function hideAll(node) {
-  return { ...node, tiles: node.tiles.map((tile) => ({ ...tile, revealed: false })) };
+  return withNodeTiles(
+    node,
+    node.tiles.map((tile) => ({ ...tile, revealed: false })),
+  );
 }
 
 /**
@@ -82,7 +86,10 @@ export function hideAll(node) {
  * @returns {MapNode}
  */
 export function revealAll(node) {
-  return { ...node, tiles: node.tiles.map((tile) => ({ ...tile, revealed: true })) };
+  return withNodeTiles(
+    node,
+    node.tiles.map((tile) => ({ ...tile, revealed: true })),
+  );
 }
 
 /**

@@ -1,4 +1,5 @@
 import { parseCoords } from './MapGeometry.js';
+import { freezeTile, freezeTiles } from './TileFreeze.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -40,7 +41,9 @@ import { parseCoords } from './MapGeometry.js';
  * cost.
  *
  * The one contract: never mutate node.tiles in place. Every mutation must go
- * through the pure helpers that return a new node.
+ * through the pure helpers that return a new node — which is enforced rather
+ * than assumed, since each of them freezes what it puts into the new node while
+ * development freezing is on (`TileFreeze.js`).
  * @type {WeakMap<MapNode, TileLayout>}
  */
 const cache = new WeakMap();
@@ -149,6 +152,25 @@ export function tileAtXY(node, x, y) {
 }
 
 /**
+ * A new node holding a tile list, frozen against the in-place mutation every
+ * cache here depends on nobody performing. This is the seam a list that was
+ * built or reordered wholesale passes through — a load, a generated map, an
+ * erase, a resize, a whole-node fog flip: it hands its list over rather than
+ * writing `tiles` into a node literal, and the new node is deliberately left
+ * uncached, since only the three helpers below can say where a position moved.
+ *
+ * The per-cell helpers below freeze the one tile they were handed instead of the
+ * list, which is the difference between a bounded cost and an O(all tiles) one;
+ * see `freezeTiles`.
+ * @param {MapNode} node
+ * @param {Tile[]} tiles
+ * @returns {MapNode}
+ */
+export function withNodeTiles(node, tiles) {
+  return { ...node, tiles: freezeTiles(tiles) };
+}
+
+/**
  * A new node with the tile at one array position replaced. Nothing moves, so
  * the new node shares the previous node's layout outright.
  * @param {MapNode} node
@@ -158,7 +180,7 @@ export function tileAtXY(node, x, y) {
  */
 export function withTileReplaced(node, pos, tile) {
   const tiles = node.tiles.slice();
-  tiles[pos] = tile;
+  tiles[pos] = freezeTile(tile);
   const next = { ...node, tiles };
   const entry = cache.get(node);
   if (entry) cache.set(next, entry);
@@ -174,7 +196,7 @@ export function withTileReplaced(node, pos, tile) {
  */
 export function withTilesReplaced(node, changes) {
   const tiles = node.tiles.slice();
-  for (const [pos, tile] of changes) tiles[pos] = tile;
+  for (const [pos, tile] of changes) tiles[pos] = freezeTile(tile);
   const next = { ...node, tiles };
   const entry = cache.get(node);
   if (entry) cache.set(next, entry);
@@ -192,7 +214,7 @@ export function withTilesReplaced(node, changes) {
  * @returns {MapNode}
  */
 export function withTileAppended(node, tile) {
-  const next = { ...node, tiles: [...node.tiles, tile] };
+  const next = { ...node, tiles: [...node.tiles, freezeTile(tile)] };
   const entry = cache.get(node);
   if (!entry) return next;
   const added = (entry.addedById?.size ?? 0) + 1;

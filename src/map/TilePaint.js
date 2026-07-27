@@ -1,6 +1,7 @@
 import { createTile, getTile, setTile, overlayList } from './TileGrid.js';
 import { parseCoords } from './MapGeometry.js';
 import { findRegionGroups } from './RegionGroups.js';
+import { withNodeTiles } from './TileIndex.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
@@ -232,10 +233,10 @@ export function tilesInRect(node, rect) {
 export function linkTilesInRect(node, rect, childNodeId) {
   const targets = new Set(tilesInRect(node, rect).map((t) => t.id));
   if (!targets.size) return node;
-  return {
-    ...node,
-    tiles: node.tiles.map((t) => (targets.has(t.id) ? { ...t, childNodeId } : t)),
-  };
+  return withNodeTiles(
+    node,
+    node.tiles.map((t) => (targets.has(t.id) ? { ...t, childNodeId } : t)),
+  );
 }
 
 /**
@@ -262,23 +263,23 @@ export function stampRegionLink(node, tileId, childNodeId) {
   const group = findRegionGroups(node).find((g) => g.tileIds.includes(tileId));
   if (childNodeId === null) {
     const clear = new Set(group ? group.tileIds : [tileId]);
-    return {
-      ...node,
-      tiles: node.tiles.map((t) => (clear.has(t.id) ? { ...t, childNodeId: null } : t)),
-    };
+    return withNodeTiles(
+      node,
+      node.tiles.map((t) => (clear.has(t.id) ? { ...t, childNodeId: null } : t)),
+    );
   }
   if (group && group.childNodeId !== childNodeId) {
     const ids = new Set(group.tileIds);
-    return {
-      ...node,
-      tiles: node.tiles.map((t) => (ids.has(t.id) ? { ...t, childNodeId } : t)),
-    };
+    return withNodeTiles(
+      node,
+      node.tiles.map((t) => (ids.has(t.id) ? { ...t, childNodeId } : t)),
+    );
   }
   if (!anchor || node.kind !== 'region') {
-    return {
-      ...node,
-      tiles: node.tiles.map((t) => (t.id === tileId ? { ...t, childNodeId } : t)),
-    };
+    return withNodeTiles(
+      node,
+      node.tiles.map((t) => (t.id === tileId ? { ...t, childNodeId } : t)),
+    );
   }
   const bx = Math.max(0, Math.min(anchor.x, node.width - 2));
   const by = Math.max(0, Math.min(anchor.y, node.height - 2));
@@ -287,9 +288,9 @@ export function stampRegionLink(node, tileId, childNodeId) {
   for (let x = bx; x < Math.min(bx + 2, node.width); x++) {
     for (let y = by; y < Math.min(by + 2, node.height); y++) block.add(`${x},${y}`);
   }
-  return {
-    ...node,
-    tiles: node.tiles.map((t) =>
+  return withNodeTiles(
+    node,
+    node.tiles.map((t) =>
       t.id === tileId ||
       (block.has(t.id) &&
         (!t.childNodeId || t.childNodeId === childNodeId) &&
@@ -297,7 +298,7 @@ export function stampRegionLink(node, tileId, childNodeId) {
         ? { ...t, childNodeId }
         : t,
     ),
-  };
+  );
 }
 
 /**
@@ -369,5 +370,8 @@ export function ensureChildLink(node, childId, art) {
  */
 export function eraseTile(node, tileId) {
   if (!getTile(node, tileId)) return node;
-  return { ...node, tiles: node.tiles.filter((t) => t.id !== tileId) };
+  return withNodeTiles(
+    node,
+    node.tiles.filter((t) => t.id !== tileId),
+  );
 }

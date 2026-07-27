@@ -153,8 +153,26 @@ established pattern that new code touching the same area should follow:
   override maps private to the new node, never written into the shared base, so
   two nodes branching off one parent (which is exactly what a stroke plus its
   pre-stroke undo snapshot are) can never see each other's tiles. New mutation
-  helpers should either route through those three or leave the new node
-  uncached, which is always correct and merely costs one rebuild.
+  helpers should either route through those three or hand their finished list to
+  `withNodeTiles`, which leaves the new node uncached — always correct, and it
+  merely costs one rebuild.
+
+  The invariant those five caches rest on is enforced rather than assumed.
+  `src/map/TileFreeze.js` freezes a tile as it enters a node, so a later write to
+  it is a `TypeError` at the write instead of a render that silently disagrees
+  with state: the three carry helpers freeze the tile they were handed, and
+  `withNodeTiles` freezes the list and its contents. Freezing a *tile* is
+  bounded work; freezing an *array* walks its elements, which is why the per-cell
+  helpers deliberately leave the list writable, and why membership protection
+  exists only at the node-entry seam.
+
+  Freezing covers the tile's `metadata` record and an `overlayRef` stack too,
+  since both are handed out by reference. `createTile` does not freeze: the
+  generators build a layout by mutating freshly created tiles and only then hand
+  the list over, which stays legal because no node holds those tiles yet. It is
+  on in development and off elsewhere, since a throw reaching a GM mid-session is
+  worse than the stale render it replaces; `setTileFreezing` overrides the
+  detection.
 - **Per-node derived data is WeakMap-cached, never recomputed per frame.**
   The revealed-id set (`MapRenderer.js`), span blocks (`TilePaint.spanBlocks`),
   region groups (`RegionGroups.findRegionGroups`), and group image chunks

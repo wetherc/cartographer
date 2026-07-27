@@ -1,6 +1,7 @@
 import { createMapNode, createTile, setTile, TileGrid } from '../map/TileGrid.js';
 import { generateNodeTiles } from '../map/MapGenerator.js';
 import { coastOverlays, smoothCoastline } from '../map/Autotile.js';
+import { withNodeTiles } from '../map/TileIndex.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -394,7 +395,7 @@ export function buildExampleWorld(palette, rng = Math.random) {
   for (const { id, name, kind } of regions) {
     const gen = gens[id];
     const node = createMapNode(id, name, 'world', gen.width, gen.height, { kind });
-    grid.addNode({ ...node, tiles: gen.tiles });
+    grid.addNode(withNodeTiles(node, gen.tiles));
   }
 
   return {

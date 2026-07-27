@@ -1,4 +1,5 @@
 import { createMapNode } from '../map/TileGrid.js';
+import { withNodeTiles } from '../map/TileIndex.js';
 import { generateNodeTiles, generateDungeonLevels, ARCHETYPES } from '../map/MapGenerator.js';
 import { ensureChildLink } from '../map/TilePaint.js';
 import { resolveEntryTile } from '../map/EntryPoint.js';
@@ -98,10 +99,10 @@ export function wireGenerateAction(app) {
           level.height,
           { kind: 'interior', environ: node.environ },
         );
-        grid.addNode({ ...child, tiles: level.tiles });
+        grid.addNode(withNodeTiles(child, level.tiles));
       });
     }
-    grid.updateNode({ ...node, width: gen.width, height: gen.height, tiles: gen.tiles });
+    grid.updateNode(withNodeTiles({ ...node, width: gen.width, height: gen.height }, gen.tiles));
     // A generated map must be reachable from the overworld, not just internally
     // connected: if no parent tile links to this node yet, stamp one (a POI
     // marker matching the archetype) on the parent tile nearest its centre, so
