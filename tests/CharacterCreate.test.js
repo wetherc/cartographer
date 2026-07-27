@@ -48,7 +48,7 @@ test('a catalog race applies its ability increases and snapshot', () => {
   assert.equal(c.stats.CON, 16); // 14 + 2
   assert.equal(c.stats.WIS, 11);
   assert.ok(c.raceTraits);
-  assert.ok(getProficiencies(c).weapons.includes('battleaxe'));
+  assert.ok(getProficiencies(c).weapons.named.includes('battleaxe'));
 });
 
 test('a custom race is just the display string', () => {

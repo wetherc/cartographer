@@ -56,7 +56,10 @@ function grantMulticlassProficiencies(character, def) {
   return withProficiencies(character, {
     ...p,
     armor: [...p.armor, ...grant.armor],
-    weapons: [...p.weapons, ...grant.weaponCategories, ...grant.weaponNamed],
+    weapons: {
+      categories: [...p.weapons.categories, ...grant.weaponCategories],
+      named: [...p.weapons.named, ...grant.weaponNamed],
+    },
     tools: [...p.tools, ...grant.tools],
   });
 }

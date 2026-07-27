@@ -8,7 +8,9 @@ import {
   withExpertise,
   isProficientSave,
   isProficientSkill,
+  isProficientWeapon,
   hasExpertise,
+  normalizeWeaponProficiencies,
 } from '../src/entities/Proficiencies.js';
 import { createCharacter, withDefaults } from '../src/entities/Character.js';
 import { withRace, withCustomRace } from '../src/entities/Races.js';
@@ -24,15 +26,10 @@ test('assembleProficiencies gathers fixed grants from class, race, and backgroun
   const p = assembleProficiencies(rogueElf());
   assert.deepEqual(p.saves, ['DEX', 'INT']);
   assert.deepEqual(p.skills, ['perception', 'deception', 'stealth']);
-  assert.deepEqual(p.weapons, [
-    'simple',
-    'hand crossbow',
-    'longsword',
-    'rapier',
-    'shortsword',
-    'shortbow',
-    'longbow',
-  ]);
+  assert.deepEqual(p.weapons, {
+    categories: ['simple'],
+    named: ['hand crossbow', 'longsword', 'rapier', 'shortsword', 'shortbow', 'longbow'],
+  });
   assert.deepEqual(p.armor, ['light']);
   assert.deepEqual(p.tools, ['gaming set', "thieves' tools"]);
   assert.deepEqual(p.languages, ['Common', 'Elvish']);
@@ -42,7 +39,7 @@ test('assembleProficiencies deduplicates overlapping grants', () => {
   const p = assembleProficiencies(rogueElf(), { skills: ['perception', 'acrobatics'] });
   assert.equal(p.skills.filter((s) => s === 'perception').length, 1);
   assert.ok(p.skills.includes('acrobatics'));
-  assert.equal(p.weapons.filter((w) => w === 'shortsword').length, 1);
+  assert.equal(p.weapons.named.filter((w) => w === 'shortsword').length, 1);
 });
 
 test('assembleProficiencies merges the chosen skills and languages', () => {
@@ -109,6 +106,51 @@ test('proficiency predicates read the lists, defaulting for legacy characters', 
   assert.equal(isProficientSkill(c, 'stealth'), true);
   assert.equal(hasExpertise(c, 'stealth'), true);
   assert.equal(hasExpertise(c, 'perception'), false);
+});
+
+test('normalizeWeaponProficiencies sorts a flat list into the two namespaces', () => {
+  assert.deepEqual(
+    normalizeWeaponProficiencies(['simple', 'longsword', 'martial', 'longsword', 'shortbow']),
+    { categories: ['simple', 'martial'], named: ['longsword', 'shortbow'] },
+  );
+  assert.deepEqual(normalizeWeaponProficiencies(undefined), { categories: [], named: [] });
+  assert.deepEqual(
+    normalizeWeaponProficiencies({ categories: ['martial', 'martial'], named: ['whip', 'whip'] }),
+    { categories: ['martial'], named: ['whip'] },
+    'an already-split value is deduplicated and passed through',
+  );
+});
+
+test('isProficientWeapon answers by category or by name', () => {
+  const c = withProficiencies(createCharacter('c1', 'Nim'), {
+    weapons: { categories: ['simple'], named: ['longsword'] },
+  });
+  assert.equal(isProficientWeapon(c, 'club', 'simple'), true, 'the whole category is granted');
+  assert.equal(isProficientWeapon(c, 'greataxe', 'martial'), false);
+  assert.equal(isProficientWeapon(c, 'Longsword', 'martial'), true, 'named beyond the category');
+  assert.equal(isProficientWeapon(c, 'greataxe'), false, 'no category to fall back on');
+});
+
+test('withProficiencies accepts a flat weapon list and stores it split', () => {
+  const c = withProficiencies(createCharacter('c1', 'Nim'), {
+    weapons: ['martial', 'dagger'],
+  });
+  assert.deepEqual(c.proficiencies.weapons, { categories: ['martial'], named: ['dagger'] });
+});
+
+test('withDefaults splits a pre-split save whose weapons were one flat list', () => {
+  const c = withProficiencies(rogueElf(), assembleProficiencies(rogueElf()));
+  const flat = {
+    ...JSON.parse(JSON.stringify(c)),
+    proficiencies: {
+      ...c.proficiencies,
+      weapons: ['simple', 'rapier', 'shortsword'],
+    },
+  };
+  assert.deepEqual(withDefaults(flat).proficiencies.weapons, {
+    categories: ['simple'],
+    named: ['rapier', 'shortsword'],
+  });
 });
 
 test('withDefaults fills empty lists on a pre-proficiency save and keeps stored ones', () => {

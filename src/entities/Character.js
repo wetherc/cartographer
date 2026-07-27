@@ -5,7 +5,7 @@ import { derive } from './Progression.js';
 import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
-import { emptyProficiencies } from './Proficiencies.js';
+import { emptyProficiencies, normalizeWeaponProficiencies } from './Proficiencies.js';
 import { getClasses, sanitizeClasses, totalLevel } from './Multiclass.js';
 import { migrateASIChoices } from './LevelUp.js';
 
@@ -302,7 +302,9 @@ export function unprepareSpell(character, spellId) {
  * pool is invented — its absence legitimately means "no HP tracking". A
  * pre-equipment save gets empty slots — with the pre-piecewise 'armor' slot
  * carrying over into 'chest'. A pre-spellbook save gains an empty spellbook,
- * and a pre-proficiency save gains empty proficiency and expertise lists. A
+ * and a pre-proficiency save gains empty proficiency and expertise lists; a
+ * save whose weapon proficiencies are one flat list has them sorted into the
+ * category and named lists they are now kept in. A
  * pre-multiclass save's scalar `class`/`subclass` fields fold into a one-entry
  * class list at the character's level. The class list is sanitized on the way
  * in, so a hand-edited one whose levels oversell the character's level comes
@@ -342,7 +344,12 @@ export function withDefaults(character) {
     baseAC: character.baseAC ?? 10,
     location: character.location ?? null,
     spellbook: character.spellbook ?? emptySpellbook(),
-    proficiencies: character.proficiencies ?? emptyProficiencies(),
+    proficiencies: character.proficiencies
+      ? {
+          ...character.proficiencies,
+          weapons: normalizeWeaponProficiencies(character.proficiencies.weapons),
+        }
+      : emptyProficiencies(),
     expertise: character.expertise ?? [],
     asiChoices: migrateASIChoices(character.asiChoices ?? [], classes[0]?.classId ?? ''),
   });

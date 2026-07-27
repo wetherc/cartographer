@@ -5,10 +5,26 @@ import { resolveBackground } from './Backgrounds.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').Proficiencies} Proficiencies */
+/** @typedef {import('../types/entities.js').LegacyProficiencies} LegacyProficiencies */
+/** @typedef {import('../types/entities.js').WeaponProficiencies} WeaponProficiencies */
+/** @typedef {import('../types/class.js').WeaponCategory} WeaponCategory */
+
+/** The whole-category weapon proficiencies, as opposed to individually named
+ * weapons. A character proficient with a category is proficient with every
+ * weapon in it.
+ * @type {WeaponCategory[]} */
+export const WEAPON_CATEGORIES = ['simple', 'martial'];
 
 /** @returns {Proficiencies} every proficiency list empty */
 export function emptyProficiencies() {
-  return { saves: [], skills: [], weapons: [], armor: [], tools: [], languages: [] };
+  return {
+    saves: [],
+    skills: [],
+    weapons: { categories: [], named: [] },
+    armor: [],
+    tools: [],
+    languages: [],
+  };
 }
 
 /** Merge lists into one duplicate-free array, first occurrence's order kept.
@@ -16,6 +32,46 @@ export function emptyProficiencies() {
  * @returns {string[]} */
 function merged(...lists) {
   return [...new Set(lists.flat())];
+}
+
+/**
+ * Normalize a weapon-proficiency value, accepting either shape: the split
+ * `{ categories, named }` or the flat list saves written before the split, in
+ * which the category words sat among the weapon names. Entries are
+ * deduplicated, and an entry that is not a known category lands in `named`.
+ * @param {WeaponProficiencies | string[] | undefined} weapons
+ * @returns {WeaponProficiencies}
+ */
+export function normalizeWeaponProficiencies(weapons) {
+  if (Array.isArray(weapons)) {
+    const flat = merged(weapons);
+    return {
+      categories: /** @type {WeaponCategory[]} */ (
+        flat.filter((w) => WEAPON_CATEGORIES.includes(/** @type {WeaponCategory} */ (w)))
+      ),
+      named: flat.filter((w) => !WEAPON_CATEGORIES.includes(/** @type {WeaponCategory} */ (w))),
+    };
+  }
+  return {
+    categories: /** @type {WeaponCategory[]} */ (merged(weapons?.categories ?? [])),
+    named: merged(weapons?.named ?? []),
+  };
+}
+
+/**
+ * Whether the character may use a weapon without penalty: either its whole
+ * category is granted or the weapon is named individually. Names are compared
+ * case-insensitively, since a named grant is stored lowercase while an item's
+ * name is however the GM typed it.
+ * @param {Character} character
+ * @param {string} name the weapon's name
+ * @param {WeaponCategory} [category] the weapon's category, when known
+ * @returns {boolean}
+ */
+export function isProficientWeapon(character, name, category) {
+  const weapons = getProficiencies(character).weapons;
+  if (category && weapons.categories.includes(category)) return true;
+  return weapons.named.includes(name.trim().toLowerCase());
 }
 
 /**
@@ -48,7 +104,13 @@ export function assembleProficiencies(character, choices = {}) {
   return {
     saves: merged(cls?.savingThrows ?? []),
     skills: merged(race?.skills ?? [], background?.skills ?? [], choices.skills ?? []),
-    weapons: merged(cls?.weaponCategories ?? [], cls?.weaponNamed ?? [], race?.weapons ?? []),
+    // A race's weapon grant is a flat list like the pre-split saves, so the
+    // same normalizer sorts every source into the two namespaces.
+    weapons: normalizeWeaponProficiencies([
+      ...(cls?.weaponCategories ?? []),
+      ...(cls?.weaponNamed ?? []),
+      ...(race?.weapons ?? []),
+    ]),
     armor: merged(cls?.armor ?? []),
     tools: merged(race?.tools ?? [], background?.tools ?? []),
     languages: merged(race?.languages ?? [], choices.languages ?? []),
@@ -58,17 +120,18 @@ export function assembleProficiencies(character, choices = {}) {
 /**
  * Set the character's proficiency lists (the hand-edit path, and how an
  * assembled set is applied). Each list is deduplicated; a missing list reads
- * as empty. Expertise entries whose skill is no longer proficient are pruned,
+ * as empty. The weapon lists accept either the split shape or a flat legacy
+ * list. Expertise entries whose skill is no longer proficient are pruned,
  * keeping the subset invariant. Pure.
  * @param {Character} character
- * @param {Partial<Proficiencies>} proficiencies
+ * @param {Partial<Proficiencies> & { weapons?: WeaponProficiencies | string[] }} proficiencies
  * @returns {Character}
  */
 export function withProficiencies(character, proficiencies) {
   const next = {
     saves: merged(proficiencies.saves ?? []),
     skills: merged(proficiencies.skills ?? []),
-    weapons: merged(proficiencies.weapons ?? []),
+    weapons: normalizeWeaponProficiencies(proficiencies.weapons),
     armor: merged(proficiencies.armor ?? []),
     tools: merged(proficiencies.tools ?? []),
     languages: merged(proficiencies.languages ?? []),

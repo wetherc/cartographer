@@ -1,5 +1,5 @@
 import type { RaceSnapshot } from './race.js';
-import type { ClassRef } from './class.js';
+import type { ClassRef, WeaponCategory } from './class.js';
 
 export interface EncounterLocation {
   nodeId: string;
@@ -194,18 +194,34 @@ export interface Spellbook {
   sources?: Record<string, string>;
 }
 
+/** Weapon proficiencies, split by namespace the way MulticlassGrant already
+ * splits the class grants they come from: `categories` holds whole weapon
+ * categories ('simple'/'martial'), `named` holds individual weapons by
+ * lowercase name. Kept apart so "is this weapon's category granted?" is a
+ * lookup rather than a string match across two kinds of key. */
+export interface WeaponProficiencies {
+  categories: WeaponCategory[];
+  named: string[];
+}
+
 /** A character's proficiencies, one list per kind. Saves hold ability keys
- * (STR..CHA), skills hold skill ids (see data/skills.js), weapons mix the
- * category words ('simple'/'martial') with named weapons (lowercase), armor
- * holds the armor categories, tools and languages are free strings. Assembled
- * from class + race + background and hand-editable afterwards. */
+ * (STR..CHA), skills hold skill ids (see data/skills.js), weapons split into
+ * categories and named weapons, armor holds the armor categories, tools and
+ * languages are free strings. Assembled from class + race + background and
+ * hand-editable afterwards. */
 export interface Proficiencies {
   saves: string[];
   skills: string[];
-  weapons: string[];
+  weapons: WeaponProficiencies;
   armor: string[];
   tools: string[];
   languages: string[];
+}
+
+/** Proficiencies as saves written before the weapon split carried them: one
+ * flat weapon list mixing the category words with named weapons. */
+export interface LegacyProficiencies extends Omit<Proficiencies, 'weapons'> {
+  weapons: string[];
 }
 
 /** One claimed ability-score-improvement slot: either a +2-total ability
