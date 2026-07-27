@@ -3,6 +3,7 @@ import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
+/** @typedef {import('../types/map.js').POIType} POIType */
 
 /**
  * "general-store" -> "General store" for a spoken description.
@@ -27,18 +28,38 @@ function readablePoi(poiType) {
  */
 export function describeNode(node, party, options = {}) {
   const revealAll = options.revealAll ?? false;
-  const gridTiles = node.tiles.filter((t) => parseCoords(t.id));
   const total = node.width * node.height;
-  const revealed = gridTiles.filter((t) => t.revealed).length;
+
+  // One pass over the tiles: the placed count, the revealed count, and the points
+  // of interest all read the same grid-tile scan, and every one of them needs the
+  // id parsed. Splitting them cost three filtered copies of the tile list, a
+  // fourth array for the rendered phrases, and a second parse per point of
+  // interest — on every party step and at the end of every paint stroke.
+  let placed = 0;
+  let revealed = 0;
+  /** @type {{ poiType: POIType, x: number, y: number, notes: string }[]} */
+  const pois = [];
+  for (const tile of node.tiles) {
+    const coords = parseCoords(tile.id);
+    if (!coords) continue;
+    placed++;
+    if (tile.revealed) revealed++;
+    if (tile.metadata.poiType && (revealAll || tile.revealed)) {
+      pois.push({
+        poiType: tile.metadata.poiType,
+        x: coords.x,
+        y: coords.y,
+        notes: tile.metadata.notes,
+      });
+    }
+  }
 
   const kindPhrase = node.kind === 'interior' ? 'an interior' : 'a region';
   const environ = node.environ ? ` (${node.environ})` : '';
   const parts = [`${node.name}, ${kindPhrase}${environ}, ${node.width} by ${node.height} tiles.`];
 
   parts.push(
-    revealAll
-      ? `${gridTiles.length} of ${total} tiles placed.`
-      : `${revealed} of ${total} tiles explored.`,
+    revealAll ? `${placed} of ${total} tiles placed.` : `${revealed} of ${total} tiles explored.`,
   );
 
   if (party && party.nodeId === node.id) {
@@ -46,13 +67,10 @@ export function describeNode(node, party, options = {}) {
     if (coords) parts.push(`Party at column ${coords.x + 1}, row ${coords.y + 1}.`);
   }
 
-  const pois = gridTiles.filter((t) => t.metadata.poiType && (revealAll || t.revealed));
   if (pois.length) {
-    const listed = pois.map((t) => {
-      const coords = parseCoords(t.id);
-      const where = coords ? ` at column ${coords.x + 1}, row ${coords.y + 1}` : '';
-      const notes = t.metadata.notes ? `: ${t.metadata.notes}` : '';
-      return `${readablePoi(/** @type {string} */ (t.metadata.poiType))}${where}${notes}`;
+    const listed = pois.map((poi) => {
+      const notes = poi.notes ? `: ${poi.notes}` : '';
+      return `${readablePoi(poi.poiType)} at column ${poi.x + 1}, row ${poi.y + 1}${notes}`;
     });
     parts.push(`Points of interest: ${listed.join('; ')}.`);
   }

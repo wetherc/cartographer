@@ -18,9 +18,19 @@ export function mountMapDescription(container) {
   el.setAttribute('aria-live', 'polite');
   container.appendChild(el);
 
+  let last = '';
+
   return {
     update(node, party, revealAll) {
-      el.textContent = node ? describeNode(node, party, { revealAll }) : '';
+      const text = node ? describeNode(node, party, { revealAll }) : '';
+      // Only write when the narration actually changed. Assigning textContent
+      // replaces the live region's text node, which is what a screen reader
+      // watches, so an unconditional write re-announces the whole description on
+      // events that did not change a word of it — a paint stroke that only swaps
+      // tile art, or a party step within an already-explored area.
+      if (text === last) return;
+      last = text;
+      el.textContent = text;
     },
   };
 }

@@ -43,6 +43,24 @@ test('describeNode lists only revealed POIs with notes in Play mode', () => {
   assert.match(text, /Points of interest: Tavern at column 3, row 2: The Prancing Pony\./);
 });
 
+test('describeNode ignores tiles whose ids are not grid coordinates', () => {
+  let n = node();
+  n = setTile(
+    n,
+    createTile('legend', 'dungeon.svg', {
+      revealed: true,
+      metadata: { poiType: 'dungeon', discoverable: false, notes: '' },
+    }),
+  );
+  const text = describeNode(n, null);
+  assert.match(
+    text,
+    /2 of 12 tiles explored\./,
+    'a non-grid tile is not a placed or revealed cell',
+  );
+  assert.doesNotMatch(text, /Dungeon/, 'and it has no position to narrate');
+});
+
 test('describeNode in Build mode counts placed tiles and includes unrevealed POIs', () => {
   let n = node();
   n = setTile(
