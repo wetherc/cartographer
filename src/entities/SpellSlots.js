@@ -143,8 +143,7 @@ export function slotsForCaster(casterType, characterLevel) {
  * which doubles as the 5e *multiclass* spellcaster table. The single-class
  * paths above use the dedicated half/third tables (a lone paladin's slots
  * differ from a multiclassed one's); this is the lookup the deferred multiclass
- * path uses after summing per-class contributions. See PLAN.md's multiclass
- * design decision.
+ * path uses after summing per-class contributions.
  * @param {number} combinedLevel
  * @returns {number[]} index 0 = spell level 1; empty for level < 1
  */

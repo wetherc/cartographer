@@ -185,7 +185,8 @@ has to say so, which is what `Encounter.fromTemplate`,
 ## UI and style
 
 Patterns that keep the UI consistent. New code should follow them rather than
-re-deciding locally.
+re-deciding locally. These are the policies; for the components and tokens they
+apply to, see [UI components](ui-components.md).
 
 ### CSS custom properties are the only source of design values
 

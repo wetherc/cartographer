@@ -16,6 +16,7 @@ own guide:
 | [The map](architecture/map.md) | Tiles, the node hierarchy, region grouping, rendering, fog of war, and party movement |
 | [Entities](architecture/entities.md) | Encounters, resources, and the character model (classes, races, proficiencies, leveling) |
 | [Persistence](architecture/persistence.md) | How a campaign becomes a string, the packing layers, undo history, and the custom library |
+| [UI components](architecture/ui-components.md) | The shared widget builders, the panel contract, the design tokens, and the CSS class vocabulary |
 | [Conventions](architecture/conventions.md) | Performance patterns, UI and CSS rules, and how code here gets tested |
 
 Read this page first. After that, start with whichever guide covers the area
