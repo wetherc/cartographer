@@ -2,6 +2,7 @@ import { abilityModifier, proficiencyBonus } from './Modifiers.js';
 import { slotsForCaster, slotPoolsForCaster } from './SpellSlots.js';
 import { getClasses } from './Multiclass.js';
 import { DEFAULT_CLASSES } from '../data/classes.js';
+import { memoizeByIdentity } from '../util/memoize.js';
 
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
 /** @typedef {import('../types/class.js').CasterType} CasterType */
@@ -152,10 +153,18 @@ export function spellAttackBonus(character, classId) {
  * How many cantrips a character may know: each caster class's cantrip curve
  * read at its own class level, summed. 0 for a non-caster or a classless
  * character.
+ *
+ * Memoized on the character, like `preparedLimit`: the spellbook panel asks
+ * for both limits once per listed spell, and `preparedLimit` re-resolves a
+ * spell ability modifier per class each time.
+ */
+export const cantripLimit = memoizeByIdentity(countCantripsKnown);
+
+/**
  * @param {Character} character
  * @returns {number}
  */
-export function cantripLimit(character) {
+function countCantripsKnown(character) {
   return casterClassRefs(character).reduce(
     (sum, ref) => sum + cantripsKnownForClass(ref.classId, ref.level),
     0,
@@ -167,10 +176,15 @@ export function cantripLimit(character) {
  * spell-ability modifier + its class level, at least 1 (the 5e prepared-caster
  * rule), summed across classes. 0 for a non-caster. Known-list casters don't
  * prepare, but the same ceiling bounds the spellbook's active set here.
+ * Memoized on the character.
+ */
+export const preparedLimit = memoizeByIdentity(countPreparedAllowed);
+
+/**
  * @param {Character} character
  * @returns {number}
  */
-export function preparedLimit(character) {
+function countPreparedAllowed(character) {
   return casterClassRefs(character).reduce((sum, ref) => {
     const mod = spellAbilityModifier(character, ref.classId);
     return mod === null ? sum : sum + Math.max(1, mod + ref.level);
