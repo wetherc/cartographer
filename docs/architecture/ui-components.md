@@ -279,11 +279,33 @@ confirmModal(message, options?)      -> Promise<boolean>
 confirmDelete(name, detail?)         -> Promise<boolean>
 ```
 
-All four share one lifecycle: capture `document.activeElement` as the opener,
-build and append the dialog, `showModal()`, and on `close` remove the dialog
-and refocus the opener before resolving. Escape closes, because that is what
-`<dialog>` does natively. Nothing here re-implements an overlay, a scrim, or a
-focus trap.
+All four share one lifecycle, and so does every other dialog in the app: capture
+`document.activeElement` as the opener, build and append the dialog,
+`showModal()`, and on `close` remove the dialog and refocus the opener before
+resolving. Escape closes, because that is what `<dialog>` does natively. Nothing
+here re-implements an overlay, a scrim, or a focus trap.
+
+That lifecycle is `openDialog`, also exported from `Modal.js`, and it is where
+you start if you need a dialog that is not a form, a message, or a question:
+
+```js
+openDialog({ className, title, form, build, result }) -> Promise<T>
+```
+
+You supply `build(close)`, which returns `{ body, actions, initialFocus }` — the
+content between the title and the button row, the buttons themselves (wired to
+the `close(value)` it was handed), and what takes focus on open. `result` maps
+the dialog's return value to whatever your function promises; it runs while the
+dialog is still mounted, so it may read its own inputs, and it may return a
+promise when the value is not settled yet (that is how the file field's decode
+is awaited). With `form: true` the parts go inside a `<form method="dialog">`,
+which is what makes Enter submit and a submit button's `value` the return value.
+
+The four dialogs that live outside `Modal.js` are all built this way:
+`promptSpellDetail` (`SpellDetail.js`), `combatSetupModal` (`CombatSetup.js`),
+`generateDialog` (`GenerateDialog.js`), and the character sheet's stat
+breakdown. Focus restoration and dismissal semantics have one owner, so a fix
+there is a fix everywhere.
 
 Which one to use is a policy question, covered in
 [Conventions](conventions.md#dialog-discipline): `confirmModal` only for
