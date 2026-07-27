@@ -26,6 +26,9 @@ guide is the API surface; that one is the policy.
   src/ui/<Panel>.js .......... feature panels: build DOM, return { update }
           |
           v
+  src/ui/listPanel.js ........ the list-panel skeleton most feature panels
+          |                    are a thin configuration of
+          v
   src/ui/buttons.js .......... shared builders: buttons, icons, dialogs,
   src/ui/icons.js             form fields, tabs, disclosures, toasts
   src/ui/Modal.js
@@ -79,6 +82,10 @@ export function mountQuestPanel(container, callbacks) {
 }
 ```
 
+That is the shape by hand. Most list panels, including the real
+`mountQuestPanel`, get it from `mountListPanel` instead (below) and never write
+this boilerplate.
+
 That `{ update }` shape is the `Updatable` interface (`src/types/app.ts`), and
 it is the whole cross-module refresh protocol. A wiring module stores the
 handle on `app.views.questPanel`; anything that changes a quest calls
@@ -109,9 +116,13 @@ Three rules make this work:
   In the player view, edit, delete, and add controls are simply not built.
 
 `render()` clearing `innerHTML` and rebuilding is the default, and it is fine
-for the small lists most panels show. Two panels deliberately do not: the
-travelogue diffs by anchor id and the tile inspector builds once and re-points.
-Copy those only when the list is large or grows continuously, and see
+for the small lists most panels show. What keeps it cheap is that `update()` is
+allowed to do nothing: a panel built on `mountListPanel` compares the rows it
+would draw against the ones it last drew and returns early when they are the
+same objects. That is why a party step can fire five panel refreshes without
+five rebuilds. Two panels skip the rebuild differently: the travelogue diffs by
+anchor id and the tile inspector builds once and re-points. Copy those only when
+the list is large or grows continuously, and see
 [Conventions](conventions.md#growing-lists-render-incrementally).
 
 ### Handles that are not `{ update }`
@@ -128,6 +139,62 @@ Not every mount returns `update`. The other shapes, so you can recognize them:
 
 When you add a composite form widget, use that last contract. It is what lets
 `ItemForm` treat a damage-parts editor exactly like a text input.
+
+## The list panel
+
+Most rails are the same thing: a list of entities, each row with an edit and a
+delete button, an empty state when there is nothing, and a "New ..." control at
+one end. `mountListPanel(container, options)` (`src/ui/listPanel.js`) is that
+shape once, and the quest, handout, NPC, and Build-rail encounter panels are
+each a configuration of it. It returns the usual `{ update }`.
+
+The options split cleanly in two. The caller decides what the markup is:
+
+| Option | What it does |
+| --- | --- |
+| `className` | the root element's class, and the stem of the row class (`quest-panel` gives `quest-panel__row`) |
+| `getRows(gm)` | the entities to draw, already scoped and ordered |
+| `buildBody(entry, ctx)` | the row's content, left of the buttons; one node or an array |
+| `actions(entry, ctx)` | the row's buttons, as `{ icon, label, variant, onClick }` descriptors — `null` entries are dropped, so an optional control is a ternary |
+| `buildExtras(entry, row, ctx)` | anything below the row's head: a stat bar, a read-aloud body |
+| `bodyClass` / `actionsClass` / `headClass` | whether the body nodes, the buttons, and the pair of them get wrapper divs |
+| `emptyMessage`, `rowModifiers`, `groupOf` | the empty-state text, extra row classes, and an optional section heading emitted when consecutive rows change group |
+| `addButtons(gm)`, `addPinned`, `addClass` | the add controls, and whether they lead the panel in a pinned `.panel-actions` row or trail it |
+| `gate()` | `false` for the read-only player view: no action buttons, no add controls |
+
+And the helper owns the plumbing: the root element, clearing and rebuilding, the
+row loop, the group headings, and one thing worth knowing about because it
+changes how you write a handler.
+
+**Every handler is awaited, and the panel re-renders unless the handler says
+nothing happened.** "Nothing happened" is a returned `false` or `null` — which
+is already what a cancelled dialog gives you, since `confirmModal` resolves
+`false` and `promptModal` resolves `null`. A handler that returns nothing at all
+counts as a change and re-renders. So the fourteen hand-written copies of
+
+```js
+const button = iconButton('edit', `Edit ${quest.title}`, async () => {
+  if (await callbacks.onEdit(quest)) render();
+});
+```
+
+collapse to a descriptor:
+
+```js
+actions: (quest) => [
+  { icon: 'edit', label: `Edit ${quest.title}`, onClick: () => callbacks.onEdit(quest) },
+],
+```
+
+The `ctx` handed to `buildBody`, `actions`, and `buildExtras` carries `gm` (the
+resolved gate), `render` for a bespoke control that has to refresh the list, and
+`action(spec, entry)` to build a button with those same semantics — that last
+one is how a leading toggle, like the quest's complete button or the handout's
+eye, gets wired even though it sits inside the body rather than in `actions`.
+
+One caveat on `update()`'s early-out: it compares row objects by identity, which
+is only sound because the entity layer never mutates in place. A panel whose
+output depends on state that is *not* in its rows has to pass `alwaysRender`.
 
 ## Buttons, icons, and empty states
 
