@@ -68,6 +68,14 @@
   color: var(--text-muted);
 }
 
+/* A field's own failure line (a rejected image pick), reported in place rather
+   than as a second dialog over the form the GM is still filling in. */
+.modal__error {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-label);
+}
+
 .modal__actions {
   display: flex;
   justify-content: flex-end;

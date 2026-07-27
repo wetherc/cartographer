@@ -5,6 +5,8 @@
  * it to <body>, and removes it on close, resolving a Promise with the result.
  */
 
+import { readImageFile } from './imageField.js';
+
 /** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file' | 'multiselect' | 'tags' | 'button' | 'pillgrid', value?: string | number, min?: number, options?: { value: string, label: string, disabled?: boolean }[], rows?: { value: string, label: string }[], full?: boolean, max?: number, emptyText?: string, fixedHeight?: boolean, disabled?: boolean, hidden?: boolean }} ModalField */
 
 /**
@@ -47,6 +49,18 @@ export function promptModal(title, fields, options = {}) {
      * than the input's fakepath value. */
     /** @type {Record<string, () => string>} */
     const getters = {};
+    /** In-flight reads per field, awaited before the submitted record is
+     * collected. A file field's value is only known once its decode settles, and
+     * collecting synchronously stored an empty value for a GM who submitted
+     * quickly after picking. Deliberately kept separate from `getters` rather
+     * than letting one getter return a promise: `onChange`'s `get(name)` handle
+     * is read synchronously by five callers and must stay a string. */
+    /** @type {Record<string, Promise<void>>} */
+    const reads = {};
+    /** Extra elements a field wants appended after its input (the file field's
+     * inline error line). */
+    /** @type {Record<string, HTMLElement>} */
+    const extras = {};
     /** Option rebuilders per multiselect field, so onChange can refilter a
      * checkbox group in place (preserving what's checked). */
     /** @type {Record<string, (options: { value: string, label: string }[], max?: number) => void>} */
@@ -85,22 +99,42 @@ export function promptModal(title, fields, options = {}) {
         if (field.value !== undefined) input.value = String(field.value);
         getters[field.name] = () => input.value;
       } else if (field.type === 'file') {
-        // A picked image is read into a data: URL; leaving the input untouched
-        // keeps the field's initial value (an existing image survives an edit).
+        // A picked image is decoded, downscaled, and re-encoded under a size cap
+        // by `readImageFile` before it becomes the field's value; leaving the
+        // input untouched keeps the field's initial value (an existing image
+        // survives an edit).
         input = document.createElement('input');
         input.type = 'file';
         input.accept = 'image/*';
         let dataUrl = field.value !== undefined ? String(field.value) : '';
+        // A rejected pick reports inline rather than through `alertModal`: this
+        // dialog is still open, and a second modal over it steals focus from the
+        // form the GM is in the middle of.
+        const error = document.createElement('p');
+        error.className = 'modal__error';
+        error.setAttribute('role', 'alert');
+        error.hidden = true;
         input.addEventListener('change', () => {
-          const file = /** @type {HTMLInputElement} */ (input).files?.[0];
+          const picked = /** @type {HTMLInputElement} */ (input);
+          const file = picked.files?.[0];
           if (!file) return;
-          const reader = new FileReader();
-          reader.onload = () => {
-            dataUrl = String(reader.result ?? '');
-          };
-          reader.readAsDataURL(file);
+          error.hidden = true;
+          reads[field.name] = readImageFile(file).then(
+            (url) => {
+              dataUrl = url;
+            },
+            (/** @type {Error} */ failure) => {
+              // Clear the selection so re-picking the same file fires `change`
+              // again — a file input is silent when the pick matches its current
+              // value, which would make the obvious retry do nothing.
+              picked.value = '';
+              error.textContent = failure.message;
+              error.hidden = false;
+            },
+          );
         });
         getters[field.name] = () => dataUrl;
+        extras[field.name] = error;
       } else if (field.type === 'multiselect') {
         // A scrollable checkbox group: the value is the comma-joined set of
         // checked option values (slug ids, so the separator is unambiguous).
@@ -331,6 +365,7 @@ export function promptModal(title, fields, options = {}) {
         input.className = 'field';
       if (field.disabled) input.disabled = true;
       label.appendChild(input);
+      if (extras[field.name]) label.appendChild(extras[field.name]);
       form.appendChild(label);
       inputs[field.name] = input;
     }
@@ -392,13 +427,21 @@ export function promptModal(title, fields, options = {}) {
     document.body.appendChild(dialog);
 
     dialog.addEventListener('close', () => {
-      const result =
-        dialog.returnValue === 'cancel'
+      const cancelled = dialog.returnValue === 'cancel';
+      const finish = () => {
+        const result = cancelled
           ? null
           : Object.fromEntries(Object.entries(getters).map(([k, get]) => [k, get()]));
-      dialog.remove();
-      opener?.focus?.();
-      resolve(result);
+        dialog.remove();
+        opener?.focus?.();
+        resolve(result);
+      };
+      // Wait out any field still being read before collecting, so a submit that
+      // races a file decode gets the picked image rather than an empty value.
+      // Only that deferral is new: the values are still read before the dialog
+      // leaves the document, since a getter reads its own input.
+      if (cancelled) finish();
+      else Promise.all(Object.values(reads)).then(finish);
     });
 
     dialog.showModal();
