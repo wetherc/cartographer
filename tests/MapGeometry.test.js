@@ -6,8 +6,12 @@ import {
   screenToTile,
   clampZoom,
   clientToBuffer,
+  bufferScale,
+  blockRect,
+  newBlockRect,
   fitToExtent,
 } from '../src/map/MapGeometry.js';
+import { anyRevealed } from '../src/map/MapRenderer.js';
 
 test('parseCoords reads "x,y" tile ids', () => {
   assert.deepEqual(parseCoords('3,4'), { x: 3, y: 4 });
@@ -57,6 +61,44 @@ test('clientToBuffer scales client coords up when the canvas is CSS-shrunk', () 
 test('clientToBuffer avoids division by zero on a zero-size rect', () => {
   const p = clientToBuffer(5, 5, { left: 0, top: 0, width: 0, height: 0 }, 720, 540);
   assert.deepEqual(p, { x: 5, y: 5, scaleX: 1, scaleY: 1 });
+});
+
+test('bufferScale is the ratio clientToBuffer reports', () => {
+  const rect = { left: 0, top: 0, width: 360, height: 270 };
+  assert.deepEqual(bufferScale(rect, 720, 540), { scaleX: 2, scaleY: 2 });
+  assert.deepEqual(bufferScale({ width: 0, height: 0 }, 720, 540), { scaleX: 1, scaleY: 1 });
+});
+
+test('blockRect spans the cell extent at the current pan and zoom', () => {
+  const view = { offsetX: 10, offsetY: -20, canvasWidth: 800, canvasHeight: 600 };
+  const rect = blockRect(newBlockRect(), { minX: 1, minY: 2, maxX: 2, maxY: 4 }, view, 48);
+  assert.deepEqual(rect, { x: 58, y: 76, w: 96, h: 144, visible: true });
+});
+
+test('blockRect reports a block off any canvas edge as not visible', () => {
+  const view = { offsetX: 0, offsetY: 0, canvasWidth: 400, canvasHeight: 300 };
+  const bounds = { minX: 0, minY: 0, maxX: 1, maxY: 1 };
+  const out = newBlockRect();
+  assert.equal(blockRect(out, bounds, { ...view, offsetX: -200 }, 48).visible, false);
+  assert.equal(blockRect(out, bounds, { ...view, offsetY: -200 }, 48).visible, false);
+  assert.equal(blockRect(out, bounds, { ...view, offsetX: 500 }, 48).visible, false);
+  assert.equal(blockRect(out, bounds, { ...view, offsetY: 400 }, 48).visible, false);
+  // Straddling an edge still draws: the visible part has to paint.
+  assert.equal(blockRect(out, bounds, { ...view, offsetX: -50 }, 48).visible, true);
+});
+
+test('blockRect fills the caller-owned rect rather than allocating', () => {
+  const out = newBlockRect();
+  const view = { offsetX: 0, offsetY: 0, canvasWidth: 800, canvasHeight: 600 };
+  assert.equal(blockRect(out, { minX: 0, minY: 0, maxX: 0, maxY: 0 }, view, 48), out);
+});
+
+test('anyRevealed gates a block on its own tiles, and passes everything with fog off', () => {
+  const revealed = new Set(['1,1']);
+  assert.equal(anyRevealed(['0,0', '1,1'], revealed), true);
+  assert.equal(anyRevealed(['0,0', '2,2'], revealed), false);
+  assert.equal(anyRevealed([], revealed), false);
+  assert.equal(anyRevealed(['0,0'], null), true);
 });
 
 test('fitToExtent centers a wide extent, limited by the width axis', () => {

@@ -1,4 +1,5 @@
 import { groupImageChunks } from './RegionGroups.js';
+import { blockRect, newBlockRect } from './MapGeometry.js';
 import { spanBlocks } from './TilePaint.js';
 import { overlayList } from './TileGrid.js';
 import { tileAtXY } from './TileIndex.js';
@@ -15,6 +16,21 @@ import { MapDecorations } from './MapDecorations.js';
  * @type {WeakMap<MapNode, Set<string>>}
  */
 const revealedCache = new WeakMap();
+
+/**
+ * Whether any of a block's tiles is revealed, and so whether the block draws at
+ * all. A null set means fog is off (Build mode) and everything draws. All three
+ * block passes gate on this; see _revealedIds for why a fully-fogged block must
+ * draw nothing rather than be painted over.
+ * @param {string[]} tileIds
+ * @param {Set<string> | null} revealedIds
+ * @returns {boolean}
+ */
+export function anyRevealed(tileIds, revealedIds) {
+  if (!revealedIds) return true;
+  for (const id of tileIds) if (revealedIds.has(id)) return true;
+  return false;
+}
 
 /**
  * The `src` to load a tile image ref from. Built-in refs are project-relative
@@ -174,34 +190,38 @@ export class MapRenderer {
     /** @type {Set<string>} */
     const covered = new Set();
     if (!view.node || view.node.kind !== 'region') return covered;
-    const { ctx } = this;
     const revealedIds = frame.revealedIds;
-    // The block rect is arithmetic on the cell extent, inlined rather than taken
-    // from two tileRect calls per block: this runs per chunk per frame.
     const size = this.tileSize * view.scale;
+    const rect = newBlockRect();
     for (const group of view.regionGroups) {
       if (group.tileIds.length < 2) continue;
       for (const chunk of groupImageChunks(view.node, group)) {
         // A fully-fogged chunk draws nothing — see _revealedIds.
-        if (revealedIds && !chunk.tileIds.some((id) => revealedIds.has(id))) continue;
+        if (!anyRevealed(chunk.tileIds, revealedIds)) continue;
         for (const id of chunk.tileIds) covered.add(id);
-
-        const x = chunk.minX * size + view.offsetX;
-        const y = chunk.minY * size + view.offsetY;
-        const w = (chunk.maxX - chunk.minX + 1) * size;
-        const h = (chunk.maxY - chunk.minY + 1) * size;
-        if (x + w < 0 || y + h < 0 || x > view.canvasWidth || y > view.canvasHeight) continue;
-
-        const img = this._getImage(chunk.imageRef);
-        if (img.complete && img.naturalWidth > 0) {
-          ctx.drawImage(img, x, y, w, h);
-        } else {
-          ctx.fillStyle = '#333';
-          ctx.fillRect(x, y, w, h);
-        }
+        blockRect(rect, chunk, view, size);
+        if (rect.visible) this._drawBlockImage(rect, chunk.imageRef);
       }
     }
     return covered;
+  }
+
+  /**
+   * Draw one block's image across its whole rect, or a flat gray placeholder
+   * while the bytes are still loading (or if the ref failed to decode), so a
+   * block never leaves a hole in the map.
+   * @param {import('./MapGeometry.js').BlockRect} rect
+   * @param {string} imageRef
+   */
+  _drawBlockImage(rect, imageRef) {
+    const { ctx } = this;
+    const img = this._getImage(imageRef);
+    if (img.complete && img.naturalWidth > 0) {
+      ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
+    } else {
+      ctx.fillStyle = '#333';
+      ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
+    }
   }
 
   /**
@@ -218,28 +238,19 @@ export class MapRenderer {
    */
   _renderSpanImages(view, frame, cover) {
     if (!view.node) return;
-    const { ctx } = this;
     const revealedIds = frame.revealedIds;
     const size = this.tileSize * view.scale;
+    const rect = newBlockRect();
     for (const block of frame.spanBlocks) {
-      // A fully-fogged block draws nothing — see _revealedIds.
-      if (revealedIds && !block.tileIds.some((id) => revealedIds.has(id))) continue;
-      for (const id of block.tileIds) cover.add(id);
-
-      const x = block.minX * size + view.offsetX;
-      const y = block.minY * size + view.offsetY;
-      const w = (block.maxX - block.minX + 1) * size;
-      const h = (block.maxY - block.minY + 1) * size;
-      if (x + w < 0 || y + h < 0 || x > view.canvasWidth || y > view.canvasHeight) continue;
+      // An imageless span block covers nothing: its cells have no scaled art
+      // drawn beneath them, so telling the tile pass to skip their base images
+      // would blank them out.
       if (!block.tile.imageRef) continue;
-
-      const img = this._getImage(block.tile.imageRef);
-      if (img.complete && img.naturalWidth > 0) {
-        ctx.drawImage(img, x, y, w, h);
-      } else {
-        ctx.fillStyle = '#333';
-        ctx.fillRect(x, y, w, h);
-      }
+      // A fully-fogged block draws nothing — see _revealedIds.
+      if (!anyRevealed(block.tileIds, revealedIds)) continue;
+      for (const id of block.tileIds) cover.add(id);
+      blockRect(rect, block, view, size);
+      if (rect.visible) this._drawBlockImage(rect, block.tile.imageRef);
     }
   }
 
@@ -365,13 +376,12 @@ export class MapRenderer {
     // reveal where every unexplored region sits.
     const revealedIds = frame.revealedIds;
     const size = this.tileSize * view.scale;
+    const rect = newBlockRect();
     for (const group of view.regionGroups) {
-      if (revealedIds && !group.tileIds.some((id) => revealedIds.has(id))) continue;
-      const x = group.minX * size + view.offsetX;
-      const y = group.minY * size + view.offsetY;
-      const w = (group.maxX - group.minX + 1) * size;
-      const h = (group.maxY - group.minY + 1) * size;
-      if (x + w < 0 || y + h < 0 || x > view.canvasWidth || y > view.canvasHeight) continue;
+      if (!anyRevealed(group.tileIds, revealedIds)) continue;
+      blockRect(rect, group, view, size);
+      if (!rect.visible) continue;
+      const { x, y, w, h } = rect;
 
       ctx.save();
       // The overlay (tint, border, name label) is clipped to the group's

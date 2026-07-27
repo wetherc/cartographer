@@ -4,6 +4,32 @@ import { parseCoords } from './MapGeometry.js';
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
 
 /**
+ * The shape one marker pass draws, given the tile's screen origin and size. It
+ * sets its own colors and traces a path; the caller fills and strokes it.
+ * Module-level constants rather than closures built per frame.
+ * @typedef {(ctx: CanvasRenderingContext2D, sx: number, sy: number, size: number) => void} MarkerShape
+ */
+
+/** A red diamond in the tile's upper-right corner. @type {MarkerShape} */
+const encounterDiamond = (ctx, sx, sy, size) => {
+  const r = size * 0.16;
+  ctx.translate(sx + size * 0.74, sy + size * 0.26);
+  ctx.rotate(Math.PI / 4);
+  ctx.fillStyle = '#a5352b';
+  ctx.strokeStyle = '#2a0f0c';
+  ctx.beginPath();
+  ctx.rect(-r, -r, r * 2, r * 2);
+};
+
+/** A blue circle in the tile's upper-left corner. @type {MarkerShape} */
+const npcCircle = (ctx, sx, sy, size) => {
+  ctx.fillStyle = '#3563a5';
+  ctx.strokeStyle = '#101f36';
+  ctx.beginPath();
+  ctx.arc(sx + size * 0.26, sy + size * 0.26, size * 0.15, 0, Math.PI * 2);
+};
+
+/**
  * The marker layer of the map render: the gold party dot, per-character
  * tokens, red encounter diamonds, and blue NPC circles, plus the shared
  * detection-range rule that gates them. Split out of MapRenderer so the
@@ -88,29 +114,31 @@ export class MapMarkers {
    * @param {MapView} view
    */
   renderEncounterMarkers(view) {
-    const ids = view.encounterTileIds;
+    this._renderMarkers(view, view.encounterTileIds, encounterDiamond);
+  }
+
+  /**
+   * One marker pass: for every listed tile that is within detection range and
+   * parses as a grid coordinate, draw `shape` at that tile. The encounter and
+   * NPC passes differ only in the shape, so they share this loop.
+   * @param {MapView} view
+   * @param {string[] | undefined} ids
+   * @param {MarkerShape} shape
+   */
+  _renderMarkers(view, ids, shape) {
     if (!ids || ids.length === 0 || !view.node) return;
     const { ctx, tileSize } = this.host;
     // One rect's worth of arithmetic per marker, inlined rather than returned as
     // an object: these loops run every frame.
     const size = tileSize * view.scale;
+    const lineWidth = Math.max(1.5, size * 0.03);
     for (const id of ids) {
       if (!this.markerVisible(view, id)) continue;
       const coords = parseCoords(id);
       if (!coords) continue;
-      const sx = coords.x * size + view.offsetX;
-      const sy = coords.y * size + view.offsetY;
-      const cx = sx + size * 0.74;
-      const cy = sy + size * 0.26;
-      const r = size * 0.16;
       ctx.save();
-      ctx.translate(cx, cy);
-      ctx.rotate(Math.PI / 4);
-      ctx.fillStyle = '#a5352b';
-      ctx.strokeStyle = '#2a0f0c';
-      ctx.lineWidth = Math.max(1.5, size * 0.03);
-      ctx.beginPath();
-      ctx.rect(-r, -r, r * 2, r * 2);
+      ctx.lineWidth = lineWidth;
+      shape(ctx, coords.x * size + view.offsetX, coords.y * size + view.offsetY, size);
       ctx.fill();
       ctx.stroke();
       ctx.restore();
@@ -126,26 +154,7 @@ export class MapMarkers {
    * @param {MapView} view
    */
   renderNPCMarkers(view) {
-    const ids = view.npcTileIds;
-    if (!ids || ids.length === 0 || !view.node) return;
-    const { ctx, tileSize } = this.host;
-    const size = tileSize * view.scale;
-    for (const id of ids) {
-      if (!this.markerVisible(view, id)) continue;
-      const coords = parseCoords(id);
-      if (!coords) continue;
-      const sx = coords.x * size + view.offsetX;
-      const sy = coords.y * size + view.offsetY;
-      ctx.save();
-      ctx.fillStyle = '#3563a5';
-      ctx.strokeStyle = '#101f36';
-      ctx.lineWidth = Math.max(1.5, size * 0.03);
-      ctx.beginPath();
-      ctx.arc(sx + size * 0.26, sy + size * 0.26, size * 0.15, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    }
+    this._renderMarkers(view, view.npcTileIds, npcCircle);
   }
 
   /** Gold dot for the party's tile. Skipped when a character token stands on

@@ -1,5 +1,5 @@
 import { getTile } from './TileGrid.js';
-import { screenToTile, clampZoom, clientToBuffer } from './MapGeometry.js';
+import { screenToTile, clampZoom, clientToBuffer, bufferScale } from './MapGeometry.js';
 
 /** @typedef {import('./MapCanvas.js').MapCanvas} MapCanvas */
 
@@ -219,8 +219,7 @@ export class MapCanvasPointer {
     // Drag deltas are measured in client (CSS) px but pan offsets live in
     // buffer px, so scale the delta by the buffer/CSS ratio.
     const rect = host.canvas.getBoundingClientRect();
-    const scaleX = rect.width === 0 ? 1 : host.canvas.width / rect.width;
-    const scaleY = rect.height === 0 ? 1 : host.canvas.height / rect.height;
+    const { scaleX, scaleY } = bufferScale(rect, host.canvas.width, host.canvas.height);
     const dx = (event.clientX - this._lastX) * scaleX;
     const dy = (event.clientY - this._lastY) * scaleY;
     host._userView = true;
@@ -240,25 +239,10 @@ export class MapCanvasPointer {
   _trackHover(event) {
     const host = this.host;
     if (!host.onCellHover || !host.node) return;
-    const rect = host.canvas.getBoundingClientRect();
-    const buffer = clientToBuffer(
-      event.clientX,
-      event.clientY,
-      rect,
-      host.canvas.width,
-      host.canvas.height,
-    );
-    const coords = screenToTile(
-      buffer.x,
-      buffer.y,
-      host.tileSize,
-      host.offsetX,
-      host.offsetY,
-      host.scale,
-    );
-    const inBounds =
-      coords.x >= 0 && coords.y >= 0 && coords.x < host.node.width && coords.y < host.node.height;
-    const cellId = inBounds ? `${coords.x},${coords.y}` : null;
+    // Same cell resolution as a click, so the tooltip can never describe a
+    // different tile than the one a click would act on.
+    const coords = this._eventCell(event);
+    const cellId = coords ? `${coords.x},${coords.y}` : null;
     if (cellId === this._hoverCellId) return;
     this._hoverCellId = cellId;
     const tile = cellId ? (getTile(host.node, cellId) ?? null) : null;
@@ -289,8 +273,7 @@ export class MapCanvasPointer {
     this._clearHover();
     host._userView = true;
     const rect = host.canvas.getBoundingClientRect();
-    const scaleX = rect.width === 0 ? 1 : host.canvas.width / rect.width;
-    const scaleY = rect.height === 0 ? 1 : host.canvas.height / rect.height;
+    const { scaleX, scaleY } = bufferScale(rect, host.canvas.width, host.canvas.height);
     host.offsetX += (cx - this._pinch.cx) * scaleX;
     host.offsetY += (cy - this._pinch.cy) * scaleY;
     if (this._pinch.dist > 0 && dist > 0) {

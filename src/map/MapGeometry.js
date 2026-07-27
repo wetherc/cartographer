@@ -77,14 +77,69 @@ export function clampZoom(scale, min, max) {
  * @returns {{ x: number, y: number, scaleX: number, scaleY: number }}
  */
 export function clientToBuffer(clientX, clientY, rect, bufferWidth, bufferHeight) {
-  const scaleX = rect.width === 0 ? 1 : bufferWidth / rect.width;
-  const scaleY = rect.height === 0 ? 1 : bufferHeight / rect.height;
+  const { scaleX, scaleY } = bufferScale(rect, bufferWidth, bufferHeight);
   return {
     x: (clientX - rect.left) * scaleX,
     y: (clientY - rect.top) * scaleY,
     scaleX,
     scaleY,
   };
+}
+
+/**
+ * The buffer/CSS pixel ratio of a canvas on its own, for the cases that scale a
+ * delta rather than convert a point (a drag or pinch measured in client px, panning
+ * an offset that lives in buffer px). Same guard against a zero-size rect as
+ * clientToBuffer, which is built on this.
+ * @param {{ width: number, height: number }} rect result of canvas.getBoundingClientRect()
+ * @param {number} bufferWidth canvas.width
+ * @param {number} bufferHeight canvas.height
+ * @returns {{ scaleX: number, scaleY: number }}
+ */
+export function bufferScale(rect, bufferWidth, bufferHeight) {
+  return {
+    scaleX: rect.width === 0 ? 1 : bufferWidth / rect.width,
+    scaleY: rect.height === 0 ? 1 : bufferHeight / rect.height,
+  };
+}
+
+/**
+ * A screen-space rect for a multi-tile block, plus whether it intersects the
+ * canvas at all.
+ * @typedef {{ x: number, y: number, w: number, h: number, visible: boolean }} BlockRect
+ */
+
+/** A reusable BlockRect for a caller to hand to blockRect. @returns {BlockRect} */
+export function newBlockRect() {
+  return { x: 0, y: 0, w: 0, h: 0, visible: false };
+}
+
+/**
+ * Screen-space rect for a block spanning the cells minX..maxX by minY..maxY,
+ * with `visible` false when it falls entirely off the canvas.
+ *
+ * The result is written into the caller's `out` rather than returned fresh: the
+ * three renderer passes that use this run per block per frame, and allocating a
+ * rect each time is exactly the per-block garbage that inlining this arithmetic
+ * removed. So `out` is a scratch value — read its fields before the next call,
+ * and never store it.
+ * @param {BlockRect} out
+ * @param {{ minX: number, minY: number, maxX: number, maxY: number }} bounds
+ * @param {{ offsetX: number, offsetY: number, canvasWidth: number, canvasHeight: number }} view
+ * @param {number} size tile size in screen px (tileSize * scale)
+ * @returns {BlockRect} the same `out`, filled
+ */
+export function blockRect(out, bounds, view, size) {
+  const x = bounds.minX * size + view.offsetX;
+  const y = bounds.minY * size + view.offsetY;
+  const w = (bounds.maxX - bounds.minX + 1) * size;
+  const h = (bounds.maxY - bounds.minY + 1) * size;
+  out.x = x;
+  out.y = y;
+  out.w = w;
+  out.h = h;
+  out.visible = !(x + w < 0 || y + h < 0 || x > view.canvasWidth || y > view.canvasHeight);
+  return out;
 }
 
 /**
