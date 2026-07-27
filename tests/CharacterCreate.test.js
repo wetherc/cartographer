@@ -4,7 +4,6 @@ import {
   characterFields,
   characterFormChange,
   buildCharacter,
-  defaultMaxHP,
 } from '../src/app/characterCreate.js';
 import { getHP, getSpellbook } from '../src/entities/Character.js';
 import { getClasses } from '../src/entities/Multiclass.js';
@@ -113,11 +112,13 @@ test('max HP derives from the class hit die and CON', () => {
   assert.equal(getHP(c)?.max, 12); // d10 + CON 14's +2
 });
 
-test('defaultMaxHP folds in the race CON increase; classless reads 10', () => {
-  assert.equal(defaultMaxHP('fighter', 14, ''), 12);
-  assert.equal(defaultMaxHP('fighter', 14, 'dwarf'), 13);
-  assert.equal(defaultMaxHP('', 14, ''), 10);
-  assert.equal(defaultMaxHP('sorcerer', 1, ''), 1); // d6 - 5, clamped at the floor
+test('max HP folds in the race CON increase; classless reads 10', () => {
+  const dwarf = buildCharacter(values({ class: 'fighter', race: 'dwarf' }), []);
+  assert.equal(getHP(dwarf)?.max, 13, "the dwarf's +2 CON takes 14 to 16");
+  const classless = buildCharacter(values({ class: '' }), []);
+  assert.equal(getHP(classless)?.max, 10);
+  const frail = buildCharacter(values({ class: 'sorcerer', 'stat-CON': '1' }), []);
+  assert.equal(getHP(frail)?.max, 1, 'd6 - 5, clamped at the floor');
 });
 
 /** A fake modal form handle over a plain record, capturing the side calls. */

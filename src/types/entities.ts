@@ -263,6 +263,11 @@ export interface Character {
   /** Temporary hit points from items/boons, absorbed before the HP pool when
    * taking damage. Tracked separately from intrinsic HP; absent reads as 0. */
   bonusHP?: number;
+  /** Set once the GM types a maximum HP by hand (or levels a classed character
+   * with an explicit growth). It takes the character off the class-derived HP
+   * rule for good: Progression.derive stops reconciling the pool's maximum
+   * against the class list and CON. Absent reads as false. */
+  hpOverride?: boolean;
   /** Unarmored base AC, normally 10; effects like Mage Armor raise it.
    * Only applies while no body armor is equipped. Absent reads as 10. */
   baseAC?: number;

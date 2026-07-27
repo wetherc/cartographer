@@ -8,7 +8,6 @@ import {
   HP_RESOURCE_ID,
   ABILITY_SCORES,
   addXP,
-  setStat,
   addResource,
   spendResource,
   restoreResource,
@@ -21,6 +20,7 @@ import {
   setBaseAC,
   damageCharacter,
 } from '../src/entities/Character.js';
+import { setStat } from '../src/entities/Progression.js';
 import { getSlotPools } from '../src/entities/SpellSlots.js';
 import { createResource } from '../src/entities/Resource.js';
 import { equip } from '../src/entities/Equipment.js';

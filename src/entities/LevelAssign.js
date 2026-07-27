@@ -1,10 +1,7 @@
 import { getClass } from './Classes.js';
 import { getClasses, pendingLevels, withClasses } from './Multiclass.js';
 import { getProficiencies, withProficiencies } from './Proficiencies.js';
-import { hpGainPerLevel, syncHitDice } from './HitDice.js';
-import { syncSlotsToLevel } from './SpellSlots.js';
-import { abilityModifier } from './Modifiers.js';
-import { HP_RESOURCE_ID } from './Character.js';
+import { derive } from './Progression.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
@@ -15,8 +12,8 @@ import { HP_RESOURCE_ID } from './Character.js';
  * here. Taking a class beyond the first is gated by the PHB ability-score
  * prerequisites — both the new class's and every current class's — and grants
  * that class's reduced multiclass proficiency list instead of the full one.
- * HP grows by the assigned class's average-rule gain at assignment time, which
- * is why addXP leaves a multiclass character's HP untouched.
+ * HP follows the class list from `Progression.derive` at assignment time,
+ * which is why addXP leaves a classed character's HP untouched.
  */
 
 /**
@@ -64,41 +61,17 @@ function grantMulticlassProficiencies(character, def) {
   });
 }
 
-/** Adjust the HP pool's max and current by a delta (max at least 1).
- * @param {Character} character @param {number} delta @returns {Character} */
-function growHP(character, delta) {
-  if (delta === 0) return character;
-  return {
-    ...character,
-    resources: character.resources.map((r) => {
-      if (r.id !== HP_RESOURCE_ID) return r;
-      const max = Math.max(1, r.max + delta);
-      return { ...r, max, current: Math.max(0, Math.min(max, r.current + delta)) };
-    }),
-  };
-}
-
-/** @param {ClassDef} def @param {Character} character @returns {number} */
-function hpGain(def, character) {
-  return hpGainPerLevel(def.hitDie, abilityModifier(character.stats?.CON ?? 10));
-}
-
-/** @param {Character} character @returns {Character} */
-function resync(character) {
-  return syncHitDice(syncSlotsToLevel(character));
-}
-
 /**
  * Assign one level to a class. A pending level (earned by XP, unassigned)
  * either raises an existing class entry by one or, prerequisites permitting,
  * starts a new class at level 1 with its reduced multiclass proficiency grant.
  * A single-class character with no pending level can still start a second
  * class: their newest level moves out of the sole class into the new one (the
- * class must be at least level 2), adjusting HP by the difference in the two
- * classes' per-level gains. Either way HP grows by the assigned class's
- * average-rule gain and the hit-dice and spell-slot pools re-derive. An
- * unknown class, a failed prerequisite, or nothing to assign leaves the
- * character unchanged. Pure.
+ * class must be at least level 2). Either way `derive` re-reads the new class
+ * list, so HP, hit dice, and spell slots all follow it — including the case
+ * where the moved level swaps a bigger hit die for a smaller one and HP goes
+ * down. An unknown class, a failed prerequisite, or nothing to assign leaves
+ * the character unchanged. Pure.
  * @param {Character} character
  * @param {string} classId
  * @returns {Character}
@@ -115,21 +88,19 @@ export function assignLevel(character, classId) {
     const next = classes.map((ref) =>
       ref.classId === classId ? { ...ref, level: ref.level + 1 } : ref,
     );
-    return resync(growHP(withClasses(character, next), hpGain(def, character)));
+    return derive(withClasses(character, next));
   }
 
   if (!canMulticlass(character, classId)) return character;
   if (pending >= 1) {
     const next = withClasses(character, [...classes, { classId, level: 1 }]);
-    return resync(growHP(grantMulticlassProficiencies(next, def), hpGain(def, character)));
+    return derive(grantMulticlassProficiencies(next, def));
   }
 
   if (classes.length !== 1 || classes[0].level < 2) return character;
-  const donor = getClass(classes[0].classId);
   const next = withClasses(character, [
     { ...classes[0], level: classes[0].level - 1 },
     { classId, level: 1 },
   ]);
-  const delta = hpGain(def, character) - (donor ? hpGain(donor, character) : 0);
-  return resync(growHP(grantMulticlassProficiencies(next, def), delta));
+  return derive(grantMulticlassProficiencies(next, def));
 }
