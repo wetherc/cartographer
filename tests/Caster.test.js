@@ -17,24 +17,62 @@ import {
 } from '../src/entities/Encounter.js';
 import { createNPC } from '../src/entities/NPC.js';
 import { getSlotPools, slotLevelOf } from '../src/entities/SpellSlots.js';
+import { spellSaveDC, spellAttackBonus } from '../src/entities/Classes.js';
 
 /** The slot pool for a spell level, or undefined. */
 function slot(entity, level) {
   return getSlotPools(entity).find((p) => slotLevelOf(p) === level);
 }
 
-test('toCaster maps a character straight through', () => {
+test("toCaster carries a character's class list straight through", () => {
   const view = toCaster({
     id: 'c1',
     name: 'Mira',
-    class: 'wizard',
+    classes: [{ classId: 'wizard', level: 5 }],
     level: 5,
     stats: { INT: 16 },
     resources: [],
   });
   assert.equal(view.level, 5);
   assert.equal(view.stats.INT, 16);
-  assert.equal(view.class, 'wizard');
+  assert.deepEqual(view.classes, [{ classId: 'wizard', level: 5 }]);
+});
+
+test('a caster view reports the same DC and attack bonus as the character itself', () => {
+  const character = {
+    id: 'c1',
+    name: 'Mira',
+    classes: [
+      { classId: 'cleric', level: 3 },
+      { classId: 'wizard', level: 2 },
+    ],
+    level: 5,
+    stats: { WIS: 16, INT: 14 },
+    resources: [],
+  };
+  const view = /** @type {any} */ (toCaster(character));
+  assert.equal(spellSaveDC(view), spellSaveDC(character));
+  assert.equal(spellAttackBonus(view), spellAttackBonus(character));
+  assert.equal(spellSaveDC(view), 8 + 3 + 3, 'proficiency +3 at level 5, WIS 16');
+  assert.equal(spellSaveDC(view, 'wizard'), 8 + 3 + 2, "the named class's ability powers the DC");
+});
+
+test('toCaster reads an encounter scalar class as a one-entry list at its caster level', () => {
+  const view = toCaster({
+    id: 'e1',
+    name: 'Acolyte',
+    class: 'cleric',
+    subclass: 'life',
+    casterLevel: 3,
+    level: 2,
+    statBlock: { WIS: 16 },
+  });
+  assert.deepEqual(view.classes, [{ classId: 'cleric', level: 3, subclass: 'life' }]);
+  assert.equal(spellSaveDC(/** @type {any} */ (view)), 8 + 2 + 3, 'level 3: proficiency +2');
+});
+
+test('toCaster yields an empty class list for a classless entity', () => {
+  assert.deepEqual(toCaster({ id: 'x', name: 'Blank' }).classes, []);
 });
 
 test('toCaster reads an encounter statBlock as stats and casterLevel as level', () => {
@@ -146,6 +184,17 @@ test('isCaster requires a caster class and a spellbook', () => {
   assert.equal(
     isCaster({ class: 'wizard', spellbook: { cantrips: [], known: [], prepared: [] } }),
     true,
+  );
+  assert.equal(
+    isCaster({
+      classes: [
+        { classId: 'fighter', level: 2 },
+        { classId: 'wizard', level: 1 },
+      ],
+      spellbook: { cantrips: [], known: [], prepared: [] },
+    }),
+    true,
+    'a class list answers the same as a scalar class',
   );
   assert.equal(isCaster({ class: 'wizard' }), false);
   assert.equal(

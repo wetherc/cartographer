@@ -5,6 +5,7 @@ import { isSlotPool, isPactPool } from './SpellSlots.js';
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
 /** @typedef {import('../types/npc.js').NPC} NPC */
+/** @typedef {import('../types/class.js').ClassRef} ClassRef */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 /** @typedef {import('../types/entities.js').Spellbook} Spellbook */
 
@@ -24,8 +25,7 @@ import { isSlotPool, isPactPool } from './SpellSlots.js';
  * @typedef {{
  *   id: string,
  *   name: string,
- *   class?: string,
- *   subclass?: string,
+ *   classes: ClassRef[],
  *   level: number,
  *   stats: Record<string, number>,
  *   resources: ResourcePool[],
@@ -34,24 +34,42 @@ import { isSlotPool, isPactPool } from './SpellSlots.js';
  */
 
 /**
+ * An entity's classes as a list, whichever shape it stores them in: a Character
+ * carries a `classes` list, while an Encounter and an NPC carry a scalar
+ * `class`/`subclass` pair at their caster level. Normalizing here is what keeps
+ * `CasterView` one shape, so every class-aware spell helper reads the list and
+ * no caller has to know which kind of combatant it was handed.
+ * @param {any} e
+ * @param {number} level the caster level the scalar pair sits at
+ * @returns {ClassRef[]}
+ */
+function casterClasses(e, level) {
+  if (Array.isArray(e.classes)) return e.classes;
+  if (!e.class) return [];
+  return [{ classId: e.class, level, subclass: e.subclass }];
+}
+
+/**
  * Present any combatant — a party Character, an Encounter (mob), or an NPC — as
  * a caster with the field shape the pure spell helpers read. This bridges the
- * two ways combatants differ from a Character: an Encounter keeps its ability
- * scores in `statBlock` (not `stats`), and an NPC has no fighting level, so
- * `stats` falls back to `statBlock` and `level` to the explicit `casterLevel`
- * (then the entity's own `level`, then 1). The result is a plain read-only
+ * three ways combatants differ from a Character: an Encounter keeps its ability
+ * scores in `statBlock` (not `stats`), an NPC has no fighting level, and both
+ * store one scalar class rather than a class list. So `stats` falls back to
+ * `statBlock`, `level` to the explicit `casterLevel` (then the entity's own
+ * `level`, then 1), and `classes` to the scalar pair read as a one-entry list at
+ * that caster level. The result is a plain read-only
  * view — write a spent slot back onto the real entity with `withCasterState`.
  * @param {Character | Encounter | NPC} entity
  * @returns {CasterView}
  */
 export function toCaster(entity) {
   const e = /** @type {any} */ (entity);
+  const level = e.casterLevel ?? e.level ?? 1;
   return {
     id: e.id,
     name: e.name,
-    class: e.class,
-    subclass: e.subclass,
-    level: e.casterLevel ?? e.level ?? 1,
+    classes: casterClasses(e, level),
+    level,
     stats: e.stats ?? e.statBlock ?? {},
     resources: e.resources ?? [],
     spellbook: e.spellbook,
@@ -59,14 +77,16 @@ export function toCaster(entity) {
 }
 
 /**
- * Whether an entity is a spellcaster: it carries a caster class and a
- * spellbook. Non-casters (and older saves) are excluded.
+ * Whether an entity is a spellcaster: it carries at least one caster class and
+ * a spellbook. Read through `toCaster`, so a Character's class list and an
+ * Encounter's or NPC's scalar class both answer. Non-casters (and older saves)
+ * are excluded.
  * @param {Character | Encounter | NPC} entity
  * @returns {boolean}
  */
 export function isCaster(entity) {
-  const e = /** @type {any} */ (entity);
-  return isCasterClass(e.class) && !!e.spellbook;
+  const view = toCaster(entity);
+  return view.classes.some((ref) => isCasterClass(ref.classId)) && !!view.spellbook;
 }
 
 /**
@@ -76,7 +96,7 @@ export function isCaster(entity) {
  * any non-slot resources it may have. Pure.
  * @template T
  * @param {T} entity
- * @param {CasterView} caster the resolver's returned caster
+ * @param {{ resources: ResourcePool[] }} caster the resolver's returned caster
  * @returns {T}
  */
 export function withCasterState(entity, caster) {
