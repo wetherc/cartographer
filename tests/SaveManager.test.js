@@ -66,6 +66,84 @@ test('serialize/deserialize round-trips a full campaign state', () => {
   assert.equal(getHP(restored.characters[0])?.max, 12);
 });
 
+/** A node holding one of every tile variation the packer has to survive. */
+function variedNode() {
+  let node = createMapNode('world', 'World', null, 4, 3);
+  const tiles = [
+    createTile('0,0', 'grass.svg'),
+    createTile('1,0', 'grass.svg', { revealed: true }),
+    createTile('2,0', 'grass.svg', { overlayRef: 'road-ns.svg' }),
+    createTile('3,0', 'grass.svg', { overlayRef: ['coast-n.svg', 'river-ns.svg'] }),
+    createTile('0,1', 'water.svg', { overlayRef: [] }),
+    createTile('1,1', 'grass.svg', {
+      metadata: { poiType: 'shop', discoverable: true, discovered: true, notes: 'Sells rope.' },
+    }),
+    createTile('2,1', 'grass.svg', {
+      metadata: { poiType: 'dungeon', discoverable: false, discovered: false, notes: '' },
+    }),
+    createTile('3,1', 'grass.svg', { childNodeId: 'region', revealed: true }),
+    createTile('0,2', 'keep.svg', { span: 2 }),
+    createTile('1,2', 'grass.svg', { span: 1 }),
+  ];
+  for (const tile of tiles) node = setTile(node, tile);
+  return node;
+}
+
+test('packing omits default tile fields and the load path restores them', () => {
+  const grid = new TileGrid();
+  grid.addNode(variedNode());
+  const state = buildState(grid, null, [], []);
+  const json = serialize(state);
+
+  // The boilerplate that dominates a real save is gone from the text.
+  assert.equal(json.includes('"revealed":false'), false);
+  assert.equal(json.includes('"childNodeId":null'), false);
+  assert.equal(json.includes('"overlayRef":null'), false);
+  assert.equal(json.includes('"discovered":false'), false);
+  assert.equal(json.includes('"notes":""'), false);
+  assert.equal(json.includes('"metadata":{}'), false);
+  assert.equal(json.includes('"span":1'), false, 'an absent span and a span of 1 are the same');
+
+  const restored = deserialize(json).nodes[0];
+  const original = state.nodes[0];
+  // Every tile round-trips exactly, bar the explicit span of 1 collapsing to
+  // absent — the same value per the Tile type, and the one asymmetry.
+  const expected = original.tiles.map((tile) =>
+    tile.span === 1 ? Object.fromEntries(Object.entries(tile).filter(([k]) => k !== 'span')) : tile,
+  );
+  assert.deepEqual(restored.tiles, expected);
+});
+
+test('packing keeps a tile field it does not know about', () => {
+  const grid = new TileGrid();
+  let node = createMapNode('world', 'World', null, 1, 1);
+  node = setTile(node, { ...createTile('0,0', 'grass.svg'), future: 'kept' });
+  grid.addNode(node);
+  const restored = deserialize(serialize(buildState(grid, null, [], []))).nodes[0];
+  assert.equal(restored.tiles[0].future, 'kept', 'a packer that picked named fields would drop it');
+});
+
+test('packing shrinks a save dominated by default tiles', () => {
+  const grid = new TileGrid();
+  let node = createMapNode('world', 'World', null, 20, 20);
+  for (let y = 0; y < 20; y += 1)
+    for (let x = 0; x < 20; x += 1) node = setTile(node, createTile(`${x},${y}`, 'grass.svg'));
+  grid.addNode(node);
+  const state = buildState(grid, null, [], []);
+  const packed = serialize(state).length;
+  const unpacked = JSON.stringify(state).length;
+  assert.ok(packed < unpacked * 0.45, `packed ${packed} vs unpacked ${unpacked}`);
+});
+
+test('a save written before tiles were packed still loads whole', () => {
+  const grid = new TileGrid();
+  grid.addNode(variedNode());
+  const state = buildState(grid, null, [], []);
+  // Version 1 wrote every tile field explicitly; the backfill must leave it be.
+  const restored = deserialize(JSON.stringify({ ...state, version: 1 })).nodes[0];
+  assert.deepEqual(restored.tiles, state.nodes[0].tiles);
+});
+
 test('buildState stamps the current schema version, whatever extra claims', () => {
   const state = buildState(sampleGrid(), null, [], [], [], [], {
     version: 99,
@@ -93,7 +171,7 @@ test('deserialize reads a save newer than the app best-effort', () => {
 test('deserialize defaults missing fields instead of throwing', () => {
   const restored = deserialize(JSON.stringify({}));
   assert.deepEqual(restored, {
-    version: 1,
+    version: CURRENT_VERSION,
     nodes: [],
     party: null,
     characters: [],

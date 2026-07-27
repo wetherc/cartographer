@@ -71,7 +71,10 @@ test('MIGRATIONS registers a step for every version below the current one', () =
   }
 });
 
-test('the version-0 step leaves the payload alone', () => {
+test('the omission-only steps leave the payload alone', () => {
   const state = { nodes: [], characters: [{ id: 'c1' }] };
+  // 0 -> 1 added the version field; 1 -> 2 started omitting default tile fields,
+  // which the load path's backfill already restores from absence.
   assert.deepEqual(MIGRATIONS[0](state), state);
+  assert.deepEqual(MIGRATIONS[1](state), state);
 });

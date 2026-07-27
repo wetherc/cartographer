@@ -64,10 +64,14 @@ function dimension(value) {
  * discoverable POIs lack, and every other field of the closed `Tile` shape,
  * since a hand-edited or truncated save can omit any of them. A tile whose
  * metadata is missing entirely reads as a plain undiscoverable tile.
+ *
+ * This is also the unpack half of the save's tile packing: `SaveManager`'s
+ * `packTile` omits exactly the fields defaulted here, so the two are inverses
+ * without either restating the other's idea of a default.
  * @param {Tile} tile
  * @returns {Tile}
  */
-function withTileDefaults(tile) {
+export function withTileDefaults(tile) {
   const raw = /** @type {any} */ (tile).metadata;
   const metadata = raw !== null && typeof raw === 'object' ? raw : {};
   return {

@@ -56,11 +56,66 @@ export function buildState(
 }
 
 /**
+ * A tile with every default-valued field omitted. Default tile boilerplate
+ * (`overlayRef: null`, `revealed: false`, `childNodeId: null`, `span: 1`, and an
+ * all-default `metadata` block) is the bulk of a serialized campaign — 62% of
+ * the example campaign's characters, whose tiles are almost all plain unpainted
+ * terrain — and the undo ring multiplies whatever the save costs.
+ *
+ * The inverse is `withTileDefaults` (`map/TileGrid.js`), which every load path
+ * already runs: it fills exactly these fields from absence, so packing needs no
+ * second statement of what a default is. Fields are deleted from a copy rather
+ * than picked into a fresh object, so a field this function does not know about
+ * survives the round trip instead of being dropped silently.
+ *
+ * Packed tiles exist only inside the serialized string; nothing in memory ever
+ * holds one, since the renderer reads `tile.metadata` without checking.
+ * @param {import('../types/map.js').Tile} tile
+ * @returns {Record<string, any>}
+ */
+function packTile(tile) {
+  /** @type {Record<string, any>} */
+  const packed = { ...tile };
+  if (packed.overlayRef == null) delete packed.overlayRef;
+  if (packed.revealed !== true) delete packed.revealed;
+  if (packed.childNodeId == null) delete packed.childNodeId;
+  // An absent span and a span of 1 mean the same one-cell image, per `Tile`.
+  if (!(typeof packed.span === 'number' && packed.span > 1)) delete packed.span;
+  const source = record(tile.metadata);
+  if (!source) {
+    delete packed.metadata;
+    return packed;
+  }
+  /** @type {Record<string, any>} */
+  const metadata = { ...source };
+  if (metadata.poiType == null) delete metadata.poiType;
+  if (metadata.discoverable !== true) delete metadata.discoverable;
+  if (metadata.discovered !== true) delete metadata.discovered;
+  if (!metadata.notes) delete metadata.notes;
+  if (Object.keys(metadata).length) packed.metadata = metadata;
+  else delete packed.metadata;
+  return packed;
+}
+
+/**
+ * The campaign in its on-disk shape: as the state, with every node's tiles
+ * packed. Pure — the state passed in is never touched.
+ * @param {CampaignState} state
+ * @returns {Record<string, any>}
+ */
+function packState(state) {
+  return {
+    ...state,
+    nodes: state.nodes.map((node) => ({ ...node, tiles: node.tiles.map(packTile) })),
+  };
+}
+
+/**
  * @param {CampaignState} state
  * @returns {string}
  */
 export function serialize(state) {
-  return JSON.stringify(state);
+  return JSON.stringify(packState(state));
 }
 
 /**
@@ -134,9 +189,11 @@ function partyPosition(value) {
  * cannot. This is the only validation seam a save passes through: Import
  * persists what it reads and then reloads, so an unreadable field that survives
  * here becomes the stored save of an app that no longer boots. Nodes without an
- * id are dropped; `withNodeDefaults` (TileGrid) defends the tiles within. A save
- * stamped with an older schema version passes through `Migrations.js`'s step
- * chain first; one stamped newer than this app is read best-effort.
+ * id are dropped; `withNodeDefaults` (TileGrid) defends the tiles within and is
+ * also what unpacks the tile fields `serialize` omits, so it runs here at the
+ * seam rather than only in `toTileGrid`. A save stamped with an older schema
+ * version passes through `Migrations.js`'s step chain first; one stamped newer
+ * than this app is read best-effort.
  * @param {string} json
  * @returns {CampaignState}
  */
@@ -149,7 +206,9 @@ export function deserialize(json) {
   const parsed = record(migrateState(raw, stateVersion(raw))) ?? {};
   return {
     version: CURRENT_VERSION,
-    nodes: records(parsed.nodes).filter((node) => typeof node.id === 'string'),
+    nodes: records(parsed.nodes)
+      .filter((node) => typeof node.id === 'string')
+      .map(withNodeDefaults),
     party: partyPosition(parsed.party),
     characters: records(parsed.characters),
     encounters: records(parsed.encounters),

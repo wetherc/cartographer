@@ -20,7 +20,7 @@
  * The schema version `buildState` stamps on every save it writes. Version 0 is
  * every save written before the field existed.
  */
-export const CURRENT_VERSION = 1;
+export const CURRENT_VERSION = 2;
 
 /**
  * Step transforms keyed by the version being migrated *from*: `MIGRATIONS[n]`
@@ -32,6 +32,12 @@ export const MIGRATIONS = {
   // 0 -> 1: version 1 adds the `version` field and nothing else. `deserialize`
   // stamps it, so a version-0 payload is already a valid version-1 one.
   0: (state) => state,
+  // 1 -> 2: version 2 omits default-valued tile fields from the serialized
+  // nodes. Omission-only in both directions, so no payload transform is needed:
+  // a version-1 save writes every field explicitly and the load path's
+  // tile-defaults backfill leaves it alone. The stamped version is what a later
+  // step can read to tell a field omitted deliberately from one that was lost.
+  1: (state) => state,
 };
 
 /**
