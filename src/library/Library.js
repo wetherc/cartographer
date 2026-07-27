@@ -16,6 +16,7 @@ import { DISPOSITIONS } from '../entities/NPC.js';
 import { isCasterClass } from '../entities/Classes.js';
 import { slugId } from '../entities/Roster.js';
 import { indexById } from '../util/indexById.js';
+import { deepFreeze } from '../util/deepFreeze.js';
 
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
 /** @typedef {import('../types/library.js').NPCTemplate} NPCTemplate */
@@ -25,14 +26,19 @@ import { indexById } from '../util/indexById.js';
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 
+/** @type {EquipmentTemplate[] | null} */
+let defaultEquipment = null;
+
 /**
  * The application's built-in equipment, one flat template list assembled from
  * the 5e preset arrays in Equipment.js — the same entries the item form's
- * preset pickers and the enemy gear pickers have always offered.
+ * preset pickers and the enemy gear pickers have always offered. Assembled
+ * once and frozen, so it is shared read-only data like the other three
+ * built-in catalogs rather than a fresh copy per call.
  * @returns {EquipmentTemplate[]}
  */
 export function defaultEquipmentTemplates() {
-  return [
+  return (defaultEquipment ??= deepFreeze([
     ...WEAPON_PRESETS.map((p) => ({
       name: p.name,
       type: p.type,
@@ -55,7 +61,7 @@ export function defaultEquipmentTemplates() {
       type: /** @type {import('../types/entities.js').ItemType} */ ('consumable'),
       description: p.description,
     })),
-  ];
+  ]));
 }
 
 /**
@@ -64,7 +70,7 @@ export function defaultEquipmentTemplates() {
  * AC plus the armor's bonus, matching effectiveStatBlock.
  * @type {EncounterTemplate[]}
  */
-export const DEFAULT_BESTIARY = [
+export const DEFAULT_BESTIARY = deepFreeze([
   {
     id: 'goblin',
     name: 'Goblin',
@@ -149,14 +155,14 @@ export const DEFAULT_BESTIARY = [
     },
     armor: { name: 'Hide', acBonus: 2 },
   },
-];
+]);
 
 /**
  * The application's built-in NPC archetypes: enough stock townsfolk that a GM
  * can drop a recognizable somebody onto the map without typing stats.
  * @type {NPCTemplate[]}
  */
-export const DEFAULT_NPC_TEMPLATES = [
+export const DEFAULT_NPC_TEMPLATES = deepFreeze([
   {
     name: 'Innkeeper',
     role: 'Innkeeper',
@@ -192,7 +198,7 @@ export const DEFAULT_NPC_TEMPLATES = [
     notes: 'Serves a hidden master and carries a sign of the order.',
     stats: { STR: 11, DEX: 12, CON: 10, INT: 10, WIS: 8, CHA: 11 },
   },
-];
+]);
 
 /** @returns {CustomLibrary} no customizations */
 export function emptyLibrary() {
@@ -635,7 +641,10 @@ export function activeArmors() {
  * @param {string} name
  * @returns {import('../types/entities.js').EnemyArmor | null} */
 export function activeEnemyArmor(name) {
-  return activeArmors().find((a) => a.name === name) ?? null;
+  // Copied out: the merged list is memoized and shared, so handing an element
+  // of it to an encounter would put library data inside campaign state.
+  const found = activeArmors().find((a) => a.name === name);
+  return found ? { ...found } : null;
 }
 
 /** The merged bestiary (built-in stock enemies + the active customizations),

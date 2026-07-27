@@ -1,5 +1,6 @@
 import { normalizeStatBlock } from './Modifiers.js';
-import { WEAPON_PRESETS, enemyArmor } from './EquipmentPresets.js';
+import { WEAPON_PRESETS, enemyArmor, copyEnemyWeapon } from './EquipmentPresets.js';
+import { copySpellbook } from './Character.js';
 import { withinRadius } from '../map/FogOfWar.js';
 import { withCasterFields, ensureCasterFields, casterTemplateFields } from './Caster.js';
 import { isCasterClass } from './Classes.js';
@@ -37,11 +38,7 @@ export function defaultEnemyGear(level, tier) {
     WEAPON_PRESETS.find((p) => p.name === names.weapon)
   );
   return {
-    weapon: {
-      name: preset.name,
-      handling: preset.handling,
-      damage: preset.damage.map((d) => ({ ...d })),
-    },
+    weapon: copyEnemyWeapon(preset),
     armor: /** @type {EnemyArmor} */ (enemyArmor(names.armor)),
   };
 }
@@ -320,7 +317,12 @@ export function toTemplate(id, encounter) {
 }
 
 /**
- * Spawn a fresh, full-health encounter from a bestiary template.
+ * Spawn a fresh, full-health encounter from a bestiary template. Every field
+ * carried over is copied, not aliased: a template is shared library data (the
+ * built-in bestiary hands out the same entry object to every spawn), so two
+ * encounters from one template must not end up editing one weapon, armor, or
+ * spellbook through each other. An absent weapon/armor stays absent so the
+ * level/tier default still applies, and an explicit null stays null.
  * @param {EncounterTemplate} template
  * @param {string} id
  * @param {EncounterLocation | null} [location]
@@ -330,12 +332,12 @@ export function fromTemplate(template, id, location = null) {
   return createEncounter(id, template.name, template.maxHP, { ...template.statBlock }, location, {
     level: template.level ?? 1,
     tier: template.tier ?? 'mob',
-    weapon: template.weapon,
-    armor: template.armor,
+    weapon: template.weapon ? copyEnemyWeapon(template.weapon) : template.weapon,
+    armor: template.armor ? { ...template.armor } : template.armor,
     class: template.class,
     subclass: template.subclass,
     casterLevel: template.casterLevel,
-    spellbook: template.spellbook,
+    spellbook: template.spellbook ? copySpellbook(template.spellbook) : template.spellbook,
   });
 }
 

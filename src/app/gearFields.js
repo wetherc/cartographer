@@ -1,5 +1,6 @@
 import { activeWeapons, activeArmors, activeEnemyArmor } from '../library/Library.js';
 import { formatDamage } from '../entities/Equipment.js';
+import { copyEnemyWeapon } from '../entities/EquipmentPresets.js';
 
 /** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
 /** @typedef {import('../types/entities.js').EnemyArmor} EnemyArmor */
@@ -71,11 +72,7 @@ export function readGear(weaponValue, armorValue, options, fallback = {}) {
     weaponValue === ''
       ? null
       : preset
-        ? {
-            name: preset.name,
-            handling: preset.handling ?? /** @type {const} */ ('melee'),
-            damage: (preset.damage ?? []).map((d) => ({ ...d })),
-          }
+        ? copyEnemyWeapon(preset)
         : (options.currentWeapon ?? fallback.weapon ?? null);
   const armor =
     armorValue === ''

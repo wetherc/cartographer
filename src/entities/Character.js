@@ -121,6 +121,23 @@ export function emptySpellbook() {
 }
 
 /**
+ * A detached copy of a spellbook, arrays and the sources map included. Used
+ * where a library template's spellbook is stamped onto a campaign entity: the
+ * template is shared, read-only data, so the entity needs its own lists to
+ * learn or prepare spells through. Pure.
+ * @param {Spellbook} book
+ * @returns {Spellbook}
+ */
+export function copySpellbook(book) {
+  return {
+    cantrips: [...(book.cantrips ?? [])],
+    known: [...(book.known ?? [])],
+    prepared: [...(book.prepared ?? [])],
+    ...(book.sources ? { sources: { ...book.sources } } : {}),
+  };
+}
+
+/**
  * A character's spellbook, or an empty one for a character that predates
  * spellbooks (so callers never guard against undefined).
  * @param {Character} character

@@ -9,6 +9,8 @@
  * @typedef {import('../types/spell.js').Spell} Spell
  */
 
+import { deepFreeze } from '../util/deepFreeze.js';
+
 /** The eight schools of magic, in the order the authoring form lists them.
  * @type {import('../types/spell.js').SpellSchool[]} */
 export const SPELL_SCHOOLS = [
@@ -29,7 +31,7 @@ export const SPELL_ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
 export const SPELL_EFFECT_KINDS = ['attack', 'save', 'heal', 'utility'];
 
 /** @type {Spell[]} */
-export const DEFAULT_SPELLS = [
+export const DEFAULT_SPELLS = deepFreeze([
   // ---- Cantrips (level 0) ----
   {
     id: 'fire-bolt',
@@ -593,4 +595,4 @@ export const DEFAULT_SPELLS = [
       halfOnSave: true,
     },
   },
-];
+]);

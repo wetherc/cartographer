@@ -185,3 +185,20 @@ export function enemyArmor(name) {
   const preset = ARMOR_PRESETS.find((p) => p.name === name);
   return preset ? { name: preset.name, acBonus: preset.baseAC - 10 } : null;
 }
+
+/**
+ * A weapon-shaped value (a preset, a library template, another enemy's weapon)
+ * as a detached enemy weapon: the three fields an enemy stores, with the
+ * structured damage parts cloned. Every path that arms an enemy from shared
+ * data goes through here, so a preset's damage array is never the array a
+ * campaign encounter carries. Pure.
+ * @param {{ name: string, handling?: import('../types/entities.js').WeaponHandling, damage?: import('../types/entities.js').DamagePart[] }} weapon
+ * @returns {import('../types/entities.js').EnemyWeapon}
+ */
+export function copyEnemyWeapon(weapon) {
+  return {
+    name: weapon.name,
+    handling: weapon.handling ?? 'melee',
+    damage: (weapon.damage ?? []).map((d) => ({ ...d })),
+  };
+}

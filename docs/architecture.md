@@ -166,7 +166,13 @@ established pattern that new code touching the same area should follow:
   re-allocates on a repeat call. New derived collections (the planned feat
   catalog) should hang off the same cache-and-invalidate point rather than
   re-merging per call — and callers must treat the returned arrays as
-  read-only, since they are shared.
+  read-only, since they are shared. The four built-in catalogs behind them
+  (`defaultEquipmentTemplates()`, `DEFAULT_BESTIARY`, `DEFAULT_NPC_TEMPLATES`,
+  `DEFAULT_SPELLS`) are `deepFreeze`d (`src/util/deepFreeze.js`), so that
+  contract is enforced rather than documented: a path that instead copies
+  library data into campaign state has to say so, which is what
+  `Encounter.fromTemplate`, `Library.activeEnemyArmor`,
+  `EquipmentPresets.copyEnemyWeapon`, and `Character.copySpellbook` are for.
 
 ## UI and style conventions
 

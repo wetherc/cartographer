@@ -181,6 +181,57 @@ test('fromTemplate spawns a fresh, full-health encounter at the given location',
   assert.equal(template.statBlock.AC, 13);
 });
 
+test('fromTemplate copies gear and spellbook so two spawns share nothing', () => {
+  const template = /** @type {any} */ ({
+    id: 'acolyte',
+    name: 'Acolyte',
+    maxHP: 9,
+    statBlock: { WIS: 14 },
+    level: 2,
+    tier: 'mob',
+    weapon: {
+      name: 'Club',
+      handling: 'melee',
+      damage: [{ count: 1, sides: 4, type: 'bludgeoning' }],
+    },
+    armor: { name: 'Hide', acBonus: 2 },
+    class: 'cleric',
+    casterLevel: 2,
+    spellbook: { cantrips: ['sacred-flame'], known: ['cure-wounds'], prepared: [], sources: {} },
+  });
+  const a = fromTemplate(template, 'e1');
+  const b = fromTemplate(template, 'e2');
+
+  assert.notEqual(a.weapon, template.weapon, 'the weapon is copied, not aliased');
+  assert.notEqual(a.weapon?.damage, template.weapon.damage, 'damage parts are copied too');
+  assert.notEqual(a.armor, template.armor);
+  assert.notEqual(a.spellbook, template.spellbook);
+  assert.notEqual(a.weapon, b.weapon, 'two spawns hold their own weapons');
+  assert.deepEqual(a.weapon, template.weapon, 'the copy carries the same values');
+  assert.deepEqual(a.armor, template.armor);
+  assert.deepEqual(a.spellbook, template.spellbook);
+
+  // Editing one spawn leaves the template and the other spawn untouched.
+  /** @type {any} */ (a.weapon).name = 'Mace';
+  /** @type {any} */ (a.weapon).damage[0].sides = 6;
+  /** @type {any} */ (a.armor).acBonus = 5;
+  /** @type {any} */ (a.spellbook).known.push('bless');
+  assert.equal(template.weapon.name, 'Club');
+  assert.equal(template.weapon.damage[0].sides, 4);
+  assert.equal(template.armor.acBonus, 2);
+  assert.deepEqual(template.spellbook.known, ['cure-wounds']);
+  assert.equal(b.weapon?.name, 'Club');
+});
+
+test('fromTemplate keeps an absent weapon absent and an explicit null null', () => {
+  const bare = /** @type {any} */ ({ id: 't', name: 'Ooze', maxHP: 12, statBlock: {} });
+  // Absent gear still reads as the level/tier default, so the spawn is armed.
+  assert.ok(fromTemplate(bare, 'e1').weapon, 'absent gear falls back to the tier default');
+  const unarmed = fromTemplate(/** @type {any} */ ({ ...bare, weapon: null, armor: null }), 'e2');
+  assert.equal(unarmed.weapon, null, 'a deliberately unarmed creature stays unarmed');
+  assert.equal(unarmed.armor, null);
+});
+
 test('editEncounter rewrites blueprint fields but keeps live state', () => {
   const base = applyDamage(
     {

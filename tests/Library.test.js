@@ -508,6 +508,29 @@ test('with no customizations the active getters return the pure defaults', () =>
   assert.deepEqual(activeEnemyArmor('Leather Armor'), { name: 'Leather Armor', acBonus: 1 });
 });
 
+test('the built-in catalogs are frozen, so a consumer cannot edit shared data', () => {
+  for (const catalog of [
+    defaultEquipmentTemplates(),
+    DEFAULT_BESTIARY,
+    DEFAULT_NPC_TEMPLATES,
+    DEFAULT_SPELLS,
+  ]) {
+    assert.ok(Object.isFrozen(catalog), 'the list itself');
+    assert.ok(Object.isFrozen(catalog[0]), 'and its entries');
+  }
+  // Same list object per call: assembled once rather than copied per caller.
+  assert.equal(defaultEquipmentTemplates(), defaultEquipmentTemplates());
+});
+
+test('activeEnemyArmor hands out a copy, not an element of the memoized list', () => {
+  setActiveLibrary(emptyLibrary());
+  const armor = /** @type {any} */ (activeEnemyArmor('Leather Armor'));
+  assert.notEqual(armor, activeEnemyArmor('Leather Armor'), 'each call is its own object');
+  // An encounter tuning its armor must not tune the library's.
+  armor.acBonus = 99;
+  assert.deepEqual(activeEnemyArmor('Leather Armor'), { name: 'Leather Armor', acBonus: 1 });
+});
+
 test('the active getters memoize their merged lists until the library changes', () => {
   try {
     setActiveLibrary(emptyLibrary());
