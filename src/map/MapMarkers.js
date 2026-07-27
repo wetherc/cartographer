@@ -1,4 +1,4 @@
-import { parseCoords, tileRect } from './MapGeometry.js';
+import { parseCoords } from './MapGeometry.js';
 
 /** @typedef {import('./MapRenderer.js').MapRenderer} MapRenderer */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
@@ -48,6 +48,17 @@ export class MapMarkers {
   }
 
   /**
+   * Drop the memoized anchors and the view they were parsed from, called by the
+   * host at the end of every frame. Without it the last drawn view — and through
+   * it a whole node's tile list — stays reachable from the renderer for as long
+   * as the map is idle, which after a paint stroke is a node no one else holds.
+   */
+  releaseFrame() {
+    this._anchorsView = null;
+    this._anchors = [];
+  }
+
+  /**
    * Whether a marker at a tile is within detection range (Euclidean, the same
    * rule as FogOfWar.withinRadius) of the party or a character token. Build
    * mode sees everything; in Play a node the party isn't in has no anchors, so
@@ -80,18 +91,15 @@ export class MapMarkers {
     const ids = view.encounterTileIds;
     if (!ids || ids.length === 0 || !view.node) return;
     const { ctx, tileSize } = this.host;
+    // One rect's worth of arithmetic per marker, inlined rather than returned as
+    // an object: these loops run every frame.
+    const size = tileSize * view.scale;
     for (const id of ids) {
       if (!this.markerVisible(view, id)) continue;
       const coords = parseCoords(id);
       if (!coords) continue;
-      const { sx, sy, size } = tileRect(
-        coords.x,
-        coords.y,
-        tileSize,
-        view.offsetX,
-        view.offsetY,
-        view.scale,
-      );
+      const sx = coords.x * size + view.offsetX;
+      const sy = coords.y * size + view.offsetY;
       const cx = sx + size * 0.74;
       const cy = sy + size * 0.26;
       const r = size * 0.16;
@@ -121,18 +129,13 @@ export class MapMarkers {
     const ids = view.npcTileIds;
     if (!ids || ids.length === 0 || !view.node) return;
     const { ctx, tileSize } = this.host;
+    const size = tileSize * view.scale;
     for (const id of ids) {
       if (!this.markerVisible(view, id)) continue;
       const coords = parseCoords(id);
       if (!coords) continue;
-      const { sx, sy, size } = tileRect(
-        coords.x,
-        coords.y,
-        tileSize,
-        view.offsetX,
-        view.offsetY,
-        view.scale,
-      );
+      const sx = coords.x * size + view.offsetX;
+      const sy = coords.y * size + view.offsetY;
       ctx.save();
       ctx.fillStyle = '#3563a5';
       ctx.strokeStyle = '#101f36';
@@ -156,14 +159,9 @@ export class MapMarkers {
     const coords = parseCoords(view.partyTileId);
     if (!coords) return;
     const { ctx, tileSize } = this.host;
-    const { sx, sy, size } = tileRect(
-      coords.x,
-      coords.y,
-      tileSize,
-      view.offsetX,
-      view.offsetY,
-      view.scale,
-    );
+    const size = tileSize * view.scale;
+    const sx = coords.x * size + view.offsetX;
+    const sy = coords.y * size + view.offsetY;
 
     ctx.save();
     ctx.fillStyle = '#e0c14b';
@@ -194,17 +192,12 @@ export class MapMarkers {
       names.push(token.name);
       byTile.set(token.tileId, names);
     }
+    const size = tileSize * view.scale;
     for (const [tileId, names] of byTile) {
       const coords = parseCoords(tileId);
       if (!coords) continue;
-      const { sx, sy, size } = tileRect(
-        coords.x,
-        coords.y,
-        tileSize,
-        view.offsetX,
-        view.offsetY,
-        view.scale,
-      );
+      const sx = coords.x * size + view.offsetX;
+      const sy = coords.y * size + view.offsetY;
       if (sx + size < 0 || sy + size < 0 || sx > view.canvasWidth || sy > view.canvasHeight)
         continue;
 

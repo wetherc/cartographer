@@ -39,6 +39,25 @@ test('groups a contiguous 2x2 block sharing one childNodeId', () => {
   );
 });
 
+test('cells carry the member coordinates in tileIds order', () => {
+  const node = nodeFromLayout(
+    [
+      ['R', 'R', 'R'],
+      ['R', '.', '.'],
+      ['R', '.', '.'],
+    ],
+    (cell) => (cell === 'R' ? 'region' : null),
+  );
+
+  const group = findRegionGroups(node)[0];
+  assert.equal(group.cells.length, group.tileIds.length);
+  assert.deepEqual(
+    group.cells.map((c) => `${c.x},${c.y}`),
+    group.tileIds,
+    'the renderer indexes cells by a tile id position, so the two stay aligned',
+  );
+});
+
 test('diagonal-only tiles are not contiguous (4-neighbor adjacency only)', () => {
   const node = nodeFromLayout(
     [

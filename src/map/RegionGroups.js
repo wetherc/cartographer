@@ -8,6 +8,7 @@ import { getTile } from './TileGrid.js';
  * @typedef {Object} RegionGroup
  * @property {string} childNodeId
  * @property {string[]} tileIds
+ * @property {{ x: number, y: number }[]} cells grid coordinates of `tileIds`, same order
  * @property {number} minX
  * @property {number} minY
  * @property {number} maxX
@@ -55,6 +56,12 @@ export function findRegionGroups(node) {
     const stack = [entry];
     visited.add(key);
     const members = [];
+    // The coordinates are already parsed here, so the group carries them beside
+    // its ids: the renderer clips a partly-explored region's overlay to its
+    // revealed tiles, and re-parsing every member id to do that ran per group per
+    // frame. Index-aligned with `members`, and written only here.
+    /** @type {{ x: number, y: number }[]} */
+    const cells = [];
     let minX = entry.x,
       maxX = entry.x,
       minY = entry.y,
@@ -64,6 +71,7 @@ export function findRegionGroups(node) {
       const current = stack.pop();
       if (!current) break;
       members.push(current.tile.id);
+      cells.push({ x: current.x, y: current.y });
       minX = Math.min(minX, current.x);
       maxX = Math.max(maxX, current.x);
       minY = Math.min(minY, current.y);
@@ -85,7 +93,7 @@ export function findRegionGroups(node) {
       }
     }
 
-    groups.push({ childNodeId, tileIds: members, minX, minY, maxX, maxY });
+    groups.push({ childNodeId, tileIds: members, cells, minX, minY, maxX, maxY });
   }
 
   groupCache.set(node, groups);

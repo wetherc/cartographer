@@ -60,7 +60,8 @@ A region can be entered from more than one tile. Any set of
 4-neighbor-contiguous tiles sharing the same non-null `childNodeId` counts as
 one region block. `RegionGroups.findRegionGroups(node)`
 (`src/map/RegionGroups.js`) is a pure flood-fill returning
-`{ childNodeId, tileIds, minX, minY, maxX, maxY }` per group. No schema change
+`{ childNodeId, tileIds, cells, minX, minY, maxX, maxY }` per group, where
+`cells` holds each member's grid coordinates in `tileIds` order. No schema change
 was needed to support this — multiple tiles simply carry the same
 `childNodeId` value. `MapCanvas` recomputes groups whenever a node loads and
 draws a tint plus outline over each group's bounding box, optionally labeled

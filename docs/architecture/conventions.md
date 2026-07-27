@@ -108,6 +108,18 @@ transform once, look cells up by coordinate) — O(visible), never O(total
 tiles), never a regex parse per tile per frame, and never an id string built
 and hashed per visible cell per frame.
 
+Derived data carries the coordinates it parsed rather than leaving the reader to
+parse them again: a region group holds a `cells` array index-aligned with its
+`tileIds`, which is what lets the overlay's clip path walk a group's revealed
+members without a parse or an allocation per tile. The renderer's block and
+marker passes follow from the same rule — a rect that is consumed immediately is
+arithmetic on the cell extent, not a `tileRect` object, since these run per
+block and per marker every frame. `tileRect` remains the right call for the
+once-per-frame chrome (selection, cursor, marquee, keyboard scroll-into-view).
+Anything a pass memoizes against the view snapshot is released at the end of the
+frame (`MapMarkers.releaseFrame`), so an idle map holds no reference to the
+finished view or the node behind it.
+
 The same pattern covers the combat rosters: `combatants.js` memoizes an
 id-index Map per characters/encounters array (safe because every mutation goes
 through `replaceById`, which replaces the array), so participant lookups

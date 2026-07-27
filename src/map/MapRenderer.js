@@ -1,4 +1,3 @@
-import { parseCoords, tileRect } from './MapGeometry.js';
 import { groupImageChunks } from './RegionGroups.js';
 import { spanBlocks } from './TilePaint.js';
 import { overlayList } from './TileGrid.js';
@@ -108,28 +107,33 @@ export class MapRenderer {
   render(view) {
     const { ctx } = this;
     ctx.clearRect(0, 0, view.canvasWidth, view.canvasHeight);
-    if (!view.node) return;
-
-    this._renderMapBounds(view);
-    // Derived data shared by the passes below, computed once per frame instead
-    // of once per pass (fog set three times, span blocks re-scanned, etc.).
-    const frame = {
-      revealedIds: this._revealedIds(view),
-      spanBlocks: spanBlocks(view.node),
-    };
-    const groupCover = this._renderGroupImages(view, frame);
-    this._renderSpanImages(view, frame, groupCover);
-    this._renderTiles(view, groupCover);
-    this._renderRegionGroups(view, frame);
-    this._decorations.renderMarquee(view);
-    this._decorations.renderSelection(view);
-    this._markers.renderEncounterMarkers(view);
-    this._markers.renderNPCMarkers(view);
-    this._markers.renderPartyMarker(view);
-    this._markers.renderCharacterTokens(view);
-    this._decorations.renderCursor(view);
-    this._renderMapBoundsBorder(view);
-    this._decorations.renderCoordinates(view);
+    if (view.node) {
+      this._renderMapBounds(view);
+      // Derived data shared by the passes below, computed once per frame instead
+      // of once per pass (fog set three times, span blocks re-scanned, etc.).
+      const frame = {
+        revealedIds: this._revealedIds(view),
+        spanBlocks: spanBlocks(view.node),
+      };
+      const groupCover = this._renderGroupImages(view, frame);
+      this._renderSpanImages(view, frame, groupCover);
+      this._renderTiles(view, groupCover);
+      this._renderRegionGroups(view, frame);
+      this._decorations.renderMarquee(view);
+      this._decorations.renderSelection(view);
+      this._markers.renderEncounterMarkers(view);
+      this._markers.renderNPCMarkers(view);
+      this._markers.renderPartyMarker(view);
+      this._markers.renderCharacterTokens(view);
+      this._decorations.renderCursor(view);
+      this._renderMapBoundsBorder(view);
+      this._decorations.renderCoordinates(view);
+    }
+    // The marker layer memoizes its detection anchors against the view object for
+    // the length of a frame. Dropping that reference here keeps the renderer from
+    // holding the finished view — and through it a whole node's tiles — for as
+    // long as the map sits idle between draws.
+    this._markers.releaseFrame();
   }
 
   /**
@@ -172,6 +176,9 @@ export class MapRenderer {
     if (!view.node || view.node.kind !== 'region') return covered;
     const { ctx } = this;
     const revealedIds = frame.revealedIds;
+    // The block rect is arithmetic on the cell extent, inlined rather than taken
+    // from two tileRect calls per block: this runs per chunk per frame.
+    const size = this.tileSize * view.scale;
     for (const group of view.regionGroups) {
       if (group.tileIds.length < 2) continue;
       for (const chunk of groupImageChunks(view.node, group)) {
@@ -179,38 +186,18 @@ export class MapRenderer {
         if (revealedIds && !chunk.tileIds.some((id) => revealedIds.has(id))) continue;
         for (const id of chunk.tileIds) covered.add(id);
 
-        const topLeft = tileRect(
-          chunk.minX,
-          chunk.minY,
-          this.tileSize,
-          view.offsetX,
-          view.offsetY,
-          view.scale,
-        );
-        const bottomRight = tileRect(
-          chunk.maxX,
-          chunk.maxY,
-          this.tileSize,
-          view.offsetX,
-          view.offsetY,
-          view.scale,
-        );
-        const w = bottomRight.sx + bottomRight.size - topLeft.sx;
-        const h = bottomRight.sy + bottomRight.size - topLeft.sy;
-        if (
-          topLeft.sx + w < 0 ||
-          topLeft.sy + h < 0 ||
-          topLeft.sx > view.canvasWidth ||
-          topLeft.sy > view.canvasHeight
-        )
-          continue;
+        const x = chunk.minX * size + view.offsetX;
+        const y = chunk.minY * size + view.offsetY;
+        const w = (chunk.maxX - chunk.minX + 1) * size;
+        const h = (chunk.maxY - chunk.minY + 1) * size;
+        if (x + w < 0 || y + h < 0 || x > view.canvasWidth || y > view.canvasHeight) continue;
 
         const img = this._getImage(chunk.imageRef);
         if (img.complete && img.naturalWidth > 0) {
-          ctx.drawImage(img, topLeft.sx, topLeft.sy, w, h);
+          ctx.drawImage(img, x, y, w, h);
         } else {
           ctx.fillStyle = '#333';
-          ctx.fillRect(topLeft.sx, topLeft.sy, w, h);
+          ctx.fillRect(x, y, w, h);
         }
       }
     }
@@ -233,44 +220,25 @@ export class MapRenderer {
     if (!view.node) return;
     const { ctx } = this;
     const revealedIds = frame.revealedIds;
+    const size = this.tileSize * view.scale;
     for (const block of frame.spanBlocks) {
       // A fully-fogged block draws nothing — see _revealedIds.
       if (revealedIds && !block.tileIds.some((id) => revealedIds.has(id))) continue;
       for (const id of block.tileIds) cover.add(id);
 
-      const topLeft = tileRect(
-        block.minX,
-        block.minY,
-        this.tileSize,
-        view.offsetX,
-        view.offsetY,
-        view.scale,
-      );
-      const bottomRight = tileRect(
-        block.maxX,
-        block.maxY,
-        this.tileSize,
-        view.offsetX,
-        view.offsetY,
-        view.scale,
-      );
-      const w = bottomRight.sx + bottomRight.size - topLeft.sx;
-      const h = bottomRight.sy + bottomRight.size - topLeft.sy;
-      if (
-        topLeft.sx + w < 0 ||
-        topLeft.sy + h < 0 ||
-        topLeft.sx > view.canvasWidth ||
-        topLeft.sy > view.canvasHeight
-      )
-        continue;
+      const x = block.minX * size + view.offsetX;
+      const y = block.minY * size + view.offsetY;
+      const w = (block.maxX - block.minX + 1) * size;
+      const h = (block.maxY - block.minY + 1) * size;
+      if (x + w < 0 || y + h < 0 || x > view.canvasWidth || y > view.canvasHeight) continue;
       if (!block.tile.imageRef) continue;
 
       const img = this._getImage(block.tile.imageRef);
       if (img.complete && img.naturalWidth > 0) {
-        ctx.drawImage(img, topLeft.sx, topLeft.sy, w, h);
+        ctx.drawImage(img, x, y, w, h);
       } else {
         ctx.fillStyle = '#333';
-        ctx.fillRect(topLeft.sx, topLeft.sy, w, h);
+        ctx.fillRect(x, y, w, h);
       }
     }
   }
@@ -396,28 +364,13 @@ export class MapRenderer {
     // at least one of its tiles through the fog, so the overworld doesn't
     // reveal where every unexplored region sits.
     const revealedIds = frame.revealedIds;
+    const size = this.tileSize * view.scale;
     for (const group of view.regionGroups) {
       if (revealedIds && !group.tileIds.some((id) => revealedIds.has(id))) continue;
-      const topLeft = tileRect(
-        group.minX,
-        group.minY,
-        this.tileSize,
-        view.offsetX,
-        view.offsetY,
-        view.scale,
-      );
-      const bottomRight = tileRect(
-        group.maxX,
-        group.maxY,
-        this.tileSize,
-        view.offsetX,
-        view.offsetY,
-        view.scale,
-      );
-      const x = topLeft.sx;
-      const y = topLeft.sy;
-      const w = bottomRight.sx + bottomRight.size - topLeft.sx;
-      const h = bottomRight.sy + bottomRight.size - topLeft.sy;
+      const x = group.minX * size + view.offsetX;
+      const y = group.minY * size + view.offsetY;
+      const w = (group.maxX - group.minX + 1) * size;
+      const h = (group.maxY - group.minY + 1) * size;
       if (x + w < 0 || y + h < 0 || x > view.canvasWidth || y > view.canvasHeight) continue;
 
       ctx.save();
@@ -426,19 +379,12 @@ export class MapRenderer {
       // extent — a differently-colored rectangle — through the fog.
       if (revealedIds) {
         const clip = new Path2D();
-        for (const id of group.tileIds) {
-          if (!revealedIds.has(id)) continue;
-          const coords = parseCoords(id);
-          if (!coords) continue;
-          const r = tileRect(
-            coords.x,
-            coords.y,
-            this.tileSize,
-            view.offsetX,
-            view.offsetY,
-            view.scale,
-          );
-          clip.rect(r.sx, r.sy, r.size, r.size);
+        // The group carries its members' coordinates alongside their ids, so this
+        // per-frame walk neither re-parses an id nor allocates a rect per tile.
+        for (let i = 0; i < group.tileIds.length; i++) {
+          if (!revealedIds.has(group.tileIds[i])) continue;
+          const cell = group.cells[i];
+          clip.rect(cell.x * size + view.offsetX, cell.y * size + view.offsetY, size, size);
         }
         ctx.clip(clip);
       }
