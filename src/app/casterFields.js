@@ -56,14 +56,17 @@ export function maxSpellLevelForClass(classId, casterLevel) {
 export function spellPickerOptions(classId = '', casterLevel = 1) {
   const filtered = isCasterClass(classId);
   const max = filtered ? maxSpellLevelForClass(classId, casterLevel) : 0;
-  return activeSpells()
-    .filter((s) => !filtered || (s.classes.includes(classId) && s.level <= max))
-    .slice()
-    .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name))
-    .map((s) => ({
-      value: s.id,
-      label: `${s.level === 0 ? 'Cantrip' : `L${s.level}`} — ${s.name}`,
-    }));
+  return (
+    activeSpells()
+      // `filter` already returned a fresh array, so sorting in place cannot
+      // reach the shared library list this reads from.
+      .filter((s) => !filtered || (s.classes.includes(classId) && s.level <= max))
+      .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name))
+      .map((s) => ({
+        value: s.id,
+        label: `${s.level === 0 ? 'Cantrip' : `L${s.level}`} — ${s.name}`,
+      }))
+  );
 }
 
 /**

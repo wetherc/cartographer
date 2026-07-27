@@ -212,10 +212,9 @@ export function isPactPool(pool) {
  * @returns {ResourcePool[]} empty for non-casters
  */
 export function getSlotPools(character) {
-  return character.resources
-    .filter(isSlotPool)
-    .slice()
-    .sort((a, b) => slotLevelOf(a) - slotLevelOf(b));
+  // `filter` already returned a fresh array, so sorting in place cannot
+  // reorder the character's own resource list.
+  return character.resources.filter(isSlotPool).sort((a, b) => slotLevelOf(a) - slotLevelOf(b));
 }
 
 /**
