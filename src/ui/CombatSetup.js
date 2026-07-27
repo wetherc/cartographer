@@ -1,5 +1,6 @@
 import { formatModifier } from '../entities/Modifiers.js';
 import { icon } from './icons.js';
+import { openDialog } from './Modal.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
 
@@ -22,100 +23,83 @@ import { icon } from './icons.js';
  * @returns {Promise<Participant[] | null>}
  */
 export function combatSetupModal(roster, callbacks = {}) {
-  return new Promise((resolve) => {
-    const opener = /** @type {HTMLElement | null} */ (document.activeElement);
-    const dialog = document.createElement('dialog');
-    dialog.className = 'modal';
+  /** @type {Map<string, HTMLInputElement>} */
+  const inputs = new Map();
 
-    const form = document.createElement('form');
-    form.method = 'dialog';
-    form.className = 'modal__form';
+  return openDialog({
+    title: 'Set up combat',
+    form: true,
+    build: (close) => {
+      /** @type {Node[]} */
+      const body = [];
+      for (const participant of roster) {
+        const row = document.createElement('div');
+        row.className = `initiative-panel__row initiative-panel__row--${participant.side}`;
 
-    const heading = document.createElement('h2');
-    heading.className = 'modal__title';
-    heading.textContent = 'Set up combat';
-    form.appendChild(heading);
+        const name = document.createElement('span');
+        name.className = 'initiative-panel__name';
+        name.textContent = participant.name;
 
-    /** @type {Map<string, HTMLInputElement>} */
-    const inputs = new Map();
-    for (const participant of roster) {
-      const row = document.createElement('div');
-      row.className = `initiative-panel__row initiative-panel__row--${participant.side}`;
+        const modifier = document.createElement('span');
+        modifier.className = 'initiative-panel__modifier';
+        modifier.textContent = formatModifier(participant.modifier ?? 0);
+        modifier.title = 'DEX modifier, added to the initiative roll';
 
-      const name = document.createElement('span');
-      name.className = 'initiative-panel__name';
-      name.textContent = participant.name;
+        const input = document.createElement('input');
+        input.type = 'number';
+        input.className = 'field initiative-panel__init';
+        input.value = String(participant.initiative);
+        input.setAttribute('aria-label', `Initiative for ${participant.name}`);
+        inputs.set(participant.id, input);
 
-      const modifier = document.createElement('span');
-      modifier.className = 'initiative-panel__modifier';
-      modifier.textContent = formatModifier(participant.modifier ?? 0);
-      modifier.title = 'DEX modifier, added to the initiative roll';
+        row.append(name, modifier, input);
+        body.push(row);
+      }
 
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.className = 'field initiative-panel__init';
-      input.value = String(participant.initiative);
-      input.setAttribute('aria-label', `Initiative for ${participant.name}`);
-      inputs.set(participant.id, input);
+      /** @type {HTMLElement[]} */
+      const actions = [];
 
-      row.append(name, modifier, input);
-      form.appendChild(row);
-    }
+      const rollInitiative = callbacks.rollInitiative;
+      if (rollInitiative) {
+        const rollAll = document.createElement('button');
+        rollAll.type = 'button';
+        rollAll.className = 'btn';
+        rollAll.append(icon('dice'), document.createTextNode('Roll initiative'));
+        rollAll.addEventListener('click', () => {
+          /** @type {{ name: string, value: number }[]} */
+          const results = [];
+          for (const participant of roster) {
+            const input = inputs.get(participant.id);
+            if (!input) continue;
+            const value = rollInitiative(participant);
+            input.value = String(value);
+            results.push({ name: participant.name, value });
+          }
+          if (results.length > 0) callbacks.onRolled?.(results);
+        });
+        actions.push(rollAll);
+      }
 
-    const actions = document.createElement('div');
-    actions.className = 'modal__actions';
+      const cancel = document.createElement('button');
+      cancel.type = 'button';
+      cancel.className = 'btn';
+      cancel.textContent = 'Cancel';
+      cancel.addEventListener('click', () => close('cancel'));
 
-    const rollInitiative = callbacks.rollInitiative;
-    if (rollInitiative) {
-      const rollAll = document.createElement('button');
-      rollAll.type = 'button';
-      rollAll.className = 'btn';
-      rollAll.append(icon('dice'), document.createTextNode('Roll initiative'));
-      rollAll.addEventListener('click', () => {
-        /** @type {{ name: string, value: number }[]} */
-        const results = [];
-        for (const participant of roster) {
-          const input = inputs.get(participant.id);
-          if (!input) continue;
-          const value = rollInitiative(participant);
-          input.value = String(value);
-          results.push({ name: participant.name, value });
-        }
-        if (results.length > 0) callbacks.onRolled?.(results);
-      });
-      actions.appendChild(rollAll);
-    }
+      // The submit button carries a value so an Escape dismissal (returnValue
+      // stays empty) reads as a cancel rather than starting the fight.
+      const start = document.createElement('button');
+      start.type = 'submit';
+      start.value = 'start';
+      start.className = 'btn btn--primary';
+      start.append(icon('sword'), document.createTextNode('Start combat'));
 
-    const cancel = document.createElement('button');
-    cancel.type = 'button';
-    cancel.className = 'btn';
-    cancel.textContent = 'Cancel';
-    cancel.addEventListener('click', () => dialog.close('cancel'));
-
-    // The submit button carries a value so an Escape dismissal (returnValue
-    // stays empty) reads as a cancel rather than starting the fight.
-    const start = document.createElement('button');
-    start.type = 'submit';
-    start.value = 'start';
-    start.className = 'btn btn--primary';
-    start.append(icon('sword'), document.createTextNode('Start combat'));
-
-    actions.append(cancel, start);
-    form.appendChild(actions);
-    dialog.appendChild(form);
-    document.body.appendChild(dialog);
-
-    dialog.addEventListener('close', () => {
-      const result =
-        dialog.returnValue === 'start'
-          ? roster.map((p) => ({ ...p, initiative: Number(inputs.get(p.id)?.value) || 0 }))
-          : null;
-      dialog.remove();
-      opener?.focus?.();
-      resolve(result);
-    });
-
-    dialog.showModal();
-    start.focus();
+      actions.push(cancel, start);
+      return { body, actions, initialFocus: start };
+    },
+    result: (returnValue) =>
+      returnValue === 'start'
+        ? roster.map((p) => ({ ...p, initiative: Number(inputs.get(p.id)?.value) || 0 }))
+        : null,
   });
 }

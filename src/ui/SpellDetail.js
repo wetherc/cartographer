@@ -1,5 +1,6 @@
 import { formatDamage } from '../entities/Equipment.js';
 import { capitalize } from '../util/text.js';
+import { openDialog } from './Modal.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /**
@@ -60,88 +61,78 @@ function metaCell(term, value) {
  * @returns {Promise<string | null>}
  */
 export function promptSpellDetail(spell, actions, options = {}) {
-  return new Promise((resolve) => {
-    const opener = /** @type {HTMLElement | null} */ (document.activeElement);
-    const dialog = document.createElement('dialog');
-    dialog.className = 'modal modal--wide spell-detail';
+  return openDialog({
+    className: 'modal modal--wide spell-detail',
+    title: spell.name,
+    build: (close) => {
+      /** @type {Node[]} */
+      const body = [];
 
-    const heading = document.createElement('h2');
-    heading.className = 'modal__title';
-    heading.textContent = spell.name;
-    dialog.appendChild(heading);
+      // School / level line, with concentration and ritual as trailing tags.
+      const subtitle = document.createElement('p');
+      subtitle.className = 'spell-detail__subtitle';
+      const levelText = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
+      subtitle.textContent = `${levelText} · ${capitalize(spell.school)}`;
+      if (spell.concentration) {
+        const tag = document.createElement('span');
+        tag.className = 'spell-detail__tag';
+        tag.textContent = 'Concentration';
+        subtitle.appendChild(tag);
+      }
+      if (spell.ritual) {
+        const tag = document.createElement('span');
+        tag.className = 'spell-detail__tag';
+        tag.textContent = 'Ritual';
+        subtitle.appendChild(tag);
+      }
+      body.push(subtitle);
 
-    // School / level line, with concentration and ritual as trailing tags.
-    const subtitle = document.createElement('p');
-    subtitle.className = 'spell-detail__subtitle';
-    const levelText = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
-    subtitle.textContent = `${levelText} · ${capitalize(spell.school)}`;
-    if (spell.concentration) {
-      const tag = document.createElement('span');
-      tag.className = 'spell-detail__tag';
-      tag.textContent = 'Concentration';
-      subtitle.appendChild(tag);
-    }
-    if (spell.ritual) {
-      const tag = document.createElement('span');
-      tag.className = 'spell-detail__tag';
-      tag.textContent = 'Ritual';
-      subtitle.appendChild(tag);
-    }
-    dialog.appendChild(subtitle);
+      const meta = document.createElement('div');
+      meta.className = 'spell-detail__meta';
+      meta.append(
+        metaCell('Casting time', spell.castingTime || '—'),
+        metaCell('Range', spell.range || '—'),
+        metaCell('Components', spell.components.join(', ') || '—'),
+        metaCell('Duration', spell.duration || '—'),
+      );
+      body.push(meta);
 
-    const meta = document.createElement('div');
-    meta.className = 'spell-detail__meta';
-    meta.append(
-      metaCell('Casting time', spell.castingTime || '—'),
-      metaCell('Range', spell.range || '—'),
-      metaCell('Components', spell.components.join(', ') || '—'),
-      metaCell('Duration', spell.duration || '—'),
-    );
-    dialog.appendChild(meta);
+      const summary = effectSummary(spell, options.saveDC ?? null);
+      if (summary) {
+        const effect = document.createElement('p');
+        effect.className = 'spell-detail__effect';
+        effect.textContent = summary;
+        body.push(effect);
+      }
 
-    const summary = effectSummary(spell, options.saveDC ?? null);
-    if (summary) {
-      const effect = document.createElement('p');
-      effect.className = 'spell-detail__effect';
-      effect.textContent = summary;
-      dialog.appendChild(effect);
-    }
+      if (spell.description) {
+        const description = document.createElement('p');
+        description.className = 'spell-detail__description';
+        description.textContent = spell.description;
+        body.push(description);
+      }
 
-    if (spell.description) {
-      const description = document.createElement('p');
-      description.className = 'spell-detail__description';
-      description.textContent = spell.description;
-      dialog.appendChild(description);
-    }
+      // Dismiss-left, primary-right — the same ordering as every modal.
+      const dismiss = document.createElement('button');
+      dismiss.type = 'button';
+      dismiss.className = 'btn';
+      dismiss.textContent = 'Close';
+      dismiss.addEventListener('click', () => close('close'));
+      const buttons = actions.map((action) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = `btn${action.variant ? ` btn--${action.variant}` : ''}`;
+        button.textContent = action.label;
+        button.addEventListener('click', () => close(action.id));
+        return button;
+      });
 
-    // Dismiss-left, primary-right — the same ordering as every modal.
-    const bar = document.createElement('div');
-    bar.className = 'modal__actions';
-    const close = document.createElement('button');
-    close.type = 'button';
-    close.className = 'btn';
-    close.textContent = 'Close';
-    close.addEventListener('click', () => dialog.close('close'));
-    bar.appendChild(close);
-    for (const action of actions) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = `btn${action.variant ? ` btn--${action.variant}` : ''}`;
-      button.textContent = action.label;
-      button.addEventListener('click', () => dialog.close(action.id));
-      bar.appendChild(button);
-    }
-    dialog.appendChild(bar);
-
-    document.body.appendChild(dialog);
-    dialog.addEventListener('close', () => {
-      const value = dialog.returnValue;
-      dialog.remove();
-      opener?.focus?.();
-      resolve(value && value !== 'close' ? value : null);
-    });
-
-    dialog.showModal();
-    /** @type {HTMLElement} */ (actions.length ? bar.lastElementChild : close).focus();
+      return {
+        body,
+        actions: [dismiss, ...buttons],
+        initialFocus: buttons.length ? buttons[buttons.length - 1] : dismiss,
+      };
+    },
+    result: (returnValue) => (returnValue && returnValue !== 'close' ? returnValue : null),
   });
 }

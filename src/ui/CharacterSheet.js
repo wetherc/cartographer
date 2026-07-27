@@ -23,6 +23,7 @@ import { mountConditionsBar } from './ConditionsBar.js';
 import { buildProgressSection } from './CharacterProgress.js';
 import { buildSpellsSection } from './CharacterSpells.js';
 import { iconButton, textButton, emptyState } from './buttons.js';
+import { openDialog } from './Modal.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -38,57 +39,45 @@ import { iconButton, textButton, emptyState } from './buttons.js';
  */
 function openStatBreakdown(key, breakdown) {
   const { base, total, sources } = breakdown;
-  const opener = /** @type {HTMLElement | null} */ (document.activeElement);
-  const dialog = document.createElement('dialog');
-  dialog.className = 'modal stat-breakdown';
+  openDialog({
+    className: 'modal stat-breakdown',
+    title: `${key} ${total}`,
+    build: (close) => {
+      const mod = document.createElement('p');
+      mod.className = 'stat-breakdown__mod';
+      mod.textContent = `Modifier ${formatModifier(abilityModifier(total))}`;
 
-  const heading = document.createElement('h2');
-  heading.className = 'modal__title';
-  heading.textContent = `${key} ${total}`;
+      const rows = document.createElement('dl');
+      rows.className = 'stat-breakdown__rows';
+      /** @param {string} label @param {string} value @param {string} [ddCls] @param {string} [rowCls] */
+      const addRow = (label, value, ddCls, rowCls) => {
+        const dt = document.createElement('dt');
+        dt.textContent = label;
+        const dd = document.createElement('dd');
+        dd.textContent = value;
+        if (rowCls) dt.className = rowCls;
+        dd.className = [ddCls, rowCls].filter(Boolean).join(' ');
+        rows.append(dt, dd);
+      };
+      addRow('Base', String(base));
+      for (const { source, delta } of sources) {
+        addRow(
+          `${source} (while equipped)`,
+          `${delta > 0 ? '+' : ''}${delta}`,
+          delta < 0 ? 'stat-breakdown__debuff' : 'stat-breakdown__buff',
+        );
+      }
+      addRow('Total', String(total), undefined, 'stat-breakdown__total');
 
-  const mod = document.createElement('p');
-  mod.className = 'stat-breakdown__mod';
-  mod.textContent = `Modifier ${formatModifier(abilityModifier(total))}`;
+      const dismiss = document.createElement('button');
+      dismiss.type = 'button';
+      dismiss.className = 'btn btn--primary';
+      dismiss.textContent = 'Close';
+      dismiss.addEventListener('click', () => close());
 
-  const rows = document.createElement('dl');
-  rows.className = 'stat-breakdown__rows';
-  /** @param {string} label @param {string} value @param {string} [ddCls] @param {string} [rowCls] */
-  const addRow = (label, value, ddCls, rowCls) => {
-    const dt = document.createElement('dt');
-    dt.textContent = label;
-    const dd = document.createElement('dd');
-    dd.textContent = value;
-    if (rowCls) dt.className = rowCls;
-    dd.className = [ddCls, rowCls].filter(Boolean).join(' ');
-    rows.append(dt, dd);
-  };
-  addRow('Base', String(base));
-  for (const { source, delta } of sources) {
-    addRow(
-      `${source} (while equipped)`,
-      `${delta > 0 ? '+' : ''}${delta}`,
-      delta < 0 ? 'stat-breakdown__debuff' : 'stat-breakdown__buff',
-    );
-  }
-  addRow('Total', String(total), undefined, 'stat-breakdown__total');
-
-  const actions = document.createElement('div');
-  actions.className = 'modal__actions';
-  const close = document.createElement('button');
-  close.type = 'button';
-  close.className = 'btn btn--primary';
-  close.textContent = 'Close';
-  close.addEventListener('click', () => dialog.close());
-  actions.appendChild(close);
-
-  dialog.append(heading, mod, rows, actions);
-  document.body.appendChild(dialog);
-  dialog.addEventListener('close', () => {
-    dialog.remove();
-    opener?.focus?.();
+      return { body: [mod, rows], actions: [dismiss], initialFocus: dismiss };
+    },
   });
-  dialog.showModal();
-  close.focus();
 }
 
 /**
