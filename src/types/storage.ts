@@ -13,6 +13,31 @@ export type RawSave = Record<string, any>;
 /** One migration step: a version-n raw save in, a version-n+1 one out. */
 export type MigrationStep = (state: RawSave) => RawSave;
 
+/**
+ * One reversible edit between two campaign states, as produced by `diffState`.
+ * `p` is the path of keys (and, inside an id-keyed collection, element ids) from
+ * the state root. An absent `t` is a removal and an absent `f` an insertion, so
+ * inverting an op is a swap of the two.
+ */
+export interface DiffOp {
+  p: (string | number)[];
+  /** The value before this op, absent when the op inserts. */
+  f?: unknown;
+  /** The value after this op, absent when the op removes. */
+  t?: unknown;
+  /**
+   * For an insertion or removal inside an id-keyed collection, the element's
+   * index in whichever of the two states contains it — so inverting the op puts
+   * it back where it was rather than appending it.
+   */
+  i?: number;
+  /**
+   * `'order'` marks a permutation of an id-keyed collection, where `f` and `t`
+   * are the whole id sequences. Absent on every value op.
+   */
+  k?: 'order';
+}
+
 export interface CampaignState {
   /**
    * Schema version of the on-disk shape, stamped by `buildState` and read by
