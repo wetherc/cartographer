@@ -1,6 +1,7 @@
 import { createResource, spend as spendPool, restore as restorePool } from './Resource.js';
-import { isSlotPool, isPactPool, syncSlotsToLevel } from './SpellSlots.js';
-import { isHitDicePool, syncHitDice } from './HitDice.js';
+import { isSlotPool, isPactPool } from './SpellSlots.js';
+import { isHitDicePool } from './HitDice.js';
+import { derive } from './Progression.js';
 import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
@@ -57,6 +58,10 @@ export function withHP(character, maxHP) {
  * Set the HP pool's maximum (the GM's per-character override), keeping current
  * HP but clamping it down if it now exceeds the new maximum. At least 1. A
  * character without an HP pool is returned unchanged.
+ *
+ * A hand-typed maximum also sets `hpOverride`, which takes the character off
+ * the derived HP rule for good: from here on `Progression.derive` leaves the
+ * pool alone rather than pulling it back to what the class list and CON imply.
  * @param {Character} character
  * @param {number} max
  * @returns {Character}
@@ -65,6 +70,7 @@ export function setMaxHP(character, max) {
   const clamped = Math.max(1, Math.floor(max) || 1);
   return {
     ...character,
+    hpOverride: true,
     resources: character.resources.map((r) =>
       r.id === HP_RESOURCE_ID ? { ...r, max: clamped, current: Math.min(r.current, clamped) } : r,
     ),
@@ -299,6 +305,12 @@ export function unprepareSpell(character, spellId) {
  * and a pre-proficiency save gains empty proficiency and expertise lists. A
  * pre-multiclass save's scalar `class`/`subclass` fields fold into a one-entry
  * class list at the character's level.
+ *
+ * Shape is only half the job. The loaded pools are also reconciled against the
+ * class list, level, and CON through `Progression.derive`, so a save
+ * hand-edited between sessions — or one written before a class definition's
+ * hit die or caster type changed in the library — comes back consistent
+ * instead of carrying the stale maxima forever.
  * @param {Character} character
  * @returns {Character}
  */
@@ -319,7 +331,7 @@ export function withDefaults(character) {
           },
         ]
       : []);
-  return {
+  return derive({
     ...rest,
     race: character.race ?? '',
     classes,
@@ -335,7 +347,7 @@ export function withDefaults(character) {
     proficiencies: character.proficiencies ?? emptyProficiencies(),
     expertise: character.expertise ?? [],
     asiChoices: migrateASIChoices(character.asiChoices ?? [], classes[0]?.classId ?? ''),
-  };
+  });
 }
 
 /**
@@ -390,6 +402,11 @@ function defaultGrowth(max) {
  * character has nothing to assign, so their HP pool grows immediately — by
  * `opts.hpGrowth` if given, else a tenth of the pool's max per level — and
  * characters with no HP pool level up without any pool change.
+ *
+ * `opts.hpGrowth` on a classed character is a deliberate step outside the
+ * class HP rule, so it sets `hpOverride` the same way a hand-typed maximum
+ * does; without that the reconcile at the end would pull the pool straight
+ * back to the class-derived value.
  * @param {Character} character
  * @param {number} amount
  * @param {{ hpGrowth?: number }} [opts]
@@ -413,17 +430,8 @@ export function addXP(character, amount, opts = {}) {
     const added = perLevel * gained;
     return { ...r, max: r.max + added, current: Math.min(r.max + added, r.current + added) };
   });
-  return syncHitDice(syncSlotsToLevel({ ...character, level, xp, resources }));
-}
-
-/**
- * @param {Character} character
- * @param {string} key
- * @param {number} value
- * @returns {Character}
- */
-export function setStat(character, key, value) {
-  return { ...character, stats: { ...character.stats, [key]: value } };
+  const overridden = opts.hpGrowth !== undefined ? { hpOverride: true } : {};
+  return derive({ ...character, ...overridden, level, xp, resources });
 }
 
 /**

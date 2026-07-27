@@ -1,12 +1,17 @@
 import { createCharacter, withHP } from '../entities/Character.js';
-import { withClasses } from '../entities/Multiclass.js';
-import { withRace, withCustomRace, getRace, RACE_LIST } from '../entities/Races.js';
+import {
+  withClasses,
+  withRace,
+  withCustomRace,
+  withProficiencies,
+} from '../entities/Progression.js';
+import { getRace, RACE_LIST } from '../entities/Races.js';
 import { withBackground, getBackground, BACKGROUND_LIST } from '../entities/Backgrounds.js';
 import { getClass, isCasterClass, CLASS_LIST } from '../entities/Classes.js';
-import { assembleProficiencies, withProficiencies } from '../entities/Proficiencies.js';
-import { withHitDice } from '../entities/HitDice.js';
+import { assembleProficiencies } from '../entities/Proficiencies.js';
+import { classMaxHP, withHitDice } from '../entities/HitDice.js';
 import { withSpellSlots } from '../entities/SpellSlots.js';
-import { abilityModifier, ABILITY_SCORES } from '../entities/Modifiers.js';
+import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { skillName, SKILL_IDS } from '../data/skills.js';
 import { slugId } from '../entities/Roster.js';
 import { statFields, readStats } from './statFields.js';
@@ -51,21 +56,8 @@ function skillOptions(classId) {
   return skillChoiceList(classId).map((id) => ({ value: id, label: skillName(id) }));
 }
 
-/**
- * The default max HP for the form's current class / CON / race picks: a full
- * hit die plus the CON modifier (race increase included) at level 1, or 10 for
- * the classless.
- * @param {string} classId
- * @param {number} con
- * @param {string} raceId
- * @returns {number}
- */
-export function defaultMaxHP(classId, con, raceId) {
-  const def = getClass(classId);
-  if (!def) return 10;
-  const raceCON = getRace(raceId)?.abilityIncreases.CON ?? 0;
-  return Math.max(1, def.hitDie + abilityModifier(con + raceCON));
-}
+/** The HP a classless character starts with, having no hit die to derive from. */
+const CLASSLESS_MAX_HP = 10;
 
 /** @returns {ModalField[]} the New character dialog's fields */
 export function characterFields() {
@@ -308,9 +300,10 @@ export function buildCharacter(values, existingIds) {
     .slice(0, getBackground(values.background)?.languageCount ?? 0);
   character = withProficiencies(character, assembleProficiencies(character, { skills, languages }));
 
-  // Max HP is fully derived, not asked for: the class hit die plus the CON
-  // modifier at level 1 (the race increase is already folded into stats here).
-  character = withHP(character, defaultMaxHP(values.class, character.stats.CON, ''));
+  // Max HP is fully derived, not asked for, and by the same rule that governs
+  // it from here on: `classMaxHP` against the character as assembled, with the
+  // race's ability increases already folded into their stats.
+  character = withHP(character, classMaxHP(character) ?? CLASSLESS_MAX_HP);
   if (classDef) character = withHitDice(character);
   if (isCasterClass(classDef?.id)) character = withSpellSlots(character);
   return character;

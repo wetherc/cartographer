@@ -1,7 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { meetsPrereq, canMulticlass, assignLevel } from '../src/entities/LevelAssign.js';
-import { createCharacter, addXP, getHP, withHP, getClasses } from '../src/entities/Character.js';
+import {
+  createCharacter,
+  addXP,
+  getHP,
+  withHP,
+  setMaxHP,
+  getClasses,
+} from '../src/entities/Character.js';
 import { getProficiencies } from '../src/entities/Proficiencies.js';
 import { withHitDice, getHitDicePools } from '../src/entities/HitDice.js';
 import { pendingLevels } from '../src/entities/Multiclass.js';
@@ -56,7 +63,7 @@ test('assignLevel raises an existing class with a pending level and grows HP', (
         { DEX: 14 },
         5,
       ),
-      40,
+      35, // d10 + CON 2, then 2 fighter levels at 8 and 1 rogue level at 7
     ),
   );
   const next = assignLevel(c, 'rogue');
@@ -65,7 +72,7 @@ test('assignLevel raises an existing class with a pending level and grows HP', (
     { classId: 'rogue', level: 2 },
   ]);
   assert.equal(pendingLevels(next), 0);
-  assert.equal(getHP(next).max, 47); // d8 average 5 + CON 2
+  assert.equal(getHP(next).max, 42); // d8 average 5 + CON 2
   assert.deepEqual(
     getHitDicePools(next).map((r) => ({ id: r.id, max: r.max })),
     [
@@ -84,13 +91,13 @@ test('assignLevel without a pending level leaves an existing class unchanged', (
 });
 
 test('assignLevel starts a new class off a pending level with the reduced grant', () => {
-  const c = withHP(classed([{ classId: 'fighter', level: 4 }], { WIS: 14 }, 5), 40);
+  const c = withHP(classed([{ classId: 'fighter', level: 4 }], { WIS: 14 }, 5), 36);
   const next = assignLevel(c, 'cleric');
   assert.deepEqual(getClasses(next), [
     { classId: 'fighter', level: 4 },
     { classId: 'cleric', level: 1 },
   ]);
-  assert.equal(getHP(next).max, 47);
+  assert.equal(getHP(next).max, 43); // d8 average 5 + CON 2
   const p = getProficiencies(next);
   assert.deepEqual(p.armor, ['light', 'medium', 'shield']);
   assert.deepEqual(p.saves, []); // no saving throws from a later class
@@ -124,20 +131,23 @@ test("a single-class character's newest level can move into a new class", () => 
 });
 
 test('a level transfer between equal hit dice leaves HP alone', () => {
-  const c = withHP(classed([{ classId: 'fighter', level: 3 }], { CHA: 14 }), 30);
+  const c = withHP(classed([{ classId: 'fighter', level: 3 }], { CHA: 14 }), 28);
   const next = assignLevel(c, 'paladin');
-  assert.equal(getHP(next).max, 30);
+  assert.equal(getHP(next).max, 28, 'both are d10, so the moved level is worth the same');
   assert.deepEqual(getClasses(next), [
     { classId: 'fighter', level: 2 },
     { classId: 'paladin', level: 1 },
   ]);
 });
 
-test('a shrinking HP pool clamps at 1', () => {
-  const c = withHP(classed([{ classId: 'fighter', level: 2 }], { DEX: 14 }), 1);
+test('a hand-set HP maximum survives a class assignment', () => {
+  const c = setMaxHP(withHP(classed([{ classId: 'fighter', level: 2 }], { DEX: 14 }), 20), 5);
   const next = assignLevel(c, 'rogue');
-  assert.equal(getHP(next).max, 1);
-  assert.equal(getHP(next).current, 0);
+  assert.deepEqual(getClasses(next), [
+    { classId: 'fighter', level: 1 },
+    { classId: 'rogue', level: 1 },
+  ]);
+  assert.equal(getHP(next).max, 5, 'the override takes the character off the derived rule');
 });
 
 test('assignLevel needs a level to move: level 1 or classless stays unchanged', () => {
@@ -156,11 +166,11 @@ test('addXP defers a multiclass character HP growth to assignment', () => {
       ],
       { DEX: 14 },
     ),
-    20,
+    19, // d10 + CON 2, plus one rogue level at 7
   );
   const leveled = addXP(c, 200); // level 2 -> 3, pending
-  assert.equal(getHP(leveled).max, 20);
+  assert.equal(getHP(leveled).max, 19);
   assert.equal(pendingLevels(leveled), 1);
-  assert.equal(getHP(assignLevel(leveled, 'fighter')).max, 28);
-  assert.equal(getHP(addXP(c, 200, { hpGrowth: 5 })).max, 25); // explicit override
+  assert.equal(getHP(assignLevel(leveled, 'fighter')).max, 27);
+  assert.equal(getHP(addXP(c, 200, { hpGrowth: 5 })).max, 24); // explicit override
 });

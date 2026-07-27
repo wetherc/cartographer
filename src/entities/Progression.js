@@ -1,0 +1,106 @@
+import { syncSlotsToLevel } from './SpellSlots.js';
+import { syncHitDice, reconcileMaxHP } from './HitDice.js';
+import { withClasses as setClassList } from './Multiclass.js';
+import { withRace as setRace, withCustomRace as setCustomRace } from './Races.js';
+import { withProficiencies as setProficiencies } from './Proficiencies.js';
+import {
+  applyASI as recordASI,
+  takeFeat as recordFeat,
+  undoLastChoice as dropLastChoice,
+} from './LevelUp.js';
+
+/** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {import('../types/class.js').ClassRef} ClassRef */
+/** @typedef {import('../types/entities.js').Proficiencies} Proficiencies */
+
+/**
+ * The one place a character's derived state is reconciled.
+ *
+ * Spell slots, hit dice, and maximum HP are all functions of the class list,
+ * the character level, the ability scores, and the class catalog. Nothing
+ * recomputes them on read — they are stored as resource pools — so every write
+ * that can change an input has to re-derive, or the pools drift and stay
+ * drifted. `derive` is that step, and the writers exported below are the same
+ * writers the lower modules expose with the step already attached. Reach for
+ * these from app and UI code; the raw versions in `Multiclass.js`, `Races.js`,
+ * `Proficiencies.js`, and `LevelUp.js` exist so those modules can stay pure
+ * list arithmetic below the class catalog, and calling them directly skips
+ * the reconcile.
+ */
+
+/**
+ * Reconcile every derived pool against the character's current class list,
+ * level, and ability scores: spell-slot maxima, hit-dice pools, then the HP
+ * pool's maximum. Order matters — the HP reconcile reads the class list the
+ * other two also read, and running it last keeps the resource ordering the
+ * slot and hit-dice syncs establish. Spending is preserved throughout: a pool
+ * that grows keeps what was spent out of it. A character whose derived state
+ * already matches comes back unchanged, identity preserved.
+ * @param {Character} character
+ * @returns {Character}
+ */
+export function derive(character) {
+  return reconcileMaxHP(syncHitDice(syncSlotsToLevel(character)));
+}
+
+/**
+ * Wrap a writer so it re-derives, unless the writer itself was a no-op — the
+ * lower modules return the same reference when nothing changed, and callers
+ * (and tests) rely on that.
+ * @template {unknown[]} A
+ * @param {(character: Character, ...args: A) => Character} write
+ * @returns {(character: Character, ...args: A) => Character}
+ */
+function deriving(write) {
+  return (character, ...args) => {
+    const next = write(character, ...args);
+    return next === character ? character : derive(next);
+  };
+}
+
+/** Set the class list, then re-derive. See Multiclass.withClasses.
+ * @type {(character: Character, classes: ClassRef[]) => Character} */
+export const withClasses = deriving(setClassList);
+
+/** Assign a catalog race, then re-derive (a racial CON increase moves HP).
+ * See Races.withRace.
+ * @type {(character: Character, raceId: string) => Character} */
+export const withRace = deriving(setRace);
+
+/** Set a hand-typed race, then re-derive (dropping a catalog race drops its
+ * ability increases with it). See Races.withCustomRace.
+ * @type {(character: Character, name: string) => Character} */
+export const withCustomRace = deriving(setCustomRace);
+
+/** Set the proficiency lists, then re-derive. See Proficiencies.withProficiencies.
+ * @type {(character: Character, proficiencies: Partial<Proficiencies>) => Character} */
+export const withProficiencies = deriving(setProficiencies);
+
+/** Spend the first pending ASI slot on an ability increase, then re-derive —
+ * this is what grants the retroactive HP a CON increase is worth. See
+ * LevelUp.applyASI.
+ * @type {(character: Character, increases: Record<string, number>) => Character} */
+export const applyASI = deriving(recordASI);
+
+/** Spend the first pending ASI slot on a feat, then re-derive.
+ * See LevelUp.takeFeat.
+ * @type {(character: Character, feat: string) => Character} */
+export const takeFeat = deriving(recordFeat);
+
+/** Undo the most recent ASI choice, then re-derive (an undone CON increase
+ * takes its HP back). See LevelUp.undoLastChoice.
+ * @type {(character: Character) => Character} */
+export const undoLastChoice = deriving(dropLastChoice);
+
+/**
+ * Set one ability score, then re-derive. Lives here rather than in
+ * Character.js because the reconcile it needs reads the class catalog, which
+ * Character.js sits below.
+ * @param {Character} character
+ * @param {string} key
+ * @param {number} value
+ * @returns {Character}
+ */
+export function setStat(character, key, value) {
+  return derive({ ...character, stats: { ...character.stats, [key]: value } });
+}

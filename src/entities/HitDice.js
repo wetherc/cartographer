@@ -20,6 +20,10 @@ import { abilityModifier } from './Modifiers.js';
 export const HIT_DICE_ID_PREFIX = 'hit-dice-d';
 export const LEGACY_HIT_DICE_ID = 'hit-dice';
 
+/** The HP pool's reserved id. Declared here rather than imported from
+ * Character.js, which sits above this module. */
+const HP_POOL_ID = 'hp';
+
 /** @param {ResourcePool} pool @returns {boolean} */
 export function isHitDicePool(pool) {
   return pool.id === LEGACY_HIT_DICE_ID || pool.id.startsWith(HIT_DICE_ID_PREFIX);
@@ -110,6 +114,42 @@ export function classMaxHP(character) {
 }
 
 /**
+ * Move the HP pool's maximum onto the value the class list, level, and CON now
+ * imply, carrying current HP by the same delta so a level-up or a retroactive
+ * CON increase grants the points rather than only raising the ceiling. Current
+ * HP stays within [0, max]; a character already at their derived maximum comes
+ * back unchanged, identity preserved.
+ *
+ * Three cases opt out. A character with no derivable class HP (classless, or
+ * every class unknown) keeps whatever pool they have — there is nothing to
+ * derive from. So does a character with no HP pool at all, since its absence
+ * legitimately means "no HP tracking". And so does one carrying `hpOverride`,
+ * the flag `Character.setMaxHP` sets: a GM who types a maximum by hand owns it
+ * from then on, and nothing here overwrites it.
+ *
+ * Call this through `Progression.derive` rather than directly; it is exported
+ * for that facade and for tests.
+ * @param {Character} character
+ * @returns {Character}
+ */
+export function reconcileMaxHP(character) {
+  if (character.hpOverride) return character;
+  const max = classMaxHP(character);
+  if (max === null) return character;
+  const pool = character.resources.find((r) => r.id === HP_POOL_ID);
+  if (!pool || pool.max === max) return character;
+  const delta = max - pool.max;
+  return {
+    ...character,
+    resources: character.resources.map((r) =>
+      r.id === HP_POOL_ID
+        ? { ...r, max, current: Math.max(0, Math.min(max, r.current + delta)) }
+        : r,
+    ),
+  };
+}
+
+/**
  * @param {Character} character
  * @returns {ResourcePool[]} the character's hit-dice pools, in resource order
  */
@@ -130,7 +170,7 @@ export function withHitDice(character) {
     createResource(hitDicePoolId(die), `Hit Dice (d${die})`, 'custom', count),
   );
   const rest = character.resources.filter((r) => !isHitDicePool(r));
-  const head = rest.filter((r) => r.id === 'hp' || isSlotPool(r) || isPactPool(r));
+  const head = rest.filter((r) => r.id === HP_POOL_ID || isSlotPool(r) || isPactPool(r));
   const tail = rest.filter((r) => !head.includes(r));
   return { ...character, resources: [...head, ...pools, ...tail] };
 }
@@ -204,7 +244,7 @@ export function spendHitDie(character, die = null, rng = Math.random) {
   const healed = Math.max(0, rolled + conModifierOf(character));
   const resources = character.resources.map((r) => {
     if (r.id === pool.id) return spend(r, 1);
-    if (r.id === 'hp') return restore(r, healed);
+    if (r.id === HP_POOL_ID) return restore(r, healed);
     return r;
   });
   return { character: { ...character, resources }, healed, rolled };

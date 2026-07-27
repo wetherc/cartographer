@@ -1,6 +1,7 @@
 import { createCharacter, withHP } from '../entities/Character.js';
-import { assembleProficiencies, withProficiencies } from '../entities/Proficiencies.js';
-import { withHitDice } from '../entities/HitDice.js';
+import { assembleProficiencies } from '../entities/Proficiencies.js';
+import { withProficiencies } from '../entities/Progression.js';
+import { classMaxHP, withHitDice } from '../entities/HitDice.js';
 import { withSpellSlots } from '../entities/SpellSlots.js';
 import { createEncounter } from '../entities/Encounter.js';
 import { createClock } from '../time/GameClock.js';
@@ -53,18 +54,14 @@ const template = (id, name, hp, level, tier, extras) => ({
  */
 function exampleParty() {
   let aldric = createCharacter('aldric', 'Ser Aldric', { STR: 16, DEX: 12, CON: 14 }, 'Human');
-  aldric = withHitDice(
-    withHP(
-      {
-        ...aldric,
-        level: 3,
-        raceId: 'human',
-        background: 'soldier',
-        classes: [{ classId: 'fighter', level: 3, subclass: 'Champion' }],
-      },
-      28,
-    ),
-  );
+  aldric = {
+    ...aldric,
+    level: 3,
+    raceId: 'human',
+    background: 'soldier',
+    classes: [{ classId: 'fighter', level: 3, subclass: 'Champion' }],
+  };
+  aldric = withHitDice(withHP(aldric, classMaxHP(aldric) ?? 0));
   aldric = withProficiencies(
     aldric,
     assembleProficiencies(aldric, { skills: ['athletics', 'intimidation'] }),
@@ -134,20 +131,14 @@ function exampleParty() {
   };
 
   let mirelle = createCharacter('mirelle', 'Mirelle', { WIS: 16, CHA: 13, CON: 12 }, 'Half-elf');
-  mirelle = withHitDice(
-    withSpellSlots(
-      withHP(
-        {
-          ...mirelle,
-          level: 3,
-          raceId: 'half-elf',
-          background: 'acolyte',
-          classes: [{ classId: 'cleric', level: 3, subclass: 'Life Domain' }],
-        },
-        21,
-      ),
-    ),
-  );
+  mirelle = {
+    ...mirelle,
+    level: 3,
+    raceId: 'half-elf',
+    background: 'acolyte',
+    classes: [{ classId: 'cleric', level: 3, subclass: 'Life Domain' }],
+  };
+  mirelle = withHitDice(withSpellSlots(withHP(mirelle, classMaxHP(mirelle) ?? 0)));
   mirelle = withProficiencies(
     mirelle,
     assembleProficiencies(mirelle, { skills: ['insight', 'religion'] }),

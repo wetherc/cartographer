@@ -6,13 +6,11 @@ import { canMulticlass, meetsPrereq, assignLevel } from '../entities/LevelAssign
 import {
   pendingASISlots,
   getASIChoices,
-  applyASI,
-  takeFeat,
-  undoLastChoice,
   unlockedFeatures,
   featuresGained,
 } from '../entities/LevelUp.js';
-import { getProficiencies, withProficiencies } from '../entities/Proficiencies.js';
+import { getProficiencies } from '../entities/Proficiencies.js';
+import { applyASI, takeFeat, undoLastChoice, withProficiencies } from '../entities/Progression.js';
 import { getHitDicePools, hitDieOfPool, spendHitDie } from '../entities/HitDice.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';

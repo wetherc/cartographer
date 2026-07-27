@@ -70,12 +70,12 @@ test('withClasses sanitizes: drops blank ids and duplicates, floors levels to 1'
 });
 
 test('addXP leaves every earned level pending for a classed character', () => {
-  const single = withHP(withList([{ classId: 'fighter', level: 1 }], 1), 12);
+  const single = withHP(withList([{ classId: 'fighter', level: 1 }], 1), 10); // d10, CON 10
   const leveled = addXP(single, 300); // 1 -> 3
   assert.equal(leveled.level, 3);
   assert.deepEqual(leveled.classes, [{ classId: 'fighter', level: 1 }]);
   assert.equal(pendingLevels(leveled), 2);
-  assert.equal(getHP(leveled).max, 12); // HP grows at assignment, not here
+  assert.equal(getHP(leveled).max, 10); // HP grows at assignment, not here
 
   const multi = withList(
     [
