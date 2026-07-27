@@ -23,6 +23,7 @@ import {
   trySaveToLocalStorage,
   loadFromLocalStorage,
   onExternalSave,
+  QUOTA_WARN_BYTES,
 } from '../src/storage/SaveManager.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
 
@@ -34,6 +35,12 @@ function installLocalStorage() {
     setItem: (k, v) => store.set(k, String(v)),
     removeItem: (k) => store.delete(k),
     clear: () => store.clear(),
+    // The footprint walk reads the whole origin through these, so the stub has
+    // to carry them rather than only the four accessors the save path uses.
+    get length() {
+      return store.size;
+    },
+    key: (i) => [...store.keys()][i] ?? null,
   };
 }
 
@@ -439,10 +446,35 @@ test('saveByteSize costs two bytes per UTF-16 code unit', async () => {
 });
 
 test('isNearQuota flags sizes at or past the warning threshold', async () => {
-  const { isNearQuota, QUOTA_WARN_BYTES } = await import('../src/storage/SaveManager.js');
+  const { isNearQuota } = await import('../src/storage/SaveManager.js');
   assert.equal(isNearQuota(QUOTA_WARN_BYTES - 1), false);
   assert.equal(isNearQuota(QUOTA_WARN_BYTES), true);
   assert.equal(isNearQuota(100, 100), true);
+});
+
+test('footprintBytes charges for keys and values, two bytes per code unit', async () => {
+  const { footprintBytes } = await import('../src/storage/SaveManager.js');
+  assert.equal(footprintBytes([]), 0);
+  assert.equal(footprintBytes([['ab', 'cd']]), 8);
+  assert.equal(
+    footprintBytes([
+      ['a', ''],
+      ['', 'bc'],
+    ]),
+    6,
+    'an empty key or value still costs its counterpart',
+  );
+});
+
+test('localStorageFootprint sums every key on the origin, not just the save', async () => {
+  const { localStorageFootprint } = await import('../src/storage/SaveManager.js');
+  assert.equal(localStorageFootprint(), 0);
+  localStorage.setItem('campaign-builder:save', 'x'.repeat(10));
+  localStorage.setItem('campaign-builder:library', 'y'.repeat(20));
+  assert.equal(
+    localStorageFootprint(),
+    ('campaign-builder:save'.length + 10) * 2 + ('campaign-builder:library'.length + 20) * 2,
+  );
 });
 
 test('a stored save then loadFromLocalStorage round-trips a campaign', () => {
@@ -452,10 +484,16 @@ test('a stored save then loadFromLocalStorage round-trips a campaign', () => {
   assert.deepEqual(loadFromLocalStorage(), state);
 });
 
-test('trySaveToLocalStorage reports success, byte cost, and quota headroom', () => {
+test('trySaveToLocalStorage reports success, byte cost, and quota headroom', async () => {
+  const { localStorageFootprint } = await import('../src/storage/SaveManager.js');
   const state = buildState(sampleGrid(), null, [], []);
   const result = trySaveToLocalStorage(state);
-  assert.deepEqual(result, { ok: true, nearQuota: false, bytes: serialize(state).length * 2 });
+  assert.deepEqual(result, {
+    ok: true,
+    nearQuota: false,
+    bytes: serialize(state).length * 2,
+    footprint: localStorageFootprint(),
+  });
   assert.deepEqual(loadFromLocalStorage(), state);
 });
 
@@ -475,6 +513,18 @@ test('trySaveToLocalStorage flags a save approaching the quota even when it land
   });
   const result = trySaveToLocalStorage(state);
   assert.equal(result.ok, true);
+  assert.equal(result.nearQuota, true);
+});
+
+test('a small save still warns when the rest of the origin fills the quota', () => {
+  // The case a per-save metric cannot see: the campaign is tiny and the undo
+  // ring is what spends the quota.
+  for (let seq = 0; seq < 10; seq += 1) {
+    localStorage.setItem(`campaign-builder:history:${seq}`, 'x'.repeat(170_000));
+  }
+  const result = trySaveToLocalStorage(buildState(sampleGrid(), null, [], []));
+  assert.equal(result.ok, true);
+  assert.ok(result.bytes < QUOTA_WARN_BYTES, 'the save on its own is nowhere near the limit');
   assert.equal(result.nearQuota, true);
 });
 

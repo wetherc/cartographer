@@ -4,6 +4,7 @@ import { confirmModal } from '../ui/Modal.js';
 import { queueToastAfterReload } from '../ui/Toast.js';
 import {
   buildState,
+  isNearQuota,
   trySaveToLocalStorage,
   snapshotPersistedSave,
   undoHistory,
@@ -32,6 +33,8 @@ export function wireCampaignActions(app) {
   let dirtySince = 0;
   /** Whether this tab declined an external-save reload; suppresses re-prompts. */
   let syncPromptDeclined = false;
+  /** Footprint at the last near-quota warning, so the toast doesn't repeat per autosave. */
+  let warnedFootprint = 0;
   /**
    * The autosave poll, live only while there are unsaved changes to write.
    * @type {ReturnType<typeof setInterval> | null}
@@ -116,12 +119,33 @@ export function wireCampaignActions(app) {
       );
       return false;
     }
-    if (result.nearQuota) {
-      app.toasts.show(
-        `Warning: the campaign uses ${(result.bytes / (1024 * 1024)).toFixed(1)} MB of the browser's ~5 MB storage limit. Export a backup and trim large images.`,
-      );
-    }
+    reportFootprint(result.footprint);
     return true;
+  }
+
+  /**
+   * Surface how much of the origin's storage quota is spent: always on the Save
+   * button's tooltip, and as a toast once past the warning threshold. The toast
+   * repeats only after the footprint has grown materially, because autosave
+   * writes every ten seconds while the campaign is dirty and a threshold that
+   * fires correctly would otherwise nag on every one of them.
+   * @param {number} footprint
+   */
+  function reportFootprint(footprint) {
+    const mb = footprint / (1024 * 1024);
+    const saveBtn = document.getElementById('save-btn');
+    if (saveBtn) saveBtn.title = `Browser storage: ${mb.toFixed(1)} MB of about 5 MB used`;
+    if (!isNearQuota(footprint)) {
+      // Back under the threshold (the GM trimmed, or another tab did): forget the
+      // last warning so crossing it again is reported.
+      warnedFootprint = 0;
+      return;
+    }
+    if (footprint < warnedFootprint * 1.1) return;
+    warnedFootprint = footprint;
+    app.toasts.show(
+      `Warning: browser storage is at ${mb.toFixed(1)} MB of its ~5 MB limit. Export a backup and trim large images.`,
+    );
   }
 
   /** Assemble the live campaign into a serializable state for save/export. */

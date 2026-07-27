@@ -308,8 +308,8 @@ export function saveByteSize(json) {
 }
 
 /**
- * Whether a save of this size is close enough to the origin quota to warn the
- * GM before writes start throwing. Pure.
+ * Whether storage use of this size is close enough to the origin quota to warn
+ * the GM before writes start throwing. Pure.
  * @param {number} bytes
  * @param {number} [limit]
  * @returns {boolean}
@@ -319,13 +319,49 @@ export function isNearQuota(bytes, limit = QUOTA_WARN_BYTES) {
 }
 
 /**
+ * Byte cost of a set of stored key/value pairs, keys included: localStorage
+ * charges for both, in UTF-16 code units. Pure, so the quota arithmetic is
+ * testable without a storage stub.
+ * @param {Iterable<[string, string]>} pairs
+ * @returns {number}
+ */
+export function footprintBytes(pairs) {
+  let total = 0;
+  for (const [key, value] of pairs) total += (key.length + value.length) * 2;
+  return total;
+}
+
+/**
+ * What this origin currently spends of its localStorage quota — every key, not
+ * just the campaign save. The quota is shared by the save, the undo ring, the
+ * custom library, and the lock/preference flags, so a single save's size says
+ * nothing about how close a write is to throwing.
+ * @returns {number}
+ */
+export function localStorageFootprint() {
+  /** @type {[string, string][]} */
+  const pairs = [];
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const key = localStorage.key(i);
+    if (key === null) continue;
+    pairs.push([key, localStorage.getItem(key) ?? '']);
+  }
+  return footprintBytes(pairs);
+}
+
+/**
  * Persist a campaign, reporting the outcome instead of throwing: localStorage
  * writes fail (QuotaExceededError) once data: URL images push the origin past
  * its quota, and a silent failure would let a GM believe they saved. `nearQuota`
- * flags a write that succeeded but is approaching the limit.
+ * flags a write that succeeded but leaves the origin approaching the limit; it
+ * is judged on the whole footprint rather than on `bytes`, since the undo ring
+ * alone costs several times what one save does. The footprint is measured after
+ * the write, which is exact — a pre-write measurement cannot know the new save's
+ * size net of the old one it replaces — and the warning concerns the next write
+ * either way.
  * @param {CampaignState} state
  * @param {string} [key]
- * @returns {{ ok: boolean, nearQuota: boolean, bytes: number }}
+ * @returns {{ ok: boolean, nearQuota: boolean, bytes: number, footprint: number }}
  */
 export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY) {
   const json = serialize(state);
@@ -333,9 +369,10 @@ export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY) {
   try {
     localStorage.setItem(key, json);
   } catch {
-    return { ok: false, nearQuota: true, bytes };
+    return { ok: false, nearQuota: true, bytes, footprint: localStorageFootprint() };
   }
-  return { ok: true, nearQuota: isNearQuota(bytes), bytes };
+  const footprint = localStorageFootprint();
+  return { ok: true, nearQuota: isNearQuota(footprint), bytes, footprint };
 }
 
 /**
