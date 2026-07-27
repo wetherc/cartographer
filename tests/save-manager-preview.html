@@ -18,7 +18,7 @@
     import { createMapNode, createTile, setTile, TileGrid } from '../src/map/TileGrid.js';
     import { createCharacter, addXP } from '../src/entities/Character.js';
     import { createEncounter } from '../src/entities/Encounter.js';
-    import { buildState, saveToLocalStorage, loadFromLocalStorage, downloadState, toTileGrid } from '../src/storage/SaveManager.js';
+    import { buildState, trySaveToLocalStorage, loadFromLocalStorage, downloadState, toTileGrid } from '../src/storage/SaveManager.js';
 
     let world = createMapNode('world', 'World', null, 1, 1);
     world = setTile(world, createTile('0,0', 'grass.svg', { revealed: true }));
@@ -33,8 +33,8 @@
     const output = document.getElementById('output');
 
     document.getElementById('save').addEventListener('click', () => {
-      saveToLocalStorage(state);
-      output.textContent = 'Saved.';
+      const { ok, bytes } = trySaveToLocalStorage(state);
+      output.textContent = ok ? `Saved (${bytes} bytes).` : 'Save failed: storage full.';
     });
 
     document.getElementById('load').addEventListener('click', () => {

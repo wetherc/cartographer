@@ -8,7 +8,6 @@ import {
   serialize,
   deserialize,
   toTileGrid,
-  saveToLocalStorage,
   trySaveToLocalStorage,
   loadFromLocalStorage,
   onExternalSave,
@@ -228,10 +227,10 @@ test('isNearQuota flags sizes at or past the warning threshold', async () => {
   assert.equal(isNearQuota(100, 100), true);
 });
 
-test('saveToLocalStorage then loadFromLocalStorage round-trips a campaign', () => {
+test('a stored save then loadFromLocalStorage round-trips a campaign', () => {
   assert.equal(loadFromLocalStorage(), null, 'no save stored yet');
   const state = buildState(sampleGrid(), { nodeId: 'world', tileId: '0,0' }, [], []);
-  saveToLocalStorage(state);
+  trySaveToLocalStorage(state);
   assert.deepEqual(loadFromLocalStorage(), state);
 });
 

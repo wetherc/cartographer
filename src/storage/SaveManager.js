@@ -193,14 +193,6 @@ export function isNearQuota(bytes, limit = QUOTA_WARN_BYTES) {
 }
 
 /**
- * @param {CampaignState} state
- * @param {string} [key]
- */
-export function saveToLocalStorage(state, key = DEFAULT_STORAGE_KEY) {
-  localStorage.setItem(key, serialize(state));
-}
-
-/**
  * Persist a campaign, reporting the outcome instead of throwing: localStorage
  * writes fail (QuotaExceededError) once data: URL images push the origin past
  * its quota, and a silent failure would let a GM believe they saved. `nearQuota`
@@ -286,18 +278,6 @@ function loadHistoryIndex(key = DEFAULT_HISTORY_KEY) {
 }
 
 /**
- * The stored snapshots (raw serialized saves), oldest first, skipping any
- * whose entry key is missing.
- * @param {string} [key]
- * @returns {string[]}
- */
-export function loadHistory(key = DEFAULT_HISTORY_KEY) {
-  return loadHistoryIndex(key)
-    .map((seq) => localStorage.getItem(historyEntryKey(key, seq)))
-    .filter((snapshot) => snapshot !== null);
-}
-
-/**
  * Remove every stored snapshot and the index itself.
  * @param {string} [key]
  */
@@ -346,19 +326,6 @@ export function snapshotRawHistory(
     return;
   }
   for (const s of evicted) localStorage.removeItem(historyEntryKey(key, s));
-}
-
-/**
- * Push the current state onto the undo history ring, so a later `undoHistory`
- * can restore it. Call this with the state that is about to be replaced.
- * Callers that already hold the persisted save string should prefer
- * `snapshotPersistedSave`, which skips this serialize.
- * @param {CampaignState} state
- * @param {string} [key]
- * @param {number} [limit]
- */
-export function snapshotHistory(state, key = DEFAULT_HISTORY_KEY, limit = DEFAULT_HISTORY_LIMIT) {
-  snapshotRawHistory(serialize(state), key, limit);
 }
 
 /**

@@ -2,9 +2,8 @@ import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   pushSnapshot,
-  loadHistory,
   clearHistory,
-  snapshotHistory,
+  serialize,
   snapshotRawHistory,
   snapshotPersistedSave,
   undoHistory,
@@ -20,6 +19,21 @@ function installLocalStorage() {
     clear: () => store.clear(),
   };
   return store;
+}
+
+/**
+ * The stored ring, oldest first, read the way the storage layout defines it:
+ * an index of sequence numbers plus one key per snapshot. Deliberately a test
+ * helper rather than an export — nothing in the app reads the whole ring at
+ * once, and an export that did would materialize every snapshot in memory.
+ * @param {string} [key]
+ * @returns {string[]}
+ */
+function storedHistory(key = 'campaign-builder:history') {
+  const index = localStorage.getItem(key);
+  if (!index) return [];
+  const seqs = JSON.parse(index);
+  return seqs.map((seq) => localStorage.getItem(`${key}:${seq}`)).filter((s) => s !== null);
 }
 
 test('pushSnapshot appends newest-last and caps at the limit', () => {
@@ -38,19 +52,23 @@ test('pushSnapshot returns a new array without mutating the input', () => {
 
 beforeEach(installLocalStorage);
 
-test('loadHistory tolerates a missing, corrupt, or legacy-format index', () => {
-  assert.deepEqual(loadHistory(), []);
+test('a missing, corrupt, or legacy-format index reads as an empty history', () => {
+  assert.equal(undoHistory(), null);
   localStorage.setItem('campaign-builder:history', 'not json');
-  assert.deepEqual(loadHistory(), []);
+  assert.equal(undoHistory(), null);
   localStorage.setItem('campaign-builder:history', '{"not":"array"}');
-  assert.deepEqual(loadHistory(), []);
+  assert.equal(undoHistory(), null);
   // The pre-index format stored the snapshots themselves as an array of
   // strings under this key; it reads as empty rather than as garbage seqs.
   localStorage.setItem('campaign-builder:history', '["{\\"nodes\\":[]}"]');
-  assert.deepEqual(loadHistory(), []);
+  assert.equal(undoHistory(), null);
+  // An unreadable index is also not treated as a ring to append to.
+  localStorage.setItem('campaign-builder:history', 'not json');
+  snapshotRawHistory('{"nodes":[1]}');
+  assert.deepEqual(storedHistory(), ['{"nodes":[1]}']);
 });
 
-test('snapshotHistory then undoHistory round-trips a state and shrinks the ring', () => {
+test('a serialized state pushed onto the ring undoes back to itself', () => {
   const state = {
     nodes: [],
     party: null,
@@ -65,11 +83,11 @@ test('snapshotHistory then undoHistory round-trips a state and shrinks the ring'
     splitParty: false,
     combat: null,
   };
-  snapshotHistory(state);
-  assert.equal(loadHistory().length, 1);
+  snapshotRawHistory(serialize(state));
+  assert.equal(storedHistory().length, 1);
   const restored = undoHistory();
   assert.deepEqual(restored, state);
-  assert.equal(loadHistory().length, 0);
+  assert.equal(storedHistory().length, 0);
   // Nothing left to undo.
   assert.equal(undoHistory(), null);
 });
@@ -77,25 +95,25 @@ test('snapshotHistory then undoHistory round-trips a state and shrinks the ring'
 test('snapshotRawHistory stores the raw string and skips a duplicate of the newest', () => {
   snapshotRawHistory('{"nodes":[1]}');
   snapshotRawHistory('{"nodes":[1]}'); // unchanged save pushed again
-  assert.deepEqual(loadHistory(), ['{"nodes":[1]}']);
+  assert.deepEqual(storedHistory(), ['{"nodes":[1]}']);
   snapshotRawHistory('{"nodes":[2]}');
   snapshotRawHistory('{"nodes":[1]}'); // same as an older entry, not the newest
-  assert.equal(loadHistory().length, 3);
+  assert.equal(storedHistory().length, 3);
 });
 
 test('snapshotPersistedSave pushes the persisted save string untouched', () => {
   snapshotPersistedSave(); // nothing saved yet: no-op
-  assert.deepEqual(loadHistory(), []);
+  assert.deepEqual(storedHistory(), []);
   localStorage.setItem('campaign-builder:save', '{"nodes":[],"party":null}');
   snapshotPersistedSave();
-  assert.deepEqual(loadHistory(), ['{"nodes":[],"party":null}']);
+  assert.deepEqual(storedHistory(), ['{"nodes":[],"party":null}']);
 });
 
 test('snapshotRawHistory enforces the ring limit and removes evicted entries', () => {
   const store = installLocalStorage();
   for (let i = 0; i < 25; i++)
     snapshotRawHistory(`{"quests":[${i}]}`, 'campaign-builder:history', 10);
-  const history = loadHistory();
+  const history = storedHistory();
   assert.equal(history.length, 10);
   assert.equal(history[history.length - 1], '{"quests":[24]}');
   // Evicted snapshots are gone from storage, not just from the index.
@@ -114,19 +132,19 @@ test('snapshotRawHistory falls back to a single-snapshot ring when the quota blo
     realSetItem(k, v);
   };
   snapshotRawHistory('{"note":"second"}');
-  assert.deepEqual(loadHistory(), ['{"note":"second"}'], 'ring shortened to the newest snapshot');
+  assert.deepEqual(storedHistory(), ['{"note":"second"}'], 'ring shortened to the newest snapshot');
 });
 
 test('snapshotRawHistory drops the ring entirely when even one snapshot cannot be stored', () => {
   const store = installLocalStorage();
   snapshotRawHistory('{"note":"first"}');
-  assert.equal(loadHistory().length, 1);
+  assert.equal(storedHistory().length, 1);
   localStorage.setItem = () => {
     throw new Error('QuotaExceededError');
   };
   snapshotRawHistory('{"note":"second"}');
   localStorage.setItem = (k, v) => store.set(k, String(v));
-  assert.deepEqual(loadHistory(), [], 'unstorable history removed rather than left stale');
+  assert.deepEqual(storedHistory(), [], 'unstorable history removed rather than left stale');
   assert.equal(store.size, 0, 'no orphaned snapshot keys remain');
 });
 
@@ -136,7 +154,7 @@ test('undoHistory skips and cleans an entry whose snapshot key is missing', () =
   localStorage.removeItem('campaign-builder:history:1'); // newest snapshot lost
   const restored = undoHistory();
   assert.deepEqual(restored?.party, null, 'falls through to the older snapshot');
-  assert.equal(loadHistory().length, 0);
+  assert.equal(storedHistory().length, 0);
 });
 
 test('clearHistory removes the index and every snapshot entry', () => {
