@@ -1,4 +1,4 @@
-import { MapRenderer } from './MapRenderer.js';
+import { MapRenderer, imageSrcForRef } from './MapRenderer.js';
 import { overlayList } from './TileGrid.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -40,15 +40,31 @@ export function exportFilename(name) {
 }
 
 /**
+ * The refs an export still has to decode, given the images a live renderer
+ * already holds. An entry that is present but not `complete` is still loading,
+ * so the export loads its own copy rather than rendering a blank. Pure.
+ * @param {string[]} refs
+ * @param {Map<string, HTMLImageElement>} [cache]
+ * @returns {string[]}
+ */
+export function refsToDecode(refs, cache) {
+  if (!cache) return refs;
+  return refs.filter((ref) => !cache.get(ref)?.complete);
+}
+
+/**
  * Render a node's full extent to a fresh canvas at `tileSize` pixels per tile,
  * fog ignored. Tile images are preloaded into the renderer's cache first, so
  * the single render pass draws real art instead of placeholders; an image that
- * fails to load falls back to the renderer's placeholder fill.
+ * fails to load falls back to the renderer's placeholder fill. Pass the live
+ * canvas's `imageCache` to reuse the art it has already decoded — for a
+ * built-in-tile map that is every image, so the export decodes nothing.
  * @param {MapNode} node
  * @param {{
  *   tileSize?: number,
  *   regionGroups?: import('./RegionGroups.js').RegionGroup[],
  *   getNodeName?: (nodeId: string) => string | undefined,
+ *   imageCache?: Map<string, HTMLImageElement>,
  * }} [options]
  * @returns {Promise<HTMLCanvasElement>}
  */
@@ -61,10 +77,17 @@ export async function renderNodeToCanvas(node, options = {}) {
   if (!ctx) throw new Error('Canvas 2d context unavailable.');
 
   const renderer = new MapRenderer(ctx, { tileSize, getNodeName: options.getNodeName });
+  const refs = collectImageRefs(node);
+  // Seed from the live cache first, then fill the gaps. Copied in rather than
+  // shared, so the export never writes into the cache the live canvas draws from.
+  for (const ref of refs) {
+    const decoded = options.imageCache?.get(ref);
+    if (decoded?.complete) renderer.imageCache.set(ref, decoded);
+  }
   await Promise.all(
-    collectImageRefs(node).map(async (ref) => {
+    refsToDecode(refs, options.imageCache).map(async (ref) => {
       const img = new Image();
-      img.src = `/${ref}`;
+      img.src = imageSrcForRef(ref);
       try {
         await img.decode();
       } catch {

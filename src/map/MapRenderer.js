@@ -18,6 +18,20 @@ import { MapDecorations } from './MapDecorations.js';
 const revealedCache = new WeakMap();
 
 /**
+ * The `src` to load a tile image ref from. Built-in refs are project-relative
+ * paths and need the leading slash; a GM-supplied tile's art is a `data:` URL
+ * and is used as-is, since prefixing it mangles it into an unloadable path.
+ * Every place that turns a ref into an image goes through here — the PNG export
+ * had its own copy of this and lacked the `data:` case, so custom art exported
+ * as placeholders. Pure.
+ * @param {string} imageRef
+ * @returns {string}
+ */
+export function imageSrcForRef(imageRef) {
+  return imageRef.startsWith('data:') ? imageRef : `/${imageRef}`;
+}
+
+/**
  * A snapshot of everything the renderer needs to draw a frame. MapCanvas owns
  * this state (pan/zoom, current node, selection/party/cursor ids, mode flags)
  * and hands a fresh view to the renderer on every draw, so the renderer holds
@@ -72,8 +86,7 @@ export class MapRenderer {
   /**
    * The decoded image for a tile ref, loaded once and kept for the session.
    * Unbounded is fine while refs are the built-in SVG set (small, finite);
-   * add eviction before large custom raster tiles land. A `data:` URL ref
-   * (GM-supplied art) is used as-is — prefixing it with `/` would mangle it.
+   * add eviction before large custom raster tiles land.
    * @param {string} imageRef
    * @returns {HTMLImageElement}
    */
@@ -81,7 +94,7 @@ export class MapRenderer {
     let img = this.imageCache.get(imageRef);
     if (!img) {
       img = new Image();
-      img.src = imageRef.startsWith('data:') ? imageRef : `/${imageRef}`;
+      img.src = imageSrcForRef(imageRef);
       img.onload = () => this.onImageLoad?.();
       this.imageCache.set(imageRef, img);
     }

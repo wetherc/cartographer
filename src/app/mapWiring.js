@@ -394,6 +394,7 @@ export function wireMapView(app) {
       tileSize: 64,
       regionGroups: findRegionGroups(node),
       getNodeName: (id) => grid.getNode(id)?.name,
+      imageCache: mapCanvas.renderer.imageCache,
     });
     downloadCanvasPNG(canvas, exportFilename(node.name));
     toasts.show(`Exported "${node.name}" as PNG.`);
