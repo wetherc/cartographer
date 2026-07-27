@@ -30,20 +30,23 @@ AppContext
 ```
 
 The two registries are how modules talk to each other without importing each
-other. When `partyWiring.js` mounts the character sheet, it registers a view;
-when `mapTravel.js` moves the party onto an encounter, it calls an action that
-`encounterWiring.js` registered. Neither file imports the other.
+other. When `partyWiring.js` mounts the character sheet, it registers a view.
+When `mapTravel.js` moves the party onto an encounter, it calls an action that
+`encounterWiring.js` registered. Neither file imports the other, so neither
+can create an import cycle or an initialization-order dependency on the other.
 
 One rule makes this safe: **everything on the context is read at call time
 inside event handlers, never captured at wiring time.** A module wired early
 can hand out an event handler that calls a view a later module registers,
 because the lookup happens when the event fires, not when the handler was
-created.
+created. Write `app.views.encounterPanel.update()` inside the handler; never
+pull `app.views.encounterPanel` into a local variable during wiring, where it
+would still be undefined.
 
-State ownership follows the same split. Only campaign data — the stuff a save
-serializes — lives on `app.state`. Per-feature UI state (the selected tile,
-the active brush, the edit history, the selected character, a running combat,
-the dirty flag) stays private inside the module that owns it.
+State ownership follows the same split. Only campaign data, the stuff a save
+serializes, lives on `app.state`. Per-feature UI state (the selected tile, the
+active brush, the edit history, the selected character, a running combat, the
+dirty flag) stays private inside the module that owns it.
 
 ## The wiring modules
 
@@ -58,7 +61,7 @@ provides `markDirty`/`setDirty` for everything else to call.
 
 It also handles cross-tab save adoption. When another browser tab saves, a
 Play-mode tab with nothing unsaved adopts that campaign in place through
-`rehydrate.js` instead of reloading the page; Build and Library mode, and any
+`rehydrate.js` instead of reloading the page. Build and Library mode, and any
 failure to adopt, fall back to the reload.
 
 ### mapWiring.js (plus mapAuthoring.js and mapTravel.js)
@@ -70,9 +73,10 @@ and the shared `MapEnv` context.
 
 The gesture layers live beside it in their own files:
 
-- `mapAuthoring.js` — Build-mode paint/erase/region strokes, drop-paint, the
-  tile inspector, and the map-edit undo (`snapshotEdit`/`undoStroke`).
-- `mapTravel.js` — Play-mode cell clicks, teleports, point-of-interest
+- `mapAuthoring.js` handles Build mode: paint/erase/region strokes,
+  drop-paint, the tile inspector, and the map-edit undo
+  (`snapshotEdit`/`undoStroke`).
+- `mapTravel.js` handles Play mode: cell clicks, teleports, point-of-interest
   discovery, NPC meets, and the hover tooltip.
 
 ### generateAction.js and nodeActions.js
@@ -92,7 +96,7 @@ everything those panels show at once.
 Writes a loaded campaign over the running one: the grid's contents, the party
 position, the node in view, the ten campaign fields on `app.state`, then every
 campaign-backed view. This is what makes a follower tab's update cost a
-repaint rather than a page load — the parse never was the expensive part, and
+repaint rather than a page load. The parse never was the expensive part, and
 after the tile codec (see [Persistence](persistence.md)) it is well under a
 millisecond.
 
@@ -101,13 +105,12 @@ Two details worth knowing:
 - It takes an already-built `Campaign` rather than reading storage, so
   migrations, asset restore, tile decode, and entity defaults stay stated once
   in `Campaigns.loadInitialCampaign` and shared with an ordinary page load.
-- `mode` and `role` are deliberately *not* adopted: both are per-tab view
+- `mode` and `role` are deliberately *not* adopted. Both are per-tab view
   state, so a display pinned to the Player view does not follow the GM tab
   into Build mode.
 
-If you add a campaign field, it has to join `SYNCED_STATE_KEYS` — a test
-holds that list against the `Campaign` shape, so forgetting will fail the
-suite.
+If you add a campaign field, it has to join `SYNCED_STATE_KEYS`. A test holds
+that list against the `Campaign` shape, so forgetting will fail the suite.
 
 ### encounterWiring.js (plus encounterForm.js, weaponAttack.js, spellCast.js, combatants.js)
 
@@ -123,7 +126,8 @@ is `encounterForm.js`'s `addFromBestiary`.
 
 The 5e attack resolution the Initiative panel triggers is `weaponAttack.js`,
 and spell resolution is `spellCast.js`. Both build on `combatants.js`, the one
-place that resolves a participant id across the three combatant collections:
+place that resolves a participant id across the three combatant collections
+(characters, encounters, NPCs):
 
 - `findCombatant(app, id)` returns `{ entity, kind, store }`, where `store`
   writes an update back to the owning collection with its panel refreshes.
@@ -153,19 +157,20 @@ The Library mode's three template lists (equipment, bestiary, NPCs) and the
 custom-library file controls: export, import, reset, and the startup
 auto-load.
 
-The custom library is deliberately not campaign state. `library/Library.js`
-holds the built-in defaults, the pure merge logic (a custom entry whose name —
-and for equipment, type — matches a default overrides it in place; others
-append), and a small module-level "active library" registry. The preset
-consumers (the item form's pickers, the enemy gear selects, "From bestiary")
-read that registry at call time, since they mount far from the wiring that
-loads customizations.
+The custom library is deliberately not campaign state; it belongs to the GM,
+not to any one campaign. `library/Library.js` holds the built-in defaults, the
+pure merge logic, and a small module-level "active library" registry. The
+merge rule: a custom entry whose name (and for equipment, type) matches a
+default overrides it in place, and all others append. The preset consumers
+(the item form's pickers, the enemy gear selects, "From bestiary") read that
+registry at call time, since they mount far from the wiring that loads
+customizations.
 
 Inside the wiring, every list's remove flow goes through one
-`makeRemoveHandler(noun, apply)` — the revert-override-vs-delete-custom
-confirm wording lives there alone — and the name-keyed lists (bestiary,
-spells) store edits through one `makeKeyedStore` (id derivation,
-rename-retires-the-old-key). A fifth library kind (the planned feat catalog)
+`makeRemoveHandler(noun, apply)`, so the revert-override-vs-delete-custom
+confirm wording lives there alone. The name-keyed lists (bestiary, spells)
+store edits through one `makeKeyedStore`, which owns id derivation and makes a
+rename retire the old key. A fifth library kind (the planned feat catalog)
 should reuse both rather than pasting a fourth copy.
 
 ### sessionControls.js

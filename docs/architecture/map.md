@@ -3,20 +3,32 @@
 *Back to the [architecture overview](../architecture.md).*
 
 The map is the heart of the app: a tiled world the GM paints in Build mode and
-the party explores in Play mode. Underneath it sits a small data model — nodes
-and tiles — and everything else on this page (the hierarchy, regions,
-rendering, fog of war, party movement) builds on that model, so start with the
-first section even if you came for something later.
+the party explores in Play mode. Underneath it sits a small data model made of
+nodes and tiles. Everything else on this page (the hierarchy, regions,
+rendering, fog of war, party movement) builds on that model, so read the first
+section even if you came here for something later.
 
 ## Nodes and tiles
 
-A **MapNode** (`src/types/map.ts`) is one map: a rectangular grid of **Tile**s.
-A world map is a node; so is a region inside it, a town inside that, and a
-dungeon under the town. Nodes form a tree two ways at once:
+Start with the two core types, both declared in `src/types/map.ts`:
 
-- Each node carries a `parentId` pointing up.
-- A tile can carry a `childNodeId` pointing down at another node — "zoom in
-  here and you get that map."
+- A **Tile** is one square of a map. It carries an id, an art reference
+  (`imageRef`), an optional overlay, a `revealed` flag for fog of war, and
+  metadata such as a point-of-interest label.
+- A **MapNode** is one whole map: a rectangular grid of tiles plus a name, a
+  kind (`'world'`, `'region'`, or `'interior'`), and dimensions.
+
+Here is the part that trips people up at first: there is no separate "world"
+type, "region" type, or "dungeon" type. A world map is a MapNode. A region
+inside it is also a MapNode. So is a town inside that region, and a dungeon
+under the town. What differs is how they connect, and they connect in two
+directions at once:
+
+- Each node carries a `parentId` pointing up at the map that contains it.
+- A tile can carry a `childNodeId` pointing down at another node. Clicking
+  that tile in Play mode means "zoom in here and you get that map."
+
+A concrete example, using the example campaign's names:
 
 ```
   world (MapNode, kind: 'world')
@@ -30,68 +42,115 @@ dungeon under the town. Nodes form a tree two ways at once:
   barrow (MapNode, kind: 'interior', parentId: 'darkwood')
 ```
 
-There is deliberately no separate "region" entity. A region is just a MapNode
-reached through one or more tiles' `childNodeId`.
+Reading this top to bottom: the world map has a tile at position (3,4) that
+zooms into the Darkwood region. Inside Darkwood, two adjacent tiles both zoom
+into the same barrow. That is legal and common; a large landmark can occupy
+several tiles of its parent map, and any of them takes you inside. The next
+section covers how those tiles get treated as one landmark.
 
-`TileGrid` (`src/map/TileGrid.js`) is the registry holding all of this: a
-`Map<id, MapNode>` with helpers to add/get/update nodes, walk the `parentId`
-chain for a breadcrumb, and resolve a tile's zoom target. One method matters
-for cross-tab sync: `replaceNodes` swaps the whole registry's contents while
-keeping the grid *object's* identity, which is how a running tab adopts a
-campaign another tab saved — the navigator, the party tracker, and the canvas
-each hold the grid they were constructed with, and none of them need to be
-rebuilt.
+There is deliberately no separate "region" entity to keep in sync with the
+tiles. A region is just a MapNode that one or more tiles point at through
+`childNodeId`.
+
+### TileGrid, the node registry
+
+`TileGrid` (`src/map/TileGrid.js`) holds all the nodes: a `Map<id, MapNode>`
+with helpers to add, get, and update nodes, walk the `parentId` chain to build
+a breadcrumb, and resolve a tile's zoom target.
+
+One method matters for cross-tab sync: `replaceNodes` swaps out the entire
+registry's contents while keeping the grid *object's* identity. Several
+long-lived objects (the navigator, the party tracker, the canvas) each hold a
+reference to the grid they were constructed with. When another browser tab
+saves the campaign, the running tab adopts the new campaign by replacing the
+grid's contents in place, and none of those holders need to be rebuilt or
+re-pointed.
 
 ### Grid coordinates
 
-A tile's id doubles as its position: tiles placed in a grid use `"x,y"` as
-their id, e.g. `"3,4"`. There is no separate x/y field. The pure functions
-`parseCoords`, `tileRect`, and `screenToTile` in `src/map/MapGeometry.js`
-convert between grid coordinates and screen pixels; anything that needs a
-tile's position parses its id.
+A tile's id doubles as its position. Tiles placed in a grid use `"x,y"` as
+their id, for example `"3,4"` for the tile at column 3, row 4. There is no
+separate x/y field to keep consistent with the id.
 
-Ids that don't match `"x,y"` are simply skipped by grid-aware code (see
-`RegionGroups.findRegionGroups`). That is intentional: hierarchy-test fixtures
-use non-grid ids and are unaffected by grid logic.
+The pure functions `parseCoords`, `tileRect`, and `screenToTile` in
+`src/map/MapGeometry.js` convert between grid coordinates and screen pixels.
+Anything that needs a tile's position parses its id.
+
+Ids that don't match the `"x,y"` pattern are simply skipped by grid-aware code
+(see `RegionGroups.findRegionGroups` for an example). That is intentional: the
+hierarchy tests use fixture nodes with ids like `"entrance"`, and grid logic
+leaves them alone rather than failing on them.
 
 ## Region grouping and multi-tile art
 
-A region can be entered from more than one tile. Any set of
-4-neighbor-contiguous tiles sharing the same non-null `childNodeId` counts as
-one region block. `RegionGroups.findRegionGroups(node)`
-(`src/map/RegionGroups.js`) is a pure flood-fill returning
-`{ childNodeId, tileIds, cells, minX, minY, maxX, maxY }` per group, where
-`cells` holds each member's grid coordinates in `tileIds` order. No schema change
-was needed to support this — multiple tiles simply carry the same
-`childNodeId` value. `MapCanvas` recomputes groups whenever a node loads and
-draws a tint plus outline over each group's bounding box, optionally labeled
-via a `getNodeName` callback.
+As the barrow example above showed, a region can be entered from more than one
+tile. The rule for what counts as one landmark: any set of tiles that share
+the same non-null `childNodeId` and are contiguous (touching along an edge,
+not just diagonally) forms one **region group**.
 
-On outdoor (`kind: 'region'`) maps, a multi-tile region block also renders as
-scaled images instead of per-tile art. `groupImageChunks(node, group)`
-partitions a filled-rectangle group into blocks of at most 2x2 tiles, each
-represented by one image (`groupImageRef` — a POI-marked tile's art wins, else
-the top-left-most tile's), and `MapRenderer._renderGroupImages` draws each
-chunk's image stretched across its block, with the per-tile pass skipping the
-covered base images. Fog rects and path overlays still draw per tile on top,
-so a partially explored block reveals piecewise and a road through a region
-stays tile-sized. Ragged (non-rectangular) groups and interiors keep plain
-per-tile rendering.
+`RegionGroups.findRegionGroups(node)` (`src/map/RegionGroups.js`) computes
+these groups. It is a pure flood-fill over the node's tiles, and for each
+group it returns:
 
-Independent of region links, a tile can carry an optional `span` (set by
-`paintTile(node, tileId, imageRef, overlay, span)` when the Build palette's
-Size row is at 2x/3x): its image draws stretched across a span-by-span block
-anchored at the tile, shifted up/left near the far edges so it stays in
-bounds. `spanBlocks(node)` in `TilePaint.js` enumerates these blocks
-pure-geometrically and `MapRenderer._renderSpanImages` draws them right after
-the region-block chunks, feeding the same cover set so the tile pass skips
-covered base images while fog and overlays stay per tile. Unlike region
-chunks, span art renders on interiors too, and covered cells keep their own
-tiles untouched — repainting the anchor at 1x clears the span.
+```js
+{ childNodeId, tileIds, cells, minX, minY, maxX, maxY }
+```
+
+`cells` holds each member tile's parsed grid coordinates, in the same order as
+`tileIds`, so downstream code never has to re-parse the ids. `minX` through
+`maxY` describe the group's bounding box.
+
+Note what this design avoids: no schema change was needed to support
+multi-tile regions. Multiple tiles simply carry the same `childNodeId` value,
+and grouping is derived from that. `MapCanvas` recomputes the groups whenever
+a node loads and draws a tint plus an outline over each group's bounding box,
+optionally labeled with the region's name via a `getNodeName` callback.
+
+### Group images
+
+On outdoor maps (`kind: 'region'`), a multi-tile region group also changes how
+its art draws. Instead of each tile drawing its own small image, the group
+renders as larger scaled images, so a two-by-two castle looks like one castle
+rather than four copies of a castle tile.
+
+`groupImageChunks(node, group)` does the partitioning. It splits a
+filled-rectangle group into chunks of at most 2x2 tiles, and each chunk draws
+one image stretched across its block. The image chosen for a chunk
+(`groupImageRef`) is the art of a tile marked as a point of interest if the
+chunk has one, otherwise the top-left-most tile's art.
+`MapRenderer._renderGroupImages` draws these chunks, and the ordinary per-tile
+pass then skips the base images of the covered cells.
+
+Fog rectangles and path overlays still draw per tile on top of the stretched
+image. That is what lets a partially explored block reveal piece by piece, and
+what keeps a road running through a region drawn at tile size rather than
+stretched with the landmark art.
+
+Groups that are ragged (not a filled rectangle) and groups on interior maps
+keep plain per-tile rendering.
+
+### Spans: one tile's art drawn large
+
+Independent of region links, a single tile can carry an optional `span`. The
+Build palette's Size row sets it (2x or 3x), and `paintTile(node, tileId,
+imageRef, overlay, span)` records it. A spanned tile's image draws stretched
+across a span-by-span block anchored at that tile. Near the right or bottom
+edge of the map, the block shifts up or left as needed so it stays in bounds.
+
+`spanBlocks(node)` in `TilePaint.js` enumerates these blocks with pure
+geometry, and `MapRenderer._renderSpanImages` draws them right after the
+region-group chunks. Span blocks feed the same "covered cells" set, so the
+per-tile pass skips the base images underneath while fog and overlays stay per
+tile, exactly as with group images.
+
+Two differences from region chunks are worth knowing. Span art renders on
+interior maps too, not just outdoor ones. And the covered cells keep their own
+tile data untouched; the span is purely a rendering effect of the anchor tile,
+so repainting the anchor at 1x clears it.
 
 ## Rendering and input
 
-The canvas work is split so that each file owns one concern:
+The canvas code is split so that each file owns one concern:
 
 ```
   MapCanvas (src/map/MapCanvas.js)
@@ -110,103 +169,136 @@ The canvas work is split so that each file owns one concern:
                               +/- zoom, focus outline
 ```
 
-The two input controllers mutate the view state back through the host
-reference. One subtlety: a pointerup counts as a tile click only if the total
-drag distance stayed below a small threshold, so panning never also triggers a
-zoom-in.
+`MapCanvas` is the host. The renderer and decoration modules read the view
+state and draw; the two input controllers (pointer and keyboard) mutate the
+view state back through the host reference.
 
-For each tile, the renderer draws a fog rect if `!tile.revealed`, otherwise
-the image at `tile.imageRef`.
+The core of the render pass is simple: for each tile, draw a fog rectangle if
+the tile is not revealed, otherwise draw the image at `tile.imageRef`. The
+group, span, and marker passes described elsewhere on this page layer on top
+of that.
 
-**Navigation** is pure logic with no DOM: `MapNavigator`
-(`src/map/MapNavigator.js`) tracks which node is "current" and exposes
-`zoomIn(tileId)` / `zoomOut()` / `goTo(nodeId)` / `getBreadcrumb()` over a
-`TileGrid`. `MapCanvas`'s `onTileClick` callback and `ui/Breadcrumb.js`'s
-click handler both just call into a navigator and re-render.
+One input subtlety: a pointerup counts as a tile click only if the total drag
+distance stayed below a small threshold. Without that check, ending a pan
+gesture on a region tile would also zoom into it.
+
+**Navigation** is pure logic with no DOM. `MapNavigator`
+(`src/map/MapNavigator.js`) tracks which node is currently in view and exposes
+`zoomIn(tileId)`, `zoomOut()`, `goTo(nodeId)`, and `getBreadcrumb()` over a
+`TileGrid`. The canvas's `onTileClick` callback and the breadcrumb's click
+handler (`ui/Breadcrumb.js`) both just call into a navigator and re-render.
+Because the navigator has no DOM dependency, all of the zoom and breadcrumb
+behavior is covered by plain unit tests.
 
 ## The tile catalog and generation
 
-`TilePalette` (`src/map/TilePalette.js`) is the built-in tile catalog. Terrain
-types have multiple interchangeable variants — `pickVariant(type, rng)` takes
-the RNG as an argument for testability — while road pieces are named connector
-shapes rather than random variants (`getRoadPiece(kind)`). Callers can
-register custom tiles (`addCustom`/`removeCustom`) without being able to
-override built-ins.
+`TilePalette` (`src/map/TilePalette.js`) is the built-in tile catalog. It
+distinguishes two kinds of art:
 
-`Autotile.js` (`src/map/Autotile.js`) picks connector overlay pieces from a
-terrain grid, pure and RNG-injected: `smoothCoastline` widens water until
-every shore shape has a matching coast piece, `coastOverlays`/`coastKind` name
-the shoreline overlay per land cell, and `riverCourse` walks a meandering
-channel from the north edge south, returning the river piece per tile.
+- Terrain types (grass, water, mountains, and so on) have multiple
+  interchangeable variants, so a painted field doesn't look like a wallpaper
+  pattern. `pickVariant(type, rng)` chooses one, taking the random number
+  generator as an argument so tests can pass a deterministic one.
+- Road pieces are named connector shapes (a straight, a corner, a tee), not
+  random variants. `getRoadPiece(kind)` looks one up by name.
 
-Two consumers build on it: the generator archetypes (wilderness/town in
-`src/map/GeneratorRegions.js`, dispatched from `MapGenerator`; dungeon/castle
-in `src/map/GeneratorInteriors.js`) and the example world in
+Callers can register custom tiles with `addCustom`/`removeCustom`. Custom
+tiles cannot override built-ins; they only extend the catalog.
+
+`Autotile.js` (`src/map/Autotile.js`) handles the fiddly part of generated
+terrain: picking connector overlay pieces so that coastlines and rivers join
+up visually. It is pure and RNG-injected like the palette:
+
+- `smoothCoastline` widens water until every shore shape is one the art set
+  has a matching coast piece for.
+- `coastOverlays` and `coastKind` name the shoreline overlay for each land
+  cell along the water.
+- `riverCourse` walks a meandering channel from the north edge south and
+  returns the right river piece for each tile along the way.
+
+Two consumers build on all of this: the generator archetypes (wilderness and
+town in `src/map/GeneratorRegions.js`, dispatched from `MapGenerator`; dungeon
+and castle in `src/map/GeneratorInteriors.js`) and the example world in
 `campaign/ExampleWorld.js`.
 
-A tile's `overlayRef` can hold a single ref or a draw-ordered stack
-(normalized by `TileGrid.overlayList`). Where a river drains into a lake or
-the sea, the mouth tile stacks the channel over its shoreline piece so neither
-overlay displaces the other.
+One more detail about overlays: a tile's `overlayRef` can hold either a single
+reference or a draw-ordered stack of them (`TileGrid.overlayList` normalizes
+the two forms). The stack exists for places like a river mouth, where the tile
+needs both its shoreline piece and the river channel drawn on top of it, and
+neither overlay should displace the other.
 
 ## Fog of war
 
-`FogOfWar.js` (`src/map/FogOfWar.js`) is pure functions over a MapNode:
+Play mode hides the parts of a map the party has not been near. The state
+behind that is just the `revealed` flag on each tile, and `FogOfWar.js`
+(`src/map/FogOfWar.js`) is a set of pure functions over a MapNode that manage
+it:
 
 - `revealAround(node, centerId, radius)` parses `centerId` as an `"x,y"` grid
-  coordinate and reveals every tile within a Euclidean radius of it.
-  Revealing is monotonic — a tile that is already revealed, or outside the
-  radius, is left untouched, so moving away from an area never re-fogs it.
-- `hideAll(node)` resets a node to fully unrevealed (a reset/debug path).
-- `revealedCount(node)` backs "percent explored"-style readouts.
+  coordinate and reveals every tile within a Euclidean radius of it, so the
+  revealed area is a disc rather than a square. Revealing is monotonic: a tile
+  that is already revealed, or outside the radius, is left untouched. Moving
+  away from an area never re-fogs it.
+- `hideAll(node)` resets a node to fully unrevealed. It backs reset and debug
+  paths.
+- `revealedCount(node)` backs "percent explored" style readouts.
 - `withinRadius(tileId, centerId, radius)` exposes the same Euclidean cutoff
-  as a predicate.
+  as a standalone predicate.
 
-That last one gates the markers: `MapMarkers` uses it to limit the
-encounter/NPC/POI markers to a detection range — twice the fog reveal radius
-(`MapView.markerRange`, wired from `PartyTracker.revealRadius`) around the
-party tile and every character token. A marker can be sensed slightly beyond
-the fog edge but never across the map, and a node the party isn't in shows no
+That last function also gates the markers. `MapMarkers` uses it to limit the
+encounter, NPC, and point-of-interest markers to a detection range around the
+party tile and around every individual character token. The range
+(`MapView.markerRange`, wired from `PartyTracker.revealRadius`) is twice the
+fog reveal radius, so a marker can be sensed slightly beyond the fog edge but
+never from across the map. A node the party isn't currently in shows no
 markers at all outside Build mode.
 
 ## The party
 
-`PartyTracker` (`src/party/PartyTracker.js`) owns the party's `PartyPosition`
-(nodeId + tileId) and is the only thing that should move the party.
-`moveTo(nodeId, tileId)` updates the position and calls `revealAround` on the
-target node, writing the result straight back into the `TileGrid` it was
-constructed with. The constructor also reveals around the initial position, so
-a party never starts fogged in on their own tile.
+`PartyTracker` (`src/party/PartyTracker.js`) owns the party's `PartyPosition`,
+which is a nodeId plus a tileId, and it is the only thing that should move the
+party. `moveTo(nodeId, tileId)` updates the position and calls `revealAround`
+on the target node, writing the revealed tiles straight back into the
+`TileGrid` it was constructed with. The constructor also reveals around the
+initial position, so a party never starts the campaign fogged in on their own
+tile.
 
-`moveTo`'s `nodeId` can differ from the party's current node, so crossing
-between a parent map and a zoomed-in region (via `MapNavigator`) works the
-same way as moving within one node — each node's revealed state is
-independent.
+`moveTo`'s `nodeId` can differ from the party's current node. Crossing between
+a parent map and a zoomed-in region (via `MapNavigator`) therefore works the
+same way as moving within one node, and each node's revealed state stays
+independent: exploring the barrow reveals nothing about Darkwood.
 
 ### Individual character tokens and the split party
 
-`CharacterTokens.js` (`src/party/CharacterTokens.js`) layers individual
-characters over that shared position. A `Character.location` of null means
-"with the party" (the token renders on the party's tile); a non-null location
-is the character's own tile.
+Usually the party moves as one marker. `CharacterTokens.js`
+(`src/party/CharacterTokens.js`) layers individual characters over that shared
+position for the times they split up. The convention: a `Character.location`
+of null means "with the party", and the character's token renders on the
+party's tile. A non-null location is the character's own tile.
 
 - `characterTokens(characters, partyPosition, nodeId)` resolves the named
-  tokens to draw in a rendered node.
+  tokens to draw on a rendered node.
 - `moveCharacter` relocates one character.
-- `recallAll` drops every individual location — the whole-party teleport.
-- `isSplit`/`characterPosition` back the regroup flow below.
+- `recallAll` drops every individual location, which amounts to teleporting
+  everyone back to the shared party position.
+- `isSplit` and `characterPosition` back the regroup flow described below.
 
-Movement permissions reuse `CharacterBinding.partyPermissions`: the GM moves
-the party (map clicks, which recall everyone) and any single character (the
-roster's place action); a bound player tab moves only its own character, whose
-steps reveal fog via the same `revealAround`.
+Movement permissions reuse `CharacterBinding.partyPermissions`. The GM moves
+the party (map clicks, which recall everyone) and any single character
+(through the roster's place action). A browser tab bound to one player moves
+only that player's character, and that character's steps reveal fog through
+the same `revealAround` path.
 
-All of that individual movement sits behind the persisted `splitParty` flag
-(on `CampaignState`, default false), toggled by a GM-only switch in the Party
-panel (`partyWiring.js`). While it is off, `syncPartyMarker` passes no tokens
-to the canvas (only the shared marker renders), the roster hides its place
-action, and a bound player's map click is a no-op — the party moves
-simultaneously, by GM clicks alone. Turning the switch off while `isSplit`
-reports scattered characters first regroups the party at a GM-chosen member's
-`characterPosition` (a `PartyTracker.moveTo` plus `recallAll`); cancelling the
-picker leaves the switch on.
+All of this individual movement sits behind the `splitParty` flag, persisted
+on `CampaignState` and false by default, toggled by a GM-only switch in the
+Party panel (`partyWiring.js`). While the switch is off, the app behaves as if
+individual movement did not exist: `syncPartyMarker` passes no tokens to the
+canvas (only the shared marker renders), the roster hides its place action,
+and a bound player's map click is a no-op. The party moves simultaneously, by
+GM clicks alone.
+
+Turning the switch off while characters are scattered first regroups the
+party: the GM picks a member, and the party position moves to that member's
+`characterPosition` (a `PartyTracker.moveTo` plus `recallAll`). Cancelling the
+picker leaves the switch on, so the app never ends up with the switch off and
+the party still split.

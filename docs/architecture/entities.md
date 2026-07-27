@@ -4,8 +4,8 @@
 
 Everything the party fights, spends, or plays lives in `src/entities/`:
 encounters, resource pools, and characters. All three follow one update style,
-described first below; the rest of the page is the character model, which is
-by far the largest of the three.
+described first below. The rest of the page covers the character model, which
+is by far the largest of the three.
 
 ## The shared shape: immutable updates
 
@@ -21,12 +21,13 @@ const leveled = addXP(character, 250);      // new character
 
 This is the same style `TileGrid.js` uses for tiles (`setTile`,
 `updateTileMetadata`), and it is what lets the app cache derived data against
-object identity — a value that has been handed out never changes underneath a
+object identity: a value that has been handed out never changes underneath a
 cache.
 
 A few behaviors are baked into the models rather than validated separately:
 
-- HP and resource pools clamp to `[0, max]` on every operation.
+- HP and resource pools clamp to `[0, max]` on every operation, so no caller
+  can overheal or drive HP negative.
 - `Character.addXP` uses an `N * XP_PER_LEVEL` (100) cost curve and loops
   internally, so one large XP award can cross several level thresholds in a
   single call.
@@ -67,7 +68,10 @@ take-a-value-return-a-value shape.
                          load-time migration seam
 ```
 
-The catalogs' shapes are declared in `types/class.ts` and `types/race.ts`.
+The split matters when you go looking for something: the catalogs hold what a
+class or race *is*, and the entity modules hold what happens when a character
+*has* one. The catalogs' shapes are declared in `types/class.ts` and
+`types/race.ts`.
 
 ### Classes and multiclassing
 
@@ -76,8 +80,9 @@ memberships (folding an older save's scalar `class`/`subclass` into a
 one-entry list at read time), `withClasses` sanitizes writes, and
 `primaryClass`/`classLevelOf`/`pendingLevels` read across the list.
 Everything class-aware goes through it rather than touching
-`character.classes` directly — that is what keeps the single-class and
-multiclass paths identical.
+`character.classes` directly. That is what keeps the single-class and
+multiclass paths identical: a fighter is just a character whose class list has
+one entry.
 
 `entities/Races.js` and `entities/Backgrounds.js` resolve a stored id to its
 definition, with `resolveRace` preferring the live catalog and falling back to
@@ -105,7 +110,7 @@ on a short rest.
 `entities/LevelUp.js` and `entities/LevelAssign.js` run the level-up flow.
 `addXP` leaves each earned level *pending* for a classed character rather than
 applying it silently, and `assignLevel` commits a pending level to a chosen
-class — growing HP, adding a hit die, and advancing spell slots. Crossing a
+class: growing HP, adding a hit die, and advancing spell slots. Crossing a
 class ASI level leaves a pending improvement, spent later by `applyASI` or
 `takeFeat`.
 
@@ -124,9 +129,9 @@ pattern as `ui/DiceTray.js`: each holds a local mutable copy of its entity,
 re-renders after every interaction, and reports the updated value through an
 `onChange` callback for a caller to persist.
 
-The sheet's progression surface — class rows with subclass, the pending-level
+The sheet's progression surface (class rows with subclass, the pending-level
 class assignment, pending ASI/feat choices, unlocked features, and the
-hit-dice pool — is built by `ui/CharacterProgress.js` and mounted into the
+hit-dice pool) is built by `ui/CharacterProgress.js` and mounted into the
 sheet. The background name and the assembled proficiency lists are stored but
 not yet rendered there; they are deferred into later saving-throw and skill
 blocks rather than built as a static list first.

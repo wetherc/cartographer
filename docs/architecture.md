@@ -19,7 +19,7 @@ own guide:
 | [Conventions](architecture/conventions.md) | Performance patterns, UI and CSS rules, and how code here gets tested |
 
 Read this page first. After that, start with whichever guide covers the area
-you are changing — each stands alone.
+you are changing; each stands alone.
 
 ## The big picture
 
@@ -50,7 +50,7 @@ The dependency direction matters more than the boxes. UI widgets and wiring
 modules call *down* into the pure modules (`map/`, `entities/`, `storage/`,
 `dice/`, `party/`, `library/`); the pure modules never import from `ui/` or
 `app/` and never touch the DOM. That rule is what keeps most of the codebase
-testable with `node --test` alone — see
+testable with `node --test` alone. See
 [Conventions](architecture/conventions.md) for the pattern in detail.
 
 ## Directory map
@@ -87,8 +87,8 @@ the cascade order is stated in exactly one place.
 
 Almost every module here is one of two kinds:
 
-1. **Pure logic** that takes its inputs — including side effects like RNG or
-   the current time — as arguments and returns new values. It never mutates
+1. **Pure logic** that takes its inputs, including side effects like RNG or
+   the current time, as arguments and returns new values. It never mutates
    what it was given and never touches the DOM. Examples: `dice/`'s
    `roll(selection, rng)`, `map/MapNavigator.js`, `map/FogOfWar.js`, all of
    `entities/`, and `storage/SaveManager.js`'s serialize/deserialize.
@@ -98,14 +98,14 @@ Almost every module here is one of two kinds:
 Pure logic gets unit tests. DOM glue gets looked at in a browser instead (see
 `docs/testing.md`). When you add a feature, ask first: which part of this is a
 pure function, and which part is glue? Put the seam there and both halves stay
-simple. Anything constructible without the DOM belongs in a pure module — the
+simple. Anything constructible without the DOM belongs in a pure module. The
 example world's maps live in `campaign/ExampleWorld.js` and its populace in
 `campaign/ExampleContent.js`, not in the wiring that loads them.
 
 The pure modules also share an update style: functions take a value and return
 a new one instead of mutating. `applyDamage(encounter, n)` hands back a new
 encounter; `setTile(node, tile)` hands back a new node. Several caches lean on
-this — an object that has been handed out is never changed in place, so a
+this: an object that has been handed out is never changed in place, so a
 cache keyed on the object itself can never go stale. The
 [Conventions](architecture/conventions.md) guide covers those caches and why
 the immutability is enforced rather than assumed.
