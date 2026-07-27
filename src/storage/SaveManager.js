@@ -2,6 +2,11 @@ import { TileGrid, withNodeDefaults } from '../map/TileGrid.js';
 import { downloadJSON, readFileText } from './fileIO.js';
 import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
 import { hoistAssets, restoreAssets } from './Assets.js';
+import { packEntities } from './EntityPack.js';
+import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
+import { withDefaults as withEncounterDefaults } from '../entities/Encounter.js';
+import { withDefaults as withNPCDefaults } from '../entities/NPC.js';
+import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -99,17 +104,40 @@ function packTile(tile) {
 }
 
 /**
+ * The save collections whose entries have an entity `withDefaults`, paired with
+ * it. Read in both directions — `packState` omits whatever the paired function
+ * restores, `deserialize` runs it — so the two halves cannot name different
+ * functions. `quests` and `bestiary` are deliberately absent: neither has a
+ * `withDefaults`, so there is no authority to pack against, and both measured at
+ * zero default-valued bytes anyway.
+ * @type {Record<string, (entity: any) => any>}
+ */
+const ENTITY_DEFAULTS = {
+  characters: withCharacterDefaults,
+  encounters: withEncounterDefaults,
+  npcs: withNPCDefaults,
+  handouts: withHandoutDefaults,
+};
+
+/**
  * The campaign in its on-disk shape: as the state, with every node's tiles
- * packed and every inline image payload hoisted into an `assets` table. Pure —
- * the state passed in is never touched.
+ * packed, every entity's default-valued fields omitted, and every inline image
+ * payload hoisted into an `assets` table. Pure — the state passed in is never
+ * touched.
  * @param {CampaignState} state
  * @returns {Record<string, any>}
  */
 function packState(state) {
-  return hoistAssets({
+  /** @type {Record<string, any>} */
+  const packed = {
     ...state,
     nodes: state.nodes.map((node) => ({ ...node, tiles: node.tiles.map(packTile) })),
-  });
+  };
+  for (const [key, withDefaults] of Object.entries(ENTITY_DEFAULTS)) {
+    const list = packed[key];
+    if (Array.isArray(list)) packed[key] = packEntities(list, withDefaults);
+  }
+  return hoistAssets(packed);
 }
 
 /**
@@ -142,6 +170,21 @@ function record(value) {
 function records(value) {
   if (!Array.isArray(value)) return [];
   return value.filter((entry) => record(entry) !== null);
+}
+
+/**
+ * A save collection read back as fully-defaulted entities: the coercion above,
+ * then the paired `withDefaults`. This is the unpack half of `packState`'s
+ * omission, so it has to run here at the seam rather than in the boot path only —
+ * a stored character legitimately carries no `spellbook` key now, and `undoHistory`
+ * and `readStateFromFile` hand their result to callers that do no defaulting.
+ * @param {string} key a key of ENTITY_DEFAULTS
+ * @param {unknown} value
+ * @returns {any[]}
+ */
+function entities(key, value) {
+  const withDefaults = ENTITY_DEFAULTS[key];
+  return records(value).map((entry) => withDefaults(entry));
 }
 
 /**
@@ -193,7 +236,10 @@ function partyPosition(value) {
  * here becomes the stored save of an app that no longer boots. Nodes without an
  * id are dropped; `withNodeDefaults` (TileGrid) defends the tiles within and is
  * also what unpacks the tile fields `serialize` omits, so it runs here at the
- * seam rather than only in `toTileGrid`, and `restoreAssets` puts the hoisted
+ * seam rather than only in `toTileGrid`. The entity `withDefaults` functions are
+ * the same story one level up: they unpack the fields `packState` omitted, so
+ * every state this returns is fully defaulted whether or not its caller reloads
+ * through the boot path. `restoreAssets` puts the hoisted
  * image payloads back before any of it, so nothing downstream ever sees a
  * reference into the asset table. A save stamped with an older schema version
  * passes through `Migrations.js`'s step chain first; one stamped newer than this
@@ -219,13 +265,13 @@ export function deserialize(json) {
       .filter((node) => typeof node.id === 'string')
       .map(withNodeDefaults),
     party: partyPosition(parsed.party),
-    characters: records(parsed.characters),
-    encounters: records(parsed.encounters),
+    characters: entities('characters', parsed.characters),
+    encounters: entities('encounters', parsed.encounters),
     travelog: records(parsed.travelog),
     quests: records(parsed.quests),
     clock: record(parsed.clock),
-    npcs: records(parsed.npcs),
-    handouts: records(parsed.handouts),
+    npcs: entities('npcs', parsed.npcs),
+    handouts: entities('handouts', parsed.handouts),
     bestiary: records(parsed.bestiary),
     splitParty: parsed.splitParty === true,
     combat: combatState(parsed.combat),

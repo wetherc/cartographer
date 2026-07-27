@@ -20,7 +20,7 @@
  * The schema version `buildState` stamps on every save it writes. Version 0 is
  * every save written before the field existed.
  */
-export const CURRENT_VERSION = 3;
+export const CURRENT_VERSION = 4;
 
 /**
  * Step transforms keyed by the version being migrated *from*: `MIGRATIONS[n]`
@@ -45,6 +45,12 @@ export const MIGRATIONS = {
   // that restore, so a future step reading an image payload has to resolve it
   // through the table rather than expecting it inline.
   2: (state) => state,
+  // 3 -> 4: version 4 omits the fields each entity's `withDefaults` restores,
+  // extending version 2's tile packing to characters, encounters, NPCs, and
+  // handouts. Omission-only in both directions once more: a version-3 save names
+  // every field explicitly, and the load path runs those same `withDefaults`
+  // whether a field was omitted or not.
+  3: (state) => state,
 };
 
 /**

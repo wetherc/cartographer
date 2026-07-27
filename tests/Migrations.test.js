@@ -75,8 +75,11 @@ test('the omission-only steps leave the payload alone', () => {
   const state = { nodes: [], characters: [{ id: 'c1' }] };
   // 0 -> 1 added the version field; 1 -> 2 started omitting default tile fields,
   // which the load path's backfill already restores from absence; 2 -> 3 started
-  // hoisting image payloads into a table an older save simply does not have.
+  // hoisting image payloads into a table an older save simply does not have;
+  // 3 -> 4 extended the tile omission to the entity collections, whose
+  // `withDefaults` the load path runs whether a field was omitted or not.
   assert.deepEqual(MIGRATIONS[0](state), state);
   assert.deepEqual(MIGRATIONS[1](state), state);
   assert.deepEqual(MIGRATIONS[2](state), state);
+  assert.deepEqual(MIGRATIONS[3](state), state);
 });

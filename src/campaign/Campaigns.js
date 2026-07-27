@@ -1,10 +1,6 @@
 import { createMapNode, TileGrid } from '../map/TileGrid.js';
-import { withDefaults } from '../entities/Character.js';
-import { withDefaults as withEncounterDefaults } from '../entities/Encounter.js';
 import { loadFromLocalStorage, toTileGrid } from '../storage/SaveManager.js';
 import { createClock } from '../time/GameClock.js';
-import { withDefaults as withNPCDefaults } from '../entities/NPC.js';
-import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
 import { buildExampleWorld } from './ExampleWorld.js';
 import { buildExampleContent } from './ExampleContent.js';
 
@@ -79,27 +75,27 @@ export function buildExampleCampaign(palette, rng = Math.random) {
 /**
  * The campaign the app boots with: the saved one if a save exists, otherwise a
  * blank campaign (the demo world is opt-in via "Load example", never a silent
- * default). Loaded entities are default-filled for back-compat with older
- * saves; an empty character roster is legitimate authored state, so no default
+ * default). An empty character roster is legitimate authored state, so no default
  * character is ever injected.
  * @returns {Campaign}
  */
 export function loadInitialCampaign() {
   const saved = loadFromLocalStorage();
   if (!saved) return buildBlankCampaign();
-  // deserialize (SaveManager) already defaults every missing top-level field, so
-  // saved is a complete CampaignState here; only party and clock, which it fills
-  // with null, still need a runtime default.
+  // deserialize (SaveManager) already defaults every missing top-level field and
+  // runs each collection's entity withDefaults, so saved is a complete
+  // CampaignState here; only party and clock, which it fills with null, still
+  // need a runtime default.
   return {
     grid: toTileGrid(saved),
     party: saved.party ?? { nodeId: 'world', tileId: '0,0' },
-    characters: saved.characters.map(withDefaults),
-    encounters: saved.encounters.map(withEncounterDefaults),
+    characters: saved.characters,
+    encounters: saved.encounters,
     travelog: saved.travelog,
     quests: saved.quests,
     clock: saved.clock ?? createClock(),
-    npcs: saved.npcs.map(withNPCDefaults),
-    handouts: saved.handouts.map(withHandoutDefaults),
+    npcs: saved.npcs,
+    handouts: saved.handouts,
     bestiary: saved.bestiary,
     splitParty: saved.splitParty,
     combat: saved.combat ?? null,

@@ -1,8 +1,20 @@
 import { test, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMapNode, createTile, setTile, TileGrid } from '../src/map/TileGrid.js';
-import { createCharacter, addXP, withHP, getHP } from '../src/entities/Character.js';
-import { createEncounter, applyDamage } from '../src/entities/Encounter.js';
+import {
+  createCharacter,
+  addXP,
+  withHP,
+  getHP,
+  withDefaults as withCharacterDefaults,
+} from '../src/entities/Character.js';
+import {
+  createEncounter,
+  applyDamage,
+  withDefaults as withEncounterDefaults,
+} from '../src/entities/Encounter.js';
+import { createNPC, withDefaults as withNPCDefaults } from '../src/entities/NPC.js';
+import { createHandout, withDefaults as withHandoutDefaults } from '../src/handout/Handouts.js';
 import {
   buildState,
   serialize,
@@ -61,7 +73,13 @@ test('serialize/deserialize round-trips a full campaign state', () => {
   const state = buildState(grid, party, characters, encounters);
   const restored = deserialize(serialize(state));
 
-  assert.deepEqual(restored, state);
+  // Loading runs each collection's entity `withDefaults`, so what comes back is
+  // the defaulted form of what went in — which is also what packing targets.
+  assert.deepEqual(restored, {
+    ...state,
+    characters: state.characters.map(withCharacterDefaults),
+    encounters: state.encounters.map(withEncounterDefaults),
+  });
   assert.equal(restored.characters[0].race, 'Dwarf');
   assert.equal(getHP(restored.characters[0])?.max, 12);
 });
@@ -142,6 +160,65 @@ test('a save written before tiles were packed still loads whole', () => {
   // Version 1 wrote every tile field explicitly; the backfill must leave it be.
   const restored = deserialize(JSON.stringify({ ...state, version: 1 })).nodes[0];
   assert.deepEqual(restored.tiles, state.nodes[0].tiles);
+});
+
+/** One of every packed entity collection, in a state ready to serialize. */
+function populatedState() {
+  const grid = new TileGrid();
+  grid.addNode(createMapNode('world', 'World', null, 1, 1));
+  return buildState(
+    grid,
+    null,
+    [createCharacter('c1', 'Hero')],
+    [
+      createEncounter('e1', 'Goblin', 7),
+      createEncounter('e2', 'Ogre', 40, {}, null, { level: 7, tier: 'boss' }),
+    ],
+    [],
+    [],
+    { npcs: [createNPC('n1', 'Alda')], handouts: [createHandout('h1', 'Rumor')] },
+  );
+}
+
+test('packing omits default entity fields and loading restores them', () => {
+  const json = serialize(populatedState());
+  for (const boilerplate of [
+    '"conditions":[]',
+    '"statMods":[]',
+    '"location":null',
+    '"expertise":[]',
+    '"bonusHP":0',
+    '"met":false',
+    '"revealed":false',
+    '"image":null',
+  ]) {
+    assert.equal(json.includes(boilerplate), false, `${boilerplate} should not be written`);
+  }
+  const restored = deserialize(json);
+  const state = populatedState();
+  assert.deepEqual(restored.characters, state.characters.map(withCharacterDefaults));
+  assert.deepEqual(restored.encounters, state.encounters.map(withEncounterDefaults));
+  assert.deepEqual(restored.npcs, state.npcs.map(withNPCDefaults));
+  assert.deepEqual(restored.handouts, state.handouts.map(withHandoutDefaults));
+});
+
+test('packing keeps a level-dependent default a type-wide table would have dropped', () => {
+  // The level-7 ogre's gear differs from what a level-1 mob is given, so it has
+  // to survive the round trip rather than being resolved again on load.
+  const state = populatedState();
+  const restored = deserialize(serialize(state));
+  const ogre = restored.encounters.find((encounter) => encounter.id === 'e2');
+  assert.deepEqual(ogre.weapon, state.encounters[1].weapon);
+  assert.deepEqual(ogre.armor, state.encounters[1].armor);
+  assert.equal(ogre.level, 7);
+});
+
+test('a save written before entities were packed still loads whole', () => {
+  const state = populatedState();
+  // Version 3 wrote every entity field explicitly; the defaults pass must agree.
+  const restored = deserialize(JSON.stringify({ ...state, version: 3 }));
+  assert.deepEqual(restored.characters, state.characters.map(withCharacterDefaults));
+  assert.deepEqual(restored.encounters, state.encounters.map(withEncounterDefaults));
 });
 
 test('serializing hoists image payloads and loading puts them back', () => {
