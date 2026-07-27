@@ -85,9 +85,13 @@ const EQUIPMENT_SUBTABS = [
  * @param {AppContext} app
  */
 export function wireLibrary(app) {
+  // One read: loadCustomLibrary parses and fully normalizes the stored JSON, so
+  // asking twice did that work twice at startup just to learn whether anything
+  // was stored. Null means nothing stored, which is what seeds from the file.
+  const stored = loadCustomLibrary();
   /** The live custom library; the active registry in Library.js mirrors it. */
-  let custom = loadCustomLibrary() ?? emptyLibrary();
-  const hadStored = loadCustomLibrary() !== null;
+  let custom = stored ?? emptyLibrary();
+  const hadStored = stored !== null;
 
   /** Refresh all three lists after any library mutation. */
   const refresh = () => {
