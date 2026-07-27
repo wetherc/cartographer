@@ -213,6 +213,43 @@ test('normalizeLibrary turns garbage into an empty library', () => {
   assert.ok(isLibraryEmpty(normalizeLibrary({})));
 });
 
+test('normalizeLibrary keeps one entry per merge key, the last one winning', () => {
+  const lib = normalizeLibrary({
+    equipment: [
+      { name: 'Dagger', type: 'weapon', notes: 'first' },
+      { name: 'Dagger', type: 'gear', notes: 'other type, kept' },
+      { name: ' dagger ', type: 'weapon', notes: 'last' },
+    ],
+    bestiary: [
+      { name: 'Slime', maxHP: 5 },
+      { name: 'SLIME', maxHP: 9 },
+    ],
+    npcs: [
+      { name: 'Mayor', role: 'first' },
+      { name: 'mayor', role: 'last' },
+    ],
+    spells: [
+      { name: 'Spark', level: 1 },
+      { name: 'Spark', level: 3 },
+    ],
+  });
+  assert.deepEqual(
+    lib.equipment.map((e) => `${e.type}:${e.name}`),
+    ['weapon:dagger', 'gear:Dagger'],
+    'the surviving duplicate keeps the key position of the first',
+  );
+  assert.equal(lib.bestiary.length, 1);
+  assert.equal(lib.bestiary[0].maxHP, 9);
+  assert.equal(lib.bestiary[0].id, 'slime', 'the dropped duplicate claims no slug');
+  assert.deepEqual(
+    lib.npcs.map((n) => n.role),
+    ['last'],
+  );
+  assert.equal(lib.spells.length, 1);
+  assert.equal(lib.spells[0].level, 3);
+  assert.equal(lib.spells[0].id, 'spark');
+});
+
 test('normalizeLibrary drops invalid entries and repairs the valid ones', () => {
   const lib = normalizeLibrary({
     equipment: [

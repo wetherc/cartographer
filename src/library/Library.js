@@ -227,7 +227,10 @@ export const nameKey = (entry) => entry.name.trim().toLowerCase();
 /**
  * Merge custom entries over a default list: a custom entry whose key matches
  * a default replaces it in place (source 'override'); the rest append in
- * their own order (source 'custom'). Pure.
+ * their own order (source 'custom'). Expects one custom per key — two would
+ * resolve as last-wins in the override branch and first-wins in the append
+ * loop — which normalizeLibrary guarantees for every library that is loaded and
+ * upsertEntry for every one that is edited. Pure.
  * @template {object} T
  * @param {T[]} defaults
  * @param {T[]} customs
@@ -429,13 +432,34 @@ function casterTemplateFrom(e) {
 }
 
 /**
+ * Keep one entry per merge key, the last one winning, at the position of the
+ * key's first appearance. Two customs sharing a key have no defined meaning —
+ * one of them can never be reached — and the merge resolves the collision
+ * inconsistently (last wins where the key matches a default, first wins where
+ * it does not), so a library is deduped on the way in rather than every reader
+ * having to guess. Last wins because that is what upsertEntry does, so a file
+ * written by appending edits reads back as the newest version of each entry.
+ * Pure.
+ * @template {object} T
+ * @param {T[]} entries
+ * @param {(entry: T) => string} keyOf
+ * @returns {T[]}
+ */
+function dedupeByKey(entries, keyOf) {
+  const byKey = new Map(entries.map((e) => [keyOf(e), e]));
+  return [...byKey.values()];
+}
+
+/**
  * Normalize a parsed custom-library JSON of any provenance (an exported file,
  * a hand-edited one, garbage) into a valid CustomLibrary, dropping entries
  * missing their essentials rather than throwing. Bestiary templates get an id
  * (sluggified from the name when absent), a positive max HP, and a stat block
  * closed over the fixed stat set; NPC templates get every field defaulted and
  * an unknown disposition read as neutral; spells get an id, defaulted
- * descriptive fields, and a repaired effect (see normalizeSpell).
+ * descriptive fields, and a repaired effect (see normalizeSpell). Each list is
+ * also deduped by its merge key, so no reader downstream sees two entries
+ * competing for one key.
  * @param {unknown} parsed
  * @returns {CustomLibrary}
  */
@@ -446,59 +470,71 @@ export function normalizeLibrary(parsed) {
   /** @type {(value: unknown) => Record<string, any>[]} */
   const arrayOf = (value) =>
     Array.isArray(value) ? value.filter((e) => e && typeof e === 'object') : [];
+  /** The name merge key over a raw record whose name each list already checked.
+   * @param {Record<string, any>} e
+   * @returns {string} */
+  const rawNameKey = (e) => nameKey({ name: e.name });
 
-  const equipment = arrayOf(source.equipment)
-    .filter((e) => typeof e.name === 'string' && e.name.trim() && ITEM_TYPES.includes(e.type))
-    .map((e) => /** @type {EquipmentTemplate} */ ({ ...e, name: e.name.trim() }));
+  const equipment = dedupeByKey(
+    arrayOf(source.equipment)
+      .filter((e) => typeof e.name === 'string' && e.name.trim() && ITEM_TYPES.includes(e.type))
+      .map((e) => /** @type {EquipmentTemplate} */ ({ ...e, name: e.name.trim() })),
+    equipmentKey,
+  );
 
+  // The name-keyed lists dedupe before their id derivation, not after, so a
+  // dropped duplicate never claims a slug the entry that survives could use.
   /** @type {string[]} */
   const bestiaryIds = [];
-  const bestiary = arrayOf(source.bestiary)
-    .filter((e) => typeof e.name === 'string' && e.name.trim())
-    .map((e) => {
-      const name = e.name.trim();
-      const id = typeof e.id === 'string' && e.id ? e.id : slugId(name, bestiaryIds);
-      bestiaryIds.push(id);
-      return /** @type {EncounterTemplate} */ ({
-        id,
-        name,
-        maxHP: Math.max(1, Math.floor(Number(e.maxHP)) || 1),
-        statBlock: normalizeStatBlock(typeof e.statBlock === 'object' ? e.statBlock : {}),
-        level: Math.max(1, Math.floor(Number(e.level)) || 1),
-        tier: e.tier === 'legend' ? 'legend' : 'mob',
-        // null survives (deliberately unarmed); absent stays absent so a
-        // default can stamp in; anything non-object drops.
-        ...(e.weapon === null || (e.weapon && typeof e.weapon === 'object')
-          ? { weapon: e.weapon }
-          : {}),
-        ...(e.armor === null || (e.armor && typeof e.armor === 'object') ? { armor: e.armor } : {}),
-        ...casterTemplateFrom(e),
-      });
+  const bestiary = dedupeByKey(
+    arrayOf(source.bestiary).filter((e) => typeof e.name === 'string' && e.name.trim()),
+    rawNameKey,
+  ).map((e) => {
+    const name = e.name.trim();
+    const id = typeof e.id === 'string' && e.id ? e.id : slugId(name, bestiaryIds);
+    bestiaryIds.push(id);
+    return /** @type {EncounterTemplate} */ ({
+      id,
+      name,
+      maxHP: Math.max(1, Math.floor(Number(e.maxHP)) || 1),
+      statBlock: normalizeStatBlock(typeof e.statBlock === 'object' ? e.statBlock : {}),
+      level: Math.max(1, Math.floor(Number(e.level)) || 1),
+      tier: e.tier === 'legend' ? 'legend' : 'mob',
+      // null survives (deliberately unarmed); absent stays absent so a
+      // default can stamp in; anything non-object drops.
+      ...(e.weapon === null || (e.weapon && typeof e.weapon === 'object')
+        ? { weapon: e.weapon }
+        : {}),
+      ...(e.armor === null || (e.armor && typeof e.armor === 'object') ? { armor: e.armor } : {}),
+      ...casterTemplateFrom(e),
     });
+  });
 
-  const npcs = arrayOf(source.npcs)
-    .filter((e) => typeof e.name === 'string' && e.name.trim())
-    .map(
-      (e) =>
-        /** @type {NPCTemplate} */ ({
-          name: e.name.trim(),
-          role: typeof e.role === 'string' ? e.role : '',
-          disposition: DISPOSITIONS.includes(e.disposition) ? e.disposition : 'neutral',
-          notes: typeof e.notes === 'string' ? e.notes : '',
-          stats: e.stats && typeof e.stats === 'object' ? e.stats : {},
-          ...casterTemplateFrom(e),
-        }),
-    );
+  const npcs = dedupeByKey(
+    arrayOf(source.npcs).filter((e) => typeof e.name === 'string' && e.name.trim()),
+    rawNameKey,
+  ).map(
+    (e) =>
+      /** @type {NPCTemplate} */ ({
+        name: e.name.trim(),
+        role: typeof e.role === 'string' ? e.role : '',
+        disposition: DISPOSITIONS.includes(e.disposition) ? e.disposition : 'neutral',
+        notes: typeof e.notes === 'string' ? e.notes : '',
+        stats: e.stats && typeof e.stats === 'object' ? e.stats : {},
+        ...casterTemplateFrom(e),
+      }),
+  );
 
   /** @type {string[]} */
   const spellIds = [];
-  const spells = arrayOf(source.spells)
-    .filter((e) => typeof e.name === 'string' && e.name.trim())
-    .map((e) => {
-      const id = typeof e.id === 'string' && e.id ? e.id : slugId(e.name.trim(), spellIds);
-      spellIds.push(id);
-      return normalizeSpell(e, id);
-    });
+  const spells = dedupeByKey(
+    arrayOf(source.spells).filter((e) => typeof e.name === 'string' && e.name.trim()),
+    rawNameKey,
+  ).map((e) => {
+    const id = typeof e.id === 'string' && e.id ? e.id : slugId(e.name.trim(), spellIds);
+    spellIds.push(id);
+    return normalizeSpell(e, id);
+  });
 
   return { equipment, bestiary, npcs, spells };
 }
