@@ -99,9 +99,13 @@ export function mountInitiativePanel(container, callbacks) {
 
   /**
    * The weapons and spells the active row's action strip holds, resolved once
-   * per render. The gating matches what `build` draws: only on a real turn,
-   * only for a combatant this viewer may act for, and only for the callback
-   * that is actually wired.
+   * per render. This is the only place that decides whether the buttons are
+   * offered at all: nothing to act on outside a real turn, nothing for a
+   * combatant this viewer may not act for (`canAttack` says the GM may act for
+   * anyone including foes, a player only for their bound character), and
+   * nothing for a callback the host left unwired. `build` places whatever comes
+   * back and draws nothing when it is empty, so the DOM cannot disagree with
+   * the dep list built from these same arrays.
    * @param {CombatState} state
    * @param {boolean[]} mayAct
    * @returns {ActionStripItems}
@@ -133,7 +137,7 @@ export function mountInitiativePanel(container, callbacks) {
     const strip = activeStrip(state, mayAct);
     const deps = initiativeDeps(state, gm, mayAct, strip);
     if (!sameDeps(builtDeps, deps)) {
-      build(state, gm, mayAct, strip);
+      build(state, gm, strip);
       builtDeps = deps;
     }
     for (const write of writers) write({ state, views });
@@ -144,10 +148,9 @@ export function mountInitiativePanel(container, callbacks) {
    * current. Reads nothing off a participant that a writer can push in later.
    * @param {CombatState} state
    * @param {boolean} gm
-   * @param {boolean[]} mayAct
    * @param {ActionStripItems} strip
    */
-  function build(state, gm, mayAct, strip) {
+  function build(state, gm, strip) {
     root.innerHTML = '';
     writers = [];
 
@@ -180,33 +183,29 @@ export function mountInitiativePanel(container, callbacks) {
         init.textContent = String(frame.state.order[i]?.initiative ?? '');
       });
 
-      // On the active combatant's turn, their weapons line up under the row
-      // as one-click attack buttons, and a caster's known cantrips and
-      // prepared/known spells follow as Cast buttons — the same strip shape,
-      // differing only in icon, class, and labeling. `canAttack` decides who
-      // sees them — the GM for anyone (including foes), a player only for
-      // their bound character.
-      if (active && i === state.index && mayAct[i]) {
-        if (callbacks.onWeaponAttack) {
-          actionStrip(strip.weapons, {
-            icon: 'sword',
-            className: 'initiative-panel__attack',
-            ariaLabel: (weapon) => `Attack with ${weapon.name}`,
-            title: (weapon) =>
-              `Roll an attack with ${weapon.name} (${formatDamage(weapon.damage ?? [])})`,
-            onPick: (weapon) => callbacks.onWeaponAttack?.(participant, weapon),
-          });
-        }
-        if (callbacks.onCastSpell) {
-          actionStrip(strip.spells, {
-            icon: 'sparkles',
-            className: 'initiative-panel__cast',
-            ariaLabel: (spell) => `Cast ${spell.name}`,
-            title: (spell) =>
-              `Cast ${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`})`,
-            onPick: (spell) => callbacks.onCastSpell?.(participant, spell),
-          });
-        }
+      // The active combatant's weapons line up under their row as one-click
+      // attack buttons, and a caster's cantrips and prepared/known spells
+      // follow as Cast buttons — the same strip shape, differing only in icon,
+      // class, and labeling. Both come from `activeStrip`, which is empty
+      // whenever they should not be offered, so this only has to place them
+      // under the right row; the strips themselves append nothing when empty.
+      if (i === state.index) {
+        actionStrip(strip.weapons, {
+          icon: 'sword',
+          className: 'initiative-panel__attack',
+          ariaLabel: (weapon) => `Attack with ${weapon.name}`,
+          title: (weapon) =>
+            `Roll an attack with ${weapon.name} (${formatDamage(weapon.damage ?? [])})`,
+          onPick: (weapon) => callbacks.onWeaponAttack?.(participant, weapon),
+        });
+        actionStrip(strip.spells, {
+          icon: 'sparkles',
+          className: 'initiative-panel__cast',
+          ariaLabel: (spell) => `Cast ${spell.name}`,
+          title: (spell) =>
+            `Cast ${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`})`,
+          onPick: (spell) => callbacks.onCastSpell?.(participant, spell),
+        });
       }
     });
 
