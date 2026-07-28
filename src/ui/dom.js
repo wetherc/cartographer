@@ -56,6 +56,17 @@ export function append(node, children) {
 }
 
 /**
+ * Join the truthy parts of a class list. Lets a builder compose its own base
+ * class with a caller-supplied one without either side minding whether the
+ * other is present.
+ * @param {(string | undefined | false)[]} parts
+ * @returns {string}
+ */
+export function classNames(parts) {
+  return parts.filter(Boolean).join(' ');
+}
+
+/**
  * Set several attributes at once. Only for elements built outside `el` whose
  * attribute list is long enough to bury the shape — the SVG icons, chiefly.
  * @param {Element} node

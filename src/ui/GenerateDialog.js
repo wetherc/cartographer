@@ -2,6 +2,8 @@ import { MapRenderer } from '../map/MapRenderer.js';
 import { randomSeed } from '../util/Rng.js';
 import { clampInt } from '../util/num.js';
 import { textButton } from './buttons.js';
+import { el } from './dom.js';
+import { numberField, select } from './formFields.js';
 import { openDialog } from './Modal.js';
 
 /**
@@ -36,66 +38,42 @@ export function generateDialog(options) {
       /** @type {Node[]} */
       const body = [];
 
-      /** @param {string} labelText @param {HTMLElement} input */
-      const field = (labelText, input) => {
-        const label = document.createElement('label');
-        label.className = 'modal__field';
-        label.textContent = labelText;
-        input.classList.add('field');
-        label.appendChild(input);
-        body.push(label);
-        return input;
+      /** @template {HTMLElement} T @param {string} caption @param {T} control @returns {T} */
+      const field = (caption, control) => {
+        body.push(el('label', 'modal__field', caption, control));
+        return control;
       };
 
-      const archetypeSelect = document.createElement('select');
-      for (const a of options.archetypes) {
-        const el = document.createElement('option');
-        el.value = a.value;
-        el.textContent = a.label;
-        archetypeSelect.appendChild(el);
-      }
-      field('Archetype', archetypeSelect);
+      const archetypeSelect = field(
+        'Archetype',
+        select(options.archetypes, options.archetypes[0]?.value ?? ''),
+      );
 
-      const sizeSelect = document.createElement('select');
-      for (const [value, label] of [
-        ['small', 'Small'],
-        ['medium', 'Medium'],
-        ['large', 'Large'],
-      ]) {
-        const el = document.createElement('option');
-        el.value = value;
-        el.textContent = label;
-        sizeSelect.appendChild(el);
-      }
-      sizeSelect.value = 'medium';
-      field('Size', sizeSelect);
+      const sizeSelect = field(
+        'Size',
+        select(
+          [
+            { value: 'small', label: 'Small' },
+            { value: 'medium', label: 'Medium' },
+            { value: 'large', label: 'Large' },
+          ],
+          'medium',
+        ),
+      );
 
-      const levelsInput = document.createElement('input');
-      levelsInput.type = 'number';
-      levelsInput.min = '1';
-      levelsInput.value = '1';
-      field('Levels (dungeon only)', levelsInput);
+      const levelsInput = field('Levels (dungeon only)', numberField(1, { min: 1 }));
 
       // Seed row: the editable seed plus a Reroll button drawing a fresh one.
       // The preview canvas below always shows the layout this exact seed builds.
-      const seedInput = document.createElement('input');
-      seedInput.type = 'number';
-      seedInput.value = String(randomSeed());
-      const seedLabel = document.createElement('label');
-      seedLabel.className = 'modal__field';
-      seedLabel.textContent = 'Seed';
-      seedInput.classList.add('field');
-      const seedRow = document.createElement('div');
-      seedRow.className = 'generate-dialog__seed';
-      seedRow.appendChild(seedInput);
+      const seedInput = numberField(randomSeed());
       // renderPreview is declared below, so the handler reaches it at click time.
       const reroll = textButton('Reroll', () => {
         seedInput.value = String(randomSeed());
         renderPreview();
       });
-      seedRow.appendChild(reroll);
-      seedLabel.appendChild(seedRow);
-      body.push(seedLabel);
+      body.push(
+        el('label', 'modal__field', 'Seed', el('div', 'generate-dialog__seed', seedInput, reroll)),
+      );
 
       const canvas = document.createElement('canvas');
       canvas.className = 'generate-dialog__preview';

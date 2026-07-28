@@ -2,6 +2,7 @@ import { removeItem, updateItem } from '../entities/Character.js';
 import { itemType, itemEffects } from '../entities/Equipment.js';
 import { buildItemForm } from './ItemForm.js';
 import { iconButton, textButton } from './buttons.js';
+import { numberField, select } from './formFields.js';
 import { confirmModal } from './Modal.js';
 import { clampInt } from '../util/num.js';
 
@@ -184,23 +185,18 @@ function buildGiveForm(item, recipients, { view, render, transfer }) {
   const form = document.createElement('div');
   form.className = 'inventory-panel__give';
 
-  const recipientSelect = document.createElement('select');
-  recipientSelect.className = 'field';
-  recipientSelect.setAttribute('aria-label', `Give ${item.name} to`);
-  for (const r of recipients) {
-    const option = document.createElement('option');
-    option.value = r.id;
-    option.textContent = r.name;
-    recipientSelect.appendChild(option);
-  }
+  const recipientSelect = select(
+    recipients.map(({ id, name }) => ({ value: id, label: name })),
+    recipients[0]?.id ?? '',
+    { ariaLabel: `Give ${item.name} to` },
+  );
 
-  const countInput = document.createElement('input');
-  countInput.type = 'number';
-  countInput.className = 'field inventory-panel__give-count';
-  countInput.min = '1';
-  countInput.max = String(item.quantity);
-  countInput.value = '1';
-  countInput.setAttribute('aria-label', `How many ${item.name} to give`);
+  const countInput = numberField(1, {
+    min: 1,
+    max: item.quantity,
+    className: 'inventory-panel__give-count',
+    ariaLabel: `How many ${item.name} to give`,
+  });
   // A 1-stack has nothing to choose; skip the input and give the one.
   countInput.hidden = item.quantity === 1;
 

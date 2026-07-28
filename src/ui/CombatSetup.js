@@ -1,5 +1,7 @@
 import { formatModifier } from '../entities/Modifiers.js';
 import { textButton } from './buttons.js';
+import { el } from './dom.js';
+import { numberField } from './formFields.js';
 import { openDialog } from './Modal.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
@@ -47,27 +49,28 @@ export function combatSetupModal(roster, callbacks = {}) {
       const body = [];
       for (const participant of roster) {
         const view = describe(participant);
-        const row = document.createElement('div');
-        row.className = `initiative-panel__row initiative-panel__row--${view.side}`;
-
-        const name = document.createElement('span');
-        name.className = 'initiative-panel__name';
-        name.textContent = view.name;
-
-        const modifier = document.createElement('span');
-        modifier.className = 'initiative-panel__modifier';
-        modifier.textContent = formatModifier(participant.modifier ?? 0);
+        const modifier = el(
+          'span',
+          'initiative-panel__modifier',
+          formatModifier(participant.modifier ?? 0),
+        );
         modifier.title = 'DEX modifier, added to the initiative roll';
 
-        const input = document.createElement('input');
-        input.type = 'number';
-        input.className = 'field initiative-panel__init';
-        input.value = String(participant.initiative);
-        input.setAttribute('aria-label', `Initiative for ${view.name}`);
+        const input = numberField(participant.initiative, {
+          className: 'initiative-panel__init',
+          ariaLabel: `Initiative for ${view.name}`,
+        });
         inputs.set(participant.id, input);
 
-        row.append(name, modifier, input);
-        body.push(row);
+        body.push(
+          el(
+            'div',
+            `initiative-panel__row initiative-panel__row--${view.side}`,
+            el('span', 'initiative-panel__name', view.name),
+            modifier,
+            input,
+          ),
+        );
       }
 
       /** @type {HTMLElement[]} */

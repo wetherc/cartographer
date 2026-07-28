@@ -1,6 +1,7 @@
 import { addStatModifier, applyDamage, heal, isDefeated } from '../entities/Encounter.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { mountStatBlockBar } from './StatBlockBar.js';
+import { numberField } from './formFields.js';
 import { mountListPanel } from './listPanel.js';
 import { buildTabs } from './Tabs.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
@@ -96,12 +97,11 @@ export function mountEncounterPanel(container, callbacks) {
     // damage/heal/delete controls, no condition editing, no add button.
     if (!ctx.gm) return [label];
 
-    const amountInput = document.createElement('input');
-    amountInput.type = 'number';
-    amountInput.value = '1';
-    amountInput.min = '0';
-    amountInput.className = 'field encounter-panel__amount';
-    amountInput.setAttribute('aria-label', `Damage/heal amount for ${encounter.name}`);
+    const amountInput = numberField(1, {
+      min: 0,
+      className: 'encounter-panel__amount',
+      ariaLabel: `Damage/heal amount for ${encounter.name}`,
+    });
     amounts.set(encounter, amountInput);
 
     return [label, amountInput];

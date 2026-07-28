@@ -2,6 +2,8 @@ import { DIE_TYPES, roll, emptySelection, formatResult } from '../dice/DiceRolle
 import { wireDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
 import { iconButton, segSwitch, textButton } from './buttons.js';
+import { el } from './dom.js';
+import { numberField } from './formFields.js';
 import { capitalize } from '../util/text.js';
 
 /** @type {import('../types/dice.js').RollMode[]} */
@@ -121,18 +123,14 @@ export function mountDiceTray(container, opts = {}) {
 
   // Optional difficulty target: when set, each roll also reports success or
   // failure against it (meets-it-beats-it), in the tray and travelogue alike.
-  const targetRow = document.createElement('div');
-  targetRow.className = 'dice-tray__row';
-  const targetName = document.createElement('span');
-  targetName.className = 'dice-tray__label';
-  targetName.textContent = 'target';
-  const targetInput = document.createElement('input');
-  targetInput.type = 'number';
-  targetInput.className = 'field dice-tray__target';
-  targetInput.placeholder = 'none';
-  targetInput.setAttribute('aria-label', 'Target number to beat (optional)');
-  targetRow.append(targetName, targetInput);
-  root.appendChild(targetRow);
+  const targetInput = numberField('', {
+    placeholder: 'none',
+    className: 'dice-tray__target',
+    ariaLabel: 'Target number to beat (optional)',
+  });
+  root.appendChild(
+    el('div', 'dice-tray__row', el('span', 'dice-tray__label', 'target'), targetInput),
+  );
 
   const rollButton = textButton('Roll', () => opts.onRoll?.(performRoll().text), {
     icon: 'dice',

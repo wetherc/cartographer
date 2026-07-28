@@ -6,6 +6,8 @@ import {
   getEquipped,
   slotAccepts,
 } from '../entities/Equipment.js';
+import { el } from './dom.js';
+import { select } from './formFields.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -36,19 +38,6 @@ export function buildEquipment(getCharacter, commit, playable) {
   const section = document.createElement('div');
   section.className = 'inventory-panel__equipment';
   for (const slot of EQUIPMENT_SLOTS) {
-    const row = document.createElement('label');
-    row.className = 'inventory-panel__slot';
-
-    const label = document.createElement('span');
-    label.className = 'inventory-panel__slot-label';
-    label.textContent = slot.label;
-
-    const select = document.createElement('select');
-    select.className = 'field';
-    const empty = document.createElement('option');
-    empty.value = '';
-    empty.textContent = '—';
-    select.appendChild(empty);
     const equippedId = getEquipped(character, slot.key)?.id ?? '';
     const eligible = character.inventory
       .filter((i) => slotAccepts(slot.key, i) || i.id === equippedId)
@@ -59,21 +48,29 @@ export function buildEquipment(getCharacter, commit, playable) {
         };
         return rank(a) - rank(b) || a.name.localeCompare(b.name);
       });
-    for (const item of eligible) {
-      const option = document.createElement('option');
-      option.value = item.id;
-      const summary = itemSummary(item);
-      option.textContent = summary ? `${item.name} (${summary})` : item.name;
-      select.appendChild(option);
-    }
-    select.value = equippedId;
-    select.disabled = !playable;
-    select.addEventListener('change', () =>
-      commit(equip(getCharacter(), slot.key, select.value === '' ? null : select.value)),
+    const picker = select(
+      [
+        { value: '', label: '—' },
+        ...eligible.map((item) => {
+          const summary = itemSummary(item);
+          return { value: item.id, label: summary ? `${item.name} (${summary})` : item.name };
+        }),
+      ],
+      equippedId,
+    );
+    picker.disabled = !playable;
+    picker.addEventListener('change', () =>
+      commit(equip(getCharacter(), slot.key, picker.value === '' ? null : picker.value)),
     );
 
-    row.append(label, select);
-    section.appendChild(row);
+    section.append(
+      el(
+        'label',
+        'inventory-panel__slot',
+        el('span', 'inventory-panel__slot-label', slot.label),
+        picker,
+      ),
+    );
   }
   return section;
 }

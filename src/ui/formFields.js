@@ -10,22 +10,48 @@
 
 import { clampInt } from '../util/num.js';
 import { textButton } from './buttons.js';
-import { el } from './dom.js';
+import { classNames, el } from './dom.js';
+
+/**
+ * The options every builder here accepts on top of its own. `className` is
+ * appended to the builder's base class rather than replacing it, so a caller
+ * that wants one sizing or layout modifier still gets the shared `field`
+ * presentation. `ariaLabel` covers the controls that stand alone in a toolbar
+ * with no visible caption to name them.
+ * @typedef {{ className?: string, ariaLabel?: string }} FieldOpts
+ */
+
+/**
+ * Apply the shared options to a freshly built control.
+ * @template {HTMLElement} T
+ * @param {T} control
+ * @param {FieldOpts} opts
+ * @returns {T}
+ */
+function withOpts(control, { className, ariaLabel }) {
+  if (className) control.className = classNames([control.className, className]);
+  if (ariaLabel) control.setAttribute('aria-label', ariaLabel);
+  return control;
+}
 
 /**
  * A captioned wrapper so each control names itself.
  * @param {string} caption
  * @param {HTMLElement} control
+ * @param {FieldOpts} [opts]
  * @returns {HTMLLabelElement}
  */
-export function labeled(caption, control) {
-  return el('label', 'inventory-panel__field-label', el('span', '', caption), control);
+export function labeled(caption, control, opts = {}) {
+  const label = el('label', 'inventory-panel__field-label', el('span', '', caption), control);
+  return withOpts(label, opts);
 }
 
 /**
  * A horizontal grouping of related fields. Type-specific fields toggle in and
  * out per row, so appearing controls extend their own line instead of
- * reflowing the whole form.
+ * reflowing the whole form. A caller needing a modifier class on the row builds
+ * it with `el` instead; the variadic children are worth more here than an
+ * options bag.
  * @param {...import('./dom.js').Child} children
  * @returns {HTMLDivElement}
  */
@@ -37,69 +63,80 @@ export function fieldRow(...children) {
  * A labeled checkbox returning its wrapper and the input.
  * @param {string} caption
  * @param {boolean} checked
+ * @param {FieldOpts} [opts]
  * @returns {{ label: HTMLLabelElement, input: HTMLInputElement }}
  */
-export function checkbox(caption, checked) {
+export function checkbox(caption, checked, opts = {}) {
   const input = el('input');
   input.type = 'checkbox';
   input.checked = checked;
-  return { label: el('label', 'spell-form__check', input, el('span', '', caption)), input };
+  const label = el('label', 'spell-form__check', input, el('span', '', caption));
+  return { label: withOpts(label, opts), input };
 }
 
 /**
- * A text input pre-filled and classed as a form field.
+ * A text input pre-filled and classed as a form field. `type` covers the
+ * search variant, which wants the browser's clear affordance.
  * @param {string} value
  * @param {string} [placeholder]
+ * @param {FieldOpts & { type?: 'text' | 'search' }} [opts]
  * @returns {HTMLInputElement}
  */
-export function textField(value, placeholder = '') {
+export function textField(value, placeholder = '', opts = {}) {
   const input = el('input', 'field');
-  input.type = 'text';
+  input.type = opts.type ?? 'text';
   input.value = value;
   input.placeholder = placeholder;
-  return input;
+  return withOpts(input, opts);
 }
 
 /**
- * A number input pre-filled and classed as a form field.
- * @param {number} value
- * @param {{ min?: number }} [opts]
+ * A number input pre-filled and classed as a form field. An empty-string value
+ * leaves the input blank, for an optional number whose placeholder stands in
+ * for "unset".
+ * @param {number | ''} value
+ * @param {FieldOpts & { min?: number, max?: number, placeholder?: string }} [opts]
  * @returns {HTMLInputElement}
  */
-export function numberField(value, { min } = {}) {
+export function numberField(value, opts = {}) {
   const input = el('input', 'field');
   input.type = 'number';
   input.value = String(value);
-  if (min !== undefined) input.min = String(min);
-  return input;
+  if (opts.placeholder) input.placeholder = opts.placeholder;
+  if (opts.min !== undefined) input.min = String(opts.min);
+  if (opts.max !== undefined) input.max = String(opts.max);
+  return withOpts(input, opts);
 }
 
 /**
  * A multi-line text input pre-filled and classed as a form field.
  * @param {string} value
- * @param {{ placeholder?: string, rows?: number }} [opts]
+ * @param {FieldOpts & { placeholder?: string, rows?: number }} [opts]
  * @returns {HTMLTextAreaElement}
  */
-export function textareaField(value, { placeholder = '', rows = 3 } = {}) {
+export function textareaField(value, opts = {}) {
   const area = el('textarea', 'field');
-  area.rows = rows;
-  area.placeholder = placeholder;
+  area.rows = opts.rows ?? 3;
+  if (opts.placeholder) area.placeholder = opts.placeholder;
   area.value = value;
-  return area;
+  return withOpts(area, opts);
 }
 
 /**
  * A <select> over the given options, pre-selected. Options are either bare
  * strings (value === label) or `{ value, label }` pairs, so the same helper
- * serves plain enum pickers and labelled choices (weapons, dispositions).
- * @param {(string | { value: string, label: string })[]} options
+ * serves plain enum pickers and labelled choices (weapons, dispositions). An
+ * option may be marked `disabled` for a choice that is shown but unavailable
+ * (a spell level the character cannot yet cast).
+ * @param {(string | { value: string, label: string, disabled?: boolean })[]} options
  * @param {string} value
+ * @param {FieldOpts} [opts]
  * @returns {HTMLSelectElement}
  */
-export function select(options, value) {
+export function select(options, value, opts = {}) {
   const picker = el('select', 'field');
   setOptions(picker, options, value);
-  return picker;
+  return withOpts(picker, opts);
 }
 
 /**
@@ -107,15 +144,16 @@ export function select(options, value) {
  * another field (the item form's preset list follows the item type) refill
  * themselves through this, so options are built in one place.
  * @param {HTMLSelectElement} picker
- * @param {(string | { value: string, label: string })[]} options
+ * @param {(string | { value: string, label: string, disabled?: boolean })[]} options
  * @param {string} value
  */
 export function setOptions(picker, options, value) {
   picker.replaceChildren(
     ...options.map((opt) => {
-      const { value: v, label } = typeof opt === 'string' ? { value: opt, label: opt } : opt;
-      const option = el('option', '', label);
-      option.value = v;
+      const spec = typeof opt === 'string' ? { value: opt, label: opt } : opt;
+      const option = el('option', '', spec.label);
+      option.value = spec.value;
+      if ('disabled' in spec && spec.disabled) option.disabled = true;
       return option;
     }),
   );

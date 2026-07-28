@@ -1,6 +1,7 @@
 import { addItem } from '../entities/Character.js';
 import { ITEM_TYPES, filterItems } from '../entities/Equipment.js';
 import { emptyState } from './buttons.js';
+import { select, textField } from './formFields.js';
 import { buildItemForm } from './ItemForm.js';
 import { buildEquipment } from './InventoryEquipment.js';
 import { buildRow } from './InventoryRows.js';
@@ -145,42 +146,25 @@ export function mountInventoryPanel(
     const controls = document.createElement('div');
     controls.className = 'inventory-panel__controls';
 
-    const searchInput = document.createElement('input');
-    searchInput.type = 'search';
-    searchInput.placeholder = 'Search items';
-    searchInput.className = 'field inventory-panel__search';
-    searchInput.value = searchQuery;
-    searchInput.setAttribute('aria-label', 'Search items by name or description');
+    const searchInput = textField(searchQuery, 'Search items', {
+      type: 'search',
+      className: 'inventory-panel__search',
+      ariaLabel: 'Search items by name or description',
+    });
 
-    const filterSelect = document.createElement('select');
-    filterSelect.className = 'field';
-    filterSelect.setAttribute('aria-label', 'Filter by item type');
-    const allTypes = document.createElement('option');
-    allTypes.value = '';
-    allTypes.textContent = 'all types';
-    filterSelect.appendChild(allTypes);
-    for (const t of ITEM_TYPES) {
-      const option = document.createElement('option');
-      option.value = t;
-      option.textContent = t;
-      filterSelect.appendChild(option);
-    }
-    filterSelect.value = typeFilter;
+    const filterSelect = select([{ value: '', label: 'all types' }, ...ITEM_TYPES], typeFilter, {
+      ariaLabel: 'Filter by item type',
+    });
 
-    const sortSelect = document.createElement('select');
-    sortSelect.className = 'field';
-    sortSelect.setAttribute('aria-label', 'Sort items');
-    for (const [value, text] of [
-      ['name', 'by name'],
-      ['type', 'by type'],
-      ['quantity', 'by quantity'],
-    ]) {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = text;
-      sortSelect.appendChild(option);
-    }
-    sortSelect.value = sortKey;
+    const sortSelect = select(
+      [
+        { value: 'name', label: 'by name' },
+        { value: 'type', label: 'by type' },
+        { value: 'quantity', label: 'by quantity' },
+      ],
+      sortKey,
+      { ariaLabel: 'Sort items' },
+    );
 
     controls.append(searchInput, filterSelect, sortSelect);
     panel.appendChild(controls);

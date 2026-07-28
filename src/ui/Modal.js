@@ -10,6 +10,7 @@
  * semantics have one owner.
  */
 
+import { select } from './formFields.js';
 import { readImageFile } from './imageField.js';
 import { buildMultiselect, buildPillGrid, buildTagsField } from './ModalFields.js';
 import { clamp } from '../util/num.js';
@@ -189,15 +190,10 @@ export function promptModal(title, fields, options = {}) {
         /** @type {HTMLInputElement | HTMLSelectElement} */
         let input;
         if (field.type === 'select') {
-          input = document.createElement('select');
-          for (const option of field.options ?? []) {
-            const el = document.createElement('option');
-            el.value = option.value;
-            el.textContent = option.label;
-            if (option.disabled) el.disabled = true;
-            input.appendChild(el);
-          }
-          if (field.value !== undefined) input.value = String(field.value);
+          const choices = field.options ?? [];
+          // No stated value means the first option, which is what a bare
+          // `<select>` shows; naming it keeps `select`'s value argument honest.
+          input = select(choices, String(field.value ?? choices[0]?.value ?? ''));
           getters[field.name] = () => input.value;
         } else if (field.type === 'file') {
           // A picked image is decoded, downscaled, and re-encoded under a size cap

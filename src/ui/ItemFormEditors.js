@@ -1,5 +1,6 @@
 import { DIE_SIZES, DAMAGE_TYPES, normalizeDamagePart } from '../entities/Equipment.js';
 import { iconButton, removableChip } from './buttons.js';
+import { numberField, select, textField } from './formFields.js';
 import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
@@ -32,41 +33,28 @@ export function buildDamageEditor(initial) {
       const row = document.createElement('div');
       row.className = 'inventory-panel__damage-row';
 
-      const countInput = document.createElement('input');
-      countInput.type = 'number';
-      countInput.min = '1';
-      countInput.value = String(part.count);
-      countInput.className = 'field inventory-panel__dice-count';
-      countInput.setAttribute('aria-label', 'Number of dice');
+      const countInput = numberField(part.count, {
+        min: 1,
+        className: 'inventory-panel__dice-count',
+        ariaLabel: 'Number of dice',
+      });
       countInput.addEventListener('change', () => {
         part.count = clampInt(countInput.value, 1);
         countInput.value = String(part.count);
       });
 
-      const dieSelect = document.createElement('select');
-      dieSelect.className = 'field';
-      dieSelect.setAttribute('aria-label', 'Die size');
-      for (const sides of DIE_SIZES) {
-        const option = document.createElement('option');
-        option.value = String(sides);
-        option.textContent = `d${sides}`;
-        dieSelect.appendChild(option);
-      }
-      dieSelect.value = String(part.sides);
+      const dieSelect = select(
+        DIE_SIZES.map((sides) => ({ value: String(sides), label: `d${sides}` })),
+        String(part.sides),
+        { ariaLabel: 'Die size' },
+      );
       dieSelect.addEventListener('change', () => {
         part.sides = Number(dieSelect.value);
       });
 
-      const typeSelectEl = document.createElement('select');
-      typeSelectEl.className = 'field';
-      typeSelectEl.setAttribute('aria-label', 'Damage type');
-      for (const damageType of DAMAGE_TYPES) {
-        const option = document.createElement('option');
-        option.value = damageType;
-        option.textContent = damageType;
-        typeSelectEl.appendChild(option);
-      }
-      typeSelectEl.value = part.damageType;
+      const typeSelectEl = select([...DAMAGE_TYPES], part.damageType, {
+        ariaLabel: 'Damage type',
+      });
       typeSelectEl.addEventListener('change', () => {
         part.damageType = typeSelectEl.value;
       });
@@ -135,10 +123,9 @@ export function buildEffectsEditor(initial) {
         }),
       );
     }
-    const effectInput = document.createElement('input');
-    effectInput.type = 'text';
-    effectInput.placeholder = 'e.g. burning';
-    effectInput.className = 'field inventory-panel__effect-input';
+    const effectInput = textField('', 'e.g. burning', {
+      className: 'inventory-panel__effect-input',
+    });
     const addEffect = () => {
       const effect = effectInput.value.trim();
       if (!effect || statusEffects.includes(effect)) return;

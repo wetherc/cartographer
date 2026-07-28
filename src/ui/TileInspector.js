@@ -1,4 +1,6 @@
 import { emptyState, textButton } from './buttons.js';
+import { el } from './dom.js';
+import { select, setOptions, textareaField } from './formFields.js';
 import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -45,51 +47,39 @@ export function mountTileInspector(container, opts) {
   coordLabel.className = 'tile-inspector__coord';
 
   // POI type
-  const typeField = document.createElement('label');
-  typeField.className = 'tile-inspector__field';
-  typeField.textContent = 'POI type';
-  const typeSelect = document.createElement('select');
-  typeSelect.className = 'field';
-  for (const value of POI_TYPES) {
-    const option = document.createElement('option');
-    option.value = value;
-    option.textContent = value === '' ? 'None' : capitalize(value);
-    typeSelect.appendChild(option);
-  }
+  const typeSelect = select(
+    POI_TYPES.map((value) => ({ value, label: value === '' ? 'None' : capitalize(value) })),
+    '',
+  );
   typeSelect.addEventListener('change', () => {
     opts.onChange({
       poiType: typeSelect.value === '' ? null : /** @type {POIType} */ (typeSelect.value),
     });
   });
-  typeField.appendChild(typeSelect);
+  const typeField = el('label', 'tile-inspector__field', 'POI type', typeSelect);
 
   // Discoverable
-  const discField = document.createElement('label');
-  discField.className = 'tile-inspector__field tile-inspector__field--inline';
-  const discInput = document.createElement('input');
+  const discInput = el('input');
   discInput.type = 'checkbox';
   discInput.addEventListener('change', () => opts.onChange({ discoverable: discInput.checked }));
-  discField.append(discInput, document.createTextNode(' Discoverable'));
+  const discField = el(
+    'label',
+    'tile-inspector__field tile-inspector__field--inline',
+    discInput,
+    ' Discoverable',
+  );
 
   // Notes
-  const notesField = document.createElement('label');
-  notesField.className = 'tile-inspector__field';
-  notesField.textContent = 'Notes';
-  const notesInput = document.createElement('textarea');
-  notesInput.className = 'field tile-inspector__notes';
-  notesInput.rows = 4;
+  const notesInput = textareaField('', { rows: 4, className: 'tile-inspector__notes' });
   notesInput.addEventListener('input', () => opts.onChange({ notes: notesInput.value }));
-  notesField.appendChild(notesInput);
+  const notesField = el('label', 'tile-inspector__field', 'Notes', notesInput);
 
   form.append(coordLabel, typeField, discField, notesField);
 
   // Region link (optional): which child node this tile zooms into. Only shown
   // when the caller supplies linking, i.e. in Build mode.
-  const linkField = document.createElement('label');
-  linkField.className = 'tile-inspector__field';
-  linkField.textContent = 'Zooms into';
-  const linkSelect = document.createElement('select');
-  linkSelect.className = 'field';
+  const linkSelect = select([], '');
+  const linkField = el('label', 'tile-inspector__field', 'Zooms into', linkSelect);
   const newRegionBtn = textButton('New region here', () => opts.linking?.onCreateNew(), {
     className: 'tile-inspector__new-region',
   });
@@ -98,7 +88,6 @@ export function mountTileInspector(container, opts) {
     linkSelect.addEventListener('change', () => {
       linking.onChange(linkSelect.value === '' ? null : linkSelect.value);
     });
-    linkField.appendChild(linkSelect);
     form.append(linkField, newRegionBtn);
   }
 
@@ -117,18 +106,14 @@ export function mountTileInspector(container, opts) {
 
   function renderLinkOptions() {
     if (!opts.linking || !tile) return;
-    linkSelect.innerHTML = '';
-    const none = document.createElement('option');
-    none.value = '';
-    none.textContent = 'Nothing';
-    linkSelect.appendChild(none);
-    for (const opt of opts.linking.getOptions()) {
-      const option = document.createElement('option');
-      option.value = opt.id;
-      option.textContent = opt.name;
-      linkSelect.appendChild(option);
-    }
-    linkSelect.value = tile.childNodeId ?? '';
+    setOptions(
+      linkSelect,
+      [
+        { value: '', label: 'Nothing' },
+        ...opts.linking.getOptions().map(({ id, name }) => ({ value: id, label: name })),
+      ],
+      tile.childNodeId ?? '',
+    );
     linkSelect.disabled = !editable;
     newRegionBtn.disabled = !editable;
   }

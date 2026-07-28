@@ -1,4 +1,4 @@
-import { el, setAttrs } from './dom.js';
+import { classNames, el, setAttrs } from './dom.js';
 import { icon } from './icons.js';
 
 /**
@@ -14,14 +14,6 @@ import { icon } from './icons.js';
  * `segSwitch` builds the fifth, a segmented group of mutually exclusive
  * buttons.
  */
-
-/**
- * @param {(string | undefined)[]} parts
- * @returns {string}
- */
-function classNames(parts) {
-  return parts.filter(Boolean).join(' ');
-}
 
 /**
  * An icon-only `btn btn--icon` button. The aria-label is required (icon-only

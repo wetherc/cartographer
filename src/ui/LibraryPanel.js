@@ -1,4 +1,5 @@
 import { textButton } from './buttons.js';
+import { textField } from './formFields.js';
 import { mountListPanel } from './listPanel.js';
 import { buildTabs } from './Tabs.js';
 
@@ -125,12 +126,11 @@ export function mountLibraryPanel(container, callbacks) {
 
   /** @returns {HTMLInputElement} */
   function buildFilter() {
-    const filterInput = document.createElement('input');
-    filterInput.type = 'search';
-    filterInput.placeholder = 'Filter by name...';
-    filterInput.className = 'field library-panel__filter';
-    filterInput.setAttribute('aria-label', 'Filter entries by name');
-    filterInput.value = filter;
+    const filterInput = textField(filter, 'Filter by name...', {
+      type: 'search',
+      className: 'library-panel__filter',
+      ariaLabel: 'Filter entries by name',
+    });
     filterInput.addEventListener('input', () => {
       filter = filterInput.value;
       lists.get(activeSubtab ?? '')?.update();

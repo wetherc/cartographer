@@ -19,6 +19,8 @@ import { buildSpellsSection } from './CharacterSpells.js';
 import { buildStatBar, buildSlotLine } from './CharacterBars.js';
 import { statBadge } from './CharacterStatBadge.js';
 import { iconButton, textButton, emptyState } from './buttons.js';
+import { el } from './dom.js';
+import { numberField } from './formFields.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -264,19 +266,18 @@ export function mountCharacterSheet(
      * @returns {{ row: HTMLElement, input: HTMLInputElement }}
      */
     function buildFieldRow(key, value, ariaLabel, onCommit) {
-      const row = document.createElement('div');
-      row.className = 'character-sheet__field-row';
-      const keyText = document.createElement('span');
-      keyText.className = 'character-sheet__stat-key';
-      keyText.textContent = key;
-      const input = document.createElement('input');
-      input.type = 'number';
-      input.className = 'field character-sheet__stat-input';
-      input.value = String(value);
-      input.min = '0';
-      input.setAttribute('aria-label', ariaLabel);
+      const input = numberField(value, {
+        min: 0,
+        className: 'character-sheet__stat-input',
+        ariaLabel,
+      });
       input.addEventListener('change', () => onCommit(Number(input.value)));
-      row.append(keyText, input);
+      const row = el(
+        'div',
+        'character-sheet__field-row',
+        el('span', 'character-sheet__stat-key', key),
+        input,
+      );
       return { row, input };
     }
 

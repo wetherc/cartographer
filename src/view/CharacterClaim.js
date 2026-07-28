@@ -18,6 +18,8 @@ import {
   characterLockKey,
   initialBinding,
 } from './CharacterBinding.js';
+import { el } from '../ui/dom.js';
+import { select, setOptions } from '../ui/formFields.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -97,16 +99,10 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
   // The picker, Player view only (hidden for the GM via CSS): binds this tab to
   // one character, or to none for a spectator tab. The URL form (?character=<id>)
   // survives reloads; the picker is per-tab session state.
-  const field = document.createElement('label');
-  field.className = 'party-binding';
-  const caption = document.createElement('span');
-  caption.className = 'party-binding__label';
-  caption.textContent = 'Playing as';
-  const picker = document.createElement('select');
-  picker.className = 'field';
-  picker.setAttribute('aria-label', 'Character this tab plays as');
-  field.append(caption, picker);
-  container.appendChild(field);
+  const picker = select([], '', { ariaLabel: 'Character this tab plays as' });
+  container.appendChild(
+    el('label', 'party-binding', el('span', 'party-binding__label', 'Playing as'), picker),
+  );
 
   picker.addEventListener('change', () => {
     const took = setBinding(picker.value === '' ? null : picker.value);
@@ -117,18 +113,14 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
   function updatePicker() {
     // A binding whose character left the roster silently resolves to spectator.
     if (boundId && !getCharacters().some((c) => c.id === boundId)) setBinding(null);
-    picker.innerHTML = '';
-    const spectator = document.createElement('option');
-    spectator.value = '';
-    spectator.textContent = 'Spectator (view only)';
-    picker.appendChild(spectator);
-    for (const character of getCharacters()) {
-      const option = document.createElement('option');
-      option.value = character.id;
-      option.textContent = character.name;
-      picker.appendChild(option);
-    }
-    picker.value = boundId ?? '';
+    setOptions(
+      picker,
+      [
+        { value: '', label: 'Spectator (view only)' },
+        ...getCharacters().map((character) => ({ value: character.id, label: character.name })),
+      ],
+      boundId ?? '',
+    );
   }
   updatePicker();
 

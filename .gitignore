@@ -1,6 +1,8 @@
 .playwright-mcp/
 .DS_Store
-node_modules/
+# No trailing slash: a git worktree links node_modules rather than holding a
+# directory, and a trailing slash would not match the symlink.
+node_modules
 
 # GM library customizations live in library/, which is not committed apart from
 # the tracked empty campaign-library.json the app loads at startup.
