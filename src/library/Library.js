@@ -1,4 +1,5 @@
-import { WEAPON_TYPES, ITEM_TYPES, DIE_SIZES, DAMAGE_TYPES } from '../entities/Equipment.js';
+import { WEAPON_TYPES, ITEM_TYPES, normalizeDamagePart } from '../entities/Equipment.js';
+import { clampInt } from '../util/num.js';
 import {
   DEFAULT_SPELLS,
   SPELL_SCHOOLS,
@@ -331,13 +332,7 @@ export function storedEntryId({ found, target, renamed, newKey, takenIds }) {
  */
 function normalizeDamageParts(value) {
   if (!Array.isArray(value)) return [];
-  return value
-    .filter((p) => p && typeof p === 'object')
-    .map((p) => ({
-      count: Math.max(1, Math.floor(Number(p.count)) || 1),
-      sides: DIE_SIZES.includes(Number(p.sides)) ? Number(p.sides) : DIE_SIZES[0],
-      damageType: DAMAGE_TYPES.includes(p.damageType) ? p.damageType : DAMAGE_TYPES[0],
-    }));
+  return value.filter((p) => p && typeof p === 'object').map(normalizeDamagePart);
 }
 
 /**
@@ -375,7 +370,7 @@ function normalizeSpell(raw, id) {
   }
 
   const scalingDamage = normalizeDamageParts(raw.scaling?.damagePerLevel);
-  const scalingTargets = Math.floor(Number(raw.scaling?.targetsPerLevel));
+  const scalingTargets = clampInt(raw.scaling?.targetsPerLevel, 0);
   const scaling =
     scalingDamage.length > 0 || scalingTargets > 0
       ? {
@@ -387,7 +382,7 @@ function normalizeSpell(raw, id) {
   return {
     id,
     name: raw.name.trim(),
-    level: Math.min(9, Math.max(0, Math.floor(Number(raw.level)) || 0)),
+    level: clampInt(raw.level, 0, 9),
     school: SPELL_SCHOOLS.includes(raw.school) ? raw.school : SPELL_SCHOOLS[0],
     classes: Array.isArray(raw.classes) ? raw.classes.filter((c) => typeof c === 'string') : [],
     castingTime: typeof raw.castingTime === 'string' ? raw.castingTime : '1 action',
@@ -430,9 +425,7 @@ function casterTemplateFrom(e) {
   return {
     class: e.class,
     ...(typeof e.subclass === 'string' ? { subclass: e.subclass } : {}),
-    ...(Number.isFinite(Number(e.casterLevel))
-      ? { casterLevel: Math.max(1, Math.floor(Number(e.casterLevel))) }
-      : {}),
+    ...(Number.isFinite(Number(e.casterLevel)) ? { casterLevel: clampInt(e.casterLevel, 1) } : {}),
     spellbook: normalizeSpellbook(e.spellbook),
   };
 }
@@ -502,9 +495,9 @@ export function normalizeLibrary(parsed) {
     return /** @type {EncounterTemplate} */ ({
       id,
       name,
-      maxHP: Math.max(1, Math.floor(Number(e.maxHP)) || 1),
+      maxHP: clampInt(e.maxHP, 1),
       statBlock: normalizeStatBlock(typeof e.statBlock === 'object' ? e.statBlock : {}),
-      level: Math.max(1, Math.floor(Number(e.level)) || 1),
+      level: clampInt(e.level, 1),
       tier: e.tier === 'legend' ? 'legend' : 'mob',
       // null survives (deliberately unarmed); absent stays absent so a
       // default can stamp in; anything non-object drops.

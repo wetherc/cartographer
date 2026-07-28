@@ -26,6 +26,7 @@ import {
   filterItems,
   equippedWeapons,
   equippedIndex,
+  normalizeDamagePart,
 } from '../src/entities/Equipment.js';
 import {
   WEAPON_PRESETS,
@@ -492,6 +493,30 @@ test('weapon presets follow 5e: valid dice, handling, and damage types', () => {
   const greatsword = WEAPON_PRESETS.find((p) => p.name === 'Greatsword');
   assert.deepEqual(greatsword?.damage, [{ count: 2, sides: 6, damageType: 'slashing' }]);
   assert.equal(greatsword?.handling, 'melee');
+});
+
+test('normalizeDamagePart repairs each field onto the supported values', () => {
+  assert.deepEqual(normalizeDamagePart({ count: 2, sides: 8, damageType: 'fire' }), {
+    count: 2,
+    sides: 8,
+    damageType: 'fire',
+  });
+  assert.deepEqual(normalizeDamagePart({ count: '3.7', sides: '10', damageType: 'cold' }), {
+    count: 3,
+    sides: 10,
+    damageType: 'cold',
+  });
+  assert.deepEqual(normalizeDamagePart({ count: 0, sides: 7, damageType: 'sonic' }), {
+    count: 1,
+    sides: DIE_SIZES[0],
+    damageType: DAMAGE_TYPES[0],
+  });
+});
+
+test('normalizeDamagePart accepts a missing term rather than throwing', () => {
+  const expected = { count: 1, sides: DIE_SIZES[0], damageType: DAMAGE_TYPES[0] };
+  assert.deepEqual(normalizeDamagePart(undefined), expected);
+  assert.deepEqual(normalizeDamagePart({}), expected);
 });
 
 test('armor presets carry a valid weight class and a plausible base AC', () => {

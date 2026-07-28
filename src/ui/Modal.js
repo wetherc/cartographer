@@ -12,6 +12,7 @@
 
 import { readImageFile } from './imageField.js';
 import { removableChip } from './buttons.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file' | 'multiselect' | 'tags' | 'button' | 'pillgrid', value?: string | number, min?: number, options?: { value: string, label: string, disabled?: boolean }[], rows?: { value: string, label: string }[], full?: boolean, max?: number, emptyText?: string, fixedHeight?: boolean, disabled?: boolean, hidden?: boolean }} ModalField */
 
@@ -428,7 +429,9 @@ export function promptModal(title, fields, options = {}) {
               if (plain.value === '' || Number.isNaN(value)) return;
               const min = plain.min === '' ? -Infinity : Number(plain.min);
               const max = plain.max === '' ? Infinity : Number(plain.max);
-              const clamped = Math.min(max, Math.max(min, value));
+              // Not clampInt: a number field may legitimately hold a decimal,
+              // and this only enforces the field's own bounds.
+              const clamped = clamp(value, min, max);
               if (clamped !== value) {
                 plain.value = String(clamped);
                 plain.dispatchEvent(new Event('input'));

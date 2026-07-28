@@ -9,6 +9,7 @@ import {
 import { activeEquipment } from '../library/Library.js';
 import { buildDamageEditor, buildEffectsEditor } from './ItemFormEditors.js';
 import { labeled, fieldRow, formActions } from './formFields.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
@@ -301,7 +302,7 @@ export function buildItemForm({
             armorWeight: /** @type {import('../types/entities.js').ArmorWeight} */ (
               weightSelect.value
             ),
-            baseAC: Math.max(1, Number(baseACInput.value) || 10),
+            baseAC: clampInt(baseACInput.value, 1, Infinity, 10),
           }
         : {}),
       ...(acBonus > 0 ? { acBonus } : {}),

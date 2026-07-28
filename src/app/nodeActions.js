@@ -4,6 +4,7 @@ import { NODE_KINDS, ENVIRONS } from '../map/NodeKinds.js';
 import { parseCoords } from '../map/MapGeometry.js';
 import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { capitalize } from '../util/text.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
@@ -95,8 +96,8 @@ export function createNodeActions(ctx) {
     ]);
     if (!values) return null;
     const id = freshNodeId();
-    const width = Math.max(1, Number(values.width) || 1);
-    const height = Math.max(1, Number(values.height) || 1);
+    const width = clampInt(values.width, 1);
+    const height = clampInt(values.height, 1);
     const kind = /** @type {NodeKind} */ (
       /** @type {readonly string[]} */ (NODE_KINDS).includes(values.kind) ? values.kind : 'region'
     );
@@ -166,8 +167,8 @@ export function createNodeActions(ctx) {
       { submitLabel: 'Save' },
     );
     if (!values) return;
-    const width = Math.max(1, Number(values.width) || node.width);
-    const height = Math.max(1, Number(values.height) || node.height);
+    const width = clampInt(values.width, 1, Infinity, node.width);
+    const height = clampInt(values.height, 1, Infinity, node.height);
     const lost = tilesOutsideBounds(node, width, height);
     if (lost.length) {
       const ok = await confirmModal(

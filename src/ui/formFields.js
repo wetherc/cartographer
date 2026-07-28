@@ -6,6 +6,8 @@
  * shape and class vocabulary stay identical across every form.
  */
 
+import { clampInt } from '../util/num.js';
+
 /**
  * A captioned wrapper so each control names itself.
  * @param {string} caption
@@ -141,7 +143,7 @@ export function statInputRows(keys, stats) {
   }
   const read = () =>
     Object.fromEntries(
-      statInputs.map(({ key, input }) => [key, Math.max(1, Number(input.value) || 10)]),
+      statInputs.map(({ key, input }) => [key, clampInt(input.value, 1, Infinity, 10)]),
     );
   return { statInputs, rows, read };
 }

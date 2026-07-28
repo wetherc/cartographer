@@ -8,6 +8,7 @@ import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Libr
 import { castSpellOutOfCombat } from './spellCast.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { replaceById, removeById } from '../entities/Roster.js';
+import { clampInt } from '../util/num.js';
 import { mountCharacterRoster } from '../ui/CharacterRoster.js';
 import { mountCharacterSheet } from '../ui/CharacterSheet.js';
 import { mountSpellbookPanel } from '../ui/SpellbookPanel.js';
@@ -377,7 +378,7 @@ export function wireParty(app) {
         [{ name: 'amount', label: 'XP per character', type: 'number', value: 100, min: 1 }],
         { submitLabel: 'Award' },
       );
-      const amount = Math.floor(Number(values?.amount) || 0);
+      const amount = clampInt(values?.amount, 0);
       if (!values || amount <= 0) return;
       state.characters = state.characters.map((c) => addXP(c, amount));
       selectCharacter(selectedCharacterId); // refresh sheet/inventory/roster

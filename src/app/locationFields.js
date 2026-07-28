@@ -1,4 +1,5 @@
 import { parseCoords, tileIdAt } from '../map/MapGeometry.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
@@ -49,10 +50,10 @@ export function locationFields(app, location, options = {}) {
 export function readLocation(app, values) {
   const node = values.nodeId ? app.grid.getNode(values.nodeId) : undefined;
   if (!node) return null;
-  const clamp = (/** @type {string} */ raw, /** @type {number} */ max) =>
-    Math.min(Math.max(0, Math.floor(Number(raw) || 0)), max - 1);
+  const inBounds = (/** @type {string} */ raw, /** @type {number} */ size) =>
+    clampInt(raw, 0, size - 1);
   return {
     nodeId: node.id,
-    tileId: tileIdAt(clamp(values.tileX, node.width), clamp(values.tileY, node.height)),
+    tileId: tileIdAt(inBounds(values.tileX, node.width), inBounds(values.tileY, node.height)),
   };
 }

@@ -8,6 +8,7 @@ import {
 import { activeBestiary } from '../library/Library.js';
 import { defaultEnemyStats, ENEMY_TIERS, STAT_KEYS } from '../entities/Modifiers.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
+import { clampInt } from '../util/num.js';
 import { locationFields, readLocation } from './locationFields.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
 import { gearOptions, readGear } from './gearFields.js';
@@ -116,7 +117,7 @@ export async function encounterForm(app, existing, defaultLocation) {
         }
         if (statsTouched || (name !== 'level' && name !== 'tier')) return;
         const stats = defaultEnemyStats(
-          Math.max(1, Number(form.get('level')) || 1),
+          clampInt(form.get('level'), 1),
           /** @type {import('../types/entities.js').EnemyTier} */ (form.get('tier')),
         );
         for (const key of STAT_KEYS) form.set(`stat-${key}`, stats[key]);
@@ -126,8 +127,8 @@ export async function encounterForm(app, existing, defaultLocation) {
   if (!values) return null;
   const name = values.name.trim();
   if (!name) return null;
-  const maxHP = Math.max(1, Number(values.maxHP) || 1);
-  const level = Math.max(1, Number(values.level) || 1);
+  const maxHP = clampInt(values.maxHP, 1);
+  const level = clampInt(values.level, 1);
   const tier = /** @type {import('../types/entities.js').EnemyTier} */ (values.tier);
   const location = readLocation(app, values);
   // The empty value is the explicit "None" choice and stores null, which

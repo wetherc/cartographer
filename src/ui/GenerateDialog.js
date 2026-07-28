@@ -1,5 +1,6 @@
 import { MapRenderer } from '../map/MapRenderer.js';
 import { randomSeed } from '../util/Rng.js';
+import { clampInt } from '../util/num.js';
 import { openDialog } from './Modal.js';
 
 /**
@@ -112,8 +113,8 @@ export function generateDialog(options) {
       readChoice = () => ({
         archetype: archetypeSelect.value,
         size: sizeSelect.value,
-        levels: Math.max(1, Number(levelsInput.value) || 1),
-        seed: Math.floor(Number(seedInput.value)) || 0,
+        levels: clampInt(levelsInput.value, 1),
+        seed: clampInt(seedInput.value),
       });
 
       function renderPreview() {

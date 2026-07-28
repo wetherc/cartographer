@@ -1,8 +1,10 @@
 import { abilityModifier } from './Modifiers.js';
 import { indexById } from '../util/indexById.js';
 import { memoizeByIdentity } from '../util/memoize.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
 /** @typedef {import('../types/entities.js').ArmorWeight} ArmorWeight */
@@ -82,6 +84,26 @@ export const DAMAGE_TYPES = [
   'radiant',
   'thunder',
 ];
+
+/**
+ * Coerce an unknown value into one well-formed damage term: at least one die,
+ * a die size and a damage type drawn from the lists above. Lives here because
+ * the lists do, so a change to either has one validator to update. Pure.
+ * @param {unknown} part
+ * @returns {DamagePart}
+ */
+export function normalizeDamagePart(part) {
+  const raw = /** @type {Record<string, unknown>} */ (part ?? {});
+  return {
+    count: clampInt(raw.count, 1),
+    sides: DIE_SIZES.includes(Number(raw.sides)) ? Number(raw.sides) : DIE_SIZES[0],
+    damageType: /** @type {string} */ (
+      DAMAGE_TYPES.includes(/** @type {string} */ (raw.damageType))
+        ? raw.damageType
+        : DAMAGE_TYPES[0]
+    ),
+  };
+}
 
 /**
  * How a weapon is wielded, which alone fixes the ability behind its damage

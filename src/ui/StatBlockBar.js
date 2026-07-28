@@ -1,5 +1,6 @@
 import { promptModal } from './Modal.js';
 import { STAT_KEYS, normalizeStatBlock } from '../entities/Modifiers.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').StatModifier} StatModifier */
 
@@ -54,7 +55,7 @@ export function mountStatBlockBar(container, callbacks) {
     );
     if (!values) return;
     const delta = Number(values.delta) || 0;
-    const rounds = Math.max(1, Number(values.rounds) || 1);
+    const rounds = clampInt(values.rounds, 1);
     if (delta !== 0) callbacks.onAddModifier?.(name, delta, rounds);
     render();
   }

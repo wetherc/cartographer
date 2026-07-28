@@ -2,6 +2,7 @@ import { CLASS_LIST } from '../entities/Classes.js';
 import { SPELL_SCHOOLS, SPELL_ABILITIES, SPELL_EFFECT_KINDS } from '../data/spells.js';
 import { buildDamageEditor } from './ItemFormEditors.js';
 import { labeled, fieldRow, checkbox, textField, select, formActions } from './formFields.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/spell.js').SpellEffect} SpellEffect */
@@ -180,7 +181,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       effect = { kind: 'utility' };
     }
 
-    const targets = Math.max(0, Math.floor(Number(targetsInput.value)) || 0);
+    const targets = clampInt(targetsInput.value, 0);
     const scaling = scales.input.checked
       ? {
           ...(scalingDamage.get().length ? { damagePerLevel: scalingDamage.get() } : {}),

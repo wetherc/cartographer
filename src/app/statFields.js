@@ -5,6 +5,8 @@
  * either way, so the two dialogs can't drift.
  */
 
+import { clampInt } from '../util/num.js';
+
 /** @typedef {import('../ui/Modal.js').ModalField} ModalField */
 
 /**
@@ -33,6 +35,6 @@ export function statFields(keys, stats = {}) {
  */
 export function readStats(keys, values) {
   return Object.fromEntries(
-    keys.map((key) => [key, Math.max(1, Number(values[`stat-${key}`]) || 10)]),
+    keys.map((key) => [key, clampInt(values[`stat-${key}`], 1, Infinity, 10)]),
   );
 }

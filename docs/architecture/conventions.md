@@ -229,6 +229,18 @@ hand-rolled copies they replaced had drifted on exactly those attributes.
 have no `document.createElement('button')` of its own unless it is genuinely a
 different control (a tab, a chip, a select-like row).
 
+### Numbers off a form or a file go through src/util/num.js
+
+`clampInt(value, min, max, fallback)` floors, clamps, and reads anything
+unparseable (blank, text, `undefined`, zero) as `fallback`, which defaults to
+`min`.
+
+One step up from that, a whole value with several such fields gets a named
+normalizer beside the constants it validates against, not a second copy of the
+coercion at each reader: `Equipment.normalizeDamagePart` is what both the
+library importer and the item form's damage editor call, so the supported die
+sizes and damage types are checked in one place.
+
 ### Destructive controls are danger-styled and always visible
 
 A delete/discard/clear button passes `variant: 'danger'` and is never

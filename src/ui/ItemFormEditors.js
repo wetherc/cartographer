@@ -1,6 +1,7 @@
-import { DIE_SIZES, DAMAGE_TYPES } from '../entities/Equipment.js';
+import { DIE_SIZES, DAMAGE_TYPES, normalizeDamagePart } from '../entities/Equipment.js';
 import { icon } from './icons.js';
 import { removableChip } from './buttons.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 
@@ -22,7 +23,7 @@ import { removableChip } from './buttons.js';
  */
 export function buildDamageEditor(initial) {
   /** @type {DamagePart[]} */
-  let damageParts = initial.map((p) => ({ ...p }));
+  let damageParts = initial.map(normalizeDamagePart);
   const element = document.createElement('div');
   element.className = 'inventory-panel__damage';
 
@@ -39,7 +40,7 @@ export function buildDamageEditor(initial) {
       countInput.className = 'field inventory-panel__dice-count';
       countInput.setAttribute('aria-label', 'Number of dice');
       countInput.addEventListener('change', () => {
-        part.count = Math.max(1, Math.floor(Number(countInput.value)) || 1);
+        part.count = clampInt(countInput.value, 1);
         countInput.value = String(part.count);
       });
 
@@ -66,9 +67,7 @@ export function buildDamageEditor(initial) {
         option.textContent = damageType;
         typeSelectEl.appendChild(option);
       }
-      typeSelectEl.value = DAMAGE_TYPES.includes(part.damageType)
-        ? part.damageType
-        : DAMAGE_TYPES[0];
+      typeSelectEl.value = part.damageType;
       typeSelectEl.addEventListener('change', () => {
         part.damageType = typeSelectEl.value;
       });
@@ -110,7 +109,7 @@ export function buildDamageEditor(initial) {
     element,
     get: () => damageParts.map((p) => ({ ...p })),
     set: (parts) => {
-      damageParts = parts.map((p) => ({ ...p }));
+      damageParts = parts.map(normalizeDamagePart);
       render();
     },
   };

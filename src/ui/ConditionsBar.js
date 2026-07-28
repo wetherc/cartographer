@@ -1,6 +1,7 @@
 import { CONDITIONS, addCondition, removeCondition } from '../entities/Conditions.js';
 import { promptModal } from './Modal.js';
 import { chip, iconButton, removableChip, textButton } from './buttons.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
 
@@ -51,7 +52,7 @@ export function mountConditionsBar(container, callbacks) {
       { submitLabel: 'Add' },
     );
     if (!values || !values.name) return;
-    const rounds = values.rounds === '' ? null : Math.max(1, Number(values.rounds) || 1);
+    const rounds = values.rounds === '' ? null : clampInt(values.rounds, 1);
     callbacks.onChange(addCondition(callbacks.getConditions(), values.name, rounds));
     render();
   }

@@ -17,6 +17,7 @@ import {
   statInputRows,
   formActions,
 } from './formFields.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
 /** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
@@ -74,13 +75,12 @@ export function buildEncounterTemplateForm({
   // Rebuild the spell checkboxes filtered to the current caster class and
   // level, keeping `selected` checked. Rebuilt live when either changes.
   function renderSpellChecks(/** @type {Set<string>} */ selected) {
-    spellChecks = spellPickerOptions(
-      classSelect.value,
-      Math.max(1, Number(casterLevelInput.value) || 1),
-    ).map((option) => ({
-      id: option.value,
-      ...checkbox(option.label, selected.has(option.value)),
-    }));
+    spellChecks = spellPickerOptions(classSelect.value, clampInt(casterLevelInput.value, 1)).map(
+      (option) => ({
+        id: option.value,
+        ...checkbox(option.label, selected.has(option.value)),
+      }),
+    );
     spellBox.textContent = '';
     for (const { label } of spellChecks) spellBox.appendChild(label);
   }
@@ -110,7 +110,7 @@ export function buildEncounterTemplateForm({
     const restamp = () => {
       if (statsTouched) return;
       const stats = defaultEnemyStats(
-        Math.max(1, Number(levelInput.value) || 1),
+        clampInt(levelInput.value, 1),
         /** @type {EnemyTier} */ (tierSelect.value),
       );
       for (const { key, input } of statInputs) input.value = String(stats[key]);
@@ -134,9 +134,9 @@ export function buildEncounterTemplateForm({
     const { weapon, armor } = readGear(weaponSelect.value, armorSelect.value, gear);
     return {
       name: nameInput.value.trim(),
-      maxHP: Math.max(1, Number(hpInput.value) || 1),
+      maxHP: clampInt(hpInput.value, 1),
       statBlock: statBlock.read(),
-      level: Math.max(1, Number(levelInput.value) || 1),
+      level: clampInt(levelInput.value, 1),
       tier: /** @type {EnemyTier} */ (tierSelect.value),
       weapon,
       armor,
@@ -150,7 +150,7 @@ export function buildEncounterTemplateForm({
     const ids = spellChecks.filter(({ input }) => input.checked).map(({ id }) => id);
     return {
       class: classSelect.value,
-      casterLevel: Math.max(1, Number(casterLevelInput.value) || 1),
+      casterLevel: clampInt(casterLevelInput.value, 1),
       spellbook: spellbookFromIds(ids),
     };
   }

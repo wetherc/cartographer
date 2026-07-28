@@ -3,6 +3,7 @@ import { itemType, itemEffects } from '../entities/Equipment.js';
 import { buildItemForm } from './ItemForm.js';
 import { iconButton, textButton } from './buttons.js';
 import { confirmModal } from './Modal.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
@@ -204,7 +205,7 @@ function buildGiveForm(item, recipients, { view, render, transfer }) {
   countInput.hidden = item.quantity === 1;
 
   const giveButton = textButton('Give', () => {
-    const count = Math.min(item.quantity, Math.max(1, Math.floor(Number(countInput.value)) || 1));
+    const count = clampInt(countInput.value, 1, item.quantity);
     view.givingId = null;
     transfer?.send(item, count, recipientSelect.value);
   });
