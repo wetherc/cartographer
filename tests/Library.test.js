@@ -399,6 +399,33 @@ test('normalizeLibrary reads spell timing as either a structured value or printe
   assert.deepEqual(lib.spells[2].duration, { kind: 'special', text: 'while the choir sings' });
 });
 
+test('normalizeLibrary reads an attack spell’s projectiles and drops an unusable block', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      {
+        name: 'Rays',
+        effect: {
+          kind: 'attack',
+          damage: [{ count: 2, sides: 6, damageType: 'fire' }],
+          projectiles: { count: '3', perStep: 1, autoHit: true },
+        },
+      },
+      // Nothing usable written, so the entry stays the single-roll attack every
+      // spell authored before projectiles existed is.
+      { name: 'Bolt', effect: { kind: 'attack', damage: [], projectiles: { count: 'lots' } } },
+      { name: 'Plain', effect: { kind: 'attack', damage: [] } },
+    ],
+  });
+  const [rays, bolt, plain] = lib.spells;
+  assert.deepEqual(/** @type {any} */ (rays.effect).projectiles, {
+    count: 3,
+    perStep: 1,
+    autoHit: true,
+  });
+  assert.equal(/** @type {any} */ (bolt.effect).projectiles, undefined);
+  assert.equal(/** @type {any} */ (plain.effect).projectiles, undefined);
+});
+
 test('normalizeLibrary repairs attack/heal effects, save conditions, and scaling', () => {
   const lib = normalizeLibrary({
     spells: [

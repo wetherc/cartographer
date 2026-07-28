@@ -14,11 +14,27 @@ export type SpellSchool =
   | 'necromancy'
   | 'transmutation';
 
+/** Several separately-rolled projectiles fired by one cast — Scorching Ray's
+ * rays, Eldritch Blast's beams, Magic Missile's darts. Each picks its own
+ * creature and rolls its own attack, so its presence changes how the effect's
+ * `damage` reads: per projectile rather than per target. */
+export interface SpellProjectiles {
+  /** How many the spell fires at its base level. */
+  count: number;
+  /** How many more per scaling increment — a slot level above the spell's own
+   * for a leveled spell, a cantrip breakpoint for a cantrip. */
+  perStep?: number;
+  /** True when the projectiles hit without an attack roll (Magic Missile). */
+  autoHit?: boolean;
+}
+
 /** A spell attack roll resolved against the target's AC, dealing damage on a
- * hit (crit doubles the dice). */
+ * hit (crit doubles the dice). With `projectiles` the cast rolls once per
+ * projectile instead, and `damage` is what one projectile deals. */
 export interface SpellAttackEffect {
   kind: 'attack';
   damage: DamagePart[];
+  projectiles?: SpellProjectiles;
 }
 
 /** A saving throw the target rolls against the caster's spell save DC. On a

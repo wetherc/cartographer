@@ -2,11 +2,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   MAX_TARGET_COUNT,
+  allocateProjectiles,
   canCast,
   cantripStep,
   castSpell,
   maxTargets,
+  normalizeProjectiles,
   normalizeTargetCount,
+  projectileCount,
 } from '../src/entities/Casting.js';
 import { createResource } from '../src/entities/Resource.js';
 
@@ -107,6 +110,37 @@ const cureWounds = {
   effect: { kind: 'heal', healing: [{ count: 1, sides: 8, damageType: 'healing' }] },
   scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'healing' }] },
 };
+
+/** Three separately-rolled rays, one more per slot level above 2nd — the shipped
+ * Scorching Ray, whose dice are per ray.
+ * @type {import('../src/types/spell.js').Spell} */
+const scorchingRay = {
+  id: 'scorching-ray',
+  name: 'Scorching Ray',
+  level: 2,
+  school: 'evocation',
+  classes: ['wizard'],
+  castingTime: { kind: 'action' },
+  range: '120 ft',
+  components: ['V', 'S'],
+  duration: { kind: 'instantaneous' },
+  concentration: false,
+  ritual: false,
+  description: '',
+  effect: {
+    kind: 'attack',
+    damage: [{ count: 2, sides: 6, damageType: 'fire' }],
+    projectiles: { count: 3, perStep: 1 },
+  },
+};
+
+/** A caster with the 2nd-level slots Scorching Ray needs. */
+function rayCaster() {
+  return caster({
+    resources: [createResource('slots-2', 'Level 2 slots', 'mana', 3)],
+    spellbook: { cantrips: [], known: ['scorching-ray', 'darts'], prepared: [] },
+  });
+}
 
 test('castSpell reports no-slot when the caster has no pool at that level', () => {
   // The default caster carries only a 1st-level pool; casting at 2nd finds none.
@@ -225,6 +259,167 @@ test('each target of an attack spell rolls its own d20', () => {
   assert.equal(a.crit, true);
   assert.equal(b.hit, false);
   assert.equal(b.damage, null, 'a missed target takes no damage of its own');
+});
+
+test('projectileCount grows with the cast’s scaling steps', () => {
+  const effect = /** @type {any} */ (scorchingRay.effect);
+  assert.equal(projectileCount(effect, 0), 3);
+  assert.equal(projectileCount(effect, 2), 5, 'one more ray per slot level above the spell’s');
+  assert.equal(projectileCount(effect, -1), 3, 'a negative step cannot shrink the count');
+  assert.equal(projectileCount({ kind: 'attack', damage: [] }, 4), 1, 'no projectiles = one roll');
+  assert.equal(
+    projectileCount({ kind: 'attack', damage: [], projectiles: { count: 2 } }, 3),
+    2,
+    'without perStep the count is flat',
+  );
+});
+
+test('a projectile spell is capped by its projectiles, not its target count', () => {
+  assert.equal(maxTargets(scorchingRay, 0), 3, 'each ray may pick its own creature');
+  assert.equal(maxTargets(scorchingRay, 2), 5);
+  // An area spell stays uncapped even when it fires projectiles, since the map
+  // decides who is caught.
+  assert.equal(maxTargets({ ...scorchingRay, targetCount: 0 }, 0), Infinity);
+});
+
+test('normalizeProjectiles keeps a usable block and drops everything else', () => {
+  assert.equal(normalizeProjectiles(undefined), null);
+  assert.equal(normalizeProjectiles('three'), null);
+  assert.equal(
+    normalizeProjectiles({ count: 0 }),
+    null,
+    'firing nothing is not a projectile spell',
+  );
+  assert.equal(normalizeProjectiles({ count: 'many' }), null);
+  assert.deepEqual(normalizeProjectiles({ count: '3.7' }), { count: 3 });
+  assert.deepEqual(normalizeProjectiles({ count: 500, perStep: 500 }), {
+    count: MAX_TARGET_COUNT,
+    perStep: MAX_TARGET_COUNT,
+  });
+  assert.deepEqual(normalizeProjectiles({ count: 3, perStep: 0, autoHit: false }), { count: 3 });
+  assert.deepEqual(normalizeProjectiles({ count: 3, perStep: 1, autoHit: 'yes' }), {
+    count: 3,
+    perStep: 1,
+    autoHit: true,
+  });
+});
+
+test('allocateProjectiles spreads evenly when the caster states nothing', () => {
+  assert.deepEqual(allocateProjectiles([], 3), []);
+  assert.deepEqual(allocateProjectiles([{ id: 'a' }], 3), [3], 'the common single-target cast');
+  assert.deepEqual(allocateProjectiles([{ id: 'a' }, { id: 'b' }], 3), [2, 1]);
+  assert.deepEqual(allocateProjectiles([{ id: 'a' }, { id: 'b' }, { id: 'c' }], 3), [1, 1, 1]);
+});
+
+test('a stated allocation is honored and can never exceed what the spell fires', () => {
+  const stated = [
+    { id: 'a', projectiles: 2 },
+    { id: 'b', projectiles: 1 },
+  ];
+  assert.deepEqual(allocateProjectiles(stated, 3), [2, 1]);
+  // Over-allocating spends what is left in order rather than inventing rays.
+  assert.deepEqual(allocateProjectiles([{ id: 'a', projectiles: 5 }, { id: 'b' }], 3), [3, 0]);
+  // An allocation short of the count fires only what it named; the cast dialog
+  // is what refuses to submit a short allocation.
+  assert.deepEqual(allocateProjectiles(stated, 5), [2, 1]);
+  assert.deepEqual(
+    allocateProjectiles([{ id: 'a', projectiles: -2 }, { id: 'b' }], 3),
+    [0, 0],
+    'once any share is stated, a target without one takes none',
+  );
+});
+
+test('each projectile rolls its own attack and crits its own dice alone', () => {
+  // Three rays at one AC-5 target: a natural 20 crits (2d6 doubled to 4d6), a
+  // 15 hits (2d6), a 2 misses. Every damage die comes up 6.
+  const rng = seq([
+    face(20, 20),
+    ...Array(4).fill(face(6, 6)),
+    face(20, 15),
+    ...Array(2).fill(face(6, 6)),
+    face(20, 2),
+  ]);
+  const result = castSpell(rayCaster(), scorchingRay, {
+    slotLevel: 2,
+    targets: [{ id: 't', name: 'Orc', ac: 5 }],
+    rng,
+  });
+  assert.equal(result.ok, true);
+  const [o] = result.outcomes;
+  assert.equal(o.fired, 3);
+  assert.equal(o.hits, 2);
+  assert.equal(o.shots.length, 3);
+  assert.equal(o.shots[0].crit, true);
+  assert.equal(o.shots[0].damage.total, 24, 'the crit doubles this ray’s dice only');
+  assert.equal(o.shots[1].crit, false);
+  assert.equal(o.shots[1].damage.total, 12);
+  assert.equal(o.shots[2].hit, false);
+  assert.equal(o.shots[2].damage, null);
+  assert.equal(o.damage.total, 36, 'the target takes one hit carrying both rays');
+  assert.equal(o.damage.detail, '36 fire [6,6,6,6,6,6]');
+});
+
+test('every projectile missing leaves the target undamaged', () => {
+  const result = castSpell(rayCaster(), scorchingRay, {
+    slotLevel: 2,
+    targets: [{ id: 't', ac: 30 }],
+    rng: seq([face(20, 2), face(20, 3), face(20, 4)]),
+  });
+  const [o] = result.outcomes;
+  assert.equal(o.hits, 0);
+  assert.equal(o.hit, false);
+  assert.equal(o.damage, null);
+});
+
+test('an allocation resolves per target and applies damage once each', () => {
+  // Two rays on the first target, one on the second, all three hitting; each
+  // ray's 2d6 comes up 6.
+  const hit = [face(20, 18), ...Array(2).fill(face(6, 6))];
+  const result = castSpell(rayCaster(), scorchingRay, {
+    slotLevel: 2,
+    targets: [
+      { id: 'a', name: 'Orc', ac: 5, projectiles: 2 },
+      { id: 'b', name: 'Goblin', ac: 5, projectiles: 1 },
+    ],
+    rng: seq([...hit, ...hit, ...hit]),
+  });
+  const [a, b] = result.outcomes;
+  assert.equal(a.fired, 2);
+  assert.equal(a.damage.total, 24);
+  assert.equal(b.fired, 1);
+  assert.equal(b.damage.total, 12);
+  assert.equal(result.outcomes.length, 2, 'one outcome per creature, not per ray');
+});
+
+test('an auto-hitting projectile skips the attack roll entirely', () => {
+  const darts = {
+    ...scorchingRay,
+    id: 'darts',
+    name: 'Magic Missile',
+    effect: {
+      kind: /** @type {const} */ ('attack'),
+      damage: [
+        { count: 1, sides: 4, damageType: 'force' },
+        { count: 1, sides: 1, damageType: 'force' },
+      ],
+      projectiles: { count: 3, autoHit: true },
+    },
+  };
+  // Only damage dice are queued: three darts of 1d4 (max 4) plus their flat 1.
+  const result = castSpell(rayCaster(), darts, {
+    slotLevel: 2,
+    targets: [{ id: 't', ac: 99 }],
+    rng: seq(
+      Array(3)
+        .fill([face(4, 4), 0])
+        .flat(),
+    ),
+  });
+  const [o] = result.outcomes;
+  assert.equal(o.hits, 3, 'AC is irrelevant to a dart that hits automatically');
+  assert.equal(o.shots[0].attack, null);
+  assert.equal(o.shots[0].crit, false, 'an auto-hit cannot crit');
+  assert.equal(o.damage.total, 15);
 });
 
 test('canCast checks cantrips and prepared/known lists', () => {

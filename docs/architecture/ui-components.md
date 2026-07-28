@@ -411,6 +411,7 @@ A field is a `ModalField` record (`Modal.js`), and `type` picks the widget:
 | `'multiselect'` | scrollable checkbox group, capped by `max` | checked values, comma-joined |
 | `'tags'` | pill list with inline entry | pills plus any unfinalized text, comma-joined |
 | `'pillgrid'` | assignment grid: `rows` x `options`, one option per row | `row:value` pairs, comma-joined |
+| `'allocation'` | distribution grid: a number input per row that must sum to `total` | `row:count` pairs, comma-joined; a row given 0 is left out |
 | `'button'` | an in-form action button | `''` (it acts through `onChange`) |
 
 Every field also takes `label`, `value`, `full`, `hidden`, and `disabled`. With
@@ -432,9 +433,15 @@ Two behaviors are easy to reimplement badly:
   `{ get, set, setOptions, setDisabled, setLabel, setRange, setHidden }`, all
   keyed by field name, and `get` is always synchronous.
 
-The composite fields (`multiselect`, `tags`, `pillgrid`) each keep their own
-local state and re-render internally; a refilter through `setOptions` preserves
-current selections even if they leave the option set.
+The composite fields (`multiselect`, `tags`, `pillgrid`, `allocation`) each keep
+their own local state and re-render internally; a refilter through `setOptions`
+preserves current selections even if they leave the option set.
+
+The allocation field is also the one field that can block a submit. It writes a
+message onto its first input through `setCustomValidity` whenever the rows do
+not sum to `total`, so the browser refuses the submit and reports it the way it
+reports any other invalid field. Its rows scroll and its remaining-count line
+does not, so the reason a submit was refused cannot be scrolled out of sight.
 
 ## Inline forms
 

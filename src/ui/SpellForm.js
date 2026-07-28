@@ -13,7 +13,11 @@ import {
   buildInlineForm,
 } from './formFields.js';
 import { clampInt } from '../util/num.js';
-import { MAX_TARGET_COUNT, normalizeTargetCount } from '../entities/Casting.js';
+import {
+  MAX_TARGET_COUNT,
+  normalizeProjectiles,
+  normalizeTargetCount,
+} from '../entities/Casting.js';
 import { CONDITIONS } from '../entities/Conditions.js';
 import {
   CASTING_TIME_KINDS,
@@ -185,6 +189,25 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const abilityField = labeled('Save', abilitySelect);
   const conditionField = labeled('Condition', conditionSelect);
 
+  // --- Projectiles: several separately-rolled attacks from one cast ----------
+  const shots = spell?.effect.kind === 'attack' ? (spell.effect.projectiles ?? null) : null;
+  const fires = checkbox('Fires projectiles', !!shots);
+  fires.label.title = 'Each projectile rolls its own attack and picks its own target';
+  const shotCountInput = numberField(shots?.count ?? 1, {
+    min: 1,
+    max: MAX_TARGET_COUNT,
+    className: 'inventory-panel__quantity-input',
+  });
+  const shotCountField = labeled('Projectiles', shotCountInput);
+  const shotPerStepInput = numberField(shots?.perStep ?? 0, {
+    min: 0,
+    max: MAX_TARGET_COUNT,
+    className: 'inventory-panel__quantity-input',
+  });
+  const shotPerStepField = labeled('Extra / level', shotPerStepInput);
+  const autoHit = checkbox('Hits automatically', shots?.autoHit ?? false);
+  autoHit.label.title = 'No attack roll, as with Magic Missile';
+
   // --- Scaling --------------------------------------------------------------
   const scales = checkbox('Scales per level', !!spell?.scaling);
   const scalingDamage = buildDamageEditor(
@@ -209,6 +232,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   );
 
   const effectRow = fieldRow(labeled('Effect', kindSelect), abilityField);
+  const projectilesRow = fieldRow(fires.label);
+  const projectileFieldsRow = fieldRow(shotCountField, shotPerStepField, autoHit.label);
   // The save's two toggles share a row; the condition picker gets its own.
   const saveTogglesRow = fieldRow(halfOnSave.label, dealsDamage.label);
   const conditionRow = fieldRow(conditionField);
@@ -224,9 +249,16 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     abilityField.hidden = kind !== 'save';
     saveTogglesRow.hidden = kind !== 'save';
     conditionRow.hidden = kind !== 'save';
+    // Only an attack fires projectiles, and their count fields only matter once
+    // it does.
+    projectilesRow.hidden = kind !== 'attack';
+    const firesShots = kind === 'attack' && fires.input.checked;
+    projectileFieldsRow.hidden = !firesShots;
     // Attack always shows damage; save shows it when "Deals damage" is on; heal
-    // shows healing; utility shows neither.
+    // shows healing; utility shows neither. Projectiles change what the dice
+    // mean, so the caption says which.
     const showDamage = kind === 'attack' || (kind === 'save' && dealsDamage.input.checked);
+    setCaption(damageField, firesShots ? 'Damage / projectile' : 'Damage');
     damageField.hidden = !showDamage;
     healField.hidden = kind !== 'heal';
     // The one damage editor element is reused; park it under whichever label is
@@ -260,6 +292,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   timeKindSelect.addEventListener('change', syncTiming);
   durationKindSelect.addEventListener('change', syncTiming);
   dealsDamage.input.addEventListener('change', syncEffectFields);
+  fires.input.addEventListener('change', syncEffectFields);
 
   function syncScaling() {
     const hide = !scales.input.checked;
@@ -298,7 +331,21 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     /** @type {SpellEffect} */
     let effect;
     if (kind === 'attack') {
-      effect = { kind: 'attack', damage: effectDamage.get() };
+      // The parser decides what a written projectile block means, the same way
+      // an imported entry's is read, so an unusable one drops out rather than
+      // becoming a spell that fires nothing.
+      const projectiles = fires.input.checked
+        ? normalizeProjectiles({
+            count: shotCountInput.value,
+            perStep: shotPerStepInput.value,
+            autoHit: autoHit.input.checked,
+          })
+        : null;
+      effect = {
+        kind: 'attack',
+        damage: effectDamage.get(),
+        ...(projectiles ? { projectiles } : {}),
+      };
     } else if (kind === 'save') {
       const condition = conditionSelect.value.trim();
       effect = {
@@ -355,6 +402,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       fieldRow(concentration.label, ritual.label),
       labeled('Description', descriptionInput),
       effectRow,
+      projectilesRow,
+      projectileFieldsRow,
       saveTogglesRow,
       conditionRow,
       damageField,

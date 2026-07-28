@@ -84,6 +84,58 @@
   cursor: default;
 }
 
+/* The cast dialog's projectile allocation: a row per reachable creature with a
+   small number input, and a live count of what is still unassigned. */
+.modal__allocation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.modal__allocation-rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 12rem;
+  overflow-y: auto;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.modal__allocation-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-label);
+}
+
+.modal__allocation-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.modal__allocation-input {
+  width: 4rem;
+  flex: none;
+  text-align: center;
+}
+
+.modal__allocation-remaining {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-label);
+}
+
+/* Anything short of a full allocation blocks the cast, so it reads as a
+   warning rather than as quiet help text. */
+.modal__allocation-remaining--short {
+  color: var(--danger);
+}
+
 /* A pinned-height variant for pickers whose options refilter as another field
    changes (the creation form's class skills), so the dialog doesn't reflow
    with every class pick. */

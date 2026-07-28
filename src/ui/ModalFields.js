@@ -1,7 +1,8 @@
 /**
- * The three composite fields a form dialog can hold: the checkbox group, the
- * tag entry, and the assignment pill grid. Each owns its own working state and
- * a `render()`, which is what made them the bulk of `Modal.js`'s field switch;
+ * The four composite fields a form dialog can hold: the checkbox group, the tag
+ * entry, the assignment pill grid, and the distribution grid. Each owns its own
+ * working state and its own rendering, which is what made them the bulk of
+ * `Modal.js`'s field switch;
  * split out here they follow the same `{ element, get, set }` contract as the
  * item form's list editors, so `Modal.js` treats a composite field as one value
  * and the pickers are reusable outside a dialog.
@@ -197,6 +198,100 @@ export function buildPillGrid(spec) {
       assigned = parseAssignments(value);
       render();
     },
+  };
+}
+
+/**
+ * A distribution grid: one number input per row, and a live line saying how many
+ * of `total` are still unassigned. The form will not submit until they sum to
+ * exactly `total`, enforced through the first input's own validity so the
+ * browser reports it the way it reports any other invalid field. The value is
+ * the comma-joined `row:count` pairs, zeroed rows left out.
+ *
+ * `setTotal` restates how many there are to distribute, for a total another
+ * field decides (the cast dialog's slot level, which sets how many projectiles a
+ * spell fires). Raising it leaves the rows alone and asks for the difference;
+ * lowering it trims from the last rows down, so what the GM assigned first
+ * survives.
+ * @param {{
+ *   rows?: FieldOption[],
+ *   total?: number,
+ *   value?: string,
+ *   unit?: string,
+ * }} spec
+ * @returns {CompositeField}
+ */
+export function buildAllocation(spec) {
+  const element = el('div', 'modal__allocation');
+  // The rows scroll and the remaining line does not, so a long target list can
+  // never push the one piece of feedback that says why Cast is refused out of
+  // sight.
+  const box = el('div', 'field modal__allocation-rows');
+  const rows = spec.rows ?? [];
+  let total = Math.max(0, Math.floor(spec.total ?? 0));
+  const unit = spec.unit ?? 'left';
+  const remaining = el('p', 'modal__allocation-remaining');
+  remaining.setAttribute('aria-live', 'polite');
+
+  /** @type {HTMLInputElement[]} */
+  const inputs = rows.map((row) => {
+    const input = el('input', 'field modal__allocation-input');
+    input.type = 'number';
+    input.min = '0';
+    input.max = String(total);
+    input.value = '0';
+    // The row's name sits in a sibling span rather than a <label>, since this
+    // whole field is already mounted inside the dialog's field label.
+    input.setAttribute('aria-label', row.label);
+    box.appendChild(
+      el('div', 'modal__allocation-row', el('span', 'modal__allocation-name', row.label), input),
+    );
+    return input;
+  });
+  element.append(box, remaining);
+
+  const assignedOf = (/** @type {HTMLInputElement} */ input) =>
+    Math.max(0, Math.floor(Number(input.value) || 0));
+
+  const sync = () => {
+    const left = total - inputs.reduce((sum, input) => sum + assignedOf(input), 0);
+    remaining.textContent = left === 0 ? 'All assigned' : `${left} ${unit}`;
+    remaining.classList.toggle('modal__allocation-remaining--short', left !== 0);
+    inputs[0]?.setCustomValidity(left === 0 ? '' : `Assign all ${total}.`);
+  };
+
+  const write = (/** @type {string} */ value) => {
+    const assigned = parseAssignments(value);
+    for (const [i, input] of inputs.entries()) {
+      input.value = String(Math.max(0, Math.floor(Number(assigned[rows[i].value]) || 0)));
+    }
+    sync();
+  };
+
+  write(spec.value ?? '');
+  element.addEventListener('input', sync);
+
+  return {
+    element,
+    setTotal: (next) => {
+      total = Math.max(0, Math.floor(next));
+      for (const input of inputs) input.max = String(total);
+      let over = inputs.reduce((sum, input) => sum + assignedOf(input), 0) - total;
+      for (let i = inputs.length - 1; i >= 0 && over > 0; i--) {
+        const held = assignedOf(inputs[i]);
+        const taken = Math.min(held, over);
+        inputs[i].value = String(held - taken);
+        over -= taken;
+      }
+      sync();
+    },
+    get: () =>
+      rows
+        .map((row, i) => ({ row: row.value, count: assignedOf(inputs[i]) }))
+        .filter((entry) => entry.count > 0)
+        .map((entry) => `${entry.row}:${entry.count}`)
+        .join(','),
+    set: write,
   };
 }
 

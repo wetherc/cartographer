@@ -14,7 +14,7 @@ import { textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
 import { select } from './formFields.js';
 import { readImageFile } from './imageField.js';
-import { buildMultiselect, buildPillGrid, buildTagsField } from './ModalFields.js';
+import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from './ModalFields.js';
 import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
@@ -149,6 +149,10 @@ export function promptModal(title, fields, options = {}) {
    * checkbox group in place (preserving what's checked). */
   /** @type {Record<string, (options: FieldOption[], max?: number) => void>} */
   const rebuilders = {};
+  /** Total setters per allocation field, so onChange can restate how many there
+   * are to distribute when another field decides that count. */
+  /** @type {Record<string, (total: number) => void>} */
+  const totals = {};
   /** Label text nodes per field, so onChange can restate a caption (e.g.
    * "Class skills (choose 2)"). */
   /** @type {Record<string, Text>} */
@@ -229,9 +233,10 @@ export function promptModal(title, fields, options = {}) {
         } else if (
           field.type === 'multiselect' ||
           field.type === 'tags' ||
-          field.type === 'pillgrid'
+          field.type === 'pillgrid' ||
+          field.type === 'allocation'
         ) {
-          // The three composite fields own their own state and rendering, so the
+          // The composite fields own their own state and rendering, so the
           // dialog only holds their handle: one element to mount, one reader for
           // the submitted record, one writer for `onChange`'s `set`. A
           // multiselect adds the refilter `setOptions` routes to.
@@ -240,11 +245,14 @@ export function promptModal(title, fields, options = {}) {
               ? buildMultiselect(field)
               : field.type === 'tags'
                 ? buildTagsField(field)
-                : buildPillGrid(field);
+                : field.type === 'allocation'
+                  ? buildAllocation(field)
+                  : buildPillGrid(field);
           input = asInput(composite.element);
           getters[field.name] = composite.get;
           setters[field.name] = composite.set;
           if (composite.setOptions) rebuilders[field.name] = composite.setOptions;
+          if (composite.setTotal) totals[field.name] = composite.setTotal;
         } else if (field.type === 'button') {
           // An in-form action (e.g. "Reroll scores"): clicking it fires the
           // form's onChange under the field's name; it contributes no value to
@@ -281,9 +289,9 @@ export function promptModal(title, fields, options = {}) {
           input = plain;
           getters[field.name] = () => plain.value;
         }
-        // The composite fields (multiselect, tags, pillgrid) and buttons set
-        // their own classes; everything else gets the shared input treatment.
-        if (!['multiselect', 'tags', 'pillgrid', 'button'].includes(field.type ?? ''))
+        // The composite fields and buttons set their own classes; everything
+        // else gets the shared input treatment.
+        if (!['multiselect', 'tags', 'pillgrid', 'allocation', 'button'].includes(field.type ?? ''))
           input.className = 'field';
         if (field.disabled) input.disabled = true;
         label.appendChild(input);
@@ -316,6 +324,7 @@ export function promptModal(title, fields, options = {}) {
           setHidden: (name, hidden) => {
             wrappers[name].classList.toggle('modal__field--hidden', hidden);
           },
+          setTotal: (name, total) => totals[name]?.(total),
         };
         for (const [name, input] of Object.entries(inputs)) {
           input.addEventListener('input', () => onChange(name, handle));

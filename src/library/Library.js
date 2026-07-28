@@ -1,6 +1,6 @@
 import { WEAPON_TYPES, ITEM_TYPES, normalizeDamagePart } from '../entities/Equipment.js';
 import { clampInt } from '../util/num.js';
-import { normalizeTargetCount } from '../entities/Casting.js';
+import { normalizeProjectiles, normalizeTargetCount } from '../entities/Casting.js';
 import { parseCastingTime, parseDuration } from '../entities/SpellTiming.js';
 import {
   DEFAULT_SPELLS,
@@ -352,7 +352,14 @@ function normalizeSpell(raw, id) {
   /** @type {import('../types/spell.js').SpellEffect} */
   let effect;
   if (kind === 'attack') {
-    effect = { kind: 'attack', damage: normalizeDamageParts(raw.effect.damage) };
+    // Projectiles stay absent when the entry says nothing, which is the single
+    // attack roll every entry authored before the field implies.
+    const projectiles = normalizeProjectiles(raw.effect.projectiles);
+    effect = {
+      kind: 'attack',
+      damage: normalizeDamageParts(raw.effect.damage),
+      ...(projectiles ? { projectiles } : {}),
+    };
   } else if (kind === 'save') {
     effect = {
       kind: 'save',

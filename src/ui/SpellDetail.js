@@ -23,7 +23,14 @@ import { openDialog } from './Modal.js';
 function effectSummary(spell, saveDC) {
   const effect = spell.effect;
   if (effect.kind === 'attack') {
-    return `Spell attack — ${formatDamage(effect.damage) || 'no damage'}`;
+    const damage = formatDamage(effect.damage) || 'no damage';
+    const shots = effect.projectiles;
+    if (!shots) return `Spell attack — ${damage}`;
+    // With projectiles the dice are per projectile, so the line says how many
+    // there are before it says what one deals.
+    const growth = shots.perStep ? ` (+${shots.perStep} per level)` : '';
+    const roll = shots.autoHit ? 'hits automatically' : 'spell attack';
+    return `${shots.count} projectile${shots.count === 1 ? '' : 's'}${growth}, ${roll} — ${damage} each`;
   }
   if (effect.kind === 'save') {
     const dc = saveDC !== null ? ` DC ${saveDC}` : '';

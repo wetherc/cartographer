@@ -167,9 +167,21 @@ and spell resolution is `spellCast.js`. How many creatures a cast may name comes
 from the spell: `Casting.maxTargets` reads its `targetCount` (absent means one)
 plus a target per scaling step, and 0 marks an area spell with no cap at all. The
 cast dialog offers a single picker at a cap of one and a capped checkbox group
-above that, and a cast that ends up over the cap — picked at the best slot, then
-cast at a lower one — resolves the targets it can reach and reports the rest as
-dropped. Both build on `combatants.js`, the one
+above that. Both caps are read at the slot level the picker opens on — the lowest
+the caster can spend — and a cast that ends up over the cap resolves the targets
+it can reach and reports the rest as dropped. A multi-projectile spell (Scorching
+Ray and friends) gets the allocation grid rather than checkboxes, since its
+projectiles are split between creatures; its total has to add up exactly, so
+changing the slot level restates it through the form's `setTotal`. See
+[Entities](entities.md#multi-projectile-spells) for the model.
+
+Which creatures a cast can reach depends on where it is cast from. In combat the
+list comes from the initiative order, so it is whoever is in the fight. Out of
+combat it is the party's own tile: the undefeated encounters staged on it plus the
+NPCs standing on it. The tile is as close to a range check as the app gets, since
+there is no distance between two tokens to measure yet.
+
+All of this builds on `combatants.js`, the one
 place that resolves a participant id across the three combatant collections
 (characters, encounters, NPCs):
 

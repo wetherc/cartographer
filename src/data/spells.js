@@ -93,9 +93,15 @@ export const DEFAULT_SPELLS = deepFreeze([
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'A crackling beam of force deals 1d10 damage.',
-    effect: { kind: 'attack', damage: [{ count: 1, sides: 10, damageType: 'force' }] },
-    scaling: { damagePerLevel: [{ count: 1, sides: 10, damageType: 'force' }] },
+    description:
+      'A crackling beam of force deals 1d10 damage. Higher levels fire more beams, each at its own target.',
+    // One beam at 1st level and one more at each cantrip breakpoint, which is
+    // exactly the SRD's beam schedule, so the damage below is per beam.
+    effect: {
+      kind: 'attack',
+      damage: [{ count: 1, sides: 10, damageType: 'force' }],
+      projectiles: { count: 1, perStep: 1 },
+    },
   },
   {
     id: 'sacred-flame',
@@ -182,23 +188,17 @@ export const DEFAULT_SPELLS = deepFreeze([
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'Three darts of force each deal 1d4+1 and hit automatically.',
-    // All three darts on one creature, which is why the target count stays 1 and
-    // the damage is lumped into one term. Splitting darts between creatures needs
-    // a per-creature allocation the resolver has no shape for; Scorching Ray and
-    // Eldritch Blast are modeled the same way.
+    description:
+      'Three darts of force each deal 1d4+1 and hit automatically. The caster splits them between creatures as they like.',
+    // Per dart, not per cast: 1d4 plus the flat +1, which the dice model carries
+    // as a one-sided die. Upcasting adds a dart rather than damage.
     effect: {
       kind: 'attack',
       damage: [
-        { count: 3, sides: 4, damageType: 'force' },
-        { count: 3, sides: 1, damageType: 'force' },
-      ],
-    },
-    scaling: {
-      damagePerLevel: [
         { count: 1, sides: 4, damageType: 'force' },
         { count: 1, sides: 1, damageType: 'force' },
       ],
+      projectiles: { count: 3, perStep: 1, autoHit: true },
     },
   },
   {
@@ -336,9 +336,14 @@ export const DEFAULT_SPELLS = deepFreeze([
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'Three rays each deal 2d6 fire on a hit.',
-    effect: { kind: 'attack', damage: [{ count: 6, sides: 6, damageType: 'fire' }] },
-    scaling: { damagePerLevel: [{ count: 2, sides: 6, damageType: 'fire' }] },
+    description:
+      'Three rays each deal 2d6 fire on a hit, rolled separately and aimed wherever the caster likes.',
+    // 2d6 per ray with its own attack roll; a higher slot adds a ray.
+    effect: {
+      kind: 'attack',
+      damage: [{ count: 2, sides: 6, damageType: 'fire' }],
+      projectiles: { count: 3, perStep: 1 },
+    },
   },
   {
     id: 'hold-person',

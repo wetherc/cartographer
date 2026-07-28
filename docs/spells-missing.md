@@ -56,7 +56,10 @@ rules the app cannot honor:
   targets in the blast" works; lingering zones do not.
 - **Buff/debuff riders on rolls** (Shield's +5 AC reaction, Haste's extra
   action, Enlarge/Reduce). These modify the action economy or later rolls,
-  neither of which the app models.
+  neither of which the app models. Multi-projectile spells are no longer part of
+  this group: a spell can fire several separately-rolled projectiles and the
+  caster splits them between creatures, which is how Scorching Ray, Eldritch
+  Blast, and Magic Missile are modeled.
 - **Summoning and companions** (Find Familiar, Conjure Animals, Animate Dead).
   No mechanism for spawning controlled combatants.
 - **Exploration/social utility** (Detect Magic, Identify, Charm Person,

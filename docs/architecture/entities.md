@@ -182,6 +182,40 @@ The authoring form and the library normalizer both route their raw values
 through the parsers, so a spell typed into the Library rail and one imported
 from a file are validated by the same code.
 
+## Multi-projectile spells
+
+Scorching Ray, Eldritch Blast, and Magic Missile each fire several projectiles
+from one cast, and each projectile rolls on its own. An attack effect says so
+with `projectiles: { count, perStep?, autoHit? }`, and its presence changes what
+the effect's `damage` means: what one projectile deals rather than what the whole
+cast deals. An effect without the field rolls once, which is what every other
+attack spell does, so nothing had to be migrated when the field was added.
+
+`entities/Casting.js` owns the rules over it:
+
+- `projectileCount(effect, steps)` — `count` plus `perStep` per scaling
+  increment. Those increments are the same ones the damage scaling uses: a slot
+  level above the spell's own for a leveled spell, a cantrip breakpoint for a
+  cantrip. `maxTargets` returns this for a projectile spell, since a creature
+  cannot be picked without a projectile to send at it.
+- `allocateProjectiles(targets, count)` — how many projectiles each target
+  catches. A target carrying `projectiles` states its own share, clamped in order
+  so the total can never exceed what the spell fires; with nothing stated they
+  spread as evenly as possible, which puts all of them on the single target of
+  the common case.
+- Resolution rolls one attack per projectile — its own d20, its own crit
+  doubling its own dice only, or no roll at all when `autoHit` — and then merges
+  the damage per target, so a creature caught by two rays takes one hit carrying
+  both. The outcome keeps each projectile's roll under `shots`, plus `fired` and
+  `hits`, which is what lets the log read `2 of 3 hit Grelka`.
+
+The cast dialog offers the allocation grid instead of the target checkboxes for
+these spells, because a checkbox cannot say "two rays here, one there". The grid
+doubles as the target picker: a creature allocated no projectile is not a target.
+Its total is how many the cast fires at the level being cast, restated whenever
+the slot picker changes, so the GM is never offered a projectile the cast cannot
+fire.
+
 ## The UI layer over entities
 
 `ui/CharacterSheet.js`, `ui/InventoryPanel.js`, and `ui/EncounterPanel.js` are

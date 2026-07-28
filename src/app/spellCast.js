@@ -1,8 +1,9 @@
 import { promptModal } from '../ui/Modal.js';
+import { parseAssignments } from '../ui/ModalFields.js';
 import { castSpell, maxTargets, scalingSteps } from '../entities/Casting.js';
 import { spellSource } from '../entities/Character.js';
 import { spellSaveDC, spellAttackBonus } from '../entities/Classes.js';
-import { isDefeated } from '../entities/Encounter.js';
+import { encountersOnTile } from '../entities/Encounter.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { castableSlotLevels } from '../entities/SpellSlots.js';
 import { toCaster, withCasterState } from '../entities/Caster.js';
@@ -41,8 +42,14 @@ function combatTargets(app, combat, caster, spell) {
 /**
  * The combatants an out-of-combat cast can reach, with no initiative order to
  * scope by: a heal reaches the whole party (allies, caster included); an attack
- * or save reaches every undefeated encounter plus the NPCs on the party's tile.
- * Utility spells target no one. Same target shape as `combatTargets`.
+ * or save reaches the foes standing where the party stands — the undefeated
+ * encounters staged on its tile plus the NPCs on it. Utility spells target no
+ * one. Same target shape as `combatTargets`.
+ *
+ * The party's tile is as close to a range check as the app gets, since there is
+ * no distance between two tokens to measure. Without it a cast offered every
+ * encounter in the campaign, including ones in regions the party has never
+ * reached.
  * @param {AppContext} app
  * @param {Spell} spell
  * @returns {{ id: string, name: string, ac: number }[]}
@@ -54,11 +61,42 @@ function rosterTargets(app, spell) {
   if (kind === 'heal') {
     return state.characters.map((c) => asTarget(c, 'character'));
   }
-  const foes = state.encounters.filter((e) => !isDefeated(e)).map((e) => asTarget(e, 'encounter'));
-  const npcs = npcsOnTile(state.npcs, app.partyTracker.getPosition()).map((n) =>
-    asTarget(n, 'npc'),
-  );
+  const position = app.partyTracker.getPosition();
+  const foes = encountersOnTile(state.encounters, position).map((e) => asTarget(e, 'encounter'));
+  const npcs = npcsOnTile(state.npcs, position).map((n) => asTarget(n, 'npc'));
   return [...foes, ...npcs];
+}
+
+/** The allocation grid's caption, restated when the slot level changes how many
+ * projectiles a cast fires.
+ * @param {number} total @returns {string} */
+function allocationLabel(total) {
+  return `Targets (${total} to allocate)`;
+}
+
+/**
+ * The slot level a cast dialog opens on: the lowest slot the caster can spend,
+ * which is what the picker shows first and what a GM who never touches it
+ * submits. Cantrips have no slot, so 0.
+ * @param {Spell} spell
+ * @param {number[]} slotLevels
+ * @returns {number}
+ */
+export function startingSlotLevel(spell, slotLevels) {
+  return spell.level > 0 ? (slotLevels[0] ?? spell.level) : 0;
+}
+
+/**
+ * How many creatures — or, for a multi-projectile spell, projectiles — a cast at
+ * this slot level reaches. Read at the level actually being cast, since a cap
+ * taken from a higher slot offers a projectile the cast cannot fire.
+ * @param {Spell} spell
+ * @param {number} slotLevel
+ * @param {number} casterLevel
+ * @returns {number}
+ */
+export function castCap(spell, slotLevel, casterLevel) {
+  return maxTargets(spell, scalingSteps(spell, slotLevel, casterLevel));
 }
 
 /**
@@ -71,7 +109,9 @@ function rosterTargets(app, spell) {
  * A spell that reaches one creature keeps a single select, so the common case
  * stays one click. A spell that reaches more gets the checkbox group, capped at
  * what the spell allows — an area spell has no cap, so the GM picks whoever the
- * blast covers.
+ * blast covers. A multi-projectile spell gets the allocation grid instead, since
+ * a checkbox cannot say "two rays here, one there"; it doubles as the target
+ * picker, a creature given no projectile being one the cast never touches.
  * @param {Spell} spell
  * @param {{ id: string, name: string, ac: number }[]} targets
  * @param {number[]} slotLevels available slot levels at or above the spell's
@@ -79,7 +119,7 @@ function rosterTargets(app, spell) {
  * @param {number} cap how many targets this cast may reach; Infinity for an area
  * @returns {import('../types/modal.js').ModalField[] | null}
  */
-function castFields(spell, targets, slotLevels, saveDC, cap) {
+export function castFields(spell, targets, slotLevels, saveDC, cap) {
   const kind = spell.effect.kind;
   /** @type {import('../types/modal.js').ModalField[]} */
   const fields = [];
@@ -99,7 +139,21 @@ function castFields(spell, targets, slotLevels, saveDC, cap) {
       value: t.id,
       label: kind === 'heal' ? t.name : `${t.name} (AC ${t.ac})`,
     }));
-    if (cap <= 1) {
+    const projectiles = spell.effect.kind === 'attack' ? spell.effect.projectiles : undefined;
+    if (projectiles && cap > 1) {
+      fields.push({
+        name: 'allocation',
+        label: allocationLabel(cap),
+        type: 'allocation',
+        full: true,
+        total: cap,
+        rows: options,
+        unit: 'unassigned',
+        // The whole allocation starts on the first target, so a single-target
+        // cast is still one click.
+        value: `${options[0].value}:${cap}`,
+      });
+    } else if (cap <= 1) {
       fields.push({ name: 'target', label: noun, type: 'select', full: true, options });
     } else {
       fields.push({
@@ -223,21 +277,32 @@ async function runCast(app, entity, spell, targets, writeBack) {
   // under; without a recorded source they fall back to the first caster class.
   const sourceClass = spellSource(caster, spell.id) ?? undefined;
   const dc = spellSaveDC(caster, sourceClass) ?? 10;
-  // The target cap is offered at the best slot the caster could spend, since the
-  // slot is picked in the same dialog: a spell that gains targets by upcasting
-  // has to show them before the level is chosen. Casting at a lower level than
-  // the picks assumed drops the extras, which `castSpell` reports back.
-  const bestSlot = spell.level > 0 ? (slotLevels[slotLevels.length - 1] ?? spell.level) : 0;
-  const cap = maxTargets(spell, scalingSteps(spell, bestSlot, caster.level ?? 1));
+  // Both caps are read at the level the picker starts on — the lowest slot the
+  // caster can spend, which is also the level submitted if the GM never touches
+  // it. The projectile allocation then follows the picked level, since it has to
+  // add up exactly; the target checkboxes stay at the starting cap and a cast
+  // over it drops the extras, which `castSpell` reports back.
+  const cap = castCap(spell, startingSlotLevel(spell, slotLevels), caster.level ?? 1);
   const fields = castFields(spell, targets, slotLevels, dc, cap);
   if (!fields) {
     app.toasts.show(`No level ${spell.level}+ slot left for ${spell.name}.`);
     return;
   }
 
+  // A projectile spell fires a different number per slot level, and its
+  // allocation has to add up to that number, so the grid is restated whenever
+  // the level changes.
+  const allocates = fields.some((f) => f.name === 'allocation');
   const values = await promptModal(`Cast ${spell.name}`, fields, {
     submitLabel: 'Cast',
     wide: true,
+    onChange: (name, form) => {
+      if (!allocates || name !== 'slot') return;
+      const slot = Number(form.get('slot')) || spell.level;
+      const total = castCap(spell, slot, caster.level ?? 1);
+      form.setTotal('allocation', total);
+      form.setLabel('allocation', allocationLabel(total));
+    },
   });
   if (!values) return;
 
@@ -289,14 +354,22 @@ async function runCast(app, entity, spell, targets, writeBack) {
 }
 
 /**
- * The targets the GM picked out of the dialog: the multiselect's comma-joined
- * ids, or the single select's one id, resolved back to the target objects in the
- * order they were offered. Unknown ids are dropped rather than trusted.
+ * The targets the GM picked out of the dialog: the allocation grid's per-target
+ * projectile counts, the multiselect's comma-joined ids, or the single select's
+ * one id, resolved back to the target objects in the order they were offered.
+ * Unknown ids are dropped rather than trusted, and a target allocated no
+ * projectile is not a target.
  * @param {{ id: string, name: string, ac: number }[]} targets
  * @param {Record<string, string>} values
- * @returns {{ id: string, name: string, ac: number }[]}
+ * @returns {import('../entities/Casting.js').CastTarget[]}
  */
 function chosenTargets(targets, values) {
+  if (values.allocation !== undefined) {
+    const assigned = parseAssignments(values.allocation);
+    return targets
+      .filter((t) => Number(assigned[t.id]) > 0)
+      .map((t) => ({ ...t, projectiles: Number(assigned[t.id]) }));
+  }
   const raw = values.targets ?? values.target ?? '';
   const ids = new Set(
     String(raw)
@@ -325,13 +398,27 @@ function targetSummary(targets) {
  * Damage and healing route to the same HP models the weapon path uses.
  * @param {AppContext} app
  * @param {Spell} spell
- * @param {{ outcomes: object[], targets: { name?: string }[] }} result
+ * @param {{ outcomes: object[], targets: import('../entities/Casting.js').CastTarget[] }} result
  */
 function applyOutcomes(app, spell, result) {
   const kind = spell.effect.kind;
   const summary = targetSummary(result.targets);
   if (kind === 'attack') {
     for (const o of /** @type {any[]} */ (result.outcomes)) {
+      // A multi-projectile cast logs the tally rather than one line per ray: the
+      // rolls are already aggregated per creature, and the damage carries every
+      // ray's dice.
+      if (o.shots) {
+        const tally = `${o.hits} of ${o.fired} hit ${o.target.name}`;
+        app.actions.logEvent(
+          'combat',
+          o.hits > 0
+            ? `${spell.name}: ${tally} for ${o.damage.detail}.`
+            : `${spell.name}: ${tally} (AC ${o.ac}).`,
+        );
+        applyToTarget(app, o.target.id, o.damage?.total ?? 0, false);
+        continue;
+      }
       const verb = o.crit ? 'critically hits' : o.hit ? 'hits' : 'misses';
       if (!o.hit) {
         app.actions.logEvent(

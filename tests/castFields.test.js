@@ -1,0 +1,111 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { castCap, castFields, startingSlotLevel } from '../src/app/spellCast.js';
+
+/**
+ * The cast dialog's field list is pure — plain field records, no DOM — so what
+ * the GM is offered can be asserted directly. The projectile allocation is the
+ * part worth pinning: it has to add up to exactly what the spell fires at the
+ * level being cast, so a count read at the wrong level is a cast the GM cannot
+ * submit or a projectile that silently vanishes.
+ */
+
+/** @type {any} */
+const target = (id, name, ac) => ({ id, name, ac });
+
+const targets = [target('a', 'Goblin', 14), target('b', 'Wolf', 13)];
+
+/** A three-ray spell gaining one ray per slot level above 2nd. @type {any} */
+const scorchingRay = {
+  id: 'scorching-ray',
+  name: 'Scorching Ray',
+  level: 2,
+  effect: {
+    kind: 'attack',
+    damage: [{ count: 2, sides: 6, damageType: 'fire' }],
+    projectiles: { count: 3, perStep: 1 },
+  },
+};
+
+/** @type {any} */
+const fireBolt = {
+  id: 'fire-bolt',
+  name: 'Fire Bolt',
+  level: 0,
+  effect: { kind: 'attack', damage: [{ count: 1, sides: 10, damageType: 'fire' }] },
+};
+
+/** The cap the dialog is built with, at a given slot level. */
+function capAt(spell, slot, casterLevel = 5) {
+  return castCap(spell, slot, casterLevel);
+}
+
+test('a projectile spell offers an allocation grid summing to what it fires', () => {
+  const cap = capAt(scorchingRay, 2);
+  assert.equal(cap, 3);
+  const fields = castFields(scorchingRay, targets, [2, 3], 13, cap);
+  const allocation = fields.find((f) => f.name === 'allocation');
+  assert.ok(allocation, 'a multi-projectile spell gets the grid, not the checkboxes');
+  assert.equal(allocation.type, 'allocation');
+  assert.equal(allocation.total, 3);
+  assert.equal(allocation.label, 'Targets (3 to allocate)');
+  assert.equal(allocation.value, 'a:3', 'the whole allocation starts on the first target');
+  assert.deepEqual(
+    allocation.rows.map((r) => r.value),
+    ['a', 'b'],
+  );
+  assert.equal(
+    fields.some((f) => f.name === 'targets' || f.name === 'target'),
+    false,
+    'the grid is the target picker',
+  );
+});
+
+test('the cap is read at the level the picker starts on, not the best slot', () => {
+  // A caster holding both a 2nd- and a 3rd-level slot starts on the 2nd, which
+  // fires three rays. Reading the best slot instead offered four, one more than
+  // the cast fires, and the fourth was lost on submit.
+  assert.equal(startingSlotLevel(scorchingRay, [2, 3]), 2);
+  assert.equal(capAt(scorchingRay, startingSlotLevel(scorchingRay, [2, 3])), 3);
+  assert.equal(capAt(scorchingRay, 3), 4, 'the extra ray belongs to the level above');
+  // Upcasting is still reachable: the dialog restates the total on that level.
+  const fields = castFields(scorchingRay, targets, [2, 3], 13, capAt(scorchingRay, 3));
+  assert.equal(fields.find((f) => f.name === 'allocation').total, 4);
+});
+
+test('startingSlotLevel falls back to the spell’s own level, and cantrips have none', () => {
+  assert.equal(startingSlotLevel(scorchingRay, []), 2, 'no slot offered still reads as its level');
+  assert.equal(startingSlotLevel(fireBolt, []), 0);
+});
+
+test('an attack spell with no projectiles keeps the single target select', () => {
+  const fields = castFields(fireBolt, targets, [], 13, capAt(fireBolt, 0));
+  assert.equal(
+    fields.some((f) => f.name === 'allocation'),
+    false,
+  );
+  const picker = fields.find((f) => f.name === 'target');
+  assert.equal(picker.type, 'select');
+  assert.deepEqual(
+    picker.options.map((o) => o.label),
+    ['Goblin (AC 14)', 'Wolf (AC 13)'],
+  );
+});
+
+test('a single-projectile cast keeps the select rather than a one-row grid', () => {
+  // Eldritch Blast at low level: one beam, so there is nothing to distribute.
+  const eldritch = {
+    ...fireBolt,
+    effect: { ...fireBolt.effect, projectiles: { count: 1, perStep: 1 } },
+  };
+  const fields = castFields(eldritch, targets, [], 13, capAt(eldritch, 0, 1));
+  assert.equal(
+    fields.some((f) => f.name === 'allocation'),
+    false,
+  );
+  assert.equal(fields.find((f) => f.name === 'target').type, 'select');
+});
+
+test('a leveled spell with no slot left builds no fields at all', () => {
+  assert.equal(castFields(scorchingRay, targets, [], 13, 3), null);
+});

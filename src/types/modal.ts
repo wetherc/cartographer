@@ -82,6 +82,20 @@ export interface PillGridModalField extends FieldBase {
 }
 
 /**
+ * A distribution grid: one number input per row, which together must sum to
+ * `total` before the form will submit. Its value is the comma-joined
+ * `row:count` pairs of the rows given a share, with zeroed rows left out.
+ */
+export interface AllocationModalField extends FieldBase {
+  type: 'allocation';
+  total: number;
+  rows: FieldOption[];
+  value?: string;
+  /** What the row counts are, for the remaining line, e.g. 'rays'. */
+  unit?: string;
+}
+
+/**
  * An in-form action button (e.g. "Reroll scores"). Clicking it fires the form's
  * `onChange` under this field's name; it contributes no value to the record.
  */
@@ -96,6 +110,7 @@ export type ModalField =
   | MultiselectModalField
   | TagsModalField
   | PillGridModalField
+  | AllocationModalField
   | ButtonModalField;
 
 /**
@@ -112,6 +127,8 @@ export interface ModalFormHandle {
   setLabel(name: string, text: string): void;
   setRange(name: string, min?: number, max?: number): void;
   setHidden(name: string, hidden: boolean): void;
+  /** Allocation fields only: restate how many there are to distribute. */
+  setTotal(name: string, total: number): void;
 }
 
 /**
@@ -124,4 +141,5 @@ export interface CompositeField {
   get(): string;
   set(value: string): void;
   setOptions?(options: FieldOption[], max?: number): void;
+  setTotal?(total: number): void;
 }

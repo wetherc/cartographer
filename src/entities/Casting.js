@@ -14,12 +14,15 @@ import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
  * A single target of a cast: its identity plus the numbers the resolver needs —
  * AC for an attack spell, save bonus for a save spell (with an optional
  * advantage/disadvantage mode on that save). Healing targets need only id/name.
+ * `projectiles` is how many of a multi-projectile spell's rays this target
+ * catches, which the caster allocates.
  * @typedef {{
  *   id?: string,
  *   name?: string,
  *   ac?: number,
  *   saveBonus?: number,
  *   saveMode?: RollMode,
+ *   projectiles?: number,
  * }} CastTarget
  */
 
@@ -74,17 +77,51 @@ export function normalizeTargetCount(value, fallback = 1) {
 }
 
 /**
+ * Coerce a written projectile block into a clean one, or null when the value
+ * says nothing usable — an absent block is what makes an attack spell roll once.
+ * A count below 1 is not a projectile spell, so it reads as absent. Shared by
+ * the authoring form and the library normalizer.
+ * @param {unknown} value
+ * @returns {import('../types/spell.js').SpellProjectiles | null}
+ */
+export function normalizeProjectiles(value) {
+  if (!value || typeof value !== 'object') return null;
+  const raw = /** @type {Record<string, unknown>} */ (value);
+  const count = Math.floor(Number(raw.count));
+  if (!Number.isFinite(count) || count < 1) return null;
+  const perStep = Math.floor(Number(raw.perStep));
+  return {
+    count: Math.min(MAX_TARGET_COUNT, count),
+    ...(Number.isFinite(perStep) && perStep > 0
+      ? { perStep: Math.min(MAX_TARGET_COUNT, perStep) }
+      : {}),
+    ...(raw.autoHit ? { autoHit: true } : {}),
+  };
+}
+
+/**
+ * How many projectiles one cast fires: the effect's base `count`, plus
+ * `perStep` more per scaling increment. An effect with no `projectiles` fires
+ * one attack, which is the single roll every other attack spell makes.
+ * @param {import('../types/spell.js').SpellAttackEffect} effect
+ * @param {number} steps how many scaling increments the cast applies
+ * @returns {number}
+ */
+export function projectileCount(effect, steps) {
+  const shots = effect.projectiles;
+  if (!shots) return 1;
+  return Math.max(1, shots.count + (shots.perStep ?? 0) * Math.max(0, steps));
+}
+
+/**
  * How many creatures one cast may resolve against: the spell's own
  * `targetCount` (absent counts as 1), plus one more per scaling increment when
  * the spell scales targets. A `targetCount` of 0 marks an area spell, where the
  * number of creatures caught is a fact about the map rather than the spell, so
  * the cap is unbounded and the caster picks.
  *
- * Note this counts *creatures*, not dice. Spells that fire several projectiles
- * at one creature (Magic Missile, Scorching Ray, Eldritch Blast) carry all of
- * them in one damage term and stay single-target, because dividing projectiles
- * between creatures needs a per-creature allocation the resolver has no shape
- * for.
+ * A multi-projectile spell is capped by its projectiles instead, since each one
+ * may pick its own creature and no creature can be picked without one.
  * @param {Spell} spell
  * @param {number} steps how many scaling increments the cast applies
  * @returns {number} the cap, or Infinity for an area spell
@@ -92,7 +129,36 @@ export function normalizeTargetCount(value, fallback = 1) {
 export function maxTargets(spell, steps) {
   const base = spell.targetCount ?? 1;
   if (base <= 0) return Infinity;
+  if (spell.effect.kind === 'attack' && spell.effect.projectiles) {
+    return projectileCount(spell.effect, steps);
+  }
   return base + (spell.scaling?.targetsPerLevel ?? 0) * Math.max(0, steps);
+}
+
+/**
+ * Split `count` projectiles between the targets: the caster's own allocation
+ * when any target states one (clamped so the total never exceeds what the spell
+ * fires), else spread as evenly as possible with the earliest targets taking the
+ * remainder — which puts every projectile on the one target of the common
+ * single-target cast.
+ * @param {CastTarget[]} targets
+ * @param {number} count
+ * @returns {number[]} how many projectiles each target catches, in order
+ */
+export function allocateProjectiles(targets, count) {
+  if (targets.length === 0) return [];
+  if (!targets.some((t) => t.projectiles !== undefined)) {
+    const each = Math.floor(count / targets.length);
+    const extra = count % targets.length;
+    return targets.map((_, i) => each + (i < extra ? 1 : 0));
+  }
+  let left = count;
+  return targets.map((target) => {
+    const wanted = Math.floor(Number(target.projectiles ?? 0));
+    const given = Number.isFinite(wanted) ? Math.min(Math.max(0, wanted), left) : 0;
+    left -= given;
+    return given;
+  });
 }
 
 /**
@@ -161,7 +227,9 @@ function slotPoolToSpend(caster, slotLevel) {
  * dropped past the spell's cap (`truncated`), and an `outcomes` array whose
  * shape follows the effect kind:
  * - `attack`: one entry per target — its d20 attack roll, whether it hit/crit,
- *   and the damage dealt on a hit (crit doubles the dice).
+ *   and the damage dealt on a hit (crit doubles the dice). A multi-projectile
+ *   spell instead carries the target's allocated `shots` (each with its own
+ *   roll), how many `fired` and `hits` landed, and their damage merged.
  * - `save`: the damage rolled once, plus one entry per target with its save
  *   roll, whether it saved, and the damage it takes (full, or half when
  *   `halfOnSave`, or none).
@@ -242,6 +310,75 @@ export function castSpell(caster, spell, options = {}) {
 }
 
 /**
+ * One projectile's resolution: its attack roll (null when the spell hits
+ * automatically), the natural d20, whether it crit or hit, and the damage it
+ * dealt — null on a miss.
+ * @typedef {{
+ *   attack: DiceResult | null,
+ *   natural: number,
+ *   crit: boolean,
+ *   hit: boolean,
+ *   damage: ReturnType<typeof rollDamage> | null,
+ * }} ProjectileShot
+ */
+
+/**
+ * Roll one projectile against an AC: a d20 plus the caster's spell attack
+ * bonus, a natural 20 doubling this projectile's dice alone and a natural 1
+ * missing regardless. An `autoHit` projectile skips the d20 entirely and can
+ * neither miss nor crit.
+ * @param {DamagePart[]} parts what one projectile deals
+ * @param {number} ac
+ * @param {number} attackBonus
+ * @param {RollMode} mode
+ * @param {boolean | undefined} autoHit
+ * @param {RandomFn} rng
+ * @returns {ProjectileShot}
+ */
+function rollProjectile(parts, ac, attackBonus, mode, autoHit, rng) {
+  if (autoHit) {
+    return { attack: null, natural: 0, crit: false, hit: true, damage: rollDamage(parts, 0, rng) };
+  }
+  const attack = roll({ counts: { d20: 1 }, modifier: attackBonus, mode }, rng);
+  const natural = attack.results.find((r) => r.die === 'd20')?.rolls[0] ?? 0;
+  const crit = natural === 20;
+  const hit = natural !== 1 && (crit || attack.total >= ac);
+  const doubled = crit ? parts.map((p) => ({ ...p, count: p.count * 2 })) : parts;
+  return { attack, natural, crit, hit, damage: hit ? rollDamage(doubled, 0, rng) : null };
+}
+
+/**
+ * Fold several projectiles' damage into one result, so a creature caught by two
+ * rays takes one hit carrying both. Same shape `rollDamage` returns: totals and
+ * raw dice merged per damage type.
+ * @param {ReturnType<typeof rollDamage>[]} rolls
+ * @returns {ReturnType<typeof rollDamage>}
+ */
+function mergeDamage(rolls) {
+  /** @type {Map<string, { damageType: string, rolls: number[], subtotal: number }>} */
+  const byType = new Map();
+  for (const result of rolls) {
+    for (const group of result.byType) {
+      const merged = byType.get(group.damageType) ?? {
+        damageType: group.damageType,
+        rolls: [],
+        subtotal: 0,
+      };
+      merged.rolls.push(...group.rolls);
+      merged.subtotal += group.subtotal;
+      byType.set(group.damageType, merged);
+    }
+  }
+  const groups = [...byType.values()];
+  return {
+    total: groups.reduce((sum, g) => sum + g.subtotal, 0),
+    byType: groups,
+    text: groups.map((g) => `${g.subtotal} ${g.damageType}`).join(' + '),
+    detail: groups.map((g) => `${g.subtotal} ${g.damageType} [${g.rolls.join(',')}]`).join(' + '),
+  };
+}
+
+/**
  * Roll a spell's effect against its targets, dispatched by effect kind. Split
  * out of `castSpell` so the validation/slot bookkeeping stays readable.
  * @param {Spell} spell
@@ -261,24 +398,42 @@ function resolveEffect(spell, ctx) {
 
   if (effect.kind === 'attack') {
     const baseParts = scaledParts(effect.damage, spell.scaling, steps);
-    return targets.map((target) => {
-      const attack = roll(
-        { counts: { d20: 1 }, modifier: spellAttackBonus, mode: attackMode },
-        rng,
-      );
-      const natural = attack.results.find((r) => r.die === 'd20')?.rolls[0] ?? 0;
-      const crit = natural === 20;
+    const shot = (/** @type {number} */ ac) =>
+      rollProjectile(baseParts, ac, spellAttackBonus, attackMode, effect.projectiles?.autoHit, rng);
+
+    // A single-projectile spell reports its one roll flat, which is what every
+    // attack outcome looked like before projectiles existed.
+    if (!effect.projectiles) {
+      return targets.map((target) => {
+        const ac = target.ac ?? 10;
+        const { attack, natural, crit, hit, damage } = shot(ac);
+        return { target, attack, natural, crit, hit, ac, damage };
+      });
+    }
+
+    // Otherwise each allocated projectile rolls on its own — its own d20, its
+    // own crit doubling only its own dice — and the damage is merged per target
+    // so a creature takes one hit rather than one per ray.
+    const allocation = allocateProjectiles(targets, projectileCount(effect, steps));
+    return targets.map((target, i) => {
       const ac = target.ac ?? 10;
-      const hit = natural !== 1 && (crit || attack.total >= ac);
-      const parts = crit ? baseParts.map((p) => ({ ...p, count: p.count * 2 })) : baseParts;
+      /** @type {ProjectileShot[]} */
+      const shots = [];
+      for (let n = 0; n < allocation[i]; n++) shots.push(shot(ac));
+      const landed = shots.filter((s) => s.damage !== null);
       return {
         target,
-        attack,
-        natural,
-        crit,
-        hit,
         ac,
-        damage: hit ? rollDamage(parts, 0, rng) : null,
+        shots,
+        fired: shots.length,
+        hits: landed.length,
+        hit: landed.length > 0,
+        damage:
+          landed.length > 0
+            ? mergeDamage(
+                /** @type {ReturnType<typeof rollDamage>[]} */ (landed.map((s) => s.damage)),
+              )
+            : null,
       };
     });
   }
