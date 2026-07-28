@@ -15,6 +15,37 @@
   margin-left: auto;
 }
 
+/* The three header switches are built in JavaScript, so their containers are
+   empty until the modules load. The header is a single non-wrapping flex row
+   near its capacity on a laptop screen, so the switches arriving 500-odd pixels
+   wide squeezes the title and the action buttons onto second lines, grows the
+   header, and drops the whole layout below it -- the load-time layout jump that
+   the pre-paint theme and role scripts in index.html exist to avoid. Reserving
+   each switch's footprint here settles the header on its final geometry during
+   the first paint instead.
+
+   These sizes track the widest label each switch carries (Play/Build/Library,
+   the three theme icons, GM/Player plus the lock button), so re-measure them in
+   a browser if a label changes. A hidden container drops out of the layout
+   entirely, so the reservation follows the mode and role rules further down. */
+#mode-switch-container {
+  min-width: 15.75rem;
+}
+
+#theme-toggle-container {
+  min-width: 8.125rem;
+}
+
+#role-switch-container {
+  min-width: 10.125rem;
+}
+
+#mode-switch-container,
+#theme-toggle-container,
+#role-switch-container {
+  min-height: 2.25rem;
+}
+
 .app-header h1 {
   font-size: var(--text-display);
   margin: 0;
