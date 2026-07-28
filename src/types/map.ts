@@ -32,6 +32,13 @@ export interface Tile {
 /** Whether a node is an outdoor area or the inside of a structure. */
 export type NodeKind = 'region' | 'interior';
 
+/** What a tile's art means to the rules: whether the party can stand on it,
+ * whether it is the authored way into a space, and whether it connects to the
+ * level above or below. `plain` covers everything with no such meaning —
+ * outdoor terrain, markers, and any custom image a GM supplies.
+ * See TilePalette.kindOf. */
+export type TileKind = 'plain' | 'floor' | 'wall' | 'door' | 'stairs-up' | 'stairs-down';
+
 export interface MapNode {
   id: string;
   name: string;

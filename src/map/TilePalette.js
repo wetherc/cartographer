@@ -1,6 +1,7 @@
 import { capitalize } from '../util/text.js';
 
 /** @typedef {{ id: string, type: string, label: string, imageRef: string, custom: boolean }} PaletteEntry */
+/** @typedef {import('../types/map.js').TileKind} TileKind */
 
 const TILE_ROOT = 'assets/tiles';
 
@@ -122,28 +123,58 @@ const MARKER_TYPES = [
  * Building-interior pieces (castle halls, shop floors). Like roads these are
  * distinct shapes picked deliberately, not random variants: flagstone floors,
  * wall segments/corners sharing one cross-section, doors, and stairs.
- * @type {string[]}
+ *
+ * Each piece is listed with what it means to the rules, because several of them
+ * mean something: the party cannot stand on a wall, a door is the authored way
+ * into a space, and stairs connect one level of a dungeon to the next. Keeping
+ * that here, beside the art, is what lets `kindOf` answer the question from an
+ * image reference without anyone matching on a file name.
+ * @type {Record<string, TileKind>}
  */
-const INTERIOR_KINDS = [
-  'floor-1',
-  'floor-2',
-  'floor-3',
-  'wall-h',
-  'wall-v',
-  'wall-corner-ne',
-  'wall-corner-nw',
-  'wall-corner-se',
-  'wall-corner-sw',
-  'wall-tee-n',
-  'wall-tee-e',
-  'wall-tee-s',
-  'wall-tee-w',
-  'wall-cross',
-  'door-h',
-  'door-v',
-  'stairs-up',
-  'stairs-down',
-];
+const INTERIOR_KINDS = {
+  'floor-1': 'floor',
+  'floor-2': 'floor',
+  'floor-3': 'floor',
+  'wall-h': 'wall',
+  'wall-v': 'wall',
+  'wall-corner-ne': 'wall',
+  'wall-corner-nw': 'wall',
+  'wall-corner-se': 'wall',
+  'wall-corner-sw': 'wall',
+  'wall-tee-n': 'wall',
+  'wall-tee-e': 'wall',
+  'wall-tee-s': 'wall',
+  'wall-tee-w': 'wall',
+  'wall-cross': 'wall',
+  'door-h': 'door',
+  'door-v': 'door',
+  'stairs-up': 'stairs-up',
+  'stairs-down': 'stairs-down',
+};
+
+/**
+ * Every built-in image reference that carries a rule meaning, mapped to it.
+ * Built from the catalog above, so the art path and the meaning are stated
+ * together in one place and renaming an asset cannot silently change a rule.
+ * @type {Map<string, TileKind>}
+ */
+const KIND_BY_REF = new Map(
+  Object.entries(INTERIOR_KINDS).map(([kind, meaning]) => [
+    `${TILE_ROOT}/interior/interior-${kind}.svg`,
+    meaning,
+  ]),
+);
+
+/**
+ * What a tile's art means to the rules. Anything outside the interior set —
+ * outdoor terrain, POI markers, and every custom or `data:` image a GM
+ * supplies — is `plain`, which is walkable and unremarkable.
+ * @param {string} imageRef
+ * @returns {TileKind}
+ */
+export function kindOf(imageRef) {
+  return KIND_BY_REF.get(imageRef) ?? 'plain';
+}
 
 /**
  * "general-store" -> "General Store"
@@ -211,7 +242,7 @@ function buildBuiltins() {
     });
   }
 
-  for (const kind of INTERIOR_KINDS) {
+  for (const kind of Object.keys(INTERIOR_KINDS)) {
     entries.push({
       id: `interior-${kind}`,
       type: 'interior',

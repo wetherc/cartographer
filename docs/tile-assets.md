@@ -41,9 +41,11 @@ Single-image markers (`MARKER_TYPES`) sit on the standard grass background (`#5a
 - `door-h`, `door-v` — a wall with a framed wooden door leaf in the gap.
 - `stairs-up`, `stairs-down` — treads lightening toward the ascent / darkening into the descent, with a direction chevron.
 
+Interior pieces are the one place where art carries rules. `INTERIOR_KINDS` in `TilePalette.js` lists each piece with what it means (`wall`, `door`, `stairs-up`, `stairs-down`, `floor`), and `kindOf(imageRef)` is how the rest of the app asks. Adding an interior piece means giving it a meaning there; `plain` is what everything else gets.
+
 ## Adding a new tile
 
 1. Add the SVG(s) under `assets/tiles/<type>/`, following the background/inset-detail conventions above if it's a terrain type with variants.
-2. Register it in `TilePalette.js` (`VARIANT_COUNTS`/`ROAD_KINDS`/`MARKER_TYPES`, or via `addCustom` for a runtime-loaded tile).
+2. Register it in `TilePalette.js` (`VARIANT_COUNTS`/`ROAD_KINDS`/`MARKER_TYPES`, `INTERIOR_KINDS` with its rule meaning, or via `addCustom` for a runtime-loaded tile).
 3. Update `tests/TilePalette.test.js` if you added a new built-in.
 4. Check it renders and abuts correctly in `tests/tile-preview.html` (see `docs/testing.md` for how to visually verify).

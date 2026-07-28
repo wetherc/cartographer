@@ -1,5 +1,6 @@
 import { parseCoords } from './MapGeometry.js';
 import { findRegionGroups } from './RegionGroups.js';
+import { kindOf } from './TilePalette.js';
 
 /** @typedef {{ minX: number, minY: number, maxX: number, maxY: number }} Bounds */
 /** @typedef {{ x: number, y: number }} Coords */
@@ -68,7 +69,7 @@ export function computeEntryTile(width, height, block, party) {
 function isWall(tile) {
   // Wall segments/corners are the one interior piece the party shouldn't stand
   // on; doors, stairs, and floors are all fair landing spots.
-  return tile.imageRef.includes('wall-');
+  return kindOf(tile.imageRef) === 'wall';
 }
 
 /**
@@ -98,7 +99,7 @@ export function resolveEntryTile(node, preferredId) {
     if (!coords) continue;
     const d = (coords.x - target.x) ** 2 + (coords.y - target.y) ** 2;
     // A door at equal distance wins: it's the authored way in.
-    const score = d - (tile.imageRef.includes('door') ? 0.5 : 0);
+    const score = d - (kindOf(tile.imageRef) === 'door' ? 0.5 : 0);
     if (score < bestScore) {
       best = tile;
       bestScore = score;
@@ -126,9 +127,9 @@ export function computeRegionEntryTile(parent, child, childNodeId, party) {
   // stacked, so entering "from the side" reads wrong and the stairs are the
   // one authored connection between them.
   const viaStairs = parent.tiles.some(
-    (t) => t.childNodeId === childNodeId && t.imageRef.includes('stairs-down'),
+    (t) => t.childNodeId === childNodeId && kindOf(t.imageRef) === 'stairs-down',
   );
-  const stairsUp = child.tiles.find((t) => t.imageRef.includes('stairs-up'));
+  const stairsUp = child.tiles.find((t) => kindOf(t.imageRef) === 'stairs-up');
   if (viaStairs && stairsUp) return stairsUp.id;
 
   const partyCoords = party.nodeId === parent.id ? parseCoords(party.tileId) : null;

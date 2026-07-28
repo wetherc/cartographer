@@ -2,6 +2,7 @@ import { createTile, getTile, setTile, overlayList } from './TileGrid.js';
 import { parseCoords } from './MapGeometry.js';
 import { findRegionGroups } from './RegionGroups.js';
 import { withNodeTiles } from './TileIndex.js';
+import { kindOf } from './TilePalette.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
@@ -294,7 +295,7 @@ export function stampRegionLink(node, tileId, childNodeId) {
       t.id === tileId ||
       (block.has(t.id) &&
         (!t.childNodeId || t.childNodeId === childNodeId) &&
-        !t.imageRef.includes('wall-'))
+        kindOf(t.imageRef) !== 'wall')
         ? { ...t, childNodeId }
         : t,
     ),
@@ -328,7 +329,7 @@ export function ensureChildLink(node, childId, art) {
   };
 
   const candidates = node.tiles.filter(
-    (t) => !t.childNodeId && !t.imageRef.includes('wall-') && !t.metadata.poiType,
+    (t) => !t.childNodeId && kindOf(t.imageRef) !== 'wall' && !t.metadata.poiType,
   );
   if (candidates.length) {
     const target = candidates.reduce((a, b) => (distToCentre(b.id) < distToCentre(a.id) ? b : a));

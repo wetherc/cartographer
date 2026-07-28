@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { TilePalette, isOverlayType } from '../src/map/TilePalette.js';
+import { TilePalette, isOverlayType, kindOf } from '../src/map/TilePalette.js';
 
 test('TilePalette ships with built-in terrain variants', () => {
   const palette = new TilePalette();
@@ -100,6 +100,35 @@ test('TilePalette ships with building-interior pieces', () => {
   assert.equal(palette.getInteriorPiece('wall-tee-n').type, 'interior');
   assert.equal(palette.getInteriorPiece('floor-1').type, 'interior');
   assert.equal(palette.getInteriorPiece('stairs-down').id, 'interior-stairs-down');
+});
+
+test('kindOf reports what an interior piece means to the rules', () => {
+  const palette = new TilePalette();
+  /** @param {string} id */
+  const kindOfPiece = (id) => kindOf(palette.getInteriorPiece(id).imageRef);
+  assert.equal(kindOfPiece('wall-h'), 'wall');
+  assert.equal(kindOfPiece('wall-corner-ne'), 'wall');
+  assert.equal(kindOfPiece('wall-cross'), 'wall');
+  assert.equal(kindOfPiece('door-v'), 'door');
+  assert.equal(kindOfPiece('stairs-up'), 'stairs-up');
+  assert.equal(kindOfPiece('stairs-down'), 'stairs-down');
+  assert.equal(kindOfPiece('floor-2'), 'floor');
+});
+
+test('kindOf calls everything outside the interior set plain', () => {
+  const palette = new TilePalette();
+  assert.equal(kindOf(palette.get('grass-1').imageRef), 'plain');
+  assert.equal(kindOf(palette.get('castle').imageRef), 'plain');
+  assert.equal(kindOf(palette.getRoadPiece('cross').imageRef), 'plain');
+  assert.equal(kindOf('data:image/png;base64,abc'), 'plain');
+  assert.equal(kindOf(''), 'plain');
+});
+
+test('kindOf reads the whole reference, not a substring of it', () => {
+  // A GM's own art named after a piece is still their art: it must not pick up
+  // the piece's rules, or a file name would decide where the party can stand.
+  assert.equal(kindOf('assets/tiles/custom/interior-wall-h.svg'), 'plain');
+  assert.equal(kindOf('my-stairs-down.png'), 'plain');
 });
 
 test('pickVariant selects deterministically from an injected rng', () => {

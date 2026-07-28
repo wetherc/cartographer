@@ -205,6 +205,15 @@ distinguishes two kinds of art:
 Callers can register custom tiles with `addCustom`/`removeCustom`. Custom
 tiles cannot override built-ins; they only extend the catalog.
 
+A few pieces mean something to the rules and not only to the eye: the party
+cannot stand on a wall, a door is the authored way into a space, and stairs
+connect one dungeon level to the next. `kindOf(imageRef)` answers what a given
+image means, and it is the only place that knows. It matches whole references
+against the catalog rather than looking for a word in a file name, so a GM's
+own art called `interior-wall-h.svg` is still just art, and renaming a built-in
+asset cannot quietly change where the party can walk. Everything outside the
+interior set — terrain, markers, custom images — is `plain`.
+
 `Autotile.js` (`src/map/Autotile.js`) handles the fiddly part of generated
 terrain: picking connector overlay pieces so that coastlines and rivers join
 up visually. It is pure and RNG-injected like the palette:
