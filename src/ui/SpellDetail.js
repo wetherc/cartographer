@@ -75,13 +75,13 @@ export function promptSpellDetail(spell, actions, options = {}) {
       subtitle.textContent = `${levelText} · ${capitalize(spell.school)}`;
       if (spell.concentration) {
         const tag = document.createElement('span');
-        tag.className = 'spell-detail__tag';
+        tag.className = 'badge spell-detail__tag';
         tag.textContent = 'Concentration';
         subtitle.appendChild(tag);
       }
       if (spell.ritual) {
         const tag = document.createElement('span');
-        tag.className = 'spell-detail__tag';
+        tag.className = 'badge spell-detail__tag';
         tag.textContent = 'Ritual';
         subtitle.appendChild(tag);
       }

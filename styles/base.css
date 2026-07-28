@@ -296,6 +296,45 @@ body {
   font-style: italic;
 }
 
+/* A small labeled tag (status conditions, weapon effects, tag-field pills),
+   optionally with a trailing x. Built by ui/buttons.js's chip/removableChip;
+   feature sheets add modifiers on top rather than restating these. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.1rem var(--space-1) 0.1rem var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-size: var(--text-label);
+  line-height: 1.4;
+}
+
+.chip__remove {
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0 0.15rem;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.chip__remove:hover {
+  color: var(--danger);
+}
+
+/* A read-only status marker on a list row: the library's built-in/custom
+   source, an NPC's disposition, a spell's known/prepared state. Color comes
+   from the per-feature modifier. */
+.badge {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: var(--text-label);
+}
+
 .field {
   padding: var(--space-2);
   border: 1px solid var(--border);

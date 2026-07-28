@@ -182,7 +182,7 @@ export function mountLibraryPanel(container, callbacks) {
       const badge = badgeText(entry.source);
       if (badge) {
         const chip = document.createElement('span');
-        chip.className = `library-panel__badge library-panel__badge--${entry.source}`;
+        chip.className = `badge library-panel__badge library-panel__badge--${entry.source}`;
         chip.textContent = badge;
         head.appendChild(chip);
       }

@@ -1,5 +1,6 @@
 import { DIE_SIZES, DAMAGE_TYPES } from '../entities/Equipment.js';
 import { icon } from './icons.js';
+import { removableChip } from './buttons.js';
 
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 
@@ -130,20 +131,12 @@ export function buildEffectsEditor(initial) {
   function render() {
     element.innerHTML = '';
     for (const effect of statusEffects) {
-      const chip = document.createElement('span');
-      chip.className = 'inventory-panel__chip';
-      chip.textContent = effect;
-      const removeChip = document.createElement('button');
-      removeChip.type = 'button';
-      removeChip.className = 'inventory-panel__chip-remove';
-      removeChip.setAttribute('aria-label', `Remove ${effect}`);
-      removeChip.textContent = '×';
-      removeChip.addEventListener('click', () => {
-        statusEffects.splice(statusEffects.indexOf(effect), 1);
-        render();
-      });
-      chip.appendChild(removeChip);
-      element.appendChild(chip);
+      element.appendChild(
+        removableChip(effect, () => {
+          statusEffects.splice(statusEffects.indexOf(effect), 1);
+          render();
+        }),
+      );
     }
     const effectInput = document.createElement('input');
     effectInput.type = 'text';

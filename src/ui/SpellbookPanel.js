@@ -317,7 +317,7 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
 /** @param {string} text @param {string} kind @returns {HTMLElement} a status badge. */
 function badge(text, kind) {
   const el = document.createElement('span');
-  el.className = `spellbook__badge spellbook__badge--${kind}`;
+  el.className = `badge spellbook__badge spellbook__badge--${kind}`;
   el.textContent = text;
   return el;
 }

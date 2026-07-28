@@ -70,7 +70,7 @@ export function mountStatBlockBar(container, callbacks) {
 
       const chip = document.createElement('button');
       chip.type = 'button';
-      chip.className = 'statblock-bar__chip';
+      chip.className = 'chip statblock-bar__chip';
       if (modified) chip.classList.add('statblock-bar__chip--modified');
       if (callbacks.mode === 'base') {
         chip.textContent = `${name} ${base[name]}`;

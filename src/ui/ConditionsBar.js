@@ -1,6 +1,6 @@
 import { CONDITIONS, addCondition, removeCondition } from '../entities/Conditions.js';
 import { promptModal } from './Modal.js';
-import { iconButton, textButton } from './buttons.js';
+import { chip, iconButton, removableChip, textButton } from './buttons.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
 
@@ -23,26 +23,17 @@ export function mountConditionsBar(container, callbacks) {
 
   /** @param {Condition} condition */
   function buildChip(condition) {
-    const chip = document.createElement('span');
-    chip.className = 'conditions-bar__chip';
     const label =
       condition.rounds === null ? condition.name : `${condition.name} (${condition.rounds})`;
-    const text = document.createElement('span');
-    text.textContent = label;
-    chip.appendChild(text);
-    if (!canEdit()) return chip;
-
-    const remove = document.createElement('button');
-    remove.type = 'button';
-    remove.className = 'conditions-bar__remove';
-    remove.setAttribute('aria-label', `Remove ${condition.name}`);
-    remove.textContent = '×';
-    remove.addEventListener('click', () => {
-      callbacks.onChange(removeCondition(callbacks.getConditions(), condition.name));
-      render();
-    });
-    chip.appendChild(remove);
-    return chip;
+    if (!canEdit()) return chip(label);
+    return removableChip(
+      label,
+      () => {
+        callbacks.onChange(removeCondition(callbacks.getConditions(), condition.name));
+        render();
+      },
+      { removeLabel: condition.name },
+    );
   }
 
   async function add() {

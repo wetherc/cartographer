@@ -9,34 +9,6 @@
   gap: var(--space-1);
 }
 
-.conditions-bar__chip {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 0.1rem var(--space-1) 0.1rem var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
-  border: 1px solid var(--border);
-  font-size: var(--text-label);
-  line-height: 1.4;
-}
-
-.conditions-bar__remove {
-  border: none;
-  background: none;
-  cursor: pointer;
-  color: inherit;
-  font-size: 1rem;
-  line-height: 1;
-  padding: 0 0.15rem;
-  opacity: 0.65;
-}
-
-.conditions-bar__remove:hover {
-  opacity: 1;
-  color: var(--danger);
-}
-
 .conditions-bar__add {
   padding: 0.1rem;
 }
@@ -51,7 +23,6 @@
   font-size: var(--text-label);
 }
 
-/* Stat-block chips on encounter rows share the conditions bar's chip look. */
 /* Three fixed columns so an enemy's six ability scores read as two aligned
    rows of equal-width chips; the add button rides in the next free cell. */
 .statblock-bar {
@@ -61,21 +32,14 @@
   gap: var(--space-1);
 }
 
-/* Chips are buttons: click to set the base value (Build) or apply a timed
-   adjustment (Play). AC rides in the seventh cell after the six abilities. */
+/* Stat-block chips take the shared .chip look and add the button bits: these
+   are clickable, to set the base value (Build) or apply a timed adjustment
+   (Play). AC rides in the seventh cell after the six abilities. */
 .statblock-bar__chip {
-  display: inline-flex;
-  align-items: center;
   justify-content: center;
-  gap: var(--space-1);
   padding: 0.1rem var(--space-2);
-  border-radius: var(--radius-sm);
-  background: var(--surface-sunken);
-  border: 1px solid var(--border);
   font: inherit;
   font-size: var(--text-label);
-  line-height: 1.4;
-  color: inherit;
   cursor: pointer;
 }
 

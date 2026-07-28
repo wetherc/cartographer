@@ -209,9 +209,6 @@
 }
 
 .spellbook__badge {
-  font-size: var(--text-label);
-  padding: 0 var(--space-1);
-  border-radius: var(--radius-sm);
   line-height: 1.5;
   white-space: nowrap;
 }
@@ -242,9 +239,6 @@
 }
 
 .spell-detail__tag {
-  font-size: var(--text-label);
-  padding: 0 var(--space-1);
-  border-radius: var(--radius-sm);
   background: var(--border);
   color: var(--text-muted);
 }

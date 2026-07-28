@@ -8,7 +8,8 @@ import { icon } from './icons.js';
  * uniform. Destructive buttons pass `variant: 'danger'` — the app-wide rule
  * is that a delete control is always danger-styled and always visible.
  * `emptyState` rides along as the third panel-level primitive: the muted
- * "nothing here" paragraph every list panel shows.
+ * "nothing here" paragraph every list panel shows, and `chip`/`removableChip`
+ * as the fourth: the small labeled tag, with or without an x to drop it.
  */
 
 /**
@@ -70,6 +71,44 @@ export function textButton(label, onClick, opts = {}) {
   button.appendChild(document.createTextNode(label));
   button.addEventListener('click', onClick);
   return button;
+}
+
+/**
+ * A small labeled tag: the status conditions on a sheet, the effects a weapon
+ * inflicts, the pills in a tag field. The label goes in its own span so a
+ * caller can append to the chip without disturbing the text.
+ * @param {string} label
+ * @param {{ className?: string }} [opts]
+ * @returns {HTMLSpanElement}
+ */
+export function chip(label, opts = {}) {
+  const el = document.createElement('span');
+  el.className = classNames(['chip', opts.className ?? '']);
+  const text = document.createElement('span');
+  text.textContent = label;
+  el.appendChild(text);
+  return el;
+}
+
+/**
+ * A chip with a trailing x that drops it. `removeLabel` names what is being
+ * removed when the visible label is not the thing itself (the conditions bar
+ * shows "Poisoned (3)" but removes "Poisoned").
+ * @param {string} label
+ * @param {() => void} onRemove
+ * @param {{ className?: string, removeLabel?: string }} [opts]
+ * @returns {HTMLSpanElement}
+ */
+export function removableChip(label, onRemove, opts = {}) {
+  const el = chip(label, opts);
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'chip__remove';
+  remove.textContent = '×';
+  remove.setAttribute('aria-label', `Remove ${opts.removeLabel ?? label}`);
+  remove.addEventListener('click', onRemove);
+  el.appendChild(remove);
+  return el;
 }
 
 /**

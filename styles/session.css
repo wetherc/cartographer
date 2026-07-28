@@ -94,9 +94,6 @@
 }
 
 .npc-panel__badge {
-  font-size: var(--text-label);
-  padding: 0 var(--space-1);
-  border-radius: var(--radius-sm);
   text-transform: capitalize;
 }
 

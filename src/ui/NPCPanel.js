@@ -43,7 +43,7 @@ export function mountNPCPanel(container, callbacks) {
       name.className = 'npc-panel__name';
       name.textContent = npc.name;
       const badge = document.createElement('span');
-      badge.className = `npc-panel__badge npc-panel__badge--${npc.disposition}`;
+      badge.className = `badge npc-panel__badge npc-panel__badge--${npc.disposition}`;
       badge.textContent = npc.disposition;
       head.append(name, badge);
       parts.push(head);

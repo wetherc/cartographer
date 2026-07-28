@@ -71,9 +71,6 @@ body.mode-library .app-buildrail:not(#library-tools) {
 }
 
 .library-panel__badge {
-  padding: 0 var(--space-1);
-  border-radius: var(--radius-sm);
-  font-size: var(--text-label);
   background: var(--surface-sunken);
   color: var(--text-muted);
   border: 1px solid var(--border);

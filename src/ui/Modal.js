@@ -11,6 +11,7 @@
  */
 
 import { readImageFile } from './imageField.js';
+import { removableChip } from './buttons.js';
 
 /** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file' | 'multiselect' | 'tags' | 'button' | 'pillgrid', value?: string | number, min?: number, options?: { value: string, label: string, disabled?: boolean }[], rows?: { value: string, label: string }[], full?: boolean, max?: number, emptyText?: string, fixedHeight?: boolean, disabled?: boolean, hidden?: boolean }} ModalField */
 
@@ -306,21 +307,13 @@ export function promptModal(title, fields, options = {}) {
           const render = () => {
             box.textContent = '';
             for (const tag of tags) {
-              const pill = document.createElement('span');
-              pill.className = 'modal__tag';
-              pill.textContent = tag;
-              const remove = document.createElement('button');
-              remove.type = 'button';
-              remove.className = 'modal__tag-remove';
-              remove.textContent = '×';
-              remove.setAttribute('aria-label', `Remove ${tag}`);
-              remove.addEventListener('click', () => {
-                tags = tags.filter((t) => t !== tag);
-                render();
-                entry.focus();
-              });
-              pill.appendChild(remove);
-              box.appendChild(pill);
+              box.appendChild(
+                removableChip(tag, () => {
+                  tags = tags.filter((t) => t !== tag);
+                  render();
+                  entry.focus();
+                }),
+              );
             }
             box.appendChild(entry);
           };

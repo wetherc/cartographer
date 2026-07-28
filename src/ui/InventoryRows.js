@@ -90,7 +90,7 @@ export function buildRow(item, playable, ctx) {
     badges.className = 'inventory-panel__effects';
     for (const effect of effects) {
       const badge = document.createElement('span');
-      badge.className = 'inventory-panel__effect';
+      badge.className = 'chip inventory-panel__effect';
       badge.textContent = effect;
       badges.appendChild(badge);
     }

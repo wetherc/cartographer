@@ -234,13 +234,16 @@ output depends on state that is *not* in its rows has to pass `alwaysRender`.
 
 ### `src/ui/buttons.js`
 
-Two button builders and one empty-state paragraph. Eighteen modules import them, and no panel
-should call `document.createElement('button')` for an ordinary control.
+Two button builders, an empty-state paragraph, and the chip pair. Eighteen
+modules import them, and no panel should call
+`document.createElement('button')` for an ordinary control.
 
 ```js
 iconButton(name, ariaLabel, onClick, opts?) -> HTMLButtonElement
 textButton(label, onClick, opts?)           -> HTMLButtonElement
 emptyState(message)                         -> HTMLParagraphElement
+chip(label, opts?)                          -> HTMLSpanElement
+removableChip(label, onRemove, opts?)       -> HTMLSpanElement
 ```
 
 `iconButton` builds `btn btn--icon`, **requires** an `ariaLabel` (an icon-only
@@ -267,6 +270,15 @@ stays visible rather than appearing on hover, and it confirms first. See
 
 `emptyState(message)` is the one `<p class="empty-state">`. Every list panel's
 "nothing here yet" line goes through it.
+
+`chip(label)` is a `<span class="chip">` holding the label in its own inner
+span, so a caller can append to the chip without disturbing the text.
+`removableChip(label, onRemove)` adds the trailing x (`.chip__remove`) that
+calls `onRemove`. Pass `opts.removeLabel` when the visible label is not the
+thing being removed: the conditions bar shows "Poisoned (3)" but its button
+should read "Remove Poisoned". Status conditions, the effects a weapon inflicts,
+and tag-field pills all build through these; `opts.className` carries any
+per-feature modifier.
 
 ### `src/ui/icons.js`
 
@@ -604,6 +616,8 @@ Class names are BEM-ish: `block__element--modifier`. Everything below lives in
 | `.row-select`, `--current` | selectable full-width list row (world tree, roster) |
 | `.section-label` | in-panel sub-heading: uppercase, tracked, muted |
 | `.empty-state` | the "nothing here yet" paragraph |
+| `.chip`, `.chip__remove` | a small labeled tag, with or without an x; built through `buttons.js` |
+| `.badge` | a read-only status marker on a list row; the color comes from a per-feature modifier |
 | `.icon` | the SVG wrapper `icon()` applies |
 | `.sr-only` | visually hidden, still announced |
 
@@ -696,13 +710,6 @@ Three known gaps, so nobody assumes they are covered:
 
 Reuse the right thing rather than adding to the pile.
 
-- **Chips and badges have no shared class.** Around ten near-identical
-  implementations exist across `party.css`, `session.css`, `library.css`,
-  `spells.css`, `character.css`, and `shell.css`. There are really two families
-  (a `--radius-sm` badge and a pill), the split is not encoded in the naming,
-  and the pill radius is a literal `999px` repeated in five sheets with no
-  `--radius-pill` token. The removable "x" chip button exists three times in JS
-  and three times in CSS, and one copy has already drifted.
 - **Transition durations are untokenized**: `0.12s`, `120ms`, `0.15s`, `0.2s`,
   and `0.25s` all appear, with no `--transition-*` token.
 - **The list-CRUD panel skeleton is written six times** (quests, handouts,

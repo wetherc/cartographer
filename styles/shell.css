@@ -159,28 +159,8 @@
   cursor: text;
 }
 
-.modal__tag {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  padding: 0 var(--space-1);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  color: var(--text);
+.modal__tags .chip {
   white-space: nowrap;
-}
-
-.modal__tag-remove {
-  border: none;
-  background: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-}
-
-.modal__tag-remove:hover {
-  color: var(--danger);
 }
 
 .modal__tags-input {
