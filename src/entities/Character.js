@@ -1,4 +1,12 @@
-import { createResource, spend as spendPool, restore as restorePool } from './Resource.js';
+import {
+  createResource,
+  spend as spendPool,
+  restore as restorePool,
+  setMax,
+  adjustMax,
+} from './Resource.js';
+import { HP_RESOURCE_ID } from './PoolIds.js';
+import { updateById } from './Roster.js';
 import { isSlotPool, isPactPool } from './SpellSlots.js';
 import { isHitDicePool } from './HitDice.js';
 import { derive } from './Progression.js';
@@ -30,9 +38,11 @@ export function defaultStats() {
 /**
  * Reserved ResourcePool id for a character's hit points. HP is a regular pool
  * so damage/heal reuse the existing spend/restore machinery; a character
- * without this pool simply has no HP tracking (older saves).
+ * without this pool simply has no HP tracking (older saves). Declared in
+ * PoolIds.js, which the pool modules below this one can also import, and
+ * re-exported here because character code is its natural import site.
  */
-export const HP_RESOURCE_ID = 'hp';
+export { HP_RESOURCE_ID } from './PoolIds.js';
 
 /**
  * @param {Character} character
@@ -71,9 +81,7 @@ export function setMaxHP(character, max) {
   return {
     ...character,
     hpOverride: true,
-    resources: character.resources.map((r) =>
-      r.id === HP_RESOURCE_ID ? { ...r, max: clamped, current: Math.min(r.current, clamped) } : r,
-    ),
+    resources: updateById(character.resources, HP_RESOURCE_ID, (r) => setMax(r, clamped)),
   };
 }
 
@@ -431,11 +439,9 @@ export function addXP(character, amount, opts = {}) {
   if (gained === 0) return { ...character, level, xp };
 
   const classed = getClasses(character).length > 0;
-  const resources = character.resources.map((r) => {
-    if (r.id !== HP_RESOURCE_ID) return r;
+  const resources = updateById(character.resources, HP_RESOURCE_ID, (r) => {
     const perLevel = opts.hpGrowth ?? (classed ? 0 : defaultGrowth(r.max));
-    const added = perLevel * gained;
-    return { ...r, max: r.max + added, current: Math.min(r.max + added, r.current + added) };
+    return adjustMax(r, r.max + perLevel * gained);
   });
   const overridden = opts.hpGrowth !== undefined ? { hpOverride: true } : {};
   return derive({ ...character, ...overridden, level, xp, resources });
@@ -459,7 +465,7 @@ export function addResource(character, pool) {
 export function spendResource(character, resourceId, amount) {
   return {
     ...character,
-    resources: character.resources.map((r) => (r.id === resourceId ? spendPool(r, amount) : r)),
+    resources: updateById(character.resources, resourceId, (r) => spendPool(r, amount)),
   };
 }
 
@@ -472,7 +478,7 @@ export function spendResource(character, resourceId, amount) {
 export function restoreResource(character, resourceId, amount) {
   return {
     ...character,
-    resources: character.resources.map((r) => (r.id === resourceId ? restorePool(r, amount) : r)),
+    resources: updateById(character.resources, resourceId, (r) => restorePool(r, amount)),
   };
 }
 
@@ -535,9 +541,10 @@ export function addItem(character, item) {
 
   return {
     ...character,
-    inventory: character.inventory.map((i) =>
-      i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i,
-    ),
+    inventory: updateById(character.inventory, item.id, (i) => ({
+      ...i,
+      quantity: i.quantity + item.quantity,
+    })),
   };
 }
 
@@ -576,7 +583,7 @@ export function transferItem(giver, receiver, itemId, quantity) {
 export function updateItem(character, itemId, next) {
   return pruneEquipment({
     ...character,
-    inventory: character.inventory.map((i) => (i.id === itemId ? { ...next, id: i.id } : i)),
+    inventory: updateById(character.inventory, itemId, (i) => ({ ...next, id: i.id })),
   });
 }
 
@@ -589,8 +596,9 @@ export function updateItem(character, itemId, next) {
  * @returns {Character}
  */
 export function removeItem(character, itemId, quantity) {
-  const inventory = character.inventory
-    .map((i) => (i.id === itemId ? { ...i, quantity: Math.max(0, i.quantity - quantity) } : i))
-    .filter((i) => i.quantity > 0);
+  const inventory = updateById(character.inventory, itemId, (i) => ({
+    ...i,
+    quantity: Math.max(0, i.quantity - quantity),
+  })).filter((i) => i.quantity > 0);
   return pruneEquipment({ ...character, inventory });
 }

@@ -40,6 +40,21 @@ export function replaceById(list, item) {
 }
 
 /**
+ * Replace the entry with the given id by what `update` makes of it, leaving the
+ * rest untouched. The whole-entry form is `replaceById`; this is the patch form,
+ * for the common `list.map((x) => (x.id === id ? { ...x, ...change } : x))`.
+ * Returns the list unchanged (same entries, new array) if no id matches.
+ * @template {{ id: string }} T
+ * @param {T[]} list
+ * @param {string} id
+ * @param {(entry: T) => T} update
+ * @returns {T[]}
+ */
+export function updateById(list, id, update) {
+  return list.map((entry) => (entry.id === id ? update(entry) : entry));
+}
+
+/**
  * Remove the entry with the given id, if present.
  * @template {{ id: string }} T
  * @param {T[]} list

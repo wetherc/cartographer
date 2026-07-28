@@ -36,6 +36,34 @@ A few behaviors are baked into the models rather than validated separately:
   `ResourcePool` via `Resource.js`, and `addItem`/`removeItem` merge or split
   inventory stacks by item id, dropping a stack once its quantity hits 0.
 
+### Reserved resource pools
+
+HP, spell slots, pact slots, and hit dice are not special-cased types — they are
+ordinary `ResourcePool`s under ids the app reserves, so spending a spell slot and
+spending an arrow run through the same `spend`/`restore` code. `entities/PoolIds.js`
+holds those ids (`hp`, the `slots-`/`pact-` prefixes, the `hit-dice-d` prefix) and
+imports nothing, so the three modules that own the rules for them — `Character.js`,
+`SpellSlots.js`, `HitDice.js` — can all read the same string no matter where they
+sit in the import graph. Each re-exports the ids it owns, so `HP_RESOURCE_ID` is
+still imported from `Character.js`.
+
+What makes a pool reserved is that its maximum is derived, not typed in. Three
+helpers in `Resource.js` cover what the deriving writers need:
+
+- `adjustMax(pool, max)` moves the maximum and carries current by the same
+  delta, so a CON increase grants the hit points instead of only raising the
+  ceiling. This is the re-derive rule (`HitDice.reconcileMaxHP`, `addXP`).
+- `growMax(pool, max)` carries a gain but never refunds a loss, so a level-up
+  hands over new slots unspent while losing capacity does not un-spend a die.
+  This is the keep-what-is-spent rule (`syncSlotsToLevel`, `syncHitDice`).
+- `spliceReservedPools(resources, next, owns, after?)` swaps a whole family of
+  pools for a freshly derived set, putting them back where the first one sat so
+  the order the resource card reads in survives. With no pool of the family
+  present it falls back to following the pools named by `after`.
+
+`Roster.js`'s `updateById(list, id, fn)` is the matching helper for the by-id
+patch, which the resource and inventory writers were each spelling out inline.
+
 ## The character foundation
 
 On top of its stats and inventory, a `Character` carries a class list, a

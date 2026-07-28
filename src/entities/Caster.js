@@ -1,6 +1,7 @@
 import { isCasterClass, casterSlots } from './Classes.js';
 import { emptySpellbook } from './Character.js';
-import { isSlotPool, isPactPool } from './SpellSlots.js';
+import { spliceReservedPools } from './Resource.js';
+import { isSlotPool, isCasterPool } from './SpellSlots.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
@@ -101,10 +102,11 @@ export function isCaster(entity) {
  */
 export function withCasterState(entity, caster) {
   const e = /** @type {any} */ (entity);
-  const isCasterPool = (/** @type {ResourcePool} */ r) => isSlotPool(r) || isPactPool(r);
-  const others = (e.resources ?? []).filter((/** @type {ResourcePool} */ r) => !isCasterPool(r));
   const slots = caster.resources.filter(isCasterPool);
-  return /** @type {T} */ ({ ...e, resources: [...others, ...slots] });
+  return /** @type {T} */ ({
+    ...e,
+    resources: spliceReservedPools(e.resources ?? [], slots, isCasterPool),
+  });
 }
 
 /**
@@ -123,14 +125,17 @@ export function withCasterFields(entity, options = {}, defaultLevel = 1) {
   if (!isCasterClass(options.class)) return entity;
   const e = /** @type {any} */ (entity);
   const casterLevel = Math.max(1, Math.floor(options.casterLevel ?? defaultLevel) || 1);
-  const others = (e.resources ?? []).filter((/** @type {ResourcePool} */ r) => !isSlotPool(r));
   return /** @type {T} */ ({
     ...e,
     class: options.class,
     ...(options.subclass ? { subclass: options.subclass } : {}),
     casterLevel,
     spellbook: options.spellbook ?? emptySpellbook(),
-    resources: [...others, ...casterSlots(options.class, casterLevel)],
+    resources: spliceReservedPools(
+      e.resources ?? [],
+      casterSlots(options.class, casterLevel),
+      isSlotPool,
+    ),
   });
 }
 

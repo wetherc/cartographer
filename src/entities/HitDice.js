@@ -1,5 +1,14 @@
-import { createResource, spend, restore } from './Resource.js';
-import { isSlotPool, isPactPool } from './SpellSlots.js';
+import {
+  createResource,
+  spend,
+  restore,
+  adjustMax,
+  growMax,
+  spliceReservedPools,
+} from './Resource.js';
+import { HP_RESOURCE_ID, HIT_DICE_ID_PREFIX, LEGACY_HIT_DICE_ID } from './PoolIds.js';
+import { updateById } from './Roster.js';
+import { isCasterPool } from './SpellSlots.js';
 import { getClass } from './Classes.js';
 import { getClasses, primaryClass } from './Multiclass.js';
 import { abilityModifier } from './Modifiers.js';
@@ -16,13 +25,11 @@ import { abilityModifier } from './Modifiers.js';
  * of each pool (see Character.js's restAll). Older saves carried one generic
  * `hit-dice` pool with no die size; syncHitDice converts it, carrying the
  * spent count into the primary class's pool.
+ *
+ * Both ids are declared in PoolIds.js with the rest of the reserved pool ids,
+ * and re-exported here because hit-dice code is their natural import site.
  */
-export const HIT_DICE_ID_PREFIX = 'hit-dice-d';
-export const LEGACY_HIT_DICE_ID = 'hit-dice';
-
-/** The HP pool's reserved id. Declared here rather than imported from
- * Character.js, which sits above this module. */
-const HP_POOL_ID = 'hp';
+export { HIT_DICE_ID_PREFIX, LEGACY_HIT_DICE_ID } from './PoolIds.js';
 
 /** @param {ResourcePool} pool @returns {boolean} */
 export function isHitDicePool(pool) {
@@ -136,16 +143,11 @@ export function reconcileMaxHP(character) {
   if (character.hpOverride) return character;
   const max = classMaxHP(character);
   if (max === null) return character;
-  const pool = character.resources.find((r) => r.id === HP_POOL_ID);
+  const pool = character.resources.find((r) => r.id === HP_RESOURCE_ID);
   if (!pool || pool.max === max) return character;
-  const delta = max - pool.max;
   return {
     ...character,
-    resources: character.resources.map((r) =>
-      r.id === HP_POOL_ID
-        ? { ...r, max, current: Math.max(0, Math.min(max, r.current + delta)) }
-        : r,
-    ),
+    resources: updateById(character.resources, HP_RESOURCE_ID, (r) => adjustMax(r, max)),
   };
 }
 
@@ -169,10 +171,13 @@ export function withHitDice(character) {
   const pools = characterHitDice(character).map(({ die, count }) =>
     createResource(hitDicePoolId(die), `Hit Dice (d${die})`, 'custom', count),
   );
-  const rest = character.resources.filter((r) => !isHitDicePool(r));
-  const head = rest.filter((r) => r.id === HP_POOL_ID || isSlotPool(r) || isPactPool(r));
-  const tail = rest.filter((r) => !head.includes(r));
-  return { ...character, resources: [...head, ...pools, ...tail] };
+  const resources = spliceReservedPools(
+    character.resources,
+    pools,
+    isHitDicePool,
+    (r) => r.id === HP_RESOURCE_ID || isCasterPool(r),
+  );
+  return { ...character, resources };
 }
 
 /**
@@ -191,13 +196,11 @@ export function syncHitDice(character) {
   const legacy = existing.find((r) => r.id === LEGACY_HIT_DICE_ID) ?? null;
 
   const next = characterHitDice(character).map(({ die, count }, index) => {
+    const fresh = createResource(hitDicePoolId(die), `Hit Dice (d${die})`, 'custom', count);
     const old = existing.find((r) => r.id === hitDicePoolId(die)) ?? (index === 0 ? legacy : null);
-    const current =
-      old === null ? count : Math.min(count, old.current + Math.max(0, count - old.max));
-    return {
-      ...createResource(hitDicePoolId(die), `Hit Dice (d${die})`, 'custom', count),
-      current,
-    };
+    // The pool is rebuilt from the class list (its id changes when a legacy
+    // pool converts), so only the spent count carries over from the old one.
+    return old === null ? fresh : { ...fresh, current: growMax(old, count).current };
   });
 
   const unchanged =
@@ -208,18 +211,10 @@ export function syncHitDice(character) {
     );
   if (unchanged) return character;
 
-  /** @type {ResourcePool[]} */
-  const resources = [];
-  let placed = false;
-  for (const r of character.resources) {
-    if (!isHitDicePool(r)) {
-      resources.push(r);
-    } else if (!placed) {
-      resources.push(...next);
-      placed = true;
-    }
-  }
-  return { ...character, resources };
+  return {
+    ...character,
+    resources: spliceReservedPools(character.resources, next, isHitDicePool),
+  };
 }
 
 /**
@@ -244,7 +239,7 @@ export function spendHitDie(character, die = null, rng = Math.random) {
   const healed = Math.max(0, rolled + conModifierOf(character));
   const resources = character.resources.map((r) => {
     if (r.id === pool.id) return spend(r, 1);
-    if (r.id === HP_POOL_ID) return restore(r, healed);
+    if (r.id === HP_RESOURCE_ID) return restore(r, healed);
     return r;
   });
   return { character: { ...character, resources }, healed, rolled };

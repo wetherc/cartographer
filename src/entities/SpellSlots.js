@@ -1,4 +1,5 @@
-import { createResource } from './Resource.js';
+import { createResource, growMax, spliceReservedPools } from './Resource.js';
+import { HP_RESOURCE_ID, SLOT_ID_PREFIX, PACT_ID_PREFIX } from './PoolIds.js';
 import { getClasses } from './Multiclass.js';
 import { DEFAULT_CLASSES } from '../data/classes.js';
 
@@ -11,15 +12,15 @@ import { DEFAULT_CLASSES } from '../data/classes.js';
  * machinery. A character with no slot pools simply isn't a caster. The maxima
  * derive from the character's class list (`characterSlots`); only long rests
  * refill them (see Character.js's restAll).
+ *
+ * Warlock pact slots are a separate pool under a `pact-N` id (N = the slot level
+ * every pact slot is cast at). Unlike leveled slots, pact slots refill on a
+ * short rest and never join the multiclass combined caster level.
+ *
+ * Both prefixes are declared in PoolIds.js with the rest of the reserved pool
+ * ids, and re-exported here because slot code is their natural import site.
  */
-export const SLOT_ID_PREFIX = 'slots-';
-
-/**
- * Warlock pact slots are a separate pool under a `pact-N` id (N = the slot
- * level every pact slot is cast at). Unlike leveled slots, pact slots refill
- * on a short rest and never join the multiclass combined caster level.
- */
-export const PACT_ID_PREFIX = 'pact-';
+export { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './PoolIds.js';
 
 /**
  * Full-caster slot progression (SRD): SLOT_TABLE[characterLevel - 1][spellLevel - 1]
@@ -352,16 +353,20 @@ export function castableSlotLevels(character, minLevel) {
  * @returns {Character}
  */
 export function withSpellSlots(character) {
-  const hp = character.resources.filter((r) => r.id === 'hp');
-  const others = character.resources.filter(
-    (r) => r.id !== 'hp' && !isSlotPool(r) && !isPactPool(r),
-  );
   const slots = characterSlots(character).map((max, i) => slotPool(i + 1, max));
   const pact = characterPactSlots(character);
-  return {
-    ...character,
-    resources: [...hp, ...slots, ...(pact ? [pactPool(pact)] : []), ...others],
-  };
+  const resources = spliceReservedPools(
+    character.resources,
+    [...slots, ...(pact ? [pactPool(pact)] : [])],
+    isCasterPool,
+    (r) => r.id === HP_RESOURCE_ID,
+  );
+  return { ...character, resources };
+}
+
+/** @param {ResourcePool} pool @returns {boolean} a leveled or pact slot pool */
+export function isCasterPool(pool) {
+  return isSlotPool(pool) || isPactPool(pool);
 }
 
 /**
@@ -386,9 +391,7 @@ export function syncSlotsToLevel(character) {
   /** @type {ResourcePool[]} */
   const synced = table.map((max, i) => {
     const prior = byLevel.get(i + 1);
-    if (!prior) return slotPool(i + 1, max);
-    const gained = Math.max(0, max - prior.max);
-    return { ...prior, max, current: Math.min(max, prior.current + gained) };
+    return prior ? growMax(prior, max) : slotPool(i + 1, max);
   });
 
   const pact = characterPactSlots(character);
@@ -396,18 +399,17 @@ export function syncSlotsToLevel(character) {
   let syncedPact = [];
   if (pact) {
     const fresh = pactPool(pact);
-    if (!priorPact) syncedPact = [fresh];
-    else {
-      const gained = Math.max(0, pact.count - priorPact.max);
-      syncedPact = [{ ...fresh, current: Math.min(pact.count, priorPact.current + gained) }];
-    }
+    // The pool is rebuilt because its id carries the slot level, which follows
+    // the pact class's levels up; only the spent count carries over.
+    syncedPact = [
+      priorPact ? { ...fresh, current: growMax(priorPact, pact.count).current } : fresh,
+    ];
   }
 
-  // Splice the synced pools in at the position of the first slot or pact pool,
-  // so the HP-then-slots-then-custom order on the card survives a level-up.
-  const isCasterPool = (/** @type {ResourcePool} */ r) => isSlotPool(r) || isPactPool(r);
-  const firstIdx = character.resources.findIndex(isCasterPool);
-  const rest = character.resources.filter((r) => !isCasterPool(r));
-  const resources = [...rest.slice(0, firstIdx), ...synced, ...syncedPact, ...rest.slice(firstIdx)];
+  const resources = spliceReservedPools(
+    character.resources,
+    [...synced, ...syncedPact],
+    isCasterPool,
+  );
   return { ...character, resources };
 }
