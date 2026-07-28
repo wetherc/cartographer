@@ -23,7 +23,7 @@ import {
 } from '../entities/StatGen.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
-/** @typedef {import('../ui/Modal.js').ModalField} ModalField */
+/** @typedef {import('../types/modal.js').ModalField} ModalField */
 
 /**
  * The "New character" dialog's fields and the pure builder that turns its

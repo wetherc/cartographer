@@ -11,10 +11,13 @@
  */
 
 import { readImageFile } from './imageField.js';
-import { removableChip } from './buttons.js';
+import { buildMultiselect, buildPillGrid, buildTagsField } from './ModalFields.js';
 import { clamp } from '../util/num.js';
 
-/** @typedef {{ name: string, label: string, type?: 'text' | 'number' | 'select' | 'file' | 'multiselect' | 'tags' | 'button' | 'pillgrid', value?: string | number, min?: number, options?: { value: string, label: string, disabled?: boolean }[], rows?: { value: string, label: string }[], full?: boolean, max?: number, emptyText?: string, fixedHeight?: boolean, disabled?: boolean, hidden?: boolean }} ModalField */
+/** @typedef {import('../types/modal.js').ModalField} ModalField */
+/** @typedef {import('../types/modal.js').ModalFormHandle} ModalFormHandle */
+/** @typedef {import('../types/modal.js').FieldOption} FieldOption */
+/** @typedef {import('../types/modal.js').CompositeField} CompositeField */
 
 /**
  * What a dialog's builder hands back: the content between the title and the
@@ -104,6 +107,18 @@ export function openDialog(spec) {
 }
 
 /**
+ * The composite fields and the action button are not `<input>`s, but the form
+ * keeps one element per field so it can attach the change listener, toggle
+ * `disabled`, and focus the first field without asking what kind each one is.
+ * This is the one place that says so.
+ * @param {HTMLElement} element
+ * @returns {HTMLInputElement}
+ */
+function asInput(element) {
+  return /** @type {HTMLInputElement} */ (/** @type {unknown} */ (element));
+}
+
+/**
  * Show a form modal. Resolves to a record of field name -> string value on
  * submit, or null if cancelled/dismissed. With `wide` the form lays fields
  * out two per row (a field marked `full` spans both columns), for dialogs
@@ -116,7 +131,7 @@ export function openDialog(spec) {
  * @param {{
  *   submitLabel?: string,
  *   wide?: boolean,
- *   onChange?: (name: string, form: { get: (name: string) => string, set: (name: string, value: string | number) => void, setOptions: (name: string, options: { value: string, label: string }[], max?: number) => void, setDisabled: (name: string, disabled: boolean) => void, setLabel: (name: string, text: string) => void, setRange: (name: string, min?: number, max?: number) => void, setHidden: (name: string, hidden: boolean) => void }) => void,
+ *   onChange?: (name: string, form: ModalFormHandle) => void,
  * }} [options]
  * @returns {Promise<Record<string, string> | null>}
  */
@@ -141,14 +156,14 @@ export function promptModal(title, fields, options = {}) {
   const extras = {};
   /** Option rebuilders per multiselect field, so onChange can refilter a
    * checkbox group in place (preserving what's checked). */
-  /** @type {Record<string, (options: { value: string, label: string }[], max?: number) => void>} */
+  /** @type {Record<string, (options: FieldOption[], max?: number) => void>} */
   const rebuilders = {};
   /** Label text nodes per field, so onChange can restate a caption (e.g.
    * "Class skills (choose 2)"). */
   /** @type {Record<string, Text>} */
   const labelTexts = {};
-  /** Value setters for composite fields whose state isn't an input.value
-   * (the pill grid); plain fields fall through to the default assignment. */
+  /** Value setters for the composite fields, whose state isn't an input.value;
+   * plain fields fall through to the default assignment. */
   /** @type {Record<string, (value: string) => void>} */
   const setters = {};
   /** The whole field wrapper per name, so onChange can show/hide a field. */
@@ -221,187 +236,25 @@ export function promptModal(title, fields, options = {}) {
           });
           getters[field.name] = () => dataUrl;
           extras[field.name] = error;
-        } else if (field.type === 'multiselect') {
-          // A scrollable checkbox group: the value is the comma-joined set of
-          // checked option values (slug ids, so the separator is unambiguous).
-          // Preselect from a comma-joined `value`. `max` caps the picks by
-          // disabling the unchecked boxes once reached; `fixedHeight` pins the
-          // box so a refilter doesn't reflow the dialog, with `emptyText`
-          // filling it while there are no options.
-          const box = document.createElement('div');
-          box.className = field.fixedHeight
-            ? 'field modal__multiselect modal__multiselect--fixed'
-            : 'field modal__multiselect';
-          /** @type {HTMLInputElement[]} */
-          let checks = [];
-          let max = field.max ?? Infinity;
-          const enforceMax = () => {
-            const full = checks.filter((c) => c.checked).length >= max;
-            for (const check of checks) check.disabled = full && !check.checked;
-          };
-          // Rebuild the checkbox rows for a fresh option set, checking those in
-          // `selected`. Reused by the initial render and by onChange refilters.
-          const render = (
-            /** @type {{ value: string, label: string }[]} */ opts,
-            /** @type {Set<string>} */ selected,
-          ) => {
-            box.textContent = '';
-            checks = [];
-            if (!opts.length && field.emptyText) {
-              const empty = document.createElement('p');
-              empty.className = 'empty-state';
-              empty.textContent = field.emptyText;
-              box.appendChild(empty);
-            }
-            for (const option of opts) {
-              const row = document.createElement('label');
-              row.className = 'modal__multiselect-option';
-              const check = document.createElement('input');
-              check.type = 'checkbox';
-              check.value = option.value;
-              check.checked = selected.has(option.value);
-              const text = document.createElement('span');
-              text.textContent = option.label;
-              row.append(check, text);
-              box.appendChild(row);
-              checks.push(check);
-            }
-            enforceMax();
-          };
-          render(
-            field.options ?? [],
-            new Set(
-              field.value !== undefined ? String(field.value).split(',').filter(Boolean) : [],
-            ),
-          );
-          box.addEventListener('input', enforceMax);
-          input = /** @type {HTMLInputElement} */ (/** @type {unknown} */ (box));
-          getters[field.name] = () =>
-            checks
-              .filter((c) => c.checked)
-              .map((c) => c.value)
-              .join(',');
-          // Refilter keeps whatever is currently checked, even if it drops out of
-          // the new option set (so a valid pick isn't silently lost mid-edit).
-          rebuilders[field.name] = (opts, newMax) => {
-            if (newMax !== undefined) max = newMax;
-            render(opts, new Set(checks.filter((c) => c.checked).map((c) => c.value)));
-          };
-        } else if (field.type === 'tags') {
-          // A pill list with an inline text entry: Enter finalizes the typed
-          // text as a pill, the x removes one, Backspace in an empty entry
-          // removes the last. The value is the comma-joined pills plus any
-          // un-finalized text, so nothing typed is lost on submit.
-          const box = document.createElement('div');
-          box.className = 'field modal__tags';
-          /** @type {string[]} */
-          let tags =
-            field.value !== undefined
-              ? String(field.value)
-                  .split(',')
-                  .map((s) => s.trim())
-                  .filter(Boolean)
-              : [];
-          const entry = document.createElement('input');
-          entry.type = 'text';
-          entry.className = 'modal__tags-input';
-          const render = () => {
-            box.textContent = '';
-            for (const tag of tags) {
-              box.appendChild(
-                removableChip(tag, () => {
-                  tags = tags.filter((t) => t !== tag);
-                  render();
-                  entry.focus();
-                }),
-              );
-            }
-            box.appendChild(entry);
-          };
-          entry.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-              event.preventDefault(); // finalize the pill, don't submit the dialog
-              const text = entry.value.trim();
-              if (text && !tags.includes(text)) tags.push(text);
-              entry.value = '';
-              render();
-              entry.focus();
-            } else if (event.key === 'Backspace' && !entry.value && tags.length) {
-              tags.pop();
-              render();
-              entry.focus();
-            }
-          });
-          box.addEventListener('click', () => entry.focus());
-          render();
-          input = /** @type {HTMLInputElement} */ (/** @type {unknown} */ (box));
-          getters[field.name] = () => [...tags, entry.value.trim()].filter(Boolean).join(',');
-        } else if (field.type === 'pillgrid') {
-          // An assignment grid: each row (e.g. an ability) holds at most one of
-          // the option values (e.g. the standard array), every value used at
-          // most once. Clicking assigns, clicking the held pill un-assigns, and
-          // clicking a pill another row already holds moves it here (the other
-          // row takes this row's old value, if any). The value is the
-          // comma-joined `row:value` pairs of the assigned rows.
-          const box = document.createElement('div');
-          box.className = 'modal__pillgrid';
-          const parse = (/** @type {string} */ value) =>
-            Object.fromEntries(
-              value
-                .split(',')
-                .filter(Boolean)
-                .map((pair) => pair.split(':')),
-            );
-          /** @type {Record<string, string>} */
-          let assigned = parse(field.value !== undefined ? String(field.value) : '');
-          const render = () => {
-            box.textContent = '';
-            for (const row of field.rows ?? []) {
-              const rowEl = document.createElement('div');
-              rowEl.className = 'modal__pillgrid-row';
-              const rowLabel = document.createElement('span');
-              rowLabel.className = 'modal__pillgrid-label';
-              rowLabel.textContent = row.label;
-              rowEl.appendChild(rowLabel);
-              for (const option of field.options ?? []) {
-                const pill = document.createElement('button');
-                pill.type = 'button';
-                pill.className =
-                  assigned[row.value] === option.value
-                    ? 'modal__pill modal__pill--selected'
-                    : 'modal__pill';
-                pill.textContent = option.label;
-                pill.setAttribute('aria-pressed', String(assigned[row.value] === option.value));
-                pill.addEventListener('click', () => {
-                  const prev = assigned[row.value];
-                  if (prev === option.value) {
-                    delete assigned[row.value];
-                  } else {
-                    const holder = Object.keys(assigned).find(
-                      (k) => k !== row.value && assigned[k] === option.value,
-                    );
-                    assigned[row.value] = option.value;
-                    if (holder && prev !== undefined) assigned[holder] = prev;
-                    else if (holder) delete assigned[holder];
-                  }
-                  render();
-                  box.dispatchEvent(new Event('input'));
-                });
-                rowEl.appendChild(pill);
-              }
-              box.appendChild(rowEl);
-            }
-          };
-          render();
-          input = /** @type {HTMLInputElement} */ (/** @type {unknown} */ (box));
-          getters[field.name] = () =>
-            Object.entries(assigned)
-              .map(([k, v]) => `${k}:${v}`)
-              .join(',');
-          setters[field.name] = (value) => {
-            assigned = parse(value);
-            render();
-          };
+        } else if (
+          field.type === 'multiselect' ||
+          field.type === 'tags' ||
+          field.type === 'pillgrid'
+        ) {
+          // The three composite fields own their own state and rendering, so the
+          // dialog only holds their handle: one element to mount, one reader for
+          // the submitted record, one writer for `onChange`'s `set`. A
+          // multiselect adds the refilter `setOptions` routes to.
+          const composite =
+            field.type === 'multiselect'
+              ? buildMultiselect(field)
+              : field.type === 'tags'
+                ? buildTagsField(field)
+                : buildPillGrid(field);
+          input = asInput(composite.element);
+          getters[field.name] = composite.get;
+          setters[field.name] = composite.set;
+          if (composite.setOptions) rebuilders[field.name] = composite.setOptions;
         } else if (field.type === 'button') {
           // An in-form action (e.g. "Reroll scores"): clicking it fires the
           // form's onChange under the field's name; it contributes no value to
@@ -412,7 +265,7 @@ export function promptModal(title, fields, options = {}) {
           button.textContent = field.label;
           labelText.nodeValue = '';
           button.addEventListener('click', () => button.dispatchEvent(new Event('input')));
-          input = /** @type {HTMLInputElement} */ (/** @type {unknown} */ (button));
+          input = asInput(button);
           getters[field.name] = () => '';
         } else {
           const plain = document.createElement('input');
@@ -454,33 +307,26 @@ export function promptModal(title, fields, options = {}) {
 
       const onChange = options.onChange;
       if (onChange) {
+        /** @type {ModalFormHandle} */
         const handle = {
-          get: (/** @type {string} */ name) => getters[name](),
-          set: (/** @type {string} */ name, /** @type {string | number} */ value) => {
+          get: (name) => getters[name](),
+          set: (name, value) => {
             if (setters[name]) setters[name](String(value));
             else inputs[name].value = String(value);
           },
-          setOptions: (
-            /** @type {string} */ name,
-            /** @type {{ value: string, label: string }[]} */ opts,
-            /** @type {number} */ max = Infinity,
-          ) => rebuilders[name]?.(opts, max),
-          setDisabled: (/** @type {string} */ name, /** @type {boolean} */ disabled) => {
+          setOptions: (name, opts, max = Infinity) => rebuilders[name]?.(opts, max),
+          setDisabled: (name, disabled) => {
             inputs[name].disabled = disabled;
           },
-          setLabel: (/** @type {string} */ name, /** @type {string} */ text) => {
+          setLabel: (name, text) => {
             labelTexts[name].nodeValue = text;
           },
-          setRange: (
-            /** @type {string} */ name,
-            /** @type {number | undefined} */ min,
-            /** @type {number | undefined} */ max,
-          ) => {
+          setRange: (name, min, max) => {
             const input = /** @type {HTMLInputElement} */ (inputs[name]);
             input.min = min === undefined ? '' : String(min);
             input.max = max === undefined ? '' : String(max);
           },
-          setHidden: (/** @type {string} */ name, /** @type {boolean} */ hidden) => {
+          setHidden: (name, hidden) => {
             wrappers[name].classList.toggle('modal__field--hidden', hidden);
           },
         };

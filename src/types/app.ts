@@ -19,7 +19,7 @@ import type { CombatState } from './combat.js';
 import type { ViewRole } from './view.js';
 import type { PartyPosition } from './map.js';
 import type { DiceResult, DiceSelection } from './dice.js';
-import type { ModalField } from '../ui/Modal.js';
+import type { ModalField } from './modal.js';
 import type { TilePalette } from '../map/TilePalette.js';
 import type { TileGrid } from '../map/TileGrid.js';
 import type { MapNavigator } from '../map/MapNavigator.js';

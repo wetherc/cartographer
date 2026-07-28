@@ -7,7 +7,7 @@
 
 import { clampInt } from '../util/num.js';
 
-/** @typedef {import('../ui/Modal.js').ModalField} ModalField */
+/** @typedef {import('../types/modal.js').ModalField} ModalField */
 
 /**
  * One number modal field per stat key, named `stat-<KEY>` and pre-filled from

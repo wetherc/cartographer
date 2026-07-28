@@ -3,7 +3,7 @@ import { activeSpells, activeSpellIndex } from '../library/Library.js';
 import { emptySpellbook } from '../entities/Character.js';
 import { clampInt } from '../util/num.js';
 
-/** @typedef {import('../ui/Modal.js').ModalField} ModalField */
+/** @typedef {import('../types/modal.js').ModalField} ModalField */
 /** @typedef {import('../types/entities.js').Spellbook} Spellbook */
 
 /**

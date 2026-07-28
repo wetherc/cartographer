@@ -20,7 +20,7 @@ import { resyncMapViews } from './mapResync.js';
  * whatever it defaulted to; the model stores whatever string is chosen.
  * @param {NodeKind} kind
  * @param {string | null} environ
- * @returns {import('../ui/Modal.js').ModalField[]}
+ * @returns {import('../types/modal.js').ModalField[]}
  */
 function nodeKindFields(kind, environ) {
   const environs = [...ENVIRONS.region, ...ENVIRONS.interior];

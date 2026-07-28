@@ -10,13 +10,13 @@ import {
 import {
   labeled,
   fieldRow,
-  checkbox,
   textField,
   numberField,
   select,
   statInputRows,
   buildInlineForm,
 } from './formFields.js';
+import { buildMultiselect } from './ModalFields.js';
 import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
@@ -64,26 +64,17 @@ export function buildEncounterTemplateForm({
   // and a spellbook so a spawned foe can cast. "None" keeps it a plain fighter.
   const classSelect = select(casterClassOptions(), template?.class ?? '');
   const casterLevelInput = numberField(template?.casterLevel ?? template?.level ?? 1, { min: 1 });
-  const spellBox = document.createElement('div');
-  spellBox.className = 'inventory-panel__spell-picker';
-  /** @type {{ id: string, label: HTMLElement, input: HTMLInputElement }[]} */
-  let spellChecks = [];
-  // Rebuild the spell checkboxes filtered to the current caster class and
-  // level, keeping `selected` checked. Rebuilt live when either changes.
-  function renderSpellChecks(/** @type {Set<string>} */ selected) {
-    spellChecks = spellPickerOptions(classSelect.value, clampInt(casterLevelInput.value, 1)).map(
-      (option) => ({
-        id: option.value,
-        ...checkbox(option.label, selected.has(option.value)),
-      }),
-    );
-    spellBox.textContent = '';
-    for (const { label } of spellChecks) spellBox.appendChild(label);
-  }
-  renderSpellChecks(new Set(spellbookIds(template?.spellbook)));
+  // The same checkbox group the dialogs' multiselect field is: a refilter keeps
+  // whatever is checked, so switching class while picking doesn't lose a valid
+  // spell. The picker's own class keeps the inline form's scroll box.
+  const spellPicker = buildMultiselect({
+    className: 'inventory-panel__spell-picker',
+    options: spellPickerOptions(classSelect.value, clampInt(casterLevelInput.value, 1)),
+    value: spellbookIds(template?.spellbook).join(','),
+  });
   const refilterSpells = () =>
-    renderSpellChecks(
-      new Set(spellChecks.filter(({ input }) => input.checked).map(({ id }) => id)),
+    spellPicker.setOptions(
+      spellPickerOptions(classSelect.value, clampInt(casterLevelInput.value, 1)),
     );
   classSelect.addEventListener('change', refilterSpells);
   casterLevelInput.addEventListener('change', refilterSpells);
@@ -133,7 +124,7 @@ export function buildEncounterTemplateForm({
   /** The caster fields to fold into the template, or empty for a non-caster. */
   function casterFields() {
     if (!isCasterClass(classSelect.value)) return {};
-    const ids = spellChecks.filter(({ input }) => input.checked).map(({ id }) => id);
+    const ids = spellPicker.get().split(',').filter(Boolean);
     return {
       class: classSelect.value,
       casterLevel: clampInt(casterLevelInput.value, 1),
@@ -149,7 +140,7 @@ export function buildEncounterTemplateForm({
       fieldRow(labeled('Weapon', weaponSelect), labeled('Armor', armorSelect)),
       ...statBlock.rows,
       fieldRow(labeled('Caster class', classSelect), labeled('Caster level', casterLevelInput)),
-      labeled('Spells', spellBox),
+      labeled('Spells', spellPicker.element),
     ],
     assemble,
     submitLabel,

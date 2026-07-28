@@ -64,11 +64,11 @@ function rosterTargets(app, spell) {
  * @param {{ id: string, name: string, ac: number }[]} targets
  * @param {number[]} slotLevels available slot levels at or above the spell's
  * @param {number} saveDC
- * @returns {import('../ui/Modal.js').ModalField[] | null}
+ * @returns {import('../types/modal.js').ModalField[] | null}
  */
 function castFields(spell, targets, slotLevels, saveDC) {
   const kind = spell.effect.kind;
-  /** @type {import('../ui/Modal.js').ModalField[]} */
+  /** @type {import('../types/modal.js').ModalField[]} */
   const fields = [];
   if (spell.level > 0) {
     if (slotLevels.length === 0) return null;
