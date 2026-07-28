@@ -2,27 +2,36 @@
    App shell
    ========================================================================== */
 
+/* The header wraps at every width. Its contents have a hard minimum width --
+   the switches are strips of joined buttons that cannot reflow internally --
+   so a row that refuses to wrap runs the last switch off the right edge of a
+   window narrower than about 1200 pixels. Wrapping moves that switch onto a
+   second row instead, which also spares the title and the action buttons the
+   squeeze they took when the row was overfull. */
 .app-header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-4);
+  row-gap: var(--space-2);
   margin-bottom: var(--space-4);
 }
 
 /* The theme toggle and GM/Player switch stay pinned to the far right, so they
    don't shift when the role change hides or shows the other header controls. */
-#theme-toggle-container {
+.app-header__view {
+  display: flex;
+  gap: var(--space-4);
   margin-left: auto;
 }
 
 /* The three header switches are built in JavaScript, so their containers are
-   empty until the modules load. The header is a single non-wrapping flex row
-   near its capacity on a laptop screen, so the switches arriving 500-odd pixels
-   wide squeezes the title and the action buttons onto second lines, grows the
-   header, and drops the whole layout below it -- the load-time layout jump that
-   the pre-paint theme and role scripts in index.html exist to avoid. Reserving
-   each switch's footprint here settles the header on its final geometry during
-   the first paint instead.
+   empty until the modules load. The header row is close to its capacity on a
+   laptop screen, so the switches arriving 500-odd pixels wide re-lays it out,
+   grows it by a row, and drops the whole layout below it -- the load-time
+   layout jump that the pre-paint theme and role scripts in index.html exist to
+   avoid. Reserving each switch's footprint here settles the header on its final
+   geometry during the first paint instead.
 
    These sizes track the widest label each switch carries (Play/Build/Library,
    the three theme icons, GM/Player plus the lock button), so re-measure them in
@@ -51,8 +60,11 @@
   margin: 0;
 }
 
+/* Seven buttons need about 480 pixels, more than a phone-width window has, so
+   they wrap too rather than running off the edge. */
 .app-header__actions {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
 }
 

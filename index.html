@@ -72,8 +72,12 @@
       <button id="import-btn" class="btn" type="button">Import</button>
       <input id="import-input" type="file" accept="application/json" hidden />
     </div>
-    <div id="theme-toggle-container"></div>
-    <div id="role-switch-container"></div>
+    <!-- The two view switches are grouped so a wrapping header carries them
+         onto the next row together, still against the right edge. -->
+    <div class="app-header__view">
+      <div id="theme-toggle-container"></div>
+      <div id="role-switch-container"></div>
+    </div>
   </header>
 
   <main class="app-main">
