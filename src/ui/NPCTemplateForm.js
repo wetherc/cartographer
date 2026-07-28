@@ -7,7 +7,7 @@ import {
   textareaField,
   select,
   statInputRows,
-  formActions,
+  buildInlineForm,
 } from './formFields.js';
 
 /** @typedef {import('../types/library.js').NPCTemplate} NPCTemplate */
@@ -26,11 +26,7 @@ import {
  * @returns {HTMLElement}
  */
 export function buildNPCTemplateForm({ template = null, submitLabel, onSubmit, onCancel = null }) {
-  const form = document.createElement('div');
-  form.className = 'inventory-panel__form';
-
   const nameInput = textField(template?.name ?? '', 'NPC name');
-  nameInput.classList.add('inventory-panel__name-input');
 
   const roleInput = textField(template?.role ?? '', 'Role / faction');
   const dispositionSelect = select(dispositionOptions(), template?.disposition ?? 'neutral');
@@ -40,29 +36,22 @@ export function buildNPCTemplateForm({ template = null, submitLabel, onSubmit, o
   // stats rather than a flat default.
   const statBlock = statInputRows(ABILITY_SCORES, template?.stats ?? {});
 
-  const actionsRow = formActions({
+  return buildInlineForm({
+    nameInput,
+    rows: [
+      fieldRow(labeled('Role / faction', roleInput), labeled('Disposition', dispositionSelect)),
+      labeled('Notes', notesInput),
+      ...statBlock.rows,
+    ],
+    assemble: () => ({
+      name: nameInput.value.trim(),
+      role: roleInput.value.trim(),
+      disposition: /** @type {import('../types/npc.js').Disposition} */ (dispositionSelect.value),
+      notes: notesInput.value.trim(),
+      stats: statBlock.read(),
+    }),
     submitLabel,
-    onSubmit: () => {
-      const name = nameInput.value.trim();
-      if (!name) return;
-      onSubmit({
-        name,
-        role: roleInput.value.trim(),
-        disposition: /** @type {import('../types/npc.js').Disposition} */ (dispositionSelect.value),
-        notes: notesInput.value.trim(),
-        stats: statBlock.read(),
-      });
-    },
+    onSubmit,
     onCancel,
   });
-
-  form.append(
-    nameInput,
-    fieldRow(labeled('Role / faction', roleInput), labeled('Disposition', dispositionSelect)),
-    labeled('Notes', notesInput),
-    ...statBlock.rows,
-    actionsRow,
-  );
-
-  return form;
 }

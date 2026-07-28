@@ -250,7 +250,7 @@ safe.
 
 ### Dismiss-left, primary-right, everywhere a dismiss exists
 
-Modals, inline forms (`formFields.formActions`), the spell-detail action bar,
+Modals, inline forms (`formFields.buildInlineForm`), the spell-detail action bar,
 and the inventory give form all order Cancel/Close on the left and the
 affirmative action on the right. A new form surface must not invent a third
 ordering.

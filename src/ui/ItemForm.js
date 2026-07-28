@@ -8,7 +8,15 @@ import {
 } from '../entities/Equipment.js';
 import { activeEquipment } from '../library/Library.js';
 import { buildDamageEditor, buildEffectsEditor } from './ItemFormEditors.js';
-import { labeled, fieldRow, formActions } from './formFields.js';
+import {
+  labeled,
+  fieldRow,
+  textField,
+  numberField,
+  select,
+  setOptions,
+  buildInlineForm,
+} from './formFields.js';
 import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
@@ -58,61 +66,39 @@ export function buildItemForm({
   onCancel = null,
   template = false,
 }) {
-  const form = document.createElement('div');
-  form.className = 'inventory-panel__form';
+  const nameInput = textField(item?.name ?? '', 'Item name');
 
-  const nameInput = document.createElement('input');
-  nameInput.type = 'text';
-  nameInput.placeholder = 'Item name';
-  nameInput.className = 'field inventory-panel__name-input';
-  nameInput.value = item?.name ?? '';
+  const descriptionInput = textField(item?.description ?? '', 'Description (optional)');
+  descriptionInput.classList.add('inventory-panel__name-input');
 
-  const descriptionInput = document.createElement('input');
-  descriptionInput.type = 'text';
-  descriptionInput.placeholder = 'Description (optional)';
-  descriptionInput.className = 'field inventory-panel__name-input';
-  descriptionInput.value = item?.description ?? '';
+  const quantityInput = numberField(item?.quantity ?? 1, { min: 1 });
+  quantityInput.classList.add('inventory-panel__quantity-input');
 
-  const quantityInput = document.createElement('input');
-  quantityInput.type = 'number';
-  quantityInput.value = String(item?.quantity ?? 1);
-  quantityInput.min = '1';
-  quantityInput.className = 'field inventory-panel__quantity-input';
-
-  const typeSelect = document.createElement('select');
-  typeSelect.className = 'field inventory-panel__type-select';
-  for (const t of ITEM_TYPES) {
-    const option = document.createElement('option');
-    option.value = t;
-    // "gear" is the catch-all for miscellaneous, non-equippable items
-    // (rope, rations, trinkets); say so where the GM picks it.
-    option.textContent = t === 'gear' ? 'gear (misc.)' : t;
-    typeSelect.appendChild(option);
-  }
-  typeSelect.value = item ? (item.type ?? 'gear') : ITEM_TYPES[0];
+  // "gear" is the catch-all for miscellaneous, non-equippable items (rope,
+  // rations, trinkets); say so where the GM picks it.
+  const typeSelect = select(
+    ITEM_TYPES.map((t) => ({ value: t, label: t === 'gear' ? 'gear (misc.)' : t })),
+    item ? (item.type ?? 'gear') : ITEM_TYPES[0],
+  );
+  typeSelect.classList.add('inventory-panel__type-select');
 
   // Body armor: its 5e weight class (which alone fixes the DEX scaling —
   // never the GM's input) and a configurable base AC defaulting to a
   // representative value for the chosen weight.
-  const weightSelect = document.createElement('select');
-  weightSelect.className = 'field';
-  for (const w of ARMOR_WEIGHTS) {
-    const option = document.createElement('option');
-    option.value = w.key;
-    option.textContent =
-      w.dexCap === 0
-        ? `${w.label} (no DEX)`
-        : w.dexCap === Infinity
-          ? `${w.label} (+ DEX)`
-          : `${w.label} (+ DEX, max ${w.dexCap})`;
-    weightSelect.appendChild(option);
-  }
-  weightSelect.value = item?.armorWeight ?? ARMOR_WEIGHTS[0].key;
-  const baseACInput = document.createElement('input');
-  baseACInput.type = 'number';
-  baseACInput.value = String(item?.baseAC ?? ARMOR_WEIGHTS[0].defaultBaseAC);
-  baseACInput.min = '1';
-  baseACInput.className = 'field inventory-panel__ac-input';
+  const weightSelect = select(
+    ARMOR_WEIGHTS.map((w) => ({
+      value: w.key,
+      label:
+        w.dexCap === 0
+          ? `${w.label} (no DEX)`
+          : w.dexCap === Infinity
+            ? `${w.label} (+ DEX)`
+            : `${w.label} (+ DEX, max ${w.dexCap})`,
+    })),
+    item?.armorWeight ?? ARMOR_WEIGHTS[0].key,
+  );
+  const baseACInput = numberField(item?.baseAC ?? ARMOR_WEIGHTS[0].defaultBaseAC, { min: 1 });
+  baseACInput.classList.add('inventory-panel__ac-input');
   weightSelect.addEventListener('change', () => {
     const weight = ARMOR_WEIGHTS.find((w) => w.key === weightSelect.value);
     if (weight) baseACInput.value = String(weight.defaultBaseAC);
@@ -128,36 +114,20 @@ export function buildItemForm({
 
   // Non-armor equippables (helmets, rings, bows...) may carry a flat AC
   // bonus while equipped.
-  const acInput = document.createElement('input');
-  acInput.type = 'number';
-  acInput.value = String(item?.acBonus ?? 0);
-  acInput.min = '0';
-  acInput.className = 'field inventory-panel__ac-input';
+  const acInput = numberField(item?.acBonus ?? 0, { min: 0 });
+  acInput.classList.add('inventory-panel__ac-input');
   acInput.title = 'Flat AC bonus while equipped';
   const acField = labeled('AC bonus', acInput);
 
-  // Any equippable may buff an ability score while worn (e.g. +2 STR).
-  const buffStatSelect = document.createElement('select');
-  buffStatSelect.className = 'field';
-  const noBuff = document.createElement('option');
-  noBuff.value = '';
-  noBuff.textContent = '—';
-  buffStatSelect.appendChild(noBuff);
-  for (const stat of ABILITY_SCORES) {
-    const option = document.createElement('option');
-    option.value = stat;
-    option.textContent = stat;
-    buffStatSelect.appendChild(option);
-  }
-  const buffAmountInput = document.createElement('input');
-  buffAmountInput.type = 'number';
-  buffAmountInput.value = '1';
-  buffAmountInput.className = 'field inventory-panel__ac-input';
+  // Any equippable may buff an ability score while worn (e.g. +2 STR). Only the
+  // first stored bonus is editable here; the dash is "no buff".
   const [firstBuff] = Object.entries(item?.statBonuses ?? {});
-  if (firstBuff) {
-    buffStatSelect.value = firstBuff[0];
-    buffAmountInput.value = String(firstBuff[1]);
-  }
+  const buffStatSelect = select(
+    [{ value: '', label: '—' }, ...ABILITY_SCORES],
+    firstBuff?.[0] ?? '',
+  );
+  const buffAmountInput = numberField(firstBuff ? Number(firstBuff[1]) : 1);
+  buffAmountInput.classList.add('inventory-panel__ac-input');
   const buffStatField = labeled('Buff', buffStatSelect);
   const buffAmountField = labeled('Amount', buffAmountInput);
 
@@ -165,12 +135,8 @@ export function buildItemForm({
   // Library-tab overrides and custom entries — offered for every type with at
   // least one entry: picking one fills the type's mechanical fields — and the
   // name and description when still blank — all of which stay editable after.
-  const presetSelect = document.createElement('select');
-  presetSelect.className = 'field';
-  const customOption = document.createElement('option');
-  customOption.value = '';
-  customOption.textContent = 'Custom';
-  presetSelect.appendChild(customOption);
+  const CUSTOM_PRESET = { value: '', label: 'Custom' };
+  const presetSelect = select([CUSTOM_PRESET], '');
   const presetField = labeled('Preset', presetSelect);
 
   /** The merged library entries backing a type's picker; empty hides the picker.
@@ -178,15 +144,10 @@ export function buildItemForm({
    * @returns {EquipmentTemplate[]} */
   const presetsFor = (type) => activeEquipment(/** @type {ItemType} */ (type));
 
-  const handlingSelect = document.createElement('select');
-  handlingSelect.className = 'field';
-  for (const h of WEAPON_HANDLING) {
-    const option = document.createElement('option');
-    option.value = h.key;
-    option.textContent = `${h.label} (${h.ability})`;
-    handlingSelect.appendChild(option);
-  }
-  handlingSelect.value = item?.handling ?? 'melee';
+  const handlingSelect = select(
+    WEAPON_HANDLING.map((h) => ({ value: h.key, label: `${h.label} (${h.ability})` })),
+    item?.handling ?? 'melee',
+  );
   const handlingField = labeled('Handling', handlingSelect);
 
   const damage = buildDamageEditor(
@@ -266,33 +227,30 @@ export function buildItemForm({
     const presets = presetsFor(type);
     presetRow.hidden = presetField.hidden = presets.length === 0;
     if (presets.length > 0) {
-      presetSelect.replaceChildren(
-        customOption,
-        ...presets.map((p) => {
-          const option = document.createElement('option');
-          option.value = p.name;
-          option.textContent = presetLabel(p);
-          return option;
-        }),
+      setOptions(
+        presetSelect,
+        [CUSTOM_PRESET, ...presets.map((p) => ({ value: p.name, label: presetLabel(p) }))],
+        '',
       );
-      presetSelect.value = '';
     }
   };
   typeSelect.addEventListener('change', syncTypeFields);
   buffStatSelect.addEventListener('change', syncTypeFields);
   syncTypeFields();
 
-  const submit = () => {
-    const name = nameInput.value.trim();
+  /** @returns {Omit<InventoryItem, 'id'> | null} */
+  const assemble = () => {
     const quantity = Number(quantityInput.value);
-    if (!name || quantity <= 0) return;
+    // A zero or negative stack is not an item, so refuse it the way an empty
+    // name is refused.
+    if (quantity <= 0) return null;
     const type = /** @type {ItemType} */ (typeSelect.value);
     const description = descriptionInput.value.trim();
     const acBonus = FLAT_AC_TYPES.includes(type) ? Math.max(0, Number(acInput.value) || 0) : 0;
     const buffStat = EQUIPPABLE_TYPES.includes(type) ? buffStatSelect.value : '';
     const buffAmount = Number(buffAmountInput.value) || 0;
-    onSubmit({
-      name,
+    return {
+      name: nameInput.value.trim(),
       quantity,
       notes: item?.notes ?? '',
       type,
@@ -316,32 +274,37 @@ export function buildItemForm({
             ...(effects.get().length ? { statusEffects: effects.get() } : {}),
           }
         : {}),
-    });
-    if (!item) {
-      nameInput.value = '';
-      descriptionInput.value = '';
-      quantityInput.value = '1';
-    }
+    };
   };
 
-  const actionsRow = formActions({ submitLabel, onSubmit: submit, onCancel });
-
-  form.append(
+  return buildInlineForm({
     nameInput,
-    descriptionInput,
-    // A library template is a blueprint, not a stack — no quantity to set.
-    template
-      ? fieldRow(labeled('Type', typeSelect))
-      : fieldRow(labeled('Type', typeSelect), labeled('Qty', quantityInput)),
-    presetRow,
-    armorRow,
-    weaponRow,
-    damageRow,
-    effectsRow,
-    acRow,
-    buffRow,
-    actionsRow,
-  );
-
-  return form;
+    rows: [
+      descriptionInput,
+      // A library template is a blueprint, not a stack — no quantity to set.
+      template
+        ? fieldRow(labeled('Type', typeSelect))
+        : fieldRow(labeled('Type', typeSelect), labeled('Qty', quantityInput)),
+      presetRow,
+      armorRow,
+      weaponRow,
+      damageRow,
+      effectsRow,
+      acRow,
+      buffRow,
+    ],
+    assemble,
+    submitLabel,
+    onSubmit,
+    onCancel,
+    // The add row keeps taking entries, so it clears itself; the per-item editor
+    // keeps the values on screen.
+    afterSubmit: item
+      ? null
+      : () => {
+          nameInput.value = '';
+          descriptionInput.value = '';
+          quantityInput.value = '1';
+        },
+  });
 }

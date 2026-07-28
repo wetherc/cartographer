@@ -15,7 +15,7 @@ import {
   numberField,
   select,
   statInputRows,
-  formActions,
+  buildInlineForm,
 } from './formFields.js';
 import { clampInt } from '../util/num.js';
 
@@ -45,15 +45,11 @@ export function buildEncounterTemplateForm({
   onSubmit,
   onCancel = null,
 }) {
-  const form = document.createElement('div');
-  form.className = 'inventory-panel__form';
-
   // The weapon/armor pickers shared with the campaign encounter dialog.
   const gear = gearOptions(template);
   const { currentWeapon, currentArmor, weaponOptions, armorOptions } = gear;
 
   const nameInput = textField(template?.name ?? '', 'Enemy name');
-  nameInput.classList.add('inventory-panel__name-input');
 
   const tierSelect = select(
     ENEMY_TIERS.map((t) => ({ value: t, label: t === 'mob' ? 'Mob' : 'Legend' })),
@@ -119,16 +115,6 @@ export function buildEncounterTemplateForm({
     tierSelect.addEventListener('change', restamp);
   }
 
-  const actionsRow = formActions({
-    submitLabel,
-    onSubmit: () => {
-      const name = nameInput.value.trim();
-      if (!name) return;
-      onSubmit(assemble());
-    },
-    onCancel,
-  });
-
   /** @returns {Omit<EncounterTemplate, 'id'>} */
   function assemble() {
     const { weapon, armor } = readGear(weaponSelect.value, armorSelect.value, gear);
@@ -155,16 +141,19 @@ export function buildEncounterTemplateForm({
     };
   }
 
-  form.append(
+  return buildInlineForm({
     nameInput,
-    fieldRow(labeled('Tier', tierSelect), labeled('Level', levelInput)),
-    fieldRow(labeled('Max HP', hpInput)),
-    fieldRow(labeled('Weapon', weaponSelect), labeled('Armor', armorSelect)),
-    ...statBlock.rows,
-    fieldRow(labeled('Caster class', classSelect), labeled('Caster level', casterLevelInput)),
-    labeled('Spells', spellBox),
-    actionsRow,
-  );
-
-  return form;
+    rows: [
+      fieldRow(labeled('Tier', tierSelect), labeled('Level', levelInput)),
+      fieldRow(labeled('Max HP', hpInput)),
+      fieldRow(labeled('Weapon', weaponSelect), labeled('Armor', armorSelect)),
+      ...statBlock.rows,
+      fieldRow(labeled('Caster class', classSelect), labeled('Caster level', casterLevelInput)),
+      labeled('Spells', spellBox),
+    ],
+    assemble,
+    submitLabel,
+    onSubmit,
+    onCancel,
+  });
 }

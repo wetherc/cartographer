@@ -1,7 +1,16 @@
 import { CLASS_LIST } from '../entities/Classes.js';
 import { SPELL_SCHOOLS, SPELL_ABILITIES, SPELL_EFFECT_KINDS } from '../data/spells.js';
 import { buildDamageEditor } from './ItemFormEditors.js';
-import { labeled, fieldRow, checkbox, textField, select, formActions } from './formFields.js';
+import {
+  labeled,
+  fieldRow,
+  checkbox,
+  textField,
+  numberField,
+  textareaField,
+  select,
+  buildInlineForm,
+} from './formFields.js';
 import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -31,11 +40,7 @@ const COMPONENTS = [
  * @returns {HTMLElement}
  */
 export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel = null }) {
-  const form = document.createElement('div');
-  form.className = 'inventory-panel__form spell-form';
-
   const nameInput = textField(spell?.name ?? '', 'Spell name');
-  nameInput.classList.add('inventory-panel__name-input');
 
   const levelSelect = select(
     ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
@@ -72,11 +77,10 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const concentration = checkbox('Concentration', spell?.concentration ?? false);
   const ritual = checkbox('Ritual', spell?.ritual ?? false);
 
-  const descriptionInput = document.createElement('textarea');
-  descriptionInput.className = 'field spell-form__description';
-  descriptionInput.rows = 3;
-  descriptionInput.placeholder = 'What the spell does.';
-  descriptionInput.value = spell?.description ?? '';
+  const descriptionInput = textareaField(spell?.description ?? '', {
+    placeholder: 'What the spell does.',
+  });
+  descriptionInput.classList.add('spell-form__description');
 
   // --- Effect section: swaps controls by kind -------------------------------
   const kindSelect = select([...SPELL_EFFECT_KINDS], spell?.effect.kind ?? 'utility');
@@ -106,11 +110,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     spell?.scaling?.damagePerLevel ?? [{ count: 1, sides: 6, damageType: 'fire' }],
   );
   const scalingDamageField = labeled('Extra dice / level', scalingDamage.element);
-  const targetsInput = document.createElement('input');
-  targetsInput.type = 'number';
-  targetsInput.min = '0';
-  targetsInput.className = 'field inventory-panel__quantity-input';
-  targetsInput.value = String(spell?.scaling?.targetsPerLevel ?? 0);
+  const targetsInput = numberField(spell?.scaling?.targetsPerLevel ?? 0, { min: 0 });
+  targetsInput.classList.add('inventory-panel__quantity-input');
   const targetsField = labeled('Extra targets / level', targetsInput);
 
   const effectRow = fieldRow(labeled('Effect', kindSelect), abilityField);
@@ -148,16 +149,6 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     scalingTargetsRow.hidden = hide;
   }
   scales.input.addEventListener('change', syncScaling);
-
-  const actionsRow = formActions({
-    submitLabel,
-    onSubmit: () => {
-      const name = nameInput.value.trim();
-      if (!name) return;
-      onSubmit(assemble());
-    },
-    onCancel,
-  });
 
   /** @returns {Omit<Spell, 'id'>} */
   function assemble() {
@@ -208,24 +199,30 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     };
   }
 
-  form.append(
+  const form = buildInlineForm({
     nameInput,
-    fieldRow(labeled('Level', levelSelect), labeled('School', schoolSelect)),
-    classesField,
-    fieldRow(labeled('Casting time', castingTimeInput), labeled('Range', rangeInput)),
-    fieldRow(labeled('Duration', durationInput), componentsField),
-    fieldRow(concentration.label, ritual.label),
-    labeled('Description', descriptionInput),
-    effectRow,
-    saveTogglesRow,
-    conditionRow,
-    damageField,
-    healField,
-    scalingRow,
-    scalingDamageRow,
-    scalingTargetsRow,
-    actionsRow,
-  );
+    rows: [
+      fieldRow(labeled('Level', levelSelect), labeled('School', schoolSelect)),
+      classesField,
+      fieldRow(labeled('Casting time', castingTimeInput), labeled('Range', rangeInput)),
+      fieldRow(labeled('Duration', durationInput), componentsField),
+      fieldRow(concentration.label, ritual.label),
+      labeled('Description', descriptionInput),
+      effectRow,
+      saveTogglesRow,
+      conditionRow,
+      damageField,
+      healField,
+      scalingRow,
+      scalingDamageRow,
+      scalingTargetsRow,
+    ],
+    assemble,
+    submitLabel,
+    onSubmit,
+    onCancel,
+    className: 'spell-form',
+  });
 
   syncEffectFields();
   syncScaling();

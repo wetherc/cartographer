@@ -432,8 +432,10 @@ textField(value, placeholder?)     -> HTMLInputElement
 numberField(value, { min }?)       -> HTMLInputElement
 textareaField(value, opts?)        -> HTMLTextAreaElement
 select(options, value)             -> HTMLSelectElement
+setOptions(select, options, value)                // refill an existing picker
 statInputRows(keys, stats)         -> { statInputs, rows, read }
-formActions({ submitLabel, onSubmit, onCancel? }) -> HTMLDivElement
+buildInlineForm({ nameInput, rows, assemble, submitLabel, onSubmit,
+                  onCancel?, afterSubmit?, className? }) -> HTMLDivElement
 ```
 
 `labeled` puts the control *inside* the `<label>`, so there is no `for`/`id`
@@ -446,8 +448,14 @@ number field per key, two per row, plus a `read()` that returns the record. Its
 modal counterpart is `src/app/statFields.js`, so the stat block has one
 definition for inline forms and one for dialogs rather than one per form.
 
-`formActions` is the only correct way to build a form's action row. It places
-Cancel left of the primary submit, matching the modals.
+`buildInlineForm` is the envelope all four forms share. It wraps the form, puts
+the name field first with the wide name-input styling, appends `rows` in order,
+and closes with the action row (Cancel left of the primary submit, matching the
+modals). A submit reads the whole form through `assemble`, which returns the
+finished value or `null` to refuse the submit; a blank name is refused before
+`assemble` runs, so no form re-implements that check. `afterSubmit` runs on an
+accepted submit, which is how the inventory add row clears itself while the
+per-item editor keeps its values on screen.
 
 ## Tabs and disclosures
 
