@@ -1,5 +1,6 @@
 import { DIE_SIZES, DAMAGE_TYPES, normalizeDamagePart } from '../entities/Equipment.js';
 import { iconButton, removableChip } from './buttons.js';
+import { el } from './dom.js';
 import { numberField, select, textField } from './formFields.js';
 import { clampInt } from '../util/num.js';
 
@@ -24,14 +25,12 @@ import { clampInt } from '../util/num.js';
 export function buildDamageEditor(initial) {
   /** @type {DamagePart[]} */
   let damageParts = initial.map(normalizeDamagePart);
-  const element = document.createElement('div');
-  element.className = 'inventory-panel__damage';
+  const element = el('div', 'inventory-panel__damage');
 
   function render() {
     element.innerHTML = '';
     damageParts.forEach((part, index) => {
-      const row = document.createElement('div');
-      row.className = 'inventory-panel__damage-row';
+      const row = el('div', 'inventory-panel__damage-row');
 
       const countInput = numberField(part.count, {
         min: 1,
@@ -110,8 +109,7 @@ export function buildDamageEditor(initial) {
 export function buildEffectsEditor(initial) {
   /** @type {string[]} */
   const statusEffects = [...initial];
-  const element = document.createElement('div');
-  element.className = 'inventory-panel__effect-editor';
+  const element = el('div', 'inventory-panel__effect-editor');
 
   function render() {
     element.innerHTML = '';

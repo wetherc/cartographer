@@ -1,6 +1,7 @@
 import { formatDamage } from '../entities/Equipment.js';
 import { capitalize } from '../util/text.js';
 import { textButton } from './buttons.js';
+import { el } from './dom.js';
 import { openDialog } from './Modal.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -38,16 +39,12 @@ function effectSummary(spell, saveDC) {
 
 /** @param {string} term @param {string} value @returns {HTMLElement} a labelled meta cell. */
 function metaCell(term, value) {
-  const cell = document.createElement('div');
-  cell.className = 'spell-detail__meta-cell';
-  const dt = document.createElement('span');
-  dt.className = 'section-label';
-  dt.textContent = term;
-  const dd = document.createElement('span');
-  dd.className = 'spell-detail__meta-value';
-  dd.textContent = value;
-  cell.append(dt, dd);
-  return cell;
+  return el(
+    'div',
+    'spell-detail__meta-cell',
+    el('span', 'section-label', term),
+    el('span', 'spell-detail__meta-value', value),
+  );
 }
 
 /**
@@ -66,52 +63,33 @@ export function promptSpellDetail(spell, actions, options = {}) {
     className: 'modal modal--wide spell-detail',
     title: spell.name,
     build: (close) => {
-      /** @type {Node[]} */
-      const body = [];
-
-      // School / level line, with concentration and ritual as trailing tags.
-      const subtitle = document.createElement('p');
-      subtitle.className = 'spell-detail__subtitle';
       const levelText = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
-      subtitle.textContent = `${levelText} · ${capitalize(spell.school)}`;
-      if (spell.concentration) {
-        const tag = document.createElement('span');
-        tag.className = 'badge spell-detail__tag';
-        tag.textContent = 'Concentration';
-        subtitle.appendChild(tag);
-      }
-      if (spell.ritual) {
-        const tag = document.createElement('span');
-        tag.className = 'badge spell-detail__tag';
-        tag.textContent = 'Ritual';
-        subtitle.appendChild(tag);
-      }
-      body.push(subtitle);
-
-      const meta = document.createElement('div');
-      meta.className = 'spell-detail__meta';
-      meta.append(
-        metaCell('Casting time', spell.castingTime || '—'),
-        metaCell('Range', spell.range || '—'),
-        metaCell('Components', spell.components.join(', ') || '—'),
-        metaCell('Duration', spell.duration || '—'),
-      );
-      body.push(meta);
-
       const summary = effectSummary(spell, options.saveDC ?? null);
-      if (summary) {
-        const effect = document.createElement('p');
-        effect.className = 'spell-detail__effect';
-        effect.textContent = summary;
-        body.push(effect);
-      }
 
-      if (spell.description) {
-        const description = document.createElement('p');
-        description.className = 'spell-detail__description';
-        description.textContent = spell.description;
-        body.push(description);
-      }
+      // Falsy entries are the optional lines (no effect summary, no
+      // description); Node[] is what openDialog's body takes.
+      const body = /** @type {Node[]} */ (
+        [
+          // School / level line, with concentration and ritual as trailing tags.
+          el(
+            'p',
+            'spell-detail__subtitle',
+            `${levelText} · ${capitalize(spell.school)}`,
+            spell.concentration && el('span', 'badge spell-detail__tag', 'Concentration'),
+            spell.ritual && el('span', 'badge spell-detail__tag', 'Ritual'),
+          ),
+          el(
+            'div',
+            'spell-detail__meta',
+            metaCell('Casting time', spell.castingTime || '—'),
+            metaCell('Range', spell.range || '—'),
+            metaCell('Components', spell.components.join(', ') || '—'),
+            metaCell('Duration', spell.duration || '—'),
+          ),
+          summary && el('p', 'spell-detail__effect', summary),
+          spell.description && el('p', 'spell-detail__description', spell.description),
+        ].filter(Boolean)
+      );
 
       // Dismiss-left, primary-right — the same ordering as every modal.
       const dismiss = textButton('Close', () => close('close'));

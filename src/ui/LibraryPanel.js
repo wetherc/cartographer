@@ -1,4 +1,5 @@
 import { textButton } from './buttons.js';
+import { el } from './dom.js';
 import { textField } from './formFields.js';
 import { mountListPanel } from './listPanel.js';
 import { buildTabs } from './Tabs.js';
@@ -45,8 +46,7 @@ import { buildTabs } from './Tabs.js';
  * @returns {{ update: () => void }}
  */
 export function mountLibraryPanel(container, callbacks) {
-  const root = document.createElement('div');
-  root.className = 'library-panel';
+  const root = el('div', 'library-panel');
   container.appendChild(root);
 
   /** Case-insensitive name filter, kept across re-renders. */
@@ -60,8 +60,8 @@ export function mountLibraryPanel(container, callbacks) {
   // The chrome hides while an inline editor is open rather than being torn
   // down, so the filter text and the selected subtab come back untouched. The
   // editor is tall, and a list scrolling behind it would bury the Save button.
-  const chrome = document.createElement('div');
-  const editorHost = document.createElement('div');
+  const chrome = el('div');
+  const editorHost = el('div');
   root.append(chrome, editorHost);
 
   /** @param {LibrarySource} source */
@@ -77,19 +77,20 @@ export function mountLibraryPanel(container, callbacks) {
     editorHost.appendChild(buildEditor(key, update));
   }
 
-  const actions = document.createElement('div');
-  actions.className = 'panel-actions panel-actions--pinned';
-  actions.appendChild(
-    textButton(
-      callbacks.addLabel,
-      async () => {
-        if (callbacks.buildEditor) openEditor(null);
-        else if (callbacks.onAdd && (await callbacks.onAdd())) refresh();
-      },
-      { icon: 'add' },
+  chrome.appendChild(
+    el(
+      'div',
+      'panel-actions panel-actions--pinned',
+      textButton(
+        callbacks.addLabel,
+        async () => {
+          if (callbacks.buildEditor) openEditor(null);
+          else if (callbacks.onAdd && (await callbacks.onAdd())) refresh();
+        },
+        { icon: 'add' },
+      ),
     ),
   );
-  chrome.appendChild(actions);
 
   /** @type {Map<string, { update: () => void }>} */
   const lists = new Map();
@@ -100,7 +101,7 @@ export function mountLibraryPanel(container, callbacks) {
     const panels = subtabs.map((subtab) => ({
       id: subtab.id,
       label: subtab.label,
-      panel: document.createElement('div'),
+      panel: el('div'),
     }));
     const tabs = buildTabs({
       className: 'library-panel__subtabs',
@@ -119,7 +120,7 @@ export function mountLibraryPanel(container, callbacks) {
     }
   } else {
     chrome.appendChild(buildFilter());
-    const panel = document.createElement('div');
+    const panel = el('div');
     chrome.appendChild(panel);
     lists.set('', mountList(panel, null));
   }
@@ -170,17 +171,13 @@ export function mountLibraryPanel(container, callbacks) {
 
   /** @param {LibraryRow} entry @returns {Node[]} */
   function buildBody(entry) {
-    const name = document.createElement('span');
-    name.className = 'library-panel__name';
-    name.textContent = entry.name;
-
+    const name = el('span', 'library-panel__name', entry.name);
     const badge = badgeText(entry.source);
     if (!badge) return [name];
-
-    const chip = document.createElement('span');
-    chip.className = `badge library-panel__badge library-panel__badge--${entry.source}`;
-    chip.textContent = badge;
-    return [name, chip];
+    return [
+      name,
+      el('span', `badge library-panel__badge library-panel__badge--${entry.source}`, badge),
+    ];
   }
 
   /**
@@ -230,10 +227,7 @@ export function mountLibraryPanel(container, callbacks) {
   /** @param {LibraryRow} entry @param {HTMLElement} row */
   function buildExtras(entry, row) {
     if (!entry.summary) return;
-    const summary = document.createElement('div');
-    summary.className = 'library-panel__summary';
-    summary.textContent = entry.summary;
-    row.appendChild(summary);
+    row.appendChild(el('div', 'library-panel__summary', entry.summary));
   }
 
   /** Redraw every list, whether or not its tab is the visible one. */

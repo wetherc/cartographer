@@ -1,5 +1,6 @@
 import { CLASS_LIST } from '../entities/Classes.js';
 import { SPELL_SCHOOLS, SPELL_ABILITIES, SPELL_EFFECT_KINDS } from '../data/spells.js';
+import { classNames, el } from './dom.js';
 import { buildDamageEditor } from './ItemFormEditors.js';
 import {
   labeled,
@@ -246,10 +247,11 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
  * multi-column grid when `grid` is set (used for the long class list).
  * @param {HTMLElement[]} labels @param {boolean} [grid] */
 function wrapChecks(labels, grid = false) {
-  const group = document.createElement('div');
-  group.className = grid ? 'spell-form__checks spell-form__checks--grid' : 'spell-form__checks';
-  group.append(...labels);
-  return group;
+  return el(
+    'div',
+    classNames(['spell-form__checks', grid && 'spell-form__checks--grid']),
+    ...labels,
+  );
 }
 
 /** The damage/healing dice on an effect, or null when it carries none.

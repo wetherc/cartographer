@@ -18,6 +18,7 @@ import { primaryClass } from '../entities/Multiclass.js';
 import { groupSpellsByLevel, spellStatus } from '../entities/SpellView.js';
 import { sameDeps } from '../view/SheetStructure.js';
 import { emptyState } from './buttons.js';
+import { el } from './dom.js';
 import { promptModal } from './Modal.js';
 import { promptSpellDetail } from './SpellDetail.js';
 
@@ -53,8 +54,7 @@ import { promptSpellDetail } from './SpellDetail.js';
 export function mountSpellbookPanel(container, initial, onChange, getPermissions, opts) {
   let current = initial;
 
-  const root = document.createElement('div');
-  root.className = 'spellbook';
+  const root = el('div', 'spellbook');
   container.appendChild(root);
 
   /** Restate what a spellbook change shows, one closure per row plus one for
@@ -224,18 +224,20 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
       return;
     }
 
-    const heading = document.createElement('div');
-    heading.className = 'spellbook__heading';
-    const title = document.createElement('span');
-    title.className = 'spellbook__class';
     const casterNames = casterClassRefs(character)
       .map((ref) => getClass(ref.classId)?.name)
       .filter(Boolean);
-    title.textContent = casterNames.length > 0 ? `${casterNames.join(' / ')} spells` : 'Spells';
-    heading.appendChild(title);
+    const heading = el(
+      'div',
+      'spellbook__heading',
+      el(
+        'span',
+        'spellbook__class',
+        casterNames.length > 0 ? `${casterNames.join(' / ')} spells` : 'Spells',
+      ),
+    );
     if (primaryCasterClass(character)) {
-      const prep = document.createElement('span');
-      prep.className = 'spellbook__prepared-count';
+      const prep = el('span', 'spellbook__prepared-count');
       const writeCounts = () => {
         const live = current;
         if (!live) return;
@@ -249,20 +251,14 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
     root.appendChild(heading);
 
     for (const group of groups) {
-      const section = document.createElement('div');
-      section.className = 'spellbook__group';
-      const label = document.createElement('span');
-      label.className = 'section-label';
-      label.textContent = group.label;
-      section.appendChild(label);
-
-      const list = document.createElement('div');
-      list.className = 'spellbook__list';
-      for (const spell of group.spells) {
-        list.appendChild(buildRow(spell));
-      }
-      section.appendChild(list);
-      root.appendChild(section);
+      root.appendChild(
+        el(
+          'div',
+          'spellbook__group',
+          el('span', 'section-label', group.label),
+          el('div', 'spellbook__list', ...group.spells.map(buildRow)),
+        ),
+      );
     }
   }
 
@@ -274,18 +270,14 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
    * @returns {HTMLElement}
    */
   function buildRow(spell) {
-    const row = document.createElement('button');
+    const badges = el('span', 'spellbook__row-badges');
+    const row = el(
+      'button',
+      'spellbook__row',
+      el('span', 'spellbook__row-name', spell.name),
+      badges,
+    );
     row.type = 'button';
-    row.className = 'spellbook__row';
-
-    const name = document.createElement('span');
-    name.className = 'spellbook__row-name';
-    name.textContent = spell.name;
-    row.appendChild(name);
-
-    const badges = document.createElement('span');
-    badges.className = 'spellbook__row-badges';
-    row.appendChild(badges);
 
     const writeStatus = () => {
       const live = current;
@@ -316,8 +308,5 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
 
 /** @param {string} text @param {string} kind @returns {HTMLElement} a status badge. */
 function badge(text, kind) {
-  const el = document.createElement('span');
-  el.className = `badge spellbook__badge spellbook__badge--${kind}`;
-  el.textContent = text;
-  return el;
+  return el('span', `badge spellbook__badge spellbook__badge--${kind}`, text);
 }
