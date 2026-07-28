@@ -9,6 +9,7 @@
  */
 
 import { clampInt } from '../util/num.js';
+import { textButton } from './buttons.js';
 
 /**
  * A captioned wrapper so each control names itself.
@@ -165,21 +166,6 @@ export function statInputRows(keys, stats) {
 }
 
 /**
- * A text-labelled button, so a form's submit and cancel actions share one size
- * and label scheme (no icon set has a non-destructive "cancel" glyph).
- * @param {string} label
- * @param {string} className
- * @returns {HTMLButtonElement}
- */
-export function labeledButton(label, className) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = className;
-  button.textContent = label;
-  return button;
-}
-
-/**
  * The envelope every inline authoring form shares. `nameInput` goes first and
  * gets the wide name-input styling, `rows` follow in order, and the action row
  * closes the form. Submitting reads the form through `assemble`, which returns
@@ -232,21 +218,16 @@ export function buildInlineForm({
 
 /**
  * A form's action row: a primary submit button plus an optional cancel, both
- * text-labelled and same-sized. `buildInlineForm` owns the only call, so every
- * form's buttons are ordered and styled alike.
+ * text-labelled and same-sized (no icon set has a non-destructive "cancel"
+ * glyph). `buildInlineForm` owns the only call, so every form's buttons are
+ * ordered and styled alike.
  * @param {{ submitLabel: string, onSubmit: () => void, onCancel?: (() => void) | null }} opts
  * @returns {HTMLDivElement}
  */
 function formActions({ submitLabel, onSubmit, onCancel = null }) {
-  const submit = labeledButton(submitLabel, 'btn btn--primary');
-  submit.addEventListener('click', onSubmit);
-  // Dismiss-left, primary-right — the same ordering as every modal.
+  // Dismiss-left, primary-right, the same ordering as every modal.
   const row = fieldRow();
-  if (onCancel) {
-    const cancel = labeledButton('Cancel', 'btn');
-    cancel.addEventListener('click', onCancel);
-    row.appendChild(cancel);
-  }
-  row.appendChild(submit);
+  if (onCancel) row.appendChild(textButton('Cancel', onCancel));
+  row.appendChild(textButton(submitLabel, onSubmit, { variant: 'primary' }));
   return row;
 }

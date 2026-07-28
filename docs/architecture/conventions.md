@@ -26,8 +26,8 @@ that object, or extend it, rather than re-scanning `node.tiles`.
 
 Per-frame DOM chrome hanging off the render loop (`MapControls.update` via
 `onViewChange`) compares against what it last wrote and bails before touching
-the DOM when nothing changed. `mountMapDescription` does the same with the
-text of the map's screen-reader live region, where the comparison buys
+the DOM when nothing changed. `mapWiring.js`'s `refreshMapDescription` does the
+same with the text of the map's screen-reader live region, where the comparison buys
 correctness as much as speed: rewriting a live region's text node re-announces
 it to a screen reader, so a write that changes nothing is an interruption
 rather than an update.

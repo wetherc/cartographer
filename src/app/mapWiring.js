@@ -1,4 +1,5 @@
 import { getTile } from '../map/TileGrid.js';
+import { describeNode } from '../map/MapDescription.js';
 import { tileIdAt } from '../map/MapGeometry.js';
 import { MapCanvas } from '../map/MapCanvas.js';
 import { revealAll, discoveredNodes } from '../map/FogOfWar.js';
@@ -14,7 +15,6 @@ import { mountBreadcrumb } from '../ui/Breadcrumb.js';
 import { mountWorldTree } from '../ui/WorldTree.js';
 import { mountPalettePanel } from '../ui/PalettePanel.js';
 import { mountMapControls } from '../ui/MapControls.js';
-import { mountMapDescription } from '../ui/MapDescription.js';
 import { mountTileTooltip } from '../ui/TileTooltip.js';
 import { wireTabs } from '../ui/Tabs.js';
 import { isDefeated } from '../entities/Encounter.js';
@@ -159,14 +159,22 @@ export function wireMapView(app) {
   }
   app.actions.syncNPCMarkers = syncNPCMarkers;
 
+  let lastDescription = '';
+
   /** Re-narrate the current map for the screen-reader live region. Called wherever
    * the node, party, fog, or tiles change (the same events that redraw). */
   function refreshMapDescription() {
-    mapDescription.update(
-      navigator.getCurrentNode(),
-      partyTracker.getPosition(),
-      state.mode === 'build',
-    );
+    const text = describeNode(navigator.getCurrentNode(), partyTracker.getPosition(), {
+      revealAll: state.mode === 'build',
+    });
+    // Only write when the narration actually changed. Assigning textContent
+    // replaces the live region's text node, which is what a screen reader
+    // watches, so an unconditional write re-announces the whole description on
+    // events that did not change a word of it: a paint stroke that only swaps
+    // tile art, or a party step within an already-explored area.
+    if (text === lastDescription) return;
+    lastDescription = text;
+    mapDescription.textContent = text;
   }
   app.actions.refreshMapDescription = refreshMapDescription;
 
@@ -332,7 +340,14 @@ export function wireMapView(app) {
     },
   });
 
-  const mapDescription = mountMapDescription(mustGetElement('map-viewport'));
+  // A visually-hidden live region that narrates the map <canvas> for screen
+  // readers, since the canvas pixels are opaque to assistive tech.
+  // aria-live="polite" announces an update without interrupting.
+  const mapDescription = document.createElement('div');
+  mapDescription.className = 'sr-only';
+  mapDescription.setAttribute('role', 'status');
+  mapDescription.setAttribute('aria-live', 'polite');
+  mustGetElement('map-viewport').appendChild(mapDescription);
 
   // The map-facing consequences of a mode switch, called by sessionControls
   // after it flips the body classes.

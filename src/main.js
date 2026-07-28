@@ -9,10 +9,8 @@ import { TilePalette } from './map/TilePalette.js';
 import { MapNavigator } from './map/MapNavigator.js';
 import { PartyTracker } from './party/PartyTracker.js';
 import { loadInitialCampaignSafe } from './campaign/Campaigns.js';
-import { mustGetElement } from './ui/dom.js';
 import { mountToasts, flushQueuedToast } from './ui/Toast.js';
 import { alertModal } from './ui/Modal.js';
-import { mountDiceTray } from './ui/DiceTray.js';
 import { wireCampaignActions } from './app/campaignActions.js';
 import { wireMapView } from './app/mapWiring.js';
 import { wireGenerateAction } from './app/generateAction.js';
@@ -22,8 +20,8 @@ import { wireStory } from './app/storyWiring.js';
 import { wireLibrary } from './app/libraryWiring.js';
 import { wireSessionControls } from './app/sessionControls.js';
 import { wireShortcuts } from './app/shortcuts.js';
+import { wireDiceTray } from './app/diceWiring.js';
 import { maybeShowOnboarding } from './app/onboarding.js';
-import { isGM } from './view/ViewRole.js';
 
 const palette = new TilePalette();
 const { campaign: initial, failed: loadFailed } = loadInitialCampaignSafe();
@@ -79,20 +77,7 @@ wireParty(app); // roster, sheet, inventory, time
 // two modules that own those lists are wired above.
 const mapEnv = wireMapView(app); // canvas, trees, inspector, palette, fog, map tools
 wireGenerateAction(app, mapEnv); // shares the map's context rather than routing through actions
-// Rolls live in the travelogue (the tray shows only the latest), tagged by
-// which side of the screen rolled them — by name when the tab is bound to a
-// character, "A player" for a spectator tab.
-function rollerName() {
-  if (isGM(app.state.role)) return 'The GM';
-  const boundId = app.actions.getBoundCharacterId();
-  return app.state.characters.find((c) => c.id === boundId)?.name ?? 'A player';
-}
-const diceTray = mountDiceTray(mustGetElement('dice-tray-container'), {
-  onRoll: (text) => app.actions.logEvent('roll', `${rollerName()} rolls ${text}.`),
-});
-// Lets a weapon attack load and roll the tray (d20 + modifier vs the
-// defender's AC) so the roll is visible where every other roll happens.
-app.actions.rollDice = (selection, target) => diceTray.rollSelection(selection, target);
+wireDiceTray(app); // dice tray + the roll entries it writes to the travelogue
 // Last, and it has to be: mounting the role switch applies the starting role
 // straight away, which refreshes four panels and re-points the character sheet,
 // so everything it touches must already be registered.

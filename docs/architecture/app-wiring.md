@@ -257,6 +257,13 @@ when this tab was frozen long enough for its record to pass the TTL.
 Player view. `view/CharacterClaim.js` claims a per-character key from
 `characterLockKey` and yields by dropping to spectator.
 
+### diceWiring.js
+
+The dice tray, and the `rollDice` action a weapon attack or a spell uses to put
+its own roll through it. Every roll is logged to the travelogue, attributed to
+the GM, to the character this tab is bound to, or to an anonymous player when the
+tab is a spectator.
+
 ### shortcuts.js and onboarding.js
 
 Global keyboard shortcuts and the first-run overlay.
