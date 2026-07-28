@@ -8,6 +8,7 @@ import { slugId, replaceById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
 import { statFields, readStats } from './statFields.js';
+import { commitNPCs } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/npc.js').NPC} NPC */
@@ -112,8 +113,6 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
   }
   // An NPC dropped or moved onto the party's own tile is met on the spot.
   app.actions.meetNPCs();
-  app.actions.syncNPCMarkers(); // also refreshes the Build-rail NPC list
-  app.views.npcPanel.update();
-  app.actions.markDirty();
+  commitNPCs(app);
   return stored;
 }

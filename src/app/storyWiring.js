@@ -11,6 +11,7 @@ import { mountHandoutPanel } from '../ui/HandoutPanel.js';
 import { createHandout, toggleRevealed, handoutsAt } from '../handout/Handouts.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { npcForm } from './npcForm.js';
+import { commitNPCs } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -60,9 +61,7 @@ export function wireStory(app) {
   /** Confirm-and-delete shared by both NPC lists. */
   const deleteNPC = (/** @type {string} */ id) => {
     state.npcs = removeById(state.npcs, id);
-    app.actions.syncNPCMarkers();
-    app.views.npcPanel.update();
-    app.actions.markDirty();
+    commitNPCs(app);
   };
   const confirmDeleteNPC = (/** @type {import('../types/npc.js').NPC} */ npc) =>
     confirmDelete(npc.name);

@@ -85,9 +85,7 @@ export function findCombatant(app, id) {
       entity: encounter,
       store: (next) => {
         state.encounters = replaceById(state.encounters, next);
-        app.actions.syncEncounterMarkers();
-        app.views.encounterPanel.update();
-        app.views.initiativePanel.update();
+        commitEncounters(app, { dirty: false });
       },
     };
   }
@@ -105,6 +103,39 @@ export function findCombatant(app, id) {
     };
   }
   return null;
+}
+
+/**
+ * Refresh everything that shows an encounter, after a write to
+ * `state.encounters`. The map markers come first because that call also
+ * rebuilds the Build-rail authoring list, which shows the same node scope;
+ * then the Play panel, then the initiative panel, since authoring, moving,
+ * spawning, or defeating an encounter on the party's tile can start or end a
+ * fight. Pass `panel: false` from a list-panel handler, which re-renders its
+ * own rows once the handler resolves, and `dirty: false` when the caller marks
+ * the campaign dirty itself.
+ * @param {AppContext} app
+ * @param {{ panel?: boolean, dirty?: boolean }} [options]
+ */
+export function commitEncounters(app, { panel = true, dirty = true } = {}) {
+  app.actions.syncEncounterMarkers();
+  if (panel) app.views.encounterPanel.update();
+  app.views.initiativePanel.update();
+  if (dirty) app.actions.markDirty();
+}
+
+/**
+ * The NPC equivalent: markers (which rebuild the Build-rail NPC list) plus the
+ * Story panel, both of which can show the same NPC, so a write from either
+ * side has to reach the other. No initiative refresh: an NPC edit leaves the
+ * running order alone, and a delete does not prune it, so a deleted NPC's
+ * participant renders as an unknown combatant until the fight's next refresh.
+ * @param {AppContext} app
+ */
+export function commitNPCs(app) {
+  app.actions.syncNPCMarkers();
+  app.views.npcPanel.update();
+  app.actions.markDirty();
 }
 
 /**

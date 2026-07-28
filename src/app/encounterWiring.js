@@ -30,7 +30,12 @@ import { isGM, hpBand } from '../view/ViewRole.js';
 import { encounterForm, deleteEncounter, addFromBestiary } from './encounterForm.js';
 import { weaponAttack } from './weaponAttack.js';
 import { castSpellAction } from './spellCast.js';
-import { describeCombatant, findCombatant, logDefeatTransition } from './combatants.js';
+import {
+  commitEncounters,
+  describeCombatant,
+  findCombatant,
+  logDefeatTransition,
+} from './combatants.js';
 import { getSpellbook } from '../entities/Character.js';
 import { resolveSpellIds } from '../library/Library.js';
 import { spellbookIds } from './casterFields.js';
@@ -156,16 +161,14 @@ export function wireEncounters(app) {
       const prev = state.encounters.find((e) => e.id === next.id);
       if (prev) logDefeatTransition(app, prev, next);
       state.encounters = replaceById(state.encounters, next);
-      app.actions.syncEncounterMarkers(); // a defeat or move should update the map marker
-      app.views.initiativePanel.update(); // defeating the last one here ends the encounter
-      app.actions.markDirty();
+      // The panel re-renders its own rows once this resolves, so it opts out of
+      // that half of the refresh.
+      commitEncounters(app, { panel: false });
     },
     onDelete: (id) => {
       state.encounters = removeById(state.encounters, id);
       app.actions.removeCombatant(id);
-      app.actions.syncEncounterMarkers();
-      app.views.initiativePanel.update();
-      app.actions.markDirty();
+      commitEncounters(app, { panel: false });
     },
     // Authoring (new encounters, spawning from the bestiary) lives in the
     // Build rail; the Play panel keeps editing an existing encounter (HP,

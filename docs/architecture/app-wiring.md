@@ -135,9 +135,29 @@ place that resolves a participant id across the three combatant collections
   order.
 - `applyToTarget` is the single damage/heal write path, with the defeat and
   drop-to-0 transitions each logged exactly once.
+- `commitEncounters(app)` and `commitNPCs(app)` are the refresh that follows a
+  write to `state.encounters` or `state.npcs`. Two separate panels show the
+  same entity — the Play sidebar's list and the Build rail's authoring list —
+  so a write from either side has to refresh the other, and nothing about the
+  write itself says which side it came from.
 
-New combat features should route entity resolution and HP application through
-these three rather than re-writing the character/encounter/NPC cascade.
+  `commitEncounters` re-marks the danger tiles on the viewed map (that call
+  also rebuilds the Build-rail encounter list, which is scoped to the same
+  node), refreshes the Play sidebar's Encounters panel, refreshes the
+  initiative panel, since authoring, moving, spawning, or defeating an
+  encounter on the party's tile can start or end a fight, and marks the
+  campaign dirty. Two opt-outs: pass `{ panel: false }` from an Encounters
+  panel row handler, because the list helper re-renders its own rows once the
+  handler resolves and updating it here would render twice; pass
+  `{ dirty: false }` where the caller marks dirty itself.
+
+  `commitNPCs` is the same for NPCs, minus the initiative panel: NPC markers
+  plus the Build-rail NPC list, the Story sidebar's NPC panel, and the dirty
+  mark.
+
+New combat features should route entity resolution, HP application, and the
+post-write refresh through these rather than re-writing the
+character/encounter/NPC cascade.
 
 The authoring dialogs share their field groups the same way: `gearFields.js`
 (weapon/armor picker options plus the None/preset/hand-tuned read-back

@@ -13,6 +13,7 @@ import { locationFields, readLocation } from './locationFields.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
 import { gearOptions, readGear } from './gearFields.js';
 import { statFields, readStats } from './statFields.js';
+import { commitEncounters } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -168,10 +169,7 @@ export async function encounterForm(app, existing, defaultLocation) {
     );
     state.encounters = [...state.encounters, stored];
   }
-  app.actions.syncEncounterMarkers(); // also refreshes the Build-rail list
-  app.views.encounterPanel.update();
-  app.views.initiativePanel.update(); // authoring/moving one here starts or ends an encounter
-  app.actions.markDirty();
+  commitEncounters(app);
   return stored;
 }
 
@@ -186,10 +184,7 @@ export async function deleteEncounter(app, encounter) {
   if (!ok) return false;
   state.encounters = removeById(state.encounters, encounter.id);
   app.actions.removeCombatant(encounter.id);
-  app.actions.syncEncounterMarkers();
-  app.views.encounterPanel.update();
-  app.views.initiativePanel.update();
-  app.actions.markDirty();
+  commitEncounters(app);
   return true;
 }
 
@@ -278,9 +273,6 @@ export async function addFromBestiary(app) {
     readLocation(app, values),
   );
   state.encounters = [...state.encounters, created];
-  app.actions.syncEncounterMarkers();
-  app.views.encounterPanel.update();
-  app.views.initiativePanel.update(); // a spawn on the party's tile starts an encounter
-  app.actions.markDirty();
+  commitEncounters(app);
   return created;
 }
