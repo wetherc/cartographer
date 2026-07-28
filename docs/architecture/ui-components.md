@@ -643,6 +643,26 @@ A flex child that holds text needs `min-width: 0` or long content will refuse
 to shrink. That guard appears over twenty times across the sheets, and it is
 the usual explanation for a panel that overflows its column.
 
+### Keeping the first paint still
+
+The page is laid out before any module has run, so anything the wiring changes
+afterwards moves content the reader is already looking at. Three habits keep
+that from happening, and a new panel should follow them:
+
+- **Decide the body classes up front.** Because a mode or role class hides
+  whole rails, waiting for `wireSessionControls` to apply them would lay the
+  page out with every rail showing and then yank two of them away. An inline
+  script at the top of `<body>` stamps the starting mode and role instead,
+  alongside the `<head>` script that pins the theme. Its defaults deliberately
+  restate `src/main.js`'s, so changing a default means changing both.
+- **Reserve space a container will fill.** An empty container that later grows
+  pushes everything under it down. `#breadcrumb-container` holds one crumb's
+  height from the start for that reason, sized from the same tokens the crumb
+  is built from rather than a pixel constant.
+- **Reserve the scrollbar too.** `html` sets `scrollbar-gutter: stable`, so the
+  moment the panels fill and the page passes one screen tall, every column does
+  not narrow at once.
+
 ## Accessibility in practice
 
 What the shared layer already handles, so you do not restate it:

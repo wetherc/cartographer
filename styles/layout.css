@@ -63,6 +63,12 @@ body.mode-build .app-belowmap {
 
 #breadcrumb-container {
   margin-bottom: var(--space-2);
+  /* The trail is empty until the map wiring knows where the party is, and it
+     sits directly above the map. Holding one crumb's worth of height from the
+     start keeps the map from sliding down when the first trail arrives. The
+     value is a crumb's line box plus the vertical padding widgets.css gives
+     it. */
+  min-height: calc(var(--text-label) * var(--line-body) + var(--space-1) * 2);
 }
 
 .map-viewport {

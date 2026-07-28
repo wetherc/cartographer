@@ -117,6 +117,13 @@
   box-sizing: border-box;
 }
 
+/* Panels fill in after the page first paints, so the page usually grows past
+   one screen a moment after load and gains a scrollbar. Reserving the gutter up
+   front stops that from narrowing every column at once. */
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   margin: 0;
   padding: var(--space-4);

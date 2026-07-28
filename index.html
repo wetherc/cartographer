@@ -17,7 +17,30 @@
     }
   </script>
 </head>
-<body>
+<body class="mode-play role-gm">
+  <script>
+    // Pin the viewer role before first paint, the same way the theme is pinned
+    // above. Mode and role each decide whether whole regions of the layout are
+    // displayed -- a mode hides an 18rem rail, a player role hides the header
+    // actions -- so letting src/app/sessionControls.js apply them after the
+    // modules load lays the page out once and then jumps it. Play mode is
+    // always the starting mode, so the class attribute states it outright; only
+    // the role has to be read. Defaults mirror src/main.js and the keys mirror
+    // src/view/PlayerLock.js.
+    try {
+      var params = new URLSearchParams(location.search).get('role');
+      var locked =
+        (params !== null && params.toLowerCase() === 'player') ||
+        sessionStorage.getItem('campaign-builder:player-lock') !== null;
+      var role = locked ? 'player' : sessionStorage.getItem('campaign-builder:role') || 'gm';
+      document.body.classList.toggle('role-gm', role === 'gm');
+      document.body.classList.toggle('role-player', role === 'player');
+      if (locked) document.body.classList.add('role-locked');
+    } catch (error) {
+      /* storage unavailable: the GM default in the class attribute stands */
+    }
+  </script>
+
   <header class="app-header">
     <h1>Campaign Builder</h1>
     <div id="mode-switch-container"></div>
