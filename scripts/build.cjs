@@ -30,8 +30,8 @@ async function build() {
   let html = await fs.readFile('index.html', 'utf-8');
   html = html
     .replace(
-      '<link rel="stylesheet" href="style.css">',
-      '<link rel="stylesheet" href="style.bundle.css">'
+      '<link rel="stylesheet" href="style.css" />',
+      '<link rel="stylesheet" href="style.bundle.css" />'
     )
     .replace(
       '<script type="module" src="src/main.js"></script>',
