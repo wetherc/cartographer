@@ -10,7 +10,8 @@
  * is what a dialog's `onChange` listens on.
  */
 
-import { removableChip } from './buttons.js';
+import { emptyState, removableChip } from './buttons.js';
+import { classNames, el } from './dom.js';
 
 /** @typedef {import('../types/modal.js').FieldOption} FieldOption */
 /** @typedef {import('../types/modal.js').CompositeField} CompositeField */
@@ -32,12 +33,11 @@ import { removableChip } from './buttons.js';
  * @returns {CompositeField & { setOptions: (options: FieldOption[], max?: number) => void }}
  */
 export function buildMultiselect(spec) {
-  const element = document.createElement('div');
-  element.className =
+  const element = el(
+    'div',
     spec.className ??
-    (spec.fixedHeight
-      ? 'field modal__multiselect modal__multiselect--fixed'
-      : 'field modal__multiselect');
+      classNames(['field modal__multiselect', spec.fixedHeight && 'modal__multiselect--fixed']),
+  );
 
   /** @type {HTMLInputElement[]} */
   let checks = [];
@@ -56,23 +56,15 @@ export function buildMultiselect(spec) {
   const render = (/** @type {FieldOption[]} */ options, /** @type {Set<string>} */ selected) => {
     element.textContent = '';
     current = options;
-    if (!options.length && spec.emptyText) {
-      const empty = document.createElement('p');
-      empty.className = 'empty-state';
-      empty.textContent = spec.emptyText;
-      element.appendChild(empty);
-    }
+    if (!options.length && spec.emptyText) element.appendChild(emptyState(spec.emptyText));
     checks = options.map((option) => {
-      const row = document.createElement('label');
-      row.className = 'modal__multiselect-option';
-      const check = document.createElement('input');
+      const check = el('input');
       check.type = 'checkbox';
       check.value = option.value;
       check.checked = selected.has(option.value);
-      const text = document.createElement('span');
-      text.textContent = option.label;
-      row.append(check, text);
-      element.appendChild(row);
+      element.appendChild(
+        el('label', 'modal__multiselect-option', check, el('span', '', option.label)),
+      );
       return check;
     });
     enforceMax();
@@ -107,14 +99,12 @@ export function buildMultiselect(spec) {
  * @returns {CompositeField}
  */
 export function buildTagsField(spec) {
-  const element = document.createElement('div');
-  element.className = 'field modal__tags';
+  const element = el('div', 'field modal__tags');
 
   /** @type {string[]} */
   let tags = splitTrimmedList(spec.value);
-  const entry = document.createElement('input');
+  const entry = el('input', 'modal__tags-input');
   entry.type = 'text';
-  entry.className = 'modal__tags-input';
 
   const render = () => {
     element.textContent = '';
@@ -167,26 +157,26 @@ export function buildTagsField(spec) {
  * @returns {CompositeField}
  */
 export function buildPillGrid(spec) {
-  const element = document.createElement('div');
-  element.className = 'modal__pillgrid';
+  const element = el('div', 'modal__pillgrid');
 
   let assigned = parseAssignments(spec.value ?? '');
 
   const render = () => {
     element.textContent = '';
     for (const row of spec.rows ?? []) {
-      const rowEl = document.createElement('div');
-      rowEl.className = 'modal__pillgrid-row';
-      const rowLabel = document.createElement('span');
-      rowLabel.className = 'modal__pillgrid-label';
-      rowLabel.textContent = row.label;
-      rowEl.appendChild(rowLabel);
+      const rowEl = el(
+        'div',
+        'modal__pillgrid-row',
+        el('span', 'modal__pillgrid-label', row.label),
+      );
       for (const option of spec.options ?? []) {
         const held = assigned[row.value] === option.value;
-        const pill = document.createElement('button');
+        const pill = el(
+          'button',
+          classNames(['modal__pill', held && 'modal__pill--selected']),
+          option.label,
+        );
         pill.type = 'button';
-        pill.className = held ? 'modal__pill modal__pill--selected' : 'modal__pill';
-        pill.textContent = option.label;
         pill.setAttribute('aria-pressed', String(held));
         pill.addEventListener('click', () => {
           assigned = assignPill(assigned, row.value, option.value);

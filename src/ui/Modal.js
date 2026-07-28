@@ -10,6 +10,8 @@
  * semantics have one owner.
  */
 
+import { textButton } from './buttons.js';
+import { classNames, el } from './dom.js';
 import { select } from './formFields.js';
 import { readImageFile } from './imageField.js';
 import { buildMultiselect, buildPillGrid, buildTagsField } from './ModalFields.js';
@@ -60,34 +62,22 @@ import { clamp } from '../util/num.js';
 export function openDialog(spec) {
   return new Promise((resolve) => {
     const opener = /** @type {HTMLElement | null} */ (document.activeElement);
-    const dialog = document.createElement('dialog');
-    dialog.className = spec.className ?? 'modal';
+    const dialog = el('dialog', spec.className ?? 'modal');
 
     /** @type {HTMLElement} */
     let host = dialog;
     if (spec.form) {
-      const form = document.createElement('form');
+      const form = el('form', 'modal__form');
       form.method = 'dialog';
-      form.className = 'modal__form';
       dialog.appendChild(form);
       host = form;
     }
 
-    if (spec.title) {
-      const heading = document.createElement('h2');
-      heading.className = 'modal__title';
-      heading.textContent = spec.title;
-      host.appendChild(heading);
-    }
+    if (spec.title) host.appendChild(el('h2', 'modal__title', spec.title));
 
     const parts = spec.build((value) => dialog.close(value));
     host.append(...(parts.body ?? []));
-    if (parts.actions?.length) {
-      const bar = document.createElement('div');
-      bar.className = 'modal__actions';
-      bar.append(...parts.actions);
-      host.appendChild(bar);
-    }
+    if (parts.actions?.length) host.appendChild(el('div', 'modal__actions', ...parts.actions));
     document.body.appendChild(dialog);
 
     dialog.addEventListener('close', () => {
@@ -179,11 +169,16 @@ export function promptModal(title, fields, options = {}) {
       /** @type {Node[]} */
       const body = [];
       for (const field of fields) {
-        const label = document.createElement('label');
-        label.className = field.full ? 'modal__field modal__field--full' : 'modal__field';
-        if (field.hidden) label.classList.add('modal__field--hidden');
         const labelText = document.createTextNode(field.label);
-        label.appendChild(labelText);
+        const label = el(
+          'label',
+          classNames([
+            'modal__field',
+            field.full && 'modal__field--full',
+            field.hidden && 'modal__field--hidden',
+          ]),
+          labelText,
+        );
         labelTexts[field.name] = labelText;
         wrappers[field.name] = label;
 
@@ -200,15 +195,14 @@ export function promptModal(title, fields, options = {}) {
           // by `readImageFile` before it becomes the field's value; leaving the
           // input untouched keeps the field's initial value (an existing image
           // survives an edit).
-          input = document.createElement('input');
+          input = el('input');
           input.type = 'file';
           input.accept = 'image/*';
           let dataUrl = field.value !== undefined ? String(field.value) : '';
           // A rejected pick reports inline rather than through `alertModal`: this
           // dialog is still open, and a second modal over it steals focus from the
           // form the GM is in the middle of.
-          const error = document.createElement('p');
-          error.className = 'modal__error';
+          const error = el('p', 'modal__error');
           error.setAttribute('role', 'alert');
           error.hidden = true;
           input.addEventListener('change', () => {
@@ -255,16 +249,13 @@ export function promptModal(title, fields, options = {}) {
           // An in-form action (e.g. "Reroll scores"): clicking it fires the
           // form's onChange under the field's name; it contributes no value to
           // the submitted record. The field's label sits on the button itself.
-          const button = document.createElement('button');
-          button.type = 'button';
-          button.className = 'btn';
-          button.textContent = field.label;
+          // The listener reaches `button` at click time, after the binding settles.
+          const button = textButton(field.label, () => button.dispatchEvent(new Event('input')));
           labelText.nodeValue = '';
-          button.addEventListener('click', () => button.dispatchEvent(new Event('input')));
           input = asInput(button);
           getters[field.name] = () => '';
         } else {
-          const plain = document.createElement('input');
+          const plain = el('input');
           plain.type = field.type ?? 'text';
           if (field.value !== undefined) plain.value = String(field.value);
           if (field.min !== undefined) plain.min = String(field.min);
@@ -331,16 +322,11 @@ export function promptModal(title, fields, options = {}) {
         }
       }
 
-      const cancel = document.createElement('button');
-      cancel.type = 'button';
-      cancel.className = 'btn';
-      cancel.textContent = 'Cancel';
-      cancel.addEventListener('click', () => close('cancel'));
-
-      const submit = document.createElement('button');
-      submit.type = 'submit';
-      submit.className = 'btn btn--primary';
-      submit.textContent = options.submitLabel ?? 'Create';
+      const cancel = textButton('Cancel', () => close('cancel'));
+      const submit = textButton(options.submitLabel ?? 'Create', undefined, {
+        variant: 'primary',
+        type: 'submit',
+      });
 
       return {
         body,
@@ -374,16 +360,8 @@ export function alertModal(message, options = {}) {
   return openDialog({
     title: options.title,
     build: (close) => {
-      const text = document.createElement('p');
-      text.className = 'modal__message';
-      text.textContent = message;
-
-      const ok = document.createElement('button');
-      ok.type = 'button';
-      ok.className = 'btn btn--primary';
-      ok.textContent = options.label ?? 'OK';
-      ok.addEventListener('click', () => close('ok'));
-
+      const text = el('p', 'modal__message', message);
+      const ok = textButton(options.label ?? 'OK', () => close('ok'), { variant: 'primary' });
       return { body: [text], actions: [ok], initialFocus: ok };
     },
   });
@@ -398,22 +376,11 @@ export function alertModal(message, options = {}) {
 export function confirmModal(message, options = {}) {
   return openDialog({
     build: (close) => {
-      const text = document.createElement('p');
-      text.className = 'modal__message';
-      text.textContent = message;
-
-      const cancel = document.createElement('button');
-      cancel.type = 'button';
-      cancel.className = 'btn';
-      cancel.textContent = 'Cancel';
-      cancel.addEventListener('click', () => close('cancel'));
-
-      const confirm = document.createElement('button');
-      confirm.type = 'button';
-      confirm.className = options.danger ? 'btn btn--danger' : 'btn btn--primary';
-      confirm.textContent = options.confirmLabel ?? 'Confirm';
-      confirm.addEventListener('click', () => close('confirm'));
-
+      const text = el('p', 'modal__message', message);
+      const cancel = textButton('Cancel', () => close('cancel'));
+      const confirm = textButton(options.confirmLabel ?? 'Confirm', () => close('confirm'), {
+        variant: options.danger ? 'danger' : 'primary',
+      });
       return { body: [text], actions: [cancel, confirm], initialFocus: confirm };
     },
     result: (returnValue) => returnValue === 'confirm',
