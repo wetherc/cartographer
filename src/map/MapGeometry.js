@@ -4,6 +4,8 @@
  * free of any canvas/DOM state so it stays unit-testable in isolation.
  */
 
+/** @typedef {import('../types/map.js').MapNode} MapNode */
+
 /**
  * Grid tiles use "x,y" as their id (e.g. "3,4"), giving a coordinate without
  * adding position fields to the Tile type. Non-grid tiles (hierarchy tests,
@@ -15,6 +17,32 @@ export function parseCoords(id) {
   const match = /^(\d+),(\d+)$/.exec(id);
   if (!match) return null;
   return { x: Number(match[1]), y: Number(match[2]) };
+}
+
+/**
+ * The id of the grid tile at (x, y) — the inverse of parseCoords, and the only
+ * place the "x,y" format is written. Everything that builds a tile id goes
+ * through here so the format is stated once rather than in every loop that
+ * walks a grid.
+ * @param {number} x
+ * @param {number} y
+ * @returns {string}
+ */
+export function tileIdAt(x, y) {
+  return `${x},${y}`;
+}
+
+/**
+ * Whether (x, y) falls inside a node's width x height grid. Callers that hold
+ * an id instead of a coordinate pair want `TilePaint.isInBounds`, which parses
+ * first and then asks this.
+ * @param {MapNode} node
+ * @param {number} x
+ * @param {number} y
+ * @returns {boolean}
+ */
+export function inBounds(node, x, y) {
+  return x >= 0 && y >= 0 && x < node.width && y < node.height;
 }
 
 /**

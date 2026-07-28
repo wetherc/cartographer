@@ -1,5 +1,5 @@
 import { getTile, updateTileMetadata } from '../map/TileGrid.js';
-import { clientToBuffer, screenToTile } from '../map/MapGeometry.js';
+import { clientToBuffer, screenToTile, tileIdAt } from '../map/MapGeometry.js';
 import {
   paintTile,
   eraseTile,
@@ -170,7 +170,7 @@ export function createMapAuthoring(app, env) {
   let strokeTouched = false;
   /** @type {(x: number, y: number, tile: import('../types/map.js').Tile | null, first: boolean) => void} */
   const onStrokeCell = (x, y, tile, first) => {
-    const id = `${x},${y}`;
+    const id = tileIdAt(x, y);
     // Play-mode GM fog brush: strokes reveal/hide fog instead of authoring
     // tiles. Only active while a fog tool is toggled on (which is what put the
     // canvas in authoring mode outside Build).
@@ -287,7 +287,7 @@ export function createMapAuthoring(app, env) {
         env.mapCanvas.offsetY,
         env.mapCanvas.scale,
       );
-      const tileId = `${coords.x},${coords.y}`;
+      const tileId = tileIdAt(coords.x, coords.y);
       snapshotEdit(navigator.getCurrentNode());
       const overlay = isOverlayType(entry.type);
       const scale = overlay ? 1 : env.palettePanel.getScale();

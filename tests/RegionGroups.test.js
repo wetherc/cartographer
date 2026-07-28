@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
+import { createMapNode, createTile, getTile, setTile } from '../src/map/TileGrid.js';
 import {
   findRegionGroups,
   isFilledRect,
@@ -247,4 +247,16 @@ test('chunks rebuild when a member tile is repainted', () => {
   assert.equal(rebuilt[0].imageRef, 'water.svg', 'the repainted top-left tile wins');
   // And the rebuilt chunks are then themselves cached against the new list.
   assert.equal(groupImageChunks(node, group), rebuilt);
+});
+
+test('a group reports its tiles under their own ids, not re-formatted ones', () => {
+  // "01,2" parses as (1, 2) but isn't how the id would be written, so a group
+  // keyed by coordinates would list a member the renderer can never look up.
+  let node = createMapNode('n', 'Node', null, 4, 4);
+  node = setTile(node, createTile('01,2', 'grass.svg', { childNodeId: 'region' }));
+
+  const groups = findRegionGroups(node);
+  assert.equal(groups.length, 1);
+  assert.deepEqual(groups[0].tileIds, ['01,2']);
+  assert.equal(getTile(node, groups[0].tileIds[0])?.childNodeId, 'region');
 });

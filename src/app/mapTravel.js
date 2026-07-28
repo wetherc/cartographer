@@ -1,4 +1,5 @@
 import { updateTileMetadata } from '../map/TileGrid.js';
+import { tileIdAt } from '../map/MapGeometry.js';
 import { computeRegionEntryTile, resolveEntryTile } from '../map/EntryPoint.js';
 import { revealAround } from '../map/FogOfWar.js';
 import { moveCharacter, recallAll } from '../party/CharacterTokens.js';
@@ -69,7 +70,7 @@ export function createMapTravel(app, env) {
     const target = resolveEntryTile(
       node,
       node.tiles.find((t) => t.revealed)?.id ??
-        `${Math.floor(node.width / 2)},${Math.floor(node.height / 2)}`,
+        tileIdAt(Math.floor(node.width / 2), Math.floor(node.height / 2)),
     );
     // No revealed tile yet means the party has never set foot here, so this
     // teleport is the region's discovery (checked before moveTo reveals fog).

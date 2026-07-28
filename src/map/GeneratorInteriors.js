@@ -1,5 +1,6 @@
 import { createTile } from './TileGrid.js';
 import { randInt } from './GeneratorRandom.js';
+import { tileIdAt } from './MapGeometry.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
@@ -122,12 +123,12 @@ export function generateDungeon(palette, size, rng, options = {}) {
     else for (let x = ex; x < size; x++) carve(x, ey);
     entry =
       side === 0
-        ? `${ex},0`
+        ? tileIdAt(ex, 0)
         : side === 1
-          ? `${ex},${size - 1}`
+          ? tileIdAt(ex, size - 1)
           : side === 2
-            ? `0,${ey}`
-            : `${size - 1},${ey}`;
+            ? tileIdAt(0, ey)
+            : tileIdAt(size - 1, ey);
     entryDoor = side <= 1 ? 'door-h' : 'door-v';
   }
 
@@ -152,18 +153,20 @@ export function generateDungeon(palette, size, rng, options = {}) {
           [-1, -1],
         ].some(([dx, dy]) => isFloor(x + dx, y + dy))
       ) {
-        walls.add(`${x},${y}`);
+        walls.add(tileIdAt(x, y));
       }
     }
   }
   /** @param {number} x @param {number} y */
-  const continuesWall = (x, y) =>
-    walls.has(`${x},${y}`) || (entrance === 'edge' && `${x},${y}` === entry);
+  const continuesWall = (x, y) => {
+    const id = tileIdAt(x, y);
+    return walls.has(id) || (entrance === 'edge' && id === entry);
+  };
   /** @type {Tile[]} */
   const tiles = [];
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const id = `${x},${y}`;
+      const id = tileIdAt(x, y);
       if (isFloor(x, y)) {
         tiles.push(
           createTile(id, interiorRef(palette, FLOOR_KINDS[randInt(rng, FLOOR_KINDS.length)])),
@@ -191,10 +194,10 @@ export function generateDungeon(palette, size, rng, options = {}) {
       const t = tiles.find((tile) => tile.id === id);
       if (t) t.imageRef = interiorRef(palette, kind);
     };
-    stamp(`${up[0]},${up[1]}`, 'stairs-up');
+    stamp(tileIdAt(up[0], up[1]), 'stairs-up');
     if (descend) {
-      stairsDown = `${down[0]},${down[1]}`;
-      if (stairsDown === `${up[0]},${up[1]}`) {
+      stairsDown = tileIdAt(down[0], down[1]);
+      if (stairsDown === tileIdAt(up[0], up[1])) {
         // Single-room level: shift the descent off the stairs-up cell onto an
         // adjacent floor tile so both stairs exist.
         const neighbor = [
@@ -205,12 +208,12 @@ export function generateDungeon(palette, size, rng, options = {}) {
         ]
           .map(([dx, dy]) => [down[0] + dx, down[1] + dy])
           .find(([x, y]) => isFloor(x, y));
-        stairsDown = neighbor ? `${neighbor[0]},${neighbor[1]}` : null;
+        stairsDown = neighbor ? tileIdAt(neighbor[0], neighbor[1]) : null;
       }
       if (stairsDown) stamp(stairsDown, 'stairs-down');
     }
     if (entrance === 'edge') stamp(entry, entryDoor);
-    else entry = `${up[0]},${up[1]}`;
+    else entry = tileIdAt(up[0], up[1]);
   }
   return { tiles, entry, stairsDown };
 }
@@ -232,7 +235,7 @@ export function generateCastle(palette, size, rng) {
   const tiles = [];
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const id = `${x},${y}`;
+      const id = tileIdAt(x, y);
       /** @type {string} */
       let kind;
       if (y === max && x === doorX) kind = 'door-h';
@@ -258,6 +261,6 @@ export function generateCastle(palette, size, rng) {
     if (t) t.imageRef = interiorRef(palette, kind);
   };
   stair('1,1', 'stairs-up');
-  stair(`${max - 1},1`, 'stairs-down');
-  return { tiles, entry: `${doorX},${max}` };
+  stair(tileIdAt(max - 1, 1), 'stairs-down');
+  return { tiles, entry: tileIdAt(doorX, max) };
 }

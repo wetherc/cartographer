@@ -1,3 +1,5 @@
+import { parseCoords, tileIdAt } from '../map/MapGeometry.js';
+
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
 
@@ -12,7 +14,9 @@
  *   option — "with the party" reads better than "unplaced" for a character
  */
 export function locationFields(app, location, options = {}) {
-  const [x, y] = location ? location.tileId.split(',').map(Number) : [0, 0];
+  // A location whose tile id isn't a grid coordinate (a hand-edited save) opens
+  // the dialog at the origin rather than at NaN, NaN.
+  const { x, y } = (location && parseCoords(location.tileId)) || { x: 0, y: 0 };
   return [
     {
       name: 'nodeId',
@@ -49,6 +53,6 @@ export function readLocation(app, values) {
     Math.min(Math.max(0, Math.floor(Number(raw) || 0)), max - 1);
   return {
     nodeId: node.id,
-    tileId: `${clamp(values.tileX, node.width)},${clamp(values.tileY, node.height)}`,
+    tileId: tileIdAt(clamp(values.tileX, node.width), clamp(values.tileY, node.height)),
   };
 }

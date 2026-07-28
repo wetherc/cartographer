@@ -1,4 +1,4 @@
-import { parseCoords } from './MapGeometry.js';
+import { parseCoords, tileIdAt } from './MapGeometry.js';
 import { getTile } from './TileGrid.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -36,13 +36,18 @@ const groupCache = new WeakMap();
 export function findRegionGroups(node) {
   const cached = groupCache.get(node);
   if (cached) return cached;
+  // Keyed by the tile's own id, not by a re-formatted coordinate: a group's
+  // members are reported as `tile.id`, and an id that parses but isn't written
+  // canonically ("01,2") would otherwise be reported under a key no lookup can
+  // reach. The cost is that such a tile can't be found as a neighbor, so it
+  // forms its own group instead of joining the block beside it.
   /** @type {Map<string, { tile: import('../types/map.js').Tile, x: number, y: number }>} */
   const byCoord = new Map();
   for (const tile of node.tiles) {
     if (!tile.childNodeId) continue;
     const coords = parseCoords(tile.id);
     if (!coords) continue;
-    byCoord.set(`${coords.x},${coords.y}`, { tile, x: coords.x, y: coords.y });
+    byCoord.set(tile.id, { tile, x: coords.x, y: coords.y });
   }
 
   const visited = new Set();
@@ -84,7 +89,7 @@ export function findRegionGroups(node) {
         [current.x, current.y - 1],
       ];
       for (const [nx, ny] of neighbors) {
-        const nKey = `${nx},${ny}`;
+        const nKey = tileIdAt(nx, ny);
         if (visited.has(nKey)) continue;
         const neighbor = byCoord.get(nKey);
         if (!neighbor || neighbor.tile.childNodeId !== childNodeId) continue;
@@ -228,7 +233,7 @@ function computeChunks(node, group) {
       const maxY = Math.min(y + 1, group.maxY);
       const tileIds = [];
       for (let cy = y; cy <= maxY; cy++) {
-        for (let cx = x; cx <= maxX; cx++) tileIds.push(`${cx},${cy}`);
+        for (let cx = x; cx <= maxX; cx++) tileIds.push(tileIdAt(cx, cy));
       }
       const imageRef = groupImageRef(node, { tileIds });
       if (imageRef) chunks.push({ imageRef, tileIds, minX: x, minY: y, maxX, maxY });

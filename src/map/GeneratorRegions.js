@@ -1,4 +1,5 @@
 import { createTile } from './TileGrid.js';
+import { parseCoords, tileIdAt } from './MapGeometry.js';
 import { coastOverlays, riverCourse, smoothCoastline } from './Autotile.js';
 import { randInt, shuffle } from './GeneratorRandom.js';
 
@@ -95,7 +96,7 @@ export function generateWilderness(palette, size, rng) {
   const tiles = [];
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      const id = `${x},${y}`;
+      const id = tileIdAt(x, y);
       // Shoreline draws under the channel, so a river drains through the
       // beach into the water instead of one overlay displacing the other.
       const refs = [];
@@ -118,7 +119,9 @@ export function generateWilderness(palette, size, rng) {
   // offer something to discover. Grass keeps markers off water/river cells.
   const grassIds = tiles
     .filter((t) => {
-      const [x, y] = t.id.split(',').map(Number);
+      const coords = parseCoords(t.id);
+      if (!coords) return false;
+      const { x, y } = coords;
       const inner = x > 0 && y > 0 && x < size - 1 && y < size - 1;
       return inner && !t.overlayRef && cells[y * size + x] === 'grass';
     })
@@ -134,7 +137,7 @@ export function generateWilderness(palette, size, rng) {
       tile.imageRef = ref;
       tile.metadata = { ...tile.metadata, poiType: 'landmark' };
     });
-  return { tiles, entry: `${Math.floor(size / 2)},${size - 1}` };
+  return { tiles, entry: tileIdAt(Math.floor(size / 2), size - 1) };
 }
 
 /**
@@ -160,7 +163,7 @@ export function generateTown(palette, size, rng) {
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const base = terrainRef(palette, 'grass', rng);
-      const tile = createTile(`${x},${y}`, base);
+      const tile = createTile(tileIdAt(x, y), base);
       if (x === rx) {
         const kind = y === my ? 'bridge-h' : 'v';
         tile.overlayRef = palette.getRiverPiece(kind)?.imageRef ?? null;
@@ -184,7 +187,7 @@ export function generateTown(palette, size, rng) {
         [0, 1],
         [0, -1],
       ].some(([dx, dy]) => isRoad(x + dx, y + dy));
-      if (touchesRoad) sites.push(`${x},${y}`);
+      if (touchesRoad) sites.push(tileIdAt(x, y));
     }
   }
   const count = Math.min(sites.length, Math.max(3, Math.round(size / 2)));
@@ -198,5 +201,5 @@ export function generateTown(palette, size, rng) {
     tile.overlayRef = null;
     tile.metadata = { ...tile.metadata, poiType: 'settlement' };
   });
-  return { tiles: [...byId.values()], entry: `${mx},${size - 1}` };
+  return { tiles: [...byId.values()], entry: tileIdAt(mx, size - 1) };
 }

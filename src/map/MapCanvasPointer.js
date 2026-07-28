@@ -1,5 +1,12 @@
 import { getTile } from './TileGrid.js';
-import { screenToTile, clampZoom, clientToBuffer, bufferScale } from './MapGeometry.js';
+import {
+  screenToTile,
+  clampZoom,
+  clientToBuffer,
+  bufferScale,
+  inBounds,
+  tileIdAt,
+} from './MapGeometry.js';
 
 /** @typedef {import('./MapCanvas.js').MapCanvas} MapCanvas */
 
@@ -160,9 +167,7 @@ export class MapCanvasPointer {
       host.offsetY,
       host.scale,
     );
-    const inBounds =
-      coords.x >= 0 && coords.y >= 0 && coords.x < host.node.width && coords.y < host.node.height;
-    return inBounds ? coords : null;
+    return inBounds(host.node, coords.x, coords.y) ? coords : null;
   }
 
   /**
@@ -175,7 +180,7 @@ export class MapCanvasPointer {
     const host = this.host;
     const coords = this._eventCell(event);
     if (!coords || !host.node) return;
-    const cellId = `${coords.x},${coords.y}`;
+    const cellId = tileIdAt(coords.x, coords.y);
     if (cellId === this._lastStrokeCellId) return;
     this._lastStrokeCellId = cellId;
     const tile = getTile(host.node, cellId) ?? null;
@@ -242,7 +247,7 @@ export class MapCanvasPointer {
     // Same cell resolution as a click, so the tooltip can never describe a
     // different tile than the one a click would act on.
     const coords = this._eventCell(event);
-    const cellId = coords ? `${coords.x},${coords.y}` : null;
+    const cellId = coords ? tileIdAt(coords.x, coords.y) : null;
     if (cellId === this._hoverCellId) return;
     this._hoverCellId = cellId;
     const tile = cellId ? (getTile(host.node, cellId) ?? null) : null;
@@ -323,7 +328,7 @@ export class MapCanvasPointer {
       if (this._dragDistance < 4 && host.onCellContextMenu && host.node) {
         const coords = this._eventCell(event);
         if (coords) {
-          const tile = getTile(host.node, `${coords.x},${coords.y}`) ?? null;
+          const tile = getTile(host.node, tileIdAt(coords.x, coords.y)) ?? null;
           host.onCellContextMenu(coords.x, coords.y, tile, event.clientX, event.clientY);
         }
       }
@@ -337,7 +342,7 @@ export class MapCanvasPointer {
     // The handler gets the tile if one exists, or null.
     const coords = this._eventCell(event);
     if (!coords) return;
-    const tile = getTile(host.node, `${coords.x},${coords.y}`) ?? null;
+    const tile = getTile(host.node, tileIdAt(coords.x, coords.y)) ?? null;
     host.onCellClick(coords.x, coords.y, tile);
   }
 

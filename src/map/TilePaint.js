@@ -1,5 +1,5 @@
 import { createTile, getTile, setTile, overlayList } from './TileGrid.js';
-import { parseCoords } from './MapGeometry.js';
+import { inBounds, parseCoords, tileIdAt } from './MapGeometry.js';
 import { findRegionGroups } from './RegionGroups.js';
 import { withNodeTiles } from './TileIndex.js';
 import { kindOf } from './TilePalette.js';
@@ -59,7 +59,7 @@ export function stackOverlay(existing, imageRef) {
 export function isInBounds(node, tileId) {
   const coords = parseCoords(tileId);
   if (!coords) return false;
-  return coords.x >= 0 && coords.y >= 0 && coords.x < node.width && coords.y < node.height;
+  return inBounds(node, coords.x, coords.y);
 }
 
 /**
@@ -108,7 +108,7 @@ export function paintTile(node, tileId, imageRef, overlay = false, span = 1) {
     const coords = /** @type {{ x: number, y: number }} */ (parseCoords(tileId));
     const ax = Math.min(coords.x, node.width - n);
     const ay = Math.min(coords.y, node.height - n);
-    const anchorId = `${ax},${ay}`;
+    const anchorId = tileIdAt(ax, ay);
     const anchor = getTile(node, anchorId) ?? createTile(anchorId, imageRef);
     return setTile(node, { ...anchor, imageRef, span: n });
   }
@@ -154,7 +154,7 @@ export function spanBlocks(node) {
     /** @type {string[]} */
     const tileIds = [];
     for (let y = coords.y; y <= maxY; y++) {
-      for (let x = coords.x; x <= maxX; x++) tileIds.push(`${x},${y}`);
+      for (let x = coords.x; x <= maxX; x++) tileIds.push(tileIdAt(x, y));
     }
     blocks.push({ tile, minX: coords.x, minY: coords.y, maxX, maxY, tileIds });
   }
@@ -287,7 +287,7 @@ export function stampRegionLink(node, tileId, childNodeId) {
   /** @type {Set<string>} */
   const block = new Set();
   for (let x = bx; x < Math.min(bx + 2, node.width); x++) {
-    for (let y = by; y < Math.min(by + 2, node.height); y++) block.add(`${x},${y}`);
+    for (let y = by; y < Math.min(by + 2, node.height); y++) block.add(tileIdAt(x, y));
   }
   return withNodeTiles(
     node,
@@ -350,7 +350,7 @@ export function ensureChildLink(node, childId, art) {
   let best = null;
   for (let y = 0; y < node.height; y++) {
     for (let x = 0; x < node.width; x++) {
-      const id = `${x},${y}`;
+      const id = tileIdAt(x, y);
       if (occupied.has(id)) continue;
       if (best === null || distToCentre(id) < distToCentre(best)) best = id;
     }

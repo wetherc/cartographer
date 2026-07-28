@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   parseCoords,
+  tileIdAt,
+  inBounds,
   tileRect,
   screenToTile,
   clampZoom,
@@ -22,6 +24,22 @@ test('parseCoords rejects non-coordinate ids', () => {
   assert.equal(parseCoords('poi'), null);
   assert.equal(parseCoords('t1'), null);
   assert.equal(parseCoords('-1,2'), null);
+});
+
+test('tileIdAt builds the id parseCoords reads back', () => {
+  assert.equal(tileIdAt(3, 4), '3,4');
+  assert.equal(tileIdAt(0, 0), '0,0');
+  assert.deepEqual(parseCoords(tileIdAt(12, 34)), { x: 12, y: 34 });
+});
+
+test('inBounds accepts cells inside a node extent and rejects the rest', () => {
+  const node = /** @type {any} */ ({ width: 4, height: 3 });
+  assert.equal(inBounds(node, 0, 0), true);
+  assert.equal(inBounds(node, 3, 2), true);
+  assert.equal(inBounds(node, 4, 2), false);
+  assert.equal(inBounds(node, 3, 3), false);
+  assert.equal(inBounds(node, -1, 0), false);
+  assert.equal(inBounds(node, 0, -1), false);
 });
 
 test('tileRect places a tile at scale 1 with no offset', () => {

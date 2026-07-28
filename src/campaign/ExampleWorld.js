@@ -3,6 +3,7 @@ import { generateNodeTiles } from '../map/MapGenerator.js';
 import { coastOverlays, smoothCoastline } from '../map/Autotile.js';
 import { withNodeTiles } from '../map/TileIndex.js';
 import { kindOf } from '../map/TilePalette.js';
+import { parseCoords, tileIdAt } from '../map/MapGeometry.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -64,9 +65,11 @@ const RIVER_X = 19;
 /** The row the river follows west from its bend to drain into the lake. */
 const RIVER_BEND_Y = 25;
 
-/** @param {string} id @returns {[number, number]} */
+/** Coordinates of a tile in this file's hand-written maps, all of which use grid
+ * ids, so an id that doesn't parse is a typo rather than a case to handle.
+ * @param {string} id @returns {[number, number]} */
 function tileXY(id) {
-  const [x, y] = id.split(',').map(Number);
+  const { x, y } = /** @type {{ x: number, y: number }} */ (parseCoords(id));
   return [x, y];
 }
 
@@ -178,16 +181,16 @@ export function buildExampleWorld(palette, rng = Math.random) {
   /** @type {Record<string, { nodeId: string, poi?: { tileId: string, imageId: string, poiType: import('../types/map.js').POIType, notes?: string } }>} */
   const links = {};
   for (let y = 2; y <= 5; y++)
-    for (let x = 4; x <= 7; x++) links[`${x},${y}`] = { nodeId: 'northmarch' };
+    for (let x = 4; x <= 7; x++) links[tileIdAt(x, y)] = { nodeId: 'northmarch' };
   for (let y = 7; y <= 10; y++)
-    for (let x = 26; x <= 29; x++) links[`${x},${y}`] = { nodeId: 'graypeak' };
+    for (let x = 26; x <= 29; x++) links[tileIdAt(x, y)] = { nodeId: 'graypeak' };
   for (const [x, y] of [
     [11, 23],
     [12, 23],
     [11, 24],
     [12, 24],
   ])
-    links[`${x},${y}`] = { nodeId: 'briarwick' };
+    links[tileIdAt(x, y)] = { nodeId: 'briarwick' };
   links['12,23'].poi = {
     tileId: '12,23',
     imageId: 'settlement',
@@ -236,7 +239,7 @@ export function buildExampleWorld(palette, rng = Math.random) {
   const last = WORLD_SIZE - 1;
   for (let y = 0; y < WORLD_SIZE; y++) {
     for (let x = 0; x < WORLD_SIZE; x++) {
-      const id = `${x},${y}`;
+      const id = tileIdAt(x, y);
       const link = links[id];
 
       // Roads and the river run as overlays over the terrain base, so they

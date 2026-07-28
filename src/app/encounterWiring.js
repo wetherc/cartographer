@@ -1,3 +1,4 @@
+import { tileIdAt } from '../map/MapGeometry.js';
 import { mustGetElement } from '../ui/dom.js';
 import { confirmDelete, alertModal } from '../ui/Modal.js';
 import { openContextMenu } from '../ui/ContextMenu.js';
@@ -240,7 +241,7 @@ export function wireEncounters(app) {
   app.actions.openEncounterContextMenu = (x, y, clientX, clientY) => {
     const location = {
       nodeId: app.navigator.getCurrentNode().id,
-      tileId: `${x},${y}`,
+      tileId: tileIdAt(x, y),
     };
     const here = encountersOnTile(state.encounters, location);
     const folkHere = npcsOnTile(state.npcs, location);

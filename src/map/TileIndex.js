@@ -1,4 +1,4 @@
-import { parseCoords } from './MapGeometry.js';
+import { inBounds, parseCoords, tileIdAt } from './MapGeometry.js';
 import { freezeTile, freezeTiles } from './TileFreeze.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -72,7 +72,7 @@ function build(node) {
     posById.set(tile.id, i);
     if (!cellPos) return;
     const coords = parseCoords(tile.id);
-    if (coords && coords.x < node.width && coords.y < node.height) {
+    if (coords && inBounds(node, coords.x, coords.y)) {
       cellPos[coords.y * node.width + coords.x] = i;
     }
   });
@@ -128,9 +128,9 @@ export function tileAt(node, tileId) {
  * @returns {number | undefined}
  */
 export function cellPosition(node, x, y) {
-  if (x < 0 || y < 0 || x >= node.width || y >= node.height) return undefined;
+  if (!inBounds(node, x, y)) return undefined;
   const entry = layout(node);
-  if (!entry.cellPos) return tilePosition(node, `${x},${y}`);
+  if (!entry.cellPos) return tilePosition(node, tileIdAt(x, y));
   const cell = y * node.width + x;
   const added = entry.addedCells?.get(cell);
   if (added !== undefined) return added;

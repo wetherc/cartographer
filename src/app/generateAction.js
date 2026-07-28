@@ -3,6 +3,7 @@ import { withNodeTiles } from '../map/TileIndex.js';
 import { generateNodeTiles, generateDungeonLevels, ARCHETYPES } from '../map/MapGenerator.js';
 import { ensureChildLink } from '../map/TilePaint.js';
 import { resolveEntryTile } from '../map/EntryPoint.js';
+import { parseCoords } from '../map/MapGeometry.js';
 import { mulberry32 } from '../util/Rng.js';
 import { mustGetElement } from '../ui/dom.js';
 import { confirmModal, alertModal } from '../ui/Modal.js';
@@ -135,10 +136,13 @@ export function wireGenerateAction(app) {
     // with void/wall; re-land it on the layout's guaranteed entry tile if so.
     const pos = partyTracker.getPosition();
     if (pos.nodeId === node.id) {
-      const [px, py] = pos.tileId.split(',').map(Number);
+      // An unparseable position can't be compared against the new extent, so
+      // treat it as outside and re-land on the layout's entry.
+      const coords = parseCoords(pos.tileId);
+      const outside = !coords || coords.x >= gen.width || coords.y >= gen.height;
       const landing = resolveEntryTile(navigator.getCurrentNode(), pos.tileId);
-      if (px >= gen.width || py >= gen.height || landing !== pos.tileId) {
-        partyTracker.moveTo(node.id, px >= gen.width || py >= gen.height ? gen.entry : landing);
+      if (outside || landing !== pos.tileId) {
+        partyTracker.moveTo(node.id, outside ? gen.entry : landing);
       }
     }
     app.views.mapCanvas.setNode(navigator.getCurrentNode());

@@ -1,3 +1,5 @@
+import { tileIdAt } from './MapGeometry.js';
+
 /**
  * Pure helpers for picking connector overlay pieces (coast shorelines, river
  * channels) from a terrain grid. Terrain grids are flat string arrays indexed
@@ -89,7 +91,7 @@ export function coastOverlays(cells, width, height) {
         water(x - 1, y + 1),
         water(x - 1, y - 1),
       );
-      if (kind) out.set(`${x},${y}`, kind);
+      if (kind) out.set(tileIdAt(x, y), kind);
     }
   }
   return out;
@@ -129,7 +131,7 @@ export function riverCourse(width, height, rng, isWater = () => false) {
     if (to === from) to = 's'; // never exit the edge we entered from
     if (to === 'e' && (x + 1 >= width || isWater(x + 1, y))) to = 's';
     if (to === 'w' && (x - 1 < 0 || isWater(x - 1, y))) to = 's';
-    out.set(`${x},${y}`, RIVER_PIECES[[from, to].sort().join(',')]);
+    out.set(tileIdAt(x, y), RIVER_PIECES[[from, to].sort().join(',')]);
     if (to === 's') {
       y++;
       from = 'n';

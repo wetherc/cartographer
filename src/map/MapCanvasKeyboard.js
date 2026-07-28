@@ -1,6 +1,6 @@
 import { getTile } from './TileGrid.js';
 import { isCursorKey, nextCursor } from './MapCursor.js';
-import { parseCoords, tileRect } from './MapGeometry.js';
+import { parseCoords, tileIdAt, tileRect } from './MapGeometry.js';
 
 /** @typedef {import('./MapCanvas.js').MapCanvas} MapCanvas */
 
@@ -59,7 +59,7 @@ export class MapCanvasKeyboard {
       event.preventDefault();
       const current = host.cursorCellId ? parseCoords(host.cursorCellId) : null;
       const next = nextCursor(current, event.key, host.node.width, host.node.height);
-      host.cursorCellId = `${next.x},${next.y}`;
+      host.cursorCellId = tileIdAt(next.x, next.y);
       this._ensureCellVisible(next.x, next.y);
       host.render();
       this._announceCursor();

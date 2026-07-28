@@ -1,4 +1,5 @@
 import { getTile } from '../map/TileGrid.js';
+import { tileIdAt } from '../map/MapGeometry.js';
 import { MapCanvas } from '../map/MapCanvas.js';
 import { revealAll, discoveredNodes } from '../map/FogOfWar.js';
 import { characterTokens } from '../party/CharacterTokens.js';
@@ -274,7 +275,7 @@ export function wireMapView(app) {
     // in encounterWiring; the action is late-bound like the rest of app.actions.
     onCellContextMenu: (x, y, _tile, clientX, clientY) => {
       if (state.mode !== 'build' || !isGM(state.role)) return;
-      selectTile(`${x},${y}`);
+      selectTile(tileIdAt(x, y));
       app.actions.openEncounterContextMenu(x, y, clientX, clientY);
     },
     onCellClick: travel.onCellClick,

@@ -1,3 +1,5 @@
+import { tileIdAt } from '../map/MapGeometry.js';
+
 /**
  * Positional encoding for a node's tiles: the on-disk form that stops writing a
  * tile's identity and art reference once per cell. Pure, and deliberately
@@ -353,7 +355,7 @@ export function decodeNodeTiles(node) {
       const imageRef = pair ? entry[0] : entry;
       if (typeof imageRef !== 'string') continue;
       const x = pos % width;
-      const id = `${x},${(pos - x) / width}`;
+      const id = tileIdAt(x, (pos - x) / width);
       const extra = leftovers.get(id);
       /** @type {Record<string, any>} */
       const tile = extra ? { ...extra } : {};
