@@ -41,6 +41,7 @@ async function build() {
 
   // Copy assets
   await fs.cp('assets', path.join(outdir, 'assets'), { recursive: true });
+  await fs.cp('CNAME', path.join(outdir, 'CNAME'));
 
   if (watch) {
     const ctx = await esbuild.context(options);
