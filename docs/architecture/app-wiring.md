@@ -182,6 +182,14 @@ change to one of these shapes lands in the shared module, never in one form.
 
 The travelogue (provides `logEvent`), NPCs, quests, and handouts.
 
+The quest and handout panels get their add/edit/delete callbacks from
+`entityList.js`'s `wireEntityList(app, spec)`. A spec says which `state` list
+the entries live on, the noun its dialogs are titled with, what fields those
+dialogs show, and how a submitted record becomes a new or edited entry. The
+helper owns the rest: prompting, rejecting an empty title, deriving a unique id
+from the title, appending or replacing, marking the campaign dirty, and
+confirming a delete by name.
+
 ### libraryWiring.js
 
 The Library mode's four template lists (equipment, bestiary, NPCs, spells) and the

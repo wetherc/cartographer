@@ -19,6 +19,7 @@ import type { CombatState } from './combat.js';
 import type { ViewRole } from './view.js';
 import type { MapNode, PartyPosition } from './map.js';
 import type { DiceResult, DiceSelection } from './dice.js';
+import type { ModalField } from '../ui/Modal.js';
 import type { TilePalette } from '../map/TilePalette.js';
 import type { TileGrid } from '../map/TileGrid.js';
 import type { MapNavigator } from '../map/MapNavigator.js';
@@ -128,6 +129,40 @@ export interface AppActions {
   // and roll it there — weapon attacks route through this so the roll shows
   // where every other roll happens.
   rollDice(selection: DiceSelection, target?: number | null): { result: DiceResult; text: string };
+}
+
+/** The `AppState` lists whose panels are built by `app/entityList.js`. A new
+ * such list adds its state key here. */
+export type EntityListKey = 'quests' | 'handouts';
+
+/** The entry type of one such list, so a spec's callbacks are typed by the
+ * state key alone. */
+export type EntityListEntry<K extends EntityListKey> = AppState[K][number];
+
+/** What one campaign list tells `wireEntityList` about itself: where it lives,
+ * what its dialogs are called, what they ask for, and how a submitted record
+ * becomes a new or edited entry. `titleKey` names the required text field, the
+ * one the id is slugged from and the delete confirmation quotes. */
+export interface EntityListSpec<K extends EntityListKey> {
+  key: K;
+  /** Lowercase singular, e.g. "quest" -> "New quest" / "Edit quest". */
+  noun: string;
+  fields: (entity: EntityListEntry<K> | null) => ModalField[];
+  create: (id: string, title: string, values: Record<string, string>) => EntityListEntry<K>;
+  patch: (
+    entity: EntityListEntry<K>,
+    title: string,
+    values: Record<string, string>,
+  ) => EntityListEntry<K>;
+  titleKey?: string;
+  /** Extra `promptModal` options for the edit dialog only. */
+  editOptions?: { submitLabel?: string; wide?: boolean };
+  prompt?: (
+    title: string,
+    fields: ModalField[],
+    options?: { submitLabel?: string; wide?: boolean },
+  ) => Promise<Record<string, string> | null>;
+  confirm?: (name: string) => Promise<boolean>;
 }
 
 export interface AppContext {
