@@ -13,6 +13,7 @@ import {
   spanBlocks,
 } from '../src/map/TilePaint.js';
 import { createMapNode, createTile, setTile, getTile } from '../src/map/TileGrid.js';
+import { gridTiles } from './helpers/grid.js';
 
 function node2x2() {
   return createMapNode('n', 'N', null, 2, 2);
@@ -236,11 +237,12 @@ test('stampRegionLink links a single tile on interiors', () => {
 });
 
 test('stampRegionLink re-points a whole linked block at a new child', () => {
-  let node = createMapNode('world', 'World', null, 5, 5);
-  for (let x = 0; x < 3; x++) {
-    for (let y = 0; y < 3; y++) node = setTile(node, createTile(`${x},${y}`, 'grass.svg'));
-  }
-  node = linkTilesInRect(node, { minX: 0, minY: 0, maxX: 2, maxY: 2 }, 'vale');
+  // Only the top-left 3x3 of the node is painted, so the fill is by tile list.
+  const painted = gridTiles(3, 3).reduce(
+    (acc, tile) => setTile(acc, tile),
+    createMapNode('world', 'World', null, 5, 5),
+  );
+  const node = linkTilesInRect(painted, { minX: 0, minY: 0, maxX: 2, maxY: 2 }, 'vale');
   const relinked = stampRegionLink(node, '1,1', 'moor');
   for (let x = 0; x < 3; x++) {
     for (let y = 0; y < 3; y++) {

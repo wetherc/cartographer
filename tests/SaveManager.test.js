@@ -27,6 +27,7 @@ import {
 } from '../src/storage/SaveManager.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
 import { installLocalStorage, installWindow } from './helpers/env.js';
+import { fillTiles } from './helpers/grid.js';
 
 beforeEach(installLocalStorage);
 
@@ -134,10 +135,7 @@ test('packing keeps a tile field it does not know about', () => {
 
 test('packing shrinks a save dominated by default tiles', () => {
   const grid = new TileGrid();
-  let node = createMapNode('world', 'World', null, 20, 20);
-  for (let y = 0; y < 20; y += 1)
-    for (let x = 0; x < 20; x += 1) node = setTile(node, createTile(`${x},${y}`, 'grass.svg'));
-  grid.addNode(node);
+  grid.addNode(fillTiles(createMapNode('world', 'World', null, 20, 20)));
   const state = buildState({ grid });
   const packed = serialize(state).length;
   const unpacked = JSON.stringify(state).length;
@@ -275,15 +273,9 @@ test('serializing encodes a grid node positionally and loading reads it back', (
 
 test('the positional encoding shrinks a save of a fully explored map', () => {
   const grid = new TileGrid();
-  let node = createMapNode('world', 'World', null, 40, 40);
-  for (let y = 0; y < 40; y += 1)
-    for (let x = 0; x < 40; x += 1)
-      node = setTile(
-        node,
-        createTile(`${x},${y}`, 'assets/tiles/grass/grass-1.svg', {
-          revealed: true,
-        }),
-      );
+  const node = fillTiles(createMapNode('world', 'World', null, 40, 40), (id) =>
+    createTile(id, 'assets/tiles/grass/grass-1.svg', { revealed: true }),
+  );
   grid.addNode(node);
   const state = buildState({ grid });
   const encoded = serialize(state).length;

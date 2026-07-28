@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { computeEntryTile, resolveEntryTile } from '../src/map/EntryPoint.js';
 import { createTile } from '../src/map/TileGrid.js';
+import { gridTiles } from './helpers/grid.js';
 
 // 8x8 child region. Its block sits at parent coords x 4..7, y 4..7.
 const W = 8;
@@ -148,9 +149,7 @@ test('computeRegionEntryTile falls back to centre when no region group matches',
     environ: null,
     tiles: [createTile('0,0', 'grass.svg')], // no tile links to 'ghost'
   };
-  const childTiles = [];
-  for (let y = 0; y < 4; y++)
-    for (let x = 0; x < 4; x++) childTiles.push(createTile(`${x},${y}`, 'grass.svg'));
+  const childTiles = gridTiles(4, 4);
   const child = {
     id: 'ghost',
     name: 'Ghost',
@@ -219,9 +218,7 @@ test('computeRegionEntryTile reads the approach geometry when no stairs connect 
     environ: null,
     tiles: parentTiles,
   };
-  const childTiles = [];
-  for (let y = 0; y < 4; y++)
-    for (let x = 0; x < 4; x++) childTiles.push(createTile(`${x},${y}`, 'grass.svg'));
+  const childTiles = gridTiles(4, 4);
   const child = {
     id: 'town',
     name: 'Town',

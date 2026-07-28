@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { encodeNodeTiles, decodeNodeTiles } from '../src/storage/TileCodec.js';
+import { gridTiles } from './helpers/grid.js';
 
 /**
  * A packed tile: only the fields a real save would carry, since the codec runs
@@ -278,22 +279,18 @@ test('random nodes round trip', () => {
   for (let iteration = 0; iteration < 200; iteration += 1) {
     const width = 1 + rand(9);
     const height = 1 + rand(9);
-    /** @type {Record<string, any>[]} */
-    const tiles = [];
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        if (rand(5) === 0) continue; // a hole, so sparse nodes are covered too
-        /** @type {Record<string, any>} */
-        const extra = {};
-        const overlay = overlays[rand(overlays.length)];
-        if (overlay) extra.overlayRef = overlay;
-        if (rand(4) === 0) extra.revealed = true;
-        if (rand(6) === 0) extra.childNodeId = `child-${rand(3)}`;
-        if (rand(7) === 0) extra.span = 2 + rand(2);
-        if (rand(8) === 0) extra.metadata = { poiType: 'landmark', notes: `n${rand(100)}` };
-        tiles.push(tile(`${x},${y}`, art[rand(art.length)], extra));
-      }
-    }
+    const tiles = gridTiles(width, height, (id) => {
+      if (rand(5) === 0) return null; // a hole, so sparse nodes are covered too
+      /** @type {Record<string, any>} */
+      const extra = {};
+      const overlay = overlays[rand(overlays.length)];
+      if (overlay) extra.overlayRef = overlay;
+      if (rand(4) === 0) extra.revealed = true;
+      if (rand(6) === 0) extra.childNodeId = `child-${rand(3)}`;
+      if (rand(7) === 0) extra.span = 2 + rand(2);
+      if (rand(8) === 0) extra.metadata = { poiType: 'landmark', notes: `n${rand(100)}` };
+      return tile(id, art[rand(art.length)], extra);
+    });
     roundTrip(makeNode({ width, height, tiles }));
   }
 });

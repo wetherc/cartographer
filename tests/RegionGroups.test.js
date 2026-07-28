@@ -7,6 +7,7 @@ import {
   groupImageRef,
   groupImageChunks,
 } from '../src/map/RegionGroups.js';
+import { fillTiles } from './helpers/grid.js';
 
 function nodeFromLayout(rows, childNodeIdFor) {
   let node = createMapNode('n', 'Node', null, rows[0].length, rows.length);
@@ -137,15 +138,9 @@ test('groupImageRef tie-breaks two tiles on the same row by the smaller x', () =
 });
 
 test('groupImageChunks splits a 4x4 block into four 2x2 chunks with their own images', () => {
-  let node = createMapNode('n', 'Node', null, 4, 4);
-  for (let y = 0; y < 4; y++) {
-    for (let x = 0; x < 4; x++) {
-      node = setTile(
-        node,
-        createTile(`${x},${y}`, `forest-${x},${y}.svg`, { childNodeId: 'region' }),
-      );
-    }
-  }
+  const node = fillTiles(createMapNode('n', 'Node', null, 4, 4), (id) =>
+    createTile(id, `forest-${id}.svg`, { childNodeId: 'region' }),
+  );
   const chunks = groupImageChunks(node, findRegionGroups(node)[0]);
   assert.equal(chunks.length, 4);
   assert.deepEqual(
@@ -166,12 +161,9 @@ test('groupImageChunks splits a 4x4 block into four 2x2 chunks with their own im
 });
 
 test('groupImageChunks leaves 1-wide strips on odd-sized blocks', () => {
-  let node = createMapNode('n', 'Node', null, 3, 3);
-  for (let y = 0; y < 3; y++) {
-    for (let x = 0; x < 3; x++) {
-      node = setTile(node, createTile(`${x},${y}`, 'forest.svg', { childNodeId: 'region' }));
-    }
-  }
+  const node = fillTiles(createMapNode('n', 'Node', null, 3, 3), (id) =>
+    createTile(id, 'forest.svg', { childNodeId: 'region' }),
+  );
   const chunks = groupImageChunks(node, findRegionGroups(node)[0]);
   assert.deepEqual(
     chunks.map((c) => ({ minX: c.minX, minY: c.minY, maxX: c.maxX, maxY: c.maxY })),

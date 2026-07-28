@@ -16,6 +16,7 @@ import {
 import { withNodeTiles } from '../src/map/TileIndex.js';
 import { eraseTile } from '../src/map/TilePaint.js';
 import { hideAll, revealAround } from '../src/map/FogOfWar.js';
+import { fillTiles } from './helpers/grid.js';
 
 /**
  * Run a body with freezing forced on or off, restoring whatever the environment
@@ -98,10 +99,7 @@ test('a tile written into a node through setTile cannot be mutated in place', ()
 
 test('a fog reveal freezes the tiles it flips', () => {
   withFreezing(true, () => {
-    let node = createMapNode('n', 'N', null, 4, 4);
-    for (let y = 0; y < 4; y++) {
-      for (let x = 0; x < 4; x++) node = setTile(node, createTile(`${x},${y}`, 'grass.svg'));
-    }
+    const node = fillTiles(createMapNode('n', 'N', null, 4, 4));
     const revealed = revealAround(node, '1,1', 1);
     const tile = revealed.tiles.find((t) => t.id === '1,1');
     assert.equal(tile?.revealed, true);
@@ -124,10 +122,7 @@ test('the per-cell helpers leave the tile list writable, which is the cost they 
 
 test('every whole-list node producer freezes the list it hands over', () => {
   withFreezing(true, () => {
-    let node = createMapNode('n', 'N', null, 4, 4);
-    for (let y = 0; y < 4; y++) {
-      for (let x = 0; x < 4; x++) node = setTile(node, createTile(`${x},${y}`, 'grass.svg'));
-    }
+    const node = fillTiles(createMapNode('n', 'N', null, 4, 4));
     const cases = {
       withNodeTiles: withNodeTiles(node, node.tiles.slice()),
       withNodeDefaults: withNodeDefaults(node),

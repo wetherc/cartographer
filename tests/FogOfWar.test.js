@@ -10,15 +10,10 @@ import {
   revealedCount,
   discoveredNodes,
 } from '../src/map/FogOfWar.js';
+import { fillTiles } from './helpers/grid.js';
 
 function grid5x5() {
-  let node = createMapNode('n', 'Node', null, 5, 5);
-  for (let y = 0; y < 5; y++) {
-    for (let x = 0; x < 5; x++) {
-      node = setTile(node, createTile(`${x},${y}`, 'grass.svg'));
-    }
-  }
-  return node;
+  return fillTiles(createMapNode('n', 'Node', null, 5, 5));
 }
 
 test('revealAround radius 0 reveals only the center tile', () => {

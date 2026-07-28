@@ -1,17 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createMapNode, createTile, setTile, TileGrid } from '../src/map/TileGrid.js';
+import { createMapNode, TileGrid } from '../src/map/TileGrid.js';
 import { revealedCount } from '../src/map/FogOfWar.js';
 import { PartyTracker } from '../src/party/PartyTracker.js';
+import { fillTiles } from './helpers/grid.js';
 
 function grid5x5(id = 'n') {
-  let node = createMapNode(id, 'Node', null, 5, 5);
-  for (let y = 0; y < 5; y++) {
-    for (let x = 0; x < 5; x++) {
-      node = setTile(node, createTile(`${x},${y}`, 'grass.svg'));
-    }
-  }
-  return node;
+  return fillTiles(createMapNode(id, 'Node', null, 5, 5));
 }
 
 test('constructing a tracker reveals fog around the initial position', () => {
