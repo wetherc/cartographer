@@ -57,6 +57,33 @@ export interface SpellScaling {
   targetsPerLevel?: number;
 }
 
+/** How long a cast takes. `action`, `bonus`, and `reaction` are the three
+ * in-combat costs; `minutes` and `hours` carry an `amount`; `special` holds text
+ * that neither the parser nor the form could read as any of the above. */
+export interface CastingTime {
+  kind: 'action' | 'bonus' | 'reaction' | 'minutes' | 'hours' | 'special';
+  /** How many minutes or hours, for those two kinds. */
+  amount?: number;
+  /** What the reaction responds to, e.g. 'which you take when you see a
+   * creature casting a spell'. Only meaningful for `reaction`. */
+  trigger?: string;
+  /** The original text, for `special`. */
+  text?: string;
+}
+
+/** How long a spell lasts once cast. The amount-bearing kinds carry `amount`;
+ * `upTo` marks a duration the caster may end early, which is how 'up to 1
+ * minute' differs from a flat '1 minute'. */
+export interface SpellDuration {
+  kind: 'instantaneous' | 'rounds' | 'minutes' | 'hours' | 'days' | 'until-dispelled' | 'special';
+  /** How many rounds, minutes, hours, or days, for those four kinds. */
+  amount?: number;
+  /** True when the printed duration reads 'up to' the amount. */
+  upTo?: boolean;
+  /** The original text, for `special`. */
+  text?: string;
+}
+
 /** A single spell, identical in shape whether it is a built-in default or a
  * GM-authored/imported entry. */
 export interface Spell {
@@ -67,11 +94,11 @@ export interface Spell {
   school: SpellSchool;
   /** Class ids that can learn the spell (its spell lists). */
   classes: string[];
-  castingTime: string;
+  castingTime: CastingTime;
   range: string;
   /** Component letters present, e.g. ['V', 'S', 'M']. */
   components: string[];
-  duration: string;
+  duration: SpellDuration;
   concentration: boolean;
   ritual: boolean;
   description: string;

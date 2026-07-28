@@ -179,6 +179,12 @@ place that resolves a participant id across the three combatant collections
   order.
 - `applyToTarget` is the single damage/heal write path, with the defeat and
   drop-to-0 transitions each logged exactly once.
+- `applyConditionToTarget` is the same for a condition a spell imposes. A
+  failed save against a spell with a `condition` adds that chip to the target,
+  with a round counter read from the spell's duration
+  (`SpellTiming.durationInRounds`), so the existing round tick clears it when
+  the spell would end. NPCs carry no conditions field, so the cast logs the
+  condition and notes that nothing is tracking it.
 - `commitEncounters(app)` and `commitNPCs(app)` are the refresh that follows a
   write to `state.encounters` or `state.npcs`. Two separate panels show the
   same entity — the Play sidebar's list and the Build rail's authoring list —

@@ -4,6 +4,7 @@ import { applyDamage, effectiveStatBlock, heal, isDefeated } from '../entities/E
 import { armorClass } from '../entities/Equipment.js';
 import { damageCharacter, restoreResource, getHP, HP_RESOURCE_ID } from '../entities/Character.js';
 import { isOnTile } from '../entities/NPC.js';
+import { addCondition } from '../entities/Conditions.js';
 import { replaceById } from '../entities/Roster.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -234,6 +235,31 @@ export function logDefeatTransition(app, prev, next) {
   if (!isDefeated(prev) && isDefeated(next)) {
     app.actions.logEvent('combat', `Defeated ${next.name}.`);
   }
+}
+
+/**
+ * Impose a condition on a combatant by id, the write path behind a spell whose
+ * failed save carries a rider. Characters and encounters both track conditions,
+ * so both get the chip; an NPC has no conditions field, and the caller's log
+ * line is all the record there is. `rounds` is the counter the round tick
+ * decrements, or null for a condition the GM clears by hand. Returns whether
+ * the chip landed, so the caller can say when it did not.
+ * @param {AppContext} app
+ * @param {string} targetId
+ * @param {string} name
+ * @param {number | null} rounds
+ * @returns {boolean}
+ */
+export function applyConditionToTarget(app, targetId, name, rounds) {
+  const found = findCombatant(app, targetId);
+  if (!found || found.kind === 'npc') return false;
+  const conditions = addCondition(found.entity.conditions, name, rounds);
+  // The two branches are the same write; they are split because each `store`
+  // accepts only its own entity type, and one call cannot satisfy both.
+  if (found.kind === 'character') found.store({ ...found.entity, conditions });
+  else found.store({ ...found.entity, conditions });
+  app.actions.markDirty();
+  return true;
 }
 
 /**

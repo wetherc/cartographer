@@ -377,6 +377,26 @@ test('normalizeLibrary repairs spells: id, defaults, effect shape, and drops nam
     'the bad die repairs, the non-object term drops',
   );
   assert.equal(lib.spells[1].effect.kind, 'utility');
+  assert.deepEqual(scorch.castingTime, { kind: 'action' }, 'absent timing gets the usual default');
+  assert.deepEqual(scorch.duration, { kind: 'instantaneous' });
+});
+
+test('normalizeLibrary reads spell timing as either a structured value or printed text', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      // A library written before timing was structured carries the printed text.
+      { name: 'Old', castingTime: '10 minutes', duration: 'Concentration, up to 1 minute' },
+      { name: 'New', castingTime: { kind: 'bonus' }, duration: { kind: 'rounds', amount: 3 } },
+      // Neither the parser nor a GM can classify this, so it survives as text.
+      { name: 'Odd', castingTime: 'one long night', duration: 'while the choir sings' },
+    ],
+  });
+  assert.deepEqual(lib.spells[0].castingTime, { kind: 'minutes', amount: 10 });
+  assert.deepEqual(lib.spells[0].duration, { kind: 'minutes', amount: 1, upTo: true });
+  assert.deepEqual(lib.spells[1].castingTime, { kind: 'bonus' });
+  assert.deepEqual(lib.spells[1].duration, { kind: 'rounds', amount: 3 });
+  assert.deepEqual(lib.spells[2].castingTime, { kind: 'special', text: 'one long night' });
+  assert.deepEqual(lib.spells[2].duration, { kind: 'special', text: 'while the choir sings' });
 });
 
 test('normalizeLibrary repairs attack/heal effects, save conditions, and scaling', () => {

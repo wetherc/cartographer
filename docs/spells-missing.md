@@ -39,9 +39,10 @@ does not have yet, and adding it today would produce an entry whose printed
 rules the app cannot honor:
 
 - **Condition-imposing spells** (Ray of Enfeeblement, Bane, Blindness/Deafness,
-  Slow, Banishment, Dominate Person, ...). The save effect's `condition` field
-  is stored and displayed, but conditions are visual chips with no rule effect.
-  Hold Person is included as the representative of this family.
+  Slow, Banishment, Dominate Person, ...). A failed save does add the condition
+  to the target as a chip, timed by the spell's duration, but a chip carries no
+  rule effect yet: nothing reads "paralyzed" and grants advantage or skips a
+  turn. Hold Person is included as the representative of this family.
 - **Concentration-dependent spells** (Bless and Hold Person ship, but the
   broader family — Haste, Invisibility, Spirit Guardians, walls and clouds —
   leans on concentration actually breaking). The `concentration` flag is
@@ -62,9 +63,9 @@ rules the app cannot honor:
   Suggestion, Divination, teleportation). Pure-prose rules; these work today
   as `utility` entries and are omitted only to keep the built-in list focused.
   They are the easiest category to add by hand.
-- **Warlock pact magic** is not modeled (warlocks currently use the standard
-  slot table), so invocation-adjacent entries beyond Eldritch Blast are left
-  out.
+- **Eldritch invocations** are not modeled, so the invocation-adjacent entries
+  beyond Eldritch Blast are left out. Pact magic itself is modeled: a warlock
+  casts from its own pact pool rather than the standard slot table.
 
 ## Closing the gap
 

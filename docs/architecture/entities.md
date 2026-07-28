@@ -151,6 +151,37 @@ folds all of the above onto an older save: a legacy scalar class becomes a
 list, a missing proficiency scaffold is created empty, a race string is
 preserved. `campaign/Campaigns.js` maps every loaded character through it.
 
+## Spell timing
+
+A `Spell` (`types/spell.ts`) lives in the library rather than in a campaign
+save, so it has no version number and no migration chain — see
+[Persistence](persistence.md) for how the library merges. That is why its two
+timing fields, `castingTime` and `duration`, are read rather than assumed.
+
+Both are structured values, not text: a `castingTime` is a kind
+(`action`, `bonus`, `reaction`, `minutes`, `hours`) with an amount for the
+counted kinds and a trigger clause for a reaction, and a `duration` is a kind
+(`instantaneous`, `rounds`, `minutes`, `hours`, `days`, `until-dispelled`) with
+an amount and an `upTo` flag for a duration the caster can end early.
+`entities/SpellTiming.js` holds the four functions over them:
+
+- `parseCastingTime` / `parseDuration` accept either the structured object or
+  the printed string an older library or a hand-written JSON file carries — `1
+  bonus action`, `10 minutes`, `Concentration, up to 1 minute`. A
+  `Concentration, ` prefix is dropped, since the spell already carries
+  `concentration` as its own flag. Anything neither parser can classify becomes
+  `{ kind: 'special', text }`, so a phrase a GM typed is never thrown away.
+- `formatCastingTime` / `formatDuration` turn a value back into the printed
+  phrasing the detail modal shows. Pass `concentration` to `formatDuration` to
+  get the SRD's own `Concentration, up to 1 minute` wording back.
+- `durationInRounds` converts a duration into a round count, which is what puts
+  a timer on a condition a spell imposes; days and open-ended durations return
+  null, meaning the GM clears the chip by hand.
+
+The authoring form and the library normalizer both route their raw values
+through the parsers, so a spell typed into the Library rail and one imported
+from a file are validated by the same code.
+
 ## The UI layer over entities
 
 `ui/CharacterSheet.js`, `ui/InventoryPanel.js`, and `ui/EncounterPanel.js` are

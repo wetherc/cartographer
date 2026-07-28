@@ -1,4 +1,5 @@
 import { formatDamage } from '../entities/Equipment.js';
+import { formatCastingTime, formatDuration } from '../entities/SpellTiming.js';
 import { capitalize } from '../util/text.js';
 import { textButton } from './buttons.js';
 import { el } from './dom.js';
@@ -81,10 +82,13 @@ export function promptSpellDetail(spell, actions, options = {}) {
           el(
             'div',
             'spell-detail__meta',
-            metaCell('Casting time', spell.castingTime || '—'),
+            metaCell('Casting time', formatCastingTime(spell.castingTime)),
             metaCell('Range', spell.range || '—'),
             metaCell('Components', spell.components.join(', ') || '—'),
-            metaCell('Duration', spell.duration || '—'),
+            metaCell(
+              'Duration',
+              formatDuration(spell.duration, { concentration: spell.concentration }),
+            ),
           ),
           summary && el('p', 'spell-detail__effect', summary),
           spell.description && el('p', 'spell-detail__description', spell.description),

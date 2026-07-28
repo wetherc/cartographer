@@ -7,7 +7,14 @@ import { npcsOnTile } from '../entities/NPC.js';
 import { castableSlotLevels } from '../entities/SpellSlots.js';
 import { toCaster, withCasterState } from '../entities/Caster.js';
 import { replaceById } from '../entities/Roster.js';
-import { findCombatant, combatantsAsTargets, asTarget, applyToTarget } from './combatants.js';
+import { durationInRounds } from '../entities/SpellTiming.js';
+import {
+  findCombatant,
+  combatantsAsTargets,
+  asTarget,
+  applyToTarget,
+  applyConditionToTarget,
+} from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
@@ -343,9 +350,16 @@ function applyOutcomes(app, spell, result) {
     return;
   }
   if (kind === 'save') {
+    // A failed save's condition rides for as long as the spell lasts, which the
+    // structured duration gives in rounds; an open-ended duration leaves the
+    // chip for the GM to clear.
+    const rounds = durationInRounds(spell.duration);
     for (const o of /** @type {any[]} */ (result.outcomes)) {
       const verdict = o.saved ? 'saves' : 'fails';
-      const cond = o.condition ? `, ${o.condition}` : '';
+      const imposed = o.condition
+        ? applyConditionToTarget(app, o.target.id, o.condition, rounds)
+        : false;
+      const cond = o.condition ? `, ${o.condition}${imposed ? '' : ' (untracked)'}` : '';
       app.actions.logEvent(
         'combat',
         `${o.target.name} ${verdict} DC ${o.dc} (${o.save.total}) — takes ${o.taken} damage${cond}.`,

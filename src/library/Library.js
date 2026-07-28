@@ -1,6 +1,7 @@
 import { WEAPON_TYPES, ITEM_TYPES, normalizeDamagePart } from '../entities/Equipment.js';
 import { clampInt } from '../util/num.js';
 import { normalizeTargetCount } from '../entities/Casting.js';
+import { parseCastingTime, parseDuration } from '../entities/SpellTiming.js';
 import {
   DEFAULT_SPELLS,
   SPELL_SCHOOLS,
@@ -394,12 +395,15 @@ function normalizeSpell(raw, id) {
     level: clampInt(raw.level, 0, 9),
     school: SPELL_SCHOOLS.includes(raw.school) ? raw.school : SPELL_SCHOOLS[0],
     classes: Array.isArray(raw.classes) ? raw.classes.filter((c) => typeof c === 'string') : [],
-    castingTime: typeof raw.castingTime === 'string' ? raw.castingTime : '1 action',
+    // Timing is structured, but an entry may carry either the object or the
+    // printed string an older library wrote; the parsers read both and keep
+    // anything they can't classify as text.
+    castingTime: parseCastingTime(raw.castingTime ?? '1 action'),
     range: typeof raw.range === 'string' ? raw.range : 'Self',
     components: Array.isArray(raw.components)
       ? raw.components.filter((c) => typeof c === 'string')
       : [],
-    duration: typeof raw.duration === 'string' ? raw.duration : 'Instantaneous',
+    duration: parseDuration(raw.duration ?? 'Instantaneous'),
     concentration: !!raw.concentration,
     ritual: !!raw.ritual,
     description: typeof raw.description === 'string' ? raw.description : '',
