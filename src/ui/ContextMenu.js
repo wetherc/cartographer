@@ -7,6 +7,8 @@
  * menu is open at a time; opening another closes the first.
  */
 
+import { el } from './dom.js';
+
 /**
  * Clamp a menu's top-left corner so the whole menu stays inside the viewport,
  * flipping off the edges rather than sliding under them.
@@ -39,16 +41,13 @@ export function openContextMenu(items, position) {
   // Return focus to whatever had it once the menu closes, matching Modal.js.
   const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
-  const menu = document.createElement('div');
-  menu.className = 'context-menu';
+  const menu = el('div', 'context-menu');
   menu.setAttribute('role', 'menu');
 
   const buttons = items.map((item) => {
-    const button = document.createElement('button');
+    const button = el('button', 'context-menu__item', item.label);
     button.type = 'button';
-    button.className = 'context-menu__item';
     button.setAttribute('role', 'menuitem');
-    button.textContent = item.label;
     button.addEventListener('click', () => {
       close();
       item.onSelect();

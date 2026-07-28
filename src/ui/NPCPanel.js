@@ -1,3 +1,4 @@
+import { el } from './dom.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountListPanel } from './listPanel.js';
 
@@ -35,39 +36,24 @@ export function mountNPCPanel(container, callbacks) {
     bodyClass: 'npc-panel__body',
     actionsClass: 'npc-panel__controls',
     buildBody: (npc) => {
-      const parts = [];
+      const getLocationLabel = callbacks.getLocationLabel;
+      const head = el(
+        'div',
+        'npc-panel__head',
+        el('span', 'npc-panel__name', npc.name),
+        el('span', `badge npc-panel__badge npc-panel__badge--${npc.disposition}`, npc.disposition),
+      );
 
-      const head = document.createElement('div');
-      head.className = 'npc-panel__head';
-      const name = document.createElement('span');
-      name.className = 'npc-panel__name';
-      name.textContent = npc.name;
-      const badge = document.createElement('span');
-      badge.className = `badge npc-panel__badge npc-panel__badge--${npc.disposition}`;
-      badge.textContent = npc.disposition;
-      head.append(name, badge);
-      parts.push(head);
-
-      if (npc.role) {
-        const role = document.createElement('span');
-        role.className = 'npc-panel__role';
-        role.textContent = npc.role;
-        parts.push(role);
-      }
-      if (callbacks.getLocationLabel) {
-        const location = document.createElement('span');
-        location.className = 'npc-panel__location';
-        location.textContent = callbacks.getLocationLabel(npc);
-        parts.push(location);
-      }
-      if (npc.notes) {
-        const notes = document.createElement('span');
-        notes.className = 'npc-panel__notes';
-        notes.textContent = npc.notes;
-        parts.push(notes);
-      }
-
-      return parts;
+      // Role, location, and notes are each optional; the cast is needed because
+      // `filter(Boolean)` does not narrow the array's union for the typechecker.
+      return /** @type {Node[]} */ (
+        [
+          head,
+          npc.role && el('span', 'npc-panel__role', npc.role),
+          getLocationLabel && el('span', 'npc-panel__location', getLocationLabel(npc)),
+          npc.notes && el('span', 'npc-panel__notes', npc.notes),
+        ].filter(Boolean)
+      );
     },
     actions: (npc, ctx) => {
       if (!ctx.gm) return [];

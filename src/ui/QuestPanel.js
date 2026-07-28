@@ -1,3 +1,4 @@
+import { el } from './dom.js';
 import { groupByStatus } from '../quest/Quests.js';
 import { icon } from './icons.js';
 import { isGM } from '../view/ViewRole.js';
@@ -59,24 +60,18 @@ export function mountQuestPanel(container, callbacks) {
         );
       } else {
         // Players see the status glyph without the affordance to flip it.
-        const status = document.createElement('span');
-        status.className = 'quest-panel__status';
-        status.appendChild(icon(done ? 'check' : 'add'));
-        toggle = status;
+        toggle = el('span', 'quest-panel__status', icon(done ? 'check' : 'add'));
       }
 
-      const body = document.createElement('div');
-      body.className = 'quest-panel__body';
-      const title = document.createElement('span');
-      title.className = 'quest-panel__title';
-      title.textContent = quest.title;
-      body.appendChild(title);
-      if (quest.notes) {
-        const notes = document.createElement('span');
-        notes.className = 'quest-panel__notes';
-        notes.textContent = quest.notes;
-        body.appendChild(notes);
-      }
+      const body = el(
+        'div',
+        'quest-panel__body',
+        el('span', 'quest-panel__title', quest.title),
+        // A ternary rather than `&&`: an empty string is a legal child that `el`
+        // would append as an empty text node, where absent notes should add
+        // nothing at all.
+        quest.notes ? el('span', 'quest-panel__notes', quest.notes) : null,
+      );
 
       return [toggle, body];
     },

@@ -8,6 +8,7 @@ import {
 } from '../entities/Equipment.js';
 import { activeEquipment } from '../library/Library.js';
 import { buildDamageEditor, buildEffectsEditor } from './ItemFormEditors.js';
+import { el } from './dom.js';
 import {
   labeled,
   fieldRow,
@@ -107,9 +108,7 @@ export function buildItemForm({
   const baseACField = labeled('Base AC', baseACInput);
 
   // Shields are always +2 AC (5e), so no input — just say so.
-  const shieldNote = document.createElement('span');
-  shieldNote.className = 'inventory-panel__note';
-  shieldNote.textContent = `+${SHIELD_AC} AC`;
+  const shieldNote = el('span', 'inventory-panel__note', `+${SHIELD_AC} AC`);
   const shieldField = labeled('Shield', shieldNote);
 
   // Non-armor equippables (helmets, rings, bows...) may carry a flat AC

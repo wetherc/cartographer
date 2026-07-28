@@ -1,4 +1,5 @@
 import { emptyState, iconButton, textButton } from './buttons.js';
+import { el } from './dom.js';
 
 /**
  * The list panel every rail is built from. Six panels used to hand-roll the
@@ -109,8 +110,7 @@ import { emptyState, iconButton, textButton } from './buttons.js';
  * @returns {{ update: () => void }}
  */
 export function mountListPanel(container, options) {
-  const root = document.createElement('div');
-  root.className = options.className;
+  const root = el('div', options.className);
   container.appendChild(root);
 
   const placement = options.addPlacement ?? 'inline';
@@ -147,8 +147,7 @@ export function mountListPanel(container, options) {
    * @returns {HTMLElement}
    */
   function buildRow(entry, ctx) {
-    const row = document.createElement('div');
-    row.className = options.rowClass ?? `${options.className}__row`;
+    const row = el('div', options.rowClass ?? `${options.className}__row`);
     for (const modifier of options.rowModifiers?.(entry, ctx.gm) ?? []) {
       if (modifier) row.classList.add(modifier);
     }
@@ -157,10 +156,7 @@ export function mountListPanel(container, options) {
     /** @type {Node[]} */
     const parts = [];
     if (options.bodyClass) {
-      const wrapper = document.createElement('div');
-      wrapper.className = options.bodyClass;
-      wrapper.append(...(Array.isArray(body) ? body : [body]));
-      parts.push(wrapper);
+      parts.push(el('div', options.bodyClass, ...(Array.isArray(body) ? body : [body])));
     } else {
       parts.push(...(Array.isArray(body) ? body : [body]));
     }
@@ -169,10 +165,7 @@ export function mountListPanel(container, options) {
       .filter(/** @returns {spec is RowAction<T>} */ (spec) => Boolean(spec))
       .map((spec) => action(spec, entry));
     if (buttons.length > 0 && options.actionsClass) {
-      const wrapper = document.createElement('div');
-      wrapper.className = options.actionsClass;
-      wrapper.append(...buttons);
-      parts.push(wrapper);
+      parts.push(el('div', options.actionsClass, ...buttons));
     } else {
       parts.push(...buttons);
     }
@@ -182,10 +175,7 @@ export function mountListPanel(container, options) {
         ? options.headClass(entry, ctx.gm)
         : (options.headClass ?? null);
     if (headClass) {
-      const head = document.createElement('div');
-      head.className = headClass;
-      head.append(...parts);
-      row.appendChild(head);
+      row.appendChild(el('div', headClass, ...parts));
     } else {
       row.append(...parts);
     }
@@ -248,14 +238,10 @@ export function mountListPanel(container, options) {
         lastGroup = group;
         host = root;
         if (options.groupWrapperClass) {
-          host = document.createElement('div');
-          host.className = options.groupWrapperClass;
+          host = el('div', options.groupWrapperClass);
           root.appendChild(host);
         }
-        const heading = document.createElement('h3');
-        heading.className = options.groupHeadingClass ?? 'section-label';
-        heading.textContent = group;
-        host.appendChild(heading);
+        host.appendChild(el('h3', options.groupHeadingClass ?? 'section-label', group));
       }
       host.appendChild(buildRow(entry, ctx));
     }
@@ -289,10 +275,7 @@ export function mountListPanel(container, options) {
  * @returns {HTMLElement}
  */
 function actionsRow(buttons, pinned) {
-  const row = document.createElement('div');
-  row.className = pinned ? 'panel-actions panel-actions--pinned' : 'panel-actions';
-  row.append(...buttons);
-  return row;
+  return el('div', pinned ? 'panel-actions panel-actions--pinned' : 'panel-actions', ...buttons);
 }
 
 /**

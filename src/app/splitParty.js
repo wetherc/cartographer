@@ -5,6 +5,7 @@
  * which is what `party/CharacterTokens.js` tracks.
  */
 
+import { el } from '../ui/dom.js';
 import { promptModal } from '../ui/Modal.js';
 import { isSplit, characterPosition, recallAll } from '../party/CharacterTokens.js';
 
@@ -22,15 +23,11 @@ import { isSplit, characterPosition, recallAll } from '../party/CharacterTokens.
 export function wireSplitParty(app, { container, refreshRoster }) {
   const { state } = app;
 
-  const field = document.createElement('label');
-  field.className = 'party-split';
-  const toggle = document.createElement('input');
+  const toggle = el('input');
   toggle.type = 'checkbox';
   toggle.checked = state.splitParty;
   toggle.setAttribute('aria-label', 'Allow splitting the party');
-  const caption = document.createElement('span');
-  caption.textContent = 'Allow splitting the party';
-  field.append(toggle, caption);
+  const field = el('label', 'party-split', toggle, el('span', '', 'Allow splitting the party'));
   container.appendChild(field);
 
   /** Refresh everything the switch changes: tokens/labels, roster place buttons. */

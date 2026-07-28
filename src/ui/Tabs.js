@@ -1,3 +1,5 @@
+import { classNames, el } from './dom.js';
+
 /**
  * Wire an accessible tab strip following the ARIA tabs pattern. The container
  * holds a `[role=tablist]` of `[role=tab]` buttons (each `aria-controls` its
@@ -91,8 +93,7 @@ export function buildTabs(options) {
   /** @param {string} id */
   const tabId = (id) => `${prefix}-tab-${id}`;
 
-  const tablist = document.createElement('div');
-  tablist.className = options.className ? `tabs ${options.className}` : 'tabs';
+  const tablist = el('div', classNames(['tabs', options.className]));
   tablist.setAttribute('role', 'tablist');
   tablist.setAttribute('aria-label', options.ariaLabel);
 
@@ -107,14 +108,12 @@ export function buildTabs(options) {
     spec.panel.setAttribute('aria-labelledby', tabId(spec.id));
     panels.set(panelId, spec.panel);
 
-    const tab = document.createElement('button');
+    const tab = el('button', 'tabs__tab', spec.label);
     tab.type = 'button';
     tab.id = tabId(spec.id);
-    tab.className = 'tabs__tab';
     tab.setAttribute('role', 'tab');
     tab.setAttribute('aria-controls', panelId);
     tab.setAttribute('aria-selected', String(spec.id === selected));
-    tab.textContent = spec.label;
     tablist.appendChild(tab);
   }
 

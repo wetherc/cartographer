@@ -1,5 +1,6 @@
 import { icon } from './icons.js';
 import { iconButton } from './buttons.js';
+import { el } from './dom.js';
 import { buildWorldTree } from '../map/WorldTree.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -28,8 +29,7 @@ import { buildWorldTree } from '../map/WorldTree.js';
  * @returns {{ update: () => void }}
  */
 export function mountWorldTree(container, opts) {
-  const root = document.createElement('nav');
-  root.className = 'world-tree';
+  const root = el('nav', 'world-tree');
   root.setAttribute('aria-label', 'World hierarchy');
   container.appendChild(root);
 
@@ -46,10 +46,8 @@ export function mountWorldTree(container, opts) {
    */
   function collapseToggle(treeNode, childList) {
     const nodeId = treeNode.node.id;
-    const toggle = document.createElement('button');
+    const toggle = el('button', 'world-tree__toggle', icon('chevron', { size: 14 }));
     toggle.type = 'button';
-    toggle.className = 'world-tree__toggle';
-    toggle.appendChild(icon('chevron', { size: 14 }));
 
     /** @param {boolean} isCollapsed */
     const apply = (isCollapsed) => {
@@ -74,79 +72,51 @@ export function mountWorldTree(container, opts) {
 
   /** @param {WorldTreeNode} treeNode @returns {HTMLLIElement} */
   function renderNode(treeNode) {
-    const li = document.createElement('li');
-    li.className = 'world-tree__item';
-
-    const row = document.createElement('div');
-    row.className = 'world-tree__row';
-
     // Built before the row so the chevron can close over it. A collapsed
     // subtree is still rendered, just hidden.
-    /** @type {HTMLUListElement | null} */
-    let childList = null;
-    if (treeNode.children.length) {
-      childList = document.createElement('ul');
-      childList.className = 'world-tree__children';
-      for (const child of treeNode.children) childList.appendChild(renderNode(child));
-    }
+    const childList = treeNode.children.length
+      ? el('ul', 'world-tree__children', ...treeNode.children.map(renderNode))
+      : null;
 
-    // Collapsible trees give every row a fixed-width toggle slot so labels
-    // line up; only rows with children get a live chevron in that slot.
-    if (opts.collapsible) {
-      if (childList) {
-        row.appendChild(collapseToggle(treeNode, childList));
-      } else {
-        const spacer = document.createElement('span');
-        spacer.className = 'world-tree__toggle world-tree__toggle--leaf';
-        row.appendChild(spacer);
-      }
-    }
-
-    const select = document.createElement('button');
+    const select = el('button', 'row-select', treeNode.node.name);
     select.type = 'button';
-    select.className = 'row-select';
-    select.textContent = treeNode.node.name;
     if (treeNode.node.id === opts.getCurrentId()) {
       select.classList.add('row-select--current');
       select.setAttribute('aria-current', 'true');
     }
     select.addEventListener('click', () => opts.onSelect(treeNode.node.id));
-    row.appendChild(select);
 
-    if (opts.onAddChild) {
-      row.appendChild(
+    const row = el(
+      'div',
+      'world-tree__row',
+      // Collapsible trees give every row a fixed-width toggle slot so labels
+      // line up; only rows with children get a live chevron in that slot.
+      opts.collapsible &&
+        (childList
+          ? collapseToggle(treeNode, childList)
+          : el('span', 'world-tree__toggle world-tree__toggle--leaf')),
+      select,
+      opts.onAddChild &&
         iconButton(
           'add',
           `Add a child under ${treeNode.node.name}`,
           () => opts.onAddChild?.(treeNode.node.id),
           { className: 'world-tree__action' },
         ),
-      );
-    }
-
-    if (opts.onEdit) {
-      row.appendChild(
+      opts.onEdit &&
         iconButton('edit', `Edit ${treeNode.node.name}`, () => opts.onEdit?.(treeNode.node.id), {
           className: 'world-tree__action',
         }),
-      );
-    }
-
-    if (opts.onDelete) {
-      row.appendChild(
+      opts.onDelete &&
         iconButton(
           'remove',
           `Delete ${treeNode.node.name}`,
           () => opts.onDelete?.(treeNode.node.id),
           { variant: 'danger', className: 'world-tree__action' },
         ),
-      );
-    }
+    );
 
-    li.appendChild(row);
-    if (childList) li.appendChild(childList);
-
-    return li;
+    return el('li', 'world-tree__item', row, childList);
   }
 
   /** @type {string | null} what the tree on screen was built from */
@@ -175,12 +145,9 @@ export function mountWorldTree(container, opts) {
     shownSignature = signature;
 
     root.innerHTML = '';
-    const list = document.createElement('ul');
-    list.className = 'world-tree__children world-tree__root';
-    for (const treeNode of buildWorldTree(nodes)) {
-      list.appendChild(renderNode(treeNode));
-    }
-    root.appendChild(list);
+    root.appendChild(
+      el('ul', 'world-tree__children world-tree__root', ...buildWorldTree(nodes).map(renderNode)),
+    );
   }
 
   update();

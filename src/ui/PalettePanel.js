@@ -1,5 +1,6 @@
 import { icon } from './icons.js';
 import { textButton } from './buttons.js';
+import { el } from './dom.js';
 import { allowsPaletteType } from '../map/NodeKinds.js';
 import { isOverlayType } from '../map/TilePalette.js';
 import { wireDisclosure } from './Disclosure.js';
@@ -32,8 +33,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   let brush = null;
   let scale = 1;
 
-  const root = document.createElement('div');
-  root.className = 'palette';
+  const root = el('div', 'palette');
   container.appendChild(root);
 
   /** @type {HTMLElement[]} */
@@ -43,27 +43,26 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   const inspectBtnRef = { el: /** @type {HTMLElement | null} */ (null) };
 
   /**
-   * @param {HTMLElement} el
+   * @param {HTMLElement} node
    * @param {Brush} value
    */
-  function bindSelect(el, value) {
-    selectables.push(el);
-    el.addEventListener('click', () => select(value, el));
+  function bindSelect(node, value) {
+    selectables.push(node);
+    node.addEventListener('click', () => select(value, node));
   }
 
   /**
    * @param {Brush} value
-   * @param {HTMLElement} el
+   * @param {HTMLElement} node
    */
-  function select(value, el) {
+  function select(value, node) {
     brush = value;
-    for (const s of selectables) s.classList.toggle('palette__item--active', s === el);
+    for (const s of selectables) s.classList.toggle('palette__item--active', s === node);
     onBrushChange(brush);
   }
 
   // Tools row: Inspect (default) and Erase.
-  const tools = document.createElement('div');
-  tools.className = 'palette__tools';
+  const tools = el('div', 'palette__tools');
 
   /**
    * @param {string} label
@@ -72,13 +71,13 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
    * @param {string} [variant]
    */
   function toolButton(label, glyph, value, variant) {
-    const el = textButton(label, () => select(value, el), {
+    const node = textButton(label, () => select(value, node), {
       icon: glyph,
       variant,
       className: 'palette__item',
     });
-    selectables.push(el);
-    return el;
+    selectables.push(node);
+    return node;
   }
 
   // Inspect is the starting brush, so it carries the active styling from mount.
@@ -95,12 +94,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   root.appendChild(tools);
 
   // Scale row: how large the next painted tile's art draws (1x1 up to 3x3).
-  const scaleRow = document.createElement('div');
-  scaleRow.className = 'palette__scale';
-  const scaleLabel = document.createElement('span');
-  scaleLabel.className = 'palette__scale-label';
-  scaleLabel.textContent = 'Size';
-  scaleRow.appendChild(scaleLabel);
+  const scaleRow = el('div', 'palette__scale', el('span', 'palette__scale-label', 'Size'));
   /** @type {HTMLButtonElement[]} */
   const scaleButtons = [];
   for (const n of [1, 2, 3]) {
@@ -148,41 +142,35 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
           ? 'Interior'
           : 'Buildings';
 
-  const sectionsEl = document.createElement('div');
-  sectionsEl.className = 'palette__sections';
+  const sectionsEl = el('div', 'palette__sections');
   /** @type {Map<string, { wrap: HTMLElement, grid: HTMLElement, swatches: HTMLElement[] }>} */
   const sections = new Map();
   for (const label of ['Terrain', 'Overlays', 'Buildings', 'Interior']) {
-    const wrap = document.createElement('div');
-    wrap.className = 'palette__section';
-
-    const head = document.createElement('button');
+    const head = el(
+      'button',
+      'disclosure section-label',
+      el('span', '', label),
+      icon('chevron', { className: 'disclosure__chevron' }),
+    );
     head.type = 'button';
-    head.className = 'disclosure section-label';
-    const title = document.createElement('span');
-    title.textContent = label;
-    head.append(title, icon('chevron', { className: 'disclosure__chevron' }));
 
-    const grid = document.createElement('div');
-    grid.className = 'palette__grid';
+    const grid = el('div', 'palette__grid');
+    const wrap = el('div', 'palette__section', head, grid);
 
     wireDisclosure(head, grid, { expanded: label === 'Terrain' });
-    wrap.append(head, grid);
     sectionsEl.appendChild(wrap);
     sections.set(label, { wrap, grid, swatches: [] });
   }
 
   for (const entry of palette.listAll()) {
-    const swatch = document.createElement('button');
-    swatch.type = 'button';
-    swatch.className = 'palette__swatch palette__item';
-    swatch.setAttribute('aria-label', entry.label);
-    swatch.draggable = true;
-
-    const img = document.createElement('img');
+    const img = el('img');
     img.src = `/${entry.imageRef}`;
     img.alt = '';
-    swatch.appendChild(img);
+
+    const swatch = el('button', 'palette__swatch palette__item', img);
+    swatch.type = 'button';
+    swatch.setAttribute('aria-label', entry.label);
+    swatch.draggable = true;
 
     if (tooltip) {
       swatch.addEventListener('pointermove', (event) => {
@@ -216,14 +204,14 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
    * @param {string} kind
    */
   function setKind(kind) {
-    for (const { el, type } of swatchEntries) {
-      el.hidden = !allowsPaletteType(kind, type);
+    for (const { el: swatch, type } of swatchEntries) {
+      swatch.hidden = !allowsPaletteType(kind, type);
     }
     // A section with nothing visible for this kind hides wholesale (Interior
     // on outdoor nodes; Terrain/Roads/Buildings inside), so no empty
     // disclosure headers linger.
     for (const { wrap, swatches } of sections.values()) {
-      wrap.hidden = swatches.every((el) => el.hidden);
+      wrap.hidden = swatches.every((swatch) => swatch.hidden);
     }
     if (
       brush &&

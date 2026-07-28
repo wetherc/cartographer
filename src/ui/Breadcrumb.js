@@ -1,3 +1,4 @@
+import { el } from './dom.js';
 import { icon } from './icons.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -12,8 +13,7 @@ import { icon } from './icons.js';
  * @returns {{ update: (nodes: MapNode[]) => void }}
  */
 export function mountBreadcrumb(container, onSelect) {
-  const root = document.createElement('nav');
-  root.className = 'breadcrumb';
+  const root = el('nav', 'breadcrumb');
   root.setAttribute('aria-label', 'Map location');
   container.appendChild(root);
 
@@ -35,16 +35,14 @@ export function mountBreadcrumb(container, onSelect) {
       /** @type {HTMLElement} */
       let crumb;
       if (!isLast) {
-        const button = document.createElement('button');
+        const button = el('button', 'breadcrumb__crumb', node.name);
         button.type = 'button';
         button.addEventListener('click', () => onSelect(node.id));
         crumb = button;
       } else {
-        crumb = document.createElement('span');
+        crumb = el('span', 'breadcrumb__crumb', node.name);
         crumb.setAttribute('aria-current', 'location');
       }
-      crumb.className = 'breadcrumb__crumb';
-      crumb.textContent = node.name;
       root.appendChild(crumb);
     });
   }

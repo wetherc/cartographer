@@ -31,48 +31,39 @@ export function mountDiceTray(container, opts = {}) {
   /** @type {(() => void)[]} re-syncs each stepper's count readout to the selection */
   const refreshers = [];
 
-  const summary = document.createElement('button');
-  summary.type = 'button';
-  summary.className = 'disclosure dice-tray__summary';
-  summary.setAttribute('aria-label', 'Dice tray');
-  summary.append(
+  const summary = el(
+    'button',
+    'disclosure dice-tray__summary',
     icon('d20', { size: 28, className: 'dice-tray__d20' }),
     icon('chevron', { className: 'disclosure__chevron' }),
   );
+  summary.type = 'button';
+  summary.setAttribute('aria-label', 'Dice tray');
   container.appendChild(summary);
 
-  const root = document.createElement('div');
-  root.className = 'dice-tray';
+  const root = el('div', 'dice-tray');
   const disclosure = wireDisclosure(summary, root);
 
   /** @param {string} label @param {number} delta @param {() => number} read @param {(n: number) => void} apply */
   const stepper = (label, delta, read, apply) => {
-    const row = document.createElement('div');
-    row.className = 'dice-tray__row';
-
-    const name = document.createElement('span');
-    name.className = 'dice-tray__label';
-    name.textContent = label;
+    const name = el('span', 'dice-tray__label', label);
 
     const minus = iconButton('minus', `Decrease ${label}`, () => {
       apply(read() - delta);
       count.textContent = String(read());
     });
 
-    const count = document.createElement('span');
-    count.className = 'dice-tray__count';
-    count.textContent = String(read());
+    const count = el('span', 'dice-tray__count', String(read()));
 
     const plus = iconButton('plus', `Increase ${label}`, () => {
       apply(read() + delta);
       count.textContent = String(read());
     });
 
-    row.append(name, minus, count, plus);
     refreshers.push(() => {
       count.textContent = String(read());
     });
-    return row;
+    return el('div', 'dice-tray__row', name, minus, count, plus);
   };
 
   for (const die of DIE_TYPES) {
@@ -102,11 +93,7 @@ export function mountDiceTray(container, opts = {}) {
   // Advantage/disadvantage segmented toggle: rolls every d20 twice, keeping
   // the higher (advantage) or lower (disadvantage) die. The choice is sticky
   // until changed, so a GM can set it once and attack through it.
-  const modeRow = document.createElement('div');
-  modeRow.className = 'dice-tray__row';
-  const modeName = document.createElement('span');
-  modeName.className = 'dice-tray__label';
-  modeName.textContent = 'd20 mode';
+  const modeName = el('span', 'dice-tray__label', 'd20 mode');
   const modeSwitch = segSwitch({
     ariaLabel: 'Roll d20s normally, with advantage, or with disadvantage',
     options: MODES.map((mode) => ({ value: mode, label: capitalize(mode) })),
@@ -118,8 +105,7 @@ export function mountDiceTray(container, opts = {}) {
   // The selection is the value of record here, and a programmatic roll writes
   // straight to it, so the buttons re-read it rather than holding it.
   refreshers.push(() => modeSwitch.sync(selection.mode ?? 'normal'));
-  modeRow.append(modeName, modeSwitch.element);
-  root.appendChild(modeRow);
+  root.appendChild(el('div', 'dice-tray__row', modeName, modeSwitch.element));
 
   // Optional difficulty target: when set, each roll also reports success or
   // failure against it (meets-it-beats-it), in the tray and travelogue alike.
@@ -138,8 +124,7 @@ export function mountDiceTray(container, opts = {}) {
     className: 'dice-tray__roll',
   });
 
-  const resultEl = document.createElement('div');
-  resultEl.className = 'dice-tray__result';
+  const resultEl = el('div', 'dice-tray__result');
 
   function performRoll() {
     const result = roll(selection);

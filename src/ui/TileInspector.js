@@ -30,8 +30,7 @@ const POI_TYPES = ['', 'settlement', 'landmark', 'dungeon', 'shop', 'quest', 'cu
  * @returns {{ setTile: (tile: Tile | null, editable?: boolean) => void }}
  */
 export function mountTileInspector(container, opts) {
-  const root = document.createElement('div');
-  root.className = 'tile-inspector';
+  const root = el('div', 'tile-inspector');
   container.appendChild(root);
 
   /** @type {Tile | null} */
@@ -40,11 +39,9 @@ export function mountTileInspector(container, opts) {
 
   const empty = emptyState('Select a tile to inspect it.');
 
-  const form = document.createElement('div');
-  form.className = 'tile-inspector__form';
+  const form = el('div', 'tile-inspector__form');
 
-  const coordLabel = document.createElement('div');
-  coordLabel.className = 'tile-inspector__coord';
+  const coordLabel = el('div', 'tile-inspector__coord');
 
   // POI type
   const typeSelect = select(

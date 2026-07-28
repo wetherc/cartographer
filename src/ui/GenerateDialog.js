@@ -75,8 +75,7 @@ export function generateDialog(options) {
         el('label', 'modal__field', 'Seed', el('div', 'generate-dialog__seed', seedInput, reroll)),
       );
 
-      const canvas = document.createElement('canvas');
-      canvas.className = 'generate-dialog__preview';
+      const canvas = el('canvas', 'generate-dialog__preview');
       canvas.width = 480;
       canvas.height = 480;
       canvas.setAttribute('role', 'img');

@@ -1,4 +1,5 @@
 import { mountStatBlockBar } from './StatBlockBar.js';
+import { el } from './dom.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { mountListPanel } from './listPanel.js';
 
@@ -43,16 +44,13 @@ export function mountBuildEncounterPanel(container, callbacks) {
       /** @type {HTMLElement} */
       let label;
       if (encounter.location) {
-        label = document.createElement('button');
+        label = el('button', 'build-encounters__label build-encounters__label--link', text);
         label.setAttribute('type', 'button');
-        label.className = 'build-encounters__label build-encounters__label--link';
         label.title = 'Show on map';
         label.addEventListener('click', () => callbacks.onFocus(encounter));
       } else {
-        label = document.createElement('span');
-        label.className = 'build-encounters__label';
+        label = el('span', 'build-encounters__label', text);
       }
-      label.textContent = text;
       return label;
     },
     actions: (encounter) => [
@@ -74,14 +72,11 @@ export function mountBuildEncounterPanel(container, callbacks) {
       // The enemy's gear at a glance; both pieces are edited through the same
       // form the edit button opens.
       if (encounter.weapon || encounter.armor) {
-        const gear = document.createElement('div');
-        gear.className = 'build-encounters__gear';
         const parts = [];
         if (encounter.weapon)
           parts.push(`${encounter.weapon.name} ${formatDamage(encounter.weapon.damage)}`);
         if (encounter.armor) parts.push(`${encounter.armor.name} +${encounter.armor.acBonus} AC`);
-        gear.textContent = parts.join(' | ');
-        row.appendChild(gear);
+        row.appendChild(el('div', 'build-encounters__gear', parts.join(' | ')));
       }
 
       // Base stat authoring lives here: every stat (the six abilities + AC)

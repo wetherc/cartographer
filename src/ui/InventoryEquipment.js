@@ -35,8 +35,7 @@ import { select } from './formFields.js';
  */
 export function buildEquipment(getCharacter, commit, playable) {
   const character = getCharacter();
-  const section = document.createElement('div');
-  section.className = 'inventory-panel__equipment';
+  const section = el('div', 'inventory-panel__equipment');
   for (const slot of EQUIPMENT_SLOTS) {
     const equippedId = getEquipped(character, slot.key)?.id ?? '';
     const eligible = character.inventory

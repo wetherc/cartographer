@@ -1,6 +1,7 @@
 import { addStatModifier, applyDamage, heal, isDefeated } from '../entities/Encounter.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { mountStatBlockBar } from './StatBlockBar.js';
+import { el } from './dom.js';
 import { numberField } from './formFields.js';
 import { mountListPanel } from './listPanel.js';
 import { buildTabs } from './Tabs.js';
@@ -51,8 +52,7 @@ import { clampInt } from '../util/num.js';
  * @returns {{ update: () => void }}
  */
 export function mountEncounterPanel(container, callbacks) {
-  const root = document.createElement('div');
-  root.className = 'encounter-panel';
+  const root = el('div', 'encounter-panel');
   container.appendChild(root);
 
   /** whether the previous update had an active encounter, so gaining one
@@ -87,11 +87,13 @@ export function mountEncounterPanel(container, callbacks) {
     // A bound encounter shows its tile coordinates so the GM can tell two
     // same-named foes apart and see where in the region it's staged.
     const coords = encounter.location ? ` @ (${encounter.location.tileId})` : '';
-    const label = document.createElement('span');
-    label.className = 'encounter-panel__label';
-    label.textContent = ctx.gm
-      ? `${encounter.name} (${encounter.currentHP}/${encounter.maxHP})${coords}`
-      : `${encounter.name} — ${hpBand(encounter.currentHP, encounter.maxHP)}`;
+    const label = el(
+      'span',
+      'encounter-panel__label',
+      ctx.gm
+        ? `${encounter.name} (${encounter.currentHP}/${encounter.maxHP})${coords}`
+        : `${encounter.name} — ${hpBand(encounter.currentHP, encounter.maxHP)}`,
+    );
 
     // Player view stops at the name and its status band: no HP numbers, no
     // damage/heal/delete controls, no condition editing, no add button.
@@ -205,8 +207,8 @@ export function mountEncounterPanel(container, callbacks) {
     addPlacement: /** @type {const} */ ('trailing'),
   };
 
-  const activePanel = document.createElement('div');
-  const nearbyPanel = document.createElement('div');
+  const activePanel = el('div');
+  const nearbyPanel = el('div');
   const tabs = buildTabs({
     className: 'encounter-panel__tabs',
     ariaLabel: 'Active and nearby encounters',

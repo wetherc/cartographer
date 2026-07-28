@@ -1,6 +1,7 @@
 import { addItem } from '../entities/Character.js';
 import { ITEM_TYPES, filterItems } from '../entities/Equipment.js';
 import { emptyState } from './buttons.js';
+import { el } from './dom.js';
 import { select, textField } from './formFields.js';
 import { buildItemForm } from './ItemForm.js';
 import { buildEquipment } from './InventoryEquipment.js';
@@ -141,11 +142,6 @@ export function mountInventoryPanel(
    * @returns {HTMLElement}
    */
   function buildInventoryTab(playable) {
-    const panel = document.createElement('div');
-
-    const controls = document.createElement('div');
-    controls.className = 'inventory-panel__controls';
-
     const searchInput = textField(searchQuery, 'Search items', {
       type: 'search',
       className: 'inventory-panel__search',
@@ -166,11 +162,9 @@ export function mountInventoryPanel(
       { ariaLabel: 'Sort items' },
     );
 
-    controls.append(searchInput, filterSelect, sortSelect);
-    panel.appendChild(controls);
+    const controls = el('div', 'inventory-panel__controls', searchInput, filterSelect, sortSelect);
 
-    const list = document.createElement('div');
-    list.className = 'inventory-panel__list';
+    const list = el('div', 'inventory-panel__list');
     // Reads the character afresh on every call rather than closing over the one
     // the tab was built for, so a consume or a give can refill the list without
     // rebuilding the controls above it.
@@ -193,7 +187,8 @@ export function mountInventoryPanel(
     };
     refillList = fillList;
     fillList();
-    panel.appendChild(list);
+
+    const panel = el('div', '', controls, list);
 
     searchInput.addEventListener('input', () => {
       searchQuery = searchInput.value;

@@ -1,4 +1,4 @@
-import { mustGetElement } from '../ui/dom.js';
+import { el, mustGetElement } from '../ui/dom.js';
 import { textButton } from '../ui/buttons.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -19,17 +19,13 @@ export function maybeShowOnboarding(app) {
     app.state.characters.length === 0;
   if (!blank || localStorage.getItem(ONBOARDED_KEY)) return;
 
-  const overlay = document.createElement('div');
-  overlay.className = 'onboarding';
-  const card = document.createElement('div');
-  card.className = 'onboarding__card card';
-  const heading = document.createElement('h2');
-  heading.className = 'card__title';
-  heading.textContent = 'Welcome, GM';
-  const blurb = document.createElement('p');
-  blurb.className = 'onboarding__blurb';
-  blurb.textContent = 'Your world is empty. Three ways to start:';
-  card.append(heading, blurb);
+  const card = el(
+    'div',
+    'onboarding__card card',
+    el('h2', 'card__title', 'Welcome, GM'),
+    el('p', 'onboarding__blurb', 'Your world is empty. Three ways to start:'),
+  );
+  const overlay = el('div', 'onboarding', card);
 
   const dismiss = () => {
     localStorage.setItem(ONBOARDED_KEY, '1');
@@ -63,6 +59,5 @@ export function maybeShowOnboarding(app) {
 
   card.appendChild(textButton('Dismiss', dismiss, { className: 'onboarding__skip' }));
 
-  overlay.appendChild(card);
   mustGetElement('map-viewport').appendChild(overlay);
 }

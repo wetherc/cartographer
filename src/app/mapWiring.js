@@ -10,7 +10,7 @@ import { createNodeActions } from './nodeActions.js';
 import { createMapAuthoring } from './mapAuthoring.js';
 import { createMapTravel } from './mapTravel.js';
 import { resyncMapViews } from './mapResync.js';
-import { mustGetElement } from '../ui/dom.js';
+import { el, mustGetElement } from '../ui/dom.js';
 import { mountBreadcrumb } from '../ui/Breadcrumb.js';
 import { mountWorldTree } from '../ui/WorldTree.js';
 import { mountPalettePanel } from '../ui/PalettePanel.js';
@@ -343,8 +343,7 @@ export function wireMapView(app) {
   // A visually-hidden live region that narrates the map <canvas> for screen
   // readers, since the canvas pixels are opaque to assistive tech.
   // aria-live="polite" announces an update without interrupting.
-  const mapDescription = document.createElement('div');
-  mapDescription.className = 'sr-only';
+  const mapDescription = el('div', 'sr-only');
   mapDescription.setAttribute('role', 'status');
   mapDescription.setAttribute('aria-live', 'polite');
   mustGetElement('map-viewport').appendChild(mapDescription);

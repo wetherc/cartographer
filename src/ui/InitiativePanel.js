@@ -2,6 +2,7 @@ import { currentParticipant } from '../combat/Initiative.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { isGM } from '../view/ViewRole.js';
 import { textButton } from './buttons.js';
+import { el } from './dom.js';
 import { sameDeps } from '../view/SheetStructure.js';
 
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
@@ -86,8 +87,7 @@ export function initiativeDeps(state, gm, mayAct, strip) {
  * @returns {{ update: () => void }}
  */
 export function mountInitiativePanel(container, callbacks) {
-  const root = document.createElement('div');
-  root.className = 'initiative-panel';
+  const root = el('div', 'initiative-panel');
   container.appendChild(root);
 
   /** @typedef {{ state: CombatState, views: (ParticipantView | null)[] }} Frame */
@@ -154,8 +154,7 @@ export function mountInitiativePanel(container, callbacks) {
     root.innerHTML = '';
     writers = [];
 
-    const header = document.createElement('div');
-    header.className = 'initiative-panel__header';
+    const header = el('div', 'initiative-panel__header');
     root.appendChild(header);
     writers.push((frame) => {
       header.textContent = `Round ${frame.state.round}`;
@@ -163,16 +162,11 @@ export function mountInitiativePanel(container, callbacks) {
 
     const active = currentParticipant(state);
     state.order.forEach((participant, i) => {
-      const row = document.createElement('div');
+      const name = el('span', 'initiative-panel__name');
+      const init = el('span', 'initiative-panel__init-readout');
+      // The row's own class names the side and the turn, so a writer sets it.
+      const row = el('div', '', name, init);
       root.appendChild(row);
-
-      const name = document.createElement('span');
-      name.className = 'initiative-panel__name';
-
-      const init = document.createElement('span');
-      init.className = 'initiative-panel__init-readout';
-
-      row.append(name, init);
       // An id nothing resolves any more still gets its row, so the order and
       // the turn pointer keep lining up; it just has nothing to act with.
       writers.push((frame) => {
@@ -219,26 +213,24 @@ export function mountInitiativePanel(container, callbacks) {
      */
     function actionStrip(items, spec) {
       if (items.length === 0) return;
-      const wrap = document.createElement('div');
-      wrap.className = 'initiative-panel__attacks';
-      for (const item of items) {
-        wrap.appendChild(
-          textButton(item.name, () => spec.onPick(item), {
-            icon: spec.icon,
-            className: spec.className,
-            ariaLabel: spec.ariaLabel(item),
-            title: spec.title(item),
-          }),
-        );
-      }
-      root.appendChild(wrap);
+      root.appendChild(
+        el(
+          'div',
+          'initiative-panel__attacks',
+          ...items.map((item) =>
+            textButton(item.name, () => spec.onPick(item), {
+              icon: spec.icon,
+              className: spec.className,
+              ariaLabel: spec.ariaLabel(item),
+              title: spec.title(item),
+            }),
+          ),
+        ),
+      );
     }
 
     // Turn flow is the GM's to drive; a player tab just watches the order.
     if (!gm) return;
-
-    const actions = document.createElement('div');
-    actions.className = 'initiative-panel__actions';
 
     const next = textButton(
       'Next turn',
@@ -258,8 +250,7 @@ export function mountInitiativePanel(container, callbacks) {
       { icon: 'flag' },
     );
 
-    actions.append(next, end);
-    root.appendChild(actions);
+    root.appendChild(el('div', 'initiative-panel__actions', next, end));
   }
 
   render();

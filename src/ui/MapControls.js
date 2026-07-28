@@ -1,4 +1,5 @@
 import { iconButton } from './buttons.js';
+import { el } from './dom.js';
 
 /**
  * Mount the on-canvas map controls: zoom in/out, fit-to-extent, and a live
@@ -24,8 +25,7 @@ import { iconButton } from './buttons.js';
  * @returns {{ update: () => void }}
  */
 export function mountMapControls(container, callbacks) {
-  const root = document.createElement('div');
-  root.className = 'map-controls';
+  const root = el('div', 'map-controls');
   container.appendChild(root);
 
   /**
@@ -36,8 +36,7 @@ export function mountMapControls(container, callbacks) {
   const button = (name, label, onClick) =>
     iconButton(name, label, onClick, { className: 'map-controls__btn' });
 
-  const readout = document.createElement('span');
-  readout.className = 'map-controls__zoom';
+  const readout = el('span', 'map-controls__zoom');
   readout.setAttribute('aria-live', 'off');
 
   /** @type {{ el: HTMLButtonElement, tool: 'reveal' | 'hide' }[]} */
@@ -58,9 +57,9 @@ export function mountMapControls(container, callbacks) {
     lastZoom = zoom;
     lastTool = active;
     readout.textContent = zoom;
-    for (const { el, tool } of fogToggles) {
-      el.classList.toggle('map-controls__btn--active', active === tool);
-      el.setAttribute('aria-pressed', String(active === tool));
+    for (const { el: btn, tool } of fogToggles) {
+      btn.classList.toggle('map-controls__btn--active', active === tool);
+      btn.setAttribute('aria-pressed', String(active === tool));
     }
   }
 
@@ -73,18 +72,18 @@ export function mountMapControls(container, callbacks) {
 
   const fog = callbacks.fog;
   if (fog) {
-    const cluster = document.createElement('span');
-    cluster.className = 'map-controls__fog';
     /** @param {'reveal' | 'hide'} tool @param {import('./icons.js').IconName} name @param {string} label */
     const toggle = (tool, name, label) => {
-      const el = button(name, label, () => {
+      const btn = button(name, label, () => {
         fog.onToolChange(fog.getTool() === tool ? null : tool);
         update();
       });
-      fogToggles.push({ el, tool });
-      return el;
+      fogToggles.push({ el: btn, tool });
+      return btn;
     };
-    cluster.append(
+    const cluster = el(
+      'span',
+      'map-controls__fog',
       toggle('reveal', 'eye', 'Reveal fog (brush)'),
       toggle('hide', 'eye-off', 'Hide fog (brush)'),
       button('map', 'Reveal whole area', fog.onRevealAll),

@@ -2,6 +2,7 @@ import { CONDITIONS, addCondition, removeCondition } from '../entities/Condition
 import { promptModal } from './Modal.js';
 import { chip, iconButton, removableChip, textButton } from './buttons.js';
 import { clampInt } from '../util/num.js';
+import { el } from './dom.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
 
@@ -18,8 +19,7 @@ import { clampInt } from '../util/num.js';
  */
 export function mountConditionsBar(container, callbacks) {
   const canEdit = callbacks.canEdit ?? (() => true);
-  const root = document.createElement('div');
-  root.className = 'conditions-bar';
+  const root = el('div', 'conditions-bar');
   container.appendChild(root);
 
   /** @param {Condition} condition */

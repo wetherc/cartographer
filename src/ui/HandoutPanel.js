@@ -1,3 +1,4 @@
+import { el } from './dom.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountListPanel } from './listPanel.js';
 
@@ -13,18 +14,12 @@ import { mountListPanel } from './listPanel.js';
  */
 function appendRevealedContent(row, handout) {
   if (handout.image) {
-    const img = document.createElement('img');
-    img.className = 'handout-panel__image';
+    const img = el('img', 'handout-panel__image');
     img.src = handout.image;
     img.alt = handout.title;
     row.appendChild(img);
   }
-  if (handout.body) {
-    const body = document.createElement('p');
-    body.className = 'handout-panel__body';
-    body.textContent = handout.body;
-    row.appendChild(body);
-  }
+  if (handout.body) row.appendChild(el('p', 'handout-panel__body', handout.body));
 }
 
 /**
@@ -64,12 +59,7 @@ export function mountHandoutPanel(container, callbacks) {
     // head row to line the buttons up against.
     headClass: (_handout, gm) => (gm ? 'handout-panel__head' : null),
     buildBody: (handout, ctx) => {
-      if (!ctx.gm) {
-        const title = document.createElement('div');
-        title.className = 'handout-panel__title';
-        title.textContent = handout.title;
-        return title;
-      }
+      if (!ctx.gm) return el('div', 'handout-panel__title', handout.title);
 
       const toggle = ctx.action(
         {
@@ -83,11 +73,7 @@ export function mountHandoutPanel(container, callbacks) {
         handout,
       );
 
-      const title = document.createElement('span');
-      title.className = 'handout-panel__title';
-      title.textContent = handout.title;
-
-      return [toggle, title];
+      return [toggle, el('span', 'handout-panel__title', handout.title)];
     },
     actions: (handout, ctx) =>
       ctx.gm

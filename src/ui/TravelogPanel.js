@@ -1,4 +1,5 @@
 import { textButton, emptyState } from './buttons.js';
+import { el } from './dom.js';
 import { entriesAfter, TRAVELOG_LIMIT } from '../log/Travelogue.js';
 
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
@@ -12,20 +13,15 @@ function formatTime(at) {
 /** Build the list row for one entry.
  * @param {LogEntry} entry */
 function entryItem(entry) {
-  const item = document.createElement('li');
-  item.className = `travelog__item travelog__item--${entry.kind}`;
-
-  const time = document.createElement('time');
-  time.className = 'travelog__time';
+  const time = el('time', 'travelog__time', formatTime(entry.at));
   time.dateTime = new Date(entry.at).toISOString();
-  time.textContent = formatTime(entry.at);
 
-  const message = document.createElement('span');
-  message.className = 'travelog__message';
-  message.textContent = entry.message;
-
-  item.append(time, message);
-  return item;
+  return el(
+    'li',
+    `travelog__item travelog__item--${entry.kind}`,
+    time,
+    el('span', 'travelog__message', entry.message),
+  );
 }
 
 /**
@@ -41,13 +37,9 @@ function entryItem(entry) {
  * @returns {{ update: () => void }}
  */
 export function mountTravelogPanel(container, callbacks) {
-  const root = document.createElement('div');
-  root.className = 'travelog';
-
   const empty = emptyState('No events logged yet.');
 
-  const list = document.createElement('ul');
-  list.className = 'travelog__list';
+  const list = el('ul', 'travelog__list');
 
   const clearButton = textButton(
     'Clear log',
@@ -57,8 +49,7 @@ export function mountTravelogPanel(container, callbacks) {
     { icon: 'remove', variant: 'danger', className: 'travelog__clear' },
   );
 
-  root.append(empty, list, clearButton);
-  container.appendChild(root);
+  container.appendChild(el('div', 'travelog', empty, list, clearButton));
 
   /** Id of the newest rendered entry; null when the list renders empty. */
   let newestId = /** @type {string | null} */ (null);

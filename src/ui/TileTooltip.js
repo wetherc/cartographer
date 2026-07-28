@@ -1,3 +1,5 @@
+import { append, el } from './dom.js';
+
 /**
  * A cursor-following tooltip surfacing a tile's metadata (POI type, notes)
  * while hovering the map in Play mode — the read side of the Build-mode tile
@@ -11,41 +13,27 @@
  * }}
  */
 export function mountTileTooltip(container) {
-  const el = document.createElement('div');
-  el.className = 'tile-tooltip';
-  el.hidden = true;
-  container.appendChild(el);
+  const tooltip = el('div', 'tile-tooltip');
+  tooltip.hidden = true;
+  container.appendChild(tooltip);
 
   return {
     show(content, clientX, clientY) {
-      el.innerHTML = '';
-      if (content.title) {
-        const title = document.createElement('div');
-        title.className = 'tile-tooltip__title';
-        title.textContent = content.title;
-        el.appendChild(title);
-      }
-      if (content.npcs) {
-        const npcs = document.createElement('div');
-        npcs.className = 'tile-tooltip__npcs';
-        npcs.textContent = content.npcs;
-        el.appendChild(npcs);
-      }
-      if (content.notes) {
-        const notes = document.createElement('div');
-        notes.className = 'tile-tooltip__notes';
-        notes.textContent = content.notes;
-        el.appendChild(notes);
-      }
-      el.hidden = false;
+      tooltip.innerHTML = '';
+      append(tooltip, [
+        !!content.title && el('div', 'tile-tooltip__title', content.title),
+        !!content.npcs && el('div', 'tile-tooltip__npcs', content.npcs),
+        !!content.notes && el('div', 'tile-tooltip__notes', content.notes),
+      ]);
+      tooltip.hidden = false;
       const margin = 12;
-      const width = el.offsetWidth;
+      const width = tooltip.offsetWidth;
       const left = Math.min(clientX + margin, window.innerWidth - width - margin);
-      el.style.left = `${Math.max(margin, left)}px`;
-      el.style.top = `${clientY + margin}px`;
+      tooltip.style.left = `${Math.max(margin, left)}px`;
+      tooltip.style.top = `${clientY + margin}px`;
     },
     hide() {
-      el.hidden = true;
+      tooltip.hidden = true;
     },
   };
 }

@@ -1,3 +1,5 @@
+import { el } from './dom.js';
+
 /**
  * Mount a toast stack: small transient status messages confirming actions
  * (Save, Export, Undo, ...) that otherwise succeed silently. The stack is a
@@ -9,17 +11,14 @@
  */
 export function mountToasts(container, options = {}) {
   const duration = options.duration ?? 3500;
-  const root = document.createElement('div');
-  root.className = 'toast-stack';
+  const root = el('div', 'toast-stack');
   root.setAttribute('role', 'status');
   root.setAttribute('aria-live', 'polite');
   container.appendChild(root);
 
   /** @param {string} message */
   function show(message) {
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = message;
+    const toast = el('div', 'toast', message);
     const dismiss = () => {
       toast.classList.add('toast--leaving');
       // Matches the CSS fade-out duration; remove after it completes.

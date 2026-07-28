@@ -1,6 +1,7 @@
 import { promptModal } from './Modal.js';
 import { STAT_KEYS, normalizeStatBlock } from '../entities/Modifiers.js';
 import { clampInt } from '../util/num.js';
+import { classNames, el } from './dom.js';
 
 /** @typedef {import('../types/entities.js').StatModifier} StatModifier */
 
@@ -27,8 +28,7 @@ import { clampInt } from '../util/num.js';
  * @returns {{ update: () => void }}
  */
 export function mountStatBlockBar(container, callbacks) {
-  const root = document.createElement('div');
-  root.className = 'statblock-bar';
+  const root = el('div', 'statblock-bar');
   container.appendChild(root);
 
   /** @param {string} name @param {number} base */
@@ -69,10 +69,11 @@ export function mountStatBlockBar(container, callbacks) {
       const effective = base[name] + active.reduce((sum, m) => sum + m.delta, 0);
       const modified = effective !== base[name];
 
-      const chip = document.createElement('button');
+      const chip = el(
+        'button',
+        classNames(['chip statblock-bar__chip', modified && 'statblock-bar__chip--modified']),
+      );
       chip.type = 'button';
-      chip.className = 'chip statblock-bar__chip';
-      if (modified) chip.classList.add('statblock-bar__chip--modified');
       if (callbacks.mode === 'base') {
         chip.textContent = `${name} ${base[name]}`;
         chip.setAttribute('aria-label', `Set ${name} (currently ${base[name]})`);

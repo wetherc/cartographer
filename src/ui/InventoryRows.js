@@ -1,6 +1,7 @@
 import { removeItem, updateItem } from '../entities/Character.js';
 import { itemType, itemEffects } from '../entities/Equipment.js';
 import { buildItemForm } from './ItemForm.js';
+import { el } from './dom.js';
 import { iconButton, textButton } from './buttons.js';
 import { numberField, select } from './formFields.js';
 import { confirmModal } from './Modal.js';
@@ -48,9 +49,9 @@ import { clampInt } from '../util/num.js';
 export function buildRow(item, playable, ctx) {
   const { view, getCharacter, commit, render, canEdit, transfer } = ctx;
   if (item.id === view.editingId) {
-    const editor = document.createElement('div');
-    editor.className = 'inventory-panel__editor';
-    editor.appendChild(
+    return el(
+      'div',
+      'inventory-panel__editor',
       buildItemForm({
         item,
         submitLabel: `Save ${item.name}`,
@@ -64,48 +65,30 @@ export function buildRow(item, playable, ctx) {
         },
       }),
     );
-    return editor;
   }
 
-  const row = document.createElement('div');
-  row.className = 'inventory-panel__row';
-
-  const main = document.createElement('div');
-  main.className = 'inventory-panel__item';
-
-  const line = document.createElement('div');
-  line.className = 'inventory-panel__item-line';
-  const label = document.createElement('span');
-  label.className = 'inventory-panel__label';
-  label.textContent = `${item.name} x${item.quantity}`;
-  const type = document.createElement('span');
-  type.className = 'inventory-panel__type';
-  type.textContent = itemType(item);
-  line.append(label, type);
-  main.appendChild(line);
-
-  // One badge per effect, so a modifier-heavy item (damage riders, stat
-  // bonuses, inflicted statuses) wraps into pills instead of one long line.
   const effects = itemEffects(item);
-  if (effects.length > 0) {
-    const badges = document.createElement('div');
-    badges.className = 'inventory-panel__effects';
-    for (const effect of effects) {
-      const badge = document.createElement('span');
-      badge.className = 'chip inventory-panel__effect';
-      badge.textContent = effect;
-      badges.appendChild(badge);
-    }
-    main.appendChild(badges);
-  }
+  const main = el(
+    'div',
+    'inventory-panel__item',
+    el(
+      'div',
+      'inventory-panel__item-line',
+      el('span', 'inventory-panel__label', `${item.name} x${item.quantity}`),
+      el('span', 'inventory-panel__type', itemType(item)),
+    ),
+    // One badge per effect, so a modifier-heavy item (damage riders, stat
+    // bonuses, inflicted statuses) wraps into pills instead of one long line.
+    effects.length > 0 &&
+      el(
+        'div',
+        'inventory-panel__effects',
+        ...effects.map((effect) => el('span', 'chip inventory-panel__effect', effect)),
+      ),
+    item.description ? el('div', 'inventory-panel__description', item.description) : null,
+  );
 
-  if (item.description) {
-    const description = document.createElement('div');
-    description.className = 'inventory-panel__description';
-    description.textContent = item.description;
-    main.appendChild(description);
-  }
-  row.appendChild(main);
+  const row = el('div', 'inventory-panel__row', main);
 
   if (!playable) return row;
 
@@ -166,10 +149,7 @@ export function buildRow(item, playable, ctx) {
   row.appendChild(removeButton);
   if (item.id !== view.givingId || recipients.length === 0) return row;
 
-  const wrap = document.createElement('div');
-  wrap.appendChild(row);
-  wrap.appendChild(buildGiveForm(item, recipients, ctx));
-  return wrap;
+  return el('div', '', row, buildGiveForm(item, recipients, ctx));
 }
 
 /**
@@ -182,9 +162,6 @@ export function buildRow(item, playable, ctx) {
  * @returns {HTMLElement}
  */
 function buildGiveForm(item, recipients, { view, render, transfer }) {
-  const form = document.createElement('div');
-  form.className = 'inventory-panel__give';
-
   const recipientSelect = select(
     recipients.map(({ id, name }) => ({ value: id, label: name })),
     recipients[0]?.id ?? '',
@@ -212,6 +189,5 @@ function buildGiveForm(item, recipients, { view, render, transfer }) {
   });
 
   // Dismiss-left, affirmative-right — the same ordering as every modal.
-  form.append(recipientSelect, countInput, cancelButton, giveButton);
-  return form;
+  return el('div', 'inventory-panel__give', recipientSelect, countInput, cancelButton, giveButton);
 }

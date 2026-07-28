@@ -1,4 +1,5 @@
 import { formatClock } from '../time/GameClock.js';
+import { el } from './dom.js';
 import { icon } from './icons.js';
 import { textButton } from './buttons.js';
 
@@ -19,8 +20,7 @@ import { textButton } from './buttons.js';
  * @returns {{ update: () => void }}
  */
 export function mountTimePanel(container, callbacks) {
-  const root = document.createElement('div');
-  root.className = 'time-panel';
+  const root = el('div', 'time-panel');
   container.appendChild(root);
 
   /** Every control here changes the clock, so each one re-renders the readout.
@@ -37,19 +37,16 @@ export function mountTimePanel(container, callbacks) {
 
   function render() {
     root.innerHTML = '';
-    const readout = document.createElement('div');
-    readout.className = 'time-panel__readout';
-    readout.append(icon('clock'), document.createTextNode(formatClock(callbacks.getClock())));
-    root.appendChild(readout);
-
-    const actions = document.createElement('div');
-    actions.className = 'time-panel__actions';
-    actions.append(
-      button('Advance', callbacks.onAdvance),
-      button('Short rest', callbacks.onShortRest),
-      button('Long rest', callbacks.onLongRest),
+    root.append(
+      el('div', 'time-panel__readout', icon('clock'), formatClock(callbacks.getClock())),
+      el(
+        'div',
+        'time-panel__actions',
+        button('Advance', callbacks.onAdvance),
+        button('Short rest', callbacks.onShortRest),
+        button('Long rest', callbacks.onLongRest),
+      ),
     );
-    root.appendChild(actions);
   }
 
   render();
