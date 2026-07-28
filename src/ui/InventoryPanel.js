@@ -64,8 +64,8 @@ export function mountInventoryPanel(
   transfer = undefined,
 ) {
   let current = initial;
-  // The search/filter/sort choices survive re-renders (every edit re-renders)
-  // but stay per-mount, so they persist while the GM works through the list.
+  // The search/filter/sort choices survive a re-render but stay per-mount, so
+  // they persist while the GM works through the list.
   let searchQuery = '';
   /** @type {ItemType | ''} */
   let typeFilter = '';
@@ -77,29 +77,69 @@ export function mountInventoryPanel(
     /** @type {string | null} */ givingId: null,
   };
 
+  /** @type {(() => void) | null} refill the mounted Inventory tab's item list */
+  let refillList = null;
+  /** What the two hosts on screen were built for, so a sync can tell whether
+   * anything this panel draws has actually changed. */
+  let shown = { character: initial, playable: false, editable: false };
+
+  /** The item list alone, leaving the search box (and its focus), the sort and
+   * filter choices, and the add form where they are. */
+  function refreshList() {
+    refillList?.();
+  }
+
   /**
    * @param {Character} next
    * @param {InventoryEvent} [event] the interaction that produced `next`, when loggable
+   * @param {'all' | 'equipment'} [scope] which hosts the change can be seen in
    */
-  function commit(next, event) {
+  function commit(next, event, scope = 'all') {
     current = next;
+    shown = { ...shown, character: next };
     onChange(next);
     if (event) onEvent(event, next);
-    render();
+    // Equipping never changes a row, but adding or spending an item changes
+    // what the slot pickers can offer, so the narrow scope only runs one way.
+    renderEquipment();
+    if (scope === 'all') refreshList();
   }
 
+  /** The character a row or a slot picker writes against, read when the control
+   * is used rather than when it was built. Only ever called from a control that
+   * exists, which means a character is selected. */
+  const liveCharacter = () => /** @type {Character} */ (current);
+
   /** @type {import('./InventoryRows.js').RowContext} */
-  const rowContext = { view, commit, render, canEdit, transfer };
+  // A row's own render() only opens or closes its edit/give form, which lives
+  // inside the list.
+  const rowContext = {
+    view,
+    getCharacter: liveCharacter,
+    commit,
+    render: refreshList,
+    canEdit,
+    transfer,
+  };
+
+  /** Rebuild the Equipment tab in place. */
+  function renderEquipment() {
+    equipmentHost.innerHTML = '';
+    equipmentHost.appendChild(
+      current
+        ? buildEquipment(liveCharacter, (next) => commit(next, undefined, 'equipment'), canPlay())
+        : emptyState('No character selected.'),
+    );
+  }
 
   /**
    * The Inventory tab: search/filter/sort controls over the item list, plus
    * the add form when playable. The controls re-fill only the list on input,
    * so typing in the search box never loses focus to a re-render.
-   * @param {Character} character
    * @param {boolean} playable
    * @returns {HTMLElement}
    */
-  function buildInventoryTab(character, playable) {
+  function buildInventoryTab(playable) {
     const panel = document.createElement('div');
 
     const controls = document.createElement('div');
@@ -147,8 +187,13 @@ export function mountInventoryPanel(
 
     const list = document.createElement('div');
     list.className = 'inventory-panel__list';
+    // Reads the character afresh on every call rather than closing over the one
+    // the tab was built for, so a consume or a give can refill the list without
+    // rebuilding the controls above it.
     const fillList = () => {
+      const character = current;
       list.innerHTML = '';
+      if (!character) return;
       const visible = filterItems(character.inventory, {
         query: searchQuery,
         type: typeFilter,
@@ -160,8 +205,9 @@ export function mountInventoryPanel(
         );
         return;
       }
-      for (const item of visible) list.appendChild(buildRow(character, item, playable, rowContext));
+      for (const item of visible) list.appendChild(buildRow(item, playable, rowContext));
     };
+    refillList = fillList;
     fillList();
     panel.appendChild(list);
 
@@ -183,6 +229,8 @@ export function mountInventoryPanel(
         buildItemForm({
           submitLabel: 'Add item',
           onSubmit: (fields) => {
+            const character = current;
+            if (!character) return;
             const id = idFromName(fields.name);
             commit(addItem(character, { ...fields, id }), {
               verb: 'pickup',
@@ -197,29 +245,41 @@ export function mountInventoryPanel(
   }
 
   function render() {
-    equipmentHost.innerHTML = '';
-    inventoryHost.innerHTML = '';
-
-    // Captured non-null so listeners created below keep the narrowing.
-    const character = current;
-    if (!character) {
-      for (const host of [equipmentHost, inventoryHost]) {
-        host.appendChild(emptyState('No character selected.'));
-      }
-      return;
-    }
-
     const playable = canPlay();
-    equipmentHost.appendChild(buildEquipment(character, commit, playable));
-    inventoryHost.appendChild(buildInventoryTab(character, playable));
+    shown = { character: current, playable, editable: canEdit() };
+    renderEquipment();
+    refillList = null;
+    inventoryHost.innerHTML = '';
+    inventoryHost.appendChild(
+      current ? buildInventoryTab(playable) : emptyState('No character selected.'),
+    );
   }
 
   render();
   return {
     getCharacter: () => current,
-    /** Sync in an externally-updated character (e.g. from a sibling panel) and re-render. */
+    /** Sync in an externally-updated character (e.g. from a sibling panel) and
+     * re-render, unless nothing this panel draws changed. The sibling panels
+     * commit on every HP tick and spell slot, and each commit reaches every
+     * panel; the kit is only part of what they hand over, and the entity layer
+     * replaces rather than mutates, so an unchanged reference is an unchanged
+     * list. */
     setCharacter: (next) => {
+      const prev = current;
       current = next;
+      if (
+        prev &&
+        next &&
+        prev === shown.character &&
+        prev.id === next.id &&
+        prev.inventory === next.inventory &&
+        prev.equipment === next.equipment &&
+        shown.playable === canPlay() &&
+        shown.editable === canEdit()
+      ) {
+        shown = { ...shown, character: next };
+        return;
+      }
       render();
     },
   };

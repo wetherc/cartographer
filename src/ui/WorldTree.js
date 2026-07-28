@@ -36,6 +36,42 @@ export function mountWorldTree(container, opts) {
   /** Node ids whose children are currently hidden. @type {Set<string>} */
   const collapsed = new Set();
 
+  /**
+   * The chevron for a row that has children. Collapsing hides the child list
+   * where it stands instead of re-rendering the tree: the subtree's DOM is
+   * already built and a collapse changes nothing else about it.
+   * @param {WorldTreeNode} treeNode
+   * @param {HTMLUListElement} childList
+   * @returns {HTMLButtonElement}
+   */
+  function collapseToggle(treeNode, childList) {
+    const nodeId = treeNode.node.id;
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'world-tree__toggle';
+    toggle.appendChild(icon('chevron', { size: 14 }));
+
+    /** @param {boolean} isCollapsed */
+    const apply = (isCollapsed) => {
+      toggle.classList.toggle('world-tree__toggle--open', !isCollapsed);
+      toggle.setAttribute('aria-expanded', String(!isCollapsed));
+      toggle.setAttribute(
+        'aria-label',
+        `${isCollapsed ? 'Expand' : 'Collapse'} ${treeNode.node.name}`,
+      );
+      childList.hidden = isCollapsed;
+    };
+
+    toggle.addEventListener('click', () => {
+      const nowCollapsed = !collapsed.has(nodeId);
+      if (nowCollapsed) collapsed.add(nodeId);
+      else collapsed.delete(nodeId);
+      apply(nowCollapsed);
+    });
+    apply(collapsed.has(nodeId));
+    return toggle;
+  }
+
   /** @param {WorldTreeNode} treeNode @returns {HTMLLIElement} */
   function renderNode(treeNode) {
     const li = document.createElement('li');
@@ -44,27 +80,21 @@ export function mountWorldTree(container, opts) {
     const row = document.createElement('div');
     row.className = 'world-tree__row';
 
+    // Built before the row so the chevron can close over it. A collapsed
+    // subtree is still rendered, just hidden.
+    /** @type {HTMLUListElement | null} */
+    let childList = null;
+    if (treeNode.children.length) {
+      childList = document.createElement('ul');
+      childList.className = 'world-tree__children';
+      for (const child of treeNode.children) childList.appendChild(renderNode(child));
+    }
+
     // Collapsible trees give every row a fixed-width toggle slot so labels
     // line up; only rows with children get a live chevron in that slot.
-    const isCollapsed = collapsed.has(treeNode.node.id);
     if (opts.collapsible) {
-      if (treeNode.children.length) {
-        const toggle = document.createElement('button');
-        toggle.type = 'button';
-        toggle.className = 'world-tree__toggle';
-        if (!isCollapsed) toggle.classList.add('world-tree__toggle--open');
-        toggle.setAttribute('aria-expanded', String(!isCollapsed));
-        toggle.setAttribute(
-          'aria-label',
-          `${isCollapsed ? 'Expand' : 'Collapse'} ${treeNode.node.name}`,
-        );
-        toggle.appendChild(icon('chevron', { size: 14 }));
-        toggle.addEventListener('click', () => {
-          if (isCollapsed) collapsed.delete(treeNode.node.id);
-          else collapsed.add(treeNode.node.id);
-          update();
-        });
-        row.appendChild(toggle);
+      if (childList) {
+        row.appendChild(collapseToggle(treeNode, childList));
       } else {
         const spacer = document.createElement('span');
         spacer.className = 'world-tree__toggle world-tree__toggle--leaf';
@@ -114,22 +144,40 @@ export function mountWorldTree(container, opts) {
     }
 
     li.appendChild(row);
-
-    if (treeNode.children.length && !(opts.collapsible && isCollapsed)) {
-      const childList = document.createElement('ul');
-      childList.className = 'world-tree__children';
-      for (const child of treeNode.children) childList.appendChild(renderNode(child));
-      li.appendChild(childList);
-    }
+    if (childList) li.appendChild(childList);
 
     return li;
   }
 
+  /** @type {string | null} what the tree on screen was built from */
+  let shownSignature = null;
+
+  /**
+   * Everything the markup reads: each node's id, name, and parent, plus which
+   * row is current. Compared by value rather than by node identity because a
+   * party step replaces the node it revealed fog on without changing any of
+   * these, and that step is the most frequent caller of update().
+   * @param {MapNode[]} nodes
+   * @param {string} currentId
+   */
+  function signatureOf(nodes, currentId) {
+    return JSON.stringify([currentId, nodes.map((n) => [n.id, n.name, n.parentId])]);
+  }
+
   function update() {
+    const nodes = opts.getNodes();
+    // Callers refresh the tree after anything that might have moved a node, so
+    // it is asked to redraw far more often than it actually changes. Bail when
+    // the markup would come out the same, since rebuilding costs the scroll
+    // position and any focus inside the tree.
+    const signature = signatureOf(nodes, opts.getCurrentId());
+    if (signature === shownSignature) return;
+    shownSignature = signature;
+
     root.innerHTML = '';
     const list = document.createElement('ul');
     list.className = 'world-tree__children world-tree__root';
-    for (const treeNode of buildWorldTree(opts.getNodes())) {
+    for (const treeNode of buildWorldTree(nodes)) {
       list.appendChild(renderNode(treeNode));
     }
     root.appendChild(list);

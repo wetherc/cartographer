@@ -16,6 +16,7 @@ import {
 } from '../entities/Classes.js';
 import { primaryClass } from '../entities/Multiclass.js';
 import { groupSpellsByLevel, spellStatus } from '../entities/SpellView.js';
+import { sameDeps } from '../view/SheetStructure.js';
 import { emptyState } from './buttons.js';
 import { promptModal } from './Modal.js';
 import { promptSpellDetail } from './SpellDetail.js';
@@ -39,10 +40,14 @@ import { promptSpellDetail } from './SpellDetail.js';
  * @param {Character | null} initial
  * @param {(character: Character) => void} onChange
  * @param {() => { play: boolean }} getPermissions
- * @param {{ learnable: (character: Character) => Spell[], resolveSpells: (ids: string[]) => Spell[] }} opts
+ * @param {{ learnable: (character: Character) => Spell[],
+ *   resolveSpells: (ids: string[]) => Spell[],
+ *   catalogStamp: () => unknown }} opts
  *   `learnable` returns every spell the class may learn (cantrips and leveled);
  *   `resolveSpells` maps stored ids to Spell objects, so known spells outside
- *   the learnable set (e.g. from an import) still appear.
+ *   the learnable set (e.g. from an import) still appear; `catalogStamp` returns
+ *   a value that changes whenever the spell catalog behind those two does, which
+ *   is how the panel knows a library edit means a rebuild.
  * @returns {{ setCharacter: (character: Character | null) => void }}
  */
 export function mountSpellbookPanel(container, initial, onChange, getPermissions, opts) {
@@ -52,11 +57,64 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
   root.className = 'spellbook';
   container.appendChild(root);
 
+  /** Restate what a spellbook change shows, one closure per row plus one for
+   * the prepared/cantrip counts. @type {(() => void)[]} */
+  let writers = [];
+  /** @type {unknown[] | null} what the list on screen was built from */
+  let shownDeps = null;
+  /** @type {Set<string>} the ids the classes offer, from the last build */
+  let learnableIds = new Set();
+
+  /** @param {Character} character @returns {string[]} */
+  function knownIds(character) {
+    const book = getSpellbook(character);
+    return [...book.cantrips, ...book.known];
+  }
+
+  /**
+   * What decides which rows exist. The learnable set covers most of it, but a
+   * known spell the classes do not offer is listed only because the character
+   * knows it, so learning or forgetting one of those adds or removes a row.
+   * @param {Character} character
+   * @returns {unknown[]}
+   */
+  function listDeps(character) {
+    const outsiders = knownIds(character)
+      .filter((id) => !learnableIds.has(id))
+      .sort()
+      .join(',');
+    return [
+      character.id,
+      getPermissions().play,
+      character.level,
+      character.classes,
+      outsiders,
+      // The catalog the learnable list is drawn from: editing a spell in the
+      // Library changes the rows without touching the character.
+      opts.catalogStamp(),
+    ];
+  }
+
+  /**
+   * Show the current spellbook. Learning, preparing, and forgetting change
+   * badges and counts but leave the rows themselves alone, so the usual case
+   * writes into the list already on screen instead of rebuilding a class-wide
+   * spell list that can run to a few hundred rows.
+   */
+  function refresh() {
+    const character = current;
+    if (!character || !sameDeps(shownDeps, listDeps(character))) {
+      render();
+      return;
+    }
+    for (const writer of writers) writer();
+  }
+
   /** @param {Character} next */
   function commit(next) {
     current = next;
     onChange(next);
-    render();
+    refresh();
   }
 
   /**
@@ -138,6 +196,8 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
 
   function render() {
     root.innerHTML = '';
+    writers = [];
+    shownDeps = null;
     const character = current;
     if (!character) {
       root.appendChild(emptyState('No character selected.'));
@@ -146,10 +206,11 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
 
     // The browsable list: learnable spells (by class) plus any already-known
     // spell that falls outside it, so imports and out-of-class grants still show.
-    const book = getSpellbook(character);
-    const known = opts.resolveSpells([...book.cantrips, ...book.known]);
-    const spells = [...opts.learnable(character), ...known];
-    const groups = groupSpellsByLevel(spells);
+    const known = opts.resolveSpells(knownIds(character));
+    const learnable = opts.learnable(character);
+    learnableIds = new Set(learnable.map((spell) => spell.id));
+    shownDeps = listDeps(character);
+    const groups = groupSpellsByLevel([...learnable, ...known]);
 
     if (groups.length === 0) {
       const className = getClass(primaryClass(character)?.classId)?.name;
@@ -175,7 +236,14 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
     if (primaryCasterClass(character)) {
       const prep = document.createElement('span');
       prep.className = 'spellbook__prepared-count';
-      prep.textContent = `Prepared ${book.prepared.length}/${preparedLimit(character)} · Cantrips ${book.cantrips.length}/${cantripLimit(character)}`;
+      const writeCounts = () => {
+        const live = current;
+        if (!live) return;
+        const counts = getSpellbook(live);
+        prep.textContent = `Prepared ${counts.prepared.length}/${preparedLimit(live)} · Cantrips ${counts.cantrips.length}/${cantripLimit(live)}`;
+      };
+      writeCounts();
+      writers.push(writeCounts);
       heading.appendChild(prep);
     }
     root.appendChild(heading);
@@ -191,7 +259,7 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
       const list = document.createElement('div');
       list.className = 'spellbook__list';
       for (const spell of group.spells) {
-        list.appendChild(buildRow(character, spell));
+        list.appendChild(buildRow(spell));
       }
       section.appendChild(list);
       root.appendChild(section);
@@ -200,16 +268,15 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
 
   /**
    * One spell row: a name button (opens the detail) with known/prepared badges.
-   * @param {Character} character
+   * The badges and the click both read the live character, since the row stays
+   * on screen across the changes made through it.
    * @param {Spell} spell
    * @returns {HTMLElement}
    */
-  function buildRow(character, spell) {
-    const status = spellStatus(character, spell);
+  function buildRow(spell) {
     const row = document.createElement('button');
     row.type = 'button';
     row.className = 'spellbook__row';
-    if (status.known) row.classList.add('spellbook__row--known');
 
     const name = document.createElement('span');
     name.className = 'spellbook__row-name';
@@ -218,11 +285,23 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
 
     const badges = document.createElement('span');
     badges.className = 'spellbook__row-badges';
-    if (status.prepared) badges.appendChild(badge('Prepared', 'prepared'));
-    else if (status.known) badges.appendChild(badge('Known', 'known'));
     row.appendChild(badges);
 
-    row.addEventListener('click', () => openSpell(character, spell));
+    const writeStatus = () => {
+      const live = current;
+      if (!live) return;
+      const status = spellStatus(live, spell);
+      row.classList.toggle('spellbook__row--known', status.known);
+      badges.innerHTML = '';
+      if (status.prepared) badges.appendChild(badge('Prepared', 'prepared'));
+      else if (status.known) badges.appendChild(badge('Known', 'known'));
+    };
+    writeStatus();
+    writers.push(writeStatus);
+
+    row.addEventListener('click', () => {
+      if (current) openSpell(current, spell);
+    });
     return row;
   }
 
@@ -230,7 +309,7 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
   return {
     setCharacter: (next) => {
       current = next;
-      render();
+      refresh();
     },
   };
 }

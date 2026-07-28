@@ -18,8 +18,14 @@ import { confirmModal } from './Modal.js';
  * and its commit/render plumbing arrive through a context object, so these
  * builders stay stateless while the state keeps living in the mount.
  *
+ * `getCharacter` is a getter rather than a value because a row outlives changes
+ * made elsewhere on the sheet: the panel leaves the list standing when a sibling
+ * panel commits something the rows do not show, so a consume or a give has to
+ * write against the character as it is when the button is pressed.
+ *
  * @typedef {{
  *   view: { editingId: string | null, givingId: string | null },
+ *   getCharacter: () => Character,
  *   commit: (next: Character, event?: InventoryEvent) => void,
  *   render: () => void,
  *   canEdit: () => boolean,
@@ -32,14 +38,13 @@ import { confirmModal } from './Modal.js';
  * One inventory row: name, stack count, description, and the mechanical
  * summary — plus edit/consume/discard controls when playable. The open edit
  * form (shared with the add form) renders in the row's place.
- * @param {Character} character
  * @param {InventoryItem} item
  * @param {boolean} playable
  * @param {RowContext} ctx
  * @returns {HTMLElement}
  */
-export function buildRow(character, item, playable, ctx) {
-  const { view, commit, render, canEdit, transfer } = ctx;
+export function buildRow(item, playable, ctx) {
+  const { view, getCharacter, commit, render, canEdit, transfer } = ctx;
   if (item.id === view.editingId) {
     const editor = document.createElement('div');
     editor.className = 'inventory-panel__editor';
@@ -49,7 +54,7 @@ export function buildRow(character, item, playable, ctx) {
         submitLabel: `Save ${item.name}`,
         onSubmit: (fields) => {
           view.editingId = null;
-          commit(updateItem(character, item.id, { ...fields, id: item.id }));
+          commit(updateItem(getCharacter(), item.id, { ...fields, id: item.id }));
         },
         onCancel: () => {
           view.editingId = null;
@@ -114,7 +119,9 @@ export function buildRow(character, item, playable, ctx) {
 
   // Hand-off to another party member; only offered when someone else exists
   // to receive. The give form opens inline under the row.
-  const recipients = transfer ? transfer.recipients().filter((r) => r.id !== character.id) : [];
+  const recipients = transfer
+    ? transfer.recipients().filter((r) => r.id !== getCharacter().id)
+    : [];
   if (recipients.length > 0) {
     row.appendChild(
       iconButton('give', `Give ${item.name} to another character`, () => {
@@ -128,7 +135,7 @@ export function buildRow(character, item, playable, ctx) {
   // Present even on 1-stacks: consuming the last of an item and discarding
   // it are the same state change but different travelogue lines.
   const consumeButton = iconButton('minus', `Consume one ${item.name}`, () =>
-    commit(removeItem(character, item.id, 1), { verb: 'use', itemName: item.name, count: 1 }),
+    commit(removeItem(getCharacter(), item.id, 1), { verb: 'use', itemName: item.name, count: 1 }),
   );
   row.appendChild(consumeButton);
 
@@ -146,7 +153,7 @@ export function buildRow(character, item, playable, ctx) {
         });
         if (!ok) return;
       }
-      commit(removeItem(character, item.id, item.quantity), {
+      commit(removeItem(getCharacter(), item.id, item.quantity), {
         verb: 'discard',
         itemName: item.name,
         count: item.quantity,

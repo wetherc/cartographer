@@ -21,12 +21,18 @@ import {
  * armor pickers), ordered by the slot's preference then name. An already-
  * equipped item that no longer passes the filter (a legacy save) still shows,
  * so it can be seen and unequipped.
- * @param {Character} character
+ *
+ * The character arrives as a getter because these rows outlive changes made
+ * elsewhere on the sheet: a slot's options only depend on the inventory, so the
+ * panel leaves the rows standing when a sibling panel commits an unrelated
+ * change, and the equip below has to write against that newer character.
+ * @param {() => Character} getCharacter
  * @param {(next: Character) => void} commit
  * @param {boolean} playable false renders the pickers disabled (read-only view)
  * @returns {HTMLElement}
  */
-export function buildEquipment(character, commit, playable) {
+export function buildEquipment(getCharacter, commit, playable) {
+  const character = getCharacter();
   const section = document.createElement('div');
   section.className = 'inventory-panel__equipment';
   for (const slot of EQUIPMENT_SLOTS) {
@@ -63,7 +69,7 @@ export function buildEquipment(character, commit, playable) {
     select.value = equippedId;
     select.disabled = !playable;
     select.addEventListener('change', () =>
-      commit(equip(character, slot.key, select.value === '' ? null : select.value)),
+      commit(equip(getCharacter(), slot.key, select.value === '' ? null : select.value)),
     );
 
     row.append(label, select);

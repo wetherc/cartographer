@@ -4,7 +4,7 @@ import { shortRest, longRest, addXP, transferItem } from '../entities/Character.
 import { highestSlotLevel } from '../entities/SpellSlots.js';
 import { casterClassRefs } from '../entities/Classes.js';
 import { characterFields, characterFormChange, buildCharacter } from './characterCreate.js';
-import { activeSpells, resolveSpellIds } from '../library/Library.js';
+import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { replaceById, removeById } from '../entities/Roster.js';
@@ -433,7 +433,9 @@ export function wireParty(app) {
       inventoryPanel.setCharacter(next);
     },
     () => ({ play: selectedPermissions().play }),
-    { learnable: learnableSpells, resolveSpells },
+    // The active library object is replaced whole on every library change, so
+    // its identity is the catalog's revision.
+    { learnable: learnableSpells, resolveSpells, catalogStamp: getActiveLibrary },
   );
 
   const inventoryPanel = mountInventoryPanel(
