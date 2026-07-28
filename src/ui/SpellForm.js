@@ -12,6 +12,7 @@ import {
   buildInlineForm,
 } from './formFields.js';
 import { clampInt } from '../util/num.js';
+import { MAX_TARGET_COUNT, normalizeTargetCount } from '../entities/Casting.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/spell.js').SpellEffect} SpellEffect */
@@ -73,6 +74,16 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     return check;
   });
   const componentsField = labeled('Components', wrapChecks(componentChecks.map((c) => c.label)));
+
+  // How many creatures one cast reaches. 0 marks an area spell, where the count
+  // depends on the map rather than the spell, so the caster picks any number.
+  const targetCountInput = numberField(spell?.targetCount ?? 1, {
+    min: 0,
+    max: MAX_TARGET_COUNT,
+    className: 'inventory-panel__quantity-input',
+  });
+  targetCountInput.title = '0 = an area: the caster picks any number of creatures';
+  const targetCountField = labeled('Targets', targetCountInput);
 
   const concentration = checkbox('Concentration', spell?.concentration ?? false);
   const ritual = checkbox('Ritual', spell?.ritual ?? false);
@@ -194,6 +205,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       concentration: concentration.input.checked,
       ritual: ritual.input.checked,
       description: descriptionInput.value.trim(),
+      targetCount: normalizeTargetCount(targetCountInput.value),
       effect,
       ...(scaling && Object.keys(scaling).length ? { scaling } : {}),
     };
@@ -206,6 +218,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       classesField,
       fieldRow(labeled('Casting time', castingTimeInput), labeled('Range', rangeInput)),
       fieldRow(labeled('Duration', durationInput), componentsField),
+      fieldRow(targetCountField),
       fieldRow(concentration.label, ritual.label),
       labeled('Description', descriptionInput),
       effectRow,

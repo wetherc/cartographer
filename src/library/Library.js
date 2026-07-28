@@ -1,5 +1,6 @@
 import { WEAPON_TYPES, ITEM_TYPES, normalizeDamagePart } from '../entities/Equipment.js';
 import { clampInt } from '../util/num.js';
+import { normalizeTargetCount } from '../entities/Casting.js';
 import {
   DEFAULT_SPELLS,
   SPELL_SCHOOLS,
@@ -379,6 +380,14 @@ function normalizeSpell(raw, id) {
         }
       : undefined;
 
+  // An absent target count stays absent, which the resolver reads as one
+  // creature, so no entry authored before the field existed becomes an area
+  // spell by omission. Anything present goes through the shared normalizer.
+  const targetCount =
+    raw.targetCount === undefined || raw.targetCount === null
+      ? undefined
+      : normalizeTargetCount(raw.targetCount);
+
   return {
     id,
     name: raw.name.trim(),
@@ -394,6 +403,7 @@ function normalizeSpell(raw, id) {
     concentration: !!raw.concentration,
     ritual: !!raw.ritual,
     description: typeof raw.description === 'string' ? raw.description : '',
+    ...(targetCount === undefined ? {} : { targetCount }),
     effect,
     ...(scaling ? { scaling } : {}),
   };

@@ -183,6 +183,10 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: false,
     ritual: false,
     description: 'Three darts of force each deal 1d4+1 and hit automatically.',
+    // All three darts on one creature, which is why the target count stays 1 and
+    // the damage is lumped into one term. Splitting darts between creatures needs
+    // a per-creature allocation the resolver has no shape for; Scorching Ray and
+    // Eldritch Blast are modeled the same way.
     effect: {
       kind: 'attack',
       damage: [
@@ -210,6 +214,7 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: false,
     ritual: false,
     description: 'A sheet of flame deals 3d6 fire; a DEX save halves it.',
+    targetCount: 0,
     effect: {
       kind: 'save',
       saveAbility: 'DEX',
@@ -294,6 +299,7 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: false,
     ritual: false,
     description: 'A wave of thunder deals 2d8 and pushes creatures back; a CON save halves it.',
+    targetCount: 0,
     effect: {
       kind: 'save',
       saveAbility: 'CON',
@@ -384,6 +390,7 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: false,
     ritual: false,
     description: 'A blast of flame deals 8d6 fire in a 20-foot radius; a DEX save halves it.',
+    targetCount: 0,
     effect: {
       kind: 'save',
       saveAbility: 'DEX',
@@ -405,6 +412,7 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: false,
     ritual: false,
     description: 'A stroke of lightning deals 8d6 lightning; a DEX save halves it.',
+    targetCount: 0,
     effect: {
       kind: 'save',
       saveAbility: 'DEX',
@@ -457,6 +465,7 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: false,
     ritual: false,
     description: 'Hail deals 2d8 bludgeoning + 4d6 cold; a DEX save halves it.',
+    targetCount: 0,
     effect: {
       kind: 'save',
       saveAbility: 'DEX',
@@ -482,6 +491,7 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: false,
     ritual: false,
     description: 'A blast of cold deals 8d8 cold; a CON save halves it.',
+    targetCount: 0,
     effect: {
       kind: 'save',
       saveAbility: 'CON',
@@ -503,6 +513,7 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: false,
     ritual: false,
     description: 'Up to six creatures each regain 3d8 + your spellcasting modifier hit points.',
+    targetCount: 6,
     effect: { kind: 'heal', healing: [{ count: 3, sides: 8, damageType: 'healing' }] },
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'healing' }] },
   },
@@ -521,6 +532,7 @@ export const DEFAULT_SPELLS = deepFreeze([
     ritual: false,
     description:
       'A bolt arcs to up to four targets, each taking 10d8 lightning; a DEX save halves it.',
+    targetCount: 4,
     effect: {
       kind: 'save',
       saveAbility: 'DEX',
@@ -585,6 +597,7 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: false,
     ritual: false,
     description: 'Fiery orbs deal 20d6 fire + 20d6 bludgeoning; a DEX save halves it.',
+    targetCount: 0,
     effect: {
       kind: 'save',
       saveAbility: 'DEX',

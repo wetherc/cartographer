@@ -40,14 +40,59 @@ export function cantripStep(casterLevel) {
 /**
  * The number of scaling increments a cast applies: for a cantrip, the caster's
  * level step (above); for a leveled spell, every slot level above the spell's
- * own level (upcasting).
+ * own level (upcasting). Exported because the cast dialog needs the same count
+ * to work out how many targets to offer before the cast is resolved.
  * @param {Spell} spell
  * @param {number} slotLevel
  * @param {number} casterLevel
  * @returns {number}
  */
-function scalingSteps(spell, slotLevel, casterLevel) {
+export function scalingSteps(spell, slotLevel, casterLevel) {
   return spell.level === 0 ? cantripStep(casterLevel) : Math.max(0, slotLevel - spell.level);
+}
+
+/** The most creatures a spell may name as a fixed target count. Past this a
+ * spell is describing an area, which `targetCount: 0` says directly. */
+export const MAX_TARGET_COUNT = 20;
+
+/**
+ * A written target count read as a number: floored, held to 0..20, with blank or
+ * unparsable input falling back (1 for the authoring form, since a spell that
+ * says nothing about its targets hits one creature). Shared by the authoring
+ * form and the library normalizer so both agree that 0 means an area — the
+ * general `clampInt` cannot express that, since its missing-value fallback
+ * treats a deliberate 0 as nothing written.
+ * @param {unknown} value
+ * @param {number} [fallback]
+ * @returns {number}
+ */
+export function normalizeTargetCount(value, fallback = 1) {
+  if (value === '' || value === null || value === undefined) return fallback;
+  const count = Math.floor(Number(value));
+  if (!Number.isFinite(count)) return fallback;
+  return Math.min(MAX_TARGET_COUNT, Math.max(0, count));
+}
+
+/**
+ * How many creatures one cast may resolve against: the spell's own
+ * `targetCount` (absent counts as 1), plus one more per scaling increment when
+ * the spell scales targets. A `targetCount` of 0 marks an area spell, where the
+ * number of creatures caught is a fact about the map rather than the spell, so
+ * the cap is unbounded and the caster picks.
+ *
+ * Note this counts *creatures*, not dice. Spells that fire several projectiles
+ * at one creature (Magic Missile, Scorching Ray, Eldritch Blast) carry all of
+ * them in one damage term and stay single-target, because dividing projectiles
+ * between creatures needs a per-creature allocation the resolver has no shape
+ * for.
+ * @param {Spell} spell
+ * @param {number} steps how many scaling increments the cast applies
+ * @returns {number} the cap, or Infinity for an area spell
+ */
+export function maxTargets(spell, steps) {
+  const base = spell.targetCount ?? 1;
+  if (base <= 0) return Infinity;
+  return base + (spell.scaling?.targetsPerLevel ?? 0) * Math.max(0, steps);
 }
 
 /**
@@ -112,8 +157,9 @@ function slotPoolToSpend(caster, slotLevel) {
  * slot is below the spell's level), or `'no-slot'` (no slot of that level
  * left, counting the pact pool at that level). On success returns the caster
  * with the slot spent — from the leveled pool first, then the pact pool;
- * cantrips spend nothing — and an `outcomes` array whose shape follows the
- * effect kind:
+ * cantrips spend nothing — the targets the cast actually reached, how many were
+ * dropped past the spell's cap (`truncated`), and an `outcomes` array whose
+ * shape follows the effect kind:
  * - `attack`: one entry per target — its d20 attack roll, whether it hit/crit,
  *   and the damage dealt on a hit (crit doubles the dice).
  * - `save`: the damage rolled once, plus one entry per target with its save
@@ -136,7 +182,8 @@ function slotPoolToSpend(caster, slotLevel) {
  * @returns {(
  *   { ok: false, reason: 'not-known' | 'bad-slot-level' | 'no-slot' } |
  *   { ok: true, caster: Character, spell: Spell, slotLevel: number, spent: boolean,
- *     effect: import('../types/spell.js').SpellEffect['kind'], outcomes: object[] }
+ *     effect: import('../types/spell.js').SpellEffect['kind'], targets: CastTarget[],
+ *     truncated: number, outcomes: object[] }
  * )}
  */
 export function castSpell(caster, spell, options = {}) {
@@ -165,9 +212,16 @@ export function castSpell(caster, spell, options = {}) {
   const steps = scalingSteps(spell, effectiveSlot, casterLevel);
   const nextCaster = poolId ? spendResource(caster, poolId, 1) : caster;
 
+  // Over-selecting drops the extra targets rather than failing the cast: the
+  // slot is already committed by the time a cap is exceeded, and losing the
+  // whole cast is a worse answer than resolving the ones the spell can reach.
+  // `truncated` lets the caller say so.
+  const cap = maxTargets(spell, steps);
+  const reached = targets.length > cap ? targets.slice(0, cap) : targets;
+
   const outcomes = resolveEffect(spell, {
     steps,
-    targets,
+    targets: reached,
     spellAttackBonus,
     saveDC,
     attackMode,
@@ -181,6 +235,8 @@ export function castSpell(caster, spell, options = {}) {
     slotLevel: effectiveSlot,
     spent: !cantrip,
     effect: spell.effect.kind,
+    targets: reached,
+    truncated: targets.length - reached.length,
     outcomes,
   };
 }

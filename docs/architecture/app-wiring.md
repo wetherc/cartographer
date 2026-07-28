@@ -163,7 +163,13 @@ resets the `noticed` flag when the encounter moves. The bestiary spawn dialog
 is `encounterForm.js`'s `addFromBestiary`.
 
 The 5e attack resolution the Initiative panel triggers is `weaponAttack.js`,
-and spell resolution is `spellCast.js`. Both build on `combatants.js`, the one
+and spell resolution is `spellCast.js`. How many creatures a cast may name comes
+from the spell: `Casting.maxTargets` reads its `targetCount` (absent means one)
+plus a target per scaling step, and 0 marks an area spell with no cap at all. The
+cast dialog offers a single picker at a cap of one and a capped checkbox group
+above that, and a cast that ends up over the cap — picked at the best slot, then
+cast at a lower one — resolves the targets it can reach and reports the rest as
+dropped. Both build on `combatants.js`, the one
 place that resolves a participant id across the three combatant collections
 (characters, encounters, NPCs):
 

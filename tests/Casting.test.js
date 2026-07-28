@@ -1,6 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { castSpell, canCast, cantripStep } from '../src/entities/Casting.js';
+import {
+  MAX_TARGET_COUNT,
+  canCast,
+  cantripStep,
+  castSpell,
+  maxTargets,
+  normalizeTargetCount,
+} from '../src/entities/Casting.js';
 import { createResource } from '../src/entities/Resource.js';
 
 /**
@@ -71,6 +78,9 @@ const burningHands = {
   concentration: false,
   ritual: false,
   description: '',
+  // An area spell, as the shipped entry is: the cone catches whoever stands in
+  // it, so the cast has no target cap of its own.
+  targetCount: 0,
   effect: {
     kind: 'save',
     saveAbility: 'DEX',
@@ -143,6 +153,78 @@ test('cantripStep follows the 5/11/17 breakpoints', () => {
   assert.equal(cantripStep(11), 2);
   assert.equal(cantripStep(17), 3);
   assert.equal(cantripStep(20), 3);
+});
+
+test('maxTargets counts a spell against its own cap, not its dice', () => {
+  // Nothing written means one creature; that is what every entry authored before
+  // the field existed reads as.
+  assert.equal(maxTargets(cureWounds, 0), 1);
+  assert.equal(maxTargets(cureWounds, 4), 1, 'damage scaling alone adds no targets');
+  // 0 marks an area: the map decides how many are caught, so there is no cap.
+  assert.equal(maxTargets(burningHands, 0), Infinity);
+  assert.equal(maxTargets({ ...cureWounds, targetCount: 6 }, 3), 6);
+  // A spell that scales targets gains one per increment, whether the increment
+  // comes from a higher slot or from a cantrip's caster-level step.
+  const chain = { ...cureWounds, targetCount: 3, scaling: { targetsPerLevel: 1 } };
+  assert.equal(maxTargets(chain, 0), 3);
+  assert.equal(maxTargets(chain, 2), 5);
+  assert.equal(maxTargets(chain, -1), 3, 'a negative step cannot shrink the cap');
+});
+
+test('normalizeTargetCount keeps a deliberate 0 and falls back on nothing written', () => {
+  assert.equal(normalizeTargetCount(''), 1, 'a blank field means the spell says nothing');
+  assert.equal(normalizeTargetCount(undefined), 1);
+  assert.equal(normalizeTargetCount(null), 1);
+  assert.equal(normalizeTargetCount('not a number'), 1);
+  assert.equal(normalizeTargetCount('0'), 0, '0 is the area marker, not a missing value');
+  assert.equal(normalizeTargetCount(-4), 0);
+  assert.equal(normalizeTargetCount('3.7'), 3);
+  assert.equal(normalizeTargetCount(500), MAX_TARGET_COUNT);
+  assert.equal(normalizeTargetCount('', 0), 0, 'the fallback is the caller’s to choose');
+});
+
+test('a cast past the spell’s cap drops the extra targets and reports how many', () => {
+  const pair = { ...firebolt, targetCount: 2 };
+  const result = castSpell(caster(), pair, {
+    targets: [{ id: 'a' }, { id: 'b' }, { id: 'c' }],
+    spellAttackBonus: 20,
+    rng: seq([0.5, 0.5]),
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.truncated, 1);
+  assert.deepEqual(
+    result.targets.map((t) => t.id),
+    ['a', 'b'],
+  );
+  assert.equal(result.outcomes.length, 2, 'no roll is made for a dropped target');
+});
+
+test('an area spell takes every target it is given, and a single-target spell one', () => {
+  const three = [{ id: 'a' }, { id: 'b' }, { id: 'c' }];
+  const area = castSpell(caster(), burningHands, { slotLevel: 1, targets: three, rng: seq([]) });
+  assert.equal(area.truncated, 0);
+  assert.equal(area.outcomes.length, 3);
+
+  const single = castSpell(caster(), cureWounds, { slotLevel: 1, targets: three, rng: seq([]) });
+  assert.equal(single.truncated, 2);
+  assert.equal(single.outcomes.length, 1);
+});
+
+test('each target of an attack spell rolls its own d20', () => {
+  const pair = { ...firebolt, targetCount: 2 };
+  // AC 15 for both: the first rolls a 20 and hits, the second a 2 and misses.
+  const result = castSpell(caster(), pair, {
+    targets: [
+      { id: 'a', ac: 15 },
+      { id: 'b', ac: 15 },
+    ],
+    rng: seq([face(20, 20), 0, 0, face(20, 2)]),
+  });
+  const [a, b] = result.outcomes;
+  assert.equal(a.hit, true);
+  assert.equal(a.crit, true);
+  assert.equal(b.hit, false);
+  assert.equal(b.damage, null, 'a missed target takes no damage of its own');
 });
 
 test('canCast checks cantrips and prepared/known lists', () => {
@@ -261,7 +343,10 @@ test('upcasting a save spell adds a die per slot level above base', () => {
 
 test('heal rolls once and applies to every target', () => {
   const rng = seq([face(8, 8)]); // 1d8 = 8
-  const result = castSpell(caster(), cureWounds, {
+  // Cure Wounds itself touches one creature; a two-target count stands in for the
+  // mass variant so the shared-roll behavior is what is under test.
+  const massCure = { ...cureWounds, targetCount: 2 };
+  const result = castSpell(caster(), massCure, {
     slotLevel: 1,
     targets: [{ id: 'a' }, { id: 'b' }],
     rng,

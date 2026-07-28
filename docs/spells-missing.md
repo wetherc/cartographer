@@ -48,10 +48,11 @@ rules the app cannot honor:
   stored and shown, but not enforced: nothing yet limits a caster to one
   effect at a time or calls for a CON save on damage.
 - **Area/geometry spells** (Grease, Web, Sleep by HP total, Wall of Fire,
-  Hunger of Hadar). Area targeting is reduced to multi-selecting combat
-  participants; there is no map-geometry template, so shape, placement, and
-  zone persistence cannot be honored. Fireball-style "pick the targets in the
-  blast" works; lingering zones do not.
+  Hunger of Hadar). Area targeting is reduced to picking the creatures caught:
+  a spell with `targetCount: 0` offers every reachable combatant and the caster
+  ticks whoever the blast covers. There is no map-geometry template, so shape,
+  placement, and zone persistence cannot be honored. Fireball-style "pick the
+  targets in the blast" works; lingering zones do not.
 - **Buff/debuff riders on rolls** (Shield's +5 AC reaction, Haste's extra
   action, Enlarge/Reduce). These modify the action economy or later rolls,
   neither of which the app models.

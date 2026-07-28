@@ -1,5 +1,5 @@
 import { promptModal } from '../ui/Modal.js';
-import { castSpell } from '../entities/Casting.js';
+import { castSpell, maxTargets, scalingSteps } from '../entities/Casting.js';
 import { spellSource } from '../entities/Character.js';
 import { spellSaveDC, spellAttackBonus } from '../entities/Classes.js';
 import { isDefeated } from '../entities/Encounter.js';
@@ -56,17 +56,23 @@ function rosterTargets(app, spell) {
 
 /**
  * The pre-roll dialog fields for a cast: a slot-level picker (leveled spells
- * cast at or above their level from a slot the caster still has), the target,
- * an advantage/disadvantage mode, and — for a save spell — the DC and the
- * target's save bonus. Cantrips omit the slot picker; utility spells add no
+ * cast at or above their level from a slot the caster still has), the target or
+ * targets, an advantage/disadvantage mode, and — for a save spell — the DC and
+ * the target's save bonus. Cantrips omit the slot picker; utility spells add no
  * target. Returns null when the caster has no usable slot for a leveled spell.
+ *
+ * A spell that reaches one creature keeps a single select, so the common case
+ * stays one click. A spell that reaches more gets the checkbox group, capped at
+ * what the spell allows — an area spell has no cap, so the GM picks whoever the
+ * blast covers.
  * @param {Spell} spell
  * @param {{ id: string, name: string, ac: number }[]} targets
  * @param {number[]} slotLevels available slot levels at or above the spell's
  * @param {number} saveDC
+ * @param {number} cap how many targets this cast may reach; Infinity for an area
  * @returns {import('../types/modal.js').ModalField[] | null}
  */
-function castFields(spell, targets, slotLevels, saveDC) {
+function castFields(spell, targets, slotLevels, saveDC, cap) {
   const kind = spell.effect.kind;
   /** @type {import('../types/modal.js').ModalField[]} */
   const fields = [];
@@ -81,16 +87,24 @@ function castFields(spell, targets, slotLevels, saveDC) {
     });
   }
   if (kind !== 'utility') {
-    fields.push({
-      name: 'target',
-      label: kind === 'heal' ? 'Recipient' : 'Target',
-      type: 'select',
-      full: true,
-      options: targets.map((t) => ({
-        value: t.id,
-        label: kind === 'heal' ? t.name : `${t.name} (AC ${t.ac})`,
-      })),
-    });
+    const noun = kind === 'heal' ? 'Recipient' : 'Target';
+    const options = targets.map((t) => ({
+      value: t.id,
+      label: kind === 'heal' ? t.name : `${t.name} (AC ${t.ac})`,
+    }));
+    if (cap <= 1) {
+      fields.push({ name: 'target', label: noun, type: 'select', full: true, options });
+    } else {
+      fields.push({
+        name: 'targets',
+        label: Number.isFinite(cap) ? `${noun}s (up to ${cap})` : `${noun}s in the area`,
+        type: 'multiselect',
+        full: true,
+        options,
+        fixedHeight: true,
+        ...(Number.isFinite(cap) ? { max: cap } : {}),
+      });
+    }
   }
   if (kind === 'attack') {
     fields.push({
@@ -202,7 +216,13 @@ async function runCast(app, entity, spell, targets, writeBack) {
   // under; without a recorded source they fall back to the first caster class.
   const sourceClass = spellSource(caster, spell.id) ?? undefined;
   const dc = spellSaveDC(caster, sourceClass) ?? 10;
-  const fields = castFields(spell, targets, slotLevels, dc);
+  // The target cap is offered at the best slot the caster could spend, since the
+  // slot is picked in the same dialog: a spell that gains targets by upcasting
+  // has to show them before the level is chosen. Casting at a lower level than
+  // the picks assumed drops the extras, which `castSpell` reports back.
+  const bestSlot = spell.level > 0 ? (slotLevels[slotLevels.length - 1] ?? spell.level) : 0;
+  const cap = maxTargets(spell, scalingSteps(spell, bestSlot, caster.level ?? 1));
+  const fields = castFields(spell, targets, slotLevels, dc, cap);
   if (!fields) {
     app.toasts.show(`No level ${spell.level}+ slot left for ${spell.name}.`);
     return;
@@ -215,18 +235,24 @@ async function runCast(app, entity, spell, targets, writeBack) {
   if (!values) return;
 
   const slotLevel = spell.level > 0 ? Number(values.slot) || spell.level : spell.level;
-  const target = targets.find((t) => t.id === values.target) ?? targets[0];
   const mode = /** @type {import('../types/dice.js').RollMode} */ (values.mode ?? 'normal');
   const saveDC = Number(values.dc) || dc;
-  const castTarget =
+  const chosen = chosenTargets(targets, values);
+  if (spell.effect.kind !== 'utility' && chosen.length === 0) {
+    app.toasts.show(`Pick at least one target for ${spell.name}.`);
+    return;
+  }
+  // Every target rolls its save against the same hand-entered bonus, since only
+  // a party character has a save surface to read one from today.
+  const castTargets =
     spell.effect.kind === 'save'
-      ? { ...target, saveBonus: Number(values['save-bonus']) || 0, saveMode: mode }
-      : target;
+      ? chosen.map((t) => ({ ...t, saveBonus: Number(values['save-bonus']) || 0, saveMode: mode }))
+      : chosen;
 
   const result = castSpell(caster, spell, {
     slotLevel,
     casterLevel: caster.level ?? 1,
-    targets: target ? [castTarget] : [],
+    targets: castTargets,
     spellAttackBonus: spellAttackBonus(caster, sourceClass) ?? 0,
     saveDC,
     attackMode: spell.effect.kind === 'attack' ? mode : 'normal',
@@ -234,6 +260,12 @@ async function runCast(app, entity, spell, targets, writeBack) {
   if (!result.ok) {
     app.toasts.show(`Can't cast ${spell.name}.`);
     return;
+  }
+  if (result.truncated > 0) {
+    app.toasts.show(
+      `${spell.name} reaches ${result.targets.length} at level ${result.slotLevel}; ` +
+        `${result.truncated} dropped.`,
+    );
   }
 
   // Write the spent slot back to the caster before applying effects, so a slot
@@ -246,20 +278,51 @@ async function runCast(app, entity, spell, targets, writeBack) {
   const at = result.slotLevel > 0 ? ` at level ${result.slotLevel}` : '';
   app.actions.logEvent('combat', `${caster.name} casts ${spell.name}${at}.`);
 
-  applyOutcomes(app, spell, result, target?.name ?? '');
+  applyOutcomes(app, spell, result);
+}
+
+/**
+ * The targets the GM picked out of the dialog: the multiselect's comma-joined
+ * ids, or the single select's one id, resolved back to the target objects in the
+ * order they were offered. Unknown ids are dropped rather than trusted.
+ * @param {{ id: string, name: string, ac: number }[]} targets
+ * @param {Record<string, string>} values
+ * @returns {{ id: string, name: string, ac: number }[]}
+ */
+function chosenTargets(targets, values) {
+  const raw = values.targets ?? values.target ?? '';
+  const ids = new Set(
+    String(raw)
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean),
+  );
+  return targets.filter((t) => ids.has(t.id));
+}
+
+/**
+ * How a cast's targets read in a toast: the one name when a spell reached one
+ * creature, a count when it reached several.
+ * @param {{ name?: string }[]} targets
+ * @returns {string}
+ */
+function targetSummary(targets) {
+  if (targets.length === 1) return targets[0].name ?? '';
+  return `${targets.length} targets`;
 }
 
 /**
  * Apply and log a resolved cast's outcomes: attack hits/misses, save results
- * with full/half/no damage, and healing. Damage and healing route to the same
- * HP models the weapon path uses. A short toast summarizes the cast.
+ * with full/half/no damage, and healing. Each target gets its own log line, so a
+ * multi-target cast is auditable roll by roll; the toast carries the summary.
+ * Damage and healing route to the same HP models the weapon path uses.
  * @param {AppContext} app
  * @param {Spell} spell
- * @param {{ outcomes: object[] }} result
- * @param {string} targetName
+ * @param {{ outcomes: object[], targets: { name?: string }[] }} result
  */
-function applyOutcomes(app, spell, result, targetName) {
+function applyOutcomes(app, spell, result) {
   const kind = spell.effect.kind;
+  const summary = targetSummary(result.targets);
   if (kind === 'attack') {
     for (const o of /** @type {any[]} */ (result.outcomes)) {
       const verb = o.crit ? 'critically hits' : o.hit ? 'hits' : 'misses';
@@ -276,7 +339,7 @@ function applyOutcomes(app, spell, result, targetName) {
       );
       applyToTarget(app, o.target.id, o.damage?.total ?? 0, false);
     }
-    app.toasts.show(`${spell.name} on ${targetName}.`);
+    app.toasts.show(`${spell.name} on ${summary}.`);
     return;
   }
   if (kind === 'save') {
@@ -289,7 +352,7 @@ function applyOutcomes(app, spell, result, targetName) {
       );
       applyToTarget(app, o.target.id, o.taken, false);
     }
-    app.toasts.show(`${spell.name} on ${targetName}.`);
+    app.toasts.show(`${spell.name} on ${summary}.`);
     return;
   }
   if (kind === 'heal') {
@@ -300,7 +363,7 @@ function applyOutcomes(app, spell, result, targetName) {
       );
       applyToTarget(app, o.target.id, o.healing.total, true);
     }
-    app.toasts.show(`${spell.name} heals ${targetName}.`);
+    app.toasts.show(`${spell.name} heals ${summary}.`);
     return;
   }
   app.toasts.show(`${spell.name} cast.`);

@@ -75,6 +75,10 @@ export interface Spell {
   concentration: boolean;
   ritual: boolean;
   description: string;
+  /** How many creatures one cast can resolve against, before scaling adds more.
+   * 0 means the spell covers an area rather than a fixed number of creatures, so
+   * the caster picks any number of them. Absent counts as 1. */
+  targetCount?: number;
   effect: SpellEffect;
   /** How the spell scales with slot level or caster level; absent = no scaling. */
   scaling?: SpellScaling;
