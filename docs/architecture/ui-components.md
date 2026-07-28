@@ -15,7 +15,7 @@ the hand-rolled copies had drifted on accessibility attributes.
 
 The rules behind these components (when to confirm, how buttons are styled,
 what gets a toast) live in [Conventions](conventions.md#ui-and-style). This
-guide is the API surface; that one is the policy.
+guide covers the API surface; that one covers the policy.
 
 ## Two layers
 
@@ -157,7 +157,7 @@ Two consequences are easy to get wrong if you extend the sheet:
 
 Comparing those fields by reference is sound because the entity layer never
 mutates in place; see
-[Conventions](conventions.md#the-immutability-is-enforced-not-assumed).
+[Conventions](conventions.md#tiles-are-frozen-once-a-node-holds-them).
 
 ### Handles that are not `{ update }`
 
@@ -226,7 +226,7 @@ resolved gate), `render` for a bespoke control that has to refresh the list, and
 one is how a leading toggle, like the quest's complete button or the handout's
 eye, gets wired even though it sits inside the body rather than in `actions`.
 
-One caveat on `update()`'s early-out: it compares row objects by identity, which
+`update()`'s early-out compares row objects by identity, which
 is only sound because the entity layer never mutates in place. A panel whose
 output depends on state that is *not* in its rows has to pass `alwaysRender`.
 
@@ -234,7 +234,7 @@ output depends on state that is *not* in its rows has to pass `alwaysRender`.
 
 ### `src/ui/buttons.js`
 
-Two builders and one paragraph. Eighteen modules import them, and no panel
+Two button builders and one empty-state paragraph. Eighteen modules import them, and no panel
 should call `document.createElement('button')` for an ordinary control.
 
 ```js
@@ -295,9 +295,9 @@ An unknown name yields an empty SVG rather than throwing, so a typo shows as a
 blank gap. The typecheck is what catches it: `IconName` is a string-literal
 union, so a misspelled name fails `tsc`.
 
-Two naming notes worth knowing before you pick a glyph. `minus` and `heal` are
+Two naming conventions constrain which glyph you pick. `minus` and `heal` are
 the fixed pair for HP moving down and up, everywhere; `sword` is reserved for
-attack actions and is deliberately *not* used for damage. And if you need a new
+attack actions and is never used for damage. And if you need a new
 glyph, add its path data to `PATHS` and its name to the union rather than
 inlining an SVG at the call site.
 
@@ -338,8 +338,8 @@ which is what makes Enter submit and a submit button's `value` the return value.
 The four dialogs that live outside `Modal.js` are all built this way:
 `promptSpellDetail` (`SpellDetail.js`), `combatSetupModal` (`CombatSetup.js`),
 `generateDialog` (`GenerateDialog.js`), and the ability-score breakdown
-(`CharacterStatBadge.js`). Focus restoration and dismissal semantics have one owner, so a fix
-there is a fix everywhere.
+(`CharacterStatBadge.js`). Focus restoration and dismissal semantics have one
+owner, so those four cannot drift from the `Modal.js` dialogs.
 
 Which one to use is a policy question, covered in
 [Conventions](conventions.md#dialog-discipline): `confirmModal` only for
@@ -369,7 +369,7 @@ columns. Actions are Cancel then submit (`options.submitLabel`, default
 `'Create'`), which is the dismiss-left/primary-right ordering used on every
 form surface in the app.
 
-Two behaviors worth knowing because they are easy to reimplement badly:
+Two behaviors are easy to reimplement badly:
 
 - **The file field reports errors inline**, as a `<p class="modal__error"
   role="alert">` inside the dialog, not as a nested alert modal. It also clears
@@ -487,7 +487,7 @@ return value; the items' own callbacks are the result.
 unit tested. It flips the menu off a viewport edge rather than letting it slide
 under one.
 
-A context menu is deliberately *not* a `<dialog>`, so it stays outside the
+A context menu is not a `<dialog>`, so it stays outside the
 `Modal.js` lifecycle rather than being folded into it.
 
 ## Image input
@@ -556,7 +556,7 @@ in one `:root` block in `styles/base.css`:
 | Type | `--font-sans`, `--font-mono`, `--text-display`, `--text-heading`, `--text-body`, `--text-label`, `--line-body` |
 | Radius | `--radius-sm`, `--radius`, `--radius-lg` |
 
-Two rules, both load-bearing:
+Two rules, both of which the token system depends on:
 
 - **Never write a fallback** (`var(--border, #ccc)`). A missing token renders
   as nothing, which is visible; a fallback hides the typo instead.
@@ -612,7 +612,7 @@ for: `.disclosure` / `__chevron` / `--open` and `.stat-bar` / `__track` /
 `__fill` (plus `--mana` and `--critical`) in `widgets.css`, and `.tabs` /
 `__tab` / `__panel` in `layout.css`.
 
-`.field` carries two details worth not undoing. Single-line controls get an
+`.field` carries two details that look removable and are not. Single-line controls get an
 explicit `height`, because a bare `<select>` ignores `line-height` for its box
 metrics and otherwise sits about 2.5 px shorter than a neighboring `<input>`.
 And selects opt into the customizable-select model (`appearance: base-select`
@@ -694,7 +694,7 @@ Three known gaps, so nobody assumes they are covered:
 
 ## Known duplication
 
-Worth knowing so you reuse the right thing and do not add to the pile.
+Reuse the right thing rather than adding to the pile.
 
 - **Chips and badges have no shared class.** Around ten near-identical
   implementations exist across `party.css`, `session.css`, `library.css`,
@@ -712,7 +712,7 @@ Worth knowing so you reuse the right thing and do not add to the pile.
   `character.css` rather than reused.
 
 If you are adding a widget that fits one of these shapes, reuse the existing
-class or JS builder and resist adding the next copy; if you are adding the
+class or JS builder rather than adding the next copy; if you are adding the
 shared version, `base.css` is where it belongs.
 
 ## Testing UI code

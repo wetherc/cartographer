@@ -13,7 +13,7 @@ import { downloadBlob } from '../storage/fileIO.js';
 
 /**
  * Every image the node's tiles reference (bases and overlays), deduplicated.
- * Pure; the seam the renderer preloads through before drawing.
+ * Pure; the renderer preloads through this before drawing.
  * @param {MapNode} node
  * @returns {string[]}
  */

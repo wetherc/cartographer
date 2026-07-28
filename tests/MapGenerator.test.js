@@ -47,7 +47,7 @@ test('an unknown size preset falls back to the medium dimensions', () => {
 test('generateDungeon defaults entrance to edge and descend to true', () => {
   const gen = generateDungeon(palette, GENERATOR_SIZES.small, mulberry32(3));
   assert.ok(gen.tiles.length > 0);
-  // descend defaulted true, so a stairs-down seam is placed.
+  // descend defaulted true, so a stairs-down tile is placed.
   assert.ok(gen.stairsDown, 'default descend places a stairs-down tile');
 });
 

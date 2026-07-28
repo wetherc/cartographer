@@ -1,7 +1,7 @@
 # Curated spells vs. the full SRD
 
-The built-in spell corpus (`src/data/spells.js`) is deliberately a curated
-cross-section, not the complete SRD. The SRD 5.1 lists 319 spells; the app
+The built-in spell corpus (`src/data/spells.js`) is a curated
+cross-section rather than the complete SRD. The SRD 5.1 lists 319 spells; the app
 ships 30. This document records what the cut was, why, and how to close the
 gap for a table that wants more.
 
@@ -34,8 +34,8 @@ with their effects carried in the description text.
 
 ## Why the rest are missing
 
-Most omissions are not data-entry backlog; they wait on mechanics later
-development phases add. Adding them today would produce entries whose printed
+The omissions are not data-entry backlog. Each waits on a mechanic the app
+does not have yet, and adding it today would produce an entry whose printed
 rules the app cannot honor:
 
 - **Condition-imposing spells** (Ray of Enfeeblement, Bane, Blindness/Deafness,
@@ -45,8 +45,8 @@ rules the app cannot honor:
 - **Concentration-dependent spells** (Bless and Hold Person ship, but the
   broader family — Haste, Invisibility, Spirit Guardians, walls and clouds —
   leans on concentration actually breaking). The `concentration` flag is
-  stored and shown; enforcement (one effect at a time, CON saves on damage) is
-  planned for later implementation.
+  stored and shown, but not enforced: nothing yet limits a caster to one
+  effect at a time or calls for a CON save on damage.
 - **Area/geometry spells** (Grease, Web, Sleep by HP total, Wall of Fire,
   Hunger of Hadar). Area targeting is reduced to multi-selecting combat
   participants; there is no map-geometry template, so shape, placement, and
@@ -54,7 +54,7 @@ rules the app cannot honor:
   blast" works; lingering zones do not.
 - **Buff/debuff riders on rolls** (Shield's +5 AC reaction, Haste's extra
   action, Enlarge/Reduce). These modify the action economy or later rolls,
-  which needs further development.
+  neither of which the app models.
 - **Summoning and companions** (Find Familiar, Conjure Animals, Animate Dead).
   No mechanism for spawning controlled combatants.
 - **Exploration/social utility** (Detect Magic, Identify, Charm Person,
@@ -80,6 +80,6 @@ needed to add any missing spell:
   `utility` entries with the rules in the description — the GM adjudicates by
   hand, as at a physical table.
 
-As the roadmap phases land (conditions with effects, action economy,
-concentration), the corresponding families above become honest to model and
-should graduate from this list into `src/data/spells.js`.
+Once conditions carry rule effects, the action economy exists, and
+concentration is enforced, the families above become modelable and belong in
+`src/data/spells.js`.

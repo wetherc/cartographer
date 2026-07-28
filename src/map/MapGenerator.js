@@ -65,7 +65,7 @@ export function generateNodeTiles(palette, { archetype, size }, rng) {
  * Generate a multi-level dungeon as a chain of levels: level 1 is entered from
  * the map edge (corridor + border door), each deeper level is entered by
  * stairs, and every level's stairs-down tile is linked (via the existing
- * `childNodeId` zoom seam) to the level below it, so stairs always connect to
+ * `childNodeId` zoom link) to the level below it, so stairs always connect to
  * a real generated level. The bottom level places no stairs-down, so no stairs
  * lead nowhere. `makeId` supplies each sub-level's node id (injected so the
  * caller can guarantee uniqueness against its grid and tests stay pure).

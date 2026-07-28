@@ -2,7 +2,7 @@
 
 *Back to the [architecture overview](../architecture.md).*
 
-Everything the party fights, spends, or plays lives in `src/entities/`:
+`src/entities/` holds the three things a campaign's rules operate on:
 encounters, resource pools, and characters. All three follow one update style,
 described first below. The rest of the page covers the character model, which
 is by far the largest of the three.
@@ -38,7 +38,7 @@ A few behaviors are baked into the models rather than validated separately:
 
 ## The character foundation
 
-A `Character` is more than stats and inventory: it carries a class list, a
+On top of its stats and inventory, a `Character` carries a class list, a
 race, a background, proficiency lists, hit dice, and a level-up flow. Each of
 those is a pure module beside `Character.js`, following the same
 take-a-value-return-a-value shape.
@@ -65,7 +65,7 @@ take-a-value-return-a-value shape.
           |
           v
     Character.js         the character value itself; withDefaults is the
-                         load-time migration seam
+                         load-time migration point
 ```
 
 The split matters when you go looking for something: the catalogs hold what a
@@ -94,7 +94,7 @@ round-trips.
 `entities/Proficiencies.js` assembles the six proficiency lists plus expertise
 from class + race + background (`assembleProficiencies`) and applies or
 hand-edits them (`withProficiencies`, which keeps expertise a subset of
-skills). The `isProficient*`/`hasExpertise` predicates default cleanly for a
+skills). The `isProficient*`/`hasExpertise` predicates return `false` for a
 legacy character with no lists.
 
 ### Hit points and hit dice
@@ -118,7 +118,7 @@ choice carries the order it was made in for `undoLastChoice` to read.
 
 ### Loading old saves
 
-`entities/Character.js`'s `withDefaults` is the load-time migration seam that
+`entities/Character.js`'s `withDefaults` is the one load-time migration point. It
 folds all of the above onto an older save: a legacy scalar class becomes a
 list, a missing proficiency scaffold is created empty, a race string is
 preserved. `campaign/Campaigns.js` maps every loaded character through it.
@@ -139,6 +139,6 @@ breakdown popover in `ui/CharacterStatBadge.js`, the HP bar and slot pips in
 `ui/CharacterBars.js`, the castable-spell list in `ui/CharacterSpells.js`, and
 the progression surface (class rows with subclass, the pending-level class
 assignment, pending ASI/feat choices, unlocked features, and the hit-dice pool)
-in `ui/CharacterProgress.js`. The background name and the assembled proficiency lists are stored but
-not yet rendered there; they are deferred into later saving-throw and skill
-blocks rather than built as a static list first.
+in `ui/CharacterProgress.js`. The background name and the assembled
+proficiency lists are stored but not rendered there yet; they are meant to
+appear inside saving-throw and skill blocks rather than as a static list.

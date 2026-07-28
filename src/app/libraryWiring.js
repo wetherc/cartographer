@@ -77,7 +77,7 @@ const EQUIPMENT_SUBTABS = [
 
 /**
  * The Library mode's rail: the merged (built-in + custom) equipment,
- * bestiary, and NPC template lists, plus the export/import/reset controls for
+ * bestiary, NPC template, and spell lists, plus the export/import/reset controls for
  * the custom library. The custom library is deliberately not campaign state:
  * it persists in its own localStorage key, survives New/Import/Load example,
  * and round-trips through a portable JSON file the GM keeps in the gitignored

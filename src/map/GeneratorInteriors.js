@@ -55,8 +55,8 @@ export function wallKind(n, e, s, w) {
  * its stairs-up tile is the way back, and it becomes the entry. `descend`
  * controls whether a stairs-down tile is placed at all; the bottom level of a
  * multi-level dungeon omits it so no stairs lead nowhere. The returned
- * `stairsDown` is that tile's id (null when omitted), the seam the caller
- * links to the next level via `childNodeId`.
+ * `stairsDown` is that tile's id (null when omitted), which the caller links
+ * to the next level via `childNodeId`.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @param {{ entrance?: 'edge' | 'stairs', descend?: boolean }} [options]
  * @returns {{ tiles: Tile[], entry: string, stairsDown: string | null }}

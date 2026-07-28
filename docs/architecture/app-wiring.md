@@ -100,7 +100,7 @@ repaint rather than a page load. The parse never was the expensive part, and
 after the tile codec (see [Persistence](persistence.md)) it is well under a
 millisecond.
 
-Two details worth knowing:
+Two details:
 
 - It takes an already-built `Campaign` rather than reading storage, so
   migrations, asset restore, tile decode, and entity defaults stay stated once
@@ -153,7 +153,7 @@ The travelogue (provides `logEvent`), NPCs, quests, and handouts.
 
 ### libraryWiring.js
 
-The Library mode's three template lists (equipment, bestiary, NPCs) and the
+The Library mode's four template lists (equipment, bestiary, NPCs, spells) and the
 custom-library file controls: export, import, reset, and the startup
 auto-load.
 

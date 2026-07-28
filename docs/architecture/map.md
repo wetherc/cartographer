@@ -2,7 +2,7 @@
 
 *Back to the [architecture overview](../architecture.md).*
 
-The map is the heart of the app: a tiled world the GM paints in Build mode and
+The map is a tiled world the GM paints in Build mode and
 the party explores in Play mode. Underneath it sits a small data model made of
 nodes and tiles. Everything else on this page (the hierarchy, regions,
 rendering, fog of war, party movement) builds on that model, so read the first
@@ -18,7 +18,7 @@ Start with the two core types, both declared in `src/types/map.ts`:
 - A **MapNode** is one whole map: a rectangular grid of tiles plus a name, a
   kind (`'world'`, `'region'`, or `'interior'`), and dimensions.
 
-Here is the part that trips people up at first: there is no separate "world"
+The part that surprises most readers: there is no separate "world"
 type, "region" type, or "dungeon" type. A world map is a MapNode. A region
 inside it is also a MapNode. So is a town inside that region, and a dungeon
 under the town. What differs is how they connect, and they connect in two
@@ -58,7 +58,7 @@ tiles. A region is just a MapNode that one or more tiles point at through
 with helpers to add, get, and update nodes, walk the `parentId` chain to build
 a breadcrumb, and resolve a tile's zoom target.
 
-One method matters for cross-tab sync: `replaceNodes` swaps out the entire
+Cross-tab sync depends on `replaceNodes`, which swaps out the entire
 registry's contents while keeping the grid *object's* identity. Several
 long-lived objects (the navigator, the party tracker, the canvas) each hold a
 reference to the grid they were constructed with. When another browser tab
@@ -143,8 +143,8 @@ region-group chunks. Span blocks feed the same "covered cells" set, so the
 per-tile pass skips the base images underneath while fog and overlays stay per
 tile, exactly as with group images.
 
-Two differences from region chunks are worth knowing. Span art renders on
-interior maps too, not just outdoor ones. And the covered cells keep their own
+Span art differs from region chunks in two ways. It renders on
+interior maps too, not only outdoor ones. And the covered cells keep their own
 tile data untouched; the span is purely a rendering effect of the anchor tile,
 so repainting the anchor at 1x clears it.
 
@@ -178,7 +178,7 @@ the tile is not revealed, otherwise draw the image at `tile.imageRef`. The
 group, span, and marker passes described elsewhere on this page layer on top
 of that.
 
-One input subtlety: a pointerup counts as a tile click only if the total drag
+A pointerup counts as a tile click only if the total drag
 distance stayed below a small threshold. Without that check, ending a pan
 gesture on a region tile would also zoom into it.
 
@@ -230,7 +230,7 @@ town in `src/map/GeneratorRegions.js`, dispatched from `MapGenerator`; dungeon
 and castle in `src/map/GeneratorInteriors.js`) and the example world in
 `campaign/ExampleWorld.js`.
 
-One more detail about overlays: a tile's `overlayRef` can hold either a single
+A tile's `overlayRef` can hold either a single
 reference or a draw-ordered stack of them (`TileGrid.overlayList` normalizes
 the two forms). The stack exists for places like a river mouth, where the tile
 needs both its shoreline piece and the river channel drawn on top of it, and

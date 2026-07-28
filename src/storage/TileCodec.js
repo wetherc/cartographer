@@ -37,7 +37,7 @@ import { tileIdAt } from '../map/MapGeometry.js';
  *
  * Like a packed tile, an encoded node exists only inside the serialized string.
  * Nothing in memory may ever hold one: the renderer reads `tile.metadata` without
- * checking, so `decodeNodeTiles` runs at the load seam before any validation.
+ * checking, so `decodeNodeTiles` runs on load before any validation.
  */
 
 /**

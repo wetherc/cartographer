@@ -70,7 +70,7 @@ export function freezeTile(tile) {
  * same array.
  *
  * O(tiles) twice over, since freezing an array walks its elements to make each
- * position non-writable, so this belongs at a node-entry seam and never on a
+ * position non-writable, so this belongs on a node-entry path and never on a
  * per-cell path: freezing the list inside the paint and fog mutation helpers
  * measured 0.81 ms per 40-cell drag at 30x30 and 7.78 ms at 100x100, which is
  * the whole cost those helpers exist to remove. Those helpers freeze the tiles

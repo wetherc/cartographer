@@ -60,7 +60,7 @@ test('slotsForCasterLevel reads the multiclass (full-caster) table by combined l
   assert.deepEqual(slotsForCasterLevel(5), slotsForCaster('full', 5));
   assert.deepEqual(slotsForCasterLevel(0), []);
   // A multiclassed paladin's combined-level slots differ from a single paladin's
-  // half-caster row — the seam the deferred multiclass path relies on.
+  // half-caster row — the distinction the deferred multiclass path relies on.
   assert.notDeepEqual(slotsForCasterLevel(2), slotsForCaster('half', 5));
 });
 

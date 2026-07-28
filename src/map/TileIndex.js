@@ -153,8 +153,8 @@ export function tileAtXY(node, x, y) {
 
 /**
  * A new node holding a tile list, frozen against the in-place mutation every
- * cache here depends on nobody performing. This is the seam a list that was
- * built or reordered wholesale passes through — a load, a generated map, an
+ * cache here depends on nobody performing. Every list that was
+ * built or reordered wholesale passes through here — a load, a generated map, an
  * erase, a resize, a whole-node fog flip: it hands its list over rather than
  * writing `tiles` into a node literal, and the new node is deliberately left
  * uncached, since only the three helpers below can say where a position moved.

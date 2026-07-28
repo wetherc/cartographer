@@ -80,7 +80,7 @@ export function stateVersion(parsed) {
  *
  * A step with no entry in the table is a pass-through rather than an error: a
  * version bump with no payload change is legitimate, and throwing here would
- * fail a load, which is the outcome this whole seam exists to avoid. A step
+ * fail a load, which is the outcome this whole table exists to avoid. A step
  * registered under the wrong key is caught by the unit test asserting the table
  * covers every version below `CURRENT_VERSION`.
  *

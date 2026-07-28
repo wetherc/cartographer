@@ -37,7 +37,7 @@ function appendRevealedContent(row, handout) {
  * visible rows and every mutation flows back through a callback, matching the
  * other panels; modals live in main.js.
  *
- * The reveal flag is the seam a future player-facing view renders against;
+ * The reveal flag is what a future player-facing view would render against;
  * today one GM-facing tab drives it manually.
  * @param {HTMLElement} container
  * @param {{

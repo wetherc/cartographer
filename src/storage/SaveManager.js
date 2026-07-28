@@ -183,7 +183,7 @@ function records(value) {
 /**
  * A save collection read back as fully-defaulted entities: the coercion above,
  * then the paired `withDefaults`. This is the unpack half of `packState`'s
- * omission, so it has to run here at the seam rather than in the boot path only —
+ * omission, so it has to run here on load rather than in the boot path only —
  * a stored character legitimately carries no `spellbook` key now, and `undoHistory`
  * and `readStateFromFile` hand their result to callers that do no defaulting.
  * @param {string} key a key of ENTITY_DEFAULTS
@@ -253,12 +253,12 @@ function partyPosition(value) {
  * Parse a serialized campaign, defaulting any missing field to an empty value
  * rather than throwing, so an older or hand-edited save still loads — and
  * coercing every field whose *shape* the load path trusts, so a malformed one
- * cannot. This is the only validation seam a save passes through: Import
+ * cannot. This is the only validation a save passes through: Import
  * persists what it reads and then reloads, so an unreadable field that survives
  * here becomes the stored save of an app that no longer boots. Nodes without an
  * id are dropped; `withNodeDefaults` (TileGrid) defends the tiles within and is
- * also what unpacks the tile fields `serialize` omits, so it runs here at the
- * seam rather than only in `toTileGrid`. The entity `withDefaults` functions are
+ * also what unpacks the tile fields `serialize` omits, so it runs here rather
+ * than only in `toTileGrid`. The entity `withDefaults` functions are
  * the same story one level up: they unpack the fields `packState` omitted, so
  * every state this returns is fully defaulted whether or not its caller reloads
  * through the boot path. `restoreAssets` puts the hoisted
@@ -461,7 +461,7 @@ export function downloadState(state, filename = 'campaign.json') {
  * Whether a `storage` event represents another tab writing a new campaign save
  * (as opposed to a history-key write, a clear, or a no-op). The browser fires
  * `storage` only in tabs *other* than the one that made the change, so a driving
- * tab never sees its own saves — this is the seam a follower tab watches. Pure.
+ * tab never sees its own saves — this is what a follower tab watches. Pure.
  * @param {StorageEvent} event
  * @param {string} [key]
  * @returns {boolean}

@@ -76,8 +76,8 @@ test('freezeTiles skips a list it has already frozen', () => {
   withFreezing(true, () => {
     const frozen = freezeTiles([createTile('0,0', 'a.svg')]);
     // A tile added behind the freeze cannot exist through the public helpers;
-    // the short-circuit is what keeps re-entering the seam with an unchanged
-    // list off the O(tiles) path.
+    // the short-circuit is what keeps a repeat call with an unchanged list off
+    // the O(tiles) path.
     assert.equal(freezeTiles(frozen), frozen);
   });
 });
@@ -115,7 +115,7 @@ test('the per-cell helpers leave the tile list writable, which is the cost they 
   withFreezing(true, () => {
     // Freezing an array walks its elements, so paying it per painted cell would
     // restore the O(all tiles) cost the layout carry removes. Membership is
-    // protected at the node-entry seam instead.
+    // protected on the node-entry path instead.
     const node = setTile(createMapNode('n', 'N', null, 4, 4), createTile('1,1', 'grass.svg'));
     assert.equal(Object.isFrozen(node.tiles), false);
     assert.equal(Object.isFrozen(node.tiles[0]), true);

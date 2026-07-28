@@ -4,11 +4,9 @@ Campaign Builder is a single-page browser app with no build step, no framework,
 and no runtime dependencies. The browser loads `index.html`, which pulls in
 `style.css` and `src/main.js` as a native ES module, and everything else is
 imported from there. If you can read plain JavaScript, you can read this whole
-codebase; there is no compiler output or framework layer between you and what
-runs.
+codebase.
 
-This page gives you the lay of the land. The deeper subsystems each have their
-own guide:
+The deeper subsystems each have their own guide:
 
 | Guide | What it covers |
 | --- | --- |
@@ -47,7 +45,7 @@ you are changing; each stands alone.
                                 file export/import, undo history
 ```
 
-The dependency direction matters more than the boxes. UI widgets and wiring
+What matters in that diagram is the direction of the arrows. UI widgets and wiring
 modules call *down* into the pure modules (`map/`, `entities/`, `storage/`,
 `dice/`, `party/`, `library/`); the pure modules never import from `ui/` or
 `app/` and never touch the DOM. That rule is what keeps most of the codebase
@@ -84,7 +82,7 @@ everything without emitting anything.
 `styles/` (base tokens and primitives first, the responsive overrides last), so
 the cascade order is stated in exactly one place.
 
-## The one design rule to internalize
+## Pure logic and DOM glue
 
 Almost every module here is one of two kinds:
 
@@ -97,9 +95,9 @@ Almost every module here is one of two kinds:
    in `ui/`, the canvas event handlers, the wiring modules in `app/`.
 
 Pure logic gets unit tests. DOM glue gets looked at in a browser instead (see
-`docs/testing.md`). When you add a feature, ask first: which part of this is a
-pure function, and which part is glue? Put the seam there and both halves stay
-simple. Anything constructible without the DOM belongs in a pure module. The
+`docs/testing.md`). When you add a feature, decide which part is a pure
+function and which part is glue, then split it there; both halves stay simpler
+that way. Anything constructible without the DOM belongs in a pure module. The
 example world's maps live in `campaign/ExampleWorld.js` and its populace in
 `campaign/ExampleContent.js`, not in the wiring that loads them.
 

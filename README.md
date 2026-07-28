@@ -1,6 +1,6 @@
 # Campaign Builder
 
-This project is a self-contained suite for creating and managing the world of a D&D (or equivalent) campaign. Notably, this is not intended to GM for you; only to visualize the world that the players are interacting with in a dynamic and engaging way.
+This project is a self-contained suite for creating and managing the world of a D&D (or equivalent) campaign. It is not intended to GM for you, only to visualize the world the players are moving through.
 
 ![Play mode: the fog-revealed map with the session panels alongside](docs/images/play-mode-light.png)
 

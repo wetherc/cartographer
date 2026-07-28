@@ -2,7 +2,7 @@
  * The two browser file-IO primitives the storage modules share: trigger a
  * download of a JSON string and read an uploaded File back to text. Thin DOM
  * wrappers (Blob, object URLs, FileReader) verified in the browser rather than
- * unit tested — and the one seam the planned Tauri storage adapter replaces
+ * unit tested — and the one place the planned Tauri storage adapter replaces
  * with native dialogs.
  */
 

@@ -1,6 +1,6 @@
 # Tile assets
 
-Built-in tile art lives under `assets/tiles/<type>/`, one subfolder per tile type (`grass/`, `forest/`, `mountain/`, `water/`, `desert/`, `swamp/`, `snow/`, `hills/`, `farmland/`, `road/`, `river/`, `coast/`, `interior/`, plus one folder per POI marker such as `settlement/`, `castle/`, `tavern/`). `TilePalette` (`src/map/TilePalette.js`) is the single source of truth for the catalog and the paths it expects — see `VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`, `MARKER_TYPES`, and `INTERIOR_KINDS` there before adding or renaming files.
+Built-in tile art lives under `assets/tiles/<type>/`, one subfolder per tile type (`grass/`, `forest/`, `mountain/`, `water/`, `desert/`, `swamp/`, `snow/`, `hills/`, `farmland/`, `road/`, `river/`, `coast/`, `interior/`, plus one folder per POI marker such as `settlement/`, `castle/`, `tavern/`). `TilePalette` (`src/map/TilePalette.js`) defines the catalog and the paths it expects; see `VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`, `MARKER_TYPES`, and `INTERIOR_KINDS` there before adding or renaming files.
 
 ## Terrain variants
 
@@ -41,7 +41,7 @@ Single-image markers (`MARKER_TYPES`) sit on the standard grass background (`#5a
 - `door-h`, `door-v` — a wall with a framed wooden door leaf in the gap.
 - `stairs-up`, `stairs-down` — treads lightening toward the ascent / darkening into the descent, with a direction chevron.
 
-Interior pieces are the one place where art carries rules. `INTERIOR_KINDS` in `TilePalette.js` lists each piece with what it means (`wall`, `door`, `stairs-up`, `stairs-down`, `floor`), and `kindOf(imageRef)` is how the rest of the app asks. Adding an interior piece means giving it a meaning there; `plain` is what everything else gets.
+Interior pieces are the only art the rules read. `INTERIOR_KINDS` in `TilePalette.js` lists each piece with what it means (`wall`, `door`, `stairs-up`, `stairs-down`, `floor`), and `kindOf(imageRef)` is how the rest of the app asks. Adding an interior piece means giving it a meaning there; `plain` is what everything else gets.
 
 ## Adding a new tile
 
