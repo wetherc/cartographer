@@ -24,6 +24,7 @@ import { setStat } from '../src/entities/Progression.js';
 import { getSlotPools } from '../src/entities/SpellSlots.js';
 import { createResource } from '../src/entities/Resource.js';
 import { equip } from '../src/entities/Equipment.js';
+import { item } from './helpers/fixtures.js';
 
 test('createCharacter starts at level 1 with no xp/resources/inventory', () => {
   const hero = createCharacter('c1', 'Hero', { STR: 14 });
@@ -135,50 +136,29 @@ test('addResource, spendResource, and restoreResource operate on the matching po
 });
 
 test('addItem creates a new stack for an unseen item id', () => {
-  const hero = addItem(createCharacter('c1', 'Hero'), {
-    id: 'rope',
-    name: 'Rope',
-    quantity: 1,
-    notes: '',
-  });
+  const hero = addItem(createCharacter('c1', 'Hero'), item('rope', 'Rope'));
   assert.equal(hero.inventory.length, 1);
   assert.equal(hero.inventory[0].quantity, 1);
 });
 
 test('addItem merges quantity into an existing stack', () => {
   let hero = createCharacter('c1', 'Hero');
-  hero = addItem(hero, { id: 'arrow', name: 'Arrow', quantity: 5, notes: '' });
-  hero = addItem(hero, { id: 'arrow', name: 'Arrow', quantity: 3, notes: '' });
+  hero = addItem(hero, item('arrow', 'Arrow', { quantity: 5 }));
+  hero = addItem(hero, item('arrow', 'Arrow', { quantity: 3 }));
   assert.equal(hero.inventory.length, 1);
   assert.equal(hero.inventory[0].quantity, 8);
 });
 
 test('transferItem moves part of a stack, merging into the receiver', () => {
-  let hero = addItem(createCharacter('c1', 'Hero'), {
-    id: 'arrow',
-    name: 'Arrow',
-    quantity: 5,
-    notes: '',
-  });
-  let sage = addItem(createCharacter('c2', 'Sage'), {
-    id: 'arrow',
-    name: 'Arrow',
-    quantity: 1,
-    notes: '',
-  });
+  let hero = addItem(createCharacter('c1', 'Hero'), item('arrow', 'Arrow', { quantity: 5 }));
+  let sage = addItem(createCharacter('c2', 'Sage'), item('arrow', 'Arrow'));
   ({ giver: hero, receiver: sage } = transferItem(hero, sage, 'arrow', 2));
   assert.equal(hero.inventory[0].quantity, 3);
   assert.equal(sage.inventory[0].quantity, 3);
 });
 
 test('transferItem clamps to the stack and unequips a fully given item', () => {
-  let hero = addItem(createCharacter('c1', 'Hero'), {
-    id: 'sword',
-    name: 'Sword',
-    quantity: 1,
-    notes: '',
-    type: 'weapon',
-  });
+  let hero = addItem(createCharacter('c1', 'Hero'), item('sword', 'Sword', { type: 'weapon' }));
   hero = equip(hero, 'mainHand', 'sword');
   const sage = createCharacter('c2', 'Sage');
   const moved = transferItem(hero, sage, 'sword', 5);
@@ -188,12 +168,7 @@ test('transferItem clamps to the stack and unequips a fully given item', () => {
 });
 
 test('transferItem refuses missing items, bad counts, and self-transfer', () => {
-  const hero = addItem(createCharacter('c1', 'Hero'), {
-    id: 'arrow',
-    name: 'Arrow',
-    quantity: 5,
-    notes: '',
-  });
+  const hero = addItem(createCharacter('c1', 'Hero'), item('arrow', 'Arrow', { quantity: 5 }));
   const sage = createCharacter('c2', 'Sage');
   assert.deepEqual(transferItem(hero, sage, 'ghost', 1), { giver: hero, receiver: sage });
   assert.deepEqual(transferItem(hero, sage, 'arrow', 0), { giver: hero, receiver: sage });
@@ -202,7 +177,7 @@ test('transferItem refuses missing items, bad counts, and self-transfer', () => 
 
 test('removeItem reduces quantity and drops the stack once it hits 0', () => {
   let hero = createCharacter('c1', 'Hero');
-  hero = addItem(hero, { id: 'arrow', name: 'Arrow', quantity: 5, notes: '' });
+  hero = addItem(hero, item('arrow', 'Arrow', { quantity: 5 }));
   hero = removeItem(hero, 'arrow', 2);
   assert.equal(hero.inventory[0].quantity, 3);
   hero = removeItem(hero, 'arrow', 3);
@@ -303,24 +278,22 @@ test('restoreResource leaves non-matching pools untouched', () => {
 
 test('addItem merges one stack while leaving other stacks alone', () => {
   let hero = createCharacter('c1', 'Hero');
-  hero = addItem(hero, { id: 'arrow', name: 'Arrow', quantity: 5, notes: '' });
-  hero = addItem(hero, { id: 'rope', name: 'Rope', quantity: 1, notes: '' });
-  hero = addItem(hero, { id: 'arrow', name: 'Arrow', quantity: 3, notes: '' });
+  hero = addItem(hero, item('arrow', 'Arrow', { quantity: 5 }));
+  hero = addItem(hero, item('rope', 'Rope'));
+  hero = addItem(hero, item('arrow', 'Arrow', { quantity: 3 }));
   assert.equal(hero.inventory.find((i) => i.id === 'arrow').quantity, 8);
   assert.equal(hero.inventory.find((i) => i.id === 'rope').quantity, 1, 'other stack untouched');
 });
 
 test('updateItem replaces one item wholesale, keeping its id and other items', () => {
   let hero = createCharacter('c1', 'Hero');
-  hero = addItem(hero, { id: 'sword', name: 'Sword', quantity: 1, notes: '', type: 'weapon' });
-  hero = addItem(hero, { id: 'rope', name: 'Rope', quantity: 1, notes: '' });
-  const edited = updateItem(hero, 'sword', {
-    id: 'ignored',
-    name: 'Flame Sword',
-    quantity: 1,
-    notes: 'burns',
-    type: 'weapon',
-  });
+  hero = addItem(hero, item('sword', 'Sword', { type: 'weapon' }));
+  hero = addItem(hero, item('rope', 'Rope'));
+  const edited = updateItem(
+    hero,
+    'sword',
+    item('ignored', 'Flame Sword', { notes: 'burns', type: 'weapon' }),
+  );
   const sword = edited.inventory.find((i) => i.id === 'sword');
   assert.equal(sword.name, 'Flame Sword', 'fields replaced');
   assert.equal(sword.id, 'sword', 'id preserved despite the replacement carrying another id');
@@ -330,9 +303,7 @@ test('updateItem replaces one item wholesale, keeping its id and other items', (
 test('withDefaults backfills baseAC as 10 and migrates bonus-era armor items', () => {
   const legacy = { ...createCharacter('c1', 'Hero') };
   delete legacy.baseAC;
-  legacy.inventory = [
-    { id: 'mail', name: 'Mail', quantity: 1, notes: '', type: 'armor', acBonus: 4 },
-  ];
+  legacy.inventory = [item('mail', 'Mail', { type: 'armor', acBonus: 4 })];
   const filled = withDefaults(legacy);
   assert.equal(filled.baseAC, 10);
   assert.deepEqual(

@@ -42,12 +42,13 @@ import {
   removeItem,
   updateItem,
 } from '../src/entities/Character.js';
+import { item } from './helpers/fixtures.js';
 
 /** @returns {import('../src/types/entities.js').Character} */
 function heroWithSword() {
   let hero = createCharacter('c1', 'Hero');
-  hero = addItem(hero, { id: 'sword', name: 'Sword', quantity: 1, notes: '', type: 'weapon' });
-  hero = addItem(hero, { id: 'rope', name: 'Rope', quantity: 2, notes: '' });
+  hero = addItem(hero, item('sword', 'Sword', { type: 'weapon' }));
+  hero = addItem(hero, item('rope', 'Rope', { quantity: 2 }));
   return hero;
 }
 
@@ -67,34 +68,10 @@ test('armor is worn piecewise: helmet, chest, gloves, and greaves are slots', ()
 });
 
 test('slotAccepts enforces item-type compatibility per slot', () => {
-  const potion = {
-    id: 'potion',
-    name: 'Potion',
-    quantity: 1,
-    notes: '',
-    type: /** @type {const} */ ('consumable'),
-  };
-  const mail = {
-    id: 'mail',
-    name: 'Chain Mail',
-    quantity: 1,
-    notes: '',
-    type: /** @type {const} */ ('armor'),
-  };
-  const shield = {
-    id: 'shield',
-    name: 'Shield',
-    quantity: 1,
-    notes: '',
-    type: /** @type {const} */ ('shield'),
-  };
-  const sword = {
-    id: 'sword',
-    name: 'Sword',
-    quantity: 1,
-    notes: '',
-    type: /** @type {const} */ ('weapon'),
-  };
+  const potion = item('potion', 'Potion', { type: 'consumable' });
+  const mail = item('mail', 'Chain Mail', { type: 'armor' });
+  const shield = item('shield', 'Shield', { type: 'shield' });
+  const sword = item('sword', 'Sword', { type: 'weapon' });
   assert.equal(slotAccepts('chest', potion), false, 'a potion cannot be worn as armor');
   assert.equal(slotAccepts('chest', mail), true);
   assert.equal(slotAccepts('helmet', mail), false, 'chest armor is not a helmet');
@@ -105,13 +82,7 @@ test('slotAccepts enforces item-type compatibility per slot', () => {
 
 test('equip is a no-op for an item the slot does not accept', () => {
   let hero = heroWithSword();
-  hero = addItem(hero, {
-    id: 'potion',
-    name: 'Potion',
-    quantity: 1,
-    notes: '',
-    type: 'consumable',
-  });
+  hero = addItem(hero, item('potion', 'Potion', { type: 'consumable' }));
   assert.equal(equip(hero, 'chest', 'potion'), hero, 'potion as armor rejected');
   assert.equal(equip(hero, 'mainHand', 'missing'), hero, 'unknown item rejected');
   assert.equal(equip(hero, 'mainHand', 'sword').equipment?.mainHand, 'sword');
@@ -139,15 +110,7 @@ test('body armor replaces the baseline; its weight class fixes the DEX scaling',
   /** @param {import('../src/types/entities.js').ArmorWeight} weight @param {number} baseAC @param {number} dex */
   const acFor = (weight, baseAC, dex) => {
     let hero = createCharacter('c1', 'Hero', { DEX: dex });
-    hero = addItem(hero, {
-      id: 'suit',
-      name: 'Suit',
-      quantity: 1,
-      notes: '',
-      type: 'armor',
-      armorWeight: weight,
-      baseAC,
-    });
+    hero = addItem(hero, item('suit', 'Suit', { type: 'armor', armorWeight: weight, baseAC }));
     assert.equal(
       armorClass(hero),
       10 + Math.floor((dex - 10) / 2),
@@ -169,14 +132,7 @@ test('body armor replaces the baseline; its weight class fixes the DEX scaling',
 
 test('shields always grant a flat +2, ignoring any stored bonus', () => {
   let hero = createCharacter('c1', 'Hero'); // DEX 10, AC 10
-  hero = addItem(hero, {
-    id: 'shield',
-    name: 'Shield',
-    quantity: 1,
-    notes: '',
-    type: 'shield',
-    acBonus: 9,
-  });
+  hero = addItem(hero, item('shield', 'Shield', { type: 'shield', acBonus: 9 }));
   hero = equip(hero, 'offHand', 'shield');
   assert.equal(SHIELD_AC, 2);
   assert.equal(armorClass(hero), 12);
@@ -184,22 +140,8 @@ test('shields always grant a flat +2, ignoring any stored bonus', () => {
 
 test('other equipped items add flat AC bonuses on top', () => {
   let hero = createCharacter('c1', 'Hero', { DEX: 14 });
-  hero = addItem(hero, {
-    id: 'helm',
-    name: 'Helm',
-    quantity: 1,
-    notes: '',
-    type: 'helmet',
-    acBonus: 1,
-  });
-  hero = addItem(hero, {
-    id: 'band',
-    name: 'Band',
-    quantity: 1,
-    notes: '',
-    type: 'ring',
-    acBonus: 1,
-  });
+  hero = addItem(hero, item('helm', 'Helm', { type: 'helmet', acBonus: 1 }));
+  hero = addItem(hero, item('band', 'Band', { type: 'ring', acBonus: 1 }));
   hero = equip(hero, 'helmet', 'helm');
   hero = equip(hero, 'accessory', 'band');
   assert.equal(armorClass(hero), 14, '10 + 2 DEX + 1 helm + 1 ring');
@@ -207,14 +149,7 @@ test('other equipped items add flat AC bonuses on top', () => {
 
 test('effectiveStats folds equipped stat buffs in, and AC uses the buffed DEX', () => {
   let hero = createCharacter('c1', 'Hero', { STR: 14, DEX: 12 });
-  hero = addItem(hero, {
-    id: 'ring',
-    name: 'Ring',
-    quantity: 1,
-    notes: '',
-    type: 'ring',
-    statBonuses: { STR: 2, DEX: 2 },
-  });
+  hero = addItem(hero, item('ring', 'Ring', { type: 'ring', statBonuses: { STR: 2, DEX: 2 } }));
   assert.equal(effectiveStats(hero).STR, 14, 'carried, not worn: no buff');
   hero = equip(hero, 'accessory', 'ring');
   assert.deepEqual(
@@ -229,14 +164,7 @@ test('statBreakdown reports base, per-source deltas, and the buffed total', () =
   let hero = createCharacter('c1', 'Hero', { STR: 14 });
   assert.deepEqual(statBreakdown(hero, 'STR'), { base: 14, total: 14, sources: [] });
 
-  hero = addItem(hero, {
-    id: 'ring',
-    name: 'Ring of Vigor',
-    quantity: 1,
-    notes: '',
-    type: 'ring',
-    statBonuses: { STR: 2 },
-  });
+  hero = addItem(hero, item('ring', 'Ring of Vigor', { type: 'ring', statBonuses: { STR: 2 } }));
   hero = equip(hero, 'accessory', 'ring');
   assert.deepEqual(statBreakdown(hero, 'STR'), {
     base: 14,
@@ -251,37 +179,15 @@ test('statBreakdown defaults an unknown ability to 10 with no sources', () => {
 });
 
 test('migrateItem turns bonus-era body armor into light armor with the same total AC', () => {
-  const old = {
-    id: 'mail',
-    name: 'Chain Mail',
-    quantity: 1,
-    notes: '',
-    type: /** @type {const} */ ('armor'),
-    acBonus: 4,
-  };
+  const old = item('mail', 'Chain Mail', { type: 'armor', acBonus: 4 });
   const migrated = migrateItem(old);
   assert.deepEqual(
     { armorWeight: migrated.armorWeight, baseAC: migrated.baseAC, acBonus: migrated.acBonus },
     { armorWeight: 'light', baseAC: 14, acBonus: undefined },
   );
-  const shield = migrateItem({
-    id: 's',
-    name: 'S',
-    quantity: 1,
-    notes: '',
-    type: /** @type {const} */ ('shield'),
-    acBonus: 3,
-  });
+  const shield = migrateItem(item('s', 'S', { type: 'shield', acBonus: 3 }));
   assert.equal(shield.acBonus, undefined, 'shields drop stored bonuses');
-  const modern = {
-    id: 'plate',
-    name: 'Plate',
-    quantity: 1,
-    notes: '',
-    type: /** @type {const} */ ('armor'),
-    armorWeight: /** @type {const} */ ('heavy'),
-    baseAC: 18,
-  };
+  const modern = item('plate', 'Plate', { type: 'armor', armorWeight: 'heavy', baseAC: 18 });
   assert.equal(migrateItem(modern), modern, 'already-migrated items pass through by reference');
 });
 
@@ -299,74 +205,42 @@ test('every armor weight has a positive default base AC and a distinct DEX cap',
 
 test('itemSummary describes armor scaling, shield/flat bonuses, and stat buffs', () => {
   assert.equal(
-    itemSummary({
-      id: 'a',
-      name: 'A',
-      quantity: 1,
-      notes: '',
-      type: 'armor',
-      armorWeight: 'medium',
-      baseAC: 14,
-    }),
+    itemSummary(item('a', 'A', { type: 'armor', armorWeight: 'medium', baseAC: 14 })),
     'medium armor, AC 14 + DEX (max 2)',
   );
   assert.equal(
-    itemSummary({
-      id: 'a',
-      name: 'A',
-      quantity: 1,
-      notes: '',
-      type: 'armor',
-      armorWeight: 'heavy',
-      baseAC: 16,
-    }),
+    itemSummary(item('a', 'A', { type: 'armor', armorWeight: 'heavy', baseAC: 16 })),
     'heavy armor, AC 16',
   );
+  assert.equal(itemSummary(item('s', 'S', { type: 'shield' })), '+2 AC');
   assert.equal(
-    itemSummary({ id: 's', name: 'S', quantity: 1, notes: '', type: 'shield' }),
-    '+2 AC',
-  );
-  assert.equal(
-    itemSummary({
-      id: 'r',
-      name: 'R',
-      quantity: 1,
-      notes: '',
-      type: 'ring',
-      acBonus: 1,
-      statBonuses: { STR: 2 },
-    }),
+    itemSummary(item('r', 'R', { type: 'ring', acBonus: 1, statBonuses: { STR: 2 } })),
     '+1 AC, +2 STR',
   );
-  assert.equal(itemSummary({ id: 't', name: 'T', quantity: 1, notes: '', type: 'gear' }), '');
+  assert.equal(itemSummary(item('t', 'T', { type: 'gear' })), '');
 });
 
 test('itemEffects keeps each effect as its own phrase for per-badge rendering', () => {
   assert.deepEqual(
-    itemEffects({
-      id: 'e',
-      name: 'Ember Blade',
-      quantity: 1,
-      notes: '',
-      type: 'weapon',
-      damage: [
-        { count: 2, sides: 6, damageType: 'slashing' },
-        { count: 1, sides: 4, damageType: 'fire' },
-      ],
-      statBonuses: { STR: 1, CHA: 2 },
-      statusEffects: ['burning'],
-    }),
+    itemEffects(
+      item('e', 'Ember Blade', {
+        type: 'weapon',
+        damage: [
+          { count: 2, sides: 6, damageType: 'slashing' },
+          { count: 1, sides: 4, damageType: 'fire' },
+        ],
+        statBonuses: { STR: 1, CHA: 2 },
+        statusEffects: ['burning'],
+      }),
+    ),
     ['2d6 slashing + 1d4 fire (STR)', '+1 STR', '+2 CHA', 'inflicts burning'],
   );
-  assert.deepEqual(itemEffects({ id: 't', name: 'T', quantity: 1, notes: '', type: 'gear' }), []);
+  assert.deepEqual(itemEffects(item('t', 'T', { type: 'gear' })), []);
 });
 
 test('itemType defaults an untyped (older-save) item to gear', () => {
-  assert.equal(itemType({ id: 'rope', name: 'Rope', quantity: 1, notes: '' }), 'gear');
-  assert.equal(
-    itemType({ id: 'sword', name: 'Sword', quantity: 1, notes: '', type: 'weapon' }),
-    'weapon',
-  );
+  assert.equal(itemType(item('rope', 'Rope')), 'gear');
+  assert.equal(itemType(item('sword', 'Sword', { type: 'weapon' })), 'weapon');
 });
 
 test('equip fills a slot and getEquipped resolves it to the inventory item', () => {
@@ -396,7 +270,7 @@ test('getEquipped returns null when the referenced stack has left the inventory'
 
 test('removeItem unequips a stack that hits zero but keeps a surviving stack equipped', () => {
   let hero = heroWithSword();
-  hero = addItem(hero, { id: 'buckler', name: 'Buckler', quantity: 2, notes: '', type: 'shield' });
+  hero = addItem(hero, item('buckler', 'Buckler', { quantity: 2, type: 'shield' }));
   hero = equip(hero, 'mainHand', 'sword');
   hero = equip(hero, 'offHand', 'buckler');
 
@@ -429,30 +303,13 @@ test('withDefaults backfills empty equipment on an older save, migrating armor t
 
 test('two ring slots: both equipped rings contribute their effects', () => {
   let hero = createCharacter('c1', 'Hero');
-  hero = addItem(hero, {
-    id: 'ward-ring',
-    name: 'Ward Ring',
-    quantity: 1,
-    notes: '',
-    type: 'ring',
-    acBonus: 1,
-  });
-  hero = addItem(hero, {
-    id: 'might-ring',
-    name: 'Might Ring',
-    quantity: 1,
-    notes: '',
-    type: 'ring',
-    statBonuses: { STR: 2 },
-  });
+  hero = addItem(hero, item('ward-ring', 'Ward Ring', { type: 'ring', acBonus: 1 }));
+  hero = addItem(hero, item('might-ring', 'Might Ring', { type: 'ring', statBonuses: { STR: 2 } }));
   hero = equip(hero, 'accessory', 'ward-ring');
   hero = equip(hero, 'accessory2', 'might-ring');
   assert.equal(armorClass(hero), 11, '10 base + ring AC bonus');
   assert.equal(effectiveStats(hero).STR, 12, 'second ring buffs STR');
-  assert.equal(
-    slotAccepts('accessory2', { id: 's', name: 'S', quantity: 1, notes: '', type: 'weapon' }),
-    false,
-  );
+  assert.equal(slotAccepts('accessory2', item('s', 'S', { type: 'weapon' })), false);
 });
 
 test('migrateEquipment backfills the second ring slot on an older save', () => {
@@ -462,14 +319,8 @@ test('migrateEquipment backfills the second ring slot on an older save', () => {
 });
 
 test('weaponAbility: melee reads STR; finesse and ranged read DEX; absent handling is melee', () => {
-  const weapon = (handling) => ({
-    id: 'w',
-    name: 'W',
-    quantity: 1,
-    notes: '',
-    type: /** @type {const} */ ('weapon'),
-    ...(handling ? { handling } : {}),
-  });
+  const weapon = (handling) =>
+    item('w', 'W', { type: 'weapon', ...(handling ? { handling } : {}) });
   assert.equal(weaponAbility(weapon('melee')), 'STR');
   assert.equal(weaponAbility(weapon('finesse')), 'DEX');
   assert.equal(weaponAbility(weapon('ranged')), 'DEX');
@@ -551,45 +402,34 @@ test('enemyArmor reads a preset as a flat bonus over the unarmored 10', () => {
 });
 
 test('formatDamage and itemSummary describe a weapon damage roll with riders', () => {
-  const blade = {
-    id: 'ember',
-    name: 'Ember Blade',
-    quantity: 1,
-    notes: '',
-    type: /** @type {const} */ ('weapon'),
-    handling: /** @type {const} */ ('melee'),
+  const blade = item('ember', 'Ember Blade', {
+    type: 'weapon',
+    handling: 'melee',
     damage: [
       { count: 2, sides: 6, damageType: 'slashing' },
       { count: 1, sides: 4, damageType: 'fire' },
     ],
     statusEffects: ['burning'],
-  };
+  });
   assert.equal(formatDamage(blade.damage), '2d6 slashing + 1d4 fire');
   assert.equal(itemSummary(blade), '2d6 slashing + 1d4 fire (STR), inflicts burning');
-  const bow = {
-    ...blade,
-    id: 'bow',
-    name: 'Longbow',
-    type: /** @type {const} */ ('bow'),
-    handling: /** @type {const} */ ('ranged'),
+  const bow = item('bow', 'Longbow', {
+    type: 'bow',
+    handling: 'ranged',
     damage: [{ count: 1, sides: 8, damageType: 'piercing' }],
     statusEffects: [],
-  };
+  });
   assert.equal(itemSummary(bow), '1d8 piercing (DEX)');
 });
 
 test('filterItems searches name and description, filters by type, and sorts', () => {
   const items = [
-    { id: 'torch', name: 'Torch', quantity: 5, notes: '', type: /** @type {const} */ ('gear') },
-    {
-      id: 'ember',
-      name: 'Ember Blade',
-      quantity: 1,
-      notes: '',
-      type: /** @type {const} */ ('weapon'),
+    item('torch', 'Torch', { quantity: 5, type: 'gear' }),
+    item('ember', 'Ember Blade', {
+      type: 'weapon',
       description: 'A greatsword with a smoldering edge.',
-    },
-    { id: 'mace', name: 'Mace', quantity: 1, notes: '', type: /** @type {const} */ ('weapon') },
+    }),
+    item('mace', 'Mace', { type: 'weapon' }),
   ];
   assert.deepEqual(
     filterItems(items).map((i) => i.id),
@@ -623,53 +463,42 @@ test('filterItems searches name and description, filters by type, and sorts', ()
 
 test('updateItem replaces fields, keeps the id, and unequips a slot that no longer accepts the item', () => {
   let hero = createCharacter('c1', 'Hero');
-  hero = addItem(hero, { id: 'band', name: 'Plain Band', quantity: 1, notes: '', type: 'ring' });
+  hero = addItem(hero, item('band', 'Plain Band', { type: 'ring' }));
   hero = equip(hero, 'accessory', 'band');
 
-  const renamed = updateItem(hero, 'band', {
-    id: 'ignored',
-    name: 'Band of Vigor',
-    quantity: 1,
-    notes: '',
-    type: 'ring',
-    statBonuses: { STR: 2 },
-  });
+  const renamed = updateItem(
+    hero,
+    'band',
+    item('ignored', 'Band of Vigor', { type: 'ring', statBonuses: { STR: 2 } }),
+  );
   assert.equal(renamed.inventory[0].name, 'Band of Vigor');
   assert.equal(renamed.inventory[0].id, 'band', 'id survives the edit');
   assert.equal(renamed.equipment?.accessory, 'band', 'still equipped');
   assert.equal(effectiveStats(renamed).STR, 12);
 
-  const retyped = updateItem(renamed, 'band', {
-    id: 'band',
-    name: 'Band of Vigor',
-    quantity: 1,
-    notes: '',
-    type: 'gear',
-  });
+  const retyped = updateItem(renamed, 'band', item('band', 'Band of Vigor', { type: 'gear' }));
   assert.equal(retyped.equipment?.accessory, null, 'gear cannot stay worn as a ring');
 });
 
 test('equippedWeapons lists the wielded damage-carrying items in slot order', () => {
   let hero = createCharacter('c1', 'Hero');
-  hero = addItem(hero, {
-    id: 'sword',
-    name: 'Sword',
-    quantity: 1,
-    notes: '',
-    type: 'weapon',
-    handling: 'melee',
-    damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
-  });
-  hero = addItem(hero, {
-    id: 'bow',
-    name: 'Bow',
-    quantity: 1,
-    notes: '',
-    type: 'bow',
-    handling: 'ranged',
-    damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
-  });
-  hero = addItem(hero, { id: 'shield', name: 'Shield', quantity: 1, notes: '', type: 'shield' });
+  hero = addItem(
+    hero,
+    item('sword', 'Sword', {
+      type: 'weapon',
+      handling: 'melee',
+      damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
+    }),
+  );
+  hero = addItem(
+    hero,
+    item('bow', 'Bow', {
+      type: 'bow',
+      handling: 'ranged',
+      damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
+    }),
+  );
+  hero = addItem(hero, item('shield', 'Shield', { type: 'shield' }));
   hero = equip(hero, 'ranged', 'bow');
   hero = equip(hero, 'mainHand', 'sword');
   hero = equip(hero, 'offHand', 'shield');
@@ -689,26 +518,14 @@ test('equippedWeapons skips weapons without a damage roll and empty hands', () =
 
 test('weaponAbility falls back to STR when the handling value is unknown', () => {
   // An out-of-vocabulary handling finds no entry, so the ability defaults.
-  const exotic = /** @type {any} */ ({
-    id: 'w',
-    name: 'Odd',
-    quantity: 1,
-    notes: '',
-    type: 'weapon',
-    handling: 'thrown',
-  });
+  const exotic = item('w', 'Odd', { type: 'weapon', handling: /** @type {any} */ ('thrown') });
   assert.equal(weaponAbility(exotic), 'STR');
 });
 
 test('migrateItem keeps an explicit weight and defaults a missing bonus to zero', () => {
-  const migrated = migrateItem({
-    id: 'brig',
-    name: 'Brigandine',
-    quantity: 1,
-    notes: '',
-    type: /** @type {const} */ ('armor'),
-    armorWeight: /** @type {const} */ ('medium'),
-  });
+  const migrated = migrateItem(
+    item('brig', 'Brigandine', { type: 'armor', armorWeight: 'medium' }),
+  );
   assert.deepEqual(
     { armorWeight: migrated.armorWeight, baseAC: migrated.baseAC },
     { armorWeight: 'medium', baseAC: 10 },
@@ -718,14 +535,7 @@ test('migrateItem keeps an explicit weight and defaults a missing bonus to zero'
 
 test('effectiveStats treats a buff to an unlisted stat as starting from 10', () => {
   let hero = createCharacter('c1', 'Hero');
-  hero = addItem(hero, {
-    id: 'charm',
-    name: 'Lucky Charm',
-    quantity: 1,
-    notes: '',
-    type: 'ring',
-    statBonuses: /** @type {any} */ ({ LUK: 3 }),
-  });
+  hero = addItem(hero, item('charm', 'Lucky Charm', { type: 'ring', statBonuses: { LUK: 3 } }));
   hero = equip(hero, 'accessory', 'charm');
   assert.equal(effectiveStats(hero).LUK, 13, 'absent stat starts at 10, +3 buff');
 });
@@ -738,42 +548,27 @@ test('armorClass defaults a missing DEX score to 10 (no modifier)', () => {
 
 test('armorClass reads an unknown armor weight as light (full DEX)', () => {
   let hero = createCharacter('c1', 'Hero', { DEX: 18 }); // +4
-  hero = addItem(hero, {
-    id: 'weird',
-    name: 'Voidmail',
-    quantity: 1,
-    notes: '',
-    type: 'armor',
-    armorWeight: /** @type {any} */ ('void'),
-    baseAC: 12,
-  });
+  hero = addItem(
+    hero,
+    item('weird', 'Voidmail', {
+      type: 'armor',
+      armorWeight: /** @type {any} */ ('void'),
+      baseAC: 12,
+    }),
+  );
   hero = equip(hero, 'chest', 'weird');
   assert.equal(armorClass(hero), 16, 'unknown weight falls back to light: 12 + full DEX (+4)');
 });
 
 test('itemEffects: light armor reports "+ DEX"; an unknown weight also reads as light', () => {
   assert.equal(
-    itemSummary({
-      id: 'a',
-      name: 'A',
-      quantity: 1,
-      notes: '',
-      type: 'armor',
-      armorWeight: 'light',
-      baseAC: 12,
-    }),
+    itemSummary(item('a', 'A', { type: 'armor', armorWeight: 'light', baseAC: 12 })),
     'light armor, AC 12 + DEX',
   );
   assert.equal(
-    itemSummary({
-      id: 'b',
-      name: 'B',
-      quantity: 1,
-      notes: '',
-      type: 'armor',
-      armorWeight: /** @type {any} */ ('void'),
-      baseAC: 13,
-    }),
+    itemSummary(
+      item('b', 'B', { type: 'armor', armorWeight: /** @type {any} */ ('void'), baseAC: 13 }),
+    ),
     'light armor, AC 13 + DEX',
     'an unrecognized weight is reported and scaled as light',
   );
@@ -781,14 +576,7 @@ test('itemEffects: light armor reports "+ DEX"; an unknown weight also reads as 
 
 test('itemEffects renders a negative stat penalty without a leading plus', () => {
   assert.deepEqual(
-    itemEffects({
-      id: 'curse',
-      name: 'Cursed Band',
-      quantity: 1,
-      notes: '',
-      type: 'ring',
-      statBonuses: { STR: -2, DEX: 0 },
-    }),
+    itemEffects(item('curse', 'Cursed Band', { type: 'ring', statBonuses: { STR: -2, DEX: 0 } })),
     ['-2 STR'],
     'negative shows its sign; a zero delta is dropped',
   );
