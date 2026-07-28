@@ -7,7 +7,8 @@ import { characterFields, characterFormChange, buildCharacter } from './characte
 import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
-import { replaceById, removeById } from '../entities/Roster.js';
+import { removeById } from '../entities/Roster.js';
+import { createCharacterScope } from './characterScope.js';
 import { clampInt } from '../util/num.js';
 import { mountCharacterRoster } from '../ui/CharacterRoster.js';
 import { mountCharacterSheet } from '../ui/CharacterSheet.js';
@@ -33,8 +34,9 @@ import { locationFields, readLocation } from './locationFields.js';
 /**
  * The party's panels — roster, character sheet, inventory — and the Time panel
  * (rests restore the same character resources). Owns the selected-character
- * scope; registers `selectCharacter` on `app.actions` so other modules (e.g.
- * condition ticks at a new combat round) can refresh the sheet.
+ * scope the sheet, inventory, and spellbook register into; registers
+ * `refreshSelectedCharacter` on `app.actions` so other modules (e.g. condition
+ * ticks at a new combat round) can refresh those panels.
  * @param {AppContext} app
  */
 export function wireParty(app) {
@@ -59,7 +61,7 @@ export function wireParty(app) {
       boundCharacterId = null;
       sessionStorage.removeItem(BOUND_CHARACTER_SESSION_KEY);
       app.toasts.show(`Another tab took over ${name}; this tab is now a spectator.`);
-      selectCharacter(selectedCharacterId);
+      scope.reselect();
     },
   });
 
@@ -94,52 +96,42 @@ export function wireParty(app) {
     ),
   );
 
+  /**
+   * The selected character, the roster write-back, and the fan-out to the
+   * character panels. The panels and the roster it reaches are declared below
+   * it, so `select` must not run until they are all mounted: it is handed to
+   * the roster and the binding picker, and neither fires its callback while
+   * mounting.
+   */
+  const scope = createCharacterScope({
+    getCharacters: () => state.characters,
+    setCharacters: (characters) => {
+      state.characters = characters;
+    },
+    onCommit: () => {
+      characterRoster.update();
+      // A mid-combat equipment change (swapping a weapon on the turn a haste
+      // potion bought a second action) must reach the initiative panel's attack
+      // strip, which is otherwise only redrawn on turn advance — the panel reads
+      // the character live, but its buttons are built at render time.
+      app.views.initiativePanel.update();
+      app.actions.markDirty();
+    },
+    onSelect: () => {
+      characterRoster.update();
+      updateBindingPicker();
+    },
+    selectedId: boundCharacterId ?? state.characters[0]?.id ?? null,
+  });
+  const selectCharacter = scope.select;
+  const selectedCharacter = scope.getSelected;
+  app.actions.refreshSelectedCharacter = scope.reselect;
+
   /** What this tab may do to the character currently on the sheet/inventory.
    * @returns {{ editBase: boolean, play: boolean, hp: boolean }} */
   function selectedPermissions() {
     const character = selectedCharacter();
     return partyPermissions(state.role, boundCharacterId, character?.id ?? '');
-  }
-
-  /** @type {string | null} id of the character the sheet/inventory are scoped to */
-  let selectedCharacterId = boundCharacterId ?? state.characters[0]?.id ?? null;
-
-  /** @returns {Character | null} */
-  function selectedCharacter() {
-    return state.characters.find((c) => c.id === selectedCharacterId) ?? null;
-  }
-
-  /**
-   * Point the sheet and inventory at a character (or null) and refresh the roster.
-   * The four panels it writes to are declared below it, so it must not run until
-   * they are all mounted: it is handed to the roster and the binding picker, and
-   * neither fires its callback while mounting.
-   * @param {string | null} id
-   */
-  function selectCharacter(id) {
-    selectedCharacterId = id;
-    const character = selectedCharacter();
-    characterSheet.setCharacter(character);
-    inventoryPanel.setCharacter(character);
-    spellbookPanel.setCharacter(character);
-    characterRoster.update();
-    updateBindingPicker();
-  }
-  app.actions.refreshSelectedCharacter = () => selectCharacter(selectedCharacterId);
-
-  /**
-   * Write an edited character back into the roster by id.
-   * @param {Character} next
-   */
-  function commitCharacter(next) {
-    state.characters = replaceById(state.characters, next);
-    characterRoster.update();
-    // A mid-combat equipment change (swapping a weapon on the turn a haste
-    // potion bought a second action) must reach the initiative panel's attack
-    // strip, which is otherwise only redrawn on turn advance — the panel reads
-    // the character live, but its buttons are built at render time.
-    app.views.initiativePanel.update();
-    app.actions.markDirty();
   }
 
   // "Playing as" picker, Player view only (hidden for the GM via CSS): binds
@@ -157,7 +149,8 @@ export function wireParty(app) {
   mustGetElement('party-container').appendChild(binding);
   bindingSelect.addEventListener('change', () => {
     const took = setBinding(bindingSelect.value === '' ? null : bindingSelect.value);
-    selectCharacter(took ?? selectedCharacterId);
+    if (took) selectCharacter(took);
+    else scope.reselect();
   });
 
   function updateBindingPicker() {
@@ -273,7 +266,7 @@ export function wireParty(app) {
 
   const characterRoster = mountCharacterRoster(mustGetElement('party-container'), {
     getCharacters: () => state.characters,
-    getSelectedId: () => selectedCharacterId,
+    getSelectedId: scope.getSelectedId,
     canManage: () => isGM(state.role),
     // The place action only exists while the GM allows splitting the party.
     canPlace: () => state.splitParty,
@@ -331,9 +324,8 @@ export function wireParty(app) {
       // resolves the id any more, so the row would render as an unknown
       // combatant whose turn can't be played.
       app.actions.removeCombatant(id);
-      selectCharacter(
-        id === selectedCharacterId ? (state.characters[0]?.id ?? null) : selectedCharacterId,
-      );
+      if (id === scope.getSelectedId()) selectCharacter(state.characters[0]?.id ?? null);
+      else scope.reselect();
       app.actions.markDirty();
     },
     // Grant the same XP to the whole party at once — the common post-encounter
@@ -348,7 +340,7 @@ export function wireParty(app) {
       const amount = clampInt(values?.amount, 0);
       if (!values || amount <= 0) return;
       state.characters = state.characters.map((c) => addXP(c, amount));
-      selectCharacter(selectedCharacterId); // refresh sheet/inventory/roster
+      scope.reselect(); // refresh sheet/inventory/roster
       app.actions.markDirty();
       app.actions.logEvent('note', `The party is awarded ${amount} XP each.`);
       app.toasts.show(
@@ -373,14 +365,18 @@ export function wireParty(app) {
     );
   };
 
+  // The three character tabs join the scope instead of naming each other: each
+  // one's edits go back through its own commit handle, which writes the
+  // character into the roster and updates the panels other than the one the edit
+  // came from (that one has already re-rendered itself).
+  const commitFromSheet = scope.register(() => characterSheet).commit;
+  const commitFromSpellbook = scope.register(() => spellbookPanel).commit;
+  const commitFromInventory = scope.register(() => inventoryPanel).commit;
+
   const characterSheet = mountCharacterSheet(
     mustGetElement('character-sheet-container'),
     selectedCharacter(),
-    (next) => {
-      commitCharacter(next);
-      inventoryPanel.setCharacter(next);
-      spellbookPanel.setCharacter(next);
-    },
+    commitFromSheet,
     selectedPermissions,
     {
       resolveSpells,
@@ -395,11 +391,7 @@ export function wireParty(app) {
   const spellbookPanel = mountSpellbookPanel(
     mustGetElement('spellbook-container'),
     selectedCharacter(),
-    (next) => {
-      commitCharacter(next);
-      characterSheet.setCharacter(next);
-      inventoryPanel.setCharacter(next);
-    },
+    commitFromSpellbook,
     () => ({ play: selectedPermissions().play }),
     // The active library object is replaced whole on every library change, so
     // its identity is the catalog's revision.
@@ -410,11 +402,7 @@ export function wireParty(app) {
     mustGetElement('equipment-container'),
     mustGetElement('inventory-container'),
     selectedCharacter(),
-    (next) => {
-      commitCharacter(next);
-      characterSheet.setCharacter(next);
-      spellbookPanel.setCharacter(next);
-    },
+    commitFromInventory,
     (event, character) => {
       const node = app.grid.getNode(app.partyTracker.getPosition().nodeId);
       app.actions.logEvent(
@@ -434,10 +422,11 @@ export function wireParty(app) {
         const receiver = state.characters.find((c) => c.id === recipientId);
         if (!giver || !receiver) return;
         const next = transferItem(giver, receiver, item.id, count);
-        commitCharacter(next.receiver);
-        commitCharacter(next.giver);
-        characterSheet.setCharacter(next.giver);
-        inventoryPanel.setCharacter(next.giver);
+        // The receiver is off screen, so it only needs the write-back; the giver
+        // reaches every panel, this panel included, since the transfer ran
+        // outside its own commit path and its copy is the pre-transfer one.
+        scope.commit(next.receiver);
+        scope.set(next.giver);
         app.actions.logEvent(
           'note',
           formatInventoryEvent(
@@ -461,7 +450,7 @@ export function wireParty(app) {
     onShortRest: () => {
       state.characters = state.characters.map(shortRest);
       state.clock = advanceWatches(state.clock, 1);
-      selectCharacter(selectedCharacterId);
+      scope.reselect();
       app.actions.logEvent(
         'rest',
         `The party takes a short rest. Now ${formatClock(state.clock)}.`,
@@ -470,23 +459,25 @@ export function wireParty(app) {
     onLongRest: () => {
       state.characters = state.characters.map(longRest);
       state.clock = advanceToDawn(state.clock);
-      selectCharacter(selectedCharacterId);
+      scope.reselect();
       app.actions.logEvent('rest', `The party takes a long rest. Now ${formatClock(state.clock)}.`);
     },
   });
 
   // One entry point for "the campaign under these panels was replaced", which is
   // what a tab following another tab's saves needs: the clock, the split toggle's
-  // own checkbox, and — through selectCharacter — the roster, sheet, equipment,
-  // inventory, spellbook, and binding picker. The selection falls back to the
-  // first character, since the roster this tab was showing may no longer hold the
-  // one it had selected.
+  // own checkbox, and — through the character scope — the roster, sheet,
+  // equipment, inventory, spellbook, and binding picker. The selection falls back
+  // to the first character, since the roster this tab was showing may no longer
+  // hold the one it had selected.
   app.views.partyPanels = {
     update: () => {
       timePanel.update();
       splitInput.checked = state.splitParty;
-      const stillThere = state.characters.some((c) => c.id === selectedCharacterId);
-      selectCharacter(stillThere ? selectedCharacterId : (state.characters[0]?.id ?? null));
+      const selectedId = scope.getSelectedId();
+      const stillThere = state.characters.some((c) => c.id === selectedId);
+      if (stillThere) scope.reselect();
+      else selectCharacter(state.characters[0]?.id ?? null);
     },
   };
 }

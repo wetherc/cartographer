@@ -98,9 +98,16 @@ gesture-layer split but follows the same context-object pattern.
 
 ### partyWiring.js
 
-The roster, character sheet, inventory, and Time panel. It provides
+The roster, character sheet, inventory, spellbook, and Time panel. It provides
 `refreshSelectedCharacter` and the `partyPanels` view, which re-reads
 everything those panels show at once.
+
+The character panels do not talk to each other. `characterScope.js` holds which
+character they are pointed at, writes an edited character back into the roster,
+and hands the new value to every panel that registered with it. A panel gets a
+commit handle from `register`, and the scope skips that panel when it fans an
+edit out, because a panel already re-renders itself from its own commit path.
+Adding a fourth character tab is one registration.
 
 ### rehydrate.js
 
