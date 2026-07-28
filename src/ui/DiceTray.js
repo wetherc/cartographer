@@ -1,8 +1,11 @@
 import { DIE_TYPES, roll, emptySelection, formatResult } from '../dice/DiceRoller.js';
 import { wireDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
-import { iconButton, textButton } from './buttons.js';
+import { iconButton, segSwitch, textButton } from './buttons.js';
 import { capitalize } from '../util/text.js';
+
+/** @type {import('../types/dice.js').RollMode[]} */
+const MODES = ['normal', 'advantage', 'disadvantage'];
 
 /**
  * Mount a dice tray widget, collapsed by default to a D20 icon behind an
@@ -102,38 +105,18 @@ export function mountDiceTray(container, opts = {}) {
   const modeName = document.createElement('span');
   modeName.className = 'dice-tray__label';
   modeName.textContent = 'd20 mode';
-  const modeGroup = document.createElement('div');
-  modeGroup.className = 'seg-switch';
-  modeGroup.setAttribute('role', 'group');
-  modeGroup.setAttribute('aria-label', 'Roll d20s normally, with advantage, or with disadvantage');
-  /** @type {{ mode: import('../types/dice.js').RollMode, button: HTMLButtonElement }[]} */
-  const modeButtons = [];
-  const syncModes = () => {
-    for (const entry of modeButtons) {
-      const active = (selection.mode ?? 'normal') === entry.mode;
-      entry.button.setAttribute('aria-pressed', String(active));
-      entry.button.classList.toggle('seg-switch__btn--active', active);
-    }
-  };
-  for (const mode of /** @type {import('../types/dice.js').RollMode[]} */ ([
-    'normal',
-    'advantage',
-    'disadvantage',
-  ])) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'btn seg-switch__btn';
-    button.textContent = capitalize(mode);
-    button.addEventListener('click', () => {
+  const modeSwitch = segSwitch({
+    ariaLabel: 'Roll d20s normally, with advantage, or with disadvantage',
+    options: MODES.map((mode) => ({ value: mode, label: capitalize(mode) })),
+    value: selection.mode ?? 'normal',
+    onChange: (mode) => {
       selection.mode = mode;
-      syncModes();
-    });
-    modeButtons.push({ mode, button });
-    modeGroup.appendChild(button);
-  }
-  syncModes();
-  refreshers.push(syncModes);
-  modeRow.append(modeName, modeGroup);
+    },
+  });
+  // The selection is the value of record here, and a programmatic roll writes
+  // straight to it, so the buttons re-read it rather than holding it.
+  refreshers.push(() => modeSwitch.sync(selection.mode ?? 'normal'));
+  modeRow.append(modeName, modeSwitch.element);
   root.appendChild(modeRow);
 
   // Optional difficulty target: when set, each roll also reports success or

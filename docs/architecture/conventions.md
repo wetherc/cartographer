@@ -225,9 +225,11 @@ actions.
 `iconButton` and `textButton` own the `btn` class assembly, always set an
 aria-label on icon-only buttons, and default the hover `title` to it. The ~40
 hand-rolled copies they replaced had drifted on exactly those attributes.
-`emptyState(message)` is the one "nothing here" paragraph. A new panel should
-have no `document.createElement('button')` of its own unless it is genuinely a
-different control (a tab, a chip, a select-like row).
+`emptyState(message)` is the one "nothing here" paragraph. `segSwitch` is the one
+segmented group of mutually exclusive buttons, and it owns the pairing of the
+active class with `aria-pressed` that its four call sites each used to repeat. A
+new panel should have no `document.createElement('button')` of its own unless it
+is genuinely a different control (a tab, a chip, a select-like row).
 
 ### Numbers off a form or a file go through src/util/num.js
 

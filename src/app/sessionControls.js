@@ -1,14 +1,14 @@
 import { mustGetElement } from '../ui/dom.js';
-import { mountModeSwitch } from '../ui/ModeSwitch.js';
-import { mountRoleSwitch } from '../ui/RoleSwitch.js';
 import { mountThemeToggle } from '../ui/ThemeToggle.js';
 import { wireTabs } from '../ui/Tabs.js';
 import { GM_LOCK_KEY, createHeartbeatLock } from '../storage/GMLock.js';
 import { isPlayerLocked, PLAYER_LOCK_SESSION_KEY } from '../view/PlayerLock.js';
 import { confirmModal } from '../ui/Modal.js';
-import { iconButton } from '../ui/buttons.js';
+import { iconButton, segSwitch } from '../ui/buttons.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
+/** @typedef {import('../types/app.js').AppMode} AppMode */
+/** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**
  * The header's two view switches (Play/Build mode, GM/Player role, the latter
@@ -34,19 +34,30 @@ export function wireSessionControls(app) {
 
   // Play/Build/Library mode drives which rails the layout shows (a body class
   // toggled by CSS), and defaults to Play so a first-run visitor lands on the
-  // live view.
-  const modeSwitch = mountModeSwitch(
-    mustGetElement('mode-switch-container'),
-    app.state.mode,
-    (mode) => {
+  // live view. All three are the same app over the same campaign data: Play is
+  // the live-session view, Build is the campaign-authoring view, and Library
+  // edits the reusable template collection that lives outside any campaign.
+  const modeSwitch = segSwitch({
+    ariaLabel: 'App mode',
+    options: [
+      { value: /** @type {AppMode} */ ('play'), icon: 'dice', label: 'Play' },
+      { value: /** @type {AppMode} */ ('build'), icon: 'edit', label: 'Build' },
+      { value: /** @type {AppMode} */ ('library'), icon: 'scroll', label: 'Library' },
+    ],
+    value: app.state.mode,
+    onChange: (mode) => {
       app.state.mode = mode;
       document.body.classList.toggle('mode-play', mode === 'play');
       document.body.classList.toggle('mode-build', mode === 'build');
       document.body.classList.toggle('mode-library', mode === 'library');
       app.actions.onModeChanged(mode);
     },
-  );
-  app.actions.setMode = (mode) => modeSwitch.setMode(mode);
+  });
+  mustGetElement('mode-switch-container').appendChild(modeSwitch.element);
+  // Apply the starting mode's body classes rather than assuming the markup
+  // already carries them.
+  modeSwitch.setValue(app.state.mode);
+  app.actions.setMode = (mode) => modeSwitch.setValue(mode);
 
   // The light/dark toggle is a per-browser viewer preference, so it lives
   // outside the GM-only header actions and stays visible in the Player role.
@@ -60,7 +71,7 @@ export function wireSessionControls(app) {
     const role = app.state.role;
     document.body.classList.toggle('role-player', role === 'player');
     document.body.classList.toggle('role-gm', role === 'gm');
-    if (role === 'player') modeSwitch.setMode('play');
+    if (role === 'player') modeSwitch.setValue('play');
     app.actions.onRoleChanged(role);
     // Re-render the party panels: their edit affordances depend on the role
     // (and, in the Player view, on this tab's character binding).
@@ -84,36 +95,46 @@ export function wireSessionControls(app) {
   const gmLock = createHeartbeatLock({
     onYield: () => {
       app.toasts.show('Another tab took over the GM view; this one switched to the Player view.');
-      roleSwitch.setRole('player');
+      roleSwitch.setValue('player');
     },
   });
 
+  // Viewer role is independent of the mode switch above: mode is what the
+  // operator is doing (authoring vs. running), role is who the screen is for.
   // The change callback references roleSwitch, but only via queueMicrotask /
   // later events, so the const is initialized before any read.
-  const roleSwitch = mountRoleSwitch(
-    mustGetElement('role-switch-container'),
-    app.state.role,
-    (role) => {
+  const roleSwitch = segSwitch({
+    ariaLabel: 'Viewer',
+    options: [
+      { value: /** @type {ViewRole} */ ('gm'), icon: 'shield', label: 'GM' },
+      { value: /** @type {ViewRole} */ ('player'), icon: 'eye', label: 'Player' },
+    ],
+    value: app.state.role,
+    onChange: (next) => {
+      let role = next;
       if (role === 'gm' && playerLocked) {
         // Backstop: the switch is hidden while locked, but nothing else may
-        // claim GM in this tab either (e.g. a programmatic setRole).
+        // claim GM in this tab either (e.g. a programmatic setValue).
         role = 'player';
-        queueMicrotask(() => roleSwitch.setRole('player'));
+        queueMicrotask(() => roleSwitch.setValue('player'));
       }
       if (role === 'gm' && !gmLock.claim(GM_LOCK_KEY)) {
         app.toasts.show('Another tab is running the GM view; this one stays on the Player view.');
         role = 'player';
         // During the initial mount the switch is still being constructed; sync its
-        // buttons to the forced role once it exists. setRole re-enters this
+        // buttons to the forced role once it exists. setValue re-enters this
         // callback, which settles immediately on the player branch.
-        queueMicrotask(() => roleSwitch.setRole('player'));
+        queueMicrotask(() => roleSwitch.setValue('player'));
       }
       if (role === 'player') gmLock.release();
       app.state.role = role;
       sessionStorage.setItem('campaign-builder:role', role);
       applyRole();
     },
-  );
+  });
+  mustGetElement('role-switch-container').appendChild(roleSwitch.element);
+  // Run the role's consequences for the starting role, as a click would.
+  roleSwitch.setValue(app.state.role);
 
   // A settled Player tab (a shared table display) can be locked so a stray tap
   // can't flip it to GM once the GM tab closes and frees the GM lock. Per-tab

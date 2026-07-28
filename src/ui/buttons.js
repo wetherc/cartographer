@@ -10,6 +10,8 @@ import { icon } from './icons.js';
  * `emptyState` rides along as the third panel-level primitive: the muted
  * "nothing here" paragraph every list panel shows, and `chip`/`removableChip`
  * as the fourth: the small labeled tag, with or without an x to drop it.
+ * `segSwitch` builds the fifth, a segmented group of mutually exclusive
+ * buttons.
  */
 
 /**
@@ -75,6 +77,72 @@ export function textButton(label, onClick, opts = {}) {
   button.appendChild(document.createTextNode(label));
   if (onClick) button.addEventListener('click', onClick);
   return button;
+}
+
+/**
+ * One choice in a `segSwitch`. A choice shows an icon, a label, or both; an
+ * icon-only choice needs `ariaLabel` for its accessible name, which also
+ * becomes the hover title unless `title` overrides it.
+ * @template {string} T
+ * @typedef {{ value: T, label?: string, icon?: import('./icons.js').IconName,
+ *   ariaLabel?: string, title?: string }} SegOption
+ */
+
+/**
+ * A segmented switch: a `role="group"` of buttons over one value, where the
+ * selected button carries both the active class and `aria-pressed` so the
+ * choice reads the same by eye and by screen reader. The header's mode, role,
+ * and theme switches and the dice tray's d20 mode are all this shape.
+ *
+ * `setValue` selects a choice and reports it through `onChange`, the same path
+ * a click takes. `sync` only repaints the buttons, for a caller whose value
+ * lives elsewhere and can change without going through the switch (the dice
+ * tray's selection, which a programmatic roll overwrites).
+ * @template {string} T
+ * @param {{ ariaLabel: string, options: SegOption<T>[], value: T,
+ *   onChange: (value: T) => void, className?: string }} spec
+ * @returns {{ element: HTMLDivElement, getValue: () => T,
+ *   setValue: (value: T) => void, sync: (value?: T) => void }}
+ */
+export function segSwitch({ ariaLabel, options, value, onChange, className = '' }) {
+  const element = document.createElement('div');
+  element.className = classNames(['seg-switch', className]);
+  element.setAttribute('role', 'group');
+  element.setAttribute('aria-label', ariaLabel);
+
+  let current = value;
+
+  const entries = options.map((option) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn seg-switch__btn';
+    if (option.ariaLabel) button.setAttribute('aria-label', option.ariaLabel);
+    if (option.title ?? option.ariaLabel) button.title = option.title ?? option.ariaLabel ?? '';
+    if (option.icon) button.appendChild(icon(option.icon));
+    if (option.label) button.appendChild(document.createTextNode(option.label));
+    button.addEventListener('click', () => setValue(option.value));
+    element.appendChild(button);
+    return { value: option.value, button };
+  });
+
+  /** @param {T} [next] */
+  function sync(next) {
+    if (next !== undefined) current = next;
+    for (const entry of entries) {
+      const active = entry.value === current;
+      entry.button.classList.toggle('seg-switch__btn--active', active);
+      entry.button.setAttribute('aria-pressed', String(active));
+    }
+  }
+
+  /** @param {T} next */
+  function setValue(next) {
+    sync(next);
+    onChange(next);
+  }
+
+  sync();
+  return { element, getValue: () => current, setValue, sync };
 }
 
 /**

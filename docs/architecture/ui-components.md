@@ -176,7 +176,7 @@ Not every mount returns `update`. The other shapes, so you can recognize them:
 | Shape | Used by | Why |
 | --- | --- | --- |
 | `{ setCharacter }`, plus `getCharacter` on two of them | `CharacterSheet`, `InventoryPanel`, `SpellbookPanel` | these three are scoped to one selected character, which they hold and re-render from; a sibling panel's edit is pushed in through `setCharacter` rather than re-read through a getter |
-| a domain handle | `ModeSwitch` (`{ getMode, setMode }`), `RoleSwitch`, `ThemeToggle`, `PalettePanel`, `TileInspector`, `Toast` (`{ show }`) | a control, not a list; there is nothing to re-render from state |
+| a domain handle | `segSwitch` (`{ element, getValue, setValue, sync }`), `ThemeToggle`, `PalettePanel`, `TileInspector`, `Toast` (`{ show }`) | a control, not a list; there is nothing to re-render from state |
 | `build<X>Form(...)` returning DOM plus readers | `ItemForm`, `SpellForm`, `EncounterTemplateForm`, `NPCTemplateForm`, `CharacterProgress` | inline forms are built per edit and thrown away, so they are constructed, not mounted |
 | `Promise<result>` | `combatSetupModal`, `generateDialog`, `promptSpellDetail`, everything in `Modal.js` | a dialog is one question with one answer |
 | `{ element, get, set }` | `buildDamageEditor`, `buildEffectsEditor` (`ItemFormEditors.js`) | a composite sub-widget inside a form: it owns a working copy, hands over `element` to mount, `get` to read at submit, and `set` so a preset picker can overwrite it |
@@ -248,7 +248,8 @@ output depends on state that is *not* in its rows has to pass `alwaysRender`.
 
 ### `src/ui/buttons.js`
 
-Two button builders, an empty-state paragraph, and the chip pair. Twenty-six
+Two button builders, a segmented switch, an empty-state paragraph, and the chip
+pair. Twenty-six
 modules import them, and no panel should call
 `document.createElement('button')` for an ordinary control. The raw calls that
 remain build controls with their own class vocabulary rather than `btn` — tabs,
@@ -258,6 +259,8 @@ what these helpers cover.
 ```js
 iconButton(name, ariaLabel, onClick, opts?) -> HTMLButtonElement
 textButton(label, onClick, opts?)           -> HTMLButtonElement
+segSwitch({ ariaLabel, options, value, onChange, className? })
+                                            -> { element, getValue, setValue, sync }
 emptyState(message)                         -> HTMLParagraphElement
 chip(label, opts?)                          -> HTMLSpanElement
 removableChip(label, onRemove, opts?)       -> HTMLSpanElement
@@ -288,6 +291,18 @@ Both take `opts.variant`, which maps straight to a `btn--*` CSS modifier:
 `variant: 'danger'` is not decoration. Every destructive control passes it and
 stays visible rather than appearing on hover, and it confirms first. See
 [Conventions](conventions.md#every-destructive-action-confirms-first).
+
+`segSwitch` builds a `role="group"` of buttons over one value: the header's
+mode, role, and theme switches and the dice tray's d20 mode. Each option is
+`{ value, label?, icon?, ariaLabel?, title? }`, so a choice can be text, an icon,
+or both, and the selected button gets the active class and `aria-pressed`
+together. The caller appends `element` itself, which is what lets the dice tray
+put the switch inside a labelled row. `setValue` selects a choice and reports it
+through `onChange`, the same path a click takes; calling it right after mounting
+is how the mode switch applies the starting mode's body classes. `sync` repaints
+the buttons without reporting anything, for a caller whose value lives elsewhere
+and can change without going through the switch, which is the dice tray's
+selection object.
 
 `emptyState(message)` is the one `<p class="empty-state">`. Every list panel's
 "nothing here yet" line goes through it.
