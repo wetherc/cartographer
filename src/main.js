@@ -31,7 +31,10 @@ const toasts = mountToasts(document.body);
 
 // The views/actions registries start empty and are populated synchronously by
 // the wiring modules below, before any user event can fire; the cast spares
-// every call site an existence check it will never need.
+// every call site an existence check it will never need. It is the one place
+// that asserts the invariant, so a module that reads a registry entry while
+// wiring is still in progress has to be ordered after the module that puts it
+// there — see the mount order below.
 const app = /** @type {import('./types/app.js').AppContext} */ (
   /** @type {unknown} */ ({
     palette,
@@ -60,15 +63,22 @@ const app = /** @type {import('./types/app.js').AppContext} */ (
   })
 );
 
+// The order below is a dependency order, not a preference. Almost every
+// cross-module reference resolves when an event fires, long after all of this
+// has run, but three modules reach another module's registrations while they
+// are still mounting, so those registrations have to be in place first.
 wireCampaignActions(app); // dirty flag + header campaign controls; provides markDirty
 // The library loads before anything that offers its presets (the item form,
 // the enemy gear pickers), so the merged lists are live from the first open.
 wireLibrary(app); // Library mode: equipment/bestiary/NPC templates + custom-library file
-wireMapView(app); // canvas, trees, inspector, palette, fog, map tools
-wireGenerateAction(app);
-wireParty(app); // roster, sheet, inventory, time
 wireEncounters(app); // encounter + initiative panels, bestiary
 wireStory(app); // travelogue (logEvent), NPCs, quests, handouts
+wireParty(app); // roster, sheet, inventory, time
+// Draws the first map, which also marks the encounter and NPC tiles and
+// rebuilds the Build-rail lists those markers share a node scope with — so the
+// two modules that own those lists are wired above.
+wireMapView(app); // canvas, trees, inspector, palette, fog, map tools
+wireGenerateAction(app);
 // Rolls live in the travelogue (the tray shows only the latest), tagged by
 // which side of the screen rolled them — by name when the tab is bound to a
 // character, "A player" for a spectator tab.
@@ -83,6 +93,9 @@ const diceTray = mountDiceTray(mustGetElement('dice-tray-container'), {
 // Lets a weapon attack load and roll the tray (d20 + modifier vs the
 // defender's AC) so the roll is visible where every other roll happens.
 app.actions.rollDice = (selection, target) => diceTray.rollSelection(selection, target);
+// Last, and it has to be: mounting the role switch applies the starting role
+// straight away, which refreshes four panels and re-points the character sheet,
+// so everything it touches must already be registered.
 wireSessionControls(app); // mode/role switches (applies the initial role), tabs, sidebar
 wireShortcuts(app);
 

@@ -125,7 +125,7 @@ export function wireMapView(app) {
     );
     // The Build-rail authoring list shows the same node scope, so it refreshes
     // wherever the markers do (navigation and every encounter mutation).
-    app.views.buildEncounters?.update();
+    app.views.buildEncounters.update();
   }
   app.actions.syncEncounterMarkers = syncEncounterMarkers;
 
@@ -143,7 +143,7 @@ export function wireMapView(app) {
     );
     // The Build-rail NPC list shows the same node scope, so it refreshes
     // wherever the markers do (navigation and every NPC mutation).
-    app.views.buildNPCs?.update();
+    app.views.buildNPCs.update();
   }
   app.actions.syncNPCMarkers = syncNPCMarkers;
 

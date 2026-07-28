@@ -96,15 +96,16 @@ export function wireLibrary(app) {
   /**
    * Refresh all four lists after any library mutation, and the character panels
    * with them: the spellbook lists the catalog's spells, so an edited or deleted
-   * entry has to reach it too. The party is wired after the library, and the
-   * file seed below resolves at an unknown time, so the action may not exist yet.
+   * entry has to reach it too. Every caller is a user action or the file seed's
+   * promise callback, both of which run after all wiring, so the party's action
+   * is registered by then even though the party is wired after the library.
    */
   const refresh = () => {
     app.views.libraryEquipment.update();
     app.views.libraryBestiary.update();
     app.views.libraryNPCs.update();
     app.views.librarySpells.update();
-    app.actions.refreshSelectedCharacter?.();
+    app.actions.refreshSelectedCharacter();
   };
 
   /** Apply, persist, and re-render a new custom library. @param {CustomLibrary} next */

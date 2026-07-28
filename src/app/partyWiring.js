@@ -147,6 +147,9 @@ export function wireParty(app) {
 
   /**
    * Point the sheet and inventory at a character (or null) and refresh the roster.
+   * The four panels it writes to are declared below it, so it must not run until
+   * they are all mounted: it is handed to the roster and the binding picker, and
+   * neither fires its callback while mounting.
    * @param {string | null} id
    */
   function selectCharacter(id) {
@@ -171,7 +174,7 @@ export function wireParty(app) {
     // potion bought a second action) must reach the initiative panel's attack
     // strip, which is otherwise only redrawn on turn advance — the panel reads
     // the character live, but its buttons are built at render time.
-    app.views.initiativePanel?.update();
+    app.views.initiativePanel.update();
     app.actions.markDirty();
   }
 

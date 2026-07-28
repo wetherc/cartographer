@@ -43,6 +43,17 @@ created. Write `app.views.encounterPanel.update()` inside the handler; never
 pull `app.views.encounterPanel` into a local variable during wiring, where it
 would still be undefined.
 
+Every registry entry is declared required, and `main.js` casts the two empty
+objects once so the types say so from the start. A few modules do read the
+registries while wiring is still running, which is why `main.js`'s call order is
+a dependency order. `mapWiring.js` draws the first map as it finishes, which
+marks the encounter and NPC tiles and rebuilds the two Build-rail lists scoped to
+the same node, so `wireEncounters` and `wireStory` are wired before it.
+`wireSessionControls` is wired last, because mounting the role switch applies the
+starting role immediately, and that refreshes four panels and re-points the
+character sheet. A module that reads a view or action during its own mount
+belongs after the module that registers it.
+
 State ownership follows the same split. Only campaign data, the stuff a save
 serializes, lives on `app.state`. Per-feature UI state (the selected tile, the
 active brush, the edit history, the selected character, a running combat, the
