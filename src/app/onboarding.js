@@ -23,7 +23,7 @@ export function maybeShowOnboarding(app) {
     'div',
     'onboarding__card card',
     el('h2', 'card__title', 'Welcome, GM'),
-    el('p', 'onboarding__blurb', 'Your world is empty. Three ways to start:'),
+    el('p', 'onboarding__blurb u-muted', 'Your world is empty. Three ways to start:'),
   );
   const overlay = el('div', 'onboarding', card);
 

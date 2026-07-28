@@ -123,9 +123,7 @@
 }
 
 .npc-panel__location {
-  font-size: var(--text-label);
   font-family: var(--font-mono);
-  color: var(--text-muted);
 }
 
 .npc-panel__controls {
@@ -178,8 +176,6 @@
 /* Each combatant's DEX modifier, shown between name and initiative value. */
 .initiative-panel__modifier {
   font-family: var(--font-mono);
-  font-size: var(--text-label);
-  color: var(--text-muted);
 }
 
 .initiative-panel__init-readout {

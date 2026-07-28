@@ -94,7 +94,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   root.appendChild(tools);
 
   // Scale row: how large the next painted tile's art draws (1x1 up to 3x3).
-  const scaleRow = el('div', 'palette__scale', el('span', 'palette__scale-label', 'Size'));
+  const scaleRow = el('div', 'palette__scale', el('span', 'palette__scale-label u-muted', 'Size'));
   /** @type {HTMLButtonElement[]} */
   const scaleButtons = [];
   for (const n of [1, 2, 3]) {

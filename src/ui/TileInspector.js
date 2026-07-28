@@ -41,7 +41,7 @@ export function mountTileInspector(container, opts) {
 
   const form = el('div', 'tile-inspector__form');
 
-  const coordLabel = el('div', 'tile-inspector__coord');
+  const coordLabel = el('div', 'tile-inspector__coord u-muted');
 
   // POI type
   const typeSelect = select(
@@ -53,7 +53,7 @@ export function mountTileInspector(container, opts) {
       poiType: typeSelect.value === '' ? null : /** @type {POIType} */ (typeSelect.value),
     });
   });
-  const typeField = el('label', 'tile-inspector__field', 'POI type', typeSelect);
+  const typeField = el('label', 'tile-inspector__field u-muted', 'POI type', typeSelect);
 
   // Discoverable
   const discInput = el('input');
@@ -61,7 +61,7 @@ export function mountTileInspector(container, opts) {
   discInput.addEventListener('change', () => opts.onChange({ discoverable: discInput.checked }));
   const discField = el(
     'label',
-    'tile-inspector__field tile-inspector__field--inline',
+    'tile-inspector__field tile-inspector__field--inline u-muted',
     discInput,
     ' Discoverable',
   );
@@ -69,14 +69,14 @@ export function mountTileInspector(container, opts) {
   // Notes
   const notesInput = textareaField('', { rows: 4, className: 'tile-inspector__notes' });
   notesInput.addEventListener('input', () => opts.onChange({ notes: notesInput.value }));
-  const notesField = el('label', 'tile-inspector__field', 'Notes', notesInput);
+  const notesField = el('label', 'tile-inspector__field u-muted', 'Notes', notesInput);
 
   form.append(coordLabel, typeField, discField, notesField);
 
   // Region link (optional): which child node this tile zooms into. Only shown
   // when the caller supplies linking, i.e. in Build mode.
   const linkSelect = select([], '');
-  const linkField = el('label', 'tile-inspector__field', 'Zooms into', linkSelect);
+  const linkField = el('label', 'tile-inspector__field u-muted', 'Zooms into', linkSelect);
   const newRegionBtn = textButton('New region here', () => opts.linking?.onCreateNew(), {
     className: 'tile-inspector__new-region',
   });

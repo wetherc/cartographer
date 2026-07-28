@@ -233,11 +233,11 @@ export function mountCharacterSheet(
         el('span', '', `Level ${character.level}`),
         el(
           'span',
-          'character-sheet__header-meta',
+          'character-sheet__header-meta u-muted',
           acBadge,
           el(
             'span',
-            'character-sheet__xp-progress',
+            'character-sheet__xp-progress u-muted',
             `XP ${character.xp} / ${character.level * XP_PER_LEVEL}`,
           ),
         ),
@@ -266,7 +266,7 @@ export function mountCharacterSheet(
       input.addEventListener('change', () => onCommit(Number(input.value)));
       const row = el(
         'div',
-        'character-sheet__field-row',
+        'character-sheet__field-row u-muted',
         el('span', 'character-sheet__stat-key', key),
         input,
       );
@@ -379,7 +379,7 @@ export function mountCharacterSheet(
       const resources = el('div', 'character-sheet__resources');
       pools.forEach((pool, index) => {
         const label = el('span', 'character-sheet__resource-label');
-        const row = el('div', 'character-sheet__resource-row', label);
+        const row = el('div', 'character-sheet__resource-row u-muted', label);
         writers.push(() => {
           const next = customPools(live())[index];
           if (next) label.textContent = `${next.name} ${next.current}/${next.max}`;

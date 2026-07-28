@@ -173,8 +173,6 @@ body.mode-build .map-controls__fog {
 
 .onboarding__blurb {
   margin: 0 0 var(--space-2);
-  color: var(--text-muted);
-  font-size: var(--text-label);
 }
 
 .onboarding__skip {

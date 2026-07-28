@@ -165,7 +165,7 @@ export function buildProgressSection(getCharacter, opts) {
 
   /** @param {string} [cls] @returns {HTMLElement} */
   const addRow = (cls) =>
-    section.appendChild(el('div', classNames(['character-sheet__progress-row', cls])));
+    section.appendChild(el('div', classNames(['character-sheet__progress-row u-muted', cls])));
   /** @param {HTMLElement} row @param {string} text */
   const addText = (row, text) => {
     row.appendChild(el('span', 'character-sheet__progress-text', text));
@@ -303,7 +303,7 @@ export function buildProgressSection(getCharacter, opts) {
     section.appendChild(
       el(
         'details',
-        'character-sheet__features',
+        'character-sheet__features u-muted',
         el('summary', '', `Class features (${features.length})`),
         el(
           'ul',

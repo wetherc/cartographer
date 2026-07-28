@@ -62,14 +62,7 @@ export function buildEquipment(getCharacter, commit, playable) {
       commit(equip(getCharacter(), slot.key, picker.value === '' ? null : picker.value)),
     );
 
-    section.append(
-      el(
-        'label',
-        'inventory-panel__slot',
-        el('span', 'inventory-panel__slot-label', slot.label),
-        picker,
-      ),
-    );
+    section.append(el('label', 'inventory-panel__slot', el('span', 'u-muted', slot.label), picker));
   }
   return section;
 }

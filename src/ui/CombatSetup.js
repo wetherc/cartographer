@@ -51,7 +51,7 @@ export function combatSetupModal(roster, callbacks = {}) {
         const view = describe(participant);
         const modifier = el(
           'span',
-          'initiative-panel__modifier',
+          'initiative-panel__modifier u-muted',
           formatModifier(participant.modifier ?? 0),
         );
         modifier.title = 'DEX modifier, added to the initiative roll';

@@ -237,7 +237,7 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
       ),
     );
     if (primaryCasterClass(character)) {
-      const prep = el('span', 'spellbook__prepared-count');
+      const prep = el('span', 'u-muted');
       const writeCounts = () => {
         const live = current;
         if (!live) return;

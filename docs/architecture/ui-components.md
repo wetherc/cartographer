@@ -694,6 +694,32 @@ for: `.disclosure` / `__chevron` / `--open` and `.stat-bar` / `__track` /
 `__fill` (plus `--mana` and `--critical`) in `widgets.css`, and `.tabs` /
 `__tab` / `__panel` in `layout.css`.
 
+### Utilities
+
+Alongside those shared classes `base.css` carries a small utility layer, for the
+treatments that kept getting restated in every feature sheet. A utility says how
+something looks, not what it is, so an element keeps its own component class for
+the rest of its styling and for anything that needs to select it:
+
+```js
+el('span', 'npc-panel__location u-muted', label);
+```
+
+There is one so far. `.u-muted` is the small secondary text used by captions,
+hints, derived readouts, and row metadata — `font-size: var(--text-label)` plus
+`color: var(--text-muted)`, the pair that roughly thirty rules each spelled out.
+
+The layer sits before the feature sheets in the cascade, so a component rule
+always wins where the two set the same property. `.tile-inspector__field--inline`
+relies on that: it takes its text back to the full `--text` color while the
+element still carries `u-muted` for the size.
+
+Add one only when the pattern is already repeated several times and its values
+come from the token scale. Anything with a component-specific value belongs in
+that component's rule. When adopting `u-muted` leaves a component rule empty,
+delete the rule and drop the class rather than leaving a name in the markup with
+nothing behind it.
+
 `.field` carries two details that look removable and are not. Single-line controls get an
 explicit `height`, because a bare `<select>` ignores `line-height` for its box
 metrics and otherwise sits about 2.5 px shorter than a neighboring `<input>`.
@@ -783,8 +809,9 @@ Reuse the right thing rather than adding to the pile.
 - **The list-CRUD panel skeleton is written six times** (quests, handouts,
   NPCs, build encounters, encounters, library), and the `<dialog>` lifecycle
   seven times, four of them outside `Modal.js`.
-- **`.section-label` and `.empty-state` are each re-implemented ad hoc** in
-  `character.css` rather than reused.
+- **`.section-label` is re-implemented ad hoc** in `character.css`:
+  `.character-sheet__field-row` and `.stat-badge__key` each restate the
+  uppercase-and-tracked treatment with their own letter spacing.
 
 If you are adding a widget that fits one of these shapes, reuse the existing
 class or JS builder rather than adding the next copy; if you are adding the

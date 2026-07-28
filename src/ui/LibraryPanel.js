@@ -227,7 +227,7 @@ export function mountLibraryPanel(container, callbacks) {
   /** @param {LibraryRow} entry @param {HTMLElement} row */
   function buildExtras(entry, row) {
     if (!entry.summary) return;
-    row.appendChild(el('div', 'library-panel__summary', entry.summary));
+    row.appendChild(el('div', 'u-muted', entry.summary));
   }
 
   /** Redraw every list, whether or not its tab is the visible one. */

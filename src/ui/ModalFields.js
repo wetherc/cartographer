@@ -230,7 +230,7 @@ export function buildAllocation(spec) {
   const rows = spec.rows ?? [];
   let total = Math.max(0, Math.floor(spec.total ?? 0));
   const unit = spec.unit ?? 'left';
-  const remaining = el('p', 'modal__allocation-remaining');
+  const remaining = el('p', 'modal__allocation-remaining u-muted');
   remaining.setAttribute('aria-live', 'polite');
 
   /** @type {HTMLInputElement[]} */

@@ -22,11 +22,11 @@ import { el } from './dom.js';
  */
 export function buildStatBar(pool, opts) {
   const fill = el('span', `stat-bar__fill stat-bar__fill--${opts.modifier}`);
-  const text = el('span', 'stat-bar__text');
+  const text = el('span', 'stat-bar__text u-muted');
   const wrap = el(
     'span',
     'stat-bar',
-    el('span', 'stat-bar__label', opts.label),
+    el('span', 'stat-bar__label u-muted', opts.label),
     opts.flank?.before,
     el('span', 'stat-bar__track', fill),
     opts.flank?.after,
@@ -86,7 +86,12 @@ export function buildSlotLine(pools, onToggle) {
   /** @param {number} n */
   const ordinal = (n) => `${n}${n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`;
   const groups = el('span', 'slot-line__groups');
-  const wrap = el('span', 'stat-bar slot-line', el('span', 'stat-bar__label', 'Slots'), groups);
+  const wrap = el(
+    'span',
+    'stat-bar slot-line',
+    el('span', 'stat-bar__label u-muted', 'Slots'),
+    groups,
+  );
   // One pip element per slot, in pool order, so `update` can walk pools and
   // pips together without reading the DOM's shape back.
   /** @type {HTMLElement[][]} */
@@ -118,7 +123,7 @@ export function buildSlotLine(pools, onToggle) {
       row.push(pip);
     }
     pipsByPool.push(row);
-    groups.appendChild(el('span', 'slot-line__group', el('span', 'slot-line__level', level), pips));
+    groups.appendChild(el('span', 'slot-line__group', el('span', 'u-muted', level), pips));
   }
 
   /** @type {ResourcePool[]} */

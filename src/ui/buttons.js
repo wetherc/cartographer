@@ -162,5 +162,5 @@ export function removableChip(label, onRemove, opts = {}) {
  * @returns {HTMLParagraphElement}
  */
 export function emptyState(message) {
-  return el('p', 'empty-state', message);
+  return el('p', 'empty-state u-muted', message);
 }

@@ -70,7 +70,7 @@ export function mountQuestPanel(container, callbacks) {
         // A ternary rather than `&&`: an empty string is a legal child that `el`
         // would append as an empty text node, where absent notes should add
         // nothing at all.
-        quest.notes ? el('span', 'quest-panel__notes', quest.notes) : null,
+        quest.notes ? el('span', 'u-muted', quest.notes) : null,
       );
 
       return [toggle, body];

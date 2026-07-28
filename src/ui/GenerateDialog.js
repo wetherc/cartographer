@@ -40,7 +40,7 @@ export function generateDialog(options) {
 
       /** @template {HTMLElement} T @param {string} caption @param {T} control @returns {T} */
       const field = (caption, control) => {
-        body.push(el('label', 'modal__field', caption, control));
+        body.push(el('label', 'modal__field u-muted', caption, control));
         return control;
       };
 
@@ -72,7 +72,12 @@ export function generateDialog(options) {
         renderPreview();
       });
       body.push(
-        el('label', 'modal__field', 'Seed', el('div', 'generate-dialog__seed', seedInput, reroll)),
+        el(
+          'label',
+          'modal__field u-muted',
+          'Seed',
+          el('div', 'generate-dialog__seed', seedInput, reroll),
+        ),
       );
 
       const canvas = el('canvas', 'generate-dialog__preview');

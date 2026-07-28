@@ -82,11 +82,6 @@
   font-weight: 600;
 }
 
-.quest-panel__notes {
-  font-size: var(--text-label);
-  color: var(--text-muted);
-}
-
 .quest-panel__row--completed .quest-panel__title {
   text-decoration: line-through;
   color: var(--text-muted);

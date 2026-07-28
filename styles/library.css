@@ -80,11 +80,6 @@ body.mode-library .app-buildrail:not(#library-tools) {
   color: var(--accent);
 }
 
-.library-panel__summary {
-  font-size: var(--text-label);
-  color: var(--text-muted);
-}
-
 .library-io__hint {
   margin: 0 0 var(--space-2);
   font-size: var(--text-label);

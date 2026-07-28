@@ -50,7 +50,7 @@ export function mountNPCPanel(container, callbacks) {
         [
           head,
           npc.role && el('span', 'npc-panel__role', npc.role),
-          getLocationLabel && el('span', 'npc-panel__location', getLocationLabel(npc)),
+          getLocationLabel && el('span', 'npc-panel__location u-muted', getLocationLabel(npc)),
           npc.notes && el('span', 'npc-panel__notes', npc.notes),
         ].filter(Boolean)
       );

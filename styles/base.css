@@ -146,6 +146,26 @@ body {
 }
 
 /* ==========================================================================
+   Utilities
+   One class per recurring treatment, for the handful of idioms that were
+   otherwise restated in every feature sheet. A utility carries no identity —
+   `.u-muted` says how a bit of text looks, not what it is — so an element keeps
+   its component class for the rest of its styling and for anything that needs
+   to select it. They sit here, ahead of the feature sheets, so a component rule
+   always wins when the two set the same property.
+
+   Only add one when the pattern is already repeated several times and the
+   values come from the token scale. Anything with a component-specific value
+   belongs in that component's rule.
+   ========================================================================== */
+
+/* Secondary text: captions, hints, derived readouts, row metadata. */
+.u-muted {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+/* ==========================================================================
    Shared primitives: .btn / .field / .card
    ========================================================================== */
 
@@ -291,8 +311,6 @@ body {
 .empty-state {
   margin: 0;
   padding: var(--space-2) 0;
-  font-size: var(--text-label);
-  color: var(--text-muted);
   font-style: italic;
 }
 

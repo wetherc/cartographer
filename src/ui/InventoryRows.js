@@ -75,7 +75,7 @@ export function buildRow(item, playable, ctx) {
       'div',
       'inventory-panel__item-line',
       el('span', 'inventory-panel__label', `${item.name} x${item.quantity}`),
-      el('span', 'inventory-panel__type', itemType(item)),
+      el('span', 'u-muted', itemType(item)),
     ),
     // One badge per effect, so a modifier-heavy item (damage riders, stat
     // bonuses, inflicted statuses) wraps into pills instead of one long line.
@@ -85,7 +85,7 @@ export function buildRow(item, playable, ctx) {
         'inventory-panel__effects',
         ...effects.map((effect) => el('span', 'chip inventory-panel__effect', effect)),
       ),
-    item.description ? el('div', 'inventory-panel__description', item.description) : null,
+    item.description ? el('div', 'inventory-panel__description u-muted', item.description) : null,
   );
 
   const row = el('div', 'inventory-panel__row', main);

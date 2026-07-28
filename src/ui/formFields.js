@@ -42,7 +42,12 @@ function withOpts(control, { className, ariaLabel }) {
  * @returns {HTMLLabelElement}
  */
 export function labeled(caption, control, opts = {}) {
-  const label = el('label', 'inventory-panel__field-label', el('span', '', caption), control);
+  const label = el(
+    'label',
+    'inventory-panel__field-label u-muted',
+    el('span', '', caption),
+    control,
+  );
   return withOpts(label, opts);
 }
 
@@ -70,7 +75,7 @@ export function checkbox(caption, checked, opts = {}) {
   const input = el('input');
   input.type = 'checkbox';
   input.checked = checked;
-  const label = el('label', 'spell-form__check', input, el('span', '', caption));
+  const label = el('label', 'spell-form__check u-muted', input, el('span', '', caption));
   return { label: withOpts(label, opts), input };
 }
 

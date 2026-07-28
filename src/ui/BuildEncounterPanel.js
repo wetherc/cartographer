@@ -76,7 +76,7 @@ export function mountBuildEncounterPanel(container, callbacks) {
         if (encounter.weapon)
           parts.push(`${encounter.weapon.name} ${formatDamage(encounter.weapon.damage)}`);
         if (encounter.armor) parts.push(`${encounter.armor.name} +${encounter.armor.acBonus} AC`);
-        row.appendChild(el('div', 'build-encounters__gear', parts.join(' | ')));
+        row.appendChild(el('div', 'u-muted', parts.join(' | ')));
       }
 
       // Base stat authoring lives here: every stat (the six abilities + AC)

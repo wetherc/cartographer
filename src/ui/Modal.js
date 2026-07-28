@@ -177,7 +177,7 @@ export function promptModal(title, fields, options = {}) {
         const label = el(
           'label',
           classNames([
-            'modal__field',
+            'modal__field u-muted',
             field.full && 'modal__field--full',
             field.hidden && 'modal__field--hidden',
           ]),

@@ -107,7 +107,7 @@ export function statBadge(character, key) {
     ]),
     el('span', 'stat-badge__key', key),
     el('span', 'stat-badge__die', d20Face(), el('span', 'stat-badge__score', String(total))),
-    el('span', 'stat-badge__mod', modText),
+    el('span', 'stat-badge__mod u-muted', modText),
   );
   badge.type = 'button';
   const note = total !== base ? ` (base ${base})` : '';

@@ -35,8 +35,6 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: var(--text-label);
-  color: var(--text-muted);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -126,8 +124,6 @@
 
 .modal__allocation-remaining {
   margin: 0;
-  color: var(--text-muted);
-  font-size: var(--text-label);
 }
 
 /* Anything short of a full allocation blocks the cast, so it reads as a
@@ -203,11 +199,6 @@
 
 .spellbook__class {
   font-weight: 600;
-}
-
-.spellbook__prepared-count {
-  font-size: var(--text-label);
-  color: var(--text-muted);
 }
 
 .spellbook__group {

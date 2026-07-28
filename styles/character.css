@@ -73,9 +73,7 @@
   display: inline-flex;
   align-items: baseline;
   gap: var(--space-2);
-  font-size: var(--text-label);
   font-weight: 400;
-  color: var(--text-muted);
 }
 
 .character-sheet__ac {
@@ -84,9 +82,7 @@
 }
 
 .character-sheet__xp-progress {
-  font-size: var(--text-label);
   font-weight: 400;
-  color: var(--text-muted);
 }
 
 /* The progression section: class line, pending level/improvement rows (text
@@ -102,8 +98,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-label);
-  color: var(--text-muted);
 }
 
 .character-sheet__progress-row .character-sheet__progress-text {
@@ -113,11 +107,6 @@
 .character-sheet__classes .character-sheet__progress-text {
   font-weight: 600;
   color: var(--text);
-}
-
-.character-sheet__features {
-  font-size: var(--text-label);
-  color: var(--text-muted);
 }
 
 .character-sheet__features summary {
@@ -143,8 +132,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  font-size: var(--text-label);
-  color: var(--text-muted);
 }
 
 .character-sheet__resource-row .character-sheet__resource-label {
@@ -160,10 +147,8 @@
   align-items: center;
   gap: var(--space-1);
   margin: 0;
-  font-size: var(--text-label);
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  color: var(--text-muted);
 }
 
 /* One shared key column width (`--sheet-key-w`, sized for the longest key,
@@ -291,8 +276,6 @@
 
 .stat-badge__mod {
   font-family: var(--font-mono);
-  font-size: var(--text-label);
-  color: var(--text-muted);
 }
 
 /* Ability-score breakdown popover: base + each source + the total. */
@@ -340,8 +323,6 @@
 }
 
 .party-binding__label {
-  font-size: var(--text-label);
-  color: var(--text-muted);
   white-space: nowrap;
 }
 
@@ -357,8 +338,6 @@
   align-items: center;
   gap: var(--space-2);
   margin-bottom: var(--space-2);
-  font-size: var(--text-label);
-  color: var(--text-muted);
   cursor: pointer;
 }
 
@@ -407,11 +386,6 @@
   display: contents;
 }
 
-.inventory-panel__slot-label {
-  font-size: var(--text-label);
-  color: var(--text-muted);
-}
-
 .inventory-panel__slot select {
   min-width: 0;
   font-size: var(--text-label);
@@ -437,8 +411,6 @@
 }
 
 .inventory-panel__description {
-  font-size: var(--text-label);
-  color: var(--text-muted);
   font-style: italic;
 }
 
@@ -469,12 +441,6 @@
 
 .inventory-panel__give-count {
   width: 4.5rem;
-}
-
-/* Broad item-type tag on each inventory row. */
-.inventory-panel__type {
-  font-size: var(--text-label);
-  color: var(--text-muted);
 }
 
 /* One pill per mechanical effect, wrapping under the name line, so an item
@@ -530,8 +496,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  font-size: var(--text-label);
-  color: var(--text-muted);
 }
 
 /* The display:flex above would otherwise defeat the hidden attribute the AC

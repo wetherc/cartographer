@@ -46,7 +46,7 @@ export function mountDiceTray(container, opts = {}) {
 
   /** @param {string} label @param {number} delta @param {() => number} read @param {(n: number) => void} apply */
   const stepper = (label, delta, read, apply) => {
-    const name = el('span', 'dice-tray__label', label);
+    const name = el('span', 'dice-tray__label u-muted', label);
 
     const minus = iconButton('minus', `Decrease ${label}`, () => {
       apply(read() - delta);
@@ -93,7 +93,7 @@ export function mountDiceTray(container, opts = {}) {
   // Advantage/disadvantage segmented toggle: rolls every d20 twice, keeping
   // the higher (advantage) or lower (disadvantage) die. The choice is sticky
   // until changed, so a GM can set it once and attack through it.
-  const modeName = el('span', 'dice-tray__label', 'd20 mode');
+  const modeName = el('span', 'dice-tray__label u-muted', 'd20 mode');
   const modeSwitch = segSwitch({
     ariaLabel: 'Roll d20s normally, with advantage, or with disadvantage',
     options: MODES.map((mode) => ({ value: mode, label: capitalize(mode) })),
@@ -115,7 +115,7 @@ export function mountDiceTray(container, opts = {}) {
     ariaLabel: 'Target number to beat (optional)',
   });
   root.appendChild(
-    el('div', 'dice-tray__row', el('span', 'dice-tray__label', 'target'), targetInput),
+    el('div', 'dice-tray__row', el('span', 'dice-tray__label u-muted', 'target'), targetInput),
   );
 
   const rollButton = textButton('Roll', () => opts.onRoll?.(performRoll().text), {

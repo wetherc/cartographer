@@ -27,7 +27,12 @@ export function wireSplitParty(app, { container, refreshRoster }) {
   toggle.type = 'checkbox';
   toggle.checked = state.splitParty;
   toggle.setAttribute('aria-label', 'Allow splitting the party');
-  const field = el('label', 'party-split', toggle, el('span', '', 'Allow splitting the party'));
+  const field = el(
+    'label',
+    'party-split u-muted',
+    toggle,
+    el('span', '', 'Allow splitting the party'),
+  );
   container.appendChild(field);
 
   /** Refresh everything the switch changes: tokens/labels, roster place buttons. */
