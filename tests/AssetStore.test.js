@@ -48,7 +48,8 @@ function stateWithHandoutImage(image = PAYLOAD) {
     height: 1,
     tiles: [createTile('0,0', 'assets/tiles/grass/grass-1.svg')],
   });
-  return buildState(grid, null, [], [], [], [], {
+  return buildState({
+    grid,
     handouts: [{ id: 'h1', title: 'Map', body: '', image, revealed: false }],
   });
 }

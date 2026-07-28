@@ -28,7 +28,7 @@
     const party = { nodeId: 'world', tileId: '0,0' };
     const characters = [addXP(createCharacter('c1', 'Hero'), 50)];
     const encounters = [createEncounter('e1', 'Goblin', 7)];
-    const state = buildState(grid, party, characters, encounters);
+    const state = buildState({ grid, party, characters, encounters });
 
     const output = document.getElementById('output');
 

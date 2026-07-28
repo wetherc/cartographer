@@ -6,6 +6,7 @@ import { GameClock } from './time';
 import { NPC } from './npc';
 import { Handout } from './handout';
 import { CombatState } from './combat';
+import type { TileGrid } from '../map/TileGrid.js';
 
 /** A save as parsed from JSON, before validation: any shape at all. */
 export type RawSave = Record<string, any>;
@@ -66,4 +67,16 @@ export interface CampaignState {
   /** A running combat (order, round, current turn), or null when none is
    * active — so refreshing the page mid-fight resumes it. Null on older saves. */
   combat: CombatState | null;
+}
+
+/**
+ * What `buildState` reads a save out of: a tile grid, plus whichever campaign
+ * fields the caller holds. Everything but the grid is optional and falls back to
+ * the same empty value `CampaignState` carries for it, so a caller states only
+ * what it has. The runtime `Campaign` satisfies this directly, and so does the
+ * live `AppState` once the grid and party position are added to it; extra fields
+ * (`mode`, `role`) are ignored rather than persisted.
+ */
+export interface CampaignSource extends Partial<Omit<CampaignState, 'nodes' | 'version'>> {
+  grid: TileGrid;
 }

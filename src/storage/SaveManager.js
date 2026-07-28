@@ -12,8 +12,6 @@ import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
-/** @typedef {import('../types/entities.js').Character} Character */
-/** @typedef {import('../types/entities.js').Encounter} Encounter */
 
 const DEFAULT_STORAGE_KEY = 'campaign-builder:save';
 
@@ -22,25 +20,32 @@ export const STORAGE_KEY = DEFAULT_STORAGE_KEY;
 
 /**
  * Collect the whole campaign (tile hierarchy, party position, characters,
- * encounters) into one plain, JSON-serializable object.
- * @param {TileGrid} grid
- * @param {PartyPosition | null} party
- * @param {Character[]} characters
- * @param {Encounter[]} encounters
- * @param {import('../types/log.js').LogEntry[]} [travelog]
- * @param {import('../types/quest.js').Quest[]} [quests]
- * @param {Partial<CampaignState>} [extra] later-added top-level fields (clock, npcs, ...)
+ * encounters, everything else top-level) into one plain, JSON-serializable
+ * object.
+ *
+ * Every field is named once, here, and a caller that omits one gets the same
+ * empty value a save written before that field existed reads as. That is why the
+ * argument is a single object rather than a positional list: a caller cannot
+ * silently drop a field by not knowing to pass it, which is how an earlier
+ * signature lost `splitParty` and `combat` on the campaign-replace path.
+ * @param {import('../types/storage.js').CampaignSource} campaign
  * @returns {CampaignState}
  */
-export function buildState(
-  grid,
-  party,
-  characters,
-  encounters,
-  travelog = [],
-  quests = [],
-  extra = {},
-) {
+export function buildState(campaign) {
+  const {
+    grid,
+    party = null,
+    characters = [],
+    encounters = [],
+    travelog = [],
+    quests = [],
+    clock = null,
+    npcs = [],
+    handouts = [],
+    bestiary = [],
+    splitParty = false,
+    combat = null,
+  } = campaign;
   return {
     nodes: [...grid.nodes.values()],
     party,
@@ -48,15 +53,14 @@ export function buildState(
     encounters,
     travelog,
     quests,
-    clock: null,
-    npcs: [],
-    handouts: [],
-    bestiary: [],
-    splitParty: false,
-    combat: null,
-    ...extra,
-    // After the spread: this is the writer, so the version it stamps is the
-    // format it actually produces, whatever a caller's leftover field claims.
+    clock,
+    npcs,
+    handouts,
+    bestiary,
+    splitParty,
+    combat,
+    // This is the writer, so the version it stamps is the format it actually
+    // produces, whatever version a caller's source object still claims.
     version: CURRENT_VERSION,
   };
 }

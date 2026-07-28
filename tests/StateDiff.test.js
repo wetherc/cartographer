@@ -15,21 +15,7 @@ import { TilePalette } from '../src/map/TilePalette.js';
 
 /** A state whose every id-keyed collection is populated, for path coverage. */
 function exampleState() {
-  const campaign = buildExampleCampaign(new TilePalette());
-  return buildState(
-    campaign.grid,
-    campaign.party,
-    campaign.characters,
-    campaign.encounters,
-    campaign.travelog,
-    campaign.quests,
-    {
-      clock: campaign.clock,
-      npcs: campaign.npcs,
-      handouts: campaign.handouts,
-      bestiary: campaign.bestiary,
-    },
-  );
+  return buildState(buildExampleCampaign(new TilePalette()));
 }
 
 /** Deep clone through JSON, which is the shape the log round-trips through. */

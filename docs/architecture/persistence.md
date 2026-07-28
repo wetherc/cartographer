@@ -47,6 +47,15 @@ The top-level shape is `CampaignState` (`src/types/storage.ts`): a flat
 `toTileGrid`, all pure. `toTileGrid` rebuilds a working hierarchy by simply
 re-adding each node, since a `MapNode` already carries its own `parentId`.
 
+`buildState` takes one source object (`CampaignSource`: a `TileGrid` plus any
+campaign field the caller holds) rather than a positional list. Every field but
+the grid is optional and falls back to the same empty value an older save reads
+as, so adding a top-level field means naming it in `buildState` and in
+`CampaignState`, and no caller has to be updated to keep persisting it. The two
+live callers pass a whole object: the save/export path spreads `app.state` with
+the grid and party position added, and the campaign-replace path passes the
+`Campaign` as it stands.
+
 The thin wrappers around those pure functions
 (`trySaveToLocalStorage`/`loadFromLocalStorage`/`downloadState`/
 `readStateFromFile`) are the only code touching the actual browser APIs:

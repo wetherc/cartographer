@@ -64,7 +64,7 @@ test('buildState collects grid nodes, party, characters, and encounters', () => 
   const characters = [createCharacter('c1', 'Hero')];
   const encounters = [createEncounter('e1', 'Goblin', 7)];
 
-  const state = buildState(grid, party, characters, encounters);
+  const state = buildState({ grid, party, characters, encounters });
   assert.equal(state.nodes.length, 3);
   assert.equal(state.party.nodeId, 'world');
   assert.equal(state.characters.length, 1);
@@ -77,7 +77,7 @@ test('serialize/deserialize round-trips a full campaign state', () => {
   const characters = [withHP(addXP(createCharacter('c1', 'Hero', { STR: 14 }, 'Dwarf'), 50), 12)];
   const encounters = [applyDamage(createEncounter('e1', 'Goblin', 7), 3)];
 
-  const state = buildState(grid, party, characters, encounters);
+  const state = buildState({ grid, party, characters, encounters });
   const restored = deserialize(serialize(state));
 
   // Loading runs each collection's entity `withDefaults`, so what comes back is
@@ -117,7 +117,7 @@ function variedNode() {
 test('packing omits default tile fields and the load path restores them', () => {
   const grid = new TileGrid();
   grid.addNode(variedNode());
-  const state = buildState(grid, null, [], []);
+  const state = buildState({ grid });
   const json = serialize(state);
 
   // The boilerplate that dominates a real save is gone from the text.
@@ -144,7 +144,7 @@ test('packing keeps a tile field it does not know about', () => {
   let node = createMapNode('world', 'World', null, 1, 1);
   node = setTile(node, { ...createTile('0,0', 'grass.svg'), future: 'kept' });
   grid.addNode(node);
-  const restored = deserialize(serialize(buildState(grid, null, [], []))).nodes[0];
+  const restored = deserialize(serialize(buildState({ grid }))).nodes[0];
   assert.equal(restored.tiles[0].future, 'kept', 'a packer that picked named fields would drop it');
 });
 
@@ -154,7 +154,7 @@ test('packing shrinks a save dominated by default tiles', () => {
   for (let y = 0; y < 20; y += 1)
     for (let x = 0; x < 20; x += 1) node = setTile(node, createTile(`${x},${y}`, 'grass.svg'));
   grid.addNode(node);
-  const state = buildState(grid, null, [], []);
+  const state = buildState({ grid });
   const packed = serialize(state).length;
   const unpacked = JSON.stringify(state).length;
   assert.ok(packed < unpacked * 0.45, `packed ${packed} vs unpacked ${unpacked}`);
@@ -163,7 +163,7 @@ test('packing shrinks a save dominated by default tiles', () => {
 test('a save written before tiles were packed still loads whole', () => {
   const grid = new TileGrid();
   grid.addNode(variedNode());
-  const state = buildState(grid, null, [], []);
+  const state = buildState({ grid });
   // Version 1 wrote every tile field explicitly; the backfill must leave it be.
   const restored = deserialize(JSON.stringify({ ...state, version: 1 })).nodes[0];
   assert.deepEqual(restored.tiles, state.nodes[0].tiles);
@@ -173,18 +173,16 @@ test('a save written before tiles were packed still loads whole', () => {
 function populatedState() {
   const grid = new TileGrid();
   grid.addNode(createMapNode('world', 'World', null, 1, 1));
-  return buildState(
+  return buildState({
     grid,
-    null,
-    [createCharacter('c1', 'Hero')],
-    [
+    characters: [createCharacter('c1', 'Hero')],
+    encounters: [
       createEncounter('e1', 'Goblin', 7),
       createEncounter('e2', 'Ogre', 40, {}, null, { level: 7, tier: 'boss' }),
     ],
-    [],
-    [],
-    { npcs: [createNPC('n1', 'Alda')], handouts: [createHandout('h1', 'Rumor')] },
-  );
+    npcs: [createNPC('n1', 'Alda')],
+    handouts: [createHandout('h1', 'Rumor')],
+  });
 }
 
 test('packing omits default entity fields and loading restores them', () => {
@@ -234,7 +232,8 @@ test('serializing hoists image payloads and loading puts them back', () => {
   const tiles = [];
   for (let i = 0; i < 12; i += 1) tiles.push(createTile(`${i},0`, art));
   grid.addNode({ id: 'world', name: 'World', parentId: null, width: 12, height: 1, tiles });
-  const state = buildState(grid, null, [], [], [], [], {
+  const state = buildState({
+    grid,
     handouts: [{ id: 'h1', title: 'Scrap', body: '', nodeId: null, revealed: false, image: art }],
   });
   const json = serialize(state);
@@ -259,7 +258,7 @@ test('a save written before image payloads were hoisted still loads', () => {
     height: 1,
     tiles: [createTile('0,0', art)],
   });
-  const state = buildState(grid, null, [], []);
+  const state = buildState({ grid });
   // Version 2 wrote the payload inline, with no table to resolve against.
   const json = JSON.stringify({ ...state, version: 2 });
   assert.equal(deserialize(json).nodes[0].tiles[0].imageRef, art);
@@ -268,7 +267,7 @@ test('a save written before image payloads were hoisted still loads', () => {
 test('serializing encodes a grid node positionally and loading reads it back', () => {
   const grid = new TileGrid();
   grid.addNode(variedNode());
-  const state = buildState(grid, null, [], []);
+  const state = buildState({ grid });
   const json = serialize(state);
 
   assert.ok(json.includes('"cells":'), 'the run-length index stream is written');
@@ -302,7 +301,7 @@ test('the positional encoding shrinks a save of a fully explored map', () => {
         }),
       );
   grid.addNode(node);
-  const state = buildState(grid, null, [], []);
+  const state = buildState({ grid });
   const encoded = serialize(state).length;
   // The same save one schema version back: tiles packed but written per cell.
   const perTile = JSON.stringify({ ...state, version: 4 }).length;
@@ -312,7 +311,7 @@ test('the positional encoding shrinks a save of a fully explored map', () => {
 test('a save written before tiles were encoded positionally still loads', () => {
   const grid = new TileGrid();
   grid.addNode(variedNode());
-  const state = buildState(grid, null, [], []);
+  const state = buildState({ grid });
   // Version 4 carries no `cells`, so the decoder must take the unencoded branch.
   const restored = deserialize(JSON.stringify({ ...state, version: 4 })).nodes[0];
   assert.deepEqual(restored.tiles.length, state.nodes[0].tiles.length);
@@ -329,7 +328,7 @@ test('a node whose tiles are not a canonical grid is stored unencoded', () => {
     height: 1,
     tiles: [createTile('spawn', 'grass.svg')],
   });
-  const json = serialize(buildState(grid, null, [], []));
+  const json = serialize(buildState({ grid }));
   assert.equal(json.includes('"cells":'), false, 'a non-grid tile id disqualifies the node');
   assert.equal(deserialize(json).nodes[0].tiles[0].id, 'spawn');
 });
@@ -340,7 +339,7 @@ test('encoding runs after the asset hoist, so the palette holds references', () 
   let node = createMapNode('world', 'World', null, 3, 1);
   for (let x = 0; x < 3; x += 1) node = setTile(node, createTile(`${x},0`, art));
   grid.addNode(node);
-  const json = serialize(buildState(grid, null, [], []));
+  const json = serialize(buildState({ grid }));
   assert.equal(json.split(art).length - 1, 1, 'one stored payload, referenced by the palette');
   const restored = deserialize(json).nodes[0];
   assert.deepEqual(
@@ -349,11 +348,35 @@ test('encoding runs after the asset hoist, so the palette holds references', () 
   );
 });
 
-test('buildState stamps the current schema version, whatever extra claims', () => {
-  const state = buildState(sampleGrid(), null, [], [], [], [], {
-    version: 99,
-  });
+test('buildState stamps the current schema version over a stale one', () => {
+  // Nothing passes `version` today, and the source type does not accept it, but
+  // the stamp is unconditional so a source that still carries one (a state
+  // loaded from an older save, re-saved) cannot claim the old format.
+  const stale = { grid: sampleGrid(), version: 99 };
+  const state = buildState(stale);
   assert.equal(state.version, CURRENT_VERSION);
+});
+
+test('buildState fills every omitted field with its empty value', () => {
+  const state = buildState({ grid: sampleGrid() });
+  assert.deepEqual(
+    { ...state, nodes: [], version: 0 },
+    {
+      nodes: [],
+      version: 0,
+      party: null,
+      characters: [],
+      encounters: [],
+      travelog: [],
+      quests: [],
+      clock: null,
+      npcs: [],
+      handouts: [],
+      bestiary: [],
+      splitParty: false,
+      combat: null,
+    },
+  );
 });
 
 test('deserialize loads a versionless save as the current version', () => {
@@ -458,7 +481,7 @@ test('serialize/deserialize round-trips a running combat', () => {
       { id: 'e1', initiative: 9, modifier: -1 },
     ],
   };
-  const state = buildState(grid, null, [], [], [], [], { combat });
+  const state = buildState({ grid, combat });
   const restored = deserialize(serialize(state));
   assert.deepEqual(restored.combat, combat);
 });
@@ -474,7 +497,7 @@ test('deserialize strips the name and side an older save froze into the order', 
       { name: 'Ghost', side: 'foe', initiative: 4 },
     ],
   };
-  const state = buildState(grid, null, [], [], [], [], { combat });
+  const state = buildState({ grid, combat });
   const restored = deserialize(serialize(state));
   assert.deepEqual(restored.combat?.order, [{ id: 'c1', initiative: 17, modifier: 2 }]);
 });
@@ -490,7 +513,7 @@ test('serialize/deserialize round-trips the quest log', () => {
     { id: 'q1', title: 'Find the sword', notes: 'It lies in the Keep.', status: 'active' },
     { id: 'q2', title: 'Slay the dragon', notes: '', status: 'completed' },
   ];
-  const state = buildState(grid, null, [], [], [], quests);
+  const state = buildState({ grid, quests });
   const restored = deserialize(serialize(state));
   assert.deepEqual(restored.quests, quests);
 });
@@ -501,14 +524,14 @@ test('serialize/deserialize round-trips the travelogue', () => {
     { id: 'l1', at: 1000, kind: 'travel', message: 'Entered the Keep.' },
     { id: 'l2', at: 2000, kind: 'combat', message: 'Defeated the Goblin.' },
   ];
-  const state = buildState(grid, null, [], [], travelog);
+  const state = buildState({ grid, travelog });
   const restored = deserialize(serialize(state));
   assert.deepEqual(restored.travelog, travelog);
 });
 
 test('toTileGrid rebuilds a working TileGrid preserving hierarchy', () => {
   const grid = sampleGrid();
-  const state = buildState(grid, null, [], []);
+  const state = buildState({ grid });
   const rebuilt = toTileGrid(deserialize(serialize(state)));
 
   assert.equal(rebuilt.getNode('world').name, 'World');
@@ -523,7 +546,7 @@ test('toTileGrid rebuilds a working TileGrid preserving hierarchy', () => {
 
 test('toTileGrid preserves node kind/environ and backfills older nodes as regions', () => {
   const grid = sampleGrid();
-  const rebuilt = toTileGrid(deserialize(serialize(buildState(grid, null, [], []))));
+  const rebuilt = toTileGrid(deserialize(serialize(buildState({ grid }))));
   const hall = rebuilt.getNode('hall');
   assert.equal(hall.kind, 'interior');
   assert.equal(hall.environ, 'castle');
@@ -579,14 +602,14 @@ test('localStorageFootprint sums every key on the origin, not just the save', as
 
 test('a stored save then loadFromLocalStorage round-trips a campaign', () => {
   assert.equal(loadFromLocalStorage(), null, 'no save stored yet');
-  const state = buildState(sampleGrid(), { nodeId: 'world', tileId: '0,0' }, [], []);
+  const state = buildState({ grid: sampleGrid(), party: { nodeId: 'world', tileId: '0,0' } });
   trySaveToLocalStorage(state);
   assert.deepEqual(loadFromLocalStorage(), state);
 });
 
 test('trySaveToLocalStorage reports success, byte cost, and quota headroom', async () => {
   const { localStorageFootprint } = await import('../src/storage/SaveManager.js');
-  const state = buildState(sampleGrid(), null, [], []);
+  const state = buildState({ grid: sampleGrid() });
   const result = trySaveToLocalStorage(state);
   assert.deepEqual(result, {
     ok: true,
@@ -605,14 +628,15 @@ test('trySaveToLocalStorage reports a quota failure instead of throwing', () => 
   globalThis.localStorage.setItem = () => {
     throw new Error('QuotaExceededError');
   };
-  const result = trySaveToLocalStorage(buildState(sampleGrid(), null, [], []));
+  const result = trySaveToLocalStorage(buildState({ grid: sampleGrid() }));
   assert.equal(result.ok, false);
   assert.equal(result.nearQuota, true);
 });
 
 test('trySaveToLocalStorage flags a save approaching the quota even when it lands', () => {
   // ~3.2 MB serialized (UTF-16), past the 3 MB warning threshold.
-  const state = buildState(sampleGrid(), null, [], [], [], [], {
+  const state = buildState({
+    grid: sampleGrid(),
     handouts: [{ id: 'h1', title: 'Map', body: 'x'.repeat(1_600_000), revealed: false }],
   });
   const result = trySaveToLocalStorage(state);
@@ -626,7 +650,7 @@ test('a small save still warns when the rest of the origin fills the quota', () 
   for (let seq = 0; seq < 10; seq += 1) {
     localStorage.setItem(`campaign-builder:history:${seq}`, 'x'.repeat(170_000));
   }
-  const result = trySaveToLocalStorage(buildState(sampleGrid(), null, [], []));
+  const result = trySaveToLocalStorage(buildState({ grid: sampleGrid() }));
   assert.equal(result.ok, true);
   assert.ok(result.bytes < QUOTA_WARN_BYTES, 'the save on its own is nowhere near the limit');
   assert.equal(result.nearQuota, true);

@@ -209,25 +209,18 @@ export function wireCampaignActions(app) {
     );
   }
 
-  /** Assemble the live campaign into a serializable state for save/export. */
+  /**
+   * Assemble the live campaign into a serializable state for save/export. The
+   * whole of `state` goes in, so a new top-level field is persisted as soon as
+   * `buildState` knows about it; the two fields the app tracks outside `state`
+   * (the grid and the party's position) are added here.
+   */
   function buildCurrentState() {
-    const { state } = app;
-    return buildState(
-      app.grid,
-      app.partyTracker.getPosition(),
-      state.characters,
-      state.encounters,
-      state.travelog,
-      state.quests,
-      {
-        clock: state.clock,
-        npcs: state.npcs,
-        handouts: state.handouts,
-        bestiary: state.bestiary,
-        splitParty: state.splitParty,
-        combat: state.combat,
-      },
-    );
+    return buildState({
+      ...app.state,
+      grid: app.grid,
+      party: app.partyTracker.getPosition(),
+    });
   }
 
   /**
@@ -238,22 +231,7 @@ export function wireCampaignActions(app) {
    * @param {string} [toastMessage]
    */
   function replaceCampaign(campaign, toastMessage = 'Campaign replaced.') {
-    const ok = persistState(
-      buildState(
-        campaign.grid,
-        campaign.party,
-        campaign.characters,
-        campaign.encounters,
-        campaign.travelog,
-        campaign.quests,
-        {
-          clock: campaign.clock,
-          npcs: campaign.npcs,
-          handouts: campaign.handouts,
-          bestiary: campaign.bestiary,
-        },
-      ),
-    );
+    const ok = persistState(buildState(campaign));
     if (!ok) return; // the error toast already explained; don't reload onto stale state
     queueToastAfterReload(toastMessage);
     setDirty(false); // intentional reload; don't trip the beforeunload guard
