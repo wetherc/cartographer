@@ -4,40 +4,40 @@ First off, thank you for considering contributing! This document provides guidel
 
 ## Core Philosophy
 
-- **Zero Runtime Dependencies:** The core application (`index.html`, `src/`, `styles/`) is and should remain plain HTML, CSS, and JavaScript (ES modules). It should run in a modern browser without any build step.
+- **Framework-Free Vanilla JS:** The application logic is written in plain, modern JavaScript (ES modules) and interacts with standard browser APIs. There are no runtime frameworks.
+- **Build Step for Production:** While development happens on source files, a build process is used to bundle and minify assets for optimized production deployment. This is a developer-facing convenience and does not change the framework-free nature of the runtime code.
 - **Separation of Concerns:** The code is organized to separate pure, stateful logic from DOM/UI rendering code.
-  - Pure logic (e.g., dice rolling, map calculations) is dependency-injected and belongs in modules that can be unit-tested.
-  - DOM/UI wiring (`src/ui/`, event handlers) is kept thin and is tested visually.
 
 ## Development Setup
 
-This project uses `pnpm` for managing development tools.
+This project uses `pnpm` for managing development tools and running a local development server.
 
 1.  **Install Dependencies:**
-    While the application itself has no dependencies, the development environment uses `typescript` for type-checking and `eslint` for linting. Install them by running:
+    The development environment uses `esbuild` for bundling, `typescript` for type-checking, and `eslint` for linting. Install them by running:
     ```bash
     pnpm install
     ```
 
-2.  **Run the Local Server:**
-    Serve the project root over HTTP (ES module imports don't work over `file://`). You can use any local server, but `http-server` is a simple choice.
+2.  **Run the Local Dev Server:**
+    A live-reloading development server is included. It automatically rebuilds assets as you make changes to the source files.
     ```bash
-    pnpx http-server -p 8934
+    pnpm run dev
     ```
-    Then open `http://localhost:8934` in your browser.
+    Then open the local URL shown in your terminal (usually `http://localhost:8080`) in your browser.
 
 ## Development Workflow
 
-Before committing, please ensure your changes pass all checks.
+- **Production Build:**
+  To generate a production-ready build in the `dist/` directory, run:
+  ```bash
+  pnpm run build
+  ```
 
 - **Run Tests:**
-  Tests use Node's built-in test runner.
+  Tests use Node's built-in test runner and run against the source files, not the built assets.
   ```bash
   # Run the full test suite
   pnpm test
-
-  # Run tests for a single file (useful while iterating)
-  node --test tests/some-module.test.js
   ```
 
 - **Run Linter:**

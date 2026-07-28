@@ -7,3 +7,6 @@ library/
 !src/library/
 claude.md
 PLAN.md
+
+# Build artifacts
+dist/
