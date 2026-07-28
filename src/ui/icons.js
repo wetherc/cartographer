@@ -7,9 +7,26 @@
  * (aria-hidden); give the surrounding control its own accessible label.
  */
 
+import { setAttrs } from './dom.js';
+
 /** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/**
+ * The stroke presentation every icon shares. `currentColor` is what makes an
+ * icon inherit its container's text color, so this stays in one place.
+ * @type {Record<string, string>}
+ */
+const SVG_ATTRS = {
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  'stroke-width': '2',
+  'stroke-linecap': 'round',
+  'stroke-linejoin': 'round',
+  'aria-hidden': 'true',
+};
 
 /**
  * Path data (the `d` attribute of one or more <path>s) per icon. Kept as raw
@@ -82,24 +99,16 @@ const PATHS = {
  * @returns {SVGSVGElement}
  */
 export function icon(name, options = {}) {
-  const size = options.size ?? 18;
+  const size = String(options.size ?? 18);
   const svg = document.createElementNS(SVG_NS, 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('width', String(size));
-  svg.setAttribute('height', String(size));
-  svg.setAttribute('fill', 'none');
-  svg.setAttribute('stroke', 'currentColor');
-  svg.setAttribute('stroke-width', '2');
-  svg.setAttribute('stroke-linecap', 'round');
-  svg.setAttribute('stroke-linejoin', 'round');
-  svg.setAttribute('aria-hidden', 'true');
+  setAttrs(svg, { ...SVG_ATTRS, width: size, height: size });
   svg.classList.add('icon');
   if (options.className) svg.classList.add(options.className);
 
   for (const d of PATHS[name] ?? []) {
     const path = document.createElementNS(SVG_NS, 'path');
     path.setAttribute('d', d);
-    svg.appendChild(path);
+    svg.append(path);
   }
   return svg;
 }

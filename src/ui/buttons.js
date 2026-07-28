@@ -1,3 +1,4 @@
+import { el, setAttrs } from './dom.js';
 import { icon } from './icons.js';
 
 /**
@@ -15,7 +16,7 @@ import { icon } from './icons.js';
  */
 
 /**
- * @param {string[]} parts
+ * @param {(string | undefined)[]} parts
  * @returns {string}
  */
 function classNames(parts) {
@@ -34,17 +35,9 @@ function classNames(parts) {
  * @returns {HTMLButtonElement}
  */
 export function iconButton(name, ariaLabel, onClick, opts = {}) {
-  const button = document.createElement('button');
-  button.type = 'button';
-  button.className = classNames([
-    'btn',
-    'btn--icon',
-    opts.variant ? `btn--${opts.variant}` : '',
-    opts.className ?? '',
-  ]);
-  button.setAttribute('aria-label', ariaLabel);
-  button.title = opts.title ?? ariaLabel;
-  button.appendChild(icon(name));
+  const classes = ['btn', 'btn--icon', opts.variant ? `btn--${opts.variant}` : '', opts.className];
+  const button = el('button', classNames(classes), icon(name));
+  setAttrs(button, { type: 'button', 'aria-label': ariaLabel, title: opts.title ?? ariaLabel });
   button.addEventListener('click', onClick);
   return button;
 }
@@ -63,18 +56,12 @@ export function iconButton(name, ariaLabel, onClick, opts = {}) {
  * @returns {HTMLButtonElement}
  */
 export function textButton(label, onClick, opts = {}) {
-  const button = document.createElement('button');
+  const classes = ['btn', opts.variant ? `btn--${opts.variant}` : '', opts.className];
+  const button = el('button', classNames(classes), opts.icon && icon(opts.icon), label);
   button.type = opts.type ?? 'button';
   if (opts.value !== undefined) button.value = opts.value;
-  button.className = classNames([
-    'btn',
-    opts.variant ? `btn--${opts.variant}` : '',
-    opts.className ?? '',
-  ]);
   if (opts.ariaLabel) button.setAttribute('aria-label', opts.ariaLabel);
   if (opts.title) button.title = opts.title;
-  if (opts.icon) button.appendChild(icon(opts.icon));
-  button.appendChild(document.createTextNode(label));
   if (onClick) button.addEventListener('click', onClick);
   return button;
 }
@@ -105,23 +92,23 @@ export function textButton(label, onClick, opts = {}) {
  *   setValue: (value: T) => void, sync: (value?: T) => void }}
  */
 export function segSwitch({ ariaLabel, options, value, onChange, className = '' }) {
-  const element = document.createElement('div');
-  element.className = classNames(['seg-switch', className]);
-  element.setAttribute('role', 'group');
-  element.setAttribute('aria-label', ariaLabel);
+  const element = el('div', classNames(['seg-switch', className]));
+  setAttrs(element, { role: 'group', 'aria-label': ariaLabel });
 
   let current = value;
 
   const entries = options.map((option) => {
-    const button = document.createElement('button');
+    const button = el(
+      'button',
+      'btn seg-switch__btn',
+      option.icon && icon(option.icon),
+      option.label,
+    );
     button.type = 'button';
-    button.className = 'btn seg-switch__btn';
     if (option.ariaLabel) button.setAttribute('aria-label', option.ariaLabel);
     if (option.title ?? option.ariaLabel) button.title = option.title ?? option.ariaLabel ?? '';
-    if (option.icon) button.appendChild(icon(option.icon));
-    if (option.label) button.appendChild(document.createTextNode(option.label));
     button.addEventListener('click', () => setValue(option.value));
-    element.appendChild(button);
+    element.append(button);
     return { value: option.value, button };
   });
 
@@ -154,12 +141,7 @@ export function segSwitch({ ariaLabel, options, value, onChange, className = '' 
  * @returns {HTMLSpanElement}
  */
 export function chip(label, opts = {}) {
-  const el = document.createElement('span');
-  el.className = classNames(['chip', opts.className ?? '']);
-  const text = document.createElement('span');
-  text.textContent = label;
-  el.appendChild(text);
-  return el;
+  return el('span', classNames(['chip', opts.className]), el('span', '', label));
 }
 
 /**
@@ -172,15 +154,13 @@ export function chip(label, opts = {}) {
  * @returns {HTMLSpanElement}
  */
 export function removableChip(label, onRemove, opts = {}) {
-  const el = chip(label, opts);
-  const remove = document.createElement('button');
+  const remove = el('button', 'chip__remove', '×');
   remove.type = 'button';
-  remove.className = 'chip__remove';
-  remove.textContent = '×';
   remove.setAttribute('aria-label', `Remove ${opts.removeLabel ?? label}`);
   remove.addEventListener('click', onRemove);
-  el.appendChild(remove);
-  return el;
+  const wrapper = chip(label, opts);
+  wrapper.append(remove);
+  return wrapper;
 }
 
 /**
@@ -190,8 +170,5 @@ export function removableChip(label, onRemove, opts = {}) {
  * @returns {HTMLParagraphElement}
  */
 export function emptyState(message) {
-  const el = document.createElement('p');
-  el.className = 'empty-state';
-  el.textContent = message;
-  return el;
+  return el('p', 'empty-state', message);
 }

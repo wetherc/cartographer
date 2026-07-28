@@ -10,6 +10,7 @@
 
 import { clampInt } from '../util/num.js';
 import { textButton } from './buttons.js';
+import { el } from './dom.js';
 
 /**
  * A captioned wrapper so each control names itself.
@@ -18,26 +19,18 @@ import { textButton } from './buttons.js';
  * @returns {HTMLLabelElement}
  */
 export function labeled(caption, control) {
-  const label = document.createElement('label');
-  label.className = 'inventory-panel__field-label';
-  const text = document.createElement('span');
-  text.textContent = caption;
-  label.append(text, control);
-  return label;
+  return el('label', 'inventory-panel__field-label', el('span', '', caption), control);
 }
 
 /**
  * A horizontal grouping of related fields. Type-specific fields toggle in and
  * out per row, so appearing controls extend their own line instead of
  * reflowing the whole form.
- * @param {...HTMLElement} children
+ * @param {...import('./dom.js').Child} children
  * @returns {HTMLDivElement}
  */
 export function fieldRow(...children) {
-  const row = document.createElement('div');
-  row.className = 'inventory-panel__form-row';
-  row.append(...children);
-  return row;
+  return el('div', 'inventory-panel__form-row', ...children);
 }
 
 /**
@@ -47,15 +40,10 @@ export function fieldRow(...children) {
  * @returns {{ label: HTMLLabelElement, input: HTMLInputElement }}
  */
 export function checkbox(caption, checked) {
-  const label = document.createElement('label');
-  label.className = 'spell-form__check';
-  const input = document.createElement('input');
+  const input = el('input');
   input.type = 'checkbox';
   input.checked = checked;
-  const text = document.createElement('span');
-  text.textContent = caption;
-  label.append(input, text);
-  return { label, input };
+  return { label: el('label', 'spell-form__check', input, el('span', '', caption)), input };
 }
 
 /**
@@ -65,9 +53,8 @@ export function checkbox(caption, checked) {
  * @returns {HTMLInputElement}
  */
 export function textField(value, placeholder = '') {
-  const input = document.createElement('input');
+  const input = el('input', 'field');
   input.type = 'text';
-  input.className = 'field';
   input.value = value;
   input.placeholder = placeholder;
   return input;
@@ -80,9 +67,8 @@ export function textField(value, placeholder = '') {
  * @returns {HTMLInputElement}
  */
 export function numberField(value, { min } = {}) {
-  const input = document.createElement('input');
+  const input = el('input', 'field');
   input.type = 'number';
-  input.className = 'field';
   input.value = String(value);
   if (min !== undefined) input.min = String(min);
   return input;
@@ -95,8 +81,7 @@ export function numberField(value, { min } = {}) {
  * @returns {HTMLTextAreaElement}
  */
 export function textareaField(value, { placeholder = '', rows = 3 } = {}) {
-  const area = document.createElement('textarea');
-  area.className = 'field';
+  const area = el('textarea', 'field');
   area.rows = rows;
   area.placeholder = placeholder;
   area.value = value;
@@ -112,31 +97,29 @@ export function textareaField(value, { placeholder = '', rows = 3 } = {}) {
  * @returns {HTMLSelectElement}
  */
 export function select(options, value) {
-  const el = document.createElement('select');
-  el.className = 'field';
-  setOptions(el, options, value);
-  return el;
+  const picker = el('select', 'field');
+  setOptions(picker, options, value);
+  return picker;
 }
 
 /**
  * Replace a `<select>`'s options and selection. Pickers whose choices depend on
  * another field (the item form's preset list follows the item type) refill
  * themselves through this, so options are built in one place.
- * @param {HTMLSelectElement} el
+ * @param {HTMLSelectElement} picker
  * @param {(string | { value: string, label: string })[]} options
  * @param {string} value
  */
-export function setOptions(el, options, value) {
-  el.replaceChildren(
+export function setOptions(picker, options, value) {
+  picker.replaceChildren(
     ...options.map((opt) => {
       const { value: v, label } = typeof opt === 'string' ? { value: opt, label: opt } : opt;
-      const option = document.createElement('option');
+      const option = el('option', '', label);
       option.value = v;
-      option.textContent = label;
       return option;
     }),
   );
-  el.value = value;
+  picker.value = value;
 }
 
 /**
@@ -194,8 +177,10 @@ export function buildInlineForm({
   afterSubmit = null,
   className = '',
 }) {
-  const form = document.createElement('div');
-  form.className = className ? `inventory-panel__form ${className}` : 'inventory-panel__form';
+  const form = el(
+    'div',
+    className ? `inventory-panel__form ${className}` : 'inventory-panel__form',
+  );
   nameInput.classList.add('inventory-panel__name-input');
 
   const actions = formActions({
@@ -226,8 +211,8 @@ export function buildInlineForm({
  */
 function formActions({ submitLabel, onSubmit, onCancel = null }) {
   // Dismiss-left, primary-right, the same ordering as every modal.
-  const row = fieldRow();
-  if (onCancel) row.appendChild(textButton('Cancel', onCancel));
-  row.appendChild(textButton(submitLabel, onSubmit, { variant: 'primary' }));
-  return row;
+  return fieldRow(
+    onCancel && textButton('Cancel', onCancel),
+    textButton(submitLabel, onSubmit, { variant: 'primary' }),
+  );
 }
