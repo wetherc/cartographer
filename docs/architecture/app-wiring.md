@@ -68,7 +68,7 @@ first:
 
 The dirty flag (the Save indicator and the leave-page guard) and the header's
 campaign controls: Save, Undo, Redo, New, Load example, Export, Import. It
-provides `markDirty`/`setDirty` for everything else to call.
+provides `markDirty` for everything else to call.
 
 It also handles cross-tab save adoption. When another browser tab saves, a
 Play-mode tab with nothing unsaved adopts that campaign in place through
@@ -80,21 +80,35 @@ failure to adopt, fall back to the reload.
 The map mounts and location syncs: the canvas, the breadcrumb, both world
 trees, the palette, the fog controls, and the Build-rail tools. It provides
 the map-facing actions (`goTo`-style syncs, `onModeChanged`/`onRoleChanged`)
-and the shared `MapEnv` context.
+and returns the shared `MapEnv` context, which every module around the map
+takes as its second argument.
+
+`mapResync.js` holds the one map-resync epilogue those modules share.
+`resyncMapViews(app, env, { reframe })` puts the views that reflect the map back
+in line with the grid. It always refreshes the breadcrumb and both world trees.
+With `reframe` it also re-frames the canvas on the current node, drops the tile
+selection, re-filters the palette to the node's kind, and re-places the party
+marker, for a caller that changed the node in view. Without it the canvas only
+redraws in place and the GM keeps their pan and zoom, for a change elsewhere
+that the node in view happens to draw. The helper lives in its own module
+because `mapWiring.js` imports `nodeActions.js`, one of the callers.
 
 The gesture layers live beside it in their own files:
 
 - `mapAuthoring.js` handles Build mode: paint/erase/region strokes,
-  drop-paint, the tile inspector, and the map-edit undo
-  (`snapshotEdit`/`undoStroke`).
+  drop-paint, the tile inspector, and the map-edit undo (`snapshotEdit` on the
+  `MapEnv`, `undoStroke` as an action).
 - `mapTravel.js` handles Play mode: cell clicks, teleports, point-of-interest
-  discovery, NPC meets, and the hover tooltip.
+  discovery, NPC meets, and the hover tooltip. It syncs its own views rather
+  than calling `resyncMapViews`. A bound character's move does not move the
+  party that the location panels filter on, and a Play-mode zoom into a node
+  leaves the tile selection and the palette alone.
 
 ### generateAction.js and nodeActions.js
 
 `generateAction.js` runs the Generate dialog flow and its non-destructive
-apply. `nodeActions.js` handles node create/edit/delete; it predates the
-gesture-layer split but follows the same context-object pattern.
+apply. `nodeActions.js` handles node create/edit/delete. Both take
+`(app, env)` like the gesture layers, and both end in `resyncMapViews`.
 
 ### partyWiring.js
 

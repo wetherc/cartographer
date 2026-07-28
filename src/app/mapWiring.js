@@ -8,6 +8,7 @@ import { findRegionGroups } from '../map/RegionGroups.js';
 import { createNodeActions } from './nodeActions.js';
 import { createMapAuthoring } from './mapAuthoring.js';
 import { createMapTravel } from './mapTravel.js';
+import { resyncMapViews } from './mapResync.js';
 import { mustGetElement } from '../ui/dom.js';
 import { mountBreadcrumb } from '../ui/Breadcrumb.js';
 import { mountWorldTree } from '../ui/WorldTree.js';
@@ -20,6 +21,7 @@ import { isDefeated } from '../entities/Encounter.js';
 import { isGM } from '../view/ViewRole.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
+/** @typedef {import('../types/map.js').MapNode} MapNode */
 
 /**
  * The mutable context shared between the map wiring and its two gesture
@@ -27,7 +29,11 @@ import { isGM } from '../view/ViewRole.js';
  * state. Wiring fills the view fields in mount order; the gesture handlers
  * only run on user events, long after wiring completes, so reading them late
  * is safe (the same late-binding the wiring already relies on for
- * mapControls and nodeActions).
+ * mapControls and nodeActions). `mapResync.js`'s resyncMapViews depends on the
+ * same invariant: it reads mapCanvas, breadcrumb, worldTree, and regionTree off
+ * this object rather than closing over the locals, so nothing may call it (or
+ * goToNode, resyncMap, or a node action) synchronously while wireMapView is
+ * still running.
  * @typedef {{
  *   mapCanvas: import('../map/MapCanvas.js').MapCanvas,
  *   inspector: ReturnType<typeof import('../ui/TileInspector.js').mountTileInspector>,
@@ -45,7 +51,9 @@ import { isGM } from '../view/ViewRole.js';
  *   selectTile: (tileId: string) => void,
  *   clearSelection: () => void,
  *   syncPartyMarker: () => void,
+ *   syncPaletteKind: () => void,
  *   refreshMapDescription: () => void,
+ *   snapshotEdit: (...nodes: MapNode[]) => void,
  * }} MapEnv
  */
 
@@ -56,8 +64,9 @@ import { isGM } from '../view/ViewRole.js';
  * undo, and the Build-rail tools (Undo stroke, Export PNG). Owns the mounts
  * and the location-sync actions; the Build-mode authoring gestures live in
  * mapAuthoring.js and the Play-mode movement in mapTravel.js, sharing state
- * through a MapEnv object.
+ * through a MapEnv object, which is returned so wireGenerateAction can share it.
  * @param {AppContext} app
+ * @returns {MapEnv}
  */
 export function wireMapView(app) {
   const { palette, grid, navigator, partyTracker, toasts, state } = app;
@@ -83,13 +92,16 @@ export function wireMapView(app) {
       selectTile,
       clearSelection,
       syncPartyMarker,
+      syncPaletteKind,
       refreshMapDescription,
     })
   );
 
   const authoring = createMapAuthoring(app, env);
   const travel = createMapTravel(app, env);
-  app.actions.snapshotEdit = authoring.snapshotEdit;
+  const nodeActions = createNodeActions(app, env);
+  env.nodeActions = nodeActions;
+  env.snapshotEdit = authoring.snapshotEdit;
   app.actions.undoStroke = authoring.undoStroke;
   app.actions.meetNPCs = travel.meetNPCsHere;
 
@@ -164,13 +176,7 @@ export function wireMapView(app) {
    */
   function goToNode(nodeId) {
     navigator.goTo(nodeId);
-    mapCanvas.setNode(navigator.getCurrentNode());
-    clearSelection();
-    syncPartyMarker();
-    syncPaletteKind();
-    breadcrumb.update(navigator.getBreadcrumb());
-    worldTree.update();
-    regionTree.update();
+    resyncMapViews(app, env, { reframe: true });
   }
 
   // Re-read the node in view and every location view from the grid, for a caller
@@ -183,7 +189,6 @@ export function wireMapView(app) {
   function syncPaletteKind() {
     palettePanel.setKind(navigator.getCurrentNode().kind);
   }
-  app.actions.syncPaletteKind = syncPaletteKind;
 
   /** Drop any Build-mode tile selection and its inspector/canvas highlight. */
   function clearSelection() {
@@ -191,7 +196,6 @@ export function wireMapView(app) {
     mapCanvas.setSelectedTile(null);
     inspector.setTile(null);
   }
-  app.actions.clearSelection = clearSelection;
   app.actions.getSelectedTileId = () => env.selectedTileId;
 
   /**
@@ -237,7 +241,6 @@ export function wireMapView(app) {
     onEdit: (id) => nodeActions.editNode(id),
     onDelete: (id) => nodeActions.deleteNode(id),
   });
-  app.views.worldTree = worldTree;
   env.worldTree = worldTree;
 
   // The Play-mode counterpart to the Build-mode world tree: the same hierarchy,
@@ -282,26 +285,6 @@ export function wireMapView(app) {
   });
   app.views.mapCanvas = mapCanvas;
   env.mapCanvas = mapCanvas;
-
-  // The node create/edit/delete actions live in their own module; they resync
-  // the views above, which now all exist, so their context can be handed over.
-  // Earlier handlers close over this binding but only run after wiring, so
-  // declaring it here (past their definitions) is safe.
-  const nodeActions = createNodeActions({
-    grid,
-    navigator,
-    partyTracker,
-    mapCanvas,
-    breadcrumb,
-    worldTree,
-    regionTree,
-    goToNode,
-    clearSelection,
-    syncPaletteKind,
-    syncPartyMarker,
-    markDirty: () => app.actions.markDirty(),
-  });
-  env.nodeActions = nodeActions;
 
   const inspector = authoring.mountInspector(mustGetElement('inspector-container'));
   env.inspector = inspector;
@@ -411,4 +394,6 @@ export function wireMapView(app) {
   syncPartyMarker();
   syncPaletteKind();
   breadcrumb.update(navigator.getBreadcrumb());
+
+  return env;
 }

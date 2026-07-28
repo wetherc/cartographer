@@ -23,8 +23,8 @@ import { shouldAutosave, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
  * Campaign persistence and the header's campaign-management controls: the
  * dirty flag (Save-button indicator, leave-page guard, external-sync prompt),
  * Save / Undo / New / Load example / Export / Import, and the cross-tab
- * reload-on-save sync. Owns `dirty`; registers `setDirty` / `markDirty` on
- * `app.actions` for every other module's mutations.
+ * reload-on-save sync. Owns `dirty`; registers `markDirty` on `app.actions` for
+ * every other module's mutations.
  * @param {AppContext} app
  */
 export function wireCampaignActions(app) {
@@ -92,7 +92,6 @@ export function wireCampaignActions(app) {
     if (!dirty) setDirty(true);
   }
 
-  app.actions.setDirty = setDirty;
   app.actions.markDirty = markDirty;
 
   // Warn before closing/reloading a tab with unsaved changes. Intentional

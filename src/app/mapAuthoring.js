@@ -15,6 +15,7 @@ import { recallAll } from '../party/CharacterTokens.js';
 import { pushEdit, popEdit } from '../map/EditHistory.js';
 import { mountTileInspector } from '../ui/TileInspector.js';
 import { promptModal, alertModal } from '../ui/Modal.js';
+import { resyncMapViews } from './mapResync.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
@@ -58,12 +59,7 @@ export function createMapAuthoring(app, env) {
     for (const node of popped.nodes) {
       if (grid.getNode(node.id)) grid.updateNode(node);
     }
-    env.mapCanvas.setNode(navigator.getCurrentNode());
-    env.clearSelection();
-    env.syncPartyMarker();
-    env.worldTree.update();
-    env.regionTree.update();
-    env.refreshMapDescription();
+    resyncMapViews(app, env, { reframe: true });
     app.actions.markDirty();
     toasts.show('Undid the last edit.');
   }

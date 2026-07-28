@@ -5,29 +5,12 @@ import { parseCoords } from '../map/MapGeometry.js';
 import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { capitalize } from '../util/text.js';
 import { clampInt } from '../util/num.js';
+import { resyncMapViews } from './mapResync.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
-
-/**
- * Runtime dependencies the node actions operate over. Views and callbacks are
- * read at call time (not when the actions are created), so the app can create
- * the actions before every view/callback exists and fill this context in as it
- * wires the rest of the module up.
- * @typedef {Object} NodeActionsContext
- * @property {import('../map/TileGrid.js').TileGrid} grid
- * @property {import('../map/MapNavigator.js').MapNavigator} navigator
- * @property {import('../party/PartyTracker.js').PartyTracker} partyTracker
- * @property {{ setNode: (node: MapNode) => void, refreshNode: (node: MapNode) => void }} mapCanvas
- * @property {{ update: (crumb: MapNode[]) => void }} breadcrumb
- * @property {{ update: () => void }} worldTree
- * @property {{ update: () => void }} regionTree
- * @property {(nodeId: string) => void} goToNode
- * @property {() => void} clearSelection
- * @property {() => void} syncPaletteKind
- * @property {() => void} syncPartyMarker
- * @property {() => void} [markDirty] flag unsaved changes after a node mutation
- */
+/** @typedef {import('../types/app.js').AppContext} AppContext */
+/** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
 
 /**
  * Modal fields (kind + environment) shared by the new-node and edit-node
@@ -63,21 +46,25 @@ function nodeKindFields(kind, environ) {
 }
 
 /**
- * Build the create/edit/delete-node actions bound to a shared context. Kept
- * out of main.js because they form a self-contained cluster: each prompts for
- * node details, mutates the grid, and resyncs the same handful of views. The
- * returned actions are wired into the world tree, the region-link flow, and the
- * inspector's "create new region" affordance.
- * @param {NodeActionsContext} ctx
+ * Build the create/edit/delete-node actions over the app context and the shared
+ * MapEnv, the same signature its sibling gesture modules (mapAuthoring,
+ * mapTravel) take. Kept out of main.js because they form a self-contained
+ * cluster: each prompts for node details, mutates the grid, and resyncs the same
+ * handful of views. The returned actions are wired into the world tree, the
+ * region-link flow, and the inspector's "create new region" affordance.
+ * @param {AppContext} app
+ * @param {MapEnv} env
  * @returns {{ addChildNode: (parentId: string) => Promise<string | null>, deleteNode: (nodeId: string) => Promise<void>, editNode: (nodeId: string) => Promise<void> }}
  */
-export function createNodeActions(ctx) {
+export function createNodeActions(app, env) {
+  const { grid, navigator, partyTracker } = app;
+
   /** Generate a node id not already used by the grid. */
   function freshNodeId() {
     let id;
     do {
       id = `node-${Math.random().toString(36).slice(2, 8)}`;
-    } while (ctx.grid.getNode(id));
+    } while (grid.getNode(id));
     return id;
   }
 
@@ -101,14 +88,16 @@ export function createNodeActions(ctx) {
     const kind = /** @type {NodeKind} */ (
       /** @type {readonly string[]} */ (NODE_KINDS).includes(values.kind) ? values.kind : 'region'
     );
-    ctx.grid.addNode(
+    grid.addNode(
       createMapNode(id, values.name || 'Untitled', parentId, width, height, {
         kind,
         environ: values.environ || null,
       }),
     );
-    ctx.worldTree.update();
-    ctx.markDirty?.();
+    // Not a resync: a new empty node changes nothing the canvas or the
+    // breadcrumb draws, only the tree it appears in.
+    env.worldTree.update();
+    app.actions.markDirty();
     return id;
   }
 
@@ -118,10 +107,10 @@ export function createNodeActions(ctx) {
    * @param {string} nodeId
    */
   async function deleteNode(nodeId) {
-    const node = ctx.grid.getNode(nodeId);
+    const node = grid.getNode(nodeId);
     if (!node) return;
-    const doomed = collectSubtreeIds([...ctx.grid.nodes.values()], nodeId);
-    if (doomed.size >= ctx.grid.nodes.size) {
+    const doomed = collectSubtreeIds([...grid.nodes.values()], nodeId);
+    if (doomed.size >= grid.nodes.size) {
       await alertModal('Cannot delete the last node in the campaign.');
       return;
     }
@@ -131,19 +120,15 @@ export function createNodeActions(ctx) {
     });
     if (!ok) return;
 
-    const removed = ctx.grid.removeNode(nodeId);
-    ctx.markDirty?.();
-    if (removed.has(ctx.navigator.currentNodeId)) {
+    const removed = grid.removeNode(nodeId);
+    app.actions.markDirty();
+    if (removed.has(navigator.currentNodeId)) {
       const fallback =
-        node.parentId && ctx.grid.getNode(node.parentId)
-          ? node.parentId
-          : [...ctx.grid.nodes.keys()][0];
-      ctx.goToNode(fallback);
+        node.parentId && grid.getNode(node.parentId) ? node.parentId : [...grid.nodes.keys()][0];
+      env.goToNode(fallback);
     } else {
       // Current node survived, but a link it drew may have been cleared.
-      ctx.mapCanvas.refreshNode(ctx.navigator.getCurrentNode());
-      ctx.worldTree.update();
-      ctx.regionTree.update();
+      resyncMapViews(app, env);
     }
   }
 
@@ -154,7 +139,7 @@ export function createNodeActions(ctx) {
    * @param {string} nodeId
    */
   async function editNode(nodeId) {
-    const node = ctx.grid.getNode(nodeId);
+    const node = grid.getNode(nodeId);
     if (!node) return;
     const values = await promptModal(
       'Edit node',
@@ -180,35 +165,29 @@ export function createNodeActions(ctx) {
     const kind = /** @type {NodeKind} */ (
       /** @type {readonly string[]} */ (NODE_KINDS).includes(values.kind) ? values.kind : node.kind
     );
-    ctx.grid.updateNode({
+    grid.updateNode({
       ...resizeNode(node, width, height),
       name: values.name.trim() || node.name,
       kind,
       environ: values.environ || null,
     });
-    ctx.markDirty?.();
+    app.actions.markDirty();
 
-    const position = ctx.partyTracker.getPosition();
+    const position = partyTracker.getPosition();
     if (position.nodeId === nodeId) {
       const coords = parseCoords(position.tileId);
       if (coords && (coords.x >= width || coords.y >= height)) {
-        ctx.partyTracker.moveTo(
+        partyTracker.moveTo(
           nodeId,
           `${Math.min(coords.x, width - 1)},${Math.min(coords.y, height - 1)}`,
         );
       }
     }
-    if (ctx.navigator.getCurrentNode().id === nodeId) {
-      // The extent or kind changed, so re-frame the view and re-filter the
-      // palette; the selected tile may be gone.
-      ctx.clearSelection();
-      ctx.mapCanvas.setNode(ctx.navigator.getCurrentNode());
-      ctx.syncPartyMarker();
-      ctx.syncPaletteKind();
-    }
-    ctx.breadcrumb.update(ctx.navigator.getBreadcrumb());
-    ctx.worldTree.update();
-    ctx.regionTree.update();
+    // Editing the node in view changed its extent or kind, so that view has to
+    // re-frame and re-filter the palette, and the selected tile may be gone.
+    // Editing any other node still redraws the canvas, because the node in view
+    // draws its children's region outlines and names.
+    resyncMapViews(app, env, { reframe: navigator.getCurrentNode().id === nodeId });
   }
 
   return { addChildNode, deleteNode, editNode };

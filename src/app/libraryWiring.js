@@ -99,13 +99,16 @@ export function wireLibrary(app) {
    * with them: the spellbook lists the catalog's spells, so an edited or deleted
    * entry has to reach it too. Every caller is a user action or the file seed's
    * promise callback, both of which run after all wiring, so the party's action
-   * is registered by then even though the party is wired after the library.
+   * is registered by then even though the party is wired after the library, and
+   * the four panel consts below are assigned by then too. Nothing may call this
+   * synchronously during wiring: the panels are mounted after it is defined, so
+   * an early call would throw rather than skip a refresh.
    */
   const refresh = () => {
-    app.views.libraryEquipment.update();
-    app.views.libraryBestiary.update();
-    app.views.libraryNPCs.update();
-    app.views.librarySpells.update();
+    equipmentPanel.update();
+    bestiaryPanel.update();
+    npcPanel.update();
+    spellPanel.update();
     app.actions.refreshSelectedCharacter();
   };
 
@@ -192,7 +195,7 @@ export function wireLibrary(app) {
 
   // --- Equipment -----------------------------------------------------------
 
-  app.views.libraryEquipment = mountLibraryPanel(mustGetElement('library-equipment-container'), {
+  const equipmentPanel = mountLibraryPanel(mustGetElement('library-equipment-container'), {
     addLabel: 'New item',
     subtabs: EQUIPMENT_SUBTABS,
     getEntries: (subtab) => {
@@ -256,7 +259,7 @@ export function wireLibrary(app) {
 
   const storeBestiary = makeKeyedStore('bestiary', activeBestiaryEntries, DEFAULT_BESTIARY);
 
-  app.views.libraryBestiary = mountLibraryPanel(mustGetElement('library-bestiary-container'), {
+  const bestiaryPanel = mountLibraryPanel(mustGetElement('library-bestiary-container'), {
     addLabel: 'New enemy',
     getEntries: () =>
       activeBestiaryEntries().map(({ entry, source }) => ({
@@ -301,7 +304,7 @@ export function wireLibrary(app) {
     setCustom({ ...custom, npcs: upsertEntry(next, template, nameKey) });
   };
 
-  app.views.libraryNPCs = mountLibraryPanel(mustGetElement('library-npcs-container'), {
+  const npcPanel = mountLibraryPanel(mustGetElement('library-npcs-container'), {
     addLabel: 'New NPC template',
     getEntries: () =>
       activeNPCEntries().map(({ entry, source }) => ({
@@ -340,7 +343,7 @@ export function wireLibrary(app) {
 
   const storeSpell = makeKeyedStore('spells', activeSpellEntries, DEFAULT_SPELLS);
 
-  app.views.librarySpells = mountLibraryPanel(mustGetElement('library-spells-container'), {
+  const spellPanel = mountLibraryPanel(mustGetElement('library-spells-container'), {
     addLabel: 'New spell',
     getEntries: () =>
       activeSpellEntries()

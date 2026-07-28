@@ -17,7 +17,7 @@ import type { NPC } from './npc.js';
 import type { Handout } from './handout.js';
 import type { CombatState } from './combat.js';
 import type { ViewRole } from './view.js';
-import type { MapNode, PartyPosition } from './map.js';
+import type { PartyPosition } from './map.js';
 import type { DiceResult, DiceSelection } from './dice.js';
 import type { ModalField } from '../ui/Modal.js';
 import type { TilePalette } from '../map/TilePalette.js';
@@ -55,18 +55,12 @@ export interface Updatable {
  * own entries during init; every entry exists once wiring completes. */
 export interface AppViews {
   mapCanvas: MapCanvas;
-  worldTree: Updatable;
   regionTree: Updatable;
   encounterPanel: Updatable;
   /** Build-rail encounter authoring list, scoped to the node being viewed. */
   buildEncounters: Updatable;
   /** Build-rail NPC authoring list, scoped to the node being viewed. */
   buildNPCs: Updatable;
-  /** Library-rail template lists (merged built-in defaults + customizations). */
-  libraryEquipment: Updatable;
-  libraryBestiary: Updatable;
-  libraryNPCs: Updatable;
-  librarySpells: Updatable;
   initiativePanel: Updatable;
   npcPanel: Updatable;
   questPanel: Updatable;
@@ -80,7 +74,6 @@ export interface AppViews {
  * touch (comments name the provider). */
 export interface AppActions {
   // campaignActions
-  setDirty(next: boolean): void;
   markDirty(): void;
   // storyWiring
   logEvent(kind: LogEntryKind, message: string): void;
@@ -111,15 +104,12 @@ export interface AppActions {
   // mapWiring: re-read the node in view and every location view from the grid,
   // for a caller that replaced the world underneath them.
   resyncMap(): void;
-  clearSelection(): void;
   // mapWiring: the Build-mode selected tile id, or null — the default spot
   // for authoring flows that place something "here".
   getSelectedTileId(): string | null;
   // mapWiring: navigate to and centre the map on a staged location, selecting
   // its tile (the Build encounter list's "show on map").
   focusLocation(location: EncounterLocation): void;
-  syncPaletteKind(): void;
-  snapshotEdit(...nodes: MapNode[]): void;
   undoStroke(): void;
   onModeChanged(mode: AppMode): void;
   onRoleChanged(role: ViewRole): void;

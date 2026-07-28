@@ -77,8 +77,8 @@ wireParty(app); // roster, sheet, inventory, time
 // Draws the first map, which also marks the encounter and NPC tiles and
 // rebuilds the Build-rail lists those markers share a node scope with — so the
 // two modules that own those lists are wired above.
-wireMapView(app); // canvas, trees, inspector, palette, fog, map tools
-wireGenerateAction(app);
+const mapEnv = wireMapView(app); // canvas, trees, inspector, palette, fog, map tools
+wireGenerateAction(app, mapEnv); // shares the map's context rather than routing through actions
 // Rolls live in the travelogue (the tray shows only the latest), tagged by
 // which side of the screen rolled them — by name when the tab is bound to a
 // character, "A player" for a spectator tab.

@@ -8,8 +8,10 @@ import { mulberry32 } from '../util/Rng.js';
 import { mustGetElement } from '../ui/dom.js';
 import { confirmModal, alertModal } from '../ui/Modal.js';
 import { generateDialog } from '../ui/GenerateDialog.js';
+import { resyncMapViews } from './mapResync.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
+/** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
 
 /**
  * Build-mode procedural generation: fill the current node with an archetype
@@ -17,8 +19,10 @@ import { generateDialog } from '../ui/GenerateDialog.js';
  * preset, as an alternative to painting a large map tile by tile. Archetypes
  * are filtered to the node's kind, and overwriting a non-empty node confirms.
  * @param {AppContext} app
+ * @param {MapEnv} env the map wiring's shared context, for the stroke-undo
+ *   snapshot and the post-generate resync
  */
-export function wireGenerateAction(app) {
+export function wireGenerateAction(app, env) {
   const { palette, grid, navigator, partyTracker } = app;
 
   mustGetElement('generate-btn').addEventListener('click', async () => {
@@ -89,7 +93,7 @@ export function wireGenerateAction(app) {
     // The regenerated layout replaces the node (and may restamp its parent's
     // entrance link below); snapshot both so the stroke-undo ring can revert it.
     const parentBefore = node.parentId ? grid.getNode(node.parentId) : null;
-    app.actions.snapshotEdit(node, ...(parentBefore ? [parentBefore] : []));
+    env.snapshotEdit(node, ...(parentBefore ? [parentBefore] : []));
     if (built.levels) {
       built.levels.slice(1).forEach((level, i) => {
         const child = createMapNode(
@@ -145,13 +149,7 @@ export function wireGenerateAction(app) {
         partyTracker.moveTo(node.id, outside ? gen.entry : landing);
       }
     }
-    app.views.mapCanvas.setNode(navigator.getCurrentNode());
-    app.actions.clearSelection();
-    app.actions.syncPaletteKind();
-    app.actions.syncPartyMarker();
-    app.views.worldTree.update();
-    app.views.regionTree.update();
-    app.actions.refreshMapDescription();
+    resyncMapViews(app, env, { reframe: true });
     app.actions.markDirty();
     app.toasts.show(`Generated ${values.archetype} map in "${node.name}" (seed ${values.seed}).`);
   });
