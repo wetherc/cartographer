@@ -128,11 +128,13 @@ does the same behind a structure check (below). The initiative panel takes that
 same split. It builds its rows once and collects writers for the round number,
 each combatant's name and side, and each initiative, so those values land in
 place. It rebuilds only when its shape would change: the viewer's role, the turn
-index, the order's length or ids, who may press the action buttons, or the acting
-combatant's own entity, which is what the action strip is built from. During a
-fight that leaves the common refreshes, such as a damage roll on someone else's
-turn, a condition, or a spent slot, writing text into elements that already exist
-and never resolving a spellbook through the library. Copy those only when the panel is
+index, the order's length or ids, who may press the action buttons, or the action
+strip's contents, meaning the acting combatant's equipped weapons and castable
+spells. During a fight that leaves the common refreshes, such as a damage roll, a
+condition, or a spent slot, writing text into elements that already exist. Naming
+the strip's items rather than the acting entity is what makes that hold on the
+acting combatant's own turn, since an edit to that entity replaces the object
+whether or not it touched a weapon or a spell. Copy those only when the panel is
 large or grows continuously, and see
 [Conventions](conventions.md#growing-lists-render-incrementally).
 

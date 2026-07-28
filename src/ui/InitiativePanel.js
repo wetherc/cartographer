@@ -11,6 +11,49 @@ import { sameDeps } from '../view/SheetStructure.js';
 /** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
+/** @typedef {{ weapons: (InventoryItem | EnemyWeapon)[], spells: import('../types/spell.js').Spell[] }} ActionStripItems */
+
+/**
+ * What the initiative panel's DOM *shape* is built from, as a flat list of
+ * values to compare with {@link sameDeps}. Two renders agreeing on this list
+ * differ only in values the panel's writers push into elements it already has
+ * (the round number, each combatant's name and side, each initiative), so it
+ * keeps its DOM instead of discarding roughly a hundred elements — every row,
+ * every action button, the turn controls — to move one name.
+ *
+ * The action strip's contents are named item by item rather than by the acting
+ * combatant's entity, because that entity changes on every unrelated edit to it
+ * (a damage roll, a condition, a spent slot, an XP award) while the strip shows
+ * only weapons and spells. Comparing the items by reference is sound because
+ * the entity layer never mutates in place: equipping a different weapon or
+ * learning a spell hands back new objects. Both variable-length spreads carry
+ * their length in the fixed head, so two different shapes cannot flatten into
+ * equal lists.
+ *
+ * The flip side is the one the character sheet's `sheetDeps` carries too: this
+ * list has to name every value the structural builders read. A condition chip
+ * or an HP readout added to a row means adding it here as well, or the row will
+ * not rebuild when that value changes.
+ * @param {CombatState} state
+ * @param {boolean} gm
+ * @param {boolean[]} mayAct
+ * @param {ActionStripItems} strip
+ * @returns {unknown[]}
+ */
+export function initiativeDeps(state, gm, mayAct, strip) {
+  return [
+    gm,
+    state.index,
+    state.order.length,
+    strip.weapons.length,
+    strip.spells.length,
+    ...state.order.map((participant) => participant.id),
+    ...mayAct,
+    ...strip.weapons,
+    ...strip.spells,
+  ];
+}
+
 /**
  * Mount the initiative tracker for a running fight: the turn order with a
  * round counter and current-turn highlight, plus Next turn / End combat for
@@ -55,30 +98,21 @@ export function mountInitiativePanel(container, callbacks) {
   let writers = /** @type {((frame: Frame) => void)[]} */ ([]);
 
   /**
-   * What the panel's DOM *shape* is built from. Everything else it shows (the
-   * round number, a combatant's name and side, a hand-edited initiative) the
-   * writers below push into elements that already exist, so a refresh driven by
-   * something the order does not show (a damage roll, a condition, a spent slot)
-   * costs no rebuild and never re-resolves the acting combatant's spellbook.
-   *
-   * Comparing the active combatant's entity by reference is sound because the
-   * entity layer hands back a new object for every edit; that entity is the only
-   * one named here, since it alone decides what the action strip holds.
+   * The weapons and spells the active row's action strip holds, resolved once
+   * per render. The gating matches what `build` draws: only on a real turn,
+   * only for a combatant this viewer may act for, and only for the callback
+   * that is actually wired.
    * @param {CombatState} state
-   * @param {boolean} gm
-   * @param {ParticipantView | null} activeView
    * @param {boolean[]} mayAct
-   * @returns {unknown[]}
+   * @returns {ActionStripItems}
    */
-  function structureDeps(state, gm, activeView, mayAct) {
-    return [
-      gm,
-      state.index,
-      state.order.length,
-      activeView?.entity ?? null,
-      ...state.order.map((participant) => participant.id),
-      ...mayAct,
-    ];
+  function activeStrip(state, mayAct) {
+    const active = currentParticipant(state);
+    if (!active || !mayAct[state.index]) return { weapons: [], spells: [] };
+    return {
+      weapons: callbacks.onWeaponAttack ? (callbacks.getWeapons?.(active) ?? []) : [],
+      spells: callbacks.onCastSpell ? (callbacks.getSpells?.(active) ?? []) : [],
+    };
   }
 
   function render() {
@@ -96,9 +130,10 @@ export function mountInitiativePanel(container, callbacks) {
     const mayAct = state.order.map((participant) =>
       callbacks.canAttack ? callbacks.canAttack(participant) : gm,
     );
-    const deps = structureDeps(state, gm, views[state.index] ?? null, mayAct);
+    const strip = activeStrip(state, mayAct);
+    const deps = initiativeDeps(state, gm, mayAct, strip);
     if (!sameDeps(builtDeps, deps)) {
-      build(state, gm, mayAct);
+      build(state, gm, mayAct, strip);
       builtDeps = deps;
     }
     for (const write of writers) write({ state, views });
@@ -110,8 +145,9 @@ export function mountInitiativePanel(container, callbacks) {
    * @param {CombatState} state
    * @param {boolean} gm
    * @param {boolean[]} mayAct
+   * @param {ActionStripItems} strip
    */
-  function build(state, gm, mayAct) {
+  function build(state, gm, mayAct, strip) {
     root.innerHTML = '';
     writers = [];
 
@@ -152,7 +188,7 @@ export function mountInitiativePanel(container, callbacks) {
       // their bound character.
       if (active && i === state.index && mayAct[i]) {
         if (callbacks.onWeaponAttack) {
-          actionStrip(callbacks.getWeapons?.(participant) ?? [], {
+          actionStrip(strip.weapons, {
             icon: 'sword',
             className: 'initiative-panel__attack',
             ariaLabel: (weapon) => `Attack with ${weapon.name}`,
@@ -162,7 +198,7 @@ export function mountInitiativePanel(container, callbacks) {
           });
         }
         if (callbacks.onCastSpell) {
-          actionStrip(callbacks.getSpells?.(participant) ?? [], {
+          actionStrip(strip.spells, {
             icon: 'sparkles',
             className: 'initiative-panel__cast',
             ariaLabel: (spell) => `Cast ${spell.name}`,
@@ -180,19 +216,19 @@ export function mountInitiativePanel(container, callbacks) {
      * @template T
      * @param {(T & { name: string })[]} items
      * @param {{ icon: import('./icons.js').IconName, className: string, ariaLabel: (item: T) => string,
-     *   title: (item: T) => string, onPick: (item: T) => void }} strip
+     *   title: (item: T) => string, onPick: (item: T) => void }} spec
      */
-    function actionStrip(items, strip) {
+    function actionStrip(items, spec) {
       if (items.length === 0) return;
       const wrap = document.createElement('div');
       wrap.className = 'initiative-panel__attacks';
       for (const item of items) {
         wrap.appendChild(
-          textButton(item.name, () => strip.onPick(item), {
-            icon: strip.icon,
-            className: strip.className,
-            ariaLabel: strip.ariaLabel(item),
-            title: strip.title(item),
+          textButton(item.name, () => spec.onPick(item), {
+            icon: spec.icon,
+            className: spec.className,
+            ariaLabel: spec.ariaLabel(item),
+            title: spec.title(item),
           }),
         );
       }

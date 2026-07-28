@@ -176,22 +176,14 @@ test('describeCombatant reads the name and side off the live entity', () => {
   const { hero, goblin, sage } = fixtures();
   const brute = createNPC('brute', 'Brute', { location: HERE, disposition: 'hostile' });
   const app = stubApp({ characters: [hero], encounters: [goblin], npcs: [sage, brute] });
-  assert.deepEqual(describeCombatant(app, 'hero'), { name: 'Hero', side: 'party', entity: hero });
-  assert.deepEqual(describeCombatant(app, 'goblin'), {
-    name: 'Goblin',
-    side: 'foe',
-    entity: goblin,
-  });
-  assert.deepEqual(describeCombatant(app, 'sage'), { name: 'Sage', side: 'party', entity: sage });
-  assert.deepEqual(describeCombatant(app, 'brute'), { name: 'Brute', side: 'foe', entity: brute });
+  assert.deepEqual(describeCombatant(app, 'hero'), { name: 'Hero', side: 'party' });
+  assert.deepEqual(describeCombatant(app, 'goblin'), { name: 'Goblin', side: 'foe' });
+  assert.deepEqual(describeCombatant(app, 'sage'), { name: 'Sage', side: 'party' });
+  assert.deepEqual(describeCombatant(app, 'brute'), { name: 'Brute', side: 'foe' });
   assert.equal(describeCombatant(app, 'nobody'), null);
-  // The entity comes back by reference, which is what lets a panel tell an
-  // edited combatant from an untouched one.
-  assert.equal(describeCombatant(app, 'hero')?.entity, hero);
   // A rename lands on the next read rather than being frozen into the order.
   findCombatant(app, 'goblin').store({ ...goblin, name: 'Goblin Chief' });
   assert.equal(describeCombatant(app, 'goblin')?.name, 'Goblin Chief');
-  assert.notEqual(describeCombatant(app, 'goblin')?.entity, goblin);
 });
 
 test('combatantsAsTargets with allies keeps downed allies targetable', () => {
