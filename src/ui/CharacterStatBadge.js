@@ -1,6 +1,7 @@
 import { statBreakdown } from '../entities/Equipment.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { textButton } from './buttons.js';
+import { classNames, el, setAttrs } from './dom.js';
 import { openDialog } from './Modal.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -20,21 +21,16 @@ function openStatBreakdown(key, breakdown) {
     className: 'modal stat-breakdown',
     title: `${key} ${total}`,
     build: (close) => {
-      const mod = document.createElement('p');
-      mod.className = 'stat-breakdown__mod';
-      mod.textContent = `Modifier ${formatModifier(abilityModifier(total))}`;
+      const mod = el(
+        'p',
+        'stat-breakdown__mod',
+        `Modifier ${formatModifier(abilityModifier(total))}`,
+      );
 
-      const rows = document.createElement('dl');
-      rows.className = 'stat-breakdown__rows';
+      const rows = el('dl', 'stat-breakdown__rows');
       /** @param {string} label @param {string} value @param {string} [ddCls] @param {string} [rowCls] */
       const addRow = (label, value, ddCls, rowCls) => {
-        const dt = document.createElement('dt');
-        dt.textContent = label;
-        const dd = document.createElement('dd');
-        dd.textContent = value;
-        if (rowCls) dt.className = rowCls;
-        dd.className = [ddCls, rowCls].filter(Boolean).join(' ');
-        rows.append(dt, dd);
+        rows.append(el('dt', rowCls, label), el('dd', classNames([ddCls, rowCls]), value));
       };
       addRow('Base', String(base));
       for (const { source, delta } of sources) {
@@ -62,10 +58,13 @@ function openStatBreakdown(key, breakdown) {
  */
 function d20Face() {
   const NS = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(NS, 'svg');
-  svg.setAttribute('class', 'stat-badge__d20');
-  svg.setAttribute('viewBox', '0 0 100 100');
-  svg.setAttribute('aria-hidden', 'true');
+  const svg = /** @type {SVGSVGElement} */ (
+    setAttrs(document.createElementNS(NS, 'svg'), {
+      class: 'stat-badge__d20',
+      viewBox: '0 0 100 100',
+      'aria-hidden': 'true',
+    })
+  );
   // Point-up hexagon corners; the central face joins the two upper-side
   // corners to the bottom point, so its centroid is the badge's midpoint.
   const A = '50,3';
@@ -75,12 +74,7 @@ function d20Face() {
   const E = '9.3,73.5';
   const F = '9.3,26.5';
   /** @param {string} tag @param {Record<string, string>} attrs */
-  const shape = (tag, attrs) => {
-    const el = document.createElementNS(NS, tag);
-    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
-    svg.appendChild(el);
-    return el;
-  };
+  const shape = (tag, attrs) => svg.appendChild(setAttrs(document.createElementNS(NS, tag), attrs));
   shape('polygon', { class: 'stat-badge__d20-hull', points: `${A} ${B} ${C} ${D} ${E} ${F}` });
   shape('path', {
     class: 'stat-badge__d20-facets',
@@ -104,32 +98,21 @@ export function statBadge(character, key) {
   const { base, total } = breakdown;
   const modText = formatModifier(abilityModifier(total));
 
-  const badge = document.createElement('button');
+  const badge = el(
+    'button',
+    classNames([
+      'stat-badge',
+      total > base && 'stat-badge--buffed',
+      total < base && 'stat-badge--debuffed',
+    ]),
+    el('span', 'stat-badge__key', key),
+    el('span', 'stat-badge__die', d20Face(), el('span', 'stat-badge__score', String(total))),
+    el('span', 'stat-badge__mod', modText),
+  );
   badge.type = 'button';
-  badge.className = 'stat-badge';
-  if (total > base) badge.classList.add('stat-badge--buffed');
-  else if (total < base) badge.classList.add('stat-badge--debuffed');
   const note = total !== base ? ` (base ${base})` : '';
   badge.setAttribute('aria-label', `${key} ${total}, modifier ${modText}${note}. Show breakdown.`);
   badge.title = 'Show breakdown';
-
-  const keyEl = document.createElement('span');
-  keyEl.className = 'stat-badge__key';
-  keyEl.textContent = key;
-
-  const die = document.createElement('span');
-  die.className = 'stat-badge__die';
-  die.appendChild(d20Face());
-  const score = document.createElement('span');
-  score.className = 'stat-badge__score';
-  score.textContent = String(total);
-  die.appendChild(score);
-
-  const modEl = document.createElement('span');
-  modEl.className = 'stat-badge__mod';
-  modEl.textContent = modText;
-
-  badge.append(keyEl, die, modEl);
   badge.addEventListener('click', () => openStatBreakdown(key, breakdown));
   return badge;
 }

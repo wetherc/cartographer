@@ -1,6 +1,7 @@
 import { getSpellbook } from '../entities/Character.js';
 import { getClass, casterClassRefs, primaryCasterClass } from '../entities/Classes.js';
 import { emptyState, textButton } from './buttons.js';
+import { el } from './dom.js';
 import { promptSpellDetail } from './SpellDetail.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -27,21 +28,14 @@ export function buildSpellsSection(character, opts) {
   const hasEntries = book.cantrips.length > 0 || book.known.length > 0;
   if (casterClassRefs(character).length === 0 && !hasEntries) return null;
 
-  const section = document.createElement('div');
-  section.className = 'character-sheet__spells';
-
-  const label = document.createElement('span');
-  label.className = 'section-label';
   const className = getClass(primaryCasterClass(character)?.classId)?.name;
-  label.textContent = className ? `Spells (${className})` : 'Spells';
-  section.appendChild(label);
-
-  const cantrips = opts.resolveSpells(book.cantrips);
-  const prepared = opts.resolveSpells(book.prepared);
-
-  section.appendChild(buildGroup('Cantrips', cantrips, opts));
-  section.appendChild(buildGroup('Prepared', prepared, opts));
-  return section;
+  return el(
+    'div',
+    'character-sheet__spells',
+    el('span', 'section-label', className ? `Spells (${className})` : 'Spells'),
+    buildGroup('Cantrips', opts.resolveSpells(book.cantrips), opts),
+    buildGroup('Prepared', opts.resolveSpells(book.prepared), opts),
+  );
 }
 
 /**
@@ -53,16 +47,7 @@ export function buildSpellsSection(character, opts) {
  * @returns {HTMLElement}
  */
 function buildGroup(title, spells, opts) {
-  const group = document.createElement('div');
-  group.className = 'character-sheet__spell-group';
-
-  const heading = document.createElement('span');
-  heading.className = 'section-label';
-  heading.textContent = title;
-  group.appendChild(heading);
-
-  const list = document.createElement('div');
-  list.className = 'character-sheet__spell-chips';
+  const list = el('div', 'character-sheet__spell-chips');
   if (spells.length === 0) list.appendChild(emptyState('None'));
   for (const spell of spells) {
     list.appendChild(
@@ -83,6 +68,5 @@ function buildGroup(title, spells, opts) {
       ),
     );
   }
-  group.appendChild(list);
-  return group;
+  return el('div', 'character-sheet__spell-group', el('span', 'section-label', title), list);
 }

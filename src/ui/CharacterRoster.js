@@ -1,4 +1,5 @@
 import { iconButton, textButton, emptyState } from './buttons.js';
+import { classNames, el } from './dom.js';
 import { getHP } from '../entities/Character.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -12,22 +13,16 @@ import { getHP } from '../entities/Character.js';
  */
 function hpMeter(character) {
   const hp = getHP(character);
-  const meter = document.createElement('span');
-  meter.className = 'character-roster__hp';
+  const meter = el('span', 'character-roster__hp');
   if (!hp || hp.max <= 0) return meter;
   const ratio = Math.max(0, Math.min(1, hp.current / hp.max));
-  const band = ratio <= 0.25 ? 'low' : ratio <= 0.5 ? 'mid' : 'ok';
-  meter.dataset.band = band;
+  meter.dataset.band = ratio <= 0.25 ? 'low' : ratio <= 0.5 ? 'mid' : 'ok';
   meter.setAttribute('role', 'img');
   meter.setAttribute('aria-label', `HP ${hp.current}/${hp.max}`);
   meter.title = `HP ${hp.current}/${hp.max}`;
-  const fill = document.createElement('span');
-  fill.className = 'character-roster__hp-fill';
+  const fill = el('span', 'character-roster__hp-fill');
   fill.style.width = `${ratio * 100}%`;
-  const text = document.createElement('span');
-  text.className = 'character-roster__hp-text';
-  text.textContent = `${hp.current}/${hp.max}`;
-  meter.append(fill, text);
+  meter.append(fill, el('span', 'character-roster__hp-text', `${hp.current}/${hp.max}`));
   return meter;
 }
 
@@ -62,8 +57,7 @@ function hpMeter(character) {
  */
 export function mountCharacterRoster(container, options) {
   const canManage = options.canManage ?? (() => true);
-  const root = document.createElement('div');
-  root.className = 'character-roster';
+  const root = el('div', 'character-roster');
   container.appendChild(root);
 
   function render() {
@@ -77,65 +71,57 @@ export function mountCharacterRoster(container, options) {
     }
 
     for (const character of characters) {
-      const row = document.createElement('div');
-      row.className = 'character-roster__row';
-
-      const select = document.createElement('button');
+      const current = character.id === selectedId;
+      const select = el(
+        'button',
+        classNames(['row-select character-roster__select', current && 'row-select--current']),
+        el('span', 'character-roster__label', `${character.name} (Lv ${character.level})`),
+        hpMeter(character),
+      );
       select.type = 'button';
-      select.className = 'row-select character-roster__select';
-      if (character.id === selectedId) {
-        select.classList.add('row-select--current');
-        select.setAttribute('aria-current', 'true');
-      }
-      const label = document.createElement('span');
-      label.className = 'character-roster__label';
-      label.textContent = `${character.name} (Lv ${character.level})`;
-      select.appendChild(label);
-      select.appendChild(hpMeter(character));
+      if (current) select.setAttribute('aria-current', 'true');
       select.addEventListener('click', () => options.onSelect(character.id));
 
-      row.appendChild(select);
+      const row = el('div', 'character-roster__row', select);
       if (canManage() && options.onPlace && (options.canPlace?.() ?? true)) {
-        const place = iconButton(
-          'map',
-          `Place ${character.name} on the map`,
-          () => options.onPlace?.(character.id),
-          { className: 'character-roster__place', title: 'Place on map' },
+        row.appendChild(
+          iconButton(
+            'map',
+            `Place ${character.name} on the map`,
+            () => options.onPlace?.(character.id),
+            { className: 'character-roster__place', title: 'Place on map' },
+          ),
         );
-        row.appendChild(place);
       }
       if (canManage()) {
-        const del = iconButton(
-          'remove',
-          `Delete ${character.name}`,
-          () => options.onDelete(character.id),
-          { variant: 'danger', className: 'character-roster__delete' },
+        row.appendChild(
+          iconButton('remove', `Delete ${character.name}`, () => options.onDelete(character.id), {
+            variant: 'danger',
+            className: 'character-roster__delete',
+          }),
         );
-        row.appendChild(del);
       }
       root.appendChild(row);
     }
 
     if (!canManage()) return;
 
-    const actions = document.createElement('div');
-    actions.className = 'panel-actions';
-
-    const add = textButton('New character', () => options.onAdd(), {
-      icon: 'add',
-      className: 'character-roster__add',
-    });
-    actions.appendChild(add);
-
-    if (options.onAwardXP && characters.length > 0) {
-      const award = textButton('Award XP', () => options.onAwardXP?.(), {
-        icon: 'sparkles',
-        className: 'character-roster__award',
-      });
-      actions.appendChild(award);
-    }
-
-    root.appendChild(actions);
+    root.appendChild(
+      el(
+        'div',
+        'panel-actions',
+        textButton('New character', () => options.onAdd(), {
+          icon: 'add',
+          className: 'character-roster__add',
+        }),
+        options.onAwardXP &&
+          characters.length > 0 &&
+          textButton('Award XP', () => options.onAwardXP?.(), {
+            icon: 'sparkles',
+            className: 'character-roster__award',
+          }),
+      ),
+    );
   }
 
   render();

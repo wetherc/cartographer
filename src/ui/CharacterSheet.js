@@ -80,8 +80,7 @@ export function mountCharacterSheet(
 ) {
   let current = initial;
 
-  const root = document.createElement('div');
-  root.className = 'character-sheet';
+  const root = el('div', 'character-sheet');
   container.appendChild(root);
 
   /**
@@ -138,40 +137,30 @@ export function mountCharacterSheet(
     /** @type {(() => void)[]} */
     const writers = [];
 
-    const summary = document.createElement('div');
-    summary.className = 'character-sheet__summary';
-
-    // Top line: name / race. The HP bar and the spell-slot pips get a
-    // full-width line each below it, so both read at a glance.
-    const summaryTop = document.createElement('span');
-    summaryTop.className = 'character-sheet__summary-top';
-
-    const name = document.createElement('span');
-    name.className = 'character-sheet__name';
-    summaryTop.appendChild(name);
+    const name = el('span', 'character-sheet__name');
     writers.push(() => {
       name.textContent = live().name;
     });
 
-    if (character.race) {
-      const race = document.createElement('span');
-      race.className = 'character-sheet__race';
-      race.textContent = character.race;
-      summaryTop.appendChild(race);
-    }
-
-    summary.appendChild(summaryTop);
+    // Top line: name / race. The HP bar and the spell-slot pips get a
+    // full-width line each below it, so both read at a glance.
+    const summary = el(
+      'div',
+      'character-sheet__summary',
+      el(
+        'span',
+        'character-sheet__summary-top',
+        name,
+        character.race && el('span', 'character-sheet__race', character.race),
+      ),
+    );
 
     // Name, HP bar, and slot pips sit in the always-visible head; the sheet no
     // longer collapses, so the body's stats follow directly beneath.
-    const head = document.createElement('div');
-    head.className = 'character-sheet__head';
-    head.appendChild(summary);
+    const head = el('div', 'character-sheet__head', summary);
 
     const hp = getHP(character);
     if (hp) {
-      const hpLine = document.createElement('div');
-      hpLine.className = 'character-sheet__hp-line';
       /** @type {{ before: HTMLElement, after: HTMLElement } | undefined} */
       let flank;
       if (perms.hp) {
@@ -199,8 +188,7 @@ export function mountCharacterSheet(
         bonus: character.bonusHP ?? 0,
         flank,
       });
-      hpLine.appendChild(bar.element);
-      head.appendChild(hpLine);
+      head.appendChild(el('div', 'character-sheet__hp-line', bar.element));
       writers.push(() => {
         const pool = getHP(live());
         if (pool) bar.update(pool, live().bonusHP ?? 0);
@@ -227,30 +215,34 @@ export function mountCharacterSheet(
       });
     }
 
-    const body = document.createElement('div');
-    body.className = 'character-sheet__body';
+    const body = el('div', 'character-sheet__body');
 
-    // Level, derived AC, and XP progress share the section header line; the
-    // controls below are laid out like stat rows, so their inputs line up
-    // with the ability-score inputs underneath them.
-    const header = document.createElement('div');
-    header.className = 'character-sheet__header';
-    const levelText = document.createElement('span');
-    levelText.textContent = `Level ${character.level}`;
-    const headerMeta = document.createElement('span');
-    headerMeta.className = 'character-sheet__header-meta';
-    const acBadge = document.createElement('span');
-    acBadge.className = 'character-sheet__ac';
+    const acBadge = el('span', 'character-sheet__ac');
     acBadge.title =
       'Armor class: equipped body armor sets base AC + DEX per its weight class ' +
       '(light: full, medium: max +2, heavy: none); unarmored is base AC + DEX. ' +
       'Shields add +2; other equipped items add their flat bonuses.';
-    const xpProgress = document.createElement('span');
-    xpProgress.className = 'character-sheet__xp-progress';
-    xpProgress.textContent = `XP ${character.xp} / ${character.level * XP_PER_LEVEL}`;
-    headerMeta.append(acBadge, xpProgress);
-    header.append(levelText, headerMeta);
-    body.appendChild(header);
+
+    // Level, derived AC, and XP progress share the section header line; the
+    // controls below are laid out like stat rows, so their inputs line up
+    // with the ability-score inputs underneath them.
+    body.appendChild(
+      el(
+        'div',
+        'character-sheet__header',
+        el('span', '', `Level ${character.level}`),
+        el(
+          'span',
+          'character-sheet__header-meta',
+          acBadge,
+          el(
+            'span',
+            'character-sheet__xp-progress',
+            `XP ${character.xp} / ${character.level * XP_PER_LEVEL}`,
+          ),
+        ),
+      ),
+    );
     // Base AC is edited without changing the sheet's shape, so the derived
     // badge has to follow it.
     writers.push(() => {
@@ -313,8 +305,7 @@ export function mountCharacterSheet(
 
     // The editable HP/AC fields sit in a grid that mirrors the ability-score
     // grid below, so their keys and inputs line up in the same columns.
-    const fields = document.createElement('div');
-    fields.className = 'character-sheet__fields';
+    const fields = el('div', 'character-sheet__fields');
 
     // The GM's per-character max HP override; current HP clamps down if the
     // new maximum is below it.
@@ -354,8 +345,7 @@ export function mountCharacterSheet(
 
     if (fields.children.length > 0) body.appendChild(fields);
 
-    const statsList = document.createElement('div');
-    statsList.className = 'character-sheet__stats';
+    const statsList = el('div', 'character-sheet__stats');
     // Each ability reads as one d20-style badge showing the *effective* score
     // (base plus equipped-item buffs) over its derived modifier — the number a
     // player actually rolls with. The base and every contributing source live
@@ -386,15 +376,10 @@ export function mountCharacterSheet(
     // carries the custom pools.
     const pools = customPools(character);
     if (pools.length > 0) {
-      const resources = document.createElement('div');
-      resources.className = 'character-sheet__resources';
+      const resources = el('div', 'character-sheet__resources');
       pools.forEach((pool, index) => {
-        const row = document.createElement('div');
-        row.className = 'character-sheet__resource-row';
-
-        const label = document.createElement('span');
-        label.className = 'character-sheet__resource-label';
-        row.appendChild(label);
+        const label = el('span', 'character-sheet__resource-label');
+        const row = el('div', 'character-sheet__resource-row', label);
         writers.push(() => {
           const next = customPools(live())[index];
           if (next) label.textContent = `${next.name} ${next.current}/${next.max}`;
@@ -433,12 +418,11 @@ export function mountCharacterSheet(
       if (spellsSection) body.appendChild(spellsSection);
     }
 
-    const conditions = document.createElement('div');
-    conditions.className = 'character-sheet__conditions';
-    const conditionsLabel = document.createElement('span');
-    conditionsLabel.className = 'section-label';
-    conditionsLabel.textContent = 'Conditions';
-    conditions.appendChild(conditionsLabel);
+    const conditions = el(
+      'div',
+      'character-sheet__conditions',
+      el('span', 'section-label', 'Conditions'),
+    );
     // The bar reads and reports the whole list, so it stays mounted across
     // ticks; only its chips are rebuilt, and only when they can have changed.
     const conditionsBar = mountConditionsBar(conditions, {

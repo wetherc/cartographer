@@ -1,5 +1,6 @@
 import { promptModal } from './Modal.js';
 import { textButton } from './buttons.js';
+import { classNames, el } from './dom.js';
 import { getClass, CLASS_LIST } from '../entities/Classes.js';
 import { getClasses, pendingLevels, classLevelOf } from '../entities/Multiclass.js';
 import { canMulticlass, meetsPrereq, assignLevel } from '../entities/LevelAssign.js';
@@ -156,26 +157,18 @@ export function buildProgressSection(getCharacter, opts) {
   const hitDice = getHitDicePools(character);
   if (classes.length === 0 && hitDice.length === 0) return null;
 
-  const section = document.createElement('div');
-  section.className = 'character-sheet__progress';
-  const heading = document.createElement('span');
-  heading.className = 'section-label';
-  heading.textContent = 'Progression';
-  section.appendChild(heading);
+  const section = el(
+    'div',
+    'character-sheet__progress',
+    el('span', 'section-label', 'Progression'),
+  );
 
   /** @param {string} [cls] @returns {HTMLElement} */
-  const addRow = (cls) => {
-    const row = document.createElement('div');
-    row.className = cls ? `character-sheet__progress-row ${cls}` : 'character-sheet__progress-row';
-    section.appendChild(row);
-    return row;
-  };
+  const addRow = (cls) =>
+    section.appendChild(el('div', classNames(['character-sheet__progress-row', cls])));
   /** @param {HTMLElement} row @param {string} text */
   const addText = (row, text) => {
-    const span = document.createElement('span');
-    span.className = 'character-sheet__progress-text';
-    span.textContent = text;
-    row.appendChild(span);
+    row.appendChild(el('span', 'character-sheet__progress-text', text));
   };
 
   if (classes.length > 0) {
@@ -307,19 +300,20 @@ export function buildProgressSection(getCharacter, opts) {
 
   const features = unlockedFeatures(character);
   if (features.length > 0) {
-    const details = document.createElement('details');
-    details.className = 'character-sheet__features';
-    const summary = document.createElement('summary');
-    summary.textContent = `Class features (${features.length})`;
-    details.appendChild(summary);
-    const list = document.createElement('ul');
-    for (const feature of features) {
-      const item = document.createElement('li');
-      item.textContent = `${feature.name} — ${className(feature.classId)} ${feature.level}`;
-      list.appendChild(item);
-    }
-    details.appendChild(list);
-    section.appendChild(details);
+    section.appendChild(
+      el(
+        'details',
+        'character-sheet__features',
+        el('summary', '', `Class features (${features.length})`),
+        el(
+          'ul',
+          '',
+          ...features.map((feature) =>
+            el('li', '', `${feature.name} — ${className(feature.classId)} ${feature.level}`),
+          ),
+        ),
+      ),
+    );
   }
 
   for (const pool of hitDice) {
