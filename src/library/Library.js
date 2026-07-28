@@ -1,4 +1,9 @@
-import { WEAPON_TYPES, ITEM_TYPES, normalizeDamagePart } from '../entities/Equipment.js';
+import {
+  WEAPON_TYPES,
+  ITEM_TYPES,
+  HEALING_TYPES,
+  normalizeDamagePart,
+} from '../entities/Equipment.js';
 import { clampInt } from '../util/num.js';
 import { normalizeProjectiles, normalizeTargetCount } from '../entities/Casting.js';
 import { parseCastingTime, parseDuration } from '../entities/SpellTiming.js';
@@ -330,11 +335,15 @@ export function storedEntryId({ found, target, renamed, newKey, takenIds }) {
  * aren't well-formed dice and clamping the rest onto the supported die sizes
  * and damage types. Pure.
  * @param {unknown} value
+ * @param {string[]} [allowed] the types these terms may carry; damage types by
+ *   default, `HEALING_TYPES` for restorative dice
  * @returns {DamagePart[]}
  */
-function normalizeDamageParts(value) {
+function normalizeDamageParts(value, allowed = undefined) {
   if (!Array.isArray(value)) return [];
-  return value.filter((p) => p && typeof p === 'object').map(normalizeDamagePart);
+  return value
+    .filter((p) => p && typeof p === 'object')
+    .map((p) => normalizeDamagePart(p, allowed));
 }
 
 /**
@@ -373,12 +382,17 @@ function normalizeSpell(raw, id) {
         : {}),
     };
   } else if (kind === 'heal') {
-    effect = { kind: 'heal', healing: normalizeDamageParts(raw.effect.healing) };
+    effect = { kind: 'heal', healing: normalizeDamageParts(raw.effect.healing, HEALING_TYPES) };
   } else {
     effect = { kind: 'utility' };
   }
 
-  const scalingDamage = normalizeDamageParts(raw.scaling?.damagePerLevel);
+  // Scaling dice add to whatever the effect deals, so a heal spell's per-level
+  // dice are restorative too.
+  const scalingDamage = normalizeDamageParts(
+    raw.scaling?.damagePerLevel,
+    kind === 'heal' ? HEALING_TYPES : undefined,
+  );
   const scalingTargets = clampInt(raw.scaling?.targetsPerLevel, 0);
   const scaling =
     scalingDamage.length > 0 || scalingTargets > 0

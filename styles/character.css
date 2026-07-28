@@ -560,6 +560,12 @@
   color: var(--text-muted);
 }
 
+/* Names a term's type where there is only one to have, in place of a
+   single-option picker. */
+.inventory-panel__damage-type {
+  color: var(--text-muted);
+}
+
 /* The damage editor stacks its rows in a stretch flex column; keep the add
    button sized to its label instead of spanning the full width. */
 .inventory-panel__damage-add {

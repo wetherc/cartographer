@@ -85,14 +85,22 @@ export const DAMAGE_TYPES = [
   'thunder',
 ];
 
+/** Restorative dice are not damage, so healing is its own one-entry vocabulary
+ * rather than a fourteenth damage type — a weapon must not be able to deal it. */
+export const HEALING_TYPE = 'healing';
+export const HEALING_TYPES = [HEALING_TYPE];
+
 /**
  * Coerce an unknown value into one well-formed damage term: at least one die,
- * a die size and a damage type drawn from the lists above. Lives here because
- * the lists do, so a change to either has one validator to update. Pure.
+ * a die size and a type drawn from `allowed`. Lives here because the lists do,
+ * so a change to either has one validator to update. A caller normalizing
+ * restorative dice passes `HEALING_TYPES`, which is what keeps a heal effect
+ * from being repaired into slashing. Pure.
  * @param {unknown} part
+ * @param {string[]} [allowed] the damage types this term may carry
  * @returns {DamagePart}
  */
-export function normalizeDamagePart(part) {
+export function normalizeDamagePart(part, allowed = DAMAGE_TYPES) {
   const raw = /** @type {Record<string, unknown>} */ (part ?? {});
   const bonus = Math.trunc(Number(raw.bonus)) || 0;
   // A term carrying a flat bonus may roll no dice, which is how a fixed amount
@@ -103,9 +111,7 @@ export function normalizeDamagePart(part) {
     count: clampInt(raw.count, floor, Infinity, floor),
     sides: DIE_SIZES.includes(Number(raw.sides)) ? Number(raw.sides) : DIE_SIZES[0],
     damageType: /** @type {string} */ (
-      DAMAGE_TYPES.includes(/** @type {string} */ (raw.damageType))
-        ? raw.damageType
-        : DAMAGE_TYPES[0]
+      allowed.includes(/** @type {string} */ (raw.damageType)) ? raw.damageType : allowed[0]
     ),
     ...(bonus === 0 ? {} : { bonus }),
   };

@@ -27,6 +27,7 @@ import {
   equippedWeapons,
   equippedIndex,
   normalizeDamagePart,
+  HEALING_TYPES,
 } from '../src/entities/Equipment.js';
 import {
   WEAPON_PRESETS,
@@ -368,6 +369,23 @@ test('normalizeDamagePart accepts a missing term rather than throwing', () => {
   const expected = { count: 1, sides: DIE_SIZES[0], damageType: DAMAGE_TYPES[0] };
   assert.deepEqual(normalizeDamagePart(undefined), expected);
   assert.deepEqual(normalizeDamagePart({}), expected);
+});
+
+test('normalizeDamagePart validates the type against the list it is given', () => {
+  assert.equal(
+    normalizeDamagePart({ count: 1, sides: 8, damageType: 'healing' }, HEALING_TYPES).damageType,
+    'healing',
+  );
+  assert.equal(
+    normalizeDamagePart({ count: 1, sides: 8, damageType: 'fire' }, HEALING_TYPES).damageType,
+    'healing',
+    'a damage type is not a kind of healing',
+  );
+  assert.equal(
+    normalizeDamagePart({ count: 1, sides: 8, damageType: 'healing' }).damageType,
+    DAMAGE_TYPES[0],
+    'and healing is not a damage type, so a weapon cannot deal it',
+  );
 });
 
 test('normalizeDamagePart keeps a flat bonus and omits it when zero', () => {

@@ -167,6 +167,13 @@ worth knowing:
 - The bonus is stored only when it is nonzero, which keeps an unbonused term
   byte-identical to what it was before.
 
+The validator also takes the vocabulary of types a term may carry, defaulting to
+the 13 damage types. Healing is not one of them — a weapon must not be able to
+deal it — so a spell's restorative dice normalize against `HEALING_TYPES`
+instead, and the authoring form pins them to that one type rather than offering a
+picker. Validating them against the damage list is what used to rewrite a heal
+spell's dice as slashing whenever it was edited or imported.
+
 `DiceRoller.rollDamage` groups terms by damage type and adds each term's bonus to
 its own group, while the `modifier` argument — the attacker's ability modifier —
 joins the first group only, per 5e. Both land in one `bonus` number per group, so

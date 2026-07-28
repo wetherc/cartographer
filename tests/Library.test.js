@@ -426,6 +426,30 @@ test('normalizeLibrary reads an attack spell’s projectiles and drops an unusab
   assert.equal(/** @type {any} */ (plain.effect).projectiles, undefined);
 });
 
+test('normalizeLibrary types a heal spell’s dice as healing, not as damage', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      {
+        name: 'Mend',
+        effect: { kind: 'heal', healing: [{ count: 2, sides: 8, damageType: 'healing' }] },
+        scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'healing' }] },
+      },
+      // Healing is not one of the 13 damage types, so validating it against them
+      // used to repair a heal spell into slashing on every edit or import.
+      {
+        name: 'Botched',
+        effect: { kind: 'heal', healing: [{ count: 1, sides: 8, damageType: 'fire' }] },
+        scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'fire' }] },
+      },
+    ],
+  });
+  const [mend, botched] = lib.spells;
+  assert.equal(/** @type {any} */ (mend.effect).healing[0].damageType, 'healing');
+  assert.equal(mend.scaling?.damagePerLevel?.[0].damageType, 'healing');
+  assert.equal(/** @type {any} */ (botched.effect).healing[0].damageType, 'healing');
+  assert.equal(botched.scaling?.damagePerLevel?.[0].damageType, 'healing');
+});
+
 test('normalizeLibrary keeps a damage term’s flat bonus, dice or not', () => {
   const lib = normalizeLibrary({
     spells: [

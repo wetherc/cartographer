@@ -17,14 +17,27 @@ import { clampInt } from '../util/num.js';
 
 /**
  * The structured damage editor: one row per damage term (dice count, die
- * size, damage type). The first term is the weapon's base roll and always
- * present; later terms are removable riders added with the "+ damage" button.
+ * size, flat bonus, damage type). The first term is the weapon's base roll and
+ * always present; later terms are removable riders added with the "+ damage"
+ * button.
+ *
+ * `fixType` pins every term to one type and drops the type picker, which is what
+ * restorative dice want: healing has exactly one flavor, so offering the 13
+ * damage types there only lets a GM author a heal spell that says "fire".
  * @param {DamagePart[]} initial
- * @returns {{ element: HTMLElement, get: () => DamagePart[], set: (parts: DamagePart[]) => void }}
+ * @param {string | null} [fixType]
+ * @returns {{
+ *   element: HTMLElement,
+ *   get: () => DamagePart[],
+ *   set: (parts: DamagePart[]) => void,
+ *   setFixedType: (type: string | null) => void,
+ * }}
  */
-export function buildDamageEditor(initial) {
+export function buildDamageEditor(initial, fixType = null) {
+  let fixed = fixType;
+  const types = () => (fixed ? [fixed] : DAMAGE_TYPES);
   /** @type {DamagePart[]} */
-  let damageParts = initial.map(normalizeDamagePart);
+  let damageParts = initial.map((p) => normalizeDamagePart(p, types()));
   const element = el('div', 'inventory-panel__damage');
 
   function render() {
@@ -74,20 +87,26 @@ export function buildDamageEditor(initial) {
         syncCount();
       });
 
-      const typeSelectEl = select([...DAMAGE_TYPES], part.damageType, {
-        ariaLabel: 'Damage type',
-      });
-      typeSelectEl.addEventListener('change', () => {
-        part.damageType = typeSelectEl.value;
-      });
-
       row.append(
         countInput,
         dieSelect,
         el('span', 'inventory-panel__damage-plus', '+'),
         bonusInput,
-        typeSelectEl,
       );
+
+      // With one type there is nothing to pick, so the row names it in text.
+      if (fixed) {
+        part.damageType = fixed;
+        row.appendChild(el('span', 'inventory-panel__damage-type', fixed));
+      } else {
+        const typeSelectEl = select([...DAMAGE_TYPES], part.damageType, {
+          ariaLabel: 'Damage type',
+        });
+        typeSelectEl.addEventListener('change', () => {
+          part.damageType = typeSelectEl.value;
+        });
+        row.appendChild(typeSelectEl);
+      }
 
       // The first term is the weapon's base roll and always present; later
       // terms are removable riders.
@@ -107,7 +126,7 @@ export function buildDamageEditor(initial) {
         'plus',
         'Add damage term',
         () => {
-          damageParts.push({ count: 1, sides: 4, damageType: 'fire' });
+          damageParts.push({ count: 1, sides: 4, damageType: fixed ?? 'fire' });
           render();
         },
         {
@@ -123,7 +142,16 @@ export function buildDamageEditor(initial) {
     element,
     get: () => damageParts.map((p) => ({ ...p })),
     set: (parts) => {
-      damageParts = parts.map(normalizeDamagePart);
+      damageParts = parts.map((p) => normalizeDamagePart(p, types()));
+      render();
+    },
+    setFixedType: (type) => {
+      if (fixed === type) return;
+      fixed = type;
+      // Terms carrying a type the new vocabulary does not allow are re-typed, so
+      // switching a spell's effect from damage to healing cannot leave "fire"
+      // dice behind.
+      damageParts = damageParts.map((p) => normalizeDamagePart(p, types()));
       render();
     },
   };

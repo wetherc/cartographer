@@ -1,6 +1,7 @@
 import { CLASS_LIST } from '../entities/Classes.js';
 import { SPELL_SCHOOLS, SPELL_ABILITIES, SPELL_EFFECT_KINDS } from '../data/spells.js';
 import { classNames, el } from './dom.js';
+import { HEALING_TYPE } from '../entities/Equipment.js';
 import { buildDamageEditor } from './ItemFormEditors.js';
 import {
   labeled,
@@ -180,8 +181,10 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     'Deals damage',
     spell?.effect.kind === 'attack' || (saveEffect?.damage.length ?? 0) > 0,
   );
+  const heals = spell?.effect.kind === 'heal';
   const effectDamage = buildDamageEditor(
     effectDamageOf(spell?.effect) ?? [{ count: 1, sides: 6, damageType: 'fire' }],
+    heals ? HEALING_TYPE : null,
   );
   const damageField = labeled('Damage', effectDamage.element);
   const healField = labeled('Healing', effectDamage.element);
@@ -212,6 +215,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const scales = checkbox('Scales per level', !!spell?.scaling);
   const scalingDamage = buildDamageEditor(
     spell?.scaling?.damagePerLevel ?? [{ count: 1, sides: 6, damageType: 'fire' }],
+    heals ? HEALING_TYPE : null,
   );
   const scalingDamageField = labeled('Extra dice / level', scalingDamage.element);
   const targetsInput = numberField(spell?.scaling?.targetsPerLevel ?? 0, { min: 0 });
@@ -261,6 +265,11 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     setCaption(damageField, firesShots ? 'Damage / projectile' : 'Damage');
     damageField.hidden = !showDamage;
     healField.hidden = kind !== 'heal';
+    // Restorative dice are healing, never a damage type, and the same holds for
+    // the per-level dice that add to them.
+    const fixed = kind === 'heal' ? HEALING_TYPE : null;
+    effectDamage.setFixedType(fixed);
+    scalingDamage.setFixedType(fixed);
     // The one damage editor element is reused; park it under whichever label is
     // visible.
     if (kind === 'heal') healField.appendChild(effectDamage.element);
