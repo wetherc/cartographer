@@ -1,4 +1,4 @@
-import { tileIdAt } from './MapGeometry.js';
+import { maskAt, tileIdAt } from './MapGeometry.js';
 
 /**
  * Pure helpers for picking connector overlay pieces (coast shorelines, river
@@ -18,8 +18,7 @@ import { tileIdAt } from './MapGeometry.js';
  */
 export function smoothCoastline(cells, width, height) {
   const out = [...cells];
-  const water = (/** @type {number} */ x, /** @type {number} */ y) =>
-    x >= 0 && y >= 0 && x < width && y < height && out[y * width + x] === 'water';
+  const water = maskAt(out, width, height, 'water');
   let changed = true;
   while (changed) {
     changed = false;
@@ -76,8 +75,7 @@ export function coastKind(n, e, s, w, ne, se, sw, nw) {
 export function coastOverlays(cells, width, height) {
   /** @type {Map<string, string>} */
   const out = new Map();
-  const water = (/** @type {number} */ x, /** @type {number} */ y) =>
-    x >= 0 && y >= 0 && x < width && y < height && cells[y * width + x] === 'water';
+  const water = maskAt(cells, width, height, 'water');
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       if (water(x, y)) continue;

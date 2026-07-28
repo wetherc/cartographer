@@ -1,4 +1,4 @@
-import { parseCoords, tileIdAt } from './MapGeometry.js';
+import { NEIGHBORS4, parseCoords, tileIdAt } from './MapGeometry.js';
 import { getTile } from './TileGrid.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 
@@ -80,14 +80,8 @@ function computeRegionGroups(node) {
       minY = Math.min(minY, current.y);
       maxY = Math.max(maxY, current.y);
 
-      const neighbors = [
-        [current.x + 1, current.y],
-        [current.x - 1, current.y],
-        [current.x, current.y + 1],
-        [current.x, current.y - 1],
-      ];
-      for (const [nx, ny] of neighbors) {
-        const nKey = tileIdAt(nx, ny);
+      for (const [dx, dy] of NEIGHBORS4) {
+        const nKey = tileIdAt(current.x + dx, current.y + dy);
         if (visited.has(nKey)) continue;
         const neighbor = byCoord.get(nKey);
         if (!neighbor || neighbor.tile.childNodeId !== childNodeId) continue;

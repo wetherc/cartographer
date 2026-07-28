@@ -1,5 +1,5 @@
-import { createTile } from './TileGrid.js';
-import { parseCoords, tileIdAt } from './MapGeometry.js';
+import { createTile, tilesById } from './TileGrid.js';
+import { maskAt, NEIGHBORS4, parseCoords, tileIdAt } from './MapGeometry.js';
 import { coastOverlays, riverCourse, smoothCoastline } from './Autotile.js';
 import { randInt, shuffle } from './GeneratorRandom.js';
 
@@ -77,19 +77,13 @@ export function generateWilderness(palette, size, rng) {
       if (cells[idx] === type) continue;
       cells[idx] = type;
       placed++;
-      for (const [dx, dy] of [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ]) {
+      for (const [dx, dy] of NEIGHBORS4) {
         if (rng() < 0.6) frontier.push([x + dx, y + dy]);
       }
     }
   }
   cells = smoothCoastline(cells, size, size);
-  const isWater = (/** @type {number} */ x, /** @type {number} */ y) =>
-    x >= 0 && y >= 0 && x < size && y < size && cells[y * size + x] === 'water';
+  const isWater = maskAt(cells, size, size, 'water');
   const coast = coastOverlays(cells, size, size);
   const river = riverCourse(size, size, rng, isWater);
   /** @type {Tile[]} */
@@ -128,11 +122,12 @@ export function generateWilderness(palette, size, rng) {
     .map((t) => t.id);
   const landmarkCount = Math.min(grassIds.length, Math.max(1, Math.round(size / 7)));
   const spots = shuffle(grassIds, rng);
+  const byId = tilesById(tiles);
   shuffle(WILDERNESS_LANDMARKS, rng)
     .slice(0, landmarkCount)
     .forEach((type, i) => {
       const ref = palette.get(type)?.imageRef;
-      const tile = tiles.find((t) => t.id === spots[i]);
+      const tile = byId.get(spots[i]);
       if (!ref || !tile) return;
       tile.imageRef = ref;
       tile.metadata = { ...tile.metadata, poiType: 'landmark' };
@@ -181,12 +176,7 @@ export function generateTown(palette, size, rng) {
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       if (isRoad(x, y) || x === rx) continue;
-      const touchesRoad = [
-        [1, 0],
-        [-1, 0],
-        [0, 1],
-        [0, -1],
-      ].some(([dx, dy]) => isRoad(x + dx, y + dy));
+      const touchesRoad = NEIGHBORS4.some(([dx, dy]) => isRoad(x + dx, y + dy));
       if (touchesRoad) sites.push(tileIdAt(x, y));
     }
   }

@@ -33,6 +33,41 @@ export function tileIdAt(x, y) {
 }
 
 /**
+ * The four orthogonal neighbour offsets as `[dx, dy]` pairs, and the eight that
+ * add the diagonals. Everything that walks a cell's neighbours iterates one of
+ * these rather than inlining the literal, so the order is fixed in one place —
+ * the generators consume it under a seeded RNG, where a reordering would change
+ * every generated map.
+ * @type {ReadonlyArray<readonly [number, number]>}
+ */
+export const NEIGHBORS4 = [
+  [1, 0],
+  [-1, 0],
+  [0, 1],
+  [0, -1],
+];
+
+/** @type {ReadonlyArray<readonly [number, number]>} */
+export const NEIGHBORS8 = [...NEIGHBORS4, [1, 1], [1, -1], [-1, 1], [-1, -1]];
+
+/**
+ * A bounds-clamped test against a flat grid of cells indexed `y * width + x`:
+ * the returned predicate says whether the cell at (x, y) holds `value`, and
+ * answers false off the grid instead of reading a wrapped-around index. That
+ * clamp is why neighbour walks don't special-case the border, and why water or
+ * floor running off the map edge doesn't appear to continue on the far side.
+ * @template T
+ * @param {readonly T[]} cells
+ * @param {number} width
+ * @param {number} height
+ * @param {T} value
+ * @returns {(x: number, y: number) => boolean}
+ */
+export function maskAt(cells, width, height, value) {
+  return (x, y) => x >= 0 && y >= 0 && x < width && y < height && cells[y * width + x] === value;
+}
+
+/**
  * Whether (x, y) falls inside a node's width x height grid. Callers that hold
  * an id instead of a coordinate pair want `TilePaint.isInBounds`, which parses
  * first and then asks this.

@@ -1,6 +1,6 @@
-import { createTile } from './TileGrid.js';
+import { createTile, tilesById } from './TileGrid.js';
 import { randInt } from './GeneratorRandom.js';
-import { tileIdAt } from './MapGeometry.js';
+import { maskAt, NEIGHBORS4, NEIGHBORS8, tileIdAt } from './MapGeometry.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
@@ -17,6 +17,23 @@ const FLOOR_KINDS = ['floor-1', 'floor-2', 'floor-3'];
 /** @param {TilePalette} palette @param {string} kind */
 function interiorRef(palette, kind) {
   return palette.getInteriorPiece(kind)?.imageRef ?? '';
+}
+
+/**
+ * A stamper that overwrites the image of an already-placed tile: both interior
+ * archetypes build the whole grid first and then re-image a few cells as stairs
+ * and doors. Indexing once here keeps that from being a full scan per stamp, and
+ * an id with no tile behind it (a stair cell the layout left as void) is ignored
+ * rather than an error.
+ * @param {Tile[]} tiles @param {TilePalette} palette
+ * @returns {(id: string, kind: string) => void}
+ */
+function tileStamper(tiles, palette) {
+  const byId = tilesById(tiles);
+  return (id, kind) => {
+    const tile = byId.get(id);
+    if (tile) tile.imageRef = interiorRef(palette, kind);
+  };
 }
 
 /**
@@ -68,8 +85,7 @@ export function generateDungeon(palette, size, rng, options = {}) {
   const floor = new Array(size * size).fill(false);
   /** @param {number} x @param {number} y */
   const inBounds = (x, y) => x >= 0 && y >= 0 && x < size && y < size;
-  /** @param {number} x @param {number} y */
-  const isFloor = (x, y) => inBounds(x, y) && floor[y * size + x];
+  const isFloor = maskAt(floor, size, size, true);
   /** @param {number} x @param {number} y */
   const carve = (x, y) => {
     if (inBounds(x, y)) floor[y * size + x] = true;
@@ -140,19 +156,7 @@ export function generateDungeon(palette, size, rng, options = {}) {
   const walls = new Set();
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
-      if (
-        !isFloor(x, y) &&
-        [
-          [1, 0],
-          [-1, 0],
-          [0, 1],
-          [0, -1],
-          [1, 1],
-          [1, -1],
-          [-1, 1],
-          [-1, -1],
-        ].some(([dx, dy]) => isFloor(x + dx, y + dy))
-      ) {
+      if (!isFloor(x, y) && NEIGHBORS8.some(([dx, dy]) => isFloor(x + dx, y + dy))) {
         walls.add(tileIdAt(x, y));
       }
     }
@@ -190,24 +194,16 @@ export function generateDungeon(palette, size, rng, options = {}) {
   if (centers.length) {
     const up = centers[0];
     const down = centers[centers.length - 1];
-    const stamp = (/** @type {string} */ id, /** @type {string} */ kind) => {
-      const t = tiles.find((tile) => tile.id === id);
-      if (t) t.imageRef = interiorRef(palette, kind);
-    };
+    const stamp = tileStamper(tiles, palette);
     stamp(tileIdAt(up[0], up[1]), 'stairs-up');
     if (descend) {
       stairsDown = tileIdAt(down[0], down[1]);
       if (stairsDown === tileIdAt(up[0], up[1])) {
         // Single-room level: shift the descent off the stairs-up cell onto an
         // adjacent floor tile so both stairs exist.
-        const neighbor = [
-          [1, 0],
-          [-1, 0],
-          [0, 1],
-          [0, -1],
-        ]
-          .map(([dx, dy]) => [down[0] + dx, down[1] + dy])
-          .find(([x, y]) => isFloor(x, y));
+        const neighbor = NEIGHBORS4.map(([dx, dy]) => [down[0] + dx, down[1] + dy]).find(([x, y]) =>
+          isFloor(x, y),
+        );
         stairsDown = neighbor ? tileIdAt(neighbor[0], neighbor[1]) : null;
       }
       if (stairsDown) stamp(stairsDown, 'stairs-down');
@@ -256,11 +252,8 @@ export function generateCastle(palette, size, rng) {
       tiles.push(createTile(id, interiorRef(palette, kind)));
     }
   }
-  const stair = (/** @type {string} */ id, /** @type {string} */ kind) => {
-    const t = tiles.find((tile) => tile.id === id);
-    if (t) t.imageRef = interiorRef(palette, kind);
-  };
-  stair('1,1', 'stairs-up');
-  stair(tileIdAt(max - 1, 1), 'stairs-down');
+  const stamp = tileStamper(tiles, palette);
+  stamp('1,1', 'stairs-up');
+  stamp(tileIdAt(max - 1, 1), 'stairs-down');
   return { tiles, entry: tileIdAt(doorX, max) };
 }

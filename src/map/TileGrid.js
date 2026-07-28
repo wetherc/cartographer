@@ -136,6 +136,18 @@ export function overlayList(tile) {
 }
 
 /**
+ * A tile array indexed by id. For callers holding a bare `Tile[]` that need
+ * more than one lookup over it: the generators build a whole grid as an array
+ * and then stamp a handful of ids onto it, where a `find` per stamp rescans the
+ * level. Callers holding a node want `getTile`, which is already indexed.
+ * @param {Tile[]} tiles
+ * @returns {Map<string, Tile>}
+ */
+export function tilesById(tiles) {
+  return new Map(tiles.map((tile) => [tile.id, tile]));
+}
+
+/**
  * Return a new node with the tile added, replacing any existing tile with the
  * same id in place (an existing tile keeps its array position).
  * @param {MapNode} node

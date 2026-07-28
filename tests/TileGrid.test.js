@@ -10,8 +10,20 @@ import {
   tilesOutsideBounds,
   withNodeDefaults,
   overlayList,
+  tilesById,
   TileGrid,
 } from '../src/map/TileGrid.js';
+
+test('tilesById indexes a tile array, holding the tiles themselves', () => {
+  const tiles = [createTile('0,0', 'grass.png'), createTile('1,0', 'water.png')];
+  const byId = tilesById(tiles);
+  assert.equal(byId.size, 2);
+  // The generators stamp through this index, so it has to hand back the array's
+  // own tiles rather than copies.
+  assert.equal(byId.get('1,0'), tiles[1]);
+  assert.equal(byId.get('9,9'), undefined);
+  assert.equal(tilesById([]).size, 0);
+});
 
 test('createTile has default unrevealed metadata', () => {
   const tile = createTile('t1', 'grass.png');

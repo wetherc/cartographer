@@ -12,8 +12,53 @@ import {
   blockRect,
   newBlockRect,
   fitToExtent,
+  maskAt,
+  NEIGHBORS4,
+  NEIGHBORS8,
 } from '../src/map/MapGeometry.js';
 import { anyRevealed } from '../src/map/MapRenderer.js';
+
+test('the neighbour offsets are the four orthogonals, plus the diagonals', () => {
+  assert.deepEqual(NEIGHBORS4, [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+  ]);
+  // The generators run these under a seeded RNG, so the order is part of what a
+  // seed reproduces: NEIGHBORS8 has to extend NEIGHBORS4 rather than reshuffle it.
+  assert.deepEqual(NEIGHBORS8.slice(0, 4), NEIGHBORS4);
+  assert.deepEqual(NEIGHBORS8.slice(4), [
+    [1, 1],
+    [1, -1],
+    [-1, 1],
+    [-1, -1],
+  ]);
+});
+
+test('maskAt tests a flat grid cell against a value', () => {
+  const cells = ['a', 'b', 'c', 'd', 'e', 'f'];
+  const isB = maskAt(cells, 3, 2, 'b');
+  assert.equal(isB(1, 0), true);
+  assert.equal(isB(0, 0), false);
+  assert.equal(maskAt(cells, 3, 2, 'f')(2, 1), true);
+});
+
+test('maskAt reads false off the grid instead of wrapping a row', () => {
+  const isX = maskAt(['x', 'o', 'o', 'x'], 2, 2, 'x');
+  assert.equal(isX(-1, 0), false); // would be index -1
+  assert.equal(isX(2, 0), false); // would wrap onto row 1
+  assert.equal(isX(0, -1), false);
+  assert.equal(isX(0, 2), false);
+});
+
+test('maskAt reads the live array, so a caller may fill the grid as it goes', () => {
+  const cells = [false, false];
+  const isSet = maskAt(cells, 2, 1, true);
+  assert.equal(isSet(1, 0), false);
+  cells[1] = true;
+  assert.equal(isSet(1, 0), true);
+});
 
 test('parseCoords reads "x,y" tile ids', () => {
   assert.deepEqual(parseCoords('3,4'), { x: 3, y: 4 });
