@@ -3,6 +3,24 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="Build and run a tabletop campaign world: a tiled map with fog of war, party tracking, character sheets, encounters, and dice."
+  />
+  <!-- Values mirror the --bg token in styles/base.css for each scheme. -->
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#191712" media="(prefers-color-scheme: dark)" />
+  <!--
+    Everything the app loads is local, so the policy names no external hosts.
+    Images allow data: and blob: because GM-supplied art is stored as a data URL
+    and read back through an object URL. Scripts allow inline because the two
+    before-paint blocks below have to run before the module graph loads.
+  -->
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; img-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+  />
   <title>Campaign Builder</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b4a2f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2l8.5 5v10L12 22l-8.5-5V7z'/%3E%3Cpath d='M12 8L6 17h12z'/%3E%3Cpath d='M12 2v6'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="style.css" />
