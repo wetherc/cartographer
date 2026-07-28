@@ -11,36 +11,7 @@ import {
   releaseLock,
   createHeartbeatLock,
 } from '../src/storage/GMLock.js';
-
-/** Minimal in-memory localStorage so the storage wrappers run under Node. */
-function installLocalStorage() {
-  const store = new Map();
-  globalThis.localStorage = {
-    getItem: (k) => (store.has(k) ? store.get(k) : null),
-    setItem: (k, v) => store.set(k, String(v)),
-    removeItem: (k) => store.delete(k),
-    clear: () => store.clear(),
-  };
-}
-
-/**
- * Enough of `window` for createHeartbeatLock to register its listeners, plus a
- * way to fire one. Handlers are collected per event name so a test can deliver
- * a storage event the way another tab's write would.
- */
-function installWindow() {
-  /** @type {Map<string, Function[]>} */
-  const handlers = new Map();
-  globalThis.window = {
-    addEventListener: (name, handler) => {
-      if (!handlers.has(name)) handlers.set(name, []);
-      handlers.get(name).push(handler);
-    },
-  };
-  return (name, event) => {
-    for (const handler of handlers.get(name) ?? []) handler(event);
-  };
-}
+import { installLocalStorage, installWindow } from './helpers/env.js';
 
 test('claimLock succeeds on a free, own, or expired lock and refreshes the timestamp', () => {
   assert.deepEqual(claimLock(null, 'a', 100), { id: 'a', at: 100 });

@@ -11,22 +11,7 @@ import {
 } from '../src/storage/HistoryLog.js';
 import { loadFromLocalStorage } from '../src/storage/SaveManager.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
-
-/** Minimal in-memory localStorage so the storage wrappers run under Node. */
-function installLocalStorage() {
-  const store = new Map();
-  globalThis.localStorage = {
-    get length() {
-      return store.size;
-    },
-    key: (i) => [...store.keys()][i] ?? null,
-    getItem: (k) => (store.has(k) ? store.get(k) : null),
-    setItem: (k, v) => store.set(k, String(v)),
-    removeItem: (k) => store.delete(k),
-    clear: () => store.clear(),
-  };
-  return store;
-}
+import { installLocalStorage } from './helpers/env.js';
 
 /**
  * A minimal campaign state, optionally with quests, so a save differs from the

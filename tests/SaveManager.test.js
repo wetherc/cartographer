@@ -26,23 +26,7 @@ import {
   QUOTA_WARN_BYTES,
 } from '../src/storage/SaveManager.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
-
-/** Minimal in-memory localStorage so the storage wrappers run under Node. */
-function installLocalStorage() {
-  const store = new Map();
-  globalThis.localStorage = {
-    getItem: (k) => (store.has(k) ? store.get(k) : null),
-    setItem: (k, v) => store.set(k, String(v)),
-    removeItem: (k) => store.delete(k),
-    clear: () => store.clear(),
-    // The footprint walk reads the whole origin through these, so the stub has
-    // to carry them rather than only the four accessors the save path uses.
-    get length() {
-      return store.size;
-    },
-    key: (i) => [...store.keys()][i] ?? null,
-  };
-}
+import { installLocalStorage, installWindow } from './helpers/env.js';
 
 beforeEach(installLocalStorage);
 
@@ -657,16 +641,8 @@ test('a small save still warns when the rest of the origin fills the quota', () 
 });
 
 test('onExternalSave fires only for another tab writing a new save, until unsubscribed', () => {
-  /** @type {Map<string, Set<(event: any) => void>>} */
-  const listeners = new Map();
-  globalThis.window = {
-    addEventListener: (type, handler) => {
-      if (!listeners.has(type)) listeners.set(type, new Set());
-      listeners.get(type).add(handler);
-    },
-    removeEventListener: (type, handler) => listeners.get(type)?.delete(handler),
-  };
-  const dispatch = (event) => listeners.get('storage')?.forEach((h) => h(event));
+  const fire = installWindow();
+  const dispatch = (event) => fire('storage', event);
 
   let calls = 0;
   const unsubscribe = onExternalSave(() => calls++);

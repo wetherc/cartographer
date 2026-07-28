@@ -8,17 +8,7 @@ import {
   fetchLibraryFile,
 } from '../src/storage/LibraryStore.js';
 import { emptyLibrary } from '../src/library/Library.js';
-
-/** Minimal in-memory localStorage so the storage wrappers run under Node. */
-function installLocalStorage() {
-  const store = new Map();
-  globalThis.localStorage = {
-    getItem: (k) => (store.has(k) ? store.get(k) : null),
-    setItem: (k, v) => store.set(k, String(v)),
-    removeItem: (k) => store.delete(k),
-    clear: () => store.clear(),
-  };
-}
+import { installLocalStorage } from './helpers/env.js';
 
 beforeEach(installLocalStorage);
 
