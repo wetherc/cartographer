@@ -42,6 +42,14 @@ async function build() {
   // Copy assets
   await fs.cp('assets', path.join(outdir, 'assets'), { recursive: true });
   await fs.cp('CNAME', path.join(outdir, 'CNAME'));
+  // The app fetches this at startup, so ship it rather than letting the
+  // request 404. Only this one file, so a GM's other library/ contents stay
+  // out of a published build.
+  await fs.mkdir(path.join(outdir, 'library'), { recursive: true });
+  await fs.cp(
+    'library/campaign-library.json',
+    path.join(outdir, 'library/campaign-library.json')
+  );
 
   if (watch) {
     const ctx = await esbuild.context(options);

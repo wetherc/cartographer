@@ -365,8 +365,10 @@ separately in `storage/LibraryStore.js`, under its own localStorage key
 
 The browser copy is the working state; `downloadLibrary`/`readLibraryFromFile`
 round-trip it through a portable JSON file, and `fetchLibraryFile` seeds an
-empty browser from `library/campaign-library.json` (a gitignored path served
-from the project root) at startup. `normalizeLibrary` (in
+empty browser from `library/campaign-library.json` at startup. That file is
+committed holding an empty library, so the startup fetch never asks for a
+missing file; a GM's export overwrites it, and everything else under
+`library/` is gitignored. `normalizeLibrary` (in
 `library/Library.js`) makes every load tolerant, dropping invalid entries
 instead of throwing.
 

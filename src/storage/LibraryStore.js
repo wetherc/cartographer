@@ -9,8 +9,9 @@ import { downloadJSON, readFileText } from './fileIO.js';
 export const LIBRARY_KEY = 'campaign-builder:library';
 
 /** Where an exported library file is auto-loaded from, relative to the served
- * project root. The library/ directory is gitignored, so customizations stay
- * with the working copy without entering version control. */
+ * project root. The file is committed holding an empty library, so the startup
+ * fetch always has something to read; a GM's export overwrites it in place.
+ * Everything else under library/ is gitignored. */
 export const LIBRARY_FILE = 'library/campaign-library.json';
 
 /**
@@ -57,8 +58,8 @@ export function clearCustomLibrary(key = LIBRARY_KEY) {
 
 /**
  * Fetch the library file served from the project root, or null when it isn't
- * there (the common case: the gitignored library/ directory doesn't exist) or
- * doesn't parse.
+ * there (a deployment that dropped it) or doesn't parse. The committed file
+ * holds an empty library, which the caller treats the same as no file.
  * @param {string} [url]
  * @returns {Promise<CustomLibrary | null>}
  */

@@ -261,10 +261,12 @@ replace the campaign but never touch the library, so a tuned equipment list
 follows you into every world you build. They persist in the browser, and the
 **Library file** card round-trips them through a portable JSON file:
 
-- **Export** downloads `campaign-library.json`. Keep it as
-  `library/campaign-library.json` in the project directory (that path is
-  gitignored, so your homebrew stays out of version control), and a fresh
-  browser (or a fresh clone) auto-loads it at startup.
+- **Export** downloads `campaign-library.json`. Save it over
+  `library/campaign-library.json` in the project directory, which ships as an
+  empty library, and a fresh browser (or a fresh clone) auto-loads it at
+  startup. That one file is tracked in git, so your homebrew shows up as a
+  change to it; commit it if you want the library to travel with the repo, or
+  leave it uncommitted if you don't.
 - **Import** hot-loads any exported library file into the current browser,
   replacing your customizations after a confirmation.
 - **Reset** removes all customizations, restoring the pure built-in defaults

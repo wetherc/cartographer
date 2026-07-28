@@ -1,9 +1,12 @@
 .playwright-mcp/
 .DS_Store
+node_modules/
 
-# GM library customizations: portable JSON kept with the working copy, never committed.
+# GM library customizations live in library/, which is not committed apart from
+# the tracked empty campaign-library.json the app loads at startup.
 # (src/library/ is source code, not GM data — keep it tracked.)
-library/
+library/*
+!library/campaign-library.json
 !src/library/
 claude.md
 PLAN.md
