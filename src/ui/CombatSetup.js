@@ -1,5 +1,5 @@
 import { formatModifier } from '../entities/Modifiers.js';
-import { icon } from './icons.js';
+import { textButton } from './buttons.js';
 import { openDialog } from './Modal.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
@@ -70,38 +70,35 @@ export function combatSetupModal(roster, callbacks = {}) {
 
       const rollInitiative = callbacks.rollInitiative;
       if (rollInitiative) {
-        const rollAll = document.createElement('button');
-        rollAll.type = 'button';
-        rollAll.className = 'btn';
-        rollAll.append(icon('dice'), document.createTextNode('Roll initiative'));
-        rollAll.addEventListener('click', () => {
-          /** @type {{ name: string, value: number }[]} */
-          const results = [];
-          for (const participant of roster) {
-            const input = inputs.get(participant.id);
-            if (!input) continue;
-            const value = rollInitiative(participant);
-            input.value = String(value);
-            results.push({ name: describe(participant).name, value });
-          }
-          if (results.length > 0) callbacks.onRolled?.(results);
-        });
+        const rollAll = textButton(
+          'Roll initiative',
+          () => {
+            /** @type {{ name: string, value: number }[]} */
+            const results = [];
+            for (const participant of roster) {
+              const input = inputs.get(participant.id);
+              if (!input) continue;
+              const value = rollInitiative(participant);
+              input.value = String(value);
+              results.push({ name: describe(participant).name, value });
+            }
+            if (results.length > 0) callbacks.onRolled?.(results);
+          },
+          { icon: 'dice' },
+        );
         actions.push(rollAll);
       }
 
-      const cancel = document.createElement('button');
-      cancel.type = 'button';
-      cancel.className = 'btn';
-      cancel.textContent = 'Cancel';
-      cancel.addEventListener('click', () => close('cancel'));
+      const cancel = textButton('Cancel', () => close('cancel'));
 
       // The submit button carries a value so an Escape dismissal (returnValue
       // stays empty) reads as a cancel rather than starting the fight.
-      const start = document.createElement('button');
-      start.type = 'submit';
-      start.value = 'start';
-      start.className = 'btn btn--primary';
-      start.append(icon('sword'), document.createTextNode('Start combat'));
+      const start = textButton('Start combat', undefined, {
+        icon: 'sword',
+        variant: 'primary',
+        type: 'submit',
+        value: 'start',
+      });
 
       actions.push(cancel, start);
       return { body, actions, initialFocus: start };

@@ -240,9 +240,12 @@ output depends on state that is *not* in its rows has to pass `alwaysRender`.
 
 ### `src/ui/buttons.js`
 
-Two button builders, an empty-state paragraph, and the chip pair. Eighteen
+Two button builders, an empty-state paragraph, and the chip pair. Twenty-six
 modules import them, and no panel should call
-`document.createElement('button')` for an ordinary control.
+`document.createElement('button')` for an ordinary control. The raw calls that
+remain build controls with their own class vocabulary rather than `btn` — tabs,
+menu items, tree rows, palette swatches, disclosure headers — and those are not
+what these helpers cover.
 
 ```js
 iconButton(name, ariaLabel, onClick, opts?) -> HTMLButtonElement
@@ -259,7 +262,11 @@ label. Pass `opts.title` only when you want a shorter tooltip than the label.
 `textButton` builds `btn` with an optional leading `opts.icon`. Here the
 visible text is already the accessible name, so `ariaLabel` is set only when
 given, for cases where the label alone is ambiguous (a weapon name whose action
-is really "Attack with ...").
+is really "Attack with ..."). A dialog's confirm button also passes
+`opts.type: 'submit'` with the `opts.value` the dialog reads back from
+`returnValue`, which is how an Escape dismissal (value left empty) stays
+distinguishable from a confirm; such a button needs no `onClick`, so the
+argument is optional.
 
 Both take `opts.variant`, which maps straight to a `btn--*` CSS modifier:
 

@@ -1,5 +1,6 @@
 import { formatDamage } from '../entities/Equipment.js';
 import { capitalize } from '../util/text.js';
+import { textButton } from './buttons.js';
 import { openDialog } from './Modal.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -113,19 +114,10 @@ export function promptSpellDetail(spell, actions, options = {}) {
       }
 
       // Dismiss-left, primary-right — the same ordering as every modal.
-      const dismiss = document.createElement('button');
-      dismiss.type = 'button';
-      dismiss.className = 'btn';
-      dismiss.textContent = 'Close';
-      dismiss.addEventListener('click', () => close('close'));
-      const buttons = actions.map((action) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = `btn${action.variant ? ` btn--${action.variant}` : ''}`;
-        button.textContent = action.label;
-        button.addEventListener('click', () => close(action.id));
-        return button;
-      });
+      const dismiss = textButton('Close', () => close('close'));
+      const buttons = actions.map((action) =>
+        textButton(action.label, () => close(action.id), { variant: action.variant }),
+      );
 
       return {
         body,

@@ -1,4 +1,5 @@
 import { mustGetElement } from '../ui/dom.js';
+import { textButton } from '../ui/buttons.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -37,16 +38,16 @@ export function maybeShowOnboarding(app) {
 
   /** @param {string} label @param {string} hint @param {() => void} action */
   const option = (label, hint, action) => {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn onboarding__option';
-    btn.textContent = label;
-    btn.title = hint;
-    btn.addEventListener('click', () => {
-      dismiss();
-      action();
-    });
-    card.appendChild(btn);
+    card.appendChild(
+      textButton(
+        label,
+        () => {
+          dismiss();
+          action();
+        },
+        { className: 'onboarding__option', title: hint },
+      ),
+    );
   };
 
   option('Build it by hand', 'Switch to Build mode and paint tiles', () =>
@@ -60,12 +61,7 @@ export function maybeShowOnboarding(app) {
     mustGetElement('example-btn').click(),
   );
 
-  const skip = document.createElement('button');
-  skip.type = 'button';
-  skip.className = 'btn onboarding__skip';
-  skip.textContent = 'Dismiss';
-  skip.addEventListener('click', dismiss);
-  card.appendChild(skip);
+  card.appendChild(textButton('Dismiss', dismiss, { className: 'onboarding__skip' }));
 
   overlay.appendChild(card);
   mustGetElement('map-viewport').appendChild(overlay);

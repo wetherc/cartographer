@@ -1,6 +1,7 @@
 import { MapRenderer } from '../map/MapRenderer.js';
 import { randomSeed } from '../util/Rng.js';
 import { clampInt } from '../util/num.js';
+import { textButton } from './buttons.js';
 import { openDialog } from './Modal.js';
 
 /**
@@ -87,10 +88,11 @@ export function generateDialog(options) {
       const seedRow = document.createElement('div');
       seedRow.className = 'generate-dialog__seed';
       seedRow.appendChild(seedInput);
-      const reroll = document.createElement('button');
-      reroll.type = 'button';
-      reroll.className = 'btn';
-      reroll.textContent = 'Reroll';
+      // renderPreview is declared below, so the handler reaches it at click time.
+      const reroll = textButton('Reroll', () => {
+        seedInput.value = String(randomSeed());
+        renderPreview();
+      });
       seedRow.appendChild(reroll);
       seedLabel.appendChild(seedRow);
       body.push(seedLabel);
@@ -149,23 +151,15 @@ export function generateDialog(options) {
       for (const input of [archetypeSelect, sizeSelect, levelsInput, seedInput]) {
         input.addEventListener('change', renderPreview);
       }
-      reroll.addEventListener('click', () => {
-        seedInput.value = String(randomSeed());
-        renderPreview();
+      const cancel = textButton('Cancel', () => close('cancel'));
+      // Submitting sets returnValue to the submit button's value; Escape leaves
+      // it '', so dismissal (Escape or Cancel) resolves null rather than
+      // accidentally generating.
+      const submit = textButton('Generate', undefined, {
+        variant: 'primary',
+        type: 'submit',
+        value: 'ok',
       });
-
-      const cancel = document.createElement('button');
-      cancel.type = 'button';
-      cancel.className = 'btn';
-      cancel.textContent = 'Cancel';
-      cancel.addEventListener('click', () => close('cancel'));
-      const submit = document.createElement('button');
-      submit.type = 'submit';
-      submit.className = 'btn btn--primary';
-      submit.textContent = 'Generate';
-      // Submitting sets returnValue to this; Escape leaves it '', so dismissal
-      // (Escape or Cancel) resolves null rather than accidentally generating.
-      submit.value = 'ok';
 
       renderPreview();
       return { body, actions: [cancel, submit], initialFocus: archetypeSelect };

@@ -14,7 +14,7 @@ import {
 } from '../storage/GMLock.js';
 import { isPlayerLocked, PLAYER_LOCK_SESSION_KEY } from '../view/PlayerLock.js';
 import { confirmModal } from '../ui/Modal.js';
-import { icon } from '../ui/icons.js';
+import { iconButton } from '../ui/buttons.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -135,14 +135,7 @@ export function wireSessionControls(app) {
   // can't flip it to GM once the GM tab closes and frees the GM lock. Per-tab
   // and deliberately one-way: unlock by closing the tab (or dropping the
   // ?role=player URL parameter). Only visible while already in the Player role.
-  const lockBtn = document.createElement('button');
-  lockBtn.type = 'button';
-  lockBtn.id = 'player-lock-btn';
-  lockBtn.className = 'btn btn--icon';
-  lockBtn.title = 'Lock this tab to the Player view';
-  lockBtn.setAttribute('aria-label', 'Lock this tab to the Player view');
-  lockBtn.appendChild(icon('lock'));
-  lockBtn.addEventListener('click', async () => {
+  const lockBtn = iconButton('lock', 'Lock this tab to the Player view', async () => {
     const ok = await confirmModal(
       'Lock this tab to the Player view? The GM view stays unavailable in this tab until it is closed.',
       { confirmLabel: 'Lock' },
@@ -153,6 +146,8 @@ export function wireSessionControls(app) {
     document.body.classList.add('role-locked');
     app.toasts.show('This tab is locked to the Player view. Close the tab to unlock it.');
   });
+  // The stylesheet hides it outside the Player role by id.
+  lockBtn.id = 'player-lock-btn';
   mustGetElement('role-switch-container').appendChild(lockBtn);
 
   // Free the lock when the GM tab goes away so a follower can take over without

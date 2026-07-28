@@ -1,5 +1,6 @@
 import { formatClock } from '../time/GameClock.js';
 import { icon } from './icons.js';
+import { textButton } from './buttons.js';
 
 /** @typedef {import('../types/time.js').GameClock} GameClock */
 
@@ -22,19 +23,17 @@ export function mountTimePanel(container, callbacks) {
   root.className = 'time-panel';
   container.appendChild(root);
 
-  /** @param {string} label @param {() => void} onClick @param {import('./icons.js').IconName} [glyph] */
-  function button(label, onClick, glyph) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn time-panel__btn';
-    if (glyph) btn.appendChild(icon(glyph));
-    btn.appendChild(document.createTextNode(label));
-    btn.addEventListener('click', () => {
-      onClick();
-      render();
-    });
-    return btn;
-  }
+  /** Every control here changes the clock, so each one re-renders the readout.
+   * @param {string} label @param {() => void} onClick @param {import('./icons.js').IconName} [glyph] */
+  const button = (label, onClick, glyph) =>
+    textButton(
+      label,
+      () => {
+        onClick();
+        render();
+      },
+      { icon: glyph, className: 'time-panel__btn' },
+    );
 
   function render() {
     root.innerHTML = '';

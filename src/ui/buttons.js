@@ -50,16 +50,20 @@ export function iconButton(name, ariaLabel, onClick, opts = {}) {
 /**
  * A text `btn` button, optionally led by an icon. `ariaLabel` overrides the
  * accessible name when the visible label alone is ambiguous (e.g. a weapon
- * name whose action is "Attack with …").
+ * name whose action is "Attack with …"). A dialog's confirm button passes
+ * `type: 'submit'` with the `value` the dialog reads back, so an Escape
+ * dismissal (which leaves the value empty) is distinguishable from a confirm.
  * @param {string} label
- * @param {(event: MouseEvent) => void} onClick
+ * @param {(event: MouseEvent) => void} [onClick] omit for a submit button the
+ *   dialog resolves through its return value rather than a listener
  * @param {{ icon?: import('./icons.js').IconName, variant?: string, className?: string,
- *   title?: string, ariaLabel?: string }} [opts]
+ *   title?: string, ariaLabel?: string, type?: 'button' | 'submit', value?: string }} [opts]
  * @returns {HTMLButtonElement}
  */
 export function textButton(label, onClick, opts = {}) {
   const button = document.createElement('button');
-  button.type = 'button';
+  button.type = opts.type ?? 'button';
+  if (opts.value !== undefined) button.value = opts.value;
   button.className = classNames([
     'btn',
     opts.variant ? `btn--${opts.variant}` : '',
@@ -69,7 +73,7 @@ export function textButton(label, onClick, opts = {}) {
   if (opts.title) button.title = opts.title;
   if (opts.icon) button.appendChild(icon(opts.icon));
   button.appendChild(document.createTextNode(label));
-  button.addEventListener('click', onClick);
+  if (onClick) button.addEventListener('click', onClick);
   return button;
 }
 

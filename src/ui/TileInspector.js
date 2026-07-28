@@ -1,4 +1,4 @@
-import { emptyState } from './buttons.js';
+import { emptyState, textButton } from './buttons.js';
 import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -90,33 +90,30 @@ export function mountTileInspector(container, opts) {
   linkField.textContent = 'Zooms into';
   const linkSelect = document.createElement('select');
   linkSelect.className = 'field';
-  const newRegionBtn = document.createElement('button');
-  newRegionBtn.type = 'button';
-  newRegionBtn.className = 'btn tile-inspector__new-region';
-  newRegionBtn.textContent = 'New region here';
+  const newRegionBtn = textButton('New region here', () => opts.linking?.onCreateNew(), {
+    className: 'tile-inspector__new-region',
+  });
   if (opts.linking) {
     const linking = opts.linking;
     linkSelect.addEventListener('change', () => {
       linking.onChange(linkSelect.value === '' ? null : linkSelect.value);
     });
-    newRegionBtn.addEventListener('click', () => linking.onCreateNew());
     linkField.appendChild(linkSelect);
     form.append(linkField, newRegionBtn);
   }
 
   // Set-spawn (optional, Build mode): make the selected tile the party's start
   // position, so a GM can place where the party begins while authoring a map.
-  const spawnBtn = document.createElement('button');
-  spawnBtn.type = 'button';
-  spawnBtn.className = 'btn tile-inspector__spawn';
-  spawnBtn.textContent = 'Set party start here';
-  if (opts.onSetSpawn) {
-    const onSetSpawn = opts.onSetSpawn;
-    spawnBtn.addEventListener('click', () => {
-      if (tile) onSetSpawn(tile.id);
-    });
-    form.appendChild(spawnBtn);
-  }
+  // Both buttons above and here are only mounted when their callback exists, so
+  // the optional call in each handler can never find it missing.
+  const spawnBtn = textButton(
+    'Set party start here',
+    () => {
+      if (tile) opts.onSetSpawn?.(tile.id);
+    },
+    { className: 'tile-inspector__spawn' },
+  );
+  if (opts.onSetSpawn) form.appendChild(spawnBtn);
 
   function renderLinkOptions() {
     if (!opts.linking || !tile) return;

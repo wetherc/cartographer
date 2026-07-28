@@ -1,4 +1,4 @@
-import { icon } from './icons.js';
+import { iconButton } from './buttons.js';
 
 /**
  * Mount the on-canvas map controls: zoom in/out, fit-to-extent, and a live
@@ -33,16 +33,8 @@ export function mountMapControls(container, callbacks) {
    * @param {string} label
    * @param {() => void} onClick
    */
-  function button(name, label, onClick) {
-    const el = document.createElement('button');
-    el.type = 'button';
-    el.className = 'btn btn--icon map-controls__btn';
-    el.setAttribute('aria-label', label);
-    el.title = label;
-    el.appendChild(icon(name));
-    el.addEventListener('click', onClick);
-    return el;
-  }
+  const button = (name, label, onClick) =>
+    iconButton(name, label, onClick, { className: 'map-controls__btn' });
 
   const readout = document.createElement('span');
   readout.className = 'map-controls__zoom';

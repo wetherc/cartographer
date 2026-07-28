@@ -1,5 +1,6 @@
 import { statBreakdown } from '../entities/Equipment.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
+import { textButton } from './buttons.js';
 import { openDialog } from './Modal.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -45,11 +46,7 @@ function openStatBreakdown(key, breakdown) {
       }
       addRow('Total', String(total), undefined, 'stat-breakdown__total');
 
-      const dismiss = document.createElement('button');
-      dismiss.type = 'button';
-      dismiss.className = 'btn btn--primary';
-      dismiss.textContent = 'Close';
-      dismiss.addEventListener('click', () => close());
+      const dismiss = textButton('Close', () => close(), { variant: 'primary' });
 
       return { body: [mod, rows], actions: [dismiss], initialFocus: dismiss };
     },

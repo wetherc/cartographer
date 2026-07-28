@@ -1,6 +1,5 @@
 import { DIE_SIZES, DAMAGE_TYPES, normalizeDamagePart } from '../entities/Equipment.js';
-import { icon } from './icons.js';
-import { removableChip } from './buttons.js';
+import { iconButton, removableChip } from './buttons.js';
 import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
@@ -77,31 +76,30 @@ export function buildDamageEditor(initial) {
       // The first term is the weapon's base roll and always present; later
       // terms are removable riders.
       if (index > 0) {
-        const removeRider = document.createElement('button');
-        removeRider.type = 'button';
-        removeRider.className = 'btn btn--icon';
-        removeRider.setAttribute('aria-label', 'Remove damage term');
-        removeRider.appendChild(icon('minus'));
-        removeRider.addEventListener('click', () => {
-          damageParts.splice(index, 1);
-          render();
-        });
-        row.appendChild(removeRider);
+        row.appendChild(
+          iconButton('minus', 'Remove damage term', () => {
+            damageParts.splice(index, 1);
+            render();
+          }),
+        );
       }
       element.appendChild(row);
     });
 
-    const addRider = document.createElement('button');
-    addRider.type = 'button';
-    addRider.className = 'btn btn--icon inventory-panel__damage-add';
-    addRider.setAttribute('aria-label', 'Add damage term');
-    addRider.appendChild(icon('plus'));
-    addRider.title = 'Add a permanent extra damage term (e.g. + 1d4 fire)';
-    addRider.addEventListener('click', () => {
-      damageParts.push({ count: 1, sides: 4, damageType: 'fire' });
-      render();
-    });
-    element.appendChild(addRider);
+    element.appendChild(
+      iconButton(
+        'plus',
+        'Add damage term',
+        () => {
+          damageParts.push({ count: 1, sides: 4, damageType: 'fire' });
+          render();
+        },
+        {
+          className: 'inventory-panel__damage-add',
+          title: 'Add a permanent extra damage term (e.g. + 1d4 fire)',
+        },
+      ),
+    );
   }
   render();
 
@@ -152,13 +150,7 @@ export function buildEffectsEditor(initial) {
       event.preventDefault();
       addEffect();
     });
-    const addButton = document.createElement('button');
-    addButton.type = 'button';
-    addButton.className = 'btn btn--icon';
-    addButton.setAttribute('aria-label', 'Add status effect');
-    addButton.appendChild(icon('plus'));
-    addButton.addEventListener('click', addEffect);
-    element.append(effectInput, addButton);
+    element.append(effectInput, iconButton('plus', 'Add status effect', addEffect));
   }
   render();
 

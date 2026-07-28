@@ -1,4 +1,5 @@
 import { icon } from './icons.js';
+import { textButton } from './buttons.js';
 import { allowsPaletteType } from '../map/NodeKinds.js';
 import { isOverlayType } from '../map/TilePalette.js';
 import { wireDisclosure } from './Disclosure.js';
@@ -64,34 +65,30 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   const tools = document.createElement('div');
   tools.className = 'palette__tools';
 
-  const inspectBtn = document.createElement('button');
-  inspectBtn.type = 'button';
-  inspectBtn.className = 'btn palette__item palette__item--active';
-  inspectBtn.appendChild(icon('edit'));
-  inspectBtn.appendChild(document.createTextNode('Inspect'));
-  bindSelect(inspectBtn, null);
+  /**
+   * @param {string} label
+   * @param {import('./icons.js').IconName} glyph
+   * @param {Brush} value
+   * @param {string} [variant]
+   */
+  function toolButton(label, glyph, value, variant) {
+    const el = textButton(label, () => select(value, el), {
+      icon: glyph,
+      variant,
+      className: 'palette__item',
+    });
+    selectables.push(el);
+    return el;
+  }
+
+  // Inspect is the starting brush, so it carries the active styling from mount.
+  const inspectBtn = toolButton('Inspect', 'edit', null);
+  inspectBtn.classList.add('palette__item--active');
   inspectBtnRef.el = inspectBtn;
 
-  const regionBtn = document.createElement('button');
-  regionBtn.type = 'button';
-  regionBtn.className = 'btn palette__item';
-  regionBtn.appendChild(icon('map'));
-  regionBtn.appendChild(document.createTextNode('Region'));
-  bindSelect(regionBtn, 'region');
-
-  const erasePathBtn = document.createElement('button');
-  erasePathBtn.type = 'button';
-  erasePathBtn.className = 'btn palette__item';
-  erasePathBtn.appendChild(icon('remove'));
-  erasePathBtn.appendChild(document.createTextNode('Erase path'));
-  bindSelect(erasePathBtn, 'erase-path');
-
-  const eraseBtn = document.createElement('button');
-  eraseBtn.type = 'button';
-  eraseBtn.className = 'btn btn--danger palette__item';
-  eraseBtn.appendChild(icon('remove'));
-  eraseBtn.appendChild(document.createTextNode('Erase tile'));
-  bindSelect(eraseBtn, 'erase');
+  const regionBtn = toolButton('Region', 'map', 'region');
+  const erasePathBtn = toolButton('Erase path', 'remove', 'erase-path');
+  const eraseBtn = toolButton('Erase tile', 'remove', 'erase', 'danger');
 
   // Grid order (row-major): Inspect, Region, Erase path, Erase tile.
   tools.append(inspectBtn, regionBtn, erasePathBtn, eraseBtn);
@@ -107,21 +104,20 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   /** @type {HTMLButtonElement[]} */
   const scaleButtons = [];
   for (const n of [1, 2, 3]) {
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'btn palette__item';
-    btn.textContent = `${n}x`;
-    btn.setAttribute('aria-label', `Paint tile art at ${n}x${n} size`);
+    const btn = textButton(
+      `${n}x`,
+      () => {
+        scale = n;
+        for (const b of scaleButtons) {
+          const active = b === btn;
+          b.classList.toggle('palette__item--active', active);
+          b.setAttribute('aria-pressed', String(active));
+        }
+      },
+      { ariaLabel: `Paint tile art at ${n}x${n} size`, className: 'palette__item' },
+    );
     btn.setAttribute('aria-pressed', String(n === scale));
     btn.classList.toggle('palette__item--active', n === scale);
-    btn.addEventListener('click', () => {
-      scale = n;
-      for (const b of scaleButtons) {
-        const active = b === btn;
-        b.classList.toggle('palette__item--active', active);
-        b.setAttribute('aria-pressed', String(active));
-      }
-    });
     scaleButtons.push(btn);
     scaleRow.appendChild(btn);
   }

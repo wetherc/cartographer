@@ -1,7 +1,6 @@
 import { getSpellbook } from '../entities/Character.js';
 import { getClass, casterClassRefs, primaryCasterClass } from '../entities/Classes.js';
-import { icon } from './icons.js';
-import { emptyState } from './buttons.js';
+import { emptyState, textButton } from './buttons.js';
 import { promptSpellDetail } from './SpellDetail.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -66,19 +65,23 @@ function buildGroup(title, spells, opts) {
   list.className = 'character-sheet__spell-chips';
   if (spells.length === 0) list.appendChild(emptyState('None'));
   for (const spell of spells) {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'btn character-sheet__spell-chip';
-    chip.title = `${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`})`;
-    chip.append(icon('sparkles'), document.createTextNode(spell.name));
-    chip.addEventListener('click', async () => {
-      const action = await promptSpellDetail(
-        spell,
-        opts.play ? [{ id: 'cast', label: 'Cast', variant: 'primary' }] : [],
-      );
-      if (action === 'cast') opts.onCast(spell);
-    });
-    list.appendChild(chip);
+    list.appendChild(
+      textButton(
+        spell.name,
+        async () => {
+          const action = await promptSpellDetail(
+            spell,
+            opts.play ? [{ id: 'cast', label: 'Cast', variant: 'primary' }] : [],
+          );
+          if (action === 'cast') opts.onCast(spell);
+        },
+        {
+          icon: 'sparkles',
+          className: 'character-sheet__spell-chip',
+          title: `${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`})`,
+        },
+      ),
+    );
   }
   group.appendChild(list);
   return group;

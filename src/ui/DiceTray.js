@@ -1,6 +1,7 @@
 import { DIE_TYPES, roll, emptySelection, formatResult } from '../dice/DiceRoller.js';
 import { wireDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
+import { iconButton, textButton } from './buttons.js';
 import { capitalize } from '../util/text.js';
 
 /**
@@ -48,12 +49,7 @@ export function mountDiceTray(container, opts = {}) {
     name.className = 'dice-tray__label';
     name.textContent = label;
 
-    const minus = document.createElement('button');
-    minus.type = 'button';
-    minus.className = 'btn btn--icon';
-    minus.setAttribute('aria-label', `Decrease ${label}`);
-    minus.appendChild(icon('minus'));
-    minus.addEventListener('click', () => {
+    const minus = iconButton('minus', `Decrease ${label}`, () => {
       apply(read() - delta);
       count.textContent = String(read());
     });
@@ -62,12 +58,7 @@ export function mountDiceTray(container, opts = {}) {
     count.className = 'dice-tray__count';
     count.textContent = String(read());
 
-    const plus = document.createElement('button');
-    plus.type = 'button';
-    plus.className = 'btn btn--icon';
-    plus.setAttribute('aria-label', `Increase ${label}`);
-    plus.appendChild(icon('plus'));
-    plus.addEventListener('click', () => {
+    const plus = iconButton('plus', `Increase ${label}`, () => {
       apply(read() + delta);
       count.textContent = String(read());
     });
@@ -160,10 +151,11 @@ export function mountDiceTray(container, opts = {}) {
   targetRow.append(targetName, targetInput);
   root.appendChild(targetRow);
 
-  const rollButton = document.createElement('button');
-  rollButton.type = 'button';
-  rollButton.className = 'btn btn--primary dice-tray__roll';
-  rollButton.append(icon('dice'), document.createTextNode('Roll'));
+  const rollButton = textButton('Roll', () => opts.onRoll?.(performRoll().text), {
+    icon: 'dice',
+    variant: 'primary',
+    className: 'dice-tray__roll',
+  });
 
   const resultEl = document.createElement('div');
   resultEl.className = 'dice-tray__result';
@@ -178,10 +170,6 @@ export function mountDiceTray(container, opts = {}) {
     resultEl.textContent = text;
     return { result, text };
   }
-
-  rollButton.addEventListener('click', () => {
-    opts.onRoll?.(performRoll().text);
-  });
 
   root.append(rollButton, resultEl);
   container.appendChild(root);
