@@ -148,8 +148,13 @@ test('rollDamage rolls each term and groups totals by damage type', () => {
     () => 0.5,
   );
   assert.equal(result.byType.length, 2);
-  assert.deepEqual(result.byType[0], { damageType: 'slashing', rolls: [4, 4], subtotal: 8 });
-  assert.deepEqual(result.byType[1], { damageType: 'fire', rolls: [3], subtotal: 3 });
+  assert.deepEqual(result.byType[0], {
+    damageType: 'slashing',
+    rolls: [4, 4],
+    bonus: 0,
+    subtotal: 8,
+  });
+  assert.deepEqual(result.byType[1], { damageType: 'fire', rolls: [3], bonus: 0, subtotal: 3 });
   assert.equal(result.total, 11);
   assert.equal(result.text, '8 slashing + 3 fire');
   assert.equal(result.detail, '8 slashing [4,4] + 3 fire [3]');
@@ -227,4 +232,68 @@ test('rollDamage merges terms sharing a damage type and skips empty terms', () =
   assert.equal(result.byType.length, 1);
   assert.deepEqual(result.byType[0].rolls, [4, 3]);
   assert.equal(result.text, '7 slashing');
+});
+
+test("rollDamage adds a term's flat bonus to that term's own damage type", () => {
+  // Magic Missile's dart: 1d4+1 force, so the +1 rides the force group rather
+  // than the first group the way the ability modifier does.
+  const result = rollDamage(
+    [
+      { count: 1, sides: 6, damageType: 'slashing' },
+      { count: 1, sides: 4, damageType: 'force', bonus: 1 },
+    ],
+    0,
+    () => 0.5,
+  );
+  assert.equal(result.byType[1].bonus, 1);
+  assert.equal(result.byType[1].subtotal, 4, '3 on the die plus the flat 1');
+  assert.equal(result.total, 8);
+  assert.equal(result.detail, '4 slashing [4] + 4 force [3 +1]');
+});
+
+test('a term with no dice contributes its flat bonus alone', () => {
+  // Revivify heals exactly 1, with no dice behind it.
+  const result = rollDamage([{ count: 0, sides: 4, damageType: 'healing', bonus: 1 }], 0, () => {
+    throw new Error('a diceless term must not roll');
+  });
+  assert.equal(result.total, 1);
+  assert.equal(result.text, '1 healing');
+  assert.equal(result.detail, '1 healing [+1]');
+});
+
+test("a term's bonus and the ability modifier join into one number on the first group", () => {
+  const result = rollDamage([{ count: 1, sides: 6, damageType: 'fire', bonus: 2 }], 3, () => 0.5);
+  assert.equal(result.byType[0].bonus, 5);
+  assert.equal(result.detail, '9 fire [4 +5]', 'one readout, not two signs in a row');
+});
+
+test('a negative flat bonus cannot take a group below zero', () => {
+  const result = rollDamage(
+    [
+      { count: 1, sides: 6, damageType: 'slashing' },
+      { count: 1, sides: 4, damageType: 'fire', bonus: -10 },
+    ],
+    0,
+    () => 0.5,
+  );
+  assert.equal(
+    result.byType[1].subtotal,
+    0,
+    'the floor applies to every group, not only the first',
+  );
+  assert.equal(result.total, 4);
+});
+
+test('bonuses of terms sharing a damage type add up in one group', () => {
+  const result = rollDamage(
+    [
+      { count: 1, sides: 6, damageType: 'fire', bonus: 1 },
+      { count: 1, sides: 4, damageType: 'fire', bonus: 2 },
+    ],
+    0,
+    () => 0.5,
+  );
+  assert.equal(result.byType.length, 1);
+  assert.equal(result.byType[0].bonus, 3);
+  assert.equal(result.detail, '10 fire [4,3 +3]');
 });

@@ -1,4 +1,4 @@
-import { roll, rollDamage } from '../dice/DiceRoller.js';
+import { damageReadout, roll, rollDamage } from '../dice/DiceRoller.js';
 import { getSpellbook, spendResource } from './Character.js';
 import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
 
@@ -355,27 +355,23 @@ function rollProjectile(parts, ac, attackBonus, mode, autoHit, rng) {
  * @returns {ReturnType<typeof rollDamage>}
  */
 function mergeDamage(rolls) {
-  /** @type {Map<string, { damageType: string, rolls: number[], subtotal: number }>} */
+  /** @type {Map<string, import('../dice/DiceRoller.js').DamageGroup>} */
   const byType = new Map();
   for (const result of rolls) {
     for (const group of result.byType) {
       const merged = byType.get(group.damageType) ?? {
         damageType: group.damageType,
         rolls: [],
+        bonus: 0,
         subtotal: 0,
       };
       merged.rolls.push(...group.rolls);
+      merged.bonus += group.bonus;
       merged.subtotal += group.subtotal;
       byType.set(group.damageType, merged);
     }
   }
-  const groups = [...byType.values()];
-  return {
-    total: groups.reduce((sum, g) => sum + g.subtotal, 0),
-    byType: groups,
-    text: groups.map((g) => `${g.subtotal} ${g.damageType}`).join(' + '),
-    detail: groups.map((g) => `${g.subtotal} ${g.damageType} [${g.rolls.join(',')}]`).join(' + '),
-  };
+  return damageReadout([...byType.values()]);
 }
 
 /**

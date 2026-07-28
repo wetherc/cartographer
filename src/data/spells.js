@@ -190,14 +190,10 @@ export const DEFAULT_SPELLS = deepFreeze([
     ritual: false,
     description:
       'Three darts of force each deal 1d4+1 and hit automatically. The caster splits them between creatures as they like.',
-    // Per dart, not per cast: 1d4 plus the flat +1, which the dice model carries
-    // as a one-sided die. Upcasting adds a dart rather than damage.
+    // Per dart, not per cast. Upcasting adds a dart rather than damage.
     effect: {
       kind: 'attack',
-      damage: [
-        { count: 1, sides: 4, damageType: 'force' },
-        { count: 1, sides: 1, damageType: 'force' },
-      ],
+      damage: [{ count: 1, sides: 4, damageType: 'force', bonus: 1 }],
       projectiles: { count: 3, perStep: 1, autoHit: true },
     },
   },
@@ -439,7 +435,8 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: false,
     ritual: false,
     description: 'Return a creature dead no more than a minute to life with 1 hit point.',
-    effect: { kind: 'heal', healing: [{ count: 1, sides: 1, damageType: 'healing' }] },
+    // Exactly one hit point, so a flat amount with no dice behind it.
+    effect: { kind: 'heal', healing: [{ count: 0, sides: 4, damageType: 'healing', bonus: 1 }] },
   },
   {
     id: 'counterspell',
@@ -564,10 +561,7 @@ export const DEFAULT_SPELLS = deepFreeze([
     effect: {
       kind: 'save',
       saveAbility: 'CON',
-      damage: [
-        { count: 7, sides: 8, damageType: 'necrotic' },
-        { count: 30, sides: 1, damageType: 'necrotic' },
-      ],
+      damage: [{ count: 7, sides: 8, damageType: 'necrotic', bonus: 30 }],
       halfOnSave: true,
     },
   },

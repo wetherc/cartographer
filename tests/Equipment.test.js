@@ -370,6 +370,61 @@ test('normalizeDamagePart accepts a missing term rather than throwing', () => {
   assert.deepEqual(normalizeDamagePart({}), expected);
 });
 
+test('normalizeDamagePart keeps a flat bonus and omits it when zero', () => {
+  assert.deepEqual(normalizeDamagePart({ count: 1, sides: 4, damageType: 'force', bonus: '1' }), {
+    count: 1,
+    sides: 4,
+    damageType: 'force',
+    bonus: 1,
+  });
+  assert.deepEqual(normalizeDamagePart({ count: 1, sides: 4, damageType: 'force', bonus: -2 }), {
+    count: 1,
+    sides: 4,
+    damageType: 'force',
+    bonus: -2,
+  });
+  assert.equal(
+    'bonus' in normalizeDamagePart({ count: 1, sides: 4, damageType: 'force', bonus: 0 }),
+    false,
+    'a zero bonus stays absent, so an unbonused term keeps its old shape',
+  );
+  assert.equal('bonus' in normalizeDamagePart({ bonus: 'lots' }), false);
+});
+
+test('a bonus lets a term roll no dice, and no bonus keeps the one-die floor', () => {
+  assert.deepEqual(normalizeDamagePart({ count: 0, sides: 4, damageType: 'poison', bonus: 3 }), {
+    count: 0,
+    sides: 4,
+    damageType: 'poison',
+    bonus: 3,
+  });
+  // Without a bonus there is nothing left to contribute, so a garbled or zero
+  // count still reads as one die rather than as an empty term.
+  assert.equal(normalizeDamagePart({ count: 0, sides: 4, damageType: 'poison' }).count, 1);
+  assert.equal(normalizeDamagePart({ count: 'none', sides: 4, damageType: 'poison' }).count, 1);
+});
+
+test('formatDamage prints a flat bonus on its term, and alone when there are no dice', () => {
+  assert.equal(
+    formatDamage([{ count: 1, sides: 4, damageType: 'force', bonus: 1 }]),
+    '1d4+1 force',
+  );
+  assert.equal(
+    formatDamage([{ count: 7, sides: 8, damageType: 'necrotic', bonus: 30 }]),
+    '7d8+30 necrotic',
+  );
+  assert.equal(
+    formatDamage([{ count: 0, sides: 4, damageType: 'radiant', bonus: 1 }]),
+    '+1 radiant',
+  );
+  assert.equal(formatDamage([{ count: 1, sides: 6, damageType: 'cold', bonus: -1 }]), '1d6-1 cold');
+  assert.equal(
+    formatDamage([{ count: 0, sides: 6, damageType: 'cold' }]),
+    '',
+    'a term with neither dice nor a bonus prints nothing',
+  );
+});
+
 test('armor presets carry a valid weight class and a plausible base AC', () => {
   assert.ok(ARMOR_PRESETS.length > 0);
   for (const preset of ARMOR_PRESETS) {

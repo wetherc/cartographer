@@ -110,28 +110,59 @@ export function attackTweak(count, die, flat, rng = Math.random) {
 }
 
 /**
+ * One damage group: every term of one damage type, with its raw dice, the flat
+ * amount riding them, and the total of both floored at zero.
+ * @typedef {{ damageType: string, rolls: number[], bonus: number, subtotal: number }} DamageGroup
+ */
+
+/**
+ * A damage result's two readouts, built from its groups. `text` is the short
+ * per-type line ("7 slashing + 3 fire"); `detail` additionally shows each
+ * group's raw dice and its flat amount ("7 slashing [2,3 +2] + 3 fire [3]") for
+ * logs that should preserve the individual rolls. Shared so a merged result
+ * reads exactly like a single one.
+ * @param {DamageGroup[]} groups
+ * @returns {{ total: number, byType: DamageGroup[], text: string, detail: string }}
+ */
+export function damageReadout(groups) {
+  return {
+    total: groups.reduce((sum, g) => sum + g.subtotal, 0),
+    byType: groups,
+    text: groups.map((g) => `${g.subtotal} ${g.damageType}`).join(' + '),
+    detail: groups
+      .map((g) => {
+        const sign = `${g.bonus > 0 ? '+' : '-'}${Math.abs(g.bonus)}`;
+        // A group with no dice behind it shows the flat amount on its own, with
+        // no leading separator to sit after.
+        const bonus = g.bonus === 0 ? '' : `${g.rolls.length > 0 ? ' ' : ''}${sign}`;
+        return `${g.subtotal} ${g.damageType} [${g.rolls.join(',')}${bonus}]`;
+      })
+      .join(' + '),
+  };
+}
+
+/**
  * Roll a weapon's damage terms (each `count` dice of `sides` per damage type)
  * with a flat modifier folded into the first term's type, 5e-style — the
- * ability modifier boosts the weapon's own damage, not its riders. Terms
- * sharing a damage type merge into one group; a negative modifier can't take
- * the base group below zero.
- * `text` is the short per-type readout ("7 slashing + 3 fire"); `detail`
- * additionally shows each group's raw dice and the folded modifier
- * ("7 slashing [2,3 +2] + 3 fire [3]") for logs that should preserve the
- * individual rolls.
- * @param {{ count: number, sides: number, damageType: string }[]} parts
+ * ability modifier boosts the weapon's own damage, not its riders. A term may
+ * also carry its own `bonus`, which rides that term's own damage type wherever
+ * it sits (Magic Missile's 1d4+1). Terms sharing a damage type merge into one
+ * group, and no group can go below zero however negative its flat amount is.
+ * @param {import('../types/entities.js').DamagePart[]} parts
  * @param {number} [modifier]
  * @param {RandomFn} [rng]
- * @returns {{ total: number, byType: { damageType: string, rolls: number[], subtotal: number }[], text: string, detail: string }}
+ * @returns {ReturnType<typeof damageReadout>}
  */
 export function rollDamage(parts, modifier = 0, rng = Math.random) {
-  /** @type {Map<string, { damageType: string, rolls: number[], subtotal: number }>} */
+  /** @type {Map<string, DamageGroup>} */
   const byType = new Map();
   for (const part of parts) {
-    if (part.count <= 0) continue;
+    const bonus = part.bonus ?? 0;
+    if (part.count <= 0 && bonus === 0) continue;
     const group = byType.get(part.damageType) ?? {
       damageType: part.damageType,
       rolls: [],
+      bonus: 0,
       subtotal: 0,
     };
     for (let i = 0; i < part.count; i++) {
@@ -139,22 +170,19 @@ export function rollDamage(parts, modifier = 0, rng = Math.random) {
       group.rolls.push(value);
       group.subtotal += value;
     }
+    group.bonus += bonus;
+    group.subtotal += bonus;
     byType.set(part.damageType, group);
   }
   const groups = [...byType.values()];
-  if (groups.length > 0) groups[0].subtotal = Math.max(0, groups[0].subtotal + modifier);
-  return {
-    total: groups.reduce((sum, g) => sum + g.subtotal, 0),
-    byType: groups,
-    text: groups.map((g) => `${g.subtotal} ${g.damageType}`).join(' + '),
-    detail: groups
-      .map((g, i) => {
-        const mod =
-          i === 0 && modifier !== 0 ? ` ${modifier > 0 ? '+' : '-'}${Math.abs(modifier)}` : '';
-        return `${g.subtotal} ${g.damageType} [${g.rolls.join(',')}${mod}]`;
-      })
-      .join(' + '),
-  };
+  // The ability modifier boosts the first group only, and joins that group's
+  // own flat amount so the readout shows one number rather than two.
+  if (groups.length > 0) {
+    groups[0].bonus += modifier;
+    groups[0].subtotal += modifier;
+  }
+  for (const group of groups) group.subtotal = Math.max(0, group.subtotal);
+  return damageReadout(groups);
 }
 
 /**

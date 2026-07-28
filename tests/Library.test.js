@@ -426,6 +426,29 @@ test('normalizeLibrary reads an attack spell’s projectiles and drops an unusab
   assert.equal(/** @type {any} */ (plain.effect).projectiles, undefined);
 });
 
+test('normalizeLibrary keeps a damage term’s flat bonus, dice or not', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      {
+        name: 'Darts',
+        effect: { kind: 'attack', damage: [{ count: 1, sides: 4, damageType: 'force', bonus: 1 }] },
+      },
+      // A fixed amount with no dice behind it, which only a bonus can express.
+      { name: 'Spark', effect: { kind: 'attack', damage: [{ count: 0, bonus: '2' }] } },
+      { name: 'Plain', effect: { kind: 'attack', damage: [{ count: 1, sides: 6 }] } },
+    ],
+  });
+  const [darts, spark, plain] = lib.spells;
+  assert.equal(/** @type {any} */ (darts.effect).damage[0].bonus, 1);
+  assert.deepEqual(/** @type {any} */ (spark.effect).damage[0].count, 0);
+  assert.deepEqual(/** @type {any} */ (spark.effect).damage[0].bonus, 2);
+  assert.equal(
+    'bonus' in /** @type {any} */ (plain.effect).damage[0],
+    false,
+    'an unbonused term keeps the shape it had before the field existed',
+  );
+});
+
 test('normalizeLibrary repairs attack/heal effects, save conditions, and scaling', () => {
   const lib = normalizeLibrary({
     spells: [

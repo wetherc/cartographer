@@ -590,6 +590,12 @@
   text-align: center;
 }
 
+/* Marks the next input as the term's flat bonus, so "1 d4 + 1 force" reads as
+   one damage roll rather than as four unrelated controls. */
+.inventory-panel__damage-plus {
+  color: var(--text-muted);
+}
+
 /* The damage editor stacks its rows in a stretch flex column; keep the add
    button sized to its label instead of spanning the full width. */
 .inventory-panel__damage-add {

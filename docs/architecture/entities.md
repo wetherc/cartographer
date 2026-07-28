@@ -151,6 +151,34 @@ folds all of the above onto an older save: a legacy scalar class becomes a
 list, a missing proficiency scaffold is created empty, a race string is
 preserved. `campaign/Campaigns.js` maps every loaded character through it.
 
+## Damage terms
+
+A weapon's damage and a spell's damage or healing are all the same thing: a list
+of `DamagePart`s, each one `count` dice of `sides` in a damage type, plus an
+optional flat `bonus` that rides that term (Magic Missile's `1d4+1`). Absent
+means no bonus, so a term written before the field existed needs no repair.
+`Equipment.normalizeDamagePart` is the single validator, and it holds two rules
+worth knowing:
+
+- A term carrying a bonus may roll no dice, which is how a fixed amount with no
+  dice behind it is written (Revivify's one hit point). A term without a bonus
+  always rolls at least one die, so a garbled count reads as `1` rather than as
+  an empty term.
+- The bonus is stored only when it is nonzero, which keeps an unbonused term
+  byte-identical to what it was before.
+
+`DiceRoller.rollDamage` groups terms by damage type and adds each term's bonus to
+its own group, while the `modifier` argument — the attacker's ability modifier —
+joins the first group only, per 5e. Both land in one `bonus` number per group, so
+a readout shows `7 slashing [2,3 +2]` rather than two separate signs. Doubling a
+term on a critical hit multiplies its dice and leaves its bonus alone, which is
+what the callers in `weaponAttack.js` and `Casting.js` already do by touching
+`count`. No group can go below zero, so a negative rider cannot heal.
+
+`damageReadout` builds the `text` and `detail` lines from those groups, and
+`Casting.js`'s projectile merge reuses it, so a hit carrying three darts reads
+like a single roll.
+
 ## Spell timing
 
 A `Spell` (`types/spell.ts`) lives in the library rather than in a campaign

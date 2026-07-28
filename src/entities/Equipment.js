@@ -94,15 +94,32 @@ export const DAMAGE_TYPES = [
  */
 export function normalizeDamagePart(part) {
   const raw = /** @type {Record<string, unknown>} */ (part ?? {});
+  const bonus = Math.trunc(Number(raw.bonus)) || 0;
+  // A term carrying a flat bonus may roll no dice, which is how a fixed amount
+  // is written; a term without one always rolls at least one die, so a garbled
+  // count still reads as 1 rather than as nothing.
+  const floor = bonus === 0 ? 1 : 0;
   return {
-    count: clampInt(raw.count, 1),
+    count: clampInt(raw.count, floor, Infinity, floor),
     sides: DIE_SIZES.includes(Number(raw.sides)) ? Number(raw.sides) : DIE_SIZES[0],
     damageType: /** @type {string} */ (
       DAMAGE_TYPES.includes(/** @type {string} */ (raw.damageType))
         ? raw.damageType
         : DAMAGE_TYPES[0]
     ),
+    ...(bonus === 0 ? {} : { bonus }),
   };
+}
+
+/**
+ * Whether a damage term contributes anything at all: it either rolls dice or
+ * carries a flat bonus. `rollDamage` makes the same check on its own rather than
+ * importing it, since the dice layer imports nothing.
+ * @param {import('../types/entities.js').DamagePart} part
+ * @returns {boolean}
+ */
+function damagePartRolls(part) {
+  return part.count > 0 || (part.bonus ?? 0) !== 0;
 }
 
 /**
@@ -129,14 +146,21 @@ export function weaponAbility(item) {
 }
 
 /**
- * A damage roll's dice terms as text: "2d6 slashing + 1d4 fire".
+ * A damage roll's dice terms as text: "2d6 slashing + 1d4 fire". A term's flat
+ * bonus rides its dice ("1d4+1 force"), and a term with no dice prints the
+ * bonus alone ("+1 healing").
  * @param {import('../types/entities.js').DamagePart[]} parts
  * @returns {string}
  */
 export function formatDamage(parts) {
   return parts
-    .filter((p) => p.count > 0)
-    .map((p) => `${p.count}d${p.sides} ${p.damageType}`.trim())
+    .filter(damagePartRolls)
+    .map((p) => {
+      const bonus = p.bonus ?? 0;
+      const sign = bonus === 0 ? '' : `${bonus > 0 ? '+' : '-'}${Math.abs(bonus)}`;
+      const dice = p.count > 0 ? `${p.count}d${p.sides}` : '';
+      return `${dice}${sign} ${p.damageType}`.trim();
+    })
     .join(' + ');
 }
 

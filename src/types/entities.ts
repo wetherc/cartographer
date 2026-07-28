@@ -135,6 +135,11 @@ export interface DamagePart {
   count: number;
   sides: number;
   damageType: string;
+  /** A flat amount added to this term's dice, e.g. Magic Missile's 1d4+1.
+   * Absent reads as 0. Doubling a term on a critical hit doubles its dice and
+   * leaves this alone, per 5e. A term carrying a bonus may roll no dice at all,
+   * which is how a fixed amount with no dice is written. */
+  bonus?: number;
 }
 
 export interface InventoryItem {

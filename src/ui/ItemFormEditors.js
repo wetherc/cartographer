@@ -32,15 +32,22 @@ export function buildDamageEditor(initial) {
     damageParts.forEach((part, index) => {
       const row = el('div', 'inventory-panel__damage-row');
 
+      // A term with a flat bonus may roll no dice, so the count's floor follows
+      // the bonus rather than sitting at 1. Keeping the two in step here is what
+      // stops the editor handing back a term the normalizer would rewrite.
       const countInput = numberField(part.count, {
-        min: 1,
         className: 'inventory-panel__dice-count',
         ariaLabel: 'Number of dice',
       });
-      countInput.addEventListener('change', () => {
-        part.count = clampInt(countInput.value, 1);
+      const countFloor = () => ((part.bonus ?? 0) === 0 ? 1 : 0);
+      const syncCount = () => {
+        const floor = countFloor();
+        countInput.min = String(floor);
+        part.count = clampInt(countInput.value, floor, Infinity, floor);
         countInput.value = String(part.count);
-      });
+      };
+      syncCount();
+      countInput.addEventListener('change', syncCount);
 
       const dieSelect = select(
         DIE_SIZES.map((sides) => ({ value: String(sides), label: `d${sides}` })),
@@ -51,6 +58,22 @@ export function buildDamageEditor(initial) {
         part.sides = Number(dieSelect.value);
       });
 
+      // The flat amount riding this term's dice, e.g. Magic Missile's 1d4+1. It
+      // is not doubled on a critical hit, which is where it differs from adding
+      // another die.
+      const bonusInput = numberField(part.bonus ?? 0, {
+        className: 'inventory-panel__dice-count',
+        ariaLabel: 'Flat bonus',
+      });
+      bonusInput.title = 'A flat amount added to this term, e.g. the +1 of 1d4+1';
+      bonusInput.addEventListener('change', () => {
+        const bonus = clampInt(bonusInput.value, -Infinity, Infinity, 0);
+        if (bonus === 0) delete part.bonus;
+        else part.bonus = bonus;
+        bonusInput.value = String(bonus);
+        syncCount();
+      });
+
       const typeSelectEl = select([...DAMAGE_TYPES], part.damageType, {
         ariaLabel: 'Damage type',
       });
@@ -58,7 +81,13 @@ export function buildDamageEditor(initial) {
         part.damageType = typeSelectEl.value;
       });
 
-      row.append(countInput, dieSelect, typeSelectEl);
+      row.append(
+        countInput,
+        dieSelect,
+        el('span', 'inventory-panel__damage-plus', '+'),
+        bonusInput,
+        typeSelectEl,
+      );
 
       // The first term is the weapon's base roll and always present; later
       // terms are removable riders.

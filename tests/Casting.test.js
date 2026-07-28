@@ -398,28 +398,50 @@ test('an auto-hitting projectile skips the attack roll entirely', () => {
     name: 'Magic Missile',
     effect: {
       kind: /** @type {const} */ ('attack'),
-      damage: [
-        { count: 1, sides: 4, damageType: 'force' },
-        { count: 1, sides: 1, damageType: 'force' },
-      ],
+      damage: [{ count: 1, sides: 4, damageType: 'force', bonus: 1 }],
       projectiles: { count: 3, autoHit: true },
     },
   };
-  // Only damage dice are queued: three darts of 1d4 (max 4) plus their flat 1.
+  // Only damage dice are queued: three darts of 1d4 (max 4), each carrying a
+  // flat +1 that rolls nothing.
   const result = castSpell(rayCaster(), darts, {
     slotLevel: 2,
     targets: [{ id: 't', ac: 99 }],
-    rng: seq(
-      Array(3)
-        .fill([face(4, 4), 0])
-        .flat(),
-    ),
+    rng: seq(Array(3).fill(face(4, 4))),
   });
   const [o] = result.outcomes;
   assert.equal(o.hits, 3, 'AC is irrelevant to a dart that hits automatically');
   assert.equal(o.shots[0].attack, null);
   assert.equal(o.shots[0].crit, false, 'an auto-hit cannot crit');
   assert.equal(o.damage.total, 15);
+  assert.equal(
+    o.damage.detail,
+    '15 force [4,4,4 +3]',
+    "each dart's flat bonus survives the merge into one hit",
+  );
+});
+
+test("a critical hit doubles a term's dice and leaves its flat bonus alone", () => {
+  const blast = {
+    ...scorchingRay,
+    id: 'darts',
+    name: 'Flat Blast',
+    effect: {
+      kind: /** @type {const} */ ('attack'),
+      damage: [{ count: 1, sides: 6, damageType: 'fire', bonus: 4 }],
+      projectiles: { count: 1 },
+    },
+  };
+  const result = castSpell(rayCaster(), blast, {
+    slotLevel: 2,
+    targets: [{ id: 't', ac: 5 }],
+    // A natural 20 on the attack, then two d6 for the doubled term.
+    rng: seq([face(20, 20), face(6, 3), face(6, 3)]),
+  });
+  const [o] = result.outcomes;
+  assert.equal(o.shots[0].crit, true);
+  assert.equal(o.damage.total, 10, '3 + 3 on the doubled dice plus the single flat 4');
+  assert.equal(o.damage.detail, '10 fire [3,3 +4]');
 });
 
 test('canCast checks cantrips and prepared/known lists', () => {
