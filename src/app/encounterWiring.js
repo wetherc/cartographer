@@ -383,7 +383,11 @@ export function wireEncounters(app) {
     canAttack: (participant) =>
       describe(participant)?.side === 'foe'
         ? isGM(state.role)
-        : isGM(state.role) || app.actions.getBoundCharacterId() === participant.id,
+        : isGM(state.role) ||
+          // The party panels register the binding reader after this panel is
+          // mounted, and a save reloaded with a fight in it draws its rows
+          // during that mount, so the first render can precede it.
+          app.actions.getBoundCharacterId?.() === participant.id,
     getRole: () => state.role,
   });
 

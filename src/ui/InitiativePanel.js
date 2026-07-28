@@ -2,6 +2,7 @@ import { currentParticipant } from '../combat/Initiative.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { isGM } from '../view/ViewRole.js';
 import { textButton } from './buttons.js';
+import { sameDeps } from '../view/SheetStructure.js';
 
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
 /** @typedef {import('../types/combat.js').Participant} Participant */
@@ -46,36 +47,102 @@ export function mountInitiativePanel(container, callbacks) {
   root.className = 'initiative-panel';
   container.appendChild(root);
 
+  /** @typedef {{ state: CombatState, views: (ParticipantView | null)[] }} Frame */
+
+  /** The dep list the DOM on screen was built from, or null while nothing is built. */
+  let builtDeps = /** @type {unknown[] | null} */ (null);
+  /** One per value the built DOM shows, each pushing it into an element it captured. */
+  let writers = /** @type {((frame: Frame) => void)[]} */ ([]);
+
+  /**
+   * What the panel's DOM *shape* is built from. Everything else it shows (the
+   * round number, a combatant's name and side, a hand-edited initiative) the
+   * writers below push into elements that already exist, so a refresh driven by
+   * something the order does not show (a damage roll, a condition, a spent slot)
+   * costs no rebuild and never re-resolves the acting combatant's spellbook.
+   *
+   * Comparing the active combatant's entity by reference is sound because the
+   * entity layer hands back a new object for every edit; that entity is the only
+   * one named here, since it alone decides what the action strip holds.
+   * @param {CombatState} state
+   * @param {boolean} gm
+   * @param {ParticipantView | null} activeView
+   * @param {boolean[]} mayAct
+   * @returns {unknown[]}
+   */
+  function structureDeps(state, gm, activeView, mayAct) {
+    return [
+      gm,
+      state.index,
+      state.order.length,
+      activeView?.entity ?? null,
+      ...state.order.map((participant) => participant.id),
+      ...mayAct,
+    ];
+  }
+
   function render() {
-    root.innerHTML = '';
     const state = callbacks.getState();
-    if (!state) return;
+    if (!state) {
+      root.innerHTML = '';
+      builtDeps = null;
+      writers = [];
+      return;
+    }
     const gm = !callbacks.getRole || isGM(callbacks.getRole());
+    const views = state.order.map((participant) => callbacks.describe?.(participant) ?? null);
+    // Who may press the action buttons turns on the viewer's role and, for a
+    // player, which character this tab is bound to, so it is a dep of its own.
+    const mayAct = state.order.map((participant) =>
+      callbacks.canAttack ? callbacks.canAttack(participant) : gm,
+    );
+    const deps = structureDeps(state, gm, views[state.index] ?? null, mayAct);
+    if (!sameDeps(builtDeps, deps)) {
+      build(state, gm, mayAct);
+      builtDeps = deps;
+    }
+    for (const write of writers) write({ state, views });
+  }
+
+  /**
+   * Create the panel's DOM from scratch and collect the writers that keep it
+   * current. Reads nothing off a participant that a writer can push in later.
+   * @param {CombatState} state
+   * @param {boolean} gm
+   * @param {boolean[]} mayAct
+   */
+  function build(state, gm, mayAct) {
+    root.innerHTML = '';
+    writers = [];
 
     const header = document.createElement('div');
     header.className = 'initiative-panel__header';
-    header.textContent = `Round ${state.round}`;
     root.appendChild(header);
+    writers.push((frame) => {
+      header.textContent = `Round ${frame.state.round}`;
+    });
 
     const active = currentParticipant(state);
     state.order.forEach((participant, i) => {
-      // An id nothing resolves any more still gets its row, so the order and
-      // the turn pointer keep lining up; it just has nothing to act with.
-      const view = callbacks.describe?.(participant) ?? null;
       const row = document.createElement('div');
-      row.className = `initiative-panel__row initiative-panel__row--${view?.side ?? 'party'}`;
-      if (active && i === state.index) row.classList.add('initiative-panel__row--active');
+      root.appendChild(row);
 
       const name = document.createElement('span');
       name.className = 'initiative-panel__name';
-      name.textContent = view?.name ?? 'Unknown combatant';
 
       const init = document.createElement('span');
       init.className = 'initiative-panel__init-readout';
-      init.textContent = String(participant.initiative);
 
       row.append(name, init);
-      root.appendChild(row);
+      // An id nothing resolves any more still gets its row, so the order and
+      // the turn pointer keep lining up; it just has nothing to act with.
+      writers.push((frame) => {
+        const view = frame.views[i];
+        const turn = active && i === frame.state.index ? ' initiative-panel__row--active' : '';
+        row.className = `initiative-panel__row initiative-panel__row--${view?.side ?? 'party'}${turn}`;
+        name.textContent = view?.name ?? 'Unknown combatant';
+        init.textContent = String(frame.state.order[i]?.initiative ?? '');
+      });
 
       // On the active combatant's turn, their weapons line up under the row
       // as one-click attack buttons, and a caster's known cantrips and
@@ -83,8 +150,7 @@ export function mountInitiativePanel(container, callbacks) {
       // differing only in icon, class, and labeling. `canAttack` decides who
       // sees them — the GM for anyone (including foes), a player only for
       // their bound character.
-      const mayAttack = callbacks.canAttack ? callbacks.canAttack(participant) : gm;
-      if (active && i === state.index && mayAttack) {
+      if (active && i === state.index && mayAct[i]) {
         if (callbacks.onWeaponAttack) {
           actionStrip(callbacks.getWeapons?.(participant) ?? [], {
             icon: 'sword',

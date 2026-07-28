@@ -124,7 +124,15 @@ would draw against the ones it last drew and returns early when they are the
 same objects. That is why a party step can fire five panel refreshes without
 five rebuilds. Three panels skip the rebuild differently: the travelogue diffs by
 anchor id, the tile inspector builds once and re-points, and the character sheet
-does the same behind a structure check (below). Copy those only when the panel is
+does the same behind a structure check (below). The initiative panel takes that
+same split. It builds its rows once and collects writers for the round number,
+each combatant's name and side, and each initiative, so those values land in
+place. It rebuilds only when its shape would change: the viewer's role, the turn
+index, the order's length or ids, who may press the action buttons, or the acting
+combatant's own entity, which is what the action strip is built from. During a
+fight that leaves the common refreshes, such as a damage roll on someone else's
+turn, a condition, or a spent slot, writing text into elements that already exist
+and never resolving a spellbook through the library. Copy those only when the panel is
 large or grows continuously, and see
 [Conventions](conventions.md#growing-lists-render-incrementally).
 

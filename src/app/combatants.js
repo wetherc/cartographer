@@ -156,13 +156,18 @@ function sideOf(found) {
  * mid-fight, or an NPC who has walked off the party's tile. The initiative
  * order stores neither field precisely so that a rename or a disposition
  * change during a fight shows up here on the next render.
+ *
+ * The resolved entity comes back alongside its name and side. A panel that
+ * caches its DOM compares that reference to decide whether anything the
+ * participant contributes has changed, since the entity layer hands back a new
+ * object for every edit rather than mutating in place.
  * @param {AppContext} app
  * @param {string} id
  * @returns {import('../types/combat.js').ParticipantView | null}
  */
 export function describeCombatant(app, id) {
   const found = findCombatant(app, id);
-  return found ? { name: found.entity.name, side: sideOf(found) } : null;
+  return found ? { name: found.entity.name, side: sideOf(found), entity: found.entity } : null;
 }
 
 /**

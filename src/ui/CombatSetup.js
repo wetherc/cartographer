@@ -30,7 +30,12 @@ export function combatSetupModal(roster, callbacks = {}) {
   /** @type {Map<string, HTMLInputElement>} */
   const inputs = new Map();
 
-  /** @param {Participant} participant @returns {ParticipantView} */
+  /**
+   * The setup rows show a name and a side and nothing else, so the fallback for
+   * an unresolvable id needs only those two fields.
+   * @param {Participant} participant
+   * @returns {Pick<ParticipantView, 'name' | 'side'>}
+   */
   const describe = (participant) =>
     callbacks.describe?.(participant) ?? { name: 'Unknown combatant', side: 'party' };
 

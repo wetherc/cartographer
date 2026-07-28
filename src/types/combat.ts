@@ -1,3 +1,6 @@
+import { Character, Encounter } from './entities';
+import { NPC } from './npc';
+
 /**
  * One combatant in the initiative order: an id and the numbers the order is
  * built from, nothing else. Everything presentational — the combatant's name
@@ -16,6 +19,12 @@ export interface Participant {
 export interface ParticipantView {
   name: string;
   side: 'party' | 'foe';
+  /**
+   * The live entity the name and side were read off, for change detection: a
+   * panel holding built DOM compares this reference against the one it drew
+   * from, which is sound because entity edits produce a new object.
+   */
+  entity: Character | Encounter | NPC;
 }
 
 /** A running combat: the sorted order, the round number, and whose turn it is. */

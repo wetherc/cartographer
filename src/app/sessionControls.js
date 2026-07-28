@@ -74,6 +74,10 @@ export function wireSessionControls(app) {
     // (and, in the Player view, on this tab's character binding).
     app.actions.refreshSelectedCharacter();
     app.views.encounterPanel.update();
+    // A fight already running has GM-only controls in it (turn flow and the
+    // action strip), so the flip has to reach it rather than waiting for the
+    // next thing that happens to refresh the panel.
+    app.views.initiativePanel.update();
     app.views.handoutPanel.update();
     app.views.npcPanel.update();
     app.views.questPanel.update();
