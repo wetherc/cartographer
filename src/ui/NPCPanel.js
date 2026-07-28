@@ -89,7 +89,7 @@ export function mountNPCPanel(container, callbacks) {
       const onAdd = callbacks.onAdd;
       return onAdd ? [{ label: 'New NPC', icon: 'add', onClick: onAdd }] : [];
     },
-    addPinned: callbacks.pinAdd,
+    addPlacement: callbacks.pinAdd ? 'leading' : 'inline',
     addClass: 'npc-panel__add',
   });
 }

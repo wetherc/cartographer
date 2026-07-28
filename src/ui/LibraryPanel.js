@@ -1,4 +1,6 @@
-import { emptyState, iconButton, textButton } from './buttons.js';
+import { textButton } from './buttons.js';
+import { mountListPanel } from './listPanel.js';
+import { buildTabs } from './Tabs.js';
 
 /** @typedef {import('../types/library.js').LibrarySource} LibrarySource */
 
@@ -23,6 +25,10 @@ import { emptyState, iconButton, textButton } from './buttons.js';
  * flows back through a callback, matching the other panels. When `subtabs`
  * are given, a tab strip above the filter narrows the list to one subtab at a
  * time and `getEntries` receives the active subtab's id.
+ *
+ * The add button, the tab strip, and the filter input are built once and stay
+ * put; only the lists redraw. That is what lets a keystroke in the filter
+ * re-run the search without rebuilding the input the GM is typing into.
  * @param {HTMLElement} container
  * @param {{
  *   getEntries: (subtab?: string) => LibraryRow[],
@@ -45,86 +51,80 @@ export function mountLibraryPanel(container, callbacks) {
   /** Case-insensitive name filter, kept across re-renders. */
   let filter = '';
   /** The selected subtab id, kept across re-renders like the filter. */
-  let activeSubtab = callbacks.subtabs?.[0]?.id ?? null;
-  /** The row being edited inline ('new' for the add form), or null. */
-  /** @type {string | null} */
-  let editing = null;
+  const subtabs = callbacks.subtabs ?? [];
+  let activeSubtab = subtabs[0]?.id ?? null;
+  /** Whether an inline editor is open, in which case the list is hidden. */
+  let editing = false;
+
+  // The chrome hides while an inline editor is open rather than being torn
+  // down, so the filter text and the selected subtab come back untouched. The
+  // editor is tall, and a list scrolling behind it would bury the Save button.
+  const chrome = document.createElement('div');
+  const editorHost = document.createElement('div');
+  root.append(chrome, editorHost);
 
   /** @param {LibrarySource} source */
   const badgeText = (source) =>
     source === 'override' ? 'customized' : source === 'custom' ? 'custom' : '';
 
-  function render() {
-    root.innerHTML = '';
+  /** @param {string | null} key the entry being edited, or null for a new one */
+  function openEditor(key) {
+    const buildEditor = callbacks.buildEditor;
+    if (!buildEditor) return;
+    editing = true;
+    chrome.hidden = true;
+    editorHost.appendChild(buildEditor(key, update));
+  }
 
-    // Inline editing replaces the whole list so the rail reads as one thing
-    // at a time — the item form is tall, and a list scrolling behind it would
-    // bury the Save button.
-    if (editing !== null && callbacks.buildEditor) {
-      root.appendChild(
-        callbacks.buildEditor(editing === 'new' ? null : editing, () => {
-          editing = null;
-          render();
-        }),
-      );
-      return;
-    }
-
-    const actions = document.createElement('div');
-    actions.className = 'panel-actions panel-actions--pinned';
-    const addButton = textButton(
+  const actions = document.createElement('div');
+  actions.className = 'panel-actions panel-actions--pinned';
+  actions.appendChild(
+    textButton(
       callbacks.addLabel,
       async () => {
-        if (callbacks.buildEditor) {
-          editing = 'new';
-          render();
-        } else if (callbacks.onAdd) {
-          if (await callbacks.onAdd()) render();
-        }
+        if (callbacks.buildEditor) openEditor(null);
+        else if (callbacks.onAdd && (await callbacks.onAdd())) refresh();
       },
       { icon: 'add' },
-    );
-    actions.appendChild(addButton);
-    root.appendChild(actions);
+    ),
+  );
+  chrome.appendChild(actions);
 
-    // The subtab strip narrows the list to one category; like the inventory
-    // panel's tabs it survives the full re-render each mutation triggers.
-    const subtabs = callbacks.subtabs;
-    if (subtabs && subtabs.length > 0) {
-      const tablist = document.createElement('div');
-      tablist.className = 'tabs library-panel__subtabs';
-      tablist.setAttribute('role', 'tablist');
-      tablist.setAttribute('aria-label', 'Entry categories');
-      for (const subtab of subtabs) {
-        const tab = document.createElement('button');
-        tab.type = 'button';
-        tab.className = 'tabs__tab';
-        tab.setAttribute('role', 'tab');
-        tab.textContent = subtab.label;
-        const selected = activeSubtab === subtab.id;
-        tab.setAttribute('aria-selected', String(selected));
-        tab.tabIndex = selected ? 0 : -1;
-        tab.addEventListener('click', () => {
-          activeSubtab = subtab.id;
-          render();
-        });
-        tablist.appendChild(tab);
-      }
-      tablist.addEventListener('keydown', (event) => {
-        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-        event.preventDefault();
-        const index = subtabs.findIndex((s) => s.id === activeSubtab);
-        const step = event.key === 'ArrowRight' ? 1 : -1;
-        activeSubtab = subtabs[(index + step + subtabs.length) % subtabs.length].id;
-        render();
-        const nextTab = /** @type {HTMLElement | null} */ (
-          root.querySelector('[role=tab][aria-selected=true]')
-        );
-        nextTab?.focus();
-      });
-      root.appendChild(tablist);
+  /** @type {Map<string, { update: () => void }>} */
+  const lists = new Map();
+
+  if (subtabs.length > 0) {
+    // The subtab strip narrows the list to one category. Each subtab owns its
+    // own list, so switching tabs only flips which one is hidden.
+    const panels = subtabs.map((subtab) => ({
+      id: subtab.id,
+      label: subtab.label,
+      panel: document.createElement('div'),
+    }));
+    const tabs = buildTabs({
+      className: 'library-panel__subtabs',
+      ariaLabel: 'Entry categories',
+      tabs: panels,
+      onSelect: (id) => {
+        activeSubtab = id;
+        lists.get(id)?.update();
+      },
+    });
+    chrome.appendChild(tabs.tablist);
+    chrome.appendChild(buildFilter());
+    for (const { id, panel } of panels) {
+      chrome.appendChild(panel);
+      lists.set(id, mountList(panel, id));
     }
+  } else {
+    chrome.appendChild(buildFilter());
+    const panel = document.createElement('div');
+    chrome.appendChild(panel);
+    lists.set('', mountList(panel, null));
+  }
 
+  /** @returns {HTMLInputElement} */
+  function buildFilter() {
     const filterInput = document.createElement('input');
     filterInput.type = 'search';
     filterInput.placeholder = 'Filter by name...';
@@ -133,121 +133,123 @@ export function mountLibraryPanel(container, callbacks) {
     filterInput.value = filter;
     filterInput.addEventListener('input', () => {
       filter = filterInput.value;
-      renderList();
+      lists.get(activeSubtab ?? '')?.update();
     });
-    root.appendChild(filterInput);
-
-    const list = document.createElement('div');
-    list.className = 'library-panel__list';
-    root.appendChild(list);
-
-    function renderList() {
-      list.innerHTML = '';
-      const query = filter.trim().toLowerCase();
-      const entries = callbacks
-        .getEntries(activeSubtab ?? undefined)
-        .filter((e) => !query || e.name.toLowerCase().includes(query));
-
-      if (entries.length === 0) {
-        list.appendChild(emptyState(query ? 'No entries match.' : 'No entries.'));
-        return;
-      }
-
-      let lastGroup = null;
-      for (const entry of entries) {
-        if (entry.group && entry.group !== lastGroup) {
-          const heading = document.createElement('h3');
-          heading.className = 'section-label library-panel__group';
-          heading.textContent = entry.group;
-          list.appendChild(heading);
-          lastGroup = entry.group;
-        }
-        list.appendChild(buildRow(entry));
-      }
-    }
-
-    /** @param {LibraryRow} entry */
-    function buildRow(entry) {
-      const row = document.createElement('div');
-      row.className = 'library-panel__row';
-
-      const head = document.createElement('div');
-      head.className = 'library-panel__head';
-
-      const name = document.createElement('span');
-      name.className = 'library-panel__name';
-      name.textContent = entry.name;
-      head.appendChild(name);
-
-      const badge = badgeText(entry.source);
-      if (badge) {
-        const chip = document.createElement('span');
-        chip.className = `badge library-panel__badge library-panel__badge--${entry.source}`;
-        chip.textContent = badge;
-        head.appendChild(chip);
-      }
-
-      if (callbacks.onSpawn) {
-        const spawnButton = iconButton(
-          'give',
-          `${callbacks.spawnLabel ?? 'Add to campaign'}: ${entry.name}`,
-          () => callbacks.onSpawn?.(entry.key),
-          { title: callbacks.spawnLabel ?? 'Add to campaign' },
-        );
-        head.appendChild(spawnButton);
-      }
-
-      const editButton = iconButton(
-        'edit',
-        `Edit ${entry.name}`,
-        async () => {
-          if (callbacks.buildEditor) {
-            editing = entry.key;
-            render();
-          } else if (callbacks.onEdit) {
-            if (await callbacks.onEdit(entry.key)) render();
-          }
-        },
-        // Editing a default doesn't touch the built-in list — it stores an
-        // override in the custom library; say so on the control.
-        { title: entry.source === 'default' ? 'Customize' : 'Edit' },
-      );
-      head.appendChild(editButton);
-
-      if (entry.source !== 'default') {
-        const removeButton = iconButton(
-          'remove',
-          entry.source === 'override' ? `Revert ${entry.name} to default` : `Delete ${entry.name}`,
-          async () => {
-            if (await callbacks.onRemove(entry.key, entry.source)) render();
-          },
-          {
-            variant: 'danger',
-            title: entry.source === 'override' ? 'Revert to default' : 'Delete',
-          },
-        );
-        head.appendChild(removeButton);
-      }
-
-      row.appendChild(head);
-
-      if (entry.summary) {
-        const summary = document.createElement('div');
-        summary.className = 'library-panel__summary';
-        summary.textContent = entry.summary;
-        row.appendChild(summary);
-      }
-      return row;
-    }
-
-    renderList();
+    return filterInput;
   }
 
-  render();
-  return {
-    update: () => {
-      editing = null;
-      render();
-    },
-  };
+  /**
+   * One subtab's list of entries, filtered by name.
+   * @param {HTMLElement} host
+   * @param {string | null} subtabId
+   * @returns {{ update: () => void }}
+   */
+  function mountList(host, subtabId) {
+    return mountListPanel(host, {
+      className: 'library-panel__list',
+      rowClass: 'library-panel__row',
+      headClass: 'library-panel__head',
+      getRows: () => {
+        const query = filter.trim().toLowerCase();
+        return callbacks
+          .getEntries(subtabId ?? undefined)
+          .filter((entry) => !query || entry.name.toLowerCase().includes(query));
+      },
+      emptyMessage: () => (filter.trim() ? 'No entries match.' : 'No entries.'),
+      groupOf: /** @param {LibraryRow} entry */ (entry) => entry.group ?? null,
+      groupHeadingClass: 'section-label library-panel__group',
+      buildBody,
+      actions: rowActions,
+      buildExtras,
+      // The rows are built fresh out of the library on every read, so the
+      // identity guard would never match anyway, and the filter needs the
+      // repaint on every keystroke.
+      alwaysRender: true,
+    });
+  }
+
+  /** @param {LibraryRow} entry @returns {Node[]} */
+  function buildBody(entry) {
+    const name = document.createElement('span');
+    name.className = 'library-panel__name';
+    name.textContent = entry.name;
+
+    const badge = badgeText(entry.source);
+    if (!badge) return [name];
+
+    const chip = document.createElement('span');
+    chip.className = `badge library-panel__badge library-panel__badge--${entry.source}`;
+    chip.textContent = badge;
+    return [name, chip];
+  }
+
+  /**
+   * @param {LibraryRow} entry
+   * @returns {(import('./listPanel.js').RowAction<LibraryRow> | null)[]}
+   */
+  function rowActions(entry) {
+    return [
+      callbacks.onSpawn
+        ? {
+            icon: 'give',
+            label: `${callbacks.spawnLabel ?? 'Add to campaign'}: ${entry.name}`,
+            title: callbacks.spawnLabel ?? 'Add to campaign',
+            onClick: () => callbacks.onSpawn?.(entry.key),
+          }
+        : null,
+      {
+        icon: 'edit',
+        label: `Edit ${entry.name}`,
+        // Editing a default doesn't touch the built-in list — it stores an
+        // override in the custom library; say so on the control.
+        title: entry.source === 'default' ? 'Customize' : 'Edit',
+        onClick: () => {
+          if (callbacks.buildEditor) {
+            openEditor(entry.key);
+            // The list is hidden behind the editor now; redrawing it is waste.
+            return false;
+          }
+          return callbacks.onEdit?.(entry.key);
+        },
+      },
+      entry.source === 'default'
+        ? null
+        : {
+            icon: 'remove',
+            label:
+              entry.source === 'override'
+                ? `Revert ${entry.name} to default`
+                : `Delete ${entry.name}`,
+            variant: 'danger',
+            title: entry.source === 'override' ? 'Revert to default' : 'Delete',
+            onClick: () => callbacks.onRemove(entry.key, entry.source),
+          },
+    ];
+  }
+
+  /** @param {LibraryRow} entry @param {HTMLElement} row */
+  function buildExtras(entry, row) {
+    if (!entry.summary) return;
+    const summary = document.createElement('div');
+    summary.className = 'library-panel__summary';
+    summary.textContent = entry.summary;
+    row.appendChild(summary);
+  }
+
+  /** Redraw every list, whether or not its tab is the visible one. */
+  function refresh() {
+    for (const list of lists.values()) list.update();
+  }
+
+  /** Close any open editor and redraw, which is also the editor's own exit. */
+  function update() {
+    if (editing) {
+      editing = false;
+      editorHost.innerHTML = '';
+      chrome.hidden = false;
+    }
+    refresh();
+  }
+
+  return { update };
 }

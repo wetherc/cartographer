@@ -9,9 +9,15 @@
  * active tab is in the document tab order. The initially-selected tab is the
  * one already marked `aria-selected="true"` in the markup, defaulting to first.
  * @param {HTMLElement} tablist the `[role=tablist]` element
+ * @param {{
+ *   resolvePanel?: (panelId: string) => HTMLElement | null,
+ *   onSelect?: (tabId: string) => void,
+ * }} [options] `resolvePanel` finds a panel that is not in the document yet,
+ *   which is how `buildTabs` wires a strip it has only just built; `onSelect`
+ *   fires for every selection including the initial one.
  * @returns {{ select: (tabId: string) => void }}
  */
-export function wireTabs(tablist) {
+export function wireTabs(tablist, options = {}) {
   const tabs = /** @type {HTMLButtonElement[]} */ ([...tablist.querySelectorAll('[role=tab]')]);
 
   /** @param {HTMLButtonElement} tab @param {boolean} focus */
@@ -21,10 +27,12 @@ export function wireTabs(tablist) {
       other.setAttribute('aria-selected', String(active));
       other.tabIndex = active ? 0 : -1;
       const panelId = other.getAttribute('aria-controls');
-      const panel = panelId && document.getElementById(panelId);
+      const panel =
+        panelId && (options.resolvePanel?.(panelId) ?? document.getElementById(panelId));
       if (panel) panel.hidden = !active;
     }
     if (focus) tab.focus();
+    options.onSelect?.(tab.id);
   }
 
   tablist.addEventListener('keydown', (event) => {
@@ -53,4 +61,67 @@ export function wireTabs(tablist) {
       if (tab) select(tab, false);
     },
   };
+}
+
+/** Distinguishes the generated ids of one strip from another's. */
+let stripCount = 0;
+
+/**
+ * Build a tab strip and pair it with panels the caller has already created.
+ * Most strips are written out in `index.html` and only need `wireTabs`, but the
+ * encounter and library panels decide their tabs at runtime, and both used to
+ * hand-roll the buttons, the ARIA attributes, and the arrow keys. The tab and
+ * panel ids are generated, since `aria-controls` needs a pairing the caller has
+ * no reason to invent.
+ *
+ * Selection only flips `hidden` on the panels, so a tab click costs nothing —
+ * the panels' contents outlive it and refresh on their own schedule.
+ * @param {{
+ *   ariaLabel: string,
+ *   className?: string,
+ *   tabs: { id: string, label: string, panel: HTMLElement }[],
+ *   selected?: string,
+ *   onSelect?: (id: string) => void,
+ * }} options
+ * @returns {{ tablist: HTMLElement, select: (id: string) => void }}
+ */
+export function buildTabs(options) {
+  stripCount += 1;
+  const prefix = `tabs${stripCount}`;
+  /** @param {string} id */
+  const tabId = (id) => `${prefix}-tab-${id}`;
+
+  const tablist = document.createElement('div');
+  tablist.className = options.className ? `tabs ${options.className}` : 'tabs';
+  tablist.setAttribute('role', 'tablist');
+  tablist.setAttribute('aria-label', options.ariaLabel);
+
+  /** @type {Map<string, HTMLElement>} */
+  const panels = new Map();
+  const selected = options.selected ?? options.tabs[0]?.id;
+
+  for (const spec of options.tabs) {
+    const panelId = `${prefix}-panel-${spec.id}`;
+    spec.panel.id = panelId;
+    spec.panel.setAttribute('role', 'tabpanel');
+    spec.panel.setAttribute('aria-labelledby', tabId(spec.id));
+    panels.set(panelId, spec.panel);
+
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.id = tabId(spec.id);
+    tab.className = 'tabs__tab';
+    tab.setAttribute('role', 'tab');
+    tab.setAttribute('aria-controls', panelId);
+    tab.setAttribute('aria-selected', String(spec.id === selected));
+    tab.textContent = spec.label;
+    tablist.appendChild(tab);
+  }
+
+  const { select } = wireTabs(tablist, {
+    resolvePanel: (panelId) => panels.get(panelId) ?? null,
+    onSelect: (id) => options.onSelect?.(id.slice(`${prefix}-tab-`.length)),
+  });
+
+  return { tablist, select: (id) => select(tabId(id)) };
 }

@@ -46,6 +46,7 @@ import { emptyState, iconButton, textButton } from './buttons.js';
  *   label: string,
  *   icon?: import('./icons.js').IconName,
  *   variant?: string,
+ *   className?: string,
  *   onClick: () => unknown,
  * }} AddButton
  */
@@ -67,6 +68,9 @@ import { emptyState, iconButton, textButton } from './buttons.js';
  * @typedef {object} ListPanelOptions
  * @property {string} className root element's class; also the row class stem
  *   (`<className>__row`).
+ * @property {string} [rowClass] the row's class, when it cannot be derived from
+ *   `className` — a panel whose list is nested inside a wider panel names its
+ *   rows after the outer one.
  * @property {(gm: boolean) => T[]} getRows the rows to show, already scoped and
  *   ordered by the caller.
  * @property {(entry: T, ctx: RowContext<T>) => Node | Node[]} buildBody the
@@ -87,9 +91,12 @@ import { emptyState, iconButton, textButton } from './buttons.js';
  * @property {string} [groupWrapperClass] collects each group's rows in a div.
  * @property {string} [groupHeadingClass]
  * @property {(gm: boolean) => (AddButton | null | false)[]} [addButtons]
- * @property {boolean} [addPinned] lead the panel with the add controls in a
- *   pinned `.panel-actions` row instead of trailing them.
- * @property {string} [addClass] class on each trailing add button.
+ * @property {'inline' | 'leading' | 'trailing'} [addPlacement] where the add
+ *   controls go: loose at the end of the list (the default), leading the panel
+ *   in a pinned `.panel-actions` row, or trailing it in a plain one.
+ * @property {string} [addClass] class on each add button, unless the button
+ *   names its own. Skipped in `leading` placement, whose pinned row styles the
+ *   buttons itself.
  * @property {() => boolean} [gate] false for the read-only player view, which
  *   drops the add controls; defaults to GM.
  * @property {boolean} [alwaysRender] skip `update`'s unchanged-rows guard.
@@ -105,6 +112,8 @@ export function mountListPanel(container, options) {
   const root = document.createElement('div');
   root.className = options.className;
   container.appendChild(root);
+
+  const placement = options.addPlacement ?? 'inline';
 
   /** @type {T[] | null} */
   let lastRows = null;
@@ -139,7 +148,7 @@ export function mountListPanel(container, options) {
    */
   function buildRow(entry, ctx) {
     const row = document.createElement('div');
-    row.className = `${options.className}__row`;
+    row.className = options.rowClass ?? `${options.className}__row`;
     for (const modifier of options.rowModifiers?.(entry, ctx.gm) ?? []) {
       if (modifier) row.classList.add(modifier);
     }
@@ -200,7 +209,7 @@ export function mountListPanel(container, options) {
           {
             icon: spec.icon,
             variant: spec.variant,
-            className: options.addPinned ? undefined : options.addClass,
+            className: placement === 'leading' ? undefined : (spec.className ?? options.addClass),
           },
         ),
       );
@@ -215,13 +224,10 @@ export function mountListPanel(container, options) {
     const ctx = { gm, render, action };
 
     const addButtons = buildAddButtons(gm);
-    // Pinned mode leads with the add controls so a long list never buries
-    // them; the Build rail's authoring panels all want that.
-    if (options.addPinned && addButtons.length > 0) {
-      const actionsRow = document.createElement('div');
-      actionsRow.className = 'panel-actions panel-actions--pinned';
-      actionsRow.append(...addButtons);
-      root.appendChild(actionsRow);
+    // Leading placement puts the add controls above the list so a long one
+    // never buries them; the Build rail's authoring panels all want that.
+    if (placement === 'leading' && addButtons.length > 0) {
+      root.appendChild(actionsRow(addButtons, true));
     }
 
     if (rows.length === 0) {
@@ -254,7 +260,11 @@ export function mountListPanel(container, options) {
       host.appendChild(buildRow(entry, ctx));
     }
 
-    if (!options.addPinned) root.append(...addButtons);
+    if (placement === 'trailing' && addButtons.length > 0) {
+      root.appendChild(actionsRow(addButtons, false));
+    } else if (placement === 'inline') {
+      root.append(...addButtons);
+    }
   }
 
   function render() {
@@ -271,6 +281,18 @@ export function mountListPanel(container, options) {
 
   render();
   return { update };
+}
+
+/**
+ * @param {HTMLElement[]} buttons
+ * @param {boolean} pinned
+ * @returns {HTMLElement}
+ */
+function actionsRow(buttons, pinned) {
+  const row = document.createElement('div');
+  row.className = pinned ? 'panel-actions panel-actions--pinned' : 'panel-actions';
+  row.append(...buttons);
+  return row;
 }
 
 /**

@@ -100,8 +100,10 @@ Three rules make this work:
   cached its data would need its own invalidation, which is exactly what the
   single `update()` entry point exists to avoid. Transient view state is a
   different matter and does belong to the panel: which row is in edit mode,
-  which section is expanded. `LibraryPanel`'s `update` clears its `editing` row
-  for exactly that reason.
+  which section is expanded, which tab is showing. `LibraryPanel`'s `update`
+  closes an open inline editor for exactly that reason, while its filter text
+  and selected subtab survive, since the input and the tab strip are built once
+  and only the lists redraw.
 - **Every mutation leaves through a callback.** Panels do not write state and
   do not open dialogs; they call `callbacks.onEdit(id)` and let the wiring
   module prompt, write, and re-render. That is what keeps panels DOM-only and
@@ -179,21 +181,25 @@ When you add a composite form widget, use that last contract. It is what lets
 Most rails are the same thing: a list of entities, each row with an edit and a
 delete button, an empty state when there is nothing, and a "New ..." control at
 one end. `mountListPanel(container, options)` (`src/ui/listPanel.js`) is that
-shape once, and the quest, handout, NPC, and Build-rail encounter panels are
-each a configuration of it. It returns the usual `{ update }`.
+shape once, and the quest, handout, NPC, encounter, library, and Build-rail
+encounter panels are each a configuration of it. It returns the usual
+`{ update }`. A panel with tabs mounts one of these per tab panel: the encounter
+panel's Active and Nearby tabs are two list panels, and the equipment library's
+five category subtabs are five.
 
 The options split cleanly in two. The caller decides what the markup is:
 
 | Option | What it does |
 | --- | --- |
 | `className` | the root element's class, and the stem of the row class (`quest-panel` gives `quest-panel__row`) |
+| `rowClass` | the row's class when it cannot come from `className` — a list nested in a wider panel names its rows after the outer one |
 | `getRows(gm)` | the entities to draw, already scoped and ordered |
 | `buildBody(entry, ctx)` | the row's content, left of the buttons; one node or an array |
 | `actions(entry, ctx)` | the row's buttons, as `{ icon, label, variant, onClick }` descriptors — `null` entries are dropped, so an optional control is a ternary |
 | `buildExtras(entry, row, ctx)` | anything below the row's head: a stat bar, a read-aloud body |
 | `bodyClass` / `actionsClass` / `headClass` | whether the body nodes, the buttons, and the pair of them get wrapper divs |
 | `emptyMessage`, `rowModifiers`, `groupOf` | the empty-state text, extra row classes, and an optional section heading emitted when consecutive rows change group |
-| `addButtons(gm)`, `addPinned`, `addClass` | the add controls, and whether they lead the panel in a pinned `.panel-actions` row or trail it |
+| `addButtons(gm)`, `addPlacement`, `addClass` | the add controls, and where they go: loose at the end of the list (`inline`, the default), leading it in a pinned `.panel-actions` row (`leading`), or trailing it in a plain one (`trailing`) |
 | `gate()` | `false` for the read-only player view: no action buttons, no add controls |
 
 And the helper owns the plumbing: the root element, clearing and rebuilding, the
@@ -430,11 +436,11 @@ Cancel left of the primary submit, matching the modals.
 
 ## Tabs and disclosures
 
-Both are "wire existing markup" helpers rather than builders. The caller owns
-the elements; the helper owns the state and the ARIA.
+Disclosures and most tab strips are "wire existing markup" helpers rather than
+builders. The caller owns the elements; the helper owns the state and the ARIA.
 
 ```js
-wireTabs(tablist) -> { select(tabId) }
+wireTabs(tablist, { resolvePanel?, onSelect? }?) -> { select(tabId) }
 ```
 
 `src/ui/Tabs.js` implements the full ARIA tabs pattern over a
@@ -446,8 +452,23 @@ each moving focus; a click selects without stealing focus. The initially
 selected tab is whichever is already marked `aria-selected="true"` in the
 markup, defaulting to the first.
 
-Two panels still hand-roll a tab strip and both are missing the Home/End
-handling. Use `wireTabs`; do not add a third.
+Most strips are written out in `index.html`, so wiring them is all the caller
+needs. When the tabs are only known at runtime, `buildTabs` builds the strip
+instead:
+
+```js
+buildTabs({ ariaLabel, className?, tabs: [{ id, label, panel }], selected?, onSelect? })
+  -> { tablist, select(id) }
+```
+
+It creates the buttons, generates the id pairing `aria-controls` needs, marks up
+the panels the caller passed in, and hands the whole thing to `wireTabs` —
+`resolvePanel` is how the panels are found before they are in the document, and
+`onSelect` reports the caller's own tab id, including for the initial selection.
+The encounter panel's two tabs and the equipment library's category subtabs are
+both this. Selecting a tab only flips `hidden`, so the panels' contents survive
+a tab click and refresh on their own schedule; neither panel re-renders to move
+a highlight. Use one of these two helpers, never a third strip by hand.
 
 ```js
 wireDisclosure(button, body, { expanded?, onToggle? }?) -> { isExpanded, setExpanded }

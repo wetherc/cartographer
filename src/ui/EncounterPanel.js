@@ -1,25 +1,27 @@
 import { addStatModifier, applyDamage, heal, isDefeated } from '../entities/Encounter.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { mountStatBlockBar } from './StatBlockBar.js';
-import { iconButton, textButton, emptyState } from './buttons.js';
+import { mountListPanel } from './listPanel.js';
+import { buildTabs } from './Tabs.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**
  * Mount the encounter panel: an "Active encounter" / "Nearby encounters" tab
- * pair, always shown. The Active tab lists the live encounters on the party's
- * tile — what the party has walked into — and carries the GM's "Start combat"
- * button; stepping onto such a tile switches to it, and leaving (or defeating
- * the last one) switches back to Nearby, which lists everything else in range
- * (authoring buttons only render when the caller passes onAdd /
- * onAddFromTemplate — the Build rail owns authoring now, so the Play mount
- * passes neither). Either tab shows an empty state when it has
- * nothing to list, and both stay freely selectable. Each row
- * shows an HP readout and a damage/heal amount applied via two buttons;
- * defeated encounters (currentHP <= 0) render with a distinguishing class
- * instead of being removed, so a GM can still see what died.
+ * pair, always shown, each tab holding one list panel. The Active tab lists the
+ * live encounters on the party's tile — what the party has walked into — and
+ * carries the GM's "Start combat" button; gaining an active encounter switches
+ * to it, and losing the last one switches back to Nearby, which lists
+ * everything else in range (authoring buttons only render when the caller
+ * passes onAdd / onAddFromTemplate — the Build rail owns authoring now, so the
+ * Play mount passes neither). Either tab shows an empty state when it has
+ * nothing to list, and both stay freely selectable. Each row shows an HP
+ * readout and a damage/heal amount applied via two buttons; defeated encounters
+ * (currentHP <= 0) render with a distinguishing class instead of being removed,
+ * so a GM can still see what died.
  *
  * The panel owns no roster state: `getActiveEncounters` and
  * `getNearbyEncounters` supply the rows (pre-filtered to the party's
@@ -52,48 +54,47 @@ export function mountEncounterPanel(container, callbacks) {
   root.className = 'encounter-panel';
   container.appendChild(root);
 
-  /** @type {'active' | 'nearby'} which tab shows; forced sensible on render */
-  let activeTab = 'nearby';
-  /** whether the previous render had an active encounter, so gaining one
+  /** whether the previous update had an active encounter, so gaining one
    * switches to the Active tab exactly once (not on every re-render) */
   let hadActive = false;
+
+  /**
+   * Each row's damage/heal amount input, keyed by the encounter it shows. The
+   * row's body builds the input and the row's buttons read it, and those are
+   * two separate builders with no shared row scope — so the entry, which both
+   * are handed and which is a fresh object after every mutation, is the key.
+   * @type {WeakMap<Encounter, HTMLInputElement>}
+   */
+  const amounts = new WeakMap();
+
+  /** @param {Encounter} encounter @returns {number} */
+  const amountOf = (encounter) => clampInt(amounts.get(encounter)?.value, 0);
 
   /** @param {Encounter} encounter @param {(encounter: Encounter) => Encounter} fn */
   function updateOne(encounter, fn) {
     callbacks.onUpdate(fn(encounter));
-    render();
   }
 
   /**
-   * One encounter's row: label with HP readout, then for the GM the
-   * damage/heal/edit/template/delete controls and the stat/condition bars.
+   * The label, plus for the GM the amount input the damage and heal buttons
+   * read.
    * @param {Encounter} encounter
-   * @param {boolean} gm
-   * @returns {HTMLElement}
+   * @param {{ gm: boolean }} ctx
+   * @returns {Node[]}
    */
-  function buildRow(encounter, gm) {
-    const row = document.createElement('div');
-    row.className = 'encounter-panel__row';
-    if (isDefeated(encounter)) row.classList.add('encounter-panel__row--defeated');
-
+  function buildBody(encounter, ctx) {
     // A bound encounter shows its tile coordinates so the GM can tell two
     // same-named foes apart and see where in the region it's staged.
     const coords = encounter.location ? ` @ (${encounter.location.tileId})` : '';
     const label = document.createElement('span');
     label.className = 'encounter-panel__label';
-    label.textContent = gm
+    label.textContent = ctx.gm
       ? `${encounter.name} (${encounter.currentHP}/${encounter.maxHP})${coords}`
       : `${encounter.name} — ${hpBand(encounter.currentHP, encounter.maxHP)}`;
 
     // Player view stops at the name and its status band: no HP numbers, no
     // damage/heal/delete controls, no condition editing, no add button.
-    if (!gm) {
-      const head = document.createElement('div');
-      head.className = 'encounter-panel__head';
-      head.appendChild(label);
-      row.appendChild(head);
-      return row;
-    }
+    if (!ctx.gm) return [label];
 
     const amountInput = document.createElement('input');
     amountInput.type = 'number';
@@ -101,61 +102,69 @@ export function mountEncounterPanel(container, callbacks) {
     amountInput.min = '0';
     amountInput.className = 'field encounter-panel__amount';
     amountInput.setAttribute('aria-label', `Damage/heal amount for ${encounter.name}`);
+    amounts.set(encounter, amountInput);
 
-    const damageButton = iconButton(
-      'minus',
-      `Damage ${encounter.name}`,
-      () => {
-        updateOne(encounter, (e) => applyDamage(e, Number(amountInput.value)));
+    return [label, amountInput];
+  }
+
+  /**
+   * The GM's per-row controls: damage, heal, the full edit dialog (name, HP,
+   * level/tier, and crucially placement, so relocating an encounter doesn't
+   * mean deleting and recreating it), save-as-template, and delete.
+   * @param {Encounter} encounter
+   * @param {{ gm: boolean }} ctx
+   * @returns {(import('./listPanel.js').RowAction<Encounter> | null)[]}
+   */
+  function actions(encounter, ctx) {
+    if (!ctx.gm) return [];
+    return [
+      {
+        icon: 'minus',
+        label: `Damage ${encounter.name}`,
+        variant: 'danger',
+        onClick: () => updateOne(encounter, (e) => applyDamage(e, amountOf(encounter))),
       },
-      { variant: 'danger' },
-    );
-
-    const healButton = iconButton(
-      'heal',
-      `Heal ${encounter.name}`,
-      () => {
-        updateOne(encounter, (e) => heal(e, Number(amountInput.value)));
+      {
+        icon: 'heal',
+        label: `Heal ${encounter.name}`,
+        variant: 'success',
+        onClick: () => updateOne(encounter, (e) => heal(e, amountOf(encounter))),
       },
-      { variant: 'success' },
-    );
-
-    // The full edit dialog (name, HP, level/tier, and crucially placement),
-    // so relocating an encounter doesn't mean deleting and recreating it.
-    const editButton = iconButton(
-      'edit',
-      `Edit ${encounter.name}`,
-      async () => {
-        if (await callbacks.onEdit?.(encounter)) render();
+      callbacks.onEdit
+        ? {
+            icon: 'edit',
+            label: `Edit ${encounter.name}`,
+            title: 'Edit',
+            onClick: () => callbacks.onEdit?.(encounter),
+          }
+        : null,
+      {
+        icon: 'save',
+        label: `Save ${encounter.name} as a bestiary template`,
+        title: 'Save as template',
+        onClick: () => callbacks.onSaveTemplate?.(encounter),
       },
-      { title: 'Edit' },
-    );
-
-    const templateButton = iconButton(
-      'save',
-      `Save ${encounter.name} as a bestiary template`,
-      () => callbacks.onSaveTemplate?.(encounter),
-      { title: 'Save as template' },
-    );
-
-    const deleteButton = iconButton(
-      'remove',
-      `Delete ${encounter.name}`,
-      async () => {
-        const ok = callbacks.confirmDelete ? await callbacks.confirmDelete(encounter) : true;
-        if (!ok) return;
-        callbacks.onDelete(encounter.id);
-        render();
+      {
+        icon: 'remove',
+        label: `Delete ${encounter.name}`,
+        variant: 'danger',
+        onClick: async () => {
+          const ok = callbacks.confirmDelete ? await callbacks.confirmDelete(encounter) : true;
+          if (!ok) return false;
+          callbacks.onDelete(encounter.id);
+        },
       },
-      { variant: 'danger' },
-    );
+    ];
+  }
 
-    const head = document.createElement('div');
-    head.className = 'encounter-panel__head';
-    head.append(label, amountInput, damageButton, healButton);
-    if (callbacks.onEdit) head.appendChild(editButton);
-    head.append(templateButton, deleteButton);
-    row.appendChild(head);
+  /**
+   * The stat block and condition bars below a GM's row.
+   * @param {Encounter} encounter
+   * @param {HTMLElement} row
+   * @param {{ gm: boolean }} ctx
+   */
+  function buildExtras(encounter, row, ctx) {
+    if (!ctx.gm) return;
 
     // In Play the stat block is read-mostly: base values aren't editable or
     // removable here (that's the Build rail's job) — clicking a chip instead
@@ -174,140 +183,90 @@ export function mountEncounterPanel(container, callbacks) {
       getConditions: () => encounter.conditions ?? [],
       onChange: (next) => updateOne(encounter, (e) => ({ ...e, conditions: next })),
     });
-
-    return row;
   }
 
-  /**
-   * The Active tab's panel: what the party stands on, plus the GM's entry
-   * into combat.
-   * @param {Encounter[]} active
-   * @param {boolean} gm
-   * @returns {HTMLElement}
-   */
-  function buildActivePanel(active, gm) {
-    const panel = document.createElement('div');
-    if (active.length === 0) panel.appendChild(emptyState('No active encounter.'));
-    for (const encounter of active) panel.appendChild(buildRow(encounter, gm));
+  // Players see a coarse status band and no controls; the GM sees exact HP and
+  // the full damage/heal/condition machinery. The gate is what each list hands
+  // its row builders as `gm`, and what drops the add controls.
+  const gate = () => !callbacks.getRole || isGM(callbacks.getRole());
 
-    const onStartCombat = callbacks.onStartCombat;
-    if (onStartCombat && gm && (callbacks.canStartCombat?.() ?? true)) {
-      const actions = document.createElement('div');
-      actions.className = 'panel-actions';
-      const startButton = textButton('Start combat', () => onStartCombat(), {
-        icon: 'sword',
-        variant: 'primary',
-        className: 'encounter-panel__start-combat',
-      });
-      actions.appendChild(startButton);
-      panel.appendChild(actions);
-    }
-    return panel;
-  }
+  /** What both lists share; they differ only in rows and add controls. */
+  const rowOptions = {
+    className: 'encounter-panel__list',
+    rowClass: 'encounter-panel__row',
+    headClass: 'encounter-panel__head',
+    rowModifiers: /** @param {Encounter} e */ (e) => [
+      isDefeated(e) && 'encounter-panel__row--defeated',
+    ],
+    buildBody,
+    actions,
+    buildExtras,
+    gate,
+    addPlacement: /** @type {const} */ ('trailing'),
+  };
 
-  /**
-   * The Nearby tab's panel: everything in range but not underfoot, plus any
-   * authoring buttons the caller supplied.
-   * @param {Encounter[]} nearby
-   * @param {boolean} gm
-   * @returns {HTMLElement}
-   */
-  function buildNearbyPanel(nearby, gm) {
-    const panel = document.createElement('div');
-    if (nearby.length === 0) panel.appendChild(emptyState('No encounters nearby.'));
-    for (const encounter of nearby) panel.appendChild(buildRow(encounter, gm));
+  const activePanel = document.createElement('div');
+  const nearbyPanel = document.createElement('div');
+  const tabs = buildTabs({
+    className: 'encounter-panel__tabs',
+    ariaLabel: 'Active and nearby encounters',
+    selected: 'nearby',
+    tabs: [
+      { id: 'active', label: 'Active encounter', panel: activePanel },
+      { id: 'nearby', label: 'Nearby encounters', panel: nearbyPanel },
+    ],
+  });
+  root.append(tabs.tablist, activePanel, nearbyPanel);
 
-    const actions = document.createElement('div');
-    actions.className = 'panel-actions';
+  const activeList = mountListPanel(activePanel, {
+    ...rowOptions,
+    getRows: () => callbacks.getActiveEncounters(),
+    emptyMessage: 'No active encounter.',
+    addButtons: () => {
+      const onStartCombat = callbacks.onStartCombat;
+      if (!onStartCombat || !(callbacks.canStartCombat?.() ?? true)) return [];
+      return [
+        {
+          label: 'Start combat',
+          icon: 'sword',
+          variant: 'primary',
+          className: 'encounter-panel__start-combat',
+          onClick: onStartCombat,
+        },
+      ];
+    },
+    // "Start combat" appears and disappears with whether a fight is already
+    // running, which no row reflects, so the rows-unchanged guard would leave a
+    // stale button on screen.
+    alwaysRender: true,
+  });
 
-    const onAdd = callbacks.onAdd;
-    if (onAdd && gm) {
+  const nearbyList = mountListPanel(nearbyPanel, {
+    ...rowOptions,
+    getRows: () => callbacks.getNearbyEncounters(),
+    emptyMessage: 'No encounters nearby.',
+    addClass: 'encounter-panel__add',
+    addButtons: () => [
       // The caller creates and stores the encounter; a non-null return just
       // signals that the visible list may have changed.
-      const addButton = textButton(
-        'New encounter',
-        async () => {
-          if (await onAdd()) render();
-        },
-        { icon: 'add', className: 'encounter-panel__add' },
-      );
-      actions.appendChild(addButton);
-    }
+      callbacks.onAdd ? { label: 'New encounter', icon: 'add', onClick: callbacks.onAdd } : null,
+      callbacks.onAddFromTemplate
+        ? { label: 'From bestiary', icon: 'scroll', onClick: callbacks.onAddFromTemplate }
+        : null,
+    ],
+  });
 
-    const onAddFromTemplate = callbacks.onAddFromTemplate;
-    if (onAddFromTemplate && gm) {
-      const bestiaryButton = textButton(
-        'From bestiary',
-        async () => {
-          if (await onAddFromTemplate()) render();
-        },
-        { icon: 'scroll', className: 'encounter-panel__add' },
-      );
-      actions.appendChild(bestiaryButton);
-    }
-
-    if (actions.childElementCount > 0) panel.appendChild(actions);
-    return panel;
-  }
-
-  function render() {
-    root.innerHTML = '';
-    const active = callbacks.getActiveEncounters();
-    const nearby = callbacks.getNearbyEncounters();
-    // Players see a coarse status band and no controls; the GM sees exact HP
-    // and the full damage/heal/condition/roster machinery.
-    const gm = !callbacks.getRole || isGM(callbacks.getRole());
-
+  function update() {
     // Gaining an active encounter jumps to its tab exactly once; losing the
     // last one falls back to Nearby. In between, the selection is the user's —
     // either tab stays selectable even when empty.
-    const hasActive = active.length > 0;
-    if (hasActive && !hadActive) activeTab = 'active';
-    else if (!hasActive && hadActive) activeTab = 'nearby';
+    const hasActive = callbacks.getActiveEncounters().length > 0;
+    if (hasActive !== hadActive) tabs.select(hasActive ? 'active' : 'nearby');
     hadActive = hasActive;
-
-    const panels = {
-      active: buildActivePanel(active, gm),
-      nearby: buildNearbyPanel(nearby, gm),
-    };
-    const tablist = document.createElement('div');
-    tablist.className = 'tabs encounter-panel__tabs';
-    tablist.setAttribute('role', 'tablist');
-    tablist.setAttribute('aria-label', 'Active and nearby encounters');
-    const tabs = /** @type {const} */ ([
-      ['active', 'Active encounter'],
-      ['nearby', 'Nearby encounters'],
-    ]).map(([key, text]) => {
-      const tab = document.createElement('button');
-      tab.type = 'button';
-      tab.className = 'tabs__tab';
-      tab.setAttribute('role', 'tab');
-      tab.textContent = text;
-      const selected = activeTab === key;
-      tab.setAttribute('aria-selected', String(selected));
-      tab.tabIndex = selected ? 0 : -1;
-      panels[key].hidden = !selected;
-      tab.addEventListener('click', () => {
-        activeTab = key;
-        render();
-      });
-      return tab;
-    });
-    tablist.addEventListener('keydown', (event) => {
-      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
-      event.preventDefault();
-      activeTab = activeTab === 'active' ? 'nearby' : 'active';
-      render();
-      const nextTab = /** @type {HTMLElement | null} */ (
-        root.querySelector('[role=tab][aria-selected=true]')
-      );
-      nextTab?.focus();
-    });
-    tablist.append(...tabs);
-
-    root.append(tablist, panels.active, panels.nearby);
+    activeList.update();
+    nearbyList.update();
   }
 
-  render();
-  return { update: render };
+  update();
+  return { update };
 }

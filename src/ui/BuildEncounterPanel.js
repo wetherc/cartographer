@@ -108,6 +108,6 @@ export function mountBuildEncounterPanel(container, callbacks) {
     ],
     // "New encounter" leads the panel and stays pinned while the list
     // scrolls, so staging another enemy never means scrolling past the roster.
-    addPinned: true,
+    addPlacement: 'leading',
   });
 }
