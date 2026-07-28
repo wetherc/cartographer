@@ -1,0 +1,26 @@
+{
+  "name": "campaign-builder",
+  "version": "1.0.0",
+  "description": "A self-contained suite for creating and managing the world of a D&D (or equivalent) campaign.",
+  "main": "src/main.js",
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.17.0",
+      "onFail": "download"
+    }
+  },
+  "type": "module",
+  "devDependencies": {
+    "eslint": "^10.8.0",
+    "typescript": "^7.0.2"
+  }
+}
