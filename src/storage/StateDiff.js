@@ -32,7 +32,7 @@
  * it here rather than spreading path knowledge through the walkers.
  *
  * Every other array is a leaf, compared and replaced whole. That is deliberate:
- * `proficiencies.skills`, `asiChoices`, an overlay stack, and `combat.order` are
+ * `proficiencies.skills`, an overlay stack, and `combat.order` are
  * all small, and several are ordered sequences rather than keyed sets, where
  * pairing by id would be wrong rather than just wasteful.
  * @type {Record<string, string>}

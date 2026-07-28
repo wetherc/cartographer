@@ -308,7 +308,9 @@ export function unprepareSpell(character, spellId) {
  * pre-multiclass save's scalar `class`/`subclass` fields fold into a one-entry
  * class list at the character's level. The class list is sanitized on the way
  * in, so a hand-edited one whose levels oversell the character's level comes
- * back trimmed to fit rather than hiding levels still to be assigned.
+ * back trimmed to fit rather than hiding levels still to be assigned. A save
+ * whose ability-score-improvement choices are still an array becomes the
+ * record keyed by slot, each choice keeping its position as its order.
  *
  * Shape is only half the job. The loaded pools are also reconciled against the
  * class list, level, and CON through `Progression.derive`, so a save
@@ -351,7 +353,7 @@ export function withDefaults(character) {
         }
       : emptyProficiencies(),
     expertise: character.expertise ?? [],
-    asiChoices: migrateASIChoices(character.asiChoices ?? [], classes[0]?.classId ?? ''),
+    asiChoices: migrateASIChoices(character.asiChoices ?? {}, classes[0]?.classId ?? ''),
   });
 }
 

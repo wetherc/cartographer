@@ -5,7 +5,7 @@ import { getClasses, pendingLevels, classLevelOf } from '../entities/Multiclass.
 import { canMulticlass, meetsPrereq, assignLevel } from '../entities/LevelAssign.js';
 import {
   pendingASISlots,
-  getASIChoices,
+  listASIChoices,
   unlockedFeatures,
   featuresGained,
 } from '../entities/LevelUp.js';
@@ -281,7 +281,7 @@ export function buildProgressSection(getCharacter, opts) {
     }
   }
 
-  const choices = getASIChoices(character);
+  const choices = listASIChoices(character);
   if (choices.length > 0) {
     const row = addRow();
     const line = choices

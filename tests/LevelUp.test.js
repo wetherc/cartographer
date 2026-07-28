@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   ABILITY_MAX,
   getASIChoices,
+  listASIChoices,
+  slotKey,
   earnedASISlots,
   pendingASISlots,
   migrateASIChoices,
@@ -101,9 +103,26 @@ test('applyASI raises the stats and records the choice against the first slot', 
   const c = applyASI(fighter(6), { STR: 1, CON: 1 });
   assert.equal(c.stats.STR, 17);
   assert.equal(c.stats.CON, 11);
-  assert.deepEqual(getASIChoices(c), [
-    { classId: 'fighter', classLevel: 4, type: 'asi', increases: { STR: 1, CON: 1 } },
-  ]);
+  assert.deepEqual(getASIChoices(c), {
+    [slotKey({ classId: 'fighter', classLevel: 4 })]: {
+      classId: 'fighter',
+      classLevel: 4,
+      order: 0,
+      type: 'asi',
+      increases: { STR: 1, CON: 1 },
+    },
+  });
+});
+
+test('a second choice keys to its own slot and takes the next order', () => {
+  const c = takeFeat(applyASI(fighter(6), { STR: 2 }), 'Sentinel');
+  assert.deepEqual(
+    listASIChoices(c).map((choice) => [slotKey(choice), choice.order]),
+    [
+      [slotKey({ classId: 'fighter', classLevel: 4 }), 0],
+      [slotKey({ classId: 'fighter', classLevel: 6 }), 1],
+    ],
+  );
 });
 
 test('applyASI defaults a missing stat to 10 and skips zero entries', () => {
@@ -121,8 +140,8 @@ test('applyASI is a no-op without a pending slot or with an invalid increase', (
 
 test('takeFeat spends the slot on a named feat; blank or slotless is a no-op', () => {
   const c = takeFeat(fighter(4), '  Sentinel  ');
-  assert.deepEqual(getASIChoices(c), [
-    { classId: 'fighter', classLevel: 4, type: 'feat', feat: 'Sentinel' },
+  assert.deepEqual(listASIChoices(c), [
+    { classId: 'fighter', classLevel: 4, order: 0, type: 'feat', feat: 'Sentinel' },
   ]);
   assert.deepEqual(pendingASISlots(c), []);
   const blank = fighter(4);
@@ -139,7 +158,7 @@ test('undoLastChoice reopens the slot, reverting an ability increase', () => {
 
   const feated = takeFeat(fighter(4), 'Sentinel');
   const unfeated = undoLastChoice(feated);
-  assert.deepEqual(getASIChoices(unfeated), []);
+  assert.deepEqual(getASIChoices(unfeated), {});
   assert.equal(unfeated.stats.STR, 16);
 
   const statless = undoLastChoice({ ...applyASI(fighter(4), { STR: 2 }), stats: undefined });
@@ -151,7 +170,34 @@ test('undoLastChoice preserves identity with no choices made', () => {
   assert.equal(undoLastChoice(c), c);
 });
 
-test('migrateASIChoices attributes level-keyed choices to the primary class', () => {
+test('undoLastChoice drops the latest choice, not the first key in the record', () => {
+  const c = {
+    ...fighter(6),
+    asiChoices: {
+      [slotKey({ classId: 'fighter', classLevel: 6 })]: {
+        classId: 'fighter',
+        classLevel: 6,
+        order: 1,
+        type: /** @type {const} */ ('feat'),
+        feat: 'Sentinel',
+      },
+      [slotKey({ classId: 'fighter', classLevel: 4 })]: {
+        classId: 'fighter',
+        classLevel: 4,
+        order: 0,
+        type: /** @type {const} */ ('asi'),
+        increases: { STR: 2 },
+      },
+    },
+  };
+  const undone = undoLastChoice(c);
+  assert.deepEqual(Object.keys(undone.asiChoices ?? {}), [
+    slotKey({ classId: 'fighter', classLevel: 4 }),
+  ]);
+  assert.equal(undone.stats.STR, 16, 'the dropped feat carried no ability increase');
+});
+
+test('migrateASIChoices keys an array by slot and attributes level-keyed choices', () => {
   const migrated = migrateASIChoices(
     [
       { level: 4, type: 'asi', increases: { STR: 2 } },
@@ -159,20 +205,41 @@ test('migrateASIChoices attributes level-keyed choices to the primary class', ()
     ],
     'fighter',
   );
-  assert.deepEqual(migrated, [
-    { classId: 'fighter', classLevel: 4, type: 'asi', increases: { STR: 2 } },
-    { classId: 'fighter', classLevel: 6, type: 'feat', feat: 'Sentinel' },
-  ]);
+  assert.deepEqual(migrated, {
+    [slotKey({ classId: 'fighter', classLevel: 4 })]: {
+      classId: 'fighter',
+      classLevel: 4,
+      order: 0,
+      type: 'asi',
+      increases: { STR: 2 },
+    },
+    [slotKey({ classId: 'fighter', classLevel: 6 })]: {
+      classId: 'fighter',
+      classLevel: 6,
+      order: 1,
+      type: 'feat',
+      feat: 'Sentinel',
+    },
+  });
 });
 
-test('migrateASIChoices preserves identity on an already-migrated list', () => {
-  const choices = [{ classId: 'fighter', classLevel: 4, type: 'feat', feat: 'Sentinel' }];
+test('migrateASIChoices carries a per-class array over, keeping its order', () => {
+  const migrated = migrateASIChoices(
+    [
+      { classId: 'rogue', classLevel: 4, type: 'feat', feat: 'Sentinel' },
+      { level: 6, type: 'asi', increases: { STR: 2 } },
+    ],
+    'fighter',
+  );
+  assert.deepEqual(
+    listASIChoices(/** @type {any} */ ({ asiChoices: migrated })).map((c) => slotKey(c)),
+    [slotKey({ classId: 'rogue', classLevel: 4 }), slotKey({ classId: 'fighter', classLevel: 6 })],
+  );
+});
+
+test('migrateASIChoices preserves identity on a value that is already a record', () => {
+  const choices = migrateASIChoices([{ level: 4, type: 'feat', feat: 'Sentinel' }], 'fighter');
   assert.equal(migrateASIChoices(choices, 'fighter'), choices);
-  const mixed = [
-    { classId: 'fighter', classLevel: 4, type: 'feat', feat: 'Sentinel' },
-    { level: 6, type: 'asi', increases: { STR: 2 } },
-  ];
-  assert.deepEqual(migrateASIChoices(mixed, 'fighter')[0], mixed[0]);
 });
 
 test("withDefaults migrates an older save's level-keyed choices", () => {
@@ -186,9 +253,15 @@ test("withDefaults migrates an older save's level-keyed choices", () => {
       asiChoices: [{ level: 4, type: 'asi', increases: { STR: 2 } }],
     }),
   );
-  assert.deepEqual(legacy.asiChoices, [
-    { classId: 'fighter', classLevel: 4, type: 'asi', increases: { STR: 2 } },
-  ]);
+  assert.deepEqual(legacy.asiChoices, {
+    [slotKey({ classId: 'fighter', classLevel: 4 })]: {
+      classId: 'fighter',
+      classLevel: 4,
+      order: 0,
+      type: 'asi',
+      increases: { STR: 2 },
+    },
+  });
   assert.deepEqual(pendingASISlots(legacy), [{ classId: 'fighter', classLevel: 6 }]);
 });
 
@@ -255,8 +328,9 @@ test('a multiclass pending level earns no slot until assigned', () => {
   assert.deepEqual(pendingASISlots(leveled), []);
 });
 
-test('withDefaults gives an older save an empty choice list', () => {
+test('withDefaults gives an older save no choices at all', () => {
   const legacy = withDefaults(/** @type {any} */ ({ id: 'c1', name: 'Old', resources: [] }));
-  assert.deepEqual(legacy.asiChoices, []);
-  assert.deepEqual(getASIChoices(/** @type {any} */ ({ resources: [] })), []);
+  assert.deepEqual(legacy.asiChoices, {});
+  assert.deepEqual(getASIChoices(/** @type {any} */ ({ resources: [] })), {});
+  assert.deepEqual(listASIChoices(/** @type {any} */ ({ resources: [] })), []);
 });

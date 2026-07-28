@@ -112,7 +112,9 @@ on a short rest.
 applying it silently, and `assignLevel` commits a pending level to a chosen
 class: growing HP, adding a hit die, and advancing spell slots. Crossing a
 class ASI level leaves a pending improvement, spent later by `applyASI` or
-`takeFeat`.
+`takeFeat`. A choice is stored against the class and class level that earned
+it — `slotKey` builds that key — so a slot can hold at most one, and each
+choice carries the order it was made in for `undoLastChoice` to read.
 
 ### Loading old saves
 

@@ -229,14 +229,30 @@ export interface LegacyProficiencies extends Omit<Proficiencies, 'weapons'> {
  * class ASI slot the choice claims — each class follows its own schedule — so
  * each earned slot is spent exactly once. */
 export type AsiChoice =
-  | { classId: string; classLevel: number; type: 'asi'; increases: Record<string, number> }
-  | { classId: string; classLevel: number; type: 'feat'; feat: string };
+  | {
+      classId: string;
+      classLevel: number;
+      order: number;
+      type: 'asi';
+      increases: Record<string, number>;
+    }
+  | { classId: string; classLevel: number; order: number; type: 'feat'; feat: string };
 
-/** The pre-multiclass choice shape, keyed by bare character level. Loading
- * migrates it to the primary class (see LevelUp.migrateASIChoices). */
+/** Recorded ASI choices, keyed by the slot they claim (see LevelUp.slotKey).
+ * A slot holds at most one choice, which the key makes structural rather than
+ * something every writer has to check. `order` carries the sequence the array
+ * this replaced got for free, so undo can still find the most recent one. */
+export type AsiChoices = Record<string, AsiChoice>;
+
+/** The choice shapes older saves carried, both of them arrays: the
+ * pre-multiclass one keyed by bare character level, and the per-class one that
+ * predates the keyed record and so has no `order`. Loading migrates either
+ * (see LevelUp.migrateASIChoices). */
 export type LegacyAsiChoice =
   | { level: number; type: 'asi'; increases: Record<string, number> }
-  | { level: number; type: 'feat'; feat: string };
+  | { level: number; type: 'feat'; feat: string }
+  | { classId: string; classLevel: number; type: 'asi'; increases: Record<string, number> }
+  | { classId: string; classLevel: number; type: 'feat'; feat: string };
 
 export interface Character {
   id: string;
@@ -266,7 +282,7 @@ export interface Character {
   expertise?: string[];
   /** Ability-score-improvement choices already made, one per claimed class ASI
    * level (see LevelUp.js). Absent on older saves, which load as none made. */
-  asiChoices?: AsiChoice[];
+  asiChoices?: AsiChoices;
   level: number;
   xp: number;
   stats: Record<string, number>;
