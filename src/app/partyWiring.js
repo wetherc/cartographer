@@ -23,14 +23,7 @@ import {
   initialBinding,
   partyPermissions,
 } from '../view/CharacterBinding.js';
-import {
-  GM_LOCK_HEARTBEAT,
-  claimLock,
-  isHeldByOther,
-  loadLock,
-  saveLock,
-  releaseLock,
-} from '../storage/GMLock.js';
+import { createHeartbeatLock } from '../storage/GMLock.js';
 import { moveCharacter, isSplit, characterPosition, recallAll } from '../party/CharacterTokens.js';
 import { locationFields, readLocation } from './locationFields.js';
 
@@ -56,31 +49,19 @@ export function wireParty(app) {
   // Bindings are exclusive across tabs: claiming a character takes a
   // heartbeat lock in localStorage (same machinery as the GM lock), so two
   // player tabs can never both play "Hero". A failed claim leaves the tab a
-  // spectator with a toast explaining who has it.
-  const bindingTabId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-  /** @type {ReturnType<typeof setInterval> | null} */
-  let bindingHeartbeat = null;
-
-  /** @param {string} characterId @returns {boolean} whether the claim stuck */
-  function tryClaimCharacter(characterId) {
-    const key = characterLockKey(characterId);
-    const next = claimLock(loadLock(key), bindingTabId, Date.now());
-    if (!next) return false;
-    saveLock(next, key);
-    if (bindingHeartbeat === null) {
-      bindingHeartbeat = setInterval(() => {
-        if (boundCharacterId)
-          saveLock({ id: bindingTabId, at: Date.now() }, characterLockKey(boundCharacterId));
-      }, GM_LOCK_HEARTBEAT);
-    }
-    return true;
-  }
-
-  function dropCharacterClaim() {
-    if (bindingHeartbeat !== null) clearInterval(bindingHeartbeat);
-    bindingHeartbeat = null;
-    if (boundCharacterId) releaseLock(bindingTabId, characterLockKey(boundCharacterId));
-  }
+  // spectator with a toast explaining who has it. onYield covers the takeover
+  // case, where this tab was frozen past the lock's TTL and another tab picked
+  // its character up.
+  const bindingLock = createHeartbeatLock({
+    onYield: () => {
+      const name =
+        state.characters.find((c) => c.id === boundCharacterId)?.name ?? boundCharacterId;
+      boundCharacterId = null;
+      sessionStorage.removeItem(BOUND_CHARACTER_SESSION_KEY);
+      app.toasts.show(`Another tab took over ${name}; this tab is now a spectator.`);
+      selectCharacter(selectedCharacterId);
+    },
+  });
 
   /**
    * Bind this tab to a character (or null for spectator), enforcing the
@@ -90,8 +71,11 @@ export function wireParty(app) {
    */
   function setBinding(id) {
     if (id === boundCharacterId) return boundCharacterId;
-    dropCharacterClaim();
-    if (id !== null && !tryClaimCharacter(id)) {
+    if (id === null) {
+      bindingLock.release();
+    } else if (!bindingLock.claim(characterLockKey(id))) {
+      // The claim released the previous character's lock before it failed, so
+      // this tab now holds nothing and falls back to spectator.
       const name = state.characters.find((c) => c.id === id)?.name ?? id;
       app.toasts.show(`Another tab is already playing ${name}; this tab stays a spectator.`);
       id = null;
@@ -109,26 +93,6 @@ export function wireParty(app) {
       state.characters,
     ),
   );
-
-  // Free the claim when the tab goes away so another tab can pick the
-  // character up without waiting out the TTL.
-  window.addEventListener('pagehide', dropCharacterClaim);
-
-  // Belt and braces, mirroring the GM lock: if another tab takes over our
-  // character's lock (e.g. this tab was frozen past the TTL), yield to it.
-  window.addEventListener('storage', (event) => {
-    if (!boundCharacterId || event.key !== characterLockKey(boundCharacterId)) return;
-    if (isHeldByOther(loadLock(event.key), bindingTabId, Date.now())) {
-      const name =
-        state.characters.find((c) => c.id === boundCharacterId)?.name ?? boundCharacterId;
-      if (bindingHeartbeat !== null) clearInterval(bindingHeartbeat);
-      bindingHeartbeat = null;
-      boundCharacterId = null;
-      sessionStorage.removeItem(BOUND_CHARACTER_SESSION_KEY);
-      app.toasts.show(`Another tab took over ${name}; this tab is now a spectator.`);
-      selectCharacter(selectedCharacterId);
-    }
-  });
 
   /** What this tab may do to the character currently on the sheet/inventory.
    * @returns {{ editBase: boolean, play: boolean, hp: boolean }} */

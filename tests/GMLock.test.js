@@ -9,6 +9,7 @@ import {
   loadLock,
   saveLock,
   releaseLock,
+  createHeartbeatLock,
 } from '../src/storage/GMLock.js';
 
 /** Minimal in-memory localStorage so the storage wrappers run under Node. */
@@ -19,6 +20,25 @@ function installLocalStorage() {
     setItem: (k, v) => store.set(k, String(v)),
     removeItem: (k) => store.delete(k),
     clear: () => store.clear(),
+  };
+}
+
+/**
+ * Enough of `window` for createHeartbeatLock to register its listeners, plus a
+ * way to fire one. Handlers are collected per event name so a test can deliver
+ * a storage event the way another tab's write would.
+ */
+function installWindow() {
+  /** @type {Map<string, Function[]>} */
+  const handlers = new Map();
+  globalThis.window = {
+    addEventListener: (name, handler) => {
+      if (!handlers.has(name)) handlers.set(name, []);
+      handlers.get(name).push(handler);
+    },
+  };
+  return (name, event) => {
+    for (const handler of handlers.get(name) ?? []) handler(event);
   };
 }
 
@@ -68,4 +88,98 @@ test('saveLock then loadLock round-trips, and releaseLock only removes our own',
   assert.deepEqual(loadLock(), { id: 'a', at: 5 }, 'another tab must not clobber the lock');
   releaseLock('a');
   assert.equal(loadLock(), null);
+});
+
+test('a heartbeat lock claims, reports, and releases its key', () => {
+  installWindow();
+  const lock = createHeartbeatLock({ onYield: () => assert.fail('no takeover happened') });
+  assert.equal(lock.claim('k'), true);
+  assert.equal(lock.heldKey(), 'k');
+  assert.equal(loadLock('k')?.id, lock.tabId);
+  lock.release();
+  assert.equal(lock.heldKey(), null);
+  assert.equal(loadLock('k'), null);
+});
+
+test('a claim refused by another tab leaves this tab holding nothing', () => {
+  installWindow();
+  const lock = createHeartbeatLock({ onYield: () => assert.fail('no takeover happened') });
+  saveLock({ id: 'other', at: Date.now() }, 'k');
+  assert.equal(lock.claim('k'), false);
+  assert.equal(lock.heldKey(), null);
+  assert.deepEqual(loadLock('k')?.id, 'other', 'the other tab keeps its lock');
+});
+
+test('claiming a second key releases the first, and a refusal releases it too', () => {
+  installWindow();
+  const lock = createHeartbeatLock({ onYield: () => assert.fail('no takeover happened') });
+  lock.claim('one');
+  assert.equal(lock.claim('two'), true);
+  assert.equal(loadLock('one'), null, 'the first key is freed for other tabs');
+  assert.equal(lock.heldKey(), 'two');
+  saveLock({ id: 'other', at: Date.now() }, 'three');
+  assert.equal(lock.claim('three'), false);
+  assert.equal(loadLock('two'), null);
+  assert.equal(lock.heldKey(), null);
+  lock.release();
+});
+
+test('the heartbeat refreshes the stored record while the lock is held', async () => {
+  installWindow();
+  let clock = 1000;
+  const lock = createHeartbeatLock({
+    onYield: () => assert.fail('no takeover happened'),
+    now: () => clock,
+    heartbeat: 2,
+  });
+  lock.claim('k');
+  assert.equal(loadLock('k')?.at, 1000);
+  clock = 2000;
+  await new Promise((resolve) => {
+    setTimeout(resolve, 20);
+  });
+  assert.equal(loadLock('k')?.at, 2000);
+  lock.release();
+  clock = 3000;
+  await new Promise((resolve) => {
+    setTimeout(resolve, 20);
+  });
+  assert.equal(loadLock('k'), null, 'releasing stops the heartbeat');
+});
+
+test('a takeover of the held key yields without clobbering the new holder', () => {
+  const fire = installWindow();
+  let yielded = 0;
+  const lock = createHeartbeatLock({ onYield: () => (yielded += 1) });
+  lock.claim('k');
+  // Another tab's write plus the storage event it raises in this tab.
+  saveLock({ id: 'other', at: Date.now() }, 'k');
+  fire('storage', { key: 'k' });
+  assert.equal(yielded, 1);
+  assert.equal(lock.heldKey(), null);
+  // Whatever the yield handler does may call release; the other tab's lock must
+  // survive it.
+  lock.release();
+  assert.equal(loadLock('k')?.id, 'other');
+});
+
+test('a storage event for another key, or one this tab still holds, does not yield', () => {
+  const fire = installWindow();
+  let yielded = 0;
+  const lock = createHeartbeatLock({ onYield: () => (yielded += 1) });
+  lock.claim('k');
+  fire('storage', { key: 'other-key' });
+  fire('storage', { key: 'k' });
+  assert.equal(yielded, 0);
+  assert.equal(lock.heldKey(), 'k');
+  lock.release();
+});
+
+test('pagehide releases the lock so a follower need not wait out the TTL', () => {
+  const fire = installWindow();
+  const lock = createHeartbeatLock({ onYield: () => assert.fail('no takeover happened') });
+  lock.claim('k');
+  fire('pagehide', {});
+  assert.equal(lock.heldKey(), null);
+  assert.equal(loadLock('k'), null);
 });

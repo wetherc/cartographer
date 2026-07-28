@@ -211,6 +211,17 @@ sidebar tabs, and the sidebar collapse; provides `setMode`. Mode is a
 three-way Play / Build / Library toggle; Library mode hides the map column
 entirely and shows only the template lists.
 
+Only one tab may hold the GM view, and only one tab may play a given character.
+Both locks come from `createHeartbeatLock` in `storage/GMLock.js`, one tab's side
+of a lock. `claim(key)` takes the key, releases whatever key this tab held
+before, and refreshes the stored record on an interval so other tabs can see the
+holder is alive. `release()` gives the key up, and so does `pagehide`. The
+`onYield` callback runs when another tab takes over the held key, which happens
+when this tab was frozen long enough for its record to pass the TTL.
+`sessionControls.js` claims the single GM key and yields by switching to the
+Player view. `partyWiring.js` claims a per-character key from
+`characterLockKey` and yields by dropping to spectator.
+
 ### shortcuts.js and onboarding.js
 
 Global keyboard shortcuts and the first-run overlay.

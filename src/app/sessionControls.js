@@ -3,15 +3,7 @@ import { mountModeSwitch } from '../ui/ModeSwitch.js';
 import { mountRoleSwitch } from '../ui/RoleSwitch.js';
 import { mountThemeToggle } from '../ui/ThemeToggle.js';
 import { wireTabs } from '../ui/Tabs.js';
-import {
-  GM_LOCK_KEY,
-  GM_LOCK_HEARTBEAT,
-  claimLock,
-  isHeldByOther,
-  loadLock,
-  saveLock,
-  releaseLock,
-} from '../storage/GMLock.js';
+import { GM_LOCK_KEY, createHeartbeatLock } from '../storage/GMLock.js';
 import { isPlayerLocked, PLAYER_LOCK_SESSION_KEY } from '../view/PlayerLock.js';
 import { confirmModal } from '../ui/Modal.js';
 import { iconButton } from '../ui/buttons.js';
@@ -87,26 +79,14 @@ export function wireSessionControls(app) {
   // lock in localStorage, and any other tab that opens as (or switches to) GM
   // while it's live is forced into the Player view instead. The lock expires on
   // its own if the GM tab crashes, and is released on a clean close or a switch
-  // to Player.
-  const gmTabId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-  /** @type {ReturnType<typeof setInterval> | null} */
-  let gmHeartbeat = null;
-
-  function tryClaimGM() {
-    const next = claimLock(loadLock(), gmTabId, Date.now());
-    if (!next) return false;
-    saveLock(next);
-    if (gmHeartbeat === null) {
-      gmHeartbeat = setInterval(() => saveLock({ id: gmTabId, at: Date.now() }), GM_LOCK_HEARTBEAT);
-    }
-    return true;
-  }
-
-  function dropGMClaim() {
-    if (gmHeartbeat !== null) clearInterval(gmHeartbeat);
-    gmHeartbeat = null;
-    releaseLock(gmTabId);
-  }
+  // to Player. Its onYield covers the case where this tab was frozen past the
+  // TTL and another tab took GM over: yield rather than run two GM views.
+  const gmLock = createHeartbeatLock({
+    onYield: () => {
+      app.toasts.show('Another tab took over the GM view; this one switched to the Player view.');
+      roleSwitch.setRole('player');
+    },
+  });
 
   // The change callback references roleSwitch, but only via queueMicrotask /
   // later events, so the const is initialized before any read.
@@ -120,7 +100,7 @@ export function wireSessionControls(app) {
         role = 'player';
         queueMicrotask(() => roleSwitch.setRole('player'));
       }
-      if (role === 'gm' && !tryClaimGM()) {
+      if (role === 'gm' && !gmLock.claim(GM_LOCK_KEY)) {
         app.toasts.show('Another tab is running the GM view; this one stays on the Player view.');
         role = 'player';
         // During the initial mount the switch is still being constructed; sync its
@@ -128,7 +108,7 @@ export function wireSessionControls(app) {
         // callback, which settles immediately on the player branch.
         queueMicrotask(() => roleSwitch.setRole('player'));
       }
-      if (role === 'player') dropGMClaim();
+      if (role === 'player') gmLock.release();
       app.state.role = role;
       sessionStorage.setItem('campaign-builder:role', role);
       applyRole();
@@ -153,25 +133,6 @@ export function wireSessionControls(app) {
   // The stylesheet hides it outside the Player role by id.
   lockBtn.id = 'player-lock-btn';
   mustGetElement('role-switch-container').appendChild(lockBtn);
-
-  // Free the lock when the GM tab goes away so a follower can take over without
-  // waiting out the TTL. pagehide also covers tab discard and navigation.
-  window.addEventListener('pagehide', () => {
-    if (app.state.role === 'gm') dropGMClaim();
-  });
-
-  // Belt and braces: if another tab somehow claims the lock while this tab is
-  // GM (e.g. this tab was frozen past the TTL and its lock was taken over),
-  // yield to it rather than run two GM views.
-  window.addEventListener('storage', (event) => {
-    if (event.key !== GM_LOCK_KEY || app.state.role !== 'gm') return;
-    if (isHeldByOther(loadLock(), gmTabId, Date.now())) {
-      if (gmHeartbeat !== null) clearInterval(gmHeartbeat);
-      gmHeartbeat = null;
-      app.toasts.show('Another tab took over the GM view; this one switched to the Player view.');
-      roleSwitch.setRole('player');
-    }
-  });
 
   // Group the Play sidebar panels into Session / Story / Log tabs so the story
   // panels (quests, NPCs, handouts) and travelogue get their own space instead
