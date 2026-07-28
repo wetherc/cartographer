@@ -123,6 +123,12 @@ commit handle from `register`, and the scope skips that panel when it fans an
 edit out, because a panel already re-renders itself from its own commit path.
 Adding a fourth character tab is one registration.
 
+`view/CharacterClaim.js` owns this tab's claim on one character and the "Playing
+as" picker, and `splitParty.js` owns the GM's split switch and the regroup it
+forces. Both are mounted from here and call back into it — the claim to select a
+character or fall back to spectator, the switch to redraw the roster whose place
+buttons follow it.
+
 ### rehydrate.js
 
 Writes a loaded campaign over the running one: the grid's contents, the party
@@ -248,7 +254,7 @@ holder is alive. `release()` gives the key up, and so does `pagehide`. The
 `onYield` callback runs when another tab takes over the held key, which happens
 when this tab was frozen long enough for its record to pass the TTL.
 `sessionControls.js` claims the single GM key and yields by switching to the
-Player view. `partyWiring.js` claims a per-character key from
+Player view. `view/CharacterClaim.js` claims a per-character key from
 `characterLockKey` and yields by dropping to spectator.
 
 ### shortcuts.js and onboarding.js

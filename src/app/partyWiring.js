@@ -18,15 +18,11 @@ import { wireTabs } from '../ui/Tabs.js';
 import { mountTimePanel } from '../ui/TimePanel.js';
 import { advanceWatches, advanceToDawn, formatClock } from '../time/GameClock.js';
 import { isGM } from '../view/ViewRole.js';
-import {
-  BOUND_CHARACTER_SESSION_KEY,
-  characterLockKey,
-  initialBinding,
-  partyPermissions,
-} from '../view/CharacterBinding.js';
-import { createHeartbeatLock } from '../storage/GMLock.js';
-import { moveCharacter, isSplit, characterPosition, recallAll } from '../party/CharacterTokens.js';
+import { partyPermissions } from '../view/CharacterBinding.js';
+import { createCharacterClaim } from '../view/CharacterClaim.js';
+import { moveCharacter } from '../party/CharacterTokens.js';
 import { locationFields, readLocation } from './locationFields.js';
+import { wireSplitParty } from './splitParty.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -36,65 +32,26 @@ import { locationFields, readLocation } from './locationFields.js';
  * (rests restore the same character resources). Owns the selected-character
  * scope the sheet, inventory, and spellbook register into; registers
  * `refreshSelectedCharacter` on `app.actions` so other modules (e.g. condition
- * ticks at a new combat round) can refresh those panels.
+ * ticks at a new combat round) can refresh those panels. The two controls above
+ * the roster come from elsewhere: the character claim from
+ * `view/CharacterClaim.js`, the split switch from `splitParty.js`.
  * @param {AppContext} app
  */
 export function wireParty(app) {
   const { state } = app;
 
-  // This tab's bound character (Player view only): the one character this tab
-  // may play. Bound via ?character=<id> or the "Playing as" picker below.
-  /** @type {string | null} */
-  let boundCharacterId = null;
-  app.actions.getBoundCharacterId = () => boundCharacterId;
-
-  // Bindings are exclusive across tabs: claiming a character takes a
-  // heartbeat lock in localStorage (same machinery as the GM lock), so two
-  // player tabs can never both play "Hero". A failed claim leaves the tab a
-  // spectator with a toast explaining who has it. onYield covers the takeover
-  // case, where this tab was frozen past the lock's TTL and another tab picked
-  // its character up.
-  const bindingLock = createHeartbeatLock({
-    onYield: () => {
-      const name =
-        state.characters.find((c) => c.id === boundCharacterId)?.name ?? boundCharacterId;
-      boundCharacterId = null;
-      sessionStorage.removeItem(BOUND_CHARACTER_SESSION_KEY);
-      app.toasts.show(`Another tab took over ${name}; this tab is now a spectator.`);
-      scope.reselect();
-    },
+  // This tab's claim on one party member (Player view only), with the "Playing
+  // as" picker. Its three callbacks reach the character scope and the roster
+  // declared below, so none of them may run before those are mounted; the picker
+  // fires only on a GM's pick and the claim only mounts here.
+  const claim = createCharacterClaim({
+    container: mustGetElement('party-container'),
+    getCharacters: () => state.characters,
+    bind: (id) => selectCharacter(id),
+    spectate: () => scope.reselect(),
+    toast: (message) => app.toasts.show(message),
   });
-
-  /**
-   * Bind this tab to a character (or null for spectator), enforcing the
-   * cross-tab claim. Returns the binding that actually took effect.
-   * @param {string | null} id
-   * @returns {string | null}
-   */
-  function setBinding(id) {
-    if (id === boundCharacterId) return boundCharacterId;
-    if (id === null) {
-      bindingLock.release();
-    } else if (!bindingLock.claim(characterLockKey(id))) {
-      // The claim released the previous character's lock before it failed, so
-      // this tab now holds nothing and falls back to spectator.
-      const name = state.characters.find((c) => c.id === id)?.name ?? id;
-      app.toasts.show(`Another tab is already playing ${name}; this tab stays a spectator.`);
-      id = null;
-    }
-    boundCharacterId = id;
-    if (id) sessionStorage.setItem(BOUND_CHARACTER_SESSION_KEY, id);
-    else sessionStorage.removeItem(BOUND_CHARACTER_SESSION_KEY);
-    return id;
-  }
-
-  setBinding(
-    initialBinding(
-      location.search,
-      sessionStorage.getItem(BOUND_CHARACTER_SESSION_KEY),
-      state.characters,
-    ),
-  );
+  app.actions.getBoundCharacterId = claim.getBoundId;
 
   /**
    * The selected character, the roster write-back, and the fan-out to the
@@ -119,9 +76,9 @@ export function wireParty(app) {
     },
     onSelect: () => {
       characterRoster.update();
-      updateBindingPicker();
+      claim.updatePicker();
     },
-    selectedId: boundCharacterId ?? state.characters[0]?.id ?? null,
+    selectedId: claim.getBoundId() ?? state.characters[0]?.id ?? null,
   });
   const selectCharacter = scope.select;
   const selectedCharacter = scope.getSelected;
@@ -131,137 +88,15 @@ export function wireParty(app) {
    * @returns {{ editBase: boolean, play: boolean, hp: boolean }} */
   function selectedPermissions() {
     const character = selectedCharacter();
-    return partyPermissions(state.role, boundCharacterId, character?.id ?? '');
+    return partyPermissions(state.role, claim.getBoundId(), character?.id ?? '');
   }
 
-  // "Playing as" picker, Player view only (hidden for the GM via CSS): binds
-  // this tab to one character, or to none for a spectator tab. The URL form
-  // (?character=<id>) survives reloads; the picker is per-tab session state.
-  const binding = document.createElement('label');
-  binding.className = 'party-binding';
-  const bindingLabel = document.createElement('span');
-  bindingLabel.className = 'party-binding__label';
-  bindingLabel.textContent = 'Playing as';
-  const bindingSelect = document.createElement('select');
-  bindingSelect.className = 'field';
-  bindingSelect.setAttribute('aria-label', 'Character this tab plays as');
-  binding.append(bindingLabel, bindingSelect);
-  mustGetElement('party-container').appendChild(binding);
-  bindingSelect.addEventListener('change', () => {
-    const took = setBinding(bindingSelect.value === '' ? null : bindingSelect.value);
-    if (took) selectCharacter(took);
-    else scope.reselect();
-  });
-
-  function updateBindingPicker() {
-    // A binding whose character left the roster silently resolves to spectator.
-    if (boundCharacterId && !state.characters.some((c) => c.id === boundCharacterId)) {
-      setBinding(null);
-    }
-    bindingSelect.innerHTML = '';
-    const spectator = document.createElement('option');
-    spectator.value = '';
-    spectator.textContent = 'Spectator (view only)';
-    bindingSelect.appendChild(spectator);
-    for (const character of state.characters) {
-      const option = document.createElement('option');
-      option.value = character.id;
-      option.textContent = character.name;
-      bindingSelect.appendChild(option);
-    }
-    bindingSelect.value = boundCharacterId ?? '';
-  }
-  updateBindingPicker();
-
-  // GM-only (hidden from players via CSS) switch governing whether the party
-  // may split up. Off by default: no individual tokens or name labels, and
-  // everyone moves simultaneously with the party marker. Turning it off while
-  // characters stand apart first regroups the whole party at one member's
-  // position, chosen by the GM.
-  const split = document.createElement('label');
-  split.className = 'party-split';
-  const splitInput = document.createElement('input');
-  splitInput.type = 'checkbox';
-  splitInput.checked = state.splitParty;
-  splitInput.setAttribute('aria-label', 'Allow splitting the party');
-  const splitLabel = document.createElement('span');
-  splitLabel.textContent = 'Allow splitting the party';
-  split.append(splitInput, splitLabel);
-  mustGetElement('party-container').appendChild(split);
-
-  /** Refresh everything the toggle changes: tokens/labels, roster place buttons. */
-  function syncSplitViews() {
-    app.actions.syncPartyMarker();
-    characterRoster.update();
-    app.actions.markDirty();
-  }
-
-  /**
-   * Gather the whole party at one member's position before disallowing the
-   * split: the GM picks the character, everyone teleports to where they stand
-   * (a member still with the party means the current party tile). Resolves
-   * false when the GM cancels, leaving the toggle on.
-   * @returns {Promise<boolean>}
-   */
-  async function regroupParty() {
-    if (!isSplit(state.characters)) return true;
-    const values = await promptModal(
-      'Regroup the party',
-      [
-        {
-          name: 'at',
-          label: 'Teleport everyone to',
-          type: 'select',
-          options: state.characters.map((c) => {
-            const at = characterPosition(c, app.partyTracker.getPosition());
-            const node = app.grid.getNode(at.nodeId);
-            return {
-              value: c.id,
-              label: c.location
-                ? `${c.name} — ${node?.name ?? at.nodeId} (tile ${at.tileId})`
-                : `${c.name} — with the party`,
-            };
-          }),
-        },
-      ],
-      { submitLabel: 'Regroup' },
-    );
-    if (!values) return false;
-    const chosen = state.characters.find((c) => c.id === values.at);
-    if (!chosen) return false;
-    const target = characterPosition(chosen, app.partyTracker.getPosition());
-    app.partyTracker.moveTo(target.nodeId, target.tileId);
-    state.characters = recallAll(state.characters);
-    app.views.mapCanvas.refreshNode(app.navigator.getCurrentNode());
-    app.views.regionTree.update();
-    app.views.encounterPanel.update();
-    app.views.initiativePanel.update();
-    app.views.npcPanel.update();
-    app.views.handoutPanel.update();
-    const node = app.grid.getNode(target.nodeId);
-    app.actions.logEvent(
-      'travel',
-      `The party regroups at ${chosen.name}'s position in ${node?.name ?? target.nodeId} (tile ${target.tileId}).`,
-    );
-    app.actions.maybeTriggerEncounter();
-    return true;
-  }
-
-  splitInput.addEventListener('change', async () => {
-    if (splitInput.checked) {
-      state.splitParty = true;
-      app.actions.logEvent('note', 'The GM allows the party to split up.');
-      syncSplitViews();
-      return;
-    }
-    const regrouped = await regroupParty();
-    if (!regrouped) {
-      splitInput.checked = true; // cancelled: the party stays split
-      return;
-    }
-    state.splitParty = false;
-    app.actions.logEvent('note', 'The GM gathers the party; splitting up is no longer allowed.');
-    syncSplitViews();
+  // GM-only (hidden from players via CSS): whether characters may stand apart
+  // from the party marker. The roster's per-character place buttons follow it,
+  // which is why it redraws the roster mounted below.
+  const splitParty = wireSplitParty(app, {
+    container: mustGetElement('party-container'),
+    refreshRoster: () => characterRoster.update(),
   });
 
   const characterRoster = mountCharacterRoster(mustGetElement('party-container'), {
@@ -473,7 +308,7 @@ export function wireParty(app) {
   app.views.partyPanels = {
     update: () => {
       timePanel.update();
-      splitInput.checked = state.splitParty;
+      splitParty.update();
       const selectedId = scope.getSelectedId();
       const stillThere = state.characters.some((c) => c.id === selectedId);
       if (stillThere) scope.reselect();

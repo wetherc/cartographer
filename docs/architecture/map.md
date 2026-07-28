@@ -300,7 +300,7 @@ the same `revealAround` path.
 
 All of this individual movement sits behind the `splitParty` flag, persisted
 on `CampaignState` and false by default, toggled by a GM-only switch in the
-Party panel (`partyWiring.js`). While the switch is off, the app behaves as if
+Party panel (`app/splitParty.js`). While the switch is off, the app behaves as if
 individual movement did not exist: `syncPartyMarker` passes no tokens to the
 canvas (only the shared marker renders), the roster hides its place action,
 and a bound player's map click is a no-op. The party moves simultaneously, by
