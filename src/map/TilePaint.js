@@ -3,6 +3,7 @@ import { inBounds, parseCoords, tileIdAt } from './MapGeometry.js';
 import { findRegionGroups } from './RegionGroups.js';
 import { withNodeTiles } from './TileIndex.js';
 import { kindOf } from './TilePalette.js';
+import { memoizeByIdentity } from '../util/memoize.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
@@ -123,26 +124,23 @@ export function paintTile(node, tileId, imageRef, overlay = false, span = 1) {
  */
 
 /**
- * Cached span blocks per node, keyed by the node object — safe because every
- * tile mutation replaces the node immutably (the TileIndex contract), so a
- * stale node can never serve fresh reads. The renderer calls spanBlocks every
- * frame; without this a pan re-scans (and regex-parses) every tile per frame.
- * @type {WeakMap<MapNode, SpanBlock[]>}
- */
-const spanCache = new WeakMap();
-
-/**
  * Every scaled-art block on a node: each tile with span > 1 yields its anchor
  * plus the rect (clamped to the grid) its image covers, with the covered tile
  * ids the renderer uses to skip those cells' own base images. Pure geometry —
- * covered cells need not hold tiles. Memoized per node; treat the returned
- * array as read-only.
+ * covered cells need not hold tiles. Memoized on the node object, which every
+ * tile mutation replaces (the TileIndex contract); the renderer calls this every
+ * frame, and without the cache a pan re-scans (and regex-parses) every tile per
+ * frame. Treat the returned array as read-only.
  * @param {MapNode} node
  * @returns {SpanBlock[]}
  */
-export function spanBlocks(node) {
-  const cached = spanCache.get(node);
-  if (cached) return cached;
+export const spanBlocks = memoizeByIdentity(computeSpanBlocks);
+
+/**
+ * @param {MapNode} node
+ * @returns {SpanBlock[]}
+ */
+function computeSpanBlocks(node) {
   /** @type {SpanBlock[]} */
   const blocks = [];
   for (const tile of node.tiles) {
@@ -158,7 +156,6 @@ export function spanBlocks(node) {
     }
     blocks.push({ tile, minX: coords.x, minY: coords.y, maxX, maxY, tileIds });
   }
-  spanCache.set(node, blocks);
   return blocks;
 }
 

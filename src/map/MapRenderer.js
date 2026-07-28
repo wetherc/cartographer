@@ -5,17 +5,23 @@ import { overlayList } from './TileGrid.js';
 import { tileAtXY } from './TileIndex.js';
 import { MapMarkers } from './MapMarkers.js';
 import { MapDecorations } from './MapDecorations.js';
+import { memoizeByIdentity } from '../util/memoize.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
 
 /**
- * Cached revealed-id sets per node, keyed by the node object — the same
+ * The revealed tile ids on a node, memoized on the node object — the same
  * immutable-replacement invariant TileIndex relies on. Rebuilding this Set per
  * frame was a full tile scan on every pan/zoom frame.
- * @type {WeakMap<MapNode, Set<string>>}
+ * @type {(node: MapNode) => Set<string>}
  */
-const revealedCache = new WeakMap();
+const revealedIdsOf = memoizeByIdentity((node) => {
+  /** @type {Set<string>} */
+  const ids = new Set();
+  for (const t of node.tiles) if (t.revealed) ids.add(t.id);
+  return ids;
+});
 
 /**
  * Whether any of a block's tiles is revealed, and so whether the block draws at
@@ -163,13 +169,7 @@ export class MapRenderer {
    */
   _revealedIds(view) {
     if (view.revealAll || !view.node) return null;
-    let ids = revealedCache.get(view.node);
-    if (!ids) {
-      ids = new Set();
-      for (const t of view.node.tiles) if (t.revealed) ids.add(t.id);
-      revealedCache.set(view.node, ids);
-    }
-    return ids;
+    return revealedIdsOf(view.node);
   }
 
   /**

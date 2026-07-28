@@ -1,5 +1,6 @@
 import { parseCoords, tileIdAt } from './MapGeometry.js';
 import { getTile } from './TileGrid.js';
+import { memoizeByIdentity } from '../util/memoize.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -16,26 +17,23 @@ import { getTile } from './TileGrid.js';
  */
 
 /**
- * Cached region groups per node, keyed by the node object — safe because every
- * tile mutation replaces the node immutably (the TileIndex contract). Group
- * objects are therefore stable per node, which is what lets the chunk cache
- * below key on them directly.
- * @type {WeakMap<MapNode, RegionGroup[]>}
- */
-const groupCache = new WeakMap();
-
-/**
  * Groups a node's tiles into contiguous (4-neighbor) blocks that share the
  * same non-null childNodeId, so a region can be entered from any tile in a
  * multi-tile block instead of a single point. Tiles with no childNodeId, or
- * ids that don't parse as "x,y" grid coordinates, are ignored. Memoized per
- * node; treat the returned array as read-only.
+ * ids that don't parse as "x,y" grid coordinates, are ignored. Memoized on the
+ * node object, which every tile mutation replaces (the TileIndex contract), so
+ * group objects are stable per node — that is what lets the chunk cache below
+ * key on them directly. Treat the returned array as read-only.
  * @param {MapNode} node
  * @returns {RegionGroup[]}
  */
-export function findRegionGroups(node) {
-  const cached = groupCache.get(node);
-  if (cached) return cached;
+export const findRegionGroups = memoizeByIdentity(computeRegionGroups);
+
+/**
+ * @param {MapNode} node
+ * @returns {RegionGroup[]}
+ */
+function computeRegionGroups(node) {
   // Keyed by the tile's own id, not by a re-formatted coordinate: a group's
   // members are reported as `tile.id`, and an id that parses but isn't written
   // canonically ("01,2") would otherwise be reported under a key no lookup can
@@ -101,7 +99,6 @@ export function findRegionGroups(node) {
     groups.push({ childNodeId, tileIds: members, cells, minX, minY, maxX, maxY });
   }
 
-  groupCache.set(node, groups);
   return groups;
 }
 

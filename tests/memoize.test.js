@@ -17,6 +17,31 @@ test('memoizeByIdentity computes once per argument object', () => {
   assert.equal(calls, 2, 'an equal but distinct object is its own entry');
 });
 
+test('memoizeByIdentity recomputes when the key object is replaced', () => {
+  let calls = 0;
+  const label = memoizeByIdentity((/** @type {{ tiles: string[] }} */ input) => {
+    calls += 1;
+    return input.tiles.join(',');
+  });
+  let node = { tiles: ['a'] };
+  assert.equal(label(node), 'a');
+  // An immutable writer hands back a new object rather than mutating, which is
+  // what invalidates the entry.
+  node = { ...node, tiles: [...node.tiles, 'b'] };
+  assert.equal(label(node), 'a,b');
+  assert.equal(calls, 2);
+  assert.equal(label(node), 'a,b');
+  assert.equal(calls, 2, 'the replacement is cached in its turn');
+});
+
+test('memoizeByIdentity keeps two memoized functions independent', () => {
+  const key = { n: 2 };
+  const double = memoizeByIdentity((/** @type {{ n: number }} */ i) => i.n * 2);
+  const triple = memoizeByIdentity((/** @type {{ n: number }} */ i) => i.n * 3);
+  assert.equal(double(key), 4);
+  assert.equal(triple(key), 6);
+});
+
 test('memoizeByIdentity caches a falsy result', () => {
   let calls = 0;
   const zero = memoizeByIdentity(() => {

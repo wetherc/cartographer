@@ -1,4 +1,5 @@
 import { indexById } from '../util/indexById.js';
+import { memoizeByIdentity } from '../util/memoize.js';
 import { applyDamage, effectiveStatBlock, heal, isDefeated } from '../entities/Encounter.js';
 import { armorClass } from '../entities/Equipment.js';
 import { damageCharacter, restoreResource, getHP, HP_RESOURCE_ID } from '../entities/Character.js';
@@ -37,9 +38,9 @@ import { replaceById } from '../entities/Roster.js';
  * immutably (replaceById), so an index keyed on the array object can never
  * serve stale reads — the TileIndex pattern applied to rosters. Lookups
  * during a fight are O(1) instead of a `.find` per participant per click.
- * @type {WeakMap<readonly { id: string }[], Map<string, { id: string }>>}
+ * @type {(items: readonly { id: string }[]) => Map<string, { id: string }>}
  */
-const indexCache = new WeakMap();
+const memoizedIndex = memoizeByIdentity(indexById);
 
 /**
  * @template {{ id: string }} T
@@ -47,12 +48,7 @@ const indexCache = new WeakMap();
  * @returns {Map<string, T>}
  */
 function cachedIndex(items) {
-  let index = indexCache.get(items);
-  if (!index) {
-    index = indexById(items);
-    indexCache.set(items, index);
-  }
-  return /** @type {Map<string, T>} */ (index);
+  return /** @type {Map<string, T>} */ (memoizedIndex(items));
 }
 
 /**
