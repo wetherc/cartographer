@@ -314,6 +314,35 @@ is a ritual either, so the flag currently serves GM-authored and imported spells
 see [the curated-spells note](../spells-missing.md) for what the built-in list
 covers.
 
+## Saving throws
+
+`entities/Checks.js` holds both halves of a save. `saveBonus(character, ability)`
+is what a character adds: the ability modifier taken from the equipment-adjusted
+scores, plus the proficiency bonus when the class granted that save.
+`resolveSave(bonus, dc, { mode, rng })` rolls one d20 through the shared dice
+roller and reports `{ roll, total, dc, natural, success }`, succeeding on a tie
+with the DC. `savingThrow(character, ability, dc, opts)` composes the two and
+adds `proficient` so a readout can say why the number is what it is.
+
+The two entry points exist because a save is not always rolled by a character.
+`Casting.js`'s save effect resolves every target through `resolveSave`, and its
+targets may be encounters or NPCs, which record no ability scores in a character's
+shape and carry no proficiency lists. So the resolver takes a bonus that the
+caller worked out, and only the character path goes through `saveBonus`.
+
+The cast dialog reflects that split. `app/combatants.js`'s `targetSaveBonus`
+returns a derived bonus for a party character and nothing for a foe;
+`app/spellCast.js` decorates a save spell's targets with whatever comes back,
+shows it in the target picker (`Rook (WIS +6)`, in place of the AC a save never
+reads), and asks for one hand-entered number to cover the targets that have none.
+When every target carries its own, the field is left out. The session log names
+the bonus beside the roll, matching how a weapon attack's log names the ability
+and proficiency behind its total.
+
+A natural 1 and a natural 20 are ordinary results on a save, unlike on an attack
+roll, so `natural` is reported for the log rather than acted on. Skill checks,
+passive scores, and expertise are not modeled yet; only saves are.
+
 ## The UI layer over entities
 
 `ui/CharacterSheet.js`, `ui/InventoryPanel.js`, and `ui/EncounterPanel.js` are

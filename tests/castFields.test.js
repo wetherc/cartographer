@@ -162,3 +162,53 @@ test('effectiveSlot ignores the picked level for a ritual', () => {
   );
   assert.equal(effectiveSlot(fireBolt, '', false), 0);
 });
+
+/** A save spell, standing in for Hold Person. @type {any} */
+const holdPerson = {
+  id: 'hold-person',
+  name: 'Hold Person',
+  level: 2,
+  effect: {
+    kind: 'save',
+    saveAbility: 'WIS',
+    damage: [],
+    halfOnSave: false,
+    condition: 'Paralyzed',
+  },
+};
+
+test('a save spell names each target’s own bonus where the app knows it', () => {
+  // AC is what an attack rolls against and means nothing to a save, so the
+  // picker shows the number this cast actually turns on.
+  const mixed = [target('a', 'Goblin', 14), { ...target('b', 'Rook', 15), saveBonus: 6 }];
+  const fields = castFields(holdPerson, mixed, [2], 13, 1);
+  assert.deepEqual(
+    fields.find((f) => f.name === 'target').options.map((o) => o.label),
+    ['Goblin', 'Rook (WIS +6)'],
+  );
+  const entered = fields.find((f) => f.name === 'save-bonus');
+  assert.equal(entered.label, 'Save bonus (targets without one)');
+});
+
+test('the hand-entered save bonus is left out when every target carries one', () => {
+  const known = [
+    { ...target('a', 'Rook', 15), saveBonus: 6 },
+    { ...target('b', 'Vex', 14), saveBonus: -1 },
+  ];
+  const fields = castFields(holdPerson, known, [2], 13, 2);
+  assert.equal(
+    fields.some((f) => f.name === 'save-bonus'),
+    false,
+    'there is nothing left for the number to govern',
+  );
+  assert.deepEqual(
+    fields.find((f) => f.name === 'targets').options.map((o) => o.label),
+    ['Rook (WIS +6)', 'Vex (WIS -1)'],
+  );
+  assert.equal(fields.find((f) => f.name === 'dc').value, 13, 'the DC stays editable');
+});
+
+test('a save spell against foes alone keeps the one hand-entered bonus', () => {
+  const fields = castFields(holdPerson, targets, [2], 13, 1);
+  assert.equal(fields.find((f) => f.name === 'save-bonus').label, 'Target save bonus');
+});

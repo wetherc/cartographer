@@ -4,6 +4,7 @@ import { castSpell, materialCheck, maxTargets, scalingSteps } from '../entities/
 import { removeItem, spellSource } from '../entities/Character.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { spellSaveDC, spellAttackBonus, hasRitualCasting } from '../entities/Classes.js';
+import { formatModifier } from '../entities/Modifiers.js';
 import { encountersOnTile } from '../entities/Encounter.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { castableSlotLevels } from '../entities/SpellSlots.js';
@@ -16,6 +17,7 @@ import {
   asTarget,
   applyToTarget,
   applyConditionToTarget,
+  targetSaveBonus,
 } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -66,6 +68,26 @@ function rosterTargets(app, spell) {
   const foes = encountersOnTile(state.encounters, position).map((e) => asTarget(e, 'encounter'));
   const npcs = npcsOnTile(state.npcs, position).map((n) => asTarget(n, 'npc'));
   return [...foes, ...npcs];
+}
+
+/**
+ * How a target reads in the picker: the number the cast rolls against, since
+ * that is what the choice turns on. An attack rolls against AC; a save rolls
+ * against the target's own bonus in the spell's ability, shown where the app
+ * knows it and left off a foe whose save the GM is about to type in; a heal
+ * rolls against nothing, so the name stands alone.
+ * @param {Spell} spell
+ * @param {import('./combatants.js').CombatTarget} target
+ * @returns {string}
+ */
+function targetLabel(spell, target) {
+  const kind = spell.effect.kind;
+  if (kind === 'heal') return target.name;
+  if (kind === 'save') {
+    if (target.saveBonus === undefined) return target.name;
+    return `${target.name} (${spell.effect.saveAbility} ${formatModifier(target.saveBonus)})`;
+  }
+  return `${target.name} (AC ${target.ac})`;
 }
 
 /** The allocation grid's caption, restated when the slot level changes how many
@@ -132,8 +154,13 @@ export function castCap(spell, slotLevel, casterLevel) {
  * A ritual cast spends no slot, so a caster out of slots can still make one:
  * the slot picker is left out rather than the whole dialog refused, and the
  * ritual box opens ticked because that is the only cast still available.
+ *
+ * A save spell's DC is offered for editing, and so is a bonus for the targets
+ * whose own save the app cannot read. A target that carries a `saveBonus` rolls
+ * that instead, and the picker shows it, so the field is left out when every
+ * target has one.
  * @param {Spell} spell
- * @param {{ id: string, name: string, ac: number }[]} targets
+ * @param {import('./combatants.js').CombatTarget[]} targets
  * @param {number[]} slotLevels available slot levels at or above the spell's
  * @param {number} saveDC
  * @param {number} cap how many targets this cast may reach; Infinity for an area
@@ -173,10 +200,7 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
   }
   if (kind !== 'utility') {
     const noun = kind === 'heal' ? 'Recipient' : 'Target';
-    const options = targets.map((t) => ({
-      value: t.id,
-      label: kind === 'heal' ? t.name : `${t.name} (AC ${t.ac})`,
-    }));
+    const options = targets.map((t) => ({ value: t.id, label: targetLabel(spell, t) }));
     const projectiles = spell.effect.kind === 'attack' ? spell.effect.projectiles : undefined;
     if (projectiles && cap > 1) {
       fields.push({
@@ -220,7 +244,18 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
   }
   if (kind === 'save') {
     fields.push({ name: 'dc', label: 'Save DC', type: 'number', value: saveDC, min: 1 });
-    fields.push({ name: 'save-bonus', label: 'Target save bonus', type: 'number', value: 0 });
+    // The hand-entered bonus covers only the targets whose own save the app
+    // cannot read, so a cast whose every target has one does not ask for it.
+    if (targets.some((t) => t.saveBonus === undefined)) {
+      fields.push({
+        name: 'save-bonus',
+        label: targets.every((t) => t.saveBonus === undefined)
+          ? 'Target save bonus'
+          : 'Save bonus (targets without one)',
+        type: 'number',
+        value: 0,
+      });
+    }
     fields.push({
       name: 'mode',
       label: 'Save roll',
@@ -305,20 +340,31 @@ export async function castSpellOutOfCombat(app, caster, spell) {
  * @param {AppContext} app
  * @param {T} entity the real combatant casting
  * @param {Spell} spell
- * @param {{ id: string, name: string, ac: number }[]} targets
+ * @param {import('./combatants.js').CombatTarget[]} offered
  * @param {(next: T) => void} writeBack stores the slot-spent entity
  */
-async function runCast(app, entity, spell, targets, writeBack) {
+async function runCast(app, entity, spell, offered, writeBack) {
   // The pure spell helpers read a caster's class/level/stats/resources/
   // spellbook — exactly the fields `toCaster` surfaces — so the view stands in
   // for a Character at the type level; runtime only ever touches those fields.
   const caster = /** @type {import('../types/entities.js').Character} */ (
     /** @type {unknown} */ (toCaster(entity))
   );
-  if (spell.effect.kind !== 'utility' && targets.length === 0) {
+  if (spell.effect.kind !== 'utility' && offered.length === 0) {
     app.toasts.show('No target available.');
     return;
   }
+  // A save spell's targets each get their own bonus where the app can read one,
+  // so the dialog shows what a target will add and the resolver rolls it. The
+  // decoration happens once here rather than in the two target assemblies, since
+  // the ability being saved against is a property of the spell, not the target.
+  const saveAbility = spell.effect.kind === 'save' ? spell.effect.saveAbility : null;
+  const targets = saveAbility
+    ? offered.map((t) => {
+        const bonus = targetSaveBonus(app, t.id, saveAbility);
+        return bonus === undefined ? t : { ...t, saveBonus: bonus };
+      })
+    : offered;
 
   // Leveled spells cast from a slot at or above their level that still has a
   // charge — leveled or pact; the picker offers each such level.
@@ -396,12 +442,12 @@ async function runCast(app, entity, spell, targets, writeBack) {
     app.toasts.show(`${spell.name} needs ${spell.materials?.text}.`);
     return;
   }
-  // Every target rolls its save against the same hand-entered bonus, since only
-  // a party character has a save surface to read one from today.
-  const castTargets =
-    spell.effect.kind === 'save'
-      ? chosen.map((t) => ({ ...t, saveBonus: Number(values['save-bonus']) || 0, saveMode: mode }))
-      : chosen;
+  // A target carrying its own bonus rolls that; a foe with no save surface to
+  // read falls back to the one number the GM typed for all of them.
+  const entered = Number(values['save-bonus']) || 0;
+  const castTargets = saveAbility
+    ? chosen.map((t) => ({ ...t, saveBonus: t.saveBonus ?? entered, saveMode: mode }))
+    : chosen;
 
   const result = castSpell(caster, spell, {
     slotLevel,
@@ -553,15 +599,20 @@ function applyOutcomes(app, spell, result) {
     // structured duration gives in rounds; an open-ended duration leaves the
     // chip for the GM to clear.
     const rounds = durationInRounds(spell.duration);
+    const ability = /** @type {import('../types/spell.js').SpellSaveEffect} */ (spell.effect)
+      .saveAbility;
     for (const o of /** @type {any[]} */ (result.outcomes)) {
       const verdict = o.saved ? 'saves' : 'fails';
+      // The bonus is named alongside the roll, the way an attack's log names the
+      // ability and proficiency behind its number.
+      const bonus = `${ability} ${formatModifier(o.target.saveBonus ?? 0)}`;
       const imposed = o.condition
         ? applyConditionToTarget(app, o.target.id, o.condition, rounds)
         : false;
       const cond = o.condition ? `, ${o.condition}${imposed ? '' : ' (untracked)'}` : '';
       app.actions.logEvent(
         'combat',
-        `${o.target.name} ${verdict} DC ${o.dc} (${o.save.total}) — takes ${o.taken} damage${cond}.`,
+        `${o.target.name} ${verdict} DC ${o.dc} (${bonus}: ${o.save.total}) — takes ${o.taken} damage${cond}.`,
       );
       applyToTarget(app, o.target.id, o.taken, false);
     }

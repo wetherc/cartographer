@@ -1,4 +1,5 @@
 import { damageReadout, roll, rollDamage } from '../dice/DiceRoller.js';
+import { resolveSave } from './Checks.js';
 import { getSpellbook, spendResource } from './Character.js';
 import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
 
@@ -506,11 +507,12 @@ function resolveEffect(spell, ctx) {
     const parts = scaledParts(effect.damage, spell.scaling, steps);
     const damage = rollDamage(parts, 0, rng);
     return targets.map((target) => {
-      const save = roll(
-        { counts: { d20: 1 }, modifier: target.saveBonus ?? 0, mode: target.saveMode ?? 'normal' },
+      // The target's bonus is already worked out by the caller: derived from a
+      // party character's own saves, or hand-entered for a foe.
+      const { roll: save, success: saved } = resolveSave(target.saveBonus ?? 0, saveDC, {
+        mode: target.saveMode ?? 'normal',
         rng,
-      );
-      const saved = save.total >= saveDC;
+      });
       const taken = saved ? (effect.halfOnSave ? Math.floor(damage.total / 2) : 0) : damage.total;
       return {
         target,

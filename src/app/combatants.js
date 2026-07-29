@@ -5,6 +5,7 @@ import { armorClass } from '../entities/Equipment.js';
 import { damageCharacter, restoreResource, getHP, HP_RESOURCE_ID } from '../entities/Character.js';
 import { isOnTile } from '../entities/NPC.js';
 import { addCondition } from '../entities/Conditions.js';
+import { saveBonus } from '../entities/Checks.js';
 import { replaceById } from '../entities/Roster.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -29,8 +30,10 @@ import { replaceById } from '../entities/Roster.js';
 
 /**
  * The target shape combat dialogs and the spell resolver consume: enough to
- * pick from a list (name), address the result (id), and roll against (ac).
- * @typedef {{ id: string, name: string, ac: number }} CombatTarget
+ * pick from a list (name), address the result (id), and roll against (ac). A
+ * save spell's targets additionally carry `saveBonus` where the target's own
+ * save is known, which is a party character (see `targetSaveBonus`).
+ * @typedef {{ id: string, name: string, ac: number, saveBonus?: number }} CombatTarget
  */
 
 /**
@@ -180,6 +183,21 @@ export function asTarget(entity, kind) {
     ac = npc.stats?.AC ?? 10;
   }
   return { id: entity.id, name: entity.name, ac };
+}
+
+/**
+ * The save bonus a target rolls with, when the app can work it out: a party
+ * character's ability modifier plus proficiency, from its own stats and
+ * proficiency lists. Undefined for an encounter or an NPC, neither of which
+ * records saving throws, leaving those to the GM's hand-entered number.
+ * @param {AppContext} app
+ * @param {string} id
+ * @param {string} ability
+ * @returns {number | undefined}
+ */
+export function targetSaveBonus(app, id, ability) {
+  const found = findCombatant(app, id);
+  return found?.kind === 'character' ? saveBonus(found.entity, ability) : undefined;
 }
 
 /**
