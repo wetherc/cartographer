@@ -51,9 +51,6 @@
    form. */
 .modal__multiselect,
 .inventory-panel__spell-picker {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
   max-height: 12rem;
   overflow-y: auto;
   padding: var(--space-1) var(--space-2);
@@ -63,9 +60,6 @@
 }
 
 .modal__multiselect-option {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   font-size: var(--text-label);
   cursor: pointer;
 }
@@ -84,16 +78,7 @@
 
 /* The cast dialog's projectile allocation: a row per reachable creature with a
    small number input, and a live count of what is still unassigned. */
-.modal__allocation {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
 .modal__allocation-rows {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
   max-height: 12rem;
   overflow-y: auto;
   padding: var(--space-1) var(--space-2);
@@ -103,9 +88,6 @@
 }
 
 .modal__allocation-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   font-size: var(--text-label);
 }
 
@@ -148,23 +130,7 @@
    ========================================================================== */
 
 .character-sheet__spells {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
   margin-top: var(--space-2);
-}
-
-.character-sheet__spell-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.character-sheet__spell-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  align-items: center;
 }
 
 .character-sheet__spell-chip {
@@ -183,12 +149,6 @@
    known/prepared badges. Rows open the detail modal to learn/prepare/forget.
    ========================================================================== */
 
-.spellbook {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 .spellbook__heading {
   display: flex;
   flex-wrap: wrap;
@@ -201,25 +161,14 @@
   font-weight: 600;
 }
 
-.spellbook__group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
 .spellbook__list {
-  display: flex;
-  flex-direction: column;
   gap: 0.15rem;
 }
 
 /* Each spell is a full-width button: name left, badges right. Known spells sit
    slightly brighter so the class list reads as "have / could learn". */
 .spellbook__row {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: var(--space-2);
   width: 100%;
   padding: var(--space-1) var(--space-2);
   border: 1px solid var(--border);
@@ -273,10 +222,6 @@
    ========================================================================== */
 
 .spell-detail__subtitle {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
   margin: 0 0 var(--space-2);
   color: var(--text-muted);
 }
@@ -291,11 +236,6 @@
   grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
   gap: var(--space-1) var(--space-3);
   margin-bottom: var(--space-2);
-}
-
-.spell-detail__meta-cell {
-  display: flex;
-  flex-direction: column;
 }
 
 .spell-detail__effect {

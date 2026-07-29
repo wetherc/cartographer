@@ -39,7 +39,7 @@ export function mountTileInspector(container, opts) {
 
   const empty = emptyState('Select a tile to inspect it.');
 
-  const form = el('div', 'tile-inspector__form');
+  const form = el('div', 'u-col u-g3');
 
   const coordLabel = el('div', 'tile-inspector__coord u-muted');
 
@@ -53,7 +53,7 @@ export function mountTileInspector(container, opts) {
       poiType: typeSelect.value === '' ? null : /** @type {POIType} */ (typeSelect.value),
     });
   });
-  const typeField = el('label', 'tile-inspector__field u-muted', 'POI type', typeSelect);
+  const typeField = el('label', 'tile-inspector__field u-col u-g1 u-muted', 'POI type', typeSelect);
 
   // Discoverable
   const discInput = el('input');
@@ -61,7 +61,7 @@ export function mountTileInspector(container, opts) {
   discInput.addEventListener('change', () => opts.onChange({ discoverable: discInput.checked }));
   const discField = el(
     'label',
-    'tile-inspector__field tile-inspector__field--inline u-muted',
+    'tile-inspector__field tile-inspector__field--inline u-row u-g2 u-muted',
     discInput,
     ' Discoverable',
   );
@@ -69,14 +69,19 @@ export function mountTileInspector(container, opts) {
   // Notes
   const notesInput = textareaField('', { rows: 4, className: 'tile-inspector__notes' });
   notesInput.addEventListener('input', () => opts.onChange({ notes: notesInput.value }));
-  const notesField = el('label', 'tile-inspector__field u-muted', 'Notes', notesInput);
+  const notesField = el('label', 'tile-inspector__field u-col u-g1 u-muted', 'Notes', notesInput);
 
   form.append(coordLabel, typeField, discField, notesField);
 
   // Region link (optional): which child node this tile zooms into. Only shown
   // when the caller supplies linking, i.e. in Build mode.
   const linkSelect = select([], '');
-  const linkField = el('label', 'tile-inspector__field u-muted', 'Zooms into', linkSelect);
+  const linkField = el(
+    'label',
+    'tile-inspector__field u-col u-g1 u-muted',
+    'Zooms into',
+    linkSelect,
+  );
   const newRegionBtn = textButton('New region here', () => opts.linking?.onCreateNew(), {
     className: 'tile-inspector__new-region',
   });

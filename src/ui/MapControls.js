@@ -25,7 +25,7 @@ import { el } from './dom.js';
  * @returns {{ update: () => void }}
  */
 export function mountMapControls(container, callbacks) {
-  const root = el('div', 'map-controls');
+  const root = el('div', 'map-controls u-row u-g1');
   container.appendChild(root);
 
   /**

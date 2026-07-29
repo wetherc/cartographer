@@ -44,7 +44,7 @@ function withOpts(control, { className, ariaLabel }) {
 export function labeled(caption, control, opts = {}) {
   const label = el(
     'label',
-    'inventory-panel__field-label u-muted',
+    'inventory-panel__field-label u-col u-g1 u-muted',
     el('span', '', caption),
     control,
   );
@@ -222,7 +222,9 @@ export function buildInlineForm({
 }) {
   const form = el(
     'div',
-    className ? `inventory-panel__form ${className}` : 'inventory-panel__form',
+    className
+      ? `inventory-panel__form u-col u-g2 ${className}`
+      : 'inventory-panel__form u-col u-g2',
   );
   nameInput.classList.add('inventory-panel__name-input');
 

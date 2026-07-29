@@ -74,7 +74,10 @@ export function mountCharacterRoster(container, options) {
       const current = character.id === selectedId;
       const select = el(
         'button',
-        classNames(['row-select character-roster__select', current && 'row-select--current']),
+        classNames([
+          'row-select character-roster__select u-row u-g2',
+          current && 'row-select--current',
+        ]),
         el('span', 'character-roster__label', `${character.name} (Lv ${character.level})`),
         hpMeter(character),
       );
@@ -82,7 +85,7 @@ export function mountCharacterRoster(container, options) {
       if (current) select.setAttribute('aria-current', 'true');
       select.addEventListener('click', () => options.onSelect(character.id));
 
-      const row = el('div', 'character-roster__row', select);
+      const row = el('div', 'character-roster__row u-row u-g1', select);
       if (canManage() && options.onPlace && (options.canPlace?.() ?? true)) {
         row.appendChild(
           iconButton(

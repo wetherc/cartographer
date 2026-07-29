@@ -65,7 +65,7 @@ export function mountQuestPanel(container, callbacks) {
 
       const body = el(
         'div',
-        'quest-panel__body',
+        'quest-panel__body u-col u-g1',
         el('span', 'quest-panel__title', quest.title),
         // A ternary rather than `&&`: an empty string is a legal child that `el`
         // would append as an empty text node, where absent notes should add

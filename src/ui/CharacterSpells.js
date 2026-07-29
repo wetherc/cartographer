@@ -31,7 +31,7 @@ export function buildSpellsSection(character, opts) {
   const className = getClass(primaryCasterClass(character)?.classId)?.name;
   return el(
     'div',
-    'character-sheet__spells',
+    'character-sheet__spells u-col u-g2',
     el('span', 'section-label', className ? `Spells (${className})` : 'Spells'),
     buildGroup('Cantrips', opts.resolveSpells(book.cantrips), opts),
     buildGroup('Prepared', opts.resolveSpells(book.prepared), opts),
@@ -47,7 +47,7 @@ export function buildSpellsSection(character, opts) {
  * @returns {HTMLElement}
  */
 function buildGroup(title, spells, opts) {
-  const list = el('div', 'character-sheet__spell-chips');
+  const list = el('div', 'u-row u-wrap u-g1');
   if (spells.length === 0) list.appendChild(emptyState('None'));
   for (const spell of spells) {
     list.appendChild(
@@ -68,5 +68,5 @@ function buildGroup(title, spells, opts) {
       ),
     );
   }
-  return el('div', 'character-sheet__spell-group', el('span', 'section-label', title), list);
+  return el('div', 'u-col u-g1', el('span', 'section-label', title), list);
 }

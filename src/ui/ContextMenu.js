@@ -41,7 +41,7 @@ export function openContextMenu(items, position) {
   // Return focus to whatever had it once the menu closes, matching Modal.js.
   const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
-  const menu = el('div', 'context-menu');
+  const menu = el('div', 'context-menu u-col');
   menu.setAttribute('role', 'menu');
 
   const buttons = items.map((item) => {

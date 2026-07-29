@@ -172,7 +172,7 @@ export function mountInitiativePanel(container, callbacks) {
       writers.push((frame) => {
         const view = frame.views[i];
         const turn = active && i === frame.state.index ? ' initiative-panel__row--active' : '';
-        row.className = `initiative-panel__row initiative-panel__row--${view?.side ?? 'party'}${turn}`;
+        row.className = `initiative-panel__row u-row u-g2 initiative-panel__row--${view?.side ?? 'party'}${turn}`;
         name.textContent = view?.name ?? 'Unknown combatant';
         init.textContent = String(frame.state.order[i]?.initiative ?? '');
       });

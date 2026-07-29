@@ -146,10 +146,10 @@ export function mountCharacterSheet(
     // full-width line each below it, so both read at a glance.
     const summary = el(
       'div',
-      'character-sheet__summary',
+      'character-sheet__summary u-col u-g1',
       el(
         'span',
-        'character-sheet__summary-top',
+        'character-sheet__summary-top u-row u-g2',
         name,
         character.race && el('span', 'character-sheet__race', character.race),
       ),
@@ -157,7 +157,7 @@ export function mountCharacterSheet(
 
     // Name, HP bar, and slot pips sit in the always-visible head; the sheet no
     // longer collapses, so the body's stats follow directly beneath.
-    const head = el('div', 'character-sheet__head', summary);
+    const head = el('div', 'character-sheet__head u-col u-g1', summary);
 
     const hp = getHP(character);
     if (hp) {
@@ -188,7 +188,7 @@ export function mountCharacterSheet(
         bonus: character.bonusHP ?? 0,
         flank,
       });
-      head.appendChild(el('div', 'character-sheet__hp-line', bar.element));
+      head.appendChild(el('div', 'character-sheet__hp-line u-row u-g1', bar.element));
       writers.push(() => {
         const pool = getHP(live());
         if (pool) bar.update(pool, live().bonusHP ?? 0);
@@ -266,7 +266,7 @@ export function mountCharacterSheet(
       input.addEventListener('change', () => onCommit(Number(input.value)));
       const row = el(
         'div',
-        'character-sheet__field-row u-muted',
+        'character-sheet__field-row u-row u-g1 u-muted',
         el('span', 'character-sheet__stat-key', key),
         input,
       );
@@ -376,10 +376,10 @@ export function mountCharacterSheet(
     // carries the custom pools.
     const pools = customPools(character);
     if (pools.length > 0) {
-      const resources = el('div', 'character-sheet__resources');
+      const resources = el('div', 'character-sheet__resources u-col u-g2');
       pools.forEach((pool, index) => {
         const label = el('span', 'character-sheet__resource-label');
-        const row = el('div', 'character-sheet__resource-row u-muted', label);
+        const row = el('div', 'character-sheet__resource-row u-row u-g2 u-muted', label);
         writers.push(() => {
           const next = customPools(live())[index];
           if (next) label.textContent = `${next.name} ${next.current}/${next.max}`;
@@ -420,7 +420,7 @@ export function mountCharacterSheet(
 
     const conditions = el(
       'div',
-      'character-sheet__conditions',
+      'character-sheet__conditions u-col u-g1',
       el('span', 'section-label', 'Conditions'),
     );
     // The bar reads and reports the whole list, so it stays mounted across

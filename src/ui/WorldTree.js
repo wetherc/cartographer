@@ -88,7 +88,7 @@ export function mountWorldTree(container, opts) {
 
     const row = el(
       'div',
-      'world-tree__row',
+      'world-tree__row u-row u-g1',
       // Collapsible trees give every row a fixed-width toggle slot so labels
       // line up; only rows with children get a live chevron in that slot.
       opts.collapsible &&

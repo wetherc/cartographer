@@ -8,16 +8,7 @@
 }
 
 .encounter-panel__row {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
   padding: var(--space-1) 0;
-}
-
-.encounter-panel__head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
 }
 
 .encounter-panel__row--defeated {
@@ -47,9 +38,6 @@
    ========================================================================== */
 
 .time-panel__readout {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   font-size: var(--text-body);
   font-weight: 600;
   margin-bottom: var(--space-2);
@@ -78,15 +66,7 @@
 
 .npc-panel__body {
   flex: 1;
-  display: flex;
-  flex-direction: column;
   gap: 0.1rem;
-}
-
-.npc-panel__head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
 }
 
 .npc-panel__name {
@@ -146,9 +126,6 @@
 }
 
 .initiative-panel__row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   padding: var(--space-1) var(--space-2);
   border-left: 3px solid transparent;
   border-radius: var(--radius-sm);

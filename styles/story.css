@@ -6,9 +6,6 @@
   list-style: none;
   margin: 0 0 var(--space-2);
   padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
   max-height: 56rem;
   overflow-y: auto;
 }
@@ -73,9 +70,6 @@
 .quest-panel__body {
   flex: 1 1 auto;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
 }
 
 .quest-panel__title {
@@ -110,12 +104,6 @@
 
 .handout-panel__row:last-of-type {
   border-bottom: none;
-}
-
-.handout-panel__head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
 }
 
 .handout-panel__title {

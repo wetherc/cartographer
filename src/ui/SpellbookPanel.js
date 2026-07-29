@@ -54,7 +54,7 @@ import { promptSpellDetail } from './SpellDetail.js';
 export function mountSpellbookPanel(container, initial, onChange, getPermissions, opts) {
   let current = initial;
 
-  const root = el('div', 'spellbook');
+  const root = el('div', 'spellbook u-col u-g3');
   container.appendChild(root);
 
   /** Restate what a spellbook change shows, one closure per row plus one for
@@ -254,9 +254,9 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
       root.appendChild(
         el(
           'div',
-          'spellbook__group',
+          'u-col u-g1',
           el('span', 'section-label', group.label),
-          el('div', 'spellbook__list', ...group.spells.map(buildRow)),
+          el('div', 'spellbook__list u-col', ...group.spells.map(buildRow)),
         ),
       );
     }
@@ -273,7 +273,7 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
     const badges = el('span', 'spellbook__row-badges');
     const row = el(
       'button',
-      'spellbook__row',
+      'spellbook__row u-row u-g2',
       el('span', 'spellbook__row-name', spell.name),
       badges,
     );

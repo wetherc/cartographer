@@ -101,7 +101,12 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
   // survives reloads; the picker is per-tab session state.
   const picker = select([], '', { ariaLabel: 'Character this tab plays as' });
   container.appendChild(
-    el('label', 'party-binding', el('span', 'party-binding__label u-muted', 'Playing as'), picker),
+    el(
+      'label',
+      'party-binding u-row u-g2',
+      el('span', 'party-binding__label u-muted', 'Playing as'),
+      picker,
+    ),
   );
 
   picker.addEventListener('change', () => {

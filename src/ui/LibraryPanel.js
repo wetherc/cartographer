@@ -147,7 +147,7 @@ export function mountLibraryPanel(container, callbacks) {
    */
   function mountList(host, subtabId) {
     return mountListPanel(host, {
-      className: 'library-panel__list',
+      className: 'u-col u-g1',
       rowClass: 'library-panel__row',
       headClass: 'library-panel__head',
       getRows: () => {

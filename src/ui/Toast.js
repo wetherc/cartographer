@@ -11,7 +11,7 @@ import { el } from './dom.js';
  */
 export function mountToasts(container, options = {}) {
   const duration = options.duration ?? 3500;
-  const root = el('div', 'toast-stack');
+  const root = el('div', 'toast-stack u-col u-g2');
   root.setAttribute('role', 'status');
   root.setAttribute('aria-live', 'polite');
   container.appendChild(root);

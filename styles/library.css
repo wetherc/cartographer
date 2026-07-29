@@ -38,12 +38,6 @@ body.mode-library .app-buildrail:not(#library-tools) {
   margin-bottom: var(--space-2);
 }
 
-.library-panel__list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
 /* Typography comes from .section-label (base.css); only the margin is local. */
 .library-panel__group {
   margin: var(--space-2) 0 0;

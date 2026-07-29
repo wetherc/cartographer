@@ -19,7 +19,7 @@ import { el } from './dom.js';
  */
 export function mountConditionsBar(container, callbacks) {
   const canEdit = callbacks.canEdit ?? (() => true);
-  const root = el('div', 'conditions-bar');
+  const root = el('div', 'conditions-bar u-row u-wrap u-g1');
   container.appendChild(root);
 
   /** @param {Condition} condition */

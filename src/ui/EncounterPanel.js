@@ -195,8 +195,8 @@ export function mountEncounterPanel(container, callbacks) {
   /** What both lists share; they differ only in rows and add controls. */
   const rowOptions = {
     className: 'encounter-panel__list',
-    rowClass: 'encounter-panel__row',
-    headClass: 'encounter-panel__head',
+    rowClass: 'encounter-panel__row u-col u-g1',
+    headClass: 'u-row u-g2',
     rowModifiers: /** @param {Encounter} e */ (e) => [
       isDefeated(e) && 'encounter-panel__row--defeated',
     ],

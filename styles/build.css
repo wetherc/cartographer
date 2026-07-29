@@ -32,9 +32,6 @@
 }
 
 .world-tree__row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
   padding: var(--space-1) 0;
 }
 
@@ -107,9 +104,6 @@ body.mode-build .app-sidebar {
 
 /* Art-size row: 1x/2x/3x stamp footprint for the next painted tile. */
 .palette__scale {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   margin-bottom: var(--space-3);
 }
 
@@ -169,26 +163,11 @@ body.mode-build .app-sidebar {
    Tile inspector (Build-mode right rail)
    ========================================================================== */
 
-.tile-inspector__form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
 .tile-inspector__coord {
   font-family: var(--font-mono);
 }
 
-.tile-inspector__field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
 .tile-inspector__field--inline {
-  flex-direction: row;
-  align-items: center;
-  gap: var(--space-2);
   color: var(--text);
 }
 
@@ -207,16 +186,7 @@ body.mode-build .app-sidebar {
 
 /* Each row stacks a header line (name + actions) over the stat chip grid. */
 .build-encounters__row {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
   padding: var(--space-1) 0;
-}
-
-.build-encounters__head {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
 }
 
 .build-encounters__label {

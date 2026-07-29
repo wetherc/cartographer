@@ -33,13 +33,13 @@ export function mountNPCPanel(container, callbacks) {
     gate: () => !callbacks.getRole || isGM(callbacks.getRole()),
     getRows: () => callbacks.getNPCs(),
     emptyMessage: 'No one of note here.',
-    bodyClass: 'npc-panel__body',
+    bodyClass: 'npc-panel__body u-col',
     actionsClass: 'npc-panel__controls',
     buildBody: (npc) => {
       const getLocationLabel = callbacks.getLocationLabel;
       const head = el(
         'div',
-        'npc-panel__head',
+        'u-row u-g2',
         el('span', 'npc-panel__name', npc.name),
         el('span', `badge npc-panel__badge npc-panel__badge--${npc.disposition}`, npc.disposition),
       );

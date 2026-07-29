@@ -6,25 +6,16 @@
    spell-slot lines. The sheet no longer collapses, so these read top to bottom
    with the body's stats following directly beneath. */
 .character-sheet__head {
-  display: flex;
-  flex-direction: column;
   align-items: stretch;
-  gap: var(--space-1);
 }
 
 .character-sheet__summary {
-  display: flex;
-  flex-direction: column;
   align-items: stretch;
-  gap: var(--space-1);
   min-width: 0;
 }
 
 /* The HP bar flanked by its damage/heal steppers. */
 .character-sheet__hp-line {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
   min-width: 0;
 }
 
@@ -38,9 +29,6 @@
 }
 
 .character-sheet__summary-top {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   min-width: 0;
 }
 
@@ -89,15 +77,6 @@
    left, action buttons right), the features disclosure, and hit-dice rows. */
 .character-sheet__progress {
   margin-top: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.character-sheet__progress-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
 }
 
 .character-sheet__progress-row .character-sheet__progress-text {
@@ -116,22 +95,10 @@
 .character-sheet__features ul {
   margin: var(--space-1) 0 0;
   padding-left: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
 }
 
 .character-sheet__resources {
   margin-top: var(--space-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.character-sheet__resource-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
 }
 
 .character-sheet__resource-row .character-sheet__resource-label {
@@ -143,9 +110,6 @@
    — and, because the field grid and the stats grid share this key width, at
    the same offset as the ability-score inputs too. */
 .character-sheet__field-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
   margin: 0;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -206,10 +170,7 @@
    the derived modifier stacked below. The whole thing is a button opening the
    breakdown popover. */
 .stat-badge {
-  display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: var(--space-1);
   padding: var(--space-2) var(--space-1);
   background: transparent;
   border: none;
@@ -316,9 +277,6 @@
 
 /* "Playing as" binding picker shown to player tabs above the roster. */
 .party-binding {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   margin-bottom: var(--space-2);
 }
 
@@ -334,9 +292,6 @@
 
 /* GM-only switch above the roster governing whether the party may split up. */
 .party-split {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   margin-bottom: var(--space-2);
   cursor: pointer;
 }
@@ -392,9 +347,6 @@
 }
 
 .inventory-panel__row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   padding: var(--space-1) 0;
 }
 
@@ -402,12 +354,6 @@
 .inventory-panel__item {
   flex: 1;
   min-width: 0;
-}
-
-.inventory-panel__item-line {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
 }
 
 .inventory-panel__description {
@@ -428,9 +374,6 @@
 
 /* Inline give form under a row: recipient picker, count, confirm/cancel. */
 .inventory-panel__give {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
   padding: var(--space-1) 0 var(--space-1) var(--space-2);
 }
 
@@ -467,10 +410,7 @@
    type-specific rows toggling below — appearing fields extend their own row
    instead of reflowing the controls around them. */
 .inventory-panel__form {
-  display: flex;
-  flex-direction: column;
   align-items: stretch;
-  gap: var(--space-2);
   margin-top: var(--space-3);
 }
 
@@ -491,15 +431,9 @@
   min-width: 0;
 }
 
-/* Captioned form controls: a small label stacked over its input. */
-.inventory-panel__field-label {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-/* The display:flex above would otherwise defeat the hidden attribute the AC
-   field toggles with. */
+/* Captioned form controls: a small label stacked over its input. The u-col
+   display would otherwise defeat the hidden attribute the AC field toggles
+   with. */
 .inventory-panel__field-label[hidden] {
   display: none;
 }
@@ -537,18 +471,6 @@
 
 /* Weapon damage editor: one row per dice term (count, die, damage type),
    the base roll first, riders after, then the add-a-term button. */
-.inventory-panel__damage {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.inventory-panel__damage-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-
 .inventory-panel__dice-count {
   width: 3rem;
   text-align: center;
@@ -574,13 +496,6 @@
 
 /* Inflicted status effects: removable chips plus the add row. Named apart
    from .inventory-panel__effects, the read-only pill row on an item row. */
-.inventory-panel__effect-editor {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
-}
-
 .inventory-panel__effect-input {
   width: 8rem;
 }

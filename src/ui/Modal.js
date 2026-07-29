@@ -67,7 +67,7 @@ export function openDialog(spec) {
     /** @type {HTMLElement} */
     let host = dialog;
     if (spec.form) {
-      const form = el('form', 'modal__form');
+      const form = el('form', 'modal__form u-col u-g3');
       form.method = 'dialog';
       dialog.appendChild(form);
       host = form;
@@ -177,7 +177,7 @@ export function promptModal(title, fields, options = {}) {
         const label = el(
           'label',
           classNames([
-            'modal__field u-muted',
+            'modal__field u-col u-g1 u-muted',
             field.full && 'modal__field--full',
             field.hidden && 'modal__field--hidden',
           ]),

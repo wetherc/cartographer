@@ -13,7 +13,7 @@ import { icon } from './icons.js';
  * @returns {{ update: (nodes: MapNode[]) => void }}
  */
 export function mountBreadcrumb(container, onSelect) {
-  const root = el('nav', 'breadcrumb');
+  const root = el('nav', 'breadcrumb u-row u-wrap u-g1');
   root.setAttribute('aria-label', 'Map location');
   container.appendChild(root);
 

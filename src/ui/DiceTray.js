@@ -33,7 +33,7 @@ export function mountDiceTray(container, opts = {}) {
 
   const summary = el(
     'button',
-    'disclosure dice-tray__summary',
+    'disclosure dice-tray__summary u-row u-g2',
     icon('d20', { size: 28, className: 'dice-tray__d20' }),
     icon('chevron', { className: 'disclosure__chevron' }),
   );
@@ -63,7 +63,7 @@ export function mountDiceTray(container, opts = {}) {
     refreshers.push(() => {
       count.textContent = String(read());
     });
-    return el('div', 'dice-tray__row', name, minus, count, plus);
+    return el('div', 'dice-tray__row u-row u-g2', name, minus, count, plus);
   };
 
   for (const die of DIE_TYPES) {
@@ -105,7 +105,7 @@ export function mountDiceTray(container, opts = {}) {
   // The selection is the value of record here, and a programmatic roll writes
   // straight to it, so the buttons re-read it rather than holding it.
   refreshers.push(() => modeSwitch.sync(selection.mode ?? 'normal'));
-  root.appendChild(el('div', 'dice-tray__row', modeName, modeSwitch.element));
+  root.appendChild(el('div', 'dice-tray__row u-row u-g2', modeName, modeSwitch.element));
 
   // Optional difficulty target: when set, each roll also reports success or
   // failure against it (meets-it-beats-it), in the tray and travelogue alike.
@@ -115,7 +115,12 @@ export function mountDiceTray(container, opts = {}) {
     ariaLabel: 'Target number to beat (optional)',
   });
   root.appendChild(
-    el('div', 'dice-tray__row', el('span', 'dice-tray__label u-muted', 'target'), targetInput),
+    el(
+      'div',
+      'dice-tray__row u-row u-g2',
+      el('span', 'dice-tray__label u-muted', 'target'),
+      targetInput,
+    ),
   );
 
   const rollButton = textButton('Roll', () => opts.onRoll?.(performRoll().text), {

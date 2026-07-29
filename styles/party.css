@@ -2,13 +2,6 @@
    Status conditions
    ========================================================================== */
 
-.conditions-bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
-}
-
 .conditions-bar__add {
   padding: 0.1rem;
 }
@@ -53,22 +46,9 @@
   font-weight: 600;
 }
 
-/* Build-rail map tools (stroke undo, PNG export). */
-.map-tools {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
 /* The Generate dialog's seed row and live layout preview. */
 .modal--generate .modal__form {
   min-width: min(34rem, 90vw);
-}
-
-.generate-dialog__seed {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
 }
 
 .generate-dialog__seed .field {
@@ -84,9 +64,6 @@
 }
 
 .character-sheet__conditions {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
   margin-top: var(--space-2);
 }
 
@@ -95,9 +72,6 @@
    ========================================================================== */
 
 .character-roster__row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
   padding: var(--space-1) 0;
 }
 
@@ -105,9 +79,6 @@
    row and lays its name and HP meter out as one line. */
 .character-roster__select {
   flex: 1;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   min-width: 0;
 }
 

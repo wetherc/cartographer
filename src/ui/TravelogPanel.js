@@ -39,7 +39,7 @@ function entryItem(entry) {
 export function mountTravelogPanel(container, callbacks) {
   const empty = emptyState('No events logged yet.');
 
-  const list = el('ul', 'travelog__list');
+  const list = el('ul', 'travelog__list u-col u-g1');
 
   const clearButton = textButton(
     'Clear log',

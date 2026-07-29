@@ -21,7 +21,7 @@ export function maybeShowOnboarding(app) {
 
   const card = el(
     'div',
-    'onboarding__card card',
+    'onboarding__card card u-col u-g2',
     el('h2', 'card__title', 'Welcome, GM'),
     el('p', 'onboarding__blurb u-muted', 'Your world is empty. Three ways to start:'),
   );

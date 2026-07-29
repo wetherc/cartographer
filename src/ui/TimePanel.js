@@ -38,7 +38,7 @@ export function mountTimePanel(container, callbacks) {
   function render() {
     root.innerHTML = '';
     root.append(
-      el('div', 'time-panel__readout', icon('clock'), formatClock(callbacks.getClock())),
+      el('div', 'time-panel__readout u-row u-g2', icon('clock'), formatClock(callbacks.getClock())),
       el(
         'div',
         'time-panel__actions',

@@ -165,6 +165,44 @@ body {
   color: var(--text-muted);
 }
 
+/* The two flex idioms nearly every container here is one of. `.u-row` is a
+   horizontal bar with its items centred across it; `.u-col` is a vertical
+   stack. Neither sets a gap, because the spacing varies and the token belongs
+   with the element rather than the direction, so pair one with a `.u-g*` below.
+   A container that wants a different cross-axis alignment (baseline, stretch,
+   flex-start) keeps its own `align-items` in its component rule, which wins. */
+.u-row {
+  display: flex;
+  align-items: center;
+}
+
+.u-col {
+  display: flex;
+  flex-direction: column;
+}
+
+.u-wrap {
+  flex-wrap: wrap;
+}
+
+/* Gap on the space scale, for use with `.u-row`/`.u-col`. An off-scale or
+   asymmetric gap stays a declaration in the component's rule. */
+.u-g1 {
+  gap: var(--space-1);
+}
+
+.u-g2 {
+  gap: var(--space-2);
+}
+
+.u-g3 {
+  gap: var(--space-3);
+}
+
+.u-g4 {
+  gap: var(--space-4);
+}
+
 /* ==========================================================================
    Shared primitives: .btn / .field / .card
    ========================================================================== */

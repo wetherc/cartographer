@@ -64,7 +64,7 @@ export function buildMultiselect(spec) {
       check.value = option.value;
       check.checked = selected.has(option.value);
       element.appendChild(
-        el('label', 'modal__multiselect-option', check, el('span', '', option.label)),
+        el('label', 'modal__multiselect-option u-row u-g2', check, el('span', '', option.label)),
       );
       return check;
     });
@@ -100,7 +100,7 @@ export function buildMultiselect(spec) {
  * @returns {CompositeField}
  */
 export function buildTagsField(spec) {
-  const element = el('div', 'field modal__tags');
+  const element = el('div', 'field modal__tags u-row u-wrap u-g1');
 
   /** @type {string[]} */
   let tags = splitTrimmedList(spec.value);
@@ -158,18 +158,14 @@ export function buildTagsField(spec) {
  * @returns {CompositeField}
  */
 export function buildPillGrid(spec) {
-  const element = el('div', 'modal__pillgrid');
+  const element = el('div', 'modal__pillgrid u-col u-g2');
 
   let assigned = parseAssignments(spec.value ?? '');
 
   const render = () => {
     element.textContent = '';
     for (const row of spec.rows ?? []) {
-      const rowEl = el(
-        'div',
-        'modal__pillgrid-row',
-        el('span', 'modal__pillgrid-label', row.label),
-      );
+      const rowEl = el('div', 'u-row u-g2', el('span', 'modal__pillgrid-label', row.label));
       for (const option of spec.options ?? []) {
         const held = assigned[row.value] === option.value;
         const pill = el(
@@ -222,11 +218,11 @@ export function buildPillGrid(spec) {
  * @returns {CompositeField}
  */
 export function buildAllocation(spec) {
-  const element = el('div', 'modal__allocation');
+  const element = el('div', 'modal__allocation u-col u-g1');
   // The rows scroll and the remaining line does not, so a long target list can
   // never push the one piece of feedback that says why Cast is refused out of
   // sight.
-  const box = el('div', 'field modal__allocation-rows');
+  const box = el('div', 'field modal__allocation-rows u-col u-g1');
   const rows = spec.rows ?? [];
   let total = Math.max(0, Math.floor(spec.total ?? 0));
   const unit = spec.unit ?? 'left';
@@ -244,7 +240,12 @@ export function buildAllocation(spec) {
     // whole field is already mounted inside the dialog's field label.
     input.setAttribute('aria-label', row.label);
     box.appendChild(
-      el('div', 'modal__allocation-row', el('span', 'modal__allocation-name', row.label), input),
+      el(
+        'div',
+        'modal__allocation-row u-row u-g2',
+        el('span', 'modal__allocation-name', row.label),
+        input,
+      ),
     );
     return input;
   });

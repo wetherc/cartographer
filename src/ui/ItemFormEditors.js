@@ -38,12 +38,12 @@ export function buildDamageEditor(initial, fixType = null) {
   const types = () => (fixed ? [fixed] : DAMAGE_TYPES);
   /** @type {DamagePart[]} */
   let damageParts = initial.map((p) => normalizeDamagePart(p, types()));
-  const element = el('div', 'inventory-panel__damage');
+  const element = el('div', 'u-col u-g1');
 
   function render() {
     element.innerHTML = '';
     damageParts.forEach((part, index) => {
-      const row = el('div', 'inventory-panel__damage-row');
+      const row = el('div', 'u-row u-g1');
 
       // A term with a flat bonus may roll no dice, so the count's floor follows
       // the bonus rather than sitting at 1. Keeping the two in step here is what
@@ -166,7 +166,7 @@ export function buildDamageEditor(initial, fixType = null) {
 export function buildEffectsEditor(initial) {
   /** @type {string[]} */
   const statusEffects = [...initial];
-  const element = el('div', 'inventory-panel__effect-editor');
+  const element = el('div', 'u-row u-wrap u-g1');
 
   function render() {
     element.innerHTML = '';

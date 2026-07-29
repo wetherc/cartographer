@@ -73,7 +73,7 @@ export function buildRow(item, playable, ctx) {
     'inventory-panel__item',
     el(
       'div',
-      'inventory-panel__item-line',
+      'u-row u-g2',
       el('span', 'inventory-panel__label', `${item.name} x${item.quantity}`),
       el('span', 'u-muted', itemType(item)),
     ),
@@ -88,7 +88,7 @@ export function buildRow(item, playable, ctx) {
     item.description ? el('div', 'inventory-panel__description u-muted', item.description) : null,
   );
 
-  const row = el('div', 'inventory-panel__row', main);
+  const row = el('div', 'inventory-panel__row u-row u-g2', main);
 
   if (!playable) return row;
 
@@ -189,5 +189,12 @@ function buildGiveForm(item, recipients, { view, render, transfer }) {
   });
 
   // Dismiss-left, affirmative-right — the same ordering as every modal.
-  return el('div', 'inventory-panel__give', recipientSelect, countInput, cancelButton, giveButton);
+  return el(
+    'div',
+    'inventory-panel__give u-row u-g1',
+    recipientSelect,
+    countInput,
+    cancelButton,
+    giveButton,
+  );
 }

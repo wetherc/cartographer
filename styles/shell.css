@@ -9,10 +9,6 @@
    second row instead, which also spares the title and the action buttons the
    squeeze they took when the row was overfull. */
 .app-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-4);
   row-gap: var(--space-2);
   margin-bottom: var(--space-4);
 }
@@ -97,18 +93,6 @@
   white-space: pre-line; /* multi-line alerts (e.g. the shortcut list) */
 }
 
-.modal__form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.modal__field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
 /* A field's own failure line (a rejected image pick), reported in place rather
    than as a second dialog over the form the GM is still filling in. */
 .modal__error {
@@ -149,17 +133,6 @@
 /* The assignment pill grid (e.g. standard-array scores): one row per target,
    the value pills repeated across each row, the held value filled in. The
    pills flex to fill the modal's width; the row label reads as a heading. */
-.modal__pillgrid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.modal__pillgrid-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-}
 
 .modal__pillgrid-label {
   width: 2.5rem;
@@ -203,10 +176,6 @@
    Enter turns the typed text into a pill, the x removes one. The box carries
    the .field border; the entry inside is borderless. */
 .modal__tags {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
   cursor: text;
 }
 
@@ -256,8 +225,6 @@
   position: fixed;
   z-index: 30; /* above the toast stack, like a native menu over everything */
   min-width: 11rem;
-  display: flex;
-  flex-direction: column;
   padding: var(--space-1);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);

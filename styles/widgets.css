@@ -3,10 +3,6 @@
    ========================================================================== */
 
 .breadcrumb {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--space-1);
   font-size: var(--text-label);
 }
 
@@ -57,9 +53,6 @@
 }
 
 .dice-tray__row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   margin-bottom: var(--space-1);
 }
 
@@ -102,9 +95,6 @@
    ========================================================================== */
 
 .disclosure {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   width: 100%;
   padding: var(--space-1) 0;
   border: none;
@@ -132,9 +122,6 @@
 
 /* One full-width line per pool on the collapsed card: label, track, numbers. */
 .stat-bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
   width: 100%;
   min-width: 0;
 }

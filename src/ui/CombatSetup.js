@@ -65,7 +65,7 @@ export function combatSetupModal(roster, callbacks = {}) {
         body.push(
           el(
             'div',
-            `initiative-panel__row initiative-panel__row--${view.side}`,
+            `initiative-panel__row u-row u-g2 initiative-panel__row--${view.side}`,
             el('span', 'initiative-panel__name', view.name),
             modifier,
             input,

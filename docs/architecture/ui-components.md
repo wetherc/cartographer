@@ -705,20 +705,42 @@ the rest of its styling and for anything that needs to select it:
 el('span', 'npc-panel__location u-muted', label);
 ```
 
-There is one so far. `.u-muted` is the small secondary text used by captions,
+There are two groups. `.u-muted` is the small secondary text used by captions,
 hints, derived readouts, and row metadata — `font-size: var(--text-label)` plus
 `color: var(--text-muted)`, the pair that roughly thirty rules each spelled out.
+
+The rest cover the two flex shapes almost every container here is. `.u-row` is a
+horizontal bar with its items centred across it (`display: flex` plus
+`align-items: center`); `.u-col` is a vertical stack (`display: flex` plus
+`flex-direction: column`). `.u-wrap` adds `flex-wrap: wrap`. Neither row nor
+column sets a gap, since the spacing varies from one container to the next, so
+they pair with `.u-g1` through `.u-g4` for a gap on the `--space-*` scale:
+
+```js
+el('div', 'encounter-panel__row u-col u-g1', head, chips);
+```
+
+A container wanting a different cross-axis alignment keeps its own
+`align-items` — `.character-sheet__head` sets `stretch`, `.travelog__item` sets
+`baseline` and skips `.u-row` altogether. An off-scale or asymmetric gap
+(`gap: 0.15rem`, `gap: var(--space-1) var(--space-3)`) likewise stays a
+declaration in the component's rule beside a bare `.u-col`.
 
 The layer sits before the feature sheets in the cascade, so a component rule
 always wins where the two set the same property. `.tile-inspector__field--inline`
 relies on that: it takes its text back to the full `--text` color while the
-element still carries `u-muted` for the size.
+element still carries `u-muted` for the size. So does every `.foo[hidden]`
+companion rule, which has to out-specify the utility's `display: flex` for the
+hidden attribute to work.
 
 Add one only when the pattern is already repeated several times and its values
 come from the token scale. Anything with a component-specific value belongs in
-that component's rule. When adopting `u-muted` leaves a component rule empty,
-delete the rule and drop the class rather than leaving a name in the markup with
-nothing behind it.
+that component's rule. Weigh the markup churn too: `.tabs__panel` keeps its
+column rule because sixteen panels are declared in `index.html`, and putting
+`u-col u-g4` on each of them would cost more than the rule saves. When adopting a
+utility leaves a component rule empty, delete the rule and drop the class rather
+than leaving a name in the markup with nothing behind it — unless another
+selector still names it, as `.character-sheet__features summary` does.
 
 `.field` carries two details that look removable and are not. Single-line controls get an
 explicit `height`, because a bare `<select>` ignores `line-height` for its box

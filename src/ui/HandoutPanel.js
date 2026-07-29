@@ -57,7 +57,7 @@ export function mountHandoutPanel(container, callbacks) {
     rowModifiers: (handout, gm) => [(!gm || handout.revealed) && 'handout-panel__row--revealed'],
     // A player's row is title-then-content with no controls, so it needs no
     // head row to line the buttons up against.
-    headClass: (_handout, gm) => (gm ? 'handout-panel__head' : null),
+    headClass: (_handout, gm) => (gm ? 'u-row u-g1' : null),
     buildBody: (handout, ctx) => {
       if (!ctx.gm) return el('div', 'handout-panel__title', handout.title);
 

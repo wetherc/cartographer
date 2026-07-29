@@ -68,7 +68,7 @@ export function buildEncounterTemplateForm({
   // whatever is checked, so switching class while picking doesn't lose a valid
   // spell. The picker's own class keeps the inline form's scroll box.
   const spellPicker = buildMultiselect({
-    className: 'inventory-panel__spell-picker',
+    className: 'inventory-panel__spell-picker u-col u-g1',
     options: spellPickerOptions(classSelect.value, clampInt(casterLevelInput.value, 1)),
     value: spellbookIds(template?.spellbook).join(','),
   });

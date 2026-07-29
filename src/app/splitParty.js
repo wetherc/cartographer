@@ -29,7 +29,7 @@ export function wireSplitParty(app, { container, refreshRoster }) {
   toggle.setAttribute('aria-label', 'Allow splitting the party');
   const field = el(
     'label',
-    'party-split u-muted',
+    'party-split u-row u-g2 u-muted',
     toggle,
     el('span', '', 'Allow splitting the party'),
   );

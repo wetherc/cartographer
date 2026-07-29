@@ -101,7 +101,7 @@ export function statBadge(character, key) {
   const badge = el(
     'button',
     classNames([
-      'stat-badge',
+      'stat-badge u-col u-g1',
       total > base && 'stat-badge--buffed',
       total < base && 'stat-badge--debuffed',
     ]),

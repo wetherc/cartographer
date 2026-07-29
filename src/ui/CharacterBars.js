@@ -25,7 +25,7 @@ export function buildStatBar(pool, opts) {
   const text = el('span', 'stat-bar__text u-muted');
   const wrap = el(
     'span',
-    'stat-bar',
+    'stat-bar u-row u-g2',
     el('span', 'stat-bar__label u-muted', opts.label),
     opts.flank?.before,
     el('span', 'stat-bar__track', fill),
@@ -88,7 +88,7 @@ export function buildSlotLine(pools, onToggle) {
   const groups = el('span', 'slot-line__groups');
   const wrap = el(
     'span',
-    'stat-bar slot-line',
+    'stat-bar slot-line u-row u-g2',
     el('span', 'stat-bar__label u-muted', 'Slots'),
     groups,
   );

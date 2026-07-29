@@ -62,7 +62,7 @@ function componentsText(spell) {
 function metaCell(term, value) {
   return el(
     'div',
-    'spell-detail__meta-cell',
+    'u-col',
     el('span', 'section-label', term),
     el('span', 'spell-detail__meta-value', value),
   );
@@ -94,7 +94,7 @@ export function promptSpellDetail(spell, actions, options = {}) {
           // School / level line, with concentration and ritual as trailing tags.
           el(
             'p',
-            'spell-detail__subtitle',
+            'spell-detail__subtitle u-row u-wrap u-g2',
             `${levelText} · ${capitalize(spell.school)}`,
             spell.concentration && el('span', 'badge spell-detail__tag', 'Concentration'),
             spell.ritual && el('span', 'badge spell-detail__tag', 'Ritual'),

@@ -59,7 +59,7 @@
     }
   </script>
 
-  <header class="app-header">
+  <header class="app-header u-row u-wrap u-g4">
     <h1>Campaign Builder</h1>
     <div id="mode-switch-container"></div>
     <div class="app-header__actions">
@@ -85,7 +85,7 @@
       <h2 class="card__title">World</h2>
     </aside>
 
-    <div class="app-center">
+    <div class="app-center u-col u-g4">
       <section class="app-map">
         <div id="breadcrumb-container"></div>
         <div id="map-viewport" class="map-viewport">
@@ -96,7 +96,7 @@
       <!-- The party's character boxes and the dice tray sit below the map so
            they don't compete with the map for the sidebar's narrow width. -->
       <div id="below-map" class="app-belowmap">
-        <div class="belowmap-side">
+        <div class="belowmap-side u-col u-g4">
           <section id="party-container" class="card" aria-label="Party roster">
             <h2 class="card__title">Party</h2>
           </section>
@@ -127,9 +127,9 @@
       </div>
     </div>
 
-    <aside class="app-sidebar">
+    <aside class="app-sidebar u-col u-g2">
       <button id="sidebar-toggle" class="sidebar-toggle btn" type="button" aria-expanded="true" aria-controls="sidebar-panels">Hide panels</button>
-      <div id="sidebar-panels" class="sidebar-panels">
+      <div id="sidebar-panels" class="sidebar-panels u-col u-g2">
         <div id="sidebar-tabs" class="tabs" role="tablist" aria-label="Session panels">
           <button class="tabs__tab" type="button" role="tab" id="tab-session" aria-controls="panel-session" aria-selected="true">Session</button>
           <button class="tabs__tab" type="button" role="tab" id="tab-story" aria-controls="panel-story" aria-selected="false" tabindex="-1">Story</button>
@@ -186,7 +186,7 @@
         </section>
         <section id="map-tools-container" class="card" aria-label="Map tools">
           <h2 class="card__title">Tools</h2>
-          <div class="map-tools">
+          <div class="u-col u-g2">
             <button id="stroke-undo-btn" class="btn" type="button">Undo stroke</button>
             <button id="export-png-btn" class="btn" type="button">Export PNG</button>
           </div>
