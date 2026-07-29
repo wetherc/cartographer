@@ -343,6 +343,48 @@ A natural 1 and a natural 20 are ordinary results on a save, unlike on an attack
 roll, so `natural` is reported for the log rather than acted on. Skill checks,
 passive scores, and expertise are not modeled yet; only saves are.
 
+## Concentration
+
+Many spells last only as long as the caster keeps concentrating on them, and a
+caster gets one at a time. `entities/Concentration.js` models that over a
+`concentration` field on the character, which holds the spell's id and name, the
+level it was cast at, and `remaining`, the rounds left. A character holding
+nothing has it as null.
+
+- `begin(character, spell, slotLevel)` starts one, taking `remaining` from the
+  spell's duration through `durationInRounds`. A duration no round counter fits —
+  open-ended, or measured in days — reads null and lasts until something breaks
+  it. Beginning a second spell ends the first, and the displaced spell's name
+  comes back in `dropped` so the caller can say what was lost.
+- `drop(character)` ends it, however it ended.
+- `concentrationDC(damage)` is 10, or half the damage when that is more, and
+  `checkOnDamage(character, damage, opts)` rolls the CON save against it through
+  `savingThrow`, dropping the spell on a failure. It reports the whole save, so
+  the log can carry the DC and the roll behind the outcome.
+- `tick(character)` spends one round of the duration and reports `expired` when
+  it runs out.
+
+The `Concentrating` chip beside the state is display. `begin` writes it, `drop`
+removes it, and `tick` rewrites its counter from `remaining` rather than
+decrementing it, which is what lets the round wrap run the shared
+`tickConditions` over the same list first: whatever that did to the chip, the
+number the GM reads afterwards is the state's own. `Conditions.js` exports the
+chip's name as `CONCENTRATING` so the two modules agree on the spelling.
+
+`app/spellCast.js` begins concentration when a cast of a concentration spell
+succeeds, threading it onto the same entity the spent slot and the consumed
+component are written to, so one store call carries all three.
+`app/combatants.js`'s `applyToTarget` calls for the save on damage, which covers
+weapon hits and spell damage alike because both arrive through it; a character
+knocked to 0 HP loses the spell outright without rolling. The round wrap in
+`app/encounterWiring.js` ticks the duration and logs a spell that ran out.
+
+Only characters concentrate. An encounter and an NPC have no field to write, so a
+foe's concentration is still a chip the GM adds and removes by hand, which is why
+`Concentrating` stays in the pick-list. The character sheet's `-1 HP` button is
+bookkeeping rather than a damage event, so it calls for no save; damage that
+should test concentration goes through an attack or a cast.
+
 ## The UI layer over entities
 
 `ui/CharacterSheet.js`, `ui/InventoryPanel.js`, and `ui/EncounterPanel.js` are

@@ -11,6 +11,7 @@ import { castableSlotLevels } from '../entities/SpellSlots.js';
 import { toCaster, withCasterState } from '../entities/Caster.js';
 import { replaceById } from '../entities/Roster.js';
 import { durationInRounds } from '../entities/SpellTiming.js';
+import { begin as beginConcentration } from '../entities/Concentration.js';
 import {
   findCombatant,
   combatantsAsTargets,
@@ -303,6 +304,7 @@ export async function castSpellAction(app, combat, participant, spell) {
     spell,
     targets,
     /** @type {(next: any) => void} */ (found.store),
+    found.kind === 'character',
   );
 }
 
@@ -315,10 +317,17 @@ export async function castSpellAction(app, combat, participant, spell) {
  * @param {Spell} spell
  */
 export async function castSpellOutOfCombat(app, caster, spell) {
-  await runCast(app, caster, spell, rosterTargets(app, spell), (next) => {
-    app.state.characters = replaceById(app.state.characters, next);
-    app.actions.refreshSelectedCharacter();
-  });
+  await runCast(
+    app,
+    caster,
+    spell,
+    rosterTargets(app, spell),
+    (next) => {
+      app.state.characters = replaceById(app.state.characters, next);
+      app.actions.refreshSelectedCharacter();
+    },
+    true,
+  );
 }
 
 /**
@@ -333,7 +342,9 @@ export async function castSpellOutOfCombat(app, caster, spell) {
  * lands on each target the same way a weapon hit does — encounters and
  * characters track HP, an HP-less NPC keeps the log line only. A spell with a
  * ritual, cast by a class that has ritual casting, can be cast for the extra ten
- * minutes instead of a slot, which spends nothing and writes nothing back.
+ * minutes instead of a slot, which spends nothing and writes nothing back. A
+ * concentration spell cast by a party character starts that character
+ * concentrating, ending whatever was already held.
  * @template {import('../types/entities.js').Character
  *   | import('../types/entities.js').Encounter
  *   | import('../types/npc.js').NPC} T
@@ -341,9 +352,13 @@ export async function castSpellOutOfCombat(app, caster, spell) {
  * @param {T} entity the real combatant casting
  * @param {Spell} spell
  * @param {import('./combatants.js').CombatTarget[]} offered
- * @param {(next: T) => void} writeBack stores the slot-spent entity
+ * @param {(next: T) => void} writeBack stores the updated entity
+ * @param {boolean} concentrates whether this caster can hold a spell open —
+ *   only a party character does, since an encounter and an NPC have no
+ *   concentration field to write. Passed from the call site rather than sniffed
+ *   off the entity, which is where the combatant's kind is already known.
  */
-async function runCast(app, entity, spell, offered, writeBack) {
+async function runCast(app, entity, spell, offered, writeBack, concentrates) {
   // The pure spell helpers read a caster's class/level/stats/resources/
   // spellbook — exactly the fields `toCaster` surfaces — so the view stands in
   // for a Character at the type level; runtime only ever touches those fields.
@@ -475,13 +490,17 @@ async function runCast(app, entity, spell, offered, writeBack) {
     );
   }
 
-  // Write the spent slot and the consumed component back to the caster before
-  // applying effects, so neither lingers if the effect application throws.
-  // `withCasterState` splices the decremented slot pools onto the real entity;
-  // one stack of the material comes off the same value, so a cast that spends
-  // both writes once. The caller stores the result.
+  // Write the spent slot, the consumed component, and the started concentration
+  // back to the caster before applying effects, so none of them lingers if the
+  // effect application throws. Each is threaded onto the same value and stored
+  // once: `withCasterState` splices the decremented slot pools onto the real
+  // entity, a stack of the material comes off the inventory, and the
+  // concentration state and its chip land beside them.
   const consumed = consume && material.item ? material.item : null;
-  if (result.spent || consumed) {
+  const holds = concentrates && spell.concentration;
+  /** @type {string | null} */
+  let displaced = null;
+  if (result.spent || consumed || holds) {
     let next = result.spent ? withCasterState(entity, result.caster) : entity;
     // Only a Character reaches here holding an inventory, which is what
     // `materialCheck` requiring one already established.
@@ -489,6 +508,15 @@ async function runCast(app, entity, spell, offered, writeBack) {
       next = /** @type {T} */ (
         removeItem(/** @type {import('../types/entities.js').Character} */ (next), consumed.id, 1)
       );
+    }
+    if (holds) {
+      const started = beginConcentration(
+        /** @type {import('../types/entities.js').Character} */ (next),
+        spell,
+        result.slotLevel,
+      );
+      next = /** @type {T} */ (started.character);
+      displaced = started.dropped;
     }
     writeBack(next);
     app.actions.markDirty();
@@ -507,6 +535,14 @@ async function runCast(app, entity, spell, offered, writeBack) {
       ? ` at level ${result.slotLevel}`
       : '';
   app.actions.logEvent('combat', `${caster.name} casts ${spell.name}${at}.`);
+  // A caster holds one spell open at a time, so starting this one ended the
+  // previous effect; that is a rules consequence the table needs told about.
+  if (displaced) {
+    app.actions.logEvent(
+      'combat',
+      `${caster.name} stops concentrating on ${displaced} to hold ${spell.name}.`,
+    );
+  }
 
   applyOutcomes(app, spell, result);
 }

@@ -259,6 +259,18 @@ export type LegacyAsiChoice =
   | { classId: string; classLevel: number; type: 'asi'; increases: Record<string, number> }
   | { classId: string; classLevel: number; type: 'feat'; feat: string };
 
+/** The one spell a caster is holding open (see Concentration.js). `slotLevel` is
+ * the level it was cast at, kept so a readout can name it. `remaining` counts the
+ * combat rounds left, or is null for a duration no round counter fits — an
+ * open-ended one, or one measured in days — which lasts until something breaks
+ * it. */
+export interface ConcentrationState {
+  spellId: string;
+  spellName: string;
+  slotLevel: number;
+  remaining: number | null;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -295,6 +307,9 @@ export interface Character {
   inventory: InventoryItem[];
   /** Active status conditions (empty on older saves). */
   conditions: Condition[];
+  /** The spell this character is holding open, or null when none is. Absent on
+   * older saves, which load as holding nothing. */
+  concentration?: ConcentrationState | null;
   /** Equipped items by slot (absent on older saves; all slots empty). */
   equipment?: Equipment;
   /** Temporary hit points from items/boons, absorbed before the HP pool when

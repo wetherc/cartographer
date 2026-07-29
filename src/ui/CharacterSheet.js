@@ -13,6 +13,8 @@ import { armorClass } from '../entities/Equipment.js';
 import { getSlotPools, getPactPool, isSlotPool, isPactPool } from '../entities/SpellSlots.js';
 import { isHitDicePool } from '../entities/HitDice.js';
 import { sheetDeps, sameDeps } from '../view/SheetStructure.js';
+import { CONCENTRATING } from '../entities/Conditions.js';
+import { drop as dropConcentration } from '../entities/Concentration.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { buildProgressSection } from './CharacterProgress.js';
 import { buildSpellsSection } from './CharacterSpells.js';
@@ -431,17 +433,49 @@ export function mountCharacterSheet(
     // ticks; only its chips are rebuilt, and only when they can have changed.
     const conditionsBar = mountConditionsBar(conditions, {
       getConditions: () => current?.conditions ?? [],
-      onChange: (next) => commit({ ...live(), conditions: next }),
+      // Taking the Concentrating chip off by hand is a way of saying the spell
+      // ended, so the state behind it goes too; otherwise the chip and the held
+      // spell could disagree.
+      onChange: (next) => {
+        const held = live();
+        const kept = next.some((c) => c.name.toLowerCase() === CONCENTRATING.toLowerCase());
+        const withConditions = { ...held, conditions: next };
+        commit(held.concentration && !kept ? dropConcentration(withConditions) : withConditions);
+      },
       canEdit: () => getPermissions().play,
     });
+    // The held spell named beside the chip that marks it, with the control that
+    // ends it early — a caster may stop concentrating whenever they like.
+    const concentration = el('div', 'character-sheet__concentration u-row u-wrap u-g1');
+    conditions.appendChild(concentration);
+    /** @type {import('../types/entities.js').ConcentrationState | null | undefined} */
+    let shownConcentration;
+    function renderConcentration() {
+      const held = live().concentration;
+      shownConcentration = held;
+      concentration.replaceChildren();
+      if (!held) return;
+      concentration.appendChild(el('span', 'u-muted', `Concentrating on ${held.spellName}`));
+      if (getPermissions().play) {
+        concentration.appendChild(
+          textButton('Drop', () => commit(dropConcentration(live())), {
+            variant: 'danger',
+            ariaLabel: `Drop concentration on ${held.spellName}`,
+          }),
+        );
+      }
+    }
+    renderConcentration();
     body.appendChild(conditions);
     /** @type {import('../types/entities.js').Condition[]} */
     let shownConditions = character.conditions;
     writers.push(() => {
       const next = live().conditions;
-      if (next === shownConditions) return;
-      shownConditions = next;
-      conditionsBar.update();
+      if (next !== shownConditions) {
+        shownConditions = next;
+        conditionsBar.update();
+      }
+      if (live().concentration !== shownConcentration) renderConcentration();
     });
 
     root.append(head, body);

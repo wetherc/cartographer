@@ -1,6 +1,14 @@
 /** @typedef {import('../types/entities.js').Condition} Condition */
 
 /**
+ * The chip a caster holding a spell open carries. `entities/Concentration.js`
+ * writes and removes it, and it is named here so the two modules agree on the
+ * spelling. It stays in the pick-list below because a foe's concentration has no
+ * state behind it yet and is still added by hand.
+ */
+export const CONCENTRATING = 'Concentrating';
+
+/**
  * The standard 5e status conditions, plus concentration and exhaustion, offered
  * as suggestions in the UI. A condition is a free string, so a GM can add one
  * that isn't listed here; this is only the pick-list.
@@ -9,7 +17,7 @@
 export const CONDITIONS = [
   'Blinded',
   'Charmed',
-  'Concentrating',
+  CONCENTRATING,
   'Deafened',
   'Exhaustion',
   'Frightened',

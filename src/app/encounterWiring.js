@@ -25,6 +25,7 @@ import { equippedWeapons } from '../entities/Equipment.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { tickConditions } from '../entities/Conditions.js';
+import { tick as tickConcentration } from '../entities/Concentration.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
 import { encounterForm, deleteEncounter, addFromBestiary } from './encounterForm.js';
@@ -330,12 +331,21 @@ export function wireEncounters(app) {
       const result = advanceTurn(combat);
       setCombat(result.state);
       // A new round elapsed, so tick every combatant's timed conditions down,
-      // along with the enemies' timed stat modifiers.
+      // along with the enemies' timed stat modifiers and the party's
+      // concentration durations.
       if (result.wrapped) {
-        state.characters = state.characters.map((c) => ({
-          ...c,
-          conditions: tickConditions(c.conditions),
-        }));
+        state.characters = state.characters.map((c) => {
+          // Concentration ticks after the conditions do, since it rewrites its
+          // own chip's counter from the duration it owns.
+          const ticked = tickConcentration({ ...c, conditions: tickConditions(c.conditions) });
+          if (ticked.expired) {
+            app.actions.logEvent(
+              'combat',
+              `${c.name}'s concentration on ${c.concentration?.spellName} ends.`,
+            );
+          }
+          return ticked.character;
+        });
         state.encounters = state.encounters.map((e) => ({
           ...e,
           conditions: tickConditions(e.conditions),

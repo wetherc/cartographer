@@ -42,12 +42,10 @@ rules the app cannot honor:
   Slow, Banishment, Dominate Person, ...). A failed save does add the condition
   to the target as a chip, timed by the spell's duration, but a chip carries no
   rule effect yet: nothing reads "paralyzed" and grants advantage or skips a
-  turn. Hold Person is included as the representative of this family.
-- **Concentration-dependent spells** (Bless and Hold Person ship, but the
-  broader family — Haste, Invisibility, Spirit Guardians, walls and clouds —
-  leans on concentration actually breaking). The `concentration` flag is
-  stored and shown, but not enforced: nothing yet limits a caster to one
-  effect at a time or calls for a CON save on damage.
+  turn. The chip also runs on its own counter rather than on the caster's
+  concentration, since a condition records no spell that imposed it, and a
+  target gets no repeated save at the end of its turns. Hold Person is included
+  as the representative of this family.
 - **Area/geometry spells** (Grease, Web, Sleep by HP total, Wall of Fire,
   Hunger of Hadar). Area targeting is reduced to picking the creatures caught:
   a spell with `targetCount: 0` offers every reachable combatant and the caster

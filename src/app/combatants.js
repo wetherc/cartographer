@@ -6,6 +6,7 @@ import { damageCharacter, restoreResource, getHP, HP_RESOURCE_ID } from '../enti
 import { isOnTile } from '../entities/NPC.js';
 import { addCondition } from '../entities/Conditions.js';
 import { saveBonus } from '../entities/Checks.js';
+import { checkOnDamage, drop as dropConcentration } from '../entities/Concentration.js';
 import { replaceById } from '../entities/Roster.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -286,6 +287,10 @@ export function applyConditionToTarget(app, targetId, name, rounds) {
  * target. Encounters and party characters track HP, with the defeat and
  * drops-to-0 transitions each logged exactly once; an HP-less NPC keeps the
  * caller's log line only. Stores the result and marks the campaign dirty.
+ *
+ * Damage to a concentrating character also calls for the save that holds the
+ * spell, which happens here because this is the path every hit arrives by,
+ * weapon and spell alike.
  * @param {AppContext} app
  * @param {string} targetId
  * @param {number} amount
@@ -307,15 +312,48 @@ export function applyToTarget(app, targetId, amount, isHeal) {
     return;
   }
   if (found.kind === 'character') {
-    const next = isHeal
+    let next = isHeal
       ? restoreResource(found.entity, HP_RESOURCE_ID, amount)
       : damageCharacter(found.entity, amount);
     // Log the drop to 0 exactly once — further damage on a downed character
     // shouldn't repeat it.
-    if (!isHeal && (getHP(found.entity)?.current ?? 0) > 0 && (getHP(next)?.current ?? 0) <= 0) {
-      app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
-    }
+    const downed =
+      !isHeal && (getHP(found.entity)?.current ?? 0) > 0 && (getHP(next)?.current ?? 0) <= 0;
+    if (downed) app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
+    if (!isHeal) next = breakConcentration(app, next, amount, downed);
     found.store(next);
     app.actions.markDirty();
   }
+}
+
+/**
+ * The concentration consequence of damage, folded into the same write: a
+ * character knocked to 0 HP loses the spell outright, and one still standing
+ * makes the CON save for it, which the log records DC and roll included. Returns
+ * the character to store; one that was holding nothing comes back untouched.
+ * @param {AppContext} app
+ * @param {Character} character already damaged
+ * @param {number} damage
+ * @param {boolean} downed whether this damage dropped them to 0 HP
+ * @returns {Character}
+ */
+function breakConcentration(app, character, damage, downed) {
+  const held = character.concentration;
+  if (!held) return character;
+  if (downed) {
+    app.actions.logEvent(
+      'combat',
+      `${character.name} falls and loses concentration on ${held.spellName}.`,
+    );
+    return dropConcentration(character);
+  }
+  const check = checkOnDamage(character, damage);
+  if (!check.save) return character;
+  const verdict = check.dropped ? 'loses' : 'holds';
+  app.actions.logEvent(
+    'combat',
+    `${character.name} ${verdict} concentration on ${held.spellName} ` +
+      `(CON save ${check.save.total} vs DC ${check.save.dc}).`,
+  );
+  return check.character;
 }
