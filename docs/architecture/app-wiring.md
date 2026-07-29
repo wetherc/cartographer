@@ -138,7 +138,7 @@ repaint rather than a page load. The parse never was the expensive part, and
 after the tile codec (see [Persistence](persistence.md)) it is well under a
 millisecond.
 
-Two details:
+What it adopts from the leader is narrower than it looks:
 
 - It takes an already-built `Campaign` rather than reading storage, so
   migrations, asset restore, tile decode, and entity defaults stay stated once

@@ -10,9 +10,8 @@ picture can't take the map down with it.
 
 This page walks the save path from live state to stored string, then covers
 loading, schema migrations, undo/redo, and the custom library's separate
-store. The invariants here are the ones that can silently destroy a GM's
-campaign if broken, so this page explains why each one holds and not only what
-it does.
+store. Breaking an invariant here can silently destroy a GM's campaign, so each
+one comes with why it holds rather than only what it does.
 
 ## The save pipeline at a glance
 
@@ -38,7 +37,7 @@ it does.
 ```
 
 Loading runs the same stages in reverse, with two extra steps at the front
-(schema migrations, then shape coercion). The order is outlined below.
+(schema migrations, then shape coercion).
 
 The top-level shape is `CampaignState` (`src/types/storage.ts`): a flat
 `nodes` array (the `TileGrid`'s node map flattened out) plus `party`,
@@ -100,7 +99,8 @@ those fields from absence, and which every load already ran, so nothing states
 a default twice. `deserialize` runs `withNodeDefaults` itself on load rather
 than leaving the unpack to `toTileGrid`.
 
-Two safety properties:
+Packing must not drop a field the packer never learned about, and a packed tile
+must never reach live state.
 
 - `packTile` deletes keys from a *copy* of the tile rather than picking named
   fields into a fresh object, so a `Tile` member added later survives a save
@@ -165,7 +165,7 @@ The fields containing payloads (a tile's `imageRef` and `overlayRef`, single or
 stacked, and a handout's `image`) are listed in one traversal there, so adding
 a third site is a single line.
 
-Design notes, each closing a real failure mode:
+The design of the table closes a failure mode at each step:
 
 - The table is rebuilt from the refs actually present on every serialize, so
   it prunes itself, and an image-free campaign gets no `assets` field at all.
@@ -254,7 +254,8 @@ its node list from 115,430 to 21,282, and a dense 40x40 region from 93,880 to
 3,621. Exploring that region fully costs 15 more characters in this form,
 where the per-cell form would add 25,600.
 
-Two properties stop the codec losing data:
+The codec never loses data, because it refuses any node it cannot represent and
+carries whatever it does not represent out of line:
 
 - **It is opt-in per node.** A node qualifies only when its dimensions are
   usable and every tile id is a canonical in-bounds `"x,y"` with no duplicate
@@ -267,7 +268,7 @@ Two properties stop the codec losing data:
   represents itself**, exactly as `packTile` does, so a `Tile` member added
   later rides out of line instead of being dropped.
 
-Smaller choices, each still load-time-relevant:
+Smaller choices in the codec still decide whether a save loads:
 
 - The palette is built by row-major traversal rather than by `tiles` array
   order, because `isExternalSaveEvent` compares raw strings: re-serializing an
@@ -346,7 +347,7 @@ be rewritten synchronously on every cap hit. (Bringing a base back is what the
 deferred idea of replaying base-plus-log at load, and so not writing the
 canonical save at all, would need.)
 
-Three rules stop the log corrupting a campaign:
+The log's own rules keep it from corrupting the campaign it describes:
 
 1. **A delta is never migrated.** It was written against one schema version's
    `CampaignState` shape, so the index carries `version` and a log stamped

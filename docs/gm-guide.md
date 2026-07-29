@@ -11,7 +11,7 @@ Open the app in a browser served over HTTP (see the README for the dev server).
 On a first run with no saved campaign, you start from a **blank campaign**: one
 empty world map, no characters, and no encounters.
 
-Three ways to begin:
+From there you have three starting points:
 
 - **New** (header) — a confirmed reset back to the blank campaign. This replaces
   the current campaign and its save, so you're asked to confirm first.

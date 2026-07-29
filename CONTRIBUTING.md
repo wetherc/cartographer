@@ -1,6 +1,6 @@
 # Contributing to Campaign Builder
 
-First off, thank you for considering contributing! This document provides guidelines to help you get started.
+Thank you for considering contributing.
 
 ## Core Philosophy
 

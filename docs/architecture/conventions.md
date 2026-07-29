@@ -292,7 +292,7 @@ The recurring split across this codebase: **pure logic takes its side effects
 unit tested with `node --test` and no DOM. Thin wrapper code then wires that
 logic to the DOM or canvas and is verified visually instead.
 
-Some examples of the split, from each area:
+The split, area by area:
 
 | Pure, unit-tested | DOM glue, verified visually |
 | --- | --- |

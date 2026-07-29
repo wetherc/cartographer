@@ -45,8 +45,7 @@ A concrete example, using the example campaign's names:
 Reading this top to bottom: the world map has a tile at position (3,4) that
 zooms into the Darkwood region. Inside Darkwood, two adjacent tiles both zoom
 into the same barrow. That is legal and common; a large landmark can occupy
-several tiles of its parent map, and any of them takes you inside. The next
-section covers how those tiles get treated as one landmark.
+several tiles of its parent map, and any of them takes you inside.
 
 There is deliberately no separate "region" entity to keep in sync with the
 tiles. A region is just a MapNode that one or more tiles point at through
@@ -100,8 +99,8 @@ group it returns:
 `tileIds`, so downstream code never has to re-parse the ids. `minX` through
 `maxY` describe the group's bounding box.
 
-Note what this design avoids: no schema change was needed to support
-multi-tile regions. Multiple tiles simply carry the same `childNodeId` value,
+No schema change was needed to support multi-tile regions. Multiple tiles simply
+carry the same `childNodeId` value,
 and grouping is derived from that. `MapCanvas` recomputes the groups whenever
 a node loads and draws a tint plus an outline over each group's bounding box,
 optionally labeled with the region's name via a `getNodeName` callback.
@@ -143,10 +142,9 @@ region-group chunks. Span blocks feed the same "covered cells" set, so the
 per-tile pass skips the base images underneath while fog and overlays stay per
 tile, exactly as with group images.
 
-Span art differs from region chunks in two ways. It renders on
-interior maps too, not only outdoor ones. And the covered cells keep their own
-tile data untouched; the span is purely a rendering effect of the anchor tile,
-so repainting the anchor at 1x clears it.
+Unlike a region chunk, span art renders on interior maps too, not only outdoor
+ones, and the covered cells keep their own tile data untouched. The span is purely
+a rendering effect of the anchor tile, so repainting the anchor at 1x clears it.
 
 ## Rendering and input
 
@@ -225,10 +223,10 @@ up visually. It is pure and RNG-injected like the palette:
 - `riverCourse` walks a meandering channel from the north edge south and
   returns the right river piece for each tile along the way.
 
-Two consumers build on all of this: the generator archetypes (wilderness and
-town in `src/map/GeneratorRegions.js`, dispatched from `MapGenerator`; dungeon
-and castle in `src/map/GeneratorInteriors.js`) and the example world in
-`campaign/ExampleWorld.js`.
+The generator archetypes (wilderness and town in `src/map/GeneratorRegions.js`,
+dispatched from `MapGenerator`; dungeon and castle in
+`src/map/GeneratorInteriors.js`) build on these helpers, as does the example world
+in `campaign/ExampleWorld.js`.
 
 A tile's `overlayRef` can hold either a single
 reference or a draw-ordered stack of them (`TileGrid.overlayList` normalizes

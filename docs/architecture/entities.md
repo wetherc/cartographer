@@ -24,7 +24,7 @@ This is the same style `TileGrid.js` uses for tiles (`setTile`,
 object identity: a value that has been handed out never changes underneath a
 cache.
 
-A few behaviors are baked into the models rather than validated separately:
+These behaviors are baked into the models rather than validated separately:
 
 - HP and resource pools clamp to `[0, max]` on every operation, so no caller
   can overheal or drive HP negative.
@@ -47,8 +47,8 @@ imports nothing, so the three modules that own the rules for them — `Character
 sit in the import graph. Each re-exports the ids it owns, so `HP_RESOURCE_ID` is
 still imported from `Character.js`.
 
-What makes a pool reserved is that its maximum is derived, not typed in. Three
-helpers in `Resource.js` cover what the deriving writers need:
+What makes a pool reserved is that its maximum is derived, not typed in. The
+deriving writers move a maximum through `Resource.js`:
 
 - `adjustMax(pool, max)` moves the maximum and carries current by the same
   delta, so a CON increase grants the hit points instead of only raising the
@@ -157,8 +157,8 @@ A weapon's damage and a spell's damage or healing are all the same thing: a list
 of `DamagePart`s, each one `count` dice of `sides` in a damage type, plus an
 optional flat `bonus` that rides that term (Magic Missile's `1d4+1`). Absent
 means no bonus, so a term written before the field existed needs no repair.
-`Equipment.normalizeDamagePart` is the single validator, and it holds two rules
-worth knowing:
+`Equipment.normalizeDamagePart` is the single validator, and it decides how a
+term with a bonus and a term without one are each repaired:
 
 - A term carrying a bonus may roll no dice, which is how a fixed amount with no
   dice behind it is written (Revivify's one hit point). A term without a bonus

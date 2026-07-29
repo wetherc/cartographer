@@ -92,7 +92,7 @@ handle on `app.views.questPanel`; anything that changes a quest calls
 `app.views.questPanel.update()` and does not need to know what the panel
 renders.
 
-Three rules make this work:
+Updating a panel blindly like that works because of how the panel is built:
 
 - **Panels hold no campaign data of their own.** Everything a panel draws comes
   from a `get*` callback that it calls *at render time* (`getQuests()`,
@@ -156,7 +156,7 @@ write — a pool level, bonus HP, base AC, the name, the conditions — so the D
 stays. Anything else (a class taken, an ability improved, an item equipped, a
 pool added or resized, a permission change) rebuilds.
 
-Two consequences are easy to get wrong if you extend the sheet:
+The repoint path constrains how the sheet can be extended:
 
 - **Event handlers must read the live character, not the one they were built
   from.** They now outlive the change that follows them, so the sheet passes a
@@ -173,7 +173,7 @@ mutates in place; see
 
 ### Handles that are not `{ update }`
 
-Not every mount returns `update`. The other shapes, so you can recognize them:
+Not every mount returns `update`. The other shapes are:
 
 | Shape | Used by | Why |
 | --- | --- | --- |
@@ -197,7 +197,7 @@ encounter panels are each a configuration of it. It returns the usual
 panel's Active and Nearby tabs are two list panels, and the equipment library's
 five category subtabs are five.
 
-The options split cleanly in two. The caller decides what the markup is:
+The caller decides what the markup is:
 
 | Option | What it does |
 | --- | --- |
@@ -212,9 +212,9 @@ The options split cleanly in two. The caller decides what the markup is:
 | `addButtons(gm)`, `addPlacement`, `addClass` | the add controls, and where they go: loose at the end of the list (`inline`, the default), leading it in a pinned `.panel-actions` row (`leading`), or trailing it in a plain one (`trailing`) |
 | `gate()` | `false` for the read-only player view: no action buttons, no add controls |
 
-And the helper owns the plumbing: the root element, clearing and rebuilding, the
-row loop, the group headings, and one thing worth knowing about because it
-changes how you write a handler.
+The helper owns the plumbing: the root element, clearing and rebuilding, the row
+loop, the group headings, and the handler contract below, which changes how you
+write a handler.
 
 **Every handler is awaited, and the panel re-renders unless the handler says
 nothing happened.** "Nothing happened" is a returned `false` or `null` — which
@@ -345,10 +345,9 @@ An unknown name yields an empty SVG rather than throwing, so a typo shows as a
 blank gap. The typecheck is what catches it: `IconName` is a string-literal
 union, so a misspelled name fails `tsc`.
 
-Two naming conventions constrain which glyph you pick. `minus` and `heal` are
-the fixed pair for HP moving down and up, everywhere; `sword` is reserved for
-attack actions and is never used for damage. And if you need a new
-glyph, add its path data to `PATHS` and its name to the union rather than
+`minus` and `heal` are the fixed pair for HP moving down and up, everywhere, and
+`sword` is reserved for attack actions and is never used for damage. If you need
+a new glyph, add its path data to `PATHS` and its name to the union rather than
 inlining an SVG at the call site.
 
 ## Dialogs
@@ -420,7 +419,7 @@ columns. Actions are Cancel then submit (`options.submitLabel`, default
 `'Create'`), which is the dismiss-left/primary-right ordering used on every
 form surface in the app.
 
-Two behaviors are easy to reimplement badly:
+A dialog rebuilt by hand tends to lose two of the wrapper's behaviors:
 
 - **The file field reports errors inline**, as a `<p class="modal__error"
   role="alert">` inside the dialog, not as a nested alert modal. It also clears
@@ -636,7 +635,7 @@ in one `:root` block in `styles/base.css`:
 | Type | `--font-sans`, `--font-mono`, `--text-display`, `--text-heading`, `--text-body`, `--text-label`, `--line-body` |
 | Radius | `--radius-sm`, `--radius`, `--radius-lg` |
 
-Two rules, both of which the token system depends on:
+The token system only holds together while both of these hold:
 
 - **Never write a fallback** (`var(--border, #ccc)`). A missing token renders
   as nothing, which is visible; a fallback hides the typo instead.
@@ -742,10 +741,10 @@ utility leaves a component rule empty, delete the rule and drop the class rather
 than leaving a name in the markup with nothing behind it — unless another
 selector still names it, as `.character-sheet__features summary` does.
 
-`.field` carries two details that look removable and are not. Single-line controls get an
+Two details in `.field` look removable and are not. Single-line controls get an
 explicit `height`, because a bare `<select>` ignores `line-height` for its box
 metrics and otherwise sits about 2.5 px shorter than a neighboring `<input>`.
-And selects opt into the customizable-select model (`appearance: base-select`
+Selects opt into the customizable-select model (`appearance: base-select`
 plus `::picker(select)`) as a progressive enhancement: an engine without it
 drops the value and falls back to the `appearance: none` rule above, so the
 closed control is themed everywhere and only a supporting engine also themes
@@ -758,7 +757,8 @@ Layout is flex-dominant with intrinsic sizing (`min()`,
 happens with no media query at all. Grid is reserved for genuinely tabular
 content.
 
-Two things follow from that:
+Because reflow is intrinsic, the few things that do switch on state are
+centralized:
 
 - **All layout media queries live in `responsive.css`**, and there is exactly
   one breakpoint: `@media (max-width: 68rem)`. Below it the main columns stack
@@ -776,8 +776,8 @@ the usual explanation for a panel that overflows its column.
 ### Keeping the first paint still
 
 The page is laid out before any module has run, so anything the wiring changes
-afterwards moves content the reader is already looking at. Three habits keep
-that from happening, and a new panel should follow them:
+afterwards moves content the reader is already looking at. A new panel should
+follow the habits that keep the page still:
 
 - **Decide the body classes up front.** Because a mode or role class hides
   whole rails, waiting for `wireSessionControls` to apply them would lay the
@@ -795,7 +795,8 @@ that from happening, and a new panel should follow them:
 
 ## Accessibility in practice
 
-What the shared layer already handles, so you do not restate it:
+The shared layer already handles all of this, so a new surface does not restate
+it:
 
 - **Focus** is one global `:focus-visible` outline in `--focus-ring`, with two
   intentional escalations: the map canvas draws a thicker accent ring, and
@@ -814,7 +815,7 @@ What the shared layer already handles, so you do not restate it:
   re-announces it.
 - **Focus return**: every dialog refocuses whatever opened it on close.
 
-Three known gaps, so nobody assumes they are covered:
+Nothing in the app covers these gaps:
 
 - No `prefers-reduced-motion` handling. The animated surfaces are the `.btn`
   transition, the disclosure chevron rotation, and the toast slide-in.

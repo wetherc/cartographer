@@ -72,9 +72,9 @@ tests/            node --test suites for the pure modules
 docs/             you are here
 ```
 
-A note on `src/types/`: the project is plain JavaScript, but it is fully
-typechecked. Types live in `.ts` files that contain only declarations, and the
-`.js` files reference them through JSDoc comments. `tsconfig.json` sets
+The project is plain JavaScript, but it is fully typechecked. Types live in `.ts`
+files that contain only declarations, and the `.js` files reference them through
+JSDoc comments. `tsconfig.json` sets
 `allowJs`/`checkJs`, so `pnpm --package=typescript dlx tsc --noEmit` checks
 everything without emitting anything.
 
