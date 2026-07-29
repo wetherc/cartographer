@@ -169,8 +169,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
 
   const descriptionInput = textareaField(spell?.description ?? '', {
     placeholder: 'What the spell does.',
+    className: 'spell-form__description',
   });
-  descriptionInput.classList.add('spell-form__description');
 
   // --- Effect section: swaps controls by kind -------------------------------
   const kindSelect = select([...SPELL_EFFECT_KINDS], spell?.effect.kind ?? 'utility');
@@ -233,8 +233,10 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     heals ? HEALING_TYPE : null,
   );
   const scalingDamageField = labeled('Extra dice / level', scalingDamage.element);
-  const targetsInput = numberField(spell?.scaling?.targetsPerLevel ?? 0, { min: 0 });
-  targetsInput.classList.add('inventory-panel__quantity-input');
+  const targetsInput = numberField(spell?.scaling?.targetsPerLevel ?? 0, {
+    min: 0,
+    className: 'inventory-panel__quantity-input',
+  });
   const targetsField = labeled('Extra targets / level', targetsInput);
 
   const castingRow = fieldRow(

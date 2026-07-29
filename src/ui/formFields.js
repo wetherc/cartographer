@@ -220,12 +220,7 @@ export function buildInlineForm({
   afterSubmit = null,
   className = '',
 }) {
-  const form = el(
-    'div',
-    className
-      ? `inventory-panel__form u-col u-g2 ${className}`
-      : 'inventory-panel__form u-col u-g2',
-  );
+  const form = el('div', classNames(['inventory-panel__form u-col u-g2', className]));
   nameInput.classList.add('inventory-panel__name-input');
 
   const actions = formActions({

@@ -69,19 +69,22 @@ export function buildItemForm({
 }) {
   const nameInput = textField(item?.name ?? '', 'Item name');
 
-  const descriptionInput = textField(item?.description ?? '', 'Description (optional)');
-  descriptionInput.classList.add('inventory-panel__name-input');
+  const descriptionInput = textField(item?.description ?? '', 'Description (optional)', {
+    className: 'inventory-panel__name-input',
+  });
 
-  const quantityInput = numberField(item?.quantity ?? 1, { min: 1 });
-  quantityInput.classList.add('inventory-panel__quantity-input');
+  const quantityInput = numberField(item?.quantity ?? 1, {
+    min: 1,
+    className: 'inventory-panel__quantity-input',
+  });
 
   // "gear" is the catch-all for miscellaneous, non-equippable items (rope,
   // rations, trinkets); say so where the GM picks it.
   const typeSelect = select(
     ITEM_TYPES.map((t) => ({ value: t, label: t === 'gear' ? 'gear (misc.)' : t })),
     item ? (item.type ?? 'gear') : ITEM_TYPES[0],
+    { className: 'inventory-panel__type-select' },
   );
-  typeSelect.classList.add('inventory-panel__type-select');
 
   // Body armor: its 5e weight class (which alone fixes the DEX scaling —
   // never the GM's input) and a configurable base AC defaulting to a
@@ -98,8 +101,10 @@ export function buildItemForm({
     })),
     item?.armorWeight ?? ARMOR_WEIGHTS[0].key,
   );
-  const baseACInput = numberField(item?.baseAC ?? ARMOR_WEIGHTS[0].defaultBaseAC, { min: 1 });
-  baseACInput.classList.add('inventory-panel__ac-input');
+  const baseACInput = numberField(item?.baseAC ?? ARMOR_WEIGHTS[0].defaultBaseAC, {
+    min: 1,
+    className: 'inventory-panel__ac-input',
+  });
   weightSelect.addEventListener('change', () => {
     const weight = ARMOR_WEIGHTS.find((w) => w.key === weightSelect.value);
     if (weight) baseACInput.value = String(weight.defaultBaseAC);
@@ -113,8 +118,10 @@ export function buildItemForm({
 
   // Non-armor equippables (helmets, rings, bows...) may carry a flat AC
   // bonus while equipped.
-  const acInput = numberField(item?.acBonus ?? 0, { min: 0 });
-  acInput.classList.add('inventory-panel__ac-input');
+  const acInput = numberField(item?.acBonus ?? 0, {
+    min: 0,
+    className: 'inventory-panel__ac-input',
+  });
   acInput.title = 'Flat AC bonus while equipped';
   const acField = labeled('AC bonus', acInput);
 
@@ -125,8 +132,9 @@ export function buildItemForm({
     [{ value: '', label: '—' }, ...ABILITY_SCORES],
     firstBuff?.[0] ?? '',
   );
-  const buffAmountInput = numberField(firstBuff ? Number(firstBuff[1]) : 1);
-  buffAmountInput.classList.add('inventory-panel__ac-input');
+  const buffAmountInput = numberField(firstBuff ? Number(firstBuff[1]) : 1, {
+    className: 'inventory-panel__ac-input',
+  });
   const buffStatField = labeled('Buff', buffStatSelect);
   const buffAmountField = labeled('Amount', buffAmountInput);
 
