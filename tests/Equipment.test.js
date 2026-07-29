@@ -497,7 +497,7 @@ test('formatDamage and itemSummary describe a weapon damage roll with riders', (
   assert.equal(itemSummary(bow), '1d8 piercing (DEX)');
 });
 
-test('filterItems searches name and description, filters by type, and sorts', () => {
+test('filterItems searches name and description, filters by type, and orders by name', () => {
   const items = [
     item('torch', 'Torch', { quantity: 5, type: 'gear' }),
     item('ember', 'Ember Blade', {
@@ -521,13 +521,9 @@ test('filterItems searches name and description, filters by type, and sorts', ()
     ['ember', 'mace'],
   );
   assert.deepEqual(
-    filterItems(items, { sort: 'quantity' }).map((i) => i.id),
-    ['torch', 'ember', 'mace'],
-  );
-  assert.deepEqual(
-    filterItems(items, { sort: 'type' }).map((i) => i.id),
-    ['torch', 'ember', 'mace'],
-    'gear before weapon',
+    filterItems(items, { query: 'a', type: 'weapon' }).map((i) => i.id),
+    ['ember', 'mace'],
+    'query and type both applied',
   );
   assert.deepEqual(
     items.map((i) => i.id),

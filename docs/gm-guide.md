@@ -505,9 +505,9 @@ Ranged, and two ring slots (Ring 1 and Ring 2, so a character can wear two
 rings at once). Each picker lists only the items its slot accepts (a potion
 can't be worn as armor; the off hand takes a shield or a weapon). The
 **Inventory** tab holds the item list with a **search box** (matching names
-and descriptions), a **type filter**, and a **sort** control (by name or
-largest stack). The list is grouped under one **collapsible heading per item
-type**, showing how many of each the character carries, so a long list folds
+and descriptions) and a **type filter**. Items run in name order under one
+**collapsible heading per item type**, showing how many of each the character
+carries, so a long list folds
 down to the part you are looking at. A heading you fold away stays folded while
 you work.
 

@@ -27,7 +27,7 @@ function idFromName(name) {
 /**
  * Mount the character's kit across two separate host elements — Equipment
  * (slot pickers for what's worn and wielded, built in InventoryEquipment.js)
- * and Inventory (a searchable, type-filterable, sortable item list grouped
+ * and Inventory (a searchable, type-filterable item list grouped
  * under collapsible type headings, with add, consume, discard, and full
  * post-creation editing via the shared item form;
  * the rows themselves are built in InventoryRows.js). The two hosts live under
@@ -70,13 +70,11 @@ export function mountInventoryPanel(
   transfer = undefined,
 ) {
   let current = initial;
-  // The search/filter/sort choices survive a re-render but stay per-mount, so
+  // The search and filter choices survive a re-render but stay per-mount, so
   // they persist while the GM works through the list.
   let searchQuery = '';
   /** @type {ItemType | ''} */
   let typeFilter = '';
-  /** @type {'name' | 'quantity'} */
-  let sortKey = 'name';
   // Which type headings the GM has folded away. Collapsed rather than expanded
   // is the stored set so a type carried for the first time opens by default.
   /** @type {Set<ItemType>} */
@@ -93,8 +91,8 @@ export function mountInventoryPanel(
    * anything this panel draws has actually changed. */
   let shown = { character: initial, playable: false, editable: false };
 
-  /** The item list alone, leaving the search box (and its focus), the sort and
-   * filter choices, and the add form where they are. */
+  /** The item list alone, leaving the search box (and its focus), the type
+   * filter, and the add form where they are. */
   function refreshList() {
     refillList?.();
   }
@@ -175,8 +173,8 @@ export function mountInventoryPanel(
   }
 
   /**
-   * The Inventory tab: search/filter/sort controls over the grouped item list,
-   * plus the add form for a GM. The controls re-fill only the list on input,
+   * The Inventory tab: the search box and type filter over the grouped item
+   * list, plus the add form for a GM. The controls re-fill only the list on input,
    * so typing in the search box never loses focus to a re-render.
    * @param {boolean} playable
    * @returns {HTMLElement}
@@ -192,16 +190,7 @@ export function mountInventoryPanel(
       ariaLabel: 'Filter by item type',
     });
 
-    const sortSelect = select(
-      [
-        { value: 'name', label: 'by name' },
-        { value: 'quantity', label: 'by quantity' },
-      ],
-      sortKey,
-      { ariaLabel: 'Sort items within each type' },
-    );
-
-    const controls = el('div', 'inventory-panel__controls', searchInput, filterSelect, sortSelect);
+    const controls = el('div', 'inventory-panel__controls', searchInput, filterSelect);
 
     const list = el('div', 'inventory-panel__list');
     // Reads the character afresh on every call rather than closing over the one
@@ -211,11 +200,7 @@ export function mountInventoryPanel(
       const character = current;
       list.innerHTML = '';
       if (!character) return;
-      const visible = filterItems(character.inventory, {
-        query: searchQuery,
-        type: typeFilter,
-        sort: sortKey,
-      });
+      const visible = filterItems(character.inventory, { query: searchQuery, type: typeFilter });
       if (visible.length === 0) {
         list.appendChild(
           emptyState(character.inventory.length === 0 ? 'No items yet.' : 'No items match.'),
@@ -235,10 +220,6 @@ export function mountInventoryPanel(
     });
     filterSelect.addEventListener('change', () => {
       typeFilter = /** @type {ItemType | ''} */ (filterSelect.value);
-      fillList();
-    });
-    sortSelect.addEventListener('change', () => {
-      sortKey = /** @type {typeof sortKey} */ (sortSelect.value);
       fillList();
     });
 

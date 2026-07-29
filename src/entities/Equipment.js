@@ -436,12 +436,13 @@ export function itemSummary(item) {
 }
 
 /**
- * Filter and order an inventory for display: a case-insensitive text query
- * matched against name and description, an optional type to keep, and a sort
- * key — by name, by type (then name), or by quantity (largest stacks first).
+ * Filter an inventory for display and put it in name order: a case-insensitive
+ * text query matched against name and description, plus an optional type to
+ * keep. Type ordering is `groupItemsByType`'s job, since the panel shows the
+ * list under one heading per type.
  * Pure; never mutates the input.
  * @param {InventoryItem[]} items
- * @param {{ query?: string, type?: ItemType | '', sort?: 'name' | 'type' | 'quantity' }} [view]
+ * @param {{ query?: string, type?: ItemType | '' }} [view]
  * @returns {InventoryItem[]}
  */
 export function filterItems(items, view = {}) {
@@ -454,13 +455,7 @@ export function filterItems(items, view = {}) {
       (item.description ?? '').toLowerCase().includes(query)
     );
   });
-  const sort = view.sort ?? 'name';
-  return matches.sort((a, b) => {
-    if (sort === 'quantity') return b.quantity - a.quantity || a.name.localeCompare(b.name);
-    if (sort === 'type')
-      return itemType(a).localeCompare(itemType(b)) || a.name.localeCompare(b.name);
-    return a.name.localeCompare(b.name);
-  });
+  return matches.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
