@@ -19,6 +19,7 @@ import {
   applyToTarget,
   applyConditionToTarget,
   targetSaveBonus,
+  endSpellEffects,
 } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -498,7 +499,7 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates) {
   // concentration state and its chip land beside them.
   const consumed = consume && material.item ? material.item : null;
   const holds = concentrates && spell.concentration;
-  /** @type {string | null} */
+  /** @type {import('../types/entities.js').ConcentrationState | null} */
   let displaced = null;
   if (result.spent || consumed || holds) {
     let next = result.spent ? withCasterState(entity, result.caster) : entity;
@@ -536,15 +537,18 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates) {
       : '';
   app.actions.logEvent('combat', `${caster.name} casts ${spell.name}${at}.`);
   // A caster holds one spell open at a time, so starting this one ended the
-  // previous effect; that is a rules consequence the table needs told about.
+  // previous effect; that is a rules consequence the table needs told about, and
+  // the creatures the displaced spell was holding go free before this cast's own
+  // outcomes land — including when the same spell is being recast on someone new.
   if (displaced) {
     app.actions.logEvent(
       'combat',
-      `${caster.name} stops concentrating on ${displaced} to hold ${spell.name}.`,
+      `${caster.name} stops concentrating on ${displaced.spellName} to hold ${spell.name}.`,
     );
+    endSpellEffects(app, entity.id, displaced.spellId);
   }
 
-  applyOutcomes(app, spell, result);
+  applyOutcomes(app, spell, result, entity.id);
 }
 
 /**
@@ -593,8 +597,10 @@ function targetSummary(targets) {
  * @param {AppContext} app
  * @param {Spell} spell
  * @param {{ outcomes: object[], targets: import('../entities/Casting.js').CastTarget[] }} result
+ * @param {string} casterId stamped onto a condition this cast imposes, so the
+ *   effect can be found again when the caster stops holding the spell
  */
-function applyOutcomes(app, spell, result) {
+function applyOutcomes(app, spell, result, casterId) {
   const kind = spell.effect.kind;
   const summary = targetSummary(result.targets);
   if (kind === 'attack') {
@@ -635,15 +641,27 @@ function applyOutcomes(app, spell, result) {
     // structured duration gives in rounds; an open-ended duration leaves the
     // chip for the GM to clear.
     const rounds = durationInRounds(spell.duration);
-    const ability = /** @type {import('../types/spell.js').SpellSaveEffect} */ (spell.effect)
-      .saveAbility;
+    const effect = /** @type {import('../types/spell.js').SpellSaveEffect} */ (spell.effect);
+    const ability = effect.saveAbility;
     for (const o of /** @type {any[]} */ (result.outcomes)) {
       const verdict = o.saved ? 'saves' : 'fails';
       // The bonus is named alongside the roll, the way an attack's log names the
       // ability and proficiency behind its number.
       const bonus = `${ability} ${formatModifier(o.target.saveBonus ?? 0)}`;
+      // The chip records the cast that wrote it, which is what ends the effect
+      // when the caster stops holding the spell, and what a repeated save rolls
+      // against. The bonus stamped here is only ever used for a target whose own
+      // save the app cannot read; a character's is re-derived at retry time.
       const imposed = o.condition
-        ? applyConditionToTarget(app, o.target.id, o.condition, rounds)
+        ? applyConditionToTarget(app, o.target.id, o.condition, rounds, {
+            spellId: spell.id,
+            spellName: spell.name,
+            casterId,
+            saveAbility: ability,
+            saveDC: o.dc,
+            saveBonus: o.target.saveBonus ?? 0,
+            ...(effect.saveEnds ? { saveEnds: true } : {}),
+          })
         : false;
       const cond = o.condition ? `, ${o.condition}${imposed ? '' : ' (untracked)'}` : '';
       app.actions.logEvent(

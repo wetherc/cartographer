@@ -6,6 +6,7 @@ import { casterClassRefs } from '../entities/Classes.js';
 import { characterFields, characterFormChange, buildCharacter } from './characterCreate.js';
 import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
+import { endSpellEffects } from './combatants.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { removeById } from '../entities/Roster.js';
 import { createCharacterScope } from './characterScope.js';
@@ -219,6 +220,9 @@ export function wireParty(app) {
       // The active library object is replaced whole on every library change, so
       // its identity is the catalog's revision.
       catalogStamp: getActiveLibrary,
+      // A caster who stops holding a spell stops affecting whoever it was on,
+      // which reaches collections the sheet cannot see.
+      onConcentrationEnd: (character, held) => endSpellEffects(app, character.id, held.spellId),
     },
     (message) => app.toasts.show(message),
   );

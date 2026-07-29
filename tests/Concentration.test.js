@@ -87,7 +87,10 @@ test('an open-ended duration concentrates with no round counter', () => {
 test('begin replaces a held spell and reports the one it displaced', () => {
   const first = begin(caster(), spell('s1', 'Hold Person', 10), 2).character;
   const second = begin(first, spell('s2', 'Bless', 10), 1);
-  assert.equal(second.dropped, 'Hold Person');
+  // The whole displaced state, not just its name: a caller has to find that
+  // spell's effects on the creatures it was holding, which takes its id.
+  assert.equal(second.dropped?.spellName, 'Hold Person');
+  assert.equal(second.dropped?.spellId, 's1');
   assert.equal(second.character.concentration?.spellId, 's2');
   // One chip, not two: the second cast's chip replaces the first's.
   assert.equal(second.character.conditions.filter((c) => c.name === 'Concentrating').length, 1);

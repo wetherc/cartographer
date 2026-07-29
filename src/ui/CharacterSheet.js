@@ -64,6 +64,10 @@ function customPools(character) {
  *   resolveSpells: (ids: string[]) => import('../types/spell.js').Spell[],
  *   onCast: (character: Character, spell: import('../types/spell.js').Spell) => void,
  *   catalogStamp?: () => unknown,
+ *   onConcentrationEnd?: (
+ *     character: Character,
+ *     held: import('../types/entities.js').ConcentrationState,
+ *   ) => void,
  * } | null} [spells]
  *   When provided, the sheet renders a read-only castable-spells section
  *   (cantrips and prepared spells, each opening a Cast/Close detail); learning
@@ -71,6 +75,10 @@ function customPools(character) {
  *   `catalogStamp` returns a value that changes whenever the spell catalog
  *   `resolveSpells` reads does, so a library edit rebuilds the section instead
  *   of leaving the pre-edit spell on screen.
+ *   `onConcentrationEnd` is called when the caster stops holding a spell from
+ *   this sheet, with the spell they were holding. The sheet only owns one
+ *   character, so taking the effect off the creatures that spell was affecting is
+ *   the host's to do.
  * @param {(message: string) => void} [notify]
  *   Non-blocking surface for progression results (hit-die heals, level-up
  *   feature announcements); the host passes its toast stack.
@@ -429,6 +437,18 @@ export function mountCharacterSheet(
       'character-sheet__conditions u-col u-g1',
       el('span', 'section-label', 'Conditions'),
     );
+    /**
+     * Stop holding the spell this character was concentrating on, whichever
+     * control said so, and tell the host which spell ended so the creatures it
+     * was affecting go free.
+     * @param {Character} from the character to drop it from
+     */
+    function endConcentration(from) {
+      const held = from.concentration;
+      commit(dropConcentration(from));
+      if (held) spells?.onConcentrationEnd?.(from, held);
+    }
+
     // The bar reads and reports the whole list, so it stays mounted across
     // ticks; only its chips are rebuilt, and only when they can have changed.
     const conditionsBar = mountConditionsBar(conditions, {
@@ -440,7 +460,8 @@ export function mountCharacterSheet(
         const held = live();
         const kept = next.some((c) => c.name.toLowerCase() === CONCENTRATING.toLowerCase());
         const withConditions = { ...held, conditions: next };
-        commit(held.concentration && !kept ? dropConcentration(withConditions) : withConditions);
+        if (held.concentration && !kept) endConcentration(withConditions);
+        else commit(withConditions);
       },
       canEdit: () => getPermissions().play,
     });
@@ -458,7 +479,7 @@ export function mountCharacterSheet(
       concentration.appendChild(el('span', 'u-muted', `Concentrating on ${held.spellName}`));
       if (getPermissions().play) {
         concentration.appendChild(
-          textButton('Drop', () => commit(dropConcentration(live())), {
+          textButton('Drop', () => endConcentration(live()), {
             variant: 'danger',
             ariaLabel: `Drop concentration on ${held.spellName}`,
           }),

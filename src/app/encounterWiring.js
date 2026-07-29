@@ -34,6 +34,7 @@ import { castSpellAction } from './spellCast.js';
 import {
   commitEncounters,
   describeCombatant,
+  endSpellEffects,
   findCombatant,
   logDefeatTransition,
 } from './combatants.js';
@@ -334,15 +335,16 @@ export function wireEncounters(app) {
       // along with the enemies' timed stat modifiers and the party's
       // concentration durations.
       if (result.wrapped) {
+        /** @type {{ casterId: string, spellId: string }[]} */
+        const expired = [];
         state.characters = state.characters.map((c) => {
           // Concentration ticks after the conditions do, since it rewrites its
           // own chip's counter from the duration it owns.
           const ticked = tickConcentration({ ...c, conditions: tickConditions(c.conditions) });
-          if (ticked.expired) {
-            app.actions.logEvent(
-              'combat',
-              `${c.name}'s concentration on ${c.concentration?.spellName} ends.`,
-            );
+          const held = c.concentration;
+          if (ticked.expired && held) {
+            app.actions.logEvent('combat', `${c.name}'s concentration on ${held.spellName} ends.`);
+            expired.push({ casterId: c.id, spellId: held.spellId });
           }
           return ticked.character;
         });
@@ -353,6 +355,9 @@ export function wireEncounters(app) {
         }));
         app.actions.refreshSelectedCharacter();
         app.views.encounterPanel.update();
+        // Swept only once both collections have been reassigned: the sweep writes
+        // to the same two, and the tick's own write would put its result back.
+        for (const { casterId, spellId } of expired) endSpellEffects(app, casterId, spellId);
       }
     },
     onEnd: () => {

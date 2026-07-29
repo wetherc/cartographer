@@ -6,10 +6,29 @@ export interface EncounterLocation {
   tileId: string;
 }
 
+/** Where a condition came from, for a condition a spell imposed. Present only on
+ * a chip written by a cast; a chip the GM added by hand carries no source and is
+ * theirs to clear. The save numbers are the ones the cast rolled against, kept so
+ * a repeated save can be rolled later against the same DC — and, for a target
+ * whose own bonus the app cannot read, with the same bonus. */
+export interface ConditionSource {
+  /** The spell that imposed it, and the caster holding it. */
+  spellId: string;
+  spellName: string;
+  casterId: string;
+  saveAbility?: string;
+  saveDC?: number;
+  saveBonus?: number;
+  /** True when the target retries the save at the end of each of its turns. */
+  saveEnds?: boolean;
+}
+
 /** A status/condition with an optional remaining-rounds counter (null = indefinite). */
 export interface Condition {
   name: string;
   rounds: number | null;
+  /** What imposed it, for a spell-imposed condition; absent for a hand-added one. */
+  source?: ConditionSource;
 }
 
 /** Enemy authoring tier: mobs are rank-and-file, legends run above-normal stats for their level. */

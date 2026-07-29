@@ -354,8 +354,8 @@ nothing has it as null.
 - `begin(character, spell, slotLevel)` starts one, taking `remaining` from the
   spell's duration through `durationInRounds`. A duration no round counter fits —
   open-ended, or measured in days — reads null and lasts until something breaks
-  it. Beginning a second spell ends the first, and the displaced spell's name
-  comes back in `dropped` so the caller can say what was lost.
+  it. Beginning a second spell ends the first, and the displaced spell comes back
+  in `dropped` so the caller can say what was lost and clear its effects.
 - `drop(character)` ends it, however it ended.
 - `concentrationDC(damage)` is 10, or half the damage when that is more, and
   `checkOnDamage(character, damage, opts)` rolls the CON save against it through
@@ -384,6 +384,35 @@ foe's concentration is still a chip the GM adds and removes by hand, which is wh
 `Concentrating` stays in the pick-list. The character sheet's `-1 HP` button is
 bookkeeping rather than a damage event, so it calls for no save; damage that
 should test concentration goes through an attack or a cast.
+
+## Conditions a spell imposed
+
+A failed save against a spell can leave the target with a condition, and that chip
+records where it came from: `Condition.source` carries the spell's id and name, the
+caster's id, and the ability, DC, and bonus the save was rolled with. A chip the GM
+adds by hand has no source, so nothing below applies to it.
+`entities/ImposedConditions.js` owns the rule over that record:
+`removeImposed(list, casterId, spellId)` takes off every chip one cast wrote,
+reporting them, and hands the original list straight back when none matched.
+
+The match needs the caster and the spell to agree, so a caster holding two spells
+ends one at a time, and two casters landing the same spell on one target keep their
+own chips.
+
+`app/combatants.js` drives them, because only the wiring can see every collection
+a target lives in. `endSpellEffects(app, casterId, spellId)` sweeps the characters
+and the encounters, then logs each creature that walked free; it runs whenever a
+caster stops holding a spell — the sheet's Drop control and its hand-removed
+`Concentrating` chip (through `onConcentrationEnd`, wired in `app/partyWiring.js`),
+a failed CON save or a drop to 0 HP in `applyToTarget`, a displacing cast in
+`app/spellCast.js`, and a duration running out at the round wrap.
+
+The sweep always runs after the write it follows, never before: both touch
+`state.characters` and `state.encounters`, and a store of a pre-sweep copy would put
+the chips back.
+
+The chip still carries no mechanical effect, so a paralyzed creature acts normally
+whether or not its source is known.
 
 ## The UI layer over entities
 

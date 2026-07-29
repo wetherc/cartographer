@@ -47,12 +47,12 @@ export function isConcentrating(character) {
  * duration has none, so it reads null and the effect lasts until something
  * breaks it.
  *
- * Returns the displaced spell's name alongside the new character, so the caller
- * can say what was lost.
+ * Returns the displaced spell alongside the new character, so the caller can say
+ * what was lost and take that spell's effects off the creatures it was holding.
  * @param {Character} character
  * @param {Spell} spell
  * @param {number} slotLevel the level the spell was cast at
- * @returns {{ character: Character, dropped: string | null }}
+ * @returns {{ character: Character, dropped: ConcentrationState | null }}
  */
 export function begin(character, spell, slotLevel) {
   const remaining = durationInRounds(spell.duration);
@@ -64,7 +64,7 @@ export function begin(character, spell, slotLevel) {
       concentration: state,
       conditions: addCondition(character.conditions, CONCENTRATING, remaining),
     },
-    dropped: character.concentration?.spellName ?? null,
+    dropped: character.concentration ?? null,
   };
 }
 

@@ -5,6 +5,7 @@ import { armorClass } from '../entities/Equipment.js';
 import { damageCharacter, restoreResource, getHP, HP_RESOURCE_ID } from '../entities/Character.js';
 import { isOnTile } from '../entities/NPC.js';
 import { addCondition } from '../entities/Conditions.js';
+import { removeImposed } from '../entities/ImposedConditions.js';
 import { saveBonus } from '../entities/Checks.js';
 import { checkOnDamage, drop as dropConcentration } from '../entities/Concentration.js';
 import { replaceById } from '../entities/Roster.js';
@@ -263,22 +264,84 @@ export function logDefeatTransition(app, prev, next) {
  * line is all the record there is. `rounds` is the counter the round tick
  * decrements, or null for a condition the GM clears by hand. Returns whether
  * the chip landed, so the caller can say when it did not.
+ *
+ * `source` names the cast behind the chip, which is what lets the effect end
+ * when the cast does and lets the target retry the save where the spell allows
+ * it. A hand-added chip has none.
  * @param {AppContext} app
  * @param {string} targetId
  * @param {string} name
  * @param {number | null} rounds
+ * @param {import('../types/entities.js').ConditionSource} [source]
  * @returns {boolean}
  */
-export function applyConditionToTarget(app, targetId, name, rounds) {
+export function applyConditionToTarget(app, targetId, name, rounds, source = undefined) {
   const found = findCombatant(app, targetId);
   if (!found || found.kind === 'npc') return false;
-  const conditions = addCondition(found.entity.conditions, name, rounds);
+  const conditions = addCondition(found.entity.conditions, name, rounds, source);
   // The two branches are the same write; they are split because each `store`
   // accepts only its own entity type, and one call cannot satisfy both.
   if (found.kind === 'character') found.store({ ...found.entity, conditions });
   else found.store({ ...found.entity, conditions });
   app.actions.markDirty();
   return true;
+}
+
+/**
+ * Take one cast's conditions back off everyone holding them — what a caster
+ * dropping a spell, losing it to damage, having it displaced by another, or
+ * running its duration out has to do to the creatures it was affecting. Every
+ * chip stamped with that caster and that spell comes off, and each is named in
+ * the log, since a target walking free is a change the table cannot see from the
+ * caster's side alone.
+ *
+ * A wiring function rather than a pure one because only this layer can see every
+ * collection a target might live in. NPCs track no conditions, so a spell that
+ * landed on one leaves nothing to sweep.
+ * @param {AppContext} app
+ * @param {string} casterId
+ * @param {string} spellId
+ */
+export function endSpellEffects(app, casterId, spellId) {
+  const { state } = app;
+  /** @type {{ name: string, condition: string }[]} */
+  const freed = [];
+  /**
+   * @template {{ name: string, conditions: import('../types/entities.js').Condition[] }} T
+   * @param {T} entity
+   * @returns {T}
+   */
+  const sweep = (entity) => {
+    const { conditions, removed } = removeImposed(entity.conditions, casterId, spellId);
+    if (removed.length === 0) return entity;
+    for (const c of removed) freed.push({ name: entity.name, condition: c.name });
+    return { ...entity, conditions };
+  };
+  /**
+   * A collection reassigned only when a chip actually came off it: the roster
+   * indexes are keyed on the array's identity, so handing back a fresh array
+   * that holds the same entities would throw those caches away for nothing.
+   * @template {{ name: string, conditions: import('../types/entities.js').Condition[] }} T
+   * @param {readonly T[]} list
+   * @returns {T[] | null}
+   */
+  const swept = (list) => {
+    const next = list.map(sweep);
+    return next.some((entity, i) => entity !== list[i]) ? next : null;
+  };
+  const characters = swept(state.characters);
+  const encounters = swept(state.encounters);
+  if (freed.length === 0) return;
+  // Both writes land before anything is logged or refreshed, so a panel
+  // re-rendering off one of them reads the other as swept too.
+  if (characters) state.characters = characters;
+  if (encounters) state.encounters = encounters;
+  if (characters) app.actions.refreshSelectedCharacter();
+  if (encounters) commitEncounters(app, { dirty: false });
+  app.actions.markDirty();
+  for (const { name, condition } of freed) {
+    app.actions.logEvent('combat', `${name} is no longer ${condition}.`);
+  }
 }
 
 /**
@@ -320,9 +383,13 @@ export function applyToTarget(app, targetId, amount, isHeal) {
     const downed =
       !isHeal && (getHP(found.entity)?.current ?? 0) > 0 && (getHP(next)?.current ?? 0) <= 0;
     if (downed) app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
-    if (!isHeal) next = breakConcentration(app, next, amount, downed);
+    const broke = isHeal ? null : breakConcentration(app, next, amount, downed);
+    if (broke) next = broke.character;
     found.store(next);
     app.actions.markDirty();
+    // After the store, never before: the sweep rewrites `state.characters`, and
+    // storing the damaged character would put the pre-sweep copy of this one back.
+    if (broke?.ended) endSpellEffects(app, next.id, broke.ended);
   }
 }
 
@@ -330,30 +397,32 @@ export function applyToTarget(app, targetId, amount, isHeal) {
  * The concentration consequence of damage, folded into the same write: a
  * character knocked to 0 HP loses the spell outright, and one still standing
  * makes the CON save for it, which the log records DC and roll included. Returns
- * the character to store; one that was holding nothing comes back untouched.
+ * the character to store alongside the id of the spell the damage ended, which
+ * the caller sweeps off that spell's targets once the store has landed. A
+ * character holding nothing comes back untouched with nothing ended.
  * @param {AppContext} app
  * @param {Character} character already damaged
  * @param {number} damage
  * @param {boolean} downed whether this damage dropped them to 0 HP
- * @returns {Character}
+ * @returns {{ character: Character, ended: string | null }}
  */
 function breakConcentration(app, character, damage, downed) {
   const held = character.concentration;
-  if (!held) return character;
+  if (!held) return { character, ended: null };
   if (downed) {
     app.actions.logEvent(
       'combat',
       `${character.name} falls and loses concentration on ${held.spellName}.`,
     );
-    return dropConcentration(character);
+    return { character: dropConcentration(character), ended: held.spellId };
   }
   const check = checkOnDamage(character, damage);
-  if (!check.save) return character;
+  if (!check.save) return { character, ended: null };
   const verdict = check.dropped ? 'loses' : 'holds';
   app.actions.logEvent(
     'combat',
     `${character.name} ${verdict} concentration on ${held.spellName} ` +
       `(CON save ${check.save.total} vs DC ${check.save.dc}).`,
   );
-  return check.character;
+  return { character: check.character, ended: check.dropped ? held.spellId : null };
 }

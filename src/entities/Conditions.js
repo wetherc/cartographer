@@ -36,25 +36,31 @@ export const CONDITIONS = [
 /**
  * @param {string} name
  * @param {number | null} [rounds] remaining rounds; null = indefinite
+ * @param {import('../types/entities.js').ConditionSource} [source] what imposed
+ *   it, for a chip a cast wrote; left off entirely when there is none, so a
+ *   hand-added chip stores no extra key
  * @returns {Condition}
  */
-export function createCondition(name, rounds = null) {
-  return { name, rounds };
+export function createCondition(name, rounds = null, source = undefined) {
+  return source ? { name, rounds, source } : { name, rounds };
 }
 
 /**
  * Add (or update the duration of) a condition, matched case-insensitively by
- * name so "Poisoned" doesn't stack with "poisoned". Returns a new list.
+ * name so "Poisoned" doesn't stack with "poisoned". Returns a new list. A
+ * replaced chip's source goes with it: the new cast owns the condition now, and
+ * a hand-added replacement means the GM does.
  * @param {Condition[]} list
  * @param {string} name
  * @param {number | null} [rounds]
+ * @param {import('../types/entities.js').ConditionSource} [source]
  * @returns {Condition[]}
  */
-export function addCondition(list, name, rounds = null) {
+export function addCondition(list, name, rounds = null, source = undefined) {
   const key = name.trim().toLowerCase();
   if (!key) return list;
   const without = list.filter((c) => c.name.toLowerCase() !== key);
-  return [...without, createCondition(name.trim(), rounds)];
+  return [...without, createCondition(name.trim(), rounds, source)];
 }
 
 /**
