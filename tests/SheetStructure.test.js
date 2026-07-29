@@ -68,6 +68,18 @@ test('spending a custom pool does not rebuild, but spending a hit die does', () 
   assert.equal(same(withDice, spendResource(withDice, 'hit-dice-d8', 1)), false);
 });
 
+test('a new spell catalog rebuilds, the same one does not', () => {
+  const catalog = { spells: [] };
+  assert.equal(sameDeps(sheetDeps(hero, perms, catalog), sheetDeps(hero, perms, catalog)), true);
+  assert.equal(
+    sameDeps(sheetDeps(hero, perms, catalog), sheetDeps(hero, perms, { spells: [] })),
+    false,
+  );
+  // No stamp at all (a host that wired no spell section) still compares equal.
+  assert.equal(sameDeps(sheetDeps(hero, perms), sheetDeps(hero, perms)), true);
+  assert.equal(sameDeps(sheetDeps(hero, perms), sheetDeps(hero, perms, catalog)), false);
+});
+
 test('level, XP, stats, classes, inventory, and the spellbook all rebuild', () => {
   assert.equal(same(hero, addXP(hero, 500)), false);
   assert.equal(same(hero, { ...hero, level: hero.level + 1 }), false);

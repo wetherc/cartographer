@@ -38,11 +38,18 @@ function poolShape(character) {
  * hands back a new object for that field. The flip side is that this list has to
  * name every field the structural builders read, so adding a read to the sheet,
  * the progression section, or the spell section means adding it here.
+ *
+ * Not everything the builders read lives on the character. The spell section
+ * resolves stored ids against the spell catalog, so editing a spell in the
+ * Library changes what the section shows without touching the character;
+ * `catalogStamp` is a value that changes whenever that catalog does, and it is
+ * how the sheet learns a library edit means a rebuild.
  * @param {Character} character
  * @param {{ editBase: boolean, play: boolean, hp: boolean }} perms
+ * @param {unknown} [catalogStamp]
  * @returns {unknown[]}
  */
-export function sheetDeps(character, perms) {
+export function sheetDeps(character, perms, catalogStamp) {
   return [
     character.id,
     perms.editBase,
@@ -60,6 +67,7 @@ export function sheetDeps(character, perms) {
     character.equipment,
     character.spellbook,
     poolShape(character),
+    catalogStamp,
   ];
 }
 

@@ -216,6 +216,9 @@ export function wireParty(app) {
     {
       resolveSpells,
       onCast: (character, spell) => castSpellOutOfCombat(app, character, spell),
+      // The active library object is replaced whole on every library change, so
+      // its identity is the catalog's revision.
+      catalogStamp: getActiveLibrary,
     },
     (message) => app.toasts.show(message),
   );

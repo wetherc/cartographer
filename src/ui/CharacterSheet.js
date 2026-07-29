@@ -61,10 +61,14 @@ function customPools(character) {
  * @param {{
  *   resolveSpells: (ids: string[]) => import('../types/spell.js').Spell[],
  *   onCast: (character: Character, spell: import('../types/spell.js').Spell) => void,
+ *   catalogStamp?: () => unknown,
  * } | null} [spells]
  *   When provided, the sheet renders a read-only castable-spells section
  *   (cantrips and prepared spells, each opening a Cast/Close detail); learning
  *   and preparing live in the Spellbook tab. Omitted, no such section appears.
+ *   `catalogStamp` returns a value that changes whenever the spell catalog
+ *   `resolveSpells` reads does, so a library edit rebuilds the section instead
+ *   of leaving the pre-edit spell on screen.
  * @param {(message: string) => void} [notify]
  *   Non-blocking surface for progression results (hit-die heals, level-up
  *   feature announcements); the host passes its toast stack.
@@ -114,7 +118,7 @@ export function mountCharacterSheet(
       return;
     }
     const perms = getPermissions();
-    const deps = sheetDeps(character, perms);
+    const deps = sheetDeps(character, perms, spells?.catalogStamp?.());
     if (repoint && sameDeps(builtDeps, deps)) {
       repoint();
       return;
