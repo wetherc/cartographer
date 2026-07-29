@@ -278,12 +278,11 @@ the spent slot, and reports it through `InventoryLog`'s `use` verb. The cast
 dialog also offers an "Ignore components" checkbox, which skips the check and the
 consumption both, for tables that treat components as flavor.
 
-Two details follow from the shape rather than the rules. `normalizeSpell` adds the
-`M` letter to any entry that names a material without listing it, because the
-authoring form only shows the material fields under a ticked M; without the
-repair, an imported spell would lose its material the first time a GM edited it.
-And `costGP` is displayed but never checked, since nothing in the app tracks how
-much money a party has.
+`normalizeSpell` adds the `M` letter to any entry that names a material without
+listing it, because the authoring form only shows the material fields under a
+ticked M; without the repair, an imported spell would lose its material the first
+time a GM edited it. `costGP` is displayed but never checked, since nothing in the
+app tracks how much money a party has.
 
 ## Ritual casting
 
@@ -299,9 +298,9 @@ caster value unchanged. Asking for a ritual cast of a spell that has no ritual, 
 of a cantrip, returns `{ ok: false, reason: 'not-ritual' }`.
 
 The cast dialog offers a "Cast as ritual" checkbox when both halves line up, and
-ticking it hides the slot picker. A caster with no slots left is the case worth
-knowing about: a ritual is the one cast still available, so the dialog drops the
-slot picker rather than refusing to open, and the box starts ticked.
+ticking it hides the slot picker. For a caster with no slots left a ritual is the
+one cast still available, so the dialog drops the slot picker rather than refusing
+to open, and the box starts ticked.
 
 The game clock divides a day into six named watches of four hours each
 (`time/GameClock.js`), so it cannot represent ten minutes and a ritual does not
