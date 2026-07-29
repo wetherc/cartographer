@@ -218,6 +218,26 @@ export interface Spellbook {
   sources?: Record<string, string>;
 }
 
+/** The fields the spell helpers read off whoever is casting. A party Character
+ * satisfies this directly; an Encounter and an NPC reach it through
+ * `Caster.toCaster`, which normalizes their scalar class pair and `statBlock`
+ * into the list and `stats` shape here. Every helper that only reads a caster
+ * (slot pools, save DC, attack bonus, spellbook, cast resolution) takes this
+ * rather than Character, so a foe's or an NPC's cast needs no cast to a type it
+ * is not. The scalar `class`/`subclass` pair is here because older Character
+ * saves still carry it before `withDefaults` folds it into `classes`. */
+export interface SpellCaster {
+  id: string;
+  name: string;
+  classes?: ClassRef[];
+  class?: string;
+  subclass?: string;
+  level: number;
+  stats: Record<string, number>;
+  resources: ResourcePool[];
+  spellbook?: Spellbook;
+}
+
 /** Weapon proficiencies, split by namespace the way MulticlassGrant already
  * splits the class grants they come from: `categories` holds whole weapon
  * categories ('simple'/'martial'), `named` holds individual weapons by

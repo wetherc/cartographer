@@ -360,12 +360,10 @@ export async function castSpellOutOfCombat(app, caster, spell) {
  *   off the entity, which is where the combatant's kind is already known.
  */
 async function runCast(app, entity, spell, offered, writeBack, concentrates) {
-  // The pure spell helpers read a caster's class/level/stats/resources/
-  // spellbook — exactly the fields `toCaster` surfaces — so the view stands in
-  // for a Character at the type level; runtime only ever touches those fields.
-  const caster = /** @type {import('../types/entities.js').Character} */ (
-    /** @type {unknown} */ (toCaster(entity))
-  );
+  // The pure spell helpers take a `SpellCaster` — a caster's class/level/stats/
+  // resources/spellbook, which is exactly what `toCaster` surfaces — so the view
+  // is what they read and the real entity is only written back to.
+  const caster = toCaster(entity);
   if (spell.effect.kind !== 'utility' && offered.length === 0) {
     app.toasts.show('No target available.');
     return;

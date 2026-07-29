@@ -9,6 +9,7 @@ import { memoizeByIdentity } from '../util/memoize.js';
 /** @typedef {import('../types/class.js').ClassRef} ClassRef */
 /** @typedef {import('../types/spell.js').Ability} Ability */
 /** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {import('../types/entities.js').SpellCaster} SpellCaster */
 
 /**
  * The playable classes. The definitions themselves live in data/classes.js
@@ -88,7 +89,7 @@ export function cantripsKnownForClass(classId, characterLevel) {
 /**
  * The character's caster classes: every class-list entry whose class casts
  * (full/half/third/pact). Empty for a martial or classless character.
- * @param {Character} character
+ * @param {SpellCaster} character
  * @returns {ClassRef[]}
  */
 export function casterClassRefs(character) {
@@ -100,7 +101,7 @@ export function casterClassRefs(character) {
  * has ritual casting (Bard, Cleric, Druid, Wizard). A ritual spell is only
  * castable without a slot by a caster whose class grants the feature, so this is
  * what gates the cast dialog's ritual option.
- * @param {Character} character
+ * @param {SpellCaster} character
  * @returns {boolean}
  */
 export function hasRitualCasting(character) {
@@ -110,7 +111,7 @@ export function hasRitualCasting(character) {
 /**
  * The character's first caster class, or null — the class whose ability powers
  * spells when a caller doesn't name one.
- * @param {Character} character
+ * @param {SpellCaster} character
  * @returns {ClassRef | null}
  */
 export function primaryCasterClass(character) {
@@ -121,7 +122,7 @@ export function primaryCasterClass(character) {
  * The modifier of a caster's spell ability, or null when the character has no
  * caster class or lacks that ability score. `classId` picks which class's
  * ability to read; it defaults to the first caster class.
- * @param {Character} character
+ * @param {SpellCaster} character
  * @param {string} [classId]
  * @returns {number | null}
  */
@@ -138,7 +139,7 @@ export function spellAbilityModifier(character, classId) {
  * Proficiency reads the total character level (the 5e multiclass rule); the
  * ability comes from `classId`, defaulting to the first caster class. Null for
  * a non-caster.
- * @param {Character} character
+ * @param {SpellCaster} character
  * @param {string} [classId]
  * @returns {number | null}
  */
@@ -151,7 +152,7 @@ export function spellSaveDC(character, classId) {
 /**
  * A caster's spell attack bonus: proficiency bonus + spell-ability modifier,
  * with the same class selection as `spellSaveDC`. Null for a non-caster.
- * @param {Character} character
+ * @param {SpellCaster} character
  * @param {string} [classId]
  * @returns {number | null}
  */

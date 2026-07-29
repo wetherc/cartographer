@@ -5,6 +5,8 @@ import { DEFAULT_CLASSES } from '../data/classes.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
+/** @typedef {import('../types/entities.js').SpellCaster} SpellCaster */
+/** @typedef {{ resources: ResourcePool[] }} PoolHolder */
 
 /**
  * Spell slots are regular resource pools under reserved ids (`slots-1` ..
@@ -208,7 +210,7 @@ export function isPactPool(pool) {
 
 /**
  * A character's slot pools, ordered by spell level.
- * @param {Character} character
+ * @param {PoolHolder} character
  * @returns {ResourcePool[]} empty for non-casters
  */
 export function getSlotPools(character) {
@@ -219,7 +221,7 @@ export function getSlotPools(character) {
 
 /**
  * The character's pact-magic pool, or null for a non-pact caster.
- * @param {Character} character
+ * @param {PoolHolder} character
  * @returns {ResourcePool | null}
  */
 export function getPactPool(character) {
@@ -268,7 +270,7 @@ export function slotPoolsForCaster(casterType, level) {
  * @type {Map<string, import('../types/class.js').CasterType>} */
 const CASTER_TYPE_BY_ID = new Map(DEFAULT_CLASSES.map((c) => [c.id, c.casterType]));
 
-/** @param {Character} character @returns {{ classId: string, level: number,
+/** @param {SpellCaster} character @returns {{ classId: string, level: number,
  *   casterType: import('../types/class.js').CasterType }[]} */
 function casterEntries(character) {
   return getClasses(character)
@@ -284,7 +286,7 @@ function casterEntries(character) {
  * slots come from `characterPactSlots`). A classless character keeps the old
  * full-caster-at-character-level behavior, so hand-built casters without a
  * class survive.
- * @param {Character} character
+ * @param {SpellCaster} character
  * @returns {number[]} index 0 = spell level 1
  */
 export function characterSlots(character) {
@@ -305,7 +307,7 @@ export function characterSlots(character) {
 /**
  * The pact-magic slots a character's class list grants: the pact progression
  * read at the summed pact-caster class levels, or null with no pact class.
- * @param {Character} character
+ * @param {SpellCaster} character
  * @returns {{ count: number, level: number } | null}
  */
 export function characterPactSlots(character) {
@@ -318,7 +320,7 @@ export function characterPactSlots(character) {
 /**
  * The highest slot level a character can cast from, across leveled and pact
  * pools; 0 for a non-caster.
- * @param {Character} character
+ * @param {PoolHolder} character
  * @returns {number}
  */
 export function highestSlotLevel(character) {
@@ -333,7 +335,7 @@ export function highestSlotLevel(character) {
  * The slot levels a caster can cast a spell of `minLevel` at right now: each
  * leveled or pact pool at or above that level with a charge left, deduplicated
  * and ascending. Backs the cast dialog's slot picker.
- * @param {Character} character
+ * @param {PoolHolder} character
  * @param {number} minLevel the spell's own level
  * @returns {number[]}
  */

@@ -21,6 +21,26 @@ import { isSlotPool, isCasterPool } from './SpellSlots.js';
  */
 
 /**
+ * The union of the caster-relevant fields across the three combatant shapes, so
+ * a Character, an Encounter, and an NPC are all assignable to it. Every field
+ * that only some of them carry is optional, which is what lets the readers and
+ * writers below take any combatant without a cast.
+ * @typedef {{
+ *   id: string,
+ *   name: string,
+ *   classes?: ClassRef[],
+ *   class?: string,
+ *   subclass?: string,
+ *   level?: number,
+ *   casterLevel?: number,
+ *   stats?: Record<string, number>,
+ *   statBlock?: Record<string, number>,
+ *   resources?: ResourcePool[],
+ *   spellbook?: Spellbook,
+ * }} CasterEntity
+ */
+
+/**
  * A caster's view of any combatant, in the exact field shape the pure spell
  * helpers (`castSpell`, `spellSaveDC`, `spellAttackBonus`, `getSlotPools`) read.
  * @typedef {{
@@ -40,7 +60,7 @@ import { isSlotPool, isCasterPool } from './SpellSlots.js';
  * `class`/`subclass` pair at their caster level. Normalizing here is what keeps
  * `CasterView` one shape, so every class-aware spell helper reads the list and
  * no caller has to know which kind of combatant it was handed.
- * @param {any} e
+ * @param {CasterEntity} e
  * @param {number} level the caster level the scalar pair sits at
  * @returns {ClassRef[]}
  */
@@ -60,20 +80,19 @@ function casterClasses(e, level) {
  * `level`, then 1), and `classes` to the scalar pair read as a one-entry list at
  * that caster level. The result is a plain read-only
  * view — write a spent slot back onto the real entity with `withCasterState`.
- * @param {Character | Encounter | NPC} entity
+ * @param {CasterEntity} entity
  * @returns {CasterView}
  */
 export function toCaster(entity) {
-  const e = /** @type {any} */ (entity);
-  const level = e.casterLevel ?? e.level ?? 1;
+  const level = entity.casterLevel ?? entity.level ?? 1;
   return {
-    id: e.id,
-    name: e.name,
-    classes: casterClasses(e, level),
+    id: entity.id,
+    name: entity.name,
+    classes: casterClasses(entity, level),
     level,
-    stats: e.stats ?? e.statBlock ?? {},
-    resources: e.resources ?? [],
-    spellbook: e.spellbook,
+    stats: entity.stats ?? entity.statBlock ?? {},
+    resources: entity.resources ?? [],
+    spellbook: entity.spellbook,
   };
 }
 
@@ -95,18 +114,17 @@ export function isCaster(entity) {
  * returns a caster view with the slot decremented; this splices those resources
  * (the slot and pact pools) onto the entity, replacing its own and keeping
  * any non-slot resources it may have. Pure.
- * @template T
+ * @template {CasterEntity} T
  * @param {T} entity
  * @param {{ resources: ResourcePool[] }} caster the resolver's returned caster
  * @returns {T}
  */
 export function withCasterState(entity, caster) {
-  const e = /** @type {any} */ (entity);
   const slots = caster.resources.filter(isCasterPool);
-  return /** @type {T} */ ({
-    ...e,
-    resources: spliceReservedPools(e.resources ?? [], slots, isCasterPool),
-  });
+  return {
+    ...entity,
+    resources: spliceReservedPools(entity.resources ?? [], slots, isCasterPool),
+  };
 }
 
 /**
@@ -115,7 +133,7 @@ export function withCasterState(entity, caster) {
  * slot pools rebuilt for the class and level. A non-caster class (or none)
  * leaves the entity untouched, so this is safe to call for every create/edit.
  * Any prior slot pools are replaced; non-slot resources survive.
- * @template T
+ * @template {CasterEntity} T
  * @param {T} entity
  * @param {CasterOptions} [options]
  * @param {number} [defaultLevel] caster level when options omit one
@@ -123,20 +141,19 @@ export function withCasterState(entity, caster) {
  */
 export function withCasterFields(entity, options = {}, defaultLevel = 1) {
   if (!isCasterClass(options.class)) return entity;
-  const e = /** @type {any} */ (entity);
   const casterLevel = Math.max(1, Math.floor(options.casterLevel ?? defaultLevel) || 1);
-  return /** @type {T} */ ({
-    ...e,
+  return {
+    ...entity,
     class: options.class,
     ...(options.subclass ? { subclass: options.subclass } : {}),
     casterLevel,
     spellbook: options.spellbook ?? emptySpellbook(),
     resources: spliceReservedPools(
-      e.resources ?? [],
+      entity.resources ?? [],
       casterSlots(options.class, casterLevel),
       isSlotPool,
     ),
-  });
+  };
 }
 
 /**
@@ -145,22 +162,21 @@ export function withCasterFields(entity, options = {}, defaultLevel = 1) {
  * spellbook, and slot pools if any are missing. A non-caster is returned
  * unchanged. Use this in `withDefaults`; use `withCasterFields` for a fresh
  * create/edit where full slots are wanted.
- * @template T
+ * @template {CasterEntity} T
  * @param {T} entity
  * @param {number} [defaultLevel]
  * @returns {T}
  */
 export function ensureCasterFields(entity, defaultLevel = 1) {
-  const e = /** @type {any} */ (entity);
-  if (!isCasterClass(e.class)) return entity;
-  const casterLevel = e.casterLevel ?? defaultLevel;
-  const hasSlots = (e.resources ?? []).some(isSlotPool);
-  return /** @type {T} */ ({
-    ...e,
+  if (!isCasterClass(entity.class)) return entity;
+  const casterLevel = entity.casterLevel ?? defaultLevel;
+  const stored = entity.resources ?? [];
+  return {
+    ...entity,
     casterLevel,
-    spellbook: e.spellbook ?? emptySpellbook(),
-    resources: hasSlots ? e.resources : casterSlots(e.class, casterLevel),
-  });
+    spellbook: entity.spellbook ?? emptySpellbook(),
+    resources: stored.some(isSlotPool) ? stored : casterSlots(entity.class, casterLevel),
+  };
 }
 
 /**

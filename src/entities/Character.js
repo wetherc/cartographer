@@ -21,6 +21,7 @@ import { migrateASIChoices } from './LevelUp.js';
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').Spellbook} Spellbook */
+/** @typedef {import('../types/entities.js').SpellCaster} SpellCaster */
 
 /** XP required to go from level N to N+1 is N * XP_PER_LEVEL. */
 export const XP_PER_LEVEL = 100;
@@ -154,7 +155,7 @@ export function copySpellbook(book) {
 /**
  * A character's spellbook, or an empty one for a character that predates
  * spellbooks (so callers never guard against undefined).
- * @param {Character} character
+ * @param {{ spellbook?: Spellbook }} character
  * @returns {Spellbook}
  */
 export function getSpellbook(character) {
@@ -190,7 +191,7 @@ function withoutSource(book, spellId) {
  * The class a spell was learned under, or null when none was recorded (a
  * single-class book, or an older save) — casting falls back to the first
  * caster class then.
- * @param {Character} character
+ * @param {{ spellbook?: Spellbook }} character
  * @param {string} spellId
  * @returns {string | null}
  */
@@ -459,10 +460,15 @@ export function addResource(character, pool) {
 }
 
 /**
- * @param {Character} character
+ * Spend from one of an entity's resource pools. Generic over the holder so a
+ * caster that is not a Character (a spellcasting foe or NPC, seen through
+ * `Caster.toCaster`) can spend a spell slot through the same function and get
+ * its own type back.
+ * @template {{ resources: ResourcePool[] }} T
+ * @param {T} character
  * @param {string} resourceId
  * @param {number} amount
- * @returns {Character}
+ * @returns {T}
  */
 export function spendResource(character, resourceId, amount) {
   return {

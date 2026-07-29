@@ -5,7 +5,7 @@ import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/spell.js').SpellScaling} SpellScaling */
-/** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {import('../types/entities.js').SpellCaster} SpellCaster */
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 /** @typedef {import('../types/dice.js').DiceResult} DiceResult */
 /** @typedef {import('../types/dice.js').RandomFn} RandomFn */
@@ -241,7 +241,7 @@ function scaledParts(baseParts, scaling, steps) {
  * prepared-list casters cast from the union, since the resolver doesn't model
  * the distinction). A caster whose class stores no spellbook (e.g. a legacy
  * character) can't cast.
- * @param {Character} caster
+ * @param {SpellCaster} caster
  * @param {Spell} spell
  * @returns {boolean}
  */
@@ -255,7 +255,7 @@ export function canCast(caster, spell) {
  * The pool id a cast at this slot level draws from: the leveled slot pool when
  * it has a charge, else the pact pool at that level (pact slots are cast at
  * exactly their own level), else null when neither has one left.
- * @param {Character} caster
+ * @param {SpellCaster} caster
  * @param {number} slotLevel
  * @returns {string | null}
  */
@@ -292,7 +292,8 @@ function slotPoolToSpend(caster, slotLevel) {
  * - `heal`: the healing rolled once, applied identically to each target.
  * - `utility`: no rolls, an empty `outcomes`.
  *
- * @param {Character} caster
+ * @template {SpellCaster} T
+ * @param {T} caster
  * @param {Spell} spell
  * @param {{
  *   slotLevel?: number,
@@ -306,7 +307,7 @@ function slotPoolToSpend(caster, slotLevel) {
  * }} [options]
  * @returns {(
  *   { ok: false, reason: 'not-known' | 'bad-slot-level' | 'no-slot' | 'not-ritual' } |
- *   { ok: true, caster: Character, spell: Spell, slotLevel: number, spent: boolean,
+ *   { ok: true, caster: T, spell: Spell, slotLevel: number, spent: boolean,
  *     ritual: boolean,
  *     effect: import('../types/spell.js').SpellEffect['kind'], targets: CastTarget[],
  *     truncated: number, outcomes: object[] }

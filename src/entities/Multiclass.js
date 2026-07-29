@@ -1,4 +1,5 @@
 /** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {import('../types/entities.js').SpellCaster} SpellCaster */
 /** @typedef {import('../types/class.js').ClassRef} ClassRef */
 
 /**
@@ -16,16 +17,13 @@
  * instead of a list; those read as a one-entry list at the character's full
  * level until `withDefaults` folds them in. A classless character yields an
  * empty list.
- * @param {Character} character
+ * @param {SpellCaster} character
  * @returns {ClassRef[]}
  */
 export function getClasses(character) {
   if (character.classes) return character.classes;
-  const legacy = /** @type {{ class?: string, subclass?: string }} */ (
-    /** @type {unknown} */ (character)
-  );
-  if (!legacy.class) return [];
-  return [{ classId: legacy.class, level: totalLevel(character), subclass: legacy.subclass }];
+  if (!character.class) return [];
+  return [{ classId: character.class, level: totalLevel(character), subclass: character.subclass }];
 }
 
 /**
@@ -49,7 +47,7 @@ export function classLevelOf(character, classId) {
   return getClasses(character).find((ref) => ref.classId === classId)?.level ?? 0;
 }
 
-/** @param {Character} character @returns {number} the stored total, at least 1 */
+/** @param {{ level: number }} character @returns {number} the stored total, at least 1 */
 export function totalLevel(character) {
   return Math.max(1, Math.floor(character.level) || 1);
 }
