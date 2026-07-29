@@ -7,6 +7,9 @@
    with the body's stats following directly beneath. */
 .character-sheet__head {
   align-items: stretch;
+  /* Same measure the body's left column keeps, so the HP bar ends where the
+     field rows beneath it do instead of running on to the card's edge. */
+  max-width: var(--sheet-measure);
 }
 
 .character-sheet__summary {
@@ -41,8 +44,46 @@
   color: var(--text-muted);
 }
 
+/* The body deals its sections into two columns (see CharacterSheet.js) plus any
+   full-width section beneath them. One grid column by default, so the sections
+   stack in source order; the container query below turns on the second one. */
 .character-sheet__body {
+  display: grid;
+  align-items: start;
+  gap: var(--space-4) var(--space-5);
   padding-top: var(--space-3);
+}
+
+.character-sheet__col {
+  min-width: 0;
+  max-width: var(--sheet-measure);
+}
+
+/* The columns supply their own inter-section spacing, and the grid's row gap
+   supplies the spacing between them, so a section that leads a column drops the
+   margin it carries for the single-column case. */
+.character-sheet__col > :first-child {
+  margin-top: 0;
+}
+
+/* Two columns once the card itself is wide enough to give both a readable
+   measure. The query measures the card, not the viewport, so the same sheet
+   mounted in a narrow rail stays stacked on a wide screen. */
+@container character-sheet (min-width: 50rem) {
+  /* The left column takes its full measure first, since it holds the six
+     ability badges, which fit on one row at that measure and wrap into a ragged
+     second one below it. */
+  .character-sheet__body {
+    grid-template-columns:
+      minmax(0, var(--sheet-measure))
+      minmax(0, var(--sheet-measure-side));
+  }
+
+  /* Anything the build put straight in the body rather than in a column (the
+     castable-spells section) spans the full width beneath both. */
+  .character-sheet__body > :not(.character-sheet__col) {
+    grid-column: 1 / -1;
+  }
 }
 
 /* Level on the left, the XP progress readout on the right of the same line. */
@@ -120,6 +161,17 @@
    numeric input on the sheet aligns to a single column. */
 .character-sheet {
   --sheet-key-w: 5rem;
+  /* How wide any one column of the sheet is allowed to get. Past this a row
+     with a label on the left and a button on the right just pulls the two
+     apart, which is what the whole card used to be capped to prevent. */
+  --sheet-measure: 34rem;
+  /* The right column gets less, because its rows are a short label with an
+     action button pushed to the far end: at the left column's measure the two
+     ends of "4 levels to assign ... Assign level" stop reading as one row. */
+  --sheet-measure-side: 24rem;
+  /* Named so the body's two-column query sizes against the card it is in
+     rather than the viewport. */
+  container: character-sheet / inline-size;
 }
 
 .character-sheet__field-row .character-sheet__stat-key {

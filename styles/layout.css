@@ -292,9 +292,10 @@ body.mode-build .map-controls__fog {
   display: none;
 }
 
-/* The Character and Equipment tabs are form-like: on a wide hiDPI display
-   their rows stretch uncomfortably, so cap their measure. Inventory keeps the
-   full width for its dense, multi-column item rows. */
+/* The Equipment and Spellbook tabs are form-like: on a wide hiDPI display their
+   rows stretch uncomfortably, so cap their measure. Inventory keeps the full
+   width for its dense, multi-column item rows, and the Character tab keeps it
+   too because the sheet splits into columns rather than stretching. */
 .tabs__panel--narrow {
   max-width: 34rem;
 }

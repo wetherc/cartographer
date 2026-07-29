@@ -45,7 +45,10 @@ function customPools(character) {
  * Mount a character card: a glanceable head (name / race / HP healthbar / spell
  * slots) over the full sheet — XP control, ability scores, and resource pools
  * (HP included) with spend/restore steppers. The card does not collapse; the
- * head and body always read top to bottom.
+ * head and body always read top to bottom. The body's sections are dealt into
+ * two columns that sit side by side on a card wide enough for both and stack in
+ * source order on a narrow one, with the castable-spells section spanning the
+ * full width beneath them.
  * Renders an empty state when no character is selected (`null`).
  * `getPermissions` scopes what the viewer may touch: without `editBase` the
  * stats and XP render read-only and the bonus-HP and base-AC fields are absent,
@@ -234,6 +237,16 @@ export function mountCharacterSheet(
     }
 
     const body = el('div', 'character-sheet__body');
+    // The body's sections are split across two columns: the numbers a player
+    // reads constantly (level, XP, the HP/AC fields, ability scores, pools) and
+    // the state that moves during play (progression, conditions). The columns
+    // sit side by side once the card is wide enough for both to keep a readable
+    // measure and stack in this order below that, which is the order the sheet
+    // has always read in. Castable spells stay a direct child of the body and
+    // span both columns, since a full caster's list wants the whole width.
+    const main = el('div', 'character-sheet__col');
+    const side = el('div', 'character-sheet__col');
+    body.append(main, side);
 
     const acBadge = el('span', 'character-sheet__ac');
     acBadge.title =
@@ -244,7 +257,7 @@ export function mountCharacterSheet(
     // Level, derived AC, and XP progress share the section header line; the
     // controls below are laid out like stat rows, so their inputs line up
     // with the ability-score inputs underneath them.
-    body.appendChild(
+    main.appendChild(
       el(
         'div',
         'character-sheet__header',
@@ -318,7 +331,7 @@ export function mountCharacterSheet(
         { icon: 'add' },
       );
       xpRow.appendChild(xpButton);
-      body.appendChild(xpRow);
+      main.appendChild(xpRow);
     }
 
     // The editable HP/AC fields sit in a grid that mirrors the ability-score
@@ -364,7 +377,7 @@ export function mountCharacterSheet(
       followField(input, () => live().baseAC ?? 10);
     }
 
-    if (fields.children.length > 0) body.appendChild(fields);
+    if (fields.children.length > 0) main.appendChild(fields);
 
     const statsList = el('div', 'character-sheet__stats');
     // Each ability reads as one d20-style badge showing the *effective* score
@@ -378,7 +391,7 @@ export function mountCharacterSheet(
     for (const key of Object.keys(character.stats)) {
       statsList.appendChild(statBadge(character, key));
     }
-    body.appendChild(statsList);
+    main.appendChild(statsList);
 
     // Classes, pending levels/improvements, features, and hit dice: the
     // progression section owns them (null for a classless legacy character).
@@ -390,7 +403,7 @@ export function mountCharacterSheet(
       onCommit: commit,
       notify,
     });
-    if (progress) body.appendChild(progress);
+    if (progress) side.appendChild(progress);
 
     // HP and spell slots are managed on the always-visible head lines, and hit
     // dice in the progression section, so the stepper list at the bottom only
@@ -429,12 +442,13 @@ export function mountCharacterSheet(
         }
         resources.appendChild(row);
       });
-      body.appendChild(resources);
+      main.appendChild(resources);
     }
 
     // Read-only castable spells: cantrips and prepared spells, each opening a
     // Cast/Close detail. Only for casters (the builder returns null otherwise)
-    // and only when the host wired spell callbacks in.
+    // and only when the host wired spell callbacks in. It goes in the body
+    // rather than either column, so it spans the full card width beneath them.
     if (spells) {
       const spellsSection = buildSpellsSection(character, {
         play: perms.play,
@@ -499,7 +513,7 @@ export function mountCharacterSheet(
       }
     }
     renderConcentration();
-    body.appendChild(conditions);
+    side.appendChild(conditions);
     /** @type {import('../types/entities.js').Condition[]} */
     let shownConditions = character.conditions;
     writers.push(() => {

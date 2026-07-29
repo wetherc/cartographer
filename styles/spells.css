@@ -124,13 +124,15 @@
 
 /* ==========================================================================
    Character-sheet spells: a read-only view of the castable set (cantrips and
-   prepared spells), sitting between the resource pools and the conditions bar.
-   Each chip opens the spell's detail, where casting happens; learning and
-   preparing live in the Spellbook tab.
+   prepared spells), spanning the full card width beneath the sheet's two
+   section columns because a full caster's list is long. Each chip opens the
+   spell's detail, where casting happens; learning and preparing live in the
+   Spellbook tab.
    ========================================================================== */
 
+/* The sheet body's row gap already separates it from the columns above. */
 .character-sheet__spells {
-  margin-top: var(--space-2);
+  margin-top: 0;
 }
 
 .character-sheet__spell-chip {

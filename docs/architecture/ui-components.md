@@ -764,6 +764,14 @@ centralized:
   one breakpoint: `@media (max-width: 68rem)`. Below it the main columns stack
   and the map viewport shortens. The only other `@media` in the project is the
   `prefers-color-scheme` chevron block.
+- **A component that reflows on its own width uses a container query, not a
+  breakpoint.** There is one: `.character-sheet` declares
+  `container: character-sheet / inline-size`, and `styles/character.css` queries
+  it at `50rem` to deal the sheet's sections into two columns. The card's width
+  depends on the sidebar being open and on which rails the current mode shows,
+  so a viewport breakpoint would guess at it. Both column widths derive from one
+  custom property, `--sheet-measure`, which is also the cap on the sheet's head,
+  so the HP bar ends where the field rows beneath it do.
 - **Mode and role are body classes, not breakpoints.** `body.mode-build`,
   `.mode-play`, `.mode-library`, `.role-gm`, `.role-player`, `.role-locked`,
   and `.sidebar-collapsed` gate whole regions, so switching modes is a class
