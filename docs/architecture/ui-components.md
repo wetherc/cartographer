@@ -774,9 +774,16 @@ centralized:
   each other on the first row, and a section column under each on the second.
   Below the query `--sheet-measure` caps the one stacked column. Inside it the
   two tracks split the card `1.4fr` to `1fr` and the body stops at
-  `--sheet-measure-wide` plus `--sheet-measure-side`, so both columns grow with
-  the card up to a width that still reads well and neither leaves an empty strip
-  beside it.
+  `--sheet-measure-body`, so both columns grow with the card up to a width that
+  still reads well.
+- **The card stops where the sheet does.** The three sheet measures live on
+  `:root` rather than on `.character-sheet`, because `.belowmap-sheet` caps itself
+  at `--sheet-measure-body` plus the card's padding and border, and a variable on
+  the sheet would be invisible to the card around it. Without that cap a 2560- or
+  3840-wide screen gave the card hundreds of pixels the sheet could not use, with
+  the tab strip stretched across the empty part. `.belowmap-side` caps for the
+  same reason, and `.app-belowmap` centers the pair so the room left over sits
+  outside both cards.
 - **Mode and role are body classes, not breakpoints.** `body.mode-build`,
   `.mode-play`, `.mode-library`, `.role-gm`, `.role-player`, `.role-locked`,
   and `.sidebar-collapsed` gate whole regions, so switching modes is a class

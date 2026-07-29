@@ -81,7 +81,7 @@
      field rows, whose label and input pull apart if the row runs long. */
   .character-sheet__body {
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    max-width: calc(var(--sheet-measure-wide) + var(--sheet-measure-side) + var(--space-5));
+    max-width: var(--sheet-measure-body);
   }
 
   /* Row one is the two headline blocks: name over HP bar on the left, the
@@ -151,6 +151,14 @@
   margin-top: var(--space-4);
 }
 
+/* The text takes the row's slack, so the row's action button parks at its far
+   end. That only reads as one row while the two ends stay close enough to take in
+   together, so the row stops well short of the column it sits in: at the column's
+   full width, "Hit Dice (d8) 3/3" and its Spend button were nearly 300px apart. */
+.character-sheet__progress-row {
+  max-width: 20rem;
+}
+
 .character-sheet__progress-row .character-sheet__progress-text {
   margin-right: auto;
 }
@@ -173,6 +181,11 @@
   margin-top: var(--space-4);
 }
 
+/* Same shape as a progression row, and capped for the same reason. */
+.character-sheet__resource-row {
+  max-width: 20rem;
+}
+
 .character-sheet__resource-row .character-sheet__resource-label {
   margin-right: auto;
 }
@@ -187,24 +200,33 @@
   letter-spacing: 0.04em;
 }
 
-/* One shared key column width (`--sheet-key-w`, sized for the longest key,
-   "BONUS HP") used by both the field rows and the ability-score rows, so every
-   numeric input on the sheet aligns to a single column. */
-.character-sheet {
-  --sheet-key-w: 5rem;
+/* The sheet's measures sit on the root rather than on `.character-sheet`,
+   because the card holding the sheet caps itself against them
+   (`styles/layout.css`) and a variable declared on the sheet is invisible to the
+   sheet's own ancestor. */
+:root {
   /* How wide the sheet's content is allowed to get while it is one stacked
      column. Past this a row with a label on the left and a button on the right
      just pulls the two apart. */
   --sheet-measure: 34rem;
   /* What the two columns may grow to once the card is wide enough for both, left
-     then right. Together with the gap they cover a card of about 70rem, which is
-     what the sheet gets on a 1920-wide screen with the session panels hidden, so
-     the space that used to sit empty at the card's right edge goes to the
-     content. The right column gets less, because its rows are a short label with
-     an action button pushed to the far end: given the left column's width the two
-     ends of "4 levels to assign ... Assign level" stop reading as one row. */
+     then right. The right column gets less because its rows are a short label
+     with an action button at the row's far end. */
   --sheet-measure-wide: 40rem;
-  --sheet-measure-side: 28rem;
+  --sheet-measure-side: 26rem;
+  /* Where the two-column body stops growing, and so where the card around it
+     stops: past this the columns would be wider than they read well at, and the
+     card would be wider than its content. */
+  --sheet-measure-body: calc(
+    var(--sheet-measure-wide) + var(--sheet-measure-side) + var(--space-5)
+  );
+}
+
+/* One shared key column width (`--sheet-key-w`, sized for the longest key,
+   "BONUS HP") used by both the field rows and the ability-score rows, so every
+   numeric input on the sheet aligns to a single column. */
+.character-sheet {
+  --sheet-key-w: 5rem;
   /* Named so the body's two-column query sizes against the card it is in
      rather than the viewport. */
   container: character-sheet / inline-size;
@@ -247,11 +269,14 @@
 
 /* The six ability scores as d20-style badges: they flow across as many columns
    as fit, wrapping to a fresh row rather than squeezing, so each die keeps its
-   size on any panel width. */
+   size on any panel width. The row stops short of the wide left column, because
+   the tracks share the width they are given and six dice spread across the full
+   column drift apart from each other. */
 .character-sheet__stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
   gap: var(--space-2);
+  max-width: 32rem;
 }
 
 /* One ability badge: key label, a die shape holding the effective score, and

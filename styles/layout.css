@@ -22,17 +22,25 @@
 
 /* Party character boxes + dice tray, laid out as a wrapping card row beneath
    the map. Build mode is authoring-only, so it stays hidden there. */
+/* Both cards below cap themselves at a width their content can fill, so on a
+   2560- or 3840-wide screen the room left over sits between and around them
+   instead of inside a half-empty panel. Centering the row puts that room on both
+   sides, which matches the map above, whose canvas is centered too. */
 .app-belowmap {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
+  justify-content: center;
   gap: var(--space-4);
 }
 
-/* Left stack: party roster with the dice tray tucked beneath it. */
+/* Left stack: party roster with the dice tray tucked beneath it. A roster row is
+   a name, a health pill, and a delete button, and the dice tray is a stack of
+   short stepper rows, so neither has anything to do with more width than this. */
 .belowmap-side {
   flex: 1 1 16rem;
   min-width: 0;
+  max-width: 30rem;
 }
 
 .belowmap-side > .card {
@@ -40,10 +48,14 @@
 }
 
 /* Combined character/equipment/inventory card, widened to fill the freed
-   dice-tray room. */
+   dice-tray room. It stops where the character sheet's own two columns stop
+   (`--sheet-measure-body`, styles/character.css) plus the card's padding and
+   border, so the card's edge and the tab strip across its top both end where the
+   content does rather than running on over empty card. */
 .belowmap-sheet {
   flex: 2 1 26rem;
   min-width: 0;
+  max-width: calc(var(--sheet-measure-body) + var(--space-4) * 2 + 2px);
 }
 
 /* Breathing room between the tab strip and the first line of tab content. */
