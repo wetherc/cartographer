@@ -45,7 +45,7 @@ function poolShape(character) {
  * `catalogStamp` is a value that changes whenever that catalog does, and it is
  * how the sheet learns a library edit means a rebuild.
  * @param {Character} character
- * @param {{ editBase: boolean, play: boolean, hp: boolean }} perms
+ * @param {import('../types/view.js').SheetPermissions} perms
  * @param {unknown} [catalogStamp]
  * @returns {unknown[]}
  */
@@ -55,6 +55,7 @@ export function sheetDeps(character, perms, catalogStamp) {
     perms.editBase,
     perms.play,
     perms.hp,
+    perms.restore,
     character.race,
     character.level,
     character.xp,

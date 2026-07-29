@@ -86,7 +86,7 @@ export function wireParty(app) {
   app.actions.refreshSelectedCharacter = scope.reselect;
 
   /** What this tab may do to the character currently on the sheet/inventory.
-   * @returns {{ editBase: boolean, play: boolean, hp: boolean }} */
+   * @returns {import('../types/view.js').SheetPermissions} */
   function selectedPermissions() {
     const character = selectedCharacter();
     return partyPermissions(state.role, claim.getBoundId(), character?.id ?? '');

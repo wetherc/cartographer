@@ -70,6 +70,9 @@ export function buildStatBar(pool, opts) {
  * filled pip spends a slot of that level, clicking an empty one restores one
  * (slots drain and refill left to right, so it reads as toggling that pip).
  * Without it (a spectator's view) the line is a plain readout.
+ * `allowRestore` false keeps the spend half and disables the empty pips, which
+ * is a player's view of their own slots: they may cast, but getting a slot back
+ * is the GM's to grant.
  * A non-caster (no slot pools) renders nothing.
  *
  * `update` takes the same pools with new `current` values and re-points the
@@ -77,9 +80,10 @@ export function buildStatBar(pool, opts) {
  * them; a caster who gains a slot gets a rebuilt line instead.
  * @param {ResourcePool[]} pools
  * @param {((pool: ResourcePool, spent: boolean) => void) | null} onToggle
+ * @param {boolean} [allowRestore] whether clicking an empty pip may put a slot back
  * @returns {{ element: HTMLElement, update: (pools: ResourcePool[]) => void }}
  */
-export function buildSlotLine(pools, onToggle) {
+export function buildSlotLine(pools, onToggle, allowRestore = true) {
   /** @param {ResourcePool} p */
   const slotNoun = (p) => (isPactPool(p) ? 'pact slot' : 'slot');
 
@@ -114,7 +118,9 @@ export function buildSlotLine(pools, onToggle) {
         const index = pipsByPool.length;
         pip.addEventListener('click', () => {
           const live = livePools[index];
-          onToggle(live, i < live.current);
+          const spent = i < live.current;
+          if (!spent && !allowRestore) return;
+          onToggle(live, spent);
         });
       } else {
         pip = el('span');
@@ -137,13 +143,23 @@ export function buildSlotLine(pools, onToggle) {
         const available = i < pool.current;
         pip.textContent = available ? '●' : '○';
         if (!onToggle) return;
+        const noun = `level ${slotLevelOf(pool)} ${slotNoun(pool)}`;
+        // A spent pip a player may not refill is still shown, so the cost of the
+        // cast stays visible; it just stops being a control.
+        pip.toggleAttribute('disabled', !available && !allowRestore);
         pip.setAttribute(
           'aria-label',
           available
-            ? `Spend a level ${slotLevelOf(pool)} ${slotNoun(pool)}`
-            : `Restore a level ${slotLevelOf(pool)} ${slotNoun(pool)}`,
+            ? `Spend a ${noun}`
+            : allowRestore
+              ? `Restore a ${noun}`
+              : `Spent ${noun}, restored by the GM`,
         );
-        pip.title = available ? 'Click to spend' : 'Click to restore';
+        pip.title = available
+          ? 'Click to spend'
+          : allowRestore
+            ? 'Click to restore'
+            : 'Only the GM can restore slots';
       });
     });
     if (onToggle) return;

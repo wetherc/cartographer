@@ -211,6 +211,12 @@
   cursor: pointer;
 }
 
-.slot-line__pip:hover {
+.slot-line__pip:hover:not(:disabled) {
   transform: scale(1.25);
+}
+
+/* A spent slot a player may not refill: still readable, no longer a control. */
+.slot-line__pip:disabled {
+  cursor: default;
+  opacity: 0.7;
 }

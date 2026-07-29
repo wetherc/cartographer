@@ -84,10 +84,12 @@ browser, so a dark GM laptop and a light table display can coexist.
 A Player tab can also **play as one character**. Pick one from the "Playing as"
 dropdown at the top of the Party panel, or open the tab with `?character=<id>`
 on the URL (combine with `?role=player&character=hero` for a bookmarked
-per-player display). A bound tab can play its character (spend and restore HP,
-spell slots, and other resources, add and clear conditions, and manage
-inventory) but cannot edit base attributes (stats, XP) or touch any other
-character; an unbound Player tab is a pure spectator. Bindings are exclusive:
+per-player display). A bound tab can play its character (spend spell slots and
+other resources, add and clear conditions, and manage inventory) but cannot edit
+base attributes (stats, XP, Bonus HP, Base AC) or touch any other character; an
+unbound Player tab is a pure spectator. Recovery is the GM's: a player can spend
+a slot but not put one back, and a spent pip on a Player tab reads as spent
+without being clickable. HP steppers are GM-only for the same reason. Bindings are exclusive:
 only one tab at a time can play a given character, on the same claim-and-expire
 rules as the GM view, so two tabs can never both act as the same hero. The GM
 tab ignores bindings entirely and can always edit everyone. Dice rolled from a
@@ -530,14 +532,14 @@ carry a flat **AC bonus** and/or an **ability-score buff** (say, +2 STR),
 both set when adding the item and applied only while equipped; a buffed
 score shows the boost beside its modifier on the sheet, and the modifier
 reflects the buffed total. Unarmored characters use their **Base AC** (a
-sheet field, normally 10) + full DEX, so effects like Mage Armor are a
+GM-only sheet field, normally 10) + full DEX, so effects like Mage Armor are a
 one-field change. The derived **AC readout** in the sheet's header sums all
 of this. Removing the last of a stack unequips it automatically, and saves
 from the flat-bonus armor era migrate on load (old body armor reads as light
 armor with the same total).
 
-The sheet also carries two HP controls beyond the bar's steppers: **Max HP**
-(GM-only) overrides the pool's maximum per character, clamping current HP down
+The sheet also carries two HP controls beyond the bar's steppers, both GM-only:
+**Max HP** overrides the pool's maximum per character, clamping current HP down
 if needed, and **Bonus HP** tracks temporary points from items or boons on top
 of intrinsic HP. It shows as a "+N" beside the bar, drains before real HP when
 damage lands, and is never refilled by healing; new bonus HP has to be granted.

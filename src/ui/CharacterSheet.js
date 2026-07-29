@@ -26,6 +26,7 @@ import { numberField } from './formFields.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
+/** @typedef {import('../types/view.js').SheetPermissions} SheetPermissions */
 
 /**
  * The pools the head and the stepper list own between them: HP on its bar,
@@ -47,10 +48,12 @@ function customPools(character) {
  * head and body always read top to bottom.
  * Renders an empty state when no character is selected (`null`).
  * `getPermissions` scopes what the viewer may touch: without `editBase` the
- * stats and XP render read-only, without `play` the pool steppers and
- * condition controls disappear too (a spectator's view of the sheet), and the
- * HP damage/heal steppers additionally require `hp` (GM-only — damage and
- * healing are adjudicated, not self-served).
+ * stats and XP render read-only and the bonus-HP and base-AC fields are absent,
+ * without `play` the pool steppers and condition controls disappear too (a
+ * spectator's view of the sheet), the HP damage/heal steppers additionally
+ * require `hp`, and putting a spent spell slot or pool point back requires
+ * `restore` (all three GM-only — damage, healing, and recovery are adjudicated,
+ * not self-served).
  *
  * The sheet is built once and then re-pointed: a change that leaves its shape
  * alone (any pool level, bonus HP, base AC, the name, the conditions) writes
@@ -59,7 +62,7 @@ function customPools(character) {
  * @param {HTMLElement} container
  * @param {Character | null} initial
  * @param {(character: Character) => void} [onChange]
- * @param {() => { editBase: boolean, play: boolean, hp: boolean }} [getPermissions]
+ * @param {() => SheetPermissions} [getPermissions]
  * @param {{
  *   resolveSpells: (ids: string[]) => import('../types/spell.js').Spell[],
  *   onCast: (character: Character, spell: import('../types/spell.js').Spell) => void,
@@ -88,7 +91,7 @@ export function mountCharacterSheet(
   container,
   initial,
   onChange = () => {},
-  getPermissions = () => ({ editBase: true, play: true, hp: true }),
+  getPermissions = () => ({ editBase: true, play: true, hp: true, restore: true }),
   spells = null,
   notify = () => {},
 ) {
@@ -143,7 +146,7 @@ export function mountCharacterSheet(
    * Build the whole card for a character whose shape is new, returning the
    * function that writes the current values into it.
    * @param {Character} character
-   * @param {{ editBase: boolean, play: boolean, hp: boolean }} perms
+   * @param {SheetPermissions} perms
    * @returns {() => void}
    */
   function build(character, perms) {
@@ -220,6 +223,7 @@ export function mountCharacterSheet(
                 spent ? spendResource(live(), pool.id, 1) : restoreResource(live(), pool.id, 1),
               )
           : null,
+        perms.restore,
       );
       head.appendChild(line.element);
       writers.push(() => {
@@ -331,8 +335,9 @@ export function mountCharacterSheet(
     }
 
     // Bonus HP from items/boons, tracked on top of the intrinsic pool; damage
-    // drains it first. Editable by anyone who can play the character.
-    if (perms.play && hp) {
+    // drains it first. Awarding it is a GM ruling like any other healing, so the
+    // field is absent from a player's sheet rather than shown read-only.
+    if (perms.editBase && hp) {
       const { row, input } = buildFieldRow(
         'BONUS HP',
         character.bonusHP ?? 0,
@@ -345,8 +350,10 @@ export function mountCharacterSheet(
     }
 
     // Unarmored base AC, normally 10; effects like Mage Armor raise it. Only
-    // in play while no body armor is equipped.
-    if (perms.play) {
+    // in play while no body armor is equipped. GM-set: a player raising their
+    // own defence is not theirs to decide, and the derived AC badge above still
+    // shows everyone the result.
+    if (perms.editBase) {
       const { row, input } = buildFieldRow(
         'BASE AC',
         character.baseAC ?? 10,
@@ -400,13 +407,18 @@ export function mountCharacterSheet(
         });
 
         if (perms.play) {
-          row.append(
+          row.appendChild(
             iconButton(
               'minus',
               `Spend one ${pool.name}`,
               () => commit(spendResource(live(), pool.id, 1)),
               { variant: 'danger' },
             ),
+          );
+        }
+        // Spending is the player's, restoring is the GM's, same as spell slots.
+        if (perms.restore) {
+          row.appendChild(
             iconButton(
               'plus',
               `Restore one ${pool.name}`,

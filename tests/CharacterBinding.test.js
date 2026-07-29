@@ -29,11 +29,17 @@ test('initialBinding resolves an id that names no party member to unbound', () =
 });
 
 test('the GM may edit, play, and adjust HP on any character regardless of binding', () => {
-  assert.deepEqual(partyPermissions('gm', null, 'hero'), { editBase: true, play: true, hp: true });
+  assert.deepEqual(partyPermissions('gm', null, 'hero'), {
+    editBase: true,
+    play: true,
+    hp: true,
+    restore: true,
+  });
   assert.deepEqual(partyPermissions('gm', 'sage', 'hero'), {
     editBase: true,
     play: true,
     hp: true,
+    restore: true,
   });
 });
 
@@ -42,12 +48,20 @@ test('a bound player tab may play its character but never edit base attributes o
     editBase: false,
     play: true,
     hp: false,
+    restore: false,
   });
   assert.deepEqual(partyPermissions('player', 'hero', 'sage'), {
     editBase: false,
     play: false,
     hp: false,
+    restore: false,
   });
+});
+
+test('no player tab may put a spent pool point back, bound or not', () => {
+  for (const bound of ['hero', null]) {
+    assert.equal(partyPermissions('player', bound, 'hero').restore, false);
+  }
 });
 
 test('an unbound player tab is a pure spectator', () => {
@@ -55,6 +69,7 @@ test('an unbound player tab is a pure spectator', () => {
     editBase: false,
     play: false,
     hp: false,
+    restore: false,
   });
 });
 

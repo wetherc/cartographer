@@ -9,6 +9,7 @@
  */
 
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
+/** @typedef {import('../types/view.js').SheetPermissions} SheetPermissions */
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /** sessionStorage key holding this tab's bound character id. */
@@ -51,16 +52,25 @@ export function initialBinding(search, sessionValue, characters) {
 
 /**
  * What a viewer may do to a given character's sheet. The GM may do anything;
- * a player tab may play (spend/restore pools, conditions, inventory) only the
- * character it is bound to, and may edit base attributes (stats, XP) never.
+ * a player tab may play (spend pools, cast, conditions, inventory) only the
+ * character it is bound to, and may edit base attributes (stats, XP, bonus HP,
+ * base AC) never.
  * HP is GM-adjudicated — damage and healing land through the GM's screen or
- * combat rolls, so even a bound player tab may not step its own HP. Pure.
+ * combat rolls, so even a bound player tab may not step its own HP. Recovery of
+ * spent pools is the same kind of ruling: a player may spend a spell slot or a
+ * ki point, but putting one back is the GM's call, so `restore` is GM-only too.
+ * Pure.
  * @param {ViewRole} role
  * @param {string | null} boundId this tab's bound character id
  * @param {string} characterId the character being rendered
- * @returns {{ editBase: boolean, play: boolean, hp: boolean }}
+ * @returns {SheetPermissions}
  */
 export function partyPermissions(role, boundId, characterId) {
-  if (role === 'gm') return { editBase: true, play: true, hp: true };
-  return { editBase: false, play: boundId !== null && boundId === characterId, hp: false };
+  if (role === 'gm') return { editBase: true, play: true, hp: true, restore: true };
+  return {
+    editBase: false,
+    play: boundId !== null && boundId === characterId,
+    hp: false,
+    restore: false,
+  };
 }

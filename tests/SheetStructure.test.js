@@ -13,7 +13,7 @@ import {
   spendResource,
 } from '../src/entities/Character.js';
 
-const perms = { editBase: true, play: true, hp: true };
+const perms = { editBase: true, play: true, hp: true, restore: true };
 
 /** @param {import('../src/types/entities.js').Character} a @param {import('../src/types/entities.js').Character} b */
 const same = (a, b) => sameDeps(sheetDeps(a, perms), sheetDeps(b, perms));
@@ -43,6 +43,10 @@ test('a different character is a different structure even at identical values', 
 
 test('the permissions are part of the structure', () => {
   assert.equal(sameDeps(sheetDeps(hero, perms), sheetDeps(hero, { ...perms, hp: false })), false);
+  assert.equal(
+    sameDeps(sheetDeps(hero, perms), sheetDeps(hero, { ...perms, restore: false })),
+    false,
+  );
 });
 
 test('a new maximum, a new pool, or a renamed pool rebuilds', () => {
