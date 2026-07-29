@@ -384,6 +384,12 @@ function normalizeSpell(raw, id) {
       ...(typeof raw.effect.condition === 'string' && raw.effect.condition
         ? { condition: raw.effect.condition }
         : {}),
+      // A repeated save only means something alongside a condition, and stays
+      // absent otherwise, so an entry authored before the field reads as a
+      // condition that runs for the spell's whole duration.
+      ...(raw.effect.saveEnds && typeof raw.effect.condition === 'string' && raw.effect.condition
+        ? { saveEnds: true }
+        : {}),
     };
   } else if (kind === 'heal') {
     effect = { kind: 'heal', healing: normalizeDamageParts(raw.effect.healing, HEALING_TYPES) };

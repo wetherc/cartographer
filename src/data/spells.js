@@ -357,13 +357,16 @@ export const DEFAULT_SPELLS = deepFreeze([
     duration: { kind: 'minutes', amount: 1, upTo: true },
     concentration: true,
     ritual: false,
-    description: 'A humanoid must succeed on a WIS save or be paralyzed.',
+    description:
+      'A humanoid must succeed on a WIS save or be paralyzed, retrying the save ' +
+      'at the end of each of its turns.',
     effect: {
       kind: 'save',
       saveAbility: 'WIS',
       damage: [],
       halfOnSave: false,
       condition: 'Paralyzed',
+      saveEnds: true,
     },
   },
   {
@@ -590,13 +593,16 @@ export const DEFAULT_SPELLS = deepFreeze([
     duration: { kind: 'instantaneous' },
     concentration: false,
     ritual: false,
-    description: 'A creature with 150 hit points or fewer is stunned.',
+    description:
+      'A creature with 150 hit points or fewer is stunned until it succeeds on a ' +
+      'CON save at the end of one of its turns.',
     effect: {
       kind: 'save',
       saveAbility: 'CON',
       damage: [],
       halfOnSave: false,
       condition: 'Stunned',
+      saveEnds: true,
     },
   },
   {

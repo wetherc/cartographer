@@ -19,6 +19,7 @@ import {
   createParticipant,
   startCombat,
   advanceTurn,
+  currentParticipant,
   dropParticipant,
 } from '../combat/Initiative.js';
 import { equippedWeapons } from '../entities/Equipment.js';
@@ -37,6 +38,7 @@ import {
   endSpellEffects,
   findCombatant,
   logDefeatTransition,
+  retryImposedSaves,
 } from './combatants.js';
 import { getSpellbook } from '../entities/Character.js';
 import { resolveSpellIds } from '../library/Library.js';
@@ -329,6 +331,11 @@ export function wireEncounters(app) {
     describe,
     onNext: () => {
       if (!combat) return;
+      // Read before the pointer moves: a spell that lets its target retry the
+      // save gets that retry at the end of the target's own turn, which is the
+      // turn now ending.
+      const acting = currentParticipant(combat);
+      if (acting) retryImposedSaves(app, acting.id);
       const result = advanceTurn(combat);
       setCombat(result.state);
       // A new round elapsed, so tick every combatant's timed conditions down,

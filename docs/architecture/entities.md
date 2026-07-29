@@ -391,13 +391,18 @@ A failed save against a spell can leave the target with a condition, and that ch
 records where it came from: `Condition.source` carries the spell's id and name, the
 caster's id, and the ability, DC, and bonus the save was rolled with. A chip the GM
 adds by hand has no source, so nothing below applies to it.
-`entities/ImposedConditions.js` owns the rule over that record:
-`removeImposed(list, casterId, spellId)` takes off every chip one cast wrote,
-reporting them, and hands the original list straight back when none matched.
+`entities/ImposedConditions.js` owns the two rules over that record:
 
-The match needs the caster and the spell to agree, so a caster holding two spells
-ends one at a time, and two casters landing the same spell on one target keep their
-own chips.
+- `removeImposed(list, casterId, spellId)` takes off every chip one cast wrote,
+  reporting them, and hands the original list straight back when none matched.
+- `repeatSaves(list, { bonusOf, rng })` rolls one save per chip whose source says
+  the save ends the effect, against the DC recorded on it, and drops the chips that
+  succeeded. `bonusOf` decides what the creature adds; it defaults to the bonus
+  stamped at cast time, which is all there is for a foe.
+
+Both matches need the caster and the spell to agree, so a caster holding two
+spells ends one at a time, and two casters landing the same spell on one target
+keep their own chips.
 
 `app/combatants.js` drives them, because only the wiring can see every collection
 a target lives in. `endSpellEffects(app, casterId, spellId)` sweeps the characters
@@ -406,13 +411,23 @@ caster stops holding a spell — the sheet's Drop control and its hand-removed
 `Concentrating` chip (through `onConcentrationEnd`, wired in `app/partyWiring.js`),
 a failed CON save or a drop to 0 HP in `applyToTarget`, a displacing cast in
 `app/spellCast.js`, and a duration running out at the round wrap.
+`retryImposedSaves(app, combatantId)` rolls the repeated saves, called from the
+initiative panel's turn advance for whoever's turn is ending. A party character
+rolls its live bonus there rather than the stamped one, so a save granted since the
+cast counts.
 
 The sweep always runs after the write it follows, never before: both touch
 `state.characters` and `state.encounters`, and a store of a pre-sweep copy would put
 the chips back.
 
+A spell says its condition allows the retry with `saveEnds` on its save effect,
+which `Library.normalizeSpell` accepts alongside a condition and drops without one.
+Hold Person and Power Word Stun ship with it.
+
 The chip still carries no mechanical effect, so a paralyzed creature acts normally
-whether or not its source is known.
+and the retry is the only rule that reads the condition. A spell whose only target
+shook the effect off also leaves the caster concentrating, since nothing tracks how
+many targets a cast has left.
 
 ## The UI layer over entities
 

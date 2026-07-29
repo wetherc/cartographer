@@ -41,10 +41,10 @@ rules the app cannot honor:
 - **Condition-imposing spells** (Ray of Enfeeblement, Bane, Blindness/Deafness,
   Slow, Banishment, Dominate Person, ...). A failed save does add the condition
   to the target as a chip, timed by the spell's duration, and the chip now ends
-  when the caster stops concentrating on the spell that imposed it. What it still
-  cannot do is have a rule effect: nothing reads "paralyzed" and grants advantage
-  or skips a turn, and a target gets no repeated save at the end of its turns.
-  Hold Person is included as the representative of this family.
+  when the caster stops concentrating and can be shaken off by a repeated save
+  where the spell allows one. What it still cannot do is have a rule effect:
+  nothing reads "paralyzed" and grants advantage or skips a turn. Hold Person is
+  included as the representative of this family.
 - **Area/geometry spells** (Grease, Web, Sleep by HP total, Wall of Fire,
   Hunger of Hadar). Area targeting is reduced to picking the creatures caught:
   a spell with `targetCount: 0` offers every reachable combatant and the caster

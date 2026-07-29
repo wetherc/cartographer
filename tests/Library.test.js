@@ -381,6 +381,25 @@ test('normalizeLibrary repairs spells: id, defaults, effect shape, and drops nam
   assert.deepEqual(scorch.duration, { kind: 'instantaneous' });
 });
 
+test('normalizeLibrary keeps a repeated save only alongside a condition', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      {
+        name: 'Hold',
+        effect: { kind: 'save', saveAbility: 'WIS', condition: 'Paralyzed', saveEnds: true },
+      },
+      // No condition to end, so the flag has nothing to mean and is dropped.
+      { name: 'Scorch', effect: { kind: 'save', saveAbility: 'DEX', saveEnds: true } },
+      // An entry written before the field reads as a condition that runs the
+      // spell's whole duration.
+      { name: 'Bane', effect: { kind: 'save', saveAbility: 'CHA', condition: 'Frightened' } },
+    ],
+  });
+  assert.equal(lib.spells[0].effect.saveEnds, true);
+  assert.equal(lib.spells[1].effect.saveEnds, undefined);
+  assert.equal(lib.spells[2].effect.saveEnds, undefined);
+});
+
 test('normalizeLibrary reads spell timing as either a structured value or printed text', () => {
   const lib = normalizeLibrary({
     spells: [

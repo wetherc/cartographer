@@ -5,7 +5,7 @@ import { armorClass } from '../entities/Equipment.js';
 import { damageCharacter, restoreResource, getHP, HP_RESOURCE_ID } from '../entities/Character.js';
 import { isOnTile } from '../entities/NPC.js';
 import { addCondition } from '../entities/Conditions.js';
-import { removeImposed } from '../entities/ImposedConditions.js';
+import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
 import { saveBonus } from '../entities/Checks.js';
 import { checkOnDamage, drop as dropConcentration } from '../entities/Concentration.js';
 import { replaceById } from '../entities/Roster.js';
@@ -341,6 +341,45 @@ export function endSpellEffects(app, casterId, spellId) {
   app.actions.markDirty();
   for (const { name, condition } of freed) {
     app.actions.logEvent('combat', `${name} is no longer ${condition}.`);
+  }
+}
+
+/**
+ * Roll the repeated saves a combatant is owed as its turn ends, for the
+ * conditions whose spell allows one, and take off whatever it shook loose. A
+ * party character rolls its own live save bonus; a foe rolls the number the GM
+ * entered when the spell was cast, which is the only bonus the app has for one.
+ * Each roll is logged with its DC, so a table can see why an effect held.
+ * @param {AppContext} app
+ * @param {string} combatantId whoever's turn just ended
+ */
+export function retryImposedSaves(app, combatantId) {
+  const found = findCombatant(app, combatantId);
+  if (!found || found.kind === 'npc') return;
+  const character = found.kind === 'character' ? found.entity : null;
+  const { conditions, results } = repeatSaves(found.entity.conditions, {
+    bonusOf: (source) =>
+      character && source.saveAbility
+        ? saveBonus(character, source.saveAbility)
+        : (source.saveBonus ?? 0),
+  });
+  if (results.length === 0) return;
+  if (conditions !== found.entity.conditions) {
+    // The same split as `applyConditionToTarget`: one write, two branches, since
+    // each `store` takes only its own entity type.
+    if (found.kind === 'character') found.store({ ...found.entity, conditions });
+    else found.store({ ...found.entity, conditions });
+    app.actions.markDirty();
+  }
+  for (const { condition, save, ended } of results) {
+    const ability = condition.source?.saveAbility;
+    const roll = `${ability ? `${ability} save` : 'save'} ${save.total} vs DC ${save.dc}`;
+    app.actions.logEvent(
+      'combat',
+      ended
+        ? `${found.entity.name} shakes off ${condition.name} (${roll}).`
+        : `${found.entity.name} is still ${condition.name} (${roll}).`,
+    );
   }
 }
 

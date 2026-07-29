@@ -47,6 +47,10 @@ export interface SpellSaveEffect {
   halfOnSave: boolean;
   /** A condition name imposed on a failed save (e.g. 'Frightened'). */
   condition?: string;
+  /** True when the imposed condition lets the target retry the save at the end
+   * of each of its turns, ending the effect on a success (Hold Person). Absent
+   * means the condition runs for the spell's whole duration. */
+  saveEnds?: boolean;
 }
 
 /** Restorative magic: healing dice applied to the target. */
