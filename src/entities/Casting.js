@@ -274,10 +274,11 @@ function slotPoolToSpend(caster, slotLevel) {
  *
  * On failure returns `{ ok: false, reason }` with reason one of
  * `'not-known'` (the caster can't cast this spell), `'bad-slot-level'` (the
- * slot is below the spell's level), or `'no-slot'` (no slot of that level
- * left, counting the pact pool at that level). On success returns the caster
+ * slot is below the spell's level), `'no-slot'` (no slot of that level
+ * left, counting the pact pool at that level), or `'not-ritual'` (a ritual cast
+ * was asked for by a spell that has no ritual). On success returns the caster
  * with the slot spent — from the leveled pool first, then the pact pool;
- * cantrips spend nothing — the targets the cast actually reached, how many were
+ * cantrips and rituals spend nothing — the targets the cast actually reached, how many were
  * dropped past the spell's cap (`truncated`), and an `outcomes` array whose
  * shape follows the effect kind:
  * - `attack`: one entry per target — its d20 attack roll, whether it hit/crit,
@@ -299,11 +300,13 @@ function slotPoolToSpend(caster, slotLevel) {
  *   saveDC?: number,
  *   casterLevel?: number,
  *   attackMode?: RollMode,
+ *   ritual?: boolean,
  *   rng?: RandomFn,
  * }} [options]
  * @returns {(
- *   { ok: false, reason: 'not-known' | 'bad-slot-level' | 'no-slot' } |
+ *   { ok: false, reason: 'not-known' | 'bad-slot-level' | 'no-slot' | 'not-ritual' } |
  *   { ok: true, caster: Character, spell: Spell, slotLevel: number, spent: boolean,
+ *     ritual: boolean,
  *     effect: import('../types/spell.js').SpellEffect['kind'], targets: CastTarget[],
  *     truncated: number, outcomes: object[] }
  * )}
@@ -316,21 +319,29 @@ export function castSpell(caster, spell, options = {}) {
     saveDC = 0,
     casterLevel = caster.level ?? 1,
     attackMode = 'normal',
+    ritual = false,
     rng = Math.random,
   } = options;
 
   if (!canCast(caster, spell)) return { ok: false, reason: 'not-known' };
 
+  // A ritual cast takes the extra ten minutes instead of a slot, so it spends
+  // nothing and always resolves at the spell's own level — there is no slot to
+  // upcast from. A spell with no ritual, and a cantrip (which has no ritual to
+  // trade a slot for), cannot be cast this way.
+  if (ritual && (!spell.ritual || spell.level === 0)) return { ok: false, reason: 'not-ritual' };
+
   // A cantrip uses no slot; a leveled spell must be cast at or above its own
   // level and have a slot of that level free.
   const cantrip = spell.level === 0;
-  const poolId = cantrip ? null : slotPoolToSpend(caster, slotLevel);
-  if (!cantrip) {
+  const asRitual = ritual && !cantrip;
+  const poolId = cantrip || asRitual ? null : slotPoolToSpend(caster, slotLevel);
+  if (!cantrip && !asRitual) {
     if (slotLevel < spell.level) return { ok: false, reason: 'bad-slot-level' };
     if (!poolId) return { ok: false, reason: 'no-slot' };
   }
 
-  const effectiveSlot = cantrip ? 0 : slotLevel;
+  const effectiveSlot = cantrip ? 0 : asRitual ? spell.level : slotLevel;
   const steps = scalingSteps(spell, effectiveSlot, casterLevel);
   const nextCaster = poolId ? spendResource(caster, poolId, 1) : caster;
 
@@ -355,7 +366,8 @@ export function castSpell(caster, spell, options = {}) {
     caster: nextCaster,
     spell,
     slotLevel: effectiveSlot,
-    spent: !cantrip,
+    spent: !cantrip && !asRitual,
+    ritual: asRitual,
     effect: spell.effect.kind,
     targets: reached,
     truncated: targets.length - reached.length,

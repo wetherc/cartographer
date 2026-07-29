@@ -3,7 +3,7 @@ import { parseAssignments } from '../ui/ModalFields.js';
 import { castSpell, materialCheck, maxTargets, scalingSteps } from '../entities/Casting.js';
 import { removeItem, spellSource } from '../entities/Character.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
-import { spellSaveDC, spellAttackBonus } from '../entities/Classes.js';
+import { spellSaveDC, spellAttackBonus, hasRitualCasting } from '../entities/Classes.js';
 import { encountersOnTile } from '../entities/Encounter.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { castableSlotLevels } from '../entities/SpellSlots.js';
@@ -88,6 +88,21 @@ export function startingSlotLevel(spell, slotLevels) {
 }
 
 /**
+ * The level a cast resolves at: the picked slot, or the spell's own level when it
+ * is being cast as a ritual — a ritual trades the slot for the time, so there is
+ * no slot to upcast from. Falls back to the spell's level when nothing is picked,
+ * which is what a dialog with no slot picker submits.
+ * @param {Spell} spell
+ * @param {string | number | undefined} picked
+ * @param {boolean} ritual
+ * @returns {number}
+ */
+export function effectiveSlot(spell, picked, ritual) {
+  if (ritual) return spell.level;
+  return Number(picked) || spell.level;
+}
+
+/**
  * How many creatures — or, for a multi-projectile spell, projectiles — a cast at
  * this slot level reaches. Read at the level actually being cast, since a cap
  * taken from a higher slot offers a projectile the cast cannot fire.
@@ -113,28 +128,48 @@ export function castCap(spell, slotLevel, casterLevel) {
  * blast covers. A multi-projectile spell gets the allocation grid instead, since
  * a checkbox cannot say "two rays here, one there"; it doubles as the target
  * picker, a creature given no projectile being one the cast never touches.
+ *
+ * A ritual cast spends no slot, so a caster out of slots can still make one:
+ * the slot picker is left out rather than the whole dialog refused, and the
+ * ritual box opens ticked because that is the only cast still available.
  * @param {Spell} spell
  * @param {{ id: string, name: string, ac: number }[]} targets
  * @param {number[]} slotLevels available slot levels at or above the spell's
  * @param {number} saveDC
  * @param {number} cap how many targets this cast may reach; Infinity for an area
- * @param {boolean} [material] whether the cast will consume a material component,
- *   which adds the opt-out a table that hand-waves components casts through
+ * @param {{ material?: boolean, ritual?: boolean }} [opts] `material`: the cast
+ *   will consume a material component, which adds the opt-out a table that
+ *   hand-waves components casts through. `ritual`: this caster may cast this
+ *   spell as a ritual, which adds the box that trades the slot for the time.
  * @returns {import('../types/modal.js').ModalField[] | null}
  */
-export function castFields(spell, targets, slotLevels, saveDC, cap, material = false) {
+export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
+  const { material = false, ritual = false } = opts;
   const kind = spell.effect.kind;
   /** @type {import('../types/modal.js').ModalField[]} */
   const fields = [];
   if (spell.level > 0) {
-    if (slotLevels.length === 0) return null;
-    fields.push({
-      name: 'slot',
-      label: 'Cast at level',
-      type: 'select',
-      value: String(slotLevels[0]),
-      options: slotLevels.map((l) => ({ value: String(l), label: `Level ${l}` })),
-    });
+    if (slotLevels.length === 0 && !ritual) return null;
+    if (slotLevels.length > 0) {
+      fields.push({
+        name: 'slot',
+        label: 'Cast at level',
+        type: 'select',
+        value: String(slotLevels[0]),
+        options: slotLevels.map((l) => ({ value: String(l), label: `Level ${l}` })),
+      });
+    }
+    // Sits beside the slot picker it governs: ticking it hides that picker,
+    // since a ritual always resolves at the spell's own level.
+    if (ritual) {
+      fields.push({
+        name: 'ritual',
+        label: 'Cast as ritual (10 minutes longer)',
+        type: 'checkbox',
+        full: true,
+        value: slotLevels.length === 0,
+      });
+    }
   }
   if (kind !== 'utility') {
     const noun = kind === 'heal' ? 'Recipient' : 'Target';
@@ -261,7 +296,9 @@ export async function castSpellOutOfCombat(app, caster, spell) {
  * is spent, `withCasterState` splices it back onto the real entity and the
  * caller's `writeBack` stores it in the right collection. Damage or healing
  * lands on each target the same way a weapon hit does — encounters and
- * characters track HP, an HP-less NPC keeps the log line only.
+ * characters track HP, an HP-less NPC keeps the log line only. A spell with a
+ * ritual, cast by a class that has ritual casting, can be cast for the extra ten
+ * minutes instead of a slot, which spends nothing and writes nothing back.
  * @template {import('../types/entities.js').Character
  *   | import('../types/entities.js').Encounter
  *   | import('../types/npc.js').NPC} T
@@ -306,7 +343,13 @@ async function runCast(app, entity, spell, targets, writeBack) {
     ),
     spell,
   );
-  const fields = castFields(spell, targets, slotLevels, dc, cap, material.required);
+  // Ritual casting is a class feature, so a spell that has a ritual is only
+  // castable as one by a bard, cleric, druid, or wizard.
+  const ritualOffered = spell.ritual && spell.level > 0 && hasRitualCasting(caster);
+  const fields = castFields(spell, targets, slotLevels, dc, cap, {
+    material: material.required,
+    ritual: ritualOffered,
+  });
   if (!fields) {
     app.toasts.show(`No level ${spell.level}+ slot left for ${spell.name}.`);
     return;
@@ -314,22 +357,30 @@ async function runCast(app, entity, spell, targets, writeBack) {
 
   // A projectile spell fires a different number per slot level, and its
   // allocation has to add up to that number, so the grid is restated whenever
-  // the level changes.
+  // the level changes — including when the ritual box changes it, since a ritual
+  // resolves at the spell's own level whatever the picker says.
   const allocates = fields.some((f) => f.name === 'allocation');
   const values = await promptModal(`Cast ${spell.name}`, fields, {
     submitLabel: 'Cast',
     wide: true,
     onChange: (name, form) => {
-      if (!allocates || name !== 'slot') return;
-      const slot = Number(form.get('slot')) || spell.level;
-      const total = castCap(spell, slot, caster.level ?? 1);
+      if (name !== 'slot' && name !== 'ritual') return;
+      const asRitual = form.get('ritual') === '1';
+      if (name === 'ritual' && slotLevels.length > 0) form.setHidden('slot', asRitual);
+      if (!allocates) return;
+      const total = castCap(
+        spell,
+        effectiveSlot(spell, form.get('slot'), asRitual),
+        caster.level ?? 1,
+      );
       form.setTotal('allocation', total);
       form.setLabel('allocation', allocationLabel(total));
     },
   });
   if (!values) return;
 
-  const slotLevel = spell.level > 0 ? Number(values.slot) || spell.level : spell.level;
+  const asRitual = values.ritual === '1';
+  const slotLevel = spell.level > 0 ? effectiveSlot(spell, values.slot, asRitual) : spell.level;
   const mode = /** @type {import('../types/dice.js').RollMode} */ (values.mode ?? 'normal');
   const saveDC = Number(values.dc) || dc;
   const chosen = chosenTargets(targets, values);
@@ -359,9 +410,16 @@ async function runCast(app, entity, spell, targets, writeBack) {
     spellAttackBonus: spellAttackBonus(caster, sourceClass) ?? 0,
     saveDC,
     attackMode: spell.effect.kind === 'attack' ? mode : 'normal',
+    ritual: asRitual,
   });
   if (!result.ok) {
-    app.toasts.show(`Can't cast ${spell.name}.`);
+    // A dialog opened on the ritual box alone submits with no slot to spend, so
+    // unticking it is the one way to reach 'no-slot' from here.
+    app.toasts.show(
+      result.reason === 'no-slot'
+        ? `No level ${spell.level}+ slot left for ${spell.name}.`
+        : `Can't cast ${spell.name}.`,
+    );
     return;
   }
   if (result.truncated > 0) {
@@ -395,7 +453,13 @@ async function runCast(app, entity, spell, targets, writeBack) {
       formatInventoryEvent(caster.name, { verb: 'use', itemName: consumed.name, count: 1 }),
     );
   }
-  const at = result.slotLevel > 0 ? ` at level ${result.slotLevel}` : '';
+  // The clock counts watches, not minutes, so a ritual's extra ten minutes is
+  // stated in the log for the GM to adjudicate rather than advanced.
+  const at = result.ritual
+    ? ' as a ritual (10 minutes longer)'
+    : result.slotLevel > 0
+      ? ` at level ${result.slotLevel}`
+      : '';
   app.actions.logEvent('combat', `${caster.name} casts ${spell.name}${at}.`);
 
   applyOutcomes(app, spell, result);

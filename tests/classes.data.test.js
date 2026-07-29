@@ -79,3 +79,12 @@ test('skillName renders hyphenated ids as display names', () => {
   assert.equal(skillName('sleight-of-hand'), 'Sleight of Hand');
   assert.equal(skillName('animal-handling'), 'Animal Handling');
 });
+
+test('ritual casting is carried by exactly the four SRD ritual classes', () => {
+  const ritual = DEFAULT_CLASSES.filter((c) => c.ritual).map((c) => c.id);
+  assert.deepEqual(ritual, ['bard', 'cleric', 'druid', 'wizard']);
+  // A class that casts nothing can hold no ritual.
+  for (const c of DEFAULT_CLASSES) {
+    if (c.casterType === 'none') assert.ok(!c.ritual, `${c.id} ritual`);
+  }
+});

@@ -12,6 +12,7 @@ import {
   casterSlots,
   cantripLimit,
   preparedLimit,
+  hasRitualCasting,
 } from '../src/entities/Classes.js';
 
 test('casterSlots is empty for an unknown class', () => {
@@ -128,4 +129,33 @@ test('every class definition is internally consistent', () => {
     }
     assert.ok([6, 8, 10, 12].includes(def.hitDie), `${def.id} hit die is a real die`);
   }
+});
+
+test('hasRitualCasting reads the class feature, not the spell', () => {
+  assert.equal(hasRitualCasting(character({ class: 'wizard' })), true);
+  assert.equal(hasRitualCasting(character({ class: 'cleric' })), true);
+  // A full caster without the feature, and a martial with no caster class.
+  assert.equal(hasRitualCasting(character({ class: 'sorcerer' })), false);
+  assert.equal(hasRitualCasting(character({ class: 'fighter' })), false);
+  assert.equal(hasRitualCasting(character({ class: undefined })), false);
+});
+
+test('one ritual-casting class in a multiclass is enough', () => {
+  const classes = [
+    { classId: 'sorcerer', level: 3 },
+    { classId: 'wizard', level: 2 },
+  ];
+  assert.equal(hasRitualCasting(character({ level: 5, classes })), true);
+  assert.equal(
+    hasRitualCasting(
+      character({
+        level: 5,
+        classes: [
+          { classId: 'sorcerer', level: 3 },
+          { classId: 'fighter', level: 2 },
+        ],
+      }),
+    ),
+    false,
+  );
 });

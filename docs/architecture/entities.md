@@ -285,6 +285,36 @@ repair, an imported spell would lose its material the first time a GM edited it.
 And `costGP` is displayed but never checked, since nothing in the app tracks how
 much money a party has.
 
+## Ritual casting
+
+A ritual cast takes ten minutes longer than normal and spends no spell slot. It
+needs both halves of the rule: the spell carries `ritual: true`, and the caster has
+a class with the ritual-casting feature. `data/classes.js` marks that feature on
+bard, cleric, druid, and wizard, and `Classes.hasRitualCasting(character)` is true
+when any of the character's caster classes has it.
+
+`Casting.castSpell` takes `{ ritual: true }`. The cast resolves at the spell's own
+level, since there is no slot to upcast from, and returns `spent: false` with the
+caster value unchanged. Asking for a ritual cast of a spell that has no ritual, or
+of a cantrip, returns `{ ok: false, reason: 'not-ritual' }`.
+
+The cast dialog offers a "Cast as ritual" checkbox when both halves line up, and
+ticking it hides the slot picker. A caster with no slots left is the case worth
+knowing about: a ritual is the one cast still available, so the dialog drops the
+slot picker rather than refusing to open, and the box starts ticked.
+
+The game clock divides a day into six named watches of four hours each
+(`time/GameClock.js`), so it cannot represent ten minutes and a ritual does not
+advance it. The session log states the extra time instead — `casts Detect Magic as a
+ritual (10 minutes longer)` — and the GM adjudicates it.
+
+A wizard should also be able to ritual-cast from the spellbook without preparing the
+spell. `canCast` still requires the spell to be known or prepared, because the
+resolver does not model that distinction. No built-in spell in `src/data/spells.js`
+is a ritual either, so the flag currently serves GM-authored and imported spells;
+see [the curated-spells note](../spells-missing.md) for what the built-in list
+covers.
+
 ## The UI layer over entities
 
 `ui/CharacterSheet.js`, `ui/InventoryPanel.js`, and `ui/EncounterPanel.js` are

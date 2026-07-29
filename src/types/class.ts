@@ -59,6 +59,9 @@ export interface ClassDef {
    * non-casters. */
   spellListId?: string;
   knownRule: SpellKnownRule;
+  /** True for a class with ritual casting (Bard, Cleric, Druid, Wizard), which
+   * may cast a ritual spell without spending a slot. Absent means it cannot. */
+  ritual?: boolean;
   /** Cantrips known by character level (index 0 = level 1); empty for classes
    * that know no cantrips. Values past the array's end use the last entry. */
   cantripsKnown: number[];

@@ -707,3 +707,102 @@ test('utility spell resolves with no outcomes and spends its slot', () => {
   assert.deepEqual(result.outcomes, []);
   assert.equal(result.caster.resources[0].current, 3);
 });
+
+/** A ritual utility spell the test caster has prepared, standing in for Detect
+ * Magic — no built-in spell is a ritual today, so the flag is exercised the way a
+ * GM-authored one would be.
+ * @type {import('../src/types/spell.js').Spell} */
+const detectMagic = {
+  ...burningHands,
+  id: 'detect-magic',
+  name: 'Detect Magic',
+  ritual: true,
+  effect: { kind: 'utility' },
+};
+
+/** The test caster with Detect Magic prepared. */
+function ritualCaster(over = {}) {
+  return caster({
+    spellbook: { cantrips: [], known: [], prepared: ['detect-magic'] },
+    ...over,
+  });
+}
+
+test('a ritual cast spends no slot and resolves at the spell’s own level', () => {
+  const c = ritualCaster();
+  const result = castSpell(c, detectMagic, { slotLevel: 1, ritual: true });
+  assert.equal(result.ok, true);
+  assert.equal(result.spent, false);
+  assert.equal(result.ritual, true);
+  assert.equal(result.slotLevel, 1);
+  assert.equal(result.caster, c, 'nothing was written, so the caster is untouched');
+  assert.equal(result.caster.resources[0].current, 4);
+});
+
+test('a ritual is castable with no slot left at all', () => {
+  // The whole point of the ritual: the extra ten minutes buys a cast a drained
+  // caster could not otherwise make.
+  const c = ritualCaster({ resources: [createResource('slots-1', 'Level 1 slots', 'mana', 0)] });
+  assert.deepEqual(castSpell(c, detectMagic, { slotLevel: 1 }), { ok: false, reason: 'no-slot' });
+  const result = castSpell(c, detectMagic, { slotLevel: 1, ritual: true });
+  assert.equal(result.ok, true);
+  assert.equal(result.spent, false);
+});
+
+test('a ritual cast ignores the slot level it was handed', () => {
+  // There is no slot to upcast from, so a higher level cannot buy more dice.
+  const spell = { ...detectMagic, effect: burningHands.effect, scaling: burningHands.scaling };
+  const c = ritualCaster({
+    resources: [createResource('slots-3', 'Level 3 slots', 'mana', 2)],
+  });
+  const result = castSpell(c, /** @type {any} */ (spell), {
+    slotLevel: 3,
+    ritual: true,
+    targets: [{ id: 't', name: 'Goblin', saveBonus: 0 }],
+    saveDC: 13,
+    // A save spell rolls its damage first, then each target's save.
+    rng: seq([...Array(3).fill(face(6, 6)), face(20, 1)]),
+  });
+  assert.equal(result.ok, true);
+  assert.equal(result.slotLevel, 1, 'the ritual resolves at the spell’s level, not the slot’s');
+  assert.equal(result.caster.resources[0].current, 2, 'the 3rd-level slot is untouched');
+  // Three d6 at 6 each: the base dice with no upcast increment.
+  assert.equal(/** @type {any} */ (result.outcomes[0]).taken, 18);
+});
+
+test('a ritual request for a spell with no ritual is refused', () => {
+  const c = caster();
+  assert.deepEqual(castSpell(c, burningHands, { slotLevel: 1, ritual: true }), {
+    ok: false,
+    reason: 'not-ritual',
+  });
+  // Refused before any slot is touched.
+  assert.equal(c.resources[0].current, 4);
+});
+
+test('a cantrip cannot be cast as a ritual', () => {
+  // A cantrip already costs no slot, so it has no ritual to trade one for.
+  const spell = { ...firebolt, ritual: true };
+  assert.deepEqual(castSpell(caster(), /** @type {any} */ (spell), { ritual: true }), {
+    ok: false,
+    reason: 'not-ritual',
+  });
+});
+
+test('a ritual cast still resolves its effect', () => {
+  const spell = { ...detectMagic, effect: cureWounds.effect, scaling: cureWounds.scaling };
+  const c = ritualCaster();
+  const result = castSpell(c, /** @type {any} */ (spell), {
+    slotLevel: 1,
+    ritual: true,
+    targets: [{ id: 't', name: 'Ally' }],
+    rng: seq([face(8, 7)]),
+  });
+  assert.equal(result.ok, true);
+  assert.equal(/** @type {any} */ (result.outcomes[0]).healing.total, 7);
+});
+
+test('a spell the caster does not know is refused before the ritual check', () => {
+  const result = castSpell(caster(), detectMagic, { slotLevel: 1, ritual: true });
+  assert.deepEqual(result, { ok: false, reason: 'not-known' });
+});

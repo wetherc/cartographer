@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { castCap, castFields, startingSlotLevel } from '../src/app/spellCast.js';
+import { castCap, castFields, effectiveSlot, startingSlotLevel } from '../src/app/spellCast.js';
 
 /**
  * The cast dialog's field list is pure — plain field records, no DOM — so what
@@ -108,4 +108,57 @@ test('a single-projectile cast keeps the select rather than a one-row grid', () 
 
 test('a leveled spell with no slot left builds no fields at all', () => {
   assert.equal(castFields(scorchingRay, targets, [], 13, 3), null);
+});
+
+/** A ritual utility spell, standing in for Detect Magic. @type {any} */
+const detectMagic = {
+  id: 'detect-magic',
+  name: 'Detect Magic',
+  level: 1,
+  ritual: true,
+  effect: { kind: 'utility' },
+};
+
+test('the ritual box is offered beside the slot picker, unticked', () => {
+  const fields = castFields(detectMagic, [], [1, 2], 13, 1, { ritual: true });
+  const box = fields.find((f) => f.name === 'ritual');
+  assert.equal(box.type, 'checkbox');
+  assert.equal(box.value, false, 'a caster holding slots casts from one by default');
+  assert.equal(box.label, 'Cast as ritual (10 minutes longer)');
+  assert.deepEqual(
+    fields.map((f) => f.name),
+    ['slot', 'ritual'],
+    'the box sits beside the picker it governs',
+  );
+});
+
+test('a ritual with no slot left keeps its dialog, pre-ticked and pickerless', () => {
+  // Without this the drained caster was refused the one cast that needs no slot.
+  const fields = castFields(detectMagic, [], [], 13, 1, { ritual: true });
+  assert.notEqual(fields, null);
+  assert.equal(
+    fields.some((f) => f.name === 'slot'),
+    false,
+  );
+  assert.equal(fields.find((f) => f.name === 'ritual').value, true);
+});
+
+test('no ritual on offer leaves the box out and still refuses a slotless cast', () => {
+  const fields = castFields(detectMagic, [], [1], 13, 1);
+  assert.equal(
+    fields.some((f) => f.name === 'ritual'),
+    false,
+  );
+  assert.equal(castFields(detectMagic, [], [], 13, 1), null);
+});
+
+test('effectiveSlot ignores the picked level for a ritual', () => {
+  assert.equal(effectiveSlot(detectMagic, '3', true), 1);
+  assert.equal(effectiveSlot(detectMagic, '3', false), 3);
+  assert.equal(
+    effectiveSlot(detectMagic, undefined, false),
+    1,
+    'nothing picked reads as its level',
+  );
+  assert.equal(effectiveSlot(fireBolt, '', false), 0);
 });

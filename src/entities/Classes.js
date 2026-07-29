@@ -96,6 +96,18 @@ export function casterClassRefs(character) {
 }
 
 /**
+ * Whether the character can cast rituals: true when any of its caster classes
+ * has ritual casting (Bard, Cleric, Druid, Wizard). A ritual spell is only
+ * castable without a slot by a caster whose class grants the feature, so this is
+ * what gates the cast dialog's ritual option.
+ * @param {Character} character
+ * @returns {boolean}
+ */
+export function hasRitualCasting(character) {
+  return casterClassRefs(character).some((ref) => !!getClass(ref.classId)?.ritual);
+}
+
+/**
  * The character's first caster class, or null — the class whose ability powers
  * spells when a caller doesn't name one.
  * @param {Character} character
