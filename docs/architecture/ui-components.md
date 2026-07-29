@@ -769,9 +769,12 @@ centralized:
   `container: character-sheet / inline-size`, and `styles/character.css` queries
   it at `50rem` to deal the sheet's sections into two columns. The card's width
   depends on the sidebar being open and on which rails the current mode shows,
-  so a viewport breakpoint would guess at it. Both column widths derive from one
-  custom property, `--sheet-measure`, which is also the cap on the sheet's head,
-  so the HP bar ends where the field rows beneath it do.
+  so a viewport breakpoint would guess at it. The query places four things by
+  grid area: the head (name and HP bar) and the level/AC/XP banner across from
+  each other on the first row, and a section column under each on the second.
+  `--sheet-measure` caps the left column and the head, so the HP bar ends where
+  the field rows beneath it do; `--sheet-measure-side` caps the right column and
+  the banner.
 - **Mode and role are body classes, not breakpoints.** `body.mode-build`,
   `.mode-play`, `.mode-library`, `.role-gm`, `.role-player`, `.role-locked`,
   and `.sidebar-collapsed` gate whole regions, so switching modes is a class

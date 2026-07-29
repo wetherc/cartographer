@@ -175,9 +175,21 @@ export function mountCharacterSheet(
       ),
     );
 
-    // Name, HP bar, and slot pips sit in the always-visible head; the sheet no
-    // longer collapses, so the body's stats follow directly beneath.
+    // Two headline blocks lead the sheet, one per column: the name over the HP
+    // bar on the left, the level/AC/XP banner over the spell-slot pips on the
+    // right. On a wide card they read across from each other, line for line.
     const head = el('div', 'character-sheet__head u-col u-g1', summary);
+    const headSide = el('div', 'character-sheet__head-side u-col u-g1');
+
+    // Under them the body lays its sections out in two columns: the numbers a
+    // player reads constantly (XP, the HP/AC fields, ability scores, pools) and
+    // the state that moves during play (progression, conditions). Below the
+    // width where both keep a readable measure everything stacks in the order it
+    // is appended here. Castable spells go straight in the body and span both
+    // columns, since a caster's list wants the whole width.
+    const body = el('div', 'character-sheet__body', head, headSide);
+    const main = el('div', 'character-sheet__col character-sheet__col--main');
+    const side = el('div', 'character-sheet__col character-sheet__col--side');
 
     const hp = getHP(character);
     if (hp) {
@@ -228,7 +240,8 @@ export function mountCharacterSheet(
           : null,
         perms.restore,
       );
-      head.appendChild(line.element);
+      // The pips ride under the banner, which puts them across from the HP bar.
+      headSide.appendChild(line.element);
       writers.push(() => {
         const next = live();
         const nextPact = getPactPool(next);
@@ -236,44 +249,32 @@ export function mountCharacterSheet(
       });
     }
 
-    const body = el('div', 'character-sheet__body');
-    // The body's sections are split across two columns: the numbers a player
-    // reads constantly (level, XP, the HP/AC fields, ability scores, pools) and
-    // the state that moves during play (progression, conditions). The columns
-    // sit side by side once the card is wide enough for both to keep a readable
-    // measure and stack in this order below that, which is the order the sheet
-    // has always read in. Castable spells stay a direct child of the body and
-    // span both columns, since a full caster's list wants the whole width.
-    const main = el('div', 'character-sheet__col');
-    const side = el('div', 'character-sheet__col');
-    body.append(main, side);
-
     const acBadge = el('span', 'character-sheet__ac');
     acBadge.title =
       'Armor class: equipped body armor sets base AC + DEX per its weight class ' +
       '(light: full, medium: max +2, heavy: none); unarmored is base AC + DEX. ' +
       'Shields add +2; other equipped items add their flat bonuses.';
 
-    // Level, derived AC, and XP progress share the section header line; the
-    // controls below are laid out like stat rows, so their inputs line up
-    // with the ability-score inputs underneath them.
-    main.appendChild(
+    // Level, derived AC, and XP progress share one banner line, the first line
+    // of the right-hand headline block.
+    const banner = el(
+      'div',
+      'character-sheet__header',
+      el('span', '', `Level ${character.level}`),
       el(
-        'div',
-        'character-sheet__header',
-        el('span', '', `Level ${character.level}`),
+        'span',
+        'character-sheet__header-meta u-muted',
+        acBadge,
         el(
           'span',
-          'character-sheet__header-meta u-muted',
-          acBadge,
-          el(
-            'span',
-            'character-sheet__xp-progress u-muted',
-            `XP ${character.xp} / ${character.level * XP_PER_LEVEL}`,
-          ),
+          'character-sheet__xp-progress u-muted',
+          `XP ${character.xp} / ${character.level * XP_PER_LEVEL}`,
         ),
       ),
     );
+    // The banner is built after the pip line but reads above it.
+    headSide.prepend(banner);
+    body.append(main, side);
     // Base AC is edited without changing the sheet's shape, so the derived
     // badge has to follow it.
     writers.push(() => {
@@ -525,7 +526,7 @@ export function mountCharacterSheet(
       if (live().concentration !== shownConcentration) renderConcentration();
     });
 
-    root.append(head, body);
+    root.appendChild(body);
     return () => {
       for (const write of writers) write();
     };

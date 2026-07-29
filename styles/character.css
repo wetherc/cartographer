@@ -2,13 +2,17 @@
    Character sheet
    ========================================================================== */
 
-/* Card head: the summary (name row) stacked over the always-live HP and
-   spell-slot lines. The sheet no longer collapses, so these read top to bottom
-   with the body's stats following directly beneath. */
+/* The two headline blocks: the name over the always-live HP bar on the left, the
+   level/AC/XP banner over the spell-slot pips on the right. Each is capped to
+   the measure of the column beneath it, so the HP bar ends where the field rows
+   do instead of running on to the card's edge. */
 .character-sheet__head {
   align-items: stretch;
-  /* Same measure the body's left column keeps, so the HP bar ends where the
-     field rows beneath it do instead of running on to the card's edge. */
+  max-width: var(--sheet-measure);
+}
+
+.character-sheet__head-side {
+  align-items: stretch;
   max-width: var(--sheet-measure);
 }
 
@@ -44,14 +48,14 @@
   color: var(--text-muted);
 }
 
-/* The body deals its sections into two columns (see CharacterSheet.js) plus any
-   full-width section beneath them. One grid column by default, so the sections
-   stack in source order; the container query below turns on the second one. */
+/* The body holds the two headline blocks, the two section columns, and any
+   full-width section under them (see CharacterSheet.js). One grid column by
+   default, so all of it stacks in source order; the container query below turns
+   on the second one and places each piece. */
 .character-sheet__body {
   display: grid;
   align-items: start;
   gap: var(--space-4) var(--space-5);
-  padding-top: var(--space-3);
 }
 
 .character-sheet__col {
@@ -79,22 +83,43 @@
       minmax(0, var(--sheet-measure-side));
   }
 
-  /* Anything the build put straight in the body rather than in a column (the
-     castable-spells section) spans the full width beneath both. */
-  .character-sheet__body > :not(.character-sheet__col) {
-    grid-column: 1 / -1;
+  /* Row one is the two headline blocks: name over HP bar on the left, the
+     level/AC/XP banner over the slot pips on the right, so the bar and the pips
+     land on the same line. Row two is the section column under each. */
+  .character-sheet__head {
+    grid-area: 1 / 1;
+  }
+
+  .character-sheet__head-side {
+    grid-area: 1 / 2;
+    max-width: var(--sheet-measure-side);
+  }
+
+  .character-sheet__col--main {
+    grid-area: 2 / 1;
+  }
+
+  .character-sheet__col--side {
+    grid-area: 2 / 2;
+  }
+
+  /* The castable-spells section, the one piece the build puts straight in the
+     body, spans both columns on a row of its own. */
+  .character-sheet__spells {
+    grid-area: 3 / 1 / auto / -1;
   }
 }
 
-/* Level on the left, the XP progress readout on the right of the same line. */
+/* Level on the left, the derived AC and XP progress readouts on the right of the
+   same line. The body's row gap separates it from what follows. */
 .character-sheet__header {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-2);
+  max-width: var(--sheet-measure);
   font-size: var(--text-heading);
   font-weight: 700;
-  margin-bottom: var(--space-3);
 }
 
 /* Derived AC and XP progress readouts on the header's right. */
