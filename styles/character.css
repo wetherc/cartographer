@@ -74,33 +74,39 @@
    measure. The query measures the card, not the viewport, so the same sheet
    mounted in a narrow rail stays stacked on a wide screen. */
 @container character-sheet (min-width: 50rem) {
-  /* The left column takes its full measure first, since it holds the six
-     ability badges, which fit on one row at that measure and wrap into a ragged
-     second one below it. */
+  /* Both columns take a share of whatever the card gives them, so neither leaves
+     a strip of empty card beside it, and the body as a whole stops at the two
+     measures so they cannot grow past what reads well. The left share is the
+     larger one: it holds the six ability badges, which want one row, and the
+     field rows, whose label and input pull apart if the row runs long. */
   .character-sheet__body {
-    grid-template-columns:
-      minmax(0, var(--sheet-measure))
-      minmax(0, var(--sheet-measure-side));
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    max-width: calc(var(--sheet-measure-wide) + var(--sheet-measure-side) + var(--space-5));
   }
 
   /* Row one is the two headline blocks: name over HP bar on the left, the
      level/AC/XP banner over the slot pips on the right, so the bar and the pips
      land on the same line. Row two is the section column under each. */
+  /* Each piece fills the grid track it sits in; the track widths above are the
+     cap, so the single-column measures are dropped here. */
   .character-sheet__head {
     grid-area: 1 / 1;
+    max-width: none;
   }
 
   .character-sheet__head-side {
     grid-area: 1 / 2;
-    max-width: var(--sheet-measure-side);
+    max-width: none;
   }
 
   .character-sheet__col--main {
     grid-area: 2 / 1;
+    max-width: none;
   }
 
   .character-sheet__col--side {
     grid-area: 2 / 2;
+    max-width: none;
   }
 
   /* The castable-spells section, the one piece the build puts straight in the
@@ -186,14 +192,19 @@
    numeric input on the sheet aligns to a single column. */
 .character-sheet {
   --sheet-key-w: 5rem;
-  /* How wide any one column of the sheet is allowed to get. Past this a row
-     with a label on the left and a button on the right just pulls the two
-     apart, which is what the whole card used to be capped to prevent. */
+  /* How wide the sheet's content is allowed to get while it is one stacked
+     column. Past this a row with a label on the left and a button on the right
+     just pulls the two apart. */
   --sheet-measure: 34rem;
-  /* The right column gets less, because its rows are a short label with an
-     action button pushed to the far end: at the left column's measure the two
+  /* What the two columns may grow to once the card is wide enough for both, left
+     then right. Together with the gap they cover a card of about 70rem, which is
+     what the sheet gets on a 1920-wide screen with the session panels hidden, so
+     the space that used to sit empty at the card's right edge goes to the
+     content. The right column gets less, because its rows are a short label with
+     an action button pushed to the far end: given the left column's width the two
      ends of "4 levels to assign ... Assign level" stop reading as one row. */
-  --sheet-measure-side: 24rem;
+  --sheet-measure-wide: 40rem;
+  --sheet-measure-side: 28rem;
   /* Named so the body's two-column query sizes against the card it is in
      rather than the viewport. */
   container: character-sheet / inline-size;

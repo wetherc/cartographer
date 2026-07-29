@@ -772,9 +772,11 @@ centralized:
   so a viewport breakpoint would guess at it. The query places four things by
   grid area: the head (name and HP bar) and the level/AC/XP banner across from
   each other on the first row, and a section column under each on the second.
-  `--sheet-measure` caps the left column and the head, so the HP bar ends where
-  the field rows beneath it do; `--sheet-measure-side` caps the right column and
-  the banner.
+  Below the query `--sheet-measure` caps the one stacked column. Inside it the
+  two tracks split the card `1.4fr` to `1fr` and the body stops at
+  `--sheet-measure-wide` plus `--sheet-measure-side`, so both columns grow with
+  the card up to a width that still reads well and neither leaves an empty strip
+  beside it.
 - **Mode and role are body classes, not breakpoints.** `body.mode-build`,
   `.mode-play`, `.mode-library`, `.role-gm`, `.role-player`, `.role-locked`,
   and `.sidebar-collapsed` gate whole regions, so switching modes is a class

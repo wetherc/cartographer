@@ -123,16 +123,26 @@
 }
 
 /* ==========================================================================
-   Character-sheet spells: a read-only view of the castable set (cantrips and
-   prepared spells), spanning the full card width beneath the sheet's two
-   section columns because a full caster's list is long. Each chip opens the
-   spell's detail, where casting happens; learning and preparing live in the
-   Spellbook tab.
+   Character-sheet spells: a read-only view of the castable set, one group per
+   spell level, spanning the full card width beneath the sheet's two section
+   columns because a full caster's list is long. Each chip opens the spell's
+   detail, where casting happens; learning and preparing live in the Spellbook
+   tab.
    ========================================================================== */
 
 /* The sheet body's row gap already separates it from the columns above. */
 .character-sheet__spells {
   margin-top: 0;
+}
+
+/* The level groups run across the section and wrap, so a caster with six levels
+   prepared reads as a few short lists rather than one tall one. The minimum is
+   wide enough for two chips of an average spell name side by side. */
+.character-sheet__spell-levels {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  align-items: start;
+  gap: var(--space-3) var(--space-4);
 }
 
 .character-sheet__spell-chip {

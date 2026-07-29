@@ -446,7 +446,7 @@ export function mountCharacterSheet(
       main.appendChild(resources);
     }
 
-    // Read-only castable spells: cantrips and prepared spells, each opening a
+    // Read-only castable spells grouped by level, each opening a
     // Cast/Close detail. Only for casters (the builder returns null otherwise)
     // and only when the host wired spell callbacks in. It goes in the body
     // rather than either column, so it spans the full card width beneath them.

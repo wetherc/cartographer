@@ -1,5 +1,6 @@
 import { getSpellbook } from '../entities/Character.js';
 import { getClass, casterClassRefs, primaryCasterClass } from '../entities/Classes.js';
+import { groupSpellsByLevel } from '../entities/SpellView.js';
 import { emptyState, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { promptSpellDetail } from './SpellDetail.js';
@@ -9,7 +10,7 @@ import { promptSpellDetail } from './SpellDetail.js';
 
 /**
  * The character-sheet spellbook: a read-only view of the spells the character
- * can cast right now — cantrips and prepared leveled spells. Clicking a spell
+ * can cast right now, grouped by spell level. Clicking a spell
  * opens its detail, which offers Cast (in play) and Close; there is no
  * learn/prepare/forget here, that lives in the Spellbook tab. A character with
  * no caster class and an empty spellbook renders nothing (returns null).
@@ -29,18 +30,35 @@ export function buildSpellsSection(character, opts) {
   if (casterClassRefs(character).length === 0 && !hasEntries) return null;
 
   const className = getClass(primaryCasterClass(character)?.classId)?.name;
-  return el(
+  const section = el(
     'div',
     'character-sheet__spells u-col u-g2',
     el('span', 'section-label', className ? `Spells (${className})` : 'Spells'),
-    buildGroup('Cantrips', opts.resolveSpells(book.cantrips), opts),
-    buildGroup('Prepared', opts.resolveSpells(book.prepared), opts),
   );
+
+  // One group per spell level the character can actually cast from, ascending:
+  // cantrips first, then each level with something prepared. A caster with a
+  // wide spread reads which slot level a spell will cost off the heading.
+  const groups = groupSpellsByLevel([
+    ...opts.resolveSpells(book.cantrips),
+    ...opts.resolveSpells(book.prepared),
+  ]);
+  if (groups.length === 0) {
+    section.appendChild(emptyState('Nothing prepared'));
+    return section;
+  }
+  // The groups sit side by side across the section's full width and wrap, so a
+  // caster with several levels prepared does not turn into one long column.
+  const levels = el('div', 'character-sheet__spell-levels');
+  for (const group of groups) levels.appendChild(buildGroup(group.label, group.spells, opts));
+  section.appendChild(levels);
+  return section;
 }
 
 /**
- * A titled row of castable spell chips. Each chip opens the spell's detail on
- * click; the detail offers Cast (when the viewer may play the character).
+ * One spell level's row of castable chips, under its level heading. Each chip
+ * opens the spell's detail on click; the detail offers Cast (when the viewer may
+ * play the character). Only called for a level that has spells.
  * @param {string} title
  * @param {Spell[]} spells
  * @param {{ play: boolean, onCast: (spell: Spell) => void }} opts
@@ -48,7 +66,6 @@ export function buildSpellsSection(character, opts) {
  */
 function buildGroup(title, spells, opts) {
   const list = el('div', 'u-row u-wrap u-g1');
-  if (spells.length === 0) list.appendChild(emptyState('None'));
   for (const spell of spells) {
     list.appendChild(
       textButton(
