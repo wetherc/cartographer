@@ -1,5 +1,5 @@
 import { removeItem, updateItem } from '../entities/Character.js';
-import { itemType, itemEffects } from '../entities/Equipment.js';
+import { itemEffects, isConsumable } from '../entities/Equipment.js';
 import { buildItemForm } from './ItemForm.js';
 import { el } from './dom.js';
 import { iconButton, textButton } from './buttons.js';
@@ -39,8 +39,8 @@ import { clampInt } from '../util/num.js';
 
 /**
  * One inventory row: name, stack count, description, and the mechanical
- * summary — plus edit/consume/discard controls when playable. The open edit
- * form (shared with the add form) renders in the row's place.
+ * summary — plus edit, give, use-one, and discard controls when playable. The
+ * open edit form (shared with the add form) renders in the row's place.
  * @param {InventoryItem} item
  * @param {boolean} playable
  * @param {RowContext} ctx
@@ -71,12 +71,8 @@ export function buildRow(item, playable, ctx) {
   const main = el(
     'div',
     'inventory-panel__item',
-    el(
-      'div',
-      'u-row u-g2',
-      el('span', 'inventory-panel__label', `${item.name} x${item.quantity}`),
-      el('span', 'u-muted', itemType(item)),
-    ),
+    // No type beside the name: the heading the row sits under already says it.
+    el('div', 'u-row u-g2', el('span', 'inventory-panel__label', `${item.name} x${item.quantity}`)),
     // One badge per effect, so a modifier-heavy item (damage riders, stat
     // bonuses, inflicted statuses) wraps into pills instead of one long line.
     effects.length > 0 &&
@@ -117,16 +113,27 @@ export function buildRow(item, playable, ctx) {
     );
   }
 
-  // Present even on 1-stacks: consuming the last of an item and discarding
-  // it are the same state change but different travelogue lines.
-  const consumeButton = iconButton('minus', `Consume one ${item.name}`, () =>
-    commit(removeItem(getCharacter(), item.id, 1), { verb: 'use', itemName: item.name, count: 1 }),
-  );
-  row.appendChild(consumeButton);
+  // Taking one off the stack is a consumable's whole point, so a potion offers
+  // it down to its last charge. Anything else only offers it while there is a
+  // stack to thin — dropping one of twenty arrows is a real move, dropping the
+  // one sword you carry is what the discard button is for. The two read as the
+  // same state change and log differently: one was used up, one was let go.
+  const usable = isConsumable(item);
+  if (usable || item.quantity > 1) {
+    row.appendChild(
+      iconButton('minus', usable ? `Use one ${item.name}` : `Drop one ${item.name}`, () =>
+        commit(removeItem(getCharacter(), item.id, 1), {
+          verb: usable ? 'use' : 'discard',
+          itemName: item.name,
+          count: 1,
+        }),
+      ),
+    );
+  }
 
   const removeButton = iconButton(
     'remove',
-    `Remove all ${item.name}`,
+    item.quantity > 1 ? `Discard all ${item.quantity} ${item.name}` : `Discard ${item.name}`,
     async () => {
       // Discarding one item is as recoverable as consuming it; a multi-stack
       // discard destroys state the GM cannot rebuild with one click, so it

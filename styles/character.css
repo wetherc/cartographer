@@ -346,6 +346,17 @@
   font-size: var(--text-label);
 }
 
+/* One collapsible type heading per classification carried, with its rows
+   indented under it so the heading reads as the parent of the group. */
+.inventory-panel__group + .inventory-panel__group {
+  margin-top: var(--space-2);
+}
+
+.inventory-panel__group-rows {
+  padding-left: var(--space-2);
+  border-left: 1px solid var(--border);
+}
+
 .inventory-panel__row {
   padding: var(--space-1) 0;
 }

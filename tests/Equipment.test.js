@@ -24,6 +24,8 @@ import {
   weaponAbility,
   formatDamage,
   filterItems,
+  groupItemsByType,
+  isConsumable,
   equippedWeapons,
   equippedIndex,
   normalizeDamagePart,
@@ -532,6 +534,40 @@ test('filterItems searches name and description, filters by type, and sorts', ()
     ['torch', 'ember', 'mace'],
     'input order untouched',
   );
+});
+
+test('groupItemsByType keeps ITEM_TYPES order, drops empty types, and preserves each group order', () => {
+  const items = [
+    item('mace', 'Mace', { type: 'weapon' }),
+    item('potion', 'Potion', { type: 'consumable', quantity: 2 }),
+    item('rope', 'Rope', { type: 'gear' }),
+    item('ember', 'Ember Blade', { type: 'weapon' }),
+  ];
+  assert.deepEqual(
+    groupItemsByType(items).map((g) => [g.type, g.items.map((i) => i.id)]),
+    [
+      ['gear', ['rope']],
+      ['weapon', ['mace', 'ember']],
+      ['consumable', ['potion']],
+    ],
+  );
+  assert.deepEqual(groupItemsByType([]), []);
+  assert.deepEqual(
+    items.map((i) => i.id),
+    ['mace', 'potion', 'rope', 'ember'],
+    'input order untouched',
+  );
+});
+
+test('groupItemsByType files an item with no type under gear', () => {
+  const untyped = { id: 'oddity', name: 'Oddity', quantity: 1 };
+  assert.deepEqual(groupItemsByType([untyped]), [{ type: 'gear', items: [untyped] }]);
+});
+
+test('isConsumable is true only for the consumable type', () => {
+  assert.equal(isConsumable(item('potion', 'Potion', { type: 'consumable' })), true);
+  assert.equal(isConsumable(item('mace', 'Mace', { type: 'weapon' })), false);
+  assert.equal(isConsumable({ id: 'oddity', name: 'Oddity', quantity: 1 }), false);
 });
 
 test('updateItem replaces fields, keeps the id, and unequips a slot that no longer accepts the item', () => {

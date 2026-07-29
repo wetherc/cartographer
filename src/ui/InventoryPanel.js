@@ -1,7 +1,9 @@
 import { addItem } from '../entities/Character.js';
-import { ITEM_TYPES, filterItems } from '../entities/Equipment.js';
+import { ITEM_TYPES, filterItems, groupItemsByType } from '../entities/Equipment.js';
 import { emptyState } from './buttons.js';
+import { wireDisclosure } from './Disclosure.js';
 import { el } from './dom.js';
+import { icon } from './icons.js';
 import { select, textField } from './formFields.js';
 import { buildItemForm } from './ItemForm.js';
 import { buildEquipment } from './InventoryEquipment.js';
@@ -25,8 +27,9 @@ function idFromName(name) {
 /**
  * Mount the character's kit across two separate host elements — Equipment
  * (slot pickers for what's worn and wielded, built in InventoryEquipment.js)
- * and Inventory (a searchable, type-filterable, sortable item list with add,
- * consume, discard, and full post-creation editing via the shared item form;
+ * and Inventory (a searchable, type-filterable, sortable item list grouped
+ * under collapsible type headings, with add, consume, discard, and full
+ * post-creation editing via the shared item form;
  * the rows themselves are built in InventoryRows.js). The two hosts live under
  * separate top-level tabs, so the panel renders each into its own element and
  * owns neither the tab strip nor any collapse behaviour. Renders an empty state
@@ -38,15 +41,16 @@ function idFromName(name) {
  * @param {HTMLElement} inventoryHost the Inventory tab's panel element
  * @param {Character | null} initial
  * With a `canPlay` callback returning false the panel renders read-only: no
- * equipment changes, no consume/remove/edit controls, no add form (a
- * spectator's or another player's view of this character).
+ * equipment changes, no consume/remove/edit controls (a spectator's or another
+ * player's view of this character).
  * With `transfer` wired, each row grows a give control: pick another party
  * member and a count, and the panel hands the stack over through
  * `transfer.send` — the caller owns moving the items and re-rendering, since
  * both characters change.
- * Item stats are GM-adjudicated: the per-row edit form only appears when
- * `canEdit` also returns true, so a player tab can use, give, and discard its
- * items but never rewrite what they do.
+ * Item stats and what the party owns are GM-adjudicated: the add form and the
+ * per-row edit form only appear when `canEdit` returns true, so a player tab
+ * can use, give, and discard its items but never write itself a new one or
+ * rewrite what one does.
  * @param {(character: Character) => void} [onChange]
  * @param {(event: InventoryEvent, character: Character) => void} [onEvent]
  * @param {() => boolean} [canPlay]
@@ -71,8 +75,12 @@ export function mountInventoryPanel(
   let searchQuery = '';
   /** @type {ItemType | ''} */
   let typeFilter = '';
-  /** @type {'name' | 'type' | 'quantity'} */
+  /** @type {'name' | 'quantity'} */
   let sortKey = 'name';
+  // Which type headings the GM has folded away. Collapsed rather than expanded
+  // is the stored set so a type carried for the first time opens by default.
+  /** @type {Set<ItemType>} */
+  const collapsedTypes = new Set();
   /** Which item's edit or give form is open; shared with the row builders. */
   const view = {
     /** @type {string | null} */ editingId: null,
@@ -135,8 +143,40 @@ export function mountInventoryPanel(
   }
 
   /**
-   * The Inventory tab: search/filter/sort controls over the item list, plus
-   * the add form when playable. The controls re-fill only the list on input,
+   * One type heading and the rows under it: a disclosure whose open state lives
+   * in `collapsedTypes`, so folding a heading away survives the list refills a
+   * consume or a give triggers.
+   * @param {{ type: ItemType, items: InventoryItem[] }} group
+   * @param {boolean} playable
+   * @returns {HTMLElement}
+   */
+  function buildGroup(group, playable) {
+    const label = `${group.type[0].toUpperCase()}${group.type.slice(1)}`;
+    const head = el(
+      'button',
+      'disclosure section-label u-row u-g2',
+      el('span', '', label),
+      el('span', 'u-muted', `(${group.items.length})`),
+      icon('chevron', { className: 'disclosure__chevron' }),
+    );
+    head.type = 'button';
+
+    const rows = el('div', 'inventory-panel__group-rows');
+    for (const item of group.items) rows.appendChild(buildRow(item, playable, rowContext));
+
+    wireDisclosure(head, rows, {
+      expanded: !collapsedTypes.has(group.type),
+      onToggle: (expanded) => {
+        if (expanded) collapsedTypes.delete(group.type);
+        else collapsedTypes.add(group.type);
+      },
+    });
+    return el('div', 'inventory-panel__group', head, rows);
+  }
+
+  /**
+   * The Inventory tab: search/filter/sort controls over the grouped item list,
+   * plus the add form for a GM. The controls re-fill only the list on input,
    * so typing in the search box never loses focus to a re-render.
    * @param {boolean} playable
    * @returns {HTMLElement}
@@ -155,11 +195,10 @@ export function mountInventoryPanel(
     const sortSelect = select(
       [
         { value: 'name', label: 'by name' },
-        { value: 'type', label: 'by type' },
         { value: 'quantity', label: 'by quantity' },
       ],
       sortKey,
-      { ariaLabel: 'Sort items' },
+      { ariaLabel: 'Sort items within each type' },
     );
 
     const controls = el('div', 'inventory-panel__controls', searchInput, filterSelect, sortSelect);
@@ -183,7 +222,7 @@ export function mountInventoryPanel(
         );
         return;
       }
-      for (const item of visible) list.appendChild(buildRow(item, playable, rowContext));
+      for (const group of groupItemsByType(visible)) list.appendChild(buildGroup(group, playable));
     };
     refillList = fillList;
     fillList();
@@ -203,7 +242,10 @@ export function mountInventoryPanel(
       fillList();
     });
 
-    if (playable) {
+    // Picking an item up is a GM ruling on what the party found, not something
+    // a player writes for themselves, so the add form follows `canEdit` rather
+    // than `canPlay`.
+    if (canEdit()) {
       panel.appendChild(
         buildItemForm({
           submitLabel: 'Add item',

@@ -85,8 +85,9 @@ A Player tab can also **play as one character**. Pick one from the "Playing as"
 dropdown at the top of the Party panel, or open the tab with `?character=<id>`
 on the URL (combine with `?role=player&character=hero` for a bookmarked
 per-player display). A bound tab can play its character (spend spell slots and
-other resources, add and clear conditions, and manage inventory) but cannot edit
-base attributes (stats, XP, Bonus HP, Base AC) or touch any other character; an
+other resources, add and clear conditions, and use, give away, or discard what
+they carry) but cannot edit base attributes (stats, XP, Bonus HP, Base AC), add
+an inventory item, or touch any other character; an
 unbound Player tab is a pure spectator. Recovery is the GM's: a player can spend
 a slot but not put one back, and a spent pip on a Player tab reads as spent
 without being clickable. HP steppers are GM-only for the same reason. Bindings are exclusive:
@@ -490,11 +491,13 @@ die, adds a hit die, and advances spell slots (newly unlocked spell levels
 arrive at full, already-spent slots stay spent). Crossing a class's **ASI
 level** leaves a pending **ability score improvement or feat**: apply +2 across
 one or two abilities (capped at 20) or take a feat by name, both undoable from
-the same block. Every inventory stack gets a **consume one** control
-distinct from the remove-whole-stack button, even for 1-stacks, since
-consuming the last potion and discarding it log differently. Inventory changes
-write themselves into the travelogue: pickups record who found what, where,
-and at what in-game time; consuming or discarding logs a shorter line.
+the same block. A consumable gets a **use one** control down to its last
+charge; anything else gets a **drop one** control only while it is stacked, on
+the grounds that letting go of the single sword you carry is what the discard
+button is for. Both sit apart from that discard button, which takes the whole
+stack and asks first when there is more than one. Inventory changes write
+themselves into the travelogue: pickups record who found what, where, and at
+what in-game time; using or discarding logs a shorter line.
 
 The panel splits into two tabs. **Equipment** (the default) holds nine
 **equipment slots**: Helmet, Armor, Gloves, Greaves, Main hand, Off hand,
@@ -502,8 +505,16 @@ Ranged, and two ring slots (Ring 1 and Ring 2, so a character can wear two
 rings at once). Each picker lists only the items its slot accepts (a potion
 can't be worn as armor; the off hand takes a shield or a weapon). The
 **Inventory** tab holds the item list with a **search box** (matching names
-and descriptions), a **type filter**, and a **sort** control (by name, type,
-or largest stack).
+and descriptions), a **type filter**, and a **sort** control (by name or
+largest stack). The list is grouped under one **collapsible heading per item
+type**, showing how many of each the character carries, so a long list folds
+down to the part you are looking at. A heading you fold away stays folded while
+you work.
+
+Only a GM can **add** an item: the add form sits below the list on a GM's
+screen and is absent from a Player tab, since what the party found is a ruling
+rather than something a player writes for themselves. A player still uses,
+gives away, and discards what they carry.
 
 Items carry a **type** (gear, weapon, armor, helmet, gloves, greaves, shield,
 bow, ring, or consumable) and an optional **description**, both set when

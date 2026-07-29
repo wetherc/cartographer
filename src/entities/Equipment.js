@@ -464,6 +464,39 @@ export function filterItems(items, view = {}) {
 }
 
 /**
+ * Split an already-filtered item list into one group per classification, in
+ * `ITEM_TYPES` order, keeping each group's incoming order. Types nobody carries
+ * are left out, so the caller renders only the groups that have contents.
+ * Pure; never mutates the input.
+ * @param {InventoryItem[]} items
+ * @returns {{ type: ItemType, items: InventoryItem[] }[]}
+ */
+export function groupItemsByType(items) {
+  /** @type {Map<ItemType, InventoryItem[]>} */
+  const groups = new Map();
+  for (const item of items) {
+    const type = itemType(item);
+    const group = groups.get(type);
+    if (group) group.push(item);
+    else groups.set(type, [item]);
+  }
+  return ITEM_TYPES.filter((type) => groups.has(type)).map((type) => ({
+    type,
+    items: /** @type {InventoryItem[]} */ (groups.get(type)),
+  }));
+}
+
+/**
+ * Whether an item is spent by using it — the one classification whose stack
+ * count goes down through play rather than through the GM discarding it.
+ * @param {InventoryItem} item
+ * @returns {boolean}
+ */
+export function isConsumable(item) {
+  return itemType(item) === 'consumable';
+}
+
+/**
  * Clear any slot referencing an item no longer in the inventory (removing the
  * last of a stack also unequips it) or one the slot no longer accepts (editing
  * a worn ring into gear also takes it off). Returns the character unchanged
