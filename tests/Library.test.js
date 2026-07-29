@@ -473,6 +473,32 @@ test('normalizeLibrary keeps a damage term’s flat bonus, dice or not', () => {
   );
 });
 
+test('normalizeLibrary keeps a named material and implies the M letter', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      {
+        name: 'Revive',
+        components: ['V', 'S', 'M'],
+        materials: { text: ' diamonds worth 300 gp ', costGP: '300', consumed: 'yes' },
+      },
+      // A material named without the letter beside it: the block is what makes it
+      // an M component, so the letter is added rather than the material dropped.
+      { name: 'Spark', components: ['V'], materials: { text: 'a pinch of dust' } },
+      { name: 'Word', components: ['V'] },
+    ],
+  });
+  const [revive, spark, word] = lib.spells;
+  assert.deepEqual(revive.materials, {
+    text: 'diamonds worth 300 gp',
+    costGP: 300,
+    consumed: true,
+  });
+  assert.deepEqual(spark.materials, { text: 'a pinch of dust', consumed: false });
+  assert.deepEqual(spark.components, ['V', 'M']);
+  assert.equal('materials' in word, false, 'a spell with no material carries no block');
+  assert.deepEqual(word.components, ['V']);
+});
+
 test('normalizeLibrary repairs attack/heal effects, save conditions, and scaling', () => {
   const lib = normalizeLibrary({
     spells: [

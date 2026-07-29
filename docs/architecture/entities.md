@@ -251,6 +251,40 @@ Its total is how many the cast fires at the level being cast, restated whenever
 the slot picker changes, so the GM is never offered a projectile the cast cannot
 fire.
 
+## Material components
+
+A spell's `components` list carries the component letters, such as
+`['V', 'S', 'M']`. Those letters alone cannot express what the material is, what
+it costs, or whether casting the spell destroys it, so a spell that needs a
+material describes it in `materials: { text, costGP?, consumed }`. Most spells
+carry no such block, which is why the field is optional rather than migrated in:
+Revivify names its diamonds, Fire Bolt has nothing to name.
+
+Of the three fields, only `consumed` changes what happens at the table. A material
+the cast destroys has to be in the caster's inventory; one it does not is covered
+by a component pouch or a spellcasting focus, and requiring it would block nearly
+every spell carrying an M. `Casting.materialCheck(caster, spell)` applies that
+rule, returning `{ required, satisfied, item }` — whether this cast needs a
+material, whether the caster is holding one, and which inventory stack it would
+come out of. Matching a printed phrase against a stack name is inexact by nature,
+so the comparison is case-insensitive and runs in both directions: a stack named
+`Diamond` covers `diamonds worth 300 gp`. Encounters and NPCs have no inventory at
+all, and are never asked for a component.
+
+`app/spellCast.js` acts on the result. A cast whose material is missing stops
+before `castSpell` runs, which is what keeps a refused cast from spending a slot.
+A cast that succeeds takes one of the stack, in the same write-back that stores
+the spent slot, and reports it through `InventoryLog`'s `use` verb. The cast
+dialog also offers an "Ignore components" checkbox, which skips the check and the
+consumption both, for tables that treat components as flavor.
+
+Two details follow from the shape rather than the rules. `normalizeSpell` adds the
+`M` letter to any entry that names a material without listing it, because the
+authoring form only shows the material fields under a ticked M; without the
+repair, an imported spell would lose its material the first time a GM edited it.
+And `costGP` is displayed but never checked, since nothing in the app tracks how
+much money a party has.
+
 ## The UI layer over entities
 
 `ui/CharacterSheet.js`, `ui/InventoryPanel.js`, and `ui/EncounterPanel.js` are

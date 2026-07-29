@@ -100,6 +100,60 @@ export function normalizeProjectiles(value) {
 }
 
 /**
+ * Coerce a written material-component block into a clean one, or null when the
+ * value names nothing — an absent block is what leaves the component letters as
+ * the whole story. A block with no text, no cost, and no consumption says
+ * nothing the letters do not, so it reads as absent. Shared by the authoring form
+ * and the library normalizer.
+ * @param {unknown} value
+ * @returns {import('../types/spell.js').SpellMaterials | null}
+ */
+export function normalizeMaterials(value) {
+  if (!value || typeof value !== 'object') return null;
+  const raw = /** @type {Record<string, unknown>} */ (value);
+  const text = typeof raw.text === 'string' ? raw.text.trim() : '';
+  const cost = Math.floor(Number(raw.costGP));
+  const costGP = Number.isFinite(cost) && cost > 0 ? cost : 0;
+  const consumed = !!raw.consumed;
+  if (!text && costGP === 0 && !consumed) return null;
+  return { text, ...(costGP > 0 ? { costGP } : {}), consumed };
+}
+
+/**
+ * Whether the caster is holding the material a cast will destroy, and which
+ * inventory stack it would come out of. Only a consumed material is checked: an
+ * unconsumed one is what a component pouch or a focus covers, so requiring it
+ * would block nearly every spell carrying an M.
+ *
+ * The match is deliberately loose, because the material is printed prose and an
+ * inventory stack is a name: a stack satisfies the spell when either name
+ * contains the other, case-insensitively, so a "Diamond" covers "diamonds worth
+ * 300 gp". A combatant with no inventory at all — an Encounter or an NPC — is
+ * never required to hold anything, since it has nowhere to hold it.
+ * @param {{ inventory?: import('../types/entities.js').InventoryItem[] }} caster
+ * @param {Spell} spell
+ * @returns {{
+ *   required: boolean,
+ *   satisfied: boolean,
+ *   item: import('../types/entities.js').InventoryItem | null,
+ * }}
+ */
+export function materialCheck(caster, spell) {
+  const materials = spell.materials;
+  const inventory = caster.inventory;
+  if (!materials?.consumed || !materials.text || !Array.isArray(inventory)) {
+    return { required: false, satisfied: true, item: null };
+  }
+  const wanted = materials.text.toLowerCase();
+  const item =
+    inventory.find((i) => {
+      const name = i.name?.trim().toLowerCase();
+      return !!name && (wanted.includes(name) || name.includes(wanted));
+    }) ?? null;
+  return { required: true, satisfied: item !== null, item };
+}
+
+/**
  * How many projectiles one cast fires: the effect's base `count`, plus
  * `perStep` more per scaling increment. An effect with no `projectiles` fires
  * one attack, which is the single roll every other attack spell makes.

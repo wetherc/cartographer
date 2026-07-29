@@ -37,6 +37,16 @@ export interface TextModalField extends FieldBase {
   max?: number;
 }
 
+/**
+ * A single on/off box. Its value is `'1'` when ticked and `''` when not, so a
+ * caller reads it as `values.name === '1'` and the record stays all-strings like
+ * every other field.
+ */
+export interface CheckboxModalField extends FieldBase {
+  type: 'checkbox';
+  value?: boolean;
+}
+
 export interface SelectModalField extends FieldBase {
   type: 'select';
   value?: string | number;
@@ -105,6 +115,7 @@ export interface ButtonModalField extends FieldBase {
 
 export type ModalField =
   | TextModalField
+  | CheckboxModalField
   | SelectModalField
   | FileModalField
   | MultiselectModalField

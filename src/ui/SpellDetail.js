@@ -45,6 +45,19 @@ function effectSummary(spell, saveDC) {
   return null;
 }
 
+/**
+ * The components line: the letters, then what the M is where the spell names it.
+ * A consumed material says so, since that is the one a caster has to be holding.
+ * @param {Spell} spell
+ * @returns {string}
+ */
+function componentsText(spell) {
+  const letters = spell.components.join(', ') || '—';
+  const materials = spell.materials;
+  if (!materials?.text) return letters;
+  return `${letters} (${materials.text}${materials.consumed ? ', consumed' : ''})`;
+}
+
 /** @param {string} term @param {string} value @returns {HTMLElement} a labelled meta cell. */
 function metaCell(term, value) {
   return el(
@@ -91,7 +104,7 @@ export function promptSpellDetail(spell, actions, options = {}) {
             'spell-detail__meta',
             metaCell('Casting time', formatCastingTime(spell.castingTime)),
             metaCell('Range', spell.range || '—'),
-            metaCell('Components', spell.components.join(', ') || '—'),
+            metaCell('Components', componentsText(spell)),
             metaCell(
               'Duration',
               formatDuration(spell.duration, { concentration: spell.concentration }),

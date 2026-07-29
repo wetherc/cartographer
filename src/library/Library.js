@@ -5,7 +5,11 @@ import {
   normalizeDamagePart,
 } from '../entities/Equipment.js';
 import { clampInt } from '../util/num.js';
-import { normalizeProjectiles, normalizeTargetCount } from '../entities/Casting.js';
+import {
+  normalizeMaterials,
+  normalizeProjectiles,
+  normalizeTargetCount,
+} from '../entities/Casting.js';
 import { parseCastingTime, parseDuration } from '../entities/SpellTiming.js';
 import {
   DEFAULT_SPELLS,
@@ -410,6 +414,17 @@ function normalizeSpell(raw, id) {
       ? undefined
       : normalizeTargetCount(raw.targetCount);
 
+  // A named material is an M component whether or not the entry remembered to
+  // list the letter, so the block implies it. Repairing it here rather than in
+  // the form is what keeps an imported entry from losing its material the next
+  // time a GM edits it, since the form only reveals the material fields under a
+  // ticked M.
+  const materials = normalizeMaterials(raw.materials);
+  const letters = Array.isArray(raw.components)
+    ? raw.components.filter((/** @type {unknown} */ c) => typeof c === 'string')
+    : [];
+  if (materials && !letters.includes('M')) letters.push('M');
+
   return {
     id,
     name: raw.name.trim(),
@@ -421,9 +436,8 @@ function normalizeSpell(raw, id) {
     // anything they can't classify as text.
     castingTime: parseCastingTime(raw.castingTime ?? '1 action'),
     range: typeof raw.range === 'string' ? raw.range : 'Self',
-    components: Array.isArray(raw.components)
-      ? raw.components.filter((c) => typeof c === 'string')
-      : [],
+    components: letters,
+    ...(materials ? { materials } : {}),
     duration: parseDuration(raw.duration ?? 'Instantaneous'),
     concentration: !!raw.concentration,
     ritual: !!raw.ritual,

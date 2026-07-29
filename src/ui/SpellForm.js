@@ -16,6 +16,7 @@ import {
 import { clampInt } from '../util/num.js';
 import {
   MAX_TARGET_COUNT,
+  normalizeMaterials,
   normalizeProjectiles,
   normalizeTargetCount,
 } from '../entities/Casting.js';
@@ -138,6 +139,20 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     return check;
   });
   const componentsField = labeled('Components', wrapChecks(componentChecks.map((c) => c.label)));
+  const materialCheck = componentChecks[COMPONENTS.findIndex((c) => c.letter === 'M')];
+
+  // What the M component is. Only a consumed material is enforced against the
+  // caster's inventory, so the cost is documentation and the checkbox is the
+  // field that changes what a cast does.
+  const materialInput = textField(spell?.materials?.text ?? '', 'a pinch of sulfur');
+  const materialField = labeled('Material', materialInput);
+  const materialCostInput = numberField(spell?.materials?.costGP ?? 0, {
+    min: 0,
+    className: 'inventory-panel__quantity-input',
+  });
+  const materialCostField = labeled('Cost (gp)', materialCostInput);
+  const consumed = checkbox('Consumed on cast', spell?.materials?.consumed ?? false);
+  consumed.label.title = 'The cast destroys the material, so the caster must be holding it';
 
   // How many creatures one cast reaches. 0 marks an area spell, where the count
   // depends on the map rather than the spell, so the caster picks any number.
@@ -235,6 +250,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     durationTextField,
   );
 
+  const materialRow = fieldRow(materialField, materialCostField, consumed.label);
+
   const effectRow = fieldRow(labeled('Effect', kindSelect), abilityField);
   const projectilesRow = fieldRow(fires.label);
   const projectileFieldsRow = fieldRow(shotCountField, shotPerStepField, autoHit.label);
@@ -276,6 +293,14 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     else if (showDamage) damageField.appendChild(effectDamage.element);
   }
   kindSelect.addEventListener('change', syncEffectFields);
+
+  // The material fields only mean something under a ticked M, and unticking M
+  // drops them from the assembled spell the same way switching effect kind drops
+  // the fields the new kind does not carry.
+  function syncComponents() {
+    materialRow.hidden = !materialCheck.input.checked;
+  }
+  materialCheck.input.addEventListener('change', syncComponents);
 
   // Each timing kind shows only what it carries: an amount for the counted
   // kinds, a trigger clause for a reaction, the original text for `special`.
@@ -370,6 +395,16 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       effect = { kind: 'utility' };
     }
 
+    // The parser decides what a written material block means, so the form and an
+    // imported entry agree; an unticked M carries none at all.
+    const materials = materialCheck.input.checked
+      ? normalizeMaterials({
+          text: materialInput.value,
+          costGP: materialCostInput.value,
+          consumed: consumed.input.checked,
+        })
+      : null;
+
     const targets = clampInt(targetsInput.value, 0);
     const scaling = scales.input.checked
       ? {
@@ -388,6 +423,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       components: COMPONENTS.filter((_, i) => componentChecks[i].input.checked).map(
         (c) => c.letter,
       ),
+      ...(materials ? { materials } : {}),
       duration: readDuration(),
       concentration: concentration.input.checked,
       ritual: ritual.input.checked,
@@ -407,6 +443,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       triggerRow,
       durationRow,
       fieldRow(labeled('Range', rangeInput), componentsField),
+      materialRow,
       fieldRow(targetCountField),
       fieldRow(concentration.label, ritual.label),
       labeled('Description', descriptionInput),
@@ -431,6 +468,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   syncEffectFields();
   syncTiming();
   syncScaling();
+  syncComponents();
   return form;
 }
 

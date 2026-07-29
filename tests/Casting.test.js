@@ -6,7 +6,9 @@ import {
   canCast,
   cantripStep,
   castSpell,
+  materialCheck,
   maxTargets,
+  normalizeMaterials,
   normalizeProjectiles,
   normalizeTargetCount,
   projectileCount,
@@ -302,6 +304,82 @@ test('normalizeProjectiles keeps a usable block and drops everything else', () =
     perStep: 1,
     autoHit: true,
   });
+});
+
+test('normalizeMaterials keeps a named material and drops an empty block', () => {
+  assert.equal(normalizeMaterials(undefined), null);
+  assert.equal(normalizeMaterials('a diamond'), null);
+  assert.equal(
+    normalizeMaterials({ text: '   ', costGP: 0, consumed: false }),
+    null,
+    'a block naming nothing says no more than the M letter does',
+  );
+  assert.deepEqual(normalizeMaterials({ text: ' a pinch of sulfur ' }), {
+    text: 'a pinch of sulfur',
+    consumed: false,
+  });
+  assert.deepEqual(normalizeMaterials({ text: 'diamonds', costGP: '300.9', consumed: 1 }), {
+    text: 'diamonds',
+    costGP: 300,
+    consumed: true,
+  });
+  assert.deepEqual(
+    normalizeMaterials({ text: 'chalk', costGP: -5 }),
+    { text: 'chalk', consumed: false },
+    'a negative cost is no cost',
+  );
+  assert.deepEqual(
+    normalizeMaterials({ consumed: true }),
+    { text: '', consumed: true },
+    'an unnamed consumed material round-trips, and enforces nothing',
+  );
+});
+
+/** @param {object} materials @returns {import('../src/types/spell.js').Spell} */
+function materialSpell(materials) {
+  return /** @type {any} */ ({ ...cureWounds, components: ['V', 'S', 'M'], materials });
+}
+
+/** @param {string} name @returns {any} an inventory item of that name */
+function item(name) {
+  return { id: name.toLowerCase(), name, quantity: 1, type: 'gear', weight: 0 };
+}
+
+test('materialCheck requires only a consumed material, and finds it by name', () => {
+  const spell = materialSpell({ text: 'diamonds worth 300 gp', costGP: 300, consumed: true });
+  const holding = caster({ inventory: [item('Rope'), item('Diamond')] });
+
+  const found = materialCheck(holding, spell);
+  assert.equal(found.required, true);
+  assert.equal(found.satisfied, true);
+  assert.equal(found.item?.name, 'Diamond', 'the printed text names the stack it comes from');
+
+  assert.deepEqual(
+    materialCheck(caster(), spell),
+    { required: true, satisfied: false, item: null },
+    'an empty inventory is a character holding nothing, not one exempt from holding it',
+  );
+
+  const missing = materialCheck(caster({ inventory: [item('Rope')] }), spell);
+  assert.equal(missing.required, true);
+  assert.equal(missing.satisfied, false);
+  assert.equal(missing.item, null);
+});
+
+test('materialCheck leaves an unconsumed material and a component-free spell alone', () => {
+  const focus = materialSpell({ text: 'a piece of cured leather', consumed: false });
+  const empty = { required: false, satisfied: true, item: null };
+  assert.deepEqual(
+    materialCheck(caster({ inventory: [item('Rope')] }), focus),
+    empty,
+    'a pouch or focus covers what the cast does not destroy',
+  );
+  assert.deepEqual(materialCheck(caster({ inventory: [item('Rope')] }), cureWounds), empty);
+  assert.deepEqual(
+    materialCheck({}, materialSpell({ text: 'diamonds', consumed: true })),
+    empty,
+    'an inventory-less combatant is never asked to hold a component',
+  );
 });
 
 test('allocateProjectiles spreads evenly when the caster states nothing', () => {

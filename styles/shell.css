@@ -130,6 +130,16 @@
   justify-content: flex-end;
 }
 
+/* A checkbox field reads as one line — caption, then the box — rather than as a
+   caption stacked over a lone tick box. It also sits level with the inputs
+   beside it in a row, which the column layout would not. */
+.modal__field--check {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+}
+
 /* Fields another field's onChange has hidden (e.g. the stat inputs while the
    standard-array pill grid is showing). */
 .modal__field--hidden {

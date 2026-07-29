@@ -194,6 +194,18 @@ export function promptModal(title, fields, options = {}) {
           // `<select>` shows; naming it keeps `select`'s value argument honest.
           input = select(choices, String(field.value ?? choices[0]?.value ?? ''));
           getters[field.name] = () => input.value;
+        } else if (field.type === 'checkbox') {
+          // The box sits after its caption rather than under it, so the label
+          // reads as one line; the wrapper class carries that layout.
+          const box = el('input');
+          box.type = 'checkbox';
+          box.checked = !!field.value;
+          label.classList.add('modal__field--check');
+          input = box;
+          getters[field.name] = () => (box.checked ? '1' : '');
+          setters[field.name] = (value) => {
+            box.checked = !!value && value !== '0';
+          };
         } else if (field.type === 'file') {
           // A picked image is decoded, downscaled, and re-encoded under a size cap
           // by `readImageFile` before it becomes the field's value; leaving the
@@ -291,7 +303,11 @@ export function promptModal(title, fields, options = {}) {
         }
         // The composite fields and buttons set their own classes; everything
         // else gets the shared input treatment.
-        if (!['multiselect', 'tags', 'pillgrid', 'allocation', 'button'].includes(field.type ?? ''))
+        if (
+          !['multiselect', 'tags', 'pillgrid', 'allocation', 'button', 'checkbox'].includes(
+            field.type ?? '',
+          )
+        )
           input.className = 'field';
         if (field.disabled) input.disabled = true;
         label.appendChild(input);

@@ -100,6 +100,18 @@ export interface SpellDuration {
   text?: string;
 }
 
+/** The material component a spell needs, for the spells whose material is worth
+ * naming. `text` is the printed component ('diamonds worth 300 gp'), `costGP`
+ * that cost as a number where the spell states one, and `consumed` marks a
+ * material the cast destroys. Only a consumed material is enforced against the
+ * caster's inventory; an unconsumed one is assumed covered by a component pouch
+ * or a spellcasting focus, as it is in play. */
+export interface SpellMaterials {
+  text: string;
+  costGP?: number;
+  consumed: boolean;
+}
+
 /** A single spell, identical in shape whether it is a built-in default or a
  * GM-authored/imported entry. */
 export interface Spell {
@@ -114,6 +126,9 @@ export interface Spell {
   range: string;
   /** Component letters present, e.g. ['V', 'S', 'M']. */
   components: string[];
+  /** What the M component is, for a spell whose material is worth naming.
+   * Absent means the letters are the whole story. */
+  materials?: SpellMaterials;
   duration: SpellDuration;
   concentration: boolean;
   ritual: boolean;

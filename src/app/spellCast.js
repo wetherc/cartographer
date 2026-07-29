@@ -1,7 +1,8 @@
 import { promptModal } from '../ui/Modal.js';
 import { parseAssignments } from '../ui/ModalFields.js';
-import { castSpell, maxTargets, scalingSteps } from '../entities/Casting.js';
-import { spellSource } from '../entities/Character.js';
+import { castSpell, materialCheck, maxTargets, scalingSteps } from '../entities/Casting.js';
+import { removeItem, spellSource } from '../entities/Character.js';
+import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { spellSaveDC, spellAttackBonus } from '../entities/Classes.js';
 import { encountersOnTile } from '../entities/Encounter.js';
 import { npcsOnTile } from '../entities/NPC.js';
@@ -117,9 +118,11 @@ export function castCap(spell, slotLevel, casterLevel) {
  * @param {number[]} slotLevels available slot levels at or above the spell's
  * @param {number} saveDC
  * @param {number} cap how many targets this cast may reach; Infinity for an area
+ * @param {boolean} [material] whether the cast will consume a material component,
+ *   which adds the opt-out a table that hand-waves components casts through
  * @returns {import('../types/modal.js').ModalField[] | null}
  */
-export function castFields(spell, targets, slotLevels, saveDC, cap) {
+export function castFields(spell, targets, slotLevels, saveDC, cap, material = false) {
   const kind = spell.effect.kind;
   /** @type {import('../types/modal.js').ModalField[]} */
   const fields = [];
@@ -193,6 +196,16 @@ export function castFields(spell, targets, slotLevels, saveDC, cap) {
         { value: 'advantage', label: 'Advantage' },
         { value: 'disadvantage', label: 'Disadvantage' },
       ],
+    });
+  }
+  // Ticking this casts without touching the inventory, so a table that treats
+  // components as flavor is not made to stock diamonds to cast Revivify.
+  if (material) {
+    fields.push({
+      name: 'ignore-components',
+      label: 'Ignore components',
+      type: 'checkbox',
+      full: true,
     });
   }
   return fields;
@@ -283,7 +296,17 @@ async function runCast(app, entity, spell, targets, writeBack) {
   // add up exactly; the target checkboxes stay at the starting cap and a cast
   // over it drops the extras, which `castSpell` reports back.
   const cap = castCap(spell, startingSlotLevel(spell, slotLevels), caster.level ?? 1);
-  const fields = castFields(spell, targets, slotLevels, dc, cap);
+  // Read against the real entity rather than the caster view, which surfaces no
+  // inventory: a combatant with none is never asked for a component. Only a
+  // Character has one, and the check's own contract is that an entity without it
+  // needs nothing, so the three combatant shapes go in as one.
+  const material = materialCheck(
+    /** @type {{ inventory?: import('../types/entities.js').InventoryItem[] }} */ (
+      /** @type {unknown} */ (entity)
+    ),
+    spell,
+  );
+  const fields = castFields(spell, targets, slotLevels, dc, cap, material.required);
   if (!fields) {
     app.toasts.show(`No level ${spell.level}+ slot left for ${spell.name}.`);
     return;
@@ -314,6 +337,14 @@ async function runCast(app, entity, spell, targets, writeBack) {
     app.toasts.show(`Pick at least one target for ${spell.name}.`);
     return;
   }
+  // A missing component blocks before the resolver runs, so a refused cast never
+  // spends a slot. Checked here rather than in `castSpell` because the opt-out is
+  // a table's ruling, not a rule of the spell.
+  const consume = material.required && values['ignore-components'] !== '1';
+  if (consume && !material.satisfied) {
+    app.toasts.show(`${spell.name} needs ${spell.materials?.text}.`);
+    return;
+  }
   // Every target rolls its save against the same hand-entered bonus, since only
   // a party character has a save surface to read one from today.
   const castTargets =
@@ -340,12 +371,29 @@ async function runCast(app, entity, spell, targets, writeBack) {
     );
   }
 
-  // Write the spent slot back to the caster before applying effects, so a slot
-  // never lingers if the effect application throws. `withCasterState` splices
-  // the decremented slot pools onto the real entity; the caller stores it.
-  if (result.spent) {
-    writeBack(withCasterState(entity, result.caster));
+  // Write the spent slot and the consumed component back to the caster before
+  // applying effects, so neither lingers if the effect application throws.
+  // `withCasterState` splices the decremented slot pools onto the real entity;
+  // one stack of the material comes off the same value, so a cast that spends
+  // both writes once. The caller stores the result.
+  const consumed = consume && material.item ? material.item : null;
+  if (result.spent || consumed) {
+    let next = result.spent ? withCasterState(entity, result.caster) : entity;
+    // Only a Character reaches here holding an inventory, which is what
+    // `materialCheck` requiring one already established.
+    if (consumed) {
+      next = /** @type {T} */ (
+        removeItem(/** @type {import('../types/entities.js').Character} */ (next), consumed.id, 1)
+      );
+    }
+    writeBack(next);
     app.actions.markDirty();
+  }
+  if (consumed) {
+    app.actions.logEvent(
+      'note',
+      formatInventoryEvent(caster.name, { verb: 'use', itemName: consumed.name, count: 1 }),
+    );
   }
   const at = result.slotLevel > 0 ? ` at level ${result.slotLevel}` : '';
   app.actions.logEvent('combat', `${caster.name} casts ${spell.name}${at}.`);
