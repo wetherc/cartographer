@@ -232,7 +232,7 @@ from the direction of approach, rather than dropping into a fully fogged interio
 ## The library (Library mode)
 
 The third header mode opens the **library**: a map-less, GM-only view of the
-reusable templates that feed the preset pickers everywhere else. It has three
+reusable templates that feed the preset pickers everywhere else. It has four
 tabs:
 
 ![Library mode: the Equipment tab with its category subtabs and a customized override](images/library-mode.png)
@@ -248,6 +248,11 @@ tabs:
   cultist). The hand-off icon on a row opens the normal New NPC dialog
   pre-filled from the template, so you can drop one into the campaign and
   place it in one step.
+- **Spells** — the spell catalog a character's spellbook picks from, grouped by
+  spell level with each entry's school and effect kind (attack, save, utility)
+  under its name, and concentration marked where it applies.
+
+![Library mode: the Spells tab, grouped by spell level](images/library-spells.png)
 
 Every entry is editable. Editing a **built-in default** doesn't destroy it; it
 stores an *override* in your custom library (the row gains a "customized"
