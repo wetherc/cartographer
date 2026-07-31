@@ -65,9 +65,14 @@ One home for the value removes that whole class of drift.
 Turn advance and combat end are registered on `app.actions` as
 `advanceCombatTurn` and `endCombat`, so the screen's Next turn and End combat
 buttons run exactly the code the fight has always run, round-wrap condition
-ticks and concentration sweeps included. The same pattern as
-`removeCombatant`: anything that changes the fight goes through the module
-that holds it.
+ticks and concentration sweeps included. The advance skips combatants who are
+down: `advanceTurn` takes a defeated predicate and steps the pointer past
+them to the next one standing, so a dead goblin's turn never comes up, while
+its chip stays in the ribbon, struck through. With every participant down the
+pointer walks one full cycle and stops where it started, which keeps the
+round counter and timed effects moving until the GM closes the fight. The
+same pattern as `removeCombatant`: anything that changes the fight goes
+through the module that holds it.
 
 What `combatWiring.js` owns is per-tab UI state that never persists: which
 combatant the left column is inspecting (`inspectedId`, picked by the ribbon

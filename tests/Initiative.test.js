@@ -88,6 +88,38 @@ test('advanceTurn steps through the order then wraps into the next round', () =>
   assert.equal(currentParticipant(result.state)?.id, 'a');
 });
 
+test('advanceTurn skips defeated participants to the next one standing', () => {
+  const state = startCombat([
+    createParticipant('a', 20),
+    createParticipant('b', 15),
+    createParticipant('c', 10),
+  ]);
+  const result = advanceTurn(state, (p) => p.id === 'b');
+  assert.equal(currentParticipant(result.state)?.id, 'c');
+  assert.equal(result.wrapped, false);
+  assert.equal(result.state.round, 1);
+});
+
+test('advanceTurn skipping past the end still turns the round over once', () => {
+  const state = {
+    ...startCombat([createParticipant('a', 20), createParticipant('b', 15)]),
+    index: 0,
+  };
+  // b is down, so a's next turn is the whole of round 2.
+  const result = advanceTurn(state, (p) => p.id === 'b');
+  assert.equal(currentParticipant(result.state)?.id, 'a');
+  assert.equal(result.wrapped, true);
+  assert.equal(result.state.round, 2);
+});
+
+test('advanceTurn with everyone defeated cycles once and keeps the round ticking', () => {
+  const state = startCombat([createParticipant('a', 20), createParticipant('b', 15)]);
+  const result = advanceTurn(state, () => true);
+  assert.equal(result.state.index, state.index, 'a full cycle lands where it started');
+  assert.equal(result.wrapped, true);
+  assert.equal(result.state.round, 2);
+});
+
 test('advanceTurn on an empty order is a no-op', () => {
   const state = startCombat([]);
   const result = advanceTurn(state);

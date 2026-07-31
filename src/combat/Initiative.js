@@ -84,19 +84,29 @@ export function currentParticipant(state) {
  * Advance to the next turn, wrapping to the top of the order and incrementing
  * the round. Returns the new state and whether the round rolled over (so the
  * caller can tick per-round effects like conditions). An empty order is a no-op.
+ *
+ * `isDefeated` skips turns nobody can take: the pointer keeps stepping past
+ * defeated participants (their chips stay in the ribbon, struck through) and
+ * lands on the next one standing. With everyone defeated it advances one full
+ * cycle and stops where it started, so the round still turns over and timed
+ * effects keep ticking while the GM decides what to do with the wipe.
  * @param {CombatState} state
+ * @param {(participant: Participant) => boolean} [isDefeated]
  * @returns {{ state: CombatState, wrapped: boolean }}
  */
-export function advanceTurn(state) {
+export function advanceTurn(state, isDefeated = () => false) {
   if (state.order.length === 0) return { state, wrapped: false };
-  const nextIndex = state.index + 1;
-  const wrapped = nextIndex >= state.order.length;
-  return {
-    state: {
-      ...state,
-      index: wrapped ? 0 : nextIndex,
-      round: wrapped ? state.round + 1 : state.round,
-    },
-    wrapped,
-  };
+  let index = state.index;
+  let round = state.round;
+  let wrapped = false;
+  for (let steps = 0; steps < state.order.length; steps += 1) {
+    index += 1;
+    if (index >= state.order.length) {
+      index = 0;
+      round += 1;
+      wrapped = true;
+    }
+    if (!isDefeated(state.order[index])) break;
+  }
+  return { state: { ...state, index, round }, wrapped };
 }

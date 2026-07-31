@@ -34,9 +34,11 @@ import {
   commitEncounters,
   describeCombatant,
   endSpellEffects,
+  findCombatant,
   logDefeatTransition,
   retryImposedSaves,
 } from './combatants.js';
+import { isDowned } from '../combat/CombatView.js';
 import { npcForm } from './npcForm.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -342,7 +344,13 @@ export function wireEncounters(app) {
     // turn now ending.
     const acting = currentParticipant(combat);
     if (acting) retryImposedSaves(app, acting.id);
-    const result = advanceTurn(combat);
+    // Defeated combatants keep their place in the order but not their turns:
+    // the pointer steps past them to the next one standing. A participant
+    // nothing resolves (deleted mid-fight) has no turn to take either.
+    const result = advanceTurn(combat, (p) => {
+      const found = findCombatant(app, p.id);
+      return !found || isDowned(found);
+    });
     setCombat(result.state);
     // A new round elapsed, so tick every combatant's timed conditions down,
     // along with the enemies' timed stat modifiers and the party's
