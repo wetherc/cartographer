@@ -97,8 +97,27 @@ body.mode-combat .app-buildrail {
   font-weight: 700;
 }
 
+/* The amount and its Damage/Heal pair do not fit one line in the left rail. The
+   amount takes a full-width row of its own above the two buttons, so it reads as
+   governing both; wrapping it beside one button would suggest it belonged to that
+   one. */
+.combat-screen__hp-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+
+.combat-screen__hp-label,
 .combat-screen__hp-amount {
-  width: 4.5rem;
+  grid-column: 1 / -1;
+}
+
+.combat-screen__hp-amount {
+  width: 100%;
+}
+
+.combat-screen__hp-controls .btn {
+  justify-content: center;
+  min-width: 0;
 }
 
 /* The board: the fight's participants as cards, party and foes side by side,

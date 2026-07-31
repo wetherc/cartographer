@@ -374,9 +374,12 @@ export function mountCombatScreen(container, callbacks) {
       if (Number.isFinite(parsed) && parsed > 0) hpAmount = parsed;
     });
     const name = row.name ?? 'Unknown combatant';
+    // The amount sits on its own line above both buttons, captioned, so it is
+    // clear it feeds either one.
     return el(
       'div',
-      'combat-screen__hp-controls u-row u-g2',
+      'combat-screen__hp-controls u-g2',
+      el('span', 'section-label combat-screen__hp-label', 'Amount'),
       amount,
       textButton('Damage', () => callbacks.onApplyHP(row.id, hpAmount, false), {
         icon: 'minus',
