@@ -11,6 +11,7 @@ import {
   hitExitBand,
   isSealedInterior,
   nearestSide,
+  sealedInteriorHint,
 } from '../src/map/MapExits.js';
 import { createTile } from '../src/map/TileGrid.js';
 import { gridTiles } from './helpers/grid.js';
@@ -303,6 +304,50 @@ test('isSealedInterior flags only an interior with nothing authored', () => {
   );
   assert.equal(isSealedInterior(null, parent), false);
   assert.equal(isSealedInterior(sealed, null), false);
+});
+
+test('the sealed-interior hint only advises stairs where stairs would count', () => {
+  const sealed = node({
+    id: 'child',
+    kind: 'interior',
+    tiles: [createTile('1,1', `${INTERIOR}-floor-1.svg`)],
+  });
+  // Entered from the side: its own stairs lead to a floor the map does not
+  // model, so a door is the only thing that can clear the warning.
+  assert.equal(
+    sealedInteriorHint(
+      sealed,
+      parentWithBlock(() => true),
+    ),
+    'No way out: paint a door on an outer wall.',
+  );
+  // A level below: the parent's stairs down are where stairs up come back to.
+  assert.equal(
+    sealedInteriorHint(sealed, levelAbove()),
+    'No way out: paint a stairs-up tile, or a door on an outer wall.',
+  );
+  assert.equal(
+    sealedInteriorHint(
+      node({ id: 'child', kind: 'interior', tiles: [createTile('0,1', `${INTERIOR}-door-v.svg`)] }),
+      parentWithBlock(() => true),
+    ),
+    null,
+  );
+  // The advice has to be advice that works: stairs up clear the warning on a
+  // level below, and do nothing for the same tiles entered from the side.
+  const stairs = node({
+    id: 'child',
+    kind: 'interior',
+    tiles: [createTile('1,1', `${INTERIOR}-stairs-up.svg`)],
+  });
+  assert.equal(sealedInteriorHint(stairs, levelAbove()), null);
+  assert.equal(
+    sealedInteriorHint(
+      stairs,
+      parentWithBlock(() => true),
+    ),
+    'No way out: paint a door on an outer wall.',
+  );
 });
 
 test('exitForTile and exitForSide find the exit a click resolves to', () => {

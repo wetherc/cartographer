@@ -83,10 +83,13 @@ export function createMapAuthoring(app, env) {
     app.actions.markDirty();
   }
 
-  /** Recompute the stroke-deferred derived state: region groups + description. */
+  /** Recompute the stroke-deferred derived state: region groups, description,
+   * and the ways out — a stroke that paints or erases a door or a staircase is
+   * exactly what makes an interior sealed or unseals it. */
   function settleAfterStroke() {
     env.mapCanvas.refreshNode(navigator.getCurrentNode());
     env.refreshMapDescription();
+    env.syncExits();
   }
 
   /**
@@ -105,6 +108,9 @@ export function createMapAuthoring(app, env) {
     grid.updateNode(updated);
     env.mapCanvas.refreshNode(updated);
     env.inspector.setTile(getTile(updated, env.selectedTileId) ?? null, true);
+    // A linked tile leads further in, so it is no longer a way out: linking an
+    // interior's only door seals it, and unlinking that tile opens it again.
+    env.syncExits();
     app.actions.markDirty();
   }
 
@@ -154,6 +160,9 @@ export function createMapAuthoring(app, env) {
     env.mapCanvas.refreshNode(updated);
     if (env.selectedTileId)
       env.inspector.setTile(getTile(updated, env.selectedTileId) ?? null, true);
+    // Same as the per-tile link, over a block: every tile in it now leads
+    // further in rather than out.
+    env.syncExits();
     app.actions.markDirty();
   }
 
@@ -296,6 +305,7 @@ export function createMapAuthoring(app, env) {
     snapshotEdit,
     undoStroke,
     applyToTile,
+    linkSelectedTile,
     onStrokeCell,
     onStrokeEnd,
     mountInspector,

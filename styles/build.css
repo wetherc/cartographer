@@ -74,6 +74,26 @@ body.mode-build .app-sidebar {
   display: none;
 }
 
+/* An authoring problem with the node in view, at the top of the rail hidden
+   above so it shows whichever Build tab is open and nowhere else. The text takes
+   the body colour and the warning colour goes to the border and a tint:
+   --warning is a mid amber that clears AA against a surface only at heading
+   sizes, and this line is label-sized. */
+.build-warning {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--warning);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--warning) 15%, transparent);
+  font-size: var(--text-label);
+}
+
+/* Nothing to warn about. The element stays in the document for the sake of its
+   live region, so the empty state is a styling matter rather than a JS one. */
+.build-warning:empty {
+  display: none;
+}
+
 .generate__hint {
   margin: 0 0 var(--space-2);
 }

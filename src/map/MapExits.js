@@ -197,6 +197,23 @@ export function isSealedInterior(node, parent) {
 }
 
 /**
+ * What Build mode tells a GM about a sealed interior, or null when the node has
+ * a way out. Stairs up only count as one on a level the parent reaches through
+ * stairs down (interiorExits), so a keep entered through a town door is told to
+ * paint a door and nothing else: advising stairs there would be advice that
+ * cannot clear the warning.
+ * @param {MapNode | null} node
+ * @param {MapNode | null} parent
+ * @returns {string | null}
+ */
+export function sealedInteriorHint(node, parent) {
+  if (!isSealedInterior(node, parent) || !node || !parent) return null;
+  return stairsDownTo(parent, node.id)
+    ? 'No way out: paint a stairs-up tile, or a door on an outer wall.'
+    : 'No way out: paint a door on an outer wall.';
+}
+
+/**
  * Which side of a node a cell is nearest to, used to decide where a door leads
  * out and where the party lands in the parent when they use it.
  * @param {MapNode} node
