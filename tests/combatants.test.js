@@ -30,6 +30,7 @@ function stubApp({ characters = [], encounters = [], npcs = [] } = {}) {
     views: {
       encounterPanel: { update: () => app.refreshes.push('encounterPanel') },
       initiativePanel: { update: () => app.refreshes.push('initiativePanel') },
+      combatScreen: { update: () => app.refreshes.push('combatScreen') },
     },
   };
   app.actions.logEvent = (kind, message) => app.logs.push(message);

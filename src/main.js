@@ -16,6 +16,7 @@ import { wireMapView } from './app/mapWiring.js';
 import { wireGenerateAction } from './app/generateAction.js';
 import { wireParty } from './app/partyWiring.js';
 import { wireEncounters } from './app/encounterWiring.js';
+import { wireCombatScreen } from './app/combatWiring.js';
 import { wireStory } from './app/storyWiring.js';
 import { wireLibrary } from './app/libraryWiring.js';
 import { wireSessionControls } from './app/sessionControls.js';
@@ -70,6 +71,9 @@ wireCampaignActions(app); // dirty flag + header campaign controls; provides mar
 // The library loads before anything that offers its presets (the item form,
 // the enemy gear pickers), so the merged lists are live from the first open.
 wireLibrary(app); // Library mode: equipment/bestiary/NPC templates + custom-library file
+// The combat screen mounts before the encounters module because that module's
+// refresh paths reach `views.combatScreen` while it is still mounting.
+wireCombatScreen(app); // combat mode's full-width board
 wireEncounters(app); // encounter + initiative panels, bestiary
 wireStory(app); // travelogue (logEvent), NPCs, quests, handouts
 wireParty(app); // roster, sheet, inventory, time

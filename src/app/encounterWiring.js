@@ -371,6 +371,9 @@ export function wireEncounters(app) {
         // to the same two, and the tick's own write would put its result back.
         for (const { casterId, spellId } of expired) endSpellEffects(app, casterId, spellId);
       }
+      // The sidebar panel redraws itself after this callback; the combat
+      // screen has to be told the turn moved.
+      app.views.combatScreen.update();
     },
     onEnd: () => {
       setCombat(null);
@@ -407,7 +410,9 @@ export function wireEncounters(app) {
   // tile (or defeating/deleting the last encounter there) drops the running
   // combat, since its participants are no longer "here", which hides the card
   // again. Wrapped so every existing `initiativePanel.update()` call site
-  // (party moves, role switches) gets the visibility sync for free.
+  // (party moves, role switches, the rehydrate loop) gets the visibility sync
+  // for free. The combat screen shows the same fight, so it refreshes here
+  // too rather than growing its own copy of every call site.
   app.views.initiativePanel = {
     update: () => {
       if (combat && encountersHere().length === 0) {
@@ -416,6 +421,7 @@ export function wireEncounters(app) {
       }
       initiativeContainer.hidden = combat === null;
       initiativePanel.update();
+      app.views.combatScreen.update();
     },
   };
   app.views.initiativePanel.update();

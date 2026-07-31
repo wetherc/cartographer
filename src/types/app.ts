@@ -62,6 +62,8 @@ export interface AppViews {
   /** Build-rail NPC authoring list, scoped to the node being viewed. */
   buildNPCs: Updatable;
   initiativePanel: Updatable;
+  /** The combat mode's full-width board. */
+  combatScreen: Updatable;
   npcPanel: Updatable;
   questPanel: Updatable;
   handoutPanel: Updatable;

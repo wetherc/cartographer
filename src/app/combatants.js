@@ -87,6 +87,9 @@ export function findCombatant(app, id) {
       store: (next) => {
         state.characters = replaceById(state.characters, next);
         app.actions.refreshSelectedCharacter();
+        // The combat screen shows the character's HP and conditions; the
+        // encounter branch reaches it through commitEncounters instead.
+        app.views.combatScreen.update();
       },
     };
   }
@@ -111,6 +114,7 @@ export function findCombatant(app, id) {
       entity: npc,
       store: (next) => {
         state.npcs = replaceById(state.npcs, next);
+        app.views.combatScreen.update();
       },
     };
   }
