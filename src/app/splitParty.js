@@ -80,6 +80,8 @@ export function wireSplitParty(app, { container, refreshRoster }) {
     state.characters = recallAll(state.characters);
     app.views.mapCanvas.refreshNode(app.navigator.getCurrentNode());
     app.views.regionTree.update();
+    // Regrouping moves the party, which can carry it off a running fight's tile.
+    app.actions.syncCombatLocation();
     app.views.encounterPanel.update();
     app.views.initiativePanel.update();
     app.views.npcPanel.update();

@@ -58,6 +58,7 @@ function world({ interior = false, mode = 'play' } = {}) {
       logEvent: (_kind, message) => log.push(message),
       markDirty: () => calls.push('markDirty'),
       maybeTriggerEncounter: () => calls.push('maybeTriggerEncounter'),
+      syncCombatLocation: () => calls.push('syncCombatLocation'),
       getSelectedCharacterId: () => null,
       getBoundCharacterId: () => null,
     },

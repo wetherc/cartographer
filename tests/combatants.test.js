@@ -39,6 +39,7 @@ function stubApp({ characters = [], encounters = [], npcs = [] } = {}) {
   };
   app.actions.refreshSelectedCharacter = () => app.refreshes.push('character');
   app.actions.syncEncounterMarkers = () => app.refreshes.push('markers');
+  app.actions.syncCombatLocation = () => app.refreshes.push('combatLocation');
   return /** @type {any} */ (app);
 }
 

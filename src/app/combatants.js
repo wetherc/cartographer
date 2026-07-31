@@ -136,6 +136,9 @@ export function findCombatant(app, id) {
 export function commitEncounters(app, { panel = true, dirty = true } = {}) {
   app.actions.syncEncounterMarkers();
   if (panel) app.views.encounterPanel.update();
+  // Deleting the last encounter staged on the party's tile ends the fight;
+  // damaging one to defeat does not (defeated encounters stay staged).
+  app.actions.syncCombatLocation();
   app.views.initiativePanel.update();
   if (dirty) app.actions.markDirty();
 }

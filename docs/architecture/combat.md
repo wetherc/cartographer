@@ -173,11 +173,14 @@ Killing the last enemy is neither. It used to end the fight on the spot, which
 closed the screen mid-swing and took the log and the board away from whoever
 landed the hit, with no chance to heal up first.
 
-Two rules keep the screen up. The auto-drop in the initiative-panel wrapper
-reads `encountersAtTile` rather than `encountersOnTile`: the two differ only in
-that `encountersOnTile` filters the defeated out, so the wrapper now counts
-every encounter staged on the party's tile including the dead ones. Walking off
-the tile or deleting the last encounter still clears the fight; a kill does not.
+Two rules keep the screen up. The auto-drop (`syncCombatLocation`, an action
+the party-move paths and `commitEncounters` call — never the plain panel
+refresh, which also runs from the rehydrate loop, where a state write would
+fight the save just adopted from another tab) reads `encountersAtTile` rather
+than `encountersOnTile`: the two differ only in that `encountersOnTile` filters
+the defeated out, so the drop counts every encounter staged on the party's tile
+including the dead ones. Walking off the tile or deleting the last encounter
+still clears the fight; a kill does not.
 And the screen grows a banner under the ribbon once `fightOutcome` settles,
 saying that the party is victorious or defeated, with a line for the GM that
 combat stays open until they end it. End combat takes the primary emphasis from

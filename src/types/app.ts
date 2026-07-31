@@ -102,6 +102,11 @@ export interface AppActions {
   // ticks) or end it; the combat screen and the sidebar panel share these.
   advanceCombatTurn(): void;
   endCombat(): void;
+  // encounterWiring: drop the running fight when nothing is staged on the
+  // party's tile any more — the party walked off, or the last encounter there
+  // was deleted. Called from the paths that change those two facts, never
+  // from a plain panel refresh, so a refresh can never write state.
+  syncCombatLocation(): void;
   // mapWiring
   syncPartyMarker(): void;
   syncEncounterMarkers(): void;

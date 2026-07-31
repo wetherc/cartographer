@@ -42,6 +42,8 @@ export function createMapTravel(app, env) {
   /** The party may have changed nodes; re-filter every location-scoped panel. */
   function refreshLocationPanels() {
     meetNPCsHere();
+    // A move can carry the party off a running fight's tile, which ends it.
+    app.actions.syncCombatLocation();
     app.views.encounterPanel.update();
     app.views.initiativePanel.update();
     app.views.npcPanel.update();

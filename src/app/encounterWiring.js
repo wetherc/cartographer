@@ -393,28 +393,39 @@ export function wireEncounters(app) {
     onOpen: () => app.actions.setMode('combat'),
   });
 
-  // The Initiative card only shows while a fight is actually running — no
-  // setup or idle state parked in the sidebar. Walking off the encounter's
-  // tile (or deleting the last encounter there) drops the running combat,
-  // since its participants are no longer "here", which hides the card again.
+  // Walking off the encounter's tile (or deleting the last encounter there)
+  // drops the running combat, since its participants are no longer "here".
   // Killing them all does not: the screen says the foes are down and waits for
   // the GM's End combat, so a last hit does not yank the fight out from under
   // whoever landed it, and there is still a chance to heal up or read the log
-  // before leaving. Wrapped so every existing `initiativePanel.update()` call site
-  // (party moves, role switches, the rehydrate loop) gets the visibility sync
-  // for free. The combat screen shows the same fight, so it refreshes here
-  // too rather than growing its own copy of every call site.
+  // before leaving. This is an action the paths that move the party or delete
+  // an encounter call, not part of the panel refresh: the refresh also runs
+  // from the rehydrate loop, where a state write would fight the save just
+  // adopted from another tab and echo a dirty write back at it.
+  app.actions.syncCombatLocation = () => {
+    if (!current()) return;
+    const stagedHere = encountersAtTile(state.encounters, app.partyTracker.getPosition());
+    if (stagedHere.length > 0) return;
+    setCombat(null);
+    exitCombatMode();
+    app.views.initiativePanel.update();
+  };
+
+  // The Initiative card only shows while a fight is actually running — no
+  // setup or idle state parked in the sidebar. Wrapped so every existing
+  // `initiativePanel.update()` call site (party moves, role switches, the
+  // rehydrate loop) gets the visibility sync for free. The combat screen shows
+  // the same fight, so it refreshes here too rather than growing its own copy
+  // of every call site.
   app.views.initiativePanel = {
     update: () => {
-      const stagedHere = encountersAtTile(state.encounters, app.partyTracker.getPosition());
-      if (current() && stagedHere.length === 0) {
-        setCombat(null);
-        exitCombatMode();
-      }
       initiativeContainer.hidden = current() === null;
       initiativePanel.update();
       app.views.combatScreen.update();
     },
   };
+  // A save can load with a fight the party is no longer standing in (the
+  // campaign was edited elsewhere); reconcile once at mount, then refresh.
+  app.actions.syncCombatLocation();
   app.views.initiativePanel.update();
 }
