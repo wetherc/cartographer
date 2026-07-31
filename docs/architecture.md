@@ -13,6 +13,7 @@ The deeper subsystems each have their own guide:
 | [The app wiring layer](architecture/app-wiring.md) | How `main.js` composes the app, the `AppContext` object, and what each `src/app/` module owns |
 | [The map](architecture/map.md) | Tiles, the node hierarchy, region grouping, rendering, fog of war, and party movement |
 | [Entities](architecture/entities.md) | Encounters, resources, and the character model (classes, races, proficiencies, leveling) |
+| [Combat](architecture/combat.md) | Combat mode: the full-width fight screen, who owns the running fight, and how the screen stays current |
 | [Persistence](architecture/persistence.md) | How a campaign becomes a string, the packing layers, undo history, and the custom library |
 | [UI components](architecture/ui-components.md) | The shared widget builders, the panel contract, the design tokens, and the CSS class vocabulary |
 | [Conventions](architecture/conventions.md) | Performance patterns, UI and CSS rules, and how code here gets tested |

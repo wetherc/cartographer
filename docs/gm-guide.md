@@ -442,7 +442,7 @@ Library mode), labeled by origin. Campaign templates are snapshots (later
 edits to the live encounter don't change them) and the same dialog can delete
 a stale one; library entries are managed in the Library tab instead.
 
-### Initiative and conditions
+### Combat (the fight screen)
 
 Opening combat is a GM-only action. While the party stands on a tile with at
 least one live encounter, the GM's Active encounter tab shows a **Start
@@ -455,40 +455,58 @@ their name and folded in everywhere: the default value is 10 + modifier, and
 adjust any value before starting). Players never see the button or the dialog;
 they cannot open a fight or roll the party's initiative.
 
-The **Initiative** panel itself appears only while a fight is running; there is
-no idle setup card in the sidebar. Once combat starts, step through with
-**Next turn**; the current turn is highlighted and a round counter
-advances. On each new round, timed conditions tick down and expire on their
-own. **End combat** ends the fight and hides the panel again, as does walking
-off the tile or defeating the last encounter on it.
+Starting the fight switches the whole view to the **combat screen**: the map
+and its panels step aside and the fight takes the full width. The left column
+details the **active combatant** (whoever's turn it is): initiative, AC, HP,
+condition chips, concentration with its Drop control, and a damage/heal pair
+for quick GM adjustments (resistances, temporary HP rulings, undoing a roll).
+The center is the **board**, the two sides as cards showing each combatant's
+HP bar, AC, and conditions. The right column keeps the **combat log** (the
+travelogue's combat and roll entries, newest first) with the **dice tray**
+docked beneath it, so every roll happens in view; both return to their usual
+places when the fight ends. Across the bottom runs the **turn ribbon**: one
+chip per combatant in initiative order, the current turn ringed, foes marked
+with a sword, defeated combatants struck through. Clicking a chip inspects
+that combatant in the left column without advancing the turn.
 
-While a foe holds the turn, its highlighted row shows a dice button (GM view
-only): set up the roll in the dice tray as usual, then click it to roll as that
-enemy; the result lands in the travelogue under the enemy's name, and in a
-toast, without disturbing the tray's own readout.
+The sidebar's **Initiative** card stays as the pointer to the fight: the
+round, whose turn it is, and an **Open combat** button. Switch to Play in the
+header any time to check the map mid-fight and come back through that button.
 
-On the **active combatant's turn**, their weapons line up under the
-highlighted row as one-click **attack buttons**: a party member's equipped
-weapons (visible to the GM and, on a bound tab, to the player driving that
-character), or a foe's assigned weapon, GM only. Clicking one picks the
-defender from the opposite side (automatic with a single one standing, a
-quick dialog otherwise; a foe's targets are the party characters, with AC
-computed from their equipped armor, and any friendly NPCs on the tile), loads
-the dice tray with 1d20 plus the weapon's ability modifier (STR for melee, DEX
-for finesse and ranged; the same rule the weapon was created under) plus the
-attacker's level-based **proficiency bonus**, against the defender's AC, and
-rolls it right in the tray. The natural d20 matters, 5e-style: a **natural 20**
-hits regardless of AC and is a **critical hit** (every damage die rolls twice),
-while a **natural 1** always misses. On a hit the weapon's damage dice roll
-too, ability modifier folded into the base term (proficiency never adds to
-damage), and the total lands in the travelogue and a toast by damage type
-("12 slashing + 3 fire"), along with any status effects the weapon inflicts.
-The damage is **applied to the defender automatically**: an encounter's HP
-drops on the spot, defeat is logged, and downing the last foe ends the combat;
-a character hit by a foe loses bonus HP first, then real HP, with a travelogue
-line when they drop to 0. NPCs carry no HP, so a hit on one stays a log line.
-The damage/heal steppers on the encounter row and character card remain for
-adjustments (resistances, temporary HP rulings, or undoing a roll).
+Step through the fight with **Next turn**; the round counter advances, and on
+each new round timed conditions tick down and expire on their own. **End
+combat** ends the fight and returns to Play, as does walking off the tile or
+defeating the last encounter on it.
+
+Acting is two clicks. **Click a board card to target it** (click again to
+release), then pick from the **action bar** under the active combatant: their
+weapons as attack buttons (a party member's equipped weapons, a foe's
+assigned weapon) and a caster's castable spells as cast buttons. The attack
+dialog opens with your targeted defender already picked, so plain Enter rolls
+it; the situational overrides (bonus or penalty dice from Bless or Bane,
+smite dice, flat riders) sit behind a **Situational modifiers** disclosure
+when you need them. A cast dialog pre-fills its target the same way,
+whichever shape the spell uses (a single pick, a multi-target list, or a
+projectile allocation grid).
+
+The roll itself is unchanged, 5e-style: 1d20 plus the weapon's ability
+modifier (STR for melee, DEX for finesse and ranged) plus the attacker's
+level-based **proficiency bonus**, against the defender's AC, rolled in the
+docked tray. A **natural 20** hits regardless of AC and is a **critical hit**
+(every damage die rolls twice); a **natural 1** always misses. On a hit the
+weapon's damage dice roll too, ability modifier folded into the base term
+(proficiency never adds to damage), and the total lands in the combat log and
+a toast by damage type ("12 slashing + 3 fire"), along with any status
+effects the weapon inflicts. Damage is **applied to the defender
+automatically**: an encounter's HP drops on the spot, defeat is logged, and
+downing the last foe ends the combat; a character hit by a foe loses bonus HP
+first, then real HP, with a log line when they drop to 0. NPCs carry no HP,
+so a hit on one stays a log line.
+
+A player tab sees the same screen read-only: coarse HP bands instead of
+numbers, no turn controls, no HP editing. On a bound tab, the player drives
+their own character's turn from the same action bar. Players reach the screen
+through the sidebar card's Open combat button.
 
 ### Characters, HP, and resources
 
@@ -644,7 +662,10 @@ rather than walking onto it first. When a node has no authored way out, its
 single "Return to {parent}" button stays visible without tabbing, since there is
 no arrow on the map to click instead. Walking off an edge with the cursor keys
 announces the first press and travels on the second, so the gesture is
-confirmed before anyone moves. Icon-only buttons carry text labels,
+confirmed before anyone moves. The combat screen is keyboard-operable too: the
+turn ribbon and the board are one tab stop each, arrow keys move between the
+chips and between the cards, Enter or Space picks a target, and a live region
+announces each turn as it arrives. Icon-only buttons carry text labels,
 disclosures report their expanded state, and both light and dark themes are
 supported.
 

@@ -263,8 +263,8 @@ ordering.
 steppers and the encounter panel's amount buttons share the pair, danger-red
 and success-green respectively. A pictorial glyph (a sword) was tried for
 damage and reverted: subtract/add reads instantly, iconography doesn't. The
-sword stays reserved for attack actions (the initiative panel's weapon strip),
-not HP arithmetic.
+sword stays reserved for attack actions (the combat screen's action bar and
+its foe markers), not HP arithmetic.
 
 ### Recurring widget shapes live in base.css, not per-feature sheets
 

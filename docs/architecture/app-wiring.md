@@ -168,8 +168,12 @@ that list against the `Campaign` shape, so forgetting will fail the suite.
 
 ### encounterWiring.js (plus encounterForm.js, weaponAttack.js, spellCast.js, combatants.js)
 
-The Encounters and Initiative panels, the Build-rail encounter authoring list,
-and the walked-into-an-encounter alert. It owns the transient combat state.
+The Encounters panel, the sidebar's Initiative card, the Build-rail encounter
+authoring list, and the walked-into-an-encounter alert. It owns the running
+combat: `state.combat` is written nowhere else, and the turn flow is
+registered on `app.actions` (`advanceCombatTurn`, `endCombat`) so the combat
+screen drives the same fight through the same code. The fight itself renders
+in combat mode, covered by [the combat guide](combat.md).
 
 The shared create/edit dialog (name, HP, level/tier, placement via
 `locationFields`) lives in `encounterForm.js` and backs both panels' add and
@@ -178,14 +182,15 @@ live state (current HP clamped to a new max, stat block, conditions) and
 resets the `noticed` flag when the encounter moves. The bestiary spawn dialog
 is `encounterForm.js`'s `addFromBestiary`.
 
-The 5e attack resolution the Initiative panel triggers is `weaponAttack.js`,
-and spell resolution is `spellCast.js`. `weaponAttack.js` itself is the dialog,
-the dice tray, and the log lines; the rules it applies are pure functions in
-`src/combat/AttackResolve.js`, which has the unit tests. `resolveAttack` decides
-hit, crit, and the wording both the log and the toast quote, `damageParts`
-assembles the dice a hit rolls (doubling every count on a crit, the dialog's
-added dice included), and `attackerStats` picks between an encounter's stat block
-and a character's gear-buffed scores. How many creatures a cast may name comes
+The 5e attack resolution the combat screen's action bar triggers is
+`weaponAttack.js`, and spell resolution is `spellCast.js`. `weaponAttack.js`
+itself is the dialog, the dice tray, and the log lines; the rules it applies are
+pure functions in `src/combat/AttackResolve.js`, which has the unit tests.
+`resolveAttack` decides hit, crit, and the wording both the log and the toast
+quote, `damageParts` assembles the dice a hit rolls (doubling every count on a
+crit, the dialog's added dice included), and `attackerStats` picks between an
+encounter's stat block and a character's gear-buffed scores. How many creatures a
+cast may name comes
 from the spell: `Casting.maxTargets` reads its `targetCount` (absent means one)
 plus a target per scaling step, and 0 marks an area spell with no cap at all. The
 cast dialog offers a single picker at a cap of one and a capped checkbox group
@@ -228,7 +233,8 @@ place that resolves a participant id across the three combatant collections
   `commitEncounters` re-marks the danger tiles on the viewed map (that call
   also rebuilds the Build-rail encounter list, which is scoped to the same
   node), refreshes the Play sidebar's Encounters panel, refreshes the
-  initiative panel, since authoring, moving, spawning, or defeating an
+  initiative panel (whose wrapped update also refreshes the combat screen),
+  since authoring, moving, spawning, or defeating an
   encounter on the party's tile can start or end a fight, and marks the
   campaign dirty. Two opt-outs: pass `{ panel: false }` from an Encounters
   panel row handler, because the list helper re-renders its own rows once the
@@ -250,6 +256,17 @@ the inline-form equivalent is `formFields.statInputRows`), and
 `casterFields.js` (class/level/spell picker, `refilterSpellsOnChange`) each
 back both the campaign dialog and the Library template form for their area. A
 change to one of these shapes lands in the shared module, never in one form.
+
+### combatWiring.js
+
+Mounts the combat screen (`ui/CombatScreen.js`) and registers
+`views.combatScreen`. It owns no combat state: the fight lives in
+encounterWiring, the view is derived per render by `combat/CombatView.js`,
+and all this module holds is the tab's transient UI choices (which combatant
+the screen is inspecting, which board card is held as the attack target). It
+is wired before `wireEncounters` so the view exists by the time the fight's
+refresh paths run. The details, including how the dice tray moves into the
+screen and back, are in [the combat guide](combat.md).
 
 ### storyWiring.js
 

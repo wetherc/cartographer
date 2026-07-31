@@ -340,7 +340,7 @@ falling back to the first caster class when no source was recorded, and to
 `'known'` when even that is missing, so a legacy character keeps casting what
 it knows. `isSpellCastable` and `castableLeveledIds` apply the rule, and
 `Casting.canCast` delegates to them, so the cast validator, the sheet's spell
-section, and the initiative panel's Cast strip all agree on what is castable.
+section, and the combat screen's action bar all agree on what is castable.
 
 The Spellbook tab follows the same rule: Prepare/Unprepare actions and the
 prepared count appear only for a character with a prepared-rule class
@@ -454,7 +454,7 @@ caster stops holding a spell — the sheet's Drop control and its hand-removed
 a failed CON save or a drop to 0 HP in `applyToTarget`, a displacing cast in
 `app/spellCast.js`, and a duration running out at the round wrap.
 `retryImposedSaves(app, combatantId)` rolls the repeated saves, called from the
-initiative panel's turn advance for whoever's turn is ending. A party character
+turn advance (`advanceCombatTurn`) for whoever's turn is ending. A party character
 rolls its live bonus there rather than the stamped one, so a save granted since the
 cast counts.
 
