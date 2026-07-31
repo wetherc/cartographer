@@ -42,7 +42,7 @@ import { npcForm } from './npcForm.js';
 
 /**
  * The Encounters and Initiative panels, the bestiary workflow, and the
- * walked-into-an-encounter alert. Owns the transient combat state; registers
+ * walked-into-an-encounter alert. The only writer of `state.combat`; registers
  * `maybeTriggerEncounter` on `app.actions` for the party-move paths. The
  * authoring dialogs live in encounterForm.js and the attack resolution in
  * weaponAttack.js; this module wires them to the panels.
@@ -51,28 +51,29 @@ import { npcForm } from './npcForm.js';
 export function wireEncounters(app) {
   const { state } = app;
 
-  // The running fight. Seeded from the persisted campaign state so a page
-  // refresh mid-combat resumes it, and mirrored back on every change (with a
-  // dirty mark) so the autosave keeps it.
-  /** @type {import('../types/combat.js').CombatState | null} */
-  let combat = state.combat;
+  // The running fight lives in `state.combat` and nowhere else. This module used
+  // to hold a mirrored copy, which went stale the moment another tab's save was
+  // adopted: the re-hydrate writes `state.combat`, so a follower whose fight had
+  // ended kept the old order in its sidebar card and could still open it.
+  // Reading state on every access costs nothing and cannot drift.
+  const current = () => state.combat;
 
   /** @param {import('../types/combat.js').CombatState | null} next */
   function setCombat(next) {
-    combat = next;
     state.combat = next;
     app.actions.markDirty();
   }
 
   /**
    * Drop a deleted combatant out of the running order. Every delete path goes
-   * through here rather than writing `state.combat` itself, because this
-   * module holds the live copy of the combat and a direct write would leave it
-   * stale. A participant left behind resolves to nothing, so its row would sit
-   * in the order with buttons that quietly do nothing.
+   * through here rather than writing `state.combat` itself, so the write is one
+   * statement with the dirty mark and the panel refresh beside it. A participant
+   * left behind resolves to nothing, so its row would sit in the order with
+   * buttons that quietly do nothing.
    * @param {string} id
    */
   app.actions.removeCombatant = (id) => {
+    const combat = current();
     if (!combat) return;
     const next = dropParticipant(combat, id);
     if (next === combat) return;
@@ -191,7 +192,7 @@ export function wireEncounters(app) {
     confirmDelete: (encounter) => confirmDelete(encounter.name),
     // Opening combat is the GM's call: the button shows only to the GM, only
     // while the party stands on a live encounter's tile with no fight running.
-    canStartCombat: () => isGM(state.role) && combat === null && encountersHere().length > 0,
+    canStartCombat: () => isGM(state.role) && current() === null && encountersHere().length > 0,
     onStartCombat: startCombatSetup,
     getRole: () => state.role,
   });
@@ -330,6 +331,7 @@ export function wireEncounters(app) {
   // drives the same fight through the same code as the sidebar panel; this
   // module stays the only writer of `combat`.
   app.actions.advanceCombatTurn = () => {
+    const combat = current();
     if (!combat) return;
     // Read before the pointer moves: a spell that lets its target retry the
     // save gets that retry at the end of the target's own turn, which is the
@@ -382,7 +384,7 @@ export function wireEncounters(app) {
   // The fight runs on the combat screen; the sidebar card is the status line
   // and the way there. Turn controls and the action strip live on the screen.
   const initiativePanel = mountInitiativePanel(initiativeContainer, {
-    getState: () => combat,
+    getState: current,
     describe,
     onOpen: () => app.actions.setMode('combat'),
   });
@@ -397,11 +399,11 @@ export function wireEncounters(app) {
   // too rather than growing its own copy of every call site.
   app.views.initiativePanel = {
     update: () => {
-      if (combat && encountersHere().length === 0) {
+      if (current() && encountersHere().length === 0) {
         setCombat(null);
         exitCombatMode();
       }
-      initiativeContainer.hidden = combat === null;
+      initiativeContainer.hidden = current() === null;
       initiativePanel.update();
       app.views.combatScreen.update();
     },
