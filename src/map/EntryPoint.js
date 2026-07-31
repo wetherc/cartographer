@@ -1,5 +1,5 @@
-import { parseCoords } from './MapGeometry.js';
-import { findRegionGroups } from './RegionGroups.js';
+import { parseCoords, tileIdAt } from './MapGeometry.js';
+import { blockFor, nearestSide, sideAxis } from './MapExits.js';
 import { kindOf } from './TilePalette.js';
 
 /** @typedef {{ minX: number, minY: number, maxX: number, maxY: number }} Bounds */
@@ -65,6 +65,22 @@ export function computeEntryTile(width, height, block, party) {
   return `${midX},${midY}`;
 }
 
+/**
+ * The inverse of projectAlong: a coordinate along one side of a child map,
+ * mapped back onto the parent block's extent on that axis, so leaving by an edge
+ * puts the party beside the point of the block they walked out of.
+ * @param {number} p coordinate along the side (child space)
+ * @param {number} size child node extent along that axis (tiles)
+ * @param {number} min region-block extent start along that axis
+ * @param {number} max region-block extent end along that axis
+ * @returns {number} parent coordinate along the block
+ */
+function projectBack(p, size, min, max) {
+  if (size <= 1) return Math.round((min + max) / 2);
+  const f = Math.min(1, Math.max(0, p / (size - 1)));
+  return Math.round(min + f * (max - min));
+}
+
 /** @param {import('../types/map.js').Tile} tile */
 function isWall(tile) {
   // Wall segments/corners are the one interior piece the party shouldn't stand
@@ -126,16 +142,125 @@ export function computeRegionEntryTile(parent, child, childNodeId, party) {
   // stairs-up, not on a border tile — the levels of a multi-level dungeon are
   // stacked, so entering "from the side" reads wrong and the stairs are the
   // one authored connection between them.
-  const viaStairs = parent.tiles.some(
-    (t) => t.childNodeId === childNodeId && kindOf(t.imageRef) === 'stairs-down',
-  );
   const stairsUp = child.tiles.find((t) => kindOf(t.imageRef) === 'stairs-up');
-  if (viaStairs && stairsUp) return stairsUp.id;
+  if (stairsUp && stairsDownTo(parent, childNodeId)) return stairsUp.id;
 
   const partyCoords = party.nodeId === parent.id ? parseCoords(party.tileId) : null;
-  const group = findRegionGroups(parent).find((g) => g.childNodeId === childNodeId) ?? null;
+  const group = blockFor(parent, childNodeId);
   const block = group
     ? { minX: group.minX, minY: group.minY, maxX: group.maxX, maxY: group.maxY }
     : null;
   return resolveEntryTile(child, computeEntryTile(child.width, child.height, block, partyCoords));
+}
+
+/**
+ * The parent's stairs-down tile leading to a child, if the child is a level
+ * below rather than a space entered from the side. The one authored connection
+ * between two stacked levels, so it is both how the party gets down and where
+ * they come back up.
+ * @param {import('../types/map.js').MapNode} parent
+ * @param {string} childNodeId
+ * @returns {import('../types/map.js').Tile | null}
+ */
+export function stairsDownTo(parent, childNodeId) {
+  return (
+    parent.tiles.find(
+      (t) => t.childNodeId === childNodeId && kindOf(t.imageRef) === 'stairs-down',
+    ) ?? null
+  );
+}
+
+/**
+ * Where the party lands in the parent when they leave a child node — the mirror
+ * of computeRegionEntryTile, so entering a sub-region and walking back out puts
+ * them next to the tile they came from rather than at the block's midpoint.
+ *
+ * - Off an edge: their coordinate along that side of the child maps back onto the
+ *   block's extent, then one cell further out, onto the parent terrain the side
+ *   abuts.
+ * - Through a door: the same projection, from the door's own coordinate, using
+ *   the side of the interior the door sits nearest.
+ * - Up a stairway: the parent's matching stairs-down tile.
+ * - Fallback: the block itself, which is where the entrance art sits.
+ *
+ * @param {import('../types/map.js').MapNode} parent node being returned to
+ * @param {import('../types/map.js').MapNode} child node being left
+ * @param {import('../types/map.js').MapExit} exit the way out being used
+ * @param {import('../types/map.js').PartyPosition} position who is leaving, and from where
+ * @returns {string} parent tile id ("x,y")
+ */
+export function computeParentReturnTile(parent, child, exit, position) {
+  const centre = tileIdAt(Math.floor(parent.width / 2), Math.floor(parent.height / 2));
+  if (exit.kind === 'tile' && exit.via === 'stairs-up') {
+    const down = stairsDownTo(parent, child.id);
+    if (down) return down.id;
+  }
+  const group = blockFor(parent, child.id);
+  if (!group) return resolveReturnTile(parent, centre, child.id);
+  const anchor = blockAnchor(parent, group);
+  if (exit.kind === 'fallback') return anchor;
+
+  const from = position.nodeId === child.id ? parseCoords(position.tileId) : null;
+  const at = exit.kind === 'tile' ? (parseCoords(exit.tileId) ?? from) : from;
+  const side = exit.kind === 'edge' ? exit.side : at ? nearestSide(child, at) : 'north';
+  const along = at ?? { x: Math.floor(child.width / 2), y: Math.floor(child.height / 2) };
+  let x;
+  let y;
+  if (sideAxis(side) === 'x') {
+    x = projectBack(along.x, child.width, group.minX, group.maxX);
+    y = side === 'north' ? group.minY - 1 : group.maxY + 1;
+  } else {
+    y = projectBack(along.y, child.height, group.minY, group.maxY);
+    x = side === 'west' ? group.minX - 1 : group.maxX + 1;
+  }
+  return resolveReturnTile(parent, tileIdAt(x, y), child.id);
+}
+
+/**
+ * The tile of a region block that stands for it — the one carrying the entrance
+ * art, else the first member. Where a party lands when a node has no authored
+ * way out and no terrain beside its block to step onto.
+ * @param {import('../types/map.js').MapNode} parent
+ * @param {import('./RegionGroups.js').RegionGroup} group
+ * @returns {string}
+ */
+function blockAnchor(parent, group) {
+  const marked = group.tileIds.find(
+    (id) => parent.tiles.find((t) => t.id === id)?.metadata.poiType,
+  );
+  return marked ?? group.tileIds[0];
+}
+
+/**
+ * The parent-side counterpart of resolveEntryTile: snap a computed landing spot
+ * to a tile that exists, is painted, and can be stood on. Cells outside the
+ * region block are what a returning party should land on, so the block they just
+ * came out of is excluded — landing back on it reads as never having left. Falls
+ * back to any painted tile, then to the preferred id on an unpainted parent.
+ * @param {import('../types/map.js').MapNode} parent
+ * @param {string} preferredId tile id the return geometry chose
+ * @param {string} excludeChildNodeId child node whose block to stay off
+ * @returns {string}
+ */
+export function resolveReturnTile(parent, preferredId, excludeChildNodeId) {
+  const usable = parent.tiles.filter(
+    (t) => t.imageRef && !isWall(t) && t.childNodeId !== excludeChildNodeId,
+  );
+  const pool = usable.length ? usable : parent.tiles.filter((t) => t.imageRef);
+  if (!pool.length) return preferredId;
+  if (pool.some((t) => t.id === preferredId)) return preferredId;
+  const target = parseCoords(preferredId);
+  if (!target) return pool[0].id;
+  let best = pool[0];
+  let bestScore = Infinity;
+  for (const tile of pool) {
+    const coords = parseCoords(tile.id);
+    if (!coords) continue;
+    const d = (coords.x - target.x) ** 2 + (coords.y - target.y) ** 2;
+    if (d < bestScore) {
+      best = tile;
+      bestScore = d;
+    }
+  }
+  return best.id;
 }

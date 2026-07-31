@@ -241,3 +241,284 @@ test('computeRegionEntryTile reads the approach geometry when no stairs connect 
     '2,2',
   );
 });
+
+// --- Leaving a child node ------------------------------------------------
+
+const INTERIOR = 'assets/tiles/interior/interior';
+
+/**
+ * A 10x10 outdoor parent, fully painted, whose 3x3 block at x 4..6, y 4..6
+ * links to the child region.
+ * @returns {import('../src/types/map.js').MapNode}
+ */
+function returnParent() {
+  return {
+    id: 'region',
+    name: 'Saltmere Coast',
+    parentId: null,
+    width: 10,
+    height: 10,
+    kind: 'region',
+    environ: null,
+    tiles: gridTiles(10, 10, (id, x, y) => {
+      const inBlock = x >= 4 && x <= 6 && y >= 4 && y <= 6;
+      return createTile(id, inBlock ? 'town.svg' : 'grass.svg', {
+        childNodeId: inBlock ? 'child' : null,
+      });
+    }),
+  };
+}
+
+/** @returns {import('../src/types/map.js').MapNode} */
+function returnChild(overrides = {}) {
+  return {
+    id: 'child',
+    name: 'Thornhold',
+    parentId: 'region',
+    width: 8,
+    height: 8,
+    kind: 'region',
+    environ: null,
+    tiles: gridTiles(8, 8),
+    ...overrides,
+  };
+}
+
+/** @param {import('../src/types/map.js').ExitSide} side */
+function edgeExit(side) {
+  return /** @type {import('../src/types/map.js').MapExit} */ ({
+    kind: 'edge',
+    side,
+    targetNodeId: 'region',
+    targetName: 'Saltmere Coast',
+  });
+}
+
+test('leaving by an edge lands one cell outside the block, aligned to where you left', async () => {
+  const { computeParentReturnTile } = await import('../src/map/EntryPoint.js');
+  const parent = returnParent();
+  const child = returnChild();
+  // West edge, a third of the way down the child: block rows 4..6, so f=3/7 -> y 5.
+  assert.equal(
+    computeParentReturnTile(parent, child, edgeExit('west'), { nodeId: 'child', tileId: '0,3' }),
+    '3,5',
+  );
+  // North edge from the child's east side: block columns 4..6 -> x 6.
+  assert.equal(
+    computeParentReturnTile(parent, child, edgeExit('north'), { nodeId: 'child', tileId: '7,0' }),
+    '6,3',
+  );
+  assert.equal(
+    computeParentReturnTile(parent, child, edgeExit('south'), { nodeId: 'child', tileId: '0,7' }),
+    '4,7',
+  );
+  assert.equal(
+    computeParentReturnTile(parent, child, edgeExit('east'), { nodeId: 'child', tileId: '7,7' }),
+    '7,6',
+  );
+});
+
+test('entering a region then leaving the way you came returns you beside where you started', async () => {
+  const { computeParentReturnTile, computeRegionEntryTile } =
+    await import('../src/map/EntryPoint.js');
+  const parent = returnParent();
+  const child = returnChild();
+  const start = { nodeId: 'region', tileId: '3,5' }; // west of the block
+  const entry = computeRegionEntryTile(parent, child, 'child', start);
+  const back = computeParentReturnTile(parent, child, edgeExit('west'), {
+    nodeId: 'child',
+    tileId: entry,
+  });
+  assert.equal(back, '3,5');
+});
+
+test('leaving a child the party is not standing in uses the child centre', async () => {
+  const { computeParentReturnTile } = await import('../src/map/EntryPoint.js');
+  const parent = returnParent();
+  const child = returnChild();
+  // Centre column 4 of 8 -> f = 4/7 -> block columns 4..6 -> x 5.
+  assert.equal(
+    computeParentReturnTile(parent, child, edgeExit('north'), { nodeId: 'region', tileId: '0,0' }),
+    '5,3',
+  );
+});
+
+test('a one-cell block returns to the cell beside it', async () => {
+  const { computeParentReturnTile } = await import('../src/map/EntryPoint.js');
+  const parent = {
+    id: 'region',
+    name: 'Coast',
+    parentId: null,
+    width: 6,
+    height: 6,
+    kind: /** @type {const} */ ('region'),
+    environ: null,
+    tiles: gridTiles(6, 6, (id, x, y) =>
+      createTile(id, x === 2 && y === 2 ? 'town.svg' : 'grass.svg', {
+        childNodeId: x === 2 && y === 2 ? 'child' : null,
+      }),
+    ),
+  };
+  assert.equal(
+    computeParentReturnTile(parent, returnChild(), edgeExit('east'), {
+      nodeId: 'child',
+      tileId: '7,4',
+    }),
+    '3,2',
+  );
+});
+
+test('leaving through a door uses the side the door sits nearest', async () => {
+  const { computeParentReturnTile } = await import('../src/map/EntryPoint.js');
+  const parent = returnParent();
+  const interior = returnChild({
+    kind: 'interior',
+    name: 'Keep',
+    tiles: [createTile('0,6', `${INTERIOR}-door-v.svg`)],
+  });
+  const exit = /** @type {import('../src/types/map.js').MapExit} */ ({
+    kind: 'tile',
+    tileId: '0,6',
+    via: 'door',
+    targetNodeId: 'region',
+    targetName: 'Saltmere Coast',
+  });
+  // Door on the west border at y 6 of 8 -> f = 6/7 -> block rows 4..6 -> y 6.
+  assert.equal(
+    computeParentReturnTile(parent, interior, exit, { nodeId: 'child', tileId: '1,6' }),
+    '3,6',
+  );
+});
+
+test('leaving up a stairway lands on the parent stairs-down that leads here', async () => {
+  const { computeParentReturnTile } = await import('../src/map/EntryPoint.js');
+  const parent = {
+    id: 'lvl-1',
+    name: 'Crypt',
+    parentId: null,
+    width: 6,
+    height: 6,
+    kind: /** @type {const} */ ('interior'),
+    environ: null,
+    tiles: [
+      createTile('4,4', `${INTERIOR}-stairs-down.svg`, { childNodeId: 'child' }),
+      createTile('1,1', `${INTERIOR}-floor-1.svg`),
+    ],
+  };
+  const child = returnChild({
+    kind: 'interior',
+    tiles: [createTile('2,3', `${INTERIOR}-stairs-up.svg`)],
+  });
+  const exit = /** @type {import('../src/types/map.js').MapExit} */ ({
+    kind: 'tile',
+    tileId: '2,3',
+    via: 'stairs-up',
+    targetNodeId: 'lvl-1',
+    targetName: 'Crypt',
+  });
+  assert.equal(
+    computeParentReturnTile(parent, child, exit, { nodeId: 'child', tileId: '2,3' }),
+    '4,4',
+  );
+});
+
+test('a fallback exit lands on the block entrance tile', async () => {
+  const { computeParentReturnTile } = await import('../src/map/EntryPoint.js');
+  const parent = returnParent();
+  // Mark the block's middle tile as the entrance art.
+  parent.tiles = parent.tiles.map((t) =>
+    t.id === '5,5'
+      ? { ...t, metadata: { ...t.metadata, poiType: /** @type {const} */ ('dungeon') } }
+      : t,
+  );
+  const exit = /** @type {import('../src/types/map.js').MapExit} */ ({
+    kind: 'fallback',
+    targetNodeId: 'region',
+    targetName: 'Saltmere Coast',
+  });
+  assert.equal(
+    computeParentReturnTile(parent, returnChild(), exit, { nodeId: 'child', tileId: '1,1' }),
+    '5,5',
+  );
+});
+
+test('a fallback with no entrance art lands on the first block tile', async () => {
+  const { computeParentReturnTile } = await import('../src/map/EntryPoint.js');
+  const exit = /** @type {import('../src/types/map.js').MapExit} */ ({
+    kind: 'fallback',
+    targetNodeId: 'region',
+    targetName: 'Saltmere Coast',
+  });
+  const landed = computeParentReturnTile(returnParent(), returnChild(), exit, {
+    nodeId: 'child',
+    tileId: '1,1',
+  });
+  assert.ok(['4,4', '5,4', '6,4', '4,5', '5,5', '6,5', '4,6', '5,6', '6,6'].includes(landed));
+});
+
+test('leaving a child no parent tile links to lands on painted parent ground', async () => {
+  const { computeParentReturnTile } = await import('../src/map/EntryPoint.js');
+  const parent = {
+    id: 'region',
+    name: 'Coast',
+    parentId: null,
+    width: 6,
+    height: 6,
+    kind: /** @type {const} */ ('region'),
+    environ: null,
+    tiles: [createTile('1,1', 'grass.svg')],
+  };
+  assert.equal(
+    computeParentReturnTile(parent, returnChild(), edgeExit('north'), {
+      nodeId: 'child',
+      tileId: '0,0',
+    }),
+    '1,1',
+  );
+});
+
+test('resolveReturnTile stays off the block it came out of, and off walls', async () => {
+  const { resolveReturnTile } = await import('../src/map/EntryPoint.js');
+  const parent = {
+    id: 'region',
+    name: 'Coast',
+    parentId: null,
+    width: 6,
+    height: 6,
+    kind: /** @type {const} */ ('interior'),
+    environ: null,
+    tiles: [
+      createTile('2,2', 'town.svg', { childNodeId: 'child' }),
+      createTile('2,3', `${INTERIOR}-wall-h.svg`),
+      createTile('4,4', `${INTERIOR}-floor-1.svg`),
+      createTile('0,0', ''),
+    ],
+  };
+  // '2,2' is the block, '2,3' a wall, '0,0' unpainted: the floor is all that's left.
+  assert.equal(resolveReturnTile(parent, '2,2', 'child'), '4,4');
+  // Nothing usable at all: the preferred id stands.
+  const bare = { ...parent, tiles: [createTile('0,0', '')] };
+  assert.equal(resolveReturnTile(bare, '3,3', 'child'), '3,3');
+  // Every tile belongs to the block: it falls back to painted tiles anyway
+  // rather than leaving the party nowhere.
+  const allBlock = {
+    ...parent,
+    tiles: [createTile('2,2', 'town.svg', { childNodeId: 'child' })],
+  };
+  assert.equal(resolveReturnTile(allBlock, '2,2', 'child'), '2,2');
+});
+
+test('resolveReturnTile falls back to the first candidate for an unparseable target', async () => {
+  const { resolveReturnTile } = await import('../src/map/EntryPoint.js');
+  const parent = {
+    id: 'region',
+    name: 'Coast',
+    parentId: null,
+    width: 4,
+    height: 4,
+    kind: /** @type {const} */ ('region'),
+    environ: null,
+    tiles: [createTile('1,1', 'grass.svg'), createTile('2,2', 'grass.svg')],
+  };
+  assert.equal(resolveReturnTile(parent, 'not-a-coord', 'child'), '1,1');
+});

@@ -52,6 +52,24 @@ export interface MapNode {
   environ: string | null;
 }
 
+/** A side of a node's grid, as an exit leads away from it. */
+export type ExitSide = 'north' | 'east' | 'south' | 'west';
+
+/** A way out of a node, back to its parent. See MapExits.findExits.
+ *  `edge` is walked off one side of an outdoor map; `tile` is a door or a
+ *  stairway inside a structure; `fallback` is offered when a node has neither,
+ *  so a party is never stranded in a space they walked into. */
+export type MapExit =
+  | { kind: 'edge'; side: ExitSide; targetNodeId: string; targetName: string }
+  | {
+      kind: 'tile';
+      tileId: string;
+      via: 'door' | 'stairs-up';
+      targetNodeId: string;
+      targetName: string;
+    }
+  | { kind: 'fallback'; targetNodeId: string; targetName: string };
+
 export interface PartyPosition {
   nodeId: string;
   tileId: string;
