@@ -72,6 +72,7 @@ export function imageSrcForRef(imageRef) {
  * @property {string[]} [npcTileIds] tiles holding a placed NPC, marked when revealed
  * @property {{ tileId: string, name: string }[]} [characterTokens] per-character markers, named above their tile
  * @property {import('../types/map.js').MapExit[]} [exits] ways out of this node (see MapExits.findExits), drawn as border arrows and badges on the door or stairway they lead through. Empty in Build mode, where authoring the map is not travelling it.
+ * @property {import('../types/map.js').ExitSide | null} [armedExitSide] edge exit a cursor key has armed, drawn emphasized: the next press of the same arrow takes it.
  * @property {string | null} selectedTileId
  * @property {string | null} cursorCellId
  * @property {boolean} focused whether the keyboard cursor outline shows

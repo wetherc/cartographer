@@ -375,6 +375,14 @@ export function wireMapView(app) {
     },
     onCellClick: travel.onCellClick,
     onExitClick: travel.exitToParent,
+    // A cursor key pressed into a border that leads out arms the exit; the
+    // same arrow again takes it. Narrated separately from the map description,
+    // which a node change rewrites wholesale.
+    onExitArmed: (exit) => {
+      exitPrompt.textContent = exit
+        ? `Press the same arrow again to return to ${exit.targetName}.`
+        : '';
+    },
   });
   app.views.mapCanvas = mapCanvas;
   env.mapCanvas = mapCanvas;
@@ -440,6 +448,14 @@ export function wireMapView(app) {
   mapDescription.setAttribute('role', 'status');
   mapDescription.setAttribute('aria-live', 'polite');
   mustGetElement('map-viewport').appendChild(mapDescription);
+
+  // Its own region rather than a line in mapDescription: the arming prompt
+  // comes and goes with single keystrokes, and refreshMapDescription's
+  // write-if-changed would either clobber it or re-announce the whole map.
+  const exitPrompt = el('div', 'sr-only');
+  exitPrompt.setAttribute('role', 'status');
+  exitPrompt.setAttribute('aria-live', 'polite');
+  mustGetElement('map-viewport').appendChild(exitPrompt);
 
   // The map-facing consequences of a mode switch, called by sessionControls
   // after it flips the body classes.

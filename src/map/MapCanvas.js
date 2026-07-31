@@ -23,7 +23,7 @@ export class MapCanvas {
   /**
    * @param {HTMLCanvasElement} canvas
    * @param {TilePalette} palette
-   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, markerRange?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, onCellContextMenu?: (x: number, y: number, tile: Tile | null, clientX: number, clientY: number) => void, onStrokeCell?: (x: number, y: number, tile: Tile | null, first: boolean) => void, onStrokeEnd?: () => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void, onExitClick?: (exit: import('../types/map.js').MapExit) => void }} [options]
+   * @param {{ tileSize?: number, minZoom?: number, maxZoom?: number, markerRange?: number, onCellClick?: (x: number, y: number, tile: Tile | null) => void, onCellContextMenu?: (x: number, y: number, tile: Tile | null, clientX: number, clientY: number) => void, onStrokeCell?: (x: number, y: number, tile: Tile | null, first: boolean) => void, onStrokeEnd?: () => void, getNodeName?: (nodeId: string) => string | undefined, onViewChange?: () => void, onCellHover?: (tile: Tile | null, clientX: number, clientY: number) => void, onExitClick?: (exit: import('../types/map.js').MapExit) => void, onExitArmed?: (exit: import('../types/map.js').MapExit | null) => void }} [options]
    */
   constructor(canvas, palette, options = {}) {
     this.canvas = canvas;
@@ -45,8 +45,11 @@ export class MapCanvas {
     this.onViewChange = options.onViewChange;
     this.onCellHover = options.onCellHover;
     /** Fired when a way out of the current node is used: a click on a border
-     * arrow, or a cursor key pressed into the border it leads off. */
+     * arrow, or a cursor key pressed twice into the border it leads off. */
     this.onExitClick = options.onExitClick;
+    /** Fired when a cursor key arms an edge exit (with the exit) and when the
+     * arming lapses (with null), so the wiring can narrate the second press. */
+    this.onExitArmed = options.onExitArmed;
 
     /** @type {MapNode | null} */
     this.node = null;
@@ -65,6 +68,9 @@ export class MapCanvas {
     /** @type {import('../types/map.js').MapExit[]} ways out of the current node, drawn as
      * border arrows and tile badges. Play mode only; the wiring supplies none while authoring. */
     this.exits = [];
+    /** @type {import('../types/map.js').ExitSide | null} edge exit a cursor key has
+     * armed: the next press of the same arrow takes it. Highlighted by the renderer. */
+    this.armedExitSide = null;
     /** When true (Build mode), draw every tile's image regardless of its
      * revealed flag, so a GM authors against the whole map, not through fog. */
     this.revealAll = false;
@@ -104,7 +110,7 @@ export class MapCanvas {
     canvas.setAttribute('role', 'application');
     canvas.setAttribute(
       'aria-label',
-      'Campaign map. Arrow keys move the cursor, Enter acts, plus and minus zoom.',
+      'Campaign map. Arrow keys move the cursor, Enter acts, plus and minus zoom. At a map edge that leads out, press the same arrow twice to leave.',
     );
 
     this._pointer = new MapCanvasPointer(this);
@@ -126,6 +132,7 @@ export class MapCanvas {
     // wrong parent, and drawing them for the frame before the wiring recomputes
     // them would offer a click that travels somewhere the party isn't.
     this.exits = [];
+    this.disarmExit();
     this.selectedTileId = null;
     this.cursorCellId = null;
     this.fit();
@@ -302,6 +309,22 @@ export class MapCanvas {
    */
   setExits(exits) {
     this.exits = exits;
+    // The armed side may no longer be a way out; requiring a fresh first press
+    // is cheaper than checking, and rearming costs the user one keystroke.
+    this.disarmExit();
+    this.render();
+  }
+
+  /**
+   * Drop a cursor-armed edge exit, telling the wiring so its narration clears
+   * too. Any interaction other than the confirming second press calls this: a
+   * cursor move, another key, a pointer touch, losing focus, or the exits or
+   * the node changing under the arming.
+   */
+  disarmExit() {
+    if (this.armedExitSide === null) return;
+    this.armedExitSide = null;
+    this.onExitArmed?.(null);
     this.render();
   }
 
@@ -360,6 +383,7 @@ export class MapCanvas {
       npcTileIds: this.npcTileIds,
       characterTokens: this.characterTokens,
       exits: this.exits,
+      armedExitSide: this.armedExitSide,
       selectedTileId: this.selectedTileId,
       cursorCellId: this.cursorCellId,
       focused: this._focused,

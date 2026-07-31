@@ -87,6 +87,9 @@ export class MapCanvasPointer {
   /** @param {PointerEvent} event */
   _onPointerDown(event) {
     const host = this.host;
+    // A pointer touch is a different intent from the arrow key that armed an
+    // edge exit; the arming lapses rather than letting a later arrow confirm it.
+    host.disarmExit();
     if (event.pointerType === 'touch') {
       this._touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
       host.canvas.setPointerCapture?.(event.pointerId);

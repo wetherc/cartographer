@@ -43,6 +43,7 @@ export class MapCanvasKeyboard {
 
   _onBlur() {
     this.host._focused = false;
+    this.host.disarmExit();
     this.host.render();
   }
 
@@ -61,22 +62,40 @@ export class MapCanvasKeyboard {
       const current = host.cursorCellId ? parseCoords(host.cursorCellId) : null;
       const next = nextCursor(current, event.key, host.node.width, host.node.height);
       // An arrow pressed at the border it points at leaves the cursor where it
-      // is; when that border is a way out, take it. Walking off the edge is the
-      // gesture the arrow already suggests, so there is no extra key to learn.
+      // is; when that border is a way out, arm it, and a second press of the
+      // same arrow takes it. Walking off the edge is the gesture the arrow
+      // already suggests, so there is no extra key to learn, but a single press
+      // moving the whole party would make holding an arrow key a teleport: the
+      // cursor sails to the border and the next key repeat would walk out.
+      // Repeats never arm or confirm, so leaving is always two deliberate
+      // presses, and the arming is narrated (onExitArmed) and drawn (the band
+      // brightens) before anything moves.
       if (current && next.x === current.x && next.y === current.y && !host.authoring) {
         const side = cursorSide(event.key);
         const exit = side ? exitForSide(host.exits, side) : null;
         if (exit) {
-          host.onExitClick?.(exit);
+          if (event.repeat) return;
+          if (host.armedExitSide === side) {
+            host.disarmExit();
+            host.onExitClick?.(exit);
+            return;
+          }
+          host.armedExitSide = side;
+          host.onExitArmed?.(exit);
+          host.render();
           return;
         }
       }
+      // Any cursor move away from the border withdraws an armed exit.
+      host.disarmExit();
       host.cursorCellId = tileIdAt(next.x, next.y);
       this._ensureCellVisible(next.x, next.y);
       host.render();
       this._announceCursor();
       return;
     }
+    // Any other key withdraws an armed exit; only the same arrow confirms it.
+    host.disarmExit();
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this._activateCursor();

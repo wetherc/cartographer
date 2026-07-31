@@ -106,29 +106,34 @@ export class MapDecorations {
       const dir = EXIT_SIDES.find((s) => s.side === exit.side);
       if (!dir) continue;
       const geom = exitBandGeometry(node, view, this.host.tileSize, exit);
-      this._drawExitBand(exit, edgeExitBand(exit, geom), dir.dx, dir.dy);
+      const armed = view.armedExitSide === exit.side;
+      this._drawExitBand(exit, edgeExitBand(exit, geom), dir.dx, dir.dy, armed);
     }
   }
 
   /**
    * One return arrow: a parchment-bordered pill carrying an outward chevron and
    * the exit's label. The label is clipped to the pill, so a long region name
-   * cannot spill past the area that answers a click.
+   * cannot spill past the area that answers a click. An armed band (the cursor
+   * pressed into this border once; the same arrow again leaves) brightens to the
+   * chevron's gold, so a sighted keyboard user sees the arming the live region
+   * narrates.
    * @param {MapExit} exit
    * @param {ExitBand} band
    * @param {number} dx direction the exit leads, in grid cells
    * @param {number} dy
+   * @param {boolean} [armed]
    */
-  _drawExitBand(exit, band, dx, dy) {
+  _drawExitBand(exit, band, dx, dy, armed = false) {
     const { ctx } = this.host;
     const { x, y, w, h, fontSize } = band;
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, Math.min(h / 2, 14));
-    ctx.fillStyle = 'rgba(20, 16, 10, 0.86)';
+    ctx.fillStyle = armed ? 'rgba(46, 36, 16, 0.94)' : 'rgba(20, 16, 10, 0.86)';
     ctx.fill();
-    ctx.strokeStyle = 'rgba(230, 215, 180, 0.85)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = armed ? '#ffd24a' : 'rgba(230, 215, 180, 0.85)';
+    ctx.lineWidth = armed ? 3 : 2;
     ctx.stroke();
     ctx.clip();
 
