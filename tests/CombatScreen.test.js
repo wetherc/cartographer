@@ -13,3 +13,9 @@ test('initialsOf marks an unresolved name', () => {
   assert.equal(initialsOf(null), '?');
   assert.equal(initialsOf('   '), '?');
 });
+
+// The escapes are each two UTF-16 code units: indexing [0] would cut them in half.
+test('initialsOf keeps a leading surrogate pair whole', () => {
+  assert.equal(initialsOf('\u{1F409} Dragon'), '\u{1F409}D');
+  assert.equal(initialsOf('\u{20BB7}\u91CE Chief'), '\u{20BB7}C');
+});

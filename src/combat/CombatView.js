@@ -138,11 +138,15 @@ export function fightOutcome(view) {
 }
 
 /**
+ * Rows nothing resolves are left out: an unresolved row's side and defeated
+ * flag are placeholders (see `buildCombatView`), and counting one as a
+ * standing party member would hold the outcome open after every real
+ * combatant on the side is down.
  * @param {CombatView} view
  * @param {'party' | 'foe'} side
  */
 function sideIsDown(view, side) {
-  const rows = view.rows.filter((row) => row.side === side);
+  const rows = view.rows.filter((row) => row.side === side && row.name !== null);
   return rows.length > 0 && rows.every((row) => row.defeated);
 }
 

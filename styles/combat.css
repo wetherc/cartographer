@@ -324,7 +324,12 @@ body.mode-combat .app-buildrail {
 }
 
 .combat-log__list {
-  max-height: 34rem;
+  /* Bounded by the viewport, not a fixed length: the page does not scroll in
+     combat mode on a typical screen, so the list takes whatever height sits
+     between the ribbon (and the card's own header) and the bottom edge, and
+     scrolls internally past that. The subtraction is that chrome's measured
+     height with a little slack; a taller monitor gets a taller log for free. */
+  max-height: max(12rem, calc(100dvh - 18rem));
   overflow-y: auto;
   margin: var(--space-2) 0 0;
   padding: 0;

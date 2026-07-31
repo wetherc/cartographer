@@ -74,7 +74,7 @@ export function loadoutAccess(found, viewer, id) {
  */
 export function buildLoadout(found, spells = [], access = 'full') {
   if (!found || access === 'none') return EMPTY;
-  const shared = { armor: armorOf(found), weapons: weaponsOf(found) };
+  const shared = { armor: armorOf(found), weapons: weaponLines(found) };
   if (access === 'public') return { ...shared, spells: { cantrips: 0, leveled: 0 }, slots: [] };
   return { ...shared, spells: countSpells(spells), slots: slotsOf(found) };
 }
@@ -116,11 +116,13 @@ function armorOf(found) {
 /**
  * The weapons available, each with its damage written out: a character's
  * equipped weapons in slot order, a foe's single weapon. Same lists the action
- * bar offers, so a card and the bar cannot disagree.
+ * bar offers, so a card and the bar cannot disagree. Named apart from
+ * combatants.js's `weaponsOf`, which returns the weapon objects themselves;
+ * this one returns display lines.
  * @param {ResolvedCombatant} found
  * @returns {{ name: string, damage: string }[]}
  */
-function weaponsOf(found) {
+function weaponLines(found) {
   /** @type {{ name: string, damage?: import('../types/entities.js').DamagePart[] }[]} */
   let weapons = [];
   if (found.kind === 'character') weapons = equippedWeapons(found.entity);

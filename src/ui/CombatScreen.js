@@ -544,8 +544,12 @@ export function initialsOf(name) {
   if (!name) return '?';
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '?';
-  return parts
-    .slice(0, 2)
-    .map((part) => part[0].toUpperCase())
-    .join('');
+  return (
+    parts
+      .slice(0, 2)
+      // Spread before indexing: [0] would split a surrogate pair, turning a
+      // name that starts with an emoji or a rare CJK character into garbage.
+      .map((part) => [...part][0].toUpperCase())
+      .join('')
+  );
 }

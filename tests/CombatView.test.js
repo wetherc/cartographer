@@ -212,3 +212,26 @@ test('fightOutcome settles only once a whole side is down', () => {
     'a mutual wipe reads as a defeat',
   );
 });
+
+test('fightOutcome leaves unresolved rows out of the reckoning', () => {
+  /** @param {{ side: 'party' | 'foe', defeated: boolean, name: string | null }[]} rows */
+  const view = (rows) => ({ round: 1, turnIndex: 0, rows });
+  // An unresolved row projects side 'party' and defeated false as
+  // placeholders; counting it as a standing party member would hold the
+  // outcome open after every real member is down.
+  assert.equal(
+    fightOutcome(
+      view([
+        { side: 'party', defeated: true, name: 'Hero' },
+        { side: 'party', defeated: false, name: null },
+        { side: 'foe', defeated: false, name: 'Goblin' },
+      ]),
+    ),
+    'defeat',
+  );
+  assert.equal(
+    fightOutcome(view([{ side: 'party', defeated: false, name: null }])),
+    null,
+    'a side with only ghosts on it settles nothing',
+  );
+});
