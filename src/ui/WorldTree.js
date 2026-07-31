@@ -12,7 +12,10 @@ import { buildWorldTree } from '../map/WorldTree.js';
  * the Build-mode counterpart to the Play-mode breadcrumb, over the same
  * TileGrid data. Selecting a node invokes onSelect; if onAddChild/onEdit/
  * onDelete are supplied, each row also gets an add-child, edit-settings, and
- * delete affordance (used in Build mode). With `collapsible`, every row with
+ * delete affordance (used in Build mode). With `getWarning`, a row whose node
+ * has something wrong gets a warning badge carrying the sentence, so a GM sees
+ * an unreachable or sealed node at the moment they break it, not when they next
+ * happen to view it. With `collapsible`, every row with
  * children gets an expand/collapse chevron; collapse state lives in the mount
  * and survives update() calls. Call update() after any structural change to
  * the tree.
@@ -24,6 +27,7 @@ import { buildWorldTree } from '../map/WorldTree.js';
  *   onAddChild?: (parentId: string) => void,
  *   onEdit?: (nodeId: string) => void,
  *   onDelete?: (nodeId: string) => void,
+ *   getWarning?: (node: MapNode) => string | null,
  *   collapsible?: boolean,
  * }} opts
  * @returns {{ update: () => void }}
@@ -86,6 +90,16 @@ export function mountWorldTree(container, opts) {
     }
     select.addEventListener('click', () => opts.onSelect(treeNode.node.id));
 
+    const warning = opts.getWarning?.(treeNode.node) ?? null;
+    /** @type {HTMLSpanElement | null} */
+    let badge = null;
+    if (warning) {
+      badge = el('span', 'world-tree__warning', icon('warning', { size: 14 }));
+      badge.setAttribute('role', 'img');
+      badge.setAttribute('aria-label', warning);
+      badge.title = warning;
+    }
+
     const row = el(
       'div',
       'world-tree__row u-row u-g1',
@@ -96,6 +110,7 @@ export function mountWorldTree(container, opts) {
           ? collapseToggle(treeNode, childList)
           : el('span', 'world-tree__toggle world-tree__toggle--leaf')),
       select,
+      badge,
       opts.onAddChild &&
         iconButton(
           'add',
@@ -123,15 +138,20 @@ export function mountWorldTree(container, opts) {
   let shownSignature = null;
 
   /**
-   * Everything the markup reads: each node's id, name, and parent, plus which
-   * row is current. Compared by value rather than by node identity because a
-   * party step replaces the node it revealed fog on without changing any of
-   * these, and that step is the most frequent caller of update().
+   * Everything the markup reads: each node's id, name, parent, and warning,
+   * plus which row is current. Compared by value rather than by node identity
+   * because a party step replaces the node it revealed fog on without changing
+   * any of these, and that step is the most frequent caller of update(). The
+   * warning is part of the signature so a paint stroke that seals or unseals a
+   * node redraws its badge.
    * @param {MapNode[]} nodes
    * @param {string} currentId
    */
   function signatureOf(nodes, currentId) {
-    return JSON.stringify([currentId, nodes.map((n) => [n.id, n.name, n.parentId])]);
+    return JSON.stringify([
+      currentId,
+      nodes.map((n) => [n.id, n.name, n.parentId, opts.getWarning?.(n) ?? null]),
+    ]);
   }
 
   function update() {

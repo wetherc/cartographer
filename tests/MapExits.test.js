@@ -418,6 +418,28 @@ test('a node nothing in the parent links to is warned about before anything else
   );
 });
 
+test('an outdoor child whose block sits in blank terrain is told to paint the parent', () => {
+  // Linked, but nothing painted beside the block: every side reports no way
+  // out, so Play would fall back. The fix is terrain on the parent, not
+  // anything paintable here.
+  assert.equal(
+    authoringWarning(
+      child,
+      parentWithBlock(() => false),
+    ),
+    'No way out: paint terrain on Saltmere Coast beside the tiles that link here.',
+  );
+  // One painted neighbour beside the block gives one side a real way out, and
+  // the warning stands down.
+  assert.equal(
+    authoringWarning(
+      child,
+      parentWithBlock((x, y) => x === 1 && y === 2),
+    ),
+    null,
+  );
+});
+
 test('the sealed-interior warning only advises stairs where stairs would count', () => {
   const sealed = node({
     id: 'child',

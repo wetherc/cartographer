@@ -65,6 +65,15 @@
   cursor: default;
 }
 
+/* Warning badge on a node nothing leads to or that has no way out; the
+   sentence itself is the badge's tooltip and accessible name. */
+.world-tree__warning {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  color: var(--warning);
+}
+
 /* Layout reflow by mode: Build shows the world tree, Play shows the sidebar. */
 body.mode-play .app-buildrail {
   display: none;

@@ -228,23 +228,25 @@ export function isSealedInterior(node, parent) {
 
 /**
  * What Build mode tells a GM about the node in view, or null when there is
- * nothing to say. Two problems, in the order a GM has to solve them.
+ * nothing to say. Three problems, in the order a GM has to solve them.
  *
  * A node no parent tile links to is unreachable: the party can never walk into it
  * and players never see it, whatever is painted inside. That comes first because
- * the link is also what decides the second answer — a staircase counts as a way
+ * the link is also what decides the later answers — a staircase counts as a way
  * out only in the direction the link runs, so advice about stairs before there is
  * a link would be a guess.
  *
- * Then a sealed interior, which is linked but has nothing painted to leave
- * through. Only the staircase running back to the parent level counts
- * (interiorExits), so the warning names that direction and no other: a crypt
- * level is told about its stairs up, an upper storey about its stairs down, and a
- * keep entered through a town door about a door alone, since stairs there would
- * be advice that cannot clear the warning.
+ * Then a linked node whose every exit is the fallback. For an interior that is a
+ * sealed structure, and only the staircase running back to the parent level
+ * counts (interiorExits), so the warning names that direction and no other: a
+ * crypt level is told about its stairs up, an upper storey about its stairs
+ * down, and a keep entered through a town door about a door alone, since stairs
+ * there would be advice that cannot clear the warning. For an outdoor child it
+ * is a block sitting in blank parent terrain, with nothing beside it to walk
+ * off onto, so the fix is painted on the parent rather than here.
  *
- * Both are warnings about an unfinished map, not about a stuck party — findExits
- * hands Play a fallback either way.
+ * All of these are warnings about an unfinished map, not about a stuck party —
+ * findExits hands Play a fallback either way.
  *
  * @param {MapNode | null} node
  * @param {MapNode | null} parent
@@ -255,7 +257,10 @@ export function authoringWarning(node, parent) {
   if (!blockFor(parent, node.id)) {
     return `Nothing leads here: link a tile on ${parent.name} to this map.`;
   }
-  if (!isSealedInterior(node, parent)) return null;
+  if (!findExits(node, parent).every((e) => e.kind === 'fallback')) return null;
+  if (node.kind !== 'interior') {
+    return `No way out: paint terrain on ${parent.name} beside the tiles that link here.`;
+  }
   const back = stairwayTo(parent, node.id)?.back ?? null;
   return back
     ? `No way out: paint a ${back} tile, or a door on an outer wall.`

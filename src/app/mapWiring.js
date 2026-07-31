@@ -144,6 +144,11 @@ export function wireMapView(app) {
     mapCanvas.setExits(exits);
     exitList?.update(exits);
     syncBuildWarning();
+    // The tree's warning badges answer the same question for every node, and a
+    // stroke on the node in view can seal or unseal a child without changing
+    // the node's own warning, so the rail warning's short-circuit above cannot
+    // stand in for this. The tree bails by signature when nothing changed.
+    env.worldTree?.update();
   }
 
   // Stays in the document with no text rather than being added when there is
@@ -332,6 +337,14 @@ export function wireMapView(app) {
     onAddChild: (id) => nodeActions.addChildNode(id),
     onEdit: (id) => nodeActions.editNode(id),
     onDelete: (id) => nodeActions.deleteNode(id),
+    // Badge every unreachable or sealed node, so unlinking a tile flags the
+    // orphaned child right here rather than when the GM next views it. Build
+    // only: this tree is in a Build-only rail, and pricing the check into the
+    // signature would otherwise cost every Play-mode party step a world scan.
+    getWarning: (node) =>
+      state.mode === 'build'
+        ? authoringWarning(node, node.parentId ? (grid.getNode(node.parentId) ?? null) : null)
+        : null,
   });
   env.worldTree = worldTree;
 
