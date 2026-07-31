@@ -5,6 +5,7 @@
   "main": "src/main.js",
   "scripts": {
     "test": "node --test tests/*.test.js",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-exclude='tests/**' tests/*.test.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "build": "node scripts/build.cjs",

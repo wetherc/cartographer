@@ -11,6 +11,16 @@ node --test tests/*.test.js              # full suite before committing
 
 Each `tests/*.test.js` file pairs with one `src/**/*.js` module. Tests exercise pure functions/classes directly (e.g. `roll(selection, rng)`, `MapNavigator`, `findRegionGroups`) with an injected RNG or plain fixture data — no DOM, no canvas, no mocking of browser APIs.
 
+## Coverage
+
+```
+pnpm coverage
+```
+
+Node's own coverage report, one row per file plus a total. The script passes `--test-coverage-exclude='tests/**'` because the runner otherwise reports the test files alongside the modules they exercise. A test file runs top to bottom, so it always scores near 100%, and leaving them in pulls the total several points above what the app code scores.
+
+The report only counts files some test imported. A module with no test at all is missing from the table rather than sitting at 0%, so compare the row list against `src/` to see the real picture. A high line count on a module that is mostly `el(...)` calls means a test constructed the DOM, not that anything checked what it built.
+
 ## Typecheck
 
 ```
