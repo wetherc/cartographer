@@ -287,6 +287,11 @@ export function createMapTravel(app, env) {
         // Entering a node for the first time discovers it.
         env.regionTree.update();
         env.syncPartyMarker();
+        // The child has its own ways out, and this path swaps the node itself
+        // rather than going through resyncMapViews, so it owes them explicitly:
+        // walking into a region used to leave its return arrows undrawn until
+        // something else re-synced.
+        env.syncExits();
         refreshLocationPanels();
         if (subject) {
           // Re-read the roster: the move above replaced the character object.
