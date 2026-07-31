@@ -1,6 +1,6 @@
 import { mustGetElement } from '../ui/dom.js';
 import { mountCombatScreen } from '../ui/CombatScreen.js';
-import { buildCombatView } from '../combat/CombatView.js';
+import { buildCombatView, isDowned } from '../combat/CombatView.js';
 import { buildLoadout, loadoutAccess } from '../combat/Loadout.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
 import { isGM } from '../view/ViewRole.js';
@@ -34,9 +34,24 @@ export function wireCombatScreen(app) {
   let inspectedId = /** @type {string | null} */ (null);
 
   /** The board-picked target the next attack or cast opens on, or null for
-   * none. As transient as the inspection; a stale id (target defeated, fight
-   * over) matches nothing and the dialogs fall back to their own defaults. */
+   * none. As transient as the inspection. Released on the refresh that shows
+   * the target defeated or gone (see `releaseStaleTarget`); the dialogs also
+   * ignore an id that matches no living foe, so a race between the two costs
+   * nothing. */
   let selectedTargetId = /** @type {string | null} */ (null);
+
+  /**
+   * Release the held target once it stops being attackable: defeated, deleted
+   * from the order, or the fight over. Without this the dead foe's card kept
+   * its pressed ring and the active column kept naming it, while the attack
+   * dialog had already stopped honoring the pick.
+   */
+  function releaseStaleTarget() {
+    if (!selectedTargetId) return;
+    const inOrder = state.combat?.order.some((p) => p.id === selectedTargetId) ?? false;
+    const found = inOrder ? findCombatant(app, selectedTargetId) : null;
+    if (!found || isDowned(found)) selectedTargetId = null;
+  }
 
   const screen = mountCombatScreen(mustGetElement('combat-screen'), {
     getView: () => {
@@ -160,6 +175,7 @@ export function wireCombatScreen(app) {
   app.views.combatScreen = {
     update: () => {
       syncDiceDock();
+      releaseStaleTarget();
       if (state.mode !== 'combat' && state.combat) return;
       screen.update();
     },

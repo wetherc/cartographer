@@ -77,9 +77,12 @@ through the module that holds it.
 What `combatWiring.js` owns is per-tab UI state that never persists: which
 combatant the left column is inspecting (`inspectedId`, picked by the ribbon
 chips, null meaning whoever's turn it is) and which board card is held as the
-target (`selectedTargetId`). A stale target id, say a foe defeated since it
-was picked, matches nothing at use time and the dialogs fall back to their own
-defaults, so neither field is ever validated or cleared eagerly.
+target (`selectedTargetId`). The inspection is never validated: inspecting a
+defeated combatant is legitimate, and an id that stops resolving just falls
+back to whoever's turn it is. The target is released on the refresh that
+shows it defeated, out of the order, or the fight over, since a dead foe's
+card would otherwise keep its pressed ring while the attack dialog had
+already stopped honoring the pick.
 
 ## The view is derived, not stored
 
