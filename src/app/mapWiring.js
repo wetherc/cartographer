@@ -122,6 +122,7 @@ export function wireMapView(app) {
     );
     syncEncounterMarkers();
     syncNPCMarkers();
+    syncExits();
     refreshMapDescription();
   }
   app.actions.syncPartyMarker = syncPartyMarker;
@@ -129,8 +130,10 @@ export function wireMapView(app) {
   /** Recompute the ways out of the node in view and hand them to both places
    * that offer them: the canvas, which draws an arrow per side and a badge per
    * door, and the exit buttons, which are how a keyboard or a screen reader takes
-   * one. Called from resyncMapViews, so it runs wherever the node in view or the
-   * world under it changed, and from the mode switch, since Build offers none. */
+   * one. Called from syncPartyMarker, which every path that changes the node in
+   * view already calls (navigation, a zoom-in, a resync); from resyncMapViews for
+   * the redraw path, which deliberately skips the party marker; and from the mode
+   * switch, since Build offers no ways out. */
   function syncExits() {
     const exits = travel.currentExits();
     mapCanvas.setExits(exits);
@@ -445,7 +448,6 @@ export function wireMapView(app) {
 
   mapCanvas.setNode(navigator.getCurrentNode());
   syncPartyMarker();
-  syncExits();
   syncPaletteKind();
   breadcrumb.update(navigator.getBreadcrumb());
 

@@ -36,11 +36,12 @@ export function resyncMapViews(app, env, { reframe = false } = {}) {
     env.syncPaletteKind();
   } else {
     env.mapCanvas.refreshNode(app.navigator.getCurrentNode());
+    // A world edit from elsewhere (another tab, a node action) can repaint the
+    // terrain around the region block the node in view sits in, changing which
+    // sides of it lead back out. The reframe path gets this through
+    // syncPartyMarker, which this one deliberately skips.
+    env.syncExits();
   }
-  // Either way the ways out may have changed: navigation lands in a different
-  // node, and a world edit from elsewhere (another tab, a node action) can repaint
-  // the terrain around the region block the node in view sits in.
-  env.syncExits();
   env.breadcrumb.update(app.navigator.getBreadcrumb());
   env.worldTree.update();
   env.regionTree.update();

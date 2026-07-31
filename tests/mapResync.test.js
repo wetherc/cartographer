@@ -53,7 +53,6 @@ test('reframe re-frames the canvas, drops the selection, and re-syncs party and 
     'clearSelection',
     'syncPartyMarker',
     'syncPaletteKind',
-    'syncExits',
     'breadcrumb:1',
     'worldTree',
     'regionTree',
