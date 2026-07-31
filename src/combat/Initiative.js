@@ -40,12 +40,16 @@ export function sortInitiative(participants, nameOf = () => '') {
 
 /**
  * Begin a combat: sort the participants and start at round 1, first turn.
+ * `startedAt` is injected rather than read from the clock so this stays pure;
+ * the caller passes the moment its setup opened, which is where the fight's
+ * slice of the travelogue begins.
  * @param {Participant[]} participants
  * @param {(participant: Participant) => string} [nameOf] for the tiebreak
+ * @param {number} [startedAt] epoch ms the fight's log starts at
  * @returns {CombatState}
  */
-export function startCombat(participants, nameOf) {
-  return { round: 1, index: 0, order: sortInitiative(participants, nameOf) };
+export function startCombat(participants, nameOf, startedAt = 0) {
+  return { round: 1, index: 0, order: sortInitiative(participants, nameOf), startedAt };
 }
 
 /**

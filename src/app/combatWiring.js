@@ -121,10 +121,17 @@ export function wireCombatScreen(app) {
       app.actions.markDirty();
       endSpellEffects(app, id, held.spellId);
     },
-    // The log column shows the fight's slice of the travelogue: what combat
-    // wrote plus the dice rolls, newest first.
-    getLogEntries: () =>
-      state.travelog.filter((entry) => entry.kind === 'combat' || entry.kind === 'roll'),
+    // The log column shows the fight's slice of the travelogue: the combat
+    // lines and dice rolls logged since this fight's setup opened, newest
+    // first. Without the time bound the column replayed every battle the
+    // campaign ever logged. An older save's fight carries startedAt 0 and
+    // still shows everything.
+    getLogEntries: () => {
+      const since = state.combat?.startedAt ?? 0;
+      return state.travelog.filter(
+        (entry) => entry.at >= since && (entry.kind === 'combat' || entry.kind === 'roll'),
+      );
+    },
   });
 
   // The app has one dice tray, and the screen borrows it whole: the tray's

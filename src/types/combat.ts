@@ -24,4 +24,11 @@ export interface CombatState {
   /** Index into `order` of the participant currently acting. */
   index: number;
   order: Participant[];
+  /**
+   * Epoch milliseconds when this fight's setup opened. The combat screen's
+   * log column shows only travelogue entries at or after this, so the fight's
+   * log starts at its own initiative rolls rather than the campaign's first
+   * battle. 0 in an older save, which shows everything.
+   */
+  startedAt: number;
 }

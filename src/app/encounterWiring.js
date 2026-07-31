@@ -302,6 +302,9 @@ export function wireEncounters(app) {
   // a "Roll initiative" fill (d20 + DEX modifier, hand-editable after), and a
   // Start that flips the initiative panel from hidden to the running order.
   async function startCombatSetup() {
+    // Taken when the setup opens, not when Start lands: the "Initiative
+    // rolled" line is logged from the dialog and belongs to this fight's log.
+    const startedAt = Date.now();
     const participants = await combatSetupModal(combatRoster(), {
       describe,
       rollInitiative: (participant) =>
@@ -315,7 +318,7 @@ export function wireEncounters(app) {
         ),
     });
     if (!participants) return;
-    setCombat(startCombat(participants, (p) => describe(p)?.name ?? ''));
+    setCombat(startCombat(participants, (p) => describe(p)?.name ?? '', startedAt));
     app.views.initiativePanel.update(); // un-hides the panel
     app.views.encounterPanel.update(); // hides the Start combat button
     app.actions.setMode('combat'); // the fight runs on the full-width screen

@@ -67,6 +67,12 @@ test('startCombat sorts and starts at round 1, first turn', () => {
   assert.equal(state.round, 1);
   assert.equal(state.index, 0);
   assert.equal(currentParticipant(state)?.id, 'b');
+  assert.equal(state.startedAt, 0, 'no injected start time reads as 0');
+});
+
+test('startCombat carries the injected start time', () => {
+  const state = startCombat([createParticipant('a', 8)], undefined, 1700000000000);
+  assert.equal(state.startedAt, 1700000000000);
 });
 
 test('advanceTurn steps through the order then wraps into the next round', () => {

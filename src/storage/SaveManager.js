@@ -223,6 +223,9 @@ function combatState(value) {
   return {
     round: number(combat.round, 1),
     index: number(combat.index, 0),
+    // A save from before the fight-scoped log carries no start time; 0 keeps
+    // that fight's log column showing every combat entry, as it did then.
+    startedAt: number(combat.startedAt, 0),
     // Participants are read down to the three fields the order owns. A save
     // written before the name and side became derived carries them here too;
     // dropping them is the whole migration, since both are now resolved from

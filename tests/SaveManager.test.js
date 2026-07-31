@@ -423,7 +423,7 @@ test('deserialize rejects a party position missing either id', () => {
 
 test('deserialize repairs a combat missing its order or counters', () => {
   const restored = deserialize(JSON.stringify({ combat: { round: 'two' } }));
-  assert.deepEqual(restored.combat, { round: 1, index: 0, order: [] });
+  assert.deepEqual(restored.combat, { round: 1, index: 0, order: [], startedAt: 0 });
   assert.equal(deserialize(JSON.stringify({ combat: [] })).combat, null);
 });
 
@@ -456,6 +456,7 @@ test('serialize/deserialize round-trips a running combat', () => {
       { id: 'c1', initiative: 17, modifier: 2 },
       { id: 'e1', initiative: 9, modifier: -1 },
     ],
+    startedAt: 1700000000000,
   };
   const state = buildState({ grid, combat });
   const restored = deserialize(serialize(state));

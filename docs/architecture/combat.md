@@ -146,8 +146,12 @@ attack dialog's six situational fields sit behind a collapsed disclosure
 card, click the weapon, press Enter.
 
 The **log column** shows the travelogue filtered to `combat` and `roll`
-entries, newest first, sharing `TravelogPanel.js`'s row builder so an entry
-reads the same in both lists. Under it sits the dice tray: the app has one
+entries logged since this fight's setup opened (`CombatState.startedAt`,
+stamped by `startCombat`), newest first, sharing `TravelogPanel.js`'s row
+builder so an entry reads the same in both lists. The time bound is what
+keeps the column from replaying every battle the campaign ever logged; the
+"Initiative rolled" line lands inside it because the stamp is taken when the
+setup dialog opens, not when Start is pressed. Under it sits the dice tray: the app has one
 tray, and the screen borrows the whole `#dice-tray-container` card by
 `appendChild` while the mode is active, returning it below the map on exit.
 Moving the element keeps `diceWiring.js`'s handle valid, since the tray is
