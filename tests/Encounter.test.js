@@ -10,6 +10,7 @@ import {
   withDefaults,
   encountersAt,
   encountersNear,
+  encountersAtTile,
   encountersOnTile,
   discoveredEncounters,
   addStatModifier,
@@ -136,6 +137,14 @@ test('encountersOnTile matches the exact tile, skips unbound, defeated, and null
   );
   assert.deepEqual(encountersOnTile(all, { nodeId: 'region', tileId: '9,9' }), []);
   assert.deepEqual(encountersOnTile(all, null), []);
+
+  assert.deepEqual(
+    encountersAtTile(all, { nodeId: 'region', tileId: '1,1' }).map((e) => e.id),
+    ['e1', 'e3'],
+    'the same tile match, keeping the defeated e3',
+  );
+  assert.deepEqual(encountersAtTile(all, { nodeId: 'region', tileId: '9,9' }), []);
+  assert.deepEqual(encountersAtTile(all, null), []);
 });
 
 test('toTemplate captures the blueprint, not the live state', () => {

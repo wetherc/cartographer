@@ -2,6 +2,7 @@ import { el } from './dom.js';
 import { icon } from './icons.js';
 import { chip, textButton } from './buttons.js';
 import { hpBand } from '../view/ViewRole.js';
+import { fightOutcome } from '../combat/CombatView.js';
 import { combatantCard } from './CombatantCard.js';
 import { combatActionBar } from './CombatActionBar.js';
 import { loadoutBlock } from './LoadoutBlock.js';
@@ -36,7 +37,9 @@ import { entryItem } from './TravelogPanel.js';
  * viewer may see, so the screen draws whatever it is handed.
  *
  * Turn flow and HP edits report back through the callbacks; the host routes
- * them to the same actions the sidebar panel uses.
+ * them to the same actions the sidebar panel uses. A fight whose party or foe
+ * side is entirely down keeps the screen: a banner names the outcome and End
+ * combat takes the emphasis, since closing the fight is the GM's call.
  *
  * `diceDock` is an empty slot under the active column, where the host parks the
  * app's dice-tray card while the mode is active. The right column is the
@@ -85,10 +88,18 @@ export function mountCombatScreen(container, callbacks) {
   // finishes what it was saying first. Lives outside the cleared regions.
   const announcer = el('div', 'sr-only');
   announcer.setAttribute('aria-live', 'polite');
+  // A side going down ends the fighting but not the fight: the screen stays
+  // until the GM ends it, so the party can heal, loot, and read the log first. A
+  // status region rather than a rebuilt node, so it is spoken once when it
+  // appears instead of on every refresh.
+  const notice = el('div', 'combat-screen__notice');
+  notice.setAttribute('role', 'status');
+  notice.hidden = true;
   const root = el(
     'div',
     'combat-screen__layout',
     ribbon,
+    notice,
     el('div', 'combat-screen__columns', left, board, side),
     announcer,
   );
@@ -119,12 +130,15 @@ export function mountCombatScreen(container, callbacks) {
     const view = callbacks.getView();
     if (!view) {
       logList.innerHTML = '';
+      notice.hidden = true;
       announcedTurn = null;
       return;
     }
     const gm = callbacks.isGM();
     const viewer = { gm };
-    renderRibbon(view, gm);
+    const outcome = fightOutcome(view);
+    setNotice(outcome, gm);
+    renderRibbon(view, gm, outcome !== null);
     renderActive(view, gm);
     const party = view.rows.filter((row) => row.side === 'party');
     const foes = view.rows.filter((row) => row.side === 'foe');
@@ -142,6 +156,31 @@ export function mountCombatScreen(container, callbacks) {
       const again = scope.querySelector(`[data-combatant-id="${CSS.escape(refocus.id)}"]`);
       again?.focus();
     }
+  }
+
+  /**
+   * The banner over the board once one side is down: the outcome, and for the
+   * GM the reminder that the fight stays open until they close it.
+   * @param {'victory' | 'defeat' | null} outcome
+   * @param {boolean} gm
+   */
+  function setNotice(outcome, gm) {
+    notice.classList.toggle('combat-screen__notice--victory', outcome === 'victory');
+    notice.classList.toggle('combat-screen__notice--defeat', outcome === 'defeat');
+    if (!outcome) {
+      notice.textContent = '';
+      notice.hidden = true;
+      return;
+    }
+    const result =
+      outcome === 'victory'
+        ? { line: 'The party is victorious.', gmTail: 'End combat when the party is done here.' }
+        : { line: 'The party is defeated.', gmTail: 'End combat when you are ready.' };
+    const text = gm ? `${result.line} ${result.gmTail}` : result.line;
+    // Shown before the text lands: a status region hidden at the moment of the
+    // change is not read out.
+    notice.hidden = false;
+    if (notice.textContent !== text) notice.textContent = text;
   }
 
   /** The fight's log entries, newest on top, rebuilt whole (a fight logs tens
@@ -216,8 +255,9 @@ export function mountCombatScreen(container, callbacks) {
    * counter and the GM's turn controls beside it.
    * @param {CombatView} view
    * @param {boolean} gm
+   * @param {boolean} settled one side is down, so End combat leads
    */
-  function renderRibbon(view, gm) {
+  function renderRibbon(view, gm, settled) {
     ribbon.appendChild(el('span', 'combat-ribbon__round', `Round ${view.round}`));
     const chips = el('div', 'combat-ribbon__chips');
     ribbon.appendChild(chips);
@@ -274,10 +314,18 @@ export function mountCombatScreen(container, callbacks) {
         mayEndTurn
           ? textButton(gm ? 'Next turn' : 'End my turn', callbacks.onNext, {
               icon: 'chevron',
-              variant: 'primary',
+              // Once a side is down, ending the fight is the next thing to do
+              // and takes the emphasis; turns still advance for anyone who
+              // wants one more round of healing.
+              variant: settled ? undefined : 'primary',
             })
           : null,
-        gm ? textButton('End combat', callbacks.onEnd, { icon: 'flag' }) : null,
+        gm
+          ? textButton('End combat', callbacks.onEnd, {
+              icon: 'flag',
+              variant: settled ? 'primary' : undefined,
+            })
+          : null,
       ),
     );
   }

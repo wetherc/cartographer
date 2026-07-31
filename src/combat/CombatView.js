@@ -123,6 +123,30 @@ export function mayActOn(found, viewer, id) {
 }
 
 /**
+ * How the fight turned out, or null while both sides still have someone
+ * standing. A side with nobody on it settles nothing, so an order with no foes
+ * in it (a brawl between party members, an order the GM built by hand) reads as
+ * undecided rather than won. A mutual wipe reads as a defeat: what happens to
+ * the party outweighs what happened to the monsters.
+ * @param {CombatView} view
+ * @returns {'victory' | 'defeat' | null}
+ */
+export function fightOutcome(view) {
+  if (sideIsDown(view, 'party')) return 'defeat';
+  if (sideIsDown(view, 'foe')) return 'victory';
+  return null;
+}
+
+/**
+ * @param {CombatView} view
+ * @param {'party' | 'foe'} side
+ */
+function sideIsDown(view, side) {
+  const rows = view.rows.filter((row) => row.side === side);
+  return rows.length > 0 && rows.every((row) => row.defeated);
+}
+
+/**
  * Assemble the full view of a running combat for one viewer: the round, the
  * turn pointer, and one row per participant in order. Pure over its inputs:
  * the combat state, the injected id resolver, and who is looking.

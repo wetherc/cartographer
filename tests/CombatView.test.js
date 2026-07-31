@@ -7,6 +7,7 @@ import {
   acOf,
   mayActOn,
   buildCombatView,
+  fightOutcome,
 } from '../src/combat/CombatView.js';
 import { createCharacter, withHP, damageCharacter } from '../src/entities/Character.js';
 import { createEncounter, applyDamage, effectiveStatBlock } from '../src/entities/Encounter.js';
@@ -158,4 +159,56 @@ test('buildCombatView carries conditions and the defeated flag', () => {
   assert.equal(view.rows[0].mayAct, true);
   assert.equal(view.rows[1].defeated, true);
   assert.equal(view.rows[1].mayAct, false);
+});
+
+test('fightOutcome settles only once a whole side is down', () => {
+  /** @param {{ side: 'party' | 'foe', defeated: boolean }[]} rows */
+  const view = (rows) => ({ round: 1, turnIndex: 0, rows });
+
+  assert.equal(fightOutcome(view([])), null);
+  assert.equal(
+    fightOutcome(view([{ side: 'party', defeated: false }])),
+    null,
+    'no foe in the order is not a won fight',
+  );
+  assert.equal(
+    fightOutcome(
+      view([
+        { side: 'party', defeated: false },
+        { side: 'foe', defeated: true },
+        { side: 'foe', defeated: false },
+      ]),
+    ),
+    null,
+    'one foe still standing keeps the fight on',
+  );
+  assert.equal(
+    fightOutcome(
+      view([
+        { side: 'party', defeated: false },
+        { side: 'foe', defeated: true },
+        { side: 'foe', defeated: true },
+      ]),
+    ),
+    'victory',
+  );
+  assert.equal(
+    fightOutcome(
+      view([
+        { side: 'party', defeated: true },
+        { side: 'foe', defeated: false },
+      ]),
+    ),
+    'defeat',
+  );
+  assert.equal(
+    fightOutcome(
+      view([
+        { side: 'party', defeated: true },
+        { side: 'foe', defeated: true },
+      ]),
+    ),
+    'defeat',
+    'a mutual wipe reads as a defeat',
+  );
 });

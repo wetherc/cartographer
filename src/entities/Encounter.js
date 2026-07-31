@@ -327,13 +327,26 @@ export function discoveredEncounters(encounters, position, node) {
  * @returns {Encounter[]}
  */
 export function encountersOnTile(encounters, position) {
+  return encountersAtTile(encounters, position).filter((e) => !isDefeated(e));
+}
+
+/**
+ * Every encounter staged on the party's exact tile, defeated ones included:
+ * who is standing there at all, rather than who can still fight. A running
+ * fight reads this, since a foe dropping to 0 HP is a turn in the fight and not
+ * the end of it, while an encounter deleted or left behind is gone for good.
+ * Pure.
+ * @param {Encounter[]} encounters
+ * @param {{ nodeId: string, tileId: string } | null} position
+ * @returns {Encounter[]}
+ */
+export function encountersAtTile(encounters, position) {
   if (!position) return [];
   return encounters.filter(
     (e) =>
       e.location !== null &&
       e.location.nodeId === position.nodeId &&
-      e.location.tileId === position.tileId &&
-      !isDefeated(e),
+      e.location.tileId === position.tileId,
   );
 }
 

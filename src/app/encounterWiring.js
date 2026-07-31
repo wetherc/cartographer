@@ -8,6 +8,7 @@ import { combatSetupModal } from '../ui/CombatSetup.js';
 import {
   effectiveStatBlock,
   encountersAt,
+  encountersAtTile,
   encountersNear,
   encountersOnTile,
   discoveredEncounters,
@@ -391,15 +392,19 @@ export function wireEncounters(app) {
 
   // The Initiative card only shows while a fight is actually running — no
   // setup or idle state parked in the sidebar. Walking off the encounter's
-  // tile (or defeating/deleting the last encounter there) drops the running
-  // combat, since its participants are no longer "here", which hides the card
-  // again. Wrapped so every existing `initiativePanel.update()` call site
+  // tile (or deleting the last encounter there) drops the running combat,
+  // since its participants are no longer "here", which hides the card again.
+  // Killing them all does not: the screen says the foes are down and waits for
+  // the GM's End combat, so a last hit does not yank the fight out from under
+  // whoever landed it, and there is still a chance to heal up or read the log
+  // before leaving. Wrapped so every existing `initiativePanel.update()` call site
   // (party moves, role switches, the rehydrate loop) gets the visibility sync
   // for free. The combat screen shows the same fight, so it refreshes here
   // too rather than growing its own copy of every call site.
   app.views.initiativePanel = {
     update: () => {
-      if (current() && encountersHere().length === 0) {
+      const stagedHere = encountersAtTile(state.encounters, app.partyTracker.getPosition());
+      if (current() && stagedHere.length === 0) {
         setCombat(null);
         exitCombatMode();
       }

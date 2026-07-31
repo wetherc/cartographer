@@ -50,6 +50,27 @@ body.mode-combat .app-buildrail {
   min-width: 0;
 }
 
+/* The banner under the ribbon once one side is down. The fight stays up until
+   the GM ends it, so the banner has to be the thing that says why nothing is
+   attacking any more. The border takes the outcome's color, the wording carries
+   it for anyone who cannot see the difference. */
+.combat-screen__notice {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-raised);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.combat-screen__notice--victory {
+  border-color: var(--success);
+}
+
+.combat-screen__notice--defeat {
+  border-color: var(--danger);
+}
+
 /* The left rail: the active combatant's card over the docked dice tray. */
 .combat-screen__left {
   flex: 0 0 17rem;
