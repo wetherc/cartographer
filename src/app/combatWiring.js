@@ -152,10 +152,15 @@ export function wireCombatScreen(app) {
 
   // Every refresh path lands here, including the mode switch itself
   // (sessionControls updates this view on every mode change), so the dock
-  // stays in step without a second observer.
+  // stays in step without a second observer. While the tab is on another mode
+  // with the fight still running (a player looking at the map mid-fight), the
+  // rebuild is skipped: nothing is visible, and the mode switch back is
+  // itself a refresh that redraws everything. The fight-over case still falls
+  // through, so the screen empties instead of holding the ended fight's DOM.
   app.views.combatScreen = {
     update: () => {
       syncDiceDock();
+      if (state.mode !== 'combat' && state.combat) return;
       screen.update();
     },
   };

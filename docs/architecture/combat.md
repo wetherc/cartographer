@@ -196,7 +196,12 @@ outcome on every HP edit.
 
 `app.views.combatScreen` is registered by `combatWiring.js` (mounted before
 `wireEncounters`, so it exists by the time the fight's refresh paths run) and
-reached from four directions:
+reached from four directions. The registered `update` skips the rebuild while
+the tab sits on another mode with the fight still running: nothing on the
+screen is visible then, and the switch back into combat mode is itself one of
+the refresh paths, so the first visible frame is always freshly drawn. A
+fight that has ended still falls through to the rebuild, which empties the
+screen rather than leaving the last fight's DOM behind.
 
 - **The initiative-panel wrapper.** `encounterWiring.js` wraps
   `views.initiativePanel.update()` and refreshes the combat screen inside it,

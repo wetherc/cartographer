@@ -113,7 +113,22 @@ export function mountCombatScreen(container, callbacks) {
    * (an HP edit, a condition tick) stays silent. */
   let announcedTurn = /** @type {string | null} */ (null);
 
+  /** Per-render loadout cache: the inspected combatant is also a board card,
+   * so one frame would otherwise resolve its loadout twice. */
+  const loadouts = /** @type {Map<string, Loadout>} */ (new Map());
+
+  /** @param {string} id */
+  function loadoutOf(id) {
+    let loadout = loadouts.get(id);
+    if (!loadout) {
+      loadout = callbacks.getLoadout(id);
+      loadouts.set(id, loadout);
+    }
+    return loadout;
+  }
+
   function render() {
+    loadouts.clear();
     // A rebuild replaces whatever held focus, so note where the keyboard was
     // (a ribbon chip, a board card) and put it back on the matching element.
     const focused = /** @type {HTMLElement | null} */ (document.activeElement);
@@ -411,7 +426,7 @@ export function mountCombatScreen(container, callbacks) {
     // The loadout in full, minus whatever the bar is about to offer as buttons:
     // the weapons would otherwise be listed twice in one column, and the bar's
     // buttons already name their damage.
-    const loadout = callbacks.getLoadout(row.id);
+    const loadout = loadoutOf(row.id);
     const block = loadoutBlock(bar ? { ...loadout, weapons: [] } : loadout, { detailed: true });
     if (block) active.appendChild(block);
 
@@ -505,7 +520,7 @@ export function mountCombatScreen(container, callbacks) {
             ...rows.map((row) =>
               combatantCard(row, {
                 selected: row.id === selectedId,
-                loadout: callbacks.getLoadout(row.id),
+                loadout: loadoutOf(row.id),
                 onSelect: (id) => {
                   callbacks.onSelectTarget(id);
                   render();
