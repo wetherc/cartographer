@@ -2,8 +2,10 @@ import { el } from './dom.js';
 import { icon } from './icons.js';
 import { chip } from './buttons.js';
 import { hpBand } from '../view/ViewRole.js';
+import { loadoutBlock } from './LoadoutBlock.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
+/** @typedef {import('../combat/Loadout.js').Loadout} Loadout */
 
 /**
  * One combatant on the combat board: name, HP, AC, initiative, and condition
@@ -16,9 +18,17 @@ import { hpBand } from '../view/ViewRole.js';
  * With `onSelect` the card is the board's target picker: a toggle button whose
  * `aria-pressed` marks the current selection. The card announces the pick and
  * nothing else; which action the target feeds is the screen's business.
+ *
+ * `loadout` is the armor, weapons, spells, and slots block, already trimmed to
+ * what this viewer may see; the card draws whatever survived that and leaves the
+ * block out when nothing did.
  * @param {CombatantRow} row
  * @param {{ gm: boolean }} viewer the GM reads exact HP, a player the band
- * @param {{ selected?: boolean, onSelect?: (id: string) => void }} [selection]
+ * @param {{
+ *   selected?: boolean,
+ *   onSelect?: (id: string) => void,
+ *   loadout?: Loadout | null,
+ * }} [selection]
  * @returns {HTMLElement}
  */
 export function combatantCard(row, viewer, selection = {}) {
@@ -61,6 +71,9 @@ export function combatantCard(row, viewer, selection = {}) {
   if (row.ac !== null) {
     card.appendChild(el('div', 'combatant-card__meta', `AC ${row.ac}`));
   }
+
+  const loadout = selection.loadout ? loadoutBlock(selection.loadout) : null;
+  if (loadout) card.appendChild(loadout);
 
   if (row.conditions.length > 0) {
     card.appendChild(

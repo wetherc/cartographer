@@ -234,6 +234,51 @@ body.mode-combat .app-buildrail {
   color: var(--text-muted);
 }
 
+/* A combatant's armor, weapons, spells, and slots: labelled lines on a board
+   card, and the same lines in a roomier form in the active column, where the
+   slot pools become chips. The label column is fixed so the values line up down
+   the block. */
+.loadout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.loadout__line {
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.loadout__label {
+  flex: 0 0 4.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.loadout__value {
+  flex: 1;
+  min-width: 0;
+  color: var(--text);
+}
+
+.loadout--detailed {
+  font-size: var(--text-body);
+}
+
+.loadout--detailed .loadout__label {
+  flex-basis: 5.5rem;
+  font-size: var(--text-label);
+  line-height: 1.6;
+}
+
+.loadout__chips {
+  flex: 1;
+  min-width: 0;
+}
+
 /* The right column: the fight's log, wide enough that a rolled attack's line
    (attacker, weapon, modifiers, total, outcome) wraps once rather than four
    times. */

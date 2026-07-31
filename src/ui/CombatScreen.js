@@ -4,10 +4,12 @@ import { chip, textButton } from './buttons.js';
 import { hpBand } from '../view/ViewRole.js';
 import { combatantCard } from './CombatantCard.js';
 import { combatActionBar } from './CombatActionBar.js';
+import { loadoutBlock } from './LoadoutBlock.js';
 import { entryItem } from './TravelogPanel.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatView} CombatView */
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
+/** @typedef {import('../combat/Loadout.js').Loadout} Loadout */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -26,6 +28,12 @@ import { entryItem } from './TravelogPanel.js';
  * The selection feeds the action bar under the active combatant (the current
  * turn's weapons and spells, offered only when the viewer may act that turn),
  * whose picks report through `onWeaponAttack`/`onCastSpell`.
+ *
+ * Every card carries its combatant's loadout (`getLoadout`): what they are
+ * wearing, what they can swing, and, where the viewer is allowed the detail,
+ * their spell counts and remaining slots. HP and AC alone told a player nothing
+ * about what their turn could do. The host decides how much of a loadout a
+ * viewer may see, so the screen draws whatever it is handed.
  *
  * Turn flow and HP edits report back through the callbacks; the host routes
  * them to the same actions the sidebar panel uses.
@@ -48,6 +56,7 @@ import { entryItem } from './TravelogPanel.js';
  *   getSelectedTargetId: () => string | null,
  *   onSelectTarget: (id: string) => void,
  *   getActions: () => { weapons: (InventoryItem | EnemyWeapon)[], spells: Spell[] },
+ *   getLoadout: (id: string) => Loadout,
  *   onWeaponAttack: (weapon: InventoryItem | EnemyWeapon) => void,
  *   onCastSpell: (spell: Spell) => void,
  *   onApplyHP: (id: string, amount: number, isHeal: boolean) => void,
@@ -332,24 +341,33 @@ export function mountCombatScreen(container, callbacks) {
     // The action bar belongs to the turn, not the inspection: it shows only
     // while the column is on the current combatant and the viewer may act for
     // them, so inspecting a foe never offers its weapons to a player.
-    if (current && row.mayAct) {
+    const bar =
+      current && row.mayAct
+        ? combatActionBar(callbacks.getActions(), {
+            onWeaponAttack: callbacks.onWeaponAttack,
+            onCastSpell: callbacks.onCastSpell,
+          })
+        : null;
+
+    // The loadout in full, minus whatever the bar is about to offer as buttons:
+    // the weapons would otherwise be listed twice in one column, and the bar's
+    // buttons already name their damage.
+    const loadout = callbacks.getLoadout(row.id);
+    const block = loadoutBlock(bar ? { ...loadout, weapons: [] } : loadout, { detailed: true });
+    if (block) active.appendChild(block);
+
+    if (bar) {
       const selected = view.rows.find((r) => r.id === callbacks.getSelectedTargetId());
-      const bar = combatActionBar(callbacks.getActions(), {
-        onWeaponAttack: callbacks.onWeaponAttack,
-        onCastSpell: callbacks.onCastSpell,
-      });
-      if (bar) {
-        if (selected && selected.id !== row.id) {
-          active.appendChild(
-            el(
-              'div',
-              'combat-screen__targeting',
-              `Targeting ${selected.name ?? 'Unknown combatant'}`,
-            ),
-          );
-        }
-        active.appendChild(bar);
+      if (selected && selected.id !== row.id) {
+        active.appendChild(
+          el(
+            'div',
+            'combat-screen__targeting',
+            `Targeting ${selected.name ?? 'Unknown combatant'}`,
+          ),
+        );
       }
+      active.appendChild(bar);
     }
   }
 
@@ -421,6 +439,7 @@ export function mountCombatScreen(container, callbacks) {
             ...rows.map((row) =>
               combatantCard(row, viewer, {
                 selected: row.id === selectedId,
+                loadout: callbacks.getLoadout(row.id),
                 onSelect: (id) => {
                   callbacks.onSelectTarget(id);
                   render();

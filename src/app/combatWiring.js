@@ -1,6 +1,7 @@
 import { mustGetElement } from '../ui/dom.js';
 import { mountCombatScreen } from '../ui/CombatScreen.js';
 import { buildCombatView } from '../combat/CombatView.js';
+import { buildLoadout, loadoutAccess } from '../combat/Loadout.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
 import { isGM } from '../view/ViewRole.js';
 import {
@@ -70,6 +71,23 @@ export function wireCombatScreen(app) {
       const active = state.combat ? state.combat.order[state.combat.index] : null;
       if (!active) return { weapons: [], spells: [] };
       return { weapons: weaponsOf(app, active.id), spells: spellsOf(app, active.id) };
+    },
+    // What one combatant brings, trimmed to what this tab is allowed to know:
+    // the GM sees every sheet, a player sees their own character in full and
+    // everyone else's armor and weapons only. The spell list is resolved here,
+    // where the merged library is reachable, and only when the viewer may have
+    // it, so a player tab never assembles another player's prepared spells.
+    getLoadout: (id) => {
+      const found = findCombatant(app, id);
+      const access = loadoutAccess(
+        found,
+        {
+          gm: isGM(state.role),
+          boundCharacterId: app.actions.getBoundCharacterId?.() ?? null,
+        },
+        id,
+      );
+      return buildLoadout(found, access === 'full' ? spellsOf(app, id) : [], access);
     },
     onWeaponAttack: (weapon) => {
       const combat = state.combat;
