@@ -12,6 +12,7 @@ import {
   isSealedInterior,
   nearestSide,
   sealedInteriorHint,
+  stairwayTo,
 } from '../src/map/MapExits.js';
 import { createTile } from '../src/map/TileGrid.js';
 import { gridTiles } from './helpers/grid.js';
@@ -64,6 +65,24 @@ function levelAbove() {
     return createTile(id, `${INTERIOR}-floor-1.svg`);
   });
   return node({ id: 'region', name: 'Crypt level 1', kind: 'interior', tiles });
+}
+
+/**
+ * The level below a stacked interior: a parent whose block links to "child"
+ * through a stairs-up tile, the shape a castle's ground floor and its upper
+ * storey make. The direction of the link is reversed, so what comes back down it
+ * is the child's stairs-down.
+ * @param {string} [linkKind] the interior piece the parent links through
+ * @returns {import('../src/types/map.js').MapNode}
+ */
+function levelBelow(linkKind = 'stairs-up') {
+  const tiles = gridTiles(6, 6, (id, x, y) => {
+    if (x === 2 && y === 2) {
+      return createTile(id, `${INTERIOR}-${linkKind}.svg`, { childNodeId: 'child' });
+    }
+    return createTile(id, `${INTERIOR}-floor-1.svg`);
+  });
+  return node({ id: 'region', name: 'Thornhold Keep', kind: 'interior', tiles });
 }
 
 const child = node({ id: 'child', name: 'Thornhold', parentId: 'region', tiles: gridTiles(6, 6) });
@@ -238,6 +257,52 @@ test('an interior exits up its stairs, and skips ones that lead further in', () 
   );
 });
 
+test('an upper storey exits down its stairs, and its stairs up lead further up', () => {
+  // A castle's upper floor: the way back is the staircase it came up, so the one
+  // that keeps climbing is no more a way out than a locked door would be.
+  const upper = node({
+    id: 'child',
+    name: 'Thornhold Keep (upper floor)',
+    kind: 'interior',
+    tiles: [
+      createTile('1,1', `${INTERIOR}-stairs-up.svg`),
+      createTile('2,3', `${INTERIOR}-stairs-down.svg`),
+      createTile('1,2', `${INTERIOR}-floor-1.svg`),
+    ],
+  });
+  assert.deepEqual(
+    findExits(upper, levelBelow()).map((e) =>
+      e.kind === 'tile' ? `${e.via}@${e.tileId}` : e.kind,
+    ),
+    ['stairs-down@2,3'],
+  );
+  // The same tiles under the level above: now the climb is the way out and the
+  // descent leads deeper.
+  assert.deepEqual(
+    findExits(upper, levelAbove()).map((e) =>
+      e.kind === 'tile' ? `${e.via}@${e.tileId}` : e.kind,
+    ),
+    ['stairs-up@1,1'],
+  );
+});
+
+test('a parent linking a child both ways is read as the descent', () => {
+  // Contradictory authoring. It resolves to the descent, which is what such a map
+  // resolved to before the climb was modelled at all.
+  const both = levelAbove();
+  // Ahead of the descent at 2,2 in tile order, so taking whichever link came
+  // first would resolve to this one.
+  both.tiles = both.tiles.map((t) =>
+    t.id === '1,2' ? createTile(t.id, `${INTERIOR}-stairs-up.svg`, { childNodeId: 'child' }) : t,
+  );
+  const stairway = stairwayTo(both, 'child');
+  assert.equal(stairway?.tile.id, '2,2');
+  assert.equal(stairway?.back, 'stairs-up');
+  assert.equal(stairwayTo(both, 'nobody'), null);
+  // A parent that links through anything but a staircase is not a stacked level.
+  assert.equal(stairwayTo(levelBelow('door-h'), 'child'), null);
+});
+
 test('a staircase inside a structure entered from outside is not a way out', () => {
   // A keep's own stairs go to a floor the map does not model, so they lead
   // nowhere the party can be put; the parent links here through a plain tile.
@@ -326,6 +391,12 @@ test('the sealed-interior hint only advises stairs where stairs would count', ()
     sealedInteriorHint(sealed, levelAbove()),
     'No way out: paint a stairs-up tile, or a door on an outer wall.',
   );
+  // An upper storey: the advice reverses with the direction of the link, since a
+  // staircase that keeps climbing would not clear the warning.
+  assert.equal(
+    sealedInteriorHint(sealed, levelBelow()),
+    'No way out: paint a stairs-down tile, or a door on an outer wall.',
+  );
   assert.equal(
     sealedInteriorHint(
       node({ id: 'child', kind: 'interior', tiles: [createTile('0,1', `${INTERIOR}-door-v.svg`)] }),
@@ -394,6 +465,10 @@ test('labels name the region and, for assistive tech, the way out', () => {
   assert.equal(
     exitDescription({ ...door, via: 'stairs-up' }),
     'Return to Saltmere Coast, through the stairs up at 0,1',
+  );
+  assert.equal(
+    exitDescription({ ...door, via: 'stairs-down' }),
+    'Return to Saltmere Coast, through the stairs down at 0,1',
   );
   assert.equal(
     exitDescription({ kind: 'fallback', targetNodeId: 'region', targetName: 'Saltmere Coast' }),

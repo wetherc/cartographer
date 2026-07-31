@@ -422,6 +422,50 @@ test('leaving up a stairway lands on the parent stairs-down that leads here', as
   );
 });
 
+test('an upper storey is entered and left through the staircase that connects it', async () => {
+  const { computeParentReturnTile, computeRegionEntryTile } =
+    await import('../src/map/EntryPoint.js');
+  // A keep's ground floor climbing to its upper storey: the link runs up, so the
+  // pair of tiles the party moves between is the parent's stairs up and the
+  // child's stairs down.
+  const ground = {
+    id: 'keep',
+    name: 'Thornhold Keep',
+    parentId: null,
+    width: 6,
+    height: 6,
+    kind: /** @type {const} */ ('interior'),
+    environ: null,
+    tiles: [
+      createTile('1,1', `${INTERIOR}-stairs-up.svg`, { childNodeId: 'child' }),
+      createTile('3,3', `${INTERIOR}-floor-1.svg`),
+    ],
+  };
+  const upper = returnChild({
+    kind: 'interior',
+    tiles: [
+      createTile('5,2', `${INTERIOR}-stairs-down.svg`),
+      // Climbing further up is not the way back, so this must not be the landing.
+      createTile('0,0', `${INTERIOR}-stairs-up.svg`),
+    ],
+  });
+  assert.equal(
+    computeRegionEntryTile(ground, upper, 'child', { nodeId: 'keep', tileId: '3,3' }),
+    '5,2',
+  );
+  const exit = /** @type {import('../src/types/map.js').MapExit} */ ({
+    kind: 'tile',
+    tileId: '5,2',
+    via: 'stairs-down',
+    targetNodeId: 'keep',
+    targetName: 'Thornhold Keep',
+  });
+  assert.equal(
+    computeParentReturnTile(ground, upper, exit, { nodeId: 'child', tileId: '5,2' }),
+    '1,1',
+  );
+});
+
 test('a fallback exit lands on the block entrance tile', async () => {
   const { computeParentReturnTile } = await import('../src/map/EntryPoint.js');
   const parent = returnParent();

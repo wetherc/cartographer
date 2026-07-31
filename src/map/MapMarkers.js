@@ -184,18 +184,24 @@ export class MapMarkers {
         continue;
       // The tile's lower-right quadrant: the NPC circle holds the upper left,
       // the encounter diamond the upper right, and the party dot the centre.
-      this._drawExitBadge(ctx, sx + size * 0.74, sy + size * 0.74, size * 0.15);
+      // A staircase running down to the parent level gets a downward chevron, so
+      // the badge agrees with tile art that visibly descends.
+      const down = exit.via === 'stairs-down';
+      this._drawExitBadge(ctx, sx + size * 0.74, sy + size * 0.74, size * 0.15, down);
     }
   }
 
   /**
-   * A parchment disc carrying an upward chevron, marking a tile as a way out.
+   * A parchment disc carrying a chevron, marking a tile as a way out. The chevron
+   * points up for a door or a staircase climbing to the parent level, down for one
+   * descending to it.
    * @param {CanvasRenderingContext2D} ctx
    * @param {number} cx
    * @param {number} cy
    * @param {number} r
+   * @param {boolean} [down]
    */
-  _drawExitBadge(ctx, cx, cy, r) {
+  _drawExitBadge(ctx, cx, cy, r, down = false) {
     ctx.save();
     ctx.fillStyle = '#e6d7b4';
     ctx.strokeStyle = '#2a2114';
@@ -207,9 +213,10 @@ export class MapMarkers {
     ctx.beginPath();
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.moveTo(cx - r * 0.45, cy + r * 0.28);
-    ctx.lineTo(cx, cy - r * 0.34);
-    ctx.lineTo(cx + r * 0.45, cy + r * 0.28);
+    const tip = down ? -1 : 1;
+    ctx.moveTo(cx - r * 0.45, cy + r * 0.28 * tip);
+    ctx.lineTo(cx, cy - r * 0.34 * tip);
+    ctx.lineTo(cx + r * 0.45, cy + r * 0.28 * tip);
     ctx.stroke();
     ctx.restore();
   }

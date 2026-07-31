@@ -1,5 +1,5 @@
 import { parseCoords, tileIdAt } from './MapGeometry.js';
-import { blockFor, nearestSide, sideAxis, stairsDownTo } from './MapExits.js';
+import { blockFor, nearestSide, sideAxis, stairwayTo } from './MapExits.js';
 import { kindOf } from './TilePalette.js';
 
 /** @typedef {{ minX: number, minY: number, maxX: number, maxY: number }} Bounds */
@@ -138,12 +138,18 @@ export function resolveEntryTile(node, preferredId) {
  * @returns {string} child tile id ("x,y")
  */
 export function computeRegionEntryTile(parent, child, childNodeId, party) {
-  // Descending a staircase lands the party on the child level's matching
-  // stairs-up, not on a border tile — the levels of a multi-level dungeon are
-  // stacked, so entering "from the side" reads wrong and the stairs are the
-  // one authored connection between them.
-  const stairsUp = child.tiles.find((t) => kindOf(t.imageRef) === 'stairs-up');
-  if (stairsUp && stairsDownTo(parent, childNodeId)) return stairsUp.id;
+  // Taking a staircase lands the party on the child level's matching staircase,
+  // not on a border tile — stacked levels sit above and below each other, so
+  // entering "from the side" reads wrong and the stairs are the one authored
+  // connection between them. Which staircase depends on the direction of travel:
+  // descend into a crypt level and arrive at its stairs up, climb to an upper
+  // storey and arrive at its stairs down. A level missing that staircase falls
+  // through to the geometric entry below.
+  const stairway = stairwayTo(parent, childNodeId);
+  const landing = stairway
+    ? child.tiles.find((t) => kindOf(t.imageRef) === stairway.back)
+    : undefined;
+  if (landing) return landing.id;
 
   const partyCoords = party.nodeId === parent.id ? parseCoords(party.tileId) : null;
   const group = blockFor(parent, childNodeId);
@@ -163,7 +169,9 @@ export function computeRegionEntryTile(parent, child, childNodeId, party) {
  *   abuts.
  * - Through a door: the same projection, from the door's own coordinate, using
  *   the side of the interior the door sits nearest.
- * - Up a stairway: the parent's matching stairs-down tile.
+ * - Along a stairway: the parent's own tile at the other end of it, whichever
+ *   direction it runs. It is a tile of the block being left, so it is returned as
+ *   it stands rather than snapped, which would reject it for that reason.
  * - Fallback: the block itself, which is where the entrance art sits.
  *
  * @param {import('../types/map.js').MapNode} parent node being returned to
@@ -174,9 +182,9 @@ export function computeRegionEntryTile(parent, child, childNodeId, party) {
  */
 export function computeParentReturnTile(parent, child, exit, position) {
   const centre = tileIdAt(Math.floor(parent.width / 2), Math.floor(parent.height / 2));
-  if (exit.kind === 'tile' && exit.via === 'stairs-up') {
-    const down = stairsDownTo(parent, child.id);
-    if (down) return down.id;
+  if (exit.kind === 'tile' && (exit.via === 'stairs-up' || exit.via === 'stairs-down')) {
+    const stairway = stairwayTo(parent, child.id);
+    if (stairway) return stairway.tile.id;
   }
   const group = blockFor(parent, child.id);
   if (!group) return resolveReturnTile(parent, centre, child.id);

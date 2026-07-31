@@ -30,8 +30,8 @@ export const EXIT_SIDES = [
  * An outdoor child reports one `edge` exit per side of the block it occupies in
  * its parent that touches painted parent tiles — walking off that side of the
  * map puts the party back on the terrain they crossed to get here. An interior
- * reports a `tile` exit per outer door and per unlinked stairs-up tile, the
- * authored ways in and out of a structure.
+ * reports a `tile` exit per outer door and per unlinked staircase running back to
+ * the parent level, the authored ways in and out of a structure.
  *
  * A node with neither (an interior a GM sealed, or a child whose parent block
  * sits in unpainted terrain) reports a single `fallback` exit instead of
@@ -83,25 +83,26 @@ function edgeExits(node, parent, target) {
  * The door and stairway tiles that lead out of an interior. A door qualifies
  * when it opens onto what is outside the structure: it sits on the grid border,
  * or beside a cell the map leaves empty (the void a generated dungeon leaves
- * around its rooms). Stairs up lead out only when the parent is the level above,
- * which it is when the parent links here through a stairs-down tile; a keep whose
- * entrance is a door has its own staircases inside, and those go to floors the map
- * does not model. Either way a tile that already links to a child node is a way
- * further in, not out, so it is skipped.
+ * around its rooms). A staircase qualifies only when it is the one the parent
+ * level connects through, which stairwayTo resolves in either direction: a crypt
+ * level below leaves through its stairs up, an upper storey above leaves through
+ * its stairs down. A keep whose entrance is a door has neither, and its own
+ * staircases go to floors the map does not model. Either way a tile that already
+ * links to a child node is a way further in, not out, so it is skipped.
  * @param {MapNode} node
  * @param {MapNode} parent
  * @param {{ targetNodeId: string, targetName: string }} target
  * @returns {MapExit[]}
  */
 function interiorExits(node, parent, target) {
-  const stacked = !!stairsDownTo(parent, node.id);
+  const back = stairwayTo(parent, node.id)?.back ?? null;
   /** @type {MapExit[]} */
   const exits = [];
   for (const tile of node.tiles) {
     if (tile.childNodeId) continue;
     const kind = kindOf(tile.imageRef);
-    if (kind === 'stairs-up' && stacked) {
-      exits.push({ kind: 'tile', tileId: tile.id, via: 'stairs-up', ...target });
+    if (back && kind === back) {
+      exits.push({ kind: 'tile', tileId: tile.id, via: back, ...target });
     } else if (kind === 'door' && opensOutward(node, tile)) {
       exits.push({ kind: 'tile', tileId: tile.id, via: 'door', ...target });
     }
@@ -135,20 +136,49 @@ function opensOutward(node, tile) {
 }
 
 /**
- * The parent's stairs-down tile leading to a child, if the child is a level below
- * rather than a space entered from the side. The one authored connection between
- * two stacked levels, so it is both how the party gets down and where they come
- * back up, and it is what makes a child's own stairs-up a way out.
+ * Which tile kind climbs back the way a stairway came. A parent reaching a child
+ * through stairs down is the level above it, so the child returns through its
+ * stairs up; a parent reaching it through stairs up is the level below, as a
+ * castle's ground floor is to its upper storey, and the child returns through its
+ * stairs down. Any other kind of link (a town's door into a keep) is not a
+ * stacked level and has no stairway back.
+ * @param {string | undefined} kind
+ * @returns {'stairs-up' | 'stairs-down' | null}
+ */
+function stairwayBack(kind) {
+  if (kind === 'stairs-down') return 'stairs-up';
+  if (kind === 'stairs-up') return 'stairs-down';
+  return null;
+}
+
+/**
+ * The parent's stairway tile leading to a child, with the tile kind in the child
+ * that comes back along it. The one authored connection between two stacked
+ * levels, so it is both how the party leaves the parent and where they arrive
+ * when they come back, and it is what makes the child's own staircase a way out.
+ *
+ * A parent that links the same child from both a stairs-down and a stairs-up tile
+ * has authored two contradictory connections; the descent wins, because a level
+ * below is the far more common shape and it is what such a map already resolved
+ * to before the ascent was modelled.
+ *
  * @param {MapNode} parent
  * @param {string} childNodeId
- * @returns {Tile | null}
+ * @returns {{ tile: Tile, back: 'stairs-up' | 'stairs-down' } | null}
  */
-export function stairsDownTo(parent, childNodeId) {
-  return (
-    parent.tiles.find(
-      (t) => t.childNodeId === childNodeId && kindOf(t.imageRef) === 'stairs-down',
-    ) ?? null
-  );
+export function stairwayTo(parent, childNodeId) {
+  /** @type {{ tile: Tile, back: 'stairs-up' | 'stairs-down' } | null} */
+  let found = null;
+  for (const tile of parent.tiles) {
+    if (tile.childNodeId !== childNodeId) continue;
+    const back = stairwayBack(kindOf(tile.imageRef));
+    if (!back) continue;
+    // A child returning through its stairs up is one the parent descends into,
+    // so this is the descent the doc comment gives precedence to.
+    if (back === 'stairs-up') return { tile, back };
+    found = found ?? { tile, back };
+  }
+  return found;
 }
 
 /**
@@ -198,18 +228,20 @@ export function isSealedInterior(node, parent) {
 
 /**
  * What Build mode tells a GM about a sealed interior, or null when the node has
- * a way out. Stairs up only count as one on a level the parent reaches through
- * stairs down (interiorExits), so a keep entered through a town door is told to
- * paint a door and nothing else: advising stairs there would be advice that
- * cannot clear the warning.
+ * a way out. Only the staircase running back to the parent level counts as one
+ * (interiorExits), so the hint names that direction and no other: a crypt level
+ * is told about its stairs up, an upper storey about its stairs down, and a keep
+ * entered through a town door about a door alone, since stairs there would be
+ * advice that cannot clear the warning.
  * @param {MapNode | null} node
  * @param {MapNode | null} parent
  * @returns {string | null}
  */
 export function sealedInteriorHint(node, parent) {
   if (!isSealedInterior(node, parent) || !node || !parent) return null;
-  return stairsDownTo(parent, node.id)
-    ? 'No way out: paint a stairs-up tile, or a door on an outer wall.'
+  const back = stairwayTo(parent, node.id)?.back ?? null;
+  return back
+    ? `No way out: paint a ${back} tile, or a door on an outer wall.`
     : 'No way out: paint a door on an outer wall.';
 }
 
@@ -385,6 +417,17 @@ export function exitLabel(exit) {
 }
 
 /**
+ * What a tile exit is, in words. The tile kinds are hyphenated for the palette
+ * and the warning copy, which name pieces a GM paints; this is a sentence.
+ * @param {'door' | 'stairs-up' | 'stairs-down'} via
+ * @returns {string}
+ */
+function viaText(via) {
+  if (via === 'door') return 'door';
+  return via === 'stairs-up' ? 'stairs up' : 'stairs down';
+}
+
+/**
  * A longer form for assistive tech, which has no arrow to look at and so needs
  * the way out named.
  * @param {MapExit} exit
@@ -393,7 +436,7 @@ export function exitLabel(exit) {
 export function exitDescription(exit) {
   if (exit.kind === 'edge') return `${exitLabel(exit)}, off the ${exit.side} edge of the map`;
   if (exit.kind === 'tile') {
-    return `${exitLabel(exit)}, through the ${exit.via === 'door' ? 'door' : 'stairs up'} at ${exit.tileId}`;
+    return `${exitLabel(exit)}, through the ${viaText(exit.via)} at ${exit.tileId}`;
   }
   return exitLabel(exit);
 }

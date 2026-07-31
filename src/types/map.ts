@@ -64,7 +64,7 @@ export type MapExit =
   | {
       kind: 'tile';
       tileId: string;
-      via: 'door' | 'stairs-up';
+      via: 'door' | 'stairs-up' | 'stairs-down';
       targetNodeId: string;
       targetName: string;
     }
