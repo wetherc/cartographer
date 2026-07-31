@@ -341,7 +341,9 @@ does not count, because the party would have nothing to step onto.
 
 An interior's doors qualify when they open outward: on the grid border, or
 beside a cell the map leaves empty, which is the void a generated dungeon leaves
-around its rooms.
+around its rooms. That test cannot tell the void from an unpainted courtyard
+inside a hand-authored structure, so a door onto such a courtyard also reads as
+a way out; paint the courtyard if it should not.
 
 ### Stairways run both ways
 
@@ -363,6 +365,12 @@ A parent that links the same child from both a stairs-down and a stairs-up tile
 has authored two contradictory connections. The descent wins, because a level
 below is much the more common shape and it is what such a map resolved to before
 the ascent was modelled.
+
+One return staircase per level is what the model expresses. Every tile in the
+child of the kind that runs back counts as an exit to the parent, and they all
+land on the parent's one linking stair tile; the entry landing likewise picks
+the first matching stair in tile order. A second staircase meant to go somewhere
+else needs its own link to a child node, which takes it out of the exit list.
 
 ### Return landing
 
@@ -387,13 +395,21 @@ it:
 - `MapDecorations` draws an outward chevron and a "Return to {name}" label in the
   gutter beyond each `edge` exit, and `MapMarkers` draws a small chevron badge on
   each `tile` exit.
-- `MapCanvasPointer` hit-tests the same bands on a click, and
-  `MapCanvasKeyboard` fires an exit when a cursor key would leave the cursor
-  clamped at a border that carries one, so walking off the edge is the gesture the
-  arrow already suggests.
+- `MapCanvasPointer` hit-tests the same bands on a click. `MapCanvasKeyboard`
+  arms an exit when a cursor key would leave the cursor clamped at a border that
+  carries one: the band brightens, a live region says to press again, and only a
+  second discrete press of the same arrow travels. Key repeats neither arm nor
+  confirm, so holding an arrow key sails the cursor to the border and stops
+  there instead of teleporting the party. Any other interaction (a cursor
+  move, another key, a pointer touch, losing focus, the exits changing)
+  withdraws the arming (`MapCanvas.disarmExit`).
 - `ui/ExitList.js` mounts the same exits as real buttons over the viewport,
-  hidden until one takes focus. They are how a keyboard or a screen reader travels,
-  and the only affordance a `fallback` exit has.
+  hidden until one takes focus. They are how a keyboard or a screen reader travels.
+  A list holding only a `fallback` exit stays pinned open instead, because the
+  canvas draws no arrow and no badge for a fallback: without the pin a pointer
+  user in a sealed interior would see no way out anywhere. A list that changes
+  while one of its buttons holds focus moves focus to the first surviving button
+  rather than dropping it.
 
 The band's rect is computed once, by `exitBandGeometry` plus `edgeExitBand`, and
 both the renderer and the pointer call it. The arrow the GM sees and the rect
@@ -420,21 +436,33 @@ outside Play mode: authoring a map is not travelling it.
 
 `syncExits` also refreshes `authoringWarning(node, parent)`, which is what Build
 mode tells the GM about the node in view. It answers the same question from the
-other side, and it reports two problems, in the order they have to be solved:
+other side, and it reports three problems, in the order they have to be solved:
 
 1. No parent tile links here at all, so the node is unreachable and players never
    see it whatever is painted inside.
-2. An interior is linked but sealed: nothing painted to leave through.
+2. A linked outdoor child whose block sits in blank parent terrain: no side has
+   anything to walk off onto, so the fix is painted on the parent, beside the
+   tiles that link here, not anywhere in the child.
+3. An interior is linked but sealed: nothing painted to leave through.
 
-The link comes first because it also decides the second answer. A staircase
+The link comes first because it also decides the later answers. A staircase
 counts as a way out only in the direction the link runs, so stair advice before
 there is a link would be a guess. Once there is one, the warning names that
 direction and no other: a crypt level is told about its stairs up, an upper
 storey about its stairs down, and a keep entered through a town door about a
 door alone.
 
-Both are warnings about an unfinished map, not a stranded party. `findExits`
-hands Play a fallback either way, and nothing is written to the node. The
-`#build-warning` element is a permanent `role="status"` live region, hidden by
-CSS while empty, and writes are deduped against the last text because
+All of these are warnings about an unfinished map, not a stranded party.
+`findExits` hands Play a fallback either way, and nothing is written to the
+node. The `#build-warning` element is a permanent `role="status"` live region,
+hidden by CSS while empty, and writes are deduped against the last text because
 `syncExits` runs on every party step and every paint stroke.
+
+The Build world tree asks the same question about every node. A row whose
+`authoringWarning` is non-null gets a warning badge with the sentence as its
+tooltip and accessible name, so unlinking a tile flags the orphaned child at the
+moment of the break rather than when the GM next views it. The warning is part
+of the tree's redraw signature, which is why `syncExits` also refreshes the
+tree: a stroke on the parent can seal or unseal a child without changing the
+rail warning for the node in view. Outside Build the check returns null, so a
+Play-mode party step never pays for a world scan.

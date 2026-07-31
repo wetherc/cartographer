@@ -242,10 +242,14 @@ stairs-down tile and the child leaves by its stairs up, link it from a stairs-up
 tile (a keep's upper storey) and the child leaves by its stairs down. Build mode
 warns you above the tool tabs when the node in view has no way in or out:
 **"Nothing leads here"** means no tile on the parent map links to this node at
-all, so the party can never reach it, and **"No way out"** means an interior is
-linked but has nothing painted to leave through. Neither one strands a party in
-Play; a node without an authored way out still offers a plain "Return to
-{parent}" button. They flag an unfinished map.
+all, so the party can never reach it, and **"No way out"** means the node is
+linked but has nothing to leave through: for an interior, no outer door or
+usable staircase; for an outdoor sub-region, no painted tile on the parent map
+beside its block to walk out onto. The world tree marks every node with a
+problem with a small warning triangle (hover it for the sentence), so breaking a
+link shows up immediately, wherever you happen to be looking. None of these
+strand a party in Play; a node without an authored way out still offers a plain
+"Return to {parent}" button. They flag an unfinished map.
 
 ## The library (Library mode)
 
@@ -346,8 +350,10 @@ dialog leaves the switch on and nobody moves.
 
 Once the party is inside a sub-region, the ways back out are drawn on the map. An
 outdoor region shows a **"Return to {parent}"** arrow in the margin beside each
-side that leads back onto the map above; click it, or press the cursor key into
-that border, and the party walks out onto the tile they crossed to get here. An
+side that leads back onto the map above. Click it and the party walks out onto
+the tile they crossed to get here. The cursor keys take the same exit in two
+presses into that border: the first press lights the arrow up, the second walks
+out, so a held key never carries the party off the map by accident. An
 interior marks its outer door and its connecting staircase with a small chevron
 badge instead, pointing up or down to match the direction the stairs run. Those
 are ordinary tiles as well, so they only lead out once whoever you're moving is
@@ -634,7 +640,11 @@ region narrates the current node (name, size, party position, revealed POIs) and
 updates as things change. The ways out of a sub-region are also real buttons: tab
 past the map and they appear over it, each naming its way out ("Return to
 Darkwood, through the stairs up at 4,1"), which takes the door in one press
-rather than walking onto it first. Icon-only buttons carry text labels,
+rather than walking onto it first. When a node has no authored way out, its
+single "Return to {parent}" button stays visible without tabbing, since there is
+no arrow on the map to click instead. Walking off an edge with the cursor keys
+announces the first press and travels on the second, so the gesture is
+confirmed before anyone moves. Icon-only buttons carry text labels,
 disclosures report their expanded state, and both light and dark themes are
 supported.
 
