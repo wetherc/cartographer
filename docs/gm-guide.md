@@ -460,8 +460,15 @@ and its panels step aside and the fight takes the full width. The left column
 details the **active combatant** (whoever's turn it is): initiative, AC, HP,
 condition chips, concentration with its Drop control, and a damage/heal pair
 for quick GM adjustments (resistances, temporary HP rulings, undoing a roll).
+Under those sits their **loadout**: the armor they are wearing, each weapon
+with its damage roll, how many cantrips and spells they have, and a chip per
+spell-slot pool.
 The center is the **board**, the two sides as cards showing each combatant's
-HP bar, AC, and conditions. The right column keeps the **combat log** (the
+HP bar, AC, conditions, and a shorter form of the same loadout, so picking a
+target does not mean opening a sheet to see what it swings. A player's own card
+shows their spells and slots; another player's card shows armor and weapons
+only, and a foe's card shows no loadout at all until the GM's tab looks at it.
+The right column keeps the **combat log** (the
 travelogue's combat and roll entries, newest first) with the **dice tray**
 docked beneath it, so every roll happens in view; both return to their usual
 places when the fight ends. Across the bottom runs the **turn ribbon**: one
@@ -469,19 +476,24 @@ chip per combatant in initiative order, the current turn ringed, foes marked
 with a sword, defeated combatants struck through. Clicking a chip inspects
 that combatant in the left column without advancing the turn.
 
-The sidebar's **Initiative** card stays as the pointer to the fight: the
-round, whose turn it is, and an **Open combat** button. Switch to Play in the
-header any time to check the map mid-fight and come back through that button.
+The ribbon's **Back to map** leaves the screen without ending the fight, and
+the sidebar's **Initiative** card is the way back: the round, whose turn it is,
+and an **Open combat** button.
 
 Step through the fight with **Next turn**; the round counter advances, and on
-each new round timed conditions tick down and expire on their own. **End
-combat** ends the fight and returns to Play, as does walking off the tile or
-defeating the last encounter on it.
+each new round timed conditions tick down and expire on their own. Defeating
+the last enemy does not end the fight. A banner appears over the board saying
+the party is victorious, and the fight stays open so everyone can heal, read the
+log, and take another round if they want one. **End combat** is what closes it
+and returns to Play, and it is the GM's button alone. A fight also ends on its
+own if the party walks off the tile, or if you delete the last encounter staged
+there.
 
 Acting is two clicks. **Click a board card to target it** (click again to
 release), then pick from the **action bar** under the active combatant: their
 weapons as attack buttons (a party member's equipped weapons, a foe's
-assigned weapon) and a caster's castable spells as cast buttons. The attack
+assigned weapon), then a caster's castable spells as cast buttons, grouped by
+spell level under the same headings the spellbook uses. The attack
 dialog opens with your targeted defender already picked, so plain Enter rolls
 it; the situational overrides (bonus or penalty dice from Bless or Bane,
 smite dice, flat riders) sit behind a **Situational modifiers** disclosure
@@ -498,14 +510,15 @@ weapon's damage dice roll too, ability modifier folded into the base term
 (proficiency never adds to damage), and the total lands in the combat log and
 a toast by damage type ("12 slashing + 3 fire"), along with any status
 effects the weapon inflicts. Damage is **applied to the defender
-automatically**: an encounter's HP drops on the spot, defeat is logged, and
-downing the last foe ends the combat; a character hit by a foe loses bonus HP
-first, then real HP, with a log line when they drop to 0. NPCs carry no HP,
-so a hit on one stays a log line.
+automatically**: an encounter's HP drops on the spot and defeat is logged; a
+character hit by a foe loses bonus HP first, then real HP, with a log line when
+they drop to 0. NPCs carry no HP, so a hit on one stays a log line.
 
-A player tab sees the same screen read-only: coarse HP bands instead of
-numbers, no turn controls, no HP editing. On a bound tab, the player drives
-their own character's turn from the same action bar. Players reach the screen
+A player tab sees the same screen with coarse HP bands instead of numbers, no
+HP editing, and no End combat. On a tab bound to a character, that player runs
+their own turn: the action bar offers their weapons and spells when their turn
+comes up, and **End my turn** passes the turn on. A player tab follows the
+party into the fight on its own, and Back to map lets them step out and return
 through the sidebar card's Open combat button.
 
 ### Characters, HP, and resources

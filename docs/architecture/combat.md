@@ -7,11 +7,18 @@ Running a fight gets its own mode. `combat` is the fourth `AppMode`, alongside
 columns entirely: `body.mode-combat` hides the map, the Play sidebar, and the
 authoring rails, and the full-width combat screen takes their place. There is
 no header button for it. The app enters combat mode when a fight starts and
-leaves when it ends, however it ends; the sidebar's Initiative card carries an
-Open combat button for a tab that stepped out to the map mid-fight, and a
-request for the mode with no fight running lands on Play instead
+leaves when it ends, however it ends; the ribbon's Back to map and the
+sidebar's Initiative card carry a tab back and forth mid-fight, and a request
+for the mode with no fight running lands on Play instead
 (`sessionControls.js` guards it), so a stale `setMode` can never show an empty
 screen.
+
+Combat mode is for both roles. Build and Library are authoring modes, so a tab
+switched to the Player role leaves them, but the same guard in
+`sessionControls.js` leaves a player on the combat screen: a player takes their
+own character's turn there, and bouncing them to the map would take the fight
+away from them. Since the header's mode switch is hidden on a player tab, the
+ribbon's Back to map is how a player reaches the map instead.
 
 This guide covers who owns what during a fight and how the screen stays
 current. The 5e resolution itself (attack rolls, casts, damage application)
@@ -24,13 +31,19 @@ and [entities](entities.md).
 ```
 src/combat/CombatView.js ..... pure: projects a CombatState into rows a
                                surface can draw (side, HP, AC, defeated,
-                               who may act)
+                               who may act), plus the fight's outcome
+src/combat/Loadout.js ........ pure: what a combatant is wearing, swinging,
+                               and holding in slots, and how much of that a
+                               given viewer may see
 src/ui/CombatScreen.js ....... the screen: active column, board, log column,
-                               turn ribbon, live region, keyboard handling
+                               turn ribbon, outcome banner, live region,
+                               keyboard handling
 src/ui/CombatantCard.js ...... one board card; doubles as a target-picker
                                button when given an onSelect
+src/ui/LoadoutBlock.js ....... a loadout as labelled lines, shared by the
+                               cards and the active column
 src/ui/CombatActionBar.js .... the active combatant's weapons and spells as
-                               one strip of buttons
+                               buttons, grouped by kind and spell level
 src/app/combatWiring.js ...... mounts the screen, holds its transient UI
                                state, routes everything else to actions
 src/app/encounterWiring.js ... still the only writer of state.combat; the
@@ -43,8 +56,12 @@ styles/combat.css ............ the mode's layout and the screen's styles
 ## One writer, two surfaces
 
 `encounterWiring.js` owned the running fight before the screen existed and
-still does: the `combat` closure variable, mirrored to `state.combat` through
-`setCombat`, is written nowhere else. The screen never holds a second copy.
+still does. The fight lives in `state.combat` and nowhere else: every read goes
+through a `current()` accessor and every write through `setCombat`, both local
+to that module. It used to keep a closure copy beside the state field, which a
+cross-tab rehydrate then could not reach: the rehydrate writes `state.combat`,
+so a follower tab whose fight had ended elsewhere kept drawing the old order.
+One home for the value removes that whole class of drift.
 Turn advance and combat end are registered on `app.actions` as
 `advanceCombatTurn` and `endCombat`, so the screen's Next turn and End combat
 buttons run exactly the code the fight has always run, round-wrap condition
@@ -74,8 +91,27 @@ of it is inspected visually instead.
 
 `mayAct` is the one viewer-dependent field: the GM may act for anyone
 including foes, a player only for the party character the tab is bound to.
-The screen uses it to gate the action bar, the HP controls, and the
-concentration Drop control.
+The screen uses it to gate the action bar, the HP controls, the concentration
+Drop control, and the turn-end button, which a player gets only on their own
+character's turn and which reads "End my turn" there rather than "Next turn".
+
+`fightOutcome(view)` is the other derivation in the module: `victory` once every
+foe row is defeated, `defeat` once every party row is, null while both sides
+still have someone standing. A side with nobody on it settles nothing, so an
+order the GM built with no foes in it reads as undecided. A mutual wipe reads as
+a defeat, since what happened to the party outweighs what happened to the
+monsters.
+
+### Who may see what
+
+`src/combat/Loadout.js` holds the second viewer rule. `loadoutAccess(found,
+viewer, id)` answers `full`, `public`, or `none`: the GM sees everything, a
+player sees their own character whole, another party member's armor and weapons
+only, and nothing at all of a foe. Armor and a drawn weapon are visible across
+the table; a caster's prepared list and remaining slots are that player's
+business, and a foe's sheet is the GM's to reveal. `buildLoadout` takes the
+access level and never assembles what the viewer may not see, so no surface
+downstream can leak it by drawing a field it was handed.
 
 ## The layout
 
@@ -86,14 +122,21 @@ turn it is: name, initiative, AC, HP (exact for the GM, the coarse band for a
 player), condition chips, and concentration with its Drop control. The GM
 gets a damage/heal amount and button pair, the Encounters panel's idiom,
 applied through `applyToTarget`, the same single write path every hit uses.
-Below that sits the **action bar** (`CombatActionBar.js`): one button per
-weapon and per castable spell of the current turn's combatant, resolved by
-the same `weaponsOf`/`spellsOf` derivations the sidebar strip used to read.
-The bar belongs to the turn, not the inspection, so inspecting a foe never
-offers its weapons to a player.
+Under the facts sits the combatant's **loadout** in its fuller form: weapons
+with their damage rolls, and a chip per slot pool. Below that sits the **action
+bar** (`CombatActionBar.js`): one button per weapon and per castable spell of
+the current turn's combatant, resolved by the same `weaponsOf`/`spellsOf`
+derivations the sidebar strip used to read. The buttons are grouped under an
+Actions heading, weapons first and then the spells by spell level under the
+spellbook's own headings, since a caster with a dozen spells was otherwise one
+undifferentiated run of buttons. The bar belongs to the turn, not the
+inspection, so inspecting a foe never offers its weapons to a player.
 
 The **board** shows the two sides as labelled groups of cards
-(`CombatantCard.js`). Each card is a real `<button>` acting as the target
+(`CombatantCard.js`). Each card carries the same loadout in a compact form
+(`LoadoutBlock.js` draws both, so a card and the column cannot describe one
+combatant differently), trimmed by the host to what that viewer may see. Each
+card is a real `<button>` acting as the target
 picker: clicking one holds it (`aria-pressed`), clicking again releases it,
 and the held id pre-fills the attack dialog's defender and the cast dialog's
 target field, whichever picker the spell built (single select, multiselect,
@@ -114,7 +157,32 @@ The **turn ribbon** runs under the columns: one chip per participant in
 order, initials plus initiative, the current turn ringed and marked
 `aria-current`, foes marked by icon rather than color alone, defeated chips
 struck through. Clicking a chip inspects without advancing the turn. The
-round counter and the GM's Next turn / End combat sit beside it.
+round counter and the turn controls sit beside it: Back to map for everyone,
+the turn-end button for whoever may take the current turn, and End combat for
+the GM alone.
+
+## Ending a fight
+
+A fight ends when the GM ends it, or when its participants are genuinely gone.
+Killing the last enemy is neither. It used to end the fight on the spot, which
+closed the screen mid-swing and took the log and the board away from whoever
+landed the hit, with no chance to heal up first.
+
+Two rules keep the screen up. The auto-drop in the initiative-panel wrapper
+reads `encountersAtTile` rather than `encountersOnTile`: the two differ only in
+that `encountersOnTile` filters the defeated out, so the wrapper now counts
+every encounter staged on the party's tile including the dead ones. Walking off
+the tile or deleting the last encounter still clears the fight; a kill does not.
+And the screen grows a banner under the ribbon once `fightOutcome` settles,
+saying that the party is victorious or defeated, with a line for the GM that
+combat stays open until they end it. End combat takes the primary emphasis from
+the turn-end button at that point, and turns still advance, so a round of
+healing is available before leaving.
+
+The banner is a persistent `role="status"` node rather than one rebuilt per
+render, unhidden before its text is written: a status region hidden at the
+moment of the change is not read out, and a rebuilt node would re-announce the
+outcome on every HP edit.
 
 ## How the screen stays current
 
@@ -141,7 +209,9 @@ reached from four directions:
   fight).
 
 A reload with a fight running re-enters combat mode from `main.js`, after
-`wireSessionControls` has registered `setMode`, and only on a GM tab. It is
+`wireSessionControls` has registered `setMode`, whatever the tab's role: a
+player takes their turn on that screen too, and Back to map leaves for anyone
+who would rather watch the map. It is
 deliberately not part of `rehydrate.js`: cross-tab rehydrate adopts campaign
 state in place and leaves `mode` out of its synced keys, so a Player-pinned
 display never inherits the GM tab's mode. `combat` is in the synced keys, and
@@ -164,4 +234,4 @@ the buttons per keypress, since every render replaces them.
 `InitiativePanel.js` dropped to a status card when the screen took over: one
 line ("Round 3, Mirelle's turn", resolved through `describe` so renames show)
 plus Open combat. The card still only shows while a fight is running, and the
-wrapper around its `update` still owns the walked-off-the-tile auto-drop.
+wrapper around its `update` still owns the auto-drop described above.

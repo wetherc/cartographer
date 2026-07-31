@@ -17,7 +17,7 @@ With Campaign Builder, you can:
     - You can progressively reveal parts of the map as your party travels. Unexplored areas remain greyed out until your party moves closer
     - Track your party's location on the map at all times
   - Add major enemies/encounters with life tracking
-  - Run fights on a dedicated full-width combat screen: a turn ribbon over the initiative order, combatant cards that double as target pickers, one-click attack and cast buttons for whoever's turn it is, and the combat log and dice tray docked alongside
+  - Run fights on a dedicated full-width combat screen: a turn ribbon over the initiative order, combatant cards that double as target pickers and show what each side is wearing, swinging, and holding in spell slots, one-click attack and cast buttons for whoever's turn it is, and the combat log and dice tray docked alongside. A player on a bound tab runs their own character's turn, and the fight stays up after the last enemy drops until the GM ends it
   - Add resource tracking (items, D&D-style spell slots, and other expendable character-based resources)
   - Add character sheets with full character stats, class (and subclass), race, background, assembled proficiencies, hit dice, spellcasting, and level/progression tracking with per-level class assignment, multiclassing, and ability-score-improvement/feat choices
   - Simulate dice rolls and their results for any combination of dice needed in an interaction
