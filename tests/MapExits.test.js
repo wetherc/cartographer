@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  authoringWarning,
   edgeExitBand,
   exitBandGeometry,
   exitDescription,
@@ -11,7 +12,6 @@ import {
   hitExitBand,
   isSealedInterior,
   nearestSide,
-  sealedInteriorHint,
   stairwayTo,
 } from '../src/map/MapExits.js';
 import { createTile } from '../src/map/TileGrid.js';
@@ -371,7 +371,54 @@ test('isSealedInterior flags only an interior with nothing authored', () => {
   assert.equal(isSealedInterior(sealed, null), false);
 });
 
-test('the sealed-interior hint only advises stairs where stairs would count', () => {
+test('a node nothing in the parent links to is warned about before anything else', () => {
+  // A parent full of terrain, none of it linking here. The node is unreachable:
+  // the party cannot walk in and players never see it.
+  const unlinked = node({ id: 'child', name: 'Thornhold', tiles: gridTiles(6, 6) });
+  const bare = node({ id: 'region', name: 'Saltmere Coast', tiles: gridTiles(6, 6) });
+  assert.equal(
+    authoringWarning(unlinked, bare),
+    'Nothing leads here: link a tile on Saltmere Coast to this map.',
+  );
+  // An interior with a working door is no better off: the door leads outside a
+  // structure the parent map does not contain.
+  const orphanKeep = node({
+    id: 'child',
+    kind: 'interior',
+    tiles: [
+      createTile('0,2', `${INTERIOR}-door-v.svg`),
+      createTile('1,2', `${INTERIOR}-floor-1.svg`),
+    ],
+  });
+  assert.equal(
+    authoringWarning(orphanKeep, bare),
+    'Nothing leads here: link a tile on Saltmere Coast to this map.',
+  );
+  // Sealed as well as unlinked: the link comes first, since which staircase counts
+  // as the way out depends on the direction it runs.
+  const sealedOrphan = node({
+    id: 'child',
+    kind: 'interior',
+    tiles: [createTile('1,1', `${INTERIOR}-floor-1.svg`)],
+  });
+  assert.equal(
+    authoringWarning(sealedOrphan, bare),
+    'Nothing leads here: link a tile on Saltmere Coast to this map.',
+  );
+  // The root has no parent to be linked from.
+  assert.equal(authoringWarning(unlinked, null), null);
+  assert.equal(authoringWarning(null, bare), null);
+  // Linked and outdoors, with terrain to step onto: nothing to warn about.
+  assert.equal(
+    authoringWarning(
+      child,
+      parentWithBlock(() => true),
+    ),
+    null,
+  );
+});
+
+test('the sealed-interior warning only advises stairs where stairs would count', () => {
   const sealed = node({
     id: 'child',
     kind: 'interior',
@@ -380,7 +427,7 @@ test('the sealed-interior hint only advises stairs where stairs would count', ()
   // Entered from the side: its own stairs lead to a floor the map does not
   // model, so a door is the only thing that can clear the warning.
   assert.equal(
-    sealedInteriorHint(
+    authoringWarning(
       sealed,
       parentWithBlock(() => true),
     ),
@@ -388,17 +435,17 @@ test('the sealed-interior hint only advises stairs where stairs would count', ()
   );
   // A level below: the parent's stairs down are where stairs up come back to.
   assert.equal(
-    sealedInteriorHint(sealed, levelAbove()),
+    authoringWarning(sealed, levelAbove()),
     'No way out: paint a stairs-up tile, or a door on an outer wall.',
   );
   // An upper storey: the advice reverses with the direction of the link, since a
   // staircase that keeps climbing would not clear the warning.
   assert.equal(
-    sealedInteriorHint(sealed, levelBelow()),
+    authoringWarning(sealed, levelBelow()),
     'No way out: paint a stairs-down tile, or a door on an outer wall.',
   );
   assert.equal(
-    sealedInteriorHint(
+    authoringWarning(
       node({ id: 'child', kind: 'interior', tiles: [createTile('0,1', `${INTERIOR}-door-v.svg`)] }),
       parentWithBlock(() => true),
     ),
@@ -411,9 +458,9 @@ test('the sealed-interior hint only advises stairs where stairs would count', ()
     kind: 'interior',
     tiles: [createTile('1,1', `${INTERIOR}-stairs-up.svg`)],
   });
-  assert.equal(sealedInteriorHint(stairs, levelAbove()), null);
+  assert.equal(authoringWarning(stairs, levelAbove()), null);
   assert.equal(
-    sealedInteriorHint(
+    authoringWarning(
       stairs,
       parentWithBlock(() => true),
     ),

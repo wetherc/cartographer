@@ -6,7 +6,7 @@ import { revealAll, discoveredNodes } from '../map/FogOfWar.js';
 import { characterTokens } from '../party/CharacterTokens.js';
 import { renderNodeToCanvas, downloadCanvasPNG, exportFilename } from '../map/MapExport.js';
 import { findRegionGroups } from '../map/RegionGroups.js';
-import { sealedInteriorHint } from '../map/MapExits.js';
+import { authoringWarning } from '../map/MapExits.js';
 import { createNodeActions } from './nodeActions.js';
 import { createMapAuthoring } from './mapAuthoring.js';
 import { createMapTravel } from './mapTravel.js';
@@ -136,10 +136,9 @@ export function wireMapView(app) {
    * the redraw path, which deliberately skips the party marker; and from the mode
    * switch, since Build offers no ways out.
    *
-   * Build's sealed-interior warning rides along, because it answers the same
-   * question about the same node from the other side: it is derived from the
-   * node itself rather than from the Play-only list above, which is empty while
-   * authoring. */
+   * Build's authoring warning rides along, because it answers the same question
+   * about the same node from the other side: it is derived from the node itself
+   * rather than from the Play-only list above, which is empty while authoring. */
   function syncExits() {
     const exits = travel.currentExits();
     mapCanvas.setExits(exits);
@@ -153,13 +152,14 @@ export function wireMapView(app) {
   const buildWarning = mustGetElement('build-warning');
   let lastBuildWarning = '';
 
-  /** Tell a GM authoring an interior with no door and no usable stairs up that
-   * the map has no way out. Play always offers a fallback, so this is about an
-   * unfinished map, and the Build rail it sits in is hidden everywhere else. */
+  /** Tell a GM that nothing in the parent map leads to the node in view, or that
+   * an interior has nothing painted to leave through. Play always offers a
+   * fallback, so both are about an unfinished map, and the Build rail they sit in
+   * is hidden everywhere else. */
   function syncBuildWarning() {
     const node = navigator.getCurrentNode();
     const parent = node.parentId ? (grid.getNode(node.parentId) ?? null) : null;
-    const text = sealedInteriorHint(node, parent) ?? '';
+    const text = authoringWarning(node, parent) ?? '';
     // Same reasoning as refreshMapDescription: this is a live region, and
     // syncExits runs on every party step and every paint stroke, so writing
     // unconditionally would re-announce an unchanged sentence each time.

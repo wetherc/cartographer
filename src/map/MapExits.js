@@ -227,18 +227,35 @@ export function isSealedInterior(node, parent) {
 }
 
 /**
- * What Build mode tells a GM about a sealed interior, or null when the node has
- * a way out. Only the staircase running back to the parent level counts as one
- * (interiorExits), so the hint names that direction and no other: a crypt level
- * is told about its stairs up, an upper storey about its stairs down, and a keep
- * entered through a town door about a door alone, since stairs there would be
- * advice that cannot clear the warning.
+ * What Build mode tells a GM about the node in view, or null when there is
+ * nothing to say. Two problems, in the order a GM has to solve them.
+ *
+ * A node no parent tile links to is unreachable: the party can never walk into it
+ * and players never see it, whatever is painted inside. That comes first because
+ * the link is also what decides the second answer — a staircase counts as a way
+ * out only in the direction the link runs, so advice about stairs before there is
+ * a link would be a guess.
+ *
+ * Then a sealed interior, which is linked but has nothing painted to leave
+ * through. Only the staircase running back to the parent level counts
+ * (interiorExits), so the warning names that direction and no other: a crypt
+ * level is told about its stairs up, an upper storey about its stairs down, and a
+ * keep entered through a town door about a door alone, since stairs there would
+ * be advice that cannot clear the warning.
+ *
+ * Both are warnings about an unfinished map, not about a stuck party — findExits
+ * hands Play a fallback either way.
+ *
  * @param {MapNode | null} node
  * @param {MapNode | null} parent
  * @returns {string | null}
  */
-export function sealedInteriorHint(node, parent) {
-  if (!isSealedInterior(node, parent) || !node || !parent) return null;
+export function authoringWarning(node, parent) {
+  if (!node || !parent) return null;
+  if (!blockFor(parent, node.id)) {
+    return `Nothing leads here: link a tile on ${parent.name} to this map.`;
+  }
+  if (!isSealedInterior(node, parent)) return null;
   const back = stairwayTo(parent, node.id)?.back ?? null;
   return back
     ? `No way out: paint a ${back} tile, or a door on an outer wall.`
