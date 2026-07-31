@@ -22,7 +22,9 @@
  * The campaign data `AppState` holds, and so the fields a re-hydrate copies over.
  * `mode` and `role` are absent on purpose: both are per-tab view state rather than
  * campaign state, and a display pinned to the Player view must not adopt the GM
- * tab's mode along with their map. Exported so a test can hold the list against
+ * tab's mode along with their map. A fight starting or ending is the one thing
+ * that moves a follower's mode, decided by `view/CombatMode.js` in the caller
+ * rather than copied from the save. Exported so a test can hold the list against
  * the campaign shape and catch a field added to one and not the other.
  * @type {string[]}
  */
@@ -78,6 +80,7 @@ export function rehydrateCampaign(app, campaign) {
     views.buildEncounters,
     views.buildNPCs,
     views.initiativePanel,
+    views.combatScreen,
     views.npcPanel,
     views.questPanel,
     views.handoutPanel,

@@ -22,6 +22,7 @@ import {
 } from '../storage/SaveNotices.js';
 import { saveCampaign, undoCampaign, redoCampaign, historyDepth } from '../storage/HistoryLog.js';
 import { shouldAutosave, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
+import { followerMode } from '../view/CombatMode.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -92,13 +93,58 @@ export function wireCampaignActions(app) {
     }
   }
 
-  /** Mark the campaign as having unsaved changes. Called from every mutation. */
+  /** Whether a fight was running at the previous mutation. */
+  let sawFight = app.state.combat !== null;
+
+  /**
+   * Mark the campaign as having unsaved changes. Called from every mutation.
+   *
+   * A mutation made while a fight is running is also flushed to storage right
+   * away rather than waiting for the autosave window. Everyone watching a fight
+   * on another tab (a player on a laptop, a table display) sees the turn and the
+   * damage only once a save lands, and the ten-second idle window plus the
+   * five-second poll made every turn arrive up to fifteen seconds late.
+   */
   function markDirty() {
     lastMutationAt = Date.now();
     if (!dirty) setDirty(true);
+    // The mutation that ends a fight leaves no fight behind to test for, and it
+    // is the one every follower most needs: a tab left on the combat screen has
+    // nothing to show once the fight is over. So the write that clears `combat`
+    // is flushed on the strength of the fight that was there a moment ago.
+    const fight = app.state.combat !== null;
+    if (fight || sawFight) flushSoon();
+    sawFight = fight;
   }
 
   app.actions.markDirty = markDirty;
+
+  /**
+   * The pending flush, so a burst of mutations (an attack stores the target,
+   * logs the roll, and logs the damage) writes once.
+   * @type {ReturnType<typeof setTimeout> | null}
+   */
+  let flushTimer = null;
+
+  /** How long a flush waits, long enough to coalesce one action's writes. */
+  const FLUSH_DELAY_MS = 250;
+
+  /**
+   * Write the campaign as soon as the current action has finished writing to
+   * state. Silent, unlike autosave: a fight writes several times a minute and a
+   * toast per turn would bury the log. An open dialog is no reason to hold off
+   * the way it is for autosave, because everything being written here has
+   * already been committed to state; nothing is mid-edit.
+   */
+  function flushSoon() {
+    if (flushTimer !== null) return;
+    flushTimer = setTimeout(() => {
+      flushTimer = null;
+      if (!dirty) return;
+      if (!persistState(buildCurrentState())) return;
+      setDirty(false);
+    }, FLUSH_DELAY_MS);
+  }
 
   // Warn before closing/reloading a tab with unsaved changes. Intentional
   // reload flows (Undo/Import/replace) clear the flag first, so they stay quiet.
@@ -310,22 +356,31 @@ export function wireCampaignActions(app) {
    * this tab its scroll position, its open panel, the map's pan and zoom, and
    * anything staged in the dice tray, every ten seconds of GM editing.
    *
-   * Only in Play mode. Build mode carries authoring state a re-hydrate would leave
-   * pointing at a world that is gone — the stroke history holds pre-stroke nodes by
-   * reference, the tile inspector holds a tile of one of them — and Library mode
-   * would come back to Play with stale panels. Both, and any failure to adopt the
-   * campaign at all, fall back to the reload this replaces, so the worst case is
-   * the behavior that was already there.
+   * Only in Play mode and combat mode. Build mode carries authoring state a
+   * re-hydrate would leave pointing at a world that is gone (the stroke history
+   * holds pre-stroke nodes by reference, the tile inspector holds a tile of one of
+   * them), and Library mode would come back to Play with stale panels. Both, and
+   * any failure to adopt the campaign at all, fall back to the reload this
+   * replaces, so the worst case is the behavior that was already there. Combat mode
+   * holds nothing but a projection of the fight, which is exactly what the save
+   * carries, and reloading a tab watching a fight was the worst version of this:
+   * mode is per-tab and never restored, so the tab came back on the map and
+   * somebody had to reopen the fight on every turn.
+   *
+   * Whether the tab then moves between Play and combat is `followerMode`'s call.
    * @returns {boolean} whether the tab re-hydrated instead of reloading
    */
   function adoptExternalSave() {
-    if (app.state.mode !== 'play') return false;
+    if (app.state.mode !== 'play' && app.state.mode !== 'combat') return false;
+    const hadFight = app.state.combat !== null;
     try {
       rehydrateCampaign(app, loadInitialCampaign());
     } catch (error) {
       console.error('Could not adopt the campaign another tab saved; reloading.', error);
       return false;
     }
+    const next = followerMode(app.state.mode, { hadFight, hasFight: app.state.combat !== null });
+    if (next) app.actions.setMode(next);
     refreshHistoryButtons();
     return true;
   }
