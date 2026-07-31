@@ -454,11 +454,27 @@ export function mountCombatScreen(container, callbacks) {
     amount.min = '1';
     amount.value = String(hpAmount);
     amount.setAttribute('aria-label', 'Damage or heal amount');
+    const name = row.name ?? 'Unknown combatant';
+    const damage = textButton('Damage', () => callbacks.onApplyHP(row.id, hpAmount, false), {
+      icon: 'minus',
+      variant: 'danger',
+      ariaLabel: `Damage ${name}`,
+    });
+    const heal = textButton('Heal', () => callbacks.onApplyHP(row.id, hpAmount, true), {
+      icon: 'heal',
+      variant: 'success',
+      ariaLabel: `Heal ${name}`,
+    });
+    // The buttons apply the tracked amount, not the field text, so while the
+    // field holds something unusable (cleared, zero, negative) they disable
+    // rather than quietly land whatever number was last valid.
     amount.addEventListener('input', () => {
       const parsed = Number.parseInt(amount.value, 10);
-      if (Number.isFinite(parsed) && parsed > 0) hpAmount = parsed;
+      const valid = Number.isFinite(parsed) && parsed > 0;
+      if (valid) hpAmount = parsed;
+      damage.disabled = !valid;
+      heal.disabled = !valid;
     });
-    const name = row.name ?? 'Unknown combatant';
     // The amount sits on its own line above both buttons, captioned, so it is
     // clear it feeds either one.
     return el(
@@ -466,16 +482,8 @@ export function mountCombatScreen(container, callbacks) {
       'combat-screen__hp-controls u-g2',
       el('span', 'section-label combat-screen__hp-label', 'Amount'),
       amount,
-      textButton('Damage', () => callbacks.onApplyHP(row.id, hpAmount, false), {
-        icon: 'minus',
-        variant: 'danger',
-        ariaLabel: `Damage ${name}`,
-      }),
-      textButton('Heal', () => callbacks.onApplyHP(row.id, hpAmount, true), {
-        icon: 'heal',
-        variant: 'success',
-        ariaLabel: `Heal ${name}`,
-      }),
+      damage,
+      heal,
     );
   }
 
