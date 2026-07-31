@@ -98,6 +98,10 @@ export interface AppActions {
   // order. Every delete path calls this rather than writing `state.combat`,
   // since encounterWiring holds the live copy of the combat.
   removeCombatant(id: string): void;
+  // encounterWiring: advance the running fight's turn (with the round-wrap
+  // ticks) or end it; the combat screen and the sidebar panel share these.
+  advanceCombatTurn(): void;
+  endCombat(): void;
   // mapWiring
   syncPartyMarker(): void;
   syncEncounterMarkers(): void;

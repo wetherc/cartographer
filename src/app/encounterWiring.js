@@ -330,57 +330,64 @@ export function wireEncounters(app) {
     if (state.mode === 'combat') app.actions.setMode('play');
   }
 
+  // Turn advance and combat end, registered as actions so the combat screen
+  // drives the same fight through the same code as the sidebar panel; this
+  // module stays the only writer of `combat`.
+  app.actions.advanceCombatTurn = () => {
+    if (!combat) return;
+    // Read before the pointer moves: a spell that lets its target retry the
+    // save gets that retry at the end of the target's own turn, which is the
+    // turn now ending.
+    const acting = currentParticipant(combat);
+    if (acting) retryImposedSaves(app, acting.id);
+    const result = advanceTurn(combat);
+    setCombat(result.state);
+    // A new round elapsed, so tick every combatant's timed conditions down,
+    // along with the enemies' timed stat modifiers and the party's
+    // concentration durations.
+    if (result.wrapped) {
+      /** @type {{ casterId: string, spellId: string }[]} */
+      const expired = [];
+      state.characters = state.characters.map((c) => {
+        // Concentration ticks after the conditions do, since it rewrites its
+        // own chip's counter from the duration it owns.
+        const ticked = tickConcentration({ ...c, conditions: tickConditions(c.conditions) });
+        const held = c.concentration;
+        if (ticked.expired && held) {
+          app.actions.logEvent('combat', `${c.name}'s concentration on ${held.spellName} ends.`);
+          expired.push({ casterId: c.id, spellId: held.spellId });
+        }
+        return ticked.character;
+      });
+      state.encounters = state.encounters.map((e) => ({
+        ...e,
+        conditions: tickConditions(e.conditions),
+        statMods: tickStatModifiers(e.statMods ?? []),
+      }));
+      app.actions.refreshSelectedCharacter();
+      app.views.encounterPanel.update();
+      // Swept only once both collections have been reassigned: the sweep writes
+      // to the same two, and the tick's own write would put its result back.
+      for (const { casterId, spellId } of expired) endSpellEffects(app, casterId, spellId);
+    }
+    // The sidebar panel redraws itself after its own button; the combat
+    // screen has to be told the turn moved either way.
+    app.views.combatScreen.update();
+  };
+
+  app.actions.endCombat = () => {
+    setCombat(null);
+    app.views.initiativePanel.update(); // re-hides the panel
+    app.views.encounterPanel.update(); // brings the Start combat button back
+    exitCombatMode();
+  };
+
   const initiativeContainer = mustGetElement('initiative-container');
   const initiativePanel = mountInitiativePanel(initiativeContainer, {
     getState: () => combat,
     describe,
-    onNext: () => {
-      if (!combat) return;
-      // Read before the pointer moves: a spell that lets its target retry the
-      // save gets that retry at the end of the target's own turn, which is the
-      // turn now ending.
-      const acting = currentParticipant(combat);
-      if (acting) retryImposedSaves(app, acting.id);
-      const result = advanceTurn(combat);
-      setCombat(result.state);
-      // A new round elapsed, so tick every combatant's timed conditions down,
-      // along with the enemies' timed stat modifiers and the party's
-      // concentration durations.
-      if (result.wrapped) {
-        /** @type {{ casterId: string, spellId: string }[]} */
-        const expired = [];
-        state.characters = state.characters.map((c) => {
-          // Concentration ticks after the conditions do, since it rewrites its
-          // own chip's counter from the duration it owns.
-          const ticked = tickConcentration({ ...c, conditions: tickConditions(c.conditions) });
-          const held = c.concentration;
-          if (ticked.expired && held) {
-            app.actions.logEvent('combat', `${c.name}'s concentration on ${held.spellName} ends.`);
-            expired.push({ casterId: c.id, spellId: held.spellId });
-          }
-          return ticked.character;
-        });
-        state.encounters = state.encounters.map((e) => ({
-          ...e,
-          conditions: tickConditions(e.conditions),
-          statMods: tickStatModifiers(e.statMods ?? []),
-        }));
-        app.actions.refreshSelectedCharacter();
-        app.views.encounterPanel.update();
-        // Swept only once both collections have been reassigned: the sweep writes
-        // to the same two, and the tick's own write would put its result back.
-        for (const { casterId, spellId } of expired) endSpellEffects(app, casterId, spellId);
-      }
-      // The sidebar panel redraws itself after this callback; the combat
-      // screen has to be told the turn moved.
-      app.views.combatScreen.update();
-    },
-    onEnd: () => {
-      setCombat(null);
-      app.views.initiativePanel.update(); // re-hides the panel
-      app.views.encounterPanel.update(); // brings the Start combat button back
-      exitCombatMode();
-    },
+    onNext: () => app.actions.advanceCombatTurn(),
+    onEnd: () => app.actions.endCombat(),
     // The active combatant's weapons, as one-click attack rolls, and their
     // castable spells as Cast buttons; both derivations live in combatants.js
     // (`weaponsOf`/`spellsOf`) so the combat screen reads the same lists. The

@@ -24,6 +24,67 @@ body.mode-combat .app-buildrail {
   display: none;
 }
 
+/* The screen: the columns fill the height and the turn ribbon docks below
+   them, one glance to see the whole order while working in a column. */
+.combat-screen__layout {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.combat-screen__columns {
+  display: flex;
+  flex: 1;
+  gap: var(--space-4);
+  align-items: flex-start;
+  min-width: 0;
+}
+
+/* The active-combatant column: whoever the ribbon inspected, or whoever's
+   turn it is. */
+.combat-screen__active {
+  flex: 0 0 18rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.combat-screen__active:empty {
+  display: none;
+}
+
+.combat-screen__active-name {
+  margin: 0;
+  font-size: var(--text-heading);
+}
+
+.combat-screen__facts {
+  display: flex;
+  gap: var(--space-4);
+}
+
+.combat-screen__fact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.combat-screen__fact-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.combat-screen__hp-amount {
+  width: 4.5rem;
+}
+
 /* The board: the fight's participants as cards, party and foes side by side,
    stacking on a narrow viewport. */
 .combat-board {
@@ -114,4 +175,92 @@ body.mode-combat .app-buildrail {
 .combatant-card__meta {
   font-size: var(--text-label);
   color: var(--text-muted);
+}
+
+/* The turn ribbon: the whole order as chips, docked under the columns. */
+.combat-ribbon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.combat-ribbon:empty {
+  display: none;
+}
+
+.combat-ribbon__round {
+  flex: 0 0 auto;
+  font-weight: 700;
+}
+
+.combat-ribbon__chips {
+  display: flex;
+  flex: 1;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.combat-ribbon__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.combat-ribbon__chip--current {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.combat-ribbon__chip--defeated .combat-ribbon__initials {
+  text-decoration: line-through;
+}
+
+.combat-ribbon__chip--defeated {
+  opacity: 0.6;
+}
+
+.combat-ribbon__foe-mark {
+  display: inline-flex;
+  color: var(--danger);
+}
+
+.combat-ribbon__initials {
+  font-weight: 700;
+}
+
+.combat-ribbon__init {
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+.combat-ribbon__controls {
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--space-2);
+}
+
+/* Stack the columns on a narrow viewport; the board's groups already wrap. */
+@media (max-width: 1100px) {
+  .combat-screen__columns {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .combat-screen__active {
+    flex: 0 0 auto;
+  }
 }
