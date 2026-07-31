@@ -255,6 +255,12 @@ export function mountCombatScreen(container, callbacks) {
     });
     // One tab stop: the current turn's chip anchors it, arrows walk the rest.
     roveGroup(ribbon, '.combat-ribbon__chip', view.rows[view.turnIndex]?.id ?? null);
+    // Ending the turn belongs to whoever is taking it. The GM moves the fight
+    // along from any turn; a player gets the control only on the turn of the
+    // character their tab is bound to, and it reads as finishing their own turn
+    // rather than as running the fight. Ending the whole combat stays the GM's.
+    const acting = view.rows[view.turnIndex];
+    const mayEndTurn = gm || Boolean(acting?.mayAct);
     // Back to map is everyone's, including a player: looking something up on the
     // map mid-fight is not a GM privilege, and the header's mode switch is hidden
     // in the Player view, so without this a player tab could not leave the screen
@@ -265,8 +271,11 @@ export function mountCombatScreen(container, callbacks) {
         'div',
         'combat-ribbon__controls',
         textButton('Back to map', callbacks.onLeave, { icon: 'map' }),
-        gm
-          ? textButton('Next turn', callbacks.onNext, { icon: 'chevron', variant: 'primary' })
+        mayEndTurn
+          ? textButton(gm ? 'Next turn' : 'End my turn', callbacks.onNext, {
+              icon: 'chevron',
+              variant: 'primary',
+            })
           : null,
         gm ? textButton('End combat', callbacks.onEnd, { icon: 'flag' }) : null,
       ),

@@ -85,7 +85,10 @@ export function wireSessionControls(app) {
     const role = app.state.role;
     document.body.classList.toggle('role-player', role === 'player');
     document.body.classList.toggle('role-gm', role === 'gm');
-    if (role === 'player') modeSwitch.setValue('play');
+    // Build and Library are authoring, so the Player view leaves them. Combat
+    // is not authoring: a player takes their own turn on that screen, and
+    // bouncing them to the map would take the fight away from them.
+    if (role === 'player' && app.state.mode !== 'combat') modeSwitch.setValue('play');
     app.actions.onRoleChanged(role);
     // Re-render the party panels: their edit affordances depend on the role
     // (and, in the Player view, on this tab's character binding).
