@@ -119,6 +119,17 @@ export function primaryCasterClass(character) {
 }
 
 /**
+ * Whether any of the character's caster classes prepares its spells (Cleric,
+ * Druid, Paladin, Wizard). Gates the prepared count and the Prepare actions:
+ * a known-rule caster (Bard, Ranger, Sorcerer, Warlock) never prepares.
+ * @param {Character} character
+ * @returns {boolean}
+ */
+export function hasPreparedCaster(character) {
+  return casterClassRefs(character).some((ref) => getClass(ref.classId)?.knownRule === 'prepared');
+}
+
+/**
  * The modifier of a caster's spell ability, or null when the character has no
  * caster class or lacks that ability score. `classId` picks which class's
  * ability to read; it defaults to the first caster class.
@@ -185,11 +196,11 @@ function countCantripsKnown(character) {
 }
 
 /**
- * How many leveled spells a character may have prepared: per caster class, its
- * spell-ability modifier + its class level, at least 1 (the 5e prepared-caster
- * rule), summed across classes. 0 for a non-caster. Known-list casters don't
- * prepare, but the same ceiling bounds the spellbook's active set here.
- * Memoized on the character.
+ * How many leveled spells a character may have prepared: per prepared-rule
+ * caster class, its spell-ability modifier + its class level, at least 1 (the
+ * 5e prepared-caster rule), summed across those classes. 0 for a non-caster
+ * or a caster whose classes all cast from their known list, since those
+ * classes grant no prepared slots. Memoized on the character.
  */
 export const preparedLimit = memoizeByIdentity(countPreparedAllowed);
 
@@ -199,6 +210,7 @@ export const preparedLimit = memoizeByIdentity(countPreparedAllowed);
  */
 function countPreparedAllowed(character) {
   return casterClassRefs(character).reduce((sum, ref) => {
+    if (getClass(ref.classId)?.knownRule !== 'prepared') return sum;
     const mod = spellAbilityModifier(character, ref.classId);
     return mod === null ? sum : sum + Math.max(1, mod + ref.level);
   }, 0);

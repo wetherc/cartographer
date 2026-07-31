@@ -140,7 +140,11 @@ const scorchingRay = {
 function rayCaster() {
   return caster({
     resources: [createResource('slots-2', 'Level 2 slots', 'mana', 3)],
-    spellbook: { cantrips: [], known: ['scorching-ray', 'darts'], prepared: [] },
+    spellbook: {
+      cantrips: [],
+      known: ['scorching-ray', 'darts'],
+      prepared: ['scorching-ray', 'darts'],
+    },
   });
 }
 
@@ -522,13 +526,24 @@ test("a critical hit doubles a term's dice and leaves its flat bonus alone", () 
   assert.equal(o.damage.detail, '10 fire [3,3 +4]');
 });
 
-test('canCast checks cantrips and prepared/known lists', () => {
+test('canCast checks cantrips and the list the known-rule selects', () => {
   const c = caster();
   assert.equal(canCast(c, firebolt), true); // cantrip listed
-  assert.equal(canCast(c, burningHands), true); // prepared
+  assert.equal(canCast(c, burningHands), true); // prepared, wizard prepares
   assert.equal(canCast(c, { ...firebolt, id: 'unlisted' }), false);
   const noBook = caster({ spellbook: { cantrips: [], known: [], prepared: [] } });
   assert.equal(canCast(noBook, burningHands), false);
+  // A prepared-rule caster's known-but-unprepared spell is not castable...
+  const unprepared = caster({
+    spellbook: { cantrips: [], known: ['burning-hands'], prepared: [] },
+  });
+  assert.equal(canCast(unprepared, burningHands), false);
+  // ...while a known-rule caster (bard) casts straight from the known list.
+  const bard = caster({
+    class: 'bard',
+    spellbook: { cantrips: [], known: ['burning-hands'], prepared: [] },
+  });
+  assert.equal(canCast(bard, burningHands), true);
 });
 
 test('cantrip attack hits, doubles dice on a crit, spends no slot', () => {

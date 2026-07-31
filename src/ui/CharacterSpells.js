@@ -1,6 +1,6 @@
 import { getSpellbook } from '../entities/Character.js';
 import { getClass, casterClassRefs, primaryCasterClass } from '../entities/Classes.js';
-import { groupSpellsByLevel } from '../entities/SpellView.js';
+import { groupSpellsByLevel, castableLeveledIds } from '../entities/SpellView.js';
 import { emptyState, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { promptSpellDetail } from './SpellDetail.js';
@@ -10,7 +10,9 @@ import { promptSpellDetail } from './SpellDetail.js';
 
 /**
  * The character-sheet spellbook: a read-only view of the spells the character
- * can cast right now, grouped by spell level. Clicking a spell
+ * can cast right now, grouped by spell level: cantrips plus the leveled
+ * spells its known-rule makes castable (prepared ones under a prepared-rule
+ * class, every known one under a known-rule class). Clicking a spell
  * opens its detail, which offers Cast (in play) and Close; there is no
  * learn/prepare/forget here, that lives in the Spellbook tab. A character with
  * no caster class and an empty spellbook renders nothing (returns null).
@@ -37,14 +39,14 @@ export function buildSpellsSection(character, opts) {
   );
 
   // One group per spell level the character can actually cast from, ascending:
-  // cantrips first, then each level with something prepared. A caster with a
+  // cantrips first, then each level with something castable. A caster with a
   // wide spread reads which slot level a spell will cost off the heading.
   const groups = groupSpellsByLevel([
     ...opts.resolveSpells(book.cantrips),
-    ...opts.resolveSpells(book.prepared),
+    ...opts.resolveSpells(castableLeveledIds(character)),
   ]);
   if (groups.length === 0) {
-    section.appendChild(emptyState('Nothing prepared'));
+    section.appendChild(emptyState('Nothing castable'));
     return section;
   }
   // The groups sit side by side across the section's full width and wrap, so a

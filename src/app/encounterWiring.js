@@ -41,6 +41,7 @@ import {
   retryImposedSaves,
 } from './combatants.js';
 import { getSpellbook } from '../entities/Character.js';
+import { castableLeveledIds } from '../entities/SpellView.js';
 import { resolveSpellIds } from '../library/Library.js';
 import { spellbookIds } from './casterFields.js';
 import { npcForm } from './npcForm.js';
@@ -386,15 +387,20 @@ export function wireEncounters(app) {
     onWeaponAttack: (participant, weapon) => {
       if (combat) weaponAttack(app, combat, participant, weapon);
     },
-    // Any combatant's castable spells: its known cantrips and prepared/known
-    // leveled spells, resolved from the spellbook's ids through the merged
-    // library's memoized index. A party character, a foe encounter, or an NPC
-    // on the tile — each reads its own stored spellbook; a non-caster's empty
-    // spellbook lists nothing.
+    // Any combatant's castable spells, resolved from the spellbook's ids
+    // through the merged library's memoized index. A party character lists its
+    // cantrips plus what its classes' known-rule makes castable (a prepared
+    // caster's unprepared spells stay off the list); a foe encounter or an NPC
+    // lists its whole spellbook, since its authoring dialog stamps every
+    // picked spell castable. A non-caster's empty spellbook lists nothing.
     getSpells: (participant) => {
       const found = findCombatant(app, participant.id);
       if (!found) return [];
-      // Any combatant's spellbook is read structurally — `getSpellbook` only
+      if (found.kind === 'character') {
+        const book = getSpellbook(found.entity);
+        return resolveSpellIds([...book.cantrips, ...castableLeveledIds(found.entity)]);
+      }
+      // A foe's or NPC's spellbook is read structurally — `getSpellbook` only
       // touches `.spellbook`, which an encounter or NPC caster carries too.
       const book = getSpellbook(/** @type {any} */ (found.entity));
       return resolveSpellIds(spellbookIds(book));

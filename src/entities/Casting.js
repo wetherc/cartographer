@@ -1,6 +1,7 @@
 import { damageReadout, roll, rollDamage } from '../dice/DiceRoller.js';
 import { resolveSave } from './Checks.js';
-import { getSpellbook, spendResource } from './Character.js';
+import { spendResource } from './Character.js';
+import { isSpellCastable } from './SpellView.js';
 import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -237,18 +238,15 @@ function scaledParts(baseParts, scaling, steps) {
 
 /**
  * Whether a caster's spellbook lets it cast this spell: cantrips must be in the
- * cantrip list; leveled spells must be prepared or known (both known-list and
- * prepared-list casters cast from the union, since the resolver doesn't model
- * the distinction). A caster whose class stores no spellbook (e.g. a legacy
- * character) can't cast.
+ * cantrip list; a leveled spell must be prepared under a prepared-rule class,
+ * known under a known-rule one. `isSpellCastable` holds the rule. A caster
+ * whose class stores no spellbook (e.g. a legacy character) can't cast.
  * @param {SpellCaster} caster
  * @param {Spell} spell
  * @returns {boolean}
  */
 export function canCast(caster, spell) {
-  const book = getSpellbook(caster);
-  if (spell.level === 0) return book.cantrips.includes(spell.id);
-  return book.prepared.includes(spell.id) || book.known.includes(spell.id);
+  return isSpellCastable(caster, spell);
 }
 
 /**

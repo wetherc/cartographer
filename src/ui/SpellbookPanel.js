@@ -13,6 +13,7 @@ import {
   preparedLimit,
   casterClassRefs,
   primaryCasterClass,
+  hasPreparedCaster,
 } from '../entities/Classes.js';
 import { primaryClass } from '../entities/Multiclass.js';
 import { groupSpellsByLevel, spellStatus } from '../entities/SpellView.js';
@@ -167,7 +168,7 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
         const atCantripLimit = status.cantrip && book.cantrips.length >= cantripLimit(character);
         if (!atCantripLimit) actions.push({ id: 'learn', label: 'Learn', variant: 'primary' });
       } else {
-        if (!status.cantrip) {
+        if (status.preparable) {
           const atPrepLimit = book.prepared.length >= preparedLimit(character);
           if (status.prepared) actions.push({ id: 'unprepare', label: 'Unprepare' });
           else if (!atPrepLimit)
@@ -242,7 +243,12 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
         const live = current;
         if (!live) return;
         const counts = getSpellbook(live);
-        prep.textContent = `Prepared ${counts.prepared.length}/${preparedLimit(live)} · Cantrips ${counts.cantrips.length}/${cantripLimit(live)}`;
+        // A caster with no prepared-rule class never prepares, so the
+        // prepared count would only ever read 0/0. Show cantrips alone.
+        const prepared = hasPreparedCaster(live)
+          ? `Prepared ${counts.prepared.length}/${preparedLimit(live)} · `
+          : '';
+        prep.textContent = `${prepared}Cantrips ${counts.cantrips.length}/${cantripLimit(live)}`;
       };
       writeCounts();
       writers.push(writeCounts);

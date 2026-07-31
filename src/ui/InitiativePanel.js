@@ -178,7 +178,7 @@ export function mountInitiativePanel(container, callbacks) {
       });
 
       // The active combatant's weapons line up under their row as one-click
-      // attack buttons, and a caster's cantrips and prepared/known spells
+      // attack buttons, and a caster's castable spells
       // follow as Cast buttons — the same strip shape, differing only in icon,
       // class, and labeling. Both come from `activeStrip`, which is empty
       // whenever they should not be offered, so this only has to place them

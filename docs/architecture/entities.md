@@ -308,11 +308,44 @@ advance it. The session log states the extra time instead — `casts Detect Magi
 ritual (10 minutes longer)` — and the GM adjudicates it.
 
 A wizard should also be able to ritual-cast from the spellbook without preparing the
-spell. `canCast` still requires the spell to be known or prepared, because the
-resolver does not model that distinction. No built-in spell in `src/data/spells.js`
+spell. `canCast` requires a prepared caster's spell to be prepared, ritual or not,
+so that piece of the rule is still missing. No built-in spell in `src/data/spells.js`
 is a ritual either, so the flag currently serves GM-authored and imported spells;
 see [the curated-spells note](../spells-missing.md) for what the built-in list
 covers.
+
+## Known and prepared casters
+
+Each caster class manages its leveled spells one of two ways, and
+`data/classes.js` records which as `knownRule`. A *prepared* caster (cleric,
+druid, paladin, wizard) keeps a wider book and readies a daily subset: only the
+spellbook's `prepared` list is castable, and `Classes.preparedLimit` caps it at
+spell-ability modifier + class level per prepared-rule class. A *known* caster
+(bard, ranger, sorcerer, warlock) casts everything it knows: the `known` list
+is castable directly, and there is no prepare step at all. Cantrips sit outside
+the distinction in their own list.
+
+`SpellView.spellRule(character, spellId)` answers which rule governs a spell:
+the rule of the class it was learned under (the spellbook's `sources` map),
+falling back to the first caster class when no source was recorded, and to
+`'known'` when even that is missing, so a legacy character keeps casting what
+it knows. `isSpellCastable` and `castableLeveledIds` apply the rule, and
+`Casting.canCast` delegates to them, so the cast validator, the sheet's spell
+section, and the initiative panel's Cast strip all agree on what is castable.
+
+The Spellbook tab follows the same rule: Prepare/Unprepare actions and the
+prepared count appear only for a character with a prepared-rule class
+(`Classes.hasPreparedCaster`); a known caster's entries show Learn and Forget
+alone. A multiclass character mixes the two per spell, each learned spell
+following its own class's rule.
+
+Foe and NPC casters are unaffected: their authoring dialogs stamp every picked
+leveled spell into both `known` and `prepared` (`spellbookFromIds`), so
+whichever list their class reads, the whole picked set stays castable.
+
+There is no spells-known cap for known casters (no per-level spells-known curve
+is modeled), and prepared casters swap their list freely rather than on a long
+rest.
 
 ## Saving throws
 
