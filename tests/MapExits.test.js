@@ -49,6 +49,22 @@ function parentWithBlock(paint) {
   return node({ id: 'region', name: 'Saltmere Coast', tiles });
 }
 
+/**
+ * The level above a stacked interior: a parent whose block links to "child"
+ * through a stairs-down tile, which is what makes the child's stairs-up a way
+ * back up rather than an internal staircase.
+ * @returns {import('../src/types/map.js').MapNode}
+ */
+function levelAbove() {
+  const tiles = gridTiles(6, 6, (id, x, y) => {
+    if (x === 2 && y === 2) {
+      return createTile(id, `${INTERIOR}-stairs-down.svg`, { childNodeId: 'child' });
+    }
+    return createTile(id, `${INTERIOR}-floor-1.svg`);
+  });
+  return node({ id: 'region', name: 'Crypt level 1', kind: 'interior', tiles });
+}
+
 const child = node({ id: 'child', name: 'Thornhold', parentId: 'region', tiles: gridTiles(6, 6) });
 
 test('no parent means no exits', () => {
@@ -214,13 +230,31 @@ test('an interior exits up its stairs, and skips ones that lead further in', () 
       createTile('1,1', `${INTERIOR}-floor-1.svg`),
     ],
   });
-  const exits = findExits(
-    interior,
-    parentWithBlock(() => true),
-  );
+  const exits = findExits(interior, levelAbove());
   assert.deepEqual(
     exits.map((e) => (e.kind === 'tile' ? `${e.via}@${e.tileId}` : e.kind)),
     ['stairs-up@2,3'],
+  );
+});
+
+test('a staircase inside a structure entered from outside is not a way out', () => {
+  // A keep's own stairs go to a floor the map does not model, so they lead
+  // nowhere the party can be put; the parent links here through a plain tile.
+  const keep = node({
+    id: 'child',
+    name: 'Thornhold Keep',
+    kind: 'interior',
+    tiles: [
+      createTile('2,3', `${INTERIOR}-stairs-up.svg`),
+      createTile('1,1', `${INTERIOR}-floor-1.svg`),
+    ],
+  });
+  assert.deepEqual(
+    findExits(
+      keep,
+      parentWithBlock(() => true),
+    ).map((e) => e.kind),
+    ['fallback'],
   );
 });
 

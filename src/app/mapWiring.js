@@ -16,6 +16,7 @@ import { mountWorldTree } from '../ui/WorldTree.js';
 import { mountPalettePanel } from '../ui/PalettePanel.js';
 import { mountMapControls } from '../ui/MapControls.js';
 import { mountTileTooltip } from '../ui/TileTooltip.js';
+import { mountExitList } from '../ui/ExitList.js';
 import { wireTabs } from '../ui/Tabs.js';
 import { isDefeated } from '../entities/Encounter.js';
 import { isGM } from '../view/ViewRole.js';
@@ -51,6 +52,7 @@ import { isGM } from '../view/ViewRole.js';
  *   selectTile: (tileId: string) => void,
  *   clearSelection: () => void,
  *   syncPartyMarker: () => void,
+ *   syncExits: () => void,
  *   syncPaletteKind: () => void,
  *   refreshMapDescription: () => void,
  *   snapshotEdit: (...nodes: MapNode[]) => void,
@@ -92,6 +94,7 @@ export function wireMapView(app) {
       selectTile,
       clearSelection,
       syncPartyMarker,
+      syncExits,
       syncPaletteKind,
       refreshMapDescription,
     })
@@ -122,6 +125,20 @@ export function wireMapView(app) {
     refreshMapDescription();
   }
   app.actions.syncPartyMarker = syncPartyMarker;
+
+  /** Recompute the ways out of the node in view and hand them to both places
+   * that offer them: the canvas, which draws an arrow per side and a badge per
+   * door, and the exit buttons, which are how a keyboard or a screen reader takes
+   * one. Called from resyncMapViews, so it runs wherever the node in view or the
+   * world under it changed, and from the mode switch, since Build offers none. */
+  function syncExits() {
+    const exits = travel.currentExits();
+    mapCanvas.setExits(exits);
+    exitList?.update(exits);
+  }
+
+  /** @type {ReturnType<typeof mountExitList> | null} assigned once the viewport is mounted */
+  let exitList = null;
 
   /** Mark the current node's tiles that carry a live (undefeated) encounter, so
    * the map shows where danger lies once the party comes within detection range. */
@@ -306,6 +323,7 @@ export function wireMapView(app) {
       app.actions.openEncounterContextMenu(x, y, clientX, clientY);
     },
     onCellClick: travel.onCellClick,
+    onExitClick: travel.exitToParent,
   });
   app.views.mapCanvas = mapCanvas;
   env.mapCanvas = mapCanvas;
@@ -356,6 +374,10 @@ export function wireMapView(app) {
     },
   });
 
+  // The keyboard and screen-reader path to the canvas-drawn return arrows, and
+  // the only affordance the fallback exit has.
+  exitList = mountExitList(mustGetElement('map-viewport'), travel.exitToParent);
+
   // A visually-hidden live region that narrates the map <canvas> for screen
   // readers, since the canvas pixels are opaque to assistive tech.
   // aria-live="polite" announces an update without interrupting.
@@ -374,6 +396,7 @@ export function wireMapView(app) {
     env.fogTool = null; // the fog brush is a Play-mode tool; changing modes drops it
     mapControls?.update();
     if (mode !== 'build') clearSelection();
+    syncExits(); // Build offers no ways out; Play draws them again
     worldTree.update();
     regionTree.update();
     refreshMapDescription();
@@ -422,6 +445,7 @@ export function wireMapView(app) {
 
   mapCanvas.setNode(navigator.getCurrentNode());
   syncPartyMarker();
+  syncExits();
   syncPaletteKind();
   breadcrumb.update(navigator.getBreadcrumb());
 

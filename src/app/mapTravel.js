@@ -1,6 +1,11 @@
 import { updateTileMetadata } from '../map/TileGrid.js';
 import { tileIdAt } from '../map/MapGeometry.js';
-import { computeRegionEntryTile, resolveEntryTile } from '../map/EntryPoint.js';
+import {
+  computeParentReturnTile,
+  computeRegionEntryTile,
+  resolveEntryTile,
+} from '../map/EntryPoint.js';
+import { exitForTile, findExits } from '../map/MapExits.js';
 import { revealAround } from '../map/FogOfWar.js';
 import { characterPosition, moveCharacter, recallAll } from '../party/CharacterTokens.js';
 import { confirmModal } from '../ui/Modal.js';
@@ -84,6 +89,81 @@ export function createMapTravel(app, env) {
     );
     refreshLocationPanels();
     app.actions.maybeTriggerEncounter();
+  }
+
+  /**
+   * The ways out of the node in view, for the canvas arrows, the exit buttons,
+   * and the click path. Empty in Build mode: authoring a map is not travelling
+   * it, and the arrows would be one more thing drawn over the tiles being painted.
+   * @returns {import('../types/map.js').MapExit[]}
+   */
+  function currentExits() {
+    if (state.mode !== 'play') return [];
+    const node = navigator.getCurrentNode();
+    return findExits(node, node.parentId ? (grid.getNode(node.parentId) ?? null) : null);
+  }
+
+  /**
+   * Leave the node in view through one of its exits, landing beside the tile in
+   * the parent that the child was entered from (EntryPoint.computeParentReturnTile).
+   * The mirror of the zoom-in branch of onCellClick, and it moves whoever a click
+   * moves: the whole party for the GM, one character while the split-party toggle
+   * is on, and no one from a spectator tab, which only follows the camera out.
+   * @param {import('../types/map.js').MapExit} exit
+   */
+  function exitToParent(exit) {
+    const child = navigator.getCurrentNode();
+    const parent = child.parentId ? grid.getNode(child.parentId) : null;
+    // A list computed for a node the view has since left, or a parent deleted
+    // underneath it: nothing to travel to.
+    if (!parent || parent.id !== exit.targetNodeId) return;
+    const gm = isGM(state.role);
+    const subject = clickSubject();
+    if (!gm && !subject) {
+      env.goToNode(parent.id);
+      return;
+    }
+    const from = subject
+      ? characterPosition(subject, partyTracker.getPosition())
+      : partyTracker.getPosition();
+    // Whoever this tab moves has to be standing in the node being left: a GM
+    // looking into a child the party is elsewhere in gets the camera out of it,
+    // not a party dragged from wherever they actually are.
+    if (from.nodeId !== child.id) {
+      env.goToNode(parent.id);
+      return;
+    }
+    const landing = computeParentReturnTile(parent, child, exit, from);
+    if (subject) {
+      state.characters = moveCharacter(state.characters, subject.id, {
+        nodeId: parent.id,
+        tileId: landing,
+      });
+      // Read the parent back out of the grid: their step reveals fog around
+      // where they came out, and the copy above predates any other write.
+      const fresh = grid.getNode(parent.id) ?? parent;
+      grid.updateNode(revealAround(fresh, landing, partyTracker.revealRadius));
+    } else {
+      partyTracker.moveTo(parent.id, landing); // reveals fog around the landing itself
+      state.characters = recallAll(state.characters);
+    }
+    env.goToNode(parent.id);
+    app.actions.logEvent(
+      'travel',
+      subject
+        ? `${subject.name} returns to ${parent.name}.`
+        : `The party returns to ${parent.name}.`,
+    );
+    app.actions.markDirty();
+    refreshLocationPanels();
+    if (subject) {
+      // Re-read the roster: the move above replaced the character object.
+      const moved = state.characters.find((c) => c.id === subject.id) ?? subject;
+      app.actions.maybeTriggerEncounter(
+        characterPosition(moved, partyTracker.getPosition()),
+        subject.name,
+      );
+    } else app.actions.maybeTriggerEncounter();
   }
 
   /**
@@ -219,6 +299,21 @@ export function createMapTravel(app, env) {
       }
       return;
     }
+    // A door or stairway out of an interior is also an ordinary tile to walk
+    // onto, so it only leads out once whoever the click moves is standing on it:
+    // otherwise the party could never stand in a doorway, and a stray click at
+    // the far end of a dungeon level would take them out of it. The exit buttons
+    // travel through the same door in one press for anyone who needs that.
+    const exit = exitForTile(currentExits(), tile.id);
+    if (exit) {
+      const at = subject
+        ? characterPosition(subject, partyTracker.getPosition())
+        : partyTracker.getPosition();
+      if (at.nodeId === navigator.getCurrentNode().id && at.tileId === tile.id) {
+        exitToParent(exit);
+        return;
+      }
+    }
     if (subject) {
       moveOneCharacter(tile, subject);
       return;
@@ -281,6 +376,8 @@ export function createMapTravel(app, env) {
     refreshLocationPanels,
     discoverTile,
     clickSubject,
+    currentExits,
+    exitToParent,
     moveOneCharacter,
     onCellClick,
     onCellHover,

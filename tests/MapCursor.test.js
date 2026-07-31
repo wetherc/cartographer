@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isCursorKey, nextCursor } from '../src/map/MapCursor.js';
+import { cursorSide, isCursorKey, nextCursor } from '../src/map/MapCursor.js';
 
 test('isCursorKey recognizes the four arrow keys and nothing else', () => {
   for (const key of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']) {
@@ -8,6 +8,14 @@ test('isCursorKey recognizes the four arrow keys and nothing else', () => {
   }
   assert.equal(isCursorKey('Enter'), false);
   assert.equal(isCursorKey('a'), false);
+});
+
+test('cursorSide names the side each arrow key heads off', () => {
+  assert.equal(cursorSide('ArrowUp'), 'north');
+  assert.equal(cursorSide('ArrowRight'), 'east');
+  assert.equal(cursorSide('ArrowDown'), 'south');
+  assert.equal(cursorSide('ArrowLeft'), 'west');
+  assert.equal(cursorSide('Enter'), null);
 });
 
 test('nextCursor starts a null cursor at the grid centre, then applies the move', () => {

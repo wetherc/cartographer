@@ -1,5 +1,6 @@
 import { getTile } from './TileGrid.js';
-import { isCursorKey, nextCursor } from './MapCursor.js';
+import { cursorSide, isCursorKey, nextCursor } from './MapCursor.js';
+import { exitForSide } from './MapExits.js';
 import { parseCoords, tileIdAt, tileRect } from './MapGeometry.js';
 
 /** @typedef {import('./MapCanvas.js').MapCanvas} MapCanvas */
@@ -59,6 +60,17 @@ export class MapCanvasKeyboard {
       event.preventDefault();
       const current = host.cursorCellId ? parseCoords(host.cursorCellId) : null;
       const next = nextCursor(current, event.key, host.node.width, host.node.height);
+      // An arrow pressed at the border it points at leaves the cursor where it
+      // is; when that border is a way out, take it. Walking off the edge is the
+      // gesture the arrow already suggests, so there is no extra key to learn.
+      if (current && next.x === current.x && next.y === current.y && !host.authoring) {
+        const side = cursorSide(event.key);
+        const exit = side ? exitForSide(host.exits, side) : null;
+        if (exit) {
+          host.onExitClick?.(exit);
+          return;
+        }
+      }
       host.cursorCellId = tileIdAt(next.x, next.y);
       this._ensureCellVisible(next.x, next.y);
       host.render();

@@ -35,6 +35,7 @@ function recordingEnv(currentNodeId = 'node-a') {
     clearSelection: () => calls.push('clearSelection'),
     syncPartyMarker: () => calls.push('syncPartyMarker'),
     syncPaletteKind: () => calls.push('syncPaletteKind'),
+    syncExits: () => calls.push('syncExits'),
     breadcrumb: {
       update: (c) => calls.push(`breadcrumb:${c.length}`),
     },
@@ -52,22 +53,23 @@ test('reframe re-frames the canvas, drops the selection, and re-syncs party and 
     'clearSelection',
     'syncPartyMarker',
     'syncPaletteKind',
+    'syncExits',
     'breadcrumb:1',
     'worldTree',
     'regionTree',
   ]);
 });
 
-test('without reframe the canvas redraws in place and nothing else is touched', () => {
+test('without reframe the canvas redraws in place, keeping the selection and framing', () => {
   const { app, env, calls } = recordingEnv();
   resyncMapViews(app, env, { reframe: false });
-  assert.deepEqual(calls, ['refreshNode', 'breadcrumb:1', 'worldTree', 'regionTree']);
+  assert.deepEqual(calls, ['refreshNode', 'syncExits', 'breadcrumb:1', 'worldTree', 'regionTree']);
 });
 
 test('omitting the options behaves like reframe: false', () => {
   const { app, env, calls } = recordingEnv();
   resyncMapViews(app, env);
-  assert.deepEqual(calls, ['refreshNode', 'breadcrumb:1', 'worldTree', 'regionTree']);
+  assert.deepEqual(calls, ['refreshNode', 'syncExits', 'breadcrumb:1', 'worldTree', 'regionTree']);
 });
 
 test('a redraw never clears the selection, re-filters the palette, or moves the party marker', () => {

@@ -141,6 +141,33 @@ body.mode-build .map-controls__fog {
   color: var(--overlay-text);
 }
 
+/* The map's ways out as real buttons: the keyboard and screen-reader path to the
+   return arrows the canvas draws. Hidden on the container rather than per button,
+   so the buttons stay in one flex row and tabbing in costs a single reflow. */
+.map-exits {
+  position: absolute;
+  bottom: var(--space-2);
+  left: var(--space-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.map-exits:focus-within {
+  width: auto;
+  max-width: calc(100% - var(--space-4));
+  height: auto;
+  padding: var(--space-1);
+  overflow: visible;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--overlay-bg) 85%, transparent);
+  clip: auto;
+}
+
 .handout-panel__image {
   display: block;
   max-width: 100%;

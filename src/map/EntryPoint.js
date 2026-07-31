@@ -1,5 +1,5 @@
 import { parseCoords, tileIdAt } from './MapGeometry.js';
-import { blockFor, nearestSide, sideAxis } from './MapExits.js';
+import { blockFor, nearestSide, sideAxis, stairsDownTo } from './MapExits.js';
 import { kindOf } from './TilePalette.js';
 
 /** @typedef {{ minX: number, minY: number, maxX: number, maxY: number }} Bounds */
@@ -151,23 +151,6 @@ export function computeRegionEntryTile(parent, child, childNodeId, party) {
     ? { minX: group.minX, minY: group.minY, maxX: group.maxX, maxY: group.maxY }
     : null;
   return resolveEntryTile(child, computeEntryTile(child.width, child.height, block, partyCoords));
-}
-
-/**
- * The parent's stairs-down tile leading to a child, if the child is a level
- * below rather than a space entered from the side. The one authored connection
- * between two stacked levels, so it is both how the party gets down and where
- * they come back up.
- * @param {import('../types/map.js').MapNode} parent
- * @param {string} childNodeId
- * @returns {import('../types/map.js').Tile | null}
- */
-export function stairsDownTo(parent, childNodeId) {
-  return (
-    parent.tiles.find(
-      (t) => t.childNodeId === childNodeId && kindOf(t.imageRef) === 'stairs-down',
-    ) ?? null
-  );
 }
 
 /**

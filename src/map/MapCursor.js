@@ -12,12 +12,33 @@ const DELTAS = {
 };
 
 /**
+ * The side of the map each direction leads off, so a cursor that cannot move any
+ * further can be read as walking off that edge.
+ * @type {Record<string, import('../types/map.js').ExitSide>}
+ */
+const SIDES = {
+  ArrowUp: 'north',
+  ArrowRight: 'east',
+  ArrowDown: 'south',
+  ArrowLeft: 'west',
+};
+
+/**
  * Whether a key names a cursor direction.
  * @param {string} key
  * @returns {boolean}
  */
 export function isCursorKey(key) {
   return key in DELTAS;
+}
+
+/**
+ * The side of the node a cursor key heads towards, or null for any other key.
+ * @param {string} key
+ * @returns {import('../types/map.js').ExitSide | null}
+ */
+export function cursorSide(key) {
+  return SIDES[key] ?? null;
 }
 
 /**

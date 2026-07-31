@@ -45,7 +45,9 @@ export function findExits(node, parent) {
   if (!node || !parent) return [];
   const target = { targetNodeId: parent.id, targetName: parent.name };
   const exits =
-    node.kind === 'interior' ? interiorExits(node, target) : edgeExits(node, parent, target);
+    node.kind === 'interior'
+      ? interiorExits(node, parent, target)
+      : edgeExits(node, parent, target);
   if (exits.length) return exits;
   return [{ kind: 'fallback', ...target }];
 }
@@ -81,20 +83,24 @@ function edgeExits(node, parent, target) {
  * The door and stairway tiles that lead out of an interior. A door qualifies
  * when it opens onto what is outside the structure: it sits on the grid border,
  * or beside a cell the map leaves empty (the void a generated dungeon leaves
- * around its rooms). Stairs up always lead to the level above, which is the
- * parent. Either way a tile that already links to a child node is a way further
- * in, not out, so it is skipped.
+ * around its rooms). Stairs up lead out only when the parent is the level above,
+ * which it is when the parent links here through a stairs-down tile; a keep whose
+ * entrance is a door has its own staircases inside, and those go to floors the map
+ * does not model. Either way a tile that already links to a child node is a way
+ * further in, not out, so it is skipped.
  * @param {MapNode} node
+ * @param {MapNode} parent
  * @param {{ targetNodeId: string, targetName: string }} target
  * @returns {MapExit[]}
  */
-function interiorExits(node, target) {
+function interiorExits(node, parent, target) {
+  const stacked = !!stairsDownTo(parent, node.id);
   /** @type {MapExit[]} */
   const exits = [];
   for (const tile of node.tiles) {
     if (tile.childNodeId) continue;
     const kind = kindOf(tile.imageRef);
-    if (kind === 'stairs-up') {
+    if (kind === 'stairs-up' && stacked) {
       exits.push({ kind: 'tile', tileId: tile.id, via: 'stairs-up', ...target });
     } else if (kind === 'door' && opensOutward(node, tile)) {
       exits.push({ kind: 'tile', tileId: tile.id, via: 'door', ...target });
@@ -126,6 +132,23 @@ function opensOutward(node, tile) {
     const neighbor = getTile(node, tileIdAt(coords.x + dx, coords.y + dy));
     return !neighbor || !neighbor.imageRef;
   });
+}
+
+/**
+ * The parent's stairs-down tile leading to a child, if the child is a level below
+ * rather than a space entered from the side. The one authored connection between
+ * two stacked levels, so it is both how the party gets down and where they come
+ * back up, and it is what makes a child's own stairs-up a way out.
+ * @param {MapNode} parent
+ * @param {string} childNodeId
+ * @returns {Tile | null}
+ */
+export function stairsDownTo(parent, childNodeId) {
+  return (
+    parent.tiles.find(
+      (t) => t.childNodeId === childNodeId && kindOf(t.imageRef) === 'stairs-down',
+    ) ?? null
+  );
 }
 
 /**

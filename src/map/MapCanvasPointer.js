@@ -1,4 +1,5 @@
 import { getTile } from './TileGrid.js';
+import { exitBandGeometry, hitExitBand } from './MapExits.js';
 import {
   screenToTile,
   clampZoom,
@@ -171,6 +172,40 @@ export class MapCanvasPointer {
   }
 
   /**
+   * The edge exit whose arrow a pointer event falls on, or null. Bands are built
+   * from the same MapExits geometry the renderer draws them with, so the rect
+   * tested here is the pill the GM can see.
+   * @param {PointerEvent} event
+   * @returns {import('../types/map.js').MapExit | null}
+   */
+  _eventExit(event) {
+    const host = this.host;
+    if (!host.node || !host.exits.length || !host.onExitClick) return null;
+    const rect = host.canvas.getBoundingClientRect();
+    const buffer = clientToBuffer(
+      event.clientX,
+      event.clientY,
+      rect,
+      host.canvas.width,
+      host.canvas.height,
+    );
+    const view = {
+      offsetX: host.offsetX,
+      offsetY: host.offsetY,
+      scale: host.scale,
+      canvasWidth: host.canvas.width,
+      canvasHeight: host.canvas.height,
+      partyTileId: host.partyTileId,
+    };
+    for (const exit of host.exits) {
+      if (exit.kind !== 'edge') continue;
+      const geom = exitBandGeometry(host.node, view, host.tileSize, exit);
+      if (hitExitBand(exit, geom, buffer.x, buffer.y)) return exit;
+    }
+    return null;
+  }
+
+  /**
    * Fire onStrokeCell for the cell under the pointer, once per distinct cell,
    * skipping out-of-bounds cells so a stroke can't author past the map edge.
    * @param {PointerEvent} event
@@ -216,6 +251,9 @@ export class MapCanvasPointer {
       return;
     }
     if (!this._panning) {
+      // A return arrow is a control drawn on the canvas, so it has to say so
+      // under the pointer; the grid itself keeps the default cursor.
+      host.canvas.style.cursor = this._eventExit(event) ? 'pointer' : '';
       this._trackHover(event);
       return;
     }
@@ -254,8 +292,11 @@ export class MapCanvasPointer {
     host.onCellHover(tile, event.clientX, event.clientY);
   }
 
-  /** Reset hover state and tell the handler the pointer is off the grid. */
+  /** Reset hover state and tell the handler the pointer is off the grid. Also
+   * drops the exit arrow's pointer cursor, unconditionally: the pointer leaving
+   * the canvas over an arrow would otherwise leave the cursor set. */
   _clearHover() {
+    this.host.canvas.style.cursor = '';
     if (this._hoverCellId === null) return;
     this._hoverCellId = null;
     this.host.onCellHover?.(null, 0, 0);
@@ -336,7 +377,17 @@ export class MapCanvasPointer {
     }
     const wasClick = this._pendingClick && this._dragDistance < 4;
     this._pendingClick = false;
-    if (!wasClick || host.authoring || !host.onCellClick || !host.node) return;
+    if (!wasClick || host.authoring || !host.node) return;
+
+    // Exits are tested before cells: a band clamped onto the map (the border
+    // panned out of view) sits over tiles, and the click has to land on the
+    // arrow the GM is looking at rather than the terrain behind it.
+    const exit = this._eventExit(event);
+    if (exit) {
+      host.onExitClick?.(exit);
+      return;
+    }
+    if (!host.onCellClick) return;
 
     // Fire for any in-bounds cell, whether or not a tile currently sits there.
     // The handler gets the tile if one exists, or null.

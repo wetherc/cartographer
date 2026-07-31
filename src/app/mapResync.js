@@ -15,8 +15,8 @@
  *   sibling's name, a cleared region link). The canvas redraws in place,
  *   keeping the GM's pan and zoom.
  *
- * Both then refresh the breadcrumb and the two world trees, which are derived
- * from grid contents either way.
+ * Both then recompute the node's ways out and refresh the breadcrumb and the two
+ * world trees, which are derived from grid contents either way.
  *
  * This lives in its own module rather than in mapWiring so that nodeActions,
  * which mapWiring imports, can call it without an import cycle. It reads the
@@ -37,6 +37,10 @@ export function resyncMapViews(app, env, { reframe = false } = {}) {
   } else {
     env.mapCanvas.refreshNode(app.navigator.getCurrentNode());
   }
+  // Either way the ways out may have changed: navigation lands in a different
+  // node, and a world edit from elsewhere (another tab, a node action) can repaint
+  // the terrain around the region block the node in view sits in.
+  env.syncExits();
   env.breadcrumb.update(app.navigator.getBreadcrumb());
   env.worldTree.update();
   env.regionTree.update();
