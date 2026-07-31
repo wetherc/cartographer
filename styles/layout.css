@@ -92,6 +92,13 @@ body.mode-build .app-belowmap {
   touch-action: none;
 }
 
+/* A held fog brush takes over the left button, so the pointer has to say so:
+   without this the only sign is a pressed icon, and clicks that no longer move
+   the party read as a dead map. */
+#map-canvas.is-fog-brush {
+  cursor: crosshair;
+}
+
 #map-canvas:focus-visible {
   outline: 3px solid var(--accent);
   outline-offset: 2px;

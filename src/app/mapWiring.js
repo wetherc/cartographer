@@ -203,8 +203,28 @@ export function wireMapView(app) {
    * @param {string} nodeId
    */
   function goToNode(nodeId) {
+    // A fog brush is work on the node it was picked up over. Carrying it into
+    // another node means the GM's next click paints there instead of moving the
+    // party, with only a pressed icon to explain why.
+    setFogTool(null);
     navigator.goTo(nodeId);
     resyncMapViews(app, env, { reframe: true });
+  }
+
+  /**
+   * Pick up or put down a Play-mode fog brush. A brush takes over the left
+   * button through the authoring gesture, so it has to be a mode the GM can see
+   * and get out of: the canvas carries a class for the crosshair cursor while one
+   * is held, Escape drops it, and so does navigating away. Build mode keeps the
+   * authoring gesture on regardless, and has no fog brush of its own.
+   * @param {'reveal' | 'hide' | null} tool
+   */
+  function setFogTool(tool) {
+    const next = state.mode === 'play' ? tool : null;
+    env.fogTool = next;
+    mapCanvas.setAuthoring(state.mode === 'build' || next !== null);
+    canvasEl.classList.toggle('is-fog-brush', next !== null);
+    mapControls?.update();
   }
 
   // Re-read the node in view and every location view from the grid, for a caller
@@ -359,12 +379,7 @@ export function wireMapView(app) {
     // on/off, reveal-all lights the whole current node.
     fog: {
       getTool: () => env.fogTool,
-      onToolChange: (tool) => {
-        env.fogTool = state.mode === 'play' ? tool : null;
-        // A fog brush needs the stroke gesture, which only fires in authoring
-        // mode; Build mode keeps authoring on regardless.
-        mapCanvas.setAuthoring(state.mode === 'build' || env.fogTool !== null);
-      },
+      onToolChange: setFogTool,
       onRevealAll: () => {
         const node = revealAll(navigator.getCurrentNode());
         grid.updateNode(node);
@@ -375,6 +390,15 @@ export function wireMapView(app) {
         toasts.show(`Revealed all of "${node.name}".`);
       },
     },
+  });
+
+  // Escape puts a held fog brush down, the way it dismisses a dialog: the brush
+  // silently owns the left button, so there has to be a key that gives it back.
+  canvasEl.addEventListener('keydown', (event) => {
+    if (event.key !== 'Escape' || !env.fogTool) return;
+    event.preventDefault();
+    setFogTool(null);
+    toasts.show('Fog brush put down.');
   });
 
   // The keyboard and screen-reader path to the canvas-drawn return arrows, and
@@ -393,11 +417,11 @@ export function wireMapView(app) {
   // after it flips the body classes.
   app.actions.onModeChanged = (mode) => {
     mapCanvas.setRevealAll(mode === 'build');
-    mapCanvas.setAuthoring(mode === 'build');
     tileTooltip.hide();
     env.regionAnchor = null;
-    env.fogTool = null; // the fog brush is a Play-mode tool; changing modes drops it
-    mapControls?.update();
+    // The fog brush is a Play-mode tool; changing modes drops it, and putting it
+    // down settles the authoring gesture and the crosshair for the new mode.
+    setFogTool(null);
     if (mode !== 'build') clearSelection();
     syncExits(); // Build offers no ways out; Play draws them again
     worldTree.update();
@@ -408,11 +432,7 @@ export function wireMapView(app) {
   // Likewise for a role switch: players don't get the fog brush or the
   // authoring gesture, and any open tooltip may now show too much.
   app.actions.onRoleChanged = (role) => {
-    if (role === 'player') {
-      env.fogTool = null;
-      mapCanvas.setAuthoring(false);
-      mapControls?.update();
-    }
+    if (role === 'player') setFogTool(null);
     tileTooltip.hide();
     // The sidebar world tree shows everything to the GM but only discovered
     // nodes to players, so a role flip changes its contents.
