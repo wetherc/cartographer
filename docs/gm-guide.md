@@ -313,14 +313,16 @@ tab's map clicks move no one.
 
 With the switch on, every character stands on the map as their own gold token
 with their name above it; characters travelling together share a tile and
-their names stack. In a player tab bound to a character (see "Player tabs play
-one character"), a click moves only that player's own character; their step
-reveals fog around them, and clicking the party's tile rejoins it. A spectator
-tab moves no one. As GM you can also place one character from the roster (the
-map button on their row, **Place &lt;name&gt; on the map**): any map and tile,
-or back "With the party", without moving anyone else. Individual moves are
-logged, and a character stepping onto an encounter's tile raises the encounter
-alert under their own name. A GM whole-party move still recalls everyone.
+their names stack. Your clicks now move one character: whoever is selected in
+the Party roster. Their step reveals fog around them, clicking the party's tile
+rejoins them to it, and clicking a region-linked tile walks them into that
+region. To move someone else, select them in the roster first. In a player tab
+bound to a character (see "Player tabs play one character"), a click moves that
+player's own character the same way. A spectator tab moves no one. You can also
+place one character from the roster (the map button on their row, labelled
+**Place** plus their name): any map and tile, or back "With the party", which
+is how you reach a map that isn't on screen. A character stepping onto an
+encounter's tile raises the encounter alert under their own name.
 
 Turning the switch off while characters stand apart first regroups the party:
 a dialog asks which member's position everyone teleports to, then all

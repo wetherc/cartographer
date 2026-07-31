@@ -290,19 +290,21 @@ party's tile. A non-null location is the character's own tile.
   everyone back to the shared party position.
 - `isSplit` and `characterPosition` back the regroup flow described below.
 
-Movement permissions reuse `CharacterBinding.partyPermissions`. The GM moves
-the party (map clicks, which recall everyone) and any single character
-(through the roster's place action). A browser tab bound to one player moves
-only that player's character, and that character's steps reveal fog through
-the same `revealAround` path.
+Movement permissions reuse `CharacterBinding.partyPermissions`. Which character
+a map click moves is `mapTravel.js`'s `clickSubject`: while the party is split,
+the GM's clicks move the character selected in the Party roster and a tab bound
+to one player moves that player's character. A moved character's steps reveal
+fog through the same `revealAround` path. The GM can also place any single
+character on any node through the roster's place action, which reaches nodes
+that are not on screen.
 
 All of this individual movement sits behind the `splitParty` flag, persisted
 on `CampaignState` and false by default, toggled by a GM-only switch in the
 Party panel (`app/splitParty.js`). While the switch is off, the app behaves as if
 individual movement did not exist: `syncPartyMarker` passes no tokens to the
 canvas (only the shared marker renders), the roster hides its place action,
-and a bound player's map click is a no-op. The party moves simultaneously, by
-GM clicks alone.
+a GM's map click moves the whole party and recalls everyone to it, and a bound
+player's map click is a no-op.
 
 Turning the switch off while characters are scattered first regroups the
 party: the GM picks a member, and the party position moves to that member's

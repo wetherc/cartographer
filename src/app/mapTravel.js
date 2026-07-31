@@ -2,7 +2,7 @@ import { updateTileMetadata } from '../map/TileGrid.js';
 import { tileIdAt } from '../map/MapGeometry.js';
 import { computeRegionEntryTile, resolveEntryTile } from '../map/EntryPoint.js';
 import { revealAround } from '../map/FogOfWar.js';
-import { moveCharacter, recallAll } from '../party/CharacterTokens.js';
+import { characterPosition, moveCharacter, recallAll } from '../party/CharacterTokens.js';
 import { confirmModal } from '../ui/Modal.js';
 import { meetNPCs } from '../entities/NPC.js';
 import { isGM } from '../view/ViewRole.js';
@@ -105,20 +105,30 @@ export function createMapTravel(app, env) {
   }
 
   /**
-   * A bound player tab moving its own character: the character takes their own
-   * location on the current node's tile (rejoining the party when the click
-   * lands on the party's tile), their step reveals fog around them, and an
-   * encounter on that tile alerts under the character's name. A spectator tab
-   * (no binding) moves no one.
-   * @param {import('../types/map.js').Tile} tile
+   * Which single character this tab's clicks move, or null when they move the
+   * whole party instead. Individual movement exists only while the GM's
+   * split-party toggle is on: the GM moves whoever is selected in the roster,
+   * a bound player tab moves its own character, and a spectator tab (no
+   * binding) moves no one.
+   * @returns {import('../types/entities.js').Character | null}
    */
-  function moveBoundCharacter(tile) {
-    // Individual movement exists only while the GM's split-party toggle is on;
-    // otherwise the party moves simultaneously, by GM clicks alone.
-    if (!state.splitParty) return;
-    const boundId = app.actions.getBoundCharacterId();
-    const character = state.characters.find((c) => c.id === boundId);
-    if (!character) return;
+  function clickSubject() {
+    if (!state.splitParty) return null;
+    const id = isGM(state.role)
+      ? app.actions.getSelectedCharacterId()
+      : app.actions.getBoundCharacterId();
+    return state.characters.find((c) => c.id === id) ?? null;
+  }
+
+  /**
+   * Move one character across the node on screen: they take their own location
+   * on the clicked tile (rejoining the party when the click lands on the
+   * party's tile), their step reveals fog around them, and an encounter on that
+   * tile alerts under their name.
+   * @param {import('../types/map.js').Tile} tile
+   * @param {import('../types/entities.js').Character} character
+   */
+  function moveOneCharacter(tile, character) {
     const nodeId = navigator.getCurrentNode().id;
     const party = partyTracker.getPosition();
     const rejoined = party.nodeId === nodeId && party.tileId === tile.id;
@@ -137,27 +147,42 @@ export function createMapTravel(app, env) {
   }
 
   // Fires only outside authoring mode: Play-mode navigation and moves.
-  // Empty cells are inert. Who moves depends on the tab: the GM's clicks
-  // move the whole party (recalling any individually placed character), a
-  // bound player tab's clicks move only that player's own character, and a
-  // spectator tab moves no one (region tiles still navigate the view).
+  // Empty cells are inert. Who moves depends on the tab and on the split-party
+  // toggle: with splitting off the GM's clicks move the whole party (recalling
+  // any individually placed character) and a player's clicks move no one; with
+  // it on, each tab moves one character — the GM's roster selection, or a bound
+  // player's own character. A spectator tab moves no one either way (region
+  // tiles still navigate the view).
   /** @type {(x: number, y: number, tile: import('../types/map.js').Tile | null) => void} */
   const onCellClick = (x, y, tile) => {
     if (!tile) return;
     const gm = isGM(state.role);
+    const subject = clickSubject();
     if (tile.childNodeId) {
       const parent = navigator.getCurrentNode();
       if (navigator.zoomIn(tile.id)) {
         const child = navigator.getCurrentNode();
-        if (gm) {
-          // Checked before moveTo reveals entry fog: an all-fogged child has
+        if (gm || subject) {
+          // Checked before the move reveals entry fog: an all-fogged child has
           // never been visited, so stepping in now is its discovery.
           const firstVisit = !child.tiles.some((t) => t.revealed);
-          // Zooming into a region moves the party into it. Unless the party
-          // has already been placed in this child before, drop them at the
-          // edge they approached from and reveal fog around it, so the child
-          // doesn't render as a blank fog field with no party marker.
-          if (partyTracker.getPosition().nodeId !== child.id) {
+          // Zooming into a region moves whoever the click moves into it. Unless
+          // they already stand in this child, drop them at the edge they
+          // approached from and reveal fog around it, so the child doesn't
+          // render as a blank fog field with no marker on it.
+          if (subject) {
+            const at = characterPosition(subject, partyTracker.getPosition());
+            if (at.nodeId !== child.id) {
+              const entry = computeRegionEntryTile(parent, child, tile.childNodeId, at);
+              state.characters = moveCharacter(state.characters, subject.id, {
+                nodeId: child.id,
+                tileId: entry,
+              });
+              grid.updateNode(
+                revealAround(navigator.getCurrentNode(), entry, partyTracker.revealRadius),
+              );
+            }
+          } else if (partyTracker.getPosition().nodeId !== child.id) {
             partyTracker.moveTo(
               child.id,
               computeRegionEntryTile(parent, child, tile.childNodeId, partyTracker.getPosition()),
@@ -166,12 +191,16 @@ export function createMapTravel(app, env) {
           }
           app.actions.logEvent(
             'travel',
-            firstVisit ? `Discovered ${child.name}.` : `Entered ${child.name}.`,
+            subject
+              ? `${subject.name} ${firstVisit ? 'discovers' : 'enters'} ${child.name}.`
+              : firstVisit
+                ? `Discovered ${child.name}.`
+                : `Entered ${child.name}.`,
           );
-          app.actions.markDirty(); // party position and fog changed
+          app.actions.markDirty(); // position and fog changed
         }
-        // Re-read the node: moveTo wrote a new, fog-revealed node into the grid,
-        // so the `child` captured above is stale and still fully fogged.
+        // Re-read the node: the move above wrote a new, fog-revealed node into
+        // the grid, so the `child` captured earlier is stale and still fogged.
         env.mapCanvas.setNode(navigator.getCurrentNode());
         env.breadcrumb.update(navigator.getBreadcrumb());
         env.worldTree.update();
@@ -179,8 +208,19 @@ export function createMapTravel(app, env) {
         env.regionTree.update();
         env.syncPartyMarker();
         refreshLocationPanels();
-        if (gm) app.actions.maybeTriggerEncounter();
+        if (subject) {
+          // Re-read the roster: the move above replaced the character object.
+          const moved = state.characters.find((c) => c.id === subject.id) ?? subject;
+          app.actions.maybeTriggerEncounter(
+            characterPosition(moved, partyTracker.getPosition()),
+            subject.name,
+          );
+        } else if (gm) app.actions.maybeTriggerEncounter();
       }
+      return;
+    }
+    if (subject) {
+      moveOneCharacter(tile, subject);
       return;
     }
     if (gm) {
@@ -194,7 +234,7 @@ export function createMapTravel(app, env) {
       app.actions.maybeTriggerEncounter();
       return;
     }
-    moveBoundCharacter(tile);
+    // A spectator tab, or a player tab with no character of its own to move.
   };
 
   // Play-mode read side of the Build-mode tile inspector: hovering a revealed
@@ -240,7 +280,8 @@ export function createMapTravel(app, env) {
     meetNPCsHere,
     refreshLocationPanels,
     discoverTile,
-    moveBoundCharacter,
+    clickSubject,
+    moveOneCharacter,
     onCellClick,
     onCellHover,
   };

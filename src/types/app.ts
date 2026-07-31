@@ -82,6 +82,9 @@ export interface AppActions {
   refreshSelectedCharacter(): void;
   // partyWiring: the character this tab is bound to (Player view), or null.
   getBoundCharacterId(): string | null;
+  // partyWiring: the character selected in the roster, or null for an empty
+  // party. The GM's map clicks move this one while the party is split.
+  getSelectedCharacterId(): string | null;
   // encounterWiring: defaults to the party's position and "The party"; a
   // player moving their own token passes that character's tile and name.
   maybeTriggerEncounter(position?: PartyPosition, subject?: string): void;

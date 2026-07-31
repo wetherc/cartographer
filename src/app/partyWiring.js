@@ -84,6 +84,7 @@ export function wireParty(app) {
   const selectCharacter = scope.select;
   const selectedCharacter = scope.getSelected;
   app.actions.refreshSelectedCharacter = scope.reselect;
+  app.actions.getSelectedCharacterId = scope.getSelectedId;
 
   /** What this tab may do to the character currently on the sheet/inventory.
    * @returns {import('../types/view.js').SheetPermissions} */
@@ -108,8 +109,8 @@ export function wireParty(app) {
     canPlace: () => state.splitParty,
     onSelect: selectCharacter,
     // GM-only individual movement: place one character at any node/tile — or
-    // back "with the party" — without moving anyone else. The map click stays
-    // the whole-party move; this is the split-the-party tool.
+    // back "with the party" — without moving anyone else. Map clicks move the
+    // selected character across the viewed node; this reaches any node.
     onPlace: async (id) => {
       const character = state.characters.find((c) => c.id === id);
       if (!character) return;
