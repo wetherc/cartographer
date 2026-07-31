@@ -298,13 +298,20 @@ fog through the same `revealAround` path. The GM can also place any single
 character on any node through the roster's place action, which reaches nodes
 that are not on screen.
 
+Picking a character in the roster brings them into view while the party is
+split: `partyWiring.js`'s `followCharacter` resolves their
+`characterPosition` and hands it to `mapWiring.js`'s `centerOnLocation`, which
+navigates to that node if the view is elsewhere and centres the canvas on the
+tile at the current zoom. It is the lighter half of `focusLocation` — no tile
+selection, no inspector — so it stays out of the way in Play mode.
+
 All of this individual movement sits behind the `splitParty` flag, persisted
 on `CampaignState` and false by default, toggled by a GM-only switch in the
 Party panel (`app/splitParty.js`). While the switch is off, the app behaves as if
 individual movement did not exist: `syncPartyMarker` passes no tokens to the
 canvas (only the shared marker renders), the roster hides its place action,
-a GM's map click moves the whole party and recalls everyone to it, and a bound
-player's map click is a no-op.
+picking a character leaves the view alone, a GM's map click moves the whole
+party and recalls everyone to it, and a bound player's map click is a no-op.
 
 Turning the switch off while characters are scattered first regroups the
 party: the GM picks a member, and the party position moves to that member's

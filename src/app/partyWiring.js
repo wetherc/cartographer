@@ -21,7 +21,7 @@ import { advanceWatches, advanceToDawn, formatClock } from '../time/GameClock.js
 import { isGM } from '../view/ViewRole.js';
 import { partyPermissions } from '../view/CharacterBinding.js';
 import { createCharacterClaim } from '../view/CharacterClaim.js';
-import { moveCharacter } from '../party/CharacterTokens.js';
+import { characterPosition, moveCharacter } from '../party/CharacterTokens.js';
 import { locationFields, readLocation } from './locationFields.js';
 import { wireSplitParty } from './splitParty.js';
 
@@ -93,6 +93,20 @@ export function wireParty(app) {
     return partyPermissions(state.role, claim.getBoundId(), character?.id ?? '');
   }
 
+  /**
+   * Follow a character the roster just picked: while the party is split they
+   * can be anywhere, so the map jumps to the node they stand in and centres on
+   * their tile. With splitting off everyone rides the party marker, so the
+   * view stays where the GM left it.
+   * @param {string | null} id
+   */
+  function followCharacter(id) {
+    if (!state.splitParty) return;
+    const character = state.characters.find((c) => c.id === id);
+    if (!character) return;
+    app.actions.centerOnLocation(characterPosition(character, app.partyTracker.getPosition()));
+  }
+
   // GM-only (hidden from players via CSS): whether characters may stand apart
   // from the party marker. The roster's per-character place buttons follow it,
   // which is why it redraws the roster mounted below.
@@ -107,7 +121,10 @@ export function wireParty(app) {
     canManage: () => isGM(state.role),
     // The place action only exists while the GM allows splitting the party.
     canPlace: () => state.splitParty,
-    onSelect: selectCharacter,
+    onSelect: (id) => {
+      selectCharacter(id);
+      followCharacter(id);
+    },
     // GM-only individual movement: place one character at any node/tile — or
     // back "with the party" — without moving anyone else. Map clicks move the
     // selected character across the viewed node; this reaches any node.

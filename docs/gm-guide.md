@@ -316,7 +316,9 @@ with their name above it; characters travelling together share a tile and
 their names stack. Your clicks now move one character: whoever is selected in
 the Party roster. Their step reveals fog around them, clicking the party's tile
 rejoins them to it, and clicking a region-linked tile walks them into that
-region. To move someone else, select them in the roster first. In a player tab
+region. To move someone else, select them in the roster first: picking a
+character jumps the map to whatever region they are standing in and centres it
+on their tile, so a scattered party is one click away each. In a player tab
 bound to a character (see "Player tabs play one character"), a click moves that
 player's own character the same way. A spectator tab moves no one. You can also
 place one character from the roster (the map button on their row, labelled

@@ -113,6 +113,9 @@ export interface AppActions {
   // mapWiring: navigate to and centre the map on a staged location, selecting
   // its tile (the Build encounter list's "show on map").
   focusLocation(location: EncounterLocation): void;
+  // mapWiring: navigate to and centre the map on a position, leaving the
+  // Build-mode tile selection alone (the roster following a split party).
+  centerOnLocation(location: EncounterLocation): void;
   undoStroke(): void;
   onModeChanged(mode: AppMode): void;
   onRoleChanged(role: ViewRole): void;

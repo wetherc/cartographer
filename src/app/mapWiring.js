@@ -238,6 +238,22 @@ export function wireMapView(app) {
   }
   app.actions.focusLocation = focusLocation;
 
+  /**
+   * Bring a position into view without touching the Build-mode tile selection:
+   * navigate to its node when the view is looking elsewhere, then centre the
+   * canvas on the tile at the current zoom. How selecting a character in the
+   * roster follows them around a split party.
+   * @param {import('../types/entities.js').EncounterLocation} location
+   */
+  function centerOnLocation(location) {
+    if (navigator.getCurrentNode().id !== location.nodeId) {
+      if (!grid.getNode(location.nodeId)) return;
+      goToNode(location.nodeId);
+    }
+    mapCanvas.centerOnTile(location.tileId);
+  }
+  app.actions.centerOnLocation = centerOnLocation;
+
   const breadcrumb = mountBreadcrumb(mustGetElement('breadcrumb-container'), goToNode);
   env.breadcrumb = breadcrumb;
 
