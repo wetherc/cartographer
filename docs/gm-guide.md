@@ -514,7 +514,8 @@ automatically**: an encounter's HP drops on the spot and defeat is logged; a
 character hit by a foe loses bonus HP first, then real HP, with a log line when
 they drop to 0. NPCs carry no HP, so a hit on one stays a log line.
 
-A player tab sees the same screen with coarse HP bands instead of numbers, no
+A player tab sees the same screen with coarse HP bands instead of numbers
+(except their own character, whose exact HP their sheet already shows), no
 HP editing, and no End combat. On a tab bound to a character, that player runs
 their own turn: the action bar offers their weapons and spells when their turn
 comes up, and **End my turn** passes the turn on. A player tab follows the

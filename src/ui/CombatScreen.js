@@ -135,7 +135,6 @@ export function mountCombatScreen(container, callbacks) {
       return;
     }
     const gm = callbacks.isGM();
-    const viewer = { gm };
     const outcome = fightOutcome(view);
     setNotice(outcome, gm);
     renderRibbon(view, gm, outcome !== null);
@@ -143,10 +142,7 @@ export function mountCombatScreen(container, callbacks) {
     const party = view.rows.filter((row) => row.side === 'party');
     const foes = view.rows.filter((row) => row.side === 'foe');
     const selectedId = callbacks.getSelectedTargetId();
-    board.append(
-      group('Party', party, viewer, selectedId),
-      group('Foes', foes, viewer, selectedId),
-    );
+    board.append(group('Party', party, selectedId), group('Foes', foes, selectedId));
     roveGroup(board, '.combatant-card--selectable', selectedId);
     renderLog();
     announceTurn(view);
@@ -332,8 +328,9 @@ export function mountCombatScreen(container, callbacks) {
 
   /**
    * The left column: whoever is inspected, or whoever's turn it is. HP is
-   * editable by the GM and banded for a player; concentration shows with its
-   * Drop control for a viewer who may act for this combatant.
+   * editable by the GM, exact for a viewer who may act for this combatant,
+   * and banded otherwise; concentration shows with its Drop control for a
+   * viewer who may act.
    * @param {CombatView} view
    * @param {boolean} gm
    */
@@ -357,8 +354,13 @@ export function mountCombatScreen(container, callbacks) {
     facts.appendChild(fact('Initiative', String(row.initiative)));
     if (row.ac !== null) facts.appendChild(fact('AC', String(row.ac)));
     if (row.hp) {
+      // Exact where the viewer may act for this combatant — the GM anywhere, a
+      // player on their own character, whose sheet already shows the numbers.
       facts.appendChild(
-        fact('HP', gm ? `${row.hp.current}/${row.hp.max}` : hpBand(row.hp.current, row.hp.max)),
+        fact(
+          'HP',
+          row.mayAct ? `${row.hp.current}/${row.hp.max}` : hpBand(row.hp.current, row.hp.max),
+        ),
       );
     }
     active.appendChild(facts);
@@ -480,10 +482,9 @@ export function mountCombatScreen(container, callbacks) {
   /**
    * @param {string} label
    * @param {CombatantRow[]} rows
-   * @param {{ gm: boolean }} viewer
    * @param {string | null} selectedId
    */
-  function group(label, rows, viewer, selectedId) {
+  function group(label, rows, selectedId) {
     return el(
       'section',
       'combat-board__group',
@@ -494,7 +495,7 @@ export function mountCombatScreen(container, callbacks) {
             'div',
             'combat-board__cards',
             ...rows.map((row) =>
-              combatantCard(row, viewer, {
+              combatantCard(row, {
                 selected: row.id === selectedId,
                 loadout: callbacks.getLoadout(row.id),
                 onSelect: (id) => {

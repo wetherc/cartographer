@@ -22,8 +22,12 @@ import { loadoutBlock } from './LoadoutBlock.js';
  * `loadout` is the armor, weapons, spells, and slots block, already trimmed to
  * what this viewer may see; the card draws whatever survived that and leaves the
  * block out when nothing did.
+ *
+ * HP is exact where the viewer may act for the combatant (`row.mayAct`: the GM
+ * everywhere, a player on their own character, matching the sheet they can
+ * already read) and the coarse band everywhere else. AC is public information —
+ * shown exact to every viewer.
  * @param {CombatantRow} row
- * @param {{ gm: boolean }} viewer the GM reads exact HP, a player the band
  * @param {{
  *   selected?: boolean,
  *   onSelect?: (id: string) => void,
@@ -31,7 +35,7 @@ import { loadoutBlock } from './LoadoutBlock.js';
  * }} [selection]
  * @returns {HTMLElement}
  */
-export function combatantCard(row, viewer, selection = {}) {
+export function combatantCard(row, selection = {}) {
   const selectable = Boolean(selection.onSelect);
   const classes = [
     'combatant-card',
@@ -66,7 +70,7 @@ export function combatantCard(row, viewer, selection = {}) {
     card.setAttribute('aria-label', `${row.name ?? 'Unknown combatant'}, defeated`);
   }
 
-  if (row.hp) card.appendChild(hpLine(row.hp, viewer.gm));
+  if (row.hp) card.appendChild(hpLine(row.hp, row.mayAct));
 
   if (row.ac !== null) {
     card.appendChild(el('div', 'combatant-card__meta', `AC ${row.ac}`));
@@ -98,13 +102,14 @@ function foeMark() {
 }
 
 /**
- * The card's HP line. The GM gets the exact numbers over the shared stat-bar
- * track; a player gets the coarse band the rest of the player view uses.
+ * The card's HP line. A viewer who may act for the combatant gets the exact
+ * numbers over the shared stat-bar track; anyone else gets the coarse band the
+ * rest of the player view uses.
  * @param {{ current: number, max: number }} hp
- * @param {boolean} gm
+ * @param {boolean} exact
  */
-function hpLine(hp, gm) {
-  if (!gm) return el('div', 'combatant-card__hp-band', hpBand(hp.current, hp.max));
+function hpLine(hp, exact) {
+  if (!exact) return el('div', 'combatant-card__hp-band', hpBand(hp.current, hp.max));
   const fraction = hp.max > 0 ? Math.max(0, Math.min(1, hp.current / hp.max)) : 0;
   const fill = el('span', `stat-bar__fill${fraction <= 0.25 ? ' stat-bar__fill--critical' : ''}`);
   fill.style.width = `${fraction * 100}%`;

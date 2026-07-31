@@ -118,8 +118,9 @@ downstream can leak it by drawing a field it was handed.
 Three columns over a turn ribbon, stacking below 1100px.
 
 The **active column** shows the inspected combatant or, by default, whoever's
-turn it is: name, initiative, AC, HP (exact for the GM, the coarse band for a
-player), condition chips, and concentration with its Drop control. The GM
+turn it is: name, initiative, AC, HP (exact where the viewer may act for the
+combatant — the GM anywhere, a player on their own character — the coarse band
+otherwise), condition chips, and concentration with its Drop control. The GM
 gets a damage/heal amount and button pair, the Encounters panel's idiom,
 applied through `applyToTarget`, the same single write path every hit uses.
 Under the facts sits the combatant's **loadout** in its fuller form: weapons
