@@ -15,6 +15,9 @@ import { exitDescription } from '../map/MapExits.js';
  * else: tabbing past the canvas brings the list into view, tabbing on hides it
  * again. Hiding happens on the container rather than per button, so the buttons
  * stay in one flex row and appearing costs one reflow instead of one per button.
+ * The one exception is a fallback-only list, which stays pinned open: the canvas
+ * draws no arrow and no badge for a fallback exit, so without the pin a pointer
+ * user in a sealed interior would see no way out at all.
  *
  * @param {HTMLElement} container the map viewport (position: relative)
  * @param {(exit: MapExit) => void} onExit
@@ -35,12 +38,21 @@ export function mountExitList(container, onExit) {
     // time would drop focus out of the list mid-tab.
     if (key === lastKey) return;
     lastKey = key;
+    // A change can still land while a button holds focus (the exits recompute
+    // as the party moves); clearing would drop focus to the body and collapse
+    // the list mid-tab, so it moves to the first surviving button instead.
+    const hadFocus = root.contains(document.activeElement);
     root.textContent = '';
     for (const exit of exits) {
       root.appendChild(
         textButton(exitDescription(exit), () => onExit(exit), { className: 'map-exits__btn' }),
       );
     }
+    root.classList.toggle(
+      'map-exits--pinned',
+      exits.length > 0 && exits.every((exit) => exit.kind === 'fallback'),
+    );
+    if (hadFocus) root.querySelector('button')?.focus();
   }
 
   update([]);

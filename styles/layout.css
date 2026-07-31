@@ -150,7 +150,9 @@ body.mode-build .map-controls__fog {
 
 /* The map's ways out as real buttons: the keyboard and screen-reader path to the
    return arrows the canvas draws. Hidden on the container rather than per button,
-   so the buttons stay in one flex row and tabbing in costs a single reflow. */
+   so the buttons stay in one flex row and tabbing in costs a single reflow.
+   A fallback-only list carries --pinned and stays open: the canvas draws nothing
+   for a fallback exit, so the pinned buttons are the only visible way out. */
 .map-exits {
   position: absolute;
   bottom: var(--space-2);
@@ -164,7 +166,8 @@ body.mode-build .map-controls__fog {
   clip: rect(0, 0, 0, 0);
 }
 
-.map-exits:focus-within {
+.map-exits:focus-within,
+.map-exits--pinned {
   width: auto;
   max-width: calc(100% - var(--space-4));
   height: auto;
