@@ -1,6 +1,7 @@
 import { mustGetElement } from '../ui/dom.js';
 import { alertModal } from '../ui/Modal.js';
 import { isGM } from '../view/ViewRole.js';
+import { SHORTCUT_HELP, shortcutFor } from '../view/Shortcuts.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -8,6 +9,11 @@ import { isGM } from '../view/ViewRole.js';
  * App-wide keyboard shortcuts. Skipped while typing in a field or while a
  * dialog is open, so they never eat input; the map keeps its own keys (arrows,
  * Enter, +/-) via canvas focus. '?' doubles as discoverability for all of it.
+ *
+ * Which key means what is `view/Shortcuts.js`'s table; this is the listener over
+ * it, plus the clicks and calls each action turns into. Save, Undo, and Redo go
+ * through the header buttons rather than their handlers, so a shortcut and a
+ * click are the same code path.
  * @param {AppContext} app
  */
 export function wireShortcuts(app) {
@@ -20,41 +26,20 @@ export function wireShortcuts(app) {
       target.isContentEditable;
     if (typing || document.querySelector('dialog[open]')) return;
 
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
-      event.preventDefault();
-      mustGetElement('save-btn').click();
-      return;
-    }
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
-      event.preventDefault();
-      // Shift is redo, and always the save-level one: strokes have no redo, so
-      // there is nothing for a Build-mode variant to do.
-      if (event.shiftKey) mustGetElement('redo-btn').click();
-      // In Build mode, Ctrl+Z undoes the last stroke-level edit (the thing a GM
-      // mid-painting reaches for); the header Undo button keeps the save-level
-      // story, which Ctrl+Z still drives everywhere else.
-      else if (app.state.mode === 'build') app.actions.undoStroke();
-      else mustGetElement('undo-btn').click();
-      return;
-    }
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
+    const action = shortcutFor(event, { mode: app.state.mode, gm: isGM(app.state.role) });
+    if (!action) return;
+    // Only the modifier combinations have a browser default worth stopping; a
+    // bare letter has none, and preventing it would be invisible either way.
+    if (event.ctrlKey || event.metaKey) event.preventDefault();
 
-    const gm = isGM(app.state.role);
-    if (event.key === 'b' && gm) app.actions.setMode('build');
-    else if (event.key === 'p' && gm) app.actions.setMode('play');
-    else if (event.key === '?') {
-      alertModal(
-        [
-          'Ctrl/Cmd+S — save the campaign',
-          'Ctrl/Cmd+Z — undo (Build: last edit; Play: previous save)',
-          'Ctrl/Cmd+Shift+Z — redo the last undone save',
-          'B / P — switch to Build / Play mode',
-          'On the map (click it first):',
-          'Arrows — move the cursor · Enter/Space — act',
-          '+ / - — zoom',
-        ].join('\n'),
-        { title: 'Keyboard shortcuts', label: 'Close' },
-      );
+    if (action === 'save') mustGetElement('save-btn').click();
+    else if (action === 'undo') mustGetElement('undo-btn').click();
+    else if (action === 'undo-stroke') app.actions.undoStroke();
+    else if (action === 'redo') mustGetElement('redo-btn').click();
+    else if (action === 'build') app.actions.setMode('build');
+    else if (action === 'play') app.actions.setMode('play');
+    else if (action === 'help') {
+      alertModal(SHORTCUT_HELP.join('\n'), { title: 'Keyboard shortcuts', label: 'Close' });
     }
   });
 }

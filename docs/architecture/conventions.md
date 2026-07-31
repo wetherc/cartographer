@@ -300,6 +300,19 @@ The split, area by area:
 | `MapNavigator`, `RegionGroups`, `FogOfWar`, `PartyTracker` | `MapCanvas`'s event handlers |
 | `Encounter`, `Resource`, `Character` | `ui/CharacterSheet.js`, `ui/InventoryPanel.js`, `ui/EncounterPanel.js` |
 | `SaveManager`'s serialize/deserialize/toTileGrid | its localStorage/download/file wrappers |
+| `combat/AttackResolve.js` | `app/weaponAttack.js`'s dialog and dice tray |
+| `entities/ItemDraft.js`, `entities/SpellDraft.js` | `ui/ItemForm.js`, `ui/SpellForm.js` |
+| `view/StatBars.js`, `view/Shortcuts.js` | `ui/CharacterBars.js`, `app/shortcuts.js` |
+| `map/NodeEdits.js`, `storage/SaveNotices.js` | `app/nodeActions.js`, `app/campaignActions.js` |
+
+The bottom four rows are all the same move, and it is worth making deliberately
+when you touch a wiring module: the decision a piece of glue makes usually does
+not need the DOM at all. A submit handler that reads six inputs and builds an
+object is a control read plus a pure function. A keydown handler is a lookup plus
+a click. Splitting there gets the part with the rules under test and leaves the
+part that cannot be tested as small as it can be. `pnpm coverage` will show which
+modules have not had that done to them yet.
 
 See `docs/testing.md` for the practical how-to: running single test files,
-the pre-commit hook, and how to visually verify against the dev server.
+reading the coverage report, the pre-commit hook, and how to visually verify
+against the dev server.

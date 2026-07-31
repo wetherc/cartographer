@@ -13,6 +13,7 @@
 
 import { emptyState, removableChip } from './buttons.js';
 import { classNames, el } from './dom.js';
+import { splitList, splitTrimmedList } from '../util/text.js';
 
 /** @typedef {import('../types/modal.js').FieldOption} FieldOption */
 /** @typedef {import('../types/modal.js').CompositeField} CompositeField */
@@ -346,26 +347,4 @@ export function formatAssignments(assigned) {
   return Object.entries(assigned)
     .map(([row, held]) => `${row}:${held}`)
     .join(',');
-}
-
-/**
- * The comma-joined-list convention these fields share: absent is empty, and an
- * empty segment is dropped rather than becoming a blank entry.
- * @param {string | undefined} value
- * @returns {string[]}
- */
-function splitList(value) {
-  return value === undefined ? [] : String(value).split(',').filter(Boolean);
-}
-
-/**
- * The same list, trimmed, for the tag entry: a GM typing "elvish, dwarvish"
- * into one paste should not get a pill with a leading space.
- * @param {string | undefined} value
- * @returns {string[]}
- */
-function splitTrimmedList(value) {
-  return splitList(value)
-    .map((entry) => entry.trim())
-    .filter(Boolean);
 }

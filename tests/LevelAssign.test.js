@@ -1,6 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { meetsPrereq, canMulticlass, assignLevel } from '../src/entities/LevelAssign.js';
+import {
+  meetsPrereq,
+  canMulticlass,
+  assignLevel,
+  assignOptions,
+  className,
+  prereqText,
+} from '../src/entities/LevelAssign.js';
+import { getClass } from '../src/entities/Classes.js';
 import {
   createCharacter,
   addXP,
@@ -173,4 +181,110 @@ test('addXP defers a multiclass character HP growth to assignment', () => {
   assert.equal(pendingLevels(leveled), 1);
   assert.equal(getHP(assignLevel(leveled, 'fighter')).max, 27);
   assert.equal(getHP(addXP(c, 200, { hpGrowth: 5 })).max, 24); // explicit override
+});
+
+test('className resolves a known class and falls back to the id', () => {
+  assert.equal(className('fighter'), 'Fighter');
+  assert.equal(className('bogus'), 'bogus');
+});
+
+test('prereqText joins one alternative with "and" and several with "or"', () => {
+  assert.equal(prereqText(getClass('rogue')), 'DEX 13');
+  assert.equal(prereqText(getClass('fighter')), 'STR 13 or DEX 13');
+  assert.equal(prereqText(getClass('monk')), 'DEX 13 and WIS 13');
+});
+
+test('a pending level offers every held class one level up', () => {
+  const c = classed(
+    [
+      { classId: 'fighter', level: 2 },
+      { classId: 'rogue', level: 1 },
+    ],
+    { DEX: 14 },
+    4, // one level earned and unassigned
+  );
+  const labels = assignOptions(c).map((o) => o.label);
+  assert.ok(labels.includes('Fighter: level 2 -> 3'));
+  assert.ok(labels.includes('Rogue: level 1 -> 2'));
+});
+
+test('a class the build no longer has is not offered a level', () => {
+  const c = classed([{ classId: 'bogus', level: 1 }], {}, 2);
+  assert.equal(
+    assignOptions(c).some((o) => o.value === 'bogus'),
+    false,
+  );
+});
+
+test('a class the prerequisites allow is offered as a new one at level 1', () => {
+  const c = classed([{ classId: 'fighter', level: 1 }], { DEX: 14 }, 2);
+  const rogue = assignOptions(c).find((o) => o.value === 'rogue');
+  assert.deepEqual(rogue, { value: 'rogue', label: 'Rogue: new class at level 1' });
+});
+
+test('a class the character cannot meet is listed disabled, naming its own requirement', () => {
+  const c = classed([{ classId: 'fighter', level: 1 }], { INT: 8 }, 2);
+  const wizard = assignOptions(c).find((o) => o.value === 'wizard');
+  assert.deepEqual(wizard, {
+    value: 'wizard',
+    label: 'Wizard: requires INT 13',
+    disabled: true,
+  });
+});
+
+test('a held class that blocks leaving is named instead of the new class', () => {
+  // Rogue 2 with DEX 13 (so rogue itself is met) and INT 13 (so wizard is met):
+  // nothing blocks, and wizard is offered.
+  const ok = classed([{ classId: 'rogue', level: 2 }], { DEX: 13, INT: 13 });
+  assert.equal(assignOptions(ok).find((o) => o.value === 'wizard')?.disabled, undefined);
+  // The same character with DEX 8 meets wizard but can no longer leave rogue, so
+  // the requirement quoted is rogue's, with the class it belongs to.
+  const stuck = classed([{ classId: 'rogue', level: 2 }], { DEX: 8, INT: 13 });
+  assert.deepEqual(
+    assignOptions(stuck).find((o) => o.value === 'wizard'),
+    {
+      value: 'wizard',
+      label: 'Wizard: requires DEX 13 (Rogue)',
+      disabled: true,
+    },
+  );
+});
+
+test('the usable options all come before the disabled ones', () => {
+  const c = classed([{ classId: 'fighter', level: 2 }], { STR: 16, DEX: 14 });
+  const options = assignOptions(c);
+  const lastUsable = options.findLastIndex((o) => !o.disabled);
+  const firstDisabled = options.findIndex((o) => o.disabled);
+  assert.ok(lastUsable >= 0 && firstDisabled >= 0);
+  assert.ok(lastUsable < firstDisabled);
+});
+
+test('a level 1 single-class character with nothing pending has nothing to assign', () => {
+  const c = classed([{ classId: 'fighter', level: 1 }], { DEX: 14 });
+  assert.deepEqual(assignOptions(c), []);
+});
+
+test('a multiclass character with nothing pending has nothing to assign either', () => {
+  const c = classed(
+    [
+      { classId: 'fighter', level: 1 },
+      { classId: 'rogue', level: 1 },
+    ],
+    { DEX: 14 },
+  );
+  assert.deepEqual(assignOptions(c), []);
+});
+
+test('a classless character with a pending level is offered every class it qualifies for', () => {
+  const c = { ...createCharacter('c1', 'Nim', { DEX: 14 }), level: 1 };
+  const options = assignOptions(c);
+  assert.equal(options.find((o) => o.value === 'rogue')?.disabled, undefined);
+  assert.equal(
+    options.every((o) => o.label.includes('new class at level 1') || o.disabled),
+    true,
+  );
+});
+
+test('a class with no prerequisite at all reads as empty text', () => {
+  assert.equal(prereqText({ ...getClass('rogue'), multiclassPrereq: [] }), '');
 });

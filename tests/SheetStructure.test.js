@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sheetDeps, sameDeps } from '../src/view/SheetStructure.js';
+import { sheetDeps, sameDeps, spellListDeps } from '../src/view/SheetStructure.js';
 import {
   createCharacter,
   withHP,
@@ -82,6 +82,45 @@ test('a new spell catalog rebuilds, the same one does not', () => {
   // No stamp at all (a host that wired no spell section) still compares equal.
   assert.equal(sameDeps(sheetDeps(hero, perms), sheetDeps(hero, perms)), true);
   assert.equal(sameDeps(sheetDeps(hero, perms), sheetDeps(hero, perms, catalog)), false);
+});
+
+/** The spell list's deps for a character knowing `known`, offered `learnable`. */
+function spellDeps(character, known, learnable, play = true, stamp = 1) {
+  return spellListDeps(character, known, new Set(learnable), play, stamp);
+}
+
+test('learning a spell the classes already offer leaves the row list alone', () => {
+  const before = spellDeps(hero, [], ['fireball']);
+  const after = spellDeps(hero, ['fireball'], ['fireball']);
+  assert.equal(sameDeps(before, after), true);
+});
+
+test('learning a spell the classes do not offer adds a row', () => {
+  const before = spellDeps(hero, [], ['fireball']);
+  const after = spellDeps(hero, ['wish'], ['fireball']);
+  assert.equal(sameDeps(before, after), false);
+});
+
+test('the order the outsiders were learned in does not matter', () => {
+  assert.equal(
+    sameDeps(spellDeps(hero, ['wish', 'bless'], []), spellDeps(hero, ['bless', 'wish'], [])),
+    true,
+  );
+});
+
+test('a new character, level, class list, permission, or catalog rebuilds the list', () => {
+  const base = spellDeps(hero, [], ['fireball']);
+  assert.equal(sameDeps(base, spellDeps({ ...hero, id: 'other' }, [], ['fireball'])), false);
+  assert.equal(sameDeps(base, spellDeps({ ...hero, level: 9 }, [], ['fireball'])), false);
+  assert.equal(
+    sameDeps(
+      base,
+      spellDeps({ ...hero, classes: [{ classId: 'bard', level: 1 }] }, [], ['fireball']),
+    ),
+    false,
+  );
+  assert.equal(sameDeps(base, spellDeps(hero, [], ['fireball'], false)), false);
+  assert.equal(sameDeps(base, spellDeps(hero, [], ['fireball'], true, 2)), false);
 });
 
 test('level, XP, stats, classes, inventory, and the spellbook all rebuild', () => {

@@ -8,21 +8,12 @@ import { select, textField } from './formFields.js';
 import { buildItemForm } from './ItemForm.js';
 import { buildEquipment } from './InventoryEquipment.js';
 import { buildRow } from './InventoryRows.js';
+import { slugify } from '../util/text.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../entities/InventoryLog.js').InventoryEvent} InventoryEvent */
-
-/**
- * Derive a stable item id from its name so adding the same item twice stacks
- * quantity onto the existing row instead of creating a duplicate one.
- * @param {string} name
- * @returns {string}
- */
-function idFromName(name) {
-  return name.trim().toLowerCase().replace(/\s+/g, '-');
-}
 
 /**
  * Mount the character's kit across two separate host elements — Equipment
@@ -233,7 +224,9 @@ export function mountInventoryPanel(
           onSubmit: (fields) => {
             const character = current;
             if (!character) return;
-            const id = idFromName(fields.name);
+            // The id comes from the name so adding the same item twice stacks
+            // quantity onto the existing row instead of making a duplicate.
+            const id = slugify(fields.name);
             commit(addItem(character, { ...fields, id }), {
               verb: 'pickup',
               itemName: fields.name,

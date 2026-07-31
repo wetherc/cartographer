@@ -73,6 +73,28 @@ export function sheetDeps(character, perms, catalogStamp) {
 }
 
 /**
+ * Everything the Spellbook tab's row list is built from. Most of it is the
+ * learnable set, which follows the character's classes and level, but a known
+ * spell those classes do not offer is listed only because the character knows
+ * it. Learning or forgetting one of those adds or removes a row without changing
+ * anything else in the list, so the known-but-not-learnable ids are folded in as
+ * a sorted string rather than left out.
+ * @param {Character} character
+ * @param {string[]} knownIds the character's cantrips and known spells
+ * @param {Set<string>} learnableIds what the classes offer, from the last build
+ * @param {boolean} play whether the viewer may act on the sheet
+ * @param {unknown} catalogStamp changes whenever the spell catalog does
+ * @returns {unknown[]}
+ */
+export function spellListDeps(character, knownIds, learnableIds, play, catalogStamp) {
+  const outsiders = knownIds
+    .filter((id) => !learnableIds.has(id))
+    .sort()
+    .join(',');
+  return [character.id, play, character.level, character.classes, outsiders, catalogStamp];
+}
+
+/**
  * Whether two {@link sheetDeps} lists describe the same structure. A missing
  * previous list (nothing built yet) is never a match.
  * @param {unknown[] | null} a

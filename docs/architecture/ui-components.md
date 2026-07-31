@@ -480,6 +480,12 @@ finished value or `null` to refuse the submit; a blank name is refused before
 accepted submit, which is how the inventory add row clears itself while the
 per-item editor keeps its values on screen.
 
+An `assemble` should read its controls and hand the values to a pure function
+rather than build the finished value itself. The item and spell forms do this
+through `entities/ItemDraft.js` and `entities/SpellDraft.js`, which is where
+their tests are; see
+[Entities](entities.md#the-ui-layer-over-entities).
+
 ## Tabs and disclosures
 
 Disclosures and most tab strips are "wire existing markup" helpers rather than

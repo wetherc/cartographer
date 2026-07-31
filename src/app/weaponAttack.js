@@ -1,8 +1,15 @@
 import { promptModal } from '../ui/Modal.js';
-import { effectiveStatBlock } from '../entities/Encounter.js';
-import { rollDamage, attackTweak, DIE_SIDES } from '../dice/DiceRoller.js';
-import { effectiveStats, weaponAbility } from '../entities/Equipment.js';
-import { abilityModifier, formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
+import { rollDamage, attackTweak } from '../dice/DiceRoller.js';
+import { weaponAbility } from '../entities/Equipment.js';
+import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
+import {
+  abilityModOf,
+  attackerStats,
+  damageModifier,
+  damageParts,
+  droppedNote,
+  resolveAttack,
+} from '../combat/AttackResolve.js';
 import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -90,8 +97,7 @@ export async function weaponAttack(app, combat, participant, weapon) {
   if (!values) return;
   const defender = defenders.find((d) => d.id === values.target) ?? defenders[0];
   const ability = weaponAbility(weapon);
-  const stats = 'statBlock' in attacker ? effectiveStatBlock(attacker) : effectiveStats(attacker);
-  const abilityMod = abilityModifier(stats[ability] ?? 10);
+  const abilityMod = abilityModOf(attackerStats(attacker), ability);
   const attackBonus = abilityMod + proficiencyBonus(attacker.level);
   // Bonus attack dice join the d20 in the tray's selection so they roll in
   // view; penalty dice are rolled by attackTweak and folded into the
@@ -105,19 +111,16 @@ export async function weaponAttack(app, combat, participant, weapon) {
     { counts: { d20: 1, ...tweak.counts }, modifier: attackBonus + tweak.modifier },
     defender.ac,
   );
-  const natural = result.results.find((r) => r.die === 'd20')?.rolls[0] ?? 0;
-  // 5e attack resolution: a natural 1 always misses and a natural 20 always
-  // hits (and crits, doubling the damage dice); anything else compares the
-  // modified total against the defender's AC.
-  const crit = natural === 20;
-  const hit = natural !== 1 && (crit || result.total >= defender.ac);
-  const outcome = crit ? 'critical hit' : natural === 1 ? 'natural 1, miss' : hit ? 'hit' : 'miss';
+  const d20 = result.results.find((r) => r.die === 'd20');
+  const natural = d20?.rolls[0] ?? 0;
+  const { crit, hit, outcome } = resolveAttack({
+    natural,
+    total: result.total,
+    ac: defender.ac,
+  });
   // An advantage/disadvantage attack notes the discarded d20 so the log
   // shows both dice, matching the tray's own readout.
-  const d20 = result.results.find((r) => r.die === 'd20');
-  const modeNote = d20?.dropped?.length
-    ? ` at ${result.selection.mode} (dropped ${d20.dropped.join(',')})`
-    : '';
+  const modeNote = droppedNote(d20, result.selection.mode);
   const tweakNote = tweak.note ? `, ${tweak.note}` : '';
   app.actions.logEvent(
     'combat',
@@ -129,21 +132,15 @@ export async function weaponAttack(app, combat, participant, weapon) {
     );
     return;
   }
-  // A crit rolls every damage die twice; the ability modifier is still
-  // added only once, and proficiency never reaches damage.
-  const parts = (weapon.damage ?? []).map((p) => (crit ? { ...p, count: p.count * 2 } : p));
-  // Dialog-added damage dice count as damage dice, so they double on a crit
-  // too; typed as the weapon's own damage so rollDamage folds them into its
-  // group. The flat damage rider joins the ability modifier.
-  const bonusDice = Math.max(0, Number(values['dmg-count']) || 0);
-  if (bonusDice > 0) {
-    parts.push({
-      count: crit ? bonusDice * 2 : bonusDice,
-      sides: DIE_SIDES[/** @type {import('../types/dice.js').DieType} */ (values['dmg-die'])],
-      damageType: parts[0]?.damageType ?? 'bonus',
-    });
-  }
-  const damage = rollDamage(parts, abilityMod + (Number(values['dmg-flat']) || 0));
+  // A crit rolls every damage die twice, the dialog's added dice included; the
+  // ability modifier is still added only once, and proficiency never reaches
+  // damage at all.
+  const parts = damageParts(weapon.damage ?? [], {
+    crit,
+    bonusDice: Number(values['dmg-count']) || 0,
+    bonusDie: /** @type {import('../types/dice.js').DieType} */ (values['dmg-die']),
+  });
+  const damage = rollDamage(parts, damageModifier(abilityMod, values['dmg-flat']));
   const inflicts =
     'statusEffects' in weapon && weapon.statusEffects?.length
       ? `, inflicting ${weapon.statusEffects.join(', ')}`

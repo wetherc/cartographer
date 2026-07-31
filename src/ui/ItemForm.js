@@ -18,26 +18,16 @@ import {
   setOptions,
   buildInlineForm,
 } from './formFields.js';
-import { clampInt } from '../util/num.js';
+import {
+  assembleItem,
+  presetLabel,
+  EQUIPPABLE_TYPES,
+  FLAT_AC_TYPES,
+} from '../entities/ItemDraft.js';
 
 /** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
-
-/** Item types that may carry a flat AC bonus while equipped. */
-const FLAT_AC_TYPES = ['weapon', 'helmet', 'gloves', 'greaves', 'bow', 'ring'];
-
-/** Item types that can be equipped somewhere, and so may buff a stat. */
-const EQUIPPABLE_TYPES = [
-  'weapon',
-  'armor',
-  'helmet',
-  'gloves',
-  'greaves',
-  'shield',
-  'bow',
-  'ring',
-];
 
 /**
  * The item create/edit form, shared by the add row and the per-item editor.
@@ -208,16 +198,6 @@ export function buildItemForm({
   const acRow = fieldRow(acField);
   const buffRow = fieldRow(buffStatField, buffAmountField);
 
-  /** One picker option's label, from whichever fields the preset carries.
-   * @param {EquipmentTemplate} preset */
-  const presetLabel = (preset) => {
-    const base = preset.damage?.[0];
-    if (base) return `${preset.name} (${base.count}d${base.sides})`;
-    if (preset.baseAC !== undefined)
-      return `${preset.name} (AC ${preset.baseAC}, ${preset.armorWeight ?? 'light'})`;
-    return preset.name;
-  };
-
   const syncTypeFields = () => {
     const type = typeSelect.value;
     const weaponish = WEAPON_TYPES.includes(type);
@@ -245,44 +225,25 @@ export function buildItemForm({
   buffStatSelect.addEventListener('change', syncTypeFields);
   syncTypeFields();
 
+  // Reading the controls happens here; deciding which of their values belong on
+  // the item is ItemDraft's job.
   /** @returns {Omit<InventoryItem, 'id'> | null} */
-  const assemble = () => {
-    const quantity = Number(quantityInput.value);
-    // A zero or negative stack is not an item, so refuse it the way an empty
-    // name is refused.
-    if (quantity <= 0) return null;
-    const type = /** @type {ItemType} */ (typeSelect.value);
-    const description = descriptionInput.value.trim();
-    const acBonus = FLAT_AC_TYPES.includes(type) ? Math.max(0, Number(acInput.value) || 0) : 0;
-    const buffStat = EQUIPPABLE_TYPES.includes(type) ? buffStatSelect.value : '';
-    const buffAmount = Number(buffAmountInput.value) || 0;
-    return {
-      name: nameInput.value.trim(),
-      quantity,
+  const assemble = () =>
+    assembleItem({
+      name: nameInput.value,
+      description: descriptionInput.value,
+      quantity: quantityInput.value,
+      type: typeSelect.value,
       notes: item?.notes ?? '',
-      type,
-      ...(description ? { description } : {}),
-      ...(type === 'armor'
-        ? {
-            armorWeight: /** @type {import('../types/entities.js').ArmorWeight} */ (
-              weightSelect.value
-            ),
-            baseAC: clampInt(baseACInput.value, 1, Infinity, 10),
-          }
-        : {}),
-      ...(acBonus > 0 ? { acBonus } : {}),
-      ...(buffStat && buffAmount !== 0 ? { statBonuses: { [buffStat]: buffAmount } } : {}),
-      ...(WEAPON_TYPES.includes(type)
-        ? {
-            handling: /** @type {import('../types/entities.js').WeaponHandling} */ (
-              handlingSelect.value
-            ),
-            damage: damage.get(),
-            ...(effects.get().length ? { statusEffects: effects.get() } : {}),
-          }
-        : {}),
-    };
-  };
+      armorWeight: weightSelect.value,
+      baseAC: baseACInput.value,
+      acBonus: acInput.value,
+      buffStat: buffStatSelect.value,
+      buffAmount: buffAmountInput.value,
+      handling: handlingSelect.value,
+      damage: damage.get(),
+      statusEffects: effects.get(),
+    });
 
   return buildInlineForm({
     nameInput,

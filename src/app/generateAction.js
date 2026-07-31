@@ -3,7 +3,7 @@ import { withNodeTiles } from '../map/TileIndex.js';
 import { generateNodeTiles, generateDungeonLevels, ARCHETYPES } from '../map/MapGenerator.js';
 import { ensureChildLink } from '../map/TilePaint.js';
 import { resolveEntryTile } from '../map/EntryPoint.js';
-import { parseCoords } from '../map/MapGeometry.js';
+import { entranceArtFor, freshNodeId, relandedTile } from '../map/NodeEdits.js';
 import { mulberry32 } from '../util/Rng.js';
 import { mustGetElement } from '../ui/dom.js';
 import { confirmModal, alertModal } from '../ui/Modal.js';
@@ -38,12 +38,7 @@ export function wireGenerateAction(app, env) {
      * @type {{ key: string, gen: { width: number, height: number, tiles: import('../types/map.js').Tile[], entry: string }, levels: ReturnType<typeof generateDungeonLevels> | null } | null}
      */
     let candidate = null;
-    const freshId = () => {
-      let id;
-      do id = `node-${Math.random().toString(36).slice(2, 8)}`;
-      while (grid.getNode(id));
-      return id;
-    };
+    const freshId = () => freshNodeId((id) => Boolean(grid.getNode(id)));
     /** @param {import('../ui/GenerateDialog.js').GenerateChoice} choice */
     const buildCandidate = (choice) => {
       const key = JSON.stringify(choice);
@@ -114,13 +109,7 @@ export function wireGenerateAction(app, env) {
     // there is always a way in. Tell the GM where it landed so it can be moved.
     const parent = node.parentId ? grid.getNode(node.parentId) : null;
     if (parent) {
-      /** @type {Record<string, { marker: string, poi: import('../types/map.js').POIType }>} */
-      const entranceArt = {
-        dungeon: { marker: 'dungeon', poi: 'dungeon' },
-        castle: { marker: 'castle', poi: 'landmark' },
-        town: { marker: 'settlement', poi: 'settlement' },
-      };
-      const artFor = entranceArt[values.archetype];
+      const artFor = entranceArtFor(values.archetype);
       const linked = ensureChildLink(parent, node.id, {
         // Wilderness gets no marker: the link rides the existing terrain tile
         // (or a fresh grass tile) and shows as a region outline once discovered.
@@ -140,14 +129,14 @@ export function wireGenerateAction(app, env) {
     // with void/wall; re-land it on the layout's guaranteed entry tile if so.
     const pos = partyTracker.getPosition();
     if (pos.nodeId === node.id) {
-      // An unparseable position can't be compared against the new extent, so
-      // treat it as outside and re-land on the layout's entry.
-      const coords = parseCoords(pos.tileId);
-      const outside = !coords || coords.x >= gen.width || coords.y >= gen.height;
-      const landing = resolveEntryTile(navigator.getCurrentNode(), pos.tileId);
-      if (outside || landing !== pos.tileId) {
-        partyTracker.moveTo(node.id, outside ? gen.entry : landing);
-      }
+      const moveTo = relandedTile({
+        tileId: pos.tileId,
+        width: gen.width,
+        height: gen.height,
+        entry: gen.entry,
+        landing: resolveEntryTile(navigator.getCurrentNode(), pos.tileId),
+      });
+      if (moveTo) partyTracker.moveTo(node.id, moveTo);
     }
     resyncMapViews(app, env, { reframe: true });
     app.actions.markDirty();

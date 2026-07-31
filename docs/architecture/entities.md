@@ -144,6 +144,15 @@ class ASI level leaves a pending improvement, spent later by `applyASI` or
 it — `slotKey` builds that key — so a slot can hold at most one, and each
 choice carries the order it was made in for `undoLastChoice` to read.
 
+`LevelAssign.js` also builds the picks the assign dialog offers.
+`assignOptions(character)` lists every held class one level up and every new
+class the prerequisites allow, then appends the classes the character cannot take
+as disabled entries naming what they want. The requirement quoted is the new
+class's own, unless the block is a held class whose prerequisite has since been
+lost, since 5e gates leaving a class the same way as entering one. `prereqText`
+does that phrasing ("STR 13 or DEX 13") and `className` resolves a class id for
+display.
+
 ### Loading old saves
 
 `entities/Character.js`'s `withDefaults` is the one load-time migration point. It
@@ -478,6 +487,21 @@ breakdown popover in `ui/CharacterStatBadge.js`, the HP bar and slot pips in
 `ui/CharacterBars.js`, the castable-spell list in `ui/CharacterSpells.js`, and
 the progression surface (class rows with subclass, the pending-level class
 assignment, pending ASI/feat choices, unlocked features, and the hit-dice pool)
-in `ui/CharacterProgress.js`. The background name and the assembled
+in `ui/CharacterProgress.js`. What the HP bar and the slot pips *say* is split
+off into `view/StatBars.js`: the fill percentage, the low-HP threshold, the
+column headings, and every string a screen reader gets. `ui/CharacterBars.js`
+keeps the elements and the update loop.
+
+The two Library authoring forms split the same way. `ui/ItemForm.js` and
+`ui/SpellForm.js` read their controls; `entities/ItemDraft.js` and
+`entities/SpellDraft.js` decide what the values mean. `assembleItem` and
+`assembleSpell` take the strings and booleans a form holds and return the
+finished item or spell, dropping the fields the chosen type or effect kind does
+not carry, so switching type before submitting cannot leave armour fields on a
+rope or a save ability on an attack. Both run the same tolerant parsers a library
+import does, which is what keeps a typed entry and an imported one agreeing about
+what a value means.
+
+The background name and the assembled
 proficiency lists are stored but not rendered there yet; they are meant to
 appear inside saving-throw and skill blocks rather than as a static list.

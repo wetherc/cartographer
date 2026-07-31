@@ -1,7 +1,7 @@
 import { createMapNode, resizeNode, tilesOutsideBounds } from '../map/TileGrid.js';
 import { collectSubtreeIds } from '../map/WorldTree.js';
-import { NODE_KINDS, ENVIRONS } from '../map/NodeKinds.js';
-import { parseCoords } from '../map/MapGeometry.js';
+import { NODE_KINDS, ENVIRONS, coerceNodeKind } from '../map/NodeKinds.js';
+import { freshNodeId, tileWithinBounds } from '../map/NodeEdits.js';
 import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { capitalize } from '../util/text.js';
 import { clampInt } from '../util/num.js';
@@ -59,14 +59,8 @@ function nodeKindFields(kind, environ) {
 export function createNodeActions(app, env) {
   const { grid, navigator, partyTracker } = app;
 
-  /** Generate a node id not already used by the grid. */
-  function freshNodeId() {
-    let id;
-    do {
-      id = `node-${Math.random().toString(36).slice(2, 8)}`;
-    } while (grid.getNode(id));
-    return id;
-  }
+  /** @param {string} id */
+  const nodeExists = (id) => Boolean(grid.getNode(id));
 
   /**
    * Prompt for a new child MapNode's name and dimensions, add it under parentId,
@@ -82,12 +76,10 @@ export function createNodeActions(app, env) {
       ...nodeKindFields('region', null),
     ]);
     if (!values) return null;
-    const id = freshNodeId();
+    const id = freshNodeId(nodeExists);
     const width = clampInt(values.width, 1);
     const height = clampInt(values.height, 1);
-    const kind = /** @type {NodeKind} */ (
-      /** @type {readonly string[]} */ (NODE_KINDS).includes(values.kind) ? values.kind : 'region'
-    );
+    const kind = coerceNodeKind(values.kind, 'region');
     grid.addNode(
       createMapNode(id, values.name || 'Untitled', parentId, width, height, {
         kind,
@@ -162,9 +154,7 @@ export function createNodeActions(app, env) {
       );
       if (!ok) return;
     }
-    const kind = /** @type {NodeKind} */ (
-      /** @type {readonly string[]} */ (NODE_KINDS).includes(values.kind) ? values.kind : node.kind
-    );
+    const kind = coerceNodeKind(values.kind, node.kind);
     grid.updateNode({
       ...resizeNode(node, width, height),
       name: values.name.trim() || node.name,
@@ -175,13 +165,8 @@ export function createNodeActions(app, env) {
 
     const position = partyTracker.getPosition();
     if (position.nodeId === nodeId) {
-      const coords = parseCoords(position.tileId);
-      if (coords && (coords.x >= width || coords.y >= height)) {
-        partyTracker.moveTo(
-          nodeId,
-          `${Math.min(coords.x, width - 1)},${Math.min(coords.y, height - 1)}`,
-        );
-      }
+      const pulled = tileWithinBounds(position.tileId, width, height);
+      if (pulled) partyTracker.moveTo(nodeId, pulled);
     }
     // Editing the node in view changed its extent or kind, so that view has to
     // re-frame and re-filter the palette, and the selected tile may be gone.

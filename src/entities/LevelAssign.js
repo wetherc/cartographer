@@ -1,5 +1,5 @@
-import { getClass } from './Classes.js';
-import { getClasses, pendingLevels, withClasses } from './Multiclass.js';
+import { getClass, CLASS_LIST } from './Classes.js';
+import { getClasses, pendingLevels, withClasses, classLevelOf } from './Multiclass.js';
 import { getProficiencies, withProficiencies } from './Proficiencies.js';
 import { derive } from './Progression.js';
 
@@ -106,4 +106,88 @@ export function assignLevel(character, classId) {
     { classId, level: 1 },
   ]);
   return derive(grantMulticlassProficiencies(next, def));
+}
+
+/**
+ * A class's display name, falling back to its id so a save naming a class this
+ * build does not have still reads as something.
+ * @param {string} classId
+ * @returns {string}
+ */
+export function className(classId) {
+  return getClass(classId)?.name ?? classId;
+}
+
+/**
+ * One class's multiclass prerequisite as text: each alternative's minimums
+ * joined with "and", the alternatives with "or", so Fighter reads
+ * "STR 13 or DEX 13".
+ * @param {ClassDef} def
+ * @returns {string}
+ */
+export function prereqText(def) {
+  return def.multiclassPrereq
+    .map((minimums) =>
+      Object.entries(minimums)
+        .map(([key, min]) => `${key} ${min}`)
+        .join(' and '),
+    )
+    .join(' or ');
+}
+
+/**
+ * The class picks the assign-a-level dialog offers. With a pending level that is
+ * every held class one level up, plus every new class the prerequisites allow.
+ * Without one it is only the new classes a single-class character of level 2 or
+ * more can move their newest level into, which is `assignLevel`'s donor path.
+ *
+ * A new class whose prerequisites are not met is still listed, disabled, naming
+ * what it wants. The requirement quoted is the new class's own, or a held
+ * class's when leaving that class is what blocks the move, since a Fighter 3
+ * whose STR and DEX both fell below 13 needs to be told about the Fighter
+ * requirement rather than about Wizard's.
+ *
+ * The disabled entries sort after the usable ones, so the dialog's first option
+ * is always one that works when any does.
+ * @param {Character} character
+ * @returns {{ value: string, label: string, disabled?: boolean }[]}
+ */
+export function assignOptions(character) {
+  const classes = getClasses(character);
+  const pending = pendingLevels(character);
+  /** @type {{ value: string, label: string, disabled?: boolean }[]} */
+  const options = [];
+  /** @type {{ value: string, label: string, disabled?: boolean }[]} */
+  const ineligible = [];
+  if (pending > 0) {
+    for (const ref of classes) {
+      if (!getClass(ref.classId)) continue;
+      options.push({
+        value: ref.classId,
+        label: `${className(ref.classId)}: level ${ref.level} -> ${ref.level + 1}`,
+      });
+    }
+  }
+  if (pending > 0 || (classes.length === 1 && classes[0].level >= 2)) {
+    for (const def of CLASS_LIST) {
+      if (classLevelOf(character, def.id) > 0) continue;
+      if (canMulticlass(character, def.id)) {
+        options.push({ value: def.id, label: `${def.name}: new class at level 1` });
+        continue;
+      }
+      const blocker = !meetsPrereq(character, def.id)
+        ? def
+        : classes
+            .map((ref) => getClass(ref.classId))
+            .find((held) => held && !meetsPrereq(character, held.id));
+      if (!blocker) continue;
+      const via = blocker === def ? '' : ` (${blocker.name})`;
+      ineligible.push({
+        value: def.id,
+        label: `${def.name}: requires ${prereqText(blocker)}${via}`,
+        disabled: true,
+      });
+    }
+  }
+  return [...options, ...ineligible];
 }

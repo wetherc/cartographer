@@ -1,5 +1,5 @@
-import { isPactPool, slotLevelOf } from '../entities/SpellSlots.js';
 import { el } from './dom.js';
+import { barReadout, pipReadout, slotColumnLabel, slotLineReadout } from '../view/StatBars.js';
 
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
@@ -41,12 +41,11 @@ export function buildStatBar(pool, opts) {
 
   /** @param {ResourcePool} next @param {number} bonus */
   function update(next, bonus) {
-    const ratio = next.max > 0 ? next.current / next.max : 0;
-    fill.style.width = `${Math.round(ratio * 100)}%`;
-    fill.classList.toggle('stat-bar__fill--critical', Boolean(opts.critical) && ratio <= 0.25);
-    text.textContent = `${next.current}/${next.max}`;
-    const bonusReadout = bonus ? `, plus ${bonus} bonus` : '';
-    wrap.setAttribute('aria-label', `${opts.label} ${next.current} of ${next.max}${bonusReadout}`);
+    const readout = barReadout(next, { label: opts.label, bonus, critical: opts.critical });
+    fill.style.width = `${readout.percent}%`;
+    fill.classList.toggle('stat-bar__fill--critical', readout.critical);
+    text.textContent = readout.text;
+    wrap.setAttribute('aria-label', readout.ariaLabel);
     if (bonus && !bonusEl) {
       bonusEl = el('span', 'stat-bar__bonus');
       bonusEl.title = 'Bonus HP';
@@ -84,11 +83,6 @@ export function buildStatBar(pool, opts) {
  * @returns {{ element: HTMLElement, update: (pools: ResourcePool[]) => void }}
  */
 export function buildSlotLine(pools, onToggle, allowRestore = true) {
-  /** @param {ResourcePool} p */
-  const slotNoun = (p) => (isPactPool(p) ? 'pact slot' : 'slot');
-
-  /** @param {number} n */
-  const ordinal = (n) => `${n}${n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 ? 'rd' : 'th'}`;
   const groups = el('span', 'slot-line__groups');
   const wrap = el(
     'span',
@@ -101,9 +95,7 @@ export function buildSlotLine(pools, onToggle, allowRestore = true) {
   /** @type {HTMLElement[][]} */
   const pipsByPool = [];
   for (const pool of pools) {
-    const level = isPactPool(pool)
-      ? `${ordinal(slotLevelOf(pool))} pact`
-      : ordinal(slotLevelOf(pool));
+    const level = slotColumnLabel(pool);
     const pips = el('span', 'slot-line__pips');
     /** @type {HTMLElement[]} */
     const row = [];
@@ -143,31 +135,15 @@ export function buildSlotLine(pools, onToggle, allowRestore = true) {
         const available = i < pool.current;
         pip.textContent = available ? '●' : '○';
         if (!onToggle) return;
-        const noun = `level ${slotLevelOf(pool)} ${slotNoun(pool)}`;
-        // A spent pip a player may not refill is still shown, so the cost of the
-        // cast stays visible; it just stops being a control.
-        pip.toggleAttribute('disabled', !available && !allowRestore);
-        pip.setAttribute(
-          'aria-label',
-          available
-            ? `Spend a ${noun}`
-            : allowRestore
-              ? `Restore a ${noun}`
-              : `Spent ${noun}, restored by the GM`,
-        );
-        pip.title = available
-          ? 'Click to spend'
-          : allowRestore
-            ? 'Click to restore'
-            : 'Only the GM can restore slots';
+        const readout = pipReadout(pool, available, allowRestore);
+        pip.toggleAttribute('disabled', readout.disabled);
+        pip.setAttribute('aria-label', readout.ariaLabel);
+        pip.title = readout.title;
       });
     });
     if (onToggle) return;
-    const readout = next
-      .map((p) => `level ${slotLevelOf(p)} ${slotNoun(p)}s: ${p.current} of ${p.max}`)
-      .join(', ');
     wrap.setAttribute('role', 'img');
-    wrap.setAttribute('aria-label', `Spell slots — ${readout}`);
+    wrap.setAttribute('aria-label', slotLineReadout(next));
   }
 
   update(pools);

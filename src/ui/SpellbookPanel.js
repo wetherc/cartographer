@@ -17,7 +17,7 @@ import {
 } from '../entities/Classes.js';
 import { primaryClass } from '../entities/Multiclass.js';
 import { groupSpellsByLevel, spellStatus } from '../entities/SpellView.js';
-import { sameDeps } from '../view/SheetStructure.js';
+import { sameDeps, spellListDeps } from '../view/SheetStructure.js';
 import { emptyState } from './buttons.js';
 import { el } from './dom.js';
 import { promptModal } from './Modal.js';
@@ -72,28 +72,19 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
     return [...book.cantrips, ...book.known];
   }
 
-  /**
-   * What decides which rows exist. The learnable set covers most of it, but a
-   * known spell the classes do not offer is listed only because the character
-   * knows it, so learning or forgetting one of those adds or removes a row.
+  /** What decides which rows exist.
    * @param {Character} character
-   * @returns {unknown[]}
-   */
+   * @returns {unknown[]} */
   function listDeps(character) {
-    const outsiders = knownIds(character)
-      .filter((id) => !learnableIds.has(id))
-      .sort()
-      .join(',');
-    return [
-      character.id,
+    return spellListDeps(
+      character,
+      knownIds(character),
+      learnableIds,
       getPermissions().play,
-      character.level,
-      character.classes,
-      outsiders,
       // The catalog the learnable list is drawn from: editing a spell in the
       // Library changes the rows without touching the character.
       opts.catalogStamp(),
-    ];
+    );
   }
 
   /**

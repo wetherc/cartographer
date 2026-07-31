@@ -70,6 +70,14 @@ The dirty flag (the Save indicator and the leave-page guard) and the header's
 campaign controls: Save, Undo, Redo, New, Load example, Export, Import. It
 provides `markDirty` for everything else to call.
 
+What the GM is told after a write is `src/storage/SaveNotices.js`, which is
+mostly about staying quiet: autosave writes every ten seconds while the campaign
+is dirty, so a full origin would otherwise repeat the same warning on every one
+of them. `saveOutcome` turns a write result into a message and a landed flag,
+`historyLoss` and `historyLossMessage` announce a shortened or cleared undo
+history once rather than per write, and `footprintWarning` waits for the
+footprint to grow ten percent before nagging again.
+
 It also handles cross-tab save adoption. When another browser tab saves, a
 Play-mode tab with nothing unsaved adopts that campaign in place through
 `rehydrate.js` instead of reloading the page. Build and Library mode, and any
@@ -109,6 +117,14 @@ The gesture layers live beside it in their own files:
 `generateAction.js` runs the Generate dialog flow and its non-destructive
 apply. `nodeActions.js` handles node create/edit/delete. Both take
 `(app, env)` like the gesture layers, and both end in `resyncMapViews`.
+
+The three decisions they share are pure functions in `src/map/NodeEdits.js`:
+`freshNodeId` picks an id the grid is not using, `tileWithinBounds` says where
+the party goes when the node it stands in shrinks, and `relandedTile` says the
+same for a node that was regenerated under it. `entranceArtFor` names the marker
+a generated map's entrance gets on its parent, and `coerceNodeKind` in
+`NodeKinds.js` keeps a dialog or a hand-edited save from writing a kind the
+renderer does not know.
 
 ### partyWiring.js
 
@@ -163,7 +179,13 @@ resets the `noticed` flag when the encounter moves. The bestiary spawn dialog
 is `encounterForm.js`'s `addFromBestiary`.
 
 The 5e attack resolution the Initiative panel triggers is `weaponAttack.js`,
-and spell resolution is `spellCast.js`. How many creatures a cast may name comes
+and spell resolution is `spellCast.js`. `weaponAttack.js` itself is the dialog,
+the dice tray, and the log lines; the rules it applies are pure functions in
+`src/combat/AttackResolve.js`, which has the unit tests. `resolveAttack` decides
+hit, crit, and the wording both the log and the toast quote, `damageParts`
+assembles the dice a hit rolls (doubling every count on a crit, the dialog's
+added dice included), and `attackerStats` picks between an encounter's stat block
+and a character's gear-buffed scores. How many creatures a cast may name comes
 from the spell: `Casting.maxTargets` reads its `targetCount` (absent means one)
 plus a target per scaling step, and 0 marks an area spell with no cap at all. The
 cast dialog offers a single picker at a cap of one and a capped checkbox group
@@ -290,4 +312,9 @@ tab is a spectator.
 
 ### shortcuts.js and onboarding.js
 
-Global keyboard shortcuts and the first-run overlay.
+Global keyboard shortcuts and the first-run overlay. Which key means what is the
+table in `src/view/Shortcuts.js`, so it can be tested without a keyboard;
+`shortcuts.js` keeps the listener, the "am I typing in a field" test that needs
+real DOM elements, and the clicks each action turns into. Ctrl/Cmd+Z is the one
+entry that reads app state: in Build mode it undoes the last stroke, everywhere
+else the last save.

@@ -13,13 +13,8 @@ import {
   select,
   buildInlineForm,
 } from './formFields.js';
-import { clampInt } from '../util/num.js';
-import {
-  MAX_TARGET_COUNT,
-  normalizeMaterials,
-  normalizeProjectiles,
-  normalizeTargetCount,
-} from '../entities/Casting.js';
+import { MAX_TARGET_COUNT } from '../entities/Casting.js';
+import { assembleSpell, effectDamageOf } from '../entities/SpellDraft.js';
 import { CONDITIONS } from '../entities/Conditions.js';
 import {
   CASTING_TIME_KINDS,
@@ -361,79 +356,51 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     });
   }
 
+  // Reading the controls is this file's job; deciding what the values mean is
+  // SpellDraft's, so the whole submitted form is gathered as plain values and
+  // handed over in one piece.
   /** @returns {Omit<Spell, 'id'>} */
   function assemble() {
-    const kind = /** @type {SpellEffect['kind']} */ (kindSelect.value);
-    /** @type {SpellEffect} */
-    let effect;
-    if (kind === 'attack') {
-      // The parser decides what a written projectile block means, the same way
-      // an imported entry's is read, so an unusable one drops out rather than
-      // becoming a spell that fires nothing.
-      const projectiles = fires.input.checked
-        ? normalizeProjectiles({
-            count: shotCountInput.value,
-            perStep: shotPerStepInput.value,
-            autoHit: autoHit.input.checked,
-          })
-        : null;
-      effect = {
-        kind: 'attack',
-        damage: effectDamage.get(),
-        ...(projectiles ? { projectiles } : {}),
-      };
-    } else if (kind === 'save') {
-      const condition = conditionSelect.value.trim();
-      effect = {
-        kind: 'save',
-        saveAbility: /** @type {import('../types/spell.js').Ability} */ (abilitySelect.value),
-        damage: dealsDamage.input.checked ? effectDamage.get() : [],
-        halfOnSave: halfOnSave.input.checked,
-        ...(condition ? { condition } : {}),
-      };
-    } else if (kind === 'heal') {
-      effect = { kind: 'heal', healing: effectDamage.get() };
-    } else {
-      effect = { kind: 'utility' };
-    }
-
-    // The parser decides what a written material block means, so the form and an
-    // imported entry agree; an unticked M carries none at all.
-    const materials = materialCheck.input.checked
-      ? normalizeMaterials({
-          text: materialInput.value,
-          costGP: materialCostInput.value,
-          consumed: consumed.input.checked,
-        })
-      : null;
-
-    const targets = clampInt(targetsInput.value, 0);
-    const scaling = scales.input.checked
-      ? {
-          ...(scalingDamage.get().length ? { damagePerLevel: scalingDamage.get() } : {}),
-          ...(targets > 0 ? { targetsPerLevel: targets } : {}),
-        }
-      : undefined;
-
-    return {
-      name: nameInput.value.trim(),
-      level: Number(levelSelect.value),
-      school: /** @type {import('../types/spell.js').SpellSchool} */ (schoolSelect.value),
+    return assembleSpell({
+      name: nameInput.value,
+      level: levelSelect.value,
+      school: schoolSelect.value,
       classes: classChecks.filter((c) => c.input.checked).map((c) => c.input.value),
       castingTime: readCastingTime(),
-      range: rangeInput.value.trim() || 'Self',
+      duration: readDuration(),
+      range: rangeInput.value,
       components: COMPONENTS.filter((_, i) => componentChecks[i].input.checked).map(
         (c) => c.letter,
       ),
-      ...(materials ? { materials } : {}),
-      duration: readDuration(),
+      materials: materialCheck.input.checked
+        ? {
+            text: materialInput.value,
+            costGP: materialCostInput.value,
+            consumed: consumed.input.checked,
+          }
+        : null,
       concentration: concentration.input.checked,
       ritual: ritual.input.checked,
-      description: descriptionInput.value.trim(),
-      targetCount: normalizeTargetCount(targetCountInput.value),
-      effect,
-      ...(scaling && Object.keys(scaling).length ? { scaling } : {}),
-    };
+      description: descriptionInput.value,
+      targetCount: targetCountInput.value,
+      effect: {
+        kind: kindSelect.value,
+        damage: effectDamage.get(),
+        saveAbility: abilitySelect.value,
+        halfOnSave: halfOnSave.input.checked,
+        dealsDamage: dealsDamage.input.checked,
+        condition: conditionSelect.value,
+        fires: fires.input.checked,
+        projectiles: {
+          count: shotCountInput.value,
+          perStep: shotPerStepInput.value,
+          autoHit: autoHit.input.checked,
+        },
+      },
+      scaling: scales.input.checked
+        ? { damagePerLevel: scalingDamage.get(), targetsPerLevel: targetsInput.value }
+        : null,
+    });
   }
 
   const form = buildInlineForm({
@@ -499,15 +466,4 @@ function wrapChecks(labels, grid = false) {
     classNames(['spell-form__checks', grid && 'spell-form__checks--grid']),
     ...labels,
   );
-}
-
-/** The damage/healing dice on an effect, or null when it carries none.
- * @param {SpellEffect | undefined} effect
- * @returns {import('../types/entities.js').DamagePart[] | null} */
-function effectDamageOf(effect) {
-  if (!effect) return null;
-  if (effect.kind === 'attack') return effect.damage.length ? effect.damage : null;
-  if (effect.kind === 'save') return effect.damage.length ? effect.damage : null;
-  if (effect.kind === 'heal') return effect.healing.length ? effect.healing : null;
-  return null;
 }

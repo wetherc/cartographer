@@ -9,11 +9,17 @@ import { confirmModal } from '../ui/Modal.js';
 import { queueToastAfterReload } from '../ui/Toast.js';
 import {
   buildState,
-  isNearQuota,
   downloadState,
   readStateFromFile,
   onExternalSave,
 } from '../storage/SaveManager.js';
+import {
+  footprintTooltip,
+  footprintWarning,
+  historyLoss,
+  historyLossMessage,
+  saveOutcome,
+} from '../storage/SaveNotices.js';
 import { saveCampaign, undoCampaign, redoCampaign, historyDepth } from '../storage/HistoryLog.js';
 import { shouldAutosave, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
 
@@ -110,19 +116,11 @@ export function wireCampaignActions(app) {
    * over-quota origin degrades every one of them.
    * @param {{ ok: boolean, evictedAll: boolean }} history
    */
-  function reportHistory({ ok, evictedAll }) {
-    const loss = !ok ? 'cleared' : evictedAll ? 'shortened' : '';
-    if (!loss) {
-      reportedHistoryLoss = '';
-      return;
-    }
-    if (loss === reportedHistoryLoss) return;
+  function reportHistory(history) {
+    const loss = historyLoss(history);
+    const message = historyLossMessage(loss, reportedHistoryLoss);
     reportedHistoryLoss = loss;
-    app.toasts.show(
-      loss === 'cleared'
-        ? 'Browser storage is full: the undo history was cleared, so this change can no longer be undone.'
-        : 'Browser storage is full: the oldest undo steps were dropped.',
-    );
+    if (message) app.toasts.show(message);
   }
 
   /**
@@ -139,17 +137,9 @@ export function wireCampaignActions(app) {
    * @returns {boolean} whether the write landed
    */
   function reportSave(result) {
-    if (result.ok && !result.assetsOk) {
-      app.toasts.show(
-        'Saved, but browser storage is too full for the images: handout pictures were not stored.',
-      );
-    }
-    if (!result.ok) {
-      app.toasts.show(
-        'Save failed: browser storage is full. Export the campaign, then remove large handout images or custom tiles.',
-      );
-      return false;
-    }
+    const { landed, message } = saveOutcome(result);
+    if (message) app.toasts.show(message);
+    if (!landed) return false;
     reportFootprint(result.footprint);
     return true;
   }
@@ -192,20 +182,11 @@ export function wireCampaignActions(app) {
    * @param {number} footprint
    */
   function reportFootprint(footprint) {
-    const mb = footprint / (1024 * 1024);
     const saveBtn = document.getElementById('save-btn');
-    if (saveBtn) saveBtn.title = `Browser storage: ${mb.toFixed(1)} MB of about 5 MB used`;
-    if (!isNearQuota(footprint)) {
-      // Back under the threshold (the GM trimmed, or another tab did): forget the
-      // last warning so crossing it again is reported.
-      warnedFootprint = 0;
-      return;
-    }
-    if (footprint < warnedFootprint * 1.1) return;
-    warnedFootprint = footprint;
-    app.toasts.show(
-      `Warning: browser storage is at ${mb.toFixed(1)} MB of its ~5 MB limit. Export a backup and trim large images.`,
-    );
+    if (saveBtn) saveBtn.title = footprintTooltip(footprint);
+    const warning = footprintWarning(footprint, warnedFootprint);
+    warnedFootprint = warning.warnedAt;
+    if (warning.message) app.toasts.show(warning.message);
   }
 
   /**

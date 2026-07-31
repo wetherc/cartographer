@@ -1,9 +1,9 @@
 import { promptModal } from './Modal.js';
 import { textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
-import { getClass, CLASS_LIST } from '../entities/Classes.js';
+import { getClass } from '../entities/Classes.js';
 import { getClasses, pendingLevels, classLevelOf } from '../entities/Multiclass.js';
-import { canMulticlass, meetsPrereq, assignLevel } from '../entities/LevelAssign.js';
+import { assignLevel, assignOptions, className } from '../entities/LevelAssign.js';
 import {
   pendingASISlots,
   listASIChoices,
@@ -26,77 +26,6 @@ import { SKILL_IDS, skillName } from '../data/skills.js';
  * short-rest spend. All rule logic lives in the entity modules (LevelAssign,
  * LevelUp, HitDice); this is DOM wiring over them, verified visually.
  */
-
-/** @param {string} classId @returns {string} */
-function className(classId) {
-  return getClass(classId)?.name ?? classId;
-}
-
-/**
- * One class's multiclass prerequisite as text: each alternative's minimums
- * joined with "and", alternatives with "or" (e.g. "STR 13 or DEX 13").
- * @param {import('../types/class.js').ClassDef} def
- * @returns {string}
- */
-function prereqText(def) {
-  return def.multiclassPrereq
-    .map((minimums) =>
-      Object.entries(minimums)
-        .map(([key, min]) => `${key} ${min}`)
-        .join(' and '),
-    )
-    .join(' or ');
-}
-
-/**
- * The class picks the assign dialog offers: with a pending level, every held
- * class one level up plus every new class at level 1; without one, only the
- * new classes a single-class character of level 2+ can move their newest
- * level into (LevelAssign's donor path). A new class whose ability-score
- * prerequisites aren't met still lists, disabled, naming the requirement —
- * the new class's own, or a held class's when that is what blocks leaving.
- * @param {Character} character
- * @returns {{ value: string, label: string, disabled?: boolean }[]}
- */
-function assignOptions(character) {
-  const classes = getClasses(character);
-  const pending = pendingLevels(character);
-  /** @type {{ value: string, label: string, disabled?: boolean }[]} */
-  const options = [];
-  /** @type {{ value: string, label: string, disabled?: boolean }[]} */
-  const ineligible = [];
-  if (pending > 0) {
-    for (const ref of classes) {
-      if (!getClass(ref.classId)) continue;
-      options.push({
-        value: ref.classId,
-        label: `${className(ref.classId)}: level ${ref.level} -> ${ref.level + 1}`,
-      });
-    }
-  }
-  if (pending > 0 || (classes.length === 1 && classes[0].level >= 2)) {
-    for (const def of CLASS_LIST) {
-      if (classLevelOf(character, def.id) > 0) continue;
-      if (canMulticlass(character, def.id)) {
-        options.push({ value: def.id, label: `${def.name}: new class at level 1` });
-        continue;
-      }
-      const blocker = !meetsPrereq(character, def.id)
-        ? def
-        : classes
-            .map((ref) => getClass(ref.classId))
-            .find((held) => held && !meetsPrereq(character, held.id));
-      if (!blocker) continue;
-      const via = blocker === def ? '' : ` (${blocker.name})`;
-      ineligible.push({
-        value: def.id,
-        label: `${def.name}: requires ${prereqText(blocker)}${via}`,
-        disabled: true,
-      });
-    }
-  }
-  return [...options, ...ineligible];
-}
 
 /**
  * Follow up a newly taken class with its multiclass skill pick, when the

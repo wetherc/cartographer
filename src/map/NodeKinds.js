@@ -48,6 +48,20 @@ export function environOptions(kind) {
 }
 
 /**
+ * Read a kind back from a dialog or a hand-edited save. Anything that is not one
+ * of the two kinds becomes the fallback, so a node can never end up with a kind
+ * the palette filter and the renderer do not know.
+ * @param {unknown} raw
+ * @param {NodeKind} fallback
+ * @returns {NodeKind}
+ */
+export function coerceNodeKind(raw, fallback) {
+  return /** @type {readonly unknown[]} */ (NODE_KINDS).includes(raw)
+    ? /** @type {NodeKind} */ (raw)
+    : fallback;
+}
+
+/**
  * Whether a palette entry of the given type belongs on a node of this kind:
  * interiors get only interior pieces (plus custom art); regions get everything
  * except interior pieces. This filters the Build-mode palette so a GM paints an
