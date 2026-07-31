@@ -13,8 +13,8 @@ import { entryItem } from './TravelogPanel.js';
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
 /**
- * The combat screen: the active combatant's column and the board over a turn
- * ribbon. The screen owns no combat state: `getView` hands it the
+ * The combat screen: a turn ribbon over the active combatant's column and the
+ * board. The screen owns no combat state: `getView` hands it the
  * already-resolved view, or null when no fight is running, in which case it
  * empties (the mode switch has hidden the screen by then anyway). Which
  * combatant the left column details is the host's transient choice
@@ -30,9 +30,10 @@ import { entryItem } from './TravelogPanel.js';
  * Turn flow and HP edits report back through the callbacks; the host routes
  * them to the same actions the sidebar panel uses.
  *
- * The right column shows the fight's log (`getLogEntries`, already filtered by
- * the host) over `diceDock`, an empty slot the host parks the app's dice-tray
- * card in while the mode is active. A visually hidden live region announces
+ * `diceDock` is an empty slot under the active column, where the host parks the
+ * app's dice-tray card while the mode is active. The right column is the
+ * fight's log (`getLogEntries`, already filtered by the host), given the width
+ * its lines need. A visually hidden live region announces
  * each turn, and both the ribbon and the board are one tab stop each: arrow
  * keys move between the chips and between the cards.
  * @param {HTMLElement} container
@@ -62,11 +63,13 @@ export function mountCombatScreen(container, callbacks) {
   const logList = el('ul', 'combat-log__list travelog__list u-col u-g1');
   const logEmpty = el('p', 'u-muted', 'Nothing logged yet.');
   const diceDock = el('div', 'combat-screen__dice-dock');
+  // The left rail: the active combatant over the borrowed dice tray, so the
+  // numbers a turn needs and the dice it rolls sit under one hand.
+  const left = el('div', 'combat-screen__left', active, diceDock);
   const side = el(
     'aside',
     'combat-screen__log',
     el('section', 'combat-log', el('h3', 'combat-board__heading', 'Combat log'), logEmpty, logList),
-    diceDock,
   );
   // Turn changes are spoken, not only ringed: polite, so a screen reader
   // finishes what it was saying first. Lives outside the cleared regions.
@@ -75,8 +78,8 @@ export function mountCombatScreen(container, callbacks) {
   const root = el(
     'div',
     'combat-screen__layout',
-    el('div', 'combat-screen__columns', active, board, side),
     ribbon,
+    el('div', 'combat-screen__columns', left, board, side),
     announcer,
   );
   container.appendChild(root);
@@ -198,9 +201,9 @@ export function mountCombatScreen(container, callbacks) {
   wireRoving(board, '.combatant-card--selectable');
 
   /**
-   * The turn ribbon: one chip per participant in order, the current turn
-   * ringed and marked `aria-current`, with the round counter and the GM's
-   * turn controls beside it.
+   * The turn ribbon, across the top of the screen: one chip per participant in
+   * order, the current turn ringed and marked `aria-current`, with the round
+   * counter and the GM's turn controls beside it.
    * @param {CombatView} view
    * @param {boolean} gm
    */

@@ -24,13 +24,21 @@ body.mode-combat .app-buildrail {
   display: none;
 }
 
-/* The screen: the columns fill the height and the turn ribbon docks below
-   them, one glance to see the whole order while working in a column. */
+/* The screen: the turn ribbon across the top, the three columns under it. The
+   round and the whole order read first, before the column being worked in.
+
+   The layout is capped and centered rather than filling the display. Three
+   columns spread across an ultrawide monitor put the active combatant and the
+   log a screen apart, and every line of text in them ends up on a line of its
+   own; the cap keeps the fight in one field of view. */
 .combat-screen__layout {
   display: flex;
   flex: 1;
   flex-direction: column;
   gap: var(--space-4);
+  width: 100%;
+  max-width: 88rem;
+  margin: 0 auto;
   min-width: 0;
 }
 
@@ -42,10 +50,18 @@ body.mode-combat .app-buildrail {
   min-width: 0;
 }
 
-/* The active-combatant column: whoever the ribbon inspected, or whoever's
+/* The left rail: the active combatant's card over the docked dice tray. */
+.combat-screen__left {
+  flex: 0 0 17rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* The active-combatant card: whoever the ribbon inspected, or whoever's
    turn it is. */
 .combat-screen__active {
-  flex: 0 0 18rem;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -199,21 +215,23 @@ body.mode-combat .app-buildrail {
   color: var(--text-muted);
 }
 
-/* The right column: the fight's log over the docked dice tray. The tray keeps
-   its own .card styling; the column only sizes it. */
+/* The right column: the fight's log, wide enough that a rolled attack's line
+   (attacker, weapon, modifiers, total, outcome) wraps once rather than four
+   times. */
 .combat-screen__log {
-  flex: 0 0 22rem;
+  flex: 0 0 27rem;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
 }
 
+/* The dice tray keeps its own .card styling; the rail only sizes it. */
 .combat-screen__dice-dock > .card {
   min-width: 0;
 }
 
 .combat-log {
+  flex: 1;
   padding: var(--space-3);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -221,7 +239,7 @@ body.mode-combat .app-buildrail {
 }
 
 .combat-log__list {
-  max-height: 24rem;
+  max-height: 34rem;
   overflow-y: auto;
   margin: var(--space-2) 0 0;
   padding: 0;
@@ -245,7 +263,8 @@ body.mode-combat .app-buildrail {
   color: var(--text-muted);
 }
 
-/* The turn ribbon: the whole order as chips, docked under the columns. */
+/* The turn ribbon: the round, the whole order as chips, and the turn controls,
+   across the top of the screen. */
 .combat-ribbon {
   display: flex;
   flex-wrap: wrap;
@@ -328,7 +347,7 @@ body.mode-combat .app-buildrail {
     align-items: stretch;
   }
 
-  .combat-screen__active,
+  .combat-screen__left,
   .combat-screen__log {
     flex: 0 0 auto;
   }
