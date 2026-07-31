@@ -234,6 +234,19 @@ tile by tile as usual.
 When the party zooms into a region, it lands on a sensible border tile computed
 from the direction of approach, rather than dropping into a fully fogged interior.
 
+Getting back out is derived from the same links, so you don't author it. An
+outdoor sub-region can be walked off any side that touches painted tiles on the
+map above. An interior leaves through a door on its outer wall, or through the
+staircase that connects it to the level above or below: link a child from a
+stairs-down tile and the child leaves by its stairs up, link it from a stairs-up
+tile (a keep's upper storey) and the child leaves by its stairs down. Build mode
+warns you above the tool tabs when the node in view has no way in or out:
+**"Nothing leads here"** means no tile on the parent map links to this node at
+all, so the party can never reach it, and **"No way out"** means an interior is
+linked but has nothing painted to leave through. Neither one strands a party in
+Play; a node without an authored way out still offers a plain "Return to
+{parent}" button. They flag an unfinished map.
+
 ## The library (Library mode)
 
 The third header mode opens the **library**: a map-less, GM-only view of the
@@ -330,6 +343,19 @@ Turning the switch off while characters stand apart first regroups the party:
 a dialog asks which member's position everyone teleports to, then all
 characters gather there and simultaneous movement resumes. Cancelling the
 dialog leaves the switch on and nobody moves.
+
+Once the party is inside a sub-region, the ways back out are drawn on the map. An
+outdoor region shows a **"Return to {parent}"** arrow in the margin beside each
+side that leads back onto the map above; click it, or press the cursor key into
+that border, and the party walks out onto the tile they crossed to get here. An
+interior marks its outer door and its connecting staircase with a small chevron
+badge instead, pointing up or down to match the direction the stairs run. Those
+are ordinary tiles as well, so they only lead out once whoever you're moving is
+already standing on them, and a first click just walks into the doorway. The
+arrows track the party along the side they lead off, and pin to the edge of the
+viewport when you pan the map's border out of view.
+
+![Inside a sub-region: a Return to World arrow in the margin on each side that leads back](images/play-mode-exits.png)
 
 Regions on the overworld aren't highlighted until at least one of their tiles has
 been revealed.
@@ -605,8 +631,12 @@ contested rolls can be compared. The history is session-only.
 The map is keyboard-operable: it's a focusable widget with a visible focus ring,
 arrows move a cursor cell, Enter/Space act, and +/- zoom. A screen-reader live
 region narrates the current node (name, size, party position, revealed POIs) and
-updates as things change. Icon-only buttons carry text labels, disclosures report
-their expanded state, and both light and dark themes are supported.
+updates as things change. The ways out of a sub-region are also real buttons: tab
+past the map and they appear over it, each naming its way out ("Return to
+Darkwood, through the stairs up at 4,1"), which takes the door in one press
+rather than walking onto it first. Icon-only buttons carry text labels,
+disclosures report their expanded state, and both light and dark themes are
+supported.
 
 ## Tips
 
