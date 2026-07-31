@@ -26,6 +26,9 @@ interface FieldBase {
   full?: boolean;
   /** Start hidden; `onChange`'s `setHidden` reveals it. */
   hidden?: boolean;
+  /** Tuck the field behind the dialog's collapsed disclosure, for situational
+   * inputs a plain submit should not have to read past. */
+  advanced?: boolean;
   disabled?: boolean;
 }
 

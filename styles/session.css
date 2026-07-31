@@ -120,9 +120,17 @@
    Initiative
    ========================================================================== */
 
-.initiative-panel__header {
+/* While a fight runs, the sidebar card is a pointer to the combat screen: the
+   round and whose turn it is, plus the button in. The row classes below serve
+   the combat setup dialog's roster. */
+.initiative-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.initiative-panel__status {
   font-weight: 600;
-  margin-bottom: var(--space-2);
 }
 
 .initiative-panel__row {
@@ -133,12 +141,6 @@
 
 .initiative-panel__row--foe .initiative-panel__name {
   color: var(--danger);
-}
-
-.initiative-panel__row--active {
-  background: var(--surface-sunken);
-  border-left-color: var(--accent);
-  font-weight: 600;
 }
 
 .initiative-panel__name {
@@ -153,44 +155,4 @@
 /* Each combatant's DEX modifier, shown between name and initiative value. */
 .initiative-panel__modifier {
   font-family: var(--font-mono);
-}
-
-.initiative-panel__init-readout {
-  font-variant-numeric: tabular-nums;
-  opacity: 0.7;
-}
-
-/* Action pairs (Roll initiative / Start combat, Next turn / End combat) sit in
-   equal-width grid columns so the two buttons always match in size; when the
-   panel is too narrow for both labels on one line, they stack instead of
-   wrapping their text to different heights. */
-.initiative-panel__actions {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
-  gap: var(--space-2);
-  margin-top: var(--space-2);
-}
-
-.initiative-panel__actions .btn {
-  white-space: nowrap;
-}
-
-/* The active party member's equipped weapons, as one-click attack rolls
-   directly under their highlighted row. */
-.initiative-panel__attacks {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-  padding: var(--space-1) var(--space-2) var(--space-1) calc(var(--space-2) + 3px);
-}
-
-.initiative-panel__attack,
-.initiative-panel__cast {
-  font-size: var(--text-label);
-}
-
-/* Cast buttons echo the attack row but tint their icon with the mana accent so
-   spells read apart from weapon strikes at a glance. */
-.initiative-panel__cast .icon {
-  color: var(--mana);
 }

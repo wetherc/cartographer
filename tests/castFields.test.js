@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { castCap, castFields, effectiveSlot, startingSlotLevel } from '../src/app/spellCast.js';
+import {
+  castCap,
+  castFields,
+  effectiveSlot,
+  prefillTarget,
+  startingSlotLevel,
+} from '../src/app/spellCast.js';
 
 /**
  * The cast dialog's field list is pure — plain field records, no DOM — so what
@@ -211,4 +217,32 @@ test('the hand-entered save bonus is left out when every target carries one', ()
 test('a save spell against foes alone keeps the one hand-entered bonus', () => {
   const fields = castFields(holdPerson, targets, [2], 13, 1);
   assert.equal(fields.find((f) => f.name === 'save-bonus').label, 'Target save bonus');
+});
+
+test('a board-picked target pre-fills whichever picker the dialog built', () => {
+  const single = castFields(fireBolt, targets, [], 13, capAt(fireBolt, 0));
+  prefillTarget(single, 'b');
+  assert.equal(single.find((f) => f.name === 'target').value, 'b');
+
+  const multi = castFields(holdPerson, targets, [2], 13, 2);
+  prefillTarget(multi, 'b');
+  assert.equal(multi.find((f) => f.name === 'targets').value, 'b');
+
+  const grid = castFields(scorchingRay, targets, [2], 13, capAt(scorchingRay, 2));
+  prefillTarget(grid, 'b');
+  assert.equal(
+    grid.find((f) => f.name === 'allocation').value,
+    'b:3',
+    'the whole allocation moves onto the picked target',
+  );
+});
+
+test('an id the dialog does not offer leaves each picker on its default', () => {
+  const single = castFields(fireBolt, targets, [], 13, capAt(fireBolt, 0));
+  prefillTarget(single, 'nobody');
+  assert.equal(single.find((f) => f.name === 'target').value, undefined);
+
+  const grid = castFields(scorchingRay, targets, [2], 13, capAt(scorchingRay, 2));
+  prefillTarget(grid, 'nobody');
+  assert.equal(grid.find((f) => f.name === 'allocation').value, 'a:3');
 });

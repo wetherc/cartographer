@@ -116,12 +116,16 @@ function asInput(element) {
  * with too many fields to read comfortably as one tall stack. `onChange`
  * fires on every edit with the changed field's name and a get/set handle on
  * the whole form, so one field can drive another (e.g. re-stamping default
- * stats when an enemy's tier changes).
+ * stats when an enemy's tier changes). Fields marked `advanced` collect into
+ * one collapsed `<details>` captioned by `advancedLabel`, placed where the
+ * first of them appears, so a plain Enter submits their defaults without the
+ * form having to show them.
  * @param {string} title
  * @param {ModalField[]} fields
  * @param {{
  *   submitLabel?: string,
  *   wide?: boolean,
+ *   advancedLabel?: string,
  *   onChange?: (name: string, form: ModalFormHandle) => void,
  * }} [options]
  * @returns {Promise<Record<string, string> | null>}
@@ -172,6 +176,10 @@ export function promptModal(title, fields, options = {}) {
     build: (close) => {
       /** @type {Node[]} */
       const body = [];
+      /** The advanced fields' shared container, created when the first one
+       * appears and mounted in its place. */
+      /** @type {HTMLElement | null} */
+      let advancedBox = null;
       for (const field of fields) {
         const labelText = document.createTextNode(field.label);
         const label = el(
@@ -312,7 +320,22 @@ export function promptModal(title, fields, options = {}) {
         if (field.disabled) input.disabled = true;
         label.appendChild(input);
         if (extras[field.name]) label.appendChild(extras[field.name]);
-        body.push(label);
+        if (field.advanced) {
+          if (!advancedBox) {
+            advancedBox = el('div', 'modal__advanced-fields');
+            body.push(
+              el(
+                'details',
+                'modal__advanced',
+                el('summary', 'modal__advanced-summary', options.advancedLabel ?? 'More options'),
+                advancedBox,
+              ),
+            );
+          }
+          advancedBox.appendChild(label);
+        } else {
+          body.push(label);
+        }
         inputs[field.name] = input;
       }
 

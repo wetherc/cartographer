@@ -29,16 +29,12 @@ import { tick as tickConcentration } from '../entities/Concentration.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
 import { encounterForm, deleteEncounter, addFromBestiary } from './encounterForm.js';
-import { weaponAttack } from './weaponAttack.js';
-import { castSpellAction } from './spellCast.js';
 import {
   commitEncounters,
   describeCombatant,
   endSpellEffects,
   logDefeatTransition,
   retryImposedSaves,
-  spellsOf,
-  weaponsOf,
 } from './combatants.js';
 import { npcForm } from './npcForm.js';
 
@@ -383,33 +379,12 @@ export function wireEncounters(app) {
   };
 
   const initiativeContainer = mustGetElement('initiative-container');
+  // The fight runs on the combat screen; the sidebar card is the status line
+  // and the way there. Turn controls and the action strip live on the screen.
   const initiativePanel = mountInitiativePanel(initiativeContainer, {
     getState: () => combat,
     describe,
-    onNext: () => app.actions.advanceCombatTurn(),
-    onEnd: () => app.actions.endCombat(),
-    // The active combatant's weapons, as one-click attack rolls, and their
-    // castable spells as Cast buttons; both derivations live in combatants.js
-    // (`weaponsOf`/`spellsOf`) so the combat screen reads the same lists. The
-    // GM can drive anyone's turn; a player only their bound character's; foe
-    // turns are the GM's alone.
-    getWeapons: (participant) => weaponsOf(app, participant.id),
-    onWeaponAttack: (participant, weapon) => {
-      if (combat) weaponAttack(app, combat, participant, weapon);
-    },
-    getSpells: (participant) => spellsOf(app, participant.id),
-    onCastSpell: (participant, spell) => {
-      if (combat) castSpellAction(app, combat, participant, spell);
-    },
-    canAttack: (participant) =>
-      describe(participant)?.side === 'foe'
-        ? isGM(state.role)
-        : isGM(state.role) ||
-          // The party panels register the binding reader after this panel is
-          // mounted, and a save reloaded with a fight in it draws its rows
-          // during that mount, so the first render can precede it.
-          app.actions.getBoundCharacterId?.() === participant.id,
-    getRole: () => state.role,
+    onOpen: () => app.actions.setMode('combat'),
   });
 
   // The Initiative card only shows while a fight is actually running — no

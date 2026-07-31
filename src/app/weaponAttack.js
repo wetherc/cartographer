@@ -33,8 +33,11 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
  * @param {import('../types/combat.js').CombatState} combat
  * @param {import('../types/combat.js').Participant} participant
  * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} weapon
+ * @param {{ defenderId?: string | null }} [options] a defender already picked
+ *   on the combat board pre-fills the dialog's target, so the common flow is
+ *   click the card, click the weapon, press Enter
  */
-export async function weaponAttack(app, combat, participant, weapon) {
+export async function weaponAttack(app, combat, participant, weapon, { defenderId = null } = {}) {
   // The attacker is a party character or an armed encounter; either way the
   // roll is d20 + the weapon ability's modifier + proficiency for its level.
   // NPCs carry no weapons yet, so an NPC participant never reaches here.
@@ -52,7 +55,8 @@ export async function weaponAttack(app, combat, participant, weapon) {
   // Every attack pauses at a pre-roll dialog: pick the defender and apply
   // any situational overrides — bonus or penalty dice on the attack roll
   // (Bless +1d4, Bane -1d4) and extra damage (a smite's dice, a flat
-  // rider). Everything defaults to zero, so plain Enter rolls the
+  // rider). Everything defaults to zero and sits behind a collapsed
+  // disclosure, so plain Enter rolls the
   // unmodified attack. Bonus damage folds into the weapon's own damage
   // type and, like all damage dice, doubles on a crit; the attack-roll
   // dice don't (they modify the d20, not the damage).
@@ -71,28 +75,40 @@ export async function weaponAttack(app, combat, participant, weapon) {
           value: d.id,
           label: `${d.name} (AC ${d.ac})`,
         })),
+        // A board-picked defender opens pre-selected; an id no defender holds
+        // (deselected, defeated since) falls back to the list's first.
+        ...(defenderId && defenders.some((d) => d.id === defenderId) ? { value: defenderId } : {}),
         full: true,
       },
-      { name: 'atk-count', label: 'Attack: bonus dice', type: 'number', value: 0 },
+      { name: 'atk-count', label: 'Attack: bonus dice', type: 'number', value: 0, advanced: true },
       {
         name: 'atk-die',
         label: 'Attack: die',
         type: 'select',
         value: 'd4',
         options: bonusDieOptions,
+        advanced: true,
       },
-      { name: 'dmg-count', label: 'Damage: bonus dice', type: 'number', value: 0, min: 0 },
+      {
+        name: 'dmg-count',
+        label: 'Damage: bonus dice',
+        type: 'number',
+        value: 0,
+        min: 0,
+        advanced: true,
+      },
       {
         name: 'dmg-die',
         label: 'Damage: die',
         type: 'select',
         value: 'd4',
         options: bonusDieOptions,
+        advanced: true,
       },
-      { name: 'atk-flat', label: 'Attack: flat bonus', type: 'number', value: 0 },
-      { name: 'dmg-flat', label: 'Damage: flat bonus', type: 'number', value: 0 },
+      { name: 'atk-flat', label: 'Attack: flat bonus', type: 'number', value: 0, advanced: true },
+      { name: 'dmg-flat', label: 'Damage: flat bonus', type: 'number', value: 0, advanced: true },
     ],
-    { submitLabel: 'Roll attack', wide: true },
+    { submitLabel: 'Roll attack', wide: true, advancedLabel: 'Situational modifiers' },
   );
   if (!values) return;
   const defender = defenders.find((d) => d.id === values.target) ?? defenders[0];

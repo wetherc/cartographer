@@ -3,7 +3,15 @@ import { mountCombatScreen } from '../ui/CombatScreen.js';
 import { buildCombatView } from '../combat/CombatView.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
 import { isGM } from '../view/ViewRole.js';
-import { applyToTarget, endSpellEffects, findCombatant } from './combatants.js';
+import {
+  applyToTarget,
+  endSpellEffects,
+  findCombatant,
+  spellsOf,
+  weaponsOf,
+} from './combatants.js';
+import { weaponAttack } from './weaponAttack.js';
+import { castSpellAction } from './spellCast.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -24,6 +32,11 @@ export function wireCombatScreen(app) {
    * whoever's turn it is. Per tab and never persisted. */
   let inspectedId = /** @type {string | null} */ (null);
 
+  /** The board-picked target the next attack or cast opens on, or null for
+   * none. As transient as the inspection; a stale id (target defeated, fight
+   * over) matches nothing and the dialogs fall back to their own defaults. */
+  let selectedTargetId = /** @type {string | null} */ (null);
+
   const screen = mountCombatScreen(mustGetElement('combat-screen'), {
     getView: () => {
       if (!state.combat) return null;
@@ -42,6 +55,32 @@ export function wireCombatScreen(app) {
     getInspectedId: () => inspectedId,
     onInspect: (id) => {
       inspectedId = id;
+    },
+    getSelectedTargetId: () => selectedTargetId,
+    // Clicking the held card releases it, so the toggle reads like a checkbox.
+    onSelectTarget: (id) => {
+      selectedTargetId = selectedTargetId === id ? null : id;
+    },
+    // The current turn's weapons and spells, the same derivations the sidebar
+    // strip used; the screen decides whether to offer them (viewer may act).
+    getActions: () => {
+      const active = state.combat ? state.combat.order[state.combat.index] : null;
+      if (!active) return { weapons: [], spells: [] };
+      return { weapons: weaponsOf(app, active.id), spells: spellsOf(app, active.id) };
+    },
+    onWeaponAttack: (weapon) => {
+      const combat = state.combat;
+      if (!combat) return;
+      weaponAttack(app, combat, combat.order[combat.index], weapon, {
+        defenderId: selectedTargetId,
+      });
+    },
+    onCastSpell: (spell) => {
+      const combat = state.combat;
+      if (!combat) return;
+      castSpellAction(app, combat, combat.order[combat.index], spell, {
+        targetId: selectedTargetId,
+      });
     },
     // The one write path every hit uses; it stores, logs the transitions, and
     // refreshes this screen along with the other panels.

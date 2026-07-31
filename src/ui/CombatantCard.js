@@ -12,15 +12,23 @@ import { hpBand } from '../view/ViewRole.js';
  * carry a sword icon beside the name so the side never rests on color alone,
  * and a defeated combatant keeps its card, struck through, so the order on
  * screen keeps matching the initiative order.
+ *
+ * With `onSelect` the card is the board's target picker: a toggle button whose
+ * `aria-pressed` marks the current selection. The card announces the pick and
+ * nothing else; which action the target feeds is the screen's business.
  * @param {CombatantRow} row
  * @param {{ gm: boolean }} viewer the GM reads exact HP, a player the band
+ * @param {{ selected?: boolean, onSelect?: (id: string) => void }} [selection]
  * @returns {HTMLElement}
  */
-export function combatantCard(row, viewer) {
+export function combatantCard(row, viewer, selection = {}) {
+  const selectable = Boolean(selection.onSelect);
   const classes = [
     'combatant-card',
     `combatant-card--${row.side}`,
     row.defeated ? 'combatant-card--defeated' : '',
+    selectable ? 'combatant-card--selectable' : '',
+    selection.selected ? 'combatant-card--selected' : '',
   ]
     .filter(Boolean)
     .join(' ');
@@ -34,7 +42,14 @@ export function combatantCard(row, viewer) {
     el('span', 'combatant-card__init', `Init ${row.initiative}`),
   );
 
-  const card = el('article', classes, header);
+  const card = el(selectable ? 'button' : 'article', classes, header);
+  if (selectable) {
+    const button = /** @type {HTMLButtonElement} */ (card);
+    button.type = 'button';
+    button.setAttribute('aria-pressed', String(Boolean(selection.selected)));
+    button.title = `Target ${row.name ?? 'Unknown combatant'}`;
+    button.addEventListener('click', () => selection.onSelect?.(row.id));
+  }
   if (row.defeated) {
     // The struck-through name says it by eye; this says it out loud.
     card.setAttribute('aria-label', `${row.name ?? 'Unknown combatant'}, defeated`);

@@ -3,9 +3,13 @@ import { icon } from './icons.js';
 import { chip, textButton } from './buttons.js';
 import { hpBand } from '../view/ViewRole.js';
 import { combatantCard } from './CombatantCard.js';
+import { combatActionBar } from './CombatActionBar.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatView} CombatView */
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
+/** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
+/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
+/** @typedef {import('../types/spell.js').Spell} Spell */
 
 /**
  * The combat screen: the active combatant's column and the board over a turn
@@ -15,6 +19,12 @@ import { combatantCard } from './CombatantCard.js';
  * combatant the left column details is the host's transient choice
  * (`getInspectedId`), defaulting to whoever's turn it is; clicking a ribbon
  * chip inspects without advancing the turn.
+ *
+ * The board's cards double as the target picker: clicking one reports through
+ * `onSelectTarget` and the host's `getSelectedTargetId` says which is held.
+ * The selection feeds the action bar under the active combatant (the current
+ * turn's weapons and spells, offered only when the viewer may act that turn),
+ * whose picks report through `onWeaponAttack`/`onCastSpell`.
  *
  * Turn flow and HP edits report back through the callbacks; the host routes
  * them to the same actions the sidebar panel uses.
@@ -26,6 +36,11 @@ import { combatantCard } from './CombatantCard.js';
  *   onEnd: () => void,
  *   getInspectedId: () => string | null,
  *   onInspect: (id: string) => void,
+ *   getSelectedTargetId: () => string | null,
+ *   onSelectTarget: (id: string) => void,
+ *   getActions: () => { weapons: (InventoryItem | EnemyWeapon)[], spells: Spell[] },
+ *   onWeaponAttack: (weapon: InventoryItem | EnemyWeapon) => void,
+ *   onCastSpell: (spell: Spell) => void,
  *   onApplyHP: (id: string, amount: number, isHeal: boolean) => void,
  *   getConcentration: (id: string) => { spellName: string } | null,
  *   onDropConcentration: (id: string) => void,
@@ -60,7 +75,11 @@ export function mountCombatScreen(container, callbacks) {
     renderActive(view, gm);
     const party = view.rows.filter((row) => row.side === 'party');
     const foes = view.rows.filter((row) => row.side === 'foe');
-    board.append(group('Party', party, viewer), group('Foes', foes, viewer));
+    const selectedId = callbacks.getSelectedTargetId();
+    board.append(
+      group('Party', party, viewer, selectedId),
+      group('Foes', foes, viewer, selectedId),
+    );
   }
 
   /**
@@ -180,6 +199,29 @@ export function mountCombatScreen(container, callbacks) {
       }
       active.appendChild(line);
     }
+
+    // The action bar belongs to the turn, not the inspection: it shows only
+    // while the column is on the current combatant and the viewer may act for
+    // them, so inspecting a foe never offers its weapons to a player.
+    if (current && row.mayAct) {
+      const selected = view.rows.find((r) => r.id === callbacks.getSelectedTargetId());
+      const bar = combatActionBar(callbacks.getActions(), {
+        onWeaponAttack: callbacks.onWeaponAttack,
+        onCastSpell: callbacks.onCastSpell,
+      });
+      if (bar) {
+        if (selected && selected.id !== row.id) {
+          active.appendChild(
+            el(
+              'div',
+              'combat-screen__targeting',
+              `Targeting ${selected.name ?? 'Unknown combatant'}`,
+            ),
+          );
+        }
+        active.appendChild(bar);
+      }
+    }
   }
 
   /**
@@ -232,15 +274,28 @@ export function mountCombatScreen(container, callbacks) {
    * @param {string} label
    * @param {CombatantRow[]} rows
    * @param {{ gm: boolean }} viewer
+   * @param {string | null} selectedId
    */
-  function group(label, rows, viewer) {
+  function group(label, rows, viewer, selectedId) {
     return el(
       'section',
       'combat-board__group',
       el('h3', 'combat-board__heading', label),
       rows.length === 0
         ? el('p', 'combat-board__empty u-muted', 'Nobody on this side.')
-        : el('div', 'combat-board__cards', ...rows.map((row) => combatantCard(row, viewer))),
+        : el(
+            'div',
+            'combat-board__cards',
+            ...rows.map((row) =>
+              combatantCard(row, viewer, {
+                selected: row.id === selectedId,
+                onSelect: (id) => {
+                  callbacks.onSelectTarget(id);
+                  render();
+                },
+              }),
+            ),
+          ),
     );
   }
 

@@ -294,8 +294,10 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
  * @param {CombatState} combat
  * @param {Participant} participant
  * @param {Spell} spell
+ * @param {{ targetId?: string | null }} [options] a target already picked on
+ *   the combat board pre-fills the dialog's target field
  */
-export async function castSpellAction(app, combat, participant, spell) {
+export async function castSpellAction(app, combat, participant, spell, { targetId = null } = {}) {
   const targets = combatTargets(app, combat, participant, spell);
   const found = findCombatant(app, participant.id);
   if (!found) return;
@@ -306,6 +308,7 @@ export async function castSpellAction(app, combat, participant, spell) {
     targets,
     /** @type {(next: any) => void} */ (found.store),
     found.kind === 'character',
+    targetId,
   );
 }
 
@@ -358,8 +361,10 @@ export async function castSpellOutOfCombat(app, caster, spell) {
  *   only a party character does, since an encounter and an NPC have no
  *   concentration field to write. Passed from the call site rather than sniffed
  *   off the entity, which is where the combatant's kind is already known.
+ * @param {string | null} [preferredTargetId] a target picked before the dialog
+ *   opened (the combat board's selection), pre-filled where it is offered
  */
-async function runCast(app, entity, spell, offered, writeBack, concentrates) {
+async function runCast(app, entity, spell, offered, writeBack, concentrates, preferredTargetId) {
   // The pure spell helpers take a `SpellCaster` — a caster's class/level/stats/
   // resources/spellbook, which is exactly what `toCaster` surfaces — so the view
   // is what they read and the real entity is only written back to.
@@ -414,6 +419,7 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates) {
     app.toasts.show(`No level ${spell.level}+ slot left for ${spell.name}.`);
     return;
   }
+  if (preferredTargetId) prefillTarget(fields, preferredTargetId);
 
   // A projectile spell fires a different number per slot level, and its
   // allocation has to add up to that number, so the grid is restated whenever
@@ -547,6 +553,30 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates) {
   }
 
   applyOutcomes(app, spell, result, entity.id);
+}
+
+/**
+ * Point a cast dialog's target field at an already-picked target, whichever
+ * shape `castFields` chose: the single select's value, the multiselect's one
+ * pre-checked box, or the whole allocation moved onto that creature (the grid
+ * already opens with everything on its first row, so this only changes which
+ * row). An id no option offers (a picked ally under an attack spell, a foe
+ * defeated since) leaves the field on its own default.
+ * @param {import('../types/modal.js').ModalField[]} fields
+ * @param {string} targetId
+ */
+export function prefillTarget(fields, targetId) {
+  for (const field of fields) {
+    if (field.name === 'target' && field.type === 'select') {
+      if (field.options.some((o) => o.value === targetId)) field.value = targetId;
+    } else if (field.name === 'targets' && field.type === 'multiselect') {
+      if (field.options.some((o) => o.value === targetId)) field.value = targetId;
+    } else if (field.name === 'allocation' && field.type === 'allocation') {
+      if (field.rows.some((r) => r.value === targetId)) {
+        field.value = `${targetId}:${field.total}`;
+      }
+    }
+  }
 }
 
 /**

@@ -136,6 +136,28 @@ body.mode-combat .app-buildrail {
   border-left-color: var(--danger);
 }
 
+/* On the board the card is a button: the target picker. The resets undo the
+   browser's button centering; the accent ring marks the held selection, kept
+   distinct from the ribbon's focus-ring on the current turn. */
+.combatant-card--selectable {
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.combatant-card--selectable:hover {
+  border-color: var(--accent);
+}
+
+.combatant-card--selected,
+.combatant-card--selected:hover {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
 .combatant-card--defeated .combatant-card__name {
   text-decoration: line-through;
 }
@@ -173,6 +195,23 @@ body.mode-combat .app-buildrail {
 
 .combatant-card__hp-band,
 .combatant-card__meta {
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+/* The active combatant's weapons and spells, one button each, under the
+   column's facts. Cast buttons tint their icon with the mana accent so spells
+   read apart from weapon strikes, as the sidebar strip did. */
+.combat-action-bar .btn {
+  font-size: var(--text-label);
+}
+
+.combat-action-bar__cast .icon {
+  color: var(--mana);
+}
+
+/* Which board card the next attack or cast opens on. */
+.combat-screen__targeting {
   font-size: var(--text-label);
   color: var(--text-muted);
 }
