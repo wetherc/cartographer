@@ -1,4 +1,5 @@
 import { parseCoords } from './MapGeometry.js';
+import { tileAtXY } from './TileIndex.js';
 
 /** @typedef {import('./MapRenderer.js').MapRenderer} MapRenderer */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
@@ -155,6 +156,62 @@ export class MapMarkers {
    */
   renderNPCMarkers(view) {
     this._renderMarkers(view, view.npcTileIds, npcCircle);
+  }
+
+  /**
+   * Badge the door and stairway tiles the party can leave an interior through,
+   * so the one authored way out reads as usable rather than as scenery. Unlike
+   * the encounter and NPC markers this ignores detection range — the way you
+   * came in is not something to sense at a distance — but an unrevealed tile
+   * stays unmarked, since a door nobody has found yet would give away the shape
+   * of the map through the fog.
+   * @param {MapView} view
+   */
+  renderExitMarkers(view) {
+    const node = view.node;
+    if (!node || !view.exits?.length) return;
+    const { ctx, tileSize } = this.host;
+    const size = tileSize * view.scale;
+    for (const exit of view.exits) {
+      if (exit.kind !== 'tile') continue;
+      const coords = parseCoords(exit.tileId);
+      if (!coords) continue;
+      const tile = tileAtXY(node, coords.x, coords.y);
+      if (!tile || (!tile.revealed && !view.revealAll)) continue;
+      const sx = coords.x * size + view.offsetX;
+      const sy = coords.y * size + view.offsetY;
+      if (sx + size < 0 || sy + size < 0 || sx > view.canvasWidth || sy > view.canvasHeight)
+        continue;
+      // The tile's lower-right quadrant: the NPC circle holds the upper left,
+      // the encounter diamond the upper right, and the party dot the centre.
+      this._drawExitBadge(ctx, sx + size * 0.74, sy + size * 0.74, size * 0.15);
+    }
+  }
+
+  /**
+   * A parchment disc carrying an upward chevron, marking a tile as a way out.
+   * @param {CanvasRenderingContext2D} ctx
+   * @param {number} cx
+   * @param {number} cy
+   * @param {number} r
+   */
+  _drawExitBadge(ctx, cx, cy, r) {
+    ctx.save();
+    ctx.fillStyle = '#e6d7b4';
+    ctx.strokeStyle = '#2a2114';
+    ctx.lineWidth = Math.max(1.5, r * 0.2);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.moveTo(cx - r * 0.45, cy + r * 0.28);
+    ctx.lineTo(cx, cy - r * 0.34);
+    ctx.lineTo(cx + r * 0.45, cy + r * 0.28);
+    ctx.stroke();
+    ctx.restore();
   }
 
   /** Gold dot for the party's tile. Skipped when a character token stands on

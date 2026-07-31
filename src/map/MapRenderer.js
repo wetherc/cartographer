@@ -71,6 +71,7 @@ export function imageSrcForRef(imageRef) {
  * @property {string[]} [encounterTileIds] tiles carrying a live encounter, marked when revealed
  * @property {string[]} [npcTileIds] tiles holding a placed NPC, marked when revealed
  * @property {{ tileId: string, name: string }[]} [characterTokens] per-character markers, named above their tile
+ * @property {import('../types/map.js').MapExit[]} [exits] ways out of this node (see MapExits.findExits), drawn as border arrows and badges on the door or stairway they lead through. Empty in Build mode, where authoring the map is not travelling it.
  * @property {string | null} selectedTileId
  * @property {string | null} cursorCellId
  * @property {boolean} focused whether the keyboard cursor outline shows
@@ -145,11 +146,15 @@ export class MapRenderer {
       this._decorations.renderSelection(view);
       this._markers.renderEncounterMarkers(view);
       this._markers.renderNPCMarkers(view);
+      this._markers.renderExitMarkers(view);
       this._markers.renderPartyMarker(view);
       this._markers.renderCharacterTokens(view);
       this._decorations.renderCursor(view);
       this._renderMapBoundsBorder(view);
       this._decorations.renderCoordinates(view);
+      // Last, over the coordinate labels: the return arrows are the one piece of
+      // chrome that is also a control, so nothing may draw on top of them.
+      this._decorations.renderEdgeExits(view);
     }
     // The marker layer memoizes its detection anchors against the view object for
     // the length of a frame. Dropping that reference here keeps the renderer from

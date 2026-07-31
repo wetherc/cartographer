@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   edgeExitBand,
+  exitBandGeometry,
   exitDescription,
   exitForSide,
   exitForTile,
@@ -403,4 +404,57 @@ test('a band never grows past the canvas, however long the region name', () => {
     { ...geom, canvasWidth: 300 },
   );
   assert.ok(long.w <= 300 - 16);
+});
+
+test('band geometry follows the party along the side the exit leads off', () => {
+  const grid = node({ id: 'child', name: 'Thornhold', width: 8, height: 5 });
+  const view = { offsetX: 40, offsetY: 60, scale: 2, canvasWidth: 900, canvasHeight: 800 };
+  /** @param {import('../src/types/map.js').ExitSide} side */
+  const at = (side, partyTileId) =>
+    exitBandGeometry(grid, { ...view, partyTileId }, 48, {
+      kind: 'edge',
+      side,
+      targetNodeId: 'region',
+      targetName: 'Saltmere Coast',
+    });
+
+  // North/south run along x, so they take the party's column; east/west its row.
+  assert.equal(at('north', '6,1').alongCell, 6);
+  assert.equal(at('south', '6,1').alongCell, 6);
+  assert.equal(at('east', '6,1').alongCell, 1);
+  assert.equal(at('west', '6,1').alongCell, 1);
+
+  const geometry = at('north', '6,1');
+  assert.equal(geometry.width, 8);
+  assert.equal(geometry.height, 5);
+  assert.equal(geometry.tileSize, 48);
+  assert.equal(geometry.offsetX, 40);
+  assert.equal(geometry.offsetY, 60);
+  assert.equal(geometry.scale, 2);
+  assert.equal(geometry.canvasWidth, 900);
+  assert.equal(geometry.canvasHeight, 800);
+});
+
+test('band geometry centres on the side when the party is somewhere else', () => {
+  const grid = node({ id: 'child', name: 'Thornhold', width: 8, height: 5 });
+  const view = { offsetX: 0, offsetY: 0, scale: 1, canvasWidth: 900, canvasHeight: 800 };
+  /** @param {import('../src/types/map.js').ExitSide} side */
+  const at = (side) =>
+    exitBandGeometry(grid, view, 48, {
+      kind: 'edge',
+      side,
+      targetNodeId: 'region',
+      targetName: 'Saltmere Coast',
+    });
+  assert.equal(at('north').alongCell, 3);
+  assert.equal(at('west').alongCell, 2);
+  // A non-edge exit has no side of its own; the geometry still describes the map.
+  assert.equal(
+    exitBandGeometry(grid, view, 48, {
+      kind: 'fallback',
+      targetNodeId: 'region',
+      targetName: 'Saltmere Coast',
+    }).alongCell,
+    3,
+  );
 });

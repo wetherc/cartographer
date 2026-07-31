@@ -217,6 +217,53 @@ export function sideAxis(side) {
 /** @typedef {{ x: number, y: number, w: number, h: number, fontSize: number }} ExitBand */
 
 /**
+ * The view state an exit band is placed from — the pan/zoom/canvas fields of the
+ * renderer's view snapshot, named structurally so this module stays free of any
+ * canvas dependency.
+ * @typedef {Object} ExitBandView
+ * @property {number} offsetX
+ * @property {number} offsetY
+ * @property {number} scale
+ * @property {number} canvasWidth
+ * @property {number} canvasHeight
+ * @property {string | null} [partyTileId]
+ */
+
+/**
+ * The geometry one edge exit's band is computed from, read off live view state.
+ * The band tracks the party along the side it leads off: an arrow beside where
+ * they stand reads as the way they would walk out, and it means a long map's
+ * arrow is never off-screen while the party is on-screen. With the party
+ * elsewhere (a node no one is standing in) it centres on the side instead.
+ *
+ * Both the renderer and the pointer build their geometry here, so the arrow the
+ * GM sees and the rect their click is tested against can never drift apart.
+ * @param {MapNode} node node being drawn
+ * @param {ExitBandView} view
+ * @param {number} tileSize base tile size in buffer px at scale 1
+ * @param {MapExit} exit
+ * @returns {ExitBandGeometry}
+ */
+export function exitBandGeometry(node, view, tileSize, exit) {
+  const side = exit.kind === 'edge' ? exit.side : 'north';
+  const axis = sideAxis(side);
+  const party = view.partyTileId ? parseCoords(view.partyTileId) : null;
+  const extent = axis === 'x' ? node.width : node.height;
+  const alongCell = party ? (axis === 'x' ? party.x : party.y) : Math.floor((extent - 1) / 2);
+  return {
+    width: node.width,
+    height: node.height,
+    tileSize,
+    offsetX: view.offsetX,
+    offsetY: view.offsetY,
+    scale: view.scale,
+    canvasWidth: view.canvasWidth,
+    canvasHeight: view.canvasHeight,
+    alongCell,
+  };
+}
+
+/**
  * The rect an edge exit's arrow is drawn in and clicked in. Deliberately a
  * bounded pill rather than a whole side of the gutter: the click target has to
  * be the thing the GM can see, and an unbounded band would swallow every click

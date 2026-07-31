@@ -59,6 +59,9 @@ export class MapCanvas {
     this.npcTileIds = [];
     /** @type {{ tileId: string, name: string }[]} per-character tokens in the current node */
     this.characterTokens = [];
+    /** @type {import('../types/map.js').MapExit[]} ways out of the current node, drawn as
+     * border arrows and tile badges. Play mode only; the wiring supplies none while authoring. */
+    this.exits = [];
     /** When true (Build mode), draw every tile's image regardless of its
      * revealed flag, so a GM authors against the whole map, not through fog. */
     this.revealAll = false;
@@ -116,6 +119,10 @@ export class MapCanvas {
     this.regionGroups = findRegionGroups(node);
     this.partyTileId = null;
     this.characterTokens = [];
+    // Cleared with the party marker: the previous node's ways out point at the
+    // wrong parent, and drawing them for the frame before the wiring recomputes
+    // them would offer a click that travels somewhere the party isn't.
+    this.exits = [];
     this.selectedTileId = null;
     this.cursorCellId = null;
     this.fit();
@@ -284,6 +291,18 @@ export class MapCanvas {
   }
 
   /**
+   * Set the ways out of the current node (MapExits.findExits), drawn as an arrow
+   * in the gutter beside each side that leads back and as a badge on each door or
+   * stairway that does. An empty list draws none, which is how Build mode shows
+   * nothing: authoring a map is not travelling it.
+   * @param {import('../types/map.js').MapExit[]} exits
+   */
+  setExits(exits) {
+    this.exits = exits;
+    this.render();
+  }
+
+  /**
    * Toggle whether unrevealed tiles are drawn as fog (false, Play) or fully
    * (true, Build).
    * @param {boolean} value
@@ -337,6 +356,7 @@ export class MapCanvas {
       encounterTileIds: this.encounterTileIds,
       npcTileIds: this.npcTileIds,
       characterTokens: this.characterTokens,
+      exits: this.exits,
       selectedTileId: this.selectedTileId,
       cursorCellId: this.cursorCellId,
       focused: this._focused,

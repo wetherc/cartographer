@@ -1,7 +1,10 @@
 import { parseCoords, tileRect } from './MapGeometry.js';
+import { EXIT_SIDES, edgeExitBand, exitBandGeometry, exitLabel } from './MapExits.js';
 
 /** @typedef {import('./MapRenderer.js').MapRenderer} MapRenderer */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
+/** @typedef {import('../types/map.js').MapExit} MapExit */
+/** @typedef {import('./MapExits.js').ExitBand} ExitBand */
 
 /**
  * The decoration layer of the map render: interaction chrome (keyboard cursor,
@@ -80,6 +83,93 @@ export class MapDecorations {
     ctx.fillStyle = 'rgba(230, 215, 180, 0.8)';
     ctx.fillText(text, x, y);
     if (pinned) ctx.globalAlpha = 1;
+  }
+
+  /**
+   * Draw an arrow in the gutter beside each side of the map the party can walk
+   * off to get back to the parent node, labelled with where it leads. The band's
+   * rect comes from MapExits, which the pointer hit-tests against the same way,
+   * so the arrow is exactly as large as the thing that can be clicked — a
+   * deliberately bounded pill rather than a whole side of the map, which would
+   * swallow every click that missed the grid.
+   *
+   * Each band tracks the party along its side and clamps to the viewport, so
+   * zooming in until the map's border scrolls away leaves the arrow pinned at
+   * the canvas edge rather than scrolling off with it.
+   * @param {MapView} view
+   */
+  renderEdgeExits(view) {
+    const node = view.node;
+    if (!node || !view.exits?.length) return;
+    for (const exit of view.exits) {
+      if (exit.kind !== 'edge') continue;
+      const dir = EXIT_SIDES.find((s) => s.side === exit.side);
+      if (!dir) continue;
+      const geom = exitBandGeometry(node, view, this.host.tileSize, exit);
+      this._drawExitBand(exit, edgeExitBand(exit, geom), dir.dx, dir.dy);
+    }
+  }
+
+  /**
+   * One return arrow: a parchment-bordered pill carrying an outward chevron and
+   * the exit's label. The label is clipped to the pill, so a long region name
+   * cannot spill past the area that answers a click.
+   * @param {MapExit} exit
+   * @param {ExitBand} band
+   * @param {number} dx direction the exit leads, in grid cells
+   * @param {number} dy
+   */
+  _drawExitBand(exit, band, dx, dy) {
+    const { ctx } = this.host;
+    const { x, y, w, h, fontSize } = band;
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, y, w, h, Math.min(h / 2, 14));
+    ctx.fillStyle = 'rgba(20, 16, 10, 0.86)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(230, 215, 180, 0.85)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.clip();
+
+    // The chevron takes the end of the pill the exit leads towards, so an east
+    // exit reads left-to-right into its arrow and a west exit out of it.
+    const lane = fontSize * 1.6;
+    const chevronX = dx > 0 ? x + w - lane / 2 : x + lane / 2;
+    const textX = dx > 0 ? x + (w - lane) / 2 : x + lane + (w - lane) / 2;
+    this._drawChevron(chevronX, y + h / 2, fontSize * 0.42, dx, dy);
+
+    ctx.font = `600 ${fontSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#f2e4bd';
+    ctx.fillText(exitLabel(exit), textX, y + h / 2 + 1);
+    ctx.restore();
+  }
+
+  /**
+   * A chevron pointing the way an exit leads, centred on a point.
+   * @param {number} cx
+   * @param {number} cy
+   * @param {number} r arm length in buffer px
+   * @param {number} dx
+   * @param {number} dy
+   */
+  _drawChevron(cx, cy, r, dx, dy) {
+    const { ctx } = this.host;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(Math.atan2(dy, dx));
+    ctx.strokeStyle = '#ffd24a';
+    ctx.lineWidth = Math.max(2, r * 0.45);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(-r * 0.6, -r);
+    ctx.lineTo(r * 0.6, 0);
+    ctx.lineTo(-r * 0.6, r);
+    ctx.stroke();
+    ctx.restore();
   }
 
   /**
