@@ -186,7 +186,8 @@ function exampleParty() {
 
 /**
  * Everything that populates the example world: the party, placed enemies,
- * the quest chain, Briarwick's NPCs, handouts, and the bestiary. Takes the
+ * the quest chain, the NPCs of Briarwick, Saltmere, and Thornhold, handouts,
+ * and the bestiary. Takes the
  * built maps so NPCs and bosses land on the staged story tiles (generated
  * layouts are random per load). The maps themselves come from
  * ExampleWorld.js; Campaigns.js assembles the two halves.
@@ -196,7 +197,17 @@ function exampleParty() {
  */
 export function buildExampleContent(palette, world) {
   const { gens, spots } = world;
-  const { campTile, raiderTiles, eyrieTile, hermitTile, tombTile, wightTile, boneTiles } = spots;
+  const {
+    campTile,
+    raiderTiles,
+    eyrieTile,
+    hermitTile,
+    tombTile,
+    wightTile,
+    boneTiles,
+    shadeTile,
+    lordTile,
+  } = spots;
   return {
     party: { nodeId: 'world', tileId: '16,16' },
     characters: exampleParty(),
@@ -215,6 +226,22 @@ export function buildExampleContent(palette, world) {
         Speed: 40,
       }),
       enemy('winter-wolf', 'Winter Wolf', 34, 3, 'mob', 'world', '26,3', { AC: 13, Speed: 50 }),
+      // The bay: drowned dead walking the shallows below Saltmere, and the
+      // thing knocking in the abandoned silver mine.
+      enemy('drowned-watchman-1', 'Drowned Watchman', 22, 2, 'mob', 'world', '6,10', {
+        AC: 11,
+        Speed: 20,
+        Swim: 30,
+      }),
+      enemy('drowned-watchman-2', 'Drowned Watchman', 22, 2, 'mob', 'world', '7,14', {
+        AC: 11,
+        Speed: 20,
+        Swim: 30,
+      }),
+      enemy('hollowvein-knocker', 'The Knocker in the Vein', 30, 3, 'mob', 'world', '21,11', {
+        AC: 14,
+        Speed: 30,
+      }),
       // Minor bosses: the mire hag in the southern marsh, the goblin chieftain
       // at his camp, and the wyvern over the hermitage.
       enemy('grelka', 'Grelka the Mire Hag', 45, 4, 'legend', 'world', '20,29', {
@@ -248,6 +275,12 @@ export function buildExampleContent(palette, world) {
         Speed: 30,
       }),
       enemy('grave-wight', 'Grave Wight', 45, 4, 'legend', 'barrow', wightTile, {
+        AC: 14,
+        Speed: 30,
+      }),
+      // Thornhold: the shade of the warden who sealed the barrow, risen in
+      // the keep's own hall now that the ward is failing.
+      enemy('crypt-shade', 'The Crypt Shade', 40, 4, 'legend', 'thornhold', shadeTile, {
         AC: 14,
         Speed: 30,
       }),
@@ -301,6 +334,34 @@ export function buildExampleContent(palette, world) {
         status: 'active',
       },
       {
+        id: 'dead-water',
+        title: 'Dead Water',
+        notes:
+          "Drowned sailors are walking the shallows of Saltmere's bay, and the fishing fleet won't put out. Harbormaster Petra pays by the head — and wants to know why the dead are coming up-current, from the river's mouth.",
+        status: 'active',
+      },
+      {
+        id: 'the-lord-of-thornhold',
+        title: 'The Lord of Thornhold',
+        notes:
+          "House Vane swore the ward that sealed the barrow, and Lord Aldemar calls the raids peasant panic. Bring him Snagtooth's sealed orders as proof; the crypt ledger of Thornhold records how the sealing was done, and something in his own hall does not want it read.",
+        status: 'active',
+      },
+      {
+        id: 'the-hollowvein-knocking',
+        title: 'The Hollowvein Knocking (optional)',
+        notes:
+          'The Hollowvein — the mine whose silver crowned Ostrand — was abandoned mid-shift when something in the dark began knocking back. Sella needs Hollowvein silver if the warding key is ever to be reforged.',
+        status: 'active',
+      },
+      {
+        id: 'the-wardstone-circle',
+        title: 'The Wardstone Circle (optional)',
+        notes:
+          'One of the five wardstones in the northern forest lies toppled, and the ward on the barrow fails with it. Raising the fallen stone will not hold Ostrand — but it will thin his court, and his reach past the barrow door with it.',
+        status: 'active',
+      },
+      {
         id: 'the-barrow-king',
         title: 'The Barrow of the Old King',
         notes:
@@ -341,7 +402,7 @@ export function buildExampleContent(palette, world) {
         role: 'Blacksmith of Briarwick',
         disposition: 'friendly',
         notes:
-          'Buys ore, sells and repairs arms. Can reforge the warding key if it comes back from the barrow broken.',
+          'Buys ore, sells and repairs arms. Can reforge the warding key if it comes back from the barrow broken — but only from Hollowvein silver, and the mine stands abandoned.',
         stats: { STR: 15, CON: 14 },
         location: {
           nodeId: 'briarwick',
@@ -363,6 +424,44 @@ export function buildExampleContent(palette, world) {
           "Half-deaf and stubborn. Won't leave the hermitage while Skalvyr circles; hands over the key once the wyvern is dealt with.",
         stats: { CON: 13, INT: 13, WIS: 16 },
         location: { nodeId: 'graypeak', tileId: hermitTile },
+      }),
+      createNPC('harbormaster-petra', 'Harbormaster Petra', {
+        role: 'Harbormaster of Saltmere',
+        disposition: 'neutral',
+        notes:
+          'Runs the port and taxes what Corvin thinks she cannot see. Pays a bounty on the drowned dead and keeps the tide-log that shows they walk up-current from the river mouth.',
+        stats: { STR: 12, WIS: 14, CHA: 13 },
+        location: {
+          nodeId: 'saltmere',
+          tileId: `${Math.floor(gens.saltmere.width / 2)},${Math.floor(gens.saltmere.height / 2)}`,
+        },
+      }),
+      createNPC('corvin-the-smuggler', 'Corvin', {
+        role: 'Smuggler, working out of the Saltmere taproom',
+        disposition: 'neutral',
+        notes:
+          'Sells anything, including his chart of the coast. Refuses cargo bound near the barrow and will say why for coin: his last crew there came back one man short, and the man came back anyway.',
+        stats: { DEX: 15, INT: 13, CHA: 14 },
+        location: {
+          nodeId: 'saltmere',
+          tileId: buildingTile(gens.saltmere, palette, 'tavern'),
+        },
+      }),
+      createNPC('lord-aldemar', 'Lord Aldemar Vane', {
+        role: 'Lord of Thornhold, heir to the wardens',
+        disposition: 'hostile',
+        notes:
+          "Proud and in denial: the raids are peasant panic and his house's ward cannot fail. Softens only when shown Snagtooth's orders under the pale seal; opens the crypt ledger once the shade in his hall is put down.",
+        stats: { STR: 14, INT: 12, WIS: 13, CHA: 15 },
+        location: { nodeId: 'thornhold', tileId: lordTile },
+      }),
+      createNPC('farmer-hedda', 'Hedda', {
+        role: 'Farmer, the big steading on the south road',
+        disposition: 'friendly',
+        notes:
+          'Sells provisions and knows every field hand between Briarwick and the coast. Saw the burned farm the night it went up: the raiders worked in silence, in files, to a drum nobody was beating.',
+        stats: { CON: 14, WIS: 13 },
+        location: { nodeId: 'world', tileId: '9,20' },
       }),
     ],
     handouts: [
@@ -406,6 +505,30 @@ export function buildExampleContent(palette, world) {
         revealed: false,
         image: null,
       },
+      {
+        id: 'smugglers-chart',
+        title: "A Smuggler's Chart",
+        body: "Corvin's coast chart, greasy and precise. Every landing on the bay is marked with a price — except one reach of the river mouth, crossed out entirely. Over the barrow inland someone has inked a pale crown and, beneath it: NO CARGO. NOT FOR TRIPLE.",
+        nodeId: 'saltmere',
+        revealed: false,
+        image: null,
+      },
+      {
+        id: 'crypt-ledger',
+        title: 'The Crypt Ledger of Thornhold',
+        body: 'The sealing, in the first Vane\'s own hand: "Five stones raised and sworn at the circle. A key cut of Hollowvein silver, the same vein that crowned him — like binds like. The door holds while the circle stands and a warden\'s line keeps the key. We do not write where the key is kept. He listens."',
+        nodeId: 'thornhold',
+        revealed: false,
+        image: null,
+      },
+      {
+        id: 'wardens-oath',
+        title: "The Wardens' Oath",
+        body: 'Cut into the tallest wardstone, worn shallow: "WHILE STONE STANDS AND SILVER SLEEPS, THE KING KEEPS HIS BED. FIVE SWORE. FIVE KEEP." Below, much newer, scratched as if with a knife-point: "four".',
+        nodeId: 'world',
+        revealed: false,
+        image: null,
+      },
     ],
     bestiary: [
       template('goblin', 'Goblin', 7, 1, 'mob', { AC: 13, Speed: 30 }),
@@ -416,6 +539,11 @@ export function buildExampleContent(palette, world) {
       template('giant-scorpion', 'Giant Scorpion', 26, 3, 'mob', { AC: 15, Speed: 40 }),
       template('winter-wolf', 'Winter Wolf', 34, 3, 'mob', { AC: 13, Speed: 50 }),
       template('barrow-skeleton', 'Barrow Skeleton', 13, 1, 'mob', { AC: 13, Speed: 30 }),
+      template('drowned-watchman', 'Drowned Watchman', 22, 2, 'mob', {
+        AC: 11,
+        Speed: 20,
+        Swim: 30,
+      }),
     ],
     splitParty: false,
     combat: null,

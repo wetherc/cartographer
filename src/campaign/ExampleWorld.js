@@ -30,6 +30,7 @@ import { parseCoords, tileIdAt } from '../map/MapGeometry.js';
  *     wightTile: string,
  *     boneTiles: string[],
  *     shadeTile: string,
+ *     lordTile: string,
  *   },
  * }} ExampleWorld
  */
@@ -493,8 +494,11 @@ export function buildExampleWorld(palette, rng = Math.random) {
   const wightTile = barrowSpots();
   const boneTiles = [barrowSpots(), barrowSpots()];
 
-  // Thornhold: the crypt shade on the hall floor farthest from the gate.
-  const shadeTile = makeSpotPicker(gens.thornhold, isBareFloor)();
+  // Thornhold: the crypt shade on the hall floor farthest from the gate, and
+  // the lord holding court a few tiles off.
+  const thornSpots = makeSpotPicker(gens.thornhold, isBareFloor);
+  const shadeTile = thornSpots();
+  const lordTile = thornSpots();
 
   for (const { id, name, kind } of regions) {
     const gen = gens[id];
@@ -514,6 +518,7 @@ export function buildExampleWorld(palette, rng = Math.random) {
       wightTile,
       boneTiles,
       shadeTile,
+      lordTile,
     },
   };
 }
