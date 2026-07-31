@@ -1,14 +1,24 @@
 import { indexById } from '../util/indexById.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { applyDamage, effectiveStatBlock, heal, isDefeated } from '../entities/Encounter.js';
-import { armorClass } from '../entities/Equipment.js';
-import { damageCharacter, restoreResource, getHP, HP_RESOURCE_ID } from '../entities/Character.js';
+import { armorClass, equippedWeapons } from '../entities/Equipment.js';
+import {
+  damageCharacter,
+  restoreResource,
+  getHP,
+  getSpellbook,
+  HP_RESOURCE_ID,
+} from '../entities/Character.js';
 import { isOnTile } from '../entities/NPC.js';
 import { addCondition } from '../entities/Conditions.js';
 import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
 import { saveBonus } from '../entities/Checks.js';
 import { checkOnDamage, drop as dropConcentration } from '../entities/Concentration.js';
 import { replaceById } from '../entities/Roster.js';
+import { castableLeveledIds } from '../entities/SpellView.js';
+import { resolveSpellIds } from '../library/Library.js';
+import { sideOf, isDowned } from '../combat/CombatView.js';
+import { spellbookIds } from './casterFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -141,18 +151,6 @@ export function commitNPCs(app) {
 }
 
 /**
- * Which side a resolved combatant fights on: the party's characters and its
- * friendly or neutral NPCs against the encounters and the hostile NPCs.
- * @param {Combatant} found
- * @returns {'party' | 'foe'}
- */
-function sideOf(found) {
-  if (found.kind === 'encounter') return 'foe';
-  if (found.kind === 'npc') return found.entity.disposition === 'hostile' ? 'foe' : 'party';
-  return 'party';
-}
-
-/**
  * How to present a participant: the name and side of whatever entity holds its
  * id, read fresh. Null when nothing holds it any more — an entity deleted
  * mid-fight, or an NPC who has walked off the party's tile. The initiative
@@ -203,17 +201,43 @@ export function targetSaveBonus(app, id, ability) {
 }
 
 /**
- * Whether a combatant is out of the fight: a defeated encounter or a
- * character at 0 HP. NPCs carry no HP yet, so they never read as downed.
- * @param {Combatant} found
+ * The weapons a combatant can attack with: a party character's equipped
+ * weapons, a foe encounter's assigned weapon. NPCs carry no weapons yet, and
+ * an id nothing resolves has nothing to swing.
+ * @param {AppContext} app
+ * @param {string} id
+ * @returns {(import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon)[]}
  */
-function isDowned(found) {
-  if (found.kind === 'encounter') return isDefeated(found.entity);
+export function weaponsOf(app, id) {
+  const found = findCombatant(app, id);
+  if (!found) return [];
+  if (found.kind === 'encounter') return found.entity.weapon ? [found.entity.weapon] : [];
+  if (found.kind === 'character') return equippedWeapons(found.entity);
+  return [];
+}
+
+/**
+ * A combatant's castable spells, resolved from the spellbook's ids through
+ * the merged library's memoized index. A party character lists its cantrips
+ * plus what its classes' known-rule makes castable (a prepared caster's
+ * unprepared spells stay off the list); a foe encounter or an NPC lists its
+ * whole spellbook, since its authoring dialog stamps every picked spell
+ * castable. A non-caster's empty spellbook lists nothing.
+ * @param {AppContext} app
+ * @param {string} id
+ * @returns {import('../types/spell.js').Spell[]}
+ */
+export function spellsOf(app, id) {
+  const found = findCombatant(app, id);
+  if (!found) return [];
   if (found.kind === 'character') {
-    const hp = getHP(found.entity);
-    return Boolean(hp && hp.current <= 0);
+    const book = getSpellbook(found.entity);
+    return resolveSpellIds([...book.cantrips, ...castableLeveledIds(found.entity)]);
   }
-  return false;
+  // A foe's or NPC's spellbook is read structurally: `getSpellbook` only
+  // touches `.spellbook`, which an encounter or NPC caster carries too.
+  const book = getSpellbook(/** @type {any} */ (found.entity));
+  return resolveSpellIds(spellbookIds(book));
 }
 
 /**

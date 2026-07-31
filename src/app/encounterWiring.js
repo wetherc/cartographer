@@ -22,7 +22,6 @@ import {
   currentParticipant,
   dropParticipant,
 } from '../combat/Initiative.js';
-import { equippedWeapons } from '../entities/Equipment.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 import { npcsOnTile } from '../entities/NPC.js';
 import { tickConditions } from '../entities/Conditions.js';
@@ -36,14 +35,11 @@ import {
   commitEncounters,
   describeCombatant,
   endSpellEffects,
-  findCombatant,
   logDefeatTransition,
   retryImposedSaves,
+  spellsOf,
+  weaponsOf,
 } from './combatants.js';
-import { getSpellbook } from '../entities/Character.js';
-import { castableLeveledIds } from '../entities/SpellView.js';
-import { resolveSpellIds } from '../library/Library.js';
-import { spellbookIds } from './casterFields.js';
 import { npcForm } from './npcForm.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -373,38 +369,16 @@ export function wireEncounters(app) {
       app.views.initiativePanel.update(); // re-hides the panel
       app.views.encounterPanel.update(); // brings the Start combat button back
     },
-    // The active combatant's weapons, as one-click attack rolls: a party
-    // member's equipped weapons, or a foe encounter's assigned weapon. The GM
-    // can drive anyone's turn; a player only their bound character's; foe
+    // The active combatant's weapons, as one-click attack rolls, and their
+    // castable spells as Cast buttons; both derivations live in combatants.js
+    // (`weaponsOf`/`spellsOf`) so the combat screen reads the same lists. The
+    // GM can drive anyone's turn; a player only their bound character's; foe
     // turns are the GM's alone.
-    getWeapons: (participant) => {
-      const found = findCombatant(app, participant.id);
-      if (!found) return [];
-      if (found.kind === 'encounter') return found.entity.weapon ? [found.entity.weapon] : [];
-      if (found.kind === 'character') return equippedWeapons(found.entity);
-      return []; // NPCs carry no weapons yet
-    },
+    getWeapons: (participant) => weaponsOf(app, participant.id),
     onWeaponAttack: (participant, weapon) => {
       if (combat) weaponAttack(app, combat, participant, weapon);
     },
-    // Any combatant's castable spells, resolved from the spellbook's ids
-    // through the merged library's memoized index. A party character lists its
-    // cantrips plus what its classes' known-rule makes castable (a prepared
-    // caster's unprepared spells stay off the list); a foe encounter or an NPC
-    // lists its whole spellbook, since its authoring dialog stamps every
-    // picked spell castable. A non-caster's empty spellbook lists nothing.
-    getSpells: (participant) => {
-      const found = findCombatant(app, participant.id);
-      if (!found) return [];
-      if (found.kind === 'character') {
-        const book = getSpellbook(found.entity);
-        return resolveSpellIds([...book.cantrips, ...castableLeveledIds(found.entity)]);
-      }
-      // A foe's or NPC's spellbook is read structurally — `getSpellbook` only
-      // touches `.spellbook`, which an encounter or NPC caster carries too.
-      const book = getSpellbook(/** @type {any} */ (found.entity));
-      return resolveSpellIds(spellbookIds(book));
-    },
+    getSpells: (participant) => spellsOf(app, participant.id),
     onCastSpell: (participant, spell) => {
       if (combat) castSpellAction(app, combat, participant, spell);
     },
