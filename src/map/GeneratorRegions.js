@@ -138,8 +138,8 @@ export function generateWilderness(palette, size, rng) {
 /**
  * A settlement: grass everywhere, a cross of roads through the middle (drawn as
  * an overlay so the grass shows through the verges), and building POI markers
- * scattered on the grass tiles bordering the roads. Entry is the south end of
- * the vertical road, which runs edge to edge.
+ * drawn as 2x2 scaled blocks on the grass beside the roads. Entry is the south
+ * end of the vertical road, which runs edge to edge.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @returns {{ tiles: Tile[], entry: string }}
  */
@@ -169,19 +169,46 @@ export function generateTown(palette, size, rng) {
       byId.set(tile.id, tile);
     }
   }
-  // Building sites: grass cells orthogonally adjacent to a road, scattered and
-  // capped so a small town stays sparse and a large one fills out.
+  // Building sites: 2x2 blocks of grass whose cells all avoid the roads and
+  // the river, with the block orthogonally adjacent to a road, scattered and
+  // capped so a small town stays sparse and a large one fills out. Each
+  // chosen block's anchor tile carries the building image with span 2, so
+  // town buildings draw at twice the tile scale; the covered cells keep
+  // their grass beneath the scaled art.
+  /** @param {number} x @param {number} y */
+  const clear = (x, y) => x >= 0 && y >= 0 && x < size && y < size && !isRoad(x, y) && x !== rx;
+  /** @param {number} x @param {number} y */
+  const blockCells = (x, y) => [
+    [x, y],
+    [x + 1, y],
+    [x, y + 1],
+    [x + 1, y + 1],
+  ];
   /** @type {string[]} */
   const sites = [];
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      if (isRoad(x, y) || x === rx) continue;
-      const touchesRoad = NEIGHBORS4.some(([dx, dy]) => isRoad(x + dx, y + dy));
+  for (let y = 0; y < size - 1; y++) {
+    for (let x = 0; x < size - 1; x++) {
+      const cells = blockCells(x, y);
+      if (!cells.every(([cx, cy]) => clear(cx, cy))) continue;
+      const touchesRoad = cells.some(([cx, cy]) =>
+        NEIGHBORS4.some(([dx, dy]) => isRoad(cx + dx, cy + dy)),
+      );
       if (touchesRoad) sites.push(tileIdAt(x, y));
     }
   }
   const count = Math.min(sites.length, Math.max(3, Math.round(size / 2)));
-  const chosen = shuffle(sites, rng).slice(0, count);
+  /** @type {Set<string>} cells covered by an already-chosen block */
+  const taken = new Set();
+  /** @type {string[]} */
+  const chosen = [];
+  for (const id of shuffle(sites, rng)) {
+    if (chosen.length >= count) break;
+    const coords = /** @type {{ x: number, y: number }} */ (parseCoords(id));
+    const cells = blockCells(coords.x, coords.y).map(([cx, cy]) => tileIdAt(cx, cy));
+    if (cells.some((c) => taken.has(c))) continue;
+    for (const c of cells) taken.add(c);
+    chosen.push(id);
+  }
   chosen.forEach((id, i) => {
     const building = TOWN_BUILDINGS[i % TOWN_BUILDINGS.length];
     const ref = palette.get(building)?.imageRef;
@@ -189,6 +216,7 @@ export function generateTown(palette, size, rng) {
     if (!ref || !tile) return;
     tile.imageRef = ref;
     tile.overlayRef = null;
+    tile.span = 2;
     tile.metadata = { ...tile.metadata, poiType: 'settlement' };
   });
   return { tiles: [...byId.values()], entry: tileIdAt(mx, size - 1) };

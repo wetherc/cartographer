@@ -93,6 +93,38 @@ test('town lays roads as overlays and scatters building markers', () => {
   );
 });
 
+test('town buildings draw as non-overlapping 2x2 span blocks clear of the paths', () => {
+  for (const seed of [7, 13, 40]) {
+    const gen = generateNodeTiles(
+      palette,
+      { kind: 'region', archetype: 'town', size: 'medium' },
+      mulberry32(seed),
+    );
+    const byId = new Map(gen.tiles.map((t) => [t.id, t]));
+    const buildings = gen.tiles.filter((t) => t.metadata.poiType === 'settlement');
+    assert.ok(buildings.length >= 3, `seed ${seed}: expected buildings`);
+    /** @type {Set<string>} */
+    const covered = new Set();
+    for (const b of buildings) {
+      assert.equal(b.span, 2, `seed ${seed}: building ${b.id} not scaled`);
+      const [x, y] = b.id.split(',').map(Number);
+      for (const [cx, cy] of [
+        [x, y],
+        [x + 1, y],
+        [x, y + 1],
+        [x + 1, y + 1],
+      ]) {
+        const id = `${cx},${cy}`;
+        const cell = byId.get(id);
+        assert.ok(cell, `seed ${seed}: block ${b.id} runs off the grid at ${id}`);
+        assert.ok(!cell.overlayRef, `seed ${seed}: block ${b.id} covers a path at ${id}`);
+        assert.ok(!covered.has(id), `seed ${seed}: blocks overlap at ${id}`);
+        covered.add(id);
+      }
+    }
+  }
+});
+
 test('town runs a bridged river past the crossroads', () => {
   for (const seed of [7, 13, 40]) {
     const gen = generateNodeTiles(

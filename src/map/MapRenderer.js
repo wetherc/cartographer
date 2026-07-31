@@ -1,5 +1,5 @@
 import { groupImageChunks } from './RegionGroups.js';
-import { blockRect, newBlockRect } from './MapGeometry.js';
+import { blockRect, newBlockRect, parseCoords } from './MapGeometry.js';
 import { spanBlocks } from './TilePaint.js';
 import { overlayList } from './TileGrid.js';
 import { tileAtXY } from './TileIndex.js';
@@ -337,7 +337,20 @@ export class MapRenderer {
       (view.revealAll ||
         ((!tile.metadata.discoverable || tile.metadata.discovered) &&
           this._markers.markerVisible(view, tile.id)));
-    if (poiVisible) this._decorations.renderPoiOutline(sx, sy, size);
+    if (poiVisible) {
+      // A span anchor's outline covers the whole block its art is stretched
+      // across (clamped to the grid, matching spanBlocks), so the highlight
+      // wraps the scaled art rather than its top-left cell.
+      let extent = size;
+      if (tile.span && tile.span > 1 && view.node) {
+        const coords = parseCoords(tile.id);
+        if (coords) {
+          extent =
+            size * Math.min(tile.span, view.node.width - coords.x, view.node.height - coords.y);
+        }
+      }
+      this._decorations.renderPoiOutline(sx, sy, extent);
+    }
   }
 
   /**
