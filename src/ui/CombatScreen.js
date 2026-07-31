@@ -4,6 +4,7 @@ import { chip, textButton } from './buttons.js';
 import { hpBand } from '../view/ViewRole.js';
 import { combatantCard } from './CombatantCard.js';
 import { combatActionBar } from './CombatActionBar.js';
+import { entryItem } from './TravelogPanel.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatView} CombatView */
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
@@ -28,6 +29,12 @@ import { combatActionBar } from './CombatActionBar.js';
  *
  * Turn flow and HP edits report back through the callbacks; the host routes
  * them to the same actions the sidebar panel uses.
+ *
+ * The right column shows the fight's log (`getLogEntries`, already filtered by
+ * the host) over `diceDock`, an empty slot the host parks the app's dice-tray
+ * card in while the mode is active. A visually hidden live region announces
+ * each turn, and both the ribbon and the board are one tab stop each: arrow
+ * keys move between the chips and between the cards.
  * @param {HTMLElement} container
  * @param {{
  *   getView: () => CombatView | null,
@@ -44,18 +51,33 @@ import { combatActionBar } from './CombatActionBar.js';
  *   onApplyHP: (id: string, amount: number, isHeal: boolean) => void,
  *   getConcentration: (id: string) => { spellName: string } | null,
  *   onDropConcentration: (id: string) => void,
+ *   getLogEntries: () => import('../types/log.js').LogEntry[],
  * }} callbacks
- * @returns {{ update: () => void }}
+ * @returns {{ update: () => void, diceDock: HTMLElement }}
  */
 export function mountCombatScreen(container, callbacks) {
   const active = el('aside', 'combat-screen__active');
   const board = el('div', 'combat-board');
   const ribbon = el('div', 'combat-ribbon');
+  const logList = el('ul', 'combat-log__list travelog__list u-col u-g1');
+  const logEmpty = el('p', 'u-muted', 'Nothing logged yet.');
+  const diceDock = el('div', 'combat-screen__dice-dock');
+  const side = el(
+    'aside',
+    'combat-screen__log',
+    el('section', 'combat-log', el('h3', 'combat-board__heading', 'Combat log'), logEmpty, logList),
+    diceDock,
+  );
+  // Turn changes are spoken, not only ringed: polite, so a screen reader
+  // finishes what it was saying first. Lives outside the cleared regions.
+  const announcer = el('div', 'sr-only');
+  announcer.setAttribute('aria-live', 'polite');
   const root = el(
     'div',
     'combat-screen__layout',
-    el('div', 'combat-screen__columns', active, board),
+    el('div', 'combat-screen__columns', active, board, side),
     ribbon,
+    announcer,
   );
   container.appendChild(root);
 
@@ -63,12 +85,30 @@ export function mountCombatScreen(container, callbacks) {
   // GM can land the same number on several combatants without retyping it.
   let hpAmount = 1;
 
+  /** The last turn spoken, as `round:id`, so a refresh that moves nothing
+   * (an HP edit, a condition tick) stays silent. */
+  let announcedTurn = /** @type {string | null} */ (null);
+
   function render() {
+    // A rebuild replaces whatever held focus, so note where the keyboard was
+    // (a ribbon chip, a board card) and put it back on the matching element.
+    const focused = /** @type {HTMLElement | null} */ (document.activeElement);
+    const refocus =
+      focused && root.contains(focused) && focused.dataset.combatantId
+        ? {
+            chip: focused.classList.contains('combat-ribbon__chip'),
+            id: focused.dataset.combatantId,
+          }
+        : null;
     active.innerHTML = '';
     board.innerHTML = '';
     ribbon.innerHTML = '';
     const view = callbacks.getView();
-    if (!view) return;
+    if (!view) {
+      logList.innerHTML = '';
+      announcedTurn = null;
+      return;
+    }
     const gm = callbacks.isGM();
     const viewer = { gm };
     renderRibbon(view, gm);
@@ -80,7 +120,82 @@ export function mountCombatScreen(container, callbacks) {
       group('Party', party, viewer, selectedId),
       group('Foes', foes, viewer, selectedId),
     );
+    roveGroup(board, '.combatant-card--selectable', selectedId);
+    renderLog();
+    announceTurn(view);
+    if (refocus) {
+      const scope = refocus.chip ? ribbon : board;
+      /** @type {HTMLElement | null} */
+      const again = scope.querySelector(`[data-combatant-id="${CSS.escape(refocus.id)}"]`);
+      again?.focus();
+    }
   }
+
+  /** The fight's log entries, newest on top, rebuilt whole (a fight logs tens
+   * of lines, nothing worth diffing). */
+  function renderLog() {
+    logList.innerHTML = '';
+    const entries = callbacks.getLogEntries();
+    for (const entry of entries) logList.prepend(entryItem(entry));
+    logEmpty.hidden = entries.length > 0;
+    logList.hidden = entries.length === 0;
+  }
+
+  /**
+   * Speak the turn when it actually moved: round and name, keyed so HP edits
+   * and other refreshes repeat nothing.
+   * @param {CombatView} view
+   */
+  function announceTurn(view) {
+    const row = view.rows[view.turnIndex];
+    if (!row) return;
+    const key = `${view.round}:${row.id}`;
+    if (key === announcedTurn) return;
+    announcedTurn = key;
+    announcer.textContent = `Round ${view.round}: ${row.name ?? 'Unknown combatant'}'s turn.`;
+  }
+
+  /**
+   * Make a set of buttons one tab stop: the anchor (or the first) holds
+   * tabindex 0, the rest -1. Re-run per render, since the buttons are rebuilt;
+   * the arrow-key movement is wired once at mount (`wireRoving`).
+   * @param {HTMLElement} scope
+   * @param {string} selector
+   * @param {string | null} anchorId the combatant whose button starts focusable
+   */
+  function roveGroup(scope, selector, anchorId) {
+    const buttons = /** @type {HTMLElement[]} */ ([...scope.querySelectorAll(selector)]);
+    const anchor = buttons.findIndex((b) => b.dataset.combatantId === anchorId);
+    buttons.forEach((b, i) => {
+      b.tabIndex = i === (anchor === -1 ? 0 : anchor) ? 0 : -1;
+    });
+  }
+
+  /**
+   * The arrow-key half of the roving tab stop, attached once to a persistent
+   * container: the buttons inside are queried per keypress, since every render
+   * replaces them. Wraps at the ends.
+   * @param {HTMLElement} scope
+   * @param {string} selector
+   */
+  function wireRoving(scope, selector) {
+    scope.addEventListener('keydown', (event) => {
+      const keys = { ArrowRight: 1, ArrowDown: 1, ArrowLeft: -1, ArrowUp: -1 };
+      const step = keys[/** @type {keyof typeof keys} */ (event.key)];
+      if (!step) return;
+      const buttons = /** @type {HTMLElement[]} */ ([...scope.querySelectorAll(selector)]);
+      const from = buttons.indexOf(/** @type {HTMLElement} */ (event.target));
+      if (from === -1) return;
+      event.preventDefault();
+      const to = buttons[(from + step + buttons.length) % buttons.length];
+      buttons.forEach((b) => {
+        b.tabIndex = b === to ? 0 : -1;
+      });
+      to.focus();
+    });
+  }
+  wireRoving(ribbon, '.combat-ribbon__chip');
+  wireRoving(board, '.combatant-card--selectable');
 
   /**
    * The turn ribbon: one chip per participant in order, the current turn
@@ -118,12 +233,15 @@ export function mountCombatScreen(container, callbacks) {
           `${row.defeated ? ', defeated' : ''}`,
       );
       button.title = name;
+      button.dataset.combatantId = row.id;
       button.addEventListener('click', () => {
         callbacks.onInspect(row.id);
         render();
       });
       chips.appendChild(button);
     });
+    // One tab stop: the current turn's chip anchors it, arrows walk the rest.
+    roveGroup(ribbon, '.combat-ribbon__chip', view.rows[view.turnIndex]?.id ?? null);
     if (!gm) return;
     ribbon.appendChild(
       el(
@@ -300,7 +418,7 @@ export function mountCombatScreen(container, callbacks) {
   }
 
   render();
-  return { update: render };
+  return { update: render, diceDock };
 }
 
 /**

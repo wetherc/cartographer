@@ -199,6 +199,35 @@ body.mode-combat .app-buildrail {
   color: var(--text-muted);
 }
 
+/* The right column: the fight's log over the docked dice tray. The tray keeps
+   its own .card styling; the column only sizes it. */
+.combat-screen__log {
+  flex: 0 0 22rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.combat-screen__dice-dock > .card {
+  min-width: 0;
+}
+
+.combat-log {
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.combat-log__list {
+  max-height: 24rem;
+  overflow-y: auto;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
 /* The active combatant's weapons and spells, one button each, under the
    column's facts. Cast buttons tint their icon with the mana accent so spells
    read apart from weapon strikes, as the sidebar strip did. */
@@ -299,7 +328,8 @@ body.mode-combat .app-buildrail {
     align-items: stretch;
   }
 
-  .combat-screen__active {
+  .combat-screen__active,
+  .combat-screen__log {
     flex: 0 0 auto;
   }
 }

@@ -48,6 +48,7 @@ export function combatantCard(row, viewer, selection = {}) {
     button.type = 'button';
     button.setAttribute('aria-pressed', String(Boolean(selection.selected)));
     button.title = `Target ${row.name ?? 'Unknown combatant'}`;
+    button.dataset.combatantId = row.id;
     button.addEventListener('click', () => selection.onSelect?.(row.id));
   }
   if (row.defeated) {

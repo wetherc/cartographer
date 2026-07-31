@@ -40,6 +40,10 @@ export function wireStory(app) {
       createEntry(`log-${now}-${logSeq++}`, kind, message, now),
     );
     app.views.travelogPanel.update();
+    // The combat screen's log column shows the same entries; without this a
+    // line that changes no combatant (a missed attack, a plain roll) never
+    // reached it. Outside a fight the screen is empty and the call is a no-op.
+    app.views.combatScreen.update();
     app.actions.markDirty();
   };
 

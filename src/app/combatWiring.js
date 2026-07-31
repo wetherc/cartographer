@@ -100,7 +100,35 @@ export function wireCombatScreen(app) {
       app.actions.markDirty();
       endSpellEffects(app, id, held.spellId);
     },
+    // The log column shows the fight's slice of the travelogue: what combat
+    // wrote plus the dice rolls, newest first.
+    getLogEntries: () =>
+      state.travelog.filter((entry) => entry.kind === 'combat' || entry.kind === 'roll'),
   });
 
-  app.views.combatScreen = screen;
+  // The app has one dice tray, and the screen borrows it whole: the tray's
+  // card moves into the log column while combat mode is active and back to
+  // its below-map spot on exit. Moving the element keeps diceWiring's handle
+  // valid — the tray is mounted once and never re-resolved. The home position
+  // is captured here, before anything can have moved it.
+  const trayCard = mustGetElement('dice-tray-container');
+  const trayHome = { parent: trayCard.parentElement, next: trayCard.nextSibling };
+  function syncDiceDock() {
+    const docked = trayCard.parentElement === screen.diceDock;
+    if (state.mode === 'combat' && !docked) {
+      screen.diceDock.appendChild(trayCard);
+    } else if (state.mode !== 'combat' && docked) {
+      trayHome.parent?.insertBefore(trayCard, trayHome.next);
+    }
+  }
+
+  // Every refresh path lands here, including the mode switch itself
+  // (sessionControls updates this view on every mode change), so the dock
+  // stays in step without a second observer.
+  app.views.combatScreen = {
+    update: () => {
+      syncDiceDock();
+      screen.update();
+    },
+  };
 }

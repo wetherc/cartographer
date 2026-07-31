@@ -62,6 +62,9 @@ export function wireSessionControls(app) {
       document.body.classList.toggle('mode-library', mode === 'library');
       document.body.classList.toggle('mode-combat', mode === 'combat');
       app.actions.onModeChanged(mode);
+      // The combat screen re-homes the dice tray on entry and exit, so every
+      // mode change has to reach it, not only the fight's own refresh paths.
+      app.views.combatScreen.update();
     },
   });
   mustGetElement('mode-switch-container').appendChild(modeSwitch.element);

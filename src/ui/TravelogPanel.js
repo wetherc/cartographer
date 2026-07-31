@@ -10,9 +10,10 @@ function formatTime(at) {
   return new Date(at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-/** Build the list row for one entry.
+/** Build the list row for one entry. Shared with the combat screen's log
+ * column, so an entry reads the same in both places.
  * @param {LogEntry} entry */
-function entryItem(entry) {
+export function entryItem(entry) {
   const time = el('time', 'travelog__time', formatTime(entry.at));
   time.dateTime = new Date(entry.at).toISOString();
 
