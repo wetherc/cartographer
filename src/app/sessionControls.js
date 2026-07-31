@@ -46,10 +46,21 @@ export function wireSessionControls(app) {
     ],
     value: app.state.mode,
     onChange: (mode) => {
+      // Combat mode is the full-width fight view, entered while a fight is
+      // running rather than through the switch (it has no button here). A
+      // request for it with no fight lands on Play instead, so a stale
+      // setMode can never show an empty combat screen. The switch itself is
+      // synced afterwards: during the initial mount it is still being
+      // constructed.
+      if (mode === 'combat' && app.state.combat === null) {
+        mode = 'play';
+        queueMicrotask(() => modeSwitch.sync('play'));
+      }
       app.state.mode = mode;
       document.body.classList.toggle('mode-play', mode === 'play');
       document.body.classList.toggle('mode-build', mode === 'build');
       document.body.classList.toggle('mode-library', mode === 'library');
+      document.body.classList.toggle('mode-combat', mode === 'combat');
       app.actions.onModeChanged(mode);
     },
   });

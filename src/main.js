@@ -22,6 +22,7 @@ import { wireSessionControls } from './app/sessionControls.js';
 import { wireShortcuts } from './app/shortcuts.js';
 import { wireDiceTray } from './app/diceWiring.js';
 import { maybeShowOnboarding } from './app/onboarding.js';
+import { isGM } from './view/ViewRole.js';
 
 const palette = new TilePalette();
 const { campaign: initial, failed: loadFailed } = loadInitialCampaignSafe();
@@ -83,6 +84,10 @@ wireDiceTray(app); // dice tray + the roll entries it writes to the travelogue
 // so everything it touches must already be registered.
 wireSessionControls(app); // mode/role switches (applies the initial role), tabs, sidebar
 wireShortcuts(app);
+
+// A reload that finds a fight running resumes it on the combat screen. GM
+// tabs only: a player display stays on Play until it opens the fight itself.
+if (app.state.combat !== null && isGM(app.state.role)) app.actions.setMode('combat');
 
 // Show any confirmation queued by a pre-reload action (Undo, Import, New, ...).
 flushQueuedToast(toasts);

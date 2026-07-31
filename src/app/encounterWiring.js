@@ -320,6 +320,14 @@ export function wireEncounters(app) {
     setCombat(startCombat(participants, (p) => describe(p)?.name ?? ''));
     app.views.initiativePanel.update(); // un-hides the panel
     app.views.encounterPanel.update(); // hides the Start combat button
+    app.actions.setMode('combat'); // the fight runs on the full-width screen
+  }
+
+  // Leaving combat mode is tied to the fight ending, however it ends: the End
+  // button, the last encounter dying, or the party walking off the tile. Any
+  // other mode is the operator's own choice and is left alone.
+  function exitCombatMode() {
+    if (state.mode === 'combat') app.actions.setMode('play');
   }
 
   const initiativeContainer = mustGetElement('initiative-container');
@@ -368,6 +376,7 @@ export function wireEncounters(app) {
       setCombat(null);
       app.views.initiativePanel.update(); // re-hides the panel
       app.views.encounterPanel.update(); // brings the Start combat button back
+      exitCombatMode();
     },
     // The active combatant's weapons, as one-click attack rolls, and their
     // castable spells as Cast buttons; both derivations live in combatants.js
@@ -401,7 +410,10 @@ export function wireEncounters(app) {
   // (party moves, role switches) gets the visibility sync for free.
   app.views.initiativePanel = {
     update: () => {
-      if (combat && encountersHere().length === 0) setCombat(null);
+      if (combat && encountersHere().length === 0) {
+        setCombat(null);
+        exitCombatMode();
+      }
       initiativeContainer.hidden = combat === null;
       initiativePanel.update();
     },

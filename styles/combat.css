@@ -1,0 +1,25 @@
+/* ==========================================================================
+   Combat mode: the full-width fight screen.
+
+   The screen shows only in combat mode, which the app enters when a fight
+   starts and leaves when it ends (there is no header button for it). Like
+   Library mode it replaces the map columns entirely: the map, the Play
+   sidebar, and both authoring rails all hide, and the screen takes the full
+   width of the main area.
+   ========================================================================== */
+
+#combat-screen {
+  display: none;
+  flex: 1;
+  min-width: 0;
+}
+
+body.mode-combat #combat-screen {
+  display: flex;
+}
+
+body.mode-combat .app-center,
+body.mode-combat .app-sidebar,
+body.mode-combat .app-buildrail {
+  display: none;
+}

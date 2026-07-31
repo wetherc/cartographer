@@ -26,7 +26,7 @@ import type { MapNavigator } from '../map/MapNavigator.js';
 import type { MapCanvas } from '../map/MapCanvas.js';
 import type { PartyTracker } from '../party/PartyTracker.js';
 
-export type AppMode = 'play' | 'build' | 'library';
+export type AppMode = 'play' | 'build' | 'library' | 'combat';
 
 /** The campaign data a save serializes, plus the two view switches. */
 export interface AppState {
