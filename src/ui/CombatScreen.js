@@ -42,6 +42,7 @@ import { entryItem } from './TravelogPanel.js';
  *   isGM: () => boolean,
  *   onNext: () => void,
  *   onEnd: () => void,
+ *   onLeave: () => void,
  *   getInspectedId: () => string | null,
  *   onInspect: (id: string) => void,
  *   getSelectedTargetId: () => string | null,
@@ -245,13 +246,20 @@ export function mountCombatScreen(container, callbacks) {
     });
     // One tab stop: the current turn's chip anchors it, arrows walk the rest.
     roveGroup(ribbon, '.combat-ribbon__chip', view.rows[view.turnIndex]?.id ?? null);
-    if (!gm) return;
+    // Back to map is everyone's, including a player: looking something up on the
+    // map mid-fight is not a GM privilege, and the header's mode switch is hidden
+    // in the Player view, so without this a player tab could not leave the screen
+    // at all. Leaving changes nothing about the fight, which keeps running; the
+    // Play sidebar's Open combat comes back here.
     ribbon.appendChild(
       el(
         'div',
         'combat-ribbon__controls',
-        textButton('Next turn', callbacks.onNext, { icon: 'chevron', variant: 'primary' }),
-        textButton('End combat', callbacks.onEnd, { icon: 'flag' }),
+        textButton('Back to map', callbacks.onLeave, { icon: 'map' }),
+        gm
+          ? textButton('Next turn', callbacks.onNext, { icon: 'chevron', variant: 'primary' })
+          : null,
+        gm ? textButton('End combat', callbacks.onEnd, { icon: 'flag' }) : null,
       ),
     );
   }

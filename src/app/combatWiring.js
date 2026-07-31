@@ -52,6 +52,9 @@ export function wireCombatScreen(app) {
     isGM: () => isGM(state.role),
     onNext: () => app.actions.advanceCombatTurn(),
     onEnd: () => app.actions.endCombat(),
+    // Leaving is a view change only: the fight keeps running, and the Play
+    // sidebar's status card offers the way back in.
+    onLeave: () => app.actions.setMode('play'),
     getInspectedId: () => inspectedId,
     onInspect: (id) => {
       inspectedId = id;
