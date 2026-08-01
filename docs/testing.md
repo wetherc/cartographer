@@ -60,6 +60,23 @@ The unit tests and the typecheck do not touch the DOM or the `<canvas>` element.
 
 Keep the preview pages current as the modules they show change shape. An old preview page can hide a real error the next time someone uses it.
 
+## Keyboard focus across a panel rebuild
+
+Several panels rebuild by clearing their root element. `src/ui/focusMemory.js` puts the keyboard position back after the clear, and `src/ui/listPanel.js` calls it for every panel it builds. Its unit tests run against stub nodes, so they prove the matching rule and not the browser behavior. Check the browser behavior when you change a panel's controls or their labels.
+
+The check needs a control that survives the rebuild. Focus one, for example the damage amount field on an encounter row, then trigger the rebuild and read `document.activeElement`. A cross-tab save adoption is the easiest trigger:
+
+```js
+const key = 'campaign-builder:save';
+window.dispatchEvent(
+  new StorageEvent('storage', { key, newValue: localStorage.getItem(key), storageArea: localStorage }),
+);
+```
+
+Two things make this check report a false result. Focusing a control that is hidden, for example one on an unselected tab, does nothing at all, so compare `document.activeElement` against the control before you trigger the rebuild. Reading the old element afterwards also proves nothing, because the rebuilt control is a different element with the same signature. Compare the accessible names instead.
+
+The `rehydrate` scenario of `bench/app-bench.js` runs the same check over fifty adoptions and reports `focusKept`.
+
 ## Browser-only APIs (localStorage, Blob, FileReader)
 
 Some modules wrap browser APIs that do not exist in the test runner of Node. Examples are `trySaveToLocalStorage`, `loadFromLocalStorage`, `downloadState`, and `readStateFromFile` in `storage/SaveManager.js`'s exports. These modules cannot get a unit test at all, not even with a DOM-less stub.

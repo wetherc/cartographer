@@ -205,4 +205,65 @@ export const SCENARIOS = [
       return { turns };
     },
   },
+
+  {
+    name: 'rehydrate-focus',
+    description: 'Whether the keyboard position survives ten cross-tab save adoptions.',
+    // This scenario reloads onto the seed save, so it runs last. A reload
+    // in the middle of the run changes what the scenarios after it start
+    // from. It reports `focusKept`, not a timing, and it is a correctness
+    // check that the harness already had the machinery for.
+    async run(page, { seedSave }) {
+      if (!seedSave) return { skipped: 'no seed save' };
+      // A dirty campaign blocks the reload with its own prompt, so the
+      // save comes first.
+      await page.clickSelector('#save-btn');
+      await page.eval(`
+        localStorage.setItem(${JSON.stringify(SAVE_KEY)}, ${JSON.stringify(seedSave)});
+        return null;
+      `);
+      await page.reload();
+      await waitForApp(page);
+      // The encounter panel lives on the Session tab, and an earlier
+      // scenario can leave another tab open. A control on a closed tab
+      // cannot take focus at all.
+      await page.clickText('#sidebar-tabs button', 'Session');
+      return page.eval(`
+        const key = 'campaign-builder:save';
+        const value = localStorage.getItem(key);
+        if (value === null) return { skipped: 'no save in localStorage' };
+        const label = (el) =>
+          el ? (el.getAttribute('aria-label') ?? el.textContent.trim()) : null;
+        // Every candidate here is a row control of a panel that the list
+        // panel builds. The party panel is left out, because it rebuilds
+        // through its own path.
+        const candidates = [
+          ...document.querySelectorAll(
+            '#encounter-container .encounter-panel__row button, #encounter-container .encounter-panel__row input',
+          ),
+        ];
+        let target = null;
+        for (const candidate of candidates) {
+          candidate.focus();
+          if (document.activeElement === candidate) {
+            target = candidate;
+            break;
+          }
+        }
+        const before = label(target);
+        for (let i = 0; i < 10; i++) {
+          window.dispatchEvent(new StorageEvent('storage', {
+            key, oldValue: null, newValue: value, storageArea: localStorage,
+          }));
+          await new Promise((r) => setTimeout(r, 20));
+        }
+        // The rebuilt control is a different element with the same
+        // accessible name, so the names are what to compare.
+        return {
+          focusTarget: before,
+          focusKept: before === null ? null : label(document.activeElement) === before,
+        };
+      `);
+    },
+  },
 ];

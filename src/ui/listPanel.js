@@ -1,5 +1,6 @@
 import { emptyState, iconButton, textButton } from './buttons.js';
 import { el } from './dom.js';
+import { captureFocus, restoreFocus } from './focusMemory.js';
 
 /**
  * This is the list panel every rail builds from. Six panels used to
@@ -28,6 +29,11 @@ import { el } from './dom.js';
  * panel refreshes that a party step fires collapse into no DOM work. A
  * panel whose output depends on state outside its rows must opt out with
  * `alwaysRender`.
+ *
+ * A repaint that does happen keeps the keyboard position, through
+ * `focusMemory.js`. Without that, every rebuild moved focus to the
+ * document body, and a cross-tab save adoption rebuilds these panels
+ * every few seconds.
  */
 
 /**
@@ -213,6 +219,9 @@ export function mountListPanel(container, options) {
   function paint(gm, rows) {
     lastGM = gm;
     lastRows = rows;
+    // Clearing the root drops focus to the document body. Note where it
+    // was, and put it back once the rows exist again.
+    const memo = captureFocus(root, document.activeElement);
     root.innerHTML = '';
     /** @type {RowContext<T>} */
     const ctx = { gm, render, action };
@@ -255,6 +264,8 @@ export function mountListPanel(container, options) {
     } else if (placement === 'inline') {
       root.append(...addButtons);
     }
+
+    restoreFocus(root, memo);
   }
 
   function render() {
