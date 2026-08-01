@@ -17,17 +17,19 @@ import { abilityModifier } from './Modifiers.js';
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
 /**
- * Hit dice are regular resource pools under reserved ids (like HP and the
- * spell-slot pools), one pool per die size: `hit-dice-d8` holds a character's
- * d8s, sized to their combined levels in d8 classes. A single-class character
- * has one pool; a multiclass character has one per distinct die size, primary
- * class first. Short rests spend them for healing; a long rest restores half
- * of each pool (see Character.js's restAll). Older saves carried one generic
- * `hit-dice` pool with no die size; syncHitDice converts it, carrying the
- * spent count into the primary class's pool.
+ * Hit dice are regular resource pools under reserved ids, like HP and the
+ * spell-slot pools. Each pool holds one die size. For example, `hit-dice-d8`
+ * holds a character's d8s, sized to the combined levels in d8 classes.
  *
- * Both ids are declared in PoolIds.js with the rest of the reserved pool ids,
- * and re-exported here because hit-dice code is their natural import site.
+ * A single-class character has one pool. A multiclass character has one pool
+ * per distinct die size, with the primary class first. A short rest spends
+ * hit dice for healing. A long rest restores half of each pool (see
+ * Character.js's restAll). Older saves carried one generic `hit-dice` pool
+ * with no die size. syncHitDice converts this pool and moves the spent count
+ * into the primary class's pool.
+ *
+ * Both ids are declared in PoolIds.js with the other reserved pool ids. This
+ * module re-exports them because hit-dice code is their natural import site.
  */
 export { HIT_DICE_ID_PREFIX, LEGACY_HIT_DICE_ID } from './PoolIds.js';
 
@@ -62,10 +64,11 @@ export function hitDieFor(character) {
 }
 
 /**
- * The hit dice the class list grants: one entry per distinct die size in
- * class-list order (primary class first), counting one die per assigned class
- * level. Unknown classes contribute nothing; pending (unassigned) levels grant
- * their die only once assigned. Empty for a classless character.
+ * The hit dice the class list grants. One entry exists per distinct die size,
+ * in class-list order with the primary class first. Each entry counts one die
+ * per assigned class level. An unknown class contributes nothing. A pending,
+ * unassigned level grants its die only after assignment. The result is empty
+ * for a classless character.
  * @param {Character} character
  * @returns {{ die: number, count: number }[]}
  */
@@ -95,12 +98,12 @@ export function hpGainPerLevel(hitDie, conModifier) {
 }
 
 /**
- * The class-derived maximum HP across the class list: the first class grants
- * a full hit die plus CON modifier at its first level (at least 1), and every
- * other assigned level — the first class's remaining levels and every other
- * class's levels in full — adds that class's average-rule gain. Pending
- * (unassigned) levels contribute nothing. Null for a classless character or
- * one whose classes are all unknown.
+ * The class-derived maximum HP across the class list. The first class grants
+ * a full hit die plus the CON modifier at its first level, with a minimum of
+ * 1. Every other assigned level adds that class's average-rule gain. This
+ * includes the first class's remaining levels and every other class's levels
+ * in full. A pending, unassigned level contributes nothing. The result is
+ * null for a classless character or one whose classes are all unknown.
  * @param {Character} character
  * @returns {number | null}
  */
@@ -121,21 +124,23 @@ export function classMaxHP(character) {
 }
 
 /**
- * Move the HP pool's maximum onto the value the class list, level, and CON now
- * imply, carrying current HP by the same delta so a level-up or a retroactive
- * CON increase grants the points rather than only raising the ceiling. Current
- * HP stays within [0, max]; a character already at their derived maximum comes
- * back unchanged, identity preserved.
+ * Move the HP pool's maximum to the value that the class list, level, and CON
+ * now imply. The function carries current HP by the same delta, so a
+ * level-up or a retroactive CON increase grants the points instead of only
+ * raising the ceiling. Current HP stays within the range 0 to max. A
+ * character already at the derived maximum returns unchanged, with identity
+ * preserved.
  *
- * Three cases opt out. A character with no derivable class HP (classless, or
- * every class unknown) keeps whatever pool they have — there is nothing to
- * derive from. So does a character with no HP pool at all, since its absence
- * legitimately means "no HP tracking". And so does one carrying `hpOverride`,
- * the flag `Character.setMaxHP` sets: a GM who types a maximum by hand owns it
- * from then on, and nothing here overwrites it.
+ * Three cases opt out. A character with no derivable class HP, because the
+ * character is classless or every class is unknown, keeps whatever pool it
+ * has, since there is nothing to derive from. A character with no HP pool at
+ * all also keeps its state, because the absence of a pool means no HP
+ * tracking. A character that carries `hpOverride`, the flag that
+ * `Character.setMaxHP` sets, also keeps its state: the GM who types a maximum
+ * by hand owns it from then on, and nothing here overwrites it.
  *
- * Call this through `Progression.derive` rather than directly; it is exported
- * for that facade and for tests.
+ * Call this function through `Progression.derive` instead of calling it
+ * directly. This function is exported for that facade and for tests.
  * @param {Character} character
  * @returns {Character}
  */
@@ -181,12 +186,13 @@ export function withHitDice(character) {
 }
 
 /**
- * Re-derive the hit-dice pools from the (possibly changed) class list, keeping
- * what's spent: each pool's current grows by exactly the dice gained, a new
- * die size arrives unspent, and a die size no longer granted drops. A legacy
- * sizeless pool converts, carrying its spent count into the first pool. A
- * character without any hit-dice pool is returned unchanged, as is one whose
- * pools already match, identity preserved.
+ * Re-derive the hit-dice pools from the class list, since it can change,
+ * and keep what is already spent. Each pool's current value grows by exactly
+ * the dice gained. A new die size arrives unspent. A die size no longer
+ * granted drops from the pools. A legacy sizeless pool converts, and its
+ * spent count moves into the first pool. A character without any hit-dice
+ * pool returns unchanged. The same applies to a character whose pools
+ * already match, with identity preserved.
  * @param {Character} character
  * @returns {Character}
  */
@@ -198,8 +204,8 @@ export function syncHitDice(character) {
   const next = characterHitDice(character).map(({ die, count }, index) => {
     const fresh = createResource(hitDicePoolId(die), `Hit Dice (d${die})`, 'custom', count);
     const old = existing.find((r) => r.id === hitDicePoolId(die)) ?? (index === 0 ? legacy : null);
-    // The pool is rebuilt from the class list (its id changes when a legacy
-    // pool converts), so only the spent count carries over from the old one.
+    // The pool is rebuilt from the class list. Its id changes when a legacy
+    // pool converts, so only the spent count carries over from the old pool.
     return old === null ? fresh : { ...fresh, current: growMax(old, count).current };
   });
 
@@ -218,12 +224,13 @@ export function syncHitDice(character) {
 }
 
 /**
- * Spend one hit die for healing (the short-rest mechanic): roll the die, add
- * the CON modifier (a heal never negative), restore that much HP, and mark the
- * die spent. `die` picks which pool; omitted, the first pool with a die left
- * is spent. A legacy sizeless pool rolls the primary class's die. A character
- * with no matching charged pool (or no resolvable die size) is returned
- * unchanged with 0 healed. RNG injected for testability.
+ * Spend one hit die for healing, the short-rest mechanic. The function rolls
+ * the die, adds the CON modifier so the heal is never negative, restores
+ * that much HP, and marks the die spent. The `die` parameter picks which
+ * pool to use. When `die` is omitted, the function spends the first pool
+ * with a die left. A legacy sizeless pool rolls the primary class's die. A
+ * character with no matching charged pool, or no resolvable die size,
+ * returns unchanged with 0 healed. The RNG is injected for testability.
  * @param {Character} character
  * @param {number | null} [die]
  * @param {() => number} [rng]

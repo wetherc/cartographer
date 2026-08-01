@@ -1,17 +1,18 @@
 /** @typedef {import('../types/entities.js').Condition} Condition */
 
 /**
- * The chip a caster holding a spell open carries. `entities/Concentration.js`
- * writes and removes it, and it is named here so the two modules agree on the
- * spelling. It stays in the pick-list below because a foe's concentration has no
- * state behind it yet and is still added by hand.
+ * The chip that a caster carries while it holds a spell open.
+ * `entities/Concentration.js` writes and removes it, and the chip is named
+ * here so the two modules agree on the spelling. It stays in the pick-list
+ * below because a foe's concentration has no state behind it yet, and a
+ * person still adds it by hand.
  */
 export const CONCENTRATING = 'Concentrating';
 
 /**
- * The standard 5e status conditions, plus concentration and exhaustion, offered
- * as suggestions in the UI. A condition is a free string, so a GM can add one
- * that isn't listed here; this is only the pick-list.
+ * The standard 5e status conditions, plus concentration and exhaustion,
+ * offered as suggestions in the UI. A condition is a free string, so the GM
+ * can add one that is not listed here. This is only the pick-list.
  * @type {string[]}
  */
 export const CONDITIONS = [
@@ -35,9 +36,9 @@ export const CONDITIONS = [
 
 /**
  * @param {string} name
- * @param {number | null} [rounds] remaining rounds; null = indefinite
+ * @param {number | null} [rounds] remaining rounds. Null means indefinite
  * @param {import('../types/entities.js').ConditionSource} [source] what imposed
- *   it, for a chip a cast wrote; left off entirely when there is none, so a
+ *   it, for a chip a cast wrote. Left off entirely when there is none, so a
  *   hand-added chip stores no extra key
  * @returns {Condition}
  */
@@ -46,10 +47,11 @@ export function createCondition(name, rounds = null, source = undefined) {
 }
 
 /**
- * Add (or update the duration of) a condition, matched case-insensitively by
- * name so "Poisoned" doesn't stack with "poisoned". Returns a new list. A
- * replaced chip's source goes with it: the new cast owns the condition now, and
- * a hand-added replacement means the GM does.
+ * Add a condition, or update its duration if present. The match is
+ * case-insensitive by name, so "Poisoned" does not stack with "poisoned".
+ * Returns a new list. A replaced chip's source goes with it: the new cast
+ * owns the condition now, and a hand-added replacement means the GM owns it
+ * instead.
  * @param {Condition[]} list
  * @param {string} name
  * @param {number | null} [rounds]
@@ -75,8 +77,8 @@ export function removeCondition(list, name) {
 }
 
 /**
- * Advance one round: decrement every timed condition's counter and drop any
- * that reach zero. Indefinite conditions (rounds === null) are left untouched.
+ * Advance one round. Decrement every timed condition's counter and drop any
+ * that reach zero. Indefinite conditions (rounds === null) stay untouched.
  * @param {Condition[]} list
  * @returns {Condition[]}
  */

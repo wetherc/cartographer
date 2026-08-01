@@ -13,11 +13,11 @@ import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
 /** @typedef {import('../types/dice.js').RollMode} RollMode */
 
 /**
- * A single target of a cast: its identity plus the numbers the resolver needs —
- * AC for an attack spell, save bonus for a save spell (with an optional
- * advantage/disadvantage mode on that save). Healing targets need only id/name.
- * `projectiles` is how many of a multi-projectile spell's rays this target
- * catches, which the caster allocates.
+ * A single target of a cast: its identity plus the numbers the resolver
+ * needs. An attack spell needs AC. A save spell needs a save bonus, with an
+ * optional advantage or disadvantage mode on that save. Healing targets need
+ * only id and name. `projectiles` states how many rays of a multi-projectile
+ * spell this target catches, which the caster allocates.
  * @typedef {{
  *   id?: string,
  *   name?: string,
@@ -29,9 +29,10 @@ import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
  */
 
 /**
- * Cantrip damage scales with caster level, stepping up at the 5e breakpoints
- * 5/11/17 — a level-1 cantrip's base dice grow by one increment at 5th level,
- * two at 11th, three at 17th.
+ * Cantrip damage scales with caster level, and it steps up at the 5e
+ * breakpoints of level 5, level 11, and level 17. A level-1 cantrip's base
+ * dice grow by one increment at level 5, two increments at level 11, and
+ * three increments at level 17.
  * @param {number} casterLevel
  * @returns {number} how many `damagePerLevel` increments a cantrip adds
  */
@@ -43,10 +44,11 @@ export function cantripStep(casterLevel) {
 }
 
 /**
- * The number of scaling increments a cast applies: for a cantrip, the caster's
- * level step (above); for a leveled spell, every slot level above the spell's
- * own level (upcasting). Exported because the cast dialog needs the same count
- * to work out how many targets to offer before the cast is resolved.
+ * The number of scaling increments a cast applies. For a cantrip, this is the
+ * caster's level step shown above. For a leveled spell, this is every slot
+ * level above the spell's own level, which is upcasting. This function is
+ * exported because the cast dialog needs the same count to work out how
+ * many targets to offer before the cast resolves.
  * @param {Spell} spell
  * @param {number} slotLevel
  * @param {number} casterLevel
@@ -56,17 +58,19 @@ export function scalingSteps(spell, slotLevel, casterLevel) {
   return spell.level === 0 ? cantripStep(casterLevel) : Math.max(0, slotLevel - spell.level);
 }
 
-/** The most creatures a spell may name as a fixed target count. Past this a
- * spell is describing an area, which `targetCount: 0` says directly. */
+/** The most creatures a spell can name as a fixed target count. Past this
+ * limit, a spell describes an area, and `targetCount: 0` states this
+ * directly. */
 export const MAX_TARGET_COUNT = 20;
 
 /**
- * A written target count read as a number: floored, held to 0..20, with blank or
- * unparsable input falling back (1 for the authoring form, since a spell that
- * says nothing about its targets hits one creature). Shared by the authoring
- * form and the library normalizer so both agree that 0 means an area — the
- * general `clampInt` cannot express that, since its missing-value fallback
- * treats a deliberate 0 as nothing written.
+ * A written target count, read as a number. It is floored and held to the
+ * range 0 to 20. Blank or unparsable input falls back to a default, 1 for
+ * the authoring form, because a spell that says nothing about its targets
+ * hits one creature. The authoring form and the library normalizer share
+ * this function, so both agree that 0 means an area. The general `clampInt`
+ * function cannot express this, because its missing-value fallback treats a
+ * deliberate 0 as nothing written.
  * @param {unknown} value
  * @param {number} [fallback]
  * @returns {number}
@@ -79,10 +83,10 @@ export function normalizeTargetCount(value, fallback = 1) {
 }
 
 /**
- * Coerce a written projectile block into a clean one, or null when the value
- * says nothing usable — an absent block is what makes an attack spell roll once.
- * A count below 1 is not a projectile spell, so it reads as absent. Shared by
- * the authoring form and the library normalizer.
+ * Coerce a written projectile block into a clean one, or return null when the
+ * value says nothing usable. An absent block is what makes an attack spell
+ * roll once. A count below 1 is not a projectile spell, so it reads as
+ * absent. The authoring form and the library normalizer share this function.
  * @param {unknown} value
  * @returns {import('../types/spell.js').SpellProjectiles | null}
  */
@@ -102,11 +106,11 @@ export function normalizeProjectiles(value) {
 }
 
 /**
- * Coerce a written material-component block into a clean one, or null when the
- * value names nothing — an absent block is what leaves the component letters as
- * the whole story. A block with no text, no cost, and no consumption says
- * nothing the letters do not, so it reads as absent. Shared by the authoring form
- * and the library normalizer.
+ * Coerce a written material-component block into a clean one, or return null
+ * when the value names nothing. An absent block leaves the component letters
+ * as the whole story. A block with no text, no cost, and no consumption says
+ * nothing the letters do not already say, so it reads as absent. The
+ * authoring form and the library normalizer share this function.
  * @param {unknown} value
  * @returns {import('../types/spell.js').SpellMaterials | null}
  */
@@ -122,16 +126,17 @@ export function normalizeMaterials(value) {
 }
 
 /**
- * Whether the caster is holding the material a cast will destroy, and which
- * inventory stack it would come out of. Only a consumed material is checked: an
- * unconsumed one is what a component pouch or a focus covers, so requiring it
- * would block nearly every spell carrying an M.
+ * Whether the caster holds the material that a cast will destroy, and which
+ * inventory stack it comes from. This function checks only a consumed
+ * material. A component pouch or a focus covers an unconsumed material, so
+ * requiring it blocks nearly every spell that carries an M.
  *
- * The match is deliberately loose, because the material is printed prose and an
- * inventory stack is a name: a stack satisfies the spell when either name
- * contains the other, case-insensitively, so a "Diamond" covers "diamonds worth
- * 300 gp". A combatant with no inventory at all — an Encounter or an NPC — is
- * never required to hold anything, since it has nowhere to hold it.
+ * The match is deliberately loose, because the material is printed prose and
+ * an inventory stack is a name. A stack satisfies the spell when either name
+ * contains the other, case-insensitively, so "Diamond" covers "diamonds
+ * worth 300 gp". A combatant with no inventory at all, such as an Encounter
+ * or an NPC, is never required to hold anything, because it has nowhere to
+ * hold it.
  * @param {{ inventory?: import('../types/entities.js').InventoryItem[] }} caster
  * @param {Spell} spell
  * @returns {{
@@ -157,8 +162,8 @@ export function materialCheck(caster, spell) {
 
 /**
  * How many projectiles one cast fires: the effect's base `count`, plus
- * `perStep` more per scaling increment. An effect with no `projectiles` fires
- * one attack, which is the single roll every other attack spell makes.
+ * `perStep` more for each scaling increment. An effect with no `projectiles`
+ * fires one attack, which is the single roll every other attack spell makes.
  * @param {import('../types/spell.js').SpellAttackEffect} effect
  * @param {number} steps how many scaling increments the cast applies
  * @returns {number}
@@ -170,14 +175,16 @@ export function projectileCount(effect, steps) {
 }
 
 /**
- * How many creatures one cast may resolve against: the spell's own
- * `targetCount` (absent counts as 1), plus one more per scaling increment when
- * the spell scales targets. A `targetCount` of 0 marks an area spell, where the
- * number of creatures caught is a fact about the map rather than the spell, so
- * the cap is unbounded and the caster picks.
+ * How many creatures one cast can resolve against: the spell's own
+ * `targetCount`, with an absent value counted as 1, plus one more for each
+ * scaling increment when the spell scales targets. A `targetCount` of 0
+ * marks an area spell, where the number of creatures caught is a fact about
+ * the map, not about the spell, so the cap is unbounded and the caster picks
+ * the targets.
  *
- * A multi-projectile spell is capped by its projectiles instead, since each one
- * may pick its own creature and no creature can be picked without one.
+ * A multi-projectile spell is capped by its projectiles instead, because
+ * each projectile can pick its own creature and no creature can be picked
+ * without one.
  * @param {Spell} spell
  * @param {number} steps how many scaling increments the cast applies
  * @returns {number} the cap, or Infinity for an area spell
@@ -192,11 +199,11 @@ export function maxTargets(spell, steps) {
 }
 
 /**
- * Split `count` projectiles between the targets: the caster's own allocation
- * when any target states one (clamped so the total never exceeds what the spell
- * fires), else spread as evenly as possible with the earliest targets taking the
- * remainder — which puts every projectile on the one target of the common
- * single-target cast.
+ * Split `count` projectiles between the targets. Use the caster's own
+ * allocation when any target states one, clamped so the total never exceeds
+ * what the spell fires. Otherwise spread the projectiles as evenly as
+ * possible, with the earliest targets taking the remainder. This puts every
+ * projectile on the one target of the common single-target cast.
  * @param {CastTarget[]} targets
  * @param {number} count
  * @returns {number[]} how many projectiles each target catches, in order
@@ -218,9 +225,10 @@ export function allocateProjectiles(targets, count) {
 }
 
 /**
- * A spell's base damage/healing dice grown by its scaling: the base parts, plus
- * `damagePerLevel` appended once per scaling increment. Returns fresh copies so
- * a later crit-doubling never mutates the spell's stored dice.
+ * A spell's base damage or healing dice, grown by its scaling: the base
+ * parts, plus `damagePerLevel` appended once for each scaling increment.
+ * This function returns fresh copies, so a later crit-doubling never mutates
+ * the spell's stored dice.
  * @param {DamagePart[]} baseParts
  * @param {SpellScaling | undefined} scaling
  * @param {number} steps
@@ -237,10 +245,11 @@ function scaledParts(baseParts, scaling, steps) {
 }
 
 /**
- * Whether a caster's spellbook lets it cast this spell: cantrips must be in the
- * cantrip list; a leveled spell must be prepared under a prepared-rule class,
- * known under a known-rule one. `isSpellCastable` holds the rule. A caster
- * whose class stores no spellbook (e.g. a legacy character) can't cast.
+ * Whether a caster's spellbook lets it cast this spell. A cantrip must be in
+ * the cantrip list. A leveled spell must be prepared under a prepared-rule
+ * class, or known under a known-rule class. `isSpellCastable` holds this
+ * rule. A caster whose class stores no spellbook, for example a legacy
+ * character, cannot cast.
  * @param {SpellCaster} caster
  * @param {Spell} spell
  * @returns {boolean}
@@ -250,9 +259,10 @@ export function canCast(caster, spell) {
 }
 
 /**
- * The pool id a cast at this slot level draws from: the leveled slot pool when
- * it has a charge, else the pact pool at that level (pact slots are cast at
- * exactly their own level), else null when neither has one left.
+ * The pool id a cast at this slot level draws from. It is the leveled slot
+ * pool when that pool has a charge. Otherwise it is the pact pool at that
+ * level, because pact slots are cast at exactly their own level. It is null
+ * when neither pool has a charge left.
  * @param {SpellCaster} caster
  * @param {number} slotLevel
  * @returns {string | null}
@@ -267,28 +277,34 @@ function slotPoolToSpend(caster, slotLevel) {
 
 /**
  * Resolve casting a spell: validate the cast, spend the slot, and roll every
- * effect against the targets. Pure — the caller applies the returned damage or
- * healing to targets and logs the result, mirroring how `weaponAttack` leaves
- * application to the app layer.
+ * effect against the targets. This function is pure. The caller applies the
+ * returned damage or healing to targets and logs the result, the same way
+ * `weaponAttack` leaves application to the app layer.
  *
- * On failure returns `{ ok: false, reason }` with reason one of
- * `'not-known'` (the caster can't cast this spell), `'bad-slot-level'` (the
- * slot is below the spell's level), `'no-slot'` (no slot of that level
- * left, counting the pact pool at that level), or `'not-ritual'` (a ritual cast
- * was asked for by a spell that has no ritual). On success returns the caster
- * with the slot spent — from the leveled pool first, then the pact pool;
- * cantrips and rituals spend nothing — the targets the cast actually reached, how many were
+ * On failure this function returns `{ ok: false, reason }`, with reason one
+ * of:
+ * - `'not-known'`: the caster cannot cast this spell.
+ * - `'bad-slot-level'`: the slot is below the spell's level.
+ * - `'no-slot'`: no slot of that level is left, counting the pact pool at
+ *   that level.
+ * - `'not-ritual'`: a ritual cast was asked for on a spell that has no
+ *   ritual.
+ *
+ * On success this function returns the caster with the slot spent, from the
+ * leveled pool first and then the pact pool (cantrips and rituals spend
+ * nothing), the targets the cast actually reached, how many targets were
  * dropped past the spell's cap (`truncated`), and an `outcomes` array whose
  * shape follows the effect kind:
- * - `attack`: one entry per target — its d20 attack roll, whether it hit/crit,
- *   and the damage dealt on a hit (crit doubles the dice). A multi-projectile
- *   spell instead carries the target's allocated `shots` (each with its own
- *   roll), how many `fired` and `hits` landed, and their damage merged.
+ * - `attack`: one entry per target, with its d20 attack roll, whether it hit
+ *   or crit, and the damage dealt on a hit (a crit doubles the dice). A
+ *   multi-projectile spell instead carries the target's allocated `shots`,
+ *   each with its own roll, how many `fired` and `hits` landed, and their
+ *   damage merged.
  * - `save`: the damage rolled once, plus one entry per target with its save
- *   roll, whether it saved, and the damage it takes (full, or half when
+ *   roll, whether it saved, and the damage it takes (full, half when
  *   `halfOnSave`, or none).
  * - `heal`: the healing rolled once, applied identically to each target.
- * - `utility`: no rolls, an empty `outcomes`.
+ * - `utility`: no rolls, and an empty `outcomes`.
  *
  * @template {SpellCaster} T
  * @param {T} caster
@@ -326,12 +342,12 @@ export function castSpell(caster, spell, options = {}) {
   if (!canCast(caster, spell)) return { ok: false, reason: 'not-known' };
 
   // A ritual cast takes the extra ten minutes instead of a slot, so it spends
-  // nothing and always resolves at the spell's own level — there is no slot to
-  // upcast from. A spell with no ritual, and a cantrip (which has no ritual to
-  // trade a slot for), cannot be cast this way.
+  // nothing and always resolves at the spell's own level. There is no slot to
+  // upcast from. A spell with no ritual, and a cantrip, which has no ritual
+  // to trade a slot for, cannot be cast this way.
   if (ritual && (!spell.ritual || spell.level === 0)) return { ok: false, reason: 'not-ritual' };
 
-  // A cantrip uses no slot; a leveled spell must be cast at or above its own
+  // A cantrip uses no slot. A leveled spell must be cast at or above its own
   // level and have a slot of that level free.
   const cantrip = spell.level === 0;
   const asRitual = ritual && !cantrip;
@@ -345,10 +361,10 @@ export function castSpell(caster, spell, options = {}) {
   const steps = scalingSteps(spell, effectiveSlot, casterLevel);
   const nextCaster = poolId ? spendResource(caster, poolId, 1) : caster;
 
-  // Over-selecting drops the extra targets rather than failing the cast: the
+  // Over-selecting drops the extra targets instead of failing the cast. The
   // slot is already committed by the time a cap is exceeded, and losing the
-  // whole cast is a worse answer than resolving the ones the spell can reach.
-  // `truncated` lets the caller say so.
+  // whole cast is worse than resolving the targets the spell can reach.
+  // `truncated` lets the caller report this.
   const cap = maxTargets(spell, steps);
   const reached = targets.length > cap ? targets.slice(0, cap) : targets;
 
@@ -376,9 +392,9 @@ export function castSpell(caster, spell, options = {}) {
 }
 
 /**
- * One projectile's resolution: its attack roll (null when the spell hits
- * automatically), the natural d20, whether it crit or hit, and the damage it
- * dealt — null on a miss.
+ * One projectile's resolution: its attack roll, null when the spell hits
+ * automatically, the natural d20, whether it crit or hit, and the damage it
+ * dealt, which is null on a miss.
  * @typedef {{
  *   attack: DiceResult | null,
  *   natural: number,
@@ -390,8 +406,8 @@ export function castSpell(caster, spell, options = {}) {
 
 /**
  * Roll one projectile against an AC: a d20 plus the caster's spell attack
- * bonus, a natural 20 doubling this projectile's dice alone and a natural 1
- * missing regardless. An `autoHit` projectile skips the d20 entirely and can
+ * bonus. A natural 20 doubles this projectile's dice alone, and a natural 1
+ * always misses. An `autoHit` projectile skips the d20 entirely and can
  * neither miss nor crit.
  * @param {DamagePart[]} parts what one projectile deals
  * @param {number} ac
@@ -414,9 +430,9 @@ function rollProjectile(parts, ac, attackBonus, mode, autoHit, rng) {
 }
 
 /**
- * Fold several projectiles' damage into one result, so a creature caught by two
- * rays takes one hit carrying both. Same shape `rollDamage` returns: totals and
- * raw dice merged per damage type.
+ * Fold several projectiles' damage into one result, so a creature caught by
+ * two rays takes one hit that carries both. This has the same shape that
+ * `rollDamage` returns: totals and raw dice merged per damage type.
  * @param {ReturnType<typeof rollDamage>[]} rolls
  * @returns {ReturnType<typeof rollDamage>}
  */
@@ -441,8 +457,9 @@ function mergeDamage(rolls) {
 }
 
 /**
- * Roll a spell's effect against its targets, dispatched by effect kind. Split
- * out of `castSpell` so the validation/slot bookkeeping stays readable.
+ * Roll a spell's effect against its targets, dispatched by effect kind. This
+ * function is split out of `castSpell` so the validation and slot
+ * bookkeeping stay readable.
  * @param {Spell} spell
  * @param {{
  *   steps: number,
@@ -463,8 +480,8 @@ function resolveEffect(spell, ctx) {
     const shot = (/** @type {number} */ ac) =>
       rollProjectile(baseParts, ac, spellAttackBonus, attackMode, effect.projectiles?.autoHit, rng);
 
-    // A single-projectile spell reports its one roll flat, which is what every
-    // attack outcome looked like before projectiles existed.
+    // A single-projectile spell reports its one roll flat. This is what
+    // every attack outcome looked like before projectiles existed.
     if (!effect.projectiles) {
       return targets.map((target) => {
         const ac = target.ac ?? 10;
@@ -473,9 +490,9 @@ function resolveEffect(spell, ctx) {
       });
     }
 
-    // Otherwise each allocated projectile rolls on its own — its own d20, its
-    // own crit doubling only its own dice — and the damage is merged per target
-    // so a creature takes one hit rather than one per ray.
+    // Otherwise each allocated projectile rolls on its own, with its own d20
+    // and its own crit that doubles only its own dice. The damage is merged
+    // per target, so a creature takes one hit instead of one hit per ray.
     const allocation = allocateProjectiles(targets, projectileCount(effect, steps));
     return targets.map((target, i) => {
       const ac = target.ac ?? 10;
@@ -501,13 +518,14 @@ function resolveEffect(spell, ctx) {
   }
 
   if (effect.kind === 'save') {
-    // Save spells roll their damage once; each target then takes full or, when
-    // the spell halves on a success, half — floored — or none.
+    // Save spells roll their damage once. Each target then takes full
+    // damage, half damage rounded down when the spell halves on a success,
+    // or no damage.
     const parts = scaledParts(effect.damage, spell.scaling, steps);
     const damage = rollDamage(parts, 0, rng);
     return targets.map((target) => {
-      // The target's bonus is already worked out by the caller: derived from a
-      // party character's own saves, or hand-entered for a foe.
+      // The caller already works out the target's bonus. It comes from a
+      // party character's own saves, or is hand-entered for a foe.
       const { roll: save, success: saved } = resolveSave(target.saveBonus ?? 0, saveDC, {
         mode: target.saveMode ?? 'normal',
         rng,

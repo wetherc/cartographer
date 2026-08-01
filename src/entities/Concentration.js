@@ -1,12 +1,13 @@
 /**
- * Concentration: the one spell effect a caster holds open, what breaks it, and
- * when it runs out. Pure — every function takes a character and hands back a
- * new one, and the d20 for a concentration save comes from the injected RNG.
+ * Concentration: the one spell effect a caster holds open, what breaks it,
+ * and when it runs out. Every function is pure. Each function takes a
+ * character and returns a new one, and the d20 for a concentration save
+ * comes from the injected random number generator.
  *
  * A character holds at most one, in `character.concentration`. The
- * `Concentrating` chip beside it is display: `begin` writes it, `drop` removes
- * it, and `tick` keeps its counter equal to the state's own `remaining`, which
- * is the authoritative number.
+ * `Concentrating` chip beside it is for display only. `begin` writes it,
+ * `drop` removes it, and `tick` keeps its counter equal to the state's own
+ * `remaining`, which is the authoritative number.
  */
 
 import { CONCENTRATING, addCondition, removeCondition } from './Conditions.js';
@@ -41,14 +42,15 @@ export function isConcentrating(character) {
 }
 
 /**
- * Start concentrating on a spell, replacing whatever was held — a caster gets
- * one effect at a time, and beginning a second ends the first. The countdown
- * comes from the spell's own duration in rounds; an open-ended or day-long
- * duration has none, so it reads null and the effect lasts until something
- * breaks it.
+ * Start concentrating on a spell, replacing whatever the character held. A
+ * caster gets one effect at a time, and beginning a second ends the first.
+ * The countdown comes from the spell's own duration in rounds. An
+ * open-ended or day-long duration has none, so it reads null, and the
+ * effect lasts until something breaks it.
  *
- * Returns the displaced spell alongside the new character, so the caller can say
- * what was lost and take that spell's effects off the creatures it was holding.
+ * Returns the displaced spell alongside the new character, so the caller
+ * can state what was lost and remove that spell's effects from the
+ * creatures it was holding.
  * @param {Character} character
  * @param {Spell} spell
  * @param {number} slotLevel the level the spell was cast at
@@ -69,9 +71,9 @@ export function begin(character, spell, slotLevel) {
 }
 
 /**
- * Stop concentrating, however it ended: voluntarily, on a failed save, when the
- * duration ran out, or on dropping to 0 HP. Removing the chip is part of it, so
- * no caller has to remember both halves.
+ * Stop concentrating, however it ended: voluntarily, on a failed save, when
+ * the duration ran out, or on dropping to 0 HP. Removing the chip is part of
+ * this action, so no caller must remember both halves.
  * @param {Character} character
  * @returns {Character}
  */
@@ -85,12 +87,13 @@ export function drop(character) {
 }
 
 /**
- * The save a concentrating character makes on taking damage: a CON save against
- * `concentrationDC`, which fails the effect out. A character holding nothing, or
- * one taking no damage, is left alone and reports no save.
+ * The save a concentrating character makes on taking damage: a CON save
+ * against `concentrationDC`. A failed save ends the effect. A character
+ * holding nothing, or one taking no damage, stays unaffected and reports no
+ * save.
  *
- * The save is reported whole so the caller can log the DC and the roll behind
- * the outcome.
+ * The function reports the whole save, so the caller can log the DC and the
+ * roll behind the outcome.
  * @param {Character} character
  * @param {number} damage
  * @param {{ mode?: RollMode, rng?: RandomFn }} [opts]
@@ -113,14 +116,14 @@ export function checkOnDamage(character, damage, opts = {}) {
 }
 
 /**
- * Advance one combat round: spend a round of the effect's duration and drop it
- * when it runs out. A duration with no round count (open-ended, or measured in
- * days) never expires here.
+ * Advance one combat round: spend a round of the effect's duration and drop
+ * it when it runs out. A duration with no round count (open-ended, or
+ * measured in days) never expires here.
  *
- * The chip's counter is rewritten from `remaining` rather than decremented,
- * which is what lets the shared `tickConditions` run over the same list first:
- * whatever it did to the chip, the number the GM reads afterwards is the state's
- * own.
+ * The function rewrites the chip's counter from `remaining` instead of
+ * decrementing it. This lets the shared `tickConditions` run over the same
+ * list first. Whatever that does to the chip, the number the GM reads
+ * afterward is the state's own number.
  * @param {Character} character
  * @returns {{ character: Character, expired: boolean }}
  */

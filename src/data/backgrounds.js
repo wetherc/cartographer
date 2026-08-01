@@ -2,10 +2,10 @@
 
 /**
  * The character backgrounds, covering the classic PHB set. Each entry is
- * library-kind shaped (stable id + name) so the catalog can later merge with
- * custom library entries. Skill grants are fixed per the printed rules;
- * choice-typed tools keep a generic name and bonus languages are counted, not
- * named, since the pick is the player's.
+ * library-kind shaped (with a stable id and name), so the catalog can later
+ * merge with custom library entries. Skill grants are fixed per the printed
+ * rules. Choice-typed tools keep a generic name, and bonus languages are
+ * counted, not named, since the pick belongs to the player.
  * @type {BackgroundDef[]}
  */
 export const DEFAULT_BACKGROUNDS = [

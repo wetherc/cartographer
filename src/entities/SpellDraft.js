@@ -3,14 +3,15 @@ import { parseCastingTime, parseDuration } from './SpellTiming.js';
 import { clampInt } from '../util/num.js';
 
 /**
- * Turning the spell form's raw control values into a Spell. Split out of
- * `ui/SpellForm.js` so the part that decides what a submitted form means is
- * testable without building the form: which effect fields survive the chosen
- * kind, when a block drops out entirely, and where the tolerant parsers the
- * library import path uses get applied.
+ * This module turns the spell form's raw control values into a Spell. It is
+ * split out of `ui/SpellForm.js`, so the part that decides what a
+ * submitted form means is testable without building the form. This covers
+ * which effect fields survive the chosen kind, when a block drops out
+ * entirely, and where the tolerant parsers that the library import path
+ * uses get applied.
  *
- * Everything here takes the strings and booleans a control holds, not the
- * controls, so a caller passes `input.value` rather than the input.
+ * Everything here takes the strings and booleans that a control holds, not
+ * the controls. A caller passes `input.value` rather than the input.
  */
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -56,11 +57,11 @@ import { clampInt } from '../util/num.js';
 
 /**
  * The effect a submitted form describes. Each kind keeps its own fields and
- * silently drops the others, so switching kind before submitting cannot leave a
- * save ability on an attack. A save may deal no damage at all (a condition-only
- * spell), which is what its damage gate expresses; attack and heal always carry
- * their dice. An unusable projectile block drops out rather than becoming a
- * spell that fires nothing.
+ * silently drops the others, so switching kind before submission cannot
+ * leave a save ability on an attack. A save can deal no damage at all (a
+ * condition-only spell), which is what its damage gate expresses. Attack
+ * and heal always carry their dice. An unusable projectile block drops out,
+ * instead of becoming a spell that fires nothing.
  * @param {EffectDraft} draft
  * @returns {SpellEffect}
  */
@@ -90,7 +91,7 @@ export function assembleEffect(draft) {
 /**
  * The scaling block a submitted form describes, or undefined when it describes
  * none. Ticking "Scales per level" without filling either field is the same as
- * not ticking it, since a block with neither half would scale nothing.
+ * not ticking it, since a block with neither half scales nothing.
  * @param {{ damagePerLevel: DamagePart[], targetsPerLevel: unknown } | null} draft
  * @returns {Spell['scaling']}
  */
@@ -105,12 +106,12 @@ export function assembleScaling(draft) {
 }
 
 /**
- * The spell a submitted form describes, minus its id: the caller owns identity
- * and the library's merge key. Text fields are trimmed, an empty range falls
- * back to Self (the value that means "no range to state"), and the timing,
- * material, and target-count fields go through the same parsers an imported
- * library file does, so a typed spell and an imported one can never disagree
- * about what a value means.
+ * The spell a submitted form describes, minus its id. The caller owns
+ * identity and the library's merge key. Text fields are trimmed, and an
+ * empty range falls back to Self (the value that means "no range to
+ * state"). The timing, material, and target-count fields go through the
+ * same parsers that an imported library file uses, so a typed spell and an
+ * imported one can never disagree about what a value means.
  * @param {SpellDraft} draft
  * @returns {Omit<Spell, 'id'>}
  */
@@ -139,7 +140,7 @@ export function assembleSpell(draft) {
 /**
  * The damage or healing dice already on an effect, or null when it carries none.
  * The form seeds one dice editor from this and reuses it across kinds, so an
- * empty list has to read as "nothing to seed from" rather than as zero dice.
+ * empty list must read as "nothing to seed from" rather than as zero dice.
  * @param {SpellEffect | undefined} effect
  * @returns {DamagePart[] | null}
  */

@@ -1,6 +1,7 @@
 /**
- * Saving throws: what a creature adds to one, and how one resolves. Pure — the
- * d20 comes from the injected RNG, and nothing here reads or writes a character.
+ * Saving throws: what a creature adds to one, and how the module resolves
+ * one. Every function is pure. The d20 comes from the injected random number
+ * generator. Nothing here reads or writes a character.
  */
 
 import { roll } from '../dice/DiceRoller.js';
@@ -14,10 +15,11 @@ import { isProficientSave } from './Proficiencies.js';
 /** @typedef {import('../types/dice.js').RandomFn} RandomFn */
 
 /**
- * One resolved save: the whole dice result (so a caller can format it the way
- * the tray does), its total against the DC, the kept d20 face, and whether it
- * beat the DC. A natural 1 or 20 carries no automatic outcome on a save, unlike
- * an attack roll, so `natural` is reported for the log rather than acted on.
+ * One resolved save: the whole dice result, so a caller can format it the way
+ * the tray does. It also carries the total against the DC, the kept d20 face,
+ * and whether the roll beat the DC. A natural 1 or 20 has no automatic
+ * outcome on a save, unlike an attack roll. The log reports `natural`, but
+ * the app does not act on it.
  * @typedef {{
  *   roll: DiceResult,
  *   total: number,
@@ -28,15 +30,15 @@ import { isProficientSave } from './Proficiencies.js';
  */
 
 /**
- * What a character adds to a saving throw in one ability: the ability modifier,
- * read from the equipment-adjusted scores so a stat-boosting item counts, plus
- * the proficiency bonus when the class granted that save. An ability the
- * character has no score for reads as 10, the same default the rest of the stat
- * code uses.
+ * What a character adds to a saving throw in one ability. This value is the
+ * ability modifier, read from the equipment-adjusted scores so a
+ * stat-boosting item counts. The value adds the proficiency bonus when the
+ * class grants that save. An ability with no score for the character reads
+ * as 10, the same default the rest of the stat code uses.
  *
- * Characters only. An encounter or an NPC keeps its ability scores in a
- * different field and carries no proficiency lists, so a foe's save bonus is
- * still whatever the GM types into the cast dialog.
+ * This function works for characters only. An encounter or an NPC keeps its
+ * ability scores in a different field and carries no proficiency lists. A
+ * foe's save bonus is still whatever the GM types into the cast dialog.
  * @param {Character} character
  * @param {string} ability one of the six ability keys
  * @returns {number}
@@ -47,13 +49,14 @@ export function saveBonus(character, ability) {
 }
 
 /**
- * Resolve a save from a bonus already worked out: one d20 plus the bonus
- * against the DC, succeeding on a tie as 5e does. Advantage and disadvantage
- * ride the shared dice roller, which keeps the discarded die in the result.
+ * Resolve a save from a bonus already worked out. It rolls one d20 plus the
+ * bonus against the DC, and the save succeeds on a tie, as the 5e rule
+ * states. Advantage and disadvantage use the shared dice roller, which keeps
+ * the discarded die in the result.
  *
- * Split from `savingThrow` because the spell resolver has a bonus but no
- * character — the target may be a foe whose save the GM entered by hand — and
- * both paths should resolve a save the same way.
+ * This function is split from `savingThrow` because the spell resolver has a
+ * bonus but no character. The target can be a foe whose save the GM entered
+ * by hand. Both paths must resolve a save the same way.
  * @param {number} bonus
  * @param {number} dc
  * @param {{ mode?: RollMode, rng?: RandomFn }} [opts]
@@ -71,9 +74,9 @@ export function resolveSave(bonus, dc, { mode = 'normal', rng = Math.random } = 
 }
 
 /**
- * Roll a character's saving throw in one ability against a DC, reporting
- * whether the bonus included proficiency so a readout can say why the number
- * is what it is.
+ * Roll a character's saving throw in one ability against a DC. The result
+ * reports whether the bonus included proficiency, so a readout can explain
+ * the number.
  * @param {Character} character
  * @param {string} ability
  * @param {number} dc

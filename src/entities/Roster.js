@@ -1,14 +1,15 @@
 /**
- * Pure helpers for managing rosters (characters, encounters): deriving a
- * unique id from a display name and replacing/removing entries by id.
- * Shared by the character and encounter CRUD UIs so id-collision and
- * list-update rules live in one tested place.
+ * This module holds pure helpers for roster management (characters,
+ * encounters). It derives a unique id from a display name and replaces or
+ * removes entries by id. The character and encounter CRUD UIs share these
+ * helpers, so id-collision and list-update rules live in one tested place.
  */
 
 /**
- * Derive a kebab-case id from a display name, suffixing `-2`, `-3`, ... until
- * it collides with none of the existing ids. Names with no usable characters
- * fall back to "entry".
+ * Derive a kebab-case id from a display name. If the id collides with an
+ * existing id, add a suffix (`-2`, `-3`, and so on) until the id matches
+ * none of the existing ids. A name with no usable characters falls back to
+ * "entry".
  * @param {string} name
  * @param {Iterable<string>} existingIds
  * @returns {string}
@@ -40,9 +41,10 @@ export function replaceById(list, item) {
 }
 
 /**
- * Replace the entry with the given id by what `update` makes of it, leaving the
- * rest untouched. The whole-entry form is `replaceById`; this is the patch form,
- * for the common `list.map((x) => (x.id === id ? { ...x, ...change } : x))`.
+ * Replace the entry with the given id by what `update` makes of it. Leave the
+ * rest untouched. `replaceById` is the whole-entry form. This function is the
+ * patch form, for the common pattern
+ * `list.map((x) => (x.id === id ? { ...x, ...change } : x))`.
  * Returns the list unchanged (same entries, new array) if no id matches.
  * @template {{ id: string }} T
  * @param {T[]} list

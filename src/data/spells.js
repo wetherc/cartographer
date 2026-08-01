@@ -1,10 +1,11 @@
 /**
- * The curated built-in spell corpus. A common cross-section of the SRD — every
- * cantrip and leveled band represented, spanning all six caster lists and all
- * four effect kinds (attack / save / heal / utility). The schema is identical
- * to a GM-authored or imported spell, so the gap between this set and the full
- * SRD closes by hand-authoring or JSON import with no code change. SRD spells
- * not yet included are tracked in docs/spells-missing.md.
+ * The curated built-in spell corpus. This is a common cross-section of the
+ * SRD, with every cantrip and leveled band represented, spanning all six
+ * caster lists and all four effect kinds (attack, save, heal, utility). The
+ * schema is identical to a GM-authored or imported spell, so the gap
+ * between this set and the full SRD closes by hand-authoring or JSON
+ * import with no code change. SRD spells not yet included are tracked in
+ * docs/spells-missing.md.
  *
  * @typedef {import('../types/spell.js').Spell} Spell
  */
@@ -337,7 +338,7 @@ export const DEFAULT_SPELLS = deepFreeze([
     ritual: false,
     description:
       'Three rays each deal 2d6 fire on a hit, rolled separately and aimed wherever the caster likes.',
-    // 2d6 per ray with its own attack roll; a higher slot adds a ray.
+    // 2d6 per ray with its own attack roll. A higher slot adds a ray.
     effect: {
       kind: 'attack',
       damage: [{ count: 2, sides: 6, damageType: 'fire' }],

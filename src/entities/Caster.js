@@ -21,10 +21,10 @@ import { isSlotPool, isCasterPool } from './SpellSlots.js';
  */
 
 /**
- * The union of the caster-relevant fields across the three combatant shapes, so
- * a Character, an Encounter, and an NPC are all assignable to it. Every field
- * that only some of them carry is optional, which is what lets the readers and
- * writers below take any combatant without a cast.
+ * The union of the caster-relevant fields across the three combatant
+ * shapes. A Character, an Encounter, and an NPC are all assignable to it.
+ * Every field that only some of them carry is optional. This is what lets
+ * the readers and writers below take any combatant without a cast.
  * @typedef {{
  *   id: string,
  *   name: string,
@@ -55,11 +55,11 @@ import { isSlotPool, isCasterPool } from './SpellSlots.js';
  */
 
 /**
- * An entity's classes as a list, whichever shape it stores them in: a Character
- * carries a `classes` list, while an Encounter and an NPC carry a scalar
- * `class`/`subclass` pair at their caster level. Normalizing here is what keeps
- * `CasterView` one shape, so every class-aware spell helper reads the list and
- * no caller has to know which kind of combatant it was handed.
+ * An entity's classes as a list, whichever shape it stores them in. A
+ * Character carries a `classes` list, while an Encounter and an NPC carry a
+ * scalar `class` and `subclass` pair at their caster level. Normalizing here
+ * keeps `CasterView` one shape, so every class-aware spell helper reads the
+ * list, and no caller must know which kind of combatant it was handed.
  * @param {CasterEntity} e
  * @param {number} level the caster level the scalar pair sits at
  * @returns {ClassRef[]}
@@ -71,15 +71,16 @@ function casterClasses(e, level) {
 }
 
 /**
- * Present any combatant — a party Character, an Encounter (mob), or an NPC — as
- * a caster with the field shape the pure spell helpers read. This bridges the
- * three ways combatants differ from a Character: an Encounter keeps its ability
- * scores in `statBlock` (not `stats`), an NPC has no fighting level, and both
- * store one scalar class rather than a class list. So `stats` falls back to
- * `statBlock`, `level` to the explicit `casterLevel` (then the entity's own
- * `level`, then 1), and `classes` to the scalar pair read as a one-entry list at
- * that caster level. The result is a plain read-only
- * view — write a spent slot back onto the real entity with `withCasterState`.
+ * Present any combatant (a party Character, an Encounter (mob), or an NPC)
+ * as a caster with the field shape the pure spell helpers read. This
+ * bridges the three ways combatants differ from a Character. An Encounter
+ * keeps its ability scores in `statBlock` (not `stats`), an NPC has no
+ * fighting level, and both store one scalar class rather than a class
+ * list. So `stats` falls back to `statBlock`, `level` falls back to the
+ * explicit `casterLevel` (then the entity's own `level`, then 1), and
+ * `classes` falls back to the scalar pair read as a one-entry list at that
+ * caster level. The result is a plain read-only view. Write a spent slot
+ * back onto the real entity with `withCasterState`.
  * @param {CasterEntity} entity
  * @returns {CasterView}
  */
@@ -97,10 +98,10 @@ export function toCaster(entity) {
 }
 
 /**
- * Whether an entity is a spellcaster: it carries at least one caster class and
- * a spellbook. Read through `toCaster`, so a Character's class list and an
- * Encounter's or NPC's scalar class both answer. Non-casters (and older saves)
- * are excluded.
+ * Whether an entity is a spellcaster: it carries at least one caster class
+ * and a spellbook. The function reads through `toCaster`, so a Character's
+ * class list and an Encounter's or NPC's scalar class both answer. The
+ * function excludes non-casters (and older saves).
  * @param {Character | Encounter | NPC} entity
  * @returns {boolean}
  */
@@ -111,9 +112,10 @@ export function isCaster(entity) {
 
 /**
  * Write a resolved cast's spent slots back onto the real entity. `castSpell`
- * returns a caster view with the slot decremented; this splices those resources
- * (the slot and pact pools) onto the entity, replacing its own and keeping
- * any non-slot resources it may have. Pure.
+ * returns a caster view with the slot decremented. This function splices
+ * those resources (the slot and pact pools) onto the entity, replacing its
+ * own and keeping any non-slot resources it can have. This function is
+ * pure.
  * @template {CasterEntity} T
  * @param {T} entity
  * @param {{ resources: ResourcePool[] }} caster the resolver's returned caster
@@ -129,10 +131,11 @@ export function withCasterState(entity, caster) {
 
 /**
  * Stamp fresh caster fields onto an entity from authoring options: class,
- * optional subclass, caster level, an (empty by default) spellbook, and full
- * slot pools rebuilt for the class and level. A non-caster class (or none)
- * leaves the entity untouched, so this is safe to call for every create/edit.
- * Any prior slot pools are replaced; non-slot resources survive.
+ * optional subclass, caster level, an (empty by default) spellbook, and
+ * full slot pools rebuilt for the class and level. A non-caster class (or
+ * none) leaves the entity untouched, so this function is safe to call for
+ * every create or edit. The function replaces any prior slot pools, and
+ * non-slot resources survive.
  * @template {CasterEntity} T
  * @param {T} entity
  * @param {CasterOptions} [options]
@@ -157,11 +160,12 @@ export function withCasterFields(entity, options = {}, defaultLevel = 1) {
 }
 
 /**
- * Backfill caster fields on an entity loaded from a save: keep stored slot
- * pools (so spent slots survive a reload) but supply a caster level, an empty
- * spellbook, and slot pools if any are missing. A non-caster is returned
- * unchanged. Use this in `withDefaults`; use `withCasterFields` for a fresh
- * create/edit where full slots are wanted.
+ * Backfill caster fields on an entity loaded from a save. The function
+ * keeps stored slot pools (so spent slots survive a reload), but supplies a
+ * caster level, an empty spellbook, and slot pools if any are missing. A
+ * non-caster returns unchanged. Use this function in `withDefaults`. Use
+ * `withCasterFields` instead for a fresh create or edit where full slots
+ * are wanted.
  * @template {CasterEntity} T
  * @param {T} entity
  * @param {number} [defaultLevel]
@@ -180,9 +184,10 @@ export function ensureCasterFields(entity, defaultLevel = 1) {
 }
 
 /**
- * The caster fields to persist in a template (bestiary or NPC): the identity of
- * the caster, not its live slots — those rebuild from class/level on spawn.
- * Returns an empty object for a non-caster, to spread into a template literal.
+ * The caster fields to persist in a template (bestiary or NPC): the identity
+ * of the caster, not its live slots. Those slots rebuild from class and
+ * level on spawn. Returns an empty object for a non-caster, to spread into
+ * a template literal.
  * @param {{ class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} entity
  * @returns {CasterOptions}
  */

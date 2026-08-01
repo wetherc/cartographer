@@ -14,28 +14,29 @@ import {
 /** @typedef {import('../types/entities.js').Proficiencies} Proficiencies */
 
 /**
- * The one place a character's derived state is reconciled.
+ * This is the one place that reconciles a character's derived state.
  *
  * Spell slots, hit dice, and maximum HP are all functions of the class list,
  * the character level, the ability scores, and the class catalog. Nothing
- * recomputes them on read — they are stored as resource pools — so every write
- * that can change an input has to re-derive, or the pools drift and stay
- * drifted. `derive` is that step, and the writers exported below are the same
- * writers the lower modules expose with the step already attached. Reach for
- * these from app and UI code; the raw versions in `Multiclass.js`, `Races.js`,
- * `Proficiencies.js`, and `LevelUp.js` exist so those modules can stay pure
- * list arithmetic below the class catalog, and calling them directly skips
- * the reconcile.
+ * recomputes them on read. The app stores them as resource pools, so every
+ * write that can change an input must re-derive them, or the pools drift and
+ * stay drifted. `derive` is that step. The writers exported below are the
+ * same writers that the lower modules expose, with the step already
+ * attached. Use these writers from app and UI code. The raw versions in
+ * `Multiclass.js`, `Races.js`, `Proficiencies.js`, and `LevelUp.js` exist so
+ * those modules can stay pure list arithmetic below the class catalog.
+ * Calling them directly skips the reconcile.
  */
 
 /**
  * Reconcile every derived pool against the character's current class list,
- * level, and ability scores: spell-slot maxima, hit-dice pools, then the HP
- * pool's maximum. Order matters — the HP reconcile reads the class list the
- * other two also read, and running it last keeps the resource ordering the
- * slot and hit-dice syncs establish. Spending is preserved throughout: a pool
- * that grows keeps what was spent out of it. A character whose derived state
- * already matches comes back unchanged, identity preserved.
+ * level, and ability scores. The function reconciles spell-slot maxima, then
+ * hit-dice pools, then the HP pool's maximum. Order matters. The HP
+ * reconcile reads the class list that the other two also read, and running
+ * it last keeps the resource ordering that the slot and hit-dice syncs
+ * establish. Spending is preserved throughout, so a pool that grows keeps
+ * what was spent out of it. A character whose derived state already matches
+ * returns unchanged, with identity preserved.
  * @param {Character} character
  * @returns {Character}
  */
@@ -44,9 +45,9 @@ export function derive(character) {
 }
 
 /**
- * Wrap a writer so it re-derives, unless the writer itself was a no-op — the
- * lower modules return the same reference when nothing changed, and callers
- * (and tests) rely on that.
+ * Wrap a writer so it re-derives, unless the writer itself was a no-op. The
+ * lower modules return the same reference when nothing changed, and callers,
+ * including tests, rely on that behavior.
  * @template {unknown[]} A
  * @param {(character: Character, ...args: A) => Character} write
  * @returns {(character: Character, ...args: A) => Character}
@@ -62,7 +63,7 @@ function deriving(write) {
  * @type {(character: Character, classes: ClassRef[]) => Character} */
 export const withClasses = deriving(setClassList);
 
-/** Assign a catalog race, then re-derive (a racial CON increase moves HP).
+/** Assign a catalog race, then re-derive. A CON increase from the race moves HP.
  * See Races.withRace.
  * @type {(character: Character, raceId: string) => Character} */
 export const withRace = deriving(setRace);
@@ -76,8 +77,8 @@ export const withCustomRace = deriving(setCustomRace);
  * @type {(character: Character, proficiencies: Partial<Proficiencies>) => Character} */
 export const withProficiencies = deriving(setProficiencies);
 
-/** Spend the first pending ASI slot on an ability increase, then re-derive —
- * this is what grants the retroactive HP a CON increase is worth. See
+/** Spend the first pending ASI slot on an ability increase, then re-derive.
+ * This step grants the retroactive HP that a CON increase is worth. See
  * LevelUp.applyASI.
  * @type {(character: Character, increases: Record<string, number>) => Character} */
 export const applyASI = deriving(recordASI);
@@ -93,9 +94,9 @@ export const takeFeat = deriving(recordFeat);
 export const undoLastChoice = deriving(dropLastChoice);
 
 /**
- * Set one ability score, then re-derive. Lives here rather than in
- * Character.js because the reconcile it needs reads the class catalog, which
- * Character.js sits below.
+ * Set one ability score, then re-derive. This function lives here instead of
+ * in Character.js, because the reconcile that it needs reads the class
+ * catalog, and Character.js sits below that catalog.
  * @param {Character} character
  * @param {string} key
  * @param {number} value

@@ -10,7 +10,7 @@
 
 /**
  * 5e-standard weapon presets: picking one fills a new weapon's base damage
- * and handling, which the GM may then adjust freely.
+ * and handling, which the GM can then adjust freely.
  * @type {{ name: string, type: ItemType, handling: import('../types/entities.js').WeaponHandling, damage: import('../types/entities.js').DamagePart[] }[]}
  */
 export const WEAPON_PRESETS = [
@@ -120,8 +120,8 @@ export const WEAPON_PRESETS = [
 
 /**
  * 5e-standard body armors: picking one fills a new armor item's weight class
- * and base AC, both still adjustable. Also the source of the enemy form's
- * armor choices, via `enemyArmor`.
+ * and base AC, both still adjustable. This is also the source of the enemy
+ * form's armor choices, via `enemyArmor`.
  * @type {{ name: string, armorWeight: ArmorWeight, baseAC: number }[]}
  */
 export const ARMOR_PRESETS = [
@@ -161,8 +161,8 @@ export const GEAR_PRESETS = [
 
 /**
  * Standard consumables: picking one fills a new consumable's name and
- * description (the mechanical effect stays a table ruling — consumables carry
- * no automated fields).
+ * description. The mechanical effect stays a table ruling. Consumables
+ * carry no automated fields.
  * @type {{ name: string, description: string }[]}
  */
 export const CONSUMABLE_PRESETS = [
@@ -187,11 +187,11 @@ export function enemyArmor(name) {
 }
 
 /**
- * A weapon-shaped value (a preset, a library template, another enemy's weapon)
- * as a detached enemy weapon: the three fields an enemy stores, with the
- * structured damage parts cloned. Every path that arms an enemy from shared
- * data goes through here, so a preset's damage array is never the array a
- * campaign encounter carries. Pure.
+ * A weapon-shaped value (a preset, a library template, another enemy's
+ * weapon) as a detached enemy weapon: the three fields an enemy stores, with
+ * the structured damage parts cloned. Every path that arms an enemy from
+ * shared data goes through here, so a preset's damage array is never the
+ * array a campaign encounter carries. This function is pure.
  * @param {{ name: string, handling?: import('../types/entities.js').WeaponHandling, damage?: import('../types/entities.js').DamagePart[] }} weapon
  * @returns {import('../types/entities.js').EnemyWeapon}
  */

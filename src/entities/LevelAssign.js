@@ -7,19 +7,19 @@ import { derive } from './Progression.js';
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
 
 /**
- * The multiclass level-up flow: a multiclass character's XP levels stay
+ * The multiclass level-up flow. A multiclass character's XP levels stay
  * pending (see Multiclass.js) until the player assigns each one to a class
  * here. Taking a class beyond the first is gated by the PHB ability-score
- * prerequisites — both the new class's and every current class's — and grants
+ * prerequisites, both the new class's and every current class's. It grants
  * that class's reduced multiclass proficiency list instead of the full one.
- * HP follows the class list from `Progression.derive` at assignment time,
- * which is why addXP leaves a classed character's HP untouched.
+ * HP follows the class list from `Progression.derive` at assignment time.
+ * This is why addXP leaves a classed character's HP untouched.
  */
 
 /**
  * Whether the character's ability scores meet a class's multiclass
- * prerequisite: any one alternative fully satisfied. A missing score reads as
- * the neutral 10; an unknown class is never met.
+ * prerequisite: any one alternative fully satisfied. A missing score reads
+ * as the neutral 10. An unknown class never meets the prerequisite.
  * @param {Character} character
  * @param {string} classId
  * @returns {boolean}
@@ -34,10 +34,10 @@ export function meetsPrereq(character, classId) {
 }
 
 /**
- * Whether the character may take `classId` as a new class: the class must be
- * known, not already held, and the ability-score prerequisites of both the new
- * class and every current (known) class must be met — the PHB gates leaving a
- * class the same way as entering one.
+ * Whether the character can take `classId` as a new class. The class must
+ * be known, not already held, and the ability-score prerequisites of both
+ * the new class and every current (known) class must be met. The PHB gates
+ * leaving a class the same way as entering one.
  * @param {Character} character
  * @param {string} classId
  * @returns {boolean}
@@ -66,15 +66,16 @@ function grantMulticlassProficiencies(character, def) {
 
 /**
  * Assign one level to a class. A pending level (earned by XP, unassigned)
- * either raises an existing class entry by one or, prerequisites permitting,
- * starts a new class at level 1 with its reduced multiclass proficiency grant.
- * A single-class character with no pending level can still start a second
- * class: their newest level moves out of the sole class into the new one (the
- * class must be at least level 2). Either way `derive` re-reads the new class
- * list, so HP, hit dice, and spell slots all follow it — including the case
- * where the moved level swaps a bigger hit die for a smaller one and HP goes
- * down. An unknown class, a failed prerequisite, or nothing to assign leaves
- * the character unchanged. Pure.
+ * either raises an existing class entry by one, or, if prerequisites allow
+ * it, starts a new class at level 1 with its reduced multiclass proficiency
+ * grant. A single-class character with no pending level can still start a
+ * second class. Their newest level moves out of the sole class into the new
+ * one (the class must be at least level 2). Either way, `derive` re-reads
+ * the new class list, so HP, hit dice, and spell slots all follow it. This
+ * includes the case where the moved level swaps a bigger hit die for a
+ * smaller one, and HP decreases. An unknown class, a failed prerequisite,
+ * or nothing to assign leaves the character unchanged. This function is
+ * pure.
  * @param {Character} character
  * @param {string} classId
  * @returns {Character}
@@ -136,19 +137,20 @@ export function prereqText(def) {
 }
 
 /**
- * The class picks the assign-a-level dialog offers. With a pending level that is
- * every held class one level up, plus every new class the prerequisites allow.
- * Without one it is only the new classes a single-class character of level 2 or
- * more can move their newest level into, which is `assignLevel`'s donor path.
+ * The class picks that the assign-a-level dialog offers. With a pending
+ * level, the picks are every held class one level up, plus every new class
+ * the prerequisites allow. Without a pending level, the picks are only the
+ * new classes that a single-class character of level 2 or more can move
+ * their newest level into. This is `assignLevel`'s donor path.
  *
- * A new class whose prerequisites are not met is still listed, disabled, naming
- * what it wants. The requirement quoted is the new class's own, or a held
- * class's when leaving that class is what blocks the move, since a Fighter 3
- * whose STR and DEX both fell below 13 needs to be told about the Fighter
- * requirement rather than about Wizard's.
+ * A new class whose prerequisites are not met is still listed, disabled,
+ * and it names what it wants. The requirement quoted is the new class's own
+ * requirement, or a held class's requirement when leaving that class blocks
+ * the move. For example, a Fighter 3 whose STR and DEX both fell below 13
+ * must see the Fighter requirement, not the Wizard requirement.
  *
- * The disabled entries sort after the usable ones, so the dialog's first option
- * is always one that works when any does.
+ * The disabled entries sort after the usable ones, so the dialog's first
+ * option always works when any option does.
  * @param {Character} character
  * @returns {{ value: string, label: string, disabled?: boolean }[]}
  */

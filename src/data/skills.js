@@ -1,9 +1,10 @@
 /** @typedef {import('../types/spell.js').Ability} Ability */
 
 /**
- * The 18 skills mapped to their governing ability, keyed by kebab-case skill
- * id. The one canonical skill list: class/background skill choices reference
- * these ids, and skill-check resolution reads the governing ability from here.
+ * The 18 skills, mapped to their governing ability and keyed by kebab-case
+ * skill id. This is the one canonical skill list. Class and background skill
+ * choices reference these ids. Skill-check resolution reads the governing
+ * ability from here.
  * @type {Record<string, Ability>}
  */
 export const SKILL_ABILITIES = {
@@ -31,8 +32,8 @@ export const SKILL_ABILITIES = {
 export const SKILL_IDS = Object.keys(SKILL_ABILITIES);
 
 /**
- * A skill id's display name: each hyphenated word capitalized ("sleight-of-hand"
- * renders as "Sleight of Hand", with the small words kept lowercase).
+ * A skill id's display name. Each hyphenated word is capitalized. For example,
+ * "sleight-of-hand" renders as "Sleight of Hand", with small words kept lowercase.
  * @param {string} skillId
  * @returns {string}
  */

@@ -27,8 +27,9 @@ import { migrateASIChoices } from './LevelUp.js';
 export const XP_PER_LEVEL = 100;
 
 /** The six ability scores every character carries, in conventional order.
- * Defined beside STAT_KEYS in Modifiers.js so the enemy stat set derives from
- * it; re-exported here because character code is its natural import site. */
+ * Defined beside STAT_KEYS in Modifiers.js, so the enemy stat set derives
+ * from it. Re-exported here because character code is its natural import
+ * site. */
 export { ABILITY_SCORES } from './Modifiers.js';
 
 /** @returns {Record<string, number>} every ability score at the neutral 10 */
@@ -37,11 +38,12 @@ export function defaultStats() {
 }
 
 /**
- * Reserved ResourcePool id for a character's hit points. HP is a regular pool
- * so damage/heal reuse the existing spend/restore machinery; a character
- * without this pool simply has no HP tracking (older saves). Declared in
- * PoolIds.js, which the pool modules below this one can also import, and
- * re-exported here because character code is its natural import site.
+ * Reserved ResourcePool id for a character's hit points. HP is a regular
+ * pool, so damage and heal reuse the existing spend and restore machinery.
+ * A character without this pool simply has no HP tracking (older saves).
+ * Declared in PoolIds.js, which the pool modules below this one can also
+ * import. Re-exported here because character code is its natural import
+ * site.
  */
 export { HP_RESOURCE_ID } from './PoolIds.js';
 
@@ -70,9 +72,10 @@ export function withHP(character, maxHP) {
  * HP but clamping it down if it now exceeds the new maximum. At least 1. A
  * character without an HP pool is returned unchanged.
  *
- * A hand-typed maximum also sets `hpOverride`, which takes the character off
- * the derived HP rule for good: from here on `Progression.derive` leaves the
- * pool alone rather than pulling it back to what the class list and CON imply.
+ * A hand-typed maximum also sets `hpOverride`. This takes the character off
+ * the derived HP rule for good. From here on, `Progression.derive` leaves
+ * the pool alone, rather than pulling it back to what the class list and
+ * CON imply.
  * @param {Character} character
  * @param {number} max
  * @returns {Character}
@@ -87,8 +90,9 @@ export function setMaxHP(character, max) {
 }
 
 /**
- * Set the character's bonus HP — temporary hit points granted by items or
- * boons, tracked on top of the intrinsic HP pool. Never negative. Pure.
+ * Set the character's bonus HP: temporary hit points granted by items or
+ * boons, tracked on top of the intrinsic HP pool. Never negative. This
+ * function is pure.
  * @param {Character} character
  * @param {number} amount
  * @returns {Character}
@@ -98,9 +102,10 @@ export function setBonusHP(character, amount) {
 }
 
 /**
- * Set the character's unarmored base AC — normally 10, raised by effects like
- * Mage Armor (13 + DEX). Only matters while no body armor is equipped, since
- * body armor replaces the unarmored baseline entirely. At least 1. Pure.
+ * Set the character's unarmored base AC: normally 10, raised by effects like
+ * Mage Armor (13 plus DEX). This only matters while no body armor is
+ * equipped, since body armor replaces the unarmored baseline entirely. At
+ * least 1. This function is pure.
  * @param {Character} character
  * @param {number} value
  * @returns {Character}
@@ -111,9 +116,10 @@ export function setBaseAC(character, value) {
 }
 
 /**
- * Apply damage: bonus HP absorbs it first (temporary points are lost before
+ * Apply damage. Bonus HP absorbs it first (temporary points are lost before
  * real ones), and only the remainder drains the HP pool. Healing is separate
- * (restoreResource) and never refills bonus HP — that's granted, not healed.
+ * (restoreResource) and never refills bonus HP. Bonus HP is granted, not
+ * healed.
  * @param {Character} character
  * @param {number} amount
  * @returns {Character}
@@ -126,8 +132,8 @@ export function damageCharacter(character, amount) {
   return remainder > 0 ? spendResource(next, HP_RESOURCE_ID, remainder) : next;
 }
 
-/** The class-list accessor lives with the rest of the class-list mechanics;
- * re-exported here because character code is its natural import site. */
+/** The class-list accessor lives with the rest of the class-list mechanics.
+ * Re-exported here because character code is its natural import site. */
 export { getClasses } from './Multiclass.js';
 
 /** @returns {Spellbook} an empty spellbook (no cantrips, known, or prepared). */
@@ -137,9 +143,9 @@ export function emptySpellbook() {
 
 /**
  * A detached copy of a spellbook, arrays and the sources map included. Used
- * where a library template's spellbook is stamped onto a campaign entity: the
- * template is shared, read-only data, so the entity needs its own lists to
- * learn or prepare spells through. Pure.
+ * where a library template's spellbook is stamped onto a campaign entity.
+ * The template is shared, read-only data, so the entity needs its own lists
+ * to learn or prepare spells through. This function is pure.
  * @param {Spellbook} book
  * @returns {Spellbook}
  */
@@ -189,7 +195,7 @@ function withoutSource(book, spellId) {
 
 /**
  * The class a spell was learned under, or null when none was recorded (a
- * single-class book, or an older save) — casting falls back to the first
+ * single-class book, or an older save). Casting falls back to the first
  * caster class then.
  * @param {{ spellbook?: Spellbook }} character
  * @param {string} spellId
@@ -201,9 +207,9 @@ export function spellSource(character, spellId) {
 
 /**
  * Learn a cantrip, up to the class's cantrip limit. A duplicate, or a learn
- * that would exceed the limit, leaves the character unchanged. `classId`
+ * that exceeds the limit leaves the character unchanged. `classId`
  * (optional) records which class the cantrip is learned under, for a
- * multiclass caster's per-class spell ability. Pure.
+ * multiclass caster's per-class spell ability. This function is pure.
  * @param {Character} character
  * @param {string} spellId
  * @param {string} [classId]
@@ -219,7 +225,7 @@ export function learnCantrip(character, spellId, classId) {
 }
 
 /**
- * Forget a cantrip. Absent from the list -> unchanged. Pure.
+ * Forget a cantrip. Absent from the list -> unchanged. This function is pure.
  * @param {Character} character
  * @param {string} spellId
  * @returns {Character}
@@ -236,8 +242,9 @@ export function unlearnCantrip(character, spellId) {
 /**
  * Add a leveled spell to the known list. A duplicate leaves the character
  * unchanged. Known-list size is not capped here (no spells-known curve is
- * modeled yet); the prepared set is what the prepared limit bounds. `classId`
- * (optional) records which class the spell is learned under. Pure.
+ * modeled yet). The prepared set is what the prepared limit bounds.
+ * `classId` (optional) records which class the spell is learned under. This
+ * function is pure.
  * @param {Character} character
  * @param {string} spellId
  * @param {string} [classId]
@@ -252,7 +259,7 @@ export function learnSpell(character, spellId, classId) {
 
 /**
  * Forget a leveled spell, dropping it from both the known and prepared lists.
- * Pure.
+ * This function is pure.
  * @param {Character} character
  * @param {string} spellId
  * @returns {Character}
@@ -272,8 +279,8 @@ export function unlearnSpell(character, spellId) {
 
 /**
  * Prepare a known leveled spell, up to the prepared limit. A spell not in the
- * known list, a duplicate, or a prepare that would exceed the limit leaves the
- * character unchanged. Pure.
+ * known list, a duplicate, or a prepare that exceeds the limit leaves the
+ * character unchanged. This function is pure.
  * @param {Character} character
  * @param {string} spellId
  * @returns {Character}
@@ -292,7 +299,7 @@ export function prepareSpell(character, spellId) {
 
 /**
  * Unprepare a spell, keeping it known. Absent from the prepared list ->
- * unchanged. Pure.
+ * unchanged. This function is pure.
  * @param {Character} character
  * @param {string} spellId
  * @returns {Character}
@@ -306,25 +313,26 @@ export function unprepareSpell(character, spellId) {
 }
 
 /**
- * Fill in fields a loaded character may predate: any missing ability score at
- * the neutral 10 (keeping existing values) and an empty-string race. No HP
- * pool is invented — its absence legitimately means "no HP tracking". A
- * pre-equipment save gets empty slots — with the pre-piecewise 'armor' slot
- * carrying over into 'chest'. A pre-spellbook save gains an empty spellbook,
- * and a pre-proficiency save gains empty proficiency and expertise lists; a
- * save whose weapon proficiencies are one flat list has them sorted into the
- * category and named lists they are now kept in. A
- * pre-multiclass save's scalar `class`/`subclass` fields fold into a one-entry
- * class list at the character's level. The class list is sanitized on the way
- * in, so a hand-edited one whose levels oversell the character's level comes
- * back trimmed to fit rather than hiding levels still to be assigned. A save
- * whose ability-score-improvement choices are still an array becomes the
- * record keyed by slot, each choice keeping its position as its order.
+ * Fill in fields that a loaded character can predate: any missing ability
+ * score at the neutral 10 (keeping existing values), and an empty-string
+ * race. The function does not invent an HP pool. Its absence legitimately
+ * means "no HP tracking". A pre-equipment save gets empty slots, with the
+ * pre-piecewise 'armor' slot carrying over into 'chest'. A pre-spellbook
+ * save gains an empty spellbook. A pre-proficiency save gains empty
+ * proficiency and expertise lists. A save whose weapon proficiencies are
+ * one flat list has them sorted into the category and named lists they are
+ * now kept in. A pre-multiclass save's scalar `class` and `subclass` fields
+ * fold into a one-entry class list at the character's level. The class
+ * list is sanitized on the way in, so a hand-edited one whose levels
+ * oversell the character's level comes back trimmed to fit, instead of
+ * hiding levels still to be assigned. A save whose ability-score-improvement
+ * choices are still an array becomes the record keyed by slot, with each
+ * choice keeping its position as its order.
  *
- * Shape is only half the job. The loaded pools are also reconciled against the
- * class list, level, and CON through `Progression.derive`, so a save
- * hand-edited between sessions — or one written before a class definition's
- * hit die or caster type changed in the library — comes back consistent
+ * Shape is only half the job. The loaded pools are also reconciled against
+ * the class list, level, and CON through `Progression.derive`. A save
+ * hand-edited between sessions, or one written before a class definition's
+ * hit die or caster type changed in the library, comes back consistent
  * instead of carrying the stale maxima forever.
  * @param {Character} character
  * @returns {Character}
@@ -369,7 +377,7 @@ export function withDefaults(character) {
 
 /**
  * Create a level 1 character with no resources or inventory. All six ability
- * scores start at 10; `stats` overrides individual scores.
+ * scores start at 10. `stats` overrides individual scores.
  * @param {string} id
  * @param {string} name
  * @param {Record<string, number>} [stats]
@@ -400,9 +408,10 @@ export function createCharacter(id, name, stats = {}, race = '') {
 }
 
 /**
- * Default per-level growth for a pool: a tenth of its maximum, at least 1, so a
- * bigger pool scales faster while a small one still grows each level. The
- * fallback for classless characters, whose growth can't come from a hit die.
+ * Default per-level growth for a pool: a tenth of its maximum, at least 1, so
+ * a bigger pool scales faster while a small one still grows each level. This
+ * is the fallback for classless characters, whose growth cannot come from a
+ * hit die.
  * @param {number} max
  * @returns {number}
  */
@@ -411,19 +420,20 @@ function defaultGrowth(max) {
 }
 
 /**
- * Add XP, auto-leveling up (possibly multiple times) as thresholds are crossed.
- * For a classed character every gained level stays pending until the player
- * assigns it to a class (see Multiclass.js's pendingLevels): HP growth, the
- * hit die, spell slots, and ASI/feature grants all follow the assigned class,
- * so they land in LevelAssign.assignLevel rather than here, and barring an
- * explicit `opts.hpGrowth` the HP pool is left untouched. A classless
- * character has nothing to assign, so their HP pool grows immediately — by
- * `opts.hpGrowth` if given, else a tenth of the pool's max per level — and
- * characters with no HP pool level up without any pool change.
+ * Add XP, auto-leveling up (possibly multiple times) as the character
+ * crosses thresholds. For a classed character, every gained level stays
+ * pending until the player assigns it to a class (see Multiclass.js's
+ * pendingLevels). HP growth, the hit die, spell slots, and ASI or feature
+ * grants all follow the assigned class, so they land in
+ * LevelAssign.assignLevel rather than here. Barring an explicit
+ * `opts.hpGrowth`, the HP pool stays untouched. A classless character has
+ * nothing to assign, so its HP pool grows immediately: by `opts.hpGrowth`
+ * if given, otherwise a tenth of the pool's max per level. Characters with
+ * no HP pool level up without any pool change.
  *
  * `opts.hpGrowth` on a classed character is a deliberate step outside the
  * class HP rule, so it sets `hpOverride` the same way a hand-typed maximum
- * does; without that the reconcile at the end would pull the pool straight
+ * does. Without that, the reconcile at the end pulls the pool straight
  * back to the class-derived value.
  * @param {Character} character
  * @param {number} amount
@@ -460,10 +470,10 @@ export function addResource(character, pool) {
 }
 
 /**
- * Spend from one of an entity's resource pools. Generic over the holder so a
- * caster that is not a Character (a spellcasting foe or NPC, seen through
- * `Caster.toCaster`) can spend a spell slot through the same function and get
- * its own type back.
+ * Spend from one of an entity's resource pools. This function is generic
+ * over the holder. A caster that is not a Character (a spellcasting foe or
+ * NPC, seen through `Caster.toCaster`) can spend a spell slot through the
+ * same function and get its own type back.
  * @template {{ resources: ResourcePool[] }} T
  * @param {T} character
  * @param {string} resourceId
@@ -493,12 +503,12 @@ export function restoreResource(character, resourceId, amount) {
 /**
  * Restore every resource pool (HP and any custom pool) by a fraction of its
  * max, clamped to full. The rest model: a long rest restores everything
- * (fraction 1), a short rest restores half (fraction 0.5). Spell slots follow
- * the D&D rule instead: only a full rest (fraction 1) refills them; anything
- * less leaves them untouched. Pact slots refill in full on a short or long
- * rest (fraction 0.5 and up). Hit dice ignore short rests (they're what a
- * short rest spends), and a long rest restores half of each die-size pool,
- * at least one die. Pure.
+ * (fraction 1), and a short rest restores half (fraction 0.5). Spell slots
+ * follow the D&D rule instead. Only a full rest (fraction 1) refills them.
+ * Anything less leaves them untouched. Pact slots refill in full on a short
+ * or long rest (fraction 0.5 and up). Hit dice ignore short rests, since
+ * they are what a short rest spends. A long rest restores half of each
+ * die-size pool, at least one die. This function is pure.
  * @param {Character} character
  * @param {number} fraction 0..1
  * @returns {Character}
@@ -528,8 +538,8 @@ export function longRest(character) {
 }
 
 /**
- * A short rest: restore half of each pool's maximum; spell slots stay spent,
- * pact slots refill in full.
+ * A short rest: restore half of each pool's maximum. Spell slots stay spent.
+ * Pact slots refill in full.
  * @param {Character} character
  * @returns {Character}
  */
@@ -558,10 +568,10 @@ export function addItem(character, item) {
 
 /**
  * Hand part of a stack (or all of it) from one party member to another. The
- * giver loses `quantity` — unequipping the item if the whole stack goes — and
+ * giver loses `quantity`, unequipping the item if the whole stack goes, and
  * the receiver gains it, merging into an existing stack with the same id.
  * A missing item, a non-positive count, or self-transfer changes nothing.
- * Pure: returns both updated characters.
+ * This function is pure and returns both updated characters.
  * @param {Character} giver
  * @param {Character} receiver
  * @param {string} itemId
@@ -581,8 +591,9 @@ export function transferItem(giver, receiver, itemId, quantity) {
 /**
  * Replace an inventory item's fields wholesale (the GM's post-creation edit),
  * keeping its id so equipment references survive. The replacement is the
- * edited item as a whole, not a patch — a field absent from `next` is gone.
- * Any slot that no longer accepts the edited item unequips it. Pure.
+ * edited item as a whole, not a patch. A field absent from `next` is gone.
+ * Any slot that no longer accepts the edited item unequips it. This
+ * function is pure.
  * @param {Character} character
  * @param {string} itemId
  * @param {InventoryItem} next
@@ -597,7 +608,7 @@ export function updateItem(character, itemId, next) {
 
 /**
  * Remove quantity from a stack, dropping it from the inventory entirely once
- * it hits 0 — and unequipping it from any slot it occupied.
+ * it hits 0, and unequipping it from any slot it occupied.
  * @param {Character} character
  * @param {string} itemId
  * @param {number} quantity

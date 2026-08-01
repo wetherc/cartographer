@@ -3,20 +3,20 @@
 /** @typedef {import('../types/class.js').ClassRef} ClassRef */
 
 /**
- * Class-list mechanics: a character's classes are a list of `ClassRef`s whose
- * levels sum to at most the stored character level (the XP engine owns that
- * total). A shortfall is a pending level — earned by XP but not yet assigned
- * to a class — which is what the multiclass level-up flow spends. This module
- * is pure list arithmetic; it deliberately knows nothing about class
- * definitions (Classes.js reads them), so it can sit below every other entity
- * module without a cycle.
+ * Class-list mechanics. A character's classes are a list of `ClassRef`s
+ * whose levels sum to at most the stored character level. The XP engine
+ * owns that total. A shortfall is a pending level, earned by XP but not yet
+ * assigned to a class. The multiclass level-up flow spends this pending
+ * level. This module is pure list arithmetic. It deliberately knows nothing
+ * about class definitions (Classes.js reads them), so it can sit below every
+ * other entity module without a cycle.
  */
 
 /**
- * A character's classes. Older saves carried a scalar `class`/`subclass` pair
- * instead of a list; those read as a one-entry list at the character's full
- * level until `withDefaults` folds them in. A classless character yields an
- * empty list.
+ * A character's classes. Older saves carried a scalar `class` and `subclass`
+ * pair instead of a list. The app reads those as a one-entry list at the
+ * character's full level until `withDefaults` folds them in. A classless
+ * character yields an empty list.
  * @param {SpellCaster} character
  * @returns {ClassRef[]}
  */
@@ -63,8 +63,8 @@ export function assignedLevel(character) {
 
 /**
  * Levels earned by XP but not yet assigned to a class: the stored character
- * level minus the class levels assigned. Always 0 for a classless character —
- * with no classes there is nothing to assign a level to.
+ * level minus the class levels assigned. Always 0 for a classless character.
+ * With no classes, there is nothing to assign a level to.
  * @param {Character} character
  * @returns {number}
  */
@@ -74,17 +74,18 @@ export function pendingLevels(character) {
 }
 
 /**
- * Sanitize a class list against a level budget: entries without a class id drop
- * out, levels floor to whole numbers of at least 1, duplicate class ids keep
- * only their first entry, and the levels sum to at most `cap`.
+ * Sanitize a class list against a level budget. Entries with no class id
+ * drop out. Levels floor to whole numbers of at least 1. Duplicate class
+ * ids keep only their first entry. The levels sum to at most `cap`.
  *
  * The cap matters because nothing else enforces it. `pendingLevels` is the
- * stored level minus this sum, so a list that oversells the level reports zero
- * pending levels and quietly swallows the ones it has left to assign. Entries
- * are taken in order until the budget runs out: the last entry that still fits
- * is trimmed to what remains, and anything after it drops. That is only
- * reachable from an imported or hand-edited save, since every writer in the
- * app assigns one level at a time.
+ * stored level minus this sum, so a list that oversells the level reports
+ * zero pending levels and quietly loses the levels it has left to assign.
+ * The function takes entries in order until the budget runs out. The last
+ * entry that still fits is trimmed to what remains, and the function drops
+ * anything after it. This case is reachable only from an imported or
+ * hand-edited save, since every writer in the app assigns one level at a
+ * time.
  * @param {ClassRef[]} classes
  * @param {number} cap total class levels allowed
  * @returns {ClassRef[]}
@@ -107,7 +108,7 @@ export function sanitizeClasses(classes, cap) {
 
 /**
  * Set the character's class list wholesale, sanitized against the character's
- * stored level. See `sanitizeClasses`. Pure.
+ * stored level. See `sanitizeClasses`. This function is pure.
  * @param {Character} character
  * @param {ClassRef[]} classes
  * @returns {Character}

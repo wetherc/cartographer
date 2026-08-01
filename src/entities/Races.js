@@ -6,8 +6,8 @@ import { DEFAULT_RACES } from '../data/races.js';
 
 /**
  * The playable races. The definitions live in data/races.js (library-kind
- * shaped, stable id + name per entry); this module holds the logic that reads
- * them, mirroring Classes.js.
+ * shaped, with a stable id and name per entry). This module holds the logic
+ * that reads them, mirroring Classes.js.
  * @type {RaceDef[]}
  */
 export const RACE_LIST = DEFAULT_RACES;
@@ -17,7 +17,7 @@ export const RACE_LIST = DEFAULT_RACES;
 const RACE_BY_ID = new Map(RACE_LIST.map((r) => [r.id, r]));
 
 /**
- * The race definition for an id, or null for an unknown/absent id (a
+ * The race definition for an id, or null for an unknown or absent id (a
  * hand-typed race).
  * @param {string | undefined | null} raceId
  * @returns {RaceDef | null}
@@ -27,8 +27,8 @@ export function getRace(raceId) {
 }
 
 /**
- * Copy a definition's mechanical fields into an independent snapshot — no
- * arrays shared with the catalog, so the stored copy survives any later
+ * Copy a definition's mechanical fields into an independent snapshot. No
+ * arrays are shared with the catalog, so the stored copy survives any later
  * library edit untouched.
  * @param {RaceDef} def
  * @returns {RaceSnapshot}
@@ -49,9 +49,9 @@ function snapshotRace(def) {
 }
 
 /**
- * The character's ability scores with the race they currently carry taken back
- * off. The snapshot records what was actually added, so undoing it is exact
- * even if the catalog entry has since been edited.
+ * The character's ability scores with the race they currently carry taken
+ * back off. The snapshot records what the race actually added, so undoing
+ * it stays exact even if a person edited the catalog entry since.
  * @param {Character} character
  * @returns {Record<string, number>}
  */
@@ -65,11 +65,12 @@ function statsWithoutRace(character) {
 
 /**
  * Assign a catalog race: the display name, the id, a snapshot of the
- * definition's mechanical fields, and the definition's ability increases added
- * to the character's scores. Any race already assigned has its increases taken
- * back off first, so re-assigning is idempotent and switching races swaps one
- * set of bonuses for the other rather than stacking them. An unknown id leaves
- * the character unchanged. Pure.
+ * definition's mechanical fields, and the definition's ability increases
+ * added to the character's scores. If a race is already assigned, the
+ * function first removes its increases. This makes re-assigning idempotent,
+ * and switching races swaps one set of bonuses for the other instead of
+ * stacking them. An unknown id leaves the character unchanged. This
+ * function is pure.
  * @param {Character} character
  * @param {string} raceId
  * @returns {Character}
@@ -85,9 +86,9 @@ export function withRace(character, raceId) {
 }
 
 /**
- * Set a hand-typed race: just the display string, dropping any catalog id and
- * snapshot a previous assignment left behind, along with the ability increases
- * that assignment added. Pure.
+ * Set a hand-typed race: only the display string. The function drops any
+ * catalog id and snapshot that a previous assignment left behind, along with
+ * the ability increases that assignment added. This function is pure.
  * @param {Character} character
  * @param {string} name
  * @returns {Character}
@@ -103,15 +104,15 @@ export function withCustomRace(character, name) {
 }
 
 /**
- * A character's racial mechanics, resolved at call time: the live catalog
- * definition wins (so a library edit propagates to every character of that
- * race), the stored snapshot backs a definition that has since disappeared,
- * and a hand-typed race resolves to null.
+ * A character's race mechanics, resolved at call time. The live catalog
+ * definition wins, so a library edit propagates to every character of that
+ * race. The stored snapshot backs a definition that no longer exists in the
+ * catalog. A hand-typed race resolves to null.
  *
- * `abilityIncreases` is the exception, and always comes from the snapshot. The
- * increases are baked into the character's scores when the race is assigned,
- * so reporting a later catalog edit here would describe a bonus the character
- * never received.
+ * `abilityIncreases` is the exception. It always comes from the snapshot.
+ * The increases are baked into the character's scores when a person assigns
+ * the race. Reporting a later catalog edit here describes a bonus the
+ * character never received.
  * @param {Character} character
  * @returns {RaceSnapshot | null}
  */

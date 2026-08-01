@@ -13,8 +13,8 @@ import { memoizeByIdentity } from '../util/memoize.js';
 
 /**
  * The playable classes. The definitions themselves live in data/classes.js
- * (library-kind shaped, stable id + name per entry); this module holds the
- * logic that reads them.
+ * (library-kind shaped, with a stable id and name per entry). This module
+ * holds the logic that reads them.
  * @type {ClassDef[]}
  */
 export const CLASS_LIST = DEFAULT_CLASSES;
@@ -24,7 +24,7 @@ export const CLASS_LIST = DEFAULT_CLASSES;
 const CLASS_BY_ID = new Map(CLASS_LIST.map((c) => [c.id, c]));
 
 /**
- * The class definition for an id, or null for an unknown/absent class (a
+ * The class definition for an id, or null for an unknown or absent class (a
  * classless legacy character).
  * @param {string | undefined | null} classId
  * @returns {ClassDef | null}
@@ -46,7 +46,7 @@ export function isCasterClass(classId) {
 /**
  * Slot counts per spell level for a class at a character level, driven by the
  * class's caster type. A non-caster, pact caster, or unknown class gets no
- * leveled slots here (pact magic is handled separately).
+ * leveled slots here. A different function handles pact magic.
  * @param {string | undefined | null} classId
  * @param {number} characterLevel
  * @returns {number[]} index 0 = spell level 1
@@ -58,9 +58,10 @@ export function slotsForClass(classId, characterLevel) {
 }
 
 /**
- * The full spell-slot pools for a class at a character level, all at full —
- * caster-type-aware (full/half/third), so a foe or NPC caster gets exactly the
- * slots its class grants. Empty for a non-caster, pact caster, or unknown class.
+ * The full spell-slot pools for a class at a character level, all at full.
+ * This is caster-type-aware (full, half, third), so a foe or NPC caster
+ * gets exactly the slots its class grants. Empty for a non-caster, pact
+ * caster, or unknown class.
  * @param {string | undefined | null} classId
  * @param {number} characterLevel
  * @returns {import('../types/entities.js').ResourcePool[]}
@@ -72,9 +73,9 @@ export function casterSlots(classId, characterLevel) {
 }
 
 /**
- * Cantrips known for a class at a character level, from its cantrip curve;
- * 0 for classes that know no cantrips or an unknown class. Levels past the
- * curve read its last entry.
+ * Cantrips known for a class at a character level, from its cantrip curve.
+ * Returns 0 for classes that know no cantrips, or for an unknown class.
+ * Levels past the curve read its last entry.
  * @param {string | undefined | null} classId
  * @param {number} characterLevel
  * @returns {number}
@@ -97,10 +98,10 @@ export function casterClassRefs(character) {
 }
 
 /**
- * Whether the character can cast rituals: true when any of its caster classes
- * has ritual casting (Bard, Cleric, Druid, Wizard). A ritual spell is only
- * castable without a slot by a caster whose class grants the feature, so this is
- * what gates the cast dialog's ritual option.
+ * Whether the character can cast rituals: true when any of its caster
+ * classes has ritual casting (Bard, Cleric, Druid, Wizard). A ritual spell
+ * is castable without a slot only by a caster whose class grants the
+ * feature. This gates the cast dialog's ritual option.
  * @param {SpellCaster} character
  * @returns {boolean}
  */
@@ -109,8 +110,8 @@ export function hasRitualCasting(character) {
 }
 
 /**
- * The character's first caster class, or null — the class whose ability powers
- * spells when a caller doesn't name one.
+ * The character's first caster class, or null. This is the class whose
+ * ability powers spells when a caller does not name one.
  * @param {SpellCaster} character
  * @returns {ClassRef | null}
  */
@@ -120,8 +121,9 @@ export function primaryCasterClass(character) {
 
 /**
  * Whether any of the character's caster classes prepares its spells (Cleric,
- * Druid, Paladin, Wizard). Gates the prepared count and the Prepare actions:
- * a known-rule caster (Bard, Ranger, Sorcerer, Warlock) never prepares.
+ * Druid, Paladin, Wizard). This gates the prepared count and the Prepare
+ * actions. A known-rule caster (Bard, Ranger, Sorcerer, Warlock) never
+ * prepares.
  * @param {Character} character
  * @returns {boolean}
  */
@@ -132,7 +134,7 @@ export function hasPreparedCaster(character) {
 /**
  * The modifier of a caster's spell ability, or null when the character has no
  * caster class or lacks that ability score. `classId` picks which class's
- * ability to read; it defaults to the first caster class.
+ * ability to read. It defaults to the first caster class.
  * @param {SpellCaster} character
  * @param {string} [classId]
  * @returns {number | null}
@@ -146,10 +148,10 @@ export function spellAbilityModifier(character, classId) {
 }
 
 /**
- * A caster's spell save DC: 8 + proficiency bonus + spell-ability modifier.
- * Proficiency reads the total character level (the 5e multiclass rule); the
- * ability comes from `classId`, defaulting to the first caster class. Null for
- * a non-caster.
+ * A caster's spell save DC: 8 plus proficiency bonus plus spell-ability
+ * modifier. Proficiency reads the total character level (the 5e multiclass
+ * rule). The ability comes from `classId`, defaulting to the first caster
+ * class. Returns null for a non-caster.
  * @param {SpellCaster} character
  * @param {string} [classId]
  * @returns {number | null}
@@ -161,8 +163,9 @@ export function spellSaveDC(character, classId) {
 }
 
 /**
- * A caster's spell attack bonus: proficiency bonus + spell-ability modifier,
- * with the same class selection as `spellSaveDC`. Null for a non-caster.
+ * A caster's spell attack bonus: proficiency bonus plus spell-ability
+ * modifier, with the same class selection as `spellSaveDC`. Returns null
+ * for a non-caster.
  * @param {SpellCaster} character
  * @param {string} [classId]
  * @returns {number | null}
@@ -174,13 +177,13 @@ export function spellAttackBonus(character, classId) {
 }
 
 /**
- * How many cantrips a character may know: each caster class's cantrip curve
- * read at its own class level, summed. 0 for a non-caster or a classless
- * character.
+ * How many cantrips a character can know: each caster class's cantrip curve
+ * read at its own class level, summed. Returns 0 for a non-caster or a
+ * classless character.
  *
- * Memoized on the character, like `preparedLimit`: the spellbook panel asks
- * for both limits once per listed spell, and `preparedLimit` re-resolves a
- * spell ability modifier per class each time.
+ * This value is memoized on the character, like `preparedLimit`. The
+ * spellbook panel asks for both limits once per listed spell, and
+ * `preparedLimit` re-resolves a spell ability modifier per class each time.
  */
 export const cantripLimit = memoizeByIdentity(countCantripsKnown);
 
@@ -196,11 +199,12 @@ function countCantripsKnown(character) {
 }
 
 /**
- * How many leveled spells a character may have prepared: per prepared-rule
- * caster class, its spell-ability modifier + its class level, at least 1 (the
- * 5e prepared-caster rule), summed across those classes. 0 for a non-caster
- * or a caster whose classes all cast from their known list, since those
- * classes grant no prepared slots. Memoized on the character.
+ * How many leveled spells a character can have prepared: per prepared-rule
+ * caster class, its spell-ability modifier plus its class level, at least 1
+ * (the 5e prepared-caster rule), summed across those classes. Returns 0 for
+ * a non-caster, or for a caster whose classes all cast from their known
+ * list, since those classes grant no prepared slots. This value is
+ * memoized on the character.
  */
 export const preparedLimit = memoizeByIdentity(countPreparedAllowed);
 

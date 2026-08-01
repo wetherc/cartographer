@@ -12,10 +12,10 @@ import { clampInt } from '../util/num.js';
 /** @typedef {import('../types/entities.js').EquipmentSlot} EquipmentSlot */
 
 /**
- * The wearable slots on a character, in display order. Each slot accepts only
- * the item types listed — a potion can't be worn as armor. Body armor (the
- * 'armor' type) goes in the chest slot; helmets, gloves, and greaves are
- * separate flat-bonus pieces.
+ * The wearable slots on a character, in display order. Each slot accepts
+ * only the item types listed. A potion cannot be worn as armor. Body armor
+ * (the 'armor' type) goes in the chest slot. Helmets, gloves, and greaves
+ * are separate flat-bonus pieces.
  * @type {{ key: EquipmentSlot, label: string, accepts: ItemType[] }[]}
  */
 export const EQUIPMENT_SLOTS = [
@@ -30,8 +30,8 @@ export const EQUIPMENT_SLOTS = [
   { key: 'accessory2', label: 'Ring 2', accepts: ['ring'] },
 ];
 
-/** The item classifications, in the add-form's display order. 'armor' is
- * body armor; consumables and gear can't be equipped anywhere.
+/** The item classifications, in the display order of the add form. 'armor'
+ * is body armor. Consumables and gear cannot be equipped anywhere.
  * @type {ItemType[]} */
 export const ITEM_TYPES = [
   'gear',
@@ -47,10 +47,11 @@ export const ITEM_TYPES = [
 ];
 
 /**
- * The 5e armor weight classes. The weight alone fixes how DEX scales the
- * armor's AC — light adds the full DEX modifier, medium caps it at +2, heavy
- * ignores DEX entirely (never a penalty) — while the base AC stays
- * configurable per item, defaulting to a representative 5e value.
+ * The 5e armor weight classes. The weight class alone fixes how DEX scales
+ * the armor's AC. Light armor adds the full DEX modifier. Medium armor caps
+ * the DEX modifier at +2. Heavy armor ignores DEX entirely and never applies
+ * a penalty. The base AC stays configurable per item, and it defaults to a
+ * representative 5e value.
  * @type {{ key: ArmorWeight, label: string, dexCap: number, defaultBaseAC: number }[]}
  */
 export const ARMOR_WEIGHTS = [
@@ -59,7 +60,7 @@ export const ARMOR_WEIGHTS = [
   { key: 'heavy', label: 'Heavy', dexCap: 0, defaultBaseAC: 16 },
 ];
 
-/** Shields always grant a flat +2 AC, per 5e; not configurable. */
+/** Shields always grant a flat +2 AC, per 5e rule. This value is not configurable. */
 export const SHIELD_AC = 2;
 
 /** The item types that carry weapon fields (handling, damage, status effects). */
@@ -85,27 +86,28 @@ export const DAMAGE_TYPES = [
   'thunder',
 ];
 
-/** Restorative dice are not damage, so healing is its own one-entry vocabulary
- * rather than a fourteenth damage type — a weapon must not be able to deal it. */
+/** Restorative dice are not damage. Healing is its own one-entry vocabulary
+ * instead of a fourteenth damage type. A weapon must not deal healing damage. */
 export const HEALING_TYPE = 'healing';
 export const HEALING_TYPES = [HEALING_TYPE];
 
 /**
- * Coerce an unknown value into one well-formed damage term: at least one die,
- * a die size and a type drawn from `allowed`. Lives here because the lists do,
- * so a change to either has one validator to update. A caller normalizing
- * restorative dice passes `HEALING_TYPES`, which is what keeps a heal effect
- * from being repaired into slashing. Pure.
+ * Coerce an unknown value into one well-formed damage term, with at least one
+ * die, a die size, and a type drawn from `allowed`. This function lives here
+ * because the type lists live here, so a change to either needs only one
+ * validator update. A caller that normalizes restorative dice passes
+ * `HEALING_TYPES`. This keeps a heal effect from being repaired into a
+ * slashing effect. This function is pure.
  * @param {unknown} part
- * @param {string[]} [allowed] the damage types this term may carry
+ * @param {string[]} [allowed] the damage types this term can carry
  * @returns {DamagePart}
  */
 export function normalizeDamagePart(part, allowed = DAMAGE_TYPES) {
   const raw = /** @type {Record<string, unknown>} */ (part ?? {});
   const bonus = Math.trunc(Number(raw.bonus)) || 0;
-  // A term carrying a flat bonus may roll no dice, which is how a fixed amount
-  // is written; a term without one always rolls at least one die, so a garbled
-  // count still reads as 1 rather than as nothing.
+  // A term with a flat bonus can roll no dice. This is how a fixed amount is
+  // written. A term without a bonus always rolls at least one die, so a
+  // garbled count still reads as 1 instead of as nothing.
   const floor = bonus === 0 ? 1 : 0;
   return {
     count: clampInt(raw.count, floor, Infinity, floor),
@@ -118,9 +120,9 @@ export function normalizeDamagePart(part, allowed = DAMAGE_TYPES) {
 }
 
 /**
- * Whether a damage term contributes anything at all: it either rolls dice or
- * carries a flat bonus. `rollDamage` makes the same check on its own rather than
- * importing it, since the dice layer imports nothing.
+ * Whether a damage term contributes anything: it either rolls dice or carries
+ * a flat bonus. `rollDamage` makes the same check on its own instead of
+ * importing this function, because the dice layer imports nothing.
  * @param {import('../types/entities.js').DamagePart} part
  * @returns {boolean}
  */
@@ -129,8 +131,8 @@ function damagePartRolls(part) {
 }
 
 /**
- * How a weapon is wielded, which alone fixes the ability behind its damage
- * roll: melee uses STR; finesse and ranged use DEX.
+ * How a weapon is wielded. This alone fixes the ability behind its damage
+ * roll. Melee uses STR. Finesse and ranged use DEX.
  * @type {{ key: import('../types/entities.js').WeaponHandling, label: string, ability: 'STR' | 'DEX' }[]}
  */
 export const WEAPON_HANDLING = [
@@ -140,9 +142,10 @@ export const WEAPON_HANDLING = [
 ];
 
 /**
- * The ability score modifying a weapon's damage roll, from its handling:
- * melee (and absent handling) reads STR, finesse and ranged read DEX. Also
- * accepts an enemy's assigned weapon, which carries the same handling field.
+ * The ability score that modifies a weapon's damage roll, based on its
+ * handling. Melee, and absent handling, reads STR. Finesse and ranged read
+ * DEX. This function also accepts an enemy's assigned weapon, which carries
+ * the same handling field.
  * @param {InventoryItem | import('../types/entities.js').EnemyWeapon} item
  * @returns {'STR' | 'DEX'}
  */
@@ -152,9 +155,9 @@ export function weaponAbility(item) {
 }
 
 /**
- * A damage roll's dice terms as text: "2d6 slashing + 1d4 fire". A term's flat
- * bonus rides its dice ("1d4+1 force"), and a term with no dice prints the
- * bonus alone ("+1 healing").
+ * A damage roll's dice terms as text, for example "2d6 slashing + 1d4 fire".
+ * A term's flat bonus rides its dice, for example "1d4+1 force". A term with
+ * no dice prints the bonus alone, for example "+1 healing".
  * @param {import('../types/entities.js').DamagePart[]} parts
  * @returns {string}
  */
@@ -186,9 +189,9 @@ export function emptyEquipment() {
 }
 
 /**
- * Normalize an equipment record from any era: the pre-piecewise 'armor' slot
- * carries over into 'chest' (unless chest is already set), unknown keys drop,
- * and missing slots fill in empty. Pure.
+ * Normalize an equipment record from any era. The pre-piecewise 'armor' slot
+ * carries over into 'chest' unless chest is already set. Unknown keys drop.
+ * Missing slots fill in as empty. This function is pure.
  * @param {Record<string, string | null> | undefined} equipment
  * @returns {Equipment}
  */
@@ -206,7 +209,7 @@ export function migrateEquipment(equipment) {
 }
 
 /**
- * An item's classification, defaulting the absent field on older saves.
+ * An item's classification, with a default for the absent field on older saves.
  * @param {InventoryItem} item
  * @returns {ItemType}
  */
@@ -215,8 +218,8 @@ export function itemType(item) {
 }
 
 /**
- * Whether a slot accepts an item's type — the rule the pickers filter by and
- * `equip` enforces.
+ * Whether a slot accepts an item's type. The pickers filter by this rule, and
+ * `equip` enforces it.
  * @param {EquipmentSlot} slot
  * @param {InventoryItem} item
  * @returns {boolean}
@@ -227,9 +230,10 @@ export function slotAccepts(slot, item) {
 }
 
 /**
- * Equip an inventory item (by id) into a slot, or clear the slot with null.
- * Equipping an item the slot doesn't accept (or one not in the inventory) is
- * a no-op, so a potion can never end up worn as armor. Pure.
+ * Equip an inventory item, by id, into a slot, or clear the slot with null.
+ * Equipping an item that the slot does not accept, or an item not in the
+ * inventory, does nothing. This keeps a potion from ever being worn as
+ * armor. This function is pure.
  * @param {Character} character
  * @param {EquipmentSlot} slot
  * @param {string | null} itemId
@@ -244,12 +248,12 @@ export function equip(character, slot, itemId) {
 }
 
 /**
- * The filled slots of a character, in `EQUIPMENT_SLOTS` order, resolved to the
- * inventory items behind them. Memoized on the character: the sheet asks what
- * is worn a dozen or more times per render (once per ability breakdown, again
- * for AC), and every one of those was a scan of all nine slots against the
- * whole inventory. Safe to cache because a character is never mutated in
- * place — every writer hands back a new object.
+ * The filled slots of a character, in `EQUIPMENT_SLOTS` order, resolved to
+ * the inventory items behind them. This result is memoized on the character.
+ * The character sheet asks what is worn a dozen or more times per render,
+ * once per ability breakdown and again for AC. Each of those calls scanned
+ * all nine slots against the whole inventory. Caching is safe because a
+ * character is never mutated in place. Every writer returns a new object.
  * @type {(character: Character) => Map<EquipmentSlot, InventoryItem>}
  */
 export const equippedIndex = memoizeByIdentity((/** @type {Character} */ character) => {
@@ -279,10 +283,10 @@ export function getEquipped(character, slot) {
 
 /**
  * Normalize an inventory item from any era. Pre-weight-class body armor
- * carried a flat acBonus on top of 10 + DEX; that reads as light armor (full
- * DEX scaling, same total) with a base AC of 10 + the old bonus. Shields drop
- * any stored bonus — they are always +2 now. Pure; unchanged items return
- * the same reference.
+ * carried a flat acBonus on top of 10 + DEX. This reads as light armor, with
+ * full DEX scaling and the same total, and a base AC of 10 + the old bonus.
+ * Shields drop any stored bonus, because shields are always +2 now. This
+ * function is pure. Unchanged items return the same reference.
  * @param {InventoryItem} item
  * @returns {InventoryItem}
  */
@@ -306,10 +310,10 @@ function equippedItems(character) {
 }
 
 /**
- * The equipped items a character can attack with: whatever occupies the main
- * hand, off hand, and ranged slots and carries a damage roll (a shield in the
- * off hand doesn't qualify). Order follows the slots, so the main weapon
- * lists first.
+ * The equipped items a character can attack with. This is whatever occupies
+ * the main hand, off hand, and ranged slots and carries a damage roll. A
+ * shield in the off hand does not qualify. Order follows the slots, so the
+ * main weapon lists first.
  * @param {Character} character
  * @returns {InventoryItem[]}
  */
@@ -322,8 +326,8 @@ export function equippedWeapons(character) {
 }
 
 /**
- * The character's ability scores with equipped-item buffs (e.g. a ring's
- * +2 STR) folded in. Unknown stats pass through untouched.
+ * The character's ability scores with equipped-item buffs folded in, for
+ * example a ring's +2 STR. Unknown stats pass through untouched.
  * @param {Character} character
  * @returns {Record<string, number>}
  */
@@ -338,11 +342,12 @@ export function effectiveStats(character) {
 }
 
 /**
- * The per-source composition of one ability score: its base value plus every
- * equipped item that shifts it, and the resulting total. The character sheet's
- * stat badges show only the total; this backs the breakdown popover behind
- * them. Debuffs (negative deltas) and future non-item sources ride the same
- * `sources` list, so a later condition/spell effect only has to append to it.
+ * The per-source composition of one ability score: its base value, every
+ * equipped item that shifts it, and the resulting total. The character
+ * sheet's stat badges show only the total. This function backs the breakdown
+ * popover behind them. Debuffs, which are negative deltas, and future
+ * non-item sources use the same `sources` list. A later condition or spell
+ * effect only needs to append to this list.
  * @param {Character} character
  * @param {string} stat
  * @returns {{ base: number, total: number, sources: { source: string, delta: number }[] }}
@@ -359,12 +364,13 @@ export function statBreakdown(character, stat) {
 }
 
 /**
- * A character's armor class, 5e-style. Equipped body armor replaces the
- * unarmored baseline with its own base AC plus a DEX contribution fixed by
- * its weight class (light: full modifier, medium: capped at +2, heavy: none);
- * unarmored is the character's base AC (10 unless raised by an effect like
- * Mage Armor) + full DEX. Shields add a flat +2, and every other equipped
- * item adds its flat acBonus. DEX here includes equipped stat buffs.
+ * A character's armor class, in 5e style. Equipped body armor replaces the
+ * unarmored baseline with its own base AC plus a DEX contribution set by its
+ * weight class. Light armor adds the full DEX modifier. Medium armor caps
+ * the DEX modifier at +2. Heavy armor ignores DEX. Unarmored AC is the base
+ * AC, which is 10 by default or higher from an effect like Mage Armor, plus
+ * the full DEX modifier. Shields add a flat +2. Every other equipped item
+ * adds its own flat acBonus. DEX here includes equipped stat buffs.
  * @param {Character} character
  * @returns {number}
  */
@@ -375,8 +381,8 @@ export function armorClass(character) {
   if (body && body.baseAC !== undefined) {
     const weight =
       ARMOR_WEIGHTS.find((w) => w.key === (body.armorWeight ?? 'light')) ?? ARMOR_WEIGHTS[0];
-    // Heavy armor ignores DEX outright (a negative modifier doesn't hurt);
-    // otherwise the modifier applies up to the weight's cap.
+    // Heavy armor ignores DEX completely, so a negative modifier does not
+    // hurt. Otherwise the modifier applies up to the weight's cap.
     ac = body.baseAC + (weight.dexCap === 0 ? 0 : Math.min(dexMod, weight.dexCap));
   } else {
     ac = (character.baseAC ?? 10) + dexMod;
@@ -389,9 +395,10 @@ export function armorClass(character) {
 }
 
 /**
- * An item's mechanical effects as one short phrase each — "light armor,
- * AC 12 + DEX", "+2 AC", "+2 STR", "inflicts burning" — so a modifier-heavy
- * item can render one badge per effect. Empty for a plain item.
+ * An item's mechanical effects, as one short phrase each, for example
+ * "light armor, AC 12 + DEX", "+2 AC", "+2 STR", or "inflicts burning". A
+ * modifier-heavy item can show one badge per effect. This list is empty for
+ * a plain item.
  * @param {InventoryItem} item
  * @returns {string[]}
  */
@@ -436,11 +443,11 @@ export function itemSummary(item) {
 }
 
 /**
- * Filter an inventory for display and put it in name order: a case-insensitive
- * text query matched against name and description, plus an optional type to
- * keep. Type ordering is `groupItemsByType`'s job, since the panel shows the
- * list under one heading per type.
- * Pure; never mutates the input.
+ * Filter an inventory for display and put it in name order. A
+ * case-insensitive text query matches against name and description, with an
+ * optional type to keep. Type ordering is the job of `groupItemsByType`,
+ * because the panel shows the list under one heading per type.
+ * This function is pure and never mutates the input.
  * @param {InventoryItem[]} items
  * @param {{ query?: string, type?: ItemType | '' }} [view]
  * @returns {InventoryItem[]}
@@ -460,9 +467,9 @@ export function filterItems(items, view = {}) {
 
 /**
  * Split an already-filtered item list into one group per classification, in
- * `ITEM_TYPES` order, keeping each group's incoming order. Types nobody carries
- * are left out, so the caller renders only the groups that have contents.
- * Pure; never mutates the input.
+ * `ITEM_TYPES` order, and keep each group's incoming order. Types that
+ * nobody carries are left out, so the caller renders only the groups that
+ * have contents. This function is pure and never mutates the input.
  * @param {InventoryItem[]} items
  * @returns {{ type: ItemType, items: InventoryItem[] }[]}
  */
@@ -482,8 +489,8 @@ export function groupItemsByType(items) {
 }
 
 /**
- * Whether an item is spent by using it — the one classification whose stack
- * count goes down through play rather than through the GM discarding it.
+ * Whether an item is spent by using it. This is the one classification whose
+ * stack count decreases through play, not because the GM removes it.
  * @param {InventoryItem} item
  * @returns {boolean}
  */
@@ -492,10 +499,10 @@ export function isConsumable(item) {
 }
 
 /**
- * Clear any slot referencing an item no longer in the inventory (removing the
- * last of a stack also unequips it) or one the slot no longer accepts (editing
- * a worn ring into gear also takes it off). Returns the character unchanged
- * when nothing dangles. Pure.
+ * Clear any slot that references an item no longer in the inventory, or an
+ * item the slot no longer accepts. Removing the last of a stack also
+ * unequips it. Editing a worn ring into gear also takes it off. This
+ * function returns the character unchanged when nothing dangles. It is pure.
  * @param {Character} character
  * @returns {Character}
  */

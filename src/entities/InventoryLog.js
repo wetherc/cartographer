@@ -1,16 +1,17 @@
 /**
- * An inventory interaction the panel reports for travelogue logging. The verb
- * carries the user's intent (which a before/after inventory diff can't
- * recover: consuming the last of a stack and discarding a 1-stack are the
- * same state change). Gives carry the recipient's name in `target`.
+ * An inventory interaction that the panel reports for travelogue logging.
+ * The verb carries the user's intent. A before-and-after inventory diff
+ * cannot recover this intent: using the last item in a stack and discarding
+ * a stack of one item produce the same state change. A give event carries
+ * the recipient's name in `target`.
  * @typedef {{ verb: 'pickup' | 'use' | 'discard' | 'give', itemName: string, count: number,
  *   target?: string }} InventoryEvent
  */
 
 /**
- * Format an inventory event as a travelogue-ready sentence. Pickups record
- * where and when the item was found when the caller supplies that context;
- * uses, discards, and gives stay short.
+ * Format an inventory event as a sentence for the travelogue. If the caller
+ * supplies the location and time, a pickup event records where and when the
+ * item was found. Use, discard, and give events stay short.
  * @param {string} name owning character's display name
  * @param {InventoryEvent} event
  * @param {{ region?: string, time?: string }} [context]

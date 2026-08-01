@@ -9,18 +9,21 @@ import { DEFAULT_CLASSES } from '../data/classes.js';
 /** @typedef {{ resources: ResourcePool[] }} PoolHolder */
 
 /**
- * Spell slots are regular resource pools under reserved ids (`slots-1` ..
- * `slots-9`, one per spell level), so spend/restore/level-up reuse the pool
- * machinery. A character with no slot pools simply isn't a caster. The maxima
- * derive from the character's class list (`characterSlots`); only long rests
- * refill them (see Character.js's restAll).
+ * Spell slots are regular resource pools under reserved ids, `slots-1`
+ * through `slots-9`, one per spell level. This lets spend, restore, and
+ * level-up reuse the pool machinery. A character with no slot pools is not a
+ * caster. The maxima derive from the character's class list through
+ * `characterSlots`. Only long rests refill them (see Character.js's
+ * restAll).
  *
- * Warlock pact slots are a separate pool under a `pact-N` id (N = the slot level
- * every pact slot is cast at). Unlike leveled slots, pact slots refill on a
- * short rest and never join the multiclass combined caster level.
+ * Warlock pact slots are a separate pool under a `pact-N` id, where N is the
+ * slot level that every pact slot is cast at. Unlike leveled slots, pact
+ * slots refill on a short rest and never join the multiclass combined caster
+ * level.
  *
- * Both prefixes are declared in PoolIds.js with the rest of the reserved pool
- * ids, and re-exported here because slot code is their natural import site.
+ * Both prefixes are declared in PoolIds.js with the other reserved pool ids.
+ * This module re-exports them because slot code is their natural import
+ * site.
  */
 export { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './PoolIds.js';
 
@@ -109,8 +112,8 @@ const THIRD_SLOT_TABLE = [
   [4, 3, 3, 1],
 ];
 
-/** The slot table for each caster type; pact and none carry no leveled-slot
- * table here (pact magic is special-cased, none has no slots).
+/** The slot table for each caster type. Pact and none carry no leveled-slot
+ * table here, because pact magic is special-cased and none has no slots.
  * @type {Record<string, number[][] | undefined>} */
 const CASTER_TABLES = {
   full: SLOT_TABLE,
@@ -122,7 +125,7 @@ const CASTER_TABLES = {
  * Slot counts per spell level for a full caster of the given character level
  * (1-based both ways). Retained for the full-caster default path.
  * @param {number} characterLevel
- * @returns {number[]} index 0 = spell level 1; empty for level < 1
+ * @returns {number[]} index 0 is spell level 1, empty for level < 1
  */
 export function slotsForLevel(characterLevel) {
   return slotsForCaster('full', characterLevel);
@@ -133,7 +136,7 @@ export function slotsForLevel(characterLevel) {
  * level. Non-slot caster types (pact, none, or any unknown) get no slots.
  * @param {import('../types/class.js').CasterType} casterType
  * @param {number} characterLevel
- * @returns {number[]} index 0 = spell level 1; empty when the caster has none
+ * @returns {number[]} index 0 is spell level 1, empty when the caster has none
  */
 export function slotsForCaster(casterType, characterLevel) {
   const table = CASTER_TABLES[casterType];
@@ -142,25 +145,27 @@ export function slotsForCaster(casterType, characterLevel) {
 }
 
 /**
- * Slot counts for a combined caster level, read from the full-caster table —
- * which doubles as the 5e *multiclass* spellcaster table. The single-class
- * paths above use the dedicated half/third tables (a lone paladin's slots
- * differ from a multiclassed one's); this is the lookup the deferred multiclass
- * path uses after summing per-class contributions.
+ * Slot counts for a combined caster level, read from the full-caster table.
+ * This table doubles as the 5e multiclass spellcaster table. The
+ * single-class paths above use the dedicated half and third tables, because
+ * a lone paladin's slots differ from a multiclassed paladin's slots. This is
+ * the lookup that the deferred multiclass path uses after it sums per-class
+ * contributions.
  * @param {number} combinedLevel
- * @returns {number[]} index 0 = spell level 1; empty for level < 1
+ * @returns {number[]} index 0 is spell level 1, empty for level < 1
  */
 export function slotsForCasterLevel(combinedLevel) {
   return slotsForCaster('full', combinedLevel);
 }
 
 /**
- * One class's contribution to a character's combined caster level: full casters
- * count their whole level, half casters half (rounded down), third casters a
- * third (rounded down), and pact/none contribute nothing to the shared slot
- * pool (warlock pact slots stay a separate pool). The deferred multiclass work
- * sums these across classes and feeds slotsForCasterLevel; single-class callers
- * don't need it. Pure.
+ * One class's contribution to a character's combined caster level. A full
+ * caster counts its whole level. A half caster counts half its level,
+ * rounded down. A third caster counts a third of its level, rounded down.
+ * Pact and none contribute nothing to the shared slot pool, because warlock
+ * pact slots stay a separate pool. The deferred multiclass work sums these
+ * contributions across classes and feeds slotsForCasterLevel. Single-class
+ * callers do not need this function. This function is pure.
  * @param {import('../types/class.js').CasterType} casterType
  * @param {number} classLevel
  * @returns {number} caster levels this class contributes
@@ -253,9 +258,10 @@ function pactPool(pact) {
 }
 
 /**
- * The slot pools for a caster of the given type and level, all at full — the
- * standalone builder used for foes and NPCs, which (unlike characters) carry no
- * HP pool to order around. A non-slot caster type gets an empty list.
+ * The slot pools for a caster of the given type and level, all at full. This
+ * is the standalone builder used for foes and NPCs, which, unlike
+ * characters, carry no HP pool to order around. A non-slot caster type gets
+ * an empty list.
  * @param {import('../types/class.js').CasterType} casterType
  * @param {number} level
  * @returns {ResourcePool[]}
@@ -264,9 +270,9 @@ export function slotPoolsForCaster(casterType, level) {
   return slotsForCaster(casterType, level).map((max, i) => slotPool(i + 1, max));
 }
 
-/** The caster type each class id maps to, read straight from the class
- * catalog. SpellSlots can't import Classes.js (which imports this module), so
- * the lookup is built here from the shared data.
+/** The caster type that each class id maps to, read straight from the class
+ * catalog. SpellSlots cannot import Classes.js, because Classes.js imports
+ * this module, so the lookup is built here from the shared data.
  * @type {Map<string, import('../types/class.js').CasterType>} */
 const CASTER_TYPE_BY_ID = new Map(DEFAULT_CLASSES.map((c) => [c.id, c.casterType]));
 
@@ -279,13 +285,13 @@ function casterEntries(character) {
 }
 
 /**
- * The leveled slot counts a character's class list grants (5e multiclass
- * rules): a single slot-granting caster class reads its own table at its class
- * level, two or more read the multiclass (full-caster) table at the summed
- * per-class contributions, and pact casters contribute nothing here (their
- * slots come from `characterPactSlots`). A classless character keeps the old
- * full-caster-at-character-level behavior, so hand-built casters without a
- * class survive.
+ * The leveled slot counts that a character's class list grants, per the 5e
+ * multiclass rules. A single slot-granting caster class reads its own table
+ * at its class level. Two or more classes read the multiclass, full-caster,
+ * table at the summed per-class contributions. A pact caster contributes
+ * nothing here, because its slots come from `characterPactSlots`. A
+ * classless character keeps the old full-caster-at-character-level
+ * behavior, so a hand-built caster without a class still works.
  * @param {SpellCaster} character
  * @returns {number[]} index 0 = spell level 1
  */
@@ -305,8 +311,9 @@ export function characterSlots(character) {
 }
 
 /**
- * The pact-magic slots a character's class list grants: the pact progression
- * read at the summed pact-caster class levels, or null with no pact class.
+ * The pact-magic slots that a character's class list grants. The function
+ * reads the pact progression at the summed pact-caster class levels. The
+ * result is null with no pact class.
  * @param {SpellCaster} character
  * @returns {{ count: number, level: number } | null}
  */
@@ -318,8 +325,8 @@ export function characterPactSlots(character) {
 }
 
 /**
- * The highest slot level a character can cast from, across leveled and pact
- * pools; 0 for a non-caster.
+ * The highest slot level that a character can cast from, across leveled and
+ * pact pools. The result is 0 for a non-caster.
  * @param {PoolHolder} character
  * @returns {number}
  */
@@ -332,9 +339,10 @@ export function highestSlotLevel(character) {
 }
 
 /**
- * The slot levels a caster can cast a spell of `minLevel` at right now: each
- * leveled or pact pool at or above that level with a charge left, deduplicated
- * and ascending. Backs the cast dialog's slot picker.
+ * The slot levels that a caster can currently cast a spell of `minLevel` at.
+ * The result lists each leveled or pact pool at or above that level with a
+ * charge left, deduplicated and in ascending order. This backs the cast
+ * dialog's slot picker.
  * @param {PoolHolder} character
  * @param {number} minLevel the spell's own level
  * @returns {number[]}
@@ -372,13 +380,13 @@ export function isCasterPool(pool) {
 }
 
 /**
- * Re-derive a caster's slot maxima from their (possibly new) class levels,
- * keeping what's spent: each pool's current grows by exactly the capacity
- * gained, and newly unlocked spell levels arrive at full. The pact pool syncs
- * the same way, following its slot level up as the pact class levels (the
- * spent count carries across the id change). A non-caster (no slot or pact
- * pools) is returned unchanged, so leveling a martial character never invents
- * slots.
+ * Re-derive a caster's slot maxima from the class levels, since they can
+ * change, keeping what is already spent. Each pool's current value grows by exactly
+ * the capacity gained, and a newly unlocked spell level arrives at full. The
+ * pact pool syncs the same way, and its slot level follows the pact class
+ * levels up, with the spent count carried across the id change. A
+ * non-caster, with no slot or pact pools, returns unchanged, so leveling a
+ * martial character never invents slots.
  * @param {Character} character
  * @returns {Character}
  */
@@ -402,7 +410,7 @@ export function syncSlotsToLevel(character) {
   if (pact) {
     const fresh = pactPool(pact);
     // The pool is rebuilt because its id carries the slot level, which follows
-    // the pact class's levels up; only the spent count carries over.
+    // the pact class's levels up. Only the spent count carries over.
     syncedPact = [
       priorPact ? { ...fresh, current: growMax(priorPact, pact.count).current } : fresh,
     ];

@@ -1,13 +1,14 @@
 /**
- * Casting time and duration as structured values instead of free text, with a
- * parser tolerant enough to read every phrasing the SRD and a GM's typing use.
+ * Casting time and duration as structured values instead of free text, with
+ * a parser tolerant enough to read every phrasing that the SRD and a GM's
+ * typing use.
  *
- * Spells live in the library, which carries no version field, so there is no
- * migration step to convert an old entry: the parsers accept either the
- * structured object or the original string, and anything they cannot read
- * becomes `{ kind: 'special', text }` so the GM's words survive intact. The
- * formatters turn a value back into the printed phrasing, which is what the
- * detail modal shows.
+ * Spells live in the library, which carries no version field, so there is
+ * no migration step to convert an old entry. The parsers accept either the
+ * structured object or the original string. Anything they cannot read
+ * becomes `{ kind: 'special', text }`, so the GM's words survive intact.
+ * The formatters turn a value back into the printed phrasing, which is what
+ * the detail modal shows.
  */
 
 /** @typedef {import('../types/spell.js').CastingTime} CastingTime */
@@ -91,9 +92,10 @@ export function parseCastingTime(value) {
 }
 
 /**
- * Read a duration from either a structured value or a printed string. A
- * `Concentration, ` prefix is stripped, since concentration is already its own
- * boolean on the spell, and both it and a bare `Up to ` set `upTo`.
+ * Read a duration from either a structured value or a printed string. The
+ * parser strips a `Concentration, ` prefix, since concentration is already
+ * its own boolean on the spell. Both that prefix and a bare `Up to ` prefix
+ * set `upTo`.
  * @param {unknown} value
  * @returns {SpellDuration}
  */
@@ -142,14 +144,14 @@ export function parseDuration(value) {
   return { kind: 'special', text: original };
 }
 
-/** @param {number} amount @param {string} unit @returns {string} e.g. '1 minute', '10 minutes'. */
+/** @param {number} amount @param {string} unit @returns {string} for example '1 minute', '10 minutes'. */
 function plural(amount, unit) {
   return `${amount} ${unit}${amount === 1 ? '' : 's'}`;
 }
 
 /**
- * The printed phrasing of a casting time — the same string the entry carried
- * before it was structured.
+ * The printed phrasing of a casting time. This is the same string the entry
+ * carried before the app structured it.
  * @param {CastingTime} value
  * @returns {string}
  */
@@ -171,9 +173,9 @@ export function formatCastingTime(value) {
 }
 
 /**
- * The printed phrasing of a duration. Pass the spell's `concentration` flag to
- * get the SRD's `Concentration, up to 1 minute` phrasing back; without it a
- * duration that may be ended early reads `Up to 1 minute`.
+ * The printed phrasing of a duration. Pass the spell's `concentration` flag
+ * to get the SRD's `Concentration, up to 1 minute` phrasing back. Without
+ * that flag, a duration that can end early reads `Up to 1 minute`.
  * @param {SpellDuration} value
  * @param {{ concentration?: boolean }} [options]
  * @returns {string}
@@ -193,10 +195,10 @@ export function formatDuration(value, { concentration = false } = {}) {
 }
 
 /**
- * How many combat rounds a duration lasts, for the round counter on a condition
- * a spell imposes. Null means no counter — an instantaneous or open-ended
- * duration, or one measured in days, which no fight runs long enough to tick
- * down and which the GM ends by hand.
+ * How many combat rounds a duration lasts, for the round counter on a
+ * condition that a spell imposes. Null means no counter. This applies to an
+ * instantaneous or open-ended duration, or one measured in days, since no
+ * fight runs long enough to tick it down, and the GM ends it by hand.
  * @param {SpellDuration} value
  * @returns {number | null}
  */

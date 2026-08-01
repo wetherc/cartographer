@@ -44,11 +44,11 @@ export function setMax(pool, max) {
 }
 
 /**
- * Move a pool's max and carry current by the same delta, so a raise grants the
- * points rather than only lifting the ceiling and a drop takes them back.
- * Current stays within [0, max]. This is the re-derive rule: the pool's max is
- * being recomputed from class, level, and stats, and the character should end up
- * where that computation says they are.
+ * Move a pool's max and carry current by the same delta. A raise grants the
+ * points instead of only lifting the ceiling, and a drop takes the points
+ * back. Current stays within the range 0 to max. This is the re-derive rule:
+ * the app recomputes the pool's max from class, level, and stats, and the
+ * character must end up where that computation places them.
  * @param {ResourcePool} pool
  * @param {number} max
  * @returns {ResourcePool}
@@ -59,10 +59,11 @@ export function adjustMax(pool, max) {
 }
 
 /**
- * Move a pool's max, carrying current up by what was gained but never down by
- * what was lost — a drop only clamps current to the new ceiling. This is the
- * keep-what-is-spent rule the slot and hit-dice syncs want: capacity gained
- * arrives unspent, and losing capacity must not also refund a spent die.
+ * Move a pool's max, and carry current up by what the pool gained. The
+ * function never carries current down by what the pool lost. A drop only
+ * clamps current to the new ceiling. This is the keep-what-is-spent rule the
+ * slot and hit-dice syncs need: capacity gained arrives unspent, and losing
+ * capacity must not also refund a spent die.
  * @param {ResourcePool} pool
  * @param {number} max
  * @returns {ResourcePool}
@@ -81,15 +82,16 @@ export function isEmpty(pool) {
 }
 
 /**
- * Swap out a family of reserved pools (the slot pools, the hit-dice pools) for a
- * freshly derived set, keeping the rest of the list in order. `owns` picks the
- * family. The replacements land where the first pool of the family sat, so the
- * order the resource card reads in survives a level-up.
+ * Swap a family of reserved pools (the slot pools, the hit-dice pools) for a
+ * freshly derived set, keeping the rest of the list in order. `owns` picks
+ * the family. The replacements land where the first pool of the family sat,
+ * so the order the resource card reads survives a level-up.
  *
- * With no pool of the family present there is no position to reuse, so the
- * replacements go after the last pool matching `after` — pass the pools the
- * family should follow (HP, say) to give a character their first slot pools in
- * the right place. `after` defaults to every pool, which appends.
+ * If no pool of the family is present, there is no position to reuse. The
+ * replacements then go after the last pool that matches `after`. Pass the
+ * pools the family must follow (HP, for example) to give a character their
+ * first slot pools in the correct place. `after` defaults to every pool,
+ * which appends.
  * @param {ResourcePool[]} resources
  * @param {ResourcePool[]} next
  * @param {(pool: ResourcePool) => boolean} owns

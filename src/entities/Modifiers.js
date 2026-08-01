@@ -1,10 +1,11 @@
 /**
- * Ability-score modifiers and tiered default enemy stat blocks. Pure.
+ * Ability score modifiers and tiered default enemy stat blocks. Every
+ * function is pure.
  */
 
 /** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
 
-/** The tiers an enemy can be authored at; legends run above-normal for their level. */
+/** The tiers an enemy can be authored at. Legends run above the normal stats for their level. */
 export const ENEMY_TIERS = /** @type {EnemyTier[]} */ (['mob', 'legend']);
 
 /** The six ability scores every creature carries, in conventional order.
@@ -12,13 +13,14 @@ export const ENEMY_TIERS = /** @type {EnemyTier[]} */ (['mob', 'legend']);
 export const ABILITY_SCORES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
 
 /** The only stats an enemy carries: the six ability scores plus armor class.
- * Stat blocks are closed over this set — there are no custom stats. */
+ * Stat blocks are closed over this set. No custom stats exist. */
 export const STAT_KEYS = [...ABILITY_SCORES, 'AC'];
 
 /**
- * Close a stat block over STAT_KEYS: unknown stats (e.g. a "Speed" from an
- * older save) are dropped, and missing ones are filled in — ability scores at
- * the 10 baseline, AC derived from the block's DEX as 10 + its modifier.
+ * Close a stat block over STAT_KEYS. The function drops unknown stats, for
+ * example a "Speed" value from an older save. It fills in missing stats:
+ * ability scores default to 10, and AC derives from the block's DEX as 10
+ * plus its modifier.
  * @param {Record<string, number>} block
  * @returns {Record<string, number>}
  */
@@ -27,9 +29,9 @@ export function normalizeStatBlock(block) {
   const next = {};
   for (const key of STAT_KEYS) {
     if (key === 'AC') {
-      // Derive from the *input* DEX, not the output being built: reading `next`
-      // here would only work while AC stays last in STAT_KEYS, silently
-      // deriving from a DEX of 10 the moment that order changed.
+      // Derive from the input DEX, not the output under construction.
+      // Reading `next` here works only while AC stays last in STAT_KEYS.
+      // If that order changes, this silently derives from a DEX of 10 instead.
       next.AC = block.AC ?? 10 + abilityModifier(block.DEX ?? 10);
     } else {
       next[key] = block[key] ?? 10;
@@ -39,8 +41,9 @@ export function normalizeStatBlock(block) {
 }
 
 /**
- * The standard derived modifier: 10-11 is +0, every two points is one step,
- * so a DEX of 20 gives +5 and a STR of 7 gives -2.
+ * The standard derived modifier. A score of 10 or 11 gives +0. Every two
+ * points change the modifier by one step. For example, a DEX of 20 gives
+ * +5, and a STR of 7 gives -2.
  * @param {number} score
  * @returns {number}
  */
@@ -49,8 +52,9 @@ export function abilityModifier(score) {
 }
 
 /**
- * The 5e proficiency bonus for a character level: +2 at levels 1-4, stepping
- * up one every four levels (+3 at 5, +4 at 9, +5 at 13, +6 at 17+).
+ * The 5e proficiency bonus for a character level. The bonus is +2 at levels
+ * 1-4, and it steps up by one every four levels (+3 at 5, +4 at 9, +5 at
+ * 13, +6 at 17 and higher).
  * @param {number} level
  * @returns {number}
  */
@@ -59,7 +63,7 @@ export function proficiencyBonus(level) {
 }
 
 /**
- * Render a modifier with its sign, as character sheets conventionally do.
+ * Format a modifier with its sign, as character sheets conventionally do.
  * @param {number} modifier
  * @returns {string}
  */
@@ -68,12 +72,14 @@ export function formatModifier(modifier) {
 }
 
 /**
- * A reasonable default stat block for an enemy of a given level: the six
- * ability scores plus AC (10 + the block's DEX modifier). Mobs sit near the
- * baseline and creep up slowly with level (physical scores lead, mental ones
- * trail by two), capping at 18. Legends start clearly above normal and scale
- * twice as fast, capping at 26 — a level-matched legend always out-stats a
- * mob. Every score stays editable after creation.
+ * A default stat block for an enemy of a given level. The block holds the
+ * six ability scores plus AC (10 plus the block's DEX modifier).
+ *
+ * Mob stats stay near the baseline and rise slowly with level. Physical
+ * scores lead, and mental scores trail by two, up to a cap of 18. Legend
+ * stats start well above normal and rise twice as fast, up to a cap of 26.
+ * A level-matched legend always beats a mob's stats. Every score stays
+ * editable after creation.
  * @param {number} level
  * @param {EnemyTier} tier
  * @returns {Record<string, number>}

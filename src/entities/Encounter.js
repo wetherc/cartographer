@@ -34,7 +34,7 @@ function requireLoadout(weaponName, armorName) {
 /**
  * The arms an unequipped enemy defaults to, per tier and level band: mobs carry
  * simple gear that steps up with level, legends carry heavy gear from the
- * start. Read-only reference data — `defaultEnemyGear` hands out copies.
+ * start. This is read-only reference data. `defaultEnemyGear` hands out copies.
  */
 const DEFAULT_LOADOUTS = {
   mob: {
@@ -64,11 +64,12 @@ export function defaultEnemyGear(level, tier) {
 }
 
 /**
- * The weapon and armor an encounter should carry: whatever it already stores,
- * with the level/tier default filled in where a field is absent. A stored null
- * means deliberately unarmed or unarmored and survives. The default is derived
- * lazily, so an encounter that already carries both — every reload of an
- * existing campaign — never touches the preset lists at all.
+ * The weapon and armor an encounter carries: whatever it already
+ * stores, with the level or tier default filled in where a field is
+ * absent. A stored null means deliberately unarmed or unarmored, and it
+ * survives. The function derives the default lazily. An encounter that
+ * already carries both (every reload of an existing campaign) never
+ * touches the preset lists at all.
  * @param {{ weapon?: EnemyWeapon | null, armor?: EnemyArmor | null }} source
  * @param {number} level
  * @param {EnemyTier} tier
@@ -87,10 +88,10 @@ function resolveGear(source, level, tier) {
 
 /**
  * Create an encounter at full health, optionally staged at a map location.
- * The stat block is closed over the fixed stat set (six abilities + AC), and
- * the enemy is armed by default: an absent weapon/armor reads as the
- * level/tier default, while an explicit null means deliberately unarmed or
- * unarmored (a beast, an ooze) and stays null.
+ * The stat block is closed over the fixed stat set (six abilities plus AC).
+ * The enemy is armed by default. An absent weapon or armor reads as the
+ * level or tier default, while an explicit null means deliberately unarmed
+ * or unarmored (a beast, an ooze), and it stays null.
  * @param {string} id
  * @param {string} name
  * @param {number} maxHP
@@ -118,17 +119,17 @@ export function createEncounter(id, name, maxHP, statBlock = {}, location = null
     armor: gear.armor,
   };
   // A caster class stamps spell slots (rebuilt for its level) and an empty
-  // spellbook; a non-caster leaves the encounter untouched.
+  // spellbook. A non-caster leaves the encounter untouched.
   return withCasterFields(encounter, options, level);
 }
 
 /**
- * Fill in fields a loaded encounter may predate: encounters saved before
- * location binding existed stay unbound (always shown); ones saved before
- * levels and tiers read as level-1 mobs. The stat block is re-closed over the
- * fixed stat set, so custom stats from older saves drop away. Gear only
- * backfills when absent — a stored null means deliberately unarmed/unarmored
- * and survives the reload.
+ * Fill in fields that a loaded encounter can predate. Encounters saved
+ * before location binding existed stay unbound (always shown). Ones saved
+ * before levels and tiers existed read as level-1 mobs. The stat block is
+ * re-closed over the fixed stat set, so custom stats from older saves drop
+ * away. Gear only backfills when absent. A stored null means deliberately
+ * unarmed or unarmored, and it survives the reload.
  * @param {Encounter} encounter
  * @returns {Encounter}
  */
@@ -154,7 +155,8 @@ export function withDefaults(encounter) {
 
 /**
  * Add a timed adjustment to one stat: +delta (or -delta) for a number of
- * combat rounds. Modifiers on the same stat stack; each ticks down on its own.
+ * combat rounds. Modifiers on the same stat stack, and each ticks down on
+ * its own.
  * @param {Encounter} encounter
  * @param {string} stat
  * @param {number} delta
@@ -169,7 +171,7 @@ export function addStatModifier(encounter, stat, delta, rounds) {
 
 /**
  * Advance one combat round: decrement every stat modifier's counter and drop
- * any that reach zero — the stat-block twin of tickConditions.
+ * any that reach zero. This is the stat-block twin of tickConditions.
  * @param {StatModifier[]} mods
  * @returns {StatModifier[]}
  */
@@ -179,8 +181,8 @@ export function tickStatModifiers(mods) {
 
 /**
  * The stat block as it currently reads: base values, plus the worn armor's
- * flat AC bonus, plus every active timed modifier. This is what combat math
- * and the Play view display should use.
+ * flat AC bonus, plus every active timed modifier. Combat math and the Play
+ * view must use this value.
  * @param {Encounter} encounter
  * @returns {Record<string, number>}
  */
@@ -195,13 +197,15 @@ export function effectiveStatBlock(encounter) {
 
 /**
  * Apply a GM edit to an encounter's blueprint fields and placement, keeping
- * its live state: currentHP survives (clamped to the new maximum) and the
- * stat block and conditions are untouched, so re-tuning a fight in progress
- * doesn't reset it. Moving the encounter clears the `noticed` flag, so the
- * party walking into its new spot logs a fresh meeting.
- * A caster edit that changes the class or caster level rebuilds the slot pools
- * (at full); dropping the caster class (or setting a non-caster) strips the
- * spell fields. An unchanged class/level keeps the current slots, spent and all.
+ * its live state. currentHP survives (clamped to the new maximum), and the
+ * stat block and conditions stay untouched, so re-tuning a fight in
+ * progress does not reset it. Moving the encounter clears the `noticed`
+ * flag, so the party walking into its new spot logs a fresh meeting.
+ *
+ * A caster edit that changes the class or caster level rebuilds the slot
+ * pools (at full). Dropping the caster class (or setting a non-caster)
+ * strips the spell fields. An unchanged class and level keep the current
+ * slots, spent and all.
  * @param {Encounter} encounter
  * @param {{ name: string, maxHP: number, level: number, tier: EnemyTier, location: EncounterLocation | null, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: import('../types/entities.js').Spellbook }} edits
  * @returns {Encounter}
@@ -227,10 +231,11 @@ export function editEncounter(encounter, edits) {
 }
 
 /**
- * Reconcile an encounter's caster fields against an edit. Keeps the spellbook
- * across a class/level change (the GM re-picks spells separately) but rebuilds
- * slot pools when either changes; strips all spell fields when the edit clears
- * the caster class. Shared by editEncounter.
+ * Reconcile an encounter's caster fields against an edit. The function keeps
+ * the spellbook across a class or level change (the GM re-picks spells
+ * separately), but rebuilds slot pools when either changes. It strips all
+ * spell fields when the edit clears the caster class. `editEncounter` shares
+ * this function.
  * @param {Encounter} base the edited encounter (non-caster fields applied)
  * @param {Encounter} prior the encounter before the edit
  * @param {{ level: number, class?: string, subclass?: string, casterLevel?: number, spellbook?: import('../types/entities.js').Spellbook }} edits
@@ -267,7 +272,7 @@ function applyCasterEdit(base, prior, edits) {
  * The encounters relevant to the party's position: those staged in the node
  * the party currently occupies, plus unbound ones (location === null), which
  * are always relevant. Binding is per-node, not per-tile, so an encounter
- * doesn't vanish when the party steps one tile sideways.
+ * does not vanish when the party steps one tile sideways.
  * @param {Encounter[]} encounters
  * @param {{ nodeId: string } | null} position
  * @returns {Encounter[]}
@@ -279,10 +284,11 @@ export function encountersAt(encounters, position) {
 }
 
 /**
- * The encounters a GM's Play sidebar should list: those the party is close
- * enough to matter — staged in the party's node within `radius` grid cells of
- * its tile — plus unbound ones (location === null), which are always relevant.
- * Distance is the same Euclidean rule the fog uses. Pure.
+ * The encounters that a GM's Play sidebar lists: those the party is close
+ * enough to matter, staged in the party's node within `radius` grid cells of
+ * its tile, plus unbound ones (location === null), which are always
+ * relevant. Distance is the same Euclidean rule that the fog uses. This
+ * function is pure.
  * @param {Encounter[]} encounters
  * @param {{ nodeId: string, tileId: string } | null} position
  * @param {number} radius
@@ -299,11 +305,11 @@ export function encountersNear(encounters, position, radius) {
 }
 
 /**
- * The encounters a player's sidebar should list: only what the party has
- * actually discovered. A bound encounter is discovered once its tile has been
- * revealed through the fog of war (checked against `node`, the party's current
- * node); an unbound one only once the party has walked into it (`noticed`).
- * Pure.
+ * The encounters that a player's sidebar lists: only what the party
+ * actually discovered. A bound encounter counts as discovered once its tile
+ * is revealed through the fog of war (checked against `node`, the party's
+ * current node). An unbound one counts as discovered only once the party
+ * walks into it (`noticed`). This function is pure.
  * @param {Encounter[]} encounters
  * @param {{ nodeId: string } | null} position
  * @param {import('../types/map.js').MapNode | null} node the party's current node
@@ -319,9 +325,10 @@ export function discoveredEncounters(encounters, position, node) {
 }
 
 /**
- * The undefeated encounters staged on the party's exact tile — what a step
- * onto that tile "walks into". Unbound (location === null) encounters aren't
- * tile-specific, so they never trigger a step. Pure.
+ * The undefeated encounters staged on the party's exact tile. This is what a
+ * step onto that tile "walks into". Unbound (location === null) encounters
+ * are not tile-specific, so they never trigger a step. This function is
+ * pure.
  * @param {Encounter[]} encounters
  * @param {{ nodeId: string, tileId: string } | null} position
  * @returns {Encounter[]}
@@ -331,11 +338,11 @@ export function encountersOnTile(encounters, position) {
 }
 
 /**
- * Every encounter staged on the party's exact tile, defeated ones included:
- * who is standing there at all, rather than who can still fight. A running
- * fight reads this, since a foe dropping to 0 HP is a turn in the fight and not
- * the end of it, while an encounter deleted or left behind is gone for good.
- * Pure.
+ * Every encounter staged on the party's exact tile, defeated ones included.
+ * This lists who is standing there at all, rather than who can still
+ * fight. A running fight reads this, since a foe dropping to 0 HP is a
+ * turn in the fight and not the end of it, while an encounter deleted or
+ * left behind is gone for good. This function is pure.
  * @param {Encounter[]} encounters
  * @param {{ nodeId: string, tileId: string } | null} position
  * @returns {Encounter[]}
@@ -373,11 +380,12 @@ export function toTemplate(id, encounter) {
 
 /**
  * Spawn a fresh, full-health encounter from a bestiary template. Every field
- * carried over is copied, not aliased: a template is shared library data (the
- * built-in bestiary hands out the same entry object to every spawn), so two
- * encounters from one template must not end up editing one weapon, armor, or
- * spellbook through each other. An absent weapon/armor stays absent so the
- * level/tier default still applies, and an explicit null stays null.
+ * carried over is copied, not aliased. A template is shared library data
+ * (the built-in bestiary hands out the same entry object to every spawn),
+ * so two encounters from one template must not end up editing one weapon,
+ * armor, or spellbook through each other. An absent weapon or armor stays
+ * absent, so the level or tier default still applies, and an explicit null
+ * stays null.
  * @param {EncounterTemplate} template
  * @param {string} id
  * @param {EncounterLocation | null} [location]

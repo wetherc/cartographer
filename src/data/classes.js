@@ -52,14 +52,15 @@ const ROGUE_SKILLS = [
 ];
 
 /**
- * The playable classes: each entry carries the spellcasting spine the spell
- * system reads (caster type, spell ability, cantrip curve — non-casters carry
- * casterType 'none' and never gain a spellbook; cantrip curves follow the SRD
- * breakpoints; `ritual` marks the four classes with ritual casting) plus the
- * character-foundation fields (saving-throw and armor/
- * weapon proficiencies, skill choices by id from data/skills.js, hit die,
- * subclass unlock level, ASI levels, and a features-by-level name scaffold).
- * An empty skill-choice `from` list means "choose from any skill".
+ * The playable classes. Each entry carries the spellcasting spine that the
+ * spell system reads: caster type, spell ability, and cantrip curve.
+ * Non-casters carry casterType 'none' and never gain a spellbook. Cantrip
+ * curves follow the SRD breakpoints. `ritual` marks the four classes with
+ * ritual casting. Each entry also carries the character-foundation fields:
+ * saving-throw and armor or weapon proficiencies, skill choices by id from
+ * data/skills.js, hit die, subclass unlock level, ASI levels, and a
+ * features-by-level name scaffold. An empty skill-choice `from` list means
+ * "choose from any skill".
  * @type {ClassDef[]}
  */
 export const DEFAULT_CLASSES = [

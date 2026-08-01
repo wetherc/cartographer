@@ -27,7 +27,7 @@ export function emptyProficiencies() {
   };
 }
 
-/** Merge lists into one duplicate-free array, first occurrence's order kept.
+/** Merge lists into one duplicate-free array, keeping first occurrence's order.
  * @param {...string[]} lists
  * @returns {string[]} */
 function merged(...lists) {
@@ -36,9 +36,10 @@ function merged(...lists) {
 
 /**
  * Normalize a weapon-proficiency value, accepting either shape: the split
- * `{ categories, named }` or the flat list saves written before the split, in
- * which the category words sat among the weapon names. Entries are
- * deduplicated, and an entry that is not a known category lands in `named`.
+ * `{ categories, named }` shape, or the flat list that saves used before the
+ * split, in which the category words sat among the weapon names. The
+ * function deduplicates entries, and an entry that is not a known category
+ * lands in `named`.
  * @param {WeaponProficiencies | string[] | undefined} weapons
  * @returns {WeaponProficiencies}
  */
@@ -59,7 +60,7 @@ export function normalizeWeaponProficiencies(weapons) {
 }
 
 /**
- * Whether the character may use a weapon without penalty: either its whole
+ * Whether the character can use a weapon without penalty: either its whole
  * category is granted or the weapon is named individually. Names are compared
  * case-insensitively, since a named grant is stored lowercase while an item's
  * name is however the GM typed it.
@@ -85,14 +86,15 @@ export function getProficiencies(character) {
 }
 
 /**
- * Assemble the proficiency lists a character's class, race, and background
- * grant. Fixed grants come straight from the definitions: the class gives
- * saving throws, armor, and weapons (categories plus named), the race gives
- * skills, weapons, tools, and languages, and the background gives skills and
- * tools. Choice-based grants — the class's skill picks and the background's
- * bonus languages — can't be derived, so the caller passes the player's picks
- * in `choices`. A missing class/race/background contributes nothing. Pure;
- * does not touch the character.
+ * Assemble the proficiency lists that a character's class, race, and
+ * background grant. Fixed grants come straight from the definitions. The
+ * class gives saving throws, armor, and weapons (categories plus named).
+ * The race gives skills, weapons, tools, and languages. The background
+ * gives skills and tools. The function cannot derive choice-based grants
+ * (the class's skill picks and the background's bonus languages), so the
+ * caller passes the player's picks in `choices`. A missing class, race, or
+ * background contributes nothing. This function is pure and does not touch
+ * the character.
  * @param {Character} character
  * @param {{ skills?: string[], languages?: string[] }} [choices]
  * @returns {Proficiencies}
@@ -119,10 +121,10 @@ export function assembleProficiencies(character, choices = {}) {
 
 /**
  * Set the character's proficiency lists (the hand-edit path, and how an
- * assembled set is applied). Each list is deduplicated; a missing list reads
- * as empty. The weapon lists accept either the split shape or a flat legacy
- * list. Expertise entries whose skill is no longer proficient are pruned,
- * keeping the subset invariant. Pure.
+ * assembled set is applied). Each list is deduplicated, and a missing list
+ * reads as empty. The weapon lists accept either the split shape or a flat
+ * legacy list. The function prunes expertise entries whose skill is no
+ * longer proficient, keeping the subset invariant. This function is pure.
  * @param {Character} character
  * @param {Partial<Proficiencies> & { weapons?: WeaponProficiencies | string[] }} proficiencies
  * @returns {Character}
@@ -141,9 +143,9 @@ export function withProficiencies(character, proficiencies) {
 }
 
 /**
- * Set the character's expertise skills. Deduplicated, and filtered to skills
- * the character is proficient in — expertise doubles a proficiency, so it
- * can't exist without one. Pure.
+ * Set the character's expertise skills. The list is deduplicated and
+ * filtered to skills the character is proficient in. Expertise doubles a
+ * proficiency, so it cannot exist without one. This function is pure.
  * @param {Character} character
  * @param {string[]} skillIds
  * @returns {Character}

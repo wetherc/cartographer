@@ -34,13 +34,13 @@ export function createNPC(id, name, options = {}) {
     location: options.location ?? null,
     met: options.met ?? false,
   };
-  // A caster class stamps spell slots and an empty spellbook; an NPC has no
+  // A caster class stamps spell slots and an empty spellbook. An NPC has no
   // fighting level, so its caster level defaults to 1.
   return withCasterFields(npc, options, options.casterLevel ?? 1);
 }
 
 /**
- * Fill in fields an NPC loaded from an older save may lack.
+ * Fill in fields an NPC loaded from an older save can lack.
  * @param {NPC} npc
  * @returns {NPC}
  */
@@ -73,9 +73,10 @@ export function npcsAt(npcs, position) {
 }
 
 /**
- * The NPCs the players know about at the party's position: unplaced NPCs plus
- * placed ones the party has already met. The GM-facing list uses `npcsAt`
- * unfiltered; this is the player-facing view of the same roster. Pure.
+ * The NPCs the players know about at the party's position: unplaced NPCs
+ * plus placed ones the party already met. The GM-facing list uses `npcsAt`
+ * unfiltered. This is the player-facing view of the same roster. This
+ * function is pure.
  * @param {NPC[]} npcs
  * @param {{ nodeId: string } | null} position
  * @returns {NPC[]}
@@ -85,10 +86,10 @@ export function knownNpcsAt(npcs, position) {
 }
 
 /**
- * Mark as met every placed NPC standing on the party's exact tile — landing
- * there is the introduction that reveals the NPC to the players. Returns the
- * (possibly unchanged) roster and the NPCs newly met by this landing, so the
- * caller can log each introduction. Pure.
+ * Mark as met every placed NPC standing on the party's exact tile. Landing
+ * there is the introduction that reveals the NPC to the players. Returns
+ * the roster (possibly unchanged) and the NPCs newly met by this landing,
+ * so the caller can log each introduction. This function is pure.
  * @param {NPC[]} npcs
  * @param {EncounterLocation | null} position
  * @returns {{ npcs: NPC[], met: NPC[] }}
@@ -114,10 +115,11 @@ export function meetNPCs(npcs, position) {
 }
 
 /**
- * Whether an NPC stands exactly on a tile. Unplaced (appears-everywhere) NPCs
- * are not on any tile: an NPC joins a fight only by standing on its own. The
- * membership test behind `npcsOnTile`, exported so a caller resolving one NPC
- * by id can ask the question without filtering the whole roster. Pure.
+ * Whether an NPC stands exactly on a tile. Unplaced (appears-everywhere)
+ * NPCs are not on any tile. An NPC joins a fight only by standing on its
+ * own. This is the membership test behind `npcsOnTile`. The function is
+ * exported so a caller resolving one NPC by id can ask the question
+ * without filtering the whole roster. This function is pure.
  * @param {NPC} npc
  * @param {EncounterLocation | null} position
  * @returns {boolean}
@@ -132,8 +134,9 @@ export function isOnTile(npc, position) {
 }
 
 /**
- * The NPCs placed exactly on a tile — participants when an encounter triggers
- * there. Unlike `npcsAt`, unplaced (appears-everywhere) NPCs are excluded. Pure.
+ * The NPCs placed exactly on a tile. These are the participants when an
+ * encounter triggers there. Unlike `npcsAt`, this function excludes
+ * unplaced (appears-everywhere) NPCs. This function is pure.
  * @param {NPC[]} npcs
  * @param {EncounterLocation | null} position
  * @returns {NPC[]}

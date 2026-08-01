@@ -1,12 +1,13 @@
 /**
- * Ability-score generation methods for character creation: the 5e point-buy
- * cost table, the standard array, and the 4d6-drop-lowest roller. All pure;
- * the roller takes its RNG as an argument.
+ * This module holds ability score generation methods for character
+ * creation: the 5e point-buy cost table, the standard array, and the
+ * 4d6-drop-lowest roller. Every function is pure. The roller takes its
+ * random number generator as an argument.
  */
 
 export const POINT_BUY_BUDGET = 27;
 
-/** Point cost per score under 5e point buy; scores outside 8-15 are not buyable. */
+/** Point cost per score under 5e point buy. Scores outside the 8-15 range are not buyable. */
 export const POINT_BUY_COSTS = { 8: 0, 9: 1, 10: 2, 11: 3, 12: 4, 13: 5, 14: 7, 15: 9 };
 
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];

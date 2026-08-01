@@ -1,13 +1,14 @@
 /**
- * Conditions a spell put on a target: which cast owns one, when the cast ending
- * takes it back off, and the repeated save a target gets against the ones that
- * allow it. Pure — every function takes a condition list and hands back a new
- * one, and the d20 for a repeated save comes from the injected RNG.
+ * Conditions that a spell put on a target: which cast owns one, when the end
+ * of the cast takes it back off, and the repeated save a target gets against
+ * the ones that allow it. Every function is pure. Each function takes a
+ * condition list and returns a new one, and the d20 for a repeated save
+ * comes from the injected random number generator.
  *
- * The counterpart to `entities/Concentration.js`, which models the caster's side
- * of the same effect. A chip written by a cast carries a `source` naming the
- * spell and the caster; a chip the GM added by hand carries none and nothing
- * here touches it.
+ * This module is the counterpart to `entities/Concentration.js`, which
+ * models the caster's side of the same effect. A chip that a cast writes
+ * carries a `source` naming the spell and the caster. A chip that the GM
+ * adds by hand carries no source, and nothing here touches it.
  */
 
 import { resolveSave } from './Checks.js';
@@ -17,9 +18,9 @@ import { resolveSave } from './Checks.js';
 /** @typedef {import('../types/dice.js').RandomFn} RandomFn */
 
 /**
- * Whether this condition was imposed by that caster's cast of that spell. Both
- * halves have to match: a caster holding two spells drops one at a time, and two
- * casters may have landed the same spell on the same target.
+ * Whether this condition was imposed by that caster's cast of that spell.
+ * Both halves must match. A caster holding two spells drops one at a time,
+ * and two casters can land the same spell on the same target.
  * @param {Condition} condition
  * @param {string} casterId
  * @param {string} spellId
@@ -31,11 +32,12 @@ export function isImposedBy(condition, casterId, spellId) {
 }
 
 /**
- * Take off every condition one cast imposed — what a caster dropping the spell,
- * losing it to damage, or running its duration out does to the creatures it was
- * holding. Reports the chips removed so the caller can say what each target is
- * free of, and returns the original list unchanged (identity preserved) when none
- * matched, so a caller can skip the write.
+ * Remove every condition that one cast imposed. This is what happens to the
+ * creatures that a spell was holding when a caster drops the spell, loses it
+ * to damage, or lets its duration run out. The function reports the chips
+ * removed, so the caller can state what each target is free of. It returns
+ * the original list unchanged (identity preserved) when no chip matched, so
+ * a caller can skip the write.
  * @param {Condition[]} list
  * @param {string} casterId
  * @param {string} spellId
@@ -48,8 +50,8 @@ export function removeImposed(list, casterId, spellId) {
 }
 
 /**
- * The bonus a repeated save rolls with by default: the one the cast recorded,
- * which for a foe is the number the GM typed at cast time.
+ * The bonus a repeated save rolls with by default. This is the bonus that
+ * the cast recorded, which for a foe is the number the GM typed at cast time.
  * @param {ConditionSource} source
  * @returns {number}
  */
@@ -58,16 +60,17 @@ function recordedBonus(source) {
 }
 
 /**
- * Roll the repeated saves a creature is owed at the end of its turn: one per
- * condition whose source says the save ends it, against the DC that cast rolled
- * against. A success takes the chip off; a failure leaves it for the next turn.
- * Conditions without a source, or whose source does not allow a retry, are left
- * alone.
+ * Roll the repeated saves that a creature is owed at the end of its turn.
+ * The function rolls one save per condition whose source says the save ends
+ * it, against the DC that the cast rolled against. A success removes the
+ * chip. A failure leaves it for the next turn. Conditions with no source, or
+ * whose source does not allow a retry, stay unaffected.
  *
- * `bonusOf` decides what the creature adds. It defaults to the bonus the cast
- * recorded, which is all there is for a foe whose saves the app cannot read; a
- * caller holding a party character should pass one that derives the character's
- * live bonus instead, so a save granted or a stat raised since the cast counts.
+ * `bonusOf` decides what the creature adds. It defaults to the bonus the
+ * cast recorded, which is all there is for a foe whose saves the app cannot
+ * read. A caller holding a party character must pass a function that
+ * derives the character's live bonus instead, so a save granted or a stat
+ * raised since the cast counts.
  * @param {Condition[]} list
  * @param {{ bonusOf?: (source: ConditionSource) => number, rng?: RandomFn }} [opts]
  * @returns {{

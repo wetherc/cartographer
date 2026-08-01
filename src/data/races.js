@@ -1,11 +1,12 @@
 /** @typedef {import('../types/race.js').RaceDef} RaceDef */
 
 /**
- * The playable races, SRD subrace baked in where the SRD ships exactly one
- * (hill dwarf, high elf, lightfoot halfling, rock gnome). Each entry is
- * library-kind shaped (stable id + name) so the catalog can later merge with
- * custom library entries. Fixed ability increases are numeric; choice-based
- * increases and everything narrative stay as trait names.
+ * The playable races. The catalog bakes in the SRD subrace where the SRD
+ * ships exactly one (hill dwarf, high elf, lightfoot halfling, rock gnome).
+ * Each entry is library-kind shaped (with a stable id and name), so the
+ * catalog can later merge with custom library entries. Fixed ability
+ * increases are numeric. Choice-based increases and everything narrative
+ * stay as trait names.
  * @type {RaceDef[]}
  */
 export const DEFAULT_RACES = [

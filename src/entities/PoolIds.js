@@ -1,14 +1,16 @@
 /**
- * The reserved ResourcePool ids and id prefixes, in one leaf module.
+ * This module holds the reserved ResourcePool ids and id prefixes.
  *
- * HP, spell slots, pact slots, and hit dice are all regular resource pools
- * under ids the app treats as reserved: they get their own UI, their own rest
- * rules, and they are re-derived from the class list rather than authored by
- * hand. The modules that own those rules (`Character.js`, `SpellSlots.js`,
- * `HitDice.js`) sit at different heights in the import graph, so keeping the
- * ids with any one of them left the others re-declaring the string. This module
- * imports nothing, so every one of them can read the id from here, and each
- * re-exports the ids it owns so existing import sites keep working.
+ * HP, spell slots, pact slots, and hit dice are resource pools with reserved
+ * ids. Each pool gets its own UI and its own rest rules. The app derives each
+ * pool from the class list instead of a hand-authored value.
+ *
+ * The modules that own these rules (`Character.js`, `SpellSlots.js`,
+ * `HitDice.js`) sit at different levels in the import graph. If one module
+ * owns the ids, the other modules redeclare the same string. This
+ * module imports nothing, so every other module can read the id from here.
+ * Each module re-exports the ids it owns, so existing import sites keep
+ * working.
  */
 
 /** A character's hit points. A character without this pool has no HP tracking. */
@@ -23,6 +25,6 @@ export const PACT_ID_PREFIX = 'pact-';
 /** Prefix for the per-die-size hit dice pools: `hit-dice-d8` holds the d8s. */
 export const HIT_DICE_ID_PREFIX = 'hit-dice-d';
 
-/** The single sizeless hit-dice pool older saves carried, before pools were
- * split by die size. `HitDice.syncHitDice` converts it. */
+/** Older saves carried one hit-dice pool with no die size, before the app
+ * split pools by die size. `HitDice.syncHitDice` converts it. */
 export const LEGACY_HIT_DICE_ID = 'hit-dice';
