@@ -85,14 +85,12 @@ export function mountCharacterRoster(container, options) {
   /** Whether a row gets the place-on-map action. */
   const placeShown = () => Boolean(options.onPlace) && (options.canPlace?.() ?? true);
 
-  /** @param {boolean} manage @param {Character[]} characters */
-  function paint(manage, characters) {
+  /** @param {boolean} manage @param {Character[]} characters @param {string | null} selectedId */
+  function paint(manage, characters, selectedId) {
     // Clearing the root drops focus to the document body, the same hazard
     // the list panels have, so the keyboard position is noted and put back.
     const memo = captureFocus(root, document.activeElement);
     root.innerHTML = '';
-
-    const selectedId = options.getSelectedId();
 
     if (characters.length === 0) {
       root.appendChild(emptyState('No characters yet.'));
@@ -164,15 +162,18 @@ export function mountCharacterRoster(container, options) {
    * position and the row elements on a save that changed nothing.
    */
   function update() {
+    // One read of the selection feeds both the guard and the paint, so the
+    // rows can never show a selection the guard did not compare.
+    const selectedId = options.getSelectedId();
     /** @type {import('./listPanel.js').PaintState<Character>} */
     const next = {
       gm: canManage(),
       rows: options.getCharacters(),
-      dependsOn: rosterDependsOn(options.getSelectedId(), placeShown()),
+      dependsOn: rosterDependsOn(selectedId, placeShown()),
     };
     if (!repaintNeeded(last, next)) return;
     last = next;
-    paint(next.gm, next.rows);
+    paint(next.gm, next.rows, selectedId);
   }
 
   update();
