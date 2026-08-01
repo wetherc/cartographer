@@ -14,6 +14,7 @@ import { withSpellSlots } from '../entities/SpellSlots.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { skillName, SKILL_IDS } from '../data/skills.js';
 import { slugId } from '../entities/Roster.js';
+import { splitList, splitTrimmedList } from '../util/text.js';
 import { statFields, readStats } from './statFields.js';
 import {
   POINT_BUY_BUDGET,
@@ -234,11 +235,7 @@ export function characterFormChange(name, form, rng = Math.random) {
     // copies the assignment through. An unassigned ability gets the
     // array's floor value.
     const assigned = Object.fromEntries(
-      form
-        .get('statPills')
-        .split(',')
-        .filter(Boolean)
-        .map((pair) => pair.split(':')),
+      splitList(form.get('statPills')).map((pair) => pair.split(':')),
     );
     for (const key of ABILITY_SCORES) form.set(`stat-${key}`, assigned[key] ?? 8);
   }
@@ -293,15 +290,13 @@ export function buildCharacter(values, existingIds) {
 
   const choice = classDef?.skillChoice;
   const from = skillChoiceList(classDef?.id);
-  const skills = values.skills
-    .split(',')
+  const skills = splitList(values.skills)
     .filter((id) => from.includes(id))
     .slice(0, choice?.choose ?? 0);
-  const languages = values.languages
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, getBackground(values.background)?.languageCount ?? 0);
+  const languages = splitTrimmedList(values.languages).slice(
+    0,
+    getBackground(values.background)?.languageCount ?? 0,
+  );
   character = withProficiencies(character, assembleProficiencies(character, { skills, languages }));
 
   // Max HP is fully derived, not asked for, by the same rule that governs

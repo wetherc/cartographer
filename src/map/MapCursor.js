@@ -1,5 +1,7 @@
 /** @typedef {{ x: number, y: number }} Coords */
 
+import { clamp } from '../util/num.js';
+
 /**
  * The arrow-key directions the map cursor understands, mapped to grid deltas.
  * @type {Record<string, Coords>}
@@ -58,7 +60,7 @@ export function nextCursor(cursor, key, width, height) {
   const delta = DELTAS[key];
   if (!delta) return start;
   return {
-    x: Math.min(width - 1, Math.max(0, start.x + delta.x)),
-    y: Math.min(height - 1, Math.max(0, start.y + delta.y)),
+    x: clamp(start.x + delta.x, 0, width - 1),
+    y: clamp(start.y + delta.y, 0, height - 1),
   };
 }

@@ -288,6 +288,18 @@ export class TileGrid {
   }
 
   /**
+   * The node one level up, or null. A root node has no parent, and a parentId
+   * that names a node the grid no longer holds also gives null. Callers that
+   * ask for a parent almost always pass it to code that takes
+   * `MapNode | null`, so this never returns undefined.
+   * @param {MapNode} node
+   * @returns {MapNode | null}
+   */
+  getParent(node) {
+    return node.parentId ? (this.nodes.get(node.parentId) ?? null) : null;
+  }
+
+  /**
    * Direct children of a node: nodes whose parentId matches this node's id.
    * @param {string} nodeId
    * @returns {MapNode[]}

@@ -2,6 +2,7 @@ import { createTile, tilesById } from './TileGrid.js';
 import { maskAt, NEIGHBORS4, parseCoords, tileIdAt } from './MapGeometry.js';
 import { coastOverlays, riverCourse, smoothCoastline } from './Autotile.js';
 import { randInt, shuffle } from './GeneratorRandom.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
@@ -122,7 +123,7 @@ export function generateWilderness(palette, size, rng) {
       return inner && !t.overlayRef && cells[y * size + x] === 'grass';
     })
     .map((t) => t.id);
-  const landmarkCount = Math.min(grassIds.length, Math.max(1, Math.round(size / 7)));
+  const landmarkCount = clamp(Math.round(size / 7), 1, grassIds.length);
   const spots = shuffle(grassIds, rng);
   const byId = tilesById(tiles);
   shuffle(WILDERNESS_LANDMARKS, rng)
@@ -200,7 +201,7 @@ export function generateTown(palette, size, rng) {
       if (touchesRoad) sites.push(tileIdAt(x, y));
     }
   }
-  const count = Math.min(sites.length, Math.max(3, Math.round(size / 2)));
+  const count = clamp(Math.round(size / 2), 3, sites.length);
   /** @type {Set<string>} cells covered by an already-chosen block */
   const taken = new Set();
   /** @type {string[]} */

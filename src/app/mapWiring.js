@@ -170,7 +170,7 @@ export function wireMapView(app) {
    * rail that shows them stays hidden everywhere else. */
   function syncBuildWarning() {
     const node = navigator.getCurrentNode();
-    const parent = node.parentId ? (grid.getNode(node.parentId) ?? null) : null;
+    const parent = grid.getParent(node);
     const text = authoringWarning(node, parent) ?? '';
     // This follows the same reasoning as refreshMapDescription. This element
     // is a live region, and syncExits runs on every party step and every
@@ -356,9 +356,7 @@ export function wireMapView(app) {
     // Adding the check to the signature costs a world scan on every
     // Play-mode party step.
     getWarning: (node) =>
-      state.mode === 'build'
-        ? authoringWarning(node, node.parentId ? (grid.getNode(node.parentId) ?? null) : null)
-        : null,
+      state.mode === 'build' ? authoringWarning(node, grid.getParent(node)) : null,
   });
   env.worldTree = worldTree;
 

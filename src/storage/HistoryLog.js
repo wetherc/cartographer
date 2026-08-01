@@ -61,6 +61,7 @@ import { applyOps, diffState, invertOps } from './StateDiff.js';
 import { CURRENT_VERSION } from './Migrations.js';
 import { STORAGE_KEY, deserialize, trySaveToLocalStorage } from './SaveManager.js';
 import { loadAssetTable } from './AssetStore.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/storage.js').DiffOp} DiffOp */
@@ -153,7 +154,7 @@ function readIndex() {
   const stored = record.cursor;
   const cursor =
     typeof stored === 'number' && Number.isFinite(stored)
-      ? Math.min(Math.max(0, Math.trunc(stored)), deltas.length)
+      ? clamp(Math.trunc(stored), 0, deltas.length)
       : deltas.length;
   return { version: CURRENT_VERSION, deltas, cursor };
 }

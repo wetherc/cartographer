@@ -2,6 +2,7 @@ import { CLASS_LIST, isCasterClass, getClass, slotsForClass } from '../entities/
 import { activeSpells, activeSpellIndex } from '../library/Library.js';
 import { emptySpellbook } from '../entities/Character.js';
 import { clampInt } from '../util/num.js';
+import { splitList } from '../util/text.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
 /** @typedef {import('../types/entities.js').Spellbook} Spellbook */
@@ -176,6 +177,6 @@ export function readCasterOptions(values) {
   const cls = values.casterClass;
   if (!isCasterClass(cls)) return {};
   const casterLevel = clampInt(values.casterLevel, 1);
-  const ids = values.spells ? values.spells.split(',').filter(Boolean) : [];
+  const ids = splitList(values.spells);
   return { class: cls, casterLevel, spellbook: spellbookFromIds(ids) };
 }

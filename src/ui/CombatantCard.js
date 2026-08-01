@@ -3,6 +3,7 @@ import { icon } from './icons.js';
 import { chip } from './buttons.js';
 import { hpBand } from '../view/ViewRole.js';
 import { loadoutBlock } from './LoadoutBlock.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
 /** @typedef {import('../combat/Loadout.js').Loadout} Loadout */
@@ -111,7 +112,7 @@ function foeMark() {
  */
 function hpLine(hp, exact) {
   if (!exact) return el('div', 'combatant-card__hp-band', hpBand(hp.current, hp.max));
-  const fraction = hp.max > 0 ? Math.max(0, Math.min(1, hp.current / hp.max)) : 0;
+  const fraction = hp.max > 0 ? clamp(hp.current / hp.max, 0, 1) : 0;
   const fill = el('span', `stat-bar__fill${fraction <= 0.25 ? ' stat-bar__fill--critical' : ''}`);
   fill.style.width = `${fraction * 100}%`;
   return el(

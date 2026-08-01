@@ -3,6 +3,7 @@ import { classNames, el } from './dom.js';
 import { captureFocus, restoreFocus } from './focusMemory.js';
 import { repaintNeeded } from './listPanel.js';
 import { getHP } from '../entities/Character.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -29,7 +30,7 @@ function hpMeter(character) {
   const hp = getHP(character);
   const meter = el('span', 'character-roster__hp');
   if (!hp || hp.max <= 0) return meter;
-  const ratio = Math.max(0, Math.min(1, hp.current / hp.max));
+  const ratio = clamp(hp.current / hp.max, 0, 1);
   meter.dataset.band = ratio <= 0.25 ? 'low' : ratio <= 0.5 ? 'mid' : 'ok';
   meter.setAttribute('role', 'img');
   meter.setAttribute('aria-label', `HP ${hp.current}/${hp.max}`);

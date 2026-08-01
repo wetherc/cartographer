@@ -1,5 +1,6 @@
 import { parseCoords } from './MapGeometry.js';
 import { tileAtXY } from './TileIndex.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {import('./MapRenderer.js').MapRenderer} MapRenderer */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
@@ -300,7 +301,7 @@ export class MapMarkers {
       // Names stack above the tile, with the nearest name closest to it. This
       // is skipped when tiles are too small for the label to be legible.
       if (size >= 24) {
-        const fontSize = Math.round(Math.max(11, Math.min(size * 0.24, 26)));
+        const fontSize = Math.round(clamp(size * 0.24, 11, 26));
         ctx.font = `600 ${fontSize}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';

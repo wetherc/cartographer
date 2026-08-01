@@ -16,6 +16,7 @@ import { ABILITY_SCORES } from './Modifiers.js';
 import { emptyProficiencies, normalizeWeaponProficiencies } from './Proficiencies.js';
 import { getClasses, sanitizeClasses, totalLevel } from './Multiclass.js';
 import { migrateASIChoices } from './LevelUp.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -514,7 +515,7 @@ export function restoreResource(character, resourceId, amount) {
  * @returns {Character}
  */
 export function restAll(character, fraction) {
-  const clamped = Math.max(0, Math.min(1, fraction));
+  const clamped = clamp(fraction, 0, 1);
   return {
     ...character,
     resources: character.resources.map((r) => {

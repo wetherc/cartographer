@@ -2,6 +2,7 @@ import { NEIGHBORS4, parseCoords, tileIdAt } from './MapGeometry.js';
 import { findRegionGroups } from './RegionGroups.js';
 import { getTile } from './TileGrid.js';
 import { kindOf } from './TilePalette.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -387,7 +388,7 @@ export function exitBandGeometry(node, view, tileSize, exit) {
 export function edgeExitBand(exit, geom) {
   const side = exit.kind === 'edge' ? exit.side : 'north';
   const size = geom.tileSize * geom.scale;
-  const fontSize = Math.round(Math.max(12, Math.min(size * 0.28, 26)));
+  const fontSize = Math.round(clamp(size * 0.28, 12, 26));
   const label = exitLabel(exit);
   // Leave room for the chevron, the gap after it, and the label at the
   // average glyph width of the sans-serif stack.
@@ -395,7 +396,7 @@ export function edgeExitBand(exit, geom) {
     Math.max(geom.canvasWidth - 16, 40),
     fontSize * 1.9 + label.length * fontSize * 0.54,
   );
-  const h = Math.round(Math.max(26, Math.min(size * 0.8, 46)));
+  const h = Math.round(clamp(size * 0.8, 26, 46));
   // A gap of 0.55 of a cell clears the coordinate labels, which hang half a
   // cell off the top and left edges.
   const gap = Math.max(10, size * 0.55);
@@ -474,9 +475,4 @@ export function exitDescription(exit) {
 /** @param {ExitBandGeometry} geom @param {ExitSide} side @returns {number} */
 function sideLength(geom, side) {
   return sideAxis(side) === 'x' ? geom.width : geom.height;
-}
-
-/** @param {number} value @param {number} min @param {number} max @returns {number} */
-function clamp(value, min, max) {
-  return Math.min(max, Math.max(min, value));
 }

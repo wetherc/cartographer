@@ -1,6 +1,7 @@
 import { parseCoords, tileIdAt } from './MapGeometry.js';
 import { blockFor, nearestSide, sideAxis, stairwayTo } from './MapExits.js';
 import { kindOf } from './TilePalette.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {{ minX: number, minY: number, maxX: number, maxY: number }} Bounds */
 /** @typedef {{ x: number, y: number }} Coords */
@@ -18,7 +19,7 @@ import { kindOf } from './TilePalette.js';
  */
 function projectAlong(p, min, max, size) {
   if (max <= min) return Math.floor((size - 1) / 2);
-  const f = Math.min(1, Math.max(0, (p - min) / (max - min)));
+  const f = clamp((p - min) / (max - min), 0, 1);
   return Math.round(f * (size - 1));
 }
 
@@ -82,7 +83,7 @@ export function computeEntryTile(width, height, block, party) {
  */
 function projectBack(p, size, min, max) {
   if (size <= 1) return Math.round((min + max) / 2);
-  const f = Math.min(1, Math.max(0, p / (size - 1)));
+  const f = clamp(p / (size - 1), 0, 1);
   return Math.round(min + f * (max - min));
 }
 

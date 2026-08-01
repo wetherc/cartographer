@@ -88,7 +88,7 @@ export function wireGenerateAction(app, env) {
     const gen = built.gen;
     // The regenerated layout replaces the node, and can restamp its parent's
     // entrance link below. Snapshot both so the stroke-undo ring can revert it.
-    const parentBefore = node.parentId ? grid.getNode(node.parentId) : null;
+    const parentBefore = grid.getParent(node);
     env.snapshotEdit(node, ...(parentBefore ? [parentBefore] : []));
     if (built.levels) {
       built.levels.slice(1).forEach((level, i) => {
@@ -109,7 +109,7 @@ export function wireGenerateAction(app, env) {
     // one (a POI marker matching the archetype) on the parent tile nearest
     // its center, so there is always a way in. Tell the GM where it landed,
     // so the GM can move it.
-    const parent = node.parentId ? grid.getNode(node.parentId) : null;
+    const parent = grid.getParent(node);
     if (parent) {
       const artFor = entranceArtFor(values.archetype);
       const linked = ensureChildLink(parent, node.id, {

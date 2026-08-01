@@ -15,6 +15,7 @@ import { applyASI, takeFeat, undoLastChoice, withProficiencies } from '../entiti
 import { getHitDicePools, hitDieOfPool, spendHitDie } from '../entities/HitDice.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
+import { splitList } from '../util/text.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -58,7 +59,7 @@ async function pickMulticlassSkill(character, classId) {
     ],
     { submitLabel: 'Choose' },
   );
-  const picked = values ? values.skills.split(',').filter(Boolean).slice(0, choice.choose) : [];
+  const picked = values ? splitList(values.skills).slice(0, choice.choose) : [];
   if (picked.length === 0) return character;
   return withProficiencies(character, { ...p, skills: [...p.skills, ...picked] });
 }

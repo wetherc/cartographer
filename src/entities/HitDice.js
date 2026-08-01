@@ -165,6 +165,17 @@ export function getHitDicePools(character) {
 }
 
 /**
+ * Build one hit-dice pool. Both writers below need the same id and the same
+ * label for a die size, so the shape lives here once.
+ * @param {number} die
+ * @param {number} count
+ * @returns {ResourcePool}
+ */
+function hitDicePool(die, count) {
+  return createResource(hitDicePoolId(die), `Hit Dice (d${die})`, 'custom', count);
+}
+
+/**
  * Give a character full hit-dice pools derived from their class list,
  * replacing any existing ones (including a legacy sizeless pool). Ordered
  * after HP and spell slots so the card reads
@@ -173,9 +184,7 @@ export function getHitDicePools(character) {
  * @returns {Character}
  */
 export function withHitDice(character) {
-  const pools = characterHitDice(character).map(({ die, count }) =>
-    createResource(hitDicePoolId(die), `Hit Dice (d${die})`, 'custom', count),
-  );
+  const pools = characterHitDice(character).map(({ die, count }) => hitDicePool(die, count));
   const resources = spliceReservedPools(
     character.resources,
     pools,
@@ -202,7 +211,7 @@ export function syncHitDice(character) {
   const legacy = existing.find((r) => r.id === LEGACY_HIT_DICE_ID) ?? null;
 
   const next = characterHitDice(character).map(({ die, count }, index) => {
-    const fresh = createResource(hitDicePoolId(die), `Hit Dice (d${die})`, 'custom', count);
+    const fresh = hitDicePool(die, count);
     const old = existing.find((r) => r.id === hitDicePoolId(die)) ?? (index === 0 ? legacy : null);
     // The pool is rebuilt from the class list. Its id changes when a legacy
     // pool converts, so only the spent count carries over from the old pool.

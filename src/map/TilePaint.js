@@ -4,6 +4,7 @@ import { findRegionGroups } from './RegionGroups.js';
 import { withNodeTiles } from './TileIndex.js';
 import { kindOf } from './TilePalette.js';
 import { memoizeByIdentity } from '../util/memoize.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
@@ -107,7 +108,7 @@ export function paintTile(node, tileId, imageRef, overlay = false, span = 1) {
     const base = existing ?? createTile(tileId, '');
     return setTile(node, { ...base, overlayRef: stackOverlay(base.overlayRef, imageRef) });
   }
-  const n = Math.max(1, Math.min(Math.floor(span), node.width, node.height));
+  const n = clamp(Math.min(Math.floor(span), node.width, node.height), 1);
   if (n > 1) {
     const coords = /** @type {{ x: number, y: number }} */ (parseCoords(tileId));
     const ax = Math.min(coords.x, node.width - n);
@@ -285,8 +286,8 @@ export function stampRegionLink(node, tileId, childNodeId) {
       node.tiles.map((t) => (t.id === tileId ? { ...t, childNodeId } : t)),
     );
   }
-  const bx = Math.max(0, Math.min(anchor.x, node.width - 2));
-  const by = Math.max(0, Math.min(anchor.y, node.height - 2));
+  const bx = clamp(Math.min(anchor.x, node.width - 2), 0);
+  const by = clamp(Math.min(anchor.y, node.height - 2), 0);
   /** @type {Set<string>} */
   const block = new Set();
   for (let x = bx; x < Math.min(bx + 2, node.width); x++) {

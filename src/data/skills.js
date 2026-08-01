@@ -1,5 +1,7 @@
 /** @typedef {import('../types/spell.js').Ability} Ability */
 
+import { capitalize } from '../util/text.js';
+
 /**
  * The 18 skills, mapped to their governing ability and keyed by kebab-case
  * skill id. This is the one canonical skill list. Class and background skill
@@ -40,6 +42,6 @@ export const SKILL_IDS = Object.keys(SKILL_ABILITIES);
 export function skillName(skillId) {
   return skillId
     .split('-')
-    .map((word) => (word === 'of' ? word : word[0].toUpperCase() + word.slice(1)))
+    .map((word) => (word === 'of' ? word : capitalize(word)))
     .join(' ');
 }

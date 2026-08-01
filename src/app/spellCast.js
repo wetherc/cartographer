@@ -21,6 +21,7 @@ import {
   targetSaveBonus,
   endSpellEffects,
 } from './combatants.js';
+import { splitTrimmedList } from '../util/text.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
@@ -615,12 +616,7 @@ function chosenTargets(targets, values) {
       .map((t) => ({ ...t, projectiles: Number(assigned[t.id]) }));
   }
   const raw = values.targets ?? values.target ?? '';
-  const ids = new Set(
-    String(raw)
-      .split(',')
-      .map((id) => id.trim())
-      .filter(Boolean),
-  );
+  const ids = new Set(splitTrimmedList(raw));
   return targets.filter((t) => ids.has(t.id));
 }
 

@@ -163,6 +163,19 @@ test('TileGrid tracks parent/child hierarchy and breadcrumb', () => {
   assert.deepEqual(breadcrumb, ['world', 'region', 'subregion']);
 });
 
+test('getParent resolves one level up, and gives null where there is none', () => {
+  const grid = new TileGrid();
+  const world = grid.addNode(createMapNode('world', 'World', null, 1, 1));
+  const region = grid.addNode(createMapNode('region', 'Region', 'world', 1, 1));
+  const orphan = grid.addNode(createMapNode('orphan', 'Orphan', 'ghost', 1, 1));
+
+  assert.equal(grid.getParent(region), world);
+  assert.equal(grid.getParent(world), null);
+  // A parentId naming a node the grid does not hold reads as no parent, not
+  // as undefined.
+  assert.equal(grid.getParent(orphan), null);
+});
+
 test('getBreadcrumb stops at a node whose parentId points at a missing node', () => {
   const grid = new TileGrid();
   // 'region' claims a parent that was never added — the walk stops there.

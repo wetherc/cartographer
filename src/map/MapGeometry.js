@@ -5,6 +5,8 @@
  * stays unit-testable in isolation.
  */
 
+import { clamp } from '../util/num.js';
+
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
 /**
@@ -124,7 +126,7 @@ export function screenToTile(screenX, screenY, tileSize, offsetX, offsetY, scale
  * @returns {number}
  */
 export function clampZoom(scale, min, max) {
-  return Math.min(max, Math.max(min, scale));
+  return clamp(scale, min, max);
 }
 
 /**

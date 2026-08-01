@@ -2,6 +2,8 @@
 /** @typedef {import('../types/entities.js').SpellCaster} SpellCaster */
 /** @typedef {import('../types/class.js').ClassRef} ClassRef */
 
+import { clamp } from '../util/num.js';
+
 /**
  * Class-list mechanics. A character's classes are a list of `ClassRef`s
  * whose levels sum to at most the stored character level. The XP engine
@@ -97,7 +99,7 @@ export function sanitizeClasses(classes, cap) {
   let used = 0;
   for (const ref of classes) {
     if (!ref.classId || seen.has(ref.classId)) continue;
-    const level = Math.min(Math.max(1, Math.floor(ref.level) || 1), cap - used);
+    const level = clamp(Math.floor(ref.level) || 1, 1, cap - used);
     if (level < 1) break;
     seen.add(ref.classId);
     used += level;

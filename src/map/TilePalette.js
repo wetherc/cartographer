@@ -202,7 +202,7 @@ function buildBuiltins() {
       entries.push({
         id: `${type}-${i}`,
         type,
-        label: `${type[0].toUpperCase()}${type.slice(1)} ${i}`,
+        label: `${capitalize(type)} ${i}`,
         imageRef: `${TILE_ROOT}/${type}/${type}-${i}.svg`,
         custom: false,
       });

@@ -3,6 +3,7 @@ import { resolveSave } from './Checks.js';
 import { spendResource } from './Character.js';
 import { isSpellCastable } from './SpellView.js';
 import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/spell.js').SpellScaling} SpellScaling */
@@ -79,7 +80,7 @@ export function normalizeTargetCount(value, fallback = 1) {
   if (value === '' || value === null || value === undefined) return fallback;
   const count = Math.floor(Number(value));
   if (!Number.isFinite(count)) return fallback;
-  return Math.min(MAX_TARGET_COUNT, Math.max(0, count));
+  return clamp(count, 0, MAX_TARGET_COUNT);
 }
 
 /**
@@ -218,7 +219,7 @@ export function allocateProjectiles(targets, count) {
   let left = count;
   return targets.map((target) => {
     const wanted = Math.floor(Number(target.projectiles ?? 0));
-    const given = Number.isFinite(wanted) ? Math.min(Math.max(0, wanted), left) : 0;
+    const given = Number.isFinite(wanted) ? clamp(wanted, 0, left) : 0;
     left -= given;
     return given;
   });

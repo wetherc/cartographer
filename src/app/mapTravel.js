@@ -107,7 +107,7 @@ export function createMapTravel(app, env) {
   function currentExits() {
     if (state.mode !== 'play') return [];
     const node = navigator.getCurrentNode();
-    return findExits(node, node.parentId ? (grid.getNode(node.parentId) ?? null) : null);
+    return findExits(node, grid.getParent(node));
   }
 
   /**
@@ -121,7 +121,7 @@ export function createMapTravel(app, env) {
    */
   function exitToParent(exit) {
     const child = navigator.getCurrentNode();
-    const parent = child.parentId ? grid.getNode(child.parentId) : null;
+    const parent = grid.getParent(child);
     // The list was computed for a node the view has since left, or for a
     // parent since deleted. There is nothing to travel to.
     if (!parent || parent.id !== exit.targetNodeId) return;

@@ -1,6 +1,8 @@
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 /** @typedef {import('../types/entities.js').ResourceType} ResourceType */
 
+import { clamp } from '../util/num.js';
+
 /**
  * Create a resource pool (item count, mana, or custom expendable) at full capacity.
  * @param {string} id
@@ -55,7 +57,7 @@ export function setMax(pool, max) {
  */
 export function adjustMax(pool, max) {
   const current = pool.current + (max - pool.max);
-  return { ...pool, max, current: Math.max(0, Math.min(max, current)) };
+  return { ...pool, max, current: clamp(current, 0, max) };
 }
 
 /**
@@ -70,7 +72,7 @@ export function adjustMax(pool, max) {
  */
 export function growMax(pool, max) {
   const current = pool.current + Math.max(0, max - pool.max);
-  return { ...pool, max, current: Math.max(0, Math.min(max, current)) };
+  return { ...pool, max, current: clamp(current, 0, max) };
 }
 
 /**

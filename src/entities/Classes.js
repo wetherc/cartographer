@@ -3,6 +3,7 @@ import { slotsForCaster, slotPoolsForCaster } from './SpellSlots.js';
 import { getClasses } from './Multiclass.js';
 import { DEFAULT_CLASSES } from '../data/classes.js';
 import { memoizeByIdentity } from '../util/memoize.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
 /** @typedef {import('../types/class.js').CasterType} CasterType */
@@ -83,7 +84,7 @@ export function casterSlots(classId, characterLevel) {
 export function cantripsKnownForClass(classId, characterLevel) {
   const def = getClass(classId);
   if (!def || def.cantripsKnown.length === 0) return 0;
-  const idx = Math.min(Math.max(1, Math.floor(characterLevel) || 1), def.cantripsKnown.length) - 1;
+  const idx = clamp(Math.floor(characterLevel) || 1, 1, def.cantripsKnown.length) - 1;
   return def.cantripsKnown[idx];
 }
 

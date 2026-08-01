@@ -8,7 +8,7 @@ import { select, textField } from './formFields.js';
 import { buildItemForm } from './ItemForm.js';
 import { buildEquipment } from './InventoryEquipment.js';
 import { buildRow } from './InventoryRows.js';
-import { slugify } from '../util/text.js';
+import { capitalize, slugify } from '../util/text.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
@@ -142,7 +142,7 @@ export function mountInventoryPanel(
    * @returns {HTMLElement}
    */
   function buildGroup(group, playable) {
-    const label = `${group.type[0].toUpperCase()}${group.type.slice(1)}`;
+    const label = capitalize(group.type);
     const head = el(
       'button',
       'disclosure section-label u-row u-g2',

@@ -1,5 +1,6 @@
 import { parseCoords, tileRect } from './MapGeometry.js';
 import { EXIT_SIDES, edgeExitBand, exitBandGeometry, exitLabel } from './MapExits.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {import('./MapRenderer.js').MapRenderer} MapRenderer */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
@@ -39,7 +40,7 @@ export class MapDecorations {
     // Font size uses buffer pixels, which are devicePixelRatio times denser
     // than CSS pixels. A small cap draws illegibly on a HiDPI canvas.
     // Scale the font with the tile size and cap it only at a generous limit.
-    const fontSize = Math.round(Math.max(14, Math.min(size * 0.3, 42)));
+    const fontSize = Math.round(clamp(size * 0.3, 14, 42));
     ctx.font = `600 ${fontSize}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';

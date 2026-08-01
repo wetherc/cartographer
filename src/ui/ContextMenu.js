@@ -14,6 +14,11 @@ import { el } from './dom.js';
  * Clamp a menu's top-left corner so the whole menu stays inside the
  * viewport. This flips the menu off an edge rather than sliding it under
  * the edge.
+ *
+ * The bounds here do not read as `util/num.js` `clamp` does. A menu taller or
+ * wider than the viewport has an upper bound below the margin. This code keeps
+ * the margin in that case, so the first items stay on screen. `clamp` keeps the
+ * upper bound instead, which would push the top-left corner off screen.
  * @param {number} x @param {number} y desired position, for example the pointer position
  * @param {number} width @param {number} height menu size
  * @param {number} viewportWidth @param {number} viewportHeight

@@ -18,6 +18,7 @@ import {
 } from './formFields.js';
 import { buildMultiselect } from './ModalFields.js';
 import { clampInt } from '../util/num.js';
+import { splitList } from '../util/text.js';
 
 /** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
 /** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
@@ -126,7 +127,7 @@ export function buildEncounterTemplateForm({
   /** The caster fields to fold into the template. This is empty for a non-caster. */
   function casterFields() {
     if (!isCasterClass(classSelect.value)) return {};
-    const ids = spellPicker.get().split(',').filter(Boolean);
+    const ids = splitList(spellPicker.get());
     return {
       class: classSelect.value,
       casterLevel: clampInt(casterLevelInput.value, 1),
