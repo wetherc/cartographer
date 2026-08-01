@@ -100,7 +100,13 @@ export class TileRaster {
      * @type {Map<string, HTMLImageElement>}
      */
     this.images = new Map();
-    /** @type {Map<string, CanvasImageSource>} */
+    /**
+     * Cached rasters, keyed by ref and then by `WxH`. Two levels instead of
+     * one `ref@WxH` string: a GM-supplied ref is a `data:` URL that runs to
+     * hundreds of kilobytes, and a single-level key would build a string
+     * that long for every tile on every frame.
+     * @type {Map<string, Map<string, CanvasImageSource>>}
+     */
     this.rasters = new Map();
     this.bytes = 0;
   }
@@ -139,15 +145,14 @@ export class TileRaster {
   source(imageRef, width, height) {
     const bw = this.enabled ? rasterSize(width) : 0;
     const bh = this.enabled ? rasterSize(height) : 0;
-    const key = `${imageRef}@${bw}x${bh}`;
-    const cached = this.rasters.get(key);
+    const cached = bw && bh ? this.rasters.get(imageRef)?.get(`${bw}x${bh}`) : undefined;
     if (cached) return cached;
 
     const img = this.image(imageRef);
     if (!img.complete || !img.naturalWidth) return null;
     // Either edge past the ceiling: draw the vector art itself.
     if (!bw || !bh) return img;
-    return this._rasterize(key, img, bw, bh) ?? img;
+    return this._rasterize(imageRef, img, bw, bh) ?? img;
   }
 
   /** Drop every raster. The decoded source images stay, because reloading them costs a network round trip. */
@@ -160,13 +165,13 @@ export class TileRaster {
    * Draw one ref into an offscreen canvas at a bucket size and cache it. The
    * frame that missed pays one vector rasterization, which is what it would
    * have paid anyway. Every frame after it blits.
-   * @param {string} key
+   * @param {string} imageRef
    * @param {HTMLImageElement} img
    * @param {number} width
    * @param {number} height
    * @returns {CanvasImageSource | null}
    */
-  _rasterize(key, img, width, height) {
+  _rasterize(imageRef, img, width, height) {
     if (this.bytes + width * height * 4 > BYTE_LIMIT) this.clearRasters();
     const canvas = this.createCanvas(width, height);
     const ctx = canvas?.getContext('2d');
@@ -174,7 +179,12 @@ export class TileRaster {
     // No `{ alpha: false }` here: overlay art such as a road over sand is
     // transparent outside its own marks.
     ctx.drawImage(img, 0, 0, width, height);
-    this.rasters.set(key, canvas);
+    let perRef = this.rasters.get(imageRef);
+    if (!perRef) {
+      perRef = new Map();
+      this.rasters.set(imageRef, perRef);
+    }
+    perRef.set(`${width}x${height}`, canvas);
     this.bytes += width * height * 4;
     return canvas;
   }

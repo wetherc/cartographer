@@ -126,6 +126,20 @@ test('source keeps a separate raster per size and per aspect', () => {
   );
 });
 
+// The cache keys by ref once and then by size, so a lookup never builds a
+// key string containing the ref. A GM-supplied ref is a data: URL that runs
+// to hundreds of kilobytes, and a per-draw key that long is what this
+// layout avoids.
+test('every size of one ref lives under one entry for that ref', () => {
+  const { raster } = harness();
+  raster.source('a.svg', 48, 48);
+  raster.source('a.svg', 130, 130);
+  raster.source('b.svg', 48, 48);
+  assert.equal(raster.rasters.size, 2);
+  assert.equal(raster.rasters.get('a.svg').size, 2);
+  assert.equal(raster.rasters.get('b.svg').size, 1);
+});
+
 test('source returns null while the art has not decoded', () => {
   const canvases = fakeCanvasFactory();
   const raster = new TileRaster({
