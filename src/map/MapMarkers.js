@@ -5,9 +5,9 @@ import { tileAtXY } from './TileIndex.js';
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
 
 /**
- * The shape one marker pass draws, given the tile's screen origin and size. It
- * sets its own colors and traces a path; the caller fills and strokes it.
- * Module-level constants rather than closures built per frame.
+ * The shape one marker pass draws, given the tile's screen origin and size.
+ * It sets its own colors and traces a path. The caller fills and strokes the
+ * path. This is a module-level constant, not a closure built per frame.
  * @typedef {(ctx: CanvasRenderingContext2D, sx: number, sy: number, size: number) => void} MarkerShape
  */
 
@@ -33,9 +33,10 @@ const npcCircle = (ctx, sx, sy, size) => {
 /**
  * The marker layer of the map render: the gold party dot, per-character
  * tokens, red encounter diamonds, and blue NPC circles, plus the shared
- * detection-range rule that gates them. Split out of MapRenderer so the
- * renderer keeps the terrain/fog/region passes; this layer reads the host's
- * ctx and tileSize and draws over the finished tiles.
+ * detection-range rule that gates them. This layer is split out of
+ * MapRenderer, so the renderer keeps only the terrain, fog, and region
+ * passes. This layer reads the host's ctx and tileSize, and draws over the
+ * finished tiles.
  */
 export class MapMarkers {
   /** @param {MapRenderer} host */
@@ -48,12 +49,13 @@ export class MapMarkers {
   }
 
   /**
-   * The parsed grid coordinates markers are detected from: the party's tile
-   * plus every character token's tile, so a scout who wandered off senses
-   * danger around their own position, not just the party's. Parsed once per
-   * frame — MapCanvas hands the renderer a fresh view snapshot per draw, so
-   * the snapshot object doubles as the memo key; markerVisible is called per
-   * marker and per POI tile within one frame.
+   * The parsed grid coordinates that markers are detected against: the
+   * party's tile, plus every character token's tile. A scout who wandered
+   * off senses danger around their own position, not only the party's
+   * position. This function parses the coordinates once per frame. MapCanvas
+   * gives the renderer a fresh view snapshot per draw, so the snapshot
+   * object also serves as the memo key. markerVisible calls this function
+   * once per marker and per point of interest tile within one frame.
    * @param {MapView} view
    * @returns {{ x: number, y: number }[]}
    */
@@ -75,10 +77,11 @@ export class MapMarkers {
   }
 
   /**
-   * Drop the memoized anchors and the view they were parsed from, called by the
-   * host at the end of every frame. Without it the last drawn view — and through
-   * it a whole node's tile list — stays reachable from the renderer for as long
-   * as the map is idle, which after a paint stroke is a node no one else holds.
+   * Remove the memoized anchors and the view they were parsed from. The host
+   * calls this at the end of every frame. Without this call, the last drawn
+   * view stays reachable from the renderer, and through it, a whole node's
+   * tile list. This can keep a node in memory that no one else holds, for as
+   * long as the map stays idle after a paint stroke.
    */
   releaseFrame() {
     this._anchorsView = null;
@@ -86,10 +89,10 @@ export class MapMarkers {
   }
 
   /**
-   * Whether a marker at a tile is within detection range (Euclidean, the same
-   * rule as FogOfWar.withinRadius) of the party or a character token. Build
-   * mode sees everything; in Play a node the party isn't in has no anchors, so
-   * its markers stay hidden.
+   * Whether a marker at a tile is within detection range of the party or a
+   * character token. This uses the same Euclidean rule as
+   * FogOfWar.withinRadius. Build mode shows every marker. In Play mode, a
+   * node the party is not in has no anchors, so its markers stay hidden.
    * @param {MapView} view
    * @param {string} tileId
    * @returns {boolean}
@@ -107,11 +110,12 @@ export class MapMarkers {
   }
 
   /**
-   * Mark tiles carrying a live encounter with a red diamond in the tile's upper
-   * corner, so a point of danger reads distinctly from the gold party dot and a
-   * POI outline. Markers respect the fog of war loosely: a danger is sensed out
-   * to the detection range (twice the fog reveal radius) around the party and
-   * any split-off character, even on still-fogged tiles, but never further.
+   * Mark tiles that carry a live encounter with a red diamond in the tile's
+   * upper corner. This makes a point of danger read as distinct from the
+   * gold party dot and a point of interest outline. Markers follow the fog
+   * of war loosely. The party or any split-off character senses danger out
+   * to the detection range, which is twice the fog reveal radius, even on
+   * tiles still under fog, but never further.
    * @param {MapView} view
    */
   renderEncounterMarkers(view) {
@@ -119,9 +123,10 @@ export class MapMarkers {
   }
 
   /**
-   * One marker pass: for every listed tile that is within detection range and
-   * parses as a grid coordinate, draw `shape` at that tile. The encounter and
-   * NPC passes differ only in the shape, so they share this loop.
+   * One marker pass. For every listed tile that is within detection range
+   * and parses as a grid coordinate, draw `shape` at that tile. The
+   * encounter pass and the NPC pass differ only in the shape, so they share
+   * this loop.
    * @param {MapView} view
    * @param {string[] | undefined} ids
    * @param {MarkerShape} shape
@@ -129,8 +134,8 @@ export class MapMarkers {
   _renderMarkers(view, ids, shape) {
     if (!ids || ids.length === 0 || !view.node) return;
     const { ctx, tileSize } = this.host;
-    // One rect's worth of arithmetic per marker, inlined rather than returned as
-    // an object: these loops run every frame.
+    // This inlines one rect's worth of arithmetic per marker instead of
+    // returning an object, because this loop runs every frame.
     const size = tileSize * view.scale;
     const lineWidth = Math.max(1.5, size * 0.03);
     for (const id of ids) {
@@ -147,11 +152,12 @@ export class MapMarkers {
   }
 
   /**
-   * Mark tiles holding a placed NPC with a blue circle in the tile's upper-left
-   * corner — mirroring the encounter diamond's upper-right spot, so a tile can
-   * carry both without overlap, and reading as a person rather than a threat.
-   * Same detection rule as encounters: marked only within the detection range
-   * of the party or a character token (Build marks all).
+   * Mark tiles that hold a placed NPC with a blue circle in the tile's
+   * upper-left corner. This mirrors the encounter diamond's upper-right
+   * spot, so a tile can carry both markers without overlap, and reads as a
+   * person rather than a threat. This uses the same detection rule as
+   * encounters: the marker shows only within detection range of the party
+   * or a character token. Build mode marks all NPCs.
    * @param {MapView} view
    */
   renderNPCMarkers(view) {
@@ -159,12 +165,12 @@ export class MapMarkers {
   }
 
   /**
-   * Badge the door and stairway tiles the party can leave an interior through,
-   * so the one authored way out reads as usable rather than as scenery. Unlike
-   * the encounter and NPC markers this ignores detection range — the way you
-   * came in is not something to sense at a distance — but an unrevealed tile
-   * stays unmarked, since a door nobody has found yet would give away the shape
-   * of the map through the fog.
+   * Badge the door and stairway tiles the party can leave an interior
+   * through. This makes the one authored way out read as usable, not as
+   * scenery. Unlike the encounter and NPC markers, this ignores detection
+   * range, because the way the party came in is not something to sense at a
+   * distance. An unrevealed tile stays unmarked, because a door nobody has
+   * found yet reveals the shape of the map through the fog.
    * @param {MapView} view
    */
   renderExitMarkers(view) {
@@ -182,19 +188,20 @@ export class MapMarkers {
       const sy = coords.y * size + view.offsetY;
       if (sx + size < 0 || sy + size < 0 || sx > view.canvasWidth || sy > view.canvasHeight)
         continue;
-      // The tile's lower-right quadrant: the NPC circle holds the upper left,
-      // the encounter diamond the upper right, and the party dot the centre.
-      // A staircase running down to the parent level gets a downward chevron, so
-      // the badge agrees with tile art that visibly descends.
+      // This uses the tile's lower-right quadrant. The NPC circle holds the
+      // upper left, the encounter diamond the upper right, and the party dot
+      // the center. A staircase down to the parent level gets a downward
+      // chevron, to match tile art that visibly descends.
       const down = exit.via === 'stairs-down';
       this._drawExitBadge(ctx, sx + size * 0.74, sy + size * 0.74, size * 0.15, down);
     }
   }
 
   /**
-   * A parchment disc carrying a chevron, marking a tile as a way out. The chevron
-   * points up for a door or a staircase climbing to the parent level, down for one
-   * descending to it.
+   * A parchment disc with a chevron, marking a tile as a way out. The
+   * chevron points up for a door, or for a staircase that climbs to the
+   * parent level. It points down for a staircase that descends to the
+   * parent level.
    * @param {CanvasRenderingContext2D} ctx
    * @param {number} cx
    * @param {number} cy
@@ -221,10 +228,11 @@ export class MapMarkers {
     ctx.restore();
   }
 
-  /** Gold dot for the party's tile. Skipped when a character token stands on
-   * that tile — the tokens carry the presence, so the dot underneath would
-   * only add clutter. It still draws for an empty roster (or a party tile all
-   * of whose members wandered off), keeping the anchor visible.
+  /** Gold dot for the party's tile. This is skipped when a character token
+   * stands on that tile, because the token already shows presence, and the
+   * dot underneath adds clutter. This still draws for an empty roster,
+   * or a party tile whose members all wandered off, to keep the anchor
+   * visible.
    * @param {MapView} view */
   renderPartyMarker(view) {
     if (!view.partyTileId) return;
@@ -248,10 +256,11 @@ export class MapMarkers {
   }
 
   /**
-   * Per-character tokens: a small gold dot per character, spread across their
-   * tile when several share it, with the characters' names stacked above the
-   * tile. Same palette as the party dot so a token reads as "one of ours",
-   * distinct from the blue NPC circle and the red encounter diamond.
+   * Per-character tokens: one small gold dot per character. The dots spread
+   * across the tile when several characters share it. The characters'
+   * names stack above the tile. This uses the same palette as the party
+   * dot, so a token reads as part of the party, distinct from the blue NPC
+   * circle and the red encounter diamond.
    * @param {MapView} view
    */
   renderCharacterTokens(view) {
@@ -275,7 +284,7 @@ export class MapMarkers {
         continue;
 
       ctx.save();
-      // Dots spread evenly along the tile's midline; a lone token sits centred.
+      // Dots spread evenly along the tile's midline. A lone token sits centered.
       const r = Math.min(size * 0.14, (size * 0.8) / (names.length * 2));
       names.forEach((_, i) => {
         const cx = sx + (size * (i + 1)) / (names.length + 1);
@@ -288,8 +297,8 @@ export class MapMarkers {
         ctx.stroke();
       });
 
-      // Names stack above the tile, nearest name closest to it. Skipped when
-      // tiles get too small for the label to be legible.
+      // Names stack above the tile, with the nearest name closest to it. This
+      // is skipped when tiles are too small for the label to be legible.
       if (size >= 24) {
         const fontSize = Math.round(Math.max(11, Math.min(size * 0.24, 26)));
         ctx.font = `600 ${fontSize}px sans-serif`;

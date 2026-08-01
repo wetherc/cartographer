@@ -11,10 +11,11 @@ import {
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
 /**
- * Reveal every tile within `radius` (Euclidean distance, in grid cells) of a
- * center tile, leaving already-revealed tiles and tiles outside the radius
- * untouched. Returns a new node; tiles whose id isn't a grid "x,y" coordinate
- * (and the center itself, if its id doesn't parse) are left as-is.
+ * Reveal every tile within `radius` (Euclidean distance in grid cells) of a
+ * center tile. The function leaves already-revealed tiles and tiles outside
+ * the radius unchanged. The function returns a new node. Tiles whose id is
+ * not a grid "x,y" coordinate stay unchanged, including the center tile if
+ * its id does not parse.
  * @param {MapNode} node
  * @param {string} centerId
  * @param {number} radius
@@ -24,11 +25,11 @@ export function revealAround(node, centerId, radius) {
   const center = parseCoords(centerId);
   if (!center) return node;
 
-  // Walk the disc's bounding square by coordinate instead of mapping the whole
-  // tile array: O(radius^2) per party step, not O(total tiles), and with no id
-  // string built per cell. A step that reveals nothing new returns the same
-  // node, keeping the WeakMap caches (tile layout, region groups, span blocks)
-  // warm.
+  // This code walks the bounding square of the disc by coordinate instead of
+  // mapping the whole tile array. This method costs O(radius^2) per party
+  // step instead of O(total tiles) and builds no id string per cell. A step
+  // that reveals nothing new returns the same node. This keeps the WeakMap
+  // caches for tile layout, region groups, and span blocks warm.
   const r = Math.ceil(radius);
   const radiusSq = radius * radius;
   /** @type {Map<number, import('../types/map.js').Tile> | null} */
@@ -50,10 +51,11 @@ export function revealAround(node, centerId, radius) {
 }
 
 /**
- * Whether a tile sits within a Euclidean radius (in grid cells) of a center
- * tile — the same distance rule revealAround uses, exposed for callers that
- * gate visibility by proximity (the map's marker detection range). False when
- * either id isn't a grid "x,y" coordinate.
+ * Check if a tile sits within a Euclidean radius (in grid cells) of a center
+ * tile. The function uses the same distance rule as revealAround. Callers
+ * that gate visibility by proximity, for example the map marker detection
+ * range, can use this function. The function returns false when either id is
+ * not a grid "x,y" coordinate.
  * @param {string} tileId
  * @param {string} centerId
  * @param {number} radius
@@ -81,7 +83,7 @@ export function hideAll(node) {
 }
 
 /**
- * Reveal every tile in a node — the GM's "show the whole area" action.
+ * Reveal every tile in a node. This is the GM action to show the whole area.
  * @param {MapNode} node
  * @returns {MapNode}
  */
@@ -93,9 +95,10 @@ export function revealAll(node) {
 }
 
 /**
- * Set one tile's revealed flag — the primitive behind the GM fog brush, which
- * strokes reveal/hide across cells the same way the Build paint brush strokes
- * terrain. No-op on an id with no tile (fog lives on tiles).
+ * Set the revealed flag of one tile. This function is the primitive behind
+ * the GM fog brush, which strokes reveal or hide across cells the same way
+ * the Build paint brush strokes terrain. The function does nothing on an id
+ * with no tile, because fog lives on tiles.
  * @param {MapNode} node
  * @param {string} tileId
  * @param {boolean} revealed
@@ -117,10 +120,11 @@ export function revealedCount(node) {
 }
 
 /**
- * The nodes the party has discovered: any node with at least one revealed tile
- * (the party reveals fog wherever it goes, so a visit always leaves a mark),
- * plus the node the party currently stands in even if it has no tiles yet
- * (e.g. the blank starting world). Preserves input order.
+ * Find the nodes that the party discovered. A discovered node is any node with at
+ * least one revealed tile, because the party reveals fog wherever it goes
+ * and a visit always leaves a mark. The result also includes the node where
+ * the party currently stands, even if that node has no tiles yet, for
+ * example the blank starting world. The function keeps the input order.
  * @param {MapNode[]} nodes
  * @param {import('../types/map.js').PartyPosition} party
  * @returns {MapNode[]}

@@ -6,9 +6,10 @@ import { kindOf } from './TilePalette.js';
 /** @typedef {{ x: number, y: number }} Coords */
 
 /**
- * Map a parent-map coordinate along one wall of the region block onto the child's
- * corresponding tile range, so entering straight at a wall lands beside the point
- * you entered from rather than the wall's midpoint. Clamped to the child extent.
+ * Map a coordinate along one wall of the region block onto the matching tile
+ * range of the child. This action puts the party beside the entry point when
+ * the party enters directly at a wall, not at the wall midpoint. The result
+ * stays within the child extent.
  * @param {number} p party coordinate along the wall (parent space)
  * @param {number} min region-block extent start along that axis
  * @param {number} max region-block extent end along that axis
@@ -22,18 +23,20 @@ function projectAlong(p, min, max, size) {
 }
 
 /**
- * Choose the tile the party enters a child node on, based on where they stood in
- * the parent map relative to the region block they walked into. The party keeps
- * travelling continuously across the zoom instead of teleporting to the middle:
+ * Choose the tile where the party enters a child node. The choice depends on
+ * the position of the party in the parent map relative to the region block
+ * that the party entered. The party moves continuously across the zoom and
+ * does not jump to the middle.
  *
- * - Approaching a wall head-on (aligned with the block's span on one axis) lands
- *   them on the inner edge tile of that wall, at the position along the wall
- *   nearest the coordinate they came from.
- * - Approaching diagonally, past a corner of the block on both axes, lands them
- *   on the matching inner corner tile of the child.
+ * - If the party approaches a wall directly (aligned with the block span on
+ *   one axis), the party lands on the inner edge tile of that wall. The
+ *   landing position is nearest to the entry coordinate along the wall.
+ * - If the party approaches diagonally past a corner of the block on both
+ *   axes, the party lands on the matching inner corner tile of the child.
  *
- * Falls back to the grid centre when there's no approach to read (the party
- * wasn't in the parent, or stood inside the block's own footprint).
+ * The function returns the center tile of the grid if there is no approach to
+ * read. This can happen if the party was not in the parent map or stood
+ * inside the block footprint.
  *
  * @param {number} width child node width in tiles
  * @param {number} height child node height in tiles
@@ -48,8 +51,9 @@ export function computeEntryTile(width, height, block, party) {
 
   const maxX = width - 1;
   const maxY = height - 1;
-  // Which side of the block the party sits on, per axis: -1 before it, +1 past
-  // it, 0 within its span. Two non-zero axes = a corner approach; one = a wall.
+  // This axis value shows the side of the block where the party sits: -1
+  // before it, +1 past it, 0 within its span. Two nonzero axes mean a corner
+  // approach. One nonzero axis means a wall approach.
   const hx = party.x < block.minX ? -1 : party.x > block.maxX ? 1 : 0;
   const hy = party.y < block.minY ? -1 : party.y > block.maxY ? 1 : 0;
 
@@ -66,9 +70,10 @@ export function computeEntryTile(width, height, block, party) {
 }
 
 /**
- * The inverse of projectAlong: a coordinate along one side of a child map,
- * mapped back onto the parent block's extent on that axis, so leaving by an edge
- * puts the party beside the point of the block they walked out of.
+ * This function is the inverse of projectAlong. The function maps a
+ * coordinate along one side of a child map back onto the parent block extent
+ * on that axis. This action puts the party beside the point of the block
+ * that the party left when the party exits by an edge.
  * @param {number} p coordinate along the side (child space)
  * @param {number} size child node extent along that axis (tiles)
  * @param {number} min region-block extent start along that axis
@@ -83,19 +88,20 @@ function projectBack(p, size, min, max) {
 
 /** @param {import('../types/map.js').Tile} tile */
 function isWall(tile) {
-  // Wall segments/corners are the one interior piece the party shouldn't stand
-  // on; doors, stairs, and floors are all fair landing spots.
+  // Wall segments and corners are the only interior tiles where the party
+  // must not stand. Doors, stairs, and floors are valid landing spots.
   return kindOf(tile.imageRef) === 'wall';
 }
 
 /**
- * Snap a computed entry tile to one that actually exists and can be stood on.
- * Sparse layouts (a generated dungeon's void, a castle's wall ring) can leave
- * the geometric entry pointing at nothing or at a wall; landing there would
- * strand the party outside the walkable area. Keeps the preferred tile when
- * it's real and walkable; otherwise picks the nearest walkable tile, preferring
- * a door on a tie so entering an interior reads as walking in through it.
- * Falls back to the preferred id on an empty node.
+ * Snap a computed entry tile to a tile that exists and can hold the party.
+ * A sparse layout, for example a generated dungeon void or a castle wall
+ * ring, can leave the geometric entry pointing at nothing or at a wall.
+ * Landing there strands the party outside the walkable area. The
+ * function keeps the preferred tile when the tile is real and walkable.
+ * Otherwise the function picks the nearest walkable tile and prefers a door
+ * on a tie. This makes entering an interior read as walking through it. The
+ * function returns the preferred id when the node is empty.
  * @param {import('../types/map.js').MapNode} node node being entered
  * @param {string} preferredId tile id ("x,y") the approach geometry chose
  * @returns {string} tile id to land the party on
@@ -114,7 +120,7 @@ export function resolveEntryTile(node, preferredId) {
     const coords = parseCoords(tile.id);
     if (!coords) continue;
     const d = (coords.x - target.x) ** 2 + (coords.y - target.y) ** 2;
-    // A door at equal distance wins: it's the authored way in.
+    // A door wins at equal distance because it is the intended way in.
     const score = d - (kindOf(tile.imageRef) === 'door' ? 0.5 : 0);
     if (score < bestScore) {
       best = tile;
@@ -125,12 +131,13 @@ export function resolveEntryTile(node, preferredId) {
 }
 
 /**
- * computeEntryTile, resolved from live map state: derives the region block the
- * childNodeId occupies in the parent and the party's coordinates there, so a
- * caller can pass nodes and a PartyPosition instead of pre-computed geometry.
- * The geometric pick is then resolved against the child's actual tiles, so a
- * sparse or walled child (a generated dungeon or castle) still lands the party
- * on a real, walkable tile.
+ * This function runs computeEntryTile from live map state. The function
+ * finds the region block that childNodeId occupies in the parent and finds
+ * the party coordinates there. A caller can pass nodes and a PartyPosition
+ * instead of precomputed geometry. The function resolves the geometric pick
+ * against the actual tiles of the child. This step makes sure that a sparse
+ * or walled child, for example a generated dungeon or castle, lands the
+ * party on a real, walkable tile.
  * @param {import('../types/map.js').MapNode} parent node being viewed when zooming in
  * @param {import('../types/map.js').MapNode} child node being entered
  * @param {string} childNodeId
@@ -138,13 +145,14 @@ export function resolveEntryTile(node, preferredId) {
  * @returns {string} child tile id ("x,y")
  */
 export function computeRegionEntryTile(parent, child, childNodeId, party) {
-  // Taking a staircase lands the party on the child level's matching staircase,
-  // not on a border tile — stacked levels sit above and below each other, so
-  // entering "from the side" reads wrong and the stairs are the one authored
-  // connection between them. Which staircase depends on the direction of travel:
-  // descend into a crypt level and arrive at its stairs up, climb to an upper
-  // storey and arrive at its stairs down. A level missing that staircase falls
-  // through to the geometric entry below.
+  // Taking a staircase lands the party on the matching staircase of the child
+  // level, not on a border tile. Stacked levels sit above and below each
+  // other, so an entry from the side is incorrect. The stairs are the only
+  // intended connection between stacked levels. The staircase used depends
+  // on the direction of travel. Descend into a crypt level and arrive at its
+  // stairs up. Climb to an upper level and arrive at its stairs down. If a
+  // level has no matching staircase, the function uses the geometric entry
+  // below instead.
   const stairway = stairwayTo(parent, childNodeId);
   const landing = stairway
     ? child.tiles.find((t) => kindOf(t.imageRef) === stairway.back)
@@ -160,19 +168,23 @@ export function computeRegionEntryTile(parent, child, childNodeId, party) {
 }
 
 /**
- * Where the party lands in the parent when they leave a child node — the mirror
- * of computeRegionEntryTile, so entering a sub-region and walking back out puts
- * them next to the tile they came from rather than at the block's midpoint.
+ * This function finds where the party lands in the parent map when the
+ * party leaves a child node. It is the mirror of computeRegionEntryTile:
+ * entering a sub-region and walking back out puts the party next to the
+ * tile that the party came from, not at the block midpoint.
  *
- * - Off an edge: their coordinate along that side of the child maps back onto the
- *   block's extent, then one cell further out, onto the parent terrain the side
- *   abuts.
- * - Through a door: the same projection, from the door's own coordinate, using
- *   the side of the interior the door sits nearest.
- * - Along a stairway: the parent's own tile at the other end of it, whichever
- *   direction it runs. It is a tile of the block being left, so it is returned as
- *   it stands rather than snapped, which would reject it for that reason.
- * - Fallback: the block itself, which is where the entrance art sits.
+ * - Off an edge: the function maps the coordinate along that side of the
+ *   child back onto the block extent, then one cell further out, onto the
+ *   parent terrain that the side touches.
+ * - Through a door: the function uses the same projection, from the
+ *   coordinate of the door, using the nearest side of the interior to the
+ *   door.
+ * - Along a stairway: the function returns the parent tile at the other end
+ *   of the stairway, in either direction. This tile belongs to the block
+ *   being left. The function returns the tile as it stands instead of
+ *   snapping it, because snapping rejects the tile for that reason.
+ * - Fallback: the function returns the block itself, where the entrance art
+ *   sits.
  *
  * @param {import('../types/map.js').MapNode} parent node being returned to
  * @param {import('../types/map.js').MapNode} child node being left
@@ -208,9 +220,10 @@ export function computeParentReturnTile(parent, child, exit, position) {
 }
 
 /**
- * The tile of a region block that stands for it — the one carrying the entrance
- * art, else the first member. Where a party lands when a node has no authored
- * way out and no terrain beside its block to step onto.
+ * This function finds the tile that stands for a region block. The function
+ * returns the tile that carries the entrance art, or the first member tile
+ * if no tile carries the art. The party lands here when a node has no
+ * intended way out and no terrain beside its block to step onto.
  * @param {import('../types/map.js').MapNode} parent
  * @param {import('./RegionGroups.js').RegionGroup} group
  * @returns {string}
@@ -223,11 +236,13 @@ function blockAnchor(parent, group) {
 }
 
 /**
- * The parent-side counterpart of resolveEntryTile: snap a computed landing spot
- * to a tile that exists, is painted, and can be stood on. Cells outside the
- * region block are what a returning party should land on, so the block they just
- * came out of is excluded — landing back on it reads as never having left. Falls
- * back to any painted tile, then to the preferred id on an unpainted parent.
+ * This function is the parent-side counterpart of resolveEntryTile. The
+ * function snaps a computed landing spot to a tile that exists, is painted,
+ * and can hold the party. A returning party must land on a cell outside the
+ * region block, so the function excludes the block that the party just
+ * left. Landing back on that block reads as if the party never left.
+ * The function falls back to any painted tile, then to the preferred id
+ * when the parent has no painted tiles.
  * @param {import('../types/map.js').MapNode} parent
  * @param {string} preferredId tile id the return geometry chose
  * @param {string} excludeChildNodeId child node whose block to stay off

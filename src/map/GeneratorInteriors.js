@@ -6,10 +6,11 @@ import { maskAt, NEIGHBORS4, NEIGHBORS8, tileIdAt } from './MapGeometry.js';
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
 
 /**
- * The interior (enclosed-structure) archetype generators — dungeon and castle
- * — plus the wall-piece picker they share, split out of MapGenerator.js,
- * which keeps the size presets and the archetype dispatch; the open-terrain
- * archetypes live in GeneratorRegions.js.
+ * This file holds the interior, or enclosed-structure, archetype generators:
+ * dungeon and castle. It also holds the wall-piece picker that both
+ * generators share. This file is split out of MapGenerator.js, which keeps
+ * the size presets and the archetype dispatch. The open-terrain archetypes
+ * live in GeneratorRegions.js.
  */
 
 const FLOOR_KINDS = ['floor-1', 'floor-2', 'floor-3'];
@@ -20,11 +21,11 @@ function interiorRef(palette, kind) {
 }
 
 /**
- * A stamper that overwrites the image of an already-placed tile: both interior
- * archetypes build the whole grid first and then re-image a few cells as stairs
- * and doors. Indexing once here keeps that from being a full scan per stamp, and
- * an id with no tile behind it (a stair cell the layout left as void) is ignored
- * rather than an error.
+ * Build a stamper that overwrites the image of an already-placed tile. Both
+ * interior archetypes build the whole grid first, then re-image a few cells
+ * as stairs and doors. Indexing once here avoids a full scan per stamp. An
+ * id with no tile behind it, for example a stair cell the layout left as
+ * void, is ignored instead of causing an error.
  * @param {Tile[]} tiles @param {TilePalette} palette
  * @returns {(id: string, kind: string) => void}
  */
@@ -37,11 +38,12 @@ function tileStamper(tiles, palette) {
 }
 
 /**
- * Pick a wall piece for a wall cell from which orthogonal neighbors continue
- * the wall (another wall cell, or a door set into the same run). Piece names
- * describe the connected edges, so four arms make a cross, three a tee (named
- * for its odd arm, matching the tile assets), two an elbow or straight, and a
- * one-armed stub extends its run. An isolated nub falls back to horizontal.
+ * Pick a wall piece for a wall cell, based on which orthogonal neighbors
+ * continue the wall. A neighbor can be another wall cell or a door set into
+ * the same run. Piece names describe the connected edges: four arms make a
+ * cross, three arms make a tee named for its odd arm to match the tile
+ * assets, two arms make an elbow or a straight piece, and one arm extends
+ * its run. An isolated cell with no connected arm falls back to horizontal.
  * @param {boolean} n @param {boolean} e @param {boolean} s @param {boolean} w
  * @returns {string}
  */
@@ -60,20 +62,22 @@ export function wallKind(n, e, s, w) {
 }
 
 /**
- * A dungeon of rectangular rooms joined by L-shaped corridors, all floored,
- * wrapped in walls wherever floor meets the void; stairs up/down sit in the
- * first and last room. Cells that are neither floor nor wall are left empty
- * (no tile), so the level reads as carved out of blank space.
+ * Generate a dungeon of rectangular rooms joined by L-shaped corridors, all
+ * floored. Walls wrap the floor wherever it meets the void. Stairs up and
+ * down sit in the first and last room. Cells that are neither floor nor wall
+ * stay empty, with no tile, so the level reads as carved out of blank space.
  *
- * How the level connects to what's above it depends on `entrance`: an `edge`
- * level (a dungeon entered from the overworld) gets a corridor carved from the
- * first room to the nearest map edge with a door on the border cell, while a
- * `stairs` level (a deeper floor reached by descending) has no surface exit —
- * its stairs-up tile is the way back, and it becomes the entry. `descend`
- * controls whether a stairs-down tile is placed at all; the bottom level of a
- * multi-level dungeon omits it so no stairs lead nowhere. The returned
- * `stairsDown` is that tile's id (null when omitted), which the caller links
- * to the next level via `childNodeId`.
+ * How the level connects to the level above it depends on `entrance`. An
+ * `edge` level, for example a dungeon entered from the overworld, gets a
+ * corridor carved from the first room to the nearest map edge, with a door
+ * on the border cell. A `stairs` level, for example a deeper floor reached
+ * by descending, has no surface exit. Its stairs-up tile is the way back,
+ * and it becomes the entry. `descend` controls whether the function places
+ * a stairs-down tile at all. The bottom level of a multi-level dungeon
+ * omits it, because no lower level exists for it to lead to. The returned
+ * `stairsDown` value
+ * is that tile id, or null when omitted. The caller links it to the next
+ * level through `childNodeId`.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @param {{ entrance?: 'edge' | 'stairs', descend?: boolean }} [options]
  * @returns {{ tiles: Tile[], entry: string, stairsDown: string | null }}
@@ -99,7 +103,8 @@ export function generateDungeon(palette, size, rng, options = {}) {
     const h = 3 + randInt(rng, 3);
     const x0 = 1 + randInt(rng, Math.max(1, size - w - 1));
     const y0 = 1 + randInt(rng, Math.max(1, size - h - 1));
-    // Reject rooms that would touch an existing one (keeps a wall between them).
+    // Reject rooms that touch an existing room. This keeps a wall between
+    // rooms.
     let clash = false;
     for (let y = y0 - 1; y <= y0 + h && !clash; y++) {
       for (let x = x0 - 1; x <= x0 + w; x++) {
@@ -121,10 +126,10 @@ export function generateDungeon(palette, size, rng, options = {}) {
   }
 
   // Edge entrance: carve a straight corridor from the first room to the
-  // nearest map edge and put a door on the border cell, so the dungeon is
-  // reachable from the parent map instead of floating disconnected in the
-  // void. A stairs-entered level skips this — it has no surface exit, and its
-  // stairs-up is the entry instead.
+  // nearest map edge, and put a door on the border cell. This makes the
+  // dungeon reachable from the parent map, instead of floating disconnected
+  // in the void. A stairs-entered level skips this step, because it has no
+  // surface exit. Its stairs-up tile is the entry instead.
   /** @type {string} */
   let entry = '0,0';
   /** @type {'door-h' | 'door-v'} */
@@ -148,10 +153,11 @@ export function generateDungeon(palette, size, rng, options = {}) {
     entryDoor = side <= 1 ? 'door-h' : 'door-v';
   }
 
-  // Walls wrap the floor wherever it meets the void (8-way, so diagonals are
-  // sealed too). Each wall cell's piece comes from which orthogonal neighbors
-  // continue the wall — the border door counts, since a door is a wall segment
-  // with a leaf in it — so runs, elbows, tees, and crossings all join cleanly.
+  // Walls wrap the floor wherever it meets the void, checked in all eight
+  // directions, so diagonals are sealed too. Each wall cell piece depends on
+  // which orthogonal neighbors continue the wall. The border door counts as
+  // a wall neighbor, because a door is a wall segment with a leaf in it.
+  // This makes runs, elbows, tees, and crossings join cleanly.
   /** @type {Set<string>} */
   const walls = new Set();
   for (let y = 0; y < size; y++) {
@@ -186,9 +192,10 @@ export function generateDungeon(palette, size, rng, options = {}) {
       }
     }
   }
-  // Stairs mark the way up (first room) and, when a level exists below, the
-  // way down (last room); an edge level also doors the border cell of its
-  // entrance corridor. A stairs-entered level's entry is its stairs-up.
+  // Stairs mark the way up in the first room, and the way down in the last
+  // room when a level exists below. An edge level also places a door on the
+  // border cell of its entrance corridor. A stairs-entered level uses its
+  // stairs-up tile as the entry.
   /** @type {string | null} */
   let stairsDown = null;
   if (centers.length) {
@@ -199,8 +206,8 @@ export function generateDungeon(palette, size, rng, options = {}) {
     if (descend) {
       stairsDown = tileIdAt(down[0], down[1]);
       if (stairsDown === tileIdAt(up[0], up[1])) {
-        // Single-room level: shift the descent off the stairs-up cell onto an
-        // adjacent floor tile so both stairs exist.
+        // Single-room level: move the stairs-down off the stairs-up cell
+        // onto an adjacent floor tile, so both stairs exist.
         const neighbor = NEIGHBORS4.map(([dx, dy]) => [down[0] + dx, down[1] + dy]).find(([x, y]) =>
           isFloor(x, y),
         );
@@ -215,10 +222,10 @@ export function generateDungeon(palette, size, rng, options = {}) {
 }
 
 /**
- * A castle keep: a floored hall enclosed by a full wall ring with a door in the
- * south wall, split by one interior partition wall (with its own door), and
- * stairs up/down in the top corners of the hall. The south door is the entry
- * connecting the keep to the parent map.
+ * Generate a castle keep: a floored hall enclosed by a full wall ring with a
+ * door in the south wall. One interior partition wall, with its own door,
+ * splits the hall. Stairs up and down sit in the top corners of the hall.
+ * The south door is the entry that connects the keep to the parent map.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @returns {{ tiles: Tile[], entry: string }}
  */
@@ -235,8 +242,8 @@ export function generateCastle(palette, size, rng) {
       /** @type {string} */
       let kind;
       if (y === max && x === doorX) kind = 'door-h';
-      // Corner names describe the connected edges, so the ring's NW corner
-      // (walls continuing east and south) takes wall-corner-se, and so on.
+      // Corner names describe the connected edges. The ring NW corner, where
+      // walls continue east and south, takes wall-corner-se.
       else if (x === 0 && y === 0) kind = 'wall-corner-se';
       else if (x === max && y === 0) kind = 'wall-corner-sw';
       else if (x === 0 && y === max) kind = 'wall-corner-ne';

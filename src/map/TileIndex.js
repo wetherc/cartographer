@@ -5,20 +5,23 @@ import { freezeTile, freezeTiles } from './TileFreeze.js';
 /** @typedef {import('../types/map.js').Tile} Tile */
 
 /**
- * The lookup structures for one node. Both are purely positional — they map an
- * identifier to an index into `node.tiles` and hold no tiles themselves — which
- * is what lets a mutation that replaces a tile in place reuse them untouched.
+ * The lookup structures for one node. Both structures are positional. Each
+ * structure maps an identifier to an index into `node.tiles` and holds no
+ * tiles. This lets a mutation that replaces a tile in place reuse the
+ * structures without a change.
  *
- * `cellPos` is the grid-coordinate half: one entry per cell of the node's
- * width x height extent, holding the array position of the tile there or -1 for
- * an empty cell. It is what turns a per-frame `x,y` string build and hash into
- * two array reads. Null on a node whose extent is unusable or implausibly large,
- * where coordinate lookups fall back to the id map.
+ * `cellPos` is the grid-coordinate structure. It has one entry per cell of the
+ * node's width x height extent. Each entry holds the array position of the
+ * tile at that cell, or -1 for an empty cell. This structure turns a per-frame
+ * `x,y` string build and hash into two array reads. The value is null when the
+ * node extent is unusable or too large, and coordinate lookups then fall back
+ * to the id map.
  *
- * `addedById`/`addedCells` are overrides for tiles appended since the base maps
- * were built. They belong to one node's entry alone and are never written after
- * that entry is cached, so a node can share the base maps with its ancestors
- * without a later append on either branch being visible to the other.
+ * `addedById` and `addedCells` hold overrides for tiles appended after the
+ * base maps were built. Each override belongs to one node entry only, and no
+ * code writes to it after the entry is cached. This lets a node share the base
+ * maps with its ancestors without a later append on one branch becoming
+ * visible on the other branch.
  * @typedef {Object} TileLayout
  * @property {Map<string, number>} posById
  * @property {Int32Array | null} cellPos
@@ -27,31 +30,31 @@ import { freezeTile, freezeTiles } from './TileFreeze.js';
  */
 
 /**
- * Per-node tile layout, built lazily on first lookup and cached in a WeakMap
- * keyed by the node object. Nodes are replaced immutably on every tile mutation
- * ({ ...node, tiles }), so a cached layout can never go stale — a mutated node
- * is a new key. This turns the flat Tile[] scans (getTile .find, setTile
- * .filter, fog checks) into O(1) lookups.
+ * Per-node tile layout. The code builds the layout lazily at first lookup and
+ * caches it in a WeakMap keyed by the node object. Each tile mutation replaces
+ * the node immutably (`{ ...node, tiles }`), so a cached layout never goes
+ * stale, because a mutated node is a new key. This turns the flat Tile[] scans
+ * (getTile .find, setTile .filter, fog checks) into lookups of constant time.
  *
- * Because the layout is positional, the three mutation helpers below hand the
- * new node the previous node's maps rather than letting it rebuild them, so a
- * paint or fog drag costs O(cells crossed) across the whole stroke instead of a
- * full re-index per cell. Removing a tile shifts every later position and so
- * still rebuilds; that is the one authoring gesture (erase) that keeps the old
- * cost.
+ * The layout is positional. The three mutation helpers below pass the new node
+ * the previous node's maps instead of rebuilding them. This makes the cost of a
+ * paint or fog drag proportional to the cells crossed, instead of a full
+ * re-index per cell. Removing a tile shifts every later position, so it still
+ * rebuilds the layout. Erase is the one authoring action that keeps this
+ * higher cost.
  *
- * The one contract: never mutate node.tiles in place. Every mutation must go
- * through the pure helpers that return a new node — which is enforced rather
- * than assumed, since each of them freezes what it puts into the new node while
- * development freezing is on (`TileFreeze.js`).
+ * Rule: never mutate node.tiles in place. Every mutation must go through the
+ * pure helpers that return a new node. The code enforces this rule: each
+ * helper freezes what it puts into the new node while development freezing is
+ * on (see `TileFreeze.js`).
  * @type {WeakMap<MapNode, TileLayout>}
  */
 const cache = new WeakMap();
 
 /**
- * Cell count above which the flat coordinate map is skipped, so a node
- * declaring an absurd extent cannot allocate an arbitrarily large buffer. A
- * real node is orders of magnitude below this.
+ * Cell count limit for the flat coordinate map. Above this limit the code
+ * skips the map, so a node with an extreme extent cannot allocate a very
+ * large buffer. A real node stays far below this limit.
  */
 const MAX_GRID_CELLS = 1_000_000;
 
@@ -80,7 +83,7 @@ function build(node) {
 }
 
 /**
- * The cached (or freshly built) layout for a node.
+ * The cached layout for a node, or a newly built one.
  * @param {MapNode} node
  * @returns {TileLayout}
  */
@@ -94,9 +97,9 @@ function layout(node) {
 }
 
 /**
- * The array position of a tile within node.tiles, or undefined when absent —
- * lets a mutation helper replace one element of a copied array instead of
- * re-scanning for it.
+ * The array position of a tile within node.tiles, or undefined if the tile
+ * is absent. This lets a mutation helper replace one element of a copied
+ * array instead of scanning the array again.
  * @param {MapNode} node
  * @param {string} tileId
  * @returns {number | undefined}
@@ -107,7 +110,7 @@ export function tilePosition(node, tileId) {
 }
 
 /**
- * The tile with an id, or undefined when the node has none.
+ * The tile with an id, or undefined if the node has no such tile.
  * @param {MapNode} node
  * @param {string} tileId
  * @returns {Tile | undefined}
@@ -118,10 +121,10 @@ export function tileAt(node, tileId) {
 }
 
 /**
- * The array position of the tile at a grid coordinate, or undefined when the
- * cell is empty or outside the node's extent. Allocates nothing, which is what
- * the render loop and the fog disc need — both visit cells by coordinate and
- * would otherwise build an id string per cell per frame.
+ * The array position of the tile at a grid coordinate, or undefined if the
+ * cell is empty or outside the node extent. This function allocates nothing.
+ * The render loop and the fog disc need this, because both visit cells by
+ * coordinate and otherwise build an id string for each cell each frame.
  * @param {MapNode} node
  * @param {number} x
  * @param {number} y
@@ -139,8 +142,8 @@ export function cellPosition(node, x, y) {
 }
 
 /**
- * The tile at a grid coordinate, or undefined when the cell is empty or outside
- * the node's extent.
+ * The tile at a grid coordinate, or undefined if the cell is empty or
+ * outside the node extent.
  * @param {MapNode} node
  * @param {number} x
  * @param {number} y
@@ -152,16 +155,17 @@ export function tileAtXY(node, x, y) {
 }
 
 /**
- * A new node holding a tile list, frozen against the in-place mutation every
- * cache here depends on nobody performing. Every list that was
- * built or reordered wholesale passes through here — a load, a generated map, an
- * erase, a resize, a whole-node fog flip: it hands its list over rather than
- * writing `tiles` into a node literal, and the new node is deliberately left
- * uncached, since only the three helpers below can say where a position moved.
+ * A new node holding a tile list, frozen against in-place mutation. Every
+ * cache here depends on no code performing that mutation. Every list built or
+ * reordered as a whole passes through this function: a load, a generated map,
+ * an erase, a resize, a whole-node fog flip. Each caller hands its list to
+ * this function instead of writing `tiles` into a node literal. The new node
+ * is deliberately left uncached, because only the three helpers below know
+ * where a position moved.
  *
- * The per-cell helpers below freeze the one tile they were handed instead of the
- * list, which is the difference between a bounded cost and an O(all tiles) one;
- * see `freezeTiles`.
+ * The per-cell helpers below freeze only the one tile they receive, not the
+ * whole list. This keeps their cost bounded instead of proportional to all
+ * tiles. See `freezeTiles`.
  * @param {MapNode} node
  * @param {Tile[]} tiles
  * @returns {MapNode}
@@ -172,7 +176,7 @@ export function withNodeTiles(node, tiles) {
 
 /**
  * A new node with the tile at one array position replaced. Nothing moves, so
- * the new node shares the previous node's layout outright.
+ * the new node shares the previous node's layout without change.
  * @param {MapNode} node
  * @param {number} pos
  * @param {Tile} tile
@@ -188,8 +192,8 @@ export function withTileReplaced(node, pos, tile) {
 }
 
 /**
- * A new node with several tiles replaced at once, keyed by array position — the
- * shape a fog reveal produces, where one party step flips a disc of cells.
+ * A new node with several tiles replaced at once, keyed by array position. A
+ * fog reveal produces this shape: one party step flips a disc of cells.
  * @param {MapNode} node
  * @param {Map<number, Tile>} changes
  * @returns {MapNode}
@@ -204,11 +208,11 @@ export function withTilesReplaced(node, changes) {
 }
 
 /**
- * A new node with a tile appended. The base maps are shared and the appended
- * id recorded in this node's own override maps; once those overrides grow past
- * roughly the square root of the tile count the new node is left uncached, so
- * the next lookup rebuilds a flat layout rather than paying a growing copy per
- * appended tile.
+ * A new node with a tile appended. The base maps stay shared, and the code
+ * records the appended id in this node's own override maps. Once the
+ * overrides grow past about the square root of the tile count, the code
+ * leaves the new node uncached. The next lookup then rebuilds a flat layout
+ * instead of paying a growing copy cost for each appended tile.
  * @param {MapNode} node
  * @param {Tile} tile
  * @returns {MapNode}

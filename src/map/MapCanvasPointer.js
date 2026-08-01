@@ -12,31 +12,32 @@ import {
 /** @typedef {import('./MapCanvas.js').MapCanvas} MapCanvas */
 
 /**
- * Pointer, touch, and wheel interaction for MapCanvas: left-click/tap acts,
- * right-drag (or one-finger touch drag) pans, wheel and pinch zoom anchored
- * under the pointer, authoring strokes, hover tracking, and the context click.
- * Split out of MapCanvas so the canvas class stays the owner of view state and
- * rendering; this controller reads and mutates the host's public view fields
- * (offsetX/offsetY/scale/_userView) and fires the host's callbacks.
+ * This class manages pointer, touch, and wheel interaction for MapCanvas.
+ * A left click or tap acts. A right-drag, or a one-finger touch drag, pans the view.
+ * The wheel and pinch gestures zoom the view at the pointer position.
+ * The class also handles authoring strokes, hover tracking, and the context click.
+ * MapCanvas does not do this work directly, so the canvas class stays the owner
+ * of view state and drawing. This controller reads and changes the host's public
+ * view fields (offsetX, offsetY, scale, _userView) and runs the host's callbacks.
  */
 export class MapCanvasPointer {
   /** @param {MapCanvas} host */
   constructor(host) {
     this.host = host;
 
-    /** @type {string | null} last hovered cell id, so hover fires per cell, not per pixel */
+    /** @type {string | null} last hovered cell id. Hover fires once per cell, not per pixel. */
     this._hoverCellId = null;
-    /** Right-drag pan is active (both modes). */
+    /** Right-drag pan is active in both modes. */
     this._panning = false;
-    /** Play-mode left button is down and may resolve to a click. */
+    /** In Play mode, the left button is down and may become a click. */
     this._pendingClick = false;
     this._lastX = 0;
     this._lastY = 0;
     this._dragDistance = 0;
     this._stroking = false;
-    /** @type {string | null} last cell a stroke touched, so a stroke applies once per cell */
+    /** @type {string | null} last cell a stroke touched. A stroke applies only once per cell. */
     this._lastStrokeCellId = null;
-    /** @type {Map<number, { x: number, y: number }>} live touch points, for pan/pinch */
+    /** @type {Map<number, { x: number, y: number }>} active touch points, used for pan and pinch */
     this._touches = new Map();
     /** @type {{ cx: number, cy: number, dist: number } | null} previous two-finger frame */
     this._pinch = null;
@@ -70,7 +71,8 @@ export class MapCanvasPointer {
     canvas.removeEventListener('contextmenu', this._onContextMenu);
   }
 
-  /** Abandon any in-flight gesture, used when the mode (authoring) flips. */
+  /** Cancel any gesture in progress. The app calls this when the mode switches
+   * to or from authoring. */
   cancel() {
     this._stroking = false;
     this._panning = false;
@@ -78,7 +80,7 @@ export class MapCanvasPointer {
     this._lastStrokeCellId = null;
   }
 
-  /** Right-drag pans in both modes now, so its context menu must never pop.
+  /** Right-drag now pans in both modes. The context menu must never open.
    * @param {MouseEvent} event */
   _onContextMenu(event) {
     event.preventDefault();
@@ -87,31 +89,31 @@ export class MapCanvasPointer {
   /** @param {PointerEvent} event */
   _onPointerDown(event) {
     const host = this.host;
-    // A pointer touch is a different intent from the arrow key that armed an
-    // edge exit; the arming lapses rather than letting a later arrow confirm it.
+    // A pointer touch differs in intent from the arrow key that armed an
+    // edge exit. The arming lapses instead of letting a later arrow confirm it.
     host.disarmExit();
     if (event.pointerType === 'touch') {
       this._touches.set(event.pointerId, { x: event.clientX, y: event.clientY });
       host.canvas.setPointerCapture?.(event.pointerId);
       if (this._touches.size >= 2) {
-        // A second finger turns any in-flight gesture into a pan/pinch: cancel
-        // the stroke/tap so lifting a finger doesn't fire a stray action.
+        // A second finger turns any gesture in progress into a pan or pinch.
+        // Cancel the stroke or tap so that lifting a finger does not fire a stray action.
         this._stroking = false;
         this._lastStrokeCellId = null;
         this._pendingClick = false;
         this._panning = false;
-        this._pinch = null; // seeded by the first two-finger move
+        this._pinch = null; // The first two-finger move sets this value.
         return;
       }
       if (host.authoring) {
-        // One finger authors, like the mouse's left button.
+        // One finger authors, the same as the mouse left button.
         this._stroking = true;
         this._lastStrokeCellId = null;
         this._strokeCell(event, true);
         return;
       }
-      // Play mode: a tap acts, a drag pans (there's no second button on touch,
-      // so the single finger has to do both; _onPointerMove promotes it).
+      // In Play mode, a tap acts and a drag pans. Touch has no second button,
+      // so one finger must do both. _onPointerMove changes a tap into a pan.
       this._pendingClick = true;
       this._dragDistance = 0;
       this._lastX = event.clientX;
@@ -119,17 +121,17 @@ export class MapCanvasPointer {
       return;
     }
     if (host.authoring && event.button === 0) {
-      // Left button authors: begin a stroke and apply it to the pressed cell.
-      // Capture the pointer so a stroke that wanders off the canvas mid-drag
-      // keeps applying and still gets its pointerup.
+      // The left button authors. Start a stroke and apply it to the pressed cell.
+      // Capture the pointer so that a stroke that moves off the canvas during a
+      // drag still applies and still receives its pointerup event.
       this._stroking = true;
       this._lastStrokeCellId = null;
       host.canvas.setPointerCapture?.(event.pointerId);
       this._strokeCell(event, true);
       return;
     }
-    // Panning is the right button in both modes, so Play and Build share one
-    // navigation gesture and the left button is free to act (click) or author.
+    // The right button pans in both modes. Play mode and Build mode share
+    // one navigation gesture. The left button is free to click or to author.
     if (event.button === 2) {
       this._panning = true;
       this._dragDistance = 0;
@@ -137,8 +139,9 @@ export class MapCanvasPointer {
       this._lastY = event.clientY;
       return;
     }
-    // Play-mode left button: a click candidate (navigate/move on release if it
-    // didn't turn into a drag). No left-drag pan, matching Build mode.
+    // In Play mode, the left button is a click candidate. It navigates or
+    // moves on release if it does not become a drag. Left-drag does not pan,
+    // the same as Build mode.
     if (!host.authoring && event.button === 0) {
       this._pendingClick = true;
       this._dragDistance = 0;
@@ -148,7 +151,8 @@ export class MapCanvasPointer {
   }
 
   /**
-   * The grid cell under a pointer event, or null when it's outside the node.
+   * Get the grid cell under a pointer event. Return null when the event is
+   * outside the node.
    * @param {PointerEvent} event
    * @returns {{ x: number, y: number } | null}
    */
@@ -175,9 +179,9 @@ export class MapCanvasPointer {
   }
 
   /**
-   * The edge exit whose arrow a pointer event falls on, or null. Bands are built
-   * from the same MapExits geometry the renderer draws them with, so the rect
-   * tested here is the pill the GM can see.
+   * Get the edge exit whose arrow a pointer event falls on, or null.
+   * Bands use the same MapExits geometry that the renderer draws.
+   * The rect tested here is the same pill shape the GM sees.
    * @param {PointerEvent} event
    * @returns {import('../types/map.js').MapExit | null}
    */
@@ -209,8 +213,8 @@ export class MapCanvasPointer {
   }
 
   /**
-   * Fire onStrokeCell for the cell under the pointer, once per distinct cell,
-   * skipping out-of-bounds cells so a stroke can't author past the map edge.
+   * Run onStrokeCell for the cell under the pointer, once for each distinct cell.
+   * Skip out-of-bounds cells so a stroke cannot author past the map edge.
    * @param {PointerEvent} event
    * @param {boolean} first
    */
@@ -240,9 +244,9 @@ export class MapCanvasPointer {
       return;
     }
     if (this._pendingClick) {
-      // Track movement so a left-drag doesn't count as a click; no pan —
-      // except on touch, where a moved finger promotes the tap into a pan
-      // (touch has no second button to dedicate to panning).
+      // Track movement so that a left-drag does not count as a click. No pan
+      // happens, except on touch, where a moved finger changes the tap into a
+      // pan. Touch has no second button to use only for panning.
       this._dragDistance +=
         Math.abs(event.clientX - this._lastX) + Math.abs(event.clientY - this._lastY);
       if (event.pointerType === 'touch' && this._dragDistance >= 8) {
@@ -254,16 +258,16 @@ export class MapCanvasPointer {
       return;
     }
     if (!this._panning) {
-      // A return arrow is a control drawn on the canvas, so it has to say so
-      // under the pointer; the grid itself keeps the default cursor.
+      // A return arrow is a control drawn on the canvas. The cursor must show
+      // this under the pointer. The grid itself keeps the default cursor.
       host.canvas.style.cursor = this._eventExit(event) ? 'pointer' : '';
       this._trackHover(event);
       return;
     }
-    // Panning: any tooltip anchored to the old position is stale.
+    // While panning, any tooltip anchored to the old position is stale.
     this._clearHover();
-    // Drag deltas are measured in client (CSS) px but pan offsets live in
-    // buffer px, so scale the delta by the buffer/CSS ratio.
+    // Drag deltas use client (CSS) pixels, but pan offsets use buffer pixels.
+    // Scale the delta by the buffer-to-CSS ratio.
     const rect = host.canvas.getBoundingClientRect();
     const { scaleX, scaleY } = bufferScale(rect, host.canvas.width, host.canvas.height);
     const dx = (event.clientX - this._lastX) * scaleX;
@@ -278,15 +282,15 @@ export class MapCanvasPointer {
   }
 
   /**
-   * Fire onCellHover when the pointer crosses into a different grid cell
-   * (or leaves the grid), passing the tile there if one exists.
+   * Run onCellHover when the pointer moves into a different grid cell,
+   * or leaves the grid. Pass the tile there, if one exists.
    * @param {PointerEvent} event
    */
   _trackHover(event) {
     const host = this.host;
     if (!host.onCellHover || !host.node) return;
-    // Same cell resolution as a click, so the tooltip can never describe a
-    // different tile than the one a click would act on.
+    // This uses the same cell resolution as a click. The tooltip always
+    // describes the same tile that a click acts on.
     const coords = this._eventCell(event);
     const cellId = coords ? tileIdAt(coords.x, coords.y) : null;
     if (cellId === this._hoverCellId) return;
@@ -295,9 +299,9 @@ export class MapCanvasPointer {
     host.onCellHover(tile, event.clientX, event.clientY);
   }
 
-  /** Reset hover state and tell the handler the pointer is off the grid. Also
-   * drops the exit arrow's pointer cursor, unconditionally: the pointer leaving
-   * the canvas over an arrow would otherwise leave the cursor set. */
+  /** Reset hover state and tell the handler that the pointer left the grid.
+   * Also clear the exit arrow pointer cursor. Otherwise the cursor stays set
+   * when the pointer leaves the canvas over an arrow. */
   _clearHover() {
     this.host.canvas.style.cursor = '';
     if (this._hoverCellId === null) return;
@@ -306,8 +310,9 @@ export class MapCanvasPointer {
   }
 
   /**
-   * Two-finger pan + pinch-zoom: the centroid delta pans, the finger-distance
-   * ratio zooms anchored at the centroid, matching the wheel's anchored zoom.
+   * Two-finger pan and pinch zoom. The centroid delta pans the view.
+   * The finger-distance ratio zooms the view, anchored at the centroid.
+   * This matches the anchored zoom that the wheel gesture uses.
    */
   _updatePinch() {
     const host = this.host;
@@ -327,7 +332,7 @@ export class MapCanvasPointer {
     host.offsetY += (cy - this._pinch.cy) * scaleY;
     if (this._pinch.dist > 0 && dist > 0) {
       const buffer = clientToBuffer(cx, cy, rect, host.canvas.width, host.canvas.height);
-      // Anchor the exact world point under the centroid, same as the wheel.
+      // Anchor the exact world point under the centroid, the same as the wheel.
       const worldX = (buffer.x - host.offsetX) / host.scale;
       const worldY = (buffer.y - host.offsetY) / host.scale;
       host.scale = clampZoom(host.scale * (dist / this._pinch.dist), host.minZoom, host.maxZoom);
@@ -351,13 +356,13 @@ export class MapCanvasPointer {
         this._panning = false;
         return;
       }
-      // A tap that acts should also surface the tile tooltip, since touch has
-      // no hover: report the tapped cell before the click handler runs.
+      // A tap that acts must also show the tile tooltip. Touch has no hover,
+      // so report the tapped cell before the click handler runs.
       if (this._pendingClick && this._dragDistance < 4) this._trackHover(event);
     }
     if (event.type === 'pointerleave') this._clearHover();
     if (this._stroking) {
-      if (event.type === 'pointerleave') return; // captured pointer: stroke ends on pointerup
+      if (event.type === 'pointerleave') return; // The pointer is captured. The stroke ends only on pointerup.
       this._stroking = false;
       this._lastStrokeCellId = null;
       host.onStrokeEnd?.();
@@ -365,10 +370,10 @@ export class MapCanvasPointer {
     }
     if (this._panning) {
       this._panning = false;
-      // A right press released without dragging is a context click on the cell
-      // under it. Detected here on pointerup rather than in the contextmenu
-      // handler because macOS fires contextmenu on press, before a drag could
-      // disqualify it — and the pan gesture must never pop the dialog.
+      // A right press released without a drag is a context click on the cell
+      // under it. This code detects it on pointerup, not in the contextmenu
+      // handler. macOS fires contextmenu on press, before a drag can disqualify
+      // it. The pan gesture must never open the dialog.
       if (this._dragDistance < 4 && host.onCellContextMenu && host.node) {
         const coords = this._eventCell(event);
         if (coords) {
@@ -376,15 +381,15 @@ export class MapCanvasPointer {
           host.onCellContextMenu(coords.x, coords.y, tile, event.clientX, event.clientY);
         }
       }
-      return; // a pan (right-drag) never acts as a click
+      return; // A pan (right-drag) never acts as a click.
     }
     const wasClick = this._pendingClick && this._dragDistance < 4;
     this._pendingClick = false;
     if (!wasClick || host.authoring || !host.node) return;
 
-    // Exits are tested before cells: a band clamped onto the map (the border
-    // panned out of view) sits over tiles, and the click has to land on the
-    // arrow the GM is looking at rather than the terrain behind it.
+    // Exits are tested before cells. A band clamped onto the map, when the
+    // border has panned out of view, sits over tiles. The click must land on
+    // the arrow the GM sees, not on the terrain behind it.
     const exit = this._eventExit(event);
     if (exit) {
       host.onExitClick?.(exit);
@@ -392,8 +397,8 @@ export class MapCanvasPointer {
     }
     if (!host.onCellClick) return;
 
-    // Fire for any in-bounds cell, whether or not a tile currently sits there.
-    // The handler gets the tile if one exists, or null.
+    // Run for any in-bounds cell, whether or not a tile sits there now.
+    // The handler gets the tile if one exists, or null otherwise.
     const coords = this._eventCell(event);
     if (!coords) return;
     const tile = getTile(host.node, tileIdAt(coords.x, coords.y)) ?? null;
@@ -415,8 +420,8 @@ export class MapCanvasPointer {
     const pointerX = buffer.x;
     const pointerY = buffer.y;
 
-    // Anchor the exact world point under the pointer (not the nearest tile
-    // corner) so repeated wheel ticks zoom smoothly instead of snapping.
+    // Anchor the exact world point under the pointer, not the nearest tile
+    // corner. This makes repeated wheel ticks zoom smoothly, without a snap.
     const worldX = (pointerX - host.offsetX) / host.scale;
     const worldY = (pointerY - host.offsetY) / host.scale;
     const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;

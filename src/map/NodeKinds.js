@@ -1,15 +1,15 @@
 /** @typedef {import('../types/map.js').NodeKind} NodeKind */
 
 /**
- * The two node kinds. A region is outdoor terrain (world/region/subregion); an
- * interior is the inside of a structure (a shop, an inn, a dungeon level).
+ * The two node kinds. A region is outdoor terrain: a world, a region, or a
+ * subregion. An interior is the inside of a structure, for example a shop, an inn, or a dungeon level.
  * @type {NodeKind[]}
  */
 export const NODE_KINDS = ['region', 'interior'];
 
 /**
- * Curated environment tags per kind, offered when authoring a node. The model
- * stores a free string (environ), so these are suggestions, not a closed set.
+ * Curated environment tags per kind, offered when a GM authors a node. The
+ * model stores a free string for the environ field, so these are suggestions, not a closed set.
  * @type {Record<NodeKind, string[]>}
  */
 export const ENVIRONS = {
@@ -39,7 +39,7 @@ export const ENVIRONS = {
 };
 
 /**
- * The environ suggestions for a kind (empty for an unknown kind).
+ * The environ suggestions for a kind. Returns an empty array for an unknown kind.
  * @param {string} kind
  * @returns {string[]}
  */
@@ -48,9 +48,9 @@ export function environOptions(kind) {
 }
 
 /**
- * Read a kind back from a dialog or a hand-edited save. Anything that is not one
- * of the two kinds becomes the fallback, so a node can never end up with a kind
- * the palette filter and the renderer do not know.
+ * Read a kind back from a dialog or a hand-edited save. Anything that is not
+ * one of the two kinds becomes the fallback. A node can then never end up
+ * with a kind that the palette filter and the renderer do not know.
  * @param {unknown} raw
  * @param {NodeKind} fallback
  * @returns {NodeKind}
@@ -62,10 +62,10 @@ export function coerceNodeKind(raw, fallback) {
 }
 
 /**
- * Whether a palette entry of the given type belongs on a node of this kind:
- * interiors get only interior pieces (plus custom art); regions get everything
- * except interior pieces. This filters the Build-mode palette so a GM paints an
- * interior with walls and floors, not grass and mountains, and vice versa.
+ * Whether a palette entry of the given type belongs on a node of this kind.
+ * Interiors get only interior pieces plus custom art. Regions get everything
+ * except interior pieces. This filters the Build-mode palette, so a GM paints
+ * an interior with walls and floors, and a region with grass and mountains.
  * @param {string} kind
  * @param {string} entryType palette entry's `type`
  * @returns {boolean}

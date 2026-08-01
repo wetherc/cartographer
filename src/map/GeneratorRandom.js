@@ -1,7 +1,7 @@
 /**
- * RNG helpers shared by the map generators. Every generator takes an injected
- * `() => number` RNG (pass `Math.random` in the app, a seeded generator in
- * tests) so a seed reproduces a generation exactly.
+ * RNG helpers for the map generators. Each generator takes an injected
+ * `() => number` RNG. Pass `Math.random` in the app and a seeded generator in
+ * tests. A seed then reproduces the same generation exactly.
  */
 
 /** @param {() => number} rng @param {number} n */
@@ -10,8 +10,8 @@ export function randInt(rng, n) {
 }
 
 /**
- * Fisher-Yates shuffle of a copy of `items`, using the injected RNG so a seed
- * reproduces the same order (used to scatter town buildings deterministically).
+ * Fisher-Yates shuffle of a copy of `items`. The injected RNG makes the order
+ * reproducible from a seed. Town building placement uses this for a deterministic scatter.
  * @template T @param {T[]} items @param {() => number} rng @returns {T[]}
  */
 export function shuffle(items, rng) {

@@ -10,9 +10,9 @@ import { kindOf } from './TilePalette.js';
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
 
 /**
- * The four sides of a node, with the direction each one leads away in. Written
- * once here because the exit finder, the return-tile geometry, and the renderer
- * all walk the same four in the same order.
+ * The four sides of a node, with the direction each side leads to. This list
+ * is defined once here. The exit finder, the return-tile geometry, and the
+ * renderer all use the same order.
  * @type {{ side: ExitSide, dx: number, dy: number }[]}
  */
 export const EXIT_SIDES = [
@@ -23,19 +23,20 @@ export const EXIT_SIDES = [
 ];
 
 /**
- * Ways out of a node, back to the node above it. Zooming into a child is fully
- * modelled (see EntryPoint); this is the other direction, and it is what the map
- * draws a return arrow or badge for.
+ * Ways out of a node, back to the parent node. EntryPoint models the zoom into
+ * a child. This function models the opposite direction. The map draws a
+ * return arrow or badge from this data.
  *
- * An outdoor child reports one `edge` exit per side of the block it occupies in
- * its parent that touches painted parent tiles — walking off that side of the
- * map puts the party back on the terrain they crossed to get here. An interior
- * reports a `tile` exit per outer door and per unlinked staircase running back to
- * the parent level, the authored ways in and out of a structure.
+ * An outdoor child reports one `edge` exit for each side of its block that
+ * touches painted parent tiles. If the party walks off that side, they return
+ * to the terrain they crossed to enter. An interior reports one `tile` exit
+ * for each outer door and each unlinked staircase back to the parent level.
+ * These are the authored ways in and out of the structure.
  *
- * A node with neither (an interior a GM sealed, or a child whose parent block
- * sits in unpainted terrain) reports a single `fallback` exit instead of
- * nothing, so a party can always get out of a space they walked into.
+ * A node with neither exit type reports one `fallback` exit instead of none.
+ * This can occur for an interior the GM sealed, or a child whose parent block
+ * sits in unpainted terrain. The fallback exit lets the party always leave a
+ * space they entered.
  *
  * @param {MapNode | null} node node the party is in
  * @param {MapNode | null} parent its parent, or null at the root
@@ -53,12 +54,13 @@ export function findExits(node, parent) {
 }
 
 /**
- * The sides of the parent's region block that abut usable parent terrain. A side
- * counts when any member cell of the block has an orthogonal neighbour in the
- * parent that carries an image and does not belong to the block itself, so a
- * ragged block is read cell by cell and a block sitting in blank terrain (or
- * flush against the parent's own edge) reports that side as no way out. Diagonal
- * contact past a corner does not count: the party would have nothing to step onto.
+ * The sides of the parent's region block that touch usable parent terrain. A
+ * side counts when at least one cell of the block has an orthogonal neighbor
+ * in the parent with an image, and that neighbor is not part of the block.
+ * This function checks the block cell by cell. A block in blank terrain, or
+ * flush against the parent's own edge, reports that side as no way out.
+ * Diagonal contact past a corner does not count, because the party has
+ * nothing to step onto there.
  * @param {MapNode} node
  * @param {MapNode} parent
  * @param {{ targetNodeId: string, targetName: string }} target
@@ -81,14 +83,15 @@ function edgeExits(node, parent, target) {
 
 /**
  * The door and stairway tiles that lead out of an interior. A door qualifies
- * when it opens onto what is outside the structure: it sits on the grid border,
- * or beside a cell the map leaves empty (the void a generated dungeon leaves
- * around its rooms). A staircase qualifies only when it is the one the parent
- * level connects through, which stairwayTo resolves in either direction: a crypt
- * level below leaves through its stairs up, an upper storey above leaves through
- * its stairs down. A keep whose entrance is a door has neither, and its own
- * staircases go to floors the map does not model. Either way a tile that already
- * links to a child node is a way further in, not out, so it is skipped.
+ * when it opens to the outside of the structure. It can sit on the grid
+ * border, or beside an empty cell (the void a generated dungeon leaves around
+ * its rooms). A staircase qualifies only when it is the one tile the parent
+ * level connects through. The function stairwayTo resolves this in either
+ * direction. A crypt level below leaves through its stairs up. An upper
+ * storey above leaves through its stairs down. A keep with a door entrance
+ * has neither case. Its own staircases lead to floors the map does not
+ * model. This function skips a tile that already links to a child node,
+ * because that tile leads further in, not out.
  * @param {MapNode} node
  * @param {MapNode} parent
  * @param {{ targetNodeId: string, targetName: string }} target
@@ -107,8 +110,8 @@ function interiorExits(node, parent, target) {
       exits.push({ kind: 'tile', tileId: tile.id, via: 'door', ...target });
     }
   }
-  // Sorted so the renderer and the accessible button list agree on order
-  // whatever order the tile array happens to be in.
+  // Sort the exits so the renderer and the accessible button list use the
+  // same order, regardless of tile array order.
   return exits.sort((a, b) => exitTileId(a).localeCompare(exitTileId(b)));
 }
 
@@ -136,11 +139,12 @@ function opensOutward(node, tile) {
 }
 
 /**
- * Which tile kind climbs back the way a stairway came. A parent reaching a child
- * through stairs down is the level above it, so the child returns through its
- * stairs up; a parent reaching it through stairs up is the level below, as a
- * castle's ground floor is to its upper storey, and the child returns through its
- * stairs down. Any other kind of link (a town's door into a keep) is not a
+ * Which tile kind leads back the way a stairway came. If the parent reaches a
+ * child through stairs down, the parent is the level above the child, and the
+ * child returns through its stairs up. If the parent reaches a child through
+ * stairs up, the parent is the level below the child, like a castle's ground
+ * floor below its upper storey, and the child returns through its stairs
+ * down. Any other kind of link, such as a town's door into a keep, is not a
  * stacked level and has no stairway back.
  * @param {string | undefined} kind
  * @returns {'stairs-up' | 'stairs-down' | null}
@@ -152,15 +156,15 @@ function stairwayBack(kind) {
 }
 
 /**
- * The parent's stairway tile leading to a child, with the tile kind in the child
- * that comes back along it. The one authored connection between two stacked
- * levels, so it is both how the party leaves the parent and where they arrive
- * when they come back, and it is what makes the child's own staircase a way out.
+ * The parent's stairway tile that leads to a child, with the matching tile
+ * kind in the child. This is the one authored connection between two stacked
+ * levels. The party uses it to leave the parent and to arrive back in the
+ * parent. It is what makes the child's own staircase a way out.
  *
- * A parent that links the same child from both a stairs-down and a stairs-up tile
- * has authored two contradictory connections; the descent wins, because a level
- * below is the far more common shape and it is what such a map already resolved
- * to before the ascent was modelled.
+ * A parent can link the same child from both a stairs-down tile and a
+ * stairs-up tile. This is a contradiction. In this case, the descent wins,
+ * because a level below is the more common shape, and existing maps already
+ * resolved to it before the ascent was modelled.
  *
  * @param {MapNode} parent
  * @param {string} childNodeId
@@ -173,8 +177,8 @@ export function stairwayTo(parent, childNodeId) {
     if (tile.childNodeId !== childNodeId) continue;
     const back = stairwayBack(kindOf(tile.imageRef));
     if (!back) continue;
-    // A child returning through its stairs up is one the parent descends into,
-    // so this is the descent the doc comment gives precedence to.
+    // A child that returns through its stairs up is one the parent descends
+    // into. This is the descent case given precedence above.
     if (back === 'stairs-up') return { tile, back };
     found = found ?? { tile, back };
   }
@@ -193,8 +197,8 @@ export function blockFor(parent, childNodeId) {
 }
 
 /**
- * The exit a tile is, if any — the click path's lookup for a door or stairway
- * the party can leave through.
+ * The exit at a tile, if any. The click path uses this to look up a door or
+ * stairway the party can leave through.
  * @param {MapExit[]} exits
  * @param {string} tileId
  * @returns {MapExit | null}
@@ -214,9 +218,10 @@ export function exitForSide(exits, side) {
 }
 
 /**
- * Whether an interior has no authored way out, so Build mode can say so. A GM
- * can still leave one in Play (findExits hands back a fallback), but a sealed
- * interior is nearly always an unfinished map rather than an intent.
+ * Whether an interior has no authored way out, so Build mode can report it.
+ * A GM can still leave through the fallback exit in Play mode, findExits
+ * returns one. A sealed interior nearly always means an unfinished map, not
+ * an intent.
  * @param {MapNode | null} node
  * @param {MapNode | null} parent
  * @returns {boolean}
@@ -228,25 +233,25 @@ export function isSealedInterior(node, parent) {
 
 /**
  * What Build mode tells a GM about the node in view, or null when there is
- * nothing to say. Three problems, in the order a GM has to solve them.
+ * nothing to say. The problems are listed in the order a GM must solve them.
  *
- * A node no parent tile links to is unreachable: the party can never walk into it
- * and players never see it, whatever is painted inside. That comes first because
- * the link is also what decides the later answers — a staircase counts as a way
- * out only in the direction the link runs, so advice about stairs before there is
- * a link would be a guess.
+ * A node with no parent tile link is unreachable. The party can never walk
+ * into it, and players never see what is painted inside. This check comes
+ * first because the link also decides the later answers. A staircase counts
+ * as a way out only in the direction the link runs. Advice about stairs
+ * before a link exists is a guess.
  *
- * Then a linked node whose every exit is the fallback. For an interior that is a
- * sealed structure, and only the staircase running back to the parent level
- * counts (interiorExits), so the warning names that direction and no other: a
- * crypt level is told about its stairs up, an upper storey about its stairs
- * down, and a keep entered through a town door about a door alone, since stairs
- * there would be advice that cannot clear the warning. For an outdoor child it
- * is a block sitting in blank parent terrain, with nothing beside it to walk
- * off onto, so the fix is painted on the parent rather than here.
+ * The next check is a linked node where every exit is the fallback exit. For
+ * a sealed interior, only the staircase back to the parent level counts, see
+ * interiorExits. The warning names only that direction. A crypt level is told
+ * about its stairs up. An upper storey is told about its stairs down. A keep
+ * entered through a town door is told about a door alone, because stairs
+ * there does not clear the warning. For an outdoor child, this case means
+ * the block sits in blank parent terrain with nothing beside it to walk
+ * onto. The fix for that case is painted on the parent, not here.
  *
- * All of these are warnings about an unfinished map, not about a stuck party —
- * findExits hands Play a fallback either way.
+ * All of these are warnings about an unfinished map, not about a stuck
+ * party. findExits always gives Play mode a fallback exit.
  *
  * @param {MapNode | null} node
  * @param {MapNode | null} parent
@@ -268,8 +273,8 @@ export function authoringWarning(node, parent) {
 }
 
 /**
- * Which side of a node a cell is nearest to, used to decide where a door leads
- * out and where the party lands in the parent when they use it.
+ * Which side of a node a cell is nearest to. This decides where a door leads
+ * out, and where the party lands in the parent when they use it.
  * @param {MapNode} node
  * @param {{ x: number, y: number }} coords
  * @returns {ExitSide}
@@ -292,9 +297,10 @@ export function sideAxis(side) {
 }
 
 /**
- * The view geometry an exit band's rect is computed from — the same fields the
- * renderer already holds on its view snapshot, plus which cell along the side
- * the band should centre on (the party's row or column).
+ * The view geometry used to compute an exit band's rect. These fields match
+ * what the renderer already holds in its view snapshot. One extra field
+ * gives the cell along the side the band centers on, the party's row
+ * or column.
  * @typedef {Object} ExitBandGeometry
  * @property {number} width node width in tiles
  * @property {number} height node height in tiles
@@ -311,9 +317,9 @@ export function sideAxis(side) {
 /** @typedef {{ x: number, y: number, w: number, h: number, fontSize: number }} ExitBand */
 
 /**
- * The view state an exit band is placed from — the pan/zoom/canvas fields of the
- * renderer's view snapshot, named structurally so this module stays free of any
- * canvas dependency.
+ * The view state used to place an exit band: the pan, zoom, and canvas
+ * fields from the renderer's view snapshot. The fields are named
+ * structurally so this module has no canvas dependency.
  * @typedef {Object} ExitBandView
  * @property {number} offsetX
  * @property {number} offsetY
@@ -324,14 +330,15 @@ export function sideAxis(side) {
  */
 
 /**
- * The geometry one edge exit's band is computed from, read off live view state.
- * The band tracks the party along the side it leads off: an arrow beside where
- * they stand reads as the way they would walk out, and it means a long map's
- * arrow is never off-screen while the party is on-screen. With the party
- * elsewhere (a node no one is standing in) it centres on the side instead.
+ * The geometry used to compute one edge exit's band, read from live view
+ * state. The band tracks the party along the side it leads off. An arrow
+ * beside the party shows the way out, and stays on-screen on a long map
+ * while the party is on-screen. If the party is elsewhere, in a node no one
+ * stands in, the band centers on the side instead.
  *
- * Both the renderer and the pointer build their geometry here, so the arrow the
- * GM sees and the rect their click is tested against can never drift apart.
+ * Both the renderer and the pointer build their geometry here. This makes
+ * sure that the arrow the GM sees and the rect the click test uses can never
+ * differ.
  * @param {MapNode} node node being drawn
  * @param {ExitBandView} view
  * @param {number} tileSize base tile size in buffer px at scale 1
@@ -358,21 +365,21 @@ export function exitBandGeometry(node, view, tileSize, exit) {
 }
 
 /**
- * The rect an edge exit's arrow is drawn in and clicked in. Deliberately a
- * bounded pill rather than a whole side of the gutter: the click target has to
- * be the thing the GM can see, and an unbounded band would swallow every click
- * that missed the map. It sits just outside the map border, centred on the cell
- * the party stands on along that side, and is clamped to stay on the canvas, so
- * panning the map's edge out of view leaves the arrow pinned at the viewport
- * edge instead of scrolling away with nothing to click.
+ * The rect an edge exit's arrow is drawn in, and clicked in. This is a
+ * bounded pill, not a whole side of the gutter, because the click target
+ * must match what the GM can see. An unbounded band catches every click
+ * that missed the map. The rect sits just outside the map border, centered
+ * on the cell the party stands on along that side. It is clamped to stay on
+ * the canvas. If the GM pans the map edge out of view, the arrow stays
+ * pinned at the viewport edge instead of scrolling away.
  *
- * Pure geometry, no ctx: the renderer draws this rect and the pointer hit-tests
- * it, so the two cannot disagree about where the arrow is. A band wider than the
- * gutter it sits in ends up clamped over the map's own tiles, which is why the
- * pointer tests bands before it resolves a cell: whatever the GM can see is what
- * the click lands on. The label width is
- * estimated from the character count for the same reason — measureText would tie
- * the rect to a canvas.
+ * This is pure geometry with no ctx parameter. The renderer draws this rect,
+ * and the pointer hit-tests it, so the two cannot disagree about the
+ * arrow's position. A band wider than its gutter ends up clamped over the
+ * map's own tiles. For this reason, the pointer tests bands before it
+ * resolves a cell, so the click always lands on what the GM can see. The
+ * label width is estimated from the character count for the same reason,
+ * because measureText ties the rect to a canvas.
  * @param {MapExit} exit
  * @param {ExitBandGeometry} geom
  * @returns {ExitBand}
@@ -382,15 +389,15 @@ export function edgeExitBand(exit, geom) {
   const size = geom.tileSize * geom.scale;
   const fontSize = Math.round(Math.max(12, Math.min(size * 0.28, 26)));
   const label = exitLabel(exit);
-  // Room for the chevron, the gap after it, and the label at roughly the average
-  // glyph width of the sans-serif stack at this size.
+  // Leave room for the chevron, the gap after it, and the label at the
+  // average glyph width of the sans-serif stack.
   const w = Math.min(
     Math.max(geom.canvasWidth - 16, 40),
     fontSize * 1.9 + label.length * fontSize * 0.54,
   );
   const h = Math.round(Math.max(26, Math.min(size * 0.8, 46)));
-  // 0.55 of a cell out clears the coordinate labels, which hang half a cell off
-  // the top and left edges.
+  // A gap of 0.55 of a cell clears the coordinate labels, which hang half a
+  // cell off the top and left edges.
   const gap = Math.max(10, size * 0.55);
   const along = clamp(geom.alongCell, 0, Math.max(0, sideLength(geom, side) - 1));
   let x;
@@ -439,8 +446,9 @@ export function exitLabel(exit) {
 }
 
 /**
- * What a tile exit is, in words. The tile kinds are hyphenated for the palette
- * and the warning copy, which name pieces a GM paints; this is a sentence.
+ * The words for a tile exit's kind. The tile kinds are hyphenated in the
+ * palette and the warning copy, which name pieces a GM paints. This function
+ * returns a plain phrase instead.
  * @param {'door' | 'stairs-up' | 'stairs-down'} via
  * @returns {string}
  */
@@ -450,8 +458,8 @@ function viaText(via) {
 }
 
 /**
- * A longer form for assistive tech, which has no arrow to look at and so needs
- * the way out named.
+ * A longer form for assistive technology. It has no arrow to look at, so it
+ * needs the way out named directly.
  * @param {MapExit} exit
  * @returns {string}
  */

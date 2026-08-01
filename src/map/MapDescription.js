@@ -6,7 +6,7 @@ import { capitalize } from '../util/text.js';
 /** @typedef {import('../types/map.js').POIType} POIType */
 
 /**
- * "general-store" -> "General store" for a spoken description.
+ * Convert "general-store" to "General store" for a spoken description.
  * @param {string} poiType
  * @returns {string}
  */
@@ -15,12 +15,13 @@ function readablePoi(poiType) {
 }
 
 /**
- * A plain-text description of a map node for screen readers and any non-visual
- * surface, since the map itself is an opaque <canvas>. Reports the node name and
- * size, how much is explored, where the party stands, and the points of
- * interest with their notes. In Play mode (revealAll false) only revealed tiles
- * are described, matching what a sighted player can see through the fog; in
- * Build mode (revealAll true) everything is described.
+ * Build a plain-text description of a map node for screen readers and any
+ * non-visual surface, because the map itself is an opaque canvas. The
+ * description reports the node name and size, how much is explored, where
+ * the party stands, and the points of interest with their notes. In Play
+ * mode (revealAll false), the description covers only revealed tiles, to
+ * match what a sighted player can see through the fog. In Build mode
+ * (revealAll true), the description covers everything.
  * @param {MapNode} node
  * @param {PartyPosition | null} party
  * @param {{ revealAll?: boolean }} [options]
@@ -30,11 +31,11 @@ export function describeNode(node, party, options = {}) {
   const revealAll = options.revealAll ?? false;
   const total = node.width * node.height;
 
-  // One pass over the tiles: the placed count, the revealed count, and the points
-  // of interest all read the same grid-tile scan, and every one of them needs the
-  // id parsed. Splitting them cost three filtered copies of the tile list, a
-  // fourth array for the rendered phrases, and a second parse per point of
-  // interest — on every party step and at the end of every paint stroke.
+  // This is one pass over the tiles. The placed count, the revealed count, and
+  // the points of interest all read the same grid-tile scan, and each needs
+  // the id parsed. Splitting the pass costs three filtered copies of the
+  // tile list, a fourth array for the description phrases, and a second parse
+  // per point of interest, on every party step and at the end of every stroke.
   let placed = 0;
   let revealed = 0;
   /** @type {{ poiType: POIType, x: number, y: number, notes: string }[]} */

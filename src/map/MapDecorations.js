@@ -7,11 +7,12 @@ import { EXIT_SIDES, edgeExitBand, exitBandGeometry, exitLabel } from './MapExit
 /** @typedef {import('./MapExits.js').ExitBand} ExitBand */
 
 /**
- * The decoration layer of the map render: interaction chrome (keyboard cursor,
- * region-tool marquee, Build selection outline), the POI glow, and the edge
- * coordinate labels. Split out of MapRenderer so the renderer keeps the
- * terrain/fog/region passes; this layer reads the host's ctx and tileSize and
- * draws over the finished tiles.
+ * This class draws the decoration layer of the map render. It covers
+ * interaction chrome (keyboard cursor, region-tool marquee, Build selection
+ * outline), the point-of-interest glow, and the edge coordinate labels.
+ * MapRenderer does not do this work directly, so the renderer keeps only the
+ * terrain, fog, and region passes. This layer reads the host's ctx and
+ * tileSize, and draws over the finished tiles.
  */
 export class MapDecorations {
   /** @param {MapRenderer} host */
@@ -20,23 +21,24 @@ export class MapDecorations {
   }
 
   /**
-   * Draw column (x) numbers above the top row and row (y) numbers left of the
-   * first column, so a GM can read a tile's coordinate off the grid. Labels
-   * hang off the grid edge and pan with it, but once the edge scrolls out of
-   * the viewport (zoomed/panned in) they pin to the viewport edge at partial
-   * opacity, over a translucent backing, so coordinates stay readable over
-   * map art. Skipped when tiles are too small to label without clutter.
+   * Draw column (x) numbers above the top row, and row (y) numbers left of the
+   * first column, so a GM can read a tile's coordinate from the grid. Labels
+   * hang off the grid edge and pan with it. Once the edge scrolls out of the
+   * viewport, from a zoom or pan, the labels pin to the viewport edge at
+   * partial opacity, over a translucent backing, so coordinates stay readable
+   * over map art. This method skips labels when tiles are too small to label
+   * without clutter.
    * @param {MapView} view
    */
   renderCoordinates(view) {
     if (!view.node) return;
     const size = this.host.tileSize * view.scale;
-    if (size < 20) return; // too dense to be legible
+    if (size < 20) return; // Text this dense is not legible.
     const { ctx } = this.host;
     ctx.save();
-    // Font is in buffer pixels, which are devicePixelRatio-times denser than CSS
-    // pixels, so a small cap renders illegibly on a HiDPI canvas. Scale with the
-    // tile and only cap generously.
+    // Font size uses buffer pixels, which are devicePixelRatio times denser
+    // than CSS pixels. A small cap draws illegibly on a HiDPI canvas.
+    // Scale the font with the tile size and cap it only at a generous limit.
     const fontSize = Math.round(Math.max(14, Math.min(size * 0.3, 42)));
     ctx.font = `600 ${fontSize}px sans-serif`;
     ctx.textAlign = 'center';
@@ -61,8 +63,8 @@ export class MapDecorations {
 
   /**
    * Draw one coordinate number. Pinned labels sit over map art, so they get a
-   * translucent dark pill behind the digits and render at reduced opacity;
-   * unpinned labels float on the empty canvas around the grid and need neither.
+   * translucent dark pill behind the digits, and draw at reduced opacity.
+   * Unpinned labels float on the empty canvas around the grid and need neither.
    * @param {string} text
    * @param {number} x
    * @param {number} y
@@ -86,16 +88,16 @@ export class MapDecorations {
   }
 
   /**
-   * Draw an arrow in the gutter beside each side of the map the party can walk
-   * off to get back to the parent node, labelled with where it leads. The band's
-   * rect comes from MapExits, which the pointer hit-tests against the same way,
-   * so the arrow is exactly as large as the thing that can be clicked — a
-   * deliberately bounded pill rather than a whole side of the map, which would
-   * swallow every click that missed the grid.
+   * Draw an arrow in the gutter beside each side of the map that the party can
+   * walk off to reach the parent node, labeled with where it leads. The band's
+   * rect comes from MapExits, and the pointer hit-tests against the same rect.
+   * The arrow is exactly as large as the area that can be clicked: a bounded
+   * pill by design, not a whole side of the map, which catches every click
+   * that missed the grid.
    *
-   * Each band tracks the party along its side and clamps to the viewport, so
-   * zooming in until the map's border scrolls away leaves the arrow pinned at
-   * the canvas edge rather than scrolling off with it.
+   * Each band tracks the party along its side and clamps to the viewport. When
+   * a zoom scrolls the map's border out of view, the arrow stays pinned at the
+   * canvas edge instead of scrolling away with the border.
    * @param {MapView} view
    */
   renderEdgeExits(view) {
@@ -112,12 +114,13 @@ export class MapDecorations {
   }
 
   /**
-   * One return arrow: a parchment-bordered pill carrying an outward chevron and
-   * the exit's label. The label is clipped to the pill, so a long region name
-   * cannot spill past the area that answers a click. An armed band (the cursor
-   * pressed into this border once; the same arrow again leaves) brightens to the
-   * chevron's gold, so a sighted keyboard user sees the arming the live region
-   * narrates.
+   * Draw one return arrow: a parchment-bordered pill carrying an outward
+   * chevron and the exit's label. The label is clipped to the pill, so a long
+   * region name cannot spill past the area that answers a click. An armed
+   * band brightens to the chevron's gold. A band becomes armed when the
+   * cursor first presses into this border. The same arrow again then leaves.
+   * The brightening shows a sighted keyboard user the arming that the live
+   * region narrates.
    * @param {MapExit} exit
    * @param {ExitBand} band
    * @param {number} dx direction the exit leads, in grid cells
@@ -137,8 +140,8 @@ export class MapDecorations {
     ctx.stroke();
     ctx.clip();
 
-    // The chevron takes the end of the pill the exit leads towards, so an east
-    // exit reads left-to-right into its arrow and a west exit out of it.
+    // The chevron takes the end of the pill that the exit leads toward. An
+    // east exit reads left-to-right into its arrow, a west exit reads out of it.
     const lane = fontSize * 1.6;
     const chevronX = dx > 0 ? x + w - lane / 2 : x + lane / 2;
     const textX = dx > 0 ? x + (w - lane) / 2 : x + lane + (w - lane) / 2;
@@ -153,7 +156,7 @@ export class MapDecorations {
   }
 
   /**
-   * A chevron pointing the way an exit leads, centred on a point.
+   * Draw a chevron pointing the way an exit leads, centered on a point.
    * @param {number} cx
    * @param {number} cy
    * @param {number} r arm length in buffer px
@@ -178,10 +181,10 @@ export class MapDecorations {
   }
 
   /**
-   * Outline a discovered point-of-interest tile with a glowing gold border, so
-   * it reads as special against surrounding terrain. Called per tile from the
-   * renderer's tile loop rather than as an overlay pass, so it sits directly
-   * on the tile.
+   * Draw a glowing gold border around a discovered point-of-interest tile, so
+   * it reads as special against the surrounding terrain. The renderer's tile
+   * loop calls this once per tile, not as a separate overlay pass, so the
+   * border sits directly on the tile.
    * @param {number} sx
    * @param {number} sy
    * @param {number} size
@@ -198,8 +201,8 @@ export class MapDecorations {
     ctx.restore();
   }
 
-  /** Draw the keyboard cursor cell while the canvas is focused, distinct from
-   * the Build selection (solid gold) and party marker (dot).
+  /** Draw the keyboard cursor cell while the canvas has focus. This is
+   * distinct from the Build selection (solid gold) and party marker (dot).
    * @param {MapView} view */
   renderCursor(view) {
     if (!view.focused || !view.cursorCellId) return;
@@ -222,7 +225,7 @@ export class MapDecorations {
     ctx.restore();
   }
 
-  /** Dashed outline + tint over the region tool's in-progress drag block.
+  /** Draw a dashed outline and tint over the region tool's drag block in progress.
    * @param {MapView} view */
   renderMarquee(view) {
     if (!view.marquee) return;
@@ -255,8 +258,8 @@ export class MapDecorations {
     ctx.restore();
   }
 
-  /** Outline the Build-mode selected tile so the GM sees which tile the
-   * inspector and palette act on.
+  /** Draw an outline around the Build-mode selected tile, so the GM sees
+   * which tile the inspector and palette act on.
    * @param {MapView} view */
   renderSelection(view) {
     if (!view.selectedTileId) return;

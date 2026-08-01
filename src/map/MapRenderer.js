@@ -11,9 +11,9 @@ import { memoizeByIdentity } from '../util/memoize.js';
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
 
 /**
- * The revealed tile ids on a node, memoized on the node object — the same
- * immutable-replacement invariant TileIndex relies on. Rebuilding this Set per
- * frame was a full tile scan on every pan/zoom frame.
+ * The revealed tile ids on a node, memoized on the node object. This relies
+ * on the same immutable-replacement rule that TileIndex relies on.
+ * Rebuilding this Set every frame ran a full tile scan on every pan or zoom frame.
  * @type {(node: MapNode) => Set<string>}
  */
 const revealedIdsOf = memoizeByIdentity((node) => {
@@ -24,10 +24,10 @@ const revealedIdsOf = memoizeByIdentity((node) => {
 });
 
 /**
- * Whether any of a block's tiles is revealed, and so whether the block draws at
- * all. A null set means fog is off (Build mode) and everything draws. All three
- * block passes gate on this; see _revealedIds for why a fully-fogged block must
- * draw nothing rather than be painted over.
+ * Whether any of a block's tiles is revealed, and so whether the block
+ * draws at all. A null set means fog of war is off, as in Build mode, and
+ * everything draws. All three block passes gate on this. See _revealedIds
+ * for why a fully-fogged block must draw nothing instead of being painted over.
  * @param {string[]} tileIds
  * @param {Set<string> | null} revealedIds
  * @returns {boolean}
@@ -39,12 +39,12 @@ export function anyRevealed(tileIds, revealedIds) {
 }
 
 /**
- * The `src` to load a tile image ref from. Built-in refs are project-relative
- * paths and need the leading slash; a GM-supplied tile's art is a `data:` URL
- * and is used as-is, since prefixing it mangles it into an unloadable path.
- * Every place that turns a ref into an image goes through here — the PNG export
- * had its own copy of this and lacked the `data:` case, so custom art exported
- * as placeholders. Pure.
+ * The `src` to load a tile image ref from. A built-in ref is a
+ * project-relative path and needs the leading slash. A GM-supplied tile's
+ * art is a `data:` URL and is used as-is, because prefixing it produces an
+ * unloadable path. Every place that turns a ref into an image goes through
+ * here. The PNG export used to keep its own copy of this logic and lacked
+ * the `data:` case, so custom art exported as placeholders. This is a pure function.
  * @param {string} imageRef
  * @returns {string}
  */
@@ -53,10 +53,10 @@ export function imageSrcForRef(imageRef) {
 }
 
 /**
- * A snapshot of everything the renderer needs to draw a frame. MapCanvas owns
- * this state (pan/zoom, current node, selection/party/cursor ids, mode flags)
- * and hands a fresh view to the renderer on every draw, so the renderer holds
- * no map state of its own beyond its image cache.
+ * A snapshot of everything the renderer needs to draw a frame. MapCanvas
+ * owns this state (pan and zoom, current node, selection, party and cursor
+ * ids, mode flags) and hands a fresh view to the renderer on every draw, so
+ * the renderer holds no map state of its own beyond its image cache.
  * @typedef {Object} MapView
  * @property {number} canvasWidth
  * @property {number} canvasHeight
@@ -65,14 +65,14 @@ export function imageSrcForRef(imageRef) {
  * @property {number} offsetX
  * @property {number} offsetY
  * @property {number} scale
- * @property {boolean} revealAll draw every tile's image regardless of fog (Build mode)
- * @property {number} markerRange detection range in grid cells: encounter/NPC/POI markers only draw within this Euclidean distance of the party or a character token
+ * @property {boolean} revealAll draw every tile's image regardless of fog of war (Build mode)
+ * @property {number} markerRange detection range in grid cells: encounter, NPC, and POI markers draw only within this Euclidean distance of the party or a character token
  * @property {string | null} partyTileId
  * @property {string[]} [encounterTileIds] tiles carrying a live encounter, marked when revealed
  * @property {string[]} [npcTileIds] tiles holding a placed NPC, marked when revealed
  * @property {{ tileId: string, name: string }[]} [characterTokens] per-character markers, named above their tile
- * @property {import('../types/map.js').MapExit[]} [exits] ways out of this node (see MapExits.findExits), drawn as border arrows and badges on the door or stairway they lead through. Empty in Build mode, where authoring the map is not travelling it.
- * @property {import('../types/map.js').ExitSide | null} [armedExitSide] edge exit a cursor key has armed, drawn emphasized: the next press of the same arrow takes it.
+ * @property {import('../types/map.js').MapExit[]} [exits] ways out of this node (see MapExits.findExits), drawn as border arrows and badges on the door or stairway they lead through. This array is empty in Build mode, where authoring the map is not the same as traveling it.
+ * @property {import('../types/map.js').ExitSide | null} [armedExitSide] edge exit a cursor key has armed, drawn with emphasis: the next press of the same arrow key takes it.
  * @property {string | null} selectedTileId
  * @property {string | null} cursorCellId
  * @property {boolean} focused whether the keyboard cursor outline shows
@@ -80,15 +80,16 @@ export function imageSrcForRef(imageRef) {
  */
 
 /**
- * Draws a MapNode's tile grid, fog, region overlays, and the party/selection/
- * cursor decorations onto a 2d context. Pure "draw from a view snapshot": it
- * reads a MapView and paints, keeping no pan/zoom or selection state itself, so
- * MapCanvas stays the single owner of interaction state. The one piece of
- * mutable state it keeps is an image cache; a freshly-loaded image calls back
- * so the canvas can re-render once the bytes arrive. This class owns the
- * terrain passes (bounds, group/span images, tiles + fog, region overlays);
- * the marker and decoration passes live in MapMarkers and MapDecorations,
- * which read this instance's ctx and tileSize through a host reference.
+ * Draws a MapNode's tile grid, fog of war, region overlays, and the party,
+ * selection, and cursor decorations onto a 2d context. This class draws
+ * from a view snapshot: it reads a MapView and draws, keeping no pan, zoom,
+ * or selection state of its own, so MapCanvas stays the single owner of
+ * interaction state. The one piece of mutable state it keeps is an image
+ * cache. A freshly loaded image calls back, so the canvas can draw again
+ * once the bytes arrive. This class owns the terrain passes: bounds,
+ * group and span images, tiles plus fog, and region overlays. The marker
+ * and decoration passes live in MapMarkers and MapDecorations, which read
+ * this instance's ctx and tileSize through a host reference.
  */
 export class MapRenderer {
   /**
@@ -108,8 +109,8 @@ export class MapRenderer {
 
   /**
    * The decoded image for a tile ref, loaded once and kept for the session.
-   * Unbounded is fine while refs are the built-in SVG set (small, finite);
-   * add eviction before large custom raster tiles land.
+   * An unbounded cache is fine while refs are the built-in SVG set, which is
+   * small and finite. Add eviction before large custom raster tiles arrive.
    * @param {string} imageRef
    * @returns {HTMLImageElement}
    */
@@ -133,8 +134,9 @@ export class MapRenderer {
     ctx.clearRect(0, 0, view.canvasWidth, view.canvasHeight);
     if (view.node) {
       this._renderMapBounds(view);
-      // Derived data shared by the passes below, computed once per frame instead
-      // of once per pass (fog set three times, span blocks re-scanned, etc.).
+      // Derived data shared by the passes below, computed once per frame
+      // instead of once per pass. Without this, the fog set was rebuilt
+      // three times and span blocks were rescanned.
       const frame = {
         revealedIds: this._revealedIds(view),
         spanBlocks: spanBlocks(view.node),
@@ -153,23 +155,24 @@ export class MapRenderer {
       this._decorations.renderCursor(view);
       this._renderMapBoundsBorder(view);
       this._decorations.renderCoordinates(view);
-      // Last, over the coordinate labels: the return arrows are the one piece of
-      // chrome that is also a control, so nothing may draw on top of them.
+      // This draws last, over the coordinate labels. The return arrows are
+      // the one piece of chrome that is also a control, so nothing can draw
+      // on top of them.
       this._decorations.renderEdgeExits(view);
     }
-    // The marker layer memoizes its detection anchors against the view object for
-    // the length of a frame. Dropping that reference here keeps the renderer from
-    // holding the finished view — and through it a whole node's tiles — for as
-    // long as the map sits idle between draws.
+    // The marker layer memoizes its detection anchors against the view
+    // object for the length of a frame. Dropping that reference here stops
+    // the renderer from holding the finished view, and through it a whole
+    // node's tiles, for as long as the map sits idle between draws.
     this._markers.releaseFrame();
   }
 
   /**
    * The revealed tile ids to fog-gate multi-tile art against, or null when
-   * everything shows (Build mode). A block none of whose tiles are revealed
-   * must not draw at all: the per-tile fog rects painted over it leave
-   * antialiased seams at fractional zoom, tracing the block's outline through
-   * the fog in a different color than the map backdrop's grid.
+   * everything shows, as in Build mode. A block with no revealed tiles must
+   * not draw at all. The per-tile fog rectangles painted over it leave
+   * antialiased seams at fractional zoom, tracing the block's outline
+   * through the fog in a color different from the map backdrop's grid.
    * @param {MapView} view
    * @returns {Set<string> | null}
    */
@@ -180,14 +183,15 @@ export class MapRenderer {
 
   /**
    * Draw each multi-tile region block on an outdoor map as scaled images in
-   * chunks of at most 2x2 tiles, so a sub-region entrance reads as a landmark
-   * instead of repeated tiles — a 4x4 block gets four distinct 2x2 images, not
-   * one image stretched 4x. Interiors keep per-tile rendering, as do ragged
-   * groups (their bounding box would paint over neighboring tiles). The
-   * per-tile pass then skips the base images of every covered tile, while its
-   * fog rects and path overlays still draw per tile on top, so a partially
-   * explored block reveals the scaled image piecewise and a road through a
-   * region stays 1x1. Returns the covered tile ids for that skip.
+   * chunks of at most 2x2 tiles, so a sub-region entrance reads as a
+   * landmark instead of repeated tiles. A 4x4 block gets four distinct 2x2
+   * images, not one image stretched 4 times. Interiors keep per-tile
+   * drawing, as do ragged groups, because their bounding box paints
+   * over neighboring tiles. The per-tile pass then skips the base images of
+   * every covered tile, while its fog rectangles and path overlays still
+   * draw per tile on top. A partially explored block then reveals the
+   * scaled image piecewise, and a road through a region stays 1x1. Returns
+   * the covered tile ids for that skip.
    * @param {MapView} view
    * @param {{ revealedIds: Set<string> | null }} frame
    * @returns {Set<string>}
@@ -202,7 +206,7 @@ export class MapRenderer {
     for (const group of view.regionGroups) {
       if (group.tileIds.length < 2) continue;
       for (const chunk of groupImageChunks(view.node, group)) {
-        // A fully-fogged chunk draws nothing — see _revealedIds.
+        // A fully-fogged chunk draws nothing. See _revealedIds.
         if (!anyRevealed(chunk.tileIds, revealedIds)) continue;
         for (const id of chunk.tileIds) covered.add(id);
         blockRect(rect, chunk, view, size);
@@ -213,9 +217,9 @@ export class MapRenderer {
   }
 
   /**
-   * Draw one block's image across its whole rect, or a flat gray placeholder
-   * while the bytes are still loading (or if the ref failed to decode), so a
-   * block never leaves a hole in the map.
+   * Draw one block's image across its whole rectangle, or a flat gray
+   * placeholder while the bytes are still loading, or if the ref failed to
+   * decode, so a block never leaves a hole in the map.
    * @param {import('./MapGeometry.js').BlockRect} rect
    * @param {string} imageRef
    */
@@ -231,13 +235,14 @@ export class MapRenderer {
   }
 
   /**
-   * Draw each scaled-art tile (span > 1) as one image stretched across its
-   * block — purely visual sizing, independent of region links, so a landmark
-   * like a 3x3 academy can dominate a town without zooming anywhere. Covered
-   * cell ids are added to `cover` so the tile pass skips their base images,
-   * while fog rects and path overlays still draw per tile on top (a block
-   * reveals piecewise; roads across it stay 1x1), matching region-block
-   * chunks. Unlike those, span art draws on interiors too.
+   * Draw each scaled-art tile, with span greater than 1, as one image
+   * stretched across its block. This sizing is purely visual and
+   * independent of region links, so a landmark such as a 3x3 academy can
+   * dominate a town at any zoom level. Covered cell ids are added to
+   * `cover`, so the tile pass skips their base images, while fog
+   * rectangles and path overlays still draw per tile on top. A block then
+   * reveals piecewise, and roads across it stay 1x1, matching region-block
+   * chunks. Unlike those chunks, span art draws on interiors too.
    * @param {MapView} view
    * @param {{ revealedIds: Set<string> | null, spanBlocks: import('./TilePaint.js').SpanBlock[] }} frame
    * @param {Set<string>} cover accumulates covered tile ids
@@ -248,11 +253,11 @@ export class MapRenderer {
     const size = this.tileSize * view.scale;
     const rect = newBlockRect();
     for (const block of frame.spanBlocks) {
-      // An imageless span block covers nothing: its cells have no scaled art
-      // drawn beneath them, so telling the tile pass to skip their base images
-      // would blank them out.
+      // An imageless span block covers nothing. Its cells have no scaled
+      // art drawn beneath them, so telling the tile pass to skip their base
+      // images leaves them blank.
       if (!block.tile.imageRef) continue;
-      // A fully-fogged block draws nothing — see _revealedIds.
+      // A fully-fogged block draws nothing. See _revealedIds.
       if (!anyRevealed(block.tileIds, revealedIds)) continue;
       for (const id of block.tileIds) cover.add(id);
       blockRect(rect, block, view, size);
@@ -261,10 +266,11 @@ export class MapRenderer {
   }
 
   /**
-   * Draw every in-view tile: fog rect when unrevealed (outside Build mode), the
-   * base terrain image, any path/road overlay on top, and a POI outline. Tiles
-   * in `groupCover` skip their base image — a scaled region-block image was
-   * already drawn beneath them — but keep fog, overlays, and POI outlines.
+   * Draw every in-view tile: a fog rectangle when unrevealed outside Build
+   * mode, the base terrain image, any path or road overlay on top, and a
+   * POI outline. Tiles in `groupCover` skip their base image, because a
+   * scaled region-block image was already drawn beneath them, but they keep
+   * fog, overlays, and POI outlines.
    * @param {MapView} view
    * @param {Set<string>} groupCover
    */
@@ -272,9 +278,9 @@ export class MapRenderer {
     const node = view.node;
     if (!node) return;
     // Invert the view transform once and walk only the visible cell range,
-    // looking tiles up by coordinate — O(visible cells), where iterating
-    // node.tiles was O(total tiles) with a regex parse per tile per frame, and
-    // where an id lookup built and hashed a string per visible cell per frame.
+    // looking tiles up by coordinate. This costs O(visible cells). Iterating
+    // node.tiles cost O(total tiles) with a regex parse per tile per frame,
+    // and an id lookup built and hashed a string per visible cell per frame.
     const size = this.tileSize * view.scale;
     const minX = Math.max(0, Math.floor(-view.offsetX / size));
     const minY = Math.max(0, Math.floor(-view.offsetY / size));
@@ -292,7 +298,7 @@ export class MapRenderer {
   }
 
   /**
-   * Draw one visible tile — the per-cell body of _renderTiles.
+   * Draw one visible tile: the per-cell body of _renderTiles.
    * @param {MapView} view
    * @param {import('../types/map.js').Tile} tile
    * @param {number} sx
@@ -303,16 +309,17 @@ export class MapRenderer {
   _renderTile(view, tile, sx, sy, size, groupCover) {
     const { ctx } = this;
     if (!tile.revealed && !view.revealAll) {
-      // A distinctly lighter fill than the map backdrop and the empty-canvas
-      // background, so an unexplored-but-real tile reads as fog, not void.
+      // This fill is distinctly lighter than the map backdrop and the
+      // empty-canvas background, so an unexplored but real tile reads as
+      // fog, not void.
       ctx.fillStyle = '#48412f';
       ctx.fillRect(sx, sy, size, size);
       return;
     }
 
-    // A tile carrying only an overlay (a path on an as-yet-unpainted cell)
-    // has an empty base, so let the map backdrop show through rather than
-    // drawing a placeholder under the path.
+    // A tile carrying only an overlay, for example a path on an
+    // as-yet-unpainted cell, has an empty base. Let the map backdrop show
+    // through instead of drawing a placeholder under the path.
     if (tile.imageRef && !groupCover.has(tile.id)) {
       const img = this._getImage(tile.imageRef);
       if (img.complete && img.naturalWidth > 0) {
@@ -323,9 +330,9 @@ export class MapRenderer {
       }
     }
 
-    // Path/road overlays draw on top of the base terrain, so a road can sit
-    // on sand, snow, etc. rather than replacing the tile beneath it. A stack
-    // draws bottom-up (e.g. a river channel over its shoreline).
+    // Path and road overlays draw on top of the base terrain, so a road can
+    // sit on sand or snow instead of replacing the tile beneath it. A stack
+    // draws bottom-up, for example a river channel over its shoreline.
     for (const ref of overlayList(tile)) {
       const overlay = this._getImage(ref);
       if (overlay.complete && overlay.naturalWidth > 0) {
@@ -333,20 +340,21 @@ export class MapRenderer {
       }
     }
 
-    // A drawn tile carrying a POI type gets a prominent outline. A POI marked
-    // discoverable stays hidden until the party reaches it (unless authoring,
-    // where the GM sees everything), so secret sites aren't given away by fog
-    // reveal alone — and like the encounter/NPC markers, an outline only
-    // shows within detection range of the party or a character token.
+    // A drawn tile carrying a POI type gets a prominent outline. A POI
+    // marked discoverable stays hidden until the party reaches it, unless
+    // the GM is authoring the map and sees everything. A fog reveal alone
+    // then does not give away a secret site. As with the encounter and NPC
+    // markers, an outline shows only within detection range of the party
+    // or a character token.
     const poiVisible =
       tile.metadata.poiType &&
       (view.revealAll ||
         ((!tile.metadata.discoverable || tile.metadata.discovered) &&
           this._markers.markerVisible(view, tile.id)));
     if (poiVisible) {
-      // A span anchor's outline covers the whole block its art is stretched
-      // across (clamped to the grid, matching spanBlocks), so the highlight
-      // wraps the scaled art rather than its top-left cell.
+      // A span anchor's outline covers the whole block its art is
+      // stretched across, clamped to the grid to match spanBlocks, so the
+      // highlight wraps the scaled art instead of only its top-left cell.
       let extent = size;
       if (tile.span && tile.span > 1 && view.node) {
         const coords = parseCoords(tile.id);
@@ -360,9 +368,9 @@ export class MapRenderer {
   }
 
   /**
-   * Fill the node's full width x height extent with a map-area backdrop, drawn
-   * before the tiles. This gives the map a definite shape even where no tile is
-   * revealed, so panning past the edge is visually obvious.
+   * Fill the node's full width by height extent with a map-area backdrop,
+   * drawn before the tiles. This gives the map a definite shape even where
+   * no tile is revealed, so panning past the edge is visually obvious.
    * @param {MapView} view
    */
   _renderMapBounds(view) {
@@ -390,9 +398,9 @@ export class MapRenderer {
    * @param {{ revealedIds: Set<string> | null }} frame */
   _renderRegionGroups(view, frame) {
     const { ctx } = this;
-    // Outside Build mode, a region stays hidden until the party has discovered
-    // at least one of its tiles through the fog, so the overworld doesn't
-    // reveal where every unexplored region sits.
+    // Outside Build mode, a region stays hidden until the party has
+    // discovered at least one of its tiles through the fog of war, so the
+    // overworld does not reveal where every unexplored region sits.
     const revealedIds = frame.revealedIds;
     const size = this.tileSize * view.scale;
     const rect = newBlockRect();
@@ -404,12 +412,13 @@ export class MapRenderer {
 
       ctx.save();
       // The overlay (tint, border, name label) is clipped to the group's
-      // revealed tiles, so a partly-explored region doesn't trace its full
-      // extent — a differently-colored rectangle — through the fog.
+      // revealed tiles, so a partly-explored region does not trace its
+      // full extent, a differently colored rectangle, through the fog.
       if (revealedIds) {
         const clip = new Path2D();
-        // The group carries its members' coordinates alongside their ids, so this
-        // per-frame walk neither re-parses an id nor allocates a rect per tile.
+        // The group carries its members' coordinates alongside their ids,
+        // so this per-frame walk neither re-parses an id nor allocates a
+        // rectangle per tile.
         for (let i = 0; i < group.tileIds.length; i++) {
           if (!revealedIds.has(group.tileIds[i])) continue;
           const cell = group.cells[i];
@@ -424,10 +433,10 @@ export class MapRenderer {
       ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
       ctx.restore();
 
-      // The name label draws outside the clip: once any of the region's tiles
-      // is discovered its name should read in full, not be cut to the revealed
-      // tiles — or to the region's own bounds, which would truncate a long
-      // name on a small region.
+      // The name label draws outside the clip. Once any of the region's
+      // tiles is discovered, its name must read in full, not cut to the
+      // revealed tiles, and not cut to the region's own bounds, which
+      // truncates a long name on a small region.
       const name = this.getNodeName?.(group.childNodeId);
       if (name) {
         ctx.save();

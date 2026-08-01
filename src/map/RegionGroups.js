@@ -9,7 +9,7 @@ import { memoizeByIdentity } from '../util/memoize.js';
  * @typedef {Object} RegionGroup
  * @property {string} childNodeId
  * @property {string[]} tileIds
- * @property {{ x: number, y: number }[]} cells grid coordinates of `tileIds`, same order
+ * @property {{ x: number, y: number }[]} cells grid coordinates of `tileIds`, in the same order
  * @property {number} minX
  * @property {number} minY
  * @property {number} maxX
@@ -17,13 +17,14 @@ import { memoizeByIdentity } from '../util/memoize.js';
  */
 
 /**
- * Groups a node's tiles into contiguous (4-neighbor) blocks that share the
- * same non-null childNodeId, so a region can be entered from any tile in a
- * multi-tile block instead of a single point. Tiles with no childNodeId, or
- * ids that don't parse as "x,y" grid coordinates, are ignored. Memoized on the
- * node object, which every tile mutation replaces (the TileIndex contract), so
- * group objects are stable per node — that is what lets the chunk cache below
- * key on them directly. Treat the returned array as read-only.
+ * Group a node's tiles into contiguous, 4-neighbor blocks that share the same
+ * non-null childNodeId. A player can then enter a region from any tile in a
+ * multi-tile block instead of from one single point. Tiles with no
+ * childNodeId, or with ids that do not parse as "x,y" grid coordinates, are
+ * ignored. This function is memoized on the node object, which every tile
+ * mutation replaces under the TileIndex contract, so group objects stay
+ * stable per node. The chunk cache below relies on that stability and keys
+ * on the group objects directly. Treat the returned array as read only.
  * @param {MapNode} node
  * @returns {RegionGroup[]}
  */
@@ -34,11 +35,12 @@ export const findRegionGroups = memoizeByIdentity(computeRegionGroups);
  * @returns {RegionGroup[]}
  */
 function computeRegionGroups(node) {
-  // Keyed by the tile's own id, not by a re-formatted coordinate: a group's
-  // members are reported as `tile.id`, and an id that parses but isn't written
-  // canonically ("01,2") would otherwise be reported under a key no lookup can
-  // reach. The cost is that such a tile can't be found as a neighbor, so it
-  // forms its own group instead of joining the block beside it.
+  // Keyed by the tile's own id, not by a reformatted coordinate. A group
+  // reports its members as `tile.id`. An id that parses but is not written
+  // canonically, for example "01,2", is otherwise reported under a
+  // key that no lookup can reach. The cost is that such a tile cannot be
+  // found as a neighbor, so it forms its own group instead of joining the
+  // block beside it.
   /** @type {Map<string, { tile: import('../types/map.js').Tile, x: number, y: number }>} */
   const byCoord = new Map();
   for (const tile of node.tiles) {
@@ -59,10 +61,11 @@ function computeRegionGroups(node) {
     const stack = [entry];
     visited.add(key);
     const members = [];
-    // The coordinates are already parsed here, so the group carries them beside
-    // its ids: the renderer clips a partly-explored region's overlay to its
-    // revealed tiles, and re-parsing every member id to do that ran per group per
-    // frame. Index-aligned with `members`, and written only here.
+    // The coordinates are already parsed here, so the group carries them
+    // beside its ids. The renderer clips a partly-explored region's overlay
+    // to its revealed tiles, and re-parsing every member id for that ran
+    // once per group per frame. This array is index-aligned with `members`
+    // and written only here.
     /** @type {{ x: number, y: number }[]} */
     const cells = [];
     let minX = entry.x,
@@ -98,9 +101,9 @@ function computeRegionGroups(node) {
 
 /**
  * Whether a group's tiles completely fill its bounding box. Only a filled
- * rectangle can be rendered as one image scaled across the block — an L-shaped
- * or ragged group's bounding box overlaps tiles that aren't part of it, so
- * those fall back to per-tile rendering.
+ * rectangle can draw as one image scaled across the block. An L-shaped or
+ * ragged group's bounding box overlaps tiles that are not part of it, so
+ * those groups fall back to per-tile drawing.
  * @param {RegionGroup} group
  * @returns {boolean}
  */
@@ -109,19 +112,20 @@ export function isFilledRect(group) {
 }
 
 /**
- * The image that represents a block of tiles when it's drawn as a single
- * scaled tile. A tile carrying a POI marker wins (that's the entrance art a
- * generated map stamps on its anchor); otherwise the top-left-most tile with
- * an image, so hand-painted blocks pick a stable, predictable variant. Null
- * when no member tile has an image.
+ * The image that represents a block of tiles when drawn as a single scaled
+ * tile. A tile carrying a POI marker wins, since that is the entrance art a
+ * generated map stamps on its anchor. Otherwise the top-left-most tile with
+ * an image wins, so a hand-painted block picks a stable, predictable
+ * variant. Returns null when no member tile has an image.
  * @param {MapNode} node
  * @param {Pick<RegionGroup, 'tileIds'>} group
  * @returns {string | null}
  */
 export function groupImageRef(node, group) {
-  // One best-so-far pass rather than map-filter-find-reduce: this runs per chunk
-  // per group whenever a group's tiles change, and the intermediate arrays plus
-  // one wrapper object per member tile were the bulk of its cost.
+  // This is one best-so-far pass instead of map-filter-find-reduce. It runs
+  // once per chunk per group whenever a group's tiles change. The
+  // intermediate arrays plus one wrapper object per member tile were the
+  // bulk of the earlier cost.
   /** @type {string | null} */
   let topLeftRef = null;
   let topLeftX = 0;
@@ -131,8 +135,8 @@ export function groupImageRef(node, group) {
     if (!tile?.imageRef) continue;
     const coords = parseCoords(id);
     if (!coords) continue;
-    // A POI marker is the entrance art a generated map stamps on its anchor, so
-    // it wins outright and there is nothing left to compare.
+    // A POI marker is the entrance art a generated map stamps on its
+    // anchor. It wins outright, with nothing left to compare.
     if (tile.metadata.poiType) return tile.imageRef;
     if (
       topLeftRef === null ||
@@ -159,44 +163,46 @@ export function groupImageRef(node, group) {
  */
 
 /**
- * Cached chunks per group, stamped with the tile list they were computed from.
- * The renderer partitions every group every frame, so this has to hit on a
- * repeat frame, and the stamp is exactly the dependency set: a chunk's contents
- * are its group's geometry plus its member tiles' art, and nothing else — not the
- * node's name, extent, or identity.
+ * Cached chunks per group, stamped with the tile list they were computed
+ * from. The renderer partitions every group every frame, so this cache must
+ * hit on a repeat frame. The stamp is exactly the dependency set: a chunk's
+ * contents are its group's geometry plus its member tiles' art, and nothing
+ * else, not the node's name, extent, or identity.
  *
  * Keying on the node object instead was imprecise in both directions. It
- * discarded chunks a node swap had not invalidated, since a paint/erase/fog drag
- * replaces the node per cell while leaving its groups memoized against the
- * pre-stroke node, so the (node, group) pair could not repeat once a stroke had
- * started — not even for the groups the stroke never came near. And it held a
- * nested WeakMap per node, leaving one dead outer entry per node object a stroke
- * created. `tiles` is the honest stamp: a tile mutation always replaces that
- * array (the TileIndex contract, enforced by TileFreeze) and nothing else does.
- * One entry per group, so a long stroke accumulates nothing, and a group is only
- * reachable through its own node's group cache, so the two die together.
+ * discarded chunks that a node swap had not invalidated, because a paint,
+ * erase, or fog drag replaces the node once per cell while leaving its
+ * groups memoized against the pre-stroke node. The (node, group) pair then
+ * did not repeat once a stroke had started, not even for the groups the
+ * stroke never came near. It also held a nested WeakMap per node, leaving
+ * one dead outer entry per node object a stroke created. `tiles` is the
+ * honest stamp: a tile mutation always replaces that array, under the
+ * TileIndex contract enforced by TileFreeze, and nothing else does. There
+ * is one entry per group, so a long stroke accumulates nothing, and a group
+ * is reachable only through its own node's group cache, so the two die together.
  *
- * This is precision rather than a speedup, and the numbers are worth recording
- * so it is not mistaken for one. The recompute costs about 0.025 ms per painted
- * cell on a twelve-group 40x40 node, and it never ran per frame — the canvas's
- * node object changes only when a cell is painted, so frames between two cell
- * crossings hit the old key too. A member-identity revalidation that would have
- * held chunks across an unrelated cell's paint was measured and dropped: a
- * filled rectangle's member count equals the sum of its chunks' tiles, so
- * revalidating costs the same tile lookups the rebuild does.
+ * This change bought precision, not speed, and the numbers below record
+ * that so nobody mistakes it for a speedup. The recompute costs about
+ * 0.025 ms per painted cell on a twelve-group 40x40 node, and it never ran
+ * once per frame, because the canvas's node object changes only when a
+ * cell is painted, so frames between two cell crossings hit the old key
+ * too. A member-identity revalidation, meant to hold chunks across
+ * an unrelated cell's paint, was measured and dropped: a filled rectangle's
+ * member count equals the sum of its chunks' tiles, so revalidating costs
+ * the same tile lookups the rebuild does.
  * @type {WeakMap<RegionGroup, { tiles: Tile[], chunks: GroupImageChunk[] }>}
  */
 const chunkCache = new WeakMap();
 
 /**
- * Partition a filled-rectangle region group into blocks of at most 2x2 tiles,
- * each carrying its own representative image — so a 4x4 region entrance reads
- * as four distinct 2x2 landmarks rather than one image stretched 4x, and odd
- * edges fall back to 1-wide strips. Chunks whose tiles are all imageless are
- * omitted (nothing to draw). A ragged (non-rectangular) group returns no
- * chunks: its bounding box would overlap tiles outside the group, so it keeps
- * per-tile rendering. Memoized per group against the node's tile list; treat the
- * result as read-only.
+ * Partition a filled-rectangle region group into blocks of at most 2x2
+ * tiles, each carrying its own representative image. A 4x4 region entrance
+ * then reads as four distinct 2x2 landmarks instead of one image stretched
+ * 4 times, and odd edges fall back to 1-wide strips. Chunks whose tiles are
+ * all imageless are omitted, since there is nothing to draw. A ragged,
+ * non-rectangular group returns no chunks: its bounding box overlaps
+ * tiles outside the group, so it keeps per-tile drawing. This is memoized
+ * per group against the node's tile list. Treat the result as read only.
  * @param {MapNode} node
  * @param {RegionGroup} group
  * @returns {GroupImageChunk[]}

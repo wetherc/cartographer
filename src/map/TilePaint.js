@@ -11,8 +11,8 @@ import { memoizeByIdentity } from '../util/memoize.js';
 const OVERLAY_ORDER = ['coast', 'river', 'road'];
 
 /**
- * The overlay family a built-in piece belongs to, from its asset path; null
- * for anything else (e.g. a custom data: URL image).
+ * The overlay family of a built-in piece, taken from its asset path. Returns
+ * null for anything else, for example a custom data: URL image.
  * @param {string} ref
  * @returns {string | null}
  */
@@ -22,12 +22,13 @@ function overlayFamily(ref) {
 }
 
 /**
- * Merge a newly painted overlay into a tile's existing overlay(s): a piece
- * replaces any existing piece of its own family (repainting a road corrects
- * the road) but stacks with other families in canonical draw order (coast
- * under river under road), so a channel painted across a shoreline drains
- * through it instead of erasing it. A piece from no known family — custom
- * overlay art — replaces the whole stack, matching the old behavior.
+ * Merge a newly painted overlay into a tile's existing overlay or overlays.
+ * A piece replaces any existing piece of its own family. For example,
+ * repainting a road corrects the road. A piece stacks with other families in
+ * the fixed draw order (coast under river under road), so a channel painted
+ * across a shoreline drains through it instead of erasing it. A piece from no
+ * known family, such as custom overlay art, replaces the whole stack. This
+ * matches the previous behavior.
  * @param {string | string[] | null} existing
  * @param {string} imageRef
  * @returns {string | string[]}
@@ -50,9 +51,10 @@ export function stackOverlay(existing, imageRef) {
 }
 
 /**
- * Whether an "x,y" tile id falls inside a node's width x height grid. Painting
- * and erasing are no-ops outside these bounds, so a stray click past the map
- * edge can't create a tile floating outside the authored area.
+ * Whether an "x,y" tile id falls inside a node's width x height grid. Paint
+ * and erase actions do nothing outside these bounds. This makes sure that a
+ * stray click past the map edge cannot create a tile outside the authored
+ * area.
  * @param {MapNode} node
  * @param {string} tileId
  * @returns {boolean}
@@ -66,29 +68,30 @@ export function isInBounds(node, tileId) {
 /**
  * Paint a tile's image at tileId, returning a new node. Painting over an
  * existing tile changes only its imageRef and keeps its metadata, childNodeId,
- * and revealed state, so re-terraining a tile never wipes the notes or region
- * link a GM already set on it. A brand-new tile starts unrevealed (fog), so
- * authored maps still reveal through play rather than starting fully explored.
- * Out-of-bounds ids are ignored.
+ * and revealed state. This makes sure that re-terraining a tile never removes
+ * the notes or region link a GM has already set on it. A new tile starts
+ * unrevealed by fog. This lets authored maps reveal through play instead of
+ * starting fully explored. The function ignores out-of-bounds ids.
  *
- * With overlay=true (a path/road brush) the image is layered as the tile's
- * overlayRef over the terrain, so a road can sit on sand, snow, etc. without
- * erasing what's beneath — and re-terraining beneath keeps the overlay, since
- * it's preserved by the spread above. A road is never the base layer, so an
- * overlay brush on an empty cell creates a tile with an empty base (the map
- * backdrop shows through) carrying the overlay; the GM can paint terrain under
- * it afterward without disturbing the path. An overlay brush is a no-op over a
- * tile that carries a POI marker, so a path can't be laid across a settlement,
- * dungeon, etc. Overlays of different families stack (see stackOverlay): a
- * river painted across a coast tile layers over the shoreline instead of
- * replacing it, while repainting within one family swaps that piece.
+ * With overlay=true (a path or road brush) the image layers as the tile's
+ * overlayRef over the terrain. This lets a road sit on sand, snow, or other
+ * terrain without erasing it. Re-terraining beneath keeps the overlay,
+ * because the spread above preserves it. A road is never the base layer. An
+ * overlay brush on an empty cell creates a tile with an empty base, so the
+ * map backdrop shows through, and the tile carries the overlay. The GM can
+ * paint terrain under it later without disturbing the path. An overlay brush
+ * does nothing on a tile that carries a POI marker. This stops a path from
+ * crossing a settlement, dungeon, or similar marker. Overlays of different
+ * families stack. See stackOverlay. A river painted across a coast tile
+ * layers over the shoreline instead of replacing it. Repainting within one
+ * family swaps that piece.
  *
- * `span` > 1 paints the image as a scaled block: the anchor tile records the
- * span and the renderer stretches its image across span x span cells (shifted
- * up/left near the far edges so the block stays in bounds). Covered neighbors
- * are untouched — the block is purely visual, so the terrain beneath survives
- * a later repaint at 1x, which also clears a tile's span. Overlays (roads)
- * always stay one cell and ignore span.
+ * A span value above 1 paints the image as a scaled block. The anchor tile
+ * records the span. The renderer stretches its image across span x span
+ * cells, shifted up or left near the far edges so the block stays in bounds.
+ * Covered neighbor tiles stay untouched, because the block is only visual.
+ * The terrain beneath survives a later repaint at span 1, which also clears a
+ * tile's span. Overlays such as roads always stay one cell and ignore span.
  * @param {MapNode} node
  * @param {string} tileId
  * @param {string} imageRef
@@ -118,19 +121,20 @@ export function paintTile(node, tileId, imageRef, overlay = false, span = 1) {
 }
 
 /**
- * A scaled-art block: the anchor tile plus the inclusive rect its image is
- * stretched across.
+ * A scaled-art block. It holds the anchor tile plus the inclusive rect that
+ * its image stretches across.
  * @typedef {{ tile: import('../types/map.js').Tile, minX: number, minY: number, maxX: number, maxY: number, tileIds: string[] }} SpanBlock
  */
 
 /**
- * Every scaled-art block on a node: each tile with span > 1 yields its anchor
- * plus the rect (clamped to the grid) its image covers, with the covered tile
- * ids the renderer uses to skip those cells' own base images. Pure geometry —
- * covered cells need not hold tiles. Memoized on the node object, which every
- * tile mutation replaces (the TileIndex contract); the renderer calls this every
- * frame, and without the cache a pan re-scans (and regex-parses) every tile per
- * frame. Treat the returned array as read-only.
+ * Every scaled-art block on a node. Each tile with span greater than 1 yields
+ * its anchor plus the rect, clamped to the grid, that its image covers. The
+ * result also lists the covered tile ids, and the renderer uses these ids to
+ * skip the base images of those cells. This is pure geometry: covered cells
+ * need not hold tiles. The function is memoized on the node object, which
+ * every tile mutation replaces (the TileIndex contract). The renderer calls
+ * this function every frame. Without the cache, a pan re-scans and
+ * regex-parses every tile each frame. Treat the returned array as read-only.
  * @param {MapNode} node
  * @returns {SpanBlock[]}
  */
@@ -160,10 +164,10 @@ function computeSpanBlocks(node) {
 }
 
 /**
- * Remove only a tile's path/road overlay, leaving its terrain, metadata, and
- * region link intact — the dedicated "erase path" gesture, distinct from
- * eraseTile which removes the whole tile. No-op if the tile is absent or has
- * no overlay.
+ * Remove only a tile's path or road overlay. This leaves its terrain,
+ * metadata, and region link intact. This is the dedicated "erase path"
+ * action, distinct from eraseTile, which removes the whole tile. The function
+ * does nothing if the tile is absent or has no overlay.
  * @param {MapNode} node
  * @param {string} tileId
  * @returns {MapNode}
@@ -181,8 +185,8 @@ export function erasePath(node, tileId) {
 
 /**
  * The inclusive rectangle spanned by two corner cells, in either drag
- * direction, so a marquee anchored bottom-right and released top-left still
- * yields a well-ordered rect.
+ * direction. This makes sure that a marquee anchored bottom-right and
+ * released top-left still yields a well-ordered rect.
  * @param {{ x: number, y: number }} a
  * @param {{ x: number, y: number }} b
  * @returns {CellRect}
@@ -197,9 +201,9 @@ export function normalizeRect(a, b) {
 }
 
 /**
- * The node's existing tiles whose coordinates fall inside a rect. Empty cells
- * contribute nothing — a region link lives on tiles, so linking a block only
- * ever stamps what's already painted there.
+ * The node's existing tiles whose coordinates fall inside a rect. Empty
+ * cells contribute nothing. A region link lives on tiles, so linking a block
+ * only stamps tiles already painted there.
  * @param {MapNode} node
  * @param {CellRect} rect
  * @returns {import('../types/map.js').Tile[]}
@@ -219,10 +223,10 @@ export function tilesInRect(node, rect) {
 
 /**
  * Stamp a childNodeId onto every existing tile inside a rect, returning a new
- * node — the area-authoring counterpart to linking tiles one at a time in the
- * inspector. Pass null to unlink the block instead. Empty cells are skipped
- * (no tile is created), so the caller should check tilesInRect first if it
- * wants to warn about a block with nothing to link.
+ * node. This is the area-authoring counterpart to linking tiles one at a
+ * time in the inspector. Pass null to unlink the block instead. The function
+ * skips empty cells and creates no tile there. If the caller wants to warn
+ * about a block with nothing to link, call tilesInRect first.
  * @param {MapNode} node
  * @param {CellRect} rect
  * @param {string | null} childNodeId
@@ -238,19 +242,21 @@ export function linkTilesInRect(node, rect, childNodeId) {
 }
 
 /**
- * Point a tile at a child node, or unlink it. On an outdoor ('region') node a
- * link occupies a 2x2 block — the anchor tile plus its right/below neighbors,
- * shifted up/left at the grid's far edges so the block stays in bounds — which
- * gives a sub-region a visible footprint instead of a single cell. Only
- * existing non-wall tiles that are unlinked (or already linked to the same
- * child) are stamped, so a neighboring region's block is never silently
- * overwritten; the anchor itself is always stamped. Interiors keep single-tile
- * links (a door or stair is one cell). When the anchor already sits inside a
- * block linked to a different child, the whole contiguous block is re-pointed
- * as one unit (and unlinking with null clears it the same way) — a multi-tile
- * entrance zooms into exactly one child, never two overlapping ones, and no
- * orphaned corner keeps the old link. Re-stamping the same child falls through
- * to the block-widening path, so ensureChildLink can grow a fresh anchor.
+ * Point a tile at a child node, or unlink it. On an outdoor ('region') node,
+ * a link occupies a 2x2 block: the anchor tile plus its right and below
+ * neighbors, shifted up or left at the grid's far edges so the block stays
+ * in bounds. This gives a sub-region a visible footprint instead of a single
+ * cell. The function stamps only existing non-wall tiles that are unlinked,
+ * or already linked to the same child. This makes sure that a neighboring
+ * region's block is never overwritten without warning. The function always
+ * stamps the anchor itself. Interior nodes keep single-tile links, because a
+ * door or stair is one cell. If the anchor already sits inside a block linked
+ * to a different child, the function re-points the whole contiguous block as
+ * one unit. Unlinking with null clears the block the same way. This makes
+ * sure that a multi-tile entrance zooms into exactly one child, never two
+ * overlapping children, and that no orphaned corner keeps the old link.
+ * Re-stamping the same child falls through to the block-widening path, so
+ * ensureChildLink can grow a fresh anchor.
  * @param {MapNode} node
  * @param {string} tileId anchor tile (must exist)
  * @param {string | null} childNodeId
@@ -300,18 +306,19 @@ export function stampRegionLink(node, tileId, childNodeId) {
 }
 
 /**
- * Guarantee that a node carries a tile linking to a child, so a generated
- * child map is always reachable from its parent instead of floating in the
- * world tree with no way in. No-op when a link already exists. Otherwise the
- * plain tile (no existing link, not a wall piece) nearest the grid centre is
- * stamped with the link — and with `markerRef` art plus a `poiType` when
- * given, so the way in reads as a place on the parent map. On a parent with no
- * eligible tile, a new tile is created at the empty cell nearest the centre
- * using `createRef` art. Returns the updated node plus which tile now links
- * (null when a link already existed, or when the grid is somehow full with
- * nothing eligible).
+ * Make sure that a node carries a tile linking to a child. This makes sure
+ * that a generated child map is always reachable from its parent, instead of
+ * floating in the world tree with no way in. The function does nothing if a
+ * link already exists. Otherwise it stamps the link onto the plain tile
+ * nearest the grid centre, that is, a tile with no existing link and not a
+ * wall piece. When given, it also applies `markerRef` art and a `poiType`, so
+ * the way in reads as a place on the parent map. If the parent has no
+ * eligible tile, the function creates a new tile at the empty cell nearest
+ * the centre, using `createRef` art. It returns the updated node plus which
+ * tile now links. The tileId is null if a link already existed, or if the
+ * grid is full with no eligible tile.
  * @param {MapNode} node parent node to link from
- * @param {string} childId node the link should zoom into
+ * @param {string} childId node the link zooms into
  * @param {{ markerRef?: string | null, createRef: string, poiType?: import('../types/map.js').POIType | null }} art
  * @returns {{ node: MapNode, tileId: string | null }}
  */
@@ -336,12 +343,12 @@ export function ensureChildLink(node, childId, art) {
       childNodeId: childId,
       metadata: { ...target.metadata, poiType: art.poiType ?? target.metadata.poiType },
     };
-    // Widen to the outdoor 2x2 footprint (a no-op on interiors), so generated
-    // links match hand-declared ones.
+    // Widen to the outdoor 2x2 footprint. This does nothing on interiors.
+    // This makes generated links match hand-declared links.
     return { node: stampRegionLink(setTile(node, linked), target.id, childId), tileId: target.id };
   }
 
-  // No paintable tile: put the link on the empty cell nearest the centre.
+  // No paintable tile exists. Put the link on the empty cell nearest the centre.
   const occupied = new Set(node.tiles.map((t) => t.id));
   /** @type {string | null} */
   let best = null;
@@ -361,7 +368,8 @@ export function ensureChildLink(node, childId, art) {
 }
 
 /**
- * Remove the tile at tileId, returning a new node. No-op if no tile is there.
+ * Remove the tile at tileId, returning a new node. The function does
+ * nothing if no tile exists there.
  * @param {MapNode} node
  * @param {string} tileId
  * @returns {MapNode}

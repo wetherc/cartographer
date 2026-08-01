@@ -6,12 +6,13 @@ import { parseCoords, tileIdAt, tileRect } from './MapGeometry.js';
 /** @typedef {import('./MapCanvas.js').MapCanvas} MapCanvas */
 
 /**
- * Keyboard operation for MapCanvas, so the map works without a mouse: arrow
- * keys move a cursor cell (scrolling it into view), Enter/Space acts on it via
- * the same paths a click takes, +/- zoom, and focus toggles the cursor
- * outline. Split out of MapCanvas so the canvas class stays the owner of view
- * state and rendering; this controller reads and mutates the host's cursor and
- * pan fields and fires the host's callbacks.
+ * This class gives keyboard operation for MapCanvas, so the map works
+ * without a mouse. Arrow keys move a cursor cell and scroll it into view.
+ * Enter or Space acts on the cursor cell through the same paths as a click.
+ * Plus and minus zoom the view. Focus toggles the cursor outline. This
+ * class is separate from MapCanvas so the MapCanvas class stays the owner
+ * of view state and drawing. This controller reads and changes the host's
+ * cursor and pan fields, and it fires the host's callbacks.
  */
 export class MapCanvasKeyboard {
   /** @param {MapCanvas} host */
@@ -48,10 +49,10 @@ export class MapCanvasKeyboard {
   }
 
   /**
-   * Keyboard equivalent of the pointer interactions: arrows move a cursor
-   * cell, Enter/Space acts on it (the same paths a click takes), and +/-
-   * zoom. Panning is via arrows moving the cursor, which scrolls the view to
-   * keep the cursor in frame.
+   * Keyboard equivalent of the pointer interactions. Arrow keys move a
+   * cursor cell. Enter or Space acts on the cursor cell through the same
+   * paths as a click. Plus and minus zoom the view. Arrow keys also pan the
+   * view: moving the cursor scrolls the view to keep the cursor in frame.
    * @param {KeyboardEvent} event
    */
   _onKeyDown(event) {
@@ -61,15 +62,18 @@ export class MapCanvasKeyboard {
       event.preventDefault();
       const current = host.cursorCellId ? parseCoords(host.cursorCellId) : null;
       const next = nextCursor(current, event.key, host.node.width, host.node.height);
-      // An arrow pressed at the border it points at leaves the cursor where it
-      // is; when that border is a way out, arm it, and a second press of the
-      // same arrow takes it. Walking off the edge is the gesture the arrow
-      // already suggests, so there is no extra key to learn, but a single press
-      // moving the whole party would make holding an arrow key a teleport: the
-      // cursor sails to the border and the next key repeat would walk out.
-      // Repeats never arm or confirm, so leaving is always two deliberate
-      // presses, and the arming is narrated (onExitArmed) and drawn (the band
-      // brightens) before anything moves.
+      // If an arrow key points at the border and the cursor is already there,
+      // the cursor stays in place. If that border is a way out, this key
+      // press arms the exit. A second press of the same arrow key takes the
+      // exit. Walking off the edge is the natural meaning of the arrow key,
+      // so the user does not need to learn an extra key. A single press
+      // cannot move the whole party. Without that limit, holding an arrow key
+      // works like a teleport: the cursor reaches the border, and the
+      // next key repeat walks out immediately. A repeated key press
+      // (from holding the key down) never arms or confirms the exit. So
+      // leaving a node always needs two deliberate key presses. The arming
+      // is narrated through onExitArmed and drawn as a brighter band, before
+      // anything moves.
       if (current && next.x === current.x && next.y === current.y && !host.authoring) {
         const side = cursorSide(event.key);
         const exit = side ? exitForSide(host.exits, side) : null;
@@ -86,7 +90,7 @@ export class MapCanvasKeyboard {
           return;
         }
       }
-      // Any cursor move away from the border withdraws an armed exit.
+      // Any cursor move away from the border cancels an armed exit.
       host.disarmExit();
       host.cursorCellId = tileIdAt(next.x, next.y);
       this._ensureCellVisible(next.x, next.y);
@@ -94,7 +98,7 @@ export class MapCanvasKeyboard {
       this._announceCursor();
       return;
     }
-    // Any other key withdraws an armed exit; only the same arrow confirms it.
+    // Any other key cancels an armed exit. Only the same arrow key confirms it.
     host.disarmExit();
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
@@ -110,8 +114,8 @@ export class MapCanvasKeyboard {
     }
   }
 
-  /** Act on the cursor cell exactly as a click would: author in Build mode
-   * (a one-cell stroke), navigate/move the party in Play mode. */
+  /** Act on the cursor cell exactly as a click would. In Build mode, this
+   * authors a one-cell stroke. In Play mode, this navigates or moves the party. */
   _activateCursor() {
     const host = this.host;
     if (!host.cursorCellId || !host.node) return;
@@ -126,8 +130,8 @@ export class MapCanvasKeyboard {
     }
   }
 
-  /** Fire onCellHover for the cursor cell so keyboard users get the same
-   * tooltip a mouse hover shows, positioned at the cell's screen centre. */
+  /** Fire onCellHover for the cursor cell. Keyboard users then get the same
+   * tooltip as a mouse hover, positioned at the cell's screen centre. */
   _announceCursor() {
     const host = this.host;
     if (!host.onCellHover || !host.cursorCellId || !host.node) return;
@@ -152,7 +156,7 @@ export class MapCanvasKeyboard {
     );
   }
 
-  /** Pan the view so a cell sits inside the visible buffer, used when the
+  /** Pan the view so a cell sits inside the visible buffer. This runs when the
    * keyboard cursor moves toward or past an edge.
    * @param {number} x @param {number} y */
   _ensureCellVisible(x, y) {

@@ -1,17 +1,20 @@
 import { maskAt, tileIdAt } from './MapGeometry.js';
 
 /**
- * Pure helpers for picking connector overlay pieces (coast shorelines, river
- * channels) from a terrain grid. Terrain grids are flat string arrays indexed
- * `y * width + x`, matching the generators in MapGenerator.js; everything here
- * is RNG-injected and DOM-free so it unit-tests directly.
+ * This module gives pure helper functions. The functions select connector
+ * overlay pieces for coast shorelines and river channels from a terrain grid.
+ * A terrain grid is a flat array of strings, indexed as `y * width + x`. This
+ * index method matches the generators in MapGenerator.js. Each function takes
+ * RNG as an input and does not use the DOM, so each function passes unit
+ * tests directly.
  */
 
 /**
- * Widen water until every land cell borders water on at most two *adjacent*
- * edges — the only shapes the coast overlay pieces can draw. A land cell with
- * water on opposite sides (a one-tile isthmus) or three-plus sides (a spit)
- * becomes water itself, repeating until stable.
+ * Widen water until each land cell borders water on at most two adjacent
+ * edges. The coast overlay pieces can draw only these shapes. A land cell
+ * with water on opposite sides (a one-tile isthmus) becomes water. A land
+ * cell with water on three or more sides (a spit) becomes water. The
+ * function repeats until the grid is stable.
  * @param {string[]} cells terrain type per cell
  * @param {number} width @param {number} height
  * @returns {string[]} a new cells array
@@ -40,11 +43,12 @@ export function smoothCoastline(cells, width, height) {
 }
 
 /**
- * Coast piece for a land cell from which neighbors are water. Coast names
- * describe where the water sits: two adjacent water edges make an outer
- * corner, one edge a straight, a diagonal-only touch an inner corner, and no
- * water at all means no overlay (null). Assumes the grid has been through
- * smoothCoastline, so opposite-edge and three-edge cases cannot occur.
+ * Coast piece for a land cell with water neighbors. Coast names describe
+ * where the water sits. Two adjacent water edges give an outer corner. One
+ * water edge gives a straight piece. A diagonal-only water touch gives an
+ * inner corner. No water gives no overlay (null). This function assumes
+ * smoothCoastline already processed the grid, so the opposite-edge and
+ * three-edge cases cannot occur here.
  * @param {boolean} n @param {boolean} e @param {boolean} s @param {boolean} w
  * @param {boolean} ne @param {boolean} se @param {boolean} sw @param {boolean} nw
  * @returns {string | null}
@@ -66,9 +70,9 @@ export function coastKind(n, e, s, w, ne, se, sw, nw) {
 }
 
 /**
- * Coast overlay kinds for every land cell that borders water, keyed by tile
- * id. Off-grid neighbors count as land, so water running off the map edge
- * doesn't grow a shoreline there.
+ * Coast overlay kind for each land cell that borders water, keyed by tile
+ * id. An off-grid neighbor counts as land. So water that runs off the map
+ * edge does not grow a shoreline there.
  * @param {string[]} cells @param {number} width @param {number} height
  * @returns {Map<string, string>}
  */
@@ -96,7 +100,8 @@ export function coastOverlays(cells, width, height) {
 }
 
 /**
- * River piece connecting two named edges of one tile, e.g. n+s -> "v".
+ * River piece that connects two named edges of one tile. For example, n+s
+ * gives "v".
  * @type {Record<string, string>}
  */
 const RIVER_PIECES = {
@@ -109,10 +114,11 @@ const RIVER_PIECES = {
 };
 
 /**
- * A meandering river: a south-biased random walk from the north edge to the
- * south edge that never doubles back on itself, returning the channel piece
- * per visited tile id. The walk ends early if it reaches existing water (the
- * river empties into a lake).
+ * This function creates a meandering river: a south-biased random walk from
+ * the north edge to the south edge. The walk never doubles back on itself.
+ * The function returns the channel piece for each visited tile id. If the
+ * walk reaches existing water, it ends early and the river empties into a
+ * lake.
  * @param {number} width @param {number} height
  * @param {() => number} rng
  * @param {(x: number, y: number) => boolean} [isWater]
@@ -126,7 +132,7 @@ export function riverCourse(width, height, rng, isWater = () => false) {
   for (let y = 0; y < height;) {
     if (isWater(x, y)) break;
     let to = rng() < 0.6 ? 's' : rng() < 0.5 ? 'e' : 'w';
-    if (to === from) to = 's'; // never exit the edge we entered from
+    if (to === from) to = 's'; // The walk cannot exit through the edge it entered from.
     if (to === 'e' && (x + 1 >= width || isWater(x + 1, y))) to = 's';
     if (to === 'w' && (x - 1 < 0 || isWater(x - 1, y))) to = 's';
     out.set(tileIdAt(x, y), RIVER_PIECES[[from, to].sort().join(',')]);

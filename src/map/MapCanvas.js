@@ -10,14 +10,16 @@ import { parseCoords, clampZoom, fitToExtent } from './MapGeometry.js';
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
 
 /**
- * Renders a MapNode's tile grid onto a canvas, with mouse-drag pan and
- * wheel zoom. Unrevealed tiles draw as a flat fog rect instead of their
- * imageRef, matching the fog-of-war model on Tile.revealed.
+ * This class draws a MapNode's tile grid onto a canvas. It supports
+ * mouse-drag pan and wheel zoom. An unrevealed tile draws as a flat fog
+ * rectangle instead of its imageRef. This matches the fog-of-war model on
+ * Tile.revealed.
  *
- * This class owns the view state (node, pan/zoom, markers, selection) and the
- * render loop; input is delegated to MapCanvasPointer (pointer/touch/wheel)
- * and MapCanvasKeyboard (cursor keys, focus), which mutate that state back
- * through the host reference.
+ * This class owns the view state (node, pan and zoom, markers, selection)
+ * and the draw loop. Input goes through MapCanvasPointer for pointer,
+ * touch, and wheel events, and through MapCanvasKeyboard for cursor keys
+ * and focus. Both controllers change that state back through the host
+ * reference.
  */
 export class MapCanvas {
   /**
@@ -34,8 +36,9 @@ export class MapCanvas {
     this.tileSize = options.tileSize ?? 48;
     this.minZoom = options.minZoom ?? 0.25;
     this.maxZoom = options.maxZoom ?? 4;
-    /** Detection range for encounter/NPC/POI markers, in grid cells from the
-     * party or a character token (conventionally twice the fog reveal radius). */
+    /** Detection range for encounter, NPC, and POI markers, in grid cells from
+     * the party or a character token. This is conventionally twice the fog
+     * reveal radius. */
     this.markerRange = options.markerRange ?? 4;
     this.onCellClick = options.onCellClick;
     this.onCellContextMenu = options.onCellContextMenu;
@@ -44,11 +47,13 @@ export class MapCanvas {
     this.getNodeName = options.getNodeName;
     this.onViewChange = options.onViewChange;
     this.onCellHover = options.onCellHover;
-    /** Fired when a way out of the current node is used: a click on a border
-     * arrow, or a cursor key pressed twice into the border it leads off. */
+    /** Fires when a way out of the current node is used. This happens on a
+     * click on a border arrow, or on a cursor key pressed twice into the
+     * border it leads off. */
     this.onExitClick = options.onExitClick;
-    /** Fired when a cursor key arms an edge exit (with the exit) and when the
-     * arming lapses (with null), so the wiring can narrate the second press. */
+    /** Fires when a cursor key arms an edge exit (with the exit), and fires
+     * again with null when the arming lapses. This lets the wiring narrate
+     * the second press. */
     this.onExitArmed = options.onExitArmed;
 
     /** @type {MapNode | null} */
@@ -66,17 +71,17 @@ export class MapCanvas {
     /** @type {{ tileId: string, name: string }[]} per-character tokens in the current node */
     this.characterTokens = [];
     /** @type {import('../types/map.js').MapExit[]} ways out of the current node, drawn as
-     * border arrows and tile badges. Play mode only; the wiring supplies none while authoring. */
+     * border arrows and tile badges. This applies only in Play mode. The wiring supplies none while authoring. */
     this.exits = [];
-    /** @type {import('../types/map.js').ExitSide | null} edge exit a cursor key has
-     * armed: the next press of the same arrow takes it. Highlighted by the renderer. */
+    /** @type {import('../types/map.js').ExitSide | null} edge exit that a cursor key
+     * arms. The next press of the same arrow key takes it. The renderer highlights it. */
     this.armedExitSide = null;
     /** When true (Build mode), draw every tile's image regardless of its
-     * revealed flag, so a GM authors against the whole map, not through fog. */
+     * revealed flag. This lets a GM author against the whole map, not through fog. */
     this.revealAll = false;
     /** When true (Build mode), the left button strokes cells through
-     * onStrokeCell/onStrokeEnd and panning moves to the right button, so
-     * authoring gestures and navigation don't share one button. */
+     * onStrokeCell and onStrokeEnd, and panning moves to the right button.
+     * This way authoring gestures and navigation do not share one button. */
     this.authoring = false;
     /** @type {import('./TilePaint.js').CellRect | null} marquee highlight for the region tool */
     this.marquee = null;
@@ -84,16 +89,16 @@ export class MapCanvas {
     this.cursorCellId = null;
     /** @type {boolean} whether the canvas is focused, so the cursor outline shows */
     this._focused = false;
-    // True once the user pans or zooms away from the fitted view; controls
-    // whether resize() re-fits or preserves their framing.
+    // True once the user pans or zooms away from the fitted view. This
+    // controls whether resize() re-fits the view or keeps the user's framing.
     this._userView = false;
     this.offsetX = 0;
     this.offsetY = 0;
     this.scale = 1;
 
-    // Drawing lives in MapRenderer; MapCanvas stays the owner of interaction
-    // state and hands the renderer a view snapshot each frame. A tile image
-    // that finishes loading asks for a redraw so it appears once decoded.
+    // Drawing lives in MapRenderer. MapCanvas stays the owner of interaction
+    // state and hands the renderer a view snapshot each frame. When a tile
+    // image finishes loading, it asks for a redraw so it appears once decoded.
     this.renderer = new MapRenderer(this.ctx, {
       tileSize: this.tileSize,
       getNodeName: this.getNodeName,
@@ -103,9 +108,9 @@ export class MapCanvas {
     /** @type {number | null} pending requestAnimationFrame id for a coalesced redraw */
     this._rafId = null;
 
-    // The map is the app's primary content and was previously mouse/wheel-only;
-    // make it a focusable widget so it's keyboard-operable and screen-reader
-    // announced (pan/zoom/cursor handled in MapCanvasKeyboard).
+    // The map is the app's primary content. It was previously mouse and wheel
+    // only. This makes it a focusable widget, so it is keyboard-operable and
+    // announced by screen readers. MapCanvasKeyboard handles pan, zoom, and cursor.
     canvas.tabIndex = 0;
     canvas.setAttribute('role', 'application');
     canvas.setAttribute(
@@ -120,7 +125,7 @@ export class MapCanvas {
   }
 
   /**
-   * Load a new MapNode, framing its full extent in the view.
+   * Load a new MapNode. Frame its full extent in the view.
    * @param {MapNode} node
    */
   setNode(node) {
@@ -128,9 +133,9 @@ export class MapCanvas {
     this.regionGroups = findRegionGroups(node);
     this.partyTileId = null;
     this.characterTokens = [];
-    // Cleared with the party marker: the previous node's ways out point at the
-    // wrong parent, and drawing them for the frame before the wiring recomputes
-    // them would offer a click that travels somewhere the party isn't.
+    // This clears along with the party marker. The previous node's ways out
+    // point at the wrong parent. Drawing them before the wiring recomputes
+    // them offers a click that travels to a place where the party is not.
     this.exits = [];
     this.disarmExit();
     this.selectedTileId = null;
@@ -143,9 +148,9 @@ export class MapCanvas {
     const { node, canvas } = this;
     if (!node) return;
     this._userView = false;
-    // Pad enough for the coordinate labels, which hang off the grid's top and
-    // left edges (up to ~60 buffer px at the label font cap); the default 24px
-    // clips them whenever the fit isn't slack from the zoom clamp.
+    // Pad enough for the coordinate labels. These labels hang off the grid's
+    // top and left edges, up to about 60 buffer pixels at the label font cap.
+    // The default 24px clips them whenever the fit is not slack from the zoom clamp.
     const fitted = fitToExtent(
       node.width * this.tileSize,
       node.height * this.tileSize,
@@ -160,9 +165,10 @@ export class MapCanvas {
   }
 
   /**
-   * Pan the view so a tile sits at the canvas centre, keeping the current
-   * zoom — how "show me this encounter" focuses the map without yanking the
-   * user's scale around. No-op on an id that isn't a grid coordinate.
+   * Pan the view so a tile sits at the canvas centre, and keep the current
+   * zoom. This is how "show me this encounter" focuses the map without
+   * changing the user's scale. This function does nothing on an id that is
+   * not a grid coordinate.
    * @param {string} tileId
    */
   centerOnTile(tileId) {
@@ -177,8 +183,8 @@ export class MapCanvas {
   }
 
   /**
-   * Zoom by a factor anchored on the canvas centre (the wheel handler anchors
-   * on the pointer instead), for the on-canvas +/- controls.
+   * Zoom by a factor anchored on the canvas centre, for the on-canvas plus
+   * and minus controls. The wheel handler anchors on the pointer instead.
    * @param {number} factor
    */
   zoomBy(factor) {
@@ -194,11 +200,12 @@ export class MapCanvas {
   }
 
   /**
-   * Resize the canvas buffer (e.g. when the layout column changes width).
-   * While the view is still the fitted default this re-frames the node; once
-   * the user has panned or zoomed it instead keeps their scale and the world
-   * point at the canvas centre anchored, so an unrelated layout reflow (a
-   * panel expanding, a scrollbar appearing) doesn't reset their view.
+   * Resize the canvas buffer. For example, call this when the layout column
+   * changes width. While the view is still the fitted default, this
+   * re-frames the node. After the user pans or zooms, this instead keeps
+   * their scale and anchors the world point at the canvas centre. So an
+   * unrelated layout reflow, such as a panel expanding or a scrollbar
+   * appearing, does not reset the user's view.
    * @param {number} width
    * @param {number} height
    */
@@ -220,8 +227,8 @@ export class MapCanvas {
   }
 
   /**
-   * Swap in an updated copy of the *same* node (e.g. after a tile mutation
-   * like a fog reveal) without resetting pan/zoom, unlike setNode.
+   * Swap in an updated copy of the same node, for example after a tile
+   * change like a fog reveal. This does not reset pan or zoom, unlike setNode.
    * @param {MapNode} node
    */
   refreshNode(node) {
@@ -231,16 +238,17 @@ export class MapCanvas {
   }
 
   /**
-   * Mid-stroke variant of refreshNode: swap the node and redraw without
-   * recomputing region groups, so a paint/erase/fog drag does O(cells) work
-   * instead of a full group flood-fill per cell crossed. Callers must settle
-   * with a full refreshNode when the stroke ends — an erase can remove a
-   * region-linked tile, which this variant leaves visually stale until then.
+   * Mid-stroke variant of refreshNode. This swaps the node and redraws
+   * without recomputing region groups. So a paint, erase, or fog drag does
+   * O(cells) work instead of a full group flood-fill for each cell crossed.
+   * Callers must call a full refreshNode when the stroke ends. An erase can
+   * remove a region-linked tile, and this variant leaves that tile visually
+   * stale until the full refreshNode runs.
    *
-   * Keeping the previous node's group objects is also what keeps the group image
-   * chunks cached across the frames within one cell: they are memoized per group
-   * against the tile list they were built from, so this swap costs a rebuild only
-   * when it actually carries changed tiles.
+   * Keeping the previous node's group objects also keeps the group image
+   * chunks cached across the frames within one cell. The chunks are
+   * memoized per group against the tile list they were built from. So this
+   * swap costs a rebuild only when the tile list actually carries changed tiles.
    * @param {MapNode} node
    */
   refreshNodeTiles(node) {
@@ -250,7 +258,7 @@ export class MapCanvas {
 
   /**
    * Show (or clear, with null) the party marker at a tile id within the
-   * current node. Does not reset pan/zoom, unlike setNode.
+   * current node. This does not reset pan or zoom, unlike setNode.
    * @param {string | null} tileId
    */
   setPartyTile(tileId) {
@@ -259,8 +267,9 @@ export class MapCanvas {
   }
 
   /**
-   * Highlight (or clear, with null) the Build-mode selected tile. Independent
-   * of the party marker, so a GM can inspect any tile without moving the party.
+   * Highlight (or clear, with null) the Build-mode selected tile. This is
+   * independent of the party marker, so a GM can inspect any tile without
+   * moving the party.
    * @param {string | null} tileId
    */
   setSelectedTile(tileId) {
@@ -270,8 +279,9 @@ export class MapCanvas {
 
   /**
    * Set the tile ids in the current node that carry a live encounter, so the
-   * renderer can mark them. Drawn only within markerRange of the party or a
-   * character token, so distant dangers stay unknown until approached.
+   * renderer can mark them. The renderer draws them only within markerRange
+   * of the party or a character token, so distant dangers stay unknown until
+   * the party approaches.
    * @param {string[]} tileIds
    */
   setEncounterTiles(tileIds) {
@@ -280,8 +290,9 @@ export class MapCanvas {
   }
 
   /**
-   * Set the tile ids in the current node that hold a placed NPC, marked by the
-   * renderer under the same detection rule as encounters (within markerRange in Play).
+   * Set the tile ids in the current node that hold a placed NPC. The
+   * renderer marks them under the same detection rule as encounters, within
+   * markerRange in Play mode.
    * @param {string[]} tileIds
    */
   setNPCTiles(tileIds) {
@@ -290,9 +301,9 @@ export class MapCanvas {
   }
 
   /**
-   * Set the per-character tokens to draw in the current node — one named
-   * marker per character standing here (resolved by the wiring from each
-   * character's own location or the shared party position).
+   * Set the per-character tokens to draw in the current node: one named
+   * marker for each character standing here. The wiring resolves each token
+   * from the character's own location or the shared party position.
    * @param {{ tileId: string, name: string }[]} tokens
    */
   setCharacterTokens(tokens) {
@@ -301,25 +312,26 @@ export class MapCanvas {
   }
 
   /**
-   * Set the ways out of the current node (MapExits.findExits), drawn as an arrow
-   * in the gutter beside each side that leads back and as a badge on each door or
-   * stairway that does. An empty list draws none, which is how Build mode shows
-   * nothing: authoring a map is not travelling it.
+   * Set the ways out of the current node, from MapExits.findExits. The
+   * renderer draws each way out as an arrow in the gutter beside the side
+   * that leads back, and as a badge on each door or stairway that leads
+   * back. An empty list draws none. This is how Build mode shows nothing,
+   * because authoring a map is not travelling it.
    * @param {import('../types/map.js').MapExit[]} exits
    */
   setExits(exits) {
     this.exits = exits;
-    // The armed side may no longer be a way out; requiring a fresh first press
+    // The armed side can no longer be a way out; requiring a fresh first press
     // is cheaper than checking, and rearming costs the user one keystroke.
     this.disarmExit();
     this.render();
   }
 
   /**
-   * Drop a cursor-armed edge exit, telling the wiring so its narration clears
-   * too. Any interaction other than the confirming second press calls this: a
-   * cursor move, another key, a pointer touch, losing focus, or the exits or
-   * the node changing under the arming.
+   * Drop a cursor-armed edge exit, and tell the wiring so its narration
+   * clears too. Any interaction other than the confirming second press calls
+   * this function: a cursor move, another key, a pointer touch, a loss of
+   * focus, or a change to the exits or the node while the exit is armed.
    */
   disarmExit() {
     if (this.armedExitSide === null) return;
@@ -339,9 +351,10 @@ export class MapCanvas {
   }
 
   /**
-   * Toggle authoring interaction (Build mode): left-drag strokes cells,
-   * right-drag pans, the context menu is suppressed. Off (Play mode), the
-   * left button pans and short drags fire onCellClick as before.
+   * Toggle authoring interaction (Build mode). In this mode, left-drag
+   * strokes cells, right-drag pans, and the context menu is suppressed. When
+   * off (Play mode), the left button pans, and short drags fire onCellClick
+   * as before.
    * @param {boolean} value
    */
   setAuthoring(value) {
@@ -351,8 +364,8 @@ export class MapCanvas {
   }
 
   /**
-   * Highlight (or clear, with null) a rectangular block of cells — the live
-   * preview for the region tool's drag gesture.
+   * Highlight (or clear, with null) a rectangular block of cells. This is
+   * the live preview for the region tool's drag gesture.
    * @param {import('./TilePaint.js').CellRect | null} rect
    */
   setMarquee(rect) {
@@ -361,10 +374,10 @@ export class MapCanvas {
   }
 
   /**
-   * Assemble the current interaction state into a view snapshot and hand it to
-   * the renderer. Pan/zoom/resize and every state setter funnel through here,
-   * so this is also the one place the zoom readout (and any other view-dependent
-   * chrome) needs poking from.
+   * Assemble the current interaction state into a view snapshot, and hand it
+   * to the renderer. Pan, zoom, resize, and every state setter route through
+   * here. So this is also the one place from which the zoom readout, and any
+   * other view-dependent chrome, must read state.
    * @returns {import('./MapRenderer.js').MapView}
    */
   _view() {
@@ -392,11 +405,11 @@ export class MapCanvas {
   }
 
   /**
-   * Request a redraw, coalesced through a single requestAnimationFrame: a
-   * pointermove/wheel burst or a run of state setters (e.g. the party-marker
-   * sync touching four fields) yields one draw per display frame, not one per
-   * call. The view snapshot is taken when the frame fires, so it reflects the
-   * latest state.
+   * Request a redraw, coalesced through a single requestAnimationFrame. A
+   * burst of pointermove or wheel events, or a run of state setters such as
+   * the party-marker sync touching four fields, yields one draw for each
+   * display frame, not one draw for each call. The renderer takes the view
+   * snapshot when the frame fires, so the snapshot reflects the latest state.
    */
   render() {
     if (this._rafId !== null) return;

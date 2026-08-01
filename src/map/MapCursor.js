@@ -12,8 +12,8 @@ const DELTAS = {
 };
 
 /**
- * The side of the map each direction leads off, so a cursor that cannot move any
- * further can be read as walking off that edge.
+ * The side of the map each direction leads off. A cursor that cannot move any
+ * further reads as walking off that edge.
  * @type {Record<string, import('../types/map.js').ExitSide>}
  */
 const SIDES = {
@@ -42,10 +42,11 @@ export function cursorSide(key) {
 }
 
 /**
- * The next keyboard cursor position after an arrow key, clamped inside the
- * node's width x height grid so the cursor never leaves the map. A null current
- * cursor (the map was just focused) starts at the grid centre rather than
- * jumping to a corner, so the first arrow press moves from a sensible middle.
+ * Get the next keyboard cursor position after an arrow key. The result stays
+ * inside the node's width by height grid, so the cursor never leaves the map.
+ * A null current cursor means the map was just focused. In that case the
+ * cursor starts at the grid center, not at a corner, so the first arrow press
+ * moves from the middle.
  * @param {Coords | null} cursor current cursor cell, or null if unset
  * @param {string} key an arrow key name (see isCursorKey)
  * @param {number} width grid width in tiles

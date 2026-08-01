@@ -2,19 +2,20 @@
 
 /**
  * In-memory Build-mode edit history: a bounded ring of node snapshots taken
- * before each stroke/erase/link/generate, so one bad paint stroke is undoable
- * without reloading a whole earlier save. Each entry holds every node the edit
- * touched (a generate touches the node and its parent), captured by reference —
- * the paint/erase transforms return fresh node objects, so a captured snapshot
- * is never mutated afterwards. Session-only by design: this is the counterpart
- * to the persisted save-level Undo, not a replacement for it.
+ * before each stroke, erase, link, or generate action. A GM can undo one bad
+ * paint stroke without a reload to an earlier save. Each entry holds every
+ * node the edit touched (a generate action touches the node and its parent).
+ * Entries are captured by reference. The paint and erase transforms return
+ * fresh node objects, so a captured snapshot never changes afterward. This
+ * history is session only by design. It is the counterpart to the persisted
+ * save-level Undo, not a replacement for it.
  */
 
 export const DEFAULT_EDIT_LIMIT = 30;
 
 /**
- * Append one edit's pre-state (the touched nodes as they were) to the ring,
- * dropping the oldest entry once past `limit`. Pure: returns a new array.
+ * Append one edit's pre-state (the touched nodes as they were) to the ring.
+ * Drop the oldest entry once past `limit`. This is a pure function: it returns a new array.
  * @param {MapNode[][]} history
  * @param {MapNode[]} nodes
  * @param {number} [limit]
@@ -26,8 +27,8 @@ export function pushEdit(history, nodes, limit = DEFAULT_EDIT_LIMIT) {
 }
 
 /**
- * Pop the most recent edit's pre-state. Pure: returns the shortened history
- * and the snapshot to restore, or `nodes: null` when there is nothing to undo.
+ * Pop the most recent edit's pre-state. This is a pure function: it returns the
+ * shortened history and the snapshot to restore, or `nodes: null` when there is nothing to undo.
  * @param {MapNode[][]} history
  * @returns {{ history: MapNode[][], nodes: MapNode[] | null }}
  */

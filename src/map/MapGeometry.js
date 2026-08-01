@@ -1,15 +1,16 @@
 /**
- * Pure grid/screen coordinate math shared by MapCanvas and the map modules that
- * reason about tile positions (fog, region grouping, descriptions, paint). Kept
- * free of any canvas/DOM state so it stays unit-testable in isolation.
+ * Pure grid and screen coordinate math shared by MapCanvas and the map
+ * modules that reason about tile positions: fog of war, region grouping,
+ * descriptions, and paint. This module holds no canvas or DOM state, so it
+ * stays unit-testable in isolation.
  */
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
 /**
- * Grid tiles use "x,y" as their id (e.g. "3,4"), giving a coordinate without
- * adding position fields to the Tile type. Non-grid tiles (hierarchy tests,
- * etc.) are free to use any other id shape.
+ * Grid tiles use "x,y" as their id, for example "3,4". This gives a
+ * coordinate without adding position fields to the Tile type. Non-grid
+ * tiles, for example hierarchy tests, can use any other id shape.
  * @param {string} id
  * @returns {{ x: number, y: number } | null}
  */
@@ -20,10 +21,10 @@ export function parseCoords(id) {
 }
 
 /**
- * The id of the grid tile at (x, y) — the inverse of parseCoords, and the only
- * place the "x,y" format is written. Everything that builds a tile id goes
- * through here so the format is stated once rather than in every loop that
- * walks a grid.
+ * The id of the grid tile at (x, y). This is the inverse of parseCoords, and
+ * the only place that writes the "x,y" format. Everything that builds a
+ * tile id goes through here, so the format is stated once, not in every
+ * loop that walks a grid.
  * @param {number} x
  * @param {number} y
  * @returns {string}
@@ -33,11 +34,11 @@ export function tileIdAt(x, y) {
 }
 
 /**
- * The four orthogonal neighbour offsets as `[dx, dy]` pairs, and the eight that
- * add the diagonals. Everything that walks a cell's neighbours iterates one of
- * these rather than inlining the literal, so the order is fixed in one place —
- * the generators consume it under a seeded RNG, where a reordering would change
- * every generated map.
+ * The four orthogonal neighbor offsets as `[dx, dy]` pairs, and the eight
+ * that add the diagonals. Everything that walks a cell's neighbors iterates
+ * one of these lists instead of writing the values inline, so the order
+ * stays fixed in one place. The generators consume this order under a
+ * seeded RNG, where a reordering changes every generated map.
  * @type {ReadonlyArray<readonly [number, number]>}
  */
 export const NEIGHBORS4 = [
@@ -51,11 +52,12 @@ export const NEIGHBORS4 = [
 export const NEIGHBORS8 = [...NEIGHBORS4, [1, 1], [1, -1], [-1, 1], [-1, -1]];
 
 /**
- * A bounds-clamped test against a flat grid of cells indexed `y * width + x`:
- * the returned predicate says whether the cell at (x, y) holds `value`, and
- * answers false off the grid instead of reading a wrapped-around index. That
- * clamp is why neighbour walks don't special-case the border, and why water or
- * floor running off the map edge doesn't appear to continue on the far side.
+ * A bounds-clamped test against a flat grid of cells indexed `y * width + x`.
+ * The returned predicate reports whether the cell at (x, y) holds `value`,
+ * and answers false off the grid instead of reading a wrapped-around index.
+ * This clamp removes the need for neighbor walks to special-case the
+ * border, and stops water or floor running off the map edge from appearing
+ * to continue on the far side.
  * @template T
  * @param {readonly T[]} cells
  * @param {number} width
@@ -68,9 +70,9 @@ export function maskAt(cells, width, height, value) {
 }
 
 /**
- * Whether (x, y) falls inside a node's width x height grid. Callers that hold
- * an id instead of a coordinate pair want `TilePaint.isInBounds`, which parses
- * first and then asks this.
+ * Whether (x, y) falls inside a node's width by height grid. A caller that
+ * holds an id instead of a coordinate pair must use `TilePaint.isInBounds`,
+ * which parses the id first and then asks this function.
  * @param {MapNode} node
  * @param {number} x
  * @param {number} y
@@ -81,8 +83,8 @@ export function inBounds(node, x, y) {
 }
 
 /**
- * Screen-space rect for a tile at grid position (x, y) given the current
- * pan offset and zoom scale.
+ * The screen-space rectangle for a tile at grid position (x, y), given the
+ * current pan offset and zoom scale.
  * @param {number} x
  * @param {number} y
  * @param {number} tileSize base tile size in CSS px at scale 1
@@ -97,7 +99,7 @@ export function tileRect(x, y, tileSize, offsetX, offsetY, scale) {
 }
 
 /**
- * Inverse of tileRect: which grid cell contains a given screen point.
+ * The inverse of tileRect: the grid cell that contains a given screen point.
  * @param {number} screenX
  * @param {number} screenY
  * @param {number} tileSize
@@ -115,7 +117,7 @@ export function screenToTile(screenX, screenY, tileSize, offsetX, offsetY, scale
 }
 
 /**
- * Clamp a zoom scale to a min/max range.
+ * Clamp a zoom scale to a minimum and maximum range.
  * @param {number} scale
  * @param {number} min
  * @param {number} max
@@ -127,11 +129,12 @@ export function clampZoom(scale, min, max) {
 
 /**
  * Convert a client (viewport) point to the canvas's internal buffer-pixel
- * space. A canvas can be rendered at a different CSS size than its internal
- * pixel buffer (e.g. `max-width: 100%` shrinks the element while `width`/
- * `height` attributes fix the buffer); `getBoundingClientRect()` alone gives
- * CSS-space coordinates, so all buffer-space tile math must first scale by the
- * buffer/CSS ratio or every click, drag, and zoom anchor is silently offset.
+ * space. A canvas can draw at a different CSS size than its internal pixel
+ * buffer. For example, `max-width: 100%` shrinks the element while `width`
+ * and `height` attributes fix the buffer. `getBoundingClientRect()` alone
+ * gives CSS-space coordinates. All buffer-space tile math must first scale
+ * by the buffer-to-CSS ratio, or every click, drag, and zoom anchor lands
+ * at the wrong point.
  * @param {number} clientX
  * @param {number} clientY
  * @param {DOMRect} rect result of canvas.getBoundingClientRect()
@@ -150,10 +153,11 @@ export function clientToBuffer(clientX, clientY, rect, bufferWidth, bufferHeight
 }
 
 /**
- * The buffer/CSS pixel ratio of a canvas on its own, for the cases that scale a
- * delta rather than convert a point (a drag or pinch measured in client px, panning
- * an offset that lives in buffer px). Same guard against a zero-size rect as
- * clientToBuffer, which is built on this.
+ * The buffer-to-CSS pixel ratio of a canvas on its own, for cases that scale
+ * a delta instead of converting a point. Examples are a drag or pinch
+ * measured in client pixels, and panning an offset that lives in buffer
+ * pixels. This carries the same guard against a zero-size rectangle as
+ * clientToBuffer, which is built on this function.
  * @param {{ width: number, height: number }} rect result of canvas.getBoundingClientRect()
  * @param {number} bufferWidth canvas.width
  * @param {number} bufferHeight canvas.height
@@ -167,25 +171,25 @@ export function bufferScale(rect, bufferWidth, bufferHeight) {
 }
 
 /**
- * A screen-space rect for a multi-tile block, plus whether it intersects the
- * canvas at all.
+ * A screen-space rectangle for a multi-tile block, plus whether it
+ * intersects the canvas at all.
  * @typedef {{ x: number, y: number, w: number, h: number, visible: boolean }} BlockRect
  */
 
-/** A reusable BlockRect for a caller to hand to blockRect. @returns {BlockRect} */
+/** A reusable BlockRect for a caller to pass to blockRect. @returns {BlockRect} */
 export function newBlockRect() {
   return { x: 0, y: 0, w: 0, h: 0, visible: false };
 }
 
 /**
- * Screen-space rect for a block spanning the cells minX..maxX by minY..maxY,
- * with `visible` false when it falls entirely off the canvas.
+ * The screen-space rectangle for a block spanning the cells minX to maxX by
+ * minY to maxY. `visible` is false when the block falls entirely off the canvas.
  *
- * The result is written into the caller's `out` rather than returned fresh: the
- * three renderer passes that use this run per block per frame, and allocating a
- * rect each time is exactly the per-block garbage that inlining this arithmetic
- * removed. So `out` is a scratch value — read its fields before the next call,
- * and never store it.
+ * The result is written into the caller's `out` argument instead of
+ * returned fresh. The three renderer passes that use this run once per
+ * block per frame, and a fresh rectangle each time recreates the
+ * per-block garbage that inlining this arithmetic removed. `out` is
+ * therefore a scratch value. Read its fields before the next call, and never store it.
  * @param {BlockRect} out
  * @param {{ minX: number, minY: number, maxX: number, maxY: number }} bounds
  * @param {{ offsetX: number, offsetY: number, canvasWidth: number, canvasHeight: number }} view
@@ -207,9 +211,9 @@ export function blockRect(out, bounds, view, size) {
 
 /**
  * Compute the zoom scale and pan offsets that frame an extent of
- * `extentW x extentH` (in world px at scale 1) centered inside a
- * `bufferW x bufferH` canvas with some breathing room, so a node loads
- * filling the view instead of adrift in backdrop at an arbitrary zoom.
+ * `extentW` by `extentH`, in world pixels at scale 1, centered inside a
+ * `bufferW` by `bufferH` canvas with some padding. A node then loads
+ * filling the view instead of adrift in the backdrop at an arbitrary zoom.
  * @param {number} extentW
  * @param {number} extentH
  * @param {number} bufferW

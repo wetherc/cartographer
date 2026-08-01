@@ -5,15 +5,17 @@ import { downloadBlob } from '../storage/fileIO.js';
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
 /**
- * Export a node's map as a PNG image: render the full extent to an offscreen
- * canvas at tile resolution and hand it to the browser as a download. GM/Build
- * only (enforced by the caller's UI placement) — the render ignores fog, so a
- * player-facing export would leak the whole map.
+ * Export a node's map as a PNG image. This draws the full extent to an
+ * offscreen canvas at tile resolution and hands it to the browser as a
+ * download. It is GM and Build mode only, enforced by the caller's UI
+ * placement. The draw ignores fog of war, so a player-facing export leaks
+ * the whole map.
  */
 
 /**
- * Every image the node's tiles reference (bases and overlays), deduplicated.
- * Pure; the renderer preloads through this before drawing.
+ * Every image the node's tiles reference, both base tiles and overlays,
+ * with duplicates removed. This is a pure function. The renderer preloads
+ * images through it before drawing.
  * @param {MapNode} node
  * @returns {string[]}
  */
@@ -27,8 +29,9 @@ export function collectImageRefs(node) {
 }
 
 /**
- * A safe download filename from a node name: word characters and dashes only,
- * with a fallback for names that sanitize away entirely. Pure.
+ * A safe download filename from a node name. It keeps only word characters
+ * and dashes, with a fallback for names that reduce to nothing. This is a
+ * pure function.
  * @param {string} name
  * @returns {string}
  */
@@ -41,9 +44,10 @@ export function exportFilename(name) {
 }
 
 /**
- * The refs an export still has to decode, given the images a live renderer
- * already holds. An entry that is present but not `complete` is still loading,
- * so the export loads its own copy rather than rendering a blank. Pure.
+ * The refs an export still must decode, given the images a live renderer
+ * already holds. An entry that is present but not `complete` is still
+ * loading, so the export loads its own copy instead of drawing a blank tile.
+ * This is a pure function.
  * @param {string[]} refs
  * @param {Map<string, HTMLImageElement>} [cache]
  * @returns {string[]}
@@ -54,12 +58,13 @@ export function refsToDecode(refs, cache) {
 }
 
 /**
- * Render a node's full extent to a fresh canvas at `tileSize` pixels per tile,
- * fog ignored. Tile images are preloaded into the renderer's cache first, so
- * the single render pass draws real art instead of placeholders; an image that
- * fails to load falls back to the renderer's placeholder fill. Pass the live
- * canvas's `imageCache` to reuse the art it has already decoded — for a
- * built-in-tile map that is every image, so the export decodes nothing.
+ * Draw a node's full extent to a fresh canvas at `tileSize` pixels per tile,
+ * with fog of war ignored. Tile images are preloaded into the renderer's
+ * cache first, so the single draw pass shows real art instead of
+ * placeholders. An image that fails to load falls back to the renderer's
+ * placeholder fill. Pass the live canvas's `imageCache` to reuse the art it
+ * already decoded. For a built-in-tile map that is every image, so the
+ * export decodes nothing.
  * @param {MapNode} node
  * @param {{
  *   tileSize?: number,
@@ -79,8 +84,9 @@ export async function renderNodeToCanvas(node, options = {}) {
 
   const renderer = new MapRenderer(ctx, { tileSize, getNodeName: options.getNodeName });
   const refs = collectImageRefs(node);
-  // Seed from the live cache first, then fill the gaps. Copied in rather than
-  // shared, so the export never writes into the cache the live canvas draws from.
+  // Seed from the live cache first, then fill the gaps. Copy the entries in
+  // instead of sharing the cache, so the export never writes into the cache
+  // the live canvas draws from.
   for (const ref of refs) {
     const decoded = options.imageCache?.get(ref);
     if (decoded?.complete) renderer.imageCache.set(ref, decoded);
@@ -92,8 +98,8 @@ export async function renderNodeToCanvas(node, options = {}) {
       try {
         await img.decode();
       } catch {
-        // Missing/broken art: leave the image incomplete so the renderer
-        // draws its placeholder fill for that tile instead of failing.
+        // Art is missing or broken. Leave the image incomplete so the
+        // renderer draws its placeholder fill for that tile instead of failing.
       }
       renderer.imageCache.set(ref, img);
     }),

@@ -6,9 +6,10 @@ import { capitalize } from '../util/text.js';
 const TILE_ROOT = 'assets/tiles';
 
 /**
- * Terrain types with multiple interchangeable variants, so adjacent tiles of
- * the same type don't look identical. Any variant abuts any other cleanly
- * because they share the same background fill.
+ * Terrain types with several interchangeable variants. This makes sure that
+ * adjacent tiles of the same type do not look identical. Any variant fits
+ * next to any other variant, because all variants share the same background
+ * fill.
  * @type {Record<string, number>}
  */
 const VARIANT_COUNTS = {
@@ -24,9 +25,9 @@ const VARIANT_COUNTS = {
 };
 
 /**
- * Road pieces are not random variants: each is a distinct connector shape,
- * selected by a caller (e.g. autotiling logic) based on which edges must
- * connect to neighboring road tiles.
+ * Road pieces are not random variants. Each piece is a distinct connector
+ * shape. A caller, for example autotiling logic, selects a piece based on
+ * which edges must connect to neighboring road tiles.
  * @type {string[]}
  */
 const ROAD_KINDS = [
@@ -48,22 +49,24 @@ const ROAD_KINDS = [
 ];
 
 /**
- * River pieces follow the road-connector pattern: distinct channel shapes
- * picked by which edges must meet neighboring river tiles, plus two bridge
- * pieces where a road crosses the channel (`bridge-h` carries an east-west
- * road over a north-south river; `bridge-v` the reverse).
+ * River pieces follow the road-connector pattern: distinct channel shapes,
+ * picked by which edges must meet neighboring river tiles. The list also
+ * adds two bridge pieces for where a road crosses the channel. `bridge-h`
+ * carries an east-west road over a north-south river. `bridge-v` carries the
+ * reverse.
  * @type {string[]}
  */
 const RIVER_KINDS = [...ROAD_KINDS, 'bridge-h', 'bridge-v'];
 
 /**
- * Coast transition overlays: water fills one half (the named edge) with a
- * sandy shoreline fading to transparent on the other, so any terrain beneath
- * (grass, desert, snow, mountain) supplies the land side without needing a
- * water-and-X tile per biome. Beyond the four straight edges there are two
- * corner families: `corner-*` (outer corner — water wraps the two named edges
- * around a land tip) and `inner-*` (inner corner — water fills only the named
- * quadrant, the inside of a bay's turn).
+ * Coast transition overlays. Water fills one half, the named edge, with a
+ * sandy shoreline that fades to transparent on the other half. This lets any
+ * terrain beneath, such as grass, desert, snow, or mountain, supply the land
+ * side, so the palette needs no separate water-and-X tile for each biome.
+ * Beyond the four straight edges there are two corner families. `corner-*` is
+ * an outer corner, where water wraps the two named edges around a land tip.
+ * `inner-*` is an inner corner, where water fills only the named quadrant,
+ * the inside of a bay's turn.
  * @type {string[]}
  */
 const COAST_KINDS = [
@@ -82,8 +85,9 @@ const COAST_KINDS = [
 ];
 
 /**
- * Palette types painted as a tile's overlayRef (layered over terrain) rather
- * than as its base image, so a path or shoreline can cross sand, snow, etc.
+ * Palette types painted as a tile's overlayRef, layered over terrain, rather
+ * than as its base image. This lets a path or shoreline cross sand, snow, or
+ * other terrain.
  * @param {string} type
  * @returns {boolean}
  */
@@ -120,15 +124,16 @@ const MARKER_TYPES = [
 ];
 
 /**
- * Building-interior pieces (castle halls, shop floors). Like roads these are
- * distinct shapes picked deliberately, not random variants: flagstone floors,
- * wall segments/corners sharing one cross-section, doors, and stairs.
+ * Building-interior pieces, such as castle halls and shop floors. Like roads,
+ * these are distinct shapes picked on purpose, not random variants:
+ * flagstone floors, wall segments and corners that share one cross-section,
+ * doors, and stairs.
  *
- * Each piece is listed with what it means to the rules, because several of them
- * mean something: the party cannot stand on a wall, a door is the authored way
- * into a space, and stairs connect one level of a dungeon to the next. Keeping
- * that here, beside the art, is what lets `kindOf` answer the question from an
- * image reference without anyone matching on a file name.
+ * The list states each piece with its meaning to the rules, because several
+ * pieces carry a rule: the party cannot stand on a wall, a door is the
+ * authored way into a space, and stairs connect one dungeon level to the
+ * next. Keeping the meaning here, beside the art, lets `kindOf` answer the
+ * question from an image reference, with no code matching on a file name.
  * @type {Record<string, TileKind>}
  */
 const INTERIOR_KINDS = {
@@ -153,9 +158,10 @@ const INTERIOR_KINDS = {
 };
 
 /**
- * Every built-in image reference that carries a rule meaning, mapped to it.
- * Built from the catalog above, so the art path and the meaning are stated
- * together in one place and renaming an asset cannot silently change a rule.
+ * Every built-in image reference that carries a rule meaning, mapped to that
+ * meaning. The code builds this map from the catalog above, so the art path
+ * and the meaning are stated together in one place. Renaming an asset cannot
+ * change a rule without notice.
  * @type {Map<string, TileKind>}
  */
 const KIND_BY_REF = new Map(
@@ -166,9 +172,10 @@ const KIND_BY_REF = new Map(
 );
 
 /**
- * What a tile's art means to the rules. Anything outside the interior set —
- * outdoor terrain, POI markers, and every custom or `data:` image a GM
- * supplies — is `plain`, which is walkable and unremarkable.
+ * What a tile's art means to the rules. Anything outside the interior set is
+ * `plain`, which is walkable and has no special meaning. This includes
+ * outdoor terrain, POI markers, and every custom or `data:` image that a GM
+ * supplies.
  * @param {string} imageRef
  * @returns {TileKind}
  */
@@ -266,8 +273,8 @@ export class TilePalette {
   }
 
   /**
-   * Register a custom tile image (e.g. a data: URL read from a file input).
-   * Throws if the id collides with an existing built-in entry.
+   * Register a custom tile image, for example a data: URL read from a file
+   * input. Throws if the id collides with an existing built-in entry.
    * @param {string} id
    * @param {string} label
    * @param {string} imageRef
@@ -285,7 +292,8 @@ export class TilePalette {
   }
 
   /**
-   * Remove a custom tile entry. No-op (and refuses) for built-ins.
+   * Remove a custom tile entry. The function does nothing, and refuses, for
+   * built-in entries.
    * @param {string} id
    */
   removeCustom(id) {
@@ -303,7 +311,7 @@ export class TilePalette {
   }
 
   /**
-   * All entries (built-in and custom) belonging to a given type.
+   * All entries, built-in and custom, that belong to a given type.
    * @param {string} type
    * @returns {PaletteEntry[]}
    */
@@ -312,7 +320,8 @@ export class TilePalette {
   }
 
   /**
-   * Pick a random variant of a terrain type, via an injected RNG for testability.
+   * Pick a random variant of a terrain type. The caller supplies the RNG so
+   * tests can control it.
    * @param {string} type
    * @param {() => number} rng returns a float in [0, 1)
    * @returns {PaletteEntry}
@@ -324,7 +333,8 @@ export class TilePalette {
   }
 
   /**
-   * Look up a specific road connector piece by kind (e.g. "h", "corner-ne", "end-n").
+   * Look up a specific road connector piece by kind, for example "h",
+   * "corner-ne", or "end-n".
    * @param {string} kind
    * @returns {PaletteEntry | undefined}
    */
@@ -333,7 +343,8 @@ export class TilePalette {
   }
 
   /**
-   * Look up a specific river connector piece by kind (e.g. "h", "corner-ne", "bridge-h").
+   * Look up a specific river connector piece by kind, for example "h",
+   * "corner-ne", or "bridge-h".
    * @param {string} kind
    * @returns {PaletteEntry | undefined}
    */
@@ -342,7 +353,8 @@ export class TilePalette {
   }
 
   /**
-   * Look up a coast transition piece by the edge its water half faces ("n", "s", "e", "w").
+   * Look up a coast transition piece by the edge its water half faces, for
+   * example "n", "s", "e", or "w".
    * @param {string} kind
    * @returns {PaletteEntry | undefined}
    */
@@ -351,7 +363,8 @@ export class TilePalette {
   }
 
   /**
-   * Look up a specific interior piece by kind (e.g. "floor-1", "wall-h", "stairs-up").
+   * Look up a specific interior piece by kind, for example "floor-1",
+   * "wall-h", or "stairs-up".
    * @param {string} kind
    * @returns {PaletteEntry | undefined}
    */

@@ -7,10 +7,10 @@ import { randInt, shuffle } from './GeneratorRandom.js';
 /** @typedef {import('./TilePalette.js').TilePalette} TilePalette */
 
 /**
- * The region (open-terrain) archetype generators — wilderness and town —
- * split out of MapGenerator.js, which keeps the size presets and the
- * archetype dispatch; the enclosed-structure archetypes live in
- * GeneratorInteriors.js.
+ * This file holds the region, or open-terrain, archetype generators:
+ * wilderness and town. This file is split out of MapGenerator.js, which
+ * keeps the size presets and the archetype dispatch. The enclosed-structure
+ * archetypes live in GeneratorInteriors.js.
  */
 
 const TERRAIN_BLOBS = [
@@ -50,13 +50,14 @@ function terrainRef(palette, type, rng) {
 }
 
 /**
- * Procedural open terrain: a grass base with clustered blobs of every biome
- * grown by probabilistic flood-fill, so terrain reads as contiguous features
- * rather than per-tile noise. Water blobs get sandy coast overlays where they
- * meet land, a river meanders in from the north edge, and a few landmark POI
- * markers (ruins, camps, standing stones...) dot the open ground.
- * Fully tiled, so it connects to the parent along its whole border; entry is
- * the bottom-centre border tile.
+ * Generate procedural open terrain: a grass base with clustered blobs of
+ * every biome. A probabilistic flood-fill grows each blob, so the terrain
+ * reads as contiguous features instead of per-tile noise. Water blobs get
+ * sandy coast overlays where they meet land. A river meanders in from the
+ * north edge. A few landmark points of interest, for example ruins, camps,
+ * and standing stones, dot the open ground. The terrain is fully tiled, so
+ * it connects to the parent along its whole border. The entry is the
+ * bottom-center border tile.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @returns {{ tiles: Tile[], entry: string }}
  */
@@ -109,8 +110,9 @@ export function generateWilderness(palette, size, rng) {
       );
     }
   }
-  // Landmark markers on plain grass away from the border, so generated wilds
-  // offer something to discover. Grass keeps markers off water/river cells.
+  // Landmark markers sit on plain grass away from the border, so generated
+  // wilds offer something to discover. Grass keeps markers off water and
+  // river cells.
   const grassIds = tiles
     .filter((t) => {
       const coords = parseCoords(t.id);
@@ -136,22 +138,23 @@ export function generateWilderness(palette, size, rng) {
 }
 
 /**
- * A settlement: grass everywhere, a cross of roads through the middle (drawn as
- * an overlay so the grass shows through the verges), and building POI markers
- * drawn as 2x2 scaled blocks on the grass beside the roads. Entry is the south
- * end of the vertical road, which runs edge to edge.
+ * Generate a settlement: grass everywhere, with a cross of roads through the
+ * middle. The function draws the roads as an overlay, so the grass shows
+ * through the verges. Building points of interest draw as 2x2 scaled blocks
+ * on the grass beside the roads. The entry is the south end of the vertical
+ * road, which runs edge to edge.
  * @param {TilePalette} palette @param {number} size @param {() => number} rng
  * @returns {{ tiles: Tile[], entry: string }}
  */
 export function generateTown(palette, size, rng) {
-  // Roads run edge to edge, so the road cross itself connects the town to the
+  // Roads run edge to edge, so the road cross connects the town to the
   // parent map on all four sides.
   const mx = Math.floor(size / 2);
   const my = Math.floor(size / 2);
   /** @param {number} x @param {number} y */
   const isRoad = (x, y) => x === mx || y === my;
-  // A river runs north-south through town a couple of tiles off the crossroads,
-  // bridged where the east-west road crosses it.
+  // A river runs north-south through town, a few tiles off the crossroads.
+  // A bridge crosses it where the east-west road meets it.
   const rx = mx + (rng() < 0.5 ? -1 : 1) * (2 + randInt(rng, Math.max(1, mx - 3)));
   /** @type {Map<string, Tile>} */
   const byId = new Map();
@@ -169,12 +172,13 @@ export function generateTown(palette, size, rng) {
       byId.set(tile.id, tile);
     }
   }
-  // Building sites: 2x2 blocks of grass whose cells all avoid the roads and
-  // the river, with the block orthogonally adjacent to a road, scattered and
-  // capped so a small town stays sparse and a large one fills out. Each
-  // chosen block's anchor tile carries the building image with span 2, so
-  // town buildings draw at twice the tile scale; the covered cells keep
-  // their grass beneath the scaled art.
+  // Building sites are 2x2 blocks of grass. Each cell in a block avoids the
+  // roads and the river, and the block sits orthogonally adjacent to a road.
+  // The function scatters and caps the site count, so a small town stays
+  // sparse and a large town fills out. The anchor tile of each chosen block
+  // carries the building image with span 2, so town buildings draw at twice
+  // the tile scale. The covered cells keep their grass beneath the scaled
+  // art.
   /** @param {number} x @param {number} y */
   const clear = (x, y) => x >= 0 && y >= 0 && x < size && y < size && !isRoad(x, y) && x !== rx;
   /** @param {number} x @param {number} y */

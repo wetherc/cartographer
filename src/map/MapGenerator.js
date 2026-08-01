@@ -14,17 +14,18 @@ import { generateDungeon, generateCastle } from './GeneratorInteriors.js';
  */
 
 /**
- * Grid side length per size preset. Square grids keep the archetype generators
- * simple and read the same at any size; "large" is big enough to be a genuinely
- * procedurally-generated area rather than a hand-place-able handful of tiles.
+ * Grid side length per size preset. Square grids keep the archetype
+ * generators simple and give the same result at any size. The "large"
+ * preset is big enough to be a real procedurally generated area, not a
+ * handful of tiles a GM can place by hand.
  * @type {Record<string, number>}
  */
 export const GENERATOR_SIZES = { small: 8, medium: 14, large: 22 };
 
 /**
- * Which archetypes make sense for each node kind — region archetypes lay out
- * open terrain, interior archetypes carve enclosed structures. The Build UI
- * offers only the current node's kind's list.
+ * Which archetypes make sense for each node kind. Region archetypes lay out
+ * open terrain. Interior archetypes carve enclosed structures. The Build UI
+ * offers only the list for the current node's kind.
  * @type {Record<NodeKind, { value: string, label: string }[]>}
  */
 export const ARCHETYPES = {
@@ -39,13 +40,13 @@ export const ARCHETYPES = {
 };
 
 /**
- * Generate a full tile grid for a node from an archetype and size preset. Pure
- * and RNG-injected (pass `Math.random` in the app, a seeded generator in
- * tests). The returned width/height replace the node's dimensions; the caller
- * stamps the tiles in. Every archetype guarantees `entry`: a border tile that
- * exists and connects to the layout's walkable area (a door for interiors, a
- * road end or open ground for regions), so a generated space is always
- * reachable from its parent map.
+ * Generate a full tile grid for a node from an archetype and size preset.
+ * This is a pure function with an injected RNG (pass `Math.random` in the
+ * app, a seeded generator in tests). The returned width and height replace
+ * the node's dimensions. The caller stamps the tiles in. Every archetype
+ * guarantees `entry`: a border tile that exists and connects to the layout's
+ * walkable area (a door for interiors, a road end or open ground for
+ * regions). A generated space is then always reachable from its parent map.
  * @param {TilePalette} palette
  * @param {{ kind: NodeKind, archetype: string, size: string }} options
  * @param {() => number} rng
@@ -62,16 +63,17 @@ export function generateNodeTiles(palette, { archetype, size }, rng) {
 }
 
 /**
- * Generate a multi-level dungeon as a chain of levels: level 1 is entered from
- * the map edge (corridor + border door), each deeper level is entered by
- * stairs, and every level's stairs-down tile is linked (via the existing
- * `childNodeId` zoom link) to the level below it, so stairs always connect to
- * a real generated level. The bottom level places no stairs-down, so no stairs
- * lead nowhere. `makeId` supplies each sub-level's node id (injected so the
- * caller can guarantee uniqueness against its grid and tests stay pure).
+ * Generate a multi-level dungeon as a chain of levels. Level 1 is entered
+ * from the map edge through a corridor and a border door. Each deeper level
+ * is entered by stairs. Every level's stairs-down tile links, through the
+ * existing `childNodeId` zoom link, to the level below it, so stairs always
+ * connect to a real generated level. The bottom level places no stairs-down,
+ * so no stairs lead to nothing. `makeId` supplies each sub-level's node id.
+ * It is injected so the caller can guarantee uniqueness against its grid and
+ * tests stay pure.
  *
- * Returns one entry per level, top first: the caller stamps level 1's tiles
- * into the node being generated and creates a child node per deeper level.
+ * This returns one entry per level, top first. The caller stamps level 1's
+ * tiles into the node being generated and creates a child node per deeper level.
  * @param {TilePalette} palette
  * @param {{ size: string, levels: number }} options
  * @param {() => number} rng
@@ -91,9 +93,9 @@ export function generateDungeonLevels(palette, { size, levels }, rng, makeId) {
     const last = i === count - 1;
     const gen = generateDungeon(palette, n, rng, {
       entrance: i === 0 ? 'edge' : 'stairs',
-      // A level only gets stairs-down if a level genuinely exists below it. A
-      // level that failed to place them (degenerate single-room layouts with
-      // no free neighbor) ends the chain early rather than orphaning levels.
+      // A level gets stairs-down only if a level genuinely exists below it.
+      // A level that failed to place them (a degenerate single-room layout
+      // with no free neighbor) ends the chain early instead of orphaning levels.
       descend: !last,
     });
     const id = i === 0 ? null : makeId();

@@ -2,9 +2,10 @@
 /** @typedef {import('./TileGrid.js').TileGrid} TileGrid */
 
 /**
- * Tracks which MapNode is currently in view and drives zoom-in/zoom-out
- * through the node hierarchy. Pure logic, no DOM — MapCanvas/breadcrumb UI
- * call into this on tile click / breadcrumb click and re-render themselves.
+ * Tracks which MapNode is currently in view and drives zoom in and zoom out
+ * through the node hierarchy. This is pure logic with no DOM access. The
+ * MapCanvas and breadcrumb UI call into it on a tile click or a breadcrumb
+ * click, then draw themselves again.
  */
 export class MapNavigator {
   /**
@@ -23,14 +24,14 @@ export class MapNavigator {
     return node;
   }
 
-  /** @returns {MapNode[]} root-to-current, inclusive */
+  /** @returns {MapNode[]} the path from the root node to the current node, inclusive */
   getBreadcrumb() {
     return this.grid.getBreadcrumb(this.currentNodeId);
   }
 
   /**
-   * Zoom into the node a tile points at, if it has one. No-op if the tile
-   * has no childNodeId.
+   * Zoom into the node a tile points at, if it has one. If the tile has no
+   * childNodeId, this method does nothing.
    * @param {string} tileId
    * @returns {boolean} whether the zoom happened
    */
@@ -55,7 +56,7 @@ export class MapNavigator {
   }
 
   /**
-   * Jump directly to a node in the hierarchy (e.g. clicking a breadcrumb entry).
+   * Jump directly to a node in the hierarchy, for example when the GM clicks a breadcrumb entry.
    * @param {string} nodeId
    */
   goTo(nodeId) {
