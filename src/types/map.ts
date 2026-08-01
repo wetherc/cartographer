@@ -2,11 +2,12 @@ export type POIType = 'settlement' | 'landmark' | 'dungeon' | 'shop' | 'quest' |
 
 export interface TileMetadata {
   poiType: POIType | null;
-  /** When true, this POI stays hidden (no outline, no tooltip) until the party
-   * reaches it; a plain POI is visible as soon as its tile is revealed. */
+  /** When true, this POI stays hidden, with no outline and no tooltip, until
+   * the party reaches it. A plain POI is visible as soon as its tile is
+   * revealed. */
   discoverable: boolean;
-  /** Whether a discoverable POI has been reached yet. Meaningless when
-   * discoverable is false. Backfilled false on older saves. */
+  /** True when a discoverable POI is reached. Meaningless when discoverable
+   * is false. Backfilled to false on older saves. */
   discovered: boolean;
   notes: string;
 }
@@ -14,18 +15,20 @@ export interface TileMetadata {
 export interface Tile {
   id: string;
   imageRef: string;
-  /** image(s) drawn on top of imageRef (e.g. a road/path), so path pieces
-   * layer over the terrain beneath instead of replacing it; null if none.
-   * An array draws in order (first at the bottom), letting overlays stack —
-   * e.g. a river channel over the shoreline where it drains into a lake. */
+  /** Image or images drawn on top of imageRef, for example a road or path.
+   * This lets path pieces layer over the terrain beneath instead of
+   * replacing it. Null means no overlay. An array draws in order, with the
+   * first entry at the bottom, so overlays can stack, for example a river
+   * channel over the shoreline where it drains into a lake. */
   overlayRef: string | string[] | null;
   metadata: TileMetadata;
   revealed: boolean;
-  /** id of the MapNode this tile zooms into, if any */
+  /** Id of the MapNode this tile zooms into, if any. */
   childNodeId: string | null;
-  /** side length, in tiles, of the block this tile's image is drawn scaled
-   * across (anchored here, extending right/down) — purely visual, no region
-   * link implied. Absent or 1 means a normal one-cell image. */
+  /** Side length, in tiles, of the block that this tile's image draws
+   * scaled across, anchored here and extending right and down. This is
+   * purely visual, and implies no region link. Absent or 1 means a normal
+   * one-cell image. */
   span?: number;
 }
 
@@ -33,8 +36,8 @@ export interface Tile {
 export type NodeKind = 'region' | 'interior';
 
 /** What a tile's art means to the rules: whether the party can stand on it,
- * whether it is the authored way into a space, and whether it connects to the
- * level above or below. `plain` covers everything with no such meaning —
+ * whether it is the authored way into a space, and whether it connects to
+ * the level above or below. `plain` covers everything with no such meaning:
  * outdoor terrain, markers, and any custom image a GM supplies.
  * See TilePalette.kindOf. */
 export type TileKind = 'plain' | 'floor' | 'wall' | 'door' | 'stairs-up' | 'stairs-down';
@@ -46,9 +49,10 @@ export interface MapNode {
   width: number;
   height: number;
   tiles: Tile[];
-  /** outdoor area vs. building interior; drives palette filtering and defaults */
+  /** Outdoor area or building interior. Drives palette filtering and defaults. */
   kind: NodeKind;
-  /** environment tag, e.g. "forest"/"cave" for a region, "inn"/"temple" for an interior; null if unset */
+  /** Environment tag, for example "forest" or "cave" for a region, "inn" or
+   * "temple" for an interior. Null if unset. */
   environ: string | null;
 }
 
@@ -56,9 +60,9 @@ export interface MapNode {
 export type ExitSide = 'north' | 'east' | 'south' | 'west';
 
 /** A way out of a node, back to its parent. See MapExits.findExits.
- *  `edge` is walked off one side of an outdoor map; `tile` is a door or a
- *  stairway inside a structure; `fallback` is offered when a node has neither,
- *  so a party is never stranded in a space they walked into. */
+ *  `edge` is walked off one side of an outdoor map. `tile` is a door or a
+ *  stairway inside a structure. `fallback` is offered when a node has
+ *  neither, so a party is never stranded in a space it walked into. */
 export type MapExit =
   | { kind: 'edge'; side: ExitSide; targetNodeId: string; targetName: string }
   | {

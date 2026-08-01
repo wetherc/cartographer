@@ -10,9 +10,9 @@ import type { Disposition } from './npc.js';
 import type { Spell } from './spell.js';
 
 /** A reusable item blueprint: an InventoryItem minus identity and stack
- * fields. The built-in 5e preset lists and the GM's custom entries share this
- * shape, so the same template can seed an inventory item, an enemy's weapon,
- * or an armor choice. */
+ * fields. The built-in 5e preset lists and the GM's custom entries share
+ * this shape, so the same template can seed an inventory item, an enemy's
+ * weapon, or an armor choice. */
 export interface EquipmentTemplate {
   name: string;
   type: ItemType;
@@ -26,9 +26,10 @@ export interface EquipmentTemplate {
   statBonuses?: Record<string, number>;
 }
 
-/** A reusable NPC blueprint: an NPC minus identity, placement, and met state.
- * Caster fields persist a spellcasting NPC; slot pools are rebuilt from
- * class/casterLevel when the NPC is created, so the template stores none. */
+/** A reusable NPC blueprint: an NPC minus identity, placement, and met
+ * state. Caster fields keep a spellcasting NPC. The app rebuilds slot pools
+ * from class and casterLevel when the NPC is created, so the template
+ * stores none. */
 export interface NPCTemplate {
   name: string;
   role: string;
@@ -41,9 +42,10 @@ export interface NPCTemplate {
 }
 
 /**
- * The GM's custom library: overrides of built-in entries (matched by name —
- * and for equipment also by item type) plus wholly new ones. Lives outside
- * any campaign save, and round-trips through a portable JSON file.
+ * The GM's custom library: overrides of built-in entries, matched by name
+ * and, for equipment, also by item type, plus wholly new entries. This
+ * library lives outside any campaign save, and round-trips through a
+ * portable JSON file.
  */
 export interface CustomLibrary {
   equipment: EquipmentTemplate[];
@@ -53,5 +55,6 @@ export interface CustomLibrary {
 }
 
 /** Where a merged library entry comes from: a built-in default, a custom
- * entry shadowing a default of the same key, or a wholly new custom entry. */
+ * entry that replaces a default of the same key, or a wholly new custom
+ * entry. */
 export type LibrarySource = 'default' | 'override' | 'custom';

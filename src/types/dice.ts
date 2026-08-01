@@ -14,7 +14,7 @@ export interface DieTypeResult {
   die: DieType;
   rolls: number[];
   subtotal: number;
-  /** d20s discarded by advantage/disadvantage, one per kept roll. */
+  /** d20s discarded by advantage or disadvantage, one per kept roll. */
   dropped?: number[];
 }
 

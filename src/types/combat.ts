@@ -1,9 +1,9 @@
 /**
  * One combatant in the initiative order: an id and the numbers the order is
- * built from, nothing else. Everything presentational — the combatant's name
- * and which side it fights on — is resolved from the live entity when a panel
- * draws, so a rename or a disposition change during a fight is picked up
- * instead of being frozen at the moment combat started.
+ * built from, and nothing else. Everything presentational, the combatant's
+ * name and which side it fights on, is resolved from the live entity when a
+ * panel draws. This way a rename or a disposition change during a fight
+ * shows up, instead of staying frozen at the moment combat started.
  */
 export interface Participant {
   id: string;
@@ -26,9 +26,9 @@ export interface CombatState {
   order: Participant[];
   /**
    * Epoch milliseconds when this fight's setup opened. The combat screen's
-   * log column shows only travelogue entries at or after this, so the fight's
-   * log starts at its own initiative rolls rather than the campaign's first
-   * battle. 0 in an older save, which shows everything.
+   * log column shows only travelogue entries at or after this time, so the
+   * fight's log starts at its own initiative rolls, not the campaign's first
+   * battle. An older save has 0 here, which shows every entry.
    */
   startedAt: number;
 }

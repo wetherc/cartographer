@@ -6,11 +6,12 @@ export interface EncounterLocation {
   tileId: string;
 }
 
-/** Where a condition came from, for a condition a spell imposed. Present only on
- * a chip written by a cast; a chip the GM added by hand carries no source and is
- * theirs to clear. The save numbers are the ones the cast rolled against, kept so
- * a repeated save can be rolled later against the same DC — and, for a target
- * whose own bonus the app cannot read, with the same bonus. */
+/** Where a condition came from, for a condition that a spell imposed. This
+ * field is present only on a chip that a cast wrote. A chip that the GM
+ * added by hand carries no source, and the GM can clear it freely. The save
+ * numbers are the ones the cast rolled against. The app keeps them so a
+ * repeated save can roll later against the same DC, and, for a target whose
+ * own bonus the app cannot read, with the same bonus. */
 export interface ConditionSource {
   /** The spell that imposed it, and the caster holding it. */
   spellId: string;
@@ -23,15 +24,15 @@ export interface ConditionSource {
   saveEnds?: boolean;
 }
 
-/** A status/condition with an optional remaining-rounds counter (null = indefinite). */
+/** A status or condition with an optional remaining-rounds counter. Null means indefinite. */
 export interface Condition {
   name: string;
   rounds: number | null;
-  /** What imposed it, for a spell-imposed condition; absent for a hand-added one. */
+  /** What imposed the condition, for a spell-imposed condition. Absent for a hand-added one. */
   source?: ConditionSource;
 }
 
-/** Enemy authoring tier: mobs are rank-and-file, legends run above-normal stats for their level. */
+/** Enemy authoring tier. A mob is rank-and-file. A legend runs above-normal stats for its level. */
 export type EnemyTier = 'mob' | 'legend';
 
 /** A timed adjustment to one stat, applied on top of the base stat block for
@@ -42,16 +43,16 @@ export interface StatModifier {
   rounds: number;
 }
 
-/** An enemy's weapon: enough of an InventoryItem's weapon fields to drive the
- * same attack math, without dragging in the full inventory model. */
+/** An enemy's weapon. It carries enough of an InventoryItem's weapon fields
+ * to drive the same attack math, without the full inventory model. */
 export interface EnemyWeapon {
   name: string;
   handling: WeaponHandling;
   damage: DamagePart[];
 }
 
-/** An enemy's worn armor: a name and the flat AC it adds on top of the stat
- * block's base AC (its effective AC includes this bonus). */
+/** An enemy's worn armor: a name, and the flat AC it adds on top of the stat
+ * block's base AC. The effective AC includes this bonus. */
 export interface EnemyArmor {
   name: string;
   acBonus: number;
@@ -65,42 +66,46 @@ export interface Encounter {
   statBlock: Record<string, number>;
   level: number;
   tier: EnemyTier;
-  /** Map location the encounter is staged at; null = not location-bound (always shown). */
+  /** Map location where the encounter is staged. Null means the encounter is
+   * not location-bound, and always shows. */
   location: EncounterLocation | null;
   /** Active status conditions (empty on older saves). */
   conditions: Condition[];
-  /** Timed stat adjustments, ticked down each combat round (empty on older saves). */
+  /** Timed stat adjustments. Each combat round reduces them by one. Empty on
+   * older saves. */
   statMods?: StatModifier[];
-  /** True once the party has walked into this encounter, so the travelogue
-   * records the first meeting exactly once. Absent on older saves. */
+  /** True once the party walks into this encounter. This lets the
+   * travelogue record the first meeting exactly once. Absent on older saves. */
   noticed?: boolean;
-  /** The enemy's weapon; stamped with a level/tier default on creation and on
-   * older saves, so every enemy can attack. An explicit null means the enemy
-   * is deliberately weaponless (a non-bipedal beast, an ooze) and gets no
-   * default and no attack button. */
+  /** The enemy's weapon. The app stamps a level and tier default on creation
+   * and on older saves, so every enemy can attack. An explicit null means
+   * the enemy is deliberately weaponless, for example a non-bipedal beast or
+   * an ooze, and gets no default and no attack button. */
   weapon?: EnemyWeapon | null;
-  /** The enemy's armor; stamped with a level/tier default like the weapon,
-   * with the same null = deliberately unarmored escape hatch. */
+  /** The enemy's armor. The app stamps a level and tier default, like the
+   * weapon. The same null value marks the enemy as deliberately unarmored. */
   armor?: EnemyArmor | null;
-  /** Spellcaster class id (see Classes.js). Present (and a caster class) makes
-   * this a spellcasting foe; absent = a non-caster. */
+  /** Spellcaster class id (see Classes.js). A present value that names a
+   * caster class makes this a spellcasting foe. An absent value marks a
+   * non-caster. */
   class?: string;
   /** The chosen subclass id, if any. */
   subclass?: string;
-  /** Caster level driving slot maxima and save DC; defaults to `level` when a
-   * caster class is assigned without an explicit value. */
+  /** Caster level, which drives the slot maxima and the save DC. It defaults
+   * to `level` when a caster class is assigned without an explicit value. */
   casterLevel?: number;
-  /** Learned cantrips/spells (spell ids); present only on casters. */
+  /** Learned cantrips and spells (spell ids). Present only on casters. */
   spellbook?: Spellbook;
-  /** Spell-slot pools (`slots-1` .. `slots-9`); present only on casters. */
+  /** Spell-slot pools (`slots-1` through `slots-9`). Present only on casters. */
   resources?: ResourcePool[];
 }
 
-/** A reusable encounter blueprint saved to the campaign's bestiary (or to the
- * campaign-independent library). Weapon/armor carry the same null semantics
- * as Encounter: null = deliberately none, absent = stamp a default. Caster
- * fields persist a spellcasting foe; slot pools are rebuilt from
- * class/casterLevel on spawn, so the template stores no resources. */
+/** A reusable encounter blueprint saved to the campaign's bestiary, or to
+ * the campaign-independent library. Weapon and armor carry the same null
+ * rule as Encounter: null means deliberately none, and absent means stamp a
+ * default. Caster fields keep a spellcasting foe. The app rebuilds slot
+ * pools from class and casterLevel on spawn, so the template stores no
+ * resources. */
 export interface EncounterTemplate {
   id: string;
   name: string;
@@ -126,8 +131,8 @@ export interface ResourcePool {
   max: number;
 }
 
-/** Item classification; each equipment slot accepts only compatible types.
- * 'armor' is body armor — helmets, gloves, and greaves are their own types. */
+/** Item classification. Each equipment slot accepts only compatible types.
+ * 'armor' means body armor. Helmets, gloves, and greaves are their own types. */
 export type ItemType =
   | 'weapon'
   | 'armor'
@@ -140,24 +145,25 @@ export type ItemType =
   | 'consumable'
   | 'gear';
 
-/** 5e armor weight class, which alone determines how DEX scales the armor's
- * AC: light adds the full DEX modifier, medium caps it at +2, heavy ignores
+/** 5e armor weight class. This alone determines how DEX scales the armor's
+ * AC. Light adds the full DEX modifier. Medium caps it at +2. Heavy ignores
  * DEX entirely. */
 export type ArmorWeight = 'light' | 'medium' | 'heavy';
 
-/** How a weapon is wielded, which alone fixes the ability behind its damage:
- * melee weapons use STR; finesse and ranged weapons use DEX. */
+/** How a weapon is wielded. This alone fixes the ability behind its damage.
+ * A melee weapon uses STR. A finesse or ranged weapon uses DEX. */
 export type WeaponHandling = 'melee' | 'finesse' | 'ranged';
 
-/** One dice term of a weapon's damage roll, e.g. 2d6 slashing. */
+/** One dice term of a weapon's damage roll, for example 2d6 slashing. */
 export interface DamagePart {
   count: number;
   sides: number;
   damageType: string;
-  /** A flat amount added to this term's dice, e.g. Magic Missile's 1d4+1.
-   * Absent reads as 0. Doubling a term on a critical hit doubles its dice and
-   * leaves this alone, per 5e. A term carrying a bonus may roll no dice at all,
-   * which is how a fixed amount with no dice is written. */
+  /** A flat amount added to this term's dice, for example Magic Missile's
+   * 1d4+1. Absent reads as 0. A critical hit doubles a term's dice, and
+   * leaves this bonus alone, per the 5e rule. A term that carries a bonus
+   * can roll no dice at all. This is how a fixed amount with no dice is
+   * written. */
   bonus?: number;
 }
 
@@ -166,15 +172,16 @@ export interface InventoryItem {
   name: string;
   quantity: number;
   notes: string;
-  /** Optional flavor/rules text shown with the item. */
+  /** Optional flavor or rules text shown with the item. */
   description?: string;
-  /** Absent on older saves; treated as 'gear'. */
+  /** Absent on older saves. Treated as 'gear'. */
   type?: ItemType;
   /** Weapons and bows: how the weapon is wielded, fixing whether STR or DEX
    * modifies its damage. Absent reads as melee. */
   handling?: WeaponHandling;
-  /** Weapons and bows: the damage roll as dice terms — the base damage first,
-   * then any permanent riders (a burning blade's + 1d4 fire). */
+  /** Weapons and bows: the damage roll as dice terms. The base damage comes
+   * first, then any permanent riders, for example a burning blade's +1d4
+   * fire. */
   damage?: DamagePart[];
   /** Weapons and bows: status effects the weapon inflicts on a hit. */
   statusEffects?: string[];
@@ -182,10 +189,11 @@ export interface InventoryItem {
   armorWeight?: ArmorWeight;
   /** Body armor only: the armor's base AC, replacing the unarmored 10. */
   baseAC?: number;
-  /** Flat armor-class bonus granted while equipped (helmets, rings, etc.).
-   * Ignored on body armor (which uses baseAC) and shields (always +2). */
+  /** Flat armor-class bonus granted while equipped, for example a helmet or
+   * ring. Ignored on body armor, which uses baseAC, and on shields, which
+   * always add +2. */
   acBonus?: number;
-  /** Ability-score buffs granted while equipped, e.g. { STR: 2 }. */
+  /** Ability-score buffs granted while equipped, for example { STR: 2 }. */
   statBonuses?: Record<string, number>;
 }
 
@@ -202,30 +210,32 @@ export type EquipmentSlot =
   | 'accessory'
   | 'accessory2';
 
-/** Inventory item id equipped in each slot; null = slot empty. */
+/** Inventory item id equipped in each slot. Null means the slot is empty. */
 export type Equipment = Record<EquipmentSlot, string | null>;
 
-/** A character's spellbook: the ids of the cantrips and leveled spells it has
- * learned, and (for prepared casters) which of the known leveled spells are
- * currently prepared. Absent on non-casters and older saves. */
+/** A character's spellbook: the ids of the cantrips and leveled spells it
+ * learns, and, for a prepared caster, which of the known leveled spells are
+ * currently prepared. Absent on non-casters and on older saves. */
 export interface Spellbook {
   cantrips: string[];
   known: string[];
   prepared: string[];
-  /** Which class each learned spell was learned under (spell id -> class id),
-   * recorded when a multiclass caster learns it so casting can use that
-   * class's ability. Absent entries fall back to the first caster class. */
+  /** Which class each learned spell was learned under (spell id maps to
+   * class id). The app records this when a multiclass caster learns a
+   * spell, so casting can use that class's ability. An absent entry falls
+   * back to the first caster class. */
   sources?: Record<string, string>;
 }
 
-/** The fields the spell helpers read off whoever is casting. A party Character
- * satisfies this directly; an Encounter and an NPC reach it through
- * `Caster.toCaster`, which normalizes their scalar class pair and `statBlock`
- * into the list and `stats` shape here. Every helper that only reads a caster
- * (slot pools, save DC, attack bonus, spellbook, cast resolution) takes this
- * rather than Character, so a foe's or an NPC's cast needs no cast to a type it
- * is not. The scalar `class`/`subclass` pair is here because older Character
- * saves still carry it before `withDefaults` folds it into `classes`. */
+/** The fields that the spell helpers read from whoever is casting. A party
+ * Character satisfies this type directly. An Encounter and an NPC reach it
+ * through `Caster.toCaster`, which normalizes their scalar class pair and
+ * `statBlock` into the list and `stats` shape here. Every helper that only
+ * reads a caster, for example slot pools, save DC, attack bonus, spellbook,
+ * or cast resolution, takes this type instead of Character. This way a
+ * foe's or an NPC's cast needs no cast to a type it is not. The scalar
+ * `class` and `subclass` pair is here because an older Character save still
+ * carries it, before `withDefaults` folds it into `classes`. */
 export interface SpellCaster {
   id: string;
   name: string;
@@ -239,20 +249,21 @@ export interface SpellCaster {
 }
 
 /** Weapon proficiencies, split by namespace the way MulticlassGrant already
- * splits the class grants they come from: `categories` holds whole weapon
- * categories ('simple'/'martial'), `named` holds individual weapons by
- * lowercase name. Kept apart so "is this weapon's category granted?" is a
- * lookup rather than a string match across two kinds of key. */
+ * splits the class grants they come from. `categories` holds whole weapon
+ * categories ('simple' or 'martial'). `named` holds individual weapons by
+ * lowercase name. The split keeps "is this weapon's category granted" a
+ * lookup, instead of a string match across two kinds of key. */
 export interface WeaponProficiencies {
   categories: WeaponCategory[];
   named: string[];
 }
 
 /** A character's proficiencies, one list per kind. Saves hold ability keys
- * (STR..CHA), skills hold skill ids (see data/skills.js), weapons split into
- * categories and named weapons, armor holds the armor categories, tools and
- * languages are free strings. Assembled from class + race + background and
- * hand-editable afterwards. */
+ * (STR through CHA). Skills hold skill ids (see data/skills.js). Weapons
+ * split into categories and named weapons. Armor holds the armor
+ * categories. Tools and languages are free strings. The app assembles this
+ * from class, race, and background, and the player can edit it by hand
+ * afterward. */
 export interface Proficiencies {
   saves: string[];
   skills: string[];
@@ -262,16 +273,16 @@ export interface Proficiencies {
   languages: string[];
 }
 
-/** Proficiencies as saves written before the weapon split carried them: one
- * flat weapon list mixing the category words with named weapons. */
+/** Proficiencies as a save written before the weapon split kept them: one
+ * flat weapon list that mixes the category words with named weapons. */
 export interface LegacyProficiencies extends Omit<Proficiencies, 'weapons'> {
   weapons: string[];
 }
 
 /** One claimed ability-score-improvement slot: either a +2-total ability
- * increase or a feat taken in its place. `classId` + `classLevel` name the
- * class ASI slot the choice claims — each class follows its own schedule — so
- * each earned slot is spent exactly once. */
+ * increase, or a feat taken in its place. `classId` and `classLevel` name
+ * the class ASI slot that the choice claims. Each class follows its own
+ * schedule, so each earned slot is spent exactly once. */
 export type AsiChoice =
   | {
       classId: string;
@@ -283,26 +294,27 @@ export type AsiChoice =
   | { classId: string; classLevel: number; order: number; type: 'feat'; feat: string };
 
 /** Recorded ASI choices, keyed by the slot they claim (see LevelUp.slotKey).
- * A slot holds at most one choice, which the key makes structural rather than
- * something every writer has to check. `order` carries the sequence the array
- * this replaced got for free, so undo can still find the most recent one. */
+ * A slot holds at most one choice. The key makes this structural, instead
+ * of a rule every writer must enforce. `order` carries the sequence that
+ * the array this record replaced got for free, so undo can still find the
+ * most recent choice. */
 export type AsiChoices = Record<string, AsiChoice>;
 
-/** The choice shapes older saves carried, both of them arrays: the
- * pre-multiclass one keyed by bare character level, and the per-class one that
- * predates the keyed record and so has no `order`. Loading migrates either
- * (see LevelUp.migrateASIChoices). */
+/** The choice shapes that older saves carried, both of them arrays: the
+ * pre-multiclass shape, keyed by bare character level, and the per-class
+ * shape, which predates the keyed record and so has no `order`. Loading
+ * migrates either shape (see LevelUp.migrateASIChoices). */
 export type LegacyAsiChoice =
   | { level: number; type: 'asi'; increases: Record<string, number> }
   | { level: number; type: 'feat'; feat: string }
   | { classId: string; classLevel: number; type: 'asi'; increases: Record<string, number> }
   | { classId: string; classLevel: number; type: 'feat'; feat: string };
 
-/** The one spell a caster is holding open (see Concentration.js). `slotLevel` is
- * the level it was cast at, kept so a readout can name it. `remaining` counts the
- * combat rounds left, or is null for a duration no round counter fits — an
- * open-ended one, or one measured in days — which lasts until something breaks
- * it. */
+/** The one spell that a caster holds open (see Concentration.js).
+ * `slotLevel` is the level it was cast at, kept so a readout can name it.
+ * `remaining` counts the combat rounds left, or is null for a duration that
+ * no round counter fits, for example an open-ended duration or one measured
+ * in days. That duration lasts until something breaks it. */
 export interface ConcentrationState {
   spellId: string;
   spellName: string;
@@ -313,27 +325,28 @@ export interface ConcentrationState {
 export interface Character {
   id: string;
   name: string;
-  /** The race's display name. A hand-typed race carries only this; a race
+  /** The race's display name. A hand-typed race carries only this. A race
    * picked from the catalog also carries `raceId` and `raceTraits`. */
   race: string;
-  /** Catalog race id (see Races.js); absent = hand-typed race. */
+  /** Catalog race id (see Races.js). Absent means a hand-typed race. */
   raceId?: string;
-  /** Snapshot of the race definition's mechanical fields as applied, so a
-   * custom definition deleted from the library degrades gracefully. Resolution
-   * prefers the live catalog (edits propagate); this is the fallback. */
+  /** Snapshot of the race definition's mechanical fields as applied. This
+   * lets a custom definition removed from the library degrade gracefully.
+   * Resolution prefers the live catalog, so edits propagate. This snapshot
+   * is the fallback. */
   raceTraits?: RaceSnapshot;
-  /** Background id (see Backgrounds.js); absent on older saves. */
+  /** Background id (see Backgrounds.js). Absent on older saves. */
   background?: string;
-  /** The character's class memberships (see Multiclass.js); one entry for a
-   * single-class character, empty for a classless one. Older saves carried
-   * scalar `class`/`subclass` fields instead; loading folds them into a
-   * one-entry list. Entry levels sum to at most `level` — any shortfall is a
-   * pending level awaiting assignment to a class. */
+  /** The character's class memberships (see Multiclass.js): one entry for a
+   * single-class character, empty for a classless one. An older save
+   * carried scalar `class` and `subclass` fields instead. Loading folds
+   * them into a one-entry list. Entry levels sum to at most `level`. Any
+   * shortfall is a pending level that still needs a class assignment. */
   classes?: ClassRef[];
-  /** Proficiency lists (see Proficiencies.js); absent on older saves, which
+  /** Proficiency lists (see Proficiencies.js). Absent on older saves, which
    * load as having none. */
   proficiencies?: Proficiencies;
-  /** Skill ids rolled with double proficiency; always a subset of
+  /** Skill ids rolled with double proficiency. Always a subset of
    * `proficiencies.skills`. Absent on older saves. */
   expertise?: string[];
   /** Ability-score-improvement choices already made, one per claimed class ASI
@@ -346,25 +359,28 @@ export interface Character {
   inventory: InventoryItem[];
   /** Active status conditions (empty on older saves). */
   conditions: Condition[];
-  /** The spell this character is holding open, or null when none is. Absent on
-   * older saves, which load as holding nothing. */
+  /** The spell this character holds open, or null when it holds none.
+   * Absent on older saves, which load as holding nothing. */
   concentration?: ConcentrationState | null;
-  /** Equipped items by slot (absent on older saves; all slots empty). */
+  /** Equipped items by slot. Absent on older saves, where all slots are empty. */
   equipment?: Equipment;
-  /** Temporary hit points from items/boons, absorbed before the HP pool when
-   * taking damage. Tracked separately from intrinsic HP; absent reads as 0. */
+  /** Temporary hit points from items or boons, absorbed before the HP pool
+   * when the character takes damage. Tracked separately from intrinsic HP.
+   * Absent reads as 0. */
   bonusHP?: number;
-  /** Set once the GM types a maximum HP by hand (or levels a classed character
-   * with an explicit growth). It takes the character off the class-derived HP
-   * rule for good: Progression.derive stops reconciling the pool's maximum
-   * against the class list and CON. Absent reads as false. */
+  /** Set once the GM types a maximum HP by hand, or levels a classed
+   * character with an explicit growth. This takes the character off the
+   * class-derived HP rule for good. Progression.derive stops reconciling
+   * the pool's maximum against the class list and CON. Absent reads as
+   * false. */
   hpOverride?: boolean;
-  /** Unarmored base AC, normally 10; effects like Mage Armor raise it.
-   * Only applies while no body armor is equipped. Absent reads as 10. */
+  /** Unarmored base AC, normally 10. Effects like Mage Armor raise it. This
+   * value only applies while no body armor is equipped. Absent reads as 10. */
   baseAC?: number;
-  /** Own map position; null (and older saves' absence) = with the party. */
+  /** Own map position. Null, and absence on an older save, means the
+   * character stands with the party. */
   location?: EncounterLocation | null;
-  /** Learned cantrips/spells (spell ids); absent on non-casters and older
-   * saves. */
+  /** Learned cantrips and spells (spell ids). Absent on non-casters and on
+   * older saves. */
   spellbook?: Spellbook;
 }

@@ -1,7 +1,7 @@
-/** What produced a travelogue entry, used only to tag/style rows. */
+/** What produced a travelogue entry, used only to tag and style rows. */
 export type LogEntryKind = 'travel' | 'combat' | 'note' | 'rest' | 'roll';
 
-/** One automatically-recorded event in the party's travelogue. */
+/** One automatically recorded event in the party's travelogue. */
 export interface LogEntry {
   id: string;
   /** Epoch milliseconds when the event was logged. */
