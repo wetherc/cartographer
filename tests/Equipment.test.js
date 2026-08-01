@@ -16,7 +16,6 @@ import {
   getEquipped,
   armorClass,
   effectiveStats,
-  statBreakdown,
   pruneEquipment,
   WEAPON_HANDLING,
   DIE_SIZES,
@@ -161,24 +160,6 @@ test('effectiveStats folds equipped stat buffs in, and AC uses the buffed DEX', 
   );
   assert.equal(hero.stats.STR, 14, 'base score untouched');
   assert.equal(armorClass(hero), 12, '10 + buffed DEX mod (+2)');
-});
-
-test('statBreakdown reports base, per-source deltas, and the buffed total', () => {
-  let hero = createCharacter('c1', 'Hero', { STR: 14 });
-  assert.deepEqual(statBreakdown(hero, 'STR'), { base: 14, total: 14, sources: [] });
-
-  hero = addItem(hero, item('ring', 'Ring of Vigor', { type: 'ring', statBonuses: { STR: 2 } }));
-  hero = equip(hero, 'accessory', 'ring');
-  assert.deepEqual(statBreakdown(hero, 'STR'), {
-    base: 14,
-    total: 16,
-    sources: [{ source: 'Ring of Vigor', delta: 2 }],
-  });
-});
-
-test('statBreakdown defaults an unknown ability to 10 with no sources', () => {
-  const hero = createCharacter('c1', 'Hero', { STR: 14 });
-  assert.deepEqual(statBreakdown(hero, 'CHA'), { base: 10, total: 10, sources: [] });
 });
 
 test('migrateItem turns bonus-era body armor into light armor with the same total AC', () => {

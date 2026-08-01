@@ -84,7 +84,7 @@ export function mountBuildEncounterPanel(container, callbacks) {
       // chip that sets its value. An edit writes back through onUpdate.
       mountStatBlockBar(row, {
         mode: 'base',
-        getStatBlock: () => encounter.statBlock ?? {},
+        getEntity: () => encounter,
         onSetStat: (stat, value) => {
           callbacks.onUpdate({
             ...encounter,

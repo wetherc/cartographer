@@ -179,8 +179,7 @@ export function mountEncounterPanel(container, callbacks) {
     // with the combat rounds.
     mountStatBlockBar(row, {
       mode: 'temp',
-      getStatBlock: () => encounter.statBlock ?? {},
-      getStatMods: () => encounter.statMods ?? [],
+      getEntity: () => encounter,
       onAddModifier: (stat, delta, rounds) =>
         updateOne(encounter, (e) => addStatModifier(e, stat, delta, rounds)),
     });

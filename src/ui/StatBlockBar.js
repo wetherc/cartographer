@@ -1,9 +1,8 @@
 import { promptModal } from './Modal.js';
-import { STAT_KEYS, normalizeStatBlock } from '../entities/Modifiers.js';
+import { STAT_KEYS } from '../entities/Modifiers.js';
+import { effectiveStat } from '../entities/Stats.js';
 import { clampInt } from '../util/num.js';
 import { classNames, el } from './dom.js';
-
-/** @typedef {import('../types/entities.js').StatModifier} StatModifier */
 
 /**
  * A row of stat chips, for example "STR 14" or "AC 13", covering the fixed
@@ -16,13 +15,13 @@ import { classNames, el } from './dom.js';
  *   plus or minus adjustment for a number of combat rounds. Base values
  *   are not editable here.
  *
- * The bar reads current values through callbacks and reports each change
- * through the matching `on*` callback. The owner only has to persist the change.
+ * The bar reads the entity through a callback, so each render sees the values
+ * as they now stand, and reports each change through the matching `on*`
+ * callback. The owner only has to persist the change.
  * @param {HTMLElement} container
  * @param {{
  *   mode: 'base' | 'temp',
- *   getStatBlock: () => Record<string, number>,
- *   getStatMods?: () => StatModifier[],
+ *   getEntity: () => import('../types/entities.js').Character | import('../types/entities.js').Encounter,
  *   onSetStat?: (name: string, value: number) => void,
  *   onAddModifier?: (name: string, delta: number, rounds: number) => void,
  * }} callbacks
@@ -63,12 +62,13 @@ export function mountStatBlockBar(container, callbacks) {
 
   function render() {
     root.innerHTML = '';
-    const base = normalizeStatBlock(callbacks.getStatBlock());
-    const mods = callbacks.mode === 'temp' ? (callbacks.getStatMods?.() ?? []) : [];
+    const entity = callbacks.getEntity();
     for (const name of STAT_KEYS) {
-      const active = mods.filter((m) => m.stat === name);
-      const effective = base[name] + active.reduce((sum, m) => sum + m.delta, 0);
-      const modified = effective !== base[name];
+      // Build authors the base values, so its chips ignore any source layered
+      // over them.
+      const { base, total, rounds } = effectiveStat(entity, name);
+      const effective = callbacks.mode === 'temp' ? total : base;
+      const modified = effective !== base;
 
       const chip = el(
         'button',
@@ -76,21 +76,20 @@ export function mountStatBlockBar(container, callbacks) {
       );
       chip.type = 'button';
       if (callbacks.mode === 'base') {
-        chip.textContent = `${name} ${base[name]}`;
-        chip.setAttribute('aria-label', `Set ${name} (currently ${base[name]})`);
+        chip.textContent = `${name} ${base}`;
+        chip.setAttribute('aria-label', `Set ${name} (currently ${base})`);
         chip.title = `Set ${name}`;
-        chip.addEventListener('click', () => editBase(name, base[name]));
+        chip.addEventListener('click', () => editBase(name, base));
       } else {
         // This shows the value combat uses. A modified stat also shows its
         // base value and how long the adjustment lasts.
-        const rounds = Math.max(0, ...active.map((m) => m.rounds));
         chip.textContent = modified
-          ? `${name} ${base[name]}→${effective} (${rounds}r)`
+          ? `${name} ${base}→${effective} (${rounds}r)`
           : `${name} ${effective}`;
         chip.setAttribute(
           'aria-label',
           modified
-            ? `Modify ${name} (base ${base[name]}, currently ${effective} for ${rounds} more rounds)`
+            ? `Modify ${name} (base ${base}, currently ${effective} for ${rounds} more rounds)`
             : `Modify ${name} (currently ${effective})`,
         );
         chip.title = `Modify ${name} for a number of rounds`;

@@ -1,4 +1,4 @@
-import { statBreakdown } from '../entities/Equipment.js';
+import { effectiveStat } from '../entities/Stats.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { textButton } from './buttons.js';
 import { classNames, el, setAttrs } from './dom.js';
@@ -8,12 +8,12 @@ import { openDialog } from './Modal.js';
 
 /**
  * Open a popover that breaks one ability score into its parts: the base
- * value, each equipped item that shifts it, with its signed delta, and the
- * resulting total and modifier. The base score lives here, since the badge
- * shows only the effective total. Duration is not modeled yet. Item buffs
- * read "while equipped". A future condition or spell source can add a real duration.
+ * value, each source that shifts it, with its signed delta and how long it
+ * holds, and the resulting total and modifier. The base score lives here,
+ * since the badge shows only the effective total. An equipped item holds
+ * while it is worn. A timed source shows its remaining rounds.
  * @param {string} key
- * @param {{ base: number, total: number, sources: { source: string, delta: number }[] }} breakdown
+ * @param {ReturnType<typeof effectiveStat>} breakdown
  */
 function openStatBreakdown(key, breakdown) {
   const { base, total, sources } = breakdown;
@@ -33,9 +33,9 @@ function openStatBreakdown(key, breakdown) {
         rows.append(el('dt', rowCls, label), el('dd', classNames([ddCls, rowCls]), value));
       };
       addRow('Base', String(base));
-      for (const { source, delta } of sources) {
+      for (const { source, delta, rounds } of sources) {
         addRow(
-          `${source} (while equipped)`,
+          `${source} (${rounds === undefined ? 'while equipped' : `${rounds} more rounds`})`,
           `${delta > 0 ? '+' : ''}${delta}`,
           delta < 0 ? 'stat-breakdown__debuff' : 'stat-breakdown__buff',
         );
@@ -96,7 +96,7 @@ function d20Face() {
  * @returns {HTMLElement}
  */
 export function statBadge(character, key) {
-  const breakdown = statBreakdown(character, key);
+  const breakdown = effectiveStat(character, key);
   const { base, total } = breakdown;
   const modText = formatModifier(abilityModifier(total));
 

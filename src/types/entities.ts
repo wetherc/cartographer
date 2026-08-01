@@ -43,6 +43,15 @@ export interface StatModifier {
   rounds: number;
 }
 
+/** One contribution to a stat's current value: what shifts it, by how much,
+ * and for how long. An absent `rounds` is an open-ended source, for example
+ * an equipped item, which holds for as long as it stays equipped. */
+export interface StatSource {
+  source: string;
+  delta: number;
+  rounds?: number;
+}
+
 /** An enemy's weapon. It carries enough of an InventoryItem's weapon fields
  * to drive the same attack math, without the full inventory model. */
 export interface EnemyWeapon {
