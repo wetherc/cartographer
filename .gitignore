@@ -15,3 +15,7 @@ PLAN.md
 
 # Build artifacts
 dist/
+
+# Benchmark output: one directory per run, with profiles that are large and
+# machine-specific. The harness in bench/ is tracked, its results are not.
+bench/results/
