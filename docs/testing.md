@@ -19,7 +19,19 @@ pnpm coverage
 
 Node itself produces the coverage report, with one row for each file plus a total. The script passes `--test-coverage-exclude='tests/**'`. Without this flag, the runner also reports the test files next to the modules the tests exercise. A test file runs from top to bottom, so it always scores near 100 percent. If the test files stay in the report, they raise the total several points above the real score of the app code.
 
-The report counts only files that a test imports. A module with no test does not appear in the table at 0 percent. It is missing from the table completely. Compare the row list against `src/` to see the real picture. A high line count on a module that is mostly `el(...)` calls means that a test built the DOM. It does not mean that a test checked what the DOM built.
+The report counts only files that a test loaded. A module that nothing imports does not show up at 0 percent. It is missing from the table completely, and the total is then an average over the tested files alone. `tests/moduleLoad.test.js` closes that gap: it imports every file under `src/` except `main.js`, so every module has a row and the total covers the whole tree. That test doubles as a load check. A renamed export or a circular import in a file with no test of its own fails there.
+
+Because of this, the total sits far below the per-file numbers of the pure modules, and that is the honest figure. The rows that pull it down are the ones the suite cannot reach:
+
+| What | Why it scores low |
+| --- | --- |
+| `src/ui/*` panels, dialogs, and widgets | They build and mount elements. A DOM-less runner can call almost none of it. |
+| `src/app/*Wiring.js` | Each one mounts panels and registers handlers against a live app. The per-feature logic that suites do cover was pulled out into the neighboring `src/app/` modules. |
+| The canvas renderers: `MapRenderer`, `MapMarkers`, `MapDecorations`, `CanvasText`, `MapExport` | They draw to a 2D context. What they draw is a visual question. |
+| `src/storage/fileIO.js` | Download and upload primitives, which need a browser. |
+| `src/main.js` | Not loaded at all. It builds the app when it loads, so it needs a document. |
+
+Every one of those is checked in a browser instead, by the procedure below. Treat a low number on one of them as expected, and a low number anywhere else as work to do. Watch for the reverse case too: a high line count on a module that is mostly `el(...)` calls means a test built the DOM, not that a test checked what the DOM built.
 
 ## Typecheck
 
