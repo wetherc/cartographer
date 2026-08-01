@@ -131,6 +131,28 @@ export const SCENARIOS = [
   },
 
   {
+    name: 'play-pan',
+    description: 'One right-drag pan across the fog-revealed map in Play mode.',
+    // Play mode is the one place the cell grid clips itself to the revealed
+    // cells, and that clip is rebuilt on every frame. The Build-mode
+    // authoring numbers never pay it, so this pan is what prices it.
+    async run(page) {
+      const box = await page.box('#map-canvas');
+      const y = box.y + box.height * 0.5;
+      const from = box.x + box.width * 0.85;
+      const to = box.x + box.width * 0.15;
+      const steps = 48;
+      const right = { button: 'right', buttons: 2 };
+      await page.mouse('mousePressed', from, y, right);
+      for (let i = 1; i <= steps; i++) {
+        await page.mouse('mouseMoved', from + ((to - from) * i) / steps, y, right);
+      }
+      await page.mouse('mouseReleased', to, y, right);
+      return { steps };
+    },
+  },
+
+  {
     name: 'panel-tabs',
     description: 'Thirty sidebar tab switches, which rebuild the session panels.',
     async run(page) {

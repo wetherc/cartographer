@@ -50,6 +50,7 @@ Results are not committed.
 | `paint-stroke` | One authoring stroke of 24 cells |
 | `generate-map` | Procedural generation through the Generate dialog |
 | `zoom-pan` | Twenty wheel-zoom steps at the canvas center |
+| `play-pan` | One right-drag pan across the fog-revealed map in Play mode |
 | `panel-tabs` | Thirty sidebar tab switches |
 | `rehydrate` | Fifty cross-tab save adoptions |
 | `combat-turns` | Start a fight, advance twenty turns, end it |
