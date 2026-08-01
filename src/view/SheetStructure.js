@@ -3,13 +3,13 @@ import { isHitDicePool } from '../entities/HitDice.js';
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /**
- * Which pools exist, what they are called, and how big they are, as one
- * comparable string. Pool *shape* decides the sheet's structure: a pool added,
- * removed, renamed, or given a new maximum changes how many rows and how many
- * spell-slot pips there are, so it forces a rebuild. A pool's `current` does
- * not, because the sheet writes those in place — except for hit dice, whose
- * remaining count is rendered by the progression section rather than by the
- * sheet itself.
+ * Which pools exist, what they are named, and how big they are, as one
+ * comparable string. Pool *shape* decides the sheet's structure. Adding,
+ * removing, renaming a pool, or giving it a new maximum changes the number
+ * of rows and spell-slot pips, so it forces a rebuild. A pool's `current`
+ * value does not force a rebuild, because the sheet writes those values in
+ * place. Hit dice are the exception: the progression section draws the
+ * remaining count, not the sheet itself.
  * @param {Character} character
  * @returns {string}
  */
@@ -25,25 +25,27 @@ function poolShape(character) {
 }
 
 /**
- * Everything the character sheet's DOM *shape* is built from, as a flat list of
- * values to compare with {@link sameDeps}. Two renders agreeing on this list
- * differ only in values the sheet can write into the elements it already has
- * (pool levels, bonus HP, base AC, the name, the conditions), so it re-points
- * the existing DOM instead of discarding roughly two hundred elements — six
- * ability badges with an inline SVG die each, every slot pip, the progression
- * and spell sections, the condition chips — to move one health bar.
+ * Everything that builds the character sheet's DOM *shape*, as a flat list
+ * of values to compare with {@link sameDeps}. Two renders that agree on
+ * this list differ only in values the sheet can write into elements it
+ * already has: pool levels, bonus HP, base AC, the name, the conditions.
+ * The sheet then re-points the existing DOM, instead of discarding around
+ * two hundred elements (six ability badges with an inline SVG die each,
+ * every slot pip, the progression and spell sections, the condition chips)
+ * just to move one health bar.
  *
- * Comparing by reference is sound because the entity layer never mutates in
- * place: any change to a character's classes, stats, inventory, or spellbook
- * hands back a new object for that field. The flip side is that this list has to
- * name every field the structural builders read, so adding a read to the sheet,
- * the progression section, or the spell section means adding it here.
+ * Comparing by reference works because the entity layer never mutates in
+ * place. Any change to a character's classes, stats, inventory, or
+ * spellbook returns a new object for that field. The list must name every
+ * field that the structural builders read. Adding a read to the sheet, the
+ * progression section, or the spell section means adding it here too.
  *
- * Not everything the builders read lives on the character. The spell section
- * resolves stored ids against the spell catalog, so editing a spell in the
- * Library changes what the section shows without touching the character;
- * `catalogStamp` is a value that changes whenever that catalog does, and it is
- * how the sheet learns a library edit means a rebuild.
+ * Not everything the builders read lives on the character. The spell
+ * section resolves stored ids against the spell catalog, so editing a spell
+ * in the Library changes what the section shows, without touching the
+ * character. `catalogStamp` is a value that changes whenever that catalog
+ * changes. This is how the sheet learns that a library edit needs a
+ * rebuild.
  * @param {Character} character
  * @param {import('../types/view.js').SheetPermissions} perms
  * @param {unknown} [catalogStamp]
@@ -73,17 +75,18 @@ export function sheetDeps(character, perms, catalogStamp) {
 }
 
 /**
- * Everything the Spellbook tab's row list is built from. Most of it is the
- * learnable set, which follows the character's classes and level, but a known
- * spell those classes do not offer is listed only because the character knows
- * it. Learning or forgetting one of those adds or removes a row without changing
- * anything else in the list, so the known-but-not-learnable ids are folded in as
- * a sorted string rather than left out.
+ * Everything that builds the Spellbook tab's row list. Most of it is the
+ * learnable set, which follows the character's classes and level. A known
+ * spell that those classes do not offer still appears, only because the
+ * character knows it. Learning or forgetting one of these spells adds or
+ * removes a row without changing anything else in the list. This function
+ * folds the known-but-not-learnable ids in as a sorted string, instead of
+ * leaving them out.
  * @param {Character} character
- * @param {string[]} knownIds the character's cantrips and known spells
- * @param {Set<string>} learnableIds what the classes offer, from the last build
- * @param {boolean} play whether the viewer may act on the sheet
- * @param {unknown} catalogStamp changes whenever the spell catalog does
+ * @param {string[]} knownIds The character's cantrips and known spells.
+ * @param {Set<string>} learnableIds What the classes offer, from the last build.
+ * @param {boolean} play Whether the viewer can act on the sheet.
+ * @param {unknown} catalogStamp Changes whenever the spell catalog changes.
  * @returns {unknown[]}
  */
 export function spellListDeps(character, knownIds, learnableIds, play, catalogStamp) {
@@ -95,8 +98,8 @@ export function spellListDeps(character, knownIds, learnableIds, play, catalogSt
 }
 
 /**
- * Whether two {@link sheetDeps} lists describe the same structure. A missing
- * previous list (nothing built yet) is never a match.
+ * Whether two {@link sheetDeps} lists describe the same structure. A
+ * missing previous list, meaning nothing built yet, is never a match.
  * @param {unknown[] | null} a
  * @param {unknown[]} b
  * @returns {boolean}

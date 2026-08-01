@@ -1,11 +1,12 @@
 /**
- * Per-tab character binding for the Player view: a player tab can be bound to
- * one party member, and only that character is playable from the tab (HP,
- * resources, conditions, inventory). Base attributes (stats, XP, roster
- * management) stay GM-only, and an unbound player tab is a pure spectator.
- * Two ways to bind, mirroring PlayerLock: a `?character=<id>` URL (survives
- * reloads, ideal for a bookmarked per-player display) or an in-panel picker
- * (per-tab, via sessionStorage). The GM view ignores bindings entirely.
+ * Per-tab character binding for the Player view. A player tab can bind to
+ * one party member. Only that character is playable from the tab: HP,
+ * resources, conditions, inventory. Base attributes (stats, XP, roster
+ * management) stay GM-only. An unbound player tab is a pure spectator.
+ * There are two ways to bind, the same as PlayerLock: a `?character=<id>`
+ * URL, which survives reloads and suits a bookmarked per-player display, or
+ * an in-panel picker, which is per-tab through sessionStorage. The GM view
+ * ignores bindings entirely.
  */
 
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
@@ -17,9 +18,9 @@ export const BOUND_CHARACTER_SESSION_KEY = 'campaign-builder:bound-character';
 
 /**
  * localStorage key of a character's cross-tab claim lock. Bindings are
- * exclusive — one tab plays one character — enforced with the same
- * heartbeat-lock machinery as the GM lock (storage/GMLock.js, which takes the
- * key as a parameter). Pure.
+ * exclusive: one tab plays one character. The same heartbeat-lock machinery
+ * as the GM lock enforces this (storage/GMLock.js, which takes the key as a
+ * parameter). This function is pure.
  * @param {string} characterId
  * @returns {string}
  */
@@ -28,8 +29,9 @@ export function characterLockKey(characterId) {
 }
 
 /**
- * The character id a URL's query string requests, or null. Pure.
- * @param {string} search a location.search string (leading "?" optional)
+ * The character id that a URL's query string requests, or null. This
+ * function is pure.
+ * @param {string} search A location.search string. The leading "?" is optional.
  * @returns {string | null}
  */
 export function characterParam(search) {
@@ -37,11 +39,12 @@ export function characterParam(search) {
 }
 
 /**
- * Resolve this tab's initial binding: the URL parameter wins over the per-tab
- * session value, and an id that names no current party member (deleted, typo,
- * another campaign's save) resolves to unbound rather than dangling. Pure.
- * @param {string} search a location.search string
- * @param {string | null} sessionValue the BOUND_CHARACTER_SESSION_KEY value
+ * Resolve this tab's initial binding. The URL parameter wins over the
+ * per-tab session value. An id that names no current party member (deleted,
+ * misspelled, or from another campaign's save) resolves to unbound, instead
+ * of dangling. This function is pure.
+ * @param {string} search A location.search string.
+ * @param {string | null} sessionValue The BOUND_CHARACTER_SESSION_KEY value.
  * @param {Character[]} characters
  * @returns {string | null}
  */
@@ -51,18 +54,19 @@ export function initialBinding(search, sessionValue, characters) {
 }
 
 /**
- * What a viewer may do to a given character's sheet. The GM may do anything;
- * a player tab may play (spend pools, cast, conditions, inventory) only the
- * character it is bound to, and may edit base attributes (stats, XP, bonus HP,
- * base AC) never.
- * HP is GM-adjudicated — damage and healing land through the GM's screen or
- * combat rolls, so even a bound player tab may not step its own HP. Recovery of
- * spent pools is the same kind of ruling: a player may spend a spell slot or a
- * ki point, but putting one back is the GM's call, so `restore` is GM-only too.
- * Pure.
+ * What a viewer can do to a given character's sheet. The GM can do anything.
+ * A player tab can play (spend pools, cast, set conditions, use inventory)
+ * only the character it is bound to, and can never edit base attributes
+ * (stats, XP, bonus HP, base AC).
+ * The GM rules on HP. Damage and healing come through the GM's screen or
+ * combat rolls, so even a bound player tab cannot change its own HP.
+ * Recovery of spent pools follows the same rule: a player can spend a spell
+ * slot or a ki point, but only the GM can put one back, so `restore` is
+ * GM-only too.
+ * This function is pure.
  * @param {ViewRole} role
- * @param {string | null} boundId this tab's bound character id
- * @param {string} characterId the character being rendered
+ * @param {string | null} boundId This tab's bound character id.
+ * @param {string} characterId The character being drawn.
  * @returns {SheetPermissions}
  */
 export function partyPermissions(role, boundId, characterId) {

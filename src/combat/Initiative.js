@@ -1,8 +1,9 @@
 /**
- * Pure initiative/turn-order logic for running a combat round. A CombatState is
- * a sorted order of participants plus a round counter and a pointer at whose
- * turn it is; every function returns a new value rather than mutating, so the UI
- * layer owns the single mutable copy (as elsewhere in this codebase).
+ * Pure initiative and turn-order logic for running a combat round. A
+ * CombatState is a sorted order of participants, plus a round counter and a
+ * pointer to whose turn it is. Every function here returns a new value
+ * instead of mutating, so the UI layer owns the single mutable copy, as
+ * elsewhere in this codebase.
  */
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
@@ -20,10 +21,10 @@ export function createParticipant(id, initiative = 10, modifier = 0) {
 
 /**
  * Sort participants into turn order: highest initiative first, ties broken by
- * name (case-insensitive) then id so the order is deterministic. A participant
- * carries no name — `nameOf` resolves one from whatever holds the id — and an
- * unresolvable id sorts as the empty string, which still leaves the id
- * tiebreak. Pure.
+ * name (case-insensitive), then by id, so the order is deterministic. A
+ * participant carries no name. `nameOf` resolves a name from whatever holds
+ * the id. An unresolvable id sorts as the empty string, which still leaves
+ * the id tiebreak. Pure function.
  * @param {Participant[]} participants
  * @param {(participant: Participant) => string} [nameOf]
  * @returns {Participant[]}
@@ -40,9 +41,9 @@ export function sortInitiative(participants, nameOf = () => '') {
 
 /**
  * Begin a combat: sort the participants and start at round 1, first turn.
- * `startedAt` is injected rather than read from the clock so this stays pure;
- * the caller passes the moment its setup opened, which is where the fight's
- * slice of the travelogue begins.
+ * `startedAt` is injected instead of read from the clock, so this function
+ * stays pure. The caller passes the moment its setup opened, which is where
+ * the fight's slice of the travelogue begins.
  * @param {Participant[]} participants
  * @param {(participant: Participant) => string} [nameOf] for the tiebreak
  * @param {number} [startedAt] epoch ms the fight's log starts at
@@ -53,13 +54,14 @@ export function startCombat(participants, nameOf, startedAt = 0) {
 }
 
 /**
- * Remove a combatant from a running order — what deleting an encounter or a
- * character mid-fight has to do, since a participant whose entity is gone can
- * neither act nor be targeted. The turn pointer follows the combatant it was
- * on: dropping someone earlier in the order shifts it back, and dropping the
- * last participant while it is their turn wraps it to the top rather than off
- * the end. Returns the state unchanged (identity preserved) when the id is not
- * in the order. Pure.
+ * Remove a combatant from a running order. Deleting an encounter or a
+ * character mid-fight must do this, because a participant whose entity is
+ * gone can neither act nor be targeted. The turn pointer follows the
+ * combatant it was on: removing someone earlier in the order shifts the
+ * pointer back, and removing the last participant during their own turn
+ * wraps the pointer to the top instead of past the end. The function returns
+ * the state unchanged (identity preserved) when the id is not in the order.
+ * Pure function.
  * @param {CombatState} state
  * @param {string} id
  * @returns {CombatState}
@@ -81,15 +83,17 @@ export function currentParticipant(state) {
 }
 
 /**
- * Advance to the next turn, wrapping to the top of the order and incrementing
- * the round. Returns the new state and whether the round rolled over (so the
- * caller can tick per-round effects like conditions). An empty order is a no-op.
+ * Advance to the next turn, wrap to the top of the order, and increment the
+ * round. The function returns the new state and whether the round rolled
+ * over, so the caller can update per-round effects like conditions. An empty
+ * order is a no-op.
  *
- * `isDefeated` skips turns nobody can take: the pointer keeps stepping past
+ * `isDefeated` skips turns nobody can take. The pointer keeps stepping past
  * defeated participants (their chips stay in the ribbon, struck through) and
- * lands on the next one standing. With everyone defeated it advances one full
- * cycle and stops where it started, so the round still turns over and timed
- * effects keep ticking while the GM decides what to do with the wipe.
+ * lands on the next one standing. If every participant is defeated, the
+ * pointer advances one full cycle and stops where it started, so the round
+ * still turns over and timed effects keep ticking while the GM decides what
+ * to do with the wipe.
  * @param {CombatState} state
  * @param {(participant: Participant) => boolean} [isDefeated]
  * @returns {{ state: CombatState, wrapped: boolean }}

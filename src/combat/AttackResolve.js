@@ -4,10 +4,11 @@ import { DIE_SIDES } from '../dice/DiceRoller.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 
 /**
- * The 5e rules a weapon attack resolves by, kept apart from the dialog and dice
- * tray that surround them in `app/weaponAttack.js`. Everything here takes plain
- * values and returns plain values, so the hit/crit table and the damage-dice
- * assembly are unit-testable without a DOM or an app context.
+ * The 5e rules a weapon attack resolves by. This module stays apart from the
+ * dialog and dice tray that surround it in `app/weaponAttack.js`. Every
+ * function here takes plain values and returns plain values, so a test run
+ * can check the hit/crit table and the damage dice assembly without a DOM or
+ * an app context.
  */
 
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
@@ -15,8 +16,9 @@ import { abilityModifier } from '../entities/Modifiers.js';
 
 /**
  * The stat map an attacker rolls from. An encounter carries a stat block that
- * its own modifiers apply to; a party character carries ability scores that
- * equipped gear may buff. Either way the caller gets one ability-to-score map.
+ * its own modifiers apply to. A party character carries ability scores that
+ * equipped gear can buff. Either way, the caller gets one ability-to-score
+ * map.
  * @param {import('../types/entities.js').Encounter | import('../types/entities.js').Character} attacker
  * @returns {Record<string, number>}
  */
@@ -25,10 +27,10 @@ export function attackerStats(attacker) {
 }
 
 /**
- * How a d20 attack roll lands. A natural 1 always misses and a natural 20
- * always hits and crits, both regardless of AC; anything else compares the
- * modified total against AC. `outcome` is the phrasing the travelogue uses, so
- * the log and the toast can never disagree about what happened.
+ * How a d20 attack roll lands. A natural 1 always misses. A natural 20 always
+ * hits and crits, regardless of AC. Any other roll compares the modified
+ * total against AC. `outcome` is the phrasing the travelogue uses, so the log
+ * and the toast always agree on what happened.
  * @param {{ natural: number, total: number, ac: number }} roll
  * @returns {{ crit: boolean, hit: boolean, outcome: string }}
  */
@@ -41,13 +43,14 @@ export function resolveAttack({ natural, total, ac }) {
 
 /**
  * The damage dice a hit rolls: the weapon's own terms, plus any extra dice the
- * pre-roll dialog added. A critical hit doubles the count of every die, the
- * dialog's dice included, because they are damage dice like the rest. Flat
- * bonuses are not dice and so are not doubled; they reach the roll through
- * `damageModifier` instead.
+ * pre-roll dialog added. A critical hit doubles the count of every die,
+ * including the dialog's dice, because they are damage dice like the rest.
+ * Flat bonuses are not dice, so a critical hit does not double them. They
+ * reach the roll through `damageModifier` instead.
  *
- * The added dice take the weapon's own damage type so they group with it in the
- * readout, falling back to `bonus` for a weapon that lists no damage at all.
+ * The added dice take the weapon's own damage type, so they group with it in
+ * the readout. They fall back to `bonus` for a weapon that lists no damage at
+ * all.
  * @param {DamagePart[]} weaponDamage
  * @param {{ crit: boolean, bonusDice?: number, bonusDie?: DieType }} opts
  * @returns {DamagePart[]}

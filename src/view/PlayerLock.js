@@ -1,18 +1,20 @@
 /**
- * A tab locked to the Player view — for a shared table display that must not
- * flip to the GM's full truth on a stray tap. Two ways in: a `?role=player`
- * URL (survives reloads, ideal for a bookmarked display) or a confirm-gated
- * lock in the header (per-tab, via sessionStorage). Unlock by closing the tab
- * or removing the URL parameter; there is deliberately no in-app unlock.
+ * A tab locked to the Player view. This suits a shared table display that
+ * must not flip to the GM's full truth on a stray tap. There are two ways
+ * in: a `?role=player` URL, which survives reloads and suits a bookmarked
+ * display, or a confirm-gated lock in the header, which is per-tab through
+ * sessionStorage. Unlock the tab by closing it or by removing the URL
+ * parameter. The app has no in-app unlock, by design.
  */
 
-/** sessionStorage key marking this tab as locked to the Player view. */
+/** sessionStorage key that marks this tab as locked to the Player view. */
 export const PLAYER_LOCK_SESSION_KEY = 'campaign-builder:player-lock';
 
 /**
- * The viewer role a URL's query string requests, or null. Only `player` is
- * honored — a URL cannot claim the GM view. Pure.
- * @param {string} search a location.search string (leading "?" optional)
+ * The viewer role that a URL's query string requests, or null. Only
+ * `player` is honored. A URL cannot claim the GM view. This function is
+ * pure.
+ * @param {string} search A location.search string. The leading "?" is optional.
  * @returns {'player' | null}
  */
 export function roleParam(search) {
@@ -22,9 +24,9 @@ export function roleParam(search) {
 
 /**
  * Whether this tab is locked to the Player view, by URL or by the per-tab
- * session flag. Pure.
- * @param {string} search a location.search string
- * @param {string | null} sessionValue the PLAYER_LOCK_SESSION_KEY value
+ * session flag. This function is pure.
+ * @param {string} search A location.search string.
+ * @param {string | null} sessionValue The PLAYER_LOCK_SESSION_KEY value.
  * @returns {boolean}
  */
 export function isPlayerLocked(search, sessionValue) {

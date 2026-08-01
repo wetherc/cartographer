@@ -1,21 +1,21 @@
 /**
  * What a combatant brings to the fight, as display-ready values: worn armor,
- * the weapons it can swing, how many spells it has to hand, and what is left in
- * its slot pools. The combat board showed HP and AC only, which is enough to
- * pick a target and nothing like enough for a player to see what their turn can
- * do; this module is the one statement of how each of those reads.
+ * the weapons it can swing, how many spells it has to hand, and what is left
+ * in its slot pools. The combat board showed HP and AC only. That is enough
+ * to pick a target, but not enough for a player to see what their turn can
+ * do. This module is the one statement of how each of those values reads.
  *
- * Not all of it is public. Armor and a drawn weapon are visible across the
- * table: anyone in the fight can see what someone is wearing and swinging. What
- * a caster has prepared and how many slots they have left is theirs, so it goes
- * only to that player's own tab and to the GM. `loadoutAccess` states that rule
- * once, and `buildLoadout` never assembles what the viewer may not see rather
- * than leaving the filtering to whichever surface draws it.
+ * Not all of it is public. Anyone in the fight can see armor and a drawn
+ * weapon, because these are visible across the table. What a caster has
+ * prepared and how many slots the caster has left belongs to that caster, so
+ * it goes only to that player's own tab and to the GM. `loadoutAccess` states
+ * that rule once. `buildLoadout` never assembles what the viewer cannot see,
+ * instead of leaving the filtering to whichever surface draws it.
  *
- * Pure over its inputs. The resolved combatant comes from the wiring layer (the
- * same `ResolvedCombatant` the combat view takes), and the castable spell list
- * is injected because resolving spell ids needs the merged library, which only
- * the wiring layer can see.
+ * Pure over its inputs. The resolved combatant comes from the wiring layer
+ * (the same `ResolvedCombatant` the combat view takes). The castable spell
+ * list is injected, because resolving spell ids needs the merged library,
+ * which only the wiring layer can see.
  */
 
 import { equippedWeapons, formatDamage, getEquipped } from '../entities/Equipment.js';
@@ -26,8 +26,8 @@ import { sideOf } from './CombatView.js';
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
 /**
- * One slot pool: its spell level, whether it is pact magic (which refreshes on a
- * short rest and is worth telling apart), and how much of it is unspent.
+ * One slot pool: its spell level, whether it is pact magic (which refreshes
+ * on a short rest, so it needs its own label), and how much of it is unspent.
  * @typedef {{ level: number, pact: boolean, remaining: number, max: number }} SlotLine
  */
 
@@ -41,7 +41,7 @@ import { sideOf } from './CombatView.js';
  */
 
 /**
- * How much of a combatant's loadout a viewer may see. `full` is everything,
+ * How much of a combatant's loadout a viewer can see. `full` is everything,
  * `public` is armor and weapons only, `none` draws nothing at all.
  * @typedef {'full' | 'public' | 'none'} LoadoutAccess
  */
@@ -50,10 +50,11 @@ import { sideOf } from './CombatView.js';
 const EMPTY = { armor: [], weapons: [], spells: { cantrips: 0, leveled: 0 }, slots: [] };
 
 /**
- * What a viewer may see of a combatant's loadout. The GM sees all of it. A
- * player sees their own character whole, another party member's armor and
- * weapons only (their spell list and slots are that player's business), and
- * nothing at all of a foe, whose sheet is the GM's to reveal.
+ * What a viewer can see of a combatant's loadout. The GM sees all of it. A
+ * player sees their own character whole. A player sees only armor and
+ * weapons for another party member, because that member's spell list and
+ * slots are that member's business. A player sees nothing of a foe, because
+ * the foe's sheet is the GM's to reveal.
  * @param {ResolvedCombatant | null} found
  * @param {{ gm: boolean, boundCharacterId?: string | null }} viewer
  * @param {string} id the participant being looked at
@@ -81,7 +82,7 @@ export function buildLoadout(found, spells = [], access = 'full') {
 
 /**
  * Whether a loadout has nothing to draw, so a card can leave the block out
- * rather than render an empty one.
+ * instead of drawing an empty one.
  * @param {Loadout} loadout
  * @returns {boolean}
  */
@@ -96,8 +97,8 @@ export function isEmptyLoadout(loadout) {
 }
 
 /**
- * The protective pieces worn, named: a character's body armor and shield, a
- * foe's authored armor. NPCs record none.
+ * The protective pieces worn, named: a character's body armor and shield, or
+ * a foe's authored armor. NPCs record none.
  * @param {ResolvedCombatant} found
  * @returns {string[]}
  */
@@ -115,10 +116,10 @@ function armorOf(found) {
 
 /**
  * The weapons available, each with its damage written out: a character's
- * equipped weapons in slot order, a foe's single weapon. Same lists the action
- * bar offers, so a card and the bar cannot disagree. Named apart from
- * combatants.js's `weaponsOf`, which returns the weapon objects themselves;
- * this one returns display lines.
+ * equipped weapons in slot order, or a foe's single weapon. This is the same
+ * list the action bar offers, so a card and the bar always agree. This
+ * function is named apart from combatants.js's `weaponsOf`, which returns
+ * the weapon objects themselves. This function returns display lines.
  * @param {ResolvedCombatant} found
  * @returns {{ name: string, damage: string }[]}
  */
@@ -134,8 +135,8 @@ function weaponLines(found) {
 }
 
 /**
- * Split a castable list into cantrips and leveled spells, which is what a card
- * can say in one line without listing a caster's whole book.
+ * Split a castable list into cantrips and leveled spells. A card can state
+ * this in one line without listing a caster's whole book.
  * @param {Spell[]} spells
  */
 function countSpells(spells) {
@@ -145,9 +146,10 @@ function countSpells(spells) {
 }
 
 /**
- * The slot pools with anything left in them, leveled first and pact magic
- * after, each labelled by its spell level. Pools already spent to zero are kept
- * so a player can see the whole shape of what they started the fight with.
+ * The slot pools with anything left in them, leveled pools first and pact
+ * magic after, each labeled by its spell level. Pools already spent to zero
+ * stay in the list, so a player can see the whole shape of what the player
+ * started the fight with.
  * @param {ResolvedCombatant} found
  * @returns {SlotLine[]}
  */

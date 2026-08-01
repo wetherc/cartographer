@@ -1,8 +1,9 @@
 /**
- * The viewer-role split: the same campaign renders differently for the GM
- * (full truth — exact HP, authored notes, every handout) and for players (a
- * coarse HP band, no secret notes, only revealed handouts). This module owns
- * the pure pieces of that distinction; the panels read `getRole()` and branch.
+ * The viewer-role split. The same campaign draws differently for the GM
+ * (full truth: exact HP, authored notes, every handout) and for players (a
+ * coarse HP band, no secret notes, only revealed handouts). This module
+ * owns the pure pieces of that distinction. The panels read `getRole()` and
+ * branch on it.
  */
 
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
@@ -19,11 +20,12 @@ export function isGM(role) {
 }
 
 /**
- * Abstract a current/max HP into the coarse status band players see instead of
- * exact numbers, so a GM can show the party a monster's condition without
- * leaking its stat block. Bands, by fraction of max: full is "Unharmed", above
- * half "Healthy", above a quarter "Bloodied", anything still standing "Badly
- * wounded", and zero or below "Down". A non-positive max reads "Unknown".
+ * Abstract a current and max HP pair into the coarse status band that
+ * players see, instead of exact numbers. This lets a GM show the party a
+ * monster's condition without leaking its stat block. The bands, by
+ * fraction of max: full is "Unharmed", above half is "Healthy", above a
+ * quarter is "Bloodied", anything still standing is "Badly wounded", and
+ * zero or below is "Down". A non-positive max reads "Unknown".
  * @param {number} current
  * @param {number} max
  * @returns {string}

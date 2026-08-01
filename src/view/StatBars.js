@@ -1,10 +1,10 @@
 import { isPactPool, slotLevelOf } from '../entities/SpellSlots.js';
 
 /**
- * What the HP bar and the spell-slot pips say, apart from the elements that say
- * it. `ui/CharacterBars.js` keeps the DOM and the update loop; the numbers, the
- * low-HP threshold, and every string a screen reader gets are here, where they
- * can be checked without a browser.
+ * What the HP bar and the spell-slot pips say, apart from the elements that
+ * show it. `ui/CharacterBars.js` keeps the DOM and the update loop. This
+ * file holds the numbers, the low-HP threshold, and every string that a
+ * screen reader gets, where a test can check them without a browser.
  */
 
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -13,13 +13,13 @@ import { isPactPool, slotLevelOf } from '../entities/SpellSlots.js';
 export const CRITICAL_RATIO = 0.25;
 
 /**
- * The HP bar's readout for a pool. `percent` is the fill width, rounded because
- * a fractional percentage buys nothing on a bar a few hundred pixels wide. A
- * pool with no maximum reads as empty rather than dividing by zero, which is
- * what an older save with no HP recorded looks like.
+ * The HP bar's readout for a pool. `percent` is the fill width, rounded,
+ * because a fractional percentage adds nothing on a bar a few hundred
+ * pixels wide. A pool with no maximum reads as empty, instead of dividing
+ * by zero. This is what an older save with no HP recorded looks like.
  *
- * `critical` is only ever true for a bar armed for it, so a resource that merely
- * happens to be low does not turn red.
+ * `critical` is only ever true for a bar set up for it, so a resource that
+ * merely happens to be low does not turn red.
  * @param {ResourcePool} pool
  * @param {{ label: string, bonus?: number, critical?: boolean }} opts
  * @returns {{ percent: number, critical: boolean, text: string, ariaLabel: string }}
@@ -37,8 +37,8 @@ export function barReadout(pool, opts) {
 }
 
 /**
- * An English ordinal for a small counting number, which is all the spell-slot
- * columns need: 1st through 9th.
+ * An English ordinal for a small counting number. Spell-slot columns need
+ * only 1st through 9th.
  * @param {number} n
  * @returns {string}
  */
@@ -47,9 +47,9 @@ export function ordinal(n) {
 }
 
 /**
- * A slot pool's column heading. A warlock's pact slots say so, because they
- * refresh on a short rest and spending one is a different decision from spending
- * an ordinary slot of the same level.
+ * A slot pool's column heading. A warlock's pact slots say so in the
+ * heading, because pact slots refresh on a short rest. Spending a pact slot
+ * is a different decision from spending an ordinary slot of the same level.
  * @param {ResourcePool} pool
  * @returns {string}
  */
@@ -58,12 +58,13 @@ export function slotColumnLabel(pool) {
 }
 
 /**
- * One pip's accessible name and tooltip. A spent pip a player may not refill
- * stays on the line and keeps a name saying why, so the cost of the cast is
- * still visible after it stops being a control.
+ * One pip's accessible name and tooltip. A spent pip that a player cannot
+ * refill stays on the line, and keeps a name that explains why. This way
+ * the cost of the cast stays visible, even after the pip stops being a
+ * control.
  * @param {ResourcePool} pool
- * @param {boolean} available whether this pip is an unspent slot
- * @param {boolean} allowRestore whether clicking an empty pip may put a slot back
+ * @param {boolean} available Whether this pip is an unspent slot.
+ * @param {boolean} allowRestore Whether a click on an empty pip can put a slot back.
  * @returns {{ ariaLabel: string, title: string, disabled: boolean }}
  */
 export function pipReadout(pool, available, allowRestore) {
@@ -80,8 +81,8 @@ export function pipReadout(pool, available, allowRestore) {
 }
 
 /**
- * The whole slot line as one sentence, for the read-only view where the pips are
- * decoration rather than controls.
+ * The whole slot line as one sentence, for the read-only view where the
+ * pips are decoration, not controls.
  * @param {ResourcePool[]} pools
  * @returns {string}
  */

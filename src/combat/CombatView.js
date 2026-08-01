@@ -1,11 +1,11 @@
 /**
  * Pure derivations over a running combat: which side a combatant fights on,
  * whether it is out of the fight, and the full per-participant view a combat
- * surface renders from. The UI layers used to derive these ad hoc (the
- * initiative panel one way, the target assembly another), so this module is
- * the one statement of each rule. It resolves nothing itself: the caller
- * injects `resolve`, which maps a participant id to the entity holding it,
- * because only the wiring layer can see every collection an id might live in.
+ * surface draws from. The UI layers used to derive these values separately
+ * (the initiative panel one way, the target assembly another). This module
+ * states each rule once. It resolves nothing itself. The caller injects
+ * `resolve`, which maps a participant id to the entity holding it, because
+ * only the wiring layer can see every collection an id can live in.
  */
 
 import { effectiveStatBlock, isDefeated } from '../entities/Encounter.js';
@@ -18,9 +18,9 @@ import { getHP } from '../entities/Character.js';
 /** @typedef {import('../types/npc.js').NPC} NPC */
 
 /**
- * A participant id resolved to whatever holds it. The `kind` names which
- * collection, and `entity` is the live object, read fresh per render so a
- * rename or an HP change mid-fight shows up on the next draw.
+ * A participant id resolved to whatever holds it. `kind` names the
+ * collection. `entity` is the live object, read fresh each time, so a rename
+ * or an HP change mid-fight shows up on the next draw.
  * @typedef {(
  *   { kind: 'character', entity: Character }
  *   | { kind: 'encounter', entity: Encounter }
@@ -30,10 +30,10 @@ import { getHP } from '../entities/Character.js';
 
 /**
  * Everything a combat surface needs to draw one participant. `name` is null
- * when nothing holds the id any more (an entity deleted mid-fight, an NPC who
- * walked off), in which case the numeric fields fall back to neutral values:
- * the row still renders so the order and the turn pointer keep lining up.
- * `hp` is null for an NPC, which carries none.
+ * when nothing holds the id any more: an entity deleted mid-fight, or an NPC
+ * who walked off. In that case the numeric fields fall back to neutral
+ * values, and the row still draws, so the order and the turn pointer keep
+ * lining up. `hp` is null for an NPC, because an NPC carries no HP.
  * @typedef {{
  *   id: string,
  *   name: string | null,
@@ -108,7 +108,7 @@ export function acOf(found) {
 }
 
 /**
- * Whether this viewer may drive a participant's turn: the GM anywhere, a
+ * Whether this viewer can drive a participant's turn: the GM anywhere, a
  * player only on the party-side character their tab is bound to. A foe is the
  * GM's alone even if a player somehow holds its id.
  * @param {ResolvedCombatant | null} found
@@ -138,10 +138,10 @@ export function fightOutcome(view) {
 }
 
 /**
- * Rows nothing resolves are left out: an unresolved row's side and defeated
- * flag are placeholders (see `buildCombatView`), and counting one as a
- * standing party member would hold the outcome open after every real
- * combatant on the side is down.
+ * Rows that nothing resolves are left out. An unresolved row's side and
+ * defeated flag are placeholders (see `buildCombatView`). Counting an
+ * unresolved row as a standing party member holds the outcome open
+ * after every real combatant on the side is down.
  * @param {CombatView} view
  * @param {'party' | 'foe'} side
  */

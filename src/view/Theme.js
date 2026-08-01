@@ -1,7 +1,8 @@
 /** @typedef {'system' | 'light' | 'dark'} ThemePreference */
 
-/** The localStorage key the theme preference persists under (shared with the
- * pre-paint inline script in index.html, which reads it before the app boots). */
+/** The localStorage key that stores the theme preference. The pre-paint
+ * inline script in index.html shares this key, and reads it before the app
+ * starts. */
 export const THEME_STORAGE_KEY = 'campaign-builder:theme';
 
 /** The switch's options in display order: follow the OS, pin light, pin dark.
@@ -9,7 +10,7 @@ export const THEME_STORAGE_KEY = 'campaign-builder:theme';
 export const THEMES = ['system', 'light', 'dark'];
 
 /**
- * Coerce a stored value (possibly stale or hand-edited) to a valid preference.
+ * Coerce a stored value, which can be stale or hand-edited, to a valid preference.
  * @param {string | null | undefined} value
  * @returns {ThemePreference}
  */
@@ -18,7 +19,7 @@ export function normalizeTheme(value) {
 }
 
 /**
- * Human label for the preference, used on the switch buttons' tooltips.
+ * The human-readable label for the preference, shown in the switch buttons' tooltips.
  * @param {ThemePreference} theme
  * @returns {string}
  */

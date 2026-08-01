@@ -1,15 +1,16 @@
 /**
  * The claiming half of the per-tab character binding: taking a character,
- * losing it to another tab, and the "Playing as" picker the Player view binds
- * through. `CharacterBinding.js` beside this holds the pure rules — which id a
- * URL and a session value resolve to, and what a bound tab may touch — and this
- * is the stateful driver over them, so a tab's claim, its session record, and
- * the picker showing it can never disagree.
+ * losing it to another tab, and the "Playing as" picker that the Player view
+ * binds through. `CharacterBinding.js`, beside this file, holds the pure
+ * rules: which id a URL and a session value resolve to, and what a bound
+ * tab can touch. This file is the stateful driver over those rules, so a
+ * tab's claim, its session record, and the picker that shows it can never
+ * disagree.
  *
- * Bindings are exclusive across tabs: claiming takes a heartbeat lock in
- * localStorage, the same machinery as the GM lock, so two player tabs can never
- * both play "Hero". A refused claim leaves the tab a spectator with a toast
- * naming who holds the character.
+ * Bindings are exclusive across tabs. Claiming takes a heartbeat lock in
+ * localStorage, the same machinery as the GM lock, so two player tabs can
+ * never both play "Hero". A refused claim leaves the tab as a spectator,
+ * with a toast that names who holds the character.
  */
 
 import { createHeartbeatLock } from '../storage/GMLock.js';
@@ -24,15 +25,15 @@ import { select, setOptions } from '../ui/formFields.js';
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /**
- * Mount the picker and resolve this tab's starting binding.
+ * Mount the picker, and resolve this tab's starting binding.
  *
- * The three callbacks are what keeps this module out of the party panels: `bind`
- * runs when a pick takes effect and should select that character, `spectate`
- * runs when the tab ends up with nothing (a cleared pick, a refused claim, or a
- * character taken over by another tab) and should re-render the panels as
- * read-only, and `toast` reports the two cross-tab outcomes a GM cannot see
- * coming. They are called back rather than resolved here because the panels they
- * refresh are mounted after this.
+ * The three callbacks keep this module out of the party panels. `bind` runs
+ * when a pick takes effect, and must select that character. `spectate`
+ * runs when the tab ends up with nothing (a cleared pick, a refused claim,
+ * or a character taken over by another tab), and must redraw the panels
+ * as read-only. `toast` reports the two cross-tab outcomes that a GM cannot
+ * predict. These callbacks run later, not here, because the panels they
+ * refresh mount after this function runs.
  * @param {{
  *   container: HTMLElement,
  *   getCharacters: () => Character[],
@@ -47,15 +48,15 @@ import { select, setOptions } from '../ui/formFields.js';
  * }}
  */
 export function createCharacterClaim({ container, getCharacters, bind, spectate, toast }) {
-  /** This tab's bound character (Player view only): the one character this tab
-   * may play. Bound via ?character=<id> or the picker below. */
+  /** This tab's bound character, Player view only: the one character this
+   * tab can play. Bound through ?character=<id> or the picker below. */
   /** @type {string | null} */
   let boundId = null;
 
   const name = (/** @type {string} */ id) => getCharacters().find((c) => c.id === id)?.name ?? id;
 
-  // onYield covers the takeover case, where this tab was frozen past the lock's
-  // TTL and another tab picked its character up.
+  // onYield covers the takeover case: this tab was frozen past the lock's
+  // TTL, and another tab picked up its character.
   const lock = createHeartbeatLock({
     onYield: () => {
       const lost = name(boundId ?? '');
@@ -67,8 +68,8 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
   });
 
   /**
-   * Bind this tab to a character (or null for spectator), enforcing the
-   * cross-tab claim. Returns the binding that actually took effect.
+   * Bind this tab to a character, or to null for spectator. This function
+   * enforces the cross-tab claim, and returns the binding that took effect.
    * @param {string | null} id
    * @returns {string | null}
    */
@@ -77,8 +78,8 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
     if (id === null) {
       lock.release();
     } else if (!lock.claim(characterLockKey(id))) {
-      // The claim released the previous character's lock before it failed, so
-      // this tab now holds nothing and falls back to spectator.
+      // The claim released the previous character's lock before it failed.
+      // This tab now holds nothing, and falls back to spectator.
       toast(`Another tab is already playing ${name(id)}; this tab stays a spectator.`);
       id = null;
     }
@@ -96,9 +97,9 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
     ),
   );
 
-  // The picker, Player view only (hidden for the GM via CSS): binds this tab to
-  // one character, or to none for a spectator tab. The URL form (?character=<id>)
-  // survives reloads; the picker is per-tab session state.
+  // The picker, Player view only (CSS hides it for the GM): binds this tab
+  // to one character, or to none for a spectator tab. The URL form
+  // (?character=<id>) survives reloads. The picker is per-tab session state.
   const picker = select([], '', { ariaLabel: 'Character this tab plays as' });
   container.appendChild(
     el(
@@ -116,7 +117,7 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
   });
 
   function updatePicker() {
-    // A binding whose character left the roster silently resolves to spectator.
+    // A binding whose character left the roster resolves to spectator, with no message.
     if (boundId && !getCharacters().some((c) => c.id === boundId)) setBinding(null);
     setOptions(
       picker,
