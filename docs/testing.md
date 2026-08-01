@@ -75,7 +75,7 @@ window.dispatchEvent(
 
 Two things make this check report a false result. Focusing a control that is hidden, for example one on an unselected tab, does nothing at all, so compare `document.activeElement` against the control before you trigger the rebuild. Reading the old element afterwards also proves nothing, because the rebuilt control is a different element with the same signature. Compare the accessible names instead.
 
-The `rehydrate` scenario of `bench/app-bench.js` runs the same check over fifty adoptions and reports `focusKept`.
+The `rehydrate-focus` scenario of `bench/app-bench.js` runs the same check over ten adoptions and reports `focusKept`.
 
 ## Browser-only APIs (localStorage, Blob, FileReader)
 

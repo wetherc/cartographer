@@ -155,6 +155,42 @@ test('rehydrate refreshes the map and every campaign-backed panel', () => {
   }
 });
 
+// A follower tab adopts an autosave every ten idle seconds, and most of those
+// carry no edit at all. The entities the save did not change must come back as
+// the objects the panels already hold, or every panel rebuilds every row.
+test('rehydrate keeps the live entities that the adopted save did not change', () => {
+  const { app } = fakeApp();
+  app.state.encounters = [
+    { id: 'e1', name: 'Goblin Scout', hp: { current: 7, max: 7 } },
+    { id: 'e2', name: 'Orc Brute', hp: { current: 15, max: 15 } },
+  ];
+  const before = app.state.encounters;
+  const next = campaignNamed('After');
+  next.encounters = JSON.parse(JSON.stringify(before));
+
+  rehydrateCampaign(app, next);
+
+  assert.equal(app.state.encounters, before);
+});
+
+test('rehydrate replaces only the entity that changed', () => {
+  const { app } = fakeApp();
+  app.state.encounters = [
+    { id: 'e1', name: 'Goblin Scout', hp: { current: 7, max: 7 } },
+    { id: 'e2', name: 'Orc Brute', hp: { current: 15, max: 15 } },
+  ];
+  const before = app.state.encounters;
+  const next = campaignNamed('After');
+  next.encounters = JSON.parse(JSON.stringify(before));
+  next.encounters[1].hp.current = 9;
+
+  rehydrateCampaign(app, next);
+
+  assert.notEqual(app.state.encounters, before);
+  assert.equal(app.state.encounters[0], before[0]);
+  assert.equal(app.state.encounters[1].hp.current, 9);
+});
+
 test('rehydrate throws rather than half-applying an unusable party position', () => {
   const { app } = fakeApp();
   const next = campaignNamed('After');

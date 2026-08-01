@@ -186,6 +186,18 @@ What it adopts from the leader is narrower than it looks:
 If you add a campaign field, it must join `SYNCED_STATE_KEYS`. A test holds
 that list against the `Campaign` shape. If you forget, the test run fails.
 
+Each adopted field passes through `reconcile` from
+`src/storage/Reconcile.js` first. A parse builds a fresh object for every
+entity, including the ones no edit touched, and autosave writes every ten
+idle seconds whether or not anything moved. `reconcile` returns the live
+object wherever the two sides are structurally equal, so an unchanged
+collection comes back as the identical array and a changed entity as a new
+object whose untouched sub-objects are still the live ones. A panel that
+compares its rows by identity, which is what `ui/listPanel.js` does, can then
+tell a real edit from a repeated autosave. It pairs a collection by element
+`id`, so an insertion at the front does not make every later entity look
+changed.
+
 ### encounterWiring.js (plus encounterForm.js, weaponAttack.js, spellCast.js, combatants.js)
 
 This module owns the Encounters panel, the sidebar's Initiative card, the

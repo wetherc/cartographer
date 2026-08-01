@@ -14,7 +14,15 @@
  * keeps the load path, migrations, asset restore, tile decode, and entity
  * defaults, stated once in `Campaigns.loadInitialCampaign` and shared with a
  * normal page load.
+ *
+ * The loaded campaign holds a fresh object for every entity, including the
+ * ones no edit touched, so each adopted field goes through
+ * `Reconcile.reconcile` before the assignment. What is unchanged stays the
+ * object the views already hold, and a panel that compares its rows by
+ * identity can then tell a real edit from a repeated autosave.
  */
+
+import { reconcile } from '../storage/Reconcile.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../campaign/Campaigns.js').Campaign} Campaign */
@@ -58,7 +66,7 @@ export function rehydrateCampaign(app, campaign) {
 
   const state = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (app.state));
   const loaded = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (campaign));
-  for (const key of SYNCED_STATE_KEYS) state[key] = loaded[key];
+  for (const key of SYNCED_STATE_KEYS) state[key] = reconcile(state[key], loaded[key]);
 
   // Revealing around the adopted tile does nothing here. The fog it can
   // reveal is already in the state that was just loaded. `revealAround`
