@@ -5,7 +5,7 @@ import { overlayList } from './TileGrid.js';
 import { tileAtXY } from './TileIndex.js';
 import { MapMarkers } from './MapMarkers.js';
 import { MapDecorations } from './MapDecorations.js';
-import { TileRaster, imageSrcForRef } from './TileRaster.js';
+import { TileRaster, imageSrcForRef, rasterSize } from './TileRaster.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 
 // Re-exported because callers outside the map, such as the handout panel and
@@ -314,6 +314,12 @@ export class MapRenderer {
     // A grid finer than about three pixels per cell reads as a flat wash over
     // the terrain rather than as lines.
     if (size < 3) return;
+    // A tile drawn straight from the vector art still carries the natural
+    // boundary: its outermost pixel row is partly transparent. That is the
+    // case when rasterizing is off, as in the PNG export, and past the
+    // raster size ceiling, as in a deep zoom. Ruling the explicit grid over
+    // the natural one would darken every boundary.
+    if (!this._raster.enabled || !rasterSize(size)) return;
     const minX = Math.max(0, Math.floor(-view.offsetX / size));
     const minY = Math.max(0, Math.floor(-view.offsetY / size));
     const maxX = Math.min(node.width, Math.ceil((view.canvasWidth - view.offsetX) / size));

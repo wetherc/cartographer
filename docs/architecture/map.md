@@ -202,7 +202,10 @@ the outermost pixel row of each tile partly transparent, so the dark map
 backdrop showed through at every boundary, and the grid was a side effect of
 that. A cached raster fills those pixels, so the grid is explicit now. The pass
 is clipped to the revealed cells, because a flat fog rectangle never showed the
-backdrop through and so never carried a grid.
+backdrop through and so never carried a grid. Where tiles still draw from the
+vector art, which is the PNG export and any zoom past the raster size ceiling,
+the natural boundary is still there, so the pass skips itself rather than
+darken every boundary with a second line.
 
 A pointerup counts as a tile click only if the total drag distance stays
 below a small threshold. Without that check, a pointer that ends a pan
