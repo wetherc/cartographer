@@ -6,6 +6,8 @@ import { tileAtXY } from './TileIndex.js';
 import { MapMarkers } from './MapMarkers.js';
 import { MapDecorations } from './MapDecorations.js';
 import { TileRaster, imageSrcForRef, rasterSize } from './TileRaster.js';
+import { INK } from './CanvasInk.js';
+import { drawPlatedLabel } from './CanvasText.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 
 // Re-exported because callers outside the map, such as the handout panel and
@@ -220,7 +222,7 @@ export class MapRenderer {
     if (img) {
       ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
     } else {
-      ctx.fillStyle = '#333';
+      ctx.fillStyle = INK.missingArt;
       ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
     }
   }
@@ -373,7 +375,7 @@ export class MapRenderer {
       // This fill is distinctly lighter than the map backdrop and the
       // empty-canvas background, so an unexplored but real tile reads as
       // fog, not void.
-      ctx.fillStyle = '#48412f';
+      ctx.fillStyle = INK.fog;
       ctx.fillRect(sx, sy, size, size);
       return;
     }
@@ -386,7 +388,7 @@ export class MapRenderer {
       if (img) {
         ctx.drawImage(img, sx, sy, size, size);
       } else {
-        ctx.fillStyle = '#333';
+        ctx.fillStyle = INK.missingArt;
         ctx.fillRect(sx, sy, size, size);
       }
     }
@@ -436,7 +438,7 @@ export class MapRenderer {
     const { ctx } = this;
     if (!view.node) return;
     const size = this.tileSize * view.scale;
-    ctx.fillStyle = '#241f16';
+    ctx.fillStyle = INK.mapBackdrop;
     ctx.fillRect(view.offsetX, view.offsetY, view.node.width * size, view.node.height * size);
   }
 
@@ -447,7 +449,7 @@ export class MapRenderer {
     if (!view.node) return;
     const size = this.tileSize * view.scale;
     ctx.save();
-    ctx.strokeStyle = 'rgba(230, 215, 180, 0.55)';
+    ctx.strokeStyle = INK.mapBorder;
     ctx.lineWidth = 2;
     ctx.strokeRect(view.offsetX, view.offsetY, view.node.width * size, view.node.height * size);
     ctx.restore();
@@ -485,9 +487,9 @@ export class MapRenderer {
         }
         ctx.clip(clip);
       }
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.fillStyle = INK.regionTint;
       ctx.fillRect(x, y, w, h);
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+      ctx.strokeStyle = INK.regionBorder;
       ctx.lineWidth = 2;
       ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
       ctx.restore();
@@ -498,17 +500,19 @@ export class MapRenderer {
       // truncates a long name on a small region.
       const name = this.getNodeName?.(group.childNodeId);
       if (name) {
-        ctx.save();
-        ctx.font = '12px sans-serif';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'top';
-        const label = ` ${name} `;
-        const metrics = ctx.measureText(label);
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(x, y, metrics.width, 16);
-        ctx.fillStyle = '#fff';
-        ctx.fillText(label, x, y + 2);
-        ctx.restore();
+        // The label reads as body text, not as chrome, and its plate starts at
+        // the group's top-left corner, so the text is inset by the padding.
+        drawPlatedLabel(ctx, name, x + 4, y + 2, {
+          fontSize: 12,
+          weight: '400',
+          align: 'left',
+          baseline: 'top',
+          plate: 'rect',
+          plateColor: INK.regionLabelPlate,
+          color: INK.regionLabelText,
+          padX: 4,
+          padY: 2,
+        });
       }
     }
   }

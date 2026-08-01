@@ -1,11 +1,18 @@
 import { parseCoords, tileRect } from './MapGeometry.js';
 import { EXIT_SIDES, edgeExitBand, exitBandGeometry, exitLabel } from './MapExits.js';
-import { clamp } from '../util/num.js';
+import { INK } from './CanvasInk.js';
+import { drawPlatedLabel, labelSize } from './CanvasText.js';
 
 /** @typedef {import('./MapRenderer.js').MapRenderer} MapRenderer */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
 /** @typedef {import('../types/map.js').MapExit} MapExit */
 /** @typedef {import('./MapExits.js').ExitBand} ExitBand */
+
+/**
+ * Coordinate digits run large: they label a whole row or column, and they draw
+ * on empty canvas or a plate rather than over tile art, so they take a high cap.
+ */
+const COORD_SCALE = { factor: 0.3, min: 14, max: 42 };
 
 /**
  * This class draws the decoration layer of the map render. It covers
@@ -35,15 +42,7 @@ export class MapDecorations {
     if (!view.node) return;
     const size = this.host.tileSize * view.scale;
     if (size < 20) return; // Text this dense is not legible.
-    const { ctx } = this.host;
-    ctx.save();
-    // Font size uses buffer pixels, which are devicePixelRatio times denser
-    // than CSS pixels. A small cap draws illegibly on a HiDPI canvas.
-    // Scale the font with the tile size and cap it only at a generous limit.
-    const fontSize = Math.round(clamp(size * 0.3, 14, 42));
-    ctx.font = `600 ${fontSize}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
+    const fontSize = labelSize(size, COORD_SCALE);
     const pad = fontSize * 0.9;
     const colPinned = view.offsetY - pad < pad;
     const colY = colPinned ? pad : view.offsetY - pad;
@@ -59,7 +58,6 @@ export class MapDecorations {
       if (cy < 0 || cy > view.canvasHeight) continue;
       this._drawCoordLabel(String(y), rowX, cy, fontSize, rowPinned);
     }
-    ctx.restore();
   }
 
   /**
@@ -73,19 +71,12 @@ export class MapDecorations {
    * @param {boolean} pinned
    */
   _drawCoordLabel(text, x, y, fontSize, pinned) {
-    const { ctx } = this.host;
-    if (pinned) {
-      ctx.globalAlpha = 0.65;
-      const w = ctx.measureText(text).width + fontSize * 0.5;
-      const h = fontSize * 1.2;
-      ctx.fillStyle = 'rgba(20, 16, 10, 0.7)';
-      ctx.beginPath();
-      ctx.roundRect(x - w / 2, y - h / 2, w, h, h / 4);
-      ctx.fill();
-    }
-    ctx.fillStyle = 'rgba(230, 215, 180, 0.8)';
-    ctx.fillText(text, x, y);
-    if (pinned) ctx.globalAlpha = 1;
+    drawPlatedLabel(this.host.ctx, text, x, y, {
+      fontSize,
+      color: INK.coordText,
+      plate: pinned ? 'pill' : null,
+      alpha: pinned ? 0.65 : 1,
+    });
   }
 
   /**
@@ -134,9 +125,9 @@ export class MapDecorations {
     ctx.save();
     ctx.beginPath();
     ctx.roundRect(x, y, w, h, Math.min(h / 2, 14));
-    ctx.fillStyle = armed ? 'rgba(46, 36, 16, 0.94)' : 'rgba(20, 16, 10, 0.86)';
+    ctx.fillStyle = armed ? INK.bandFillArmed : INK.bandFill;
     ctx.fill();
-    ctx.strokeStyle = armed ? '#ffd24a' : 'rgba(230, 215, 180, 0.85)';
+    ctx.strokeStyle = armed ? INK.goldLit : INK.bandBorder;
     ctx.lineWidth = armed ? 3 : 2;
     ctx.stroke();
     ctx.clip();
@@ -148,11 +139,8 @@ export class MapDecorations {
     const textX = dx > 0 ? x + (w - lane) / 2 : x + lane + (w - lane) / 2;
     this._drawChevron(chevronX, y + h / 2, fontSize * 0.42, dx, dy);
 
-    ctx.font = `600 ${fontSize}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#f2e4bd';
-    ctx.fillText(exitLabel(exit), textX, y + h / 2 + 1);
+    // The band's own body is the label's plate, so the label draws bare.
+    drawPlatedLabel(ctx, exitLabel(exit), textX, y + h / 2 + 1, { fontSize });
     ctx.restore();
   }
 
@@ -169,7 +157,7 @@ export class MapDecorations {
     ctx.save();
     ctx.translate(cx, cy);
     ctx.rotate(Math.atan2(dy, dx));
-    ctx.strokeStyle = '#ffd24a';
+    ctx.strokeStyle = INK.goldLit;
     ctx.lineWidth = Math.max(2, r * 0.45);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -193,9 +181,9 @@ export class MapDecorations {
   renderPoiOutline(sx, sy, size) {
     const { ctx } = this.host;
     ctx.save();
-    ctx.strokeStyle = '#ffd24a';
+    ctx.strokeStyle = INK.goldLit;
     ctx.lineWidth = Math.max(2, size * 0.06);
-    ctx.shadowColor = 'rgba(255, 190, 60, 0.9)';
+    ctx.shadowColor = INK.goldGlow;
     ctx.shadowBlur = size * 0.18;
     const inset = ctx.lineWidth / 2 + 1;
     ctx.strokeRect(sx + inset, sy + inset, size - inset * 2, size - inset * 2);
@@ -219,7 +207,7 @@ export class MapDecorations {
       view.scale,
     );
     ctx.save();
-    ctx.strokeStyle = '#5ec8ff';
+    ctx.strokeStyle = INK.cursor;
     ctx.lineWidth = 3;
     ctx.setLineDash([4, 3]);
     ctx.strokeRect(sx + 1.5, sy + 1.5, size - 3, size - 3);
@@ -250,9 +238,9 @@ export class MapDecorations {
     const w = bottomRight.sx + bottomRight.size - topLeft.sx;
     const h = bottomRight.sy + bottomRight.size - topLeft.sy;
     ctx.save();
-    ctx.fillStyle = 'rgba(224, 193, 75, 0.18)';
+    ctx.fillStyle = INK.marqueeFill;
     ctx.fillRect(topLeft.sx, topLeft.sy, w, h);
-    ctx.strokeStyle = '#e0c14b';
+    ctx.strokeStyle = INK.gold;
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 4]);
     ctx.strokeRect(topLeft.sx + 1, topLeft.sy + 1, w - 2, h - 2);
@@ -276,7 +264,7 @@ export class MapDecorations {
       view.scale,
     );
     ctx.save();
-    ctx.strokeStyle = '#e0c14b';
+    ctx.strokeStyle = INK.gold;
     ctx.lineWidth = 3;
     ctx.strokeRect(sx + 1.5, sy + 1.5, size - 3, size - 3);
     ctx.restore();

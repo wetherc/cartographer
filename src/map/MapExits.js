@@ -3,6 +3,7 @@ import { findRegionGroups } from './RegionGroups.js';
 import { getTile } from './TileGrid.js';
 import { kindOf } from './TilePalette.js';
 import { clamp } from '../util/num.js';
+import { labelSize } from './CanvasText.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -22,6 +23,14 @@ export const EXIT_SIDES = [
   { side: 'south', dx: 0, dy: 1 },
   { side: 'west', dx: -1, dy: 0 },
 ];
+
+/**
+ * An exit label rides inside its band, which is sized from the tile too, so the
+ * label stays between the coordinate digits and a character name in weight.
+ * The band's width is computed from this size, so the geometry and the drawing
+ * both take it from here.
+ */
+const EXIT_LABEL_SCALE = { factor: 0.28, min: 12, max: 26 };
 
 /**
  * Ways out of a node, back to the parent node. EntryPoint models the zoom into
@@ -388,7 +397,7 @@ export function exitBandGeometry(node, view, tileSize, exit) {
 export function edgeExitBand(exit, geom) {
   const side = exit.kind === 'edge' ? exit.side : 'north';
   const size = geom.tileSize * geom.scale;
-  const fontSize = Math.round(clamp(size * 0.28, 12, 26));
+  const fontSize = labelSize(size, EXIT_LABEL_SCALE);
   const label = exitLabel(exit);
   // Leave room for the chevron, the gap after it, and the label at the
   // average glyph width of the sans-serif stack.

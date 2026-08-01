@@ -175,6 +175,19 @@ The canvas code splits so that each file owns one concern:
 state and draw. The two input controllers (pointer and keyboard) change the
 view state back through the host reference.
 
+Every drawing layer takes its colors from `INK` in `src/map/CanvasInk.js` and
+its captions from `src/map/CanvasText.js`. Canvas accepts a color string, not a
+CSS custom property, so the map cannot read the stylesheet's tokens, and `INK`
+is the canvas side of that vocabulary: one named entry per role, so a color two
+layers share is written once. `CanvasText` holds the label rule that the
+coordinate digits, character names, exit labels, and region names share:
+`labelSize(size, { factor, min, max })` scales a font from the on-screen tile
+size, and `drawPlatedLabel(ctx, text, x, y, opts)` sets the font and alignment,
+draws the pill or rectangle behind the text, and restores the context. Each
+caller keeps its own scale, because the bounds differ by what the label sits
+over: coordinate digits run large on empty canvas, and a character name stays
+small over tile art.
+
 The core of the draw pass is simple: for each tile, draw a fog rectangle if
 the tile is not revealed. Otherwise, draw the image at `tile.imageRef`. The
 group, span, and marker passes described elsewhere on this page add to that

@@ -1,6 +1,7 @@
 import { parseCoords } from './MapGeometry.js';
 import { tileAtXY } from './TileIndex.js';
-import { clamp } from '../util/num.js';
+import { INK } from './CanvasInk.js';
+import { drawPlatedLabel, labelSize } from './CanvasText.js';
 
 /** @typedef {import('./MapRenderer.js').MapRenderer} MapRenderer */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
@@ -12,21 +13,27 @@ import { clamp } from '../util/num.js';
  * @typedef {(ctx: CanvasRenderingContext2D, sx: number, sy: number, size: number) => void} MarkerShape
  */
 
+/**
+ * Character names sit above their tile, over map art, and several can stack on
+ * one tile, so they stay smaller than the coordinate digits at every zoom.
+ */
+const NAME_SCALE = { factor: 0.24, min: 11, max: 26 };
+
 /** A red diamond in the tile's upper-right corner. @type {MarkerShape} */
 const encounterDiamond = (ctx, sx, sy, size) => {
   const r = size * 0.16;
   ctx.translate(sx + size * 0.74, sy + size * 0.26);
   ctx.rotate(Math.PI / 4);
-  ctx.fillStyle = '#a5352b';
-  ctx.strokeStyle = '#2a0f0c';
+  ctx.fillStyle = INK.encounterFill;
+  ctx.strokeStyle = INK.encounterRim;
   ctx.beginPath();
   ctx.rect(-r, -r, r * 2, r * 2);
 };
 
 /** A blue circle in the tile's upper-left corner. @type {MarkerShape} */
 const npcCircle = (ctx, sx, sy, size) => {
-  ctx.fillStyle = '#3563a5';
-  ctx.strokeStyle = '#101f36';
+  ctx.fillStyle = INK.npcFill;
+  ctx.strokeStyle = INK.npcRim;
   ctx.beginPath();
   ctx.arc(sx + size * 0.26, sy + size * 0.26, size * 0.15, 0, Math.PI * 2);
 };
@@ -211,8 +218,8 @@ export class MapMarkers {
    */
   _drawExitBadge(ctx, cx, cy, r, down = false) {
     ctx.save();
-    ctx.fillStyle = '#e6d7b4';
-    ctx.strokeStyle = '#2a2114';
+    ctx.fillStyle = INK.badgeFill;
+    ctx.strokeStyle = INK.badgeRim;
     ctx.lineWidth = Math.max(1.5, r * 0.2);
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
@@ -246,8 +253,8 @@ export class MapMarkers {
     const sy = coords.y * size + view.offsetY;
 
     ctx.save();
-    ctx.fillStyle = '#e0c14b';
-    ctx.strokeStyle = '#3a2f0a';
+    ctx.fillStyle = INK.gold;
+    ctx.strokeStyle = INK.goldRim;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(sx + size / 2, sy + size / 2, size * 0.22, 0, Math.PI * 2);
@@ -289,8 +296,8 @@ export class MapMarkers {
       const r = Math.min(size * 0.14, (size * 0.8) / (names.length * 2));
       names.forEach((_, i) => {
         const cx = sx + (size * (i + 1)) / (names.length + 1);
-        ctx.fillStyle = '#e0c14b';
-        ctx.strokeStyle = '#3a2f0a';
+        ctx.fillStyle = INK.gold;
+        ctx.strokeStyle = INK.goldRim;
         ctx.lineWidth = Math.max(1.5, size * 0.03);
         ctx.beginPath();
         ctx.arc(cx, sy + size / 2, r, 0, Math.PI * 2);
@@ -301,17 +308,19 @@ export class MapMarkers {
       // Names stack above the tile, with the nearest name closest to it. This
       // is skipped when tiles are too small for the label to be legible.
       if (size >= 24) {
-        const fontSize = Math.round(clamp(size * 0.24, 11, 26));
-        ctx.font = `600 ${fontSize}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
+        const fontSize = labelSize(size, NAME_SCALE);
         names.forEach((name, i) => {
           const ty = sy - 3 - (names.length - 1 - i) * (fontSize + 2);
-          const width = ctx.measureText(name).width;
-          ctx.fillStyle = 'rgba(20, 16, 8, 0.72)';
-          ctx.fillRect(sx + size / 2 - width / 2 - 3, ty - fontSize - 1, width + 6, fontSize + 4);
-          ctx.fillStyle = '#f2e4bd';
-          ctx.fillText(name, sx + size / 2, ty);
+          // A square plate, not a pill: stacked names read as one block, and
+          // rounded ends between them would not.
+          drawPlatedLabel(ctx, name, sx + size / 2, ty, {
+            fontSize,
+            baseline: 'bottom',
+            plate: 'rect',
+            // Wider than the default so the plate covers a descender, as in a
+            // name like "Gwyneth".
+            padY: fontSize * 0.2,
+          });
         });
       }
       ctx.restore();
