@@ -7,9 +7,13 @@
  * form. buildInlineForm assembles those primitives into the wrapper, name
  * field, and action row that all four forms share, leaving each form
  * only its own fields to describe.
+ *
+ * The controls themselves are not rail-only. `Modal.js` builds a dialog's
+ * plain fields from the same functions, so the same field behaves alike in a
+ * dialog and in the rail.
  */
 
-import { clampInt } from '../util/num.js';
+import { clamp, clampInt } from '../util/num.js';
 import { textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
 
@@ -66,17 +70,31 @@ export function fieldRow(...children) {
 }
 
 /**
- * A labeled checkbox returning its wrapper and the input.
+ * A bare on/off box, with no caption of its own. A modal field already has a
+ * caption from its own wrapper, so it mounts this box rather than the labeled
+ * form below.
+ * @param {boolean} checked
+ * @returns {HTMLInputElement}
+ */
+export function checkboxInput(checked) {
+  const input = el('input');
+  input.type = 'checkbox';
+  input.checked = checked;
+  return input;
+}
+
+/**
+ * A labeled checkbox returning its wrapper and the input. The box sits before
+ * its caption on one line, so a checkbox in a row of captioned fields reads as
+ * the same weight of control.
  * @param {string} caption
  * @param {boolean} checked
  * @param {FieldOpts} [opts]
  * @returns {{ label: HTMLLabelElement, input: HTMLInputElement }}
  */
 export function checkbox(caption, checked, opts = {}) {
-  const input = el('input');
-  input.type = 'checkbox';
-  input.checked = checked;
-  const label = el('label', 'spell-form__check u-muted', input, el('span', '', caption));
+  const input = checkboxInput(checked);
+  const label = el('label', 'field-check u-muted', input, el('span', '', caption));
   return { label: withOpts(label, opts), input };
 }
 
@@ -100,7 +118,14 @@ export function textField(value, placeholder = '', opts = {}) {
  * A number input, pre-filled and classed as a form field. An empty-string
  * value leaves the input blank, for an optional number whose placeholder
  * stands in for "unset".
- * @param {number | ''} value
+ *
+ * `min` and `max` constrain the spinner, and the field also corrects a typed
+ * out-of-range number to the nearer bound. The correction waits for the edit
+ * to commit, on blur or Enter, rather than firing per keystroke, so a "1" on
+ * the way to "12" stays as typed. The bounds are read from the element, so a
+ * caller that restates them later, for example a dialog whose spell level
+ * follows the caster's class, still gets the new range enforced.
+ * @param {number | string} value
  * @param {FieldOpts & { min?: number, max?: number, placeholder?: string }} [opts]
  * @returns {HTMLInputElement}
  */
@@ -111,6 +136,20 @@ export function numberField(value, opts = {}) {
   if (opts.placeholder) input.placeholder = opts.placeholder;
   if (opts.min !== undefined) input.min = String(opts.min);
   if (opts.max !== undefined) input.max = String(opts.max);
+  input.addEventListener('change', () => {
+    const typed = Number(input.value);
+    if (input.value === '' || Number.isNaN(typed)) return;
+    // Not clampInt: a number field can hold a decimal. This enforces the
+    // field's own bounds and nothing else.
+    const min = input.min === '' ? -Infinity : Number(input.min);
+    const max = input.max === '' ? Infinity : Number(input.max);
+    const clamped = clamp(typed, min, max);
+    if (clamped === typed) return;
+    input.value = String(clamped);
+    // The correction is an edit, so anything watching the field for edits
+    // sees the value it landed on.
+    input.dispatchEvent(new Event('input'));
+  });
   return withOpts(input, opts);
 }
 

@@ -492,6 +492,23 @@ select.field option::checkmark {
   cursor: not-allowed;
 }
 
+/* A captioned checkbox from formFields: the box and its caption on one line,
+   sized and spaced to match the captioned fields it shares a row with, so it
+   reads as the same weight of control. */
+.field-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.field-check input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);

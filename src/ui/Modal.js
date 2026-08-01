@@ -13,10 +13,9 @@
 
 import { textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
-import { select } from './formFields.js';
+import { checkboxInput, numberField, select, textField } from './formFields.js';
 import { readImageFile } from './imageField.js';
 import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from './ModalFields.js';
-import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
 /** @typedef {import('../types/modal.js').ModalFormHandle} ModalFormHandle */
@@ -210,9 +209,7 @@ export function promptModal(title, fields, options = {}) {
         } else if (field.type === 'checkbox') {
           // The box sits after its caption, not under it, so the label reads
           // as one line. The wrapper class carries that layout.
-          const box = el('input');
-          box.type = 'checkbox';
-          box.checked = !!field.value;
+          const box = checkboxInput(!!field.value);
           label.classList.add('modal__field--check');
           input = box;
           getters[field.name] = () => (box.checked ? '1' : '');
@@ -224,7 +221,7 @@ export function promptModal(title, fields, options = {}) {
           // under a size cap before it becomes the field's value. The input
           // stays untouched, so the field keeps its initial value and an
           // existing image survives an edit.
-          input = el('input');
+          input = el('input', 'field');
           input.type = 'file';
           input.accept = 'image/*';
           let dataUrl = field.value !== undefined ? String(field.value) : '';
@@ -290,40 +287,16 @@ export function promptModal(title, fields, options = {}) {
           input = asInput(button);
           getters[field.name] = () => '';
         } else {
-          const plain = el('input');
-          plain.type = field.type ?? 'text';
-          if (field.value !== undefined) plain.value = String(field.value);
-          if (field.min !== undefined) plain.min = String(field.min);
-          if (field.max !== undefined && field.type === 'number') plain.max = String(field.max);
-          // min/max constrain only the spinner. A typed out-of-range number is
-          // clamped when the edit commits (blur or Enter), not per keystroke.
-          // This lets a "1" on the way to "12" stay as typed.
-          if (field.type === 'number') {
-            plain.addEventListener('change', () => {
-              const value = Number(plain.value);
-              if (plain.value === '' || Number.isNaN(value)) return;
-              const min = plain.min === '' ? -Infinity : Number(plain.min);
-              const max = plain.max === '' ? Infinity : Number(plain.max);
-              // Not clampInt: a number field can hold a decimal. This only
-              // enforces the field's own bounds.
-              const clamped = clamp(value, min, max);
-              if (clamped !== value) {
-                plain.value = String(clamped);
-                plain.dispatchEvent(new Event('input'));
-              }
-            });
-          }
+          // A plain text or number field comes from the same builders the
+          // inline rail forms use, so the two paths agree on the field class
+          // and on the number field's clamp when an edit commits.
+          const plain =
+            field.type === 'number'
+              ? numberField(field.value ?? '', { min: field.min, max: field.max })
+              : textField(field.value === undefined ? '' : String(field.value));
           input = plain;
           getters[field.name] = () => plain.value;
         }
-        // The composite fields and buttons set their own classes. Every other
-        // field gets the shared input treatment.
-        if (
-          !['multiselect', 'tags', 'pillgrid', 'allocation', 'button', 'checkbox'].includes(
-            field.type ?? '',
-          )
-        )
-          input.className = 'field';
         if (field.disabled) input.disabled = true;
         label.appendChild(input);
         if (extras[field.name]) label.appendChild(extras[field.name]);

@@ -14,7 +14,8 @@
 }
 
 /* Inline checkbox groups (components, flags): wrap onto multiple rows at narrow
-   widths, each option a compact tappable label. */
+   widths, each option a compact tappable label. The options themselves are
+   .field-check labels (base.css). */
 .spell-form__checks {
   display: flex;
   flex-wrap: wrap;
@@ -27,22 +28,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
   gap: var(--space-1) var(--space-2);
-}
-
-/* Match the captioned field labels' size and muted colour so a checkbox sitting
-   in the same row as a labeled field reads as the same weight of control. */
-.spell-form__check {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.spell-form__check input {
-  width: 1rem;
-  height: 1rem;
-  margin: 0;
 }
 
 /* The caster spell picker on the encounter/NPC/bestiary forms: a scrollable

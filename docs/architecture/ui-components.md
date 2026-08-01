@@ -474,8 +474,9 @@ they build from `src/ui/formFields.js` instead of `Modal.js`:
 labeled(caption, control)          -> HTMLLabelElement   // wraps the control
 fieldRow(...children)              -> HTMLDivElement     // one horizontal group
 checkbox(caption, checked)         -> { label, input }
+checkboxInput(checked)             -> HTMLInputElement   // the bare box
 textField(value, placeholder?)     -> HTMLInputElement
-numberField(value, { min }?)       -> HTMLInputElement
+numberField(value, { min, max }?)  -> HTMLInputElement
 textareaField(value, opts?)        -> HTMLTextAreaElement
 select(options, value)             -> HTMLSelectElement
 setOptions(select, options, value)                // refill an existing picker
@@ -488,6 +489,12 @@ buildInlineForm({ nameInput, rows, assemble, submitLabel, onSubmit,
 pairing to keep in sync and nothing has to generate a unique id. `select`
 accepts bare strings (value is the label) or `{ value, label }` pairs, so the
 same helper serves enum pickers and labelled choices.
+
+These controls are not rail-only. `promptModal` builds a dialog's plain text,
+number, select, and checkbox fields from the same functions, so a field
+behaves the same in a dialog as in the rail. `numberField` owns the
+clamp-on-`change` for both, reading `min`/`max` off the element so a dialog
+that restates a field's range through `setRange` still gets it enforced.
 
 `statInputRows(keys, stats)` is the shared ability-score block: one clamped
 number field per key, two per row, plus a `read()` that returns the record. Its
