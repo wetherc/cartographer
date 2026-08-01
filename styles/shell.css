@@ -217,6 +217,12 @@
   grid-column: 1 / -1;
 }
 
+/* A field that begins a row: the pair it belongs to (weapon and armor) stays
+   together when an odd number of fields comes before it. */
+.modal--wide .modal__field--break {
+  grid-column-start: 1;
+}
+
 /* Situational fields tucked behind a disclosure (an attack's bonus dice): the
    box opens closed, so a plain Enter submits their defaults unseen. */
 .modal__advanced {

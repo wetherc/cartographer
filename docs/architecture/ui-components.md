@@ -34,7 +34,7 @@ surface. Conventions covers the policy.
   src/ui/buttons.js .......... shared builders: buttons, icons, dialogs,
   src/ui/icons.js             form fields, tabs, disclosures, toasts
   src/ui/Modal.js
-  src/ui/formFields.js
+  src/ui/formFields.js, SpecForm.js
   src/ui/Tabs.js, Disclosure.js, Toast.js, ContextMenu.js, dom.js
           |
           v
@@ -426,6 +426,7 @@ A field is a `ModalField` record (`Modal.js`), and `type` picks the widget:
 | --- | --- | --- |
 | `'text'` *(default)* | `input.field` | the string |
 | `'number'` | `input.field type=number`, honoring `min`/`max` | the string. Out-of-range values clamp on `change`, not per keystroke |
+| `'textarea'` | `textarea.field`, `rows` lines tall | the string |
 | `'select'` | `select.field` over `options: { value, label, disabled? }[]` | the selected value |
 | `'file'` | image picker | a `data:` URL produced by `readImageFile` |
 | `'multiselect'` | scrollable checkbox group, capped by `max` | checked values, comma-joined |
@@ -434,11 +435,13 @@ A field is a `ModalField` record (`Modal.js`), and `type` picks the widget:
 | `'allocation'` | distribution grid: a number input per row that must sum to `total` | `row:count` pairs, comma-joined. A row given 0 is left out |
 | `'button'` | an in-form action button | `''` (it acts through `onChange`) |
 
-Every field also takes `label`, `value`, `full`, `hidden`, and `disabled`. With
-`options.wide` the form lays fields two per row and `full: true` spans both
-columns. Actions are Cancel then submit (`options.submitLabel`, default
-`'Create'`), which is the dismiss-left/primary-right ordering used on every
-form surface in the app.
+Every field also takes `label`, `value`, `full`, `newRow`, `hidden`, and
+`disabled`. With `options.wide` the form lays fields two per row, `full: true`
+spans both columns, and `newRow: true` begins a row, which is what keeps a pair
+that belongs together (weapon and armor) on one row when an odd number of
+fields comes before it. Actions are Cancel then submit
+(`options.submitLabel`, default `'Create'`), which is the
+dismiss-left/primary-right ordering used on every form surface in the app.
 
 A dialog rebuilt by hand tends to lose two of the wrapper's behaviors:
 
@@ -480,7 +483,6 @@ numberField(value, { min, max }?)  -> HTMLInputElement
 textareaField(value, opts?)        -> HTMLTextAreaElement
 select(options, value)             -> HTMLSelectElement
 setOptions(select, options, value)                // refill an existing picker
-statInputRows(keys, stats)         -> { statInputs, rows, read }
 buildInlineForm({ nameInput, rows, assemble, submitLabel, onSubmit,
                   onCancel?, afterSubmit?, className? }) -> HTMLDivElement
 ```
@@ -495,11 +497,6 @@ number, select, and checkbox fields from the same functions, so a field
 behaves the same in a dialog as in the rail. `numberField` owns the
 clamp-on-`change` for both, reading `min`/`max` off the element so a dialog
 that restates a field's range through `setRange` still gets it enforced.
-
-`statInputRows(keys, stats)` is the shared ability-score block: one clamped
-number field per key, two per row, plus a `read()` that returns the record. Its
-modal counterpart is `src/app/statFields.js`, so the stat block has one
-definition for inline forms and one for dialogs rather than one per form.
 
 `buildInlineForm` is the envelope that all four forms share. It wraps the
 form, puts the name field first with the wide name-input styling, appends
@@ -516,6 +513,30 @@ function, rather than build the finished value itself. The item and spell
 forms do this through `entities/ItemDraft.js` and `entities/SpellDraft.js`.
 Their tests live there too. See
 [Entities](entities.md#the-ui-layer-over-entities).
+
+### One spec, two surfaces
+
+The bestiary and NPC template forms build no controls of their own. An entity
+the GM authors both in a dialog and in the rail describes its fields once as
+the `ModalField[]` that `promptModal` takes, and `src/ui/SpecForm.js` renders
+that same list inline:
+
+```js
+buildSpecForm({ fields, assemble, submitLabel, onSubmit,
+                onCancel?, onChange?, className? }) -> HTMLDivElement
+```
+
+The first field is the entity's name and becomes the wide name input. The rest
+lay out two per row, honoring `full` and `newRow` as the wide dialog does.
+`assemble` receives the same field-name-to-string record that `promptModal`
+resolves to, so both surfaces read a form back through the same functions, and
+`onChange` receives the same `ModalFormHandle`, so a rule such as "re-stamp the
+default stats when the tier changes" runs on both. The specs themselves are in
+`app/encounterFields.js` and `app/npcFields.js`; see
+[App wiring](app-wiring.md). The controls come from
+`formFields.js` and `ModalFields.js`, the builders the dialog uses. The file,
+tags, pill-grid, allocation, and button kinds have no inline renderer, and a
+spec that reaches for one throws rather than dropping the field.
 
 ## Tabs and disclosures
 

@@ -13,7 +13,7 @@
 
 import { textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
-import { checkboxInput, numberField, select, textField } from './formFields.js';
+import { checkboxInput, numberField, select, textareaField, textField } from './formFields.js';
 import { readImageFile } from './imageField.js';
 import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from './ModalFields.js';
 
@@ -191,6 +191,7 @@ export function promptModal(title, fields, options = {}) {
           classNames([
             'modal__field u-col u-g1 u-muted',
             field.full && 'modal__field--full',
+            field.newRow && 'modal__field--break',
             field.hidden && 'modal__field--hidden',
           ]),
           labelText,
@@ -286,14 +287,27 @@ export function promptModal(title, fields, options = {}) {
           labelText.nodeValue = '';
           input = asInput(button);
           getters[field.name] = () => '';
+        } else if (field.type === 'textarea') {
+          // A prose field gets the same box the rail forms give it, rather
+          // than a one-line input that hides most of what the GM typed.
+          const area = textareaField(field.value === undefined ? '' : String(field.value), {
+            rows: field.rows,
+            placeholder: field.placeholder,
+          });
+          input = asInput(area);
+          getters[field.name] = () => area.value;
         } else {
           // A plain text or number field comes from the same builders the
           // inline rail forms use, so the two paths agree on the field class
           // and on the number field's clamp when an edit commits.
           const plain =
             field.type === 'number'
-              ? numberField(field.value ?? '', { min: field.min, max: field.max })
-              : textField(field.value === undefined ? '' : String(field.value));
+              ? numberField(field.value ?? '', {
+                  min: field.min,
+                  max: field.max,
+                  placeholder: field.placeholder,
+                })
+              : textField(field.value === undefined ? '' : String(field.value), field.placeholder);
           input = plain;
           getters[field.name] = () => plain.value;
         }

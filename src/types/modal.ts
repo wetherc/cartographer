@@ -25,6 +25,10 @@ interface FieldBase {
   label: string;
   /** In a `wide` dialog, span both columns instead of taking one. */
   full?: boolean;
+  /** Begin a row rather than pairing with the field before it. This keeps a
+   * pair that belongs together, for example weapon and armor, on one row when
+   * an odd number of fields comes before it. */
+  newRow?: boolean;
   /** Start hidden. `onChange`'s `setHidden` reveals it. */
   hidden?: boolean;
   /** Tuck the field behind the dialog's collapsed disclosure, for
@@ -39,6 +43,16 @@ export interface TextModalField extends FieldBase {
   value?: string | number;
   min?: number;
   max?: number;
+  /** Placeholder text for an empty field, for example 'Enemy name'. */
+  placeholder?: string;
+}
+
+/** A multi-line text input, for a field whose value is prose. */
+export interface TextareaModalField extends FieldBase {
+  type: 'textarea';
+  value?: string;
+  rows?: number;
+  placeholder?: string;
 }
 
 /**
@@ -120,6 +134,7 @@ export interface ButtonModalField extends FieldBase {
 
 export type ModalField =
   | TextModalField
+  | TextareaModalField
   | CheckboxModalField
   | SelectModalField
   | FileModalField

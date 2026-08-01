@@ -1,18 +1,10 @@
 import { promptModal, confirmDelete, alertModal } from '../ui/Modal.js';
-import {
-  createEncounter,
-  defaultEnemyGear,
-  editEncounter,
-  fromTemplate,
-} from '../entities/Encounter.js';
+import { createEncounter, editEncounter, fromTemplate } from '../entities/Encounter.js';
 import { activeBestiary } from '../library/Library.js';
-import { defaultEnemyStats, ENEMY_TIERS, STAT_KEYS } from '../entities/Modifiers.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
-import { clampInt } from '../util/num.js';
 import { locationFields, readLocation } from './locationFields.js';
-import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
-import { gearOptions, readGear } from './gearFields.js';
-import { statFields, readStats } from './statFields.js';
+import { encounterFields, encounterFieldsChange, readEncounterFields } from './encounterFields.js';
+import { gearOptions } from './gearFields.js';
 import { commitEncounters } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -42,68 +34,19 @@ export async function encounterForm(app, existing, defaultLocation) {
   // that creature gets no attack button in combat. The bestiary template
   // form shares this code.
   const gear = gearOptions(existing);
-  const { currentWeapon, currentArmor, weaponOptions, armorOptions } = gear;
   // Creation shows the stat block too, pre-filled with the tier's
   // level-appropriate defaults. A plain mob needs no stat typing, but every
-  // score stays overridable. A change to level or tier re-stamps the
-  // defaults until the GM hand-edits a stat. After that edit, the GM's
-  // numbers stay. Edits to an existing encounter omit the block, because it
-  // lives on the Build-rail row's chips.
-  const statBlockFields = existing ? [] : statFields(STAT_KEYS, defaultEnemyStats(1, 'mob'));
-  let statsTouched = false;
+  // score stays overridable. Edits to an existing encounter omit the block,
+  // because it lives on the Build-rail row's chips.
+  const stats = !existing;
   // The layout uses two columns, with fields paired by theme: identity
-  // (name, tier), then vitals (HP, level), then gear (weapon, armor), then
-  // stats, then placement. The map picker's breadcrumb labels run long, so
-  // the map picker spans the full width.
+  // (name, tier), then vitals (level, HP), then gear (weapon, armor), then
+  // stats, then the caster section, then placement. The map picker's
+  // breadcrumb labels run long, so the map picker spans the full width.
   const values = await promptModal(
     existing ? 'Edit encounter' : 'New encounter',
     [
-      { name: 'name', label: 'Name', value: existing?.name ?? '' },
-      {
-        name: 'tier',
-        label: 'Tier',
-        type: 'select',
-        value: existing?.tier ?? 'mob',
-        options: ENEMY_TIERS.map((t) => ({
-          value: t,
-          label: t === 'mob' ? 'Mob' : 'Legend',
-        })),
-      },
-      {
-        name: 'maxHP',
-        label: 'Max HP',
-        type: 'number',
-        value: existing?.maxHP ?? 10,
-        min: 1,
-      },
-      {
-        name: 'level',
-        label: 'Level',
-        type: 'number',
-        value: existing?.level ?? 1,
-        min: 1,
-      },
-      {
-        name: 'weapon',
-        label: 'Weapon',
-        type: 'select',
-        // Editing an unarmed enemy (weapon is null) shows None. A new enemy
-        // still defaults to armed, the common humanoid case.
-        value: existing ? (currentWeapon?.name ?? '') : defaultEnemyGear(1, 'mob').weapon.name,
-        options: weaponOptions,
-      },
-      {
-        name: 'armor',
-        label: 'Armor',
-        type: 'select',
-        value: existing ? (currentArmor?.name ?? '') : defaultEnemyGear(1, 'mob').armor.name,
-        options: armorOptions,
-      },
-      ...statBlockFields,
-      // The spellcaster section is optional. A caster class turns the mob
-      // into a combatant that can cast during initiative. "None" leaves it
-      // a plain fighter.
-      ...casterFields(existing),
+      ...encounterFields(existing, gear, { stats }),
       ...locationFields(app, existing ? existing.location : defaultLocation).map((field) =>
         field.name === 'nodeId' ? { ...field, full: true } : field,
       ),
@@ -111,56 +54,19 @@ export async function encounterForm(app, existing, defaultLocation) {
     {
       submitLabel: existing ? 'Save' : 'Add',
       wide: true,
-      onChange: (name, form) => {
-        // Refilter the spell picker to the chosen caster class and level.
-        // This applies both when creating and when editing.
-        if (refilterSpellsOnChange(name, form)) return;
-        // Re-stamp the stat defaults when level or tier changes. This
-        // applies only to a new encounter, and only until a stat is
-        // hand-edited.
-        if (existing) return;
-        if (name.startsWith('stat-')) {
-          statsTouched = true;
-          return;
-        }
-        if (statsTouched || (name !== 'level' && name !== 'tier')) return;
-        const stats = defaultEnemyStats(
-          clampInt(form.get('level'), 1),
-          /** @type {import('../types/entities.js').EnemyTier} */ (form.get('tier')),
-        );
-        for (const key of STAT_KEYS) form.set(`stat-${key}`, stats[key]);
-      },
+      onChange: encounterFieldsChange({ restampStats: stats }),
     },
   );
   if (!values) return null;
-  const name = values.name.trim();
+  const fields = readEncounterFields(values, gear, { stats });
+  const { name, maxHP, level, tier, statBlock, ...blueprint } = fields;
   if (!name) return null;
-  const maxHP = clampInt(values.maxHP, 1);
-  const level = clampInt(values.level, 1);
-  const tier = /** @type {import('../types/entities.js').EnemyTier} */ (values.tier);
   const location = readLocation(app, values);
-  // The empty value is the explicit "None" choice. It stores null, which
-  // suppresses the default-gear stamping that follows.
-  const { weapon, armor } = readGear(
-    values.weapon,
-    values.armor,
-    gear,
-    defaultEnemyGear(level, tier),
-  );
   let stored;
   if (existing) {
     // A level or tier edit does not re-stamp the stat block. The GM can
     // tune it by hand on the row, and it stays editable there.
-    stored = editEncounter(existing, {
-      name,
-      maxHP,
-      level,
-      tier,
-      location,
-      weapon,
-      armor,
-      ...readCasterOptions(values),
-    });
+    stored = editEncounter(existing, { name, maxHP, level, tier, location, ...blueprint });
     state.encounters = replaceById(state.encounters, stored);
   } else {
     stored = createEncounter(
@@ -170,9 +76,9 @@ export async function encounterForm(app, existing, defaultLocation) {
       ),
       name,
       maxHP,
-      readStats(STAT_KEYS, values),
+      statBlock ?? {},
       location,
-      { level, tier, weapon, armor, ...readCasterOptions(values) },
+      { level, tier, ...blueprint },
     );
     state.encounters = [...state.encounters, stored];
   }

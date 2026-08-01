@@ -32,10 +32,9 @@
 
 /* The caster spell picker on the encounter/NPC/bestiary forms: a scrollable
    checkbox column so a long library stays a fixed-height block rather than a
-   page-long list. Shared by the modal multiselect and the inline template
-   form. */
-.modal__multiselect,
-.inventory-panel__spell-picker {
+   page-long list. The dialogs and the inline rail forms mount the same
+   multiselect, so one rule covers both. */
+.modal__multiselect {
   max-height: 12rem;
   overflow-y: auto;
   padding: var(--space-1) var(--space-2);

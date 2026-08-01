@@ -301,19 +301,25 @@ New combat features must route entity resolution, HP application, and the
 post-write refresh through these functions. They must not rewrite the
 character, encounter, and NPC cascade.
 
-The authoring dialogs share their field groups the same way. Each of three
-modules backs both the campaign dialog and the Library template form for
-its area:
+The authoring forms share their fields the same way. An entity the GM can
+author in two places (a campaign encounter in a dialog, a bestiary template
+in the Library rail) describes its fields once as a `ModalField[]`:
 
+- `encounterFields.js` holds the encounter's fields, the live behavior
+  (`encounterFieldsChange`), and `readEncounterFields`. `npcFields.js` does
+  the same for an NPC.
 - `gearFields.js` holds the weapon and armor picker options, plus the None,
   preset, and hand-tuned read-back cascade.
-- `statFields.js` holds the modal stat-block fields and the clamped
-  read-back. The inline-form equivalent is `formFields.statInputRows`.
+- `statFields.js` holds the stat-block fields and the clamped read-back.
 - `casterFields.js` holds the class, level, and spell picker, plus
   `refilterSpellsOnChange`.
 
-A change to one of these shapes lands in the shared module, never in one
-form.
+`promptModal` renders such a spec as a dialog and `ui/SpecForm.js`'s
+`buildSpecForm` renders it as an inline rail form, so a field, a default, a
+clamp, and a cross-field rule are each written once. A dialog adds the
+placement fields from `locationFields.js` around the spec; a template form
+omits them, because a template holds no position. A change to one of these
+shapes lands in the shared module, never in one form.
 
 ### combatWiring.js
 

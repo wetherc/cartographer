@@ -13,7 +13,7 @@
  * dialog and in the rail.
  */
 
-import { clamp, clampInt } from '../util/num.js';
+import { clamp } from '../util/num.js';
 import { textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
 
@@ -205,33 +205,6 @@ export function setOptions(picker, options, value) {
     }),
   );
   picker.value = value;
-}
-
-/**
- * The stat-block input group shared by the bestiary and NPC template
- * forms: one number field per key, laid out two per row so the block
- * stays compact, with the same clamped read-back the modal dialogs use.
- * The caller keeps the `statInputs` handles for change listeners, for
- * example the bestiary form's re-stamping.
- * @param {string[]} keys
- * @param {Record<string, number>} stats
- * @returns {{
- *   statInputs: { key: string, input: HTMLInputElement }[],
- *   rows: HTMLDivElement[],
- *   read: () => Record<string, number>,
- * }}
- */
-export function statInputRows(keys, stats) {
-  const statInputs = keys.map((key) => ({ key, input: numberField(stats[key] ?? 10, { min: 1 }) }));
-  const rows = [];
-  for (let i = 0; i < statInputs.length; i += 2) {
-    rows.push(fieldRow(...statInputs.slice(i, i + 2).map(({ key, input }) => labeled(key, input))));
-  }
-  const read = () =>
-    Object.fromEntries(
-      statInputs.map(({ key, input }) => [key, clampInt(input.value, 1, Infinity, 10)]),
-    );
-  return { statInputs, rows, read };
 }
 
 /**

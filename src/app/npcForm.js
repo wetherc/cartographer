@@ -1,13 +1,12 @@
 import { promptModal } from '../ui/Modal.js';
-import { createNPC, dispositionOptions } from '../entities/NPC.js';
-import { ABILITY_SCORES } from '../entities/Character.js';
+import { createNPC } from '../entities/NPC.js';
 import { withCasterFields } from '../entities/Caster.js';
 import { isCasterClass } from '../entities/Classes.js';
 import { isSlotPool } from '../entities/SpellSlots.js';
 import { slugId, replaceById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
-import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
-import { statFields, readStats } from './statFields.js';
+import { refilterSpellsOnChange } from './casterFields.js';
+import { npcFields, readNPCFields } from './npcFields.js';
 import { commitNPCs } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -35,28 +34,13 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
   /** The source that seeds the dialog's fields: the NPC being edited, or a template. */
   const seed = existing ?? template;
   // This uses a two-column layout matching the encounter dialog: identity
-  // (name/role), then disposition, full-width notes, the stat block, then
-  // placement. The map picker's breadcrumb labels run long, so it spans the
-  // full width.
+  // (name/role), then disposition, full-width notes, the stat block, the
+  // caster section, then placement. The map picker's breadcrumb labels run
+  // long, so it spans the full width.
   const values = await promptModal(
     existing ? 'Edit NPC' : 'New NPC',
     [
-      { name: 'name', label: 'Name', value: seed?.name ?? '' },
-      { name: 'role', label: 'Role / faction', value: seed?.role ?? '' },
-      {
-        name: 'disposition',
-        label: 'Disposition',
-        type: 'select',
-        value: seed?.disposition ?? 'neutral',
-        options: dispositionOptions(),
-      },
-      { name: 'notes', label: 'Notes', value: seed?.notes ?? '', full: true },
-      // This gives one number field per ability score, so an NPC's modifiers
-      // (initiative, future checks) derive from real stats, not a flat default.
-      ...statFields(ABILITY_SCORES, seed?.stats ?? {}),
-      // This is an optional spellcaster section. A caster class gives the NPC
-      // spell slots and a spellbook, so it can cast in an encounter it joins.
-      ...casterFields(seed),
+      ...npcFields(seed),
       // This field defaults to the caller's placement (the party's tile, the
       // Build-mode selected tile, or the right-clicked tile), but the GM can
       // choose any map or tile.
@@ -71,45 +55,31 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
       onChange: refilterSpellsOnChange,
     },
   );
-  const name = values?.name.trim();
-  if (!values || !name) return null;
-  const caster = readCasterOptions(values);
+  if (!values) return null;
+  const fields = readNPCFields(values);
+  if (!fields.name) return null;
   /** @type {NPC} */
   let stored;
   if (existing) {
-    const base = {
-      ...existing,
-      name,
-      role: values.role.trim(),
-      disposition: /** @type {import('../types/npc.js').Disposition} */ (values.disposition),
-      notes: values.notes.trim(),
-      stats: readStats(ABILITY_SCORES, values),
-      location: readLocation(app, values),
-    };
+    const base = { ...existing, ...fields, location: readLocation(app, values) };
     // A caster class rebuilds slots at full and stamps the picked spellbook.
     // Choosing "None" removes the caster fields and any slot pools.
-    if (isCasterClass(caster.class)) {
-      stored = withCasterFields(base, caster, caster.casterLevel);
+    if (isCasterClass(fields.class)) {
+      stored = withCasterFields(base, fields, fields.casterLevel);
     } else {
       const { class: _c, casterLevel: _l, spellbook: _b, ...rest } = base;
       stored = { ...rest, resources: (base.resources ?? []).filter((r) => !isSlotPool(r)) };
     }
     state.npcs = replaceById(state.npcs, stored);
   } else {
+    const { name: _name, ...options } = fields;
     stored = createNPC(
       slugId(
-        name,
+        fields.name,
         state.npcs.map((n) => n.id),
       ),
-      name,
-      {
-        role: values.role.trim(),
-        disposition: /** @type {import('../types/npc.js').Disposition} */ (values.disposition),
-        notes: values.notes.trim(),
-        stats: readStats(ABILITY_SCORES, values),
-        location: readLocation(app, values),
-        ...caster,
-      },
+      fields.name,
+      { ...options, location: readLocation(app, values) },
     );
     state.npcs = [...state.npcs, stored];
   }

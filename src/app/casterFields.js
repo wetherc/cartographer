@@ -101,6 +101,9 @@ export function casterFields(seed) {
       name: 'casterClass',
       label: 'Caster class',
       type: 'select',
+      // The caster section begins a row, so it does not pair with the last
+      // field of whatever block comes before it.
+      newRow: true,
       value: seed?.class ?? '',
       options: casterClassOptions(),
     },
