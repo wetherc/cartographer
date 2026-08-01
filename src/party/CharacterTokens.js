@@ -4,19 +4,20 @@
 
 /**
  * Pure logic behind per-character map tokens. A character's `location` is
- * their own position on the world; null means "with the party", i.e. they
- * stand wherever the shared party marker is. The wiring resolves tokens per
- * rendered node through `characterTokens` and moves characters through
- * `moveCharacter`, so both stay testable without a canvas.
+ * their own position on the world. Null means the character stands with the
+ * party, at the shared party marker. The wiring resolves tokens per rendered
+ * node through `characterTokens`, and moves characters through
+ * `moveCharacter`. Both functions stay testable without a canvas.
  */
 
 /**
- * Resolve which character tokens appear in a node and where. A character with
- * their own location shows on that tile when it's in this node; a character
- * still with the party shows on the party's tile when the party is here.
+ * Resolve which character tokens appear in a node, and where. A character
+ * with their own location shows on that tile when the tile is in this node.
+ * A character still with the party shows on the party's tile, when the
+ * party is in this node.
  * @param {Character[]} characters
  * @param {PartyPosition} partyPosition
- * @param {string} nodeId the node being rendered
+ * @param {string} nodeId The node being drawn.
  * @returns {{ tileId: string, name: string, characterId: string }[]}
  */
 export function characterTokens(characters, partyPosition, nodeId) {
@@ -40,8 +41,8 @@ export function characterTokens(characters, partyPosition, nodeId) {
 }
 
 /**
- * Move one character to a location of their own (or back to the party with
- * null). Unknown ids leave the roster unchanged.
+ * Move one character to a location of their own, or back to the party with
+ * null. An unknown id leaves the roster unchanged.
  * @param {Character[]} characters
  * @param {string} id
  * @param {EncounterLocation | null} location
@@ -52,8 +53,9 @@ export function moveCharacter(characters, id, location) {
 }
 
 /**
- * Whether anyone currently stands apart from the party marker — i.e. whether
- * turning the split-party toggle off needs a regroup first.
+ * True when anyone currently stands apart from the party marker. This tells
+ * the caller whether turning off the split-party toggle needs a regroup
+ * first.
  * @param {Character[]} characters
  * @returns {boolean}
  */
@@ -62,7 +64,7 @@ export function isSplit(characters) {
 }
 
 /**
- * Where a character actually stands: their own location when placed, the
+ * Where a character actually stands: their own location when placed, or the
  * shared party position otherwise. This is the regroup target when the GM
  * gathers the party at one member.
  * @param {Character} character
@@ -74,8 +76,9 @@ export function characterPosition(character, partyPosition) {
 }
 
 /**
- * Recall every character to the party marker — the whole-party teleport: any
- * individually placed character drops their own location and follows again.
+ * Recall every character to the party marker. This is the whole-party
+ * teleport: any individually placed character loses its own location and
+ * follows the party again.
  * @param {Character[]} characters
  * @returns {Character[]}
  */

@@ -1,20 +1,21 @@
 /** @typedef {import('../types/time.js').GameClock} GameClock */
 
 /**
- * The named watches that divide one in-game day, in order. A day advances one
- * watch at a time; rolling past the last watch increments the day.
+ * The named watches that divide one in-game day, in order. A day advances
+ * one watch at a time. Rolling past the last watch increases the day by one.
  * @type {string[]}
  */
 export const WATCHES = ['Dawn', 'Morning', 'Midday', 'Afternoon', 'Dusk', 'Night'];
 
-/** @returns {GameClock} a fresh clock at the dawn of day 1 */
+/** @returns {GameClock} A fresh clock at the dawn of day 1. */
 export function createClock() {
   return { day: 1, watch: 0 };
 }
 
 /**
  * Advance the clock by `watches` watches, rolling the day over as needed.
- * Negative values are treated as zero (the clock never runs backward).
+ * The function treats negative values as zero. The clock never runs
+ * backward.
  * @param {GameClock} clock
  * @param {number} [watches]
  * @returns {GameClock}
@@ -25,9 +26,10 @@ export function advanceWatches(clock, watches = 1) {
 }
 
 /**
- * Advance to the next Dawn — the start of the next day if the clock is already
- * past dawn, used for a long rest. If it's exactly Dawn already, advance a full
- * day so a long rest always consumes time.
+ * Advance to the next Dawn: the start of the next day if the clock is
+ * already past dawn. A long rest calls this function. If the clock is
+ * exactly at Dawn already, the function still advances a full day, so a
+ * long rest always takes time.
  * @param {GameClock} clock
  * @returns {GameClock}
  */
@@ -37,7 +39,7 @@ export function advanceToDawn(clock) {
 
 /**
  * @param {GameClock} clock
- * @returns {string} e.g. "Day 3, Dusk"
+ * @returns {string} For example "Day 3, Dusk".
  */
 export function formatClock(clock) {
   return `Day ${clock.day}, ${WATCHES[clock.watch] ?? WATCHES[0]}`;

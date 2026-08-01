@@ -20,13 +20,13 @@ export const DIE_SIDES = {
 export const DIE_TYPES = /** @type {DieType[]} */ (Object.keys(DIE_SIDES));
 
 /**
- * Roll a structured dice selection (counts per die type + flat modifier).
- * No text parsing — counts come from UI state. With advantage or
- * disadvantage set, each d20 rolls twice and keeps the higher (or lower)
- * die, recording the discarded one in `dropped`; other die types are
- * unaffected, matching the 5e rule.
+ * Roll a structured dice selection: counts per die type plus a flat modifier.
+ * Counts come from UI state, not text parsing. If advantage or disadvantage
+ * is set, each d20 rolls twice. The roll keeps the higher die (advantage) or
+ * the lower die (disadvantage) and records the other die in `dropped`. Other
+ * die types are not affected. This matches the 5e rule.
  * @param {DiceSelection} selection
- * @param {RandomFn} [rng] injectable RNG for testing, defaults to Math.random
+ * @param {RandomFn} [rng] Test RNG. Defaults to Math.random.
  * @returns {DiceResult}
  */
 export function roll(selection, rng = Math.random) {
@@ -77,13 +77,14 @@ export function emptySelection() {
 }
 
 /**
- * Resolve a pre-roll attack tweak — bonus or penalty dice plus a flat bonus,
- * e.g. Bless's +1d4 or Bane's -1d4 — into pieces a d20 attack roll can
- * absorb. Bonus dice ride along in the returned counts so the roll shows
- * them live; penalty dice can't (selection counts are non-negative), so
- * they're rolled here and folded into the modifier, with the rolled values
- * preserved in the note. The note reads like "+1d4" or "-1d4 [3] +2" and is
- * empty when there's nothing to apply.
+ * Resolve a pre-roll attack tweak (bonus or penalty dice plus a flat bonus,
+ * for example Bless's +1d4 or Bane's -1d4) into pieces that a d20 attack
+ * roll can use. Bonus dice stay in the returned counts, so the roll shows
+ * them directly. Penalty dice cannot go in the counts, because selection
+ * counts must not be negative. This function rolls penalty dice here and
+ * folds the result into the modifier, and keeps the rolled values in the
+ * note. The note reads like "+1d4" or "-1d4 [3] +2". The note is empty when
+ * there is nothing to apply.
  * @param {number} count bonus (positive) or penalty (negative) dice
  * @param {DieType} die
  * @param {number} flat
@@ -110,17 +111,19 @@ export function attackTweak(count, die, flat, rng = Math.random) {
 }
 
 /**
- * One damage group: every term of one damage type, with its raw dice, the flat
- * amount riding them, and the total of both floored at zero.
+ * One damage group. It holds every term of one damage type: the raw dice,
+ * the flat amount added to them, and the total of both. The total cannot go
+ * below zero.
  * @typedef {{ damageType: string, rolls: number[], bonus: number, subtotal: number }} DamageGroup
  */
 
 /**
- * A damage result's two readouts, built from its groups. `text` is the short
- * per-type line ("7 slashing + 3 fire"); `detail` additionally shows each
- * group's raw dice and its flat amount ("7 slashing [2,3 +2] + 3 fire [3]") for
- * logs that should preserve the individual rolls. Shared so a merged result
- * reads exactly like a single one.
+ * A damage result has two readouts, built from its groups. `text` is the
+ * short line per type, for example "7 slashing + 3 fire". `detail` also
+ * shows each group's raw dice and its flat amount, for example
+ * "7 slashing [2,3 +2] + 3 fire [3]", for logs that must keep the individual
+ * rolls. This function is shared so a merged result reads the same as a
+ * single result.
  * @param {DamageGroup[]} groups
  * @returns {{ total: number, byType: DamageGroup[], text: string, detail: string }}
  */
@@ -132,8 +135,8 @@ export function damageReadout(groups) {
     detail: groups
       .map((g) => {
         const sign = `${g.bonus > 0 ? '+' : '-'}${Math.abs(g.bonus)}`;
-        // A group with no dice behind it shows the flat amount on its own, with
-        // no leading separator to sit after.
+        // A group with no dice shows only the flat amount, with no leading
+        // separator.
         const bonus = g.bonus === 0 ? '' : `${g.rolls.length > 0 ? ' ' : ''}${sign}`;
         return `${g.subtotal} ${g.damageType} [${g.rolls.join(',')}${bonus}]`;
       })
@@ -142,12 +145,13 @@ export function damageReadout(groups) {
 }
 
 /**
- * Roll a weapon's damage terms (each `count` dice of `sides` per damage type)
- * with a flat modifier folded into the first term's type, 5e-style — the
- * ability modifier boosts the weapon's own damage, not its riders. A term may
- * also carry its own `bonus`, which rides that term's own damage type wherever
- * it sits (Magic Missile's 1d4+1). Terms sharing a damage type merge into one
- * group, and no group can go below zero however negative its flat amount is.
+ * Roll a weapon's damage terms. Each term has a `count` of dice with `sides`
+ * sides, for one damage type. The function folds a flat modifier into the
+ * first term's type: the ability modifier boosts the weapon's own damage,
+ * not its riders (5e rule). A term can also carry its own `bonus`, which
+ * stays with that term's damage type wherever it sits, for example Magic
+ * Missile's 1d4+1. Terms that share a damage type merge into one group. No
+ * group total can go below zero, even with a large negative flat amount.
  * @param {import('../types/entities.js').DamagePart[]} parts
  * @param {number} [modifier]
  * @param {RandomFn} [rng]
@@ -175,8 +179,8 @@ export function rollDamage(parts, modifier = 0, rng = Math.random) {
     byType.set(part.damageType, group);
   }
   const groups = [...byType.values()];
-  // The ability modifier boosts the first group only, and joins that group's
-  // own flat amount so the readout shows one number rather than two.
+  // The ability modifier boosts the first group only. It joins that group's
+  // flat amount so the readout shows one number, not two.
   if (groups.length > 0) {
     groups[0].bonus += modifier;
     groups[0].subtotal += modifier;
@@ -186,10 +190,10 @@ export function rollDamage(parts, modifier = 0, rng = Math.random) {
 }
 
 /**
- * Render a roll result as a one-line readout, e.g.
- * "d20[14]=14 + modifier=2 -> total: 16". Rolls made at advantage or
- * disadvantage name the mode and the discarded d20s so the readout shows
- * both dice, e.g. "d20[17]=17 -> total: 17 (advantage, dropped 5)".
+ * Render a roll result as one line, for example
+ * "d20[14]=14 + modifier=2 -> total: 16". A roll made at advantage or
+ * disadvantage names the mode and shows the discarded d20 too, for example
+ * "d20[17]=17 -> total: 17 (advantage, dropped 5)".
  * @param {import('../types/dice.js').DiceResult} result
  * @returns {string}
  */

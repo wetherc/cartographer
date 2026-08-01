@@ -1,21 +1,22 @@
 /**
- * Pure helpers for the party's travelogue: an append-only, capped list of
- * events (party movement, combat outcomes) recorded as the campaign is played.
- * Message composition and id generation live in the caller (main.js), so this
- * module stays free of app state and is unit-testable.
+ * Pure helpers for the party's travelogue. This is an append-only, capped
+ * list of events (party movement, combat outcomes) recorded as the campaign
+ * runs. Message composition and id generation live in the caller (main.js),
+ * so this module stays free of app state and tests can run against it
+ * directly.
  */
 
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
 /** @typedef {import('../types/log.js').LogEntryKind} LogEntryKind */
 
-/** How many entries a travelogue retains before the oldest are dropped. */
+/** How many entries a travelogue keeps before it removes the oldest. */
 export const TRAVELOG_LIMIT = 200;
 
 /**
  * @param {string} id
  * @param {LogEntryKind} kind
  * @param {string} message
- * @param {number} at epoch milliseconds
+ * @param {number} at Epoch milliseconds.
  * @returns {LogEntry}
  */
 export function createEntry(id, kind, message, at) {
@@ -23,8 +24,9 @@ export function createEntry(id, kind, message, at) {
 }
 
 /**
- * Append an entry, returning a new list. Entries are stored oldest-first; once
- * the list exceeds `limit`, the oldest are trimmed so it never grows unbounded.
+ * Append an entry, and return a new list. Entries are stored oldest first.
+ * Once the list exceeds `limit`, the function trims the oldest entries, so
+ * the list never grows without bound.
  * @param {LogEntry[]} log
  * @param {LogEntry} entry
  * @param {number} [limit]
@@ -36,11 +38,11 @@ export function appendEntry(log, entry, limit = TRAVELOG_LIMIT) {
 }
 
 /**
- * The entries newer than `lastId`, for append-only rendering: the whole log
- * when `lastId` is null (nothing rendered yet), or null when `lastId` is no
- * longer in the log (it was cleared or replaced) so the caller knows to
- * re-render from scratch. Searches newest-first, since `lastId` is normally
- * at or near the end.
+ * The entries newer than `lastId`, for append-only rendering. This function
+ * returns the whole log when `lastId` is null (nothing shown yet), or null
+ * when `lastId` is no longer in the log (the log was cleared or replaced),
+ * so the caller knows to redraw from scratch. The search runs newest first,
+ * since `lastId` is normally at or near the end.
  * @param {LogEntry[]} log
  * @param {string | null} lastId
  * @returns {LogEntry[] | null}

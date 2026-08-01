@@ -1,8 +1,9 @@
 /**
- * Pure helpers for the quest/session log. List-level operations (unique id
- * derivation, replace/remove by id) are shared with the rosters via
- * entities/Roster.js; this module owns only the per-quest shape and status
- * transitions, so it stays app-state-free and unit-testable.
+ * Pure helpers for the quest and session log. List-level operations (unique
+ * id derivation, replace or remove by id) come from the rosters through
+ * entities/Roster.js. This module owns only the per-quest shape and status
+ * transitions. This keeps the module free of app state, so tests can run
+ * against it directly.
  */
 
 /** @typedef {import('../types/quest.js').Quest} Quest */
@@ -38,8 +39,8 @@ export function toggleQuestStatus(quest) {
 }
 
 /**
- * Partition quests into active-first, completed-last groups, preserving each
- * group's original order — the order a GM-facing panel wants to render.
+ * Split quests into active-first, completed-last groups. Each group keeps
+ * its original order, the order that a GM-facing panel shows.
  * @param {Quest[]} quests
  * @returns {{ active: Quest[], completed: Quest[] }}
  */
