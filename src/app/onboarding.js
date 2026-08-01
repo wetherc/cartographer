@@ -6,10 +6,11 @@ import { textButton } from '../ui/buttons.js';
 const ONBOARDED_KEY = 'campaign-builder:onboarded';
 
 /**
- * First-run onboarding: a blank campaign in Play mode is a fogged empty map
- * with no hint that Build mode, generation, or the example exist. Overlay the
- * three ways forward on the map until the GM picks one (or dismisses), then
- * never show it again on this browser.
+ * First-run onboarding. A blank campaign in Play mode shows a fogged, empty
+ * map with no hint that Build mode, generation, or the example campaign
+ * exist. This function overlays three ways forward on the map until the GM
+ * picks one or dismisses the overlay. After that, the overlay never shows
+ * again on this browser.
  * @param {AppContext} app
  */
 export function maybeShowOnboarding(app) {

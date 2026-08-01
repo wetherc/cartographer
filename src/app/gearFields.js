@@ -16,12 +16,13 @@ import { copyEnemyWeapon } from '../entities/EquipmentPresets.js';
  */
 
 /**
- * Build the weapon/armor picker options shared by the encounter dialog and the
- * bestiary template form: the merged library's choices, "None" for a
- * deliberately weaponless/unarmored creature, and — when the enemy already
- * carries a hand-tuned gear entry not in the library — that entry kept offered
- * as-is (labelled with its damage / AC bonus) so editing other fields doesn't
- * clobber it.
+ * Build the weapon and armor picker options shared by the encounter dialog
+ * and the bestiary template form. The options are: the merged library's
+ * choices, "None" for a creature that is deliberately weaponless or
+ * unarmored, and, when the enemy already carries a hand-tuned gear entry not
+ * in the library, that entry offered as is, labelled with its damage or AC
+ * bonus. This keeps the hand-tuned entry from being lost when the GM edits
+ * other fields.
  * @param {{ weapon?: EnemyWeapon | null, armor?: EnemyArmor | null } | null} current
  * @returns {GearOptions}
  */
@@ -55,11 +56,12 @@ export function gearOptions(current) {
 }
 
 /**
- * Read the gear pickers back into stored weapon/armor values, one cascade for
- * both forms: the empty value is the explicit "None" choice and stores null; a
- * library preset is copied (structured damage cloned); anything else falls back
- * to the enemy's current hand-tuned entry, then to the caller's fallback (the
- * encounter dialog passes the tier's default gear, the template form nothing).
+ * Read the gear pickers back into stored weapon and armor values. Both forms
+ * share one cascade: the empty value is the explicit "None" choice and stores
+ * null. A library preset is copied, with its structured damage cloned.
+ * Anything else falls back to the enemy's current hand-tuned entry, then to
+ * the caller's fallback. The encounter dialog passes the tier's default gear
+ * as the fallback. The template form passes nothing.
  * @param {string} weaponValue
  * @param {string} armorValue
  * @param {GearOptions} options

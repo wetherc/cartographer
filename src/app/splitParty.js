@@ -1,8 +1,9 @@
 /**
- * The GM's "allow splitting the party" switch and the regroup it forces on the
- * way back. Off by default: no individual tokens or name labels, and everyone
- * moves with the party marker. On, each character can stand on its own tile,
- * which is what `party/CharacterTokens.js` tracks.
+ * This module is the GM's "allow splitting the party" switch, and the
+ * regroup step it forces on the way back. The switch is off by default: no
+ * individual tokens or name labels appear, and every character moves with
+ * the party marker. When on, each character can stand on its own tile, which
+ * `party/CharacterTokens.js` tracks.
  */
 
 import { el } from '../ui/dom.js';
@@ -13,12 +14,13 @@ import { isSplit, characterPosition, recallAll } from '../party/CharacterTokens.
 
 /**
  * Mount the switch. `refreshRoster` redraws the roster, whose per-character
- * place buttons only exist while splitting is allowed; the panel owns that list,
- * so it hands the redraw in rather than being reached from here.
+ * place buttons exist only while splitting is allowed. The panel owns that
+ * list, so it passes the redraw function in instead of this module reaching
+ * the panel directly.
  * @param {AppContext} app
  * @param {{ container: HTMLElement, refreshRoster: () => void }} deps
- * @returns {{ update: () => void }} `update` re-reads the switch from state, for
- *   a tab following another tab's saves
+ * @returns {{ update: () => void }} `update` re-reads the switch from state,
+ *   for a tab that follows another tab's saves
  */
 export function wireSplitParty(app, { container, refreshRoster }) {
   const { state } = app;
@@ -35,7 +37,7 @@ export function wireSplitParty(app, { container, refreshRoster }) {
   );
   container.appendChild(field);
 
-  /** Refresh everything the switch changes: tokens/labels, roster place buttons. */
+  /** Refresh everything the switch changes: tokens, labels, and roster place buttons. */
   function syncSplitViews() {
     app.actions.syncPartyMarker();
     refreshRoster();
@@ -44,9 +46,10 @@ export function wireSplitParty(app, { container, refreshRoster }) {
 
   /**
    * Gather the whole party at one member's position before disallowing the
-   * split: the GM picks the character, everyone teleports to where they stand
-   * (a member still with the party means the current party tile). Resolves
-   * false when the GM cancels, leaving the switch on.
+   * split. The GM picks the character, and everyone teleports to where that
+   * character stands. A member still with the party stands at the current
+   * party tile. This resolves to false when the GM cancels, and the switch
+   * stays on.
    * @returns {Promise<boolean>}
    */
   async function regroupParty() {
@@ -80,7 +83,7 @@ export function wireSplitParty(app, { container, refreshRoster }) {
     state.characters = recallAll(state.characters);
     app.views.mapCanvas.refreshNode(app.navigator.getCurrentNode());
     app.views.regionTree.update();
-    // Regrouping moves the party, which can carry it off a running fight's tile.
+    // Regrouping moves the party, and can carry it off a running fight's tile.
     app.actions.syncCombatLocation();
     app.views.encounterPanel.update();
     app.views.initiativePanel.update();
@@ -104,7 +107,7 @@ export function wireSplitParty(app, { container, refreshRoster }) {
     }
     const regrouped = await regroupParty();
     if (!regrouped) {
-      toggle.checked = true; // cancelled: the party stays split
+      toggle.checked = true; // cancelled, so the party stays split
       return;
     }
     state.splitParty = false;

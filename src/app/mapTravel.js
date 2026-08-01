@@ -17,20 +17,22 @@ import { capitalize } from '../util/text.js';
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
 
 /**
- * Play-mode movement and discovery for the map view: cell clicks (party moves,
- * region zoom-ins, split-party character moves), sidebar teleports, POI
- * discovery, NPC introductions, and the hover tooltip. Split out of mapWiring
- * so the wiring module stays the mount-and-sync layer; handlers read the
- * shared MapEnv late, after wiring assigns the mounted views.
+ * This module builds Play-mode movement and discovery for the map view. It
+ * handles cell clicks such as party moves, region zoom-ins, and split-party
+ * character moves, sidebar teleports, POI discovery, NPC introductions, and
+ * the hover tooltip. The code stays separate from mapWiring, so the wiring
+ * module only mounts views and keeps them in sync. Handlers read the shared
+ * MapEnv late, after wiring assigns the mounted views.
  * @param {AppContext} app
  * @param {MapEnv} env
  */
 export function createMapTravel(app, env) {
   const { grid, navigator, partyTracker, state } = app;
 
-  /** Landing where a placed NPC stands is the introduction: mark it met so it
-   * starts appearing in the players' Story sidebar, and log the meeting. Only
-   * the GM's tab moves the party, so only it mutates the roster. */
+  /** Landing where a placed NPC stands is the introduction. Mark the NPC
+   * met, so it starts to appear in the players' Story sidebar, and log the
+   * meeting. Only the GM's tab moves the party, so only the GM's tab
+   * changes the roster. */
   function meetNPCsHere() {
     if (!isGM(state.role)) return;
     const { npcs, met } = meetNPCs(state.npcs, partyTracker.getPosition());
@@ -39,7 +41,7 @@ export function createMapTravel(app, env) {
     for (const npc of met) app.actions.logEvent('travel', `The party meets ${npc.name}.`);
   }
 
-  /** The party may have changed nodes; re-filter every location-scoped panel. */
+  /** The party can change nodes. Re-filter every location-scoped panel. */
   function refreshLocationPanels() {
     meetNPCsHere();
     // A move can carry the party off a running fight's tile, which ends it.
@@ -51,18 +53,18 @@ export function createMapTravel(app, env) {
   }
 
   /**
-   * Offer to teleport the party to a discovered node. Clicking the node the
-   * party already occupies just brings the view back to it; otherwise a confirm
-   * dialog gates the move. The party lands on the node's first revealed tile
-   * (there is always one for a discovered node with tiles), falling back to the
-   * grid centre for a tile-less node.
+   * Offer to teleport the party to a discovered node. A click on the node
+   * the party already occupies just brings the view back to it. Otherwise, a
+   * confirm dialog gates the move. The party lands on the node's first
+   * revealed tile. A discovered node with tiles always has one. A tile-less
+   * node falls back to the grid center.
    * @param {string} nodeId
    */
   async function teleportToNode(nodeId) {
     const node = grid.getNode(nodeId);
     if (!node) return;
-    // Teleporting the party is the GM's call; a player selecting a node just
-    // brings it into view without moving anyone.
+    // Teleporting the party is the GM's decision. When a player selects a
+    // node, the view brings it into view without moving anyone.
     if (!isGM(state.role) || partyTracker.getPosition().nodeId === nodeId) {
       env.goToNode(nodeId);
       return;
@@ -71,16 +73,18 @@ export function createMapTravel(app, env) {
       confirmLabel: 'Teleport',
     });
     if (!ok) return;
-    // Resolve the landing spot against the node's real tiles, so a teleport into
-    // a sparse or walled node (e.g. a generated dungeon) never strands the party
-    // on a wall or an empty cell.
+    // Resolve the landing spot against the node's real tiles. This makes
+    // sure that a teleport into a sparse or walled node, for example a
+    // generated dungeon, never strands the party on a wall or an empty
+    // cell.
     const target = resolveEntryTile(
       node,
       node.tiles.find((t) => t.revealed)?.id ??
         tileIdAt(Math.floor(node.width / 2), Math.floor(node.height / 2)),
     );
-    // No revealed tile yet means the party has never set foot here, so this
-    // teleport is the region's discovery (checked before moveTo reveals fog).
+    // No revealed tile means the party has never set foot here. This
+    // teleport is then the region's discovery. The code checks this before
+    // moveTo reveals fog.
     const firstVisit = !node.tiles.some((t) => t.revealed);
     partyTracker.moveTo(nodeId, target);
     state.characters = recallAll(state.characters); // the whole party teleports
@@ -94,9 +98,10 @@ export function createMapTravel(app, env) {
   }
 
   /**
-   * The ways out of the node in view, for the canvas arrows, the exit buttons,
-   * and the click path. Empty in Build mode: authoring a map is not travelling
-   * it, and the arrows would be one more thing drawn over the tiles being painted.
+   * The ways out of the node in view, for the canvas arrows, the exit
+   * buttons, and the click path. The list is empty in Build mode. Authoring
+   * a map is not traveling it, and the arrows are one more thing drawn
+   * over the tiles the GM paints.
    * @returns {import('../types/map.js').MapExit[]}
    */
   function currentExits() {
@@ -106,18 +111,19 @@ export function createMapTravel(app, env) {
   }
 
   /**
-   * Leave the node in view through one of its exits, landing beside the tile in
-   * the parent that the child was entered from (EntryPoint.computeParentReturnTile).
-   * The mirror of the zoom-in branch of onCellClick, and it moves whoever a click
-   * moves: the whole party for the GM, one character while the split-party toggle
-   * is on, and no one from a spectator tab, which only follows the camera out.
+   * Leave the node in view through one of its exits. The character lands
+   * beside the tile in the parent node that the child was entered from
+   * (EntryPoint.computeParentReturnTile). This function mirrors the zoom-in
+   * branch of onCellClick. It moves whoever a click moves: the whole party
+   * for the GM, one character while the split-party toggle is on, and no
+   * one from a spectator tab. A spectator tab only follows the camera out.
    * @param {import('../types/map.js').MapExit} exit
    */
   function exitToParent(exit) {
     const child = navigator.getCurrentNode();
     const parent = child.parentId ? grid.getNode(child.parentId) : null;
-    // A list computed for a node the view has since left, or a parent deleted
-    // underneath it: nothing to travel to.
+    // The list was computed for a node the view has since left, or for a
+    // parent since deleted. There is nothing to travel to.
     if (!parent || parent.id !== exit.targetNodeId) return;
     const gm = isGM(state.role);
     const subject = clickSubject();
@@ -128,9 +134,10 @@ export function createMapTravel(app, env) {
     const from = subject
       ? characterPosition(subject, partyTracker.getPosition())
       : partyTracker.getPosition();
-    // Whoever this tab moves has to be standing in the node being left: a GM
-    // looking into a child the party is elsewhere in gets the camera out of it,
-    // not a party dragged from wherever they actually are.
+    // Whoever this tab moves must stand in the node being left. A GM
+    // looking into a child node where the party stands elsewhere gets the
+    // camera out of it. The party is not dragged from wherever it actually
+    // stands.
     if (from.nodeId !== child.id) {
       env.goToNode(parent.id);
       return;
@@ -141,8 +148,9 @@ export function createMapTravel(app, env) {
         nodeId: parent.id,
         tileId: landing,
       });
-      // Read the parent back out of the grid: their step reveals fog around
-      // where they came out, and the copy above predates any other write.
+      // Read the parent node back out of the grid. The character's step
+      // reveals fog around the landing point. The copy above predates any
+      // other write.
       const fresh = grid.getNode(parent.id) ?? parent;
       grid.updateNode(revealAround(fresh, landing, partyTracker.revealRadius));
     } else {
@@ -159,7 +167,7 @@ export function createMapTravel(app, env) {
     app.actions.markDirty();
     refreshLocationPanels();
     if (subject) {
-      // Re-read the roster: the move above replaced the character object.
+      // Re-read the roster. The move above replaced the character object.
       const moved = state.characters.find((c) => c.id === subject.id) ?? subject;
       app.actions.maybeTriggerEncounter(
         characterPosition(moved, partyTracker.getPosition()),
@@ -169,10 +177,10 @@ export function createMapTravel(app, env) {
   }
 
   /**
-   * Mark a discoverable POI discovered once the party reaches it, persisting the
-   * flag and logging the find. A non-discoverable or already-found tile is a
-   * no-op. Read the node fresh from the navigator since the party's move just
-   * rewrote it in the grid.
+   * Mark a discoverable POI discovered once the party reaches it. Save the
+   * flag and log the find. A non-discoverable or already-found tile does
+   * nothing. Read the node fresh from the navigator, because the party's
+   * move just rewrote the node in the grid.
    * @param {import('../types/map.js').Tile} tile
    */
   function discoverTile(tile) {
@@ -187,11 +195,11 @@ export function createMapTravel(app, env) {
   }
 
   /**
-   * Which single character this tab's clicks move, or null when they move the
-   * whole party instead. Individual movement exists only while the GM's
-   * split-party toggle is on: the GM moves whoever is selected in the roster,
-   * a bound player tab moves its own character, and a spectator tab (no
-   * binding) moves no one.
+   * Which single character this tab's clicks move, or null when the clicks
+   * move the whole party instead. Individual movement exists only while the
+   * GM's split-party toggle is on. The GM moves whoever is selected in the
+   * roster. A bound player tab moves its own character. A spectator tab,
+   * with no binding, moves no one.
    * @returns {import('../types/entities.js').Character | null}
    */
   function clickSubject() {
@@ -203,10 +211,10 @@ export function createMapTravel(app, env) {
   }
 
   /**
-   * Move one character across the node on screen: they take their own location
-   * on the clicked tile (rejoining the party when the click lands on the
-   * party's tile), their step reveals fog around them, and an encounter on that
-   * tile alerts under their name.
+   * Move one character across the node on screen. The character takes its
+   * own location on the clicked tile, and rejoins the party when the click
+   * lands on the party's tile. The character's step reveals fog around it.
+   * An encounter on that tile alerts under the character's name.
    * @param {import('../types/map.js').Tile} tile
    * @param {import('../types/entities.js').Character} character
    */
@@ -228,13 +236,14 @@ export function createMapTravel(app, env) {
     app.actions.maybeTriggerEncounter({ nodeId, tileId: tile.id }, character.name);
   }
 
-  // Fires only outside authoring mode: Play-mode navigation and moves.
-  // Empty cells are inert. Who moves depends on the tab and on the split-party
-  // toggle: with splitting off the GM's clicks move the whole party (recalling
-  // any individually placed character) and a player's clicks move no one; with
-  // it on, each tab moves one character — the GM's roster selection, or a bound
-  // player's own character. A spectator tab moves no one either way (region
-  // tiles still navigate the view).
+  // This handler runs only outside authoring mode, for Play-mode navigation
+  // and moves. Empty cells do nothing. Who moves depends on the tab and on
+  // the split-party toggle. With splitting off, the GM's clicks move the
+  // whole party and recall any individually placed character, and a
+  // player's clicks move no one. With splitting on, each tab moves one
+  // character: the GM's roster selection, or a bound player's own
+  // character. A spectator tab moves no one either way, but region tiles
+  // still navigate the view.
   /** @type {(x: number, y: number, tile: import('../types/map.js').Tile | null) => void} */
   const onCellClick = (x, y, tile) => {
     if (!tile) return;
@@ -245,13 +254,15 @@ export function createMapTravel(app, env) {
       if (navigator.zoomIn(tile.id)) {
         const child = navigator.getCurrentNode();
         if (gm || subject) {
-          // Checked before the move reveals entry fog: an all-fogged child has
-          // never been visited, so stepping in now is its discovery.
+          // Check this before the move reveals entry fog. An all-fogged
+          // child has never been visited, so stepping in now is its
+          // discovery.
           const firstVisit = !child.tiles.some((t) => t.revealed);
-          // Zooming into a region moves whoever the click moves into it. Unless
-          // they already stand in this child, drop them at the edge they
-          // approached from and reveal fog around it, so the child doesn't
-          // render as a blank fog field with no marker on it.
+          // Zooming into a region moves whoever the click moves into it.
+          // Unless the character already stands in this child, drop the
+          // character at the edge it approached from and reveal fog around
+          // it. This makes sure that the child does not draw as a blank fog
+          // field with no marker on it.
           if (subject) {
             const at = characterPosition(subject, partyTracker.getPosition());
             if (at.nodeId !== child.id) {
@@ -281,22 +292,23 @@ export function createMapTravel(app, env) {
           );
           app.actions.markDirty(); // position and fog changed
         }
-        // Re-read the node: the move above wrote a new, fog-revealed node into
-        // the grid, so the `child` captured earlier is stale and still fogged.
+        // Re-read the node. The move above wrote a new, fog-revealed node
+        // into the grid, so the `child` variable captured earlier is stale
+        // and still fogged.
         env.mapCanvas.setNode(navigator.getCurrentNode());
         env.breadcrumb.update(navigator.getBreadcrumb());
         env.worldTree.update();
         // Entering a node for the first time discovers it.
         env.regionTree.update();
         env.syncPartyMarker();
-        // The child has its own ways out, and this path swaps the node itself
-        // rather than going through resyncMapViews, so it owes them explicitly:
-        // walking into a region used to leave its return arrows undrawn until
-        // something else re-synced.
+        // The child node has its own ways out. This code path swaps the node
+        // itself instead of going through resyncMapViews, so it must draw
+        // the ways out explicitly. Before this fix, walking into a region
+        // left its return arrows undrawn until something else re-synced.
         env.syncExits();
         refreshLocationPanels();
         if (subject) {
-          // Re-read the roster: the move above replaced the character object.
+          // Re-read the roster. The move above replaced the character object.
           const moved = state.characters.find((c) => c.id === subject.id) ?? subject;
           app.actions.maybeTriggerEncounter(
             characterPosition(moved, partyTracker.getPosition()),
@@ -307,10 +319,11 @@ export function createMapTravel(app, env) {
       return;
     }
     // A door or stairway out of an interior is also an ordinary tile to walk
-    // onto, so it only leads out once whoever the click moves is standing on it:
-    // otherwise the party could never stand in a doorway, and a stray click at
-    // the far end of a dungeon level would take them out of it. The exit buttons
-    // travel through the same door in one press for anyone who needs that.
+    // onto. It leads out only once whoever the click moves stands on it.
+    // Otherwise the party can never stand in a doorway, and a stray click
+    // at the far end of a dungeon level takes the party out of it. The
+    // exit buttons travel through the same door in one press for anyone who
+    // needs that.
     const exit = exitForTile(currentExits(), tile.id);
     if (exit) {
       const at = subject
@@ -339,9 +352,10 @@ export function createMapTravel(app, env) {
     // A spectator tab, or a player tab with no character of its own to move.
   };
 
-  // Play-mode read side of the Build-mode tile inspector: hovering a revealed
-  // tile with metadata shows what the GM authored there. Build mode already
-  // surfaces the same data through the inspector, so hover stays quiet there.
+  // Play-mode read side of the Build-mode tile inspector. Hovering over a
+  // revealed tile with metadata shows what the GM authored there. Build mode
+  // already shows the same data through the inspector, so hover stays quiet
+  // there.
   /** @type {(tile: import('../types/map.js').Tile | null, clientX: number, clientY: number) => void} */
   const onCellHover = (tile, clientX, clientY) => {
     if (
@@ -358,8 +372,8 @@ export function createMapTravel(app, env) {
       .filter((n) => n.location && n.location.nodeId === nodeId && n.location.tileId === tile.id)
       .map((n) => n.name);
     const poiType = tile.metadata.poiType;
-    // Notes are the GM's secret; players see the POI type and who stands
-    // here (the marker is already visible once the tile is revealed).
+    // Notes are the GM's secret. Players see the POI type and who stands
+    // here. The marker is already visible once the tile is revealed.
     const gm = isGM(state.role);
     const visible = poiType || npcNames.length > 0 || (gm && tile.metadata.notes);
     if (!visible) {

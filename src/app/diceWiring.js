@@ -1,6 +1,6 @@
 /**
- * The dice tray and the roll log. Rolls live in the travelogue (the tray itself
- * shows only the latest), tagged by which side of the screen rolled them.
+ * The dice tray and the roll log. Rolls live in the log (the tray itself
+ * shows only the latest roll), tagged by which side of the screen rolled them.
  */
 
 import { mustGetElement } from '../ui/dom.js';
@@ -14,8 +14,8 @@ import { isGM } from '../view/ViewRole.js';
  * @param {AppContext} app
  */
 export function wireDiceTray(app) {
-  /** Who a roll is attributed to: the GM, the character this tab is bound to,
-   * or an anonymous player for a spectator tab. */
+  /** This function returns who a roll is attributed to: the GM, the
+   * character this tab is bound to, or an anonymous player for a spectator tab. */
   function rollerName() {
     if (isGM(app.state.role)) return 'The GM';
     const boundId = app.actions.getBoundCharacterId();
@@ -26,7 +26,7 @@ export function wireDiceTray(app) {
     onRoll: (text) => app.actions.logEvent('roll', `${rollerName()} rolls ${text}.`),
   });
 
-  // Lets a weapon attack load and roll the tray (d20 + modifier vs the
-  // defender's AC) so the roll is visible where every other roll happens.
+  // This lets a weapon attack load and roll the tray (d20 plus modifier
+  // against the defender's AC). The roll then shows where every other roll shows.
   app.actions.rollDice = (selection, target) => diceTray.rollSelection(selection, target);
 }

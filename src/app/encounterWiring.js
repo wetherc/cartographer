@@ -44,21 +44,22 @@ import { npcForm } from './npcForm.js';
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
 /**
- * The Encounters and Initiative panels, the bestiary workflow, and the
- * walked-into-an-encounter alert. The only writer of `state.combat`; registers
- * `maybeTriggerEncounter` on `app.actions` for the party-move paths. The
- * authoring dialogs live in encounterForm.js and the attack resolution in
- * weaponAttack.js; this module wires them to the panels.
+ * This module wires the Encounters panel, the Initiative panel, the bestiary
+ * flow, and the walked-into-an-encounter alert. It is the only writer of
+ * `state.combat`. It registers `maybeTriggerEncounter` on `app.actions` for
+ * the party movement paths. The authoring dialogs are in encounterForm.js.
+ * The attack resolution is in weaponAttack.js. This module connects them to
+ * the panels.
  * @param {AppContext} app
  */
 export function wireEncounters(app) {
   const { state } = app;
 
-  // The running fight lives in `state.combat` and nowhere else. This module used
-  // to hold a mirrored copy, which went stale the moment another tab's save was
-  // adopted: the re-hydrate writes `state.combat`, so a follower whose fight had
-  // ended kept the old order in its sidebar card and could still open it.
-  // Reading state on every access costs nothing and cannot drift.
+  // The running fight lives only in `state.combat`. This module once kept a
+  // mirrored copy. That copy went stale when another tab adopted its save,
+  // because the re-hydrate writes `state.combat` directly. A follower tab
+  // then still shows and opens an ended fight from its old sidebar card.
+  // Reading state on every access has no cost and cannot go stale.
   const current = () => state.combat;
 
   /** @param {import('../types/combat.js').CombatState | null} next */
@@ -68,11 +69,11 @@ export function wireEncounters(app) {
   }
 
   /**
-   * Drop a deleted combatant out of the running order. Every delete path goes
-   * through here rather than writing `state.combat` itself, so the write is one
-   * statement with the dirty mark and the panel refresh beside it. A participant
-   * left behind resolves to nothing, so its row would sit in the order with
-   * buttons that quietly do nothing.
+   * Remove a deleted combatant from the running order. Every delete path
+   * calls this function instead of writing `state.combat` directly. This
+   * keeps the write, the dirty mark, and the panel refresh together in one
+   * place. A combatant left in the order resolves to nothing, so its row
+   * shows buttons that do nothing.
    * @param {string} id
    */
   app.actions.removeCombatant = (id) => {
@@ -85,14 +86,15 @@ export function wireEncounters(app) {
   };
 
   /**
-   * If the party's current tile holds a live encounter, announce it in a modal
-   * over the map. The encounter isn't removed — a party that flees or ignores it
-   * leaves it in the sidebar for the current node — so this is purely a "you walk
-   * into something" alert. The readout respects the viewer role: the GM sees
-   * exact HP, players see the coarse status band. Called after a real move, not
-   * on initial render, so the app doesn't greet a fresh load with a popup.
-   * Defaults to the whole party at its shared position; a player moving their
-   * own token passes that character's tile and name instead.
+   * If the party's current tile has a live encounter, show it in a modal
+   * over the map. The encounter stays in place: a party that flees or
+   * ignores it still sees it in the sidebar for that node. This is only a
+   * walk-into-something alert. The readout follows the viewer role. The GM
+   * sees exact HP. A player sees the coarse status band. The app calls this
+   * after a real move, not on the initial render, so a fresh load does not
+   * show a popup. It defaults to the whole party at its shared position. A
+   * player who moves their own token passes that character's tile and name
+   * instead.
    * @param {import('../types/map.js').PartyPosition} [position]
    * @param {string} [subject]
    */
@@ -104,8 +106,9 @@ export function wireEncounters(app) {
     if (here.length === 0) return;
     const node = app.grid.getNode(position.nodeId);
     const region = node ? node.name : position.nodeId;
-    // First meetings go in the travelogue exactly once, keyed by a persisted
-    // `noticed` flag — walking back onto the tile re-alerts but doesn't re-log.
+    // The travelogue logs each first meeting exactly once, using a persisted
+    // `noticed` flag. Walking back onto the tile shows the alert again but
+    // does not log it again.
     const fresh = here.filter((e) => !e.noticed);
     if (fresh.length > 0) {
       state.encounters = state.encounters.map((e) =>
@@ -136,13 +139,15 @@ export function wireEncounters(app) {
   };
 
   app.views.encounterPanel = mountEncounterPanel(mustGetElement('encounter-container'), {
-    // The panel shows only what's relevant where the party stands, split into
-    // the panel's two tabs. Active: the live encounters on the party's exact
-    // tile — what a step just walked into (both roles; the alert already
-    // announced it). Nearby: the rest in range — for the GM, encounters
-    // within four times the fog reveal radius of the party (plus unbound
-    // ones); for players, only what's been discovered — an encounter whose
-    // tile the fog has revealed, or an unbound one the party walked into.
+    // The panel shows only what is relevant to the party's current position,
+    // split into two tabs. The Active tab lists live encounters on the
+    // party's exact tile. This is what the party just walked into. Both
+    // roles see it, because the alert already announced it. The Nearby tab
+    // lists the rest within range. For the GM, this means encounters within
+    // four times the fog reveal radius of the party, plus unbound
+    // encounters. For a player, this means only discovered encounters: one
+    // on a tile the fog has revealed, or an unbound one the party walked
+    // into.
     getActiveEncounters: () => encountersOnTile(state.encounters, app.partyTracker.getPosition()),
     getNearbyEncounters: () => {
       const position = app.partyTracker.getPosition();
@@ -157,13 +162,13 @@ export function wireEncounters(app) {
       return list.filter((e) => !hereIds.has(e.id));
     },
     onUpdate: (next) => {
-      // Log the transition into defeat exactly once (damage that keeps it down
-      // shouldn't re-log), by comparing against the pre-update encounter.
+      // Log the transition into defeat exactly once. Compare against the
+      // pre-update encounter so damage that keeps it down does not log again.
       const prev = state.encounters.find((e) => e.id === next.id);
       if (prev) logDefeatTransition(app, prev, next);
       state.encounters = replaceById(state.encounters, next);
-      // The panel re-renders its own rows once this resolves, so it opts out of
-      // that half of the refresh.
+      // The panel re-renders its own rows once this call resolves. It skips
+      // that part of the refresh.
       commitEncounters(app, { panel: false });
     },
     onDelete: (id) => {
@@ -171,13 +176,14 @@ export function wireEncounters(app) {
       app.actions.removeCombatant(id);
       commitEncounters(app, { panel: false });
     },
-    // Authoring (new encounters, spawning from the bestiary) lives in the
-    // Build rail; the Play panel keeps editing an existing encounter (HP,
-    // placement) and snapshotting one as a template mid-session.
+    // Authoring, including new encounters and spawning from the bestiary,
+    // lives in the Build rail. The Play panel edits an existing encounter's
+    // HP and placement, and saves one as a template mid-session.
     onEdit: (encounter) => encounterForm(app, encounter, null),
-    // Save an encounter's blueprint (name, max HP, stat block) to the bestiary,
-    // so the next Goblin isn't typed from scratch. Same-named saves stack as
-    // separate templates — a template is a snapshot, not a live link.
+    // Save an encounter's blueprint (name, max HP, stat block) to the
+    // bestiary. This avoids typing the next Goblin from scratch. Saves with
+    // the same name stack as separate templates, because a template is a
+    // snapshot, not a live link.
     onSaveTemplate: (encounter) => {
       state.bestiary = [
         ...state.bestiary,
@@ -193,17 +199,19 @@ export function wireEncounters(app) {
       app.toasts.show(`Saved "${encounter.name}" to the bestiary.`);
     },
     confirmDelete: (encounter) => confirmDelete(encounter.name),
-    // Opening combat is the GM's call: the button shows only to the GM, only
-    // while the party stands on a live encounter's tile with no fight running.
+    // Only the GM can start combat. The button shows only to the GM, and
+    // only while the party stands on a live encounter's tile with no fight
+    // running.
     canStartCombat: () => isGM(state.role) && current() === null && encountersHere().length > 0,
     onStartCombat: startCombatSetup,
     getRole: () => state.role,
   });
 
-  // The Build rail's authoring list: the encounters staged in whatever node
-  // the GM is looking at (plus unplaced ones), editable without moving the
-  // party there. New encounters default onto the Build-mode selected tile of
-  // the viewed node, so "select a tile, add an encounter" places it there.
+  // This is the Build rail's authoring list. It lists the encounters staged
+  // in the node the GM is viewing, plus unplaced ones, and lets the GM edit
+  // them without moving the party there. A new encounter defaults to the
+  // Build-mode selected tile of the viewed node, so the GM can select a
+  // tile and add an encounter there directly.
   app.views.buildEncounters = mountBuildEncounterPanel(
     mustGetElement('build-encounters-container'),
     {
@@ -219,14 +227,14 @@ export function wireEncounters(app) {
       onAddFromTemplate: () => addFromBestiary(app),
       onEdit: (encounter) => encounterForm(app, encounter, null),
       onDelete: (encounter) => deleteEncounter(app, encounter),
-      // Base stat edits from the Build rail's chips: persist and let the Play
-      // panel (which shows the same encounter) pick the change up.
+      // Persist base stat edits from the Build rail's chips. The Play panel
+      // shows the same encounter and picks up the change.
       onUpdate: (next) => {
         state.encounters = replaceById(state.encounters, next);
         app.views.encounterPanel.update();
         app.actions.markDirty();
       },
-      // Selecting a placed encounter jumps the map to where it's staged.
+      // Selecting a placed encounter moves the map view to its staged location.
       onFocus: (encounter) => {
         if (encounter.location) app.actions.focusLocation(encounter.location);
       },
@@ -234,9 +242,10 @@ export function wireEncounters(app) {
   );
 
   /**
-   * The Build-mode right-click menu for a tile of the viewed node, floated at
-   * the pointer: create a new encounter or NPC placed there, or edit one
-   * already staged on that tile. Each choice opens the matching shared form.
+   * This is the Build-mode right-click menu for a tile of the viewed node.
+   * It opens at the pointer. It can create a new encounter or NPC on that
+   * tile, or edit one already staged there. Each choice opens the matching
+   * shared form.
    * @param {number} x
    * @param {number} y
    * @param {number} clientX
@@ -266,18 +275,20 @@ export function wireEncounters(app) {
     );
   };
 
-  // "In an encounter" means the party stands on a tile with at least one live
-  // encounter bound to it — the same trigger the walked-into-it alert uses.
+  // "In an encounter" means the party stands on a tile with at least one
+  // live encounter bound to it. This is the same condition the
+  // walked-into-it alert uses.
   function encountersHere() {
     return encountersOnTile(state.encounters, app.partyTracker.getPosition());
   }
 
-  // Combatants are whoever is involved in *this* encounter: the whole party,
-  // the live encounters on the party's tile, and any NPCs standing on that
-  // tile (hostile ones line up as foes, friendly/neutral ones with the
-  // party). Each carries its DEX modifier: seeded into the default value
-  // (10 + mod, the passive baseline), added on top of the d20 by "Roll
-  // initiative", and shown beside the name. Values stay hand-editable.
+  // The combatants are everyone involved in this encounter: the whole
+  // party, the live encounters on the party's tile, and any NPCs on that
+  // tile. Hostile NPCs line up as foes. Friendly and neutral NPCs line up
+  // with the party. Each combatant carries its DEX modifier. This modifier
+  // seeds the default value (10 + modifier, the passive baseline), adds to
+  // the d20 roll from Roll initiative, and shows beside the name. The GM
+  // can edit every value by hand.
   function combatRoster() {
     /** @type {(id: string, stats: Record<string, number> | undefined) => import('../types/combat.js').Participant} */
     const withDex = (id, stats) => {
@@ -292,27 +303,31 @@ export function wireEncounters(app) {
   }
 
   /**
-   * The name and side to show for a participant, resolved from whatever holds
-   * its id right now. Both panels take this instead of reading the order, so
-   * renaming a combatant or flipping an NPC's disposition mid-fight shows up
-   * on the next render.
+   * Resolve the name and side to show for a participant, from whatever
+   * currently holds its id. Both panels use this function instead of
+   * reading the order directly. This way a combatant renamed, or an NPC
+   * whose disposition changes mid-fight, shows the change on the next
+   * render.
    * @param {import('../types/combat.js').Participant} participant
    */
   const describe = (participant) => describeCombatant(app, participant.id);
 
-  // The GM's entry into combat: a setup dialog over the map with the roster,
-  // a "Roll initiative" fill (d20 + DEX modifier, hand-editable after), and a
-  // Start that flips the initiative panel from hidden to the running order.
+  // This is the GM's entry into combat. It opens a setup dialog over the
+  // map with the roster, a Roll initiative fill (d20 plus DEX modifier,
+  // editable by hand after), and a Start control. Start changes the
+  // initiative panel from hidden to the running order.
   async function startCombatSetup() {
-    // Taken when the setup opens, not when Start lands: the "Initiative
-    // rolled" line is logged from the dialog and belongs to this fight's log.
+    // This timestamp is taken when the setup opens, not when Start runs.
+    // The dialog logs the "Initiative rolled" line, and it belongs to this
+    // fight's log.
     const startedAt = Date.now();
     const participants = await combatSetupModal(combatRoster(), {
       describe,
       rollInitiative: (participant) =>
         Math.floor(Math.random() * 20) + 1 + (participant.modifier ?? 0),
-      // One travelogue line per "Roll initiative" press, recording every
-      // result; hand-edited overrides before Start aren't re-logged.
+      // The travelogue gets one line for each press of Roll initiative, and
+      // records every result. A hand-edited override before Start does not
+      // log again.
       onRolled: (results) =>
         app.actions.logEvent(
           'roll',
@@ -321,45 +336,47 @@ export function wireEncounters(app) {
     });
     if (!participants) return;
     setCombat(startCombat(participants, (p) => describe(p)?.name ?? '', startedAt));
-    app.views.initiativePanel.update(); // un-hides the panel
+    app.views.initiativePanel.update(); // shows the panel again
     app.views.encounterPanel.update(); // hides the Start combat button
     app.actions.setMode('combat'); // the fight runs on the full-width screen
   }
 
-  // Leaving combat mode is tied to the fight ending, however it ends: the End
-  // button, the last encounter dying, or the party walking off the tile. Any
-  // other mode is the operator's own choice and is left alone.
+  // Leaving combat mode is tied to the fight ending, regardless of how it
+  // ends: the End button, the last encounter dying, or the party walking
+  // off the tile. Any other mode change is the operator's own choice, and
+  // this function leaves it alone.
   function exitCombatMode() {
     if (state.mode === 'combat') app.actions.setMode('play');
   }
 
-  // Turn advance and combat end, registered as actions so the combat screen
-  // drives the same fight through the same code as the sidebar panel; this
-  // module stays the only writer of `combat`.
+  // Turn advance and combat end are registered as actions. This lets the
+  // combat screen drive the same fight through the same code as the
+  // sidebar panel. This module stays the only writer of `combat`.
   app.actions.advanceCombatTurn = () => {
     const combat = current();
     if (!combat) return;
-    // Read before the pointer moves: a spell that lets its target retry the
-    // save gets that retry at the end of the target's own turn, which is the
-    // turn now ending.
+    // Read this before the turn pointer moves. A spell that lets its target
+    // retry the save gets that retry at the end of the target's own turn,
+    // the turn now ending.
     const acting = currentParticipant(combat);
     if (acting) retryImposedSaves(app, acting.id);
-    // Defeated combatants keep their place in the order but not their turns:
-    // the pointer steps past them to the next one standing. A participant
-    // nothing resolves (deleted mid-fight) has no turn to take either.
+    // A defeated combatant keeps its place in the order but not its turn.
+    // The pointer steps past it to the next combatant standing. A
+    // participant that resolves to nothing, because it was deleted
+    // mid-fight, also has no turn to take.
     const result = advanceTurn(combat, (p) => {
       const found = findCombatant(app, p.id);
       return !found || isDowned(found);
     });
     setCombat(result.state);
-    // A new round elapsed, so tick every combatant's timed conditions down,
-    // along with the enemies' timed stat modifiers and the party's
-    // concentration durations.
+    // A new round elapsed. Tick down every combatant's timed conditions,
+    // the enemies' timed stat modifiers, and the party's concentration
+    // durations.
     if (result.wrapped) {
       /** @type {{ casterId: string, spellId: string }[]} */
       const expired = [];
       state.characters = state.characters.map((c) => {
-        // Concentration ticks after the conditions do, since it rewrites its
+        // Concentration ticks after the conditions, because it rewrites its
         // own chip's counter from the duration it owns.
         const ticked = tickConcentration({ ...c, conditions: tickConditions(c.conditions) });
         const held = c.concentration;
@@ -376,40 +393,43 @@ export function wireEncounters(app) {
       }));
       app.actions.refreshSelectedCharacter();
       app.views.encounterPanel.update();
-      // Swept only once both collections have been reassigned: the sweep writes
-      // to the same two, and the tick's own write would put its result back.
+      // The sweep runs only after both collections are reassigned. The
+      // sweep writes to the same two collections. Run earlier, the tick's
+      // own write restores its result.
       for (const { casterId, spellId } of expired) endSpellEffects(app, casterId, spellId);
     }
-    // The sidebar panel redraws itself after its own button; the combat
-    // screen has to be told the turn moved either way.
+    // The sidebar panel redraws itself after its own button. The combat
+    // screen must be told that the turn moved, in either case.
     app.views.combatScreen.update();
   };
 
   app.actions.endCombat = () => {
     setCombat(null);
-    app.views.initiativePanel.update(); // re-hides the panel
-    app.views.encounterPanel.update(); // brings the Start combat button back
+    app.views.initiativePanel.update(); // hides the panel again
+    app.views.encounterPanel.update(); // shows the Start combat button again
     exitCombatMode();
   };
 
   const initiativeContainer = mustGetElement('initiative-container');
-  // The fight runs on the combat screen; the sidebar card is the status line
-  // and the way there. Turn controls and the action strip live on the screen.
+  // The fight runs on the combat screen. The sidebar card is only the
+  // status line and the link to it. Turn controls and the action strip
+  // live on the screen.
   const initiativePanel = mountInitiativePanel(initiativeContainer, {
     getState: current,
     describe,
     onOpen: () => app.actions.setMode('combat'),
   });
 
-  // Walking off the encounter's tile (or deleting the last encounter there)
-  // drops the running combat, since its participants are no longer "here".
-  // Killing them all does not: the screen says the foes are down and waits for
-  // the GM's End combat, so a last hit does not yank the fight out from under
-  // whoever landed it, and there is still a chance to heal up or read the log
-  // before leaving. This is an action the paths that move the party or delete
-  // an encounter call, not part of the panel refresh: the refresh also runs
-  // from the rehydrate loop, where a state write would fight the save just
-  // adopted from another tab and echo a dirty write back at it.
+  // Walking off the encounter's tile, or deleting the last encounter there,
+  // drops the running combat, because its participants are no longer here.
+  // Killing every foe does not drop it: the screen shows the foes as down
+  // and waits for the GM to press End combat. This way a last hit does not
+  // take the fight away from whoever landed it, and the party can still
+  // heal up or read the log before leaving. The paths that move the party
+  // or delete an encounter call this action directly, not the panel
+  // refresh. The refresh also runs from the rehydrate loop, where a state
+  // write conflicts with the save just adopted from another tab and
+  // echoes a dirty write back at it.
   app.actions.syncCombatLocation = () => {
     if (!current()) return;
     const stagedHere = encountersAtTile(state.encounters, app.partyTracker.getPosition());
@@ -419,12 +439,12 @@ export function wireEncounters(app) {
     app.views.initiativePanel.update();
   };
 
-  // The Initiative card only shows while a fight is actually running — no
-  // setup or idle state parked in the sidebar. Wrapped so every existing
-  // `initiativePanel.update()` call site (party moves, role switches, the
-  // rehydrate loop) gets the visibility sync for free. The combat screen shows
-  // the same fight, so it refreshes here too rather than growing its own copy
-  // of every call site.
+  // The Initiative card shows only while a fight is running. No setup or
+  // idle state stays parked in the sidebar. This wrapper gives every
+  // existing `initiativePanel.update()` call site, including party moves,
+  // role switches, and the rehydrate loop, the visibility sync for free.
+  // The combat screen shows the same fight, so it refreshes here too,
+  // instead of duplicating every call site.
   app.views.initiativePanel = {
     update: () => {
       initiativeContainer.hidden = current() === null;
@@ -432,8 +452,9 @@ export function wireEncounters(app) {
       app.views.combatScreen.update();
     },
   };
-  // A save can load with a fight the party is no longer standing in (the
-  // campaign was edited elsewhere); reconcile once at mount, then refresh.
+  // A loaded save can carry a fight the party no longer stands in, because
+  // the campaign was edited elsewhere. Reconcile this once at mount, then
+  // refresh.
   app.actions.syncCombatLocation();
   app.views.initiativePanel.update();
 }

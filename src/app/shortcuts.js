@@ -6,14 +6,15 @@ import { SHORTCUT_HELP, shortcutFor } from '../view/Shortcuts.js';
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
 /**
- * App-wide keyboard shortcuts. Skipped while typing in a field or while a
- * dialog is open, so they never eat input; the map keeps its own keys (arrows,
- * Enter, +/-) via canvas focus. '?' doubles as discoverability for all of it.
+ * App-wide keyboard shortcuts. The app skips shortcuts while the user types
+ * in a field or while a dialog is open, so a shortcut never eats input. The
+ * map keeps its own keys (arrows, Enter, +/-) through canvas focus. The '?'
+ * key shows the shortcut list.
  *
- * Which key means what is `view/Shortcuts.js`'s table; this is the listener over
- * it, plus the clicks and calls each action turns into. Save, Undo, and Redo go
- * through the header buttons rather than their handlers, so a shortcut and a
- * click are the same code path.
+ * `view/Shortcuts.js` holds the table of which key means what. This
+ * function is the listener over that table, plus the clicks and calls each
+ * action turns into. Save, Undo, and Redo go through the header buttons,
+ * not their own handlers, so a shortcut and a click run the same code path.
  * @param {AppContext} app
  */
 export function wireShortcuts(app) {
@@ -28,8 +29,8 @@ export function wireShortcuts(app) {
 
     const action = shortcutFor(event, { mode: app.state.mode, gm: isGM(app.state.role) });
     if (!action) return;
-    // Only the modifier combinations have a browser default worth stopping; a
-    // bare letter has none, and preventing it would be invisible either way.
+    // Only modifier-key combinations have a browser default worth stopping.
+    // A bare letter has no default, so preventing it has no visible effect.
     if (event.ctrlKey || event.metaKey) event.preventDefault();
 
     if (action === 'save') mustGetElement('save-btn').click();

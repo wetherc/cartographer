@@ -1,8 +1,8 @@
 /**
- * The stat-block field group shared by the modal authoring dialogs: the
- * encounter dialog renders STAT_KEYS (abilities plus AC), the NPC dialog
- * ABILITY_SCORES — same `stat-<KEY>` naming and the same clamped read-back
- * either way, so the two dialogs can't drift.
+ * The stat-block field group shared by the modal authoring dialogs. The
+ * encounter dialog renders STAT_KEYS (abilities plus AC). The NPC dialog
+ * renders ABILITY_SCORES. Both dialogs use the same `stat-<KEY>` naming and
+ * the same clamped read-back, so the two dialogs cannot drift apart.
  */
 
 import { clampInt } from '../util/num.js';
@@ -10,8 +10,8 @@ import { clampInt } from '../util/num.js';
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
 
 /**
- * One number modal field per stat key, named `stat-<KEY>` and pre-filled from
- * the given block (missing stats default to the neutral 10).
+ * One number modal field per stat key, named `stat-<KEY>` and pre-filled
+ * from the given block. A missing stat defaults to the neutral value 10.
  * @param {string[]} keys
  * @param {Record<string, number>} [stats]
  * @returns {ModalField[]}
@@ -27,8 +27,8 @@ export function statFields(keys, stats = {}) {
 }
 
 /**
- * Read the stat fields back out of submitted modal values, clamping each to a
- * positive integer (blank or garbage reads as 10).
+ * Read the stat fields back out of the submitted modal values. The function
+ * clamps each value to a positive integer. A blank or invalid value reads as 10.
  * @param {string[]} keys
  * @param {Record<string, string>} values
  * @returns {Record<string, number>}

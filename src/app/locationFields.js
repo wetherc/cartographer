@@ -7,16 +7,18 @@ import { clampInt } from '../util/num.js';
 /**
  * Modal fields for placing something on the map: a map picker (every node,
  * labelled by its breadcrumb path, plus an unplaced option) and the tile
- * coordinates within it. Shared by the NPC dialogs and the bestiary spawn
- * dialog, so every "put this at a location" flow reads the same way.
+ * coordinates within the chosen node. The NPC dialogs and the bestiary spawn
+ * dialog share this function, so every "put this at a location" flow reads
+ * the same way.
  * @param {AppContext} app
  * @param {EncounterLocation | null} location
- * @param {{ unplacedLabel?: string }} [options] label for the null-location
- *   option — "with the party" reads better than "unplaced" for a character
+ * @param {{ unplacedLabel?: string }} [options] the label for the
+ *   null-location option. For example, "with the party" reads better than
+ *   "unplaced" for a character.
  */
 export function locationFields(app, location, options = {}) {
-  // A location whose tile id isn't a grid coordinate (a hand-edited save) opens
-  // the dialog at the origin rather than at NaN, NaN.
+  // A location whose tile id is not a grid coordinate (for example, a
+  // hand-edited save) opens the dialog at the origin, not at NaN, NaN.
   const { x, y } = (location && parseCoords(location.tileId)) || { x: 0, y: 0 };
   return [
     {
@@ -41,8 +43,9 @@ export function locationFields(app, location, options = {}) {
 }
 
 /**
- * Read the placement fields back into a location, clamping the coordinates to
- * the chosen node's bounds; the unplaced option (or a deleted node) yields null.
+ * Read the placement fields back into a location. The function clamps the
+ * coordinates to the chosen node's bounds. The unplaced option, or a
+ * deleted node, yields null.
  * @param {AppContext} app
  * @param {Record<string, string>} values
  * @returns {EncounterLocation | null}

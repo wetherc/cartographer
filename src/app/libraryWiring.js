@@ -41,8 +41,9 @@ import { npcForm } from './npcForm.js';
 /** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
-/** A spell's one-line summary for its library row: level/school and its effect
- * kind, plus a concentration marker.
+/** Build the one-line summary for a spell in the library row.
+ * It shows the level, the school, the effect kind, and a concentration marker
+ * if the spell needs concentration.
  * @param {Spell} spell
  * @returns {string} */
 function spellSummary(spell) {
@@ -52,7 +53,7 @@ function spellSummary(spell) {
     .join(' | ');
 }
 
-/** Section headings for the equipment list, in display order. */
+/** The section headings for the equipment list, in display order. */
 const TYPE_GROUPS = /** @type {Record<string, string>} */ ({
   weapon: 'Weapons',
   bow: 'Bows',
@@ -66,7 +67,7 @@ const TYPE_GROUPS = /** @type {Record<string, string>} */ ({
   gear: 'Gear',
 });
 
-/** The equipment list's subtabs: each shows one category of item types. */
+/** The subtabs for the equipment list. Each subtab shows one category of item types. */
 const EQUIPMENT_SUBTABS = [
   { id: 'weapons', label: 'Weapons', types: ['weapon', 'bow'] },
   { id: 'armor', label: 'Armor', types: ['armor', 'helmet', 'gloves', 'greaves', 'shield'] },
@@ -76,33 +77,35 @@ const EQUIPMENT_SUBTABS = [
 ];
 
 /**
- * The Library mode's rail: the merged (built-in + custom) equipment,
- * bestiary, NPC template, and spell lists, plus the export/import/reset controls for
- * the custom library. The custom library is deliberately not campaign state:
- * it persists in its own localStorage key, survives New/Import/Load example,
- * and round-trips through a portable JSON file the GM keeps at
- * library/campaign-library.json — an empty browser auto-loads that file at
- * startup.
+ * Build the rail for the Library mode. It shows the merged built-in and
+ * custom lists for equipment, bestiary, NPC templates, and spells, plus
+ * export, import, and reset controls for the custom library.
+ * The custom library is not campaign state, by design. It persists in its
+ * own key in localStorage, survives New, Import, and Load Example, and it
+ * round-trips through a portable JSON file that the GM keeps at
+ * library/campaign-library.json. An empty browser loads that file
+ * automatically at startup.
  * @param {AppContext} app
  */
 export function wireLibrary(app) {
-  // One read: loadCustomLibrary parses and fully normalizes the stored JSON, so
-  // asking twice did that work twice at startup just to learn whether anything
-  // was stored. Null means nothing stored, which is what seeds from the file.
+  // loadCustomLibrary parses and normalizes the stored JSON, so this call
+  // happens only once. A second call at startup repeats that work.
+  // A null result means nothing is stored, and the file seed below handles that case.
   const stored = loadCustomLibrary();
-  /** The live custom library; the active registry in Library.js mirrors it. */
+  /** The current custom library. The active registry in Library.js mirrors this value. */
   let custom = stored ?? emptyLibrary();
   const hadStored = stored !== null;
 
   /**
-   * Refresh all four lists after any library mutation, and the character panels
-   * with them: the spellbook lists the catalog's spells, so an edited or deleted
-   * entry has to reach it too. Every caller is a user action or the file seed's
-   * promise callback, both of which run after all wiring, so the party's action
-   * is registered by then even though the party is wired after the library, and
-   * the four panel consts below are assigned by then too. Nothing may call this
-   * synchronously during wiring: the panels are mounted after it is defined, so
-   * an early call would throw rather than skip a refresh.
+   * Refresh all four lists after a library change, and refresh the character
+   * panels too. The spellbook shows the catalog spells, so an edited or
+   * removed entry must reach it as well.
+   * Every caller is a user action or the promise callback for the file seed.
+   * Both run after all wiring completes, so the party action is registered
+   * and the four panel constants below are already assigned.
+   * Do not call this function during wiring. The panels are mounted after
+   * this function is defined, so an early call throws an error instead of
+   * skipping a refresh.
    */
   const refresh = () => {
     equipmentPanel.update();
@@ -112,7 +115,7 @@ export function wireLibrary(app) {
     app.actions.refreshSelectedCharacter();
   };
 
-  /** Apply, persist, and re-render a new custom library. @param {CustomLibrary} next */
+  /** Apply a new custom library, store it, and refresh the display. @param {CustomLibrary} next */
   const setCustom = (next) => {
     custom = next;
     setActiveLibrary(next);
@@ -125,11 +128,13 @@ export function wireLibrary(app) {
   };
 
   /**
-   * The shared onRemove handler behind every library list: removing an
-   * override reverts the entry to its built-in default, removing a custom
-   * entry deletes it outright — one place for that wording and the
-   * danger-only-on-delete styling. `noun` names the entry kind in the
-   * confirm; `apply` removes the confirmed key from the custom library.
+   * The shared onRemove handler for every library list. Removing an override
+   * reverts the entry to its built-in default. Removing a custom entry
+   * deletes it.
+   * This function is the single place for that wording and for the danger
+   * style that applies only to delete. The noun parameter names the entry
+   * kind in the confirm dialog. The apply parameter removes the confirmed
+   * key from the custom library.
    * @param {string} noun
    * @param {(key: string) => void} apply
    * @returns {(key: string, source: string) => Promise<boolean>}
@@ -146,18 +151,19 @@ export function wireLibrary(app) {
   };
 
   /**
-   * Store an edited name-keyed entry (bestiary template or spell) under its
-   * possibly-renamed key: a rename retires the old custom entry rather than
-   * leaving both behind, and editing a built-in stores a custom override. The
-   * id comes from `storedEntryId`, which keeps a custom entry's id stable
-   * across a rename so campaign references to it survive. The form owns the
-   * fields; this owns identity and the merge key.
-   * A freshly derived id avoids every id in the list's namespace — both the
-   * built-in defaults and the stored customs — rather than only the ids
-   * currently visible in the merged list: an overridden default's own id is
-   * hidden by its override but resurfaces the moment that override is renamed
-   * or removed, so a slug that reused it would make one of the two entries
-   * unreachable through the last-wins id index.
+   * Store an edited name-keyed entry (a bestiary template or a spell) under
+   * its key, which can change on rename.
+   * A rename removes the old custom entry instead of leaving both entries in
+   * place. An edit to a built-in entry stores a custom override.
+   * The id comes from storedEntryId. This function keeps a custom entry's id
+   * stable across a rename, so campaign references to the id remain valid.
+   * The form owns the fields. This function owns the identity and the merge
+   * key.
+   * A new id must avoid every id in the list namespace, both the built-in
+   * defaults and the stored custom entries, not only the ids visible in the
+   * merged list. An overridden default hides its own id, but that id returns
+   * when the override is renamed or removed. A new id that reuses it makes
+   * one of the two entries unreachable through the last-wins id index.
    * @param {'bestiary' | 'spells'} list which custom-library list to write
    * @param {() => { entry: { id: string, name: string }, source: import('../types/library.js').LibrarySource }[]} activeEntries
    * @param {{ id: string }[]} defaults the list's built-in entries
@@ -179,10 +185,10 @@ export function wireLibrary(app) {
 
   setActiveLibrary(custom);
 
-  // Seed an empty browser from the library file, so a fresh clone (or a
-  // cleared browser) picks the GM's customizations back up without a manual
-  // import. A browser that already holds a library keeps it — the file is
-  // hot-loaded explicitly through Import.
+  // Seed an empty browser from the library file. A fresh clone or a cleared
+  // browser then picks up the GM customizations without a manual import.
+  // A browser that already holds a library keeps it. The file loads only
+  // when the GM selects Import.
   if (!hadStored) {
     fetchLibraryFile().then((library) => {
       if (!library || isLibraryEmpty(library)) return;
@@ -201,10 +207,10 @@ export function wireLibrary(app) {
     getEntries: (subtab) => {
       const merged = activeEquipmentEntries();
       const category = EQUIPMENT_SUBTABS.find((s) => s.id === subtab) ?? EQUIPMENT_SUBTABS[0];
-      // Order by type within the subtab so the group headings come out
-      // contiguous; merged order (defaults first, customs appended) is
-      // preserved within each type. Single-type subtabs skip the heading —
-      // it would just repeat the tab's label.
+      // Order entries by type within the subtab so the group headings stay
+      // contiguous. The merged order (defaults first, then custom entries)
+      // stays intact within each type. A single-type subtab skips the
+      // heading, because the heading otherwise repeats the tab label.
       return category.types.flatMap((type) =>
         merged
           .filter(({ entry }) => entry.type === type)
@@ -220,8 +226,9 @@ export function wireLibrary(app) {
           })),
       );
     },
-    // The full item form, inline in the rail: editing a built-in default
-    // stores the result as an override; a new name makes a new custom entry.
+    // The full item form appears inline in the rail. Editing a built-in
+    // default stores the result as an override. A new name creates a new
+    // custom entry.
     buildEditor: (key, close) => {
       const found = key
         ? activeEquipmentEntries().find(({ entry }) => equipmentKey(entry) === key)
@@ -242,8 +249,8 @@ export function wireLibrary(app) {
           const { quantity: _quantity, notes: _notes, ...rest } = fields;
           const entry = /** @type {EquipmentTemplate} */ (rest);
           let next = custom.equipment;
-          // A rename (or type change) retires the old custom entry rather
-          // than leaving both behind; renaming a default just adds the copy.
+          // A rename or a type change removes the old custom entry instead
+          // of leaving both. Renaming a default only adds the renamed copy.
           if (key && key !== equipmentKey(entry)) next = removeEntry(next, key, equipmentKey);
           setCustom({ ...custom, equipment: upsertEntry(next, entry, equipmentKey) });
           close();
@@ -273,8 +280,9 @@ export function wireLibrary(app) {
           .join(' | '),
         source,
       })),
-    // The full bestiary form, inline in the rail: editing a built-in default
-    // stores the result as an override; a new name makes a new custom entry.
+    // The full bestiary form appears inline in the rail. Editing a built-in
+    // default stores the result as an override. A new name creates a new
+    // custom entry.
     buildEditor: (key, close) => {
       const found = key
         ? activeBestiaryEntries().find(({ entry }) => nameKey(entry) === key)
@@ -296,7 +304,7 @@ export function wireLibrary(app) {
 
   // --- NPC templates ---------------------------------------------------------
 
-  /** Store an NPC template edit under its (possibly renamed) key.
+  /** Store an edited NPC template under its key, which can change on rename.
    * @param {string | null} key @param {NPCTemplate} template */
   const storeNPCTemplate = (key, template) => {
     let next = custom.npcs;
@@ -313,7 +321,7 @@ export function wireLibrary(app) {
         summary: [entry.role, entry.disposition].filter(Boolean).join(' — '),
         source,
       })),
-    // The full NPC template form, inline in the rail like the item form.
+    // The full NPC template form appears inline in the rail, like the item form.
     buildEditor: (key, close) => {
       const found = key ? activeNPCEntries().find(({ entry }) => nameKey(entry) === key) : null;
       return buildNPCTemplateForm({
@@ -329,8 +337,9 @@ export function wireLibrary(app) {
     onRemove: makeRemoveHandler('NPC template', (key) =>
       setCustom({ ...custom, npcs: removeEntry(custom.npcs, key, nameKey) }),
     ),
-    // Spawn a campaign NPC from a template: the normal NPC dialog, pre-filled
-    // from the blueprint, defaulting placement to the party's position.
+    // Spawn a campaign NPC from a template. The normal NPC dialog opens
+    // pre-filled from the template, with placement set to the party
+    // position by default.
     spawnLabel: 'Add to campaign',
     onSpawn: (key) => {
       const found = activeNPCEntries().find(({ entry }) => nameKey(entry) === key);
@@ -419,7 +428,7 @@ export function wireLibrary(app) {
     if (!ok) return;
     custom = emptyLibrary();
     setActiveLibrary(custom);
-    // Clear the stored key (rather than storing an empty library) so the next
+    // Clear the stored key instead of storing an empty library, so the next
     // page load can seed from the library file again.
     clearCustomLibrary();
     refresh();

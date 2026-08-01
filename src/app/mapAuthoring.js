@@ -21,12 +21,13 @@ import { resyncMapViews } from './mapResync.js';
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
 
 /**
- * Build-mode authoring for the map view: the paint/erase/region stroke
- * gestures, the drop-paint target, the tile inspector and its link/spawn
- * affordances, and the stroke-level undo ring. Split out of mapWiring so the
- * wiring module stays the mount-and-sync layer; everything here reads the
- * shared MapEnv late (mapCanvas, inspector, nodeActions are assigned during
- * wiring, before any gesture can fire).
+ * This module builds Build-mode authoring for the map view. It handles the
+ * paint, erase, and region stroke gestures, the drop-paint target, the tile
+ * inspector with its link and spawn functions, and the stroke-level undo
+ * ring. The code stays separate from mapWiring, so the wiring module only
+ * mounts views and keeps them in sync. Every function here reads the shared
+ * MapEnv late. Wiring assigns mapCanvas, inspector, and nodeActions before a
+ * gesture can happen.
  * @param {AppContext} app
  * @param {MapEnv} env
  */
@@ -34,15 +35,16 @@ export function createMapAuthoring(app, env) {
   const { palette, grid, navigator, partyTracker, toasts, state } = app;
 
   /**
-   * Build-mode stroke-level undo: an in-memory ring of node snapshots taken
-   * before each paint/erase stroke, region link, tile link, drop-paint, and
-   * generate, so one bad edit is reversible without reloading a whole earlier
-   * save. Session-only — the persisted Undo button stays the save-level story.
+   * Stroke-level undo for Build mode: an in-memory ring of node snapshots.
+   * The code takes one snapshot before each paint, erase, region link, tile
+   * link, drop-paint, or generate action. This lets the user undo one bad
+   * edit without a reload. The ring lasts only for this session. The
+   * persisted Undo button still handles undo at the save level.
    * @type {import('../types/map.js').MapNode[][]}
    */
   let editHistory = [];
 
-  /** Snapshot the given nodes' pre-edit state onto the stroke-undo ring.
+  /** Save the given nodes' state before the edit, onto the stroke-undo ring.
    * @param {...import('../types/map.js').MapNode} nodes */
   function snapshotEdit(...nodes) {
     editHistory = pushEdit(editHistory, nodes);
@@ -65,11 +67,12 @@ export function createMapAuthoring(app, env) {
   }
 
   /**
-   * Apply a pure node transform (paint/erase) to the current node, persist it,
-   * re-render the canvas, and keep the inspector in sync if it was showing the
-   * affected tile. Per-cell derived work (region groups, the screen-reader map
-   * description) is deferred to the stroke's end — a drag calls this once per
-   * cell crossed, and nobody reads either mid-drag.
+   * Apply a pure node transform (paint or erase) to the current node. The
+   * function saves the node, draws the canvas again, and updates the
+   * inspector if it shows the affected tile. Per-cell derived work, such as
+   * region groups and the screen-reader map description, waits until the end
+   * of the stroke. A drag calls this function once for each cell it crosses.
+   * Nothing reads the derived work during the drag.
    * @param {string} tileId
    * @param {(node: import('../types/map.js').MapNode) => import('../types/map.js').MapNode} transform
    */
@@ -83,9 +86,9 @@ export function createMapAuthoring(app, env) {
     app.actions.markDirty();
   }
 
-  /** Recompute the stroke-deferred derived state: region groups, description,
-   * and the ways out — a stroke that paints or erases a door or a staircase is
-   * exactly what makes an interior sealed or unseals it. */
+  /** Recompute the derived state deferred during the stroke: region groups,
+   * the description, and the ways out. A stroke that paints or erases a door
+   * or a staircase can seal or unseal an interior. */
   function settleAfterStroke() {
     env.mapCanvas.refreshNode(navigator.getCurrentNode());
     env.refreshMapDescription();
@@ -93,11 +96,11 @@ export function createMapAuthoring(app, env) {
   }
 
   /**
-   * Point the selected tile's childNodeId at a node (or null to unlink), so
-   * zooming that tile enters the linked node. On outdoor maps the link stamps
-   * a 2x2 block (and unlinking clears the whole block); interiors stay
-   * single-tile. Re-derives region groups via the canvas refresh so the block
-   * outline updates immediately.
+   * Set the selected tile's childNodeId to a node, or to null to unlink it.
+   * When a tile links to a node, a zoom on that tile enters the linked node.
+   * On outdoor maps, a link stamps a 2x2 block. Unlinking clears the whole
+   * block. Interiors keep a single tile. The canvas refresh recomputes region
+   * groups, so the block outline updates at once.
    * @param {string | null} childNodeId
    */
   function linkSelectedTile(childNodeId) {
@@ -108,16 +111,18 @@ export function createMapAuthoring(app, env) {
     grid.updateNode(updated);
     env.mapCanvas.refreshNode(updated);
     env.inspector.setTile(getTile(updated, env.selectedTileId) ?? null, true);
-    // A linked tile leads further in, so it is no longer a way out: linking an
-    // interior's only door seals it, and unlinking that tile opens it again.
+    // A linked tile leads further into the map, so it is no longer a way
+    // out. Linking an interior's only door seals it. Unlinking the tile
+    // opens it again.
     env.syncExits();
     app.actions.markDirty();
   }
 
   /**
-   * Resolve a completed region-tool drag: link every existing tile in the
-   * marquee block to a child node chosen from the current node's children, or to
-   * a newly created one — the area counterpart to the inspector's per-tile link.
+   * Resolve a completed region-tool drag. Link every existing tile in the
+   * marquee block to a child node. The user picks the child node from the
+   * current node's children, or creates a new one. This function is the
+   * area version of the inspector's per-tile link.
    */
   async function finishRegionStroke() {
     const rect = env.mapCanvas.marquee;
@@ -160,25 +165,27 @@ export function createMapAuthoring(app, env) {
     env.mapCanvas.refreshNode(updated);
     if (env.selectedTileId)
       env.inspector.setTile(getTile(updated, env.selectedTileId) ?? null, true);
-    // Same as the per-tile link, over a block: every tile in it now leads
-    // further in rather than out.
+    // Same as the per-tile link, but for a whole block. Every tile in the
+    // block now leads further into the map instead of out.
     env.syncExits();
     app.actions.markDirty();
   }
 
-  // Build-mode authoring arrives as strokes: a left-drag applies the active
-  // brush to every cell it crosses (a click is a one-cell stroke), so painting
-  // a row is one gesture instead of one click per tile. The Region brush
-  // instead drags out a marquee block, resolved to a child-node link on release.
-  /** Whether the in-progress stroke mutated any cell, so the stroke's end
-   * knows to settle deferred derived state (an inspect click never does). */
+  // Build-mode authoring uses strokes. A left-drag applies the active brush
+  // to every cell it crosses. A click is a one-cell stroke. This lets the
+  // user paint a row in one gesture instead of one click per tile. The
+  // Region brush instead drags out a marquee block. The block resolves to a
+  // child-node link on release.
+  /** Whether the current stroke changed any cell. This tells the stroke's
+   * end function to settle the deferred derived state. An inspect click
+   * never changes a cell. */
   let strokeTouched = false;
   /** @type {(x: number, y: number, tile: import('../types/map.js').Tile | null, first: boolean) => void} */
   const onStrokeCell = (x, y, tile, first) => {
     const id = tileIdAt(x, y);
-    // Play-mode GM fog brush: strokes reveal/hide fog instead of authoring
-    // tiles. Only active while a fog tool is toggled on (which is what put the
-    // canvas in authoring mode outside Build).
+    // Play-mode GM fog brush. A stroke reveals or hides fog instead of
+    // changing tiles. This works only while a fog tool is on. The fog tool
+    // is also what puts the canvas in authoring mode outside Build mode.
     if (state.mode === 'play') {
       if (env.fogTool) {
         strokeTouched = true;
@@ -186,9 +193,10 @@ export function createMapAuthoring(app, env) {
       }
       return;
     }
-    // A whole drag coalesces into one stroke, so one snapshot on its first
-    // cell makes the stroke the unit of undo. Inspect (no brush) and the
-    // region marquee don't mutate here; the region tool snapshots on link.
+    // A whole drag counts as one stroke. One snapshot on the first cell
+    // makes the stroke the unit of undo. Inspect mode and the region
+    // marquee do not change data here. The region tool takes its snapshot
+    // at link time.
     if (first && env.activeBrush && env.activeBrush !== 'region') {
       snapshotEdit(navigator.getCurrentNode());
     }
@@ -202,18 +210,19 @@ export function createMapAuthoring(app, env) {
       strokeTouched = true;
       applyToTile(id, (node) => erasePath(node, id));
     } else if (env.activeBrush) {
-      // Captured so the closure below keeps the non-null narrowing.
+      // Capture the brush here so the closure below keeps the non-null
+      // type check.
       const brush = env.activeBrush;
       const overlay = isOverlayType(brush.type);
       const scale = overlay ? 1 : env.palettePanel.getScale();
-      // A scaled stamp is a single placement, not a stroke: dragging with a
-      // 2x/3x size would litter overlapping blocks, so only the first cell
-      // paints.
+      // A scaled stamp is a single placement, not a stroke. Dragging at 2x
+      // or 3x size creates overlapping blocks. Only the first cell paints.
       if (scale > 1 && !first) return;
       strokeTouched = true;
       applyToTile(id, (node) => paintTile(node, id, brush.imageRef, overlay, scale));
     } else if (first) {
-      // Inspect acts on the pressed cell only; dragging doesn't re-select.
+      // Inspect acts on the pressed cell only. Dragging does not change the
+      // selection.
       env.selectTile(id);
     }
   };
@@ -227,8 +236,8 @@ export function createMapAuthoring(app, env) {
   };
 
   /**
-   * Mount the Build-rail tile inspector: metadata edits, the per-tile child
-   * link (with create-new), and spawn placement.
+   * Mount the Build-rail tile inspector. It handles metadata edits, the
+   * per-tile child link (with create-new), and spawn placement.
    * @param {HTMLElement} container
    */
   function mountInspector(container) {
@@ -250,7 +259,8 @@ export function createMapAuthoring(app, env) {
           if (id) linkSelectedTile(id);
         },
       },
-      // Build-mode spawn placement: make the selected tile the party's start.
+      // Build-mode spawn placement. Set the selected tile as the party's
+      // start point.
       onSetSpawn: (tileId) => {
         partyTracker.moveTo(navigator.getCurrentNode().id, tileId);
         state.characters = recallAll(state.characters);
@@ -262,8 +272,9 @@ export function createMapAuthoring(app, env) {
   }
 
   /**
-   * Make the canvas a drop target for palette swatches: dragging a tile onto a
-   * grid cell paints it there, an alternative to selecting a brush and clicking.
+   * Make the canvas a drop target for palette swatches. The user can drag a
+   * tile onto a grid cell to paint it there. This is an alternative to
+   * selecting a brush and clicking.
    * @param {HTMLCanvasElement} canvasEl
    */
   function wireCanvasDrop(canvasEl) {

@@ -26,12 +26,13 @@ import {
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
 
 /**
- * The "New character" dialog's fields and the pure builder that turns its
- * submitted values into a level 1 character: race (catalog pick or hand-typed),
- * background, class, ability scores, the class's skill picks, the background's
- * bonus languages, and a class-derived max HP. The field list and the builder
- * are both DOM-free so the assembly is unit-testable; partyWiring supplies the
- * modal around them.
+ * This module defines the fields for the New Character dialog and the pure
+ * builder that turns submitted values into a level 1 character. The
+ * character gets a race (a catalog pick or a hand-typed name), a background,
+ * a class, ability scores, the class's skill picks, the background's bonus
+ * languages, and a class-derived max HP.
+ * The field list and the builder are both free of DOM code, so the assembly
+ * is unit-testable. partyWiring supplies the modal around them.
  */
 
 /** @param {{ id: string, name: string }[]} defs @param {string} noneLabel */
@@ -40,8 +41,8 @@ function catalogOptions(defs, noneLabel) {
 }
 
 /**
- * The class's skill-choice list; an empty `from` means "choose from any
- * skill" (e.g. the bard).
+ * The class's skill-choice list. An empty `from` list means the class can
+ * choose from any skill, for example the bard.
  * @param {string | undefined} classId
  * @returns {string[]}
  */
@@ -56,7 +57,7 @@ function skillOptions(classId) {
   return skillChoiceList(classId).map((id) => ({ value: id, label: skillName(id) }));
 }
 
-/** The HP a classless character starts with, having no hit die to derive from. */
+/** The HP a classless character starts with. This character has no hit die to derive HP from. */
 const CLASSLESS_MAX_HP = 10;
 
 /** @returns {ModalField[]} the New character dialog's fields */
@@ -97,16 +98,18 @@ export function characterFields() {
         { value: 'custom', label: 'Custom scores' },
       ],
     },
-    // The default method is point buy, so the stat inputs open range-limited
-    // to its buyable 8-15; applyStatMethod widens the range on a method change.
+    // The default method is point buy, so the stat inputs open with a range
+    // limited to the buyable 8-15. applyStatMethod widens the range when
+    // the method changes.
     ...statFields(ABILITY_SCORES, Object.fromEntries(ABILITY_SCORES.map((key) => [key, 8]))).map(
       (field) => ({ ...field, min: 8, max: 15 }),
     ),
-    // Standard array replaces the number inputs with this assignment grid: one
-    // pill row per ability, each array value assignable to at most one row.
-    // Pills start unassigned; clicking a held pill frees it, and clicking a
-    // value another row holds moves it. Hidden under the other methods; an
-    // unassigned ability submits at the array's floor of 8.
+    // The standard array method replaces the number inputs with this
+    // assignment grid. The grid has one pill row per ability, and each
+    // array value can go to at most one row. Pills start unassigned. A
+    // click on a held pill frees it. A click on a value that another row
+    // holds moves it there. This grid stays hidden under the other methods.
+    // An unassigned ability submits at the array's floor of 8.
     {
       name: 'statPills',
       label: 'Assign each value to one ability',
@@ -117,7 +120,7 @@ export function characterFields() {
       full: true,
       hidden: true,
     },
-    // Shown only while the roll method is active, below the rolled scores.
+    // This field shows only while the roll method is active, below the rolled scores.
     { name: 'reroll', label: 'Reroll scores', type: 'button', hidden: true },
     {
       name: 'skills',
@@ -152,9 +155,10 @@ function readFormScores(form) {
 }
 
 /**
- * The ability-scores caption for the current method and scores: point buy
- * tracks the remaining budget live (the inputs themselves keep the scores in
- * range and under budget); the other methods need no readout.
+ * Build the ability-scores caption for the current method and scores. The
+ * point buy method tracks the remaining budget live, because the inputs
+ * already keep the scores in range and under budget. The other methods
+ * need no readout.
  * @param {string} method
  * @param {Record<string, number>} scores
  * @returns {string}
@@ -170,19 +174,21 @@ function statMethodCaption(method, scores) {
 }
 
 /**
- * Stamp the scores a freshly picked generation method starts from: point buy
- * begins at all 8s, the standard array lands in stat order, a roll (or a
- * reroll) draws 4d6-drop-lowest per score. Custom keeps whatever is typed.
+ * Stamp the starting scores for a freshly picked generation method. Point
+ * buy begins at all 8s. The standard array lands in stat order. A roll, or
+ * a reroll, draws 4d6 and drops the lowest die for each score. Custom keeps
+ * whatever the GM already typed.
  * @param {FormHandle} form
  * @param {() => number} rng
  */
 function applyStatMethod(form, rng) {
   const method = form.get('statMethod');
   form.setHidden('reroll', method !== 'roll');
-  // Standard array swaps the number inputs out for the assignment pill grid;
-  // every other method shows the inputs, with point buy hard-limited to its
-  // buyable 8-15 and the rest on the shared positive floor. Rolled scores are
-  // the dice's call: the inputs display them but aren't editable.
+  // The standard array method swaps the number inputs for the assignment
+  // pill grid. Every other method shows the inputs. Point buy limits the
+  // inputs to the buyable range of 8-15. The rest use the shared positive
+  // floor. Rolled scores come from the dice: the inputs display them but
+  // are not editable.
   form.setHidden('statPills', method !== 'standard-array');
   for (const key of ABILITY_SCORES) {
     form.setHidden(`stat-${key}`, method === 'standard-array');
@@ -191,9 +197,9 @@ function applyStatMethod(form, rng) {
     else form.setRange(`stat-${key}`, 1, undefined);
   }
   if (method === 'standard-array') form.set('statPills', '');
-  // Point buy starts at all 8s; standard array starts unassigned, which the
-  // hidden inputs also record as 8s until pills are placed. Custom keeps
-  // whatever is typed.
+  // Point buy starts at all 8s. Standard array starts unassigned, and the
+  // hidden inputs also record 8s until the GM places the pills. Custom
+  // keeps whatever is typed.
   const stamp =
     method === 'roll'
       ? rollScores(ABILITY_SCORES, rng)
@@ -205,11 +211,11 @@ function applyStatMethod(form, rng) {
 }
 
 /**
- * Keep the dependent fields in step as the form is edited: a race pick locks
- * the custom-race entry, the class pick refilters the skill multiselect to
- * that class's choices (capped and captioned at its pick count), and the stat
- * method stamps its starting scores (standard array through the pill grid,
- * point buy under a hard budget).
+ * Keep the dependent fields in step as the GM edits the form. A race pick
+ * locks the custom-race entry. A class pick refilters the skill multiselect
+ * to that class's choices, capped and captioned at its pick count. The stat
+ * method stamps its starting scores: the standard array through the pill
+ * grid, and point buy under a hard budget.
  * @param {string} name the changed field
  * @param {FormHandle} form
  * @param {() => number} [rng]
@@ -223,9 +229,10 @@ export function characterFormChange(name, form, rng = Math.random) {
   }
   if (name === 'statMethod' || name === 'reroll') applyStatMethod(form, rng);
   if (name === 'statPills') {
-    // The pill grid is the visible control under standard array; the hidden
-    // number inputs stay the submitted source of truth, so copy the
-    // assignment through, with unassigned abilities at the array's floor.
+    // The pill grid is the visible control under standard array. The
+    // hidden number inputs stay the submitted source of truth, so this
+    // copies the assignment through. An unassigned ability gets the
+    // array's floor value.
     const assigned = Object.fromEntries(
       form
         .get('statPills')
@@ -239,8 +246,9 @@ export function characterFormChange(name, form, rng = Math.random) {
     const method = form.get('statMethod');
     const scores = readFormScores(form);
     if (method === 'point-buy') {
-      // The budget is a hard limit: an edit that would overspend walks back
-      // down until it fits, so freeing points elsewhere must come first.
+      // The budget is a hard limit. An edit that overspends walks the
+      // value back down until it fits. The GM must free points elsewhere
+      // first.
       const key = name.slice('stat-'.length);
       while (scores[key] > 8 && (pointBuyRemaining(scores) ?? 0) < 0) {
         scores[key] -= 1;
@@ -252,13 +260,14 @@ export function characterFormChange(name, form, rng = Math.random) {
 }
 
 /**
- * Build the level 1 character the submitted dialog values describe. Assigning
- * the race adds its ability increases to the typed scores (a custom race is
- * just the display string); skill picks are filtered to the class's choice
- * list and capped at its count, bonus languages at the background's count. The
- * proficiency lists assemble from class + race + background plus those picks,
- * the HP pool derives from the class hit die and CON, a classed character gets
- * hit dice, and a caster its spell slots. Pure.
+ * Build the level 1 character that the submitted dialog values describe.
+ * Assigning the race adds its ability increases to the typed scores. A
+ * custom race is only a display string, with no ability increases.
+ * Skill picks are filtered to the class's choice list and capped at its
+ * count. Bonus languages are capped at the background's count. The
+ * proficiency lists assemble from class, race, background, and those picks.
+ * The HP pool derives from the class hit die and CON. A classed character
+ * gets hit dice, and a caster gets spell slots. This function is pure.
  * @param {Record<string, string>} values
  * @param {string[]} existingIds roster ids the new character's id must avoid
  * @returns {Character}
@@ -295,9 +304,9 @@ export function buildCharacter(values, existingIds) {
     .slice(0, getBackground(values.background)?.languageCount ?? 0);
   character = withProficiencies(character, assembleProficiencies(character, { skills, languages }));
 
-  // Max HP is fully derived, not asked for, and by the same rule that governs
-  // it from here on: `classMaxHP` against the character as assembled, with the
-  // race's ability increases already folded into their stats.
+  // Max HP is fully derived, not asked for, by the same rule that governs
+  // it from here on. classMaxHP reads the character as assembled, with the
+  // race's ability increases already folded into the stats.
   character = withHP(character, classMaxHP(character) ?? CLASSLESS_MAX_HP);
   if (classDef) character = withHitDice(character);
   if (isCasterClass(classDef?.id)) character = withSpellSlots(character);

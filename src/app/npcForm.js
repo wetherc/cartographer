@@ -14,29 +14,30 @@ import { commitNPCs } from './combatants.js';
 /** @typedef {import('../types/npc.js').NPC} NPC */
 
 /**
- * The shared create/edit dialog behind every NPC authoring flow — the Story
- * sidebar, the Build rail's NPC list, the Build-mode right-click menu, and
- * the Library rail's "Add to campaign". With an existing NPC it edits in
- * place; without one it creates at the given default placement, optionally
- * pre-filled from a library template. Either way the change lands in
- * `state.npcs`, the map markers and both NPC lists refresh, and an NPC put on
- * the party's own tile is met on the spot. Returns the stored NPC, or null on
- * cancel/blank name.
+ * This is the shared create/edit dialog behind every NPC authoring flow: the
+ * Story sidebar, the Build rail's NPC list, the Build-mode right-click menu,
+ * and the Library rail's "Add to campaign". With an existing NPC it edits in
+ * place. Without one it creates the NPC at the given default placement,
+ * optionally pre-filled from a library template. Either way, the change
+ * lands in `state.npcs`, the map markers and both NPC lists refresh, and an
+ * NPC placed on the party's own tile is met on the spot. The function
+ * returns the stored NPC, or null on cancel or a blank name.
  * @param {AppContext} app
  * @param {NPC | null} existing
  * @param {import('../types/entities.js').EncounterLocation | null} defaultLocation
  *   placement preset for a new NPC
  * @param {import('../types/library.js').NPCTemplate | null} [template]
- *   blueprint pre-filling a new NPC's fields (ignored when editing)
+ *   template that fills a new NPC's fields (ignored when editing)
  * @returns {Promise<NPC | null>}
  */
 export async function npcForm(app, existing, defaultLocation, template = null) {
   const { state } = app;
-  /** Whatever seeds the dialog's fields: the NPC being edited, or a template. */
+  /** The source that seeds the dialog's fields: the NPC being edited, or a template. */
   const seed = existing ?? template;
-  // Two-column layout matching the encounter dialog: identity (name/role),
-  // then disposition, full-width notes, the stat block, then placement — the
-  // map picker's breadcrumb labels run long, so it spans the full width.
+  // This uses a two-column layout matching the encounter dialog: identity
+  // (name/role), then disposition, full-width notes, the stat block, then
+  // placement. The map picker's breadcrumb labels run long, so it spans the
+  // full width.
   const values = await promptModal(
     existing ? 'Edit NPC' : 'New NPC',
     [
@@ -50,14 +51,15 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
         options: dispositionOptions(),
       },
       { name: 'notes', label: 'Notes', value: seed?.notes ?? '', full: true },
-      // One number field per ability score, so an NPC's modifiers (initiative,
-      // future checks) derive from real stats rather than a flat default.
+      // This gives one number field per ability score, so an NPC's modifiers
+      // (initiative, future checks) derive from real stats, not a flat default.
       ...statFields(ABILITY_SCORES, seed?.stats ?? {}),
-      // Optional spellcaster section: a caster class gives the NPC spell slots
-      // and a spellbook so it can cast in an encounter it joins.
+      // This is an optional spellcaster section. A caster class gives the NPC
+      // spell slots and a spellbook, so it can cast in an encounter it joins.
       ...casterFields(seed),
-      // Defaults to the caller's placement (the party's tile, the Build-mode
-      // selected tile, the right-clicked tile), but any map/tile can be chosen.
+      // This field defaults to the caller's placement (the party's tile, the
+      // Build-mode selected tile, or the right-clicked tile), but the GM can
+      // choose any map or tile.
       ...locationFields(app, existing ? existing.location : defaultLocation).map((field) =>
         field.name === 'nodeId' ? { ...field, full: true } : field,
       ),
@@ -65,7 +67,7 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
     {
       submitLabel: existing ? 'Save' : 'Add',
       wide: true,
-      // Refilter the spell picker to the chosen caster class and level.
+      // Refilter the spell picker for the chosen caster class and level.
       onChange: refilterSpellsOnChange,
     },
   );
@@ -84,8 +86,8 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
       stats: readStats(ABILITY_SCORES, values),
       location: readLocation(app, values),
     };
-    // A caster class rebuilds slots at full and stamps the picked spellbook;
-    // choosing "None" sheds the caster fields and any slot pools.
+    // A caster class rebuilds slots at full and stamps the picked spellbook.
+    // Choosing "None" removes the caster fields and any slot pools.
     if (isCasterClass(caster.class)) {
       stored = withCasterFields(base, caster, caster.casterLevel);
     } else {
@@ -111,7 +113,7 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
     );
     state.npcs = [...state.npcs, stored];
   }
-  // An NPC dropped or moved onto the party's own tile is met on the spot.
+  // An NPC placed or moved onto the party's own tile is met on the spot.
   app.actions.meetNPCs();
   commitNPCs(app);
   return stored;

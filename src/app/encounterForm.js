@@ -18,13 +18,16 @@ import { commitEncounters } from './combatants.js';
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
 /**
- * The shared create/edit dialog behind every encounter authoring flow: name,
- * HP, level/tier, and the same map/tile placement fields the NPC dialogs
- * use. With an existing encounter it edits in place — live state (current
- * HP, stat block, conditions) survives, so placement is finally editable
- * without deleting and recreating. Without one it creates, with a stat
- * block pre-filled from the tier's level-appropriate defaults and editable
- * in place. Returns the stored encounter, or null on cancel/blank name.
+ * The shared create and edit dialog for every encounter authoring flow. It
+ * collects the name, HP, level, tier, and the same map and tile placement
+ * fields that the NPC dialogs use.
+ * With an existing encounter, this dialog edits it in place. The live state
+ * (current HP, stat block, conditions) survives, so the GM can now edit
+ * placement without deleting and recreating the encounter.
+ * Without an existing encounter, this dialog creates one, with a stat block
+ * pre-filled from the tier's level-appropriate defaults and editable in
+ * place. The function returns the stored encounter, or null if the GM
+ * cancels or leaves the name blank.
  * @param {AppContext} app
  * @param {import('../types/entities.js').Encounter | null} existing
  * @param {import('../types/entities.js').EncounterLocation | null} defaultLocation placement preset for a new encounter
@@ -32,24 +35,26 @@ import { commitEncounters } from './combatants.js';
  */
 export async function encounterForm(app, existing, defaultLocation) {
   const { state } = app;
-  // Gear choice is the merged library list — the 5e presets plus the GM's
-  // overrides and custom entries; a hand-tuned entry not in the library stays
-  // offered as-is, and "None" marks a deliberately weaponless/unarmored
-  // creature (a non-bipedal beast, an ooze), which then gets no attack button
-  // in combat. Shared with the bestiary template form.
+  // The gear choice is the merged library list: the 5e presets plus the GM
+  // overrides and custom entries. A hand-tuned entry that is not in the
+  // library stays offered as-is. "None" marks a creature with no weapon and
+  // no armor by design (for example a non-bipedal beast or an ooze), and
+  // that creature gets no attack button in combat. The bestiary template
+  // form shares this code.
   const gear = gearOptions(existing);
   const { currentWeapon, currentArmor, weaponOptions, armorOptions } = gear;
   // Creation shows the stat block too, pre-filled with the tier's
-  // level-appropriate defaults so a plain mob needs no stat typing but every
-  // score stays overridable. Changing level or tier re-stamps the defaults
-  // until a stat is hand-edited, after which the GM's numbers stand. Edits
-  // omit the block — it lives on the Build-rail row's chips.
+  // level-appropriate defaults. A plain mob needs no stat typing, but every
+  // score stays overridable. A change to level or tier re-stamps the
+  // defaults until the GM hand-edits a stat. After that edit, the GM's
+  // numbers stay. Edits to an existing encounter omit the block, because it
+  // lives on the Build-rail row's chips.
   const statBlockFields = existing ? [] : statFields(STAT_KEYS, defaultEnemyStats(1, 'mob'));
   let statsTouched = false;
-  // Two-column layout, fields paired by theme: identity (name/tier), then
-  // vitals (HP/level), then gear (weapon/armor), then stats, then placement
-  // — the map picker's breadcrumb labels run long, so it spans the full
-  // width.
+  // The layout uses two columns, with fields paired by theme: identity
+  // (name, tier), then vitals (HP, level), then gear (weapon, armor), then
+  // stats, then placement. The map picker's breadcrumb labels run long, so
+  // the map picker spans the full width.
   const values = await promptModal(
     existing ? 'Edit encounter' : 'New encounter',
     [
@@ -82,7 +87,7 @@ export async function encounterForm(app, existing, defaultLocation) {
         name: 'weapon',
         label: 'Weapon',
         type: 'select',
-        // Editing an unarmed enemy (weapon null) shows None; a new enemy
+        // Editing an unarmed enemy (weapon is null) shows None. A new enemy
         // still defaults to armed, the common humanoid case.
         value: existing ? (currentWeapon?.name ?? '') : defaultEnemyGear(1, 'mob').weapon.name,
         options: weaponOptions,
@@ -95,8 +100,9 @@ export async function encounterForm(app, existing, defaultLocation) {
         options: armorOptions,
       },
       ...statBlockFields,
-      // Optional spellcaster section: a caster class turns the mob into a
-      // combatant that can cast in initiative; "None" leaves it a plain fighter.
+      // The spellcaster section is optional. A caster class turns the mob
+      // into a combatant that can cast during initiative. "None" leaves it
+      // a plain fighter.
       ...casterFields(existing),
       ...locationFields(app, existing ? existing.location : defaultLocation).map((field) =>
         field.name === 'nodeId' ? { ...field, full: true } : field,
@@ -106,11 +112,12 @@ export async function encounterForm(app, existing, defaultLocation) {
       submitLabel: existing ? 'Save' : 'Add',
       wide: true,
       onChange: (name, form) => {
-        // Refilter the spell picker to the chosen caster class and level (both
-        // when creating and editing).
+        // Refilter the spell picker to the chosen caster class and level.
+        // This applies both when creating and when editing.
         if (refilterSpellsOnChange(name, form)) return;
-        // Re-stamp the stat defaults on level/tier change, but only for a new
-        // encounter and only until a stat is hand-edited.
+        // Re-stamp the stat defaults when level or tier changes. This
+        // applies only to a new encounter, and only until a stat is
+        // hand-edited.
         if (existing) return;
         if (name.startsWith('stat-')) {
           statsTouched = true;
@@ -132,8 +139,8 @@ export async function encounterForm(app, existing, defaultLocation) {
   const level = clampInt(values.level, 1);
   const tier = /** @type {import('../types/entities.js').EnemyTier} */ (values.tier);
   const location = readLocation(app, values);
-  // The empty value is the explicit "None" choice and stores null, which
-  // suppresses the default-gear stamping downstream.
+  // The empty value is the explicit "None" choice. It stores null, which
+  // suppresses the default-gear stamping that follows.
   const { weapon, armor } = readGear(
     values.weapon,
     values.armor,
@@ -142,8 +149,8 @@ export async function encounterForm(app, existing, defaultLocation) {
   );
   let stored;
   if (existing) {
-    // Level/tier edits don't re-stamp the stat block — the GM may have tuned
-    // it by hand on the row, and it stays editable there.
+    // A level or tier edit does not re-stamp the stat block. The GM can
+    // tune it by hand on the row, and it stays editable there.
     stored = editEncounter(existing, {
       name,
       maxHP,
@@ -174,7 +181,8 @@ export async function encounterForm(app, existing, defaultLocation) {
 }
 
 /**
- * Confirm-and-delete shared by both encounter lists. Resolves true if deleted.
+ * The confirm-and-delete flow shared by both encounter lists. Resolves to
+ * true if the encounter is deleted.
  * @param {AppContext} app
  * @param {import('../types/entities.js').Encounter} encounter
  */
@@ -189,11 +197,12 @@ export async function deleteEncounter(app, encounter) {
 }
 
 /**
- * Spawn a fresh, full-health encounter from a saved template — the
- * campaign's bestiary plus the built-in/custom library — at a chosen
- * map/tile, defaulting to the Build-mode selected tile of the viewed node.
- * The same dialog can prune a stale campaign template; library entries are
- * managed in the Library tab instead.
+ * Spawn a fresh, full-health encounter from a saved template. The template
+ * source is the campaign bestiary plus the built-in and custom library. The
+ * new encounter appears at a chosen map and tile, and defaults to the
+ * Build-mode selected tile of the viewed node.
+ * This same dialog can remove a stale campaign template. The GM manages
+ * library entries in the Library tab instead.
  * @param {AppContext} app
  * @returns {Promise<import('../types/entities.js').Encounter | null>}
  */
@@ -235,8 +244,9 @@ export async function addFromBestiary(app) {
           { value: 'delete', label: 'Delete this template' },
         ],
       },
-      // Same node-picker + tile X/Y group the NPC dialogs use; defaults to
-      // the tile the GM has selected in the node being viewed.
+      // This uses the same node picker and tile X/Y group as the NPC
+      // dialogs. It defaults to the tile that the GM selected in the node
+      // being viewed.
       ...locationFields(app, {
         nodeId: app.navigator.getCurrentNode().id,
         tileId: app.actions.getSelectedTileId() ?? '0,0',

@@ -15,51 +15,53 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
 /**
- * Roll a weapon attack for the active combatant, 5e-style: a pre-roll
- * dialog picks the defender and takes situational overrides — bonus or
- * penalty dice on the attack roll (Bless +1d4, Bane -1d4), extra damage
- * dice (a smite), and flat bonuses on either — then loads 1d20 + the
- * attacker's ability modifier + proficiency bonus (+ overrides) and the
- * defender's AC into the dice tray and rolls. A natural 20 hits regardless of AC and
- * doubles the damage dice (a critical hit); a natural 1 always misses;
- * otherwise the total is compared against AC. On a hit the weapon's damage
- * dice roll too — ability modifier folded into the base term, proficiency
- * never added to damage — and the result is applied to the defender
- * automatically: encounters lose HP on the spot, party characters take it
- * through bonus HP first, and HP-less NPCs just get the log line. Party
- * members attack with their equipped weapons; foes with the encounter's
- * assigned weapon. Everything lands in the travelogue and a toast.
+ * Rolls a weapon attack for the active combatant, in 5e style. A pre-roll
+ * dialog picks the defender and takes situational overrides: bonus or
+ * penalty dice on the attack roll (Bless +1d4, Bane -1d4), extra damage dice
+ * (a smite), and flat bonuses on either roll. The function then loads 1d20,
+ * the attacker's ability modifier, proficiency bonus, any overrides, and the
+ * defender's AC into the dice tray, and rolls. A natural 20 hits regardless
+ * of AC and doubles the damage dice, for a critical hit. A natural 1 always
+ * misses. Otherwise the function compares the total against AC. On a hit,
+ * the weapon's damage dice roll too: the ability modifier folds into the
+ * base term, and proficiency never adds to damage. The function applies the
+ * result to the defender automatically. Encounters lose HP on the spot,
+ * party characters take it through bonus HP first, and HP-less NPCs get
+ * only the log line. Party members attack with their equipped weapons, and
+ * foes attack with the encounter's assigned weapon. Everything lands in the
+ * travelogue and in a toast.
  * @param {AppContext} app
  * @param {import('../types/combat.js').CombatState} combat
  * @param {import('../types/combat.js').Participant} participant
  * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} weapon
- * @param {{ defenderId?: string | null }} [options] a defender already picked
- *   on the combat board pre-fills the dialog's target, so the common flow is
- *   click the card, click the weapon, press Enter
+ * @param {{ defenderId?: string | null }} [options] If a defender is already
+ *   picked on the combat board, it pre-fills the dialog's target. The common
+ *   flow is to click the card, click the weapon, then press Enter.
  */
 export async function weaponAttack(app, combat, participant, weapon, { defenderId = null } = {}) {
-  // The attacker is a party character or an armed encounter; either way the
-  // roll is d20 + the weapon ability's modifier + proficiency for its level.
-  // NPCs carry no weapons yet, so an NPC participant never reaches here.
+  // The attacker is a party character or an armed encounter. Either way, the
+  // roll uses d20 plus the weapon ability's modifier plus proficiency for its
+  // level. NPCs carry no weapons yet, so an NPC participant never reaches
+  // this function.
   const found = findCombatant(app, participant.id);
   const attacker = found && found.kind !== 'npc' ? found.entity : null;
   if (!attacker) return;
   // Defenders come from the opposite side of the running order: encounters
   // by id, party characters (AC from armor), and NPCs standing on the tile.
-  // Downed ones drop out.
+  // Downed combatants drop out of the list.
   const defenders = combatantsAsTargets(app, combat, participant);
   if (defenders.length === 0) {
     app.toasts.show('No defender left standing.');
     return;
   }
-  // Every attack pauses at a pre-roll dialog: pick the defender and apply
-  // any situational overrides — bonus or penalty dice on the attack roll
-  // (Bless +1d4, Bane -1d4) and extra damage (a smite's dice, a flat
-  // rider). Everything defaults to zero and sits behind a collapsed
-  // disclosure, so plain Enter rolls the
-  // unmodified attack. Bonus damage folds into the weapon's own damage
-  // type and, like all damage dice, doubles on a crit; the attack-roll
-  // dice don't (they modify the d20, not the damage).
+  // Every attack pauses at a pre-roll dialog. The dialog picks the defender
+  // and applies any situational overrides: bonus or penalty dice on the
+  // attack roll (Bless +1d4, Bane -1d4), and extra damage such as a smite's
+  // dice or a flat rider. Every override defaults to zero and sits behind a
+  // collapsed disclosure, so a plain Enter rolls the unmodified attack. Bonus
+  // damage folds into the weapon's own damage type and doubles on a crit,
+  // like all damage dice. The attack-roll dice do not double, because they
+  // modify the d20, not the damage.
   const bonusDieOptions = ['d4', 'd6', 'd8', 'd10', 'd12'].map((d) => ({
     value: d,
     label: d,
@@ -75,8 +77,9 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
           value: d.id,
           label: `${d.name} (AC ${d.ac})`,
         })),
-        // A board-picked defender opens pre-selected; an id no defender holds
-        // (deselected, defeated since) falls back to the list's first.
+        // A board-picked defender opens pre-selected. If no defender holds
+        // that id, for example after a deselect or a defeat, the dialog
+        // falls back to the first defender in the list.
         ...(defenderId && defenders.some((d) => d.id === defenderId) ? { value: defenderId } : {}),
         full: true,
       },
@@ -115,9 +118,9 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
   const ability = weaponAbility(weapon);
   const abilityMod = abilityModOf(attackerStats(attacker), ability);
   const attackBonus = abilityMod + proficiencyBonus(attacker.level);
-  // Bonus attack dice join the d20 in the tray's selection so they roll in
-  // view; penalty dice are rolled by attackTweak and folded into the
-  // modifier (with the values kept in its note for the log).
+  // Bonus attack dice join the d20 in the tray's selection, so they roll in
+  // view. `attackTweak` rolls penalty dice and folds them into the modifier,
+  // and keeps the values in its note for the log.
   const tweak = attackTweak(
     Number(values['atk-count']) || 0,
     /** @type {import('../types/dice.js').DieType} */ (values['atk-die']),
@@ -134,8 +137,8 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
     total: result.total,
     ac: defender.ac,
   });
-  // An advantage/disadvantage attack notes the discarded d20 so the log
-  // shows both dice, matching the tray's own readout.
+  // An advantage or disadvantage attack notes the discarded d20, so the log
+  // shows both dice and matches the tray's own readout.
   const modeNote = droppedNote(d20, result.selection.mode);
   const tweakNote = tweak.note ? `, ${tweak.note}` : '';
   app.actions.logEvent(
@@ -148,9 +151,9 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
     );
     return;
   }
-  // A crit rolls every damage die twice, the dialog's added dice included; the
-  // ability modifier is still added only once, and proficiency never reaches
-  // damage at all.
+  // A crit rolls every damage die twice, including the dialog's added dice.
+  // The ability modifier still adds only once, and proficiency never
+  // reaches damage.
   const parts = damageParts(weapon.damage ?? [], {
     crit,
     bonusDice: Number(values['dmg-count']) || 0,
@@ -162,15 +165,15 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
       ? `, inflicting ${weapon.statusEffects.join(', ')}`
       : '';
   const blow = crit ? 'critically hits' : 'hits';
-  // The travelogue keeps the raw damage dice (detail), while the toast
-  // below stays with the short per-type totals (text).
+  // The travelogue keeps the raw damage dice as detail. The toast below
+  // keeps only the short per-type totals as text.
   app.actions.logEvent(
     'combat',
     `${weapon.name} ${blow} ${defender.name} for ${damage.detail || '0 damage'}${inflicts}.`,
   );
-  // Apply the damage on the spot through the shared write path: encounters
-  // and characters track HP with defeat/drop-to-0 logged once; a defender
-  // that's an HP-less NPC keeps the log line only.
+  // Applies the damage on the spot through the shared write path. Encounters
+  // and characters track HP, and the function logs a defeat or a drop to 0
+  // only once. An HP-less NPC defender keeps only the log line.
   applyToTarget(app, defender.id, damage.total, false);
   app.toasts.show(
     `${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${damage.text || 'no damage'}${inflicts}.`,

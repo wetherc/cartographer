@@ -28,10 +28,10 @@ import {
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
 /**
- * The combatants a spell can target, by effect kind: an attack or a save spell
- * reaches the caster's foes; a heal reaches its own side (allies, including the
- * caster). Utility spells target no one. The list itself comes from the shared
- * `combatantsAsTargets` assembly over combat's running order.
+ * The combatants a spell can target, by effect kind. An attack or a save
+ * spell reaches the caster's foes. A heal reaches its own side (allies,
+ * including the caster). A utility spell targets no one. The list comes from
+ * the shared `combatantsAsTargets` function over the combat running order.
  * @param {AppContext} app
  * @param {CombatState} combat
  * @param {Participant} caster
@@ -45,16 +45,16 @@ function combatTargets(app, combat, caster, spell) {
 }
 
 /**
- * The combatants an out-of-combat cast can reach, with no initiative order to
- * scope by: a heal reaches the whole party (allies, caster included); an attack
- * or save reaches the foes standing where the party stands — the undefeated
- * encounters staged on its tile plus the NPCs on it. Utility spells target no
- * one. Same target shape as `combatTargets`.
+ * The combatants an out-of-combat cast can reach. There is no initiative
+ * order to limit the scope. A heal reaches the whole party (allies, caster
+ * included). An attack or a save spell reaches the foes on the party's tile:
+ * the undefeated encounters and NPCs staged there. A utility spell targets
+ * no one. The target shape matches `combatTargets`.
  *
- * The party's tile is as close to a range check as the app gets, since there is
- * no distance between two tokens to measure. Without it a cast offered every
- * encounter in the campaign, including ones in regions the party has never
- * reached.
+ * The party's tile is the closest range check the app has, because the app
+ * cannot measure distance between two tokens. Without this check, a cast
+ * offers every encounter in the campaign, including encounters in
+ * regions the party has not reached.
  * @param {AppContext} app
  * @param {Spell} spell
  * @returns {{ id: string, name: string, ac: number }[]}
@@ -73,11 +73,11 @@ function rosterTargets(app, spell) {
 }
 
 /**
- * How a target reads in the picker: the number the cast rolls against, since
- * that is what the choice turns on. An attack rolls against AC; a save rolls
- * against the target's own bonus in the spell's ability, shown where the app
- * knows it and left off a foe whose save the GM is about to type in; a heal
- * rolls against nothing, so the name stands alone.
+ * The label a target shows in the picker: the number the cast rolls against.
+ * An attack rolls against AC. A save rolls against the target's own bonus in
+ * the spell's ability, when the app knows it. The app omits the bonus for a
+ * foe whose save the GM must type in. A heal rolls against nothing, so only
+ * the name shows.
  * @param {Spell} spell
  * @param {import('./combatants.js').CombatTarget} target
  * @returns {string}
@@ -92,17 +92,17 @@ function targetLabel(spell, target) {
   return `${target.name} (AC ${target.ac})`;
 }
 
-/** The allocation grid's caption, restated when the slot level changes how many
- * projectiles a cast fires.
+/** The allocation grid caption. The app restates it when the slot level
+ * changes the number of projectiles a cast fires.
  * @param {number} total @returns {string} */
 function allocationLabel(total) {
   return `Targets (${total} to allocate)`;
 }
 
 /**
- * The slot level a cast dialog opens on: the lowest slot the caster can spend,
- * which is what the picker shows first and what a GM who never touches it
- * submits. Cantrips have no slot, so 0.
+ * The slot level a cast dialog opens on: the lowest slot the caster can
+ * spend. The picker shows this level first, and the dialog submits it if the
+ * GM does not change it. A cantrip has no slot, so the level is 0.
  * @param {Spell} spell
  * @param {number[]} slotLevels
  * @returns {number}
@@ -112,10 +112,11 @@ export function startingSlotLevel(spell, slotLevels) {
 }
 
 /**
- * The level a cast resolves at: the picked slot, or the spell's own level when it
- * is being cast as a ritual — a ritual trades the slot for the time, so there is
- * no slot to upcast from. Falls back to the spell's level when nothing is picked,
- * which is what a dialog with no slot picker submits.
+ * The level a cast resolves at: the picked slot, or the spell's own level
+ * when the caster casts it as a ritual. A ritual trades the slot for extra
+ * time, so there is no slot to upcast from. When nothing is picked, the
+ * function returns the spell's level. This is what a dialog with no slot
+ * picker submits.
  * @param {Spell} spell
  * @param {string | number | undefined} picked
  * @param {boolean} ritual
@@ -127,9 +128,10 @@ export function effectiveSlot(spell, picked, ritual) {
 }
 
 /**
- * How many creatures — or, for a multi-projectile spell, projectiles — a cast at
- * this slot level reaches. Read at the level actually being cast, since a cap
- * taken from a higher slot offers a projectile the cast cannot fire.
+ * The number of creatures a cast reaches at this slot level. For a
+ * multi-projectile spell, this is the number of projectiles. Read the cap at
+ * the level the cast actually uses. A cap taken from a higher slot offers
+ * a projectile the cast cannot fire.
  * @param {Spell} spell
  * @param {number} slotLevel
  * @param {number} casterLevel
@@ -140,36 +142,40 @@ export function castCap(spell, slotLevel, casterLevel) {
 }
 
 /**
- * The pre-roll dialog fields for a cast: a slot-level picker (leveled spells
- * cast at or above their level from a slot the caster still has), the target or
- * targets, an advantage/disadvantage mode, and — for a save spell — the DC and
- * the target's save bonus. Cantrips omit the slot picker; utility spells add no
- * target. Returns null when the caster has no usable slot for a leveled spell.
+ * The pre-roll dialog fields for a cast. Fields include a slot-level picker
+ * (for a leveled spell cast at or above its level, from a slot the caster
+ * still has), the target or targets, an advantage/disadvantage mode, and,
+ * for a save spell, the DC and the target's save bonus. A cantrip omits the
+ * slot picker. A utility spell adds no target field. The function returns
+ * null when the caster has no usable slot for a leveled spell.
  *
- * A spell that reaches one creature keeps a single select, so the common case
- * stays one click. A spell that reaches more gets the checkbox group, capped at
- * what the spell allows — an area spell has no cap, so the GM picks whoever the
- * blast covers. A multi-projectile spell gets the allocation grid instead, since
- * a checkbox cannot say "two rays here, one there"; it doubles as the target
- * picker, a creature given no projectile being one the cast never touches.
+ * A spell that reaches one creature keeps a single select, so the common
+ * case stays one click. A spell that reaches more creatures gets a checkbox
+ * group, capped at the number the spell allows. An area spell has no cap, so
+ * the GM picks whoever the blast covers. A multi-projectile spell gets the
+ * allocation grid instead, because a checkbox cannot express partial
+ * allocation across targets. The grid also serves as the target picker: a
+ * creature given no projectile is not a target of the cast.
  *
- * A ritual cast spends no slot, so a caster out of slots can still make one:
- * the slot picker is left out rather than the whole dialog refused, and the
- * ritual box opens ticked because that is the only cast still available.
+ * A ritual cast spends no slot, so a caster with no slots left can still
+ * cast one. The dialog leaves out the slot picker instead of refusing the
+ * whole dialog, and the ritual box opens ticked, because that is the only
+ * cast still available.
  *
- * A save spell's DC is offered for editing, and so is a bonus for the targets
- * whose own save the app cannot read. A target that carries a `saveBonus` rolls
- * that instead, and the picker shows it, so the field is left out when every
- * target has one.
+ * The dialog offers the save DC for editing, for a save spell. It also
+ * offers a bonus field for targets whose own save the app cannot read. A
+ * target that carries a `saveBonus` value rolls that value instead, and the
+ * picker shows it. The field is left out when every target has a
+ * `saveBonus` value.
  * @param {Spell} spell
  * @param {import('./combatants.js').CombatTarget[]} targets
- * @param {number[]} slotLevels available slot levels at or above the spell's
+ * @param {number[]} slotLevels the available slot levels at or above the spell's level
  * @param {number} saveDC
- * @param {number} cap how many targets this cast may reach; Infinity for an area
- * @param {{ material?: boolean, ritual?: boolean }} [opts] `material`: the cast
- *   will consume a material component, which adds the opt-out a table that
- *   hand-waves components casts through. `ritual`: this caster may cast this
- *   spell as a ritual, which adds the box that trades the slot for the time.
+ * @param {number} cap the number of targets this cast can reach. The value is Infinity for an area spell.
+ * @param {{ material?: boolean, ritual?: boolean }} [opts] `material`: true when the
+ *   cast will consume a material component. This adds the opt-out checkbox for a
+ *   table that treats components as flavor. `ritual`: true when this caster can
+ *   cast this spell as a ritual. This adds the box that trades the slot for extra time.
  * @returns {import('../types/modal.js').ModalField[] | null}
  */
 export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
@@ -188,8 +194,8 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
         options: slotLevels.map((l) => ({ value: String(l), label: `Level ${l}` })),
       });
     }
-    // Sits beside the slot picker it governs: ticking it hides that picker,
-    // since a ritual always resolves at the spell's own level.
+    // This sits beside the slot picker it controls. Ticking this box hides
+    // the slot picker, because a ritual always resolves at the spell's own level.
     if (ritual) {
       fields.push({
         name: 'ritual',
@@ -213,8 +219,8 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
         total: cap,
         rows: options,
         unit: 'unassigned',
-        // The whole allocation starts on the first target, so a single-target
-        // cast is still one click.
+        // The whole allocation starts on the first target. This keeps a
+        // single-target cast to one click.
         value: `${options[0].value}:${cap}`,
       });
     } else if (cap <= 1) {
@@ -246,8 +252,8 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
   }
   if (kind === 'save') {
     fields.push({ name: 'dc', label: 'Save DC', type: 'number', value: saveDC, min: 1 });
-    // The hand-entered bonus covers only the targets whose own save the app
-    // cannot read, so a cast whose every target has one does not ask for it.
+    // The hand-entered bonus covers only targets whose own save the app
+    // cannot read. The dialog does not ask for this bonus when every target has one.
     if (targets.some((t) => t.saveBonus === undefined)) {
       fields.push({
         name: 'save-bonus',
@@ -270,8 +276,8 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
       ],
     });
   }
-  // Ticking this casts without touching the inventory, so a table that treats
-  // components as flavor is not made to stock diamonds to cast Revivify.
+  // Ticking this box casts the spell without touching the inventory. A table
+  // that treats components as flavor does not need to stock diamonds to cast Revivify.
   if (material) {
     fields.push({
       name: 'ignore-components',
@@ -284,18 +290,18 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
 }
 
 /**
- * Cast a spell for the active combatant, mirroring `weaponAttack`: the targets
- * come from the initiative order (foes for attack/save, the party for heal),
- * then `runCast` runs the pre-roll dialog, resolves, and applies. The caster is
- * whichever combatant holds the participant's id — resolved by the shared
- * `findCombatant`, whose `store` writes the spent slot back to that
- * combatant's own collection.
+ * Cast a spell for the active combatant. This mirrors `weaponAttack`. The
+ * targets come from the initiative order: foes for an attack or save, the
+ * party for a heal. Then `runCast` runs the pre-roll dialog, resolves the
+ * cast, and applies the result. The caster is the combatant that holds the
+ * participant's id, found by the shared `findCombatant` function. Its
+ * `store` function writes the spent slot back to that combatant's own collection.
  * @param {AppContext} app
  * @param {CombatState} combat
  * @param {Participant} participant
  * @param {Spell} spell
  * @param {{ targetId?: string | null }} [options] a target already picked on
- *   the combat board pre-fills the dialog's target field
+ *   the combat board pre-fills the dialog target field
  */
 export async function castSpellAction(app, combat, participant, spell, { targetId = null } = {}) {
   const targets = combatTargets(app, combat, participant, spell);
@@ -313,9 +319,10 @@ export async function castSpellAction(app, combat, participant, spell, { targetI
 }
 
 /**
- * Cast a spell from a character's sheet outside of combat: the targets come
- * from the roster and nearby foes (no initiative order), then `runCast` handles
- * the dialog, resolution, and application exactly as the combat path does.
+ * Cast a spell from a character's sheet outside of combat. The targets come
+ * from the roster and nearby foes, with no initiative order. Then `runCast`
+ * handles the dialog, the resolution, and the application, the same way the
+ * combat path does.
  * @param {AppContext} app
  * @param {import('../types/entities.js').Character} caster
  * @param {Spell} spell
@@ -335,48 +342,54 @@ export async function castSpellOutOfCombat(app, caster, spell) {
 }
 
 /**
- * The shared cast pipeline behind both entry points, mirroring `weaponAttack`:
- * a pre-roll dialog picks the slot level, target, and situational modes, then
- * the pure `castSpell` resolver rolls the effect and this wiring applies the
- * result and logs it. A caster with no spell ability falls back to a flat DC 10
- * / +0 attack. The caster entity is read through `toCaster` so a party
- * Character, a foe Encounter, and an NPC all resolve the same way; when a slot
- * is spent, `withCasterState` splices it back onto the real entity and the
- * caller's `writeBack` stores it in the right collection. Damage or healing
- * lands on each target the same way a weapon hit does — encounters and
- * characters track HP, an HP-less NPC keeps the log line only. A spell with a
- * ritual, cast by a class that has ritual casting, can be cast for the extra ten
- * minutes instead of a slot, which spends nothing and writes nothing back. A
- * concentration spell cast by a party character starts that character
- * concentrating, ending whatever was already held.
+ * The shared cast pipeline behind both entry points. This mirrors
+ * `weaponAttack`. A pre-roll dialog picks the slot level, the target, and
+ * situational modes. Then the pure `castSpell` resolver rolls the effect,
+ * and this function applies the result and logs it. A caster with no spell
+ * ability falls back to a flat DC 10 and a +0 attack bonus.
+ *
+ * The function reads the caster entity through `toCaster`, so a party
+ * Character, a foe Encounter, and an NPC all resolve the same way. When a
+ * slot is spent, `withCasterState` splices the change back onto the real
+ * entity, and the caller's `writeBack` function stores it in the right
+ * collection. Damage or healing lands on each target the same way a weapon
+ * hit does: encounters and characters track HP, and an NPC with no HP field
+ * keeps only the log line.
+ *
+ * A caster from a class with ritual casting can cast a spell with a ritual
+ * for the extra ten minutes instead of a slot. This spends nothing and
+ * writes nothing back. A concentration spell cast by a party character
+ * starts that character concentrating and ends whatever spell it held before.
  * @template {import('../types/entities.js').Character
  *   | import('../types/entities.js').Encounter
  *   | import('../types/npc.js').NPC} T
  * @param {AppContext} app
- * @param {T} entity the real combatant casting
+ * @param {T} entity the real combatant that casts the spell
  * @param {Spell} spell
  * @param {import('./combatants.js').CombatTarget[]} offered
  * @param {(next: T) => void} writeBack stores the updated entity
- * @param {boolean} concentrates whether this caster can hold a spell open —
- *   only a party character does, since an encounter and an NPC have no
- *   concentration field to write. Passed from the call site rather than sniffed
- *   off the entity, which is where the combatant's kind is already known.
- * @param {string | null} [preferredTargetId] a target picked before the dialog
- *   opened (the combat board's selection), pre-filled where it is offered
+ * @param {boolean} concentrates true when this caster can hold a spell open.
+ *   Only a party character can, because an encounter and an NPC have no
+ *   concentration field. The call site passes this value, because it
+ *   already knows the combatant kind.
+ * @param {string | null} [preferredTargetId] a target picked before the
+ *   dialog opened, from the combat board selection. The dialog pre-fills
+ *   this target where it is offered.
  */
 async function runCast(app, entity, spell, offered, writeBack, concentrates, preferredTargetId) {
-  // The pure spell helpers take a `SpellCaster` — a caster's class/level/stats/
-  // resources/spellbook, which is exactly what `toCaster` surfaces — so the view
-  // is what they read and the real entity is only written back to.
+  // The pure spell helper functions take a `SpellCaster`: a caster's class,
+  // level, stats, resources, and spellbook. This is exactly what `toCaster`
+  // returns. The helpers read this view, and the code writes back only to
+  // the real entity.
   const caster = toCaster(entity);
   if (spell.effect.kind !== 'utility' && offered.length === 0) {
     app.toasts.show('No target available.');
     return;
   }
-  // A save spell's targets each get their own bonus where the app can read one,
-  // so the dialog shows what a target will add and the resolver rolls it. The
-  // decoration happens once here rather than in the two target assemblies, since
-  // the ability being saved against is a property of the spell, not the target.
+  // Each target of a save spell gets its own bonus where the app can read
+  // one. The dialog shows what a target will add, and the resolver rolls it.
+  // This happens once here, not in the two target assemblies, because the
+  // saved ability is a property of the spell, not of the target.
   const saveAbility = spell.effect.kind === 'save' ? spell.effect.saveAbility : null;
   const targets = saveAbility
     ? offered.map((t) => {
@@ -385,31 +398,34 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
       })
     : offered;
 
-  // Leveled spells cast from a slot at or above their level that still has a
-  // charge — leveled or pact; the picker offers each such level.
+  // A leveled spell casts from a slot at or above its level that still has a
+  // charge, leveled or pact. The picker offers each such level.
   const slotLevels = spell.level > 0 ? castableSlotLevels(caster, spell.level) : [];
-  // A multiclass caster's DC/attack use the class the spell was learned
-  // under; without a recorded source they fall back to the first caster class.
+  // A multiclass caster's DC and attack bonus use the class the spell was
+  // learned under. Without a recorded source, they fall back to the first
+  // caster class.
   const sourceClass = spellSource(caster, spell.id) ?? undefined;
   const dc = spellSaveDC(caster, sourceClass) ?? 10;
-  // Both caps are read at the level the picker starts on — the lowest slot the
-  // caster can spend, which is also the level submitted if the GM never touches
-  // it. The projectile allocation then follows the picked level, since it has to
-  // add up exactly; the target checkboxes stay at the starting cap and a cast
-  // over it drops the extras, which `castSpell` reports back.
+  // Both caps read the level the picker starts on: the lowest slot the
+  // caster can spend. This is also the level submitted if the GM does not
+  // change it. The projectile allocation then follows the picked level,
+  // because it must add up exactly. The target checkboxes stay at the
+  // starting cap, and a cast above it drops the extra targets. `castSpell`
+  // reports the dropped targets back.
   const cap = castCap(spell, startingSlotLevel(spell, slotLevels), caster.level ?? 1);
-  // Read against the real entity rather than the caster view, which surfaces no
-  // inventory: a combatant with none is never asked for a component. Only a
-  // Character has one, and the check's own contract is that an entity without it
-  // needs nothing, so the three combatant shapes go in as one.
+  // The check reads the real entity, not the caster view, because the
+  // caster view has no inventory. A combatant with no inventory is never
+  // asked for a component. Only a Character has an inventory. The check's
+  // contract is that an entity without one needs nothing, so all three
+  // combatant shapes go through the same check.
   const material = materialCheck(
     /** @type {{ inventory?: import('../types/entities.js').InventoryItem[] }} */ (
       /** @type {unknown} */ (entity)
     ),
     spell,
   );
-  // Ritual casting is a class feature, so a spell that has a ritual is only
-  // castable as one by a bard, cleric, druid, or wizard.
+  // Ritual casting is a class feature. A caster can cast a spell with a
+  // ritual as a ritual only as a bard, cleric, druid, or wizard.
   const ritualOffered = spell.ritual && spell.level > 0 && hasRitualCasting(caster);
   const fields = castFields(spell, targets, slotLevels, dc, cap, {
     material: material.required,
@@ -421,10 +437,10 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
   }
   if (preferredTargetId) prefillTarget(fields, preferredTargetId);
 
-  // A projectile spell fires a different number per slot level, and its
-  // allocation has to add up to that number, so the grid is restated whenever
-  // the level changes — including when the ritual box changes it, since a ritual
-  // resolves at the spell's own level whatever the picker says.
+  // A projectile spell fires a different number of projectiles at each slot
+  // level, and its allocation must add up to that number. The grid is
+  // restated whenever the level changes, including when the ritual box
+  // changes it, because a ritual always resolves at the spell's own level.
   const allocates = fields.some((f) => f.name === 'allocation');
   const values = await promptModal(`Cast ${spell.name}`, fields, {
     submitLabel: 'Cast',
@@ -454,16 +470,16 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
     app.toasts.show(`Pick at least one target for ${spell.name}.`);
     return;
   }
-  // A missing component blocks before the resolver runs, so a refused cast never
-  // spends a slot. Checked here rather than in `castSpell` because the opt-out is
-  // a table's ruling, not a rule of the spell.
+  // A missing component blocks the cast before the resolver runs, so a
+  // refused cast never spends a slot. The check happens here, not in
+  // `castSpell`, because the opt-out is a table ruling, not a rule of the spell.
   const consume = material.required && values['ignore-components'] !== '1';
   if (consume && !material.satisfied) {
     app.toasts.show(`${spell.name} needs ${spell.materials?.text}.`);
     return;
   }
-  // A target carrying its own bonus rolls that; a foe with no save surface to
-  // read falls back to the one number the GM typed for all of them.
+  // A target that carries its own bonus rolls that bonus. A foe with no save
+  // the app can read falls back to the one number the GM typed for all such targets.
   const entered = Number(values['save-bonus']) || 0;
   const castTargets = saveAbility
     ? chosen.map((t) => ({ ...t, saveBonus: t.saveBonus ?? entered, saveMode: mode }))
@@ -479,8 +495,8 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
     ritual: asRitual,
   });
   if (!result.ok) {
-    // A dialog opened on the ritual box alone submits with no slot to spend, so
-    // unticking it is the one way to reach 'no-slot' from here.
+    // A dialog opened with only the ritual box submits with no slot to
+    // spend. Unticking the ritual box is the one way to reach 'no-slot' from here.
     app.toasts.show(
       result.reason === 'no-slot'
         ? `No level ${spell.level}+ slot left for ${spell.name}.`
@@ -495,10 +511,11 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
     );
   }
 
-  // Write the spent slot, the consumed component, and the started concentration
-  // back to the caster before applying effects, so none of them lingers if the
-  // effect application throws. Each is threaded onto the same value and stored
-  // once: `withCasterState` splices the decremented slot pools onto the real
+  // The code writes the spent slot, the consumed component, and the started
+  // concentration back to the caster before it applies effects. This
+  // prevents any of them from lingering if effect application throws an
+  // error. Each change threads onto the same value and stores once:
+  // `withCasterState` splices the decremented slot pools onto the real
   // entity, a stack of the material comes off the inventory, and the
   // concentration state and its chip land beside them.
   const consumed = consume && material.item ? material.item : null;
@@ -507,8 +524,8 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
   let displaced = null;
   if (result.spent || consumed || holds) {
     let next = result.spent ? withCasterState(entity, result.caster) : entity;
-    // Only a Character reaches here holding an inventory, which is what
-    // `materialCheck` requiring one already established.
+    // Only a Character reaches here with an inventory. `materialCheck`
+    // already requires one.
     if (consumed) {
       next = /** @type {T} */ (
         removeItem(/** @type {import('../types/entities.js').Character} */ (next), consumed.id, 1)
@@ -532,18 +549,18 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
       formatInventoryEvent(caster.name, { verb: 'use', itemName: consumed.name, count: 1 }),
     );
   }
-  // The clock counts watches, not minutes, so a ritual's extra ten minutes is
-  // stated in the log for the GM to adjudicate rather than advanced.
+  // The clock counts watches, not minutes. The log states a ritual's extra
+  // ten minutes for the GM to adjudicate, rather than advancing the clock.
   const at = result.ritual
     ? ' as a ritual (10 minutes longer)'
     : result.slotLevel > 0
       ? ` at level ${result.slotLevel}`
       : '';
   app.actions.logEvent('combat', `${caster.name} casts ${spell.name}${at}.`);
-  // A caster holds one spell open at a time, so starting this one ended the
-  // previous effect; that is a rules consequence the table needs told about, and
-  // the creatures the displaced spell was holding go free before this cast's own
-  // outcomes land — including when the same spell is being recast on someone new.
+  // A caster holds one spell open at a time, so starting this spell ended
+  // the previous effect. The table needs to know this rules consequence.
+  // The creatures the displaced spell held go free before this cast's own
+  // outcomes land, including when the caster recasts the same spell on someone new.
   if (displaced) {
     app.actions.logEvent(
       'combat',
@@ -556,12 +573,13 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
 }
 
 /**
- * Point a cast dialog's target field at an already-picked target, whichever
- * shape `castFields` chose: the single select's value, the multiselect's one
- * pre-checked box, or the whole allocation moved onto that creature (the grid
- * already opens with everything on its first row, so this only changes which
- * row). An id no option offers (a picked ally under an attack spell, a foe
- * defeated since) leaves the field on its own default.
+ * Point a cast dialog's target field at an already-picked target, in
+ * whichever shape `castFields` chose: the single select value, the
+ * multiselect one pre-checked box, or the whole allocation moved onto that
+ * creature. The grid already opens with everything on its first row, so
+ * this only changes which row holds the allocation. When no option offers
+ * the id (for example, a picked ally under an attack spell, or a foe
+ * defeated since), the field keeps its own default.
  * @param {import('../types/modal.js').ModalField[]} fields
  * @param {string} targetId
  */
@@ -580,11 +598,11 @@ export function prefillTarget(fields, targetId) {
 }
 
 /**
- * The targets the GM picked out of the dialog: the allocation grid's per-target
- * projectile counts, the multiselect's comma-joined ids, or the single select's
- * one id, resolved back to the target objects in the order they were offered.
- * Unknown ids are dropped rather than trusted, and a target allocated no
- * projectile is not a target.
+ * The targets the GM picked out of the dialog. The source is the allocation
+ * grid's per-target projectile counts, the multiselect's comma-joined ids,
+ * or the single select's one id. The function resolves these back to the
+ * target objects in the order they were offered. It drops unknown ids
+ * rather than trusting them. A target allocated no projectile is not a target.
  * @param {{ id: string, name: string, ac: number }[]} targets
  * @param {Record<string, string>} values
  * @returns {import('../entities/Casting.js').CastTarget[]}
@@ -607,8 +625,9 @@ function chosenTargets(targets, values) {
 }
 
 /**
- * How a cast's targets read in a toast: the one name when a spell reached one
- * creature, a count when it reached several.
+ * How a cast's targets read in a toast message. The function returns the
+ * one name when a spell reached one creature, and a count when it reached
+ * several.
  * @param {{ name?: string }[]} targets
  * @returns {string}
  */
@@ -618,24 +637,26 @@ function targetSummary(targets) {
 }
 
 /**
- * Apply and log a resolved cast's outcomes: attack hits/misses, save results
- * with full/half/no damage, and healing. Each target gets its own log line, so a
- * multi-target cast is auditable roll by roll; the toast carries the summary.
- * Damage and healing route to the same HP models the weapon path uses.
+ * Apply and log a resolved cast's outcomes: attack hits and misses, save
+ * results with full, half, or no damage, and healing. Each target gets its
+ * own log line, so a multi-target cast is auditable roll by roll. The toast
+ * carries the summary. Damage and healing route to the same HP models the
+ * weapon path uses.
  * @param {AppContext} app
  * @param {Spell} spell
  * @param {{ outcomes: object[], targets: import('../entities/Casting.js').CastTarget[] }} result
- * @param {string} casterId stamped onto a condition this cast imposes, so the
- *   effect can be found again when the caster stops holding the spell
+ * @param {string} casterId the function stamps this id onto a condition this
+ *   cast imposes, so the app can find the effect again when the caster stops
+ *   holding the spell
  */
 function applyOutcomes(app, spell, result, casterId) {
   const kind = spell.effect.kind;
   const summary = targetSummary(result.targets);
   if (kind === 'attack') {
     for (const o of /** @type {any[]} */ (result.outcomes)) {
-      // A multi-projectile cast logs the tally rather than one line per ray: the
-      // rolls are already aggregated per creature, and the damage carries every
-      // ray's dice.
+      // A multi-projectile cast logs the tally, not one line per ray. The
+      // rolls are already aggregated per creature, and the damage carries
+      // every ray's dice.
       if (o.shots) {
         const tally = `${o.hits} of ${o.fired} hit ${o.target.name}`;
         app.actions.logEvent(
@@ -665,21 +686,22 @@ function applyOutcomes(app, spell, result, casterId) {
     return;
   }
   if (kind === 'save') {
-    // A failed save's condition rides for as long as the spell lasts, which the
-    // structured duration gives in rounds; an open-ended duration leaves the
-    // chip for the GM to clear.
+    // A failed save's condition rides for as long as the spell lasts. The
+    // structured duration gives this length in rounds. An open-ended
+    // duration leaves the chip for the GM to clear.
     const rounds = durationInRounds(spell.duration);
     const effect = /** @type {import('../types/spell.js').SpellSaveEffect} */ (spell.effect);
     const ability = effect.saveAbility;
     for (const o of /** @type {any[]} */ (result.outcomes)) {
       const verdict = o.saved ? 'saves' : 'fails';
-      // The bonus is named alongside the roll, the way an attack's log names the
-      // ability and proficiency behind its number.
+      // The log names the bonus alongside the roll, the same way an attack
+      // log names the ability and proficiency behind its number.
       const bonus = `${ability} ${formatModifier(o.target.saveBonus ?? 0)}`;
-      // The chip records the cast that wrote it, which is what ends the effect
-      // when the caster stops holding the spell, and what a repeated save rolls
-      // against. The bonus stamped here is only ever used for a target whose own
-      // save the app cannot read; a character's is re-derived at retry time.
+      // The chip records the cast that wrote it. This lets the app end the
+      // effect when the caster stops holding the spell, and lets a repeated
+      // save roll against it. The app uses the bonus stamped here only for a
+      // target whose own save it cannot read. It re-derives a character's
+      // bonus at retry time.
       const imposed = o.condition
         ? applyConditionToTarget(app, o.target.id, o.condition, rounds, {
             spellId: spell.id,

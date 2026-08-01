@@ -7,9 +7,10 @@ import { clampInt } from '../util/num.js';
 /** @typedef {import('../types/entities.js').Spellbook} Spellbook */
 
 /**
- * The class options for a caster picker: "None" (a non-caster) plus every
- * spellcasting class. Non-caster classes are omitted — the picker's only job is
- * to turn a combatant into a caster, and a non-caster choice is just "None".
+ * Returns the class options for a caster picker: "None" (a non-caster) plus
+ * every spellcasting class. The picker omits non-caster classes, because its
+ * only job is to turn a combatant into a caster. A non-caster choice is
+ * simply "None".
  * @returns {{ value: string, label: string }[]}
  */
 export function casterClassOptions() {
@@ -23,12 +24,14 @@ export function casterClassOptions() {
 }
 
 /**
- * The highest spell level a class can cast at a caster level, so the picker
- * hides spells the caster couldn't slot. Read from the class's slot table
- * (its length is the top slot level); pact casters (Warlock) have no table
- * entry, so their pact-slot progression — one spell level every two caster
- * levels, capping at 5 — is computed directly. 0 for a non-caster or unknown
- * class (and, e.g., a level-1 half-caster with no slots yet).
+ * Returns the highest spell level a class can cast at a given caster level.
+ * The picker uses this to hide spells the caster cannot slot. This function
+ * reads the value from the class's slot table, where the table length is the
+ * top slot level. Pact casters (Warlock) have no table entry, so this
+ * function computes their pact-slot progression directly: one spell level
+ * every two caster levels, up to a maximum of 5. The function returns 0 for
+ * a non-caster or unknown class, and for a level-1 half-caster with no slots
+ * yet.
  * @param {string | undefined | null} classId
  * @param {number} casterLevel
  * @returns {number}
@@ -44,12 +47,13 @@ export function maxSpellLevelForClass(classId, casterLevel) {
 }
 
 /**
- * Library spells as multiselect options, ordered by level then name and
- * labelled with their level (cantrips first). The value is the spell id, so the
- * multiselect's comma-joined result is a set of spell ids. A caster class
- * filters the list to that class's spell list and the spell levels it can slot
- * at `casterLevel`; with no caster class (None/non-caster) the whole library is
- * offered, since the field is discarded downstream anyway.
+ * Returns library spells as multiselect options, ordered by level then name,
+ * and labelled with their level (cantrips first). Each option's value is the
+ * spell id, so the multiselect's comma-joined result is a set of spell ids. A
+ * caster class filters the list to that class's spell list and to the spell
+ * levels it can slot at `casterLevel`. With no caster class (None or
+ * non-caster), this function offers the whole library, because the field is
+ * discarded downstream anyway.
  * @param {string} [classId]
  * @param {number} [casterLevel]
  * @returns {{ value: string, label: string }[]}
@@ -59,8 +63,8 @@ export function spellPickerOptions(classId = '', casterLevel = 1) {
   const max = filtered ? maxSpellLevelForClass(classId, casterLevel) : 0;
   return (
     activeSpells()
-      // `filter` already returned a fresh array, so sorting in place cannot
-      // reach the shared library list this reads from.
+      // `filter` already returns a fresh array. Sorting it in place cannot
+      // reach the shared library list that this reads from.
       .filter((s) => !filtered || (s.classes.includes(classId) && s.level <= max))
       .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name))
       .map((s) => ({
@@ -71,7 +75,8 @@ export function spellPickerOptions(classId = '', casterLevel = 1) {
 }
 
 /**
- * The flat set of spell ids a spellbook holds, for pre-checking the picker.
+ * Returns the flat set of spell ids that a spellbook holds. The picker uses
+ * this set to pre-check its options.
  * @param {Spellbook | undefined} spellbook
  * @returns {string[]}
  */
@@ -81,10 +86,11 @@ export function spellbookIds(spellbook) {
 }
 
 /**
- * The three caster fields — class, caster level, and a spell multiselect —
- * shared by the encounter and NPC dialogs. Seeded from an existing caster's
- * class/level/spellbook so editing pre-selects them; the spell list is the whole
- * library (a foe may know any spell), pre-checked from the seed's spellbook.
+ * Returns the three caster fields (class, caster level, and a spell
+ * multiselect) shared by the encounter and NPC dialogs. A seed from an
+ * existing caster's class, level, and spellbook pre-selects these fields for
+ * editing. The spell list offers the whole library, because a foe can know
+ * any spell, and it is pre-checked from the seed's spellbook.
  * @param {{ class?: string, casterLevel?: number, level?: number, spellbook?: Spellbook } | null} seed
  * @returns {ModalField[]}
  */
@@ -110,18 +116,19 @@ export function casterFields(seed) {
       type: 'multiselect',
       value: spellbookIds(seed?.spellbook).join(','),
       full: true,
-      // Seed the list filtered to the seed's class/level; the dialog's onChange
-      // refilters it live as the caster class or level change.
+      // Seed the list filtered to the seed's class and level. The dialog's
+      // onChange refilters it live as the caster class or level changes.
       options: spellPickerOptions(seed?.class ?? '', seed?.casterLevel ?? seed?.level ?? 1),
     },
   ];
 }
 
 /**
- * The modal `onChange` fragment behind the caster fields: when the caster class
- * or level changes, refilter the spell multiselect to what that caster can
- * slot. Returns whether the change was handled, so a dialog with its own
- * onChange logic (the encounter form's stat re-stamping) can bail early.
+ * This is the modal `onChange` fragment behind the caster fields. When the
+ * caster class or level changes, it refilters the spell multiselect to what
+ * that caster can slot. It returns whether it handled the change, so a
+ * dialog with its own onChange logic (the encounter form's stat re-stamping)
+ * can exit early.
  * @param {string} name the changed field's name
  * @param {{ get: (name: string) => string, setOptions: (name: string, options: { value: string, label: string }[]) => void }} form
  * @returns {boolean}
@@ -136,10 +143,10 @@ export function refilterSpellsOnChange(name, form) {
 }
 
 /**
- * Partition a flat set of picked spell ids into a spellbook: cantrips (level 0)
- * into `cantrips`, leveled spells into both `known` and `prepared` so a foe can
- * cast them straight away. Unknown ids (a spell removed from the library) are
- * dropped.
+ * Splits a flat set of picked spell ids into a spellbook. Cantrips (level 0)
+ * go into `cantrips`. Leveled spells go into both `known` and `prepared`, so
+ * a foe can cast them right away. This function drops unknown ids, such as a
+ * spell removed from the library.
  * @param {string[]} ids
  * @returns {Spellbook}
  */
@@ -159,8 +166,8 @@ export function spellbookFromIds(ids) {
 }
 
 /**
- * Read the caster fields back into `withCasterFields`/`createNPC` options. A
- * non-caster class yields no caster options (an empty object), so the entity
+ * Reads the caster fields back into `withCasterFields`/`createNPC` options. A
+ * non-caster class yields no caster options, an empty object, so the entity
  * stays a plain combatant.
  * @param {Record<string, string>} values
  * @returns {{ class?: string, casterLevel?: number, spellbook?: Spellbook }}

@@ -17,19 +17,21 @@ import { commitNPCs } from './combatants.js';
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
 /**
- * The Story tab's panels — travelogue, NPCs, quests, handouts — plus the
- * `logEvent` action every module records travelogue entries through.
+ * Wires the Story tab's panels (travelogue, NPCs, quests, handouts) and the
+ * `logEvent` action. Every module records travelogue entries through
+ * `logEvent`.
  * @param {AppContext} app
  */
 export function wireStory(app) {
   const { state } = app;
 
-  /** Monotonic counter making travelogue entry ids unique within a session. */
+  /** A monotonic counter. It makes travelogue entry ids unique within one session. */
   let logSeq = 0;
 
   /**
-   * Record a travelogue event and refresh the panel. Ids combine the clock with
-   * a session counter so two events in the same millisecond never collide.
+   * Records a travelogue event and refreshes the panel. Ids combine the clock
+   * time with a session counter, so two events in the same millisecond never
+   * collide.
    * @param {import('../types/log.js').LogEntryKind} kind
    * @param {string} message
    */
@@ -40,9 +42,10 @@ export function wireStory(app) {
       createEntry(`log-${now}-${logSeq++}`, kind, message, now),
     );
     app.views.travelogPanel.update();
-    // The combat screen's log column shows the same entries; without this a
-    // line that changes no combatant (a missed attack, a plain roll) never
-    // reached it. Outside a fight the screen is empty and the call is a no-op.
+    // The combat screen's log column shows the same entries. Without this
+    // call, a line that changes no combatant, such as a missed attack or a
+    // plain roll, never reaches it. Outside a fight, the screen is empty, and
+    // the call is a no-op.
     app.views.combatScreen.update();
     app.actions.markDirty();
   };
@@ -63,7 +66,7 @@ export function wireStory(app) {
     },
   });
 
-  /** Confirm-and-delete shared by both NPC lists. */
+  /** The confirm-and-delete flow shared by both NPC lists. */
   const deleteNPC = (/** @type {string} */ id) => {
     state.npcs = removeById(state.npcs, id);
     commitNPCs(app);
@@ -72,8 +75,8 @@ export function wireStory(app) {
     confirmDelete(npc.name);
 
   app.views.npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
-    // Players only learn of a placed NPC once the party has landed on its
-    // tile; the GM sees the whole node's roster, with unmet ones flagged.
+    // A player learns of a placed NPC only after the party lands on its tile.
+    // The GM sees the whole node's roster, with unmet NPCs flagged.
     getNPCs: () =>
       isGM(state.role)
         ? npcsAt(state.npcs, app.partyTracker.getPosition())
@@ -90,10 +93,10 @@ export function wireStory(app) {
     getRole: () => state.role,
   });
 
-  // The Build rail's NPC authoring list (the NPCs subtab beside the mob
-  // roster): the NPCs placed in whatever node the GM is looking at, plus
-  // unplaced ones, editable without moving the party there. New NPCs default
-  // onto the Build-mode selected tile of the viewed node.
+  // This is the Build rail's NPC authoring list, the NPCs subtab beside the
+  // mob roster. It lists the NPCs placed in whatever node the GM views, plus
+  // unplaced NPCs, and lets the GM edit them without moving the party there.
+  // New NPCs default onto the Build-mode selected tile of the viewed node.
   app.views.buildNPCs = mountNPCPanel(mustGetElement('build-npcs-container'), {
     getNPCs: () => npcsAt(state.npcs, { nodeId: app.navigator.getCurrentNode().id }),
     getLocationLabel: (npc) => formatLocation(npc.location, (id) => app.grid.getNode(id)?.name),
@@ -106,7 +109,7 @@ export function wireStory(app) {
     onEdit: (npc) => npcForm(app, npc, null),
     confirmDelete: confirmDeleteNPC,
     getRole: () => state.role,
-    pinAdd: true, // lead with "New NPC", matching the Mobs subtab
+    pinAdd: true, // Leads with "New NPC", to match the Mobs subtab.
   });
 
   const questList = wireEntityList(app, {
@@ -145,8 +148,8 @@ export function wireStory(app) {
           }
         : { name: 'image', label: 'Image (optional)', type: 'file' },
     ],
-    // A new handout is bound to the node the party stands in, so it surfaces at
-    // that location.
+    // A new handout binds to the node where the party stands, so it appears
+    // at that location.
     create: (id, title, values) =>
       createHandout(
         id,

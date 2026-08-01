@@ -1,14 +1,14 @@
 /**
- * The add/edit/delete callbacks a title-keyed campaign list wants. Quests and
- * handouts differ only in which state list they live on, what their dialog
- * asks for, and how a submitted record becomes an entry. Everything around
- * that is identical: prompt, reject an empty title, derive a unique id from the
- * title, append or replace, mark the campaign dirty, and confirm a delete by
- * name. That shared part lives here once, so a further list (a feat catalog,
- * say) supplies only its own three pieces.
+ * The add, edit, and delete callbacks that a title-keyed campaign list needs.
+ * Quests and handouts differ only in which state list they live on, what
+ * their dialog asks for, and how a submitted record becomes an entry.
+ * Everything else is identical: show a prompt, reject an empty title, derive
+ * a unique id from the title, append or replace the entry, mark the campaign
+ * dirty, and confirm a delete by name. This shared part lives here once, so a
+ * further list, such as a feat catalog, supplies only its own three pieces.
  *
- * The dialog functions are injectable so the logic can be exercised without a
- * DOM; callers in the app leave them at their defaults.
+ * The dialog functions can be injected, so the logic can run without a DOM.
+ * Callers in the app leave them at their default values.
  */
 
 import { promptModal, confirmDelete } from '../ui/Modal.js';
@@ -25,11 +25,11 @@ import { slugId, replaceById, removeById } from '../entities/Roster.js';
 /**
  * Build the panel callbacks for one campaign list.
  *
- * `fields` is asked for the dialog's fields twice: with the entry being edited,
- * and with null when adding. `create` receives the id already slugged against
- * the list's existing ids; `patch` receives the entry to fold the edits into.
- * Both receive the trimmed title separately from the raw submitted record,
- * since the guard has already trimmed it.
+ * `fields` is asked for the dialog's fields twice: once with the entry being
+ * edited, and once with null when adding. `create` receives the id already
+ * slugged against the list's existing ids. `patch` receives the entry to fold
+ * the edits into. Both receive the trimmed title apart from the raw
+ * submitted record, because the guard already trimmed it.
  * @template {EntityListKey} K
  * @param {AppContext} app
  * @param {import('../types/app.js').EntityListSpec<K>} spec
@@ -60,7 +60,7 @@ export function wireEntityList(app, spec) {
   };
   /**
    * The submitted title, trimmed, or null if the dialog was dismissed or the
-   * title left blank — the one thing every list requires.
+   * title stayed blank. Every list requires this one field.
    * @param {Record<string, string> | null} values
    */
   const readTitle = (values) => {

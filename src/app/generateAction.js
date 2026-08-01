@@ -14,10 +14,11 @@ import { resyncMapViews } from './mapResync.js';
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
 
 /**
- * Build-mode procedural generation: fill the current node with an archetype
- * layout (wilderness/town for regions, dungeon/castle for interiors) at a size
- * preset, as an alternative to painting a large map tile by tile. Archetypes
- * are filtered to the node's kind, and overwriting a non-empty node confirms.
+ * This is Build-mode procedural generation. It fills the current node with
+ * an archetype layout (wilderness or town for regions, dungeon or castle for
+ * interiors) at a size preset, as an alternative to painting a large map
+ * tile by tile. Archetypes are filtered to the node's kind, and overwriting
+ * a non-empty node asks for confirmation.
  * @param {AppContext} app
  * @param {MapEnv} env the map wiring's shared context, for the stroke-undo
  *   snapshot and the post-generate resync
@@ -30,11 +31,11 @@ export function wireGenerateAction(app, env) {
     const archetypes = ARCHETYPES[node.kind];
 
     /**
-     * Build (and memoize) the full generation result for a dialog choice. The
-     * RNG is seeded from the choice, so the preview the dialog renders and the
-     * layout stamped on accept are the same map — and the seed shown to the GM
-     * reproduces it later. Multi-level dungeons are built whole here so the
-     * preview's level 1 carries the exact stairs the accepted map will.
+     * Build and cache the full generation result for a dialog choice. The
+     * RNG is seeded from the choice, so the preview the dialog draws and the
+     * layout stamped on accept are the same map. The seed shown to the GM
+     * reproduces it later. This function builds multi-level dungeons whole,
+     * so the preview's level 1 carries the exact stairs the accepted map will.
      * @type {{ key: string, gen: { width: number, height: number, tiles: import('../types/map.js').Tile[], entry: string }, levels: ReturnType<typeof generateDungeonLevels> | null } | null}
      */
     let candidate = null;
@@ -45,9 +46,9 @@ export function wireGenerateAction(app, env) {
       if (candidate?.key !== key) {
         const rng = mulberry32(choice.seed);
         if (choice.archetype === 'dungeon') {
-          // A dungeon can be a chain of levels: each level's stairs-down is
-          // linked to a freshly created child node holding the level below, so
-          // stairs always connect to a real generated level.
+          // A dungeon can be a chain of levels. Each level's stairs-down
+          // links to a freshly created child node that holds the level
+          // below, so stairs always connect to a real generated level.
           const levels = generateDungeonLevels(
             palette,
             { size: choice.size, levels: choice.levels },
@@ -85,8 +86,8 @@ export function wireGenerateAction(app, env) {
     }
     const built = buildCandidate(values);
     const gen = built.gen;
-    // The regenerated layout replaces the node (and may restamp its parent's
-    // entrance link below); snapshot both so the stroke-undo ring can revert it.
+    // The regenerated layout replaces the node, and can restamp its parent's
+    // entrance link below. Snapshot both so the stroke-undo ring can revert it.
     const parentBefore = node.parentId ? grid.getNode(node.parentId) : null;
     env.snapshotEdit(node, ...(parentBefore ? [parentBefore] : []));
     if (built.levels) {
@@ -103,15 +104,16 @@ export function wireGenerateAction(app, env) {
       });
     }
     grid.updateNode(withNodeTiles({ ...node, width: gen.width, height: gen.height }, gen.tiles));
-    // A generated map must be reachable from the overworld, not just internally
-    // connected: if no parent tile links to this node yet, stamp one (a POI
-    // marker matching the archetype) on the parent tile nearest its centre, so
-    // there is always a way in. Tell the GM where it landed so it can be moved.
+    // A generated map must be reachable from the overworld, not just
+    // internally connected. If no parent tile links to this node yet, stamp
+    // one (a POI marker matching the archetype) on the parent tile nearest
+    // its center, so there is always a way in. Tell the GM where it landed,
+    // so the GM can move it.
     const parent = node.parentId ? grid.getNode(node.parentId) : null;
     if (parent) {
       const artFor = entranceArtFor(values.archetype);
       const linked = ensureChildLink(parent, node.id, {
-        // Wilderness gets no marker: the link rides the existing terrain tile
+        // Wilderness gets no marker. The link rides the existing terrain tile
         // (or a fresh grass tile) and shows as a region outline once discovered.
         markerRef: artFor ? (palette.get(artFor.marker)?.imageRef ?? null) : null,
         createRef: palette.pickVariant('grass', Math.random).imageRef,
@@ -125,8 +127,9 @@ export function wireGenerateAction(app, env) {
         );
       }
     }
-    // The regenerated layout may have shrunk past the party or replaced its tile
-    // with void/wall; re-land it on the layout's guaranteed entry tile if so.
+    // If the regenerated layout has shrunk past the party, or replaced the
+    // party's tile with void or wall, re-land the party on the layout's
+    // guaranteed entry tile.
     const pos = partyTracker.getPosition();
     if (pos.nodeId === node.id) {
       const moveTo = relandedTile({
