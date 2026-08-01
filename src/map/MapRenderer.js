@@ -118,6 +118,17 @@ export class MapRenderer {
   }
 
   /**
+   * The per-frame data shared by the render passes. `vectorBlocks` is
+   * filled by the block passes and read by the grid pass, so the frame
+   * object is also how those passes talk to each other within one draw.
+   * @typedef {{
+   *   revealedIds: Set<string> | null,
+   *   spanBlocks: import('./TilePaint.js').SpanBlock[],
+   *   vectorBlocks: { x: number, y: number, w: number, h: number }[],
+   * }} Frame
+   */
+
+  /**
    * Draw one frame of the map from a view snapshot.
    * @param {MapView} view
    */
@@ -132,6 +143,8 @@ export class MapRenderer {
       const frame = {
         revealedIds: this._revealedIds(view),
         spanBlocks: spanBlocks(view.node),
+        /** @type {{ x: number, y: number, w: number, h: number }[]} */
+        vectorBlocks: [],
       };
       const groupCover = this._renderGroupImages(view, frame);
       this._renderSpanImages(view, frame, groupCover);
@@ -186,7 +199,7 @@ export class MapRenderer {
    * scaled image piecewise, and a road through a region stays 1x1. Returns
    * the covered tile ids for that skip.
    * @param {MapView} view
-   * @param {{ revealedIds: Set<string> | null }} frame
+   * @param {Frame} frame
    * @returns {Set<string>}
    */
   _renderGroupImages(view, frame) {
@@ -203,7 +216,7 @@ export class MapRenderer {
         if (!anyRevealed(chunk.tileIds, revealedIds)) continue;
         for (const id of chunk.tileIds) covered.add(id);
         blockRect(rect, chunk, view, size);
-        if (rect.visible) this._drawBlockImage(rect, chunk.imageRef);
+        if (rect.visible) this._drawBlockImage(rect, chunk.imageRef, frame);
       }
     }
     return covered;
@@ -213,14 +226,25 @@ export class MapRenderer {
    * Draw one block's image across its whole rectangle, or a flat gray
    * placeholder while the bytes are still loading, or if the ref failed to
    * decode, so a block never leaves a hole in the map.
+   *
+   * A block wider or taller than the raster ceiling draws from the vector
+   * art, which keeps the partly transparent outer pixel row that single
+   * rastered tiles lose. Its rectangle is recorded on the frame so the cell
+   * grid pass leaves it alone instead of ruling a second line over that
+   * natural boundary. The placeholder fill is opaque and carries no such
+   * boundary, so it is not recorded.
    * @param {import('./MapGeometry.js').BlockRect} rect
    * @param {string} imageRef
+   * @param {{ vectorBlocks: { x: number, y: number, w: number, h: number }[] }} frame
    */
-  _drawBlockImage(rect, imageRef) {
+  _drawBlockImage(rect, imageRef, frame) {
     const { ctx } = this;
     const img = this._raster.source(imageRef, rect.w, rect.h);
     if (img) {
       ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
+      if (!rasterSize(rect.w) || !rasterSize(rect.h)) {
+        frame.vectorBlocks.push({ x: rect.x, y: rect.y, w: rect.w, h: rect.h });
+      }
     } else {
       ctx.fillStyle = INK.missingArt;
       ctx.fillRect(rect.x, rect.y, rect.w, rect.h);
@@ -237,7 +261,7 @@ export class MapRenderer {
    * reveals piecewise, and roads across it stay 1x1, matching region-block
    * chunks. Unlike those chunks, span art draws on interiors too.
    * @param {MapView} view
-   * @param {{ revealedIds: Set<string> | null, spanBlocks: import('./TilePaint.js').SpanBlock[] }} frame
+   * @param {Frame} frame
    * @param {Set<string>} cover accumulates covered tile ids
    */
   _renderSpanImages(view, frame, cover) {
@@ -254,7 +278,7 @@ export class MapRenderer {
       if (!anyRevealed(block.tileIds, revealedIds)) continue;
       for (const id of block.tileIds) cover.add(id);
       blockRect(rect, block, view, size);
-      if (rect.visible) this._drawBlockImage(rect, block.tile.imageRef);
+      if (rect.visible) this._drawBlockImage(rect, block.tile.imageRef, frame);
     }
   }
 
@@ -305,8 +329,12 @@ export class MapRenderer {
    * backdrop through and so never carried a grid. Cells are clipped rather
    * than stroked one at a time, which would draw every shared boundary twice
    * and leave it darker than the outer edges.
+   * A block past the raster ceiling drew from the vector art and so kept
+   * its natural boundary. Its rectangle is clipped out here, which also
+   * keeps its interior clear, the look every block had before the raster
+   * cache when covered cells drew no per-tile image.
    * @param {MapView} view
-   * @param {{ revealedIds: Set<string> | null }} frame
+   * @param {Frame} frame
    */
   _renderCellGrid(view, frame) {
     const node = view.node;
@@ -341,6 +369,14 @@ export class MapRenderer {
         }
       }
       ctx.clip(clip);
+    }
+    if (frame.vectorBlocks.length > 0) {
+      // The view rectangle with each vector-drawn block cut out of it. The
+      // even-odd rule is what turns the inner rectangles into holes.
+      const keep = new Path2D();
+      keep.rect(left, top, right - left, bottom - top);
+      for (const block of frame.vectorBlocks) keep.rect(block.x, block.y, block.w, block.h);
+      ctx.clip(keep, 'evenodd');
     }
     ctx.strokeStyle = 'rgba(36, 31, 22, 0.55)';
     ctx.lineWidth = 1;
