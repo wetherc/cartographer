@@ -159,6 +159,14 @@ into it. The claim calls back to select a character, or to fall back to
 spectator. The switch calls back to redraw the roster, whose place buttons
 follow it.
 
+Every panel this module refreshes stops short of rebuilding when nothing it
+shows has changed. `ui/CharacterSheet.js` compares a dependency list and
+re-points its existing nodes at the new values. `ui/CharacterRoster.js` runs
+the guard that the list panels run, through `repaintNeeded`. The claim
+compares the option list and the displayed value before it replaces the
+picker's options. A `partyPanels` update on an adopted save that changed
+nothing therefore adds no element to the party rail.
+
 ### rehydrate.js
 
 This module writes a loaded campaign over the running one. It replaces:

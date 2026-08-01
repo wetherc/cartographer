@@ -1,8 +1,22 @@
 import { iconButton, textButton, emptyState } from './buttons.js';
 import { classNames, el } from './dom.js';
+import { captureFocus, restoreFocus } from './focusMemory.js';
+import { repaintNeeded } from './listPanel.js';
 import { getHP } from '../entities/Character.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
+
+/**
+ * What the roster draws besides its rows: which row reads as the current
+ * one, and whether the rows carry a place-on-map action. A change in either
+ * has to repaint even when the characters are the same objects.
+ * @param {string | null} selectedId
+ * @param {boolean} placeShown
+ * @returns {string}
+ */
+export function rosterDependsOn(selectedId, placeShown) {
+  return `${placeShown ? 1 : 0}:${selectedId ?? ''}`;
+}
 
 /**
  * A compact HP bar for a roster row. A filled track shows current and max
@@ -53,8 +67,14 @@ function hpMeter(character) {
  * If onPlace is set, each managed row also offers a Place on map action.
  * This lets the GM move one character to any node or tile, or back to the
  * party, without changing the rest of the party. canPlace, checked per
- * render like canManage, hides that action while splitting the party is
+ * paint like canManage, hides that action while splitting the party is
  * not allowed.
+ *
+ * `update` carries the same guard the list panels carry, through
+ * `repaintNeeded` from `listPanel.js`: it repaints when the manage gate
+ * flipped, when `rosterDependsOn` reports a different value, or when the
+ * characters are not the same objects in the same order. A repaint keeps
+ * the keyboard position through `focusMemory.js`.
  * @returns {{ update: () => void }}
  */
 export function mountCharacterRoster(container, options) {
@@ -62,10 +82,22 @@ export function mountCharacterRoster(container, options) {
   const root = el('div', 'character-roster');
   container.appendChild(root);
 
-  function render() {
+  /**
+   * The rows the DOM currently holds, or null before the first paint.
+   * @type {import('./listPanel.js').PaintState<Character> | null}
+   */
+  let last = null;
+
+  /** Whether a row gets the place-on-map action. */
+  const placeShown = () => Boolean(options.onPlace) && (options.canPlace?.() ?? true);
+
+  /** @param {boolean} manage @param {Character[]} characters */
+  function paint(manage, characters) {
+    // Clearing the root drops focus to the document body, the same hazard
+    // the list panels have, so the keyboard position is noted and put back.
+    const memo = captureFocus(root, document.activeElement);
     root.innerHTML = '';
 
-    const characters = options.getCharacters();
     const selectedId = options.getSelectedId();
 
     if (characters.length === 0) {
@@ -88,7 +120,7 @@ export function mountCharacterRoster(container, options) {
       select.addEventListener('click', () => options.onSelect(character.id));
 
       const row = el('div', 'character-roster__row u-row u-g1', select);
-      if (canManage() && options.onPlace && (options.canPlace?.() ?? true)) {
+      if (manage && placeShown()) {
         row.appendChild(
           iconButton(
             'map',
@@ -98,7 +130,7 @@ export function mountCharacterRoster(container, options) {
           ),
         );
       }
-      if (canManage()) {
+      if (manage) {
         row.appendChild(
           iconButton('remove', `Delete ${character.name}`, () => options.onDelete(character.id), {
             variant: 'danger',
@@ -109,26 +141,46 @@ export function mountCharacterRoster(container, options) {
       root.appendChild(row);
     }
 
-    if (!canManage()) return;
-
-    root.appendChild(
-      el(
-        'div',
-        'panel-actions',
-        textButton('New character', () => options.onAdd(), {
-          icon: 'add',
-          className: 'character-roster__add',
-        }),
-        options.onAwardXP &&
-          characters.length > 0 &&
-          textButton('Award XP', () => options.onAwardXP?.(), {
-            icon: 'sparkles',
-            className: 'character-roster__award',
+    if (manage) {
+      root.appendChild(
+        el(
+          'div',
+          'panel-actions',
+          textButton('New character', () => options.onAdd(), {
+            icon: 'add',
+            className: 'character-roster__add',
           }),
-      ),
-    );
+          options.onAwardXP &&
+            characters.length > 0 &&
+            textButton('Award XP', () => options.onAwardXP?.(), {
+              icon: 'sparkles',
+              className: 'character-roster__award',
+            }),
+        ),
+      );
+    }
+
+    restoreFocus(root, memo);
   }
 
-  render();
-  return { update: render };
+  /**
+   * Repaint only when something the rows show has changed. Every refresh of
+   * the party panels reaches the roster, and a cross-tab adoption fires one
+   * every few seconds, so an unguarded rebuild threw away the keyboard
+   * position and the row elements on a save that changed nothing.
+   */
+  function update() {
+    /** @type {import('./listPanel.js').PaintState<Character>} */
+    const next = {
+      gm: canManage(),
+      rows: options.getCharacters(),
+      dependsOn: rosterDependsOn(options.getSelectedId(), placeShown()),
+    };
+    if (!repaintNeeded(last, next)) return;
+    last = next;
+    paint(next.gm, next.rows);
+  }
+
+  update();
+  return { update };
 }

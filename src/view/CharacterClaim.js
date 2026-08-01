@@ -116,17 +116,28 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
     else spectate();
   });
 
+  /** The options the picker holds now, as one comparable string. */
+  /** @type {string | null} */
+  let painted = null;
+
   function updatePicker() {
     // A binding whose character left the roster resolves to spectator, with no message.
     if (boundId && !getCharacters().some((c) => c.id === boundId)) setBinding(null);
-    setOptions(
-      picker,
-      [
-        { value: '', label: 'Spectator (view only)' },
-        ...getCharacters().map((character) => ({ value: character.id, label: character.name })),
-      ],
-      boundId ?? '',
-    );
+    const options = [
+      { value: '', label: 'Spectator (view only)' },
+      ...getCharacters().map((character) => ({ value: character.id, label: character.name })),
+    ];
+    // Every refresh of the party panels reaches this picker, and a cross-tab
+    // adoption fires one every few seconds. Replacing the options each time
+    // closes an open dropdown under the player's cursor.
+    // The displayed value is part of the check, not only the binding behind
+    // it. A pick that another tab already holds is refused, leaving the
+    // rejected name on screen with the binding unchanged, and that has to be
+    // put back.
+    const stamp = JSON.stringify([boundId ?? '', options]);
+    if (stamp === painted && picker.value === (boundId ?? '')) return;
+    painted = stamp;
+    setOptions(picker, options, boundId ?? '');
   }
   updatePicker();
 
