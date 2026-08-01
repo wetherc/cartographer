@@ -249,8 +249,16 @@ than in `actions`.
 
 `update()`'s early-out compares row objects by identity. This check is
 sound only because the entity layer never mutates data in place. A panel
-whose output depends on state that is not in its rows must pass
-`alwaysRender`.
+that draws something its rows do not describe passes `dependsOn`, a
+function returning one comparable value, which the guard compares with
+`Object.is` alongside the rows and the gate. The Active encounter tab uses
+it for its Start combat button, which appears and disappears with whether a
+fight is already running. `repaintNeeded(last, next)` is the decision
+itself, exported so `tests/listPanel.test.js` can reach it without a DOM.
+
+Build the value out of numbers, strings, or booleans. A fresh object per
+read differs from the last one every time, which turns the guard off and
+also discards what the user typed into a row's input on every refresh.
 
 ## Buttons, icons, and empty states
 

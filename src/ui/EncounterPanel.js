@@ -227,27 +227,34 @@ export function mountEncounterPanel(container, callbacks) {
   });
   root.append(tabs.tablist, activePanel, nearbyPanel);
 
+  /**
+   * The Active tab's add controls: Start combat, when a fight can begin and
+   * the caller offers the entry into one. This is the only part of the tab
+   * that no row describes, so it is also what the panel's `dependsOn`
+   * reads. One function serves both, so the guard and the button cannot
+   * disagree about whether the button belongs on screen.
+   * @returns {import('./listPanel.js').AddButton[]}
+   */
+  function activeAddButtons() {
+    const onStartCombat = callbacks.onStartCombat;
+    if (!onStartCombat || !(callbacks.canStartCombat?.() ?? true)) return [];
+    return [
+      {
+        label: 'Start combat',
+        icon: 'sword',
+        variant: 'primary',
+        className: 'encounter-panel__start-combat',
+        onClick: onStartCombat,
+      },
+    ];
+  }
+
   const activeList = mountListPanel(activePanel, {
     ...rowOptions,
     getRows: () => callbacks.getActiveEncounters(),
     emptyMessage: 'No active encounter.',
-    addButtons: () => {
-      const onStartCombat = callbacks.onStartCombat;
-      if (!onStartCombat || !(callbacks.canStartCombat?.() ?? true)) return [];
-      return [
-        {
-          label: 'Start combat',
-          icon: 'sword',
-          variant: 'primary',
-          className: 'encounter-panel__start-combat',
-          onClick: onStartCombat,
-        },
-      ];
-    },
-    // Start combat appears and disappears with whether a fight is already
-    // running. No row reflects this. Without this, the rows-unchanged guard
-    // leaves a stale button on screen.
-    alwaysRender: true,
+    addButtons: activeAddButtons,
+    dependsOn: () => activeAddButtons().length,
   });
 
   const nearbyList = mountListPanel(nearbyPanel, {

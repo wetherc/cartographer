@@ -27,8 +27,11 @@ import { captureFocus, restoreFocus } from './focusMemory.js';
  * changed. Entities here are immutable, since a mutation hands back a
  * new object, so unchanged references mean unchanged output. The five
  * panel refreshes that a party step fires collapse into no DOM work. A
- * panel whose output depends on state outside its rows must opt out with
- * `alwaysRender`.
+ * panel that draws something its rows do not describe names that state in
+ * `dependsOn`, and the guard compares its value alongside the rows. This
+ * is narrower than an unconditional repaint: a panel that opts out of the
+ * guard entirely also throws away what the user typed into a row's input
+ * on every refresh, and a cross-tab adoption refreshes every few seconds.
  *
  * A repaint that does happen keeps the keyboard position, through
  * `focusMemory.js`. Without that, every rebuild moved focus to the
@@ -110,7 +113,17 @@ import { captureFocus, restoreFocus } from './focusMemory.js';
  *   its pinned row styles the buttons itself.
  * @property {() => boolean} [gate] false for the read-only player view,
  *   which drops the add controls. Defaults to GM.
- * @property {boolean} [alwaysRender] skip `update`'s unchanged-rows guard.
+ * @property {() => unknown} [dependsOn] whatever the panel draws that its
+ *   rows do not describe, as one comparable value. `update` repaints when
+ *   it differs from the last painted one, compared with `Object.is`. A
+ *   panel that omits it draws from its rows and the gate alone.
+ */
+
+/**
+ * What one paint drew from: the resolved gate, the row objects, and the
+ * value of `dependsOn` at that moment.
+ * @template T
+ * @typedef {{ gm: boolean, rows: T[], dependsOn: unknown }} PaintState
  */
 
 /**
@@ -125,10 +138,11 @@ export function mountListPanel(container, options) {
 
   const placement = options.addPlacement ?? 'inline';
 
-  /** @type {T[] | null} */
-  let lastRows = null;
-  /** @type {boolean | null} */
-  let lastGM = null;
+  /**
+   * What the last paint drew from, or null before the first one.
+   * @type {PaintState<T> | null}
+   */
+  let last = null;
 
   /**
    * Wire one button so its handler is awaited and the panel rerenders
@@ -215,10 +229,9 @@ export function mountListPanel(container, options) {
       );
   }
 
-  /** @param {boolean} gm @param {T[]} rows */
-  function paint(gm, rows) {
-    lastGM = gm;
-    lastRows = rows;
+  /** @param {boolean} gm @param {T[]} rows @param {unknown} dependsOn */
+  function paint(gm, rows, dependsOn) {
+    last = { gm, rows, dependsOn };
     // Clearing the root drops focus to the document body. Note where it
     // was, and put it back once the rows exist again.
     const memo = captureFocus(root, document.activeElement);
@@ -270,14 +283,14 @@ export function mountListPanel(container, options) {
 
   function render() {
     const gm = options.gate ? options.gate() : true;
-    paint(gm, options.getRows(gm));
+    paint(gm, options.getRows(gm), options.dependsOn?.());
   }
 
   function update() {
     const gm = options.gate ? options.gate() : true;
-    const rows = options.getRows(gm);
-    if (!options.alwaysRender && gm === lastGM && lastRows && sameRows(lastRows, rows)) return;
-    paint(gm, rows);
+    const next = { gm, rows: options.getRows(gm), dependsOn: options.dependsOn?.() };
+    if (!repaintNeeded(last, next)) return;
+    paint(next.gm, next.rows, next.dependsOn);
   }
 
   render();
@@ -291,6 +304,23 @@ export function mountListPanel(container, options) {
  */
 function actionsRow(buttons, pinned) {
   return el('div', pinned ? 'panel-actions panel-actions--pinned' : 'panel-actions', ...buttons);
+}
+
+/**
+ * Whether `update` has to repaint. The first call always does. After that,
+ * a repaint is needed when the gate flipped, when `dependsOn` reports a
+ * different value, or when the rows are not the same objects in the same
+ * order.
+ * @template T
+ * @param {PaintState<T> | null} last the last paint, or null before the first.
+ * @param {PaintState<T>} next
+ * @returns {boolean}
+ */
+export function repaintNeeded(last, next) {
+  if (!last) return true;
+  if (last.gm !== next.gm) return true;
+  if (!Object.is(last.dependsOn, next.dependsOn)) return true;
+  return !sameRows(last.rows, next.rows);
 }
 
 /**

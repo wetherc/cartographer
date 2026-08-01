@@ -165,10 +165,11 @@ export function mountLibraryPanel(container, callbacks) {
       buildBody,
       actions: rowActions,
       buildExtras,
-      // The rows are built fresh from the library on every read, so the
-      // identity guard never matches anyway. The filter also needs
-      // the repaint on every keystroke.
-      alwaysRender: true,
+      // `getEntries` builds a fresh row object per entry, so the identity
+      // guard already misses on every read and the filter gets its repaint
+      // per keystroke. The one thing outside the rows is the empty
+      // message, which names the filter when there is one.
+      dependsOn: () => filter.trim() !== '',
     });
   }
 
