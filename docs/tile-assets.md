@@ -1,51 +1,69 @@
 # Tile assets
 
-Built-in tile art lives under `assets/tiles/<type>/`, one subfolder per tile type (`grass/`, `forest/`, `mountain/`, `water/`, `desert/`, `swamp/`, `snow/`, `hills/`, `farmland/`, `road/`, `river/`, `coast/`, `interior/`, plus one folder per POI marker such as `settlement/`, `castle/`, `tavern/`). `TilePalette` (`src/map/TilePalette.js`) defines the catalog and the paths it expects; see `VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`, `MARKER_TYPES`, and `INTERIOR_KINDS` there before adding or renaming files.
+Built-in tile art lives under `assets/tiles/<type>/`. Each tile type has its own subfolder: `grass/`, `forest/`, `mountain/`, `water/`, `desert/`, `swamp/`, `snow/`, `hills/`, `farmland/`, `road/`, `river/`, `coast/`, `interior/`, and one folder for each POI marker, for example `settlement/`, `castle/`, `tavern/`. `TilePalette` (`src/map/TilePalette.js`) defines the catalog and the paths that it expects. Anyone who adds or renames files must first read `VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`, `MARKER_TYPES`, and `INTERIOR_KINDS` in that file.
 
 ## Terrain variants
 
-Each terrain type ships 3 variants (`grass-1.svg`, `grass-2.svg`, `grass-3.svg`, etc.), selected via `palette.pickVariant(type, rng)` so adjacent tiles of the same type don't look identical. For variants to abut cleanly in the grid:
+Each terrain type includes 3 variants, for example `grass-1.svg`, `grass-2.svg`, and `grass-3.svg`. `palette.pickVariant(type, rng)` selects one variant so adjacent tiles of the same type do not look identical. The variants must abut cleanly in the grid, under these rules:
 
-- All variants of a type share the exact same background fill color. (`farmland` deliberately reuses the grass background, like roads do, so fields abut grass seamlessly around settlements.)
-- Decorative details (grass tufts, trees, rocks, sparkles) stay inset from the tile edges — nothing one-off touches or crosses a border.
-- The one allowed exception: a type may carry an edge-crossing motif, provided it is byte-identical across all variants of the type and geometrically continuous at the borders. A *periodic path* (water's wave rows, desert's dune crests, mountain's mid-ground ridge band) must pass through the same point with the same tangent at x=0 and x=64 (e.g. a `Q .. T ..` chain whose period divides 64). A *wrapped stamp* (forest's edge-canopy clusters, mountain's edge outcrops) is a `<use>` element straddling a border, duplicated at the opposite border with the same transform except the 64-unit offset — anything crossing x=0 repeats at +64, anything crossing y=0 likewise, corners at all four. Stagger wrapped-stamp centers a few units off the border line and vary their shapes/offsets per edge — identical stamps sitting exactly on every border read as a straight row of blobs at each seam and produce a visible 64px lattice. Either way, any variant abuts any variant seamlessly. Never vary such a motif per variant; variants differ only in their inset details.
-- Variants differ only in the count/placement/arrangement of those inset details, never in background color or overall tone.
-- Reusable elements (a grass tuft, a tree) are defined once in `<defs>` and stamped with `<use href="#id" transform=...>`; canvas `drawImage` renders these fine.
+- All variants of a type use the same background fill color. `farmland` reuses the grass background, like `road`, so fields abut grass tiles around settlements.
+- Decorative details, for example grass tufts, trees, rocks, and sparkles, stay inset from the tile edges. No decorative detail touches or crosses a border.
+- One exception exists. A type can carry a motif that crosses an edge, if the motif is byte-identical across all variants of the type and continuous in geometry at the borders.
+
+  A *periodic path* is one type of edge-crossing motif: water's wave rows, desert's dune crests, and the mountain mid-ground ridge band. This path must pass through the same point with the same tangent at x=0 and x=64. For example, use a `Q .. T ..` chain whose period divides 64.
+
+  A *wrapped stamp* is the other type: forest's edge-canopy clusters and mountain's edge outcrops. A wrapped stamp is a `<use>` element that straddles a border. The tile duplicates the stamp at the opposite border with the same transform, except for a 64-unit offset. Anything that crosses x=0 repeats at +64. Anything that crosses y=0 repeats in the same way. Corners repeat at all four positions.
+
+  Wrapped-stamp centers must sit a few units off the border line. Their shapes and offsets must vary per edge. Identical stamps that sit exactly on every border form a straight row of shapes at each seam. The result is a visible 64-pixel lattice across the map.
+
+  Either type of motif lets any variant abut any other variant without a seam. Such a motif must not vary between variants. Variants differ only in their inset details.
+- Variants differ only in the count, placement, and arrangement of inset details. They never differ in background color or in overall tone.
+- Reusable elements, for example a grass tuft or a tree, are defined once in `<defs>`. Each element is stamped with `<use href="#id" transform=...>`. The canvas `drawImage` method draws these correctly.
 
 ## Road connector pieces
 
-Road tiles are not random variants — each is a distinct connector shape, looked up by name via `palette.getRoadPiece(kind)`: `h`, `v`, `cross`, the four `corner-*`, and the four `end-*` (dead-end stub) pieces. A caller doing autotiling picks the piece whose open edges match which neighbors are also road tiles. All road pieces share:
+Road tiles are not random variants. Each road tile is a distinct connector shape. `palette.getRoadPiece(kind)` looks up a piece by name: `h`, `v`, `cross`, the four `corner-*` pieces, and the four `end-*` (dead-end stub) pieces. Code that performs autotiling picks the piece whose open edges match the neighboring road tiles. All road pieces share:
 
-- The same background fill as `grass` (roads are grass-adjacent terrain, not a separate background color) — a mismatch here shows up as a visible seam where road tiles meet grass tiles.
-- The same path stroke width and centerline position, so a straight piece's path lines up with a corner or cross piece's path at the shared edge.
+- The same background fill as `grass`. Roads are grass-adjacent terrain, not a separate background color. A mismatch here produces a visible seam where road tiles meet grass tiles.
+- The same path stroke width and the same centerline position. As a result, the path of a straight piece lines up with the path of a corner or cross piece at the shared edge.
 
 ## River connector pieces
 
-Rivers follow the road pattern — the same fifteen connector kinds looked up via `palette.getRiverPiece(kind)`, painted as transparent overlays (`overlayRef`) so a channel can cross grass, sand, or snow.
+Rivers follow the same pattern as roads. `palette.getRiverPiece(kind)` looks up the same fifteen connector kinds. Rivers are painted as transparent overlays (`overlayRef`), so a channel can cross grass, sand, or snow.
 
 ## Coast transition pieces
 
-`coast/` holds twelve shoreline pieces (via `palette.getCoastPiece(kind)`): four straights (`n/s/e/w`, named for the edge whose half is water), four outer corners (`corner-ne/nw/se/sw` — water wraps the two named edges around a land tip), and four inner corners (`inner-ne/nw/se/sw` — water fills only the named quadrant, the inside of a bay's turn). Like roads and rivers they are transparent overlays (`isOverlayType`): the water side is the water terrain's base `#33719f` with a wavy `#c2a36c` sand strand and a `#8ac2e6` foam line, and the land side is fully transparent, so whatever terrain sits beneath — grass, desert, snow, mountain — supplies the shore. One set of twelve therefore serves every biome; no water-and-X combination tiles are needed.
+`coast/` holds twelve shoreline pieces, found through `palette.getCoastPiece(kind)`:
+
+- Four straights (`n/s/e/w`), named for the edge whose half is water.
+- Four outer corners (`corner-ne/nw/se/sw`). Water wraps the two named edges around a land tip.
+- Four inner corners (`inner-ne/nw/se/sw`). Water fills only the named quadrant, the inside of a turn in a bay.
+
+Like roads and rivers, coast pieces are transparent overlays (`isOverlayType`). The water side uses the water terrain base color `#33719f`, with a wavy `#c2a36c` sand strand and an `#8ac2e6` foam line. The land side is fully transparent. The terrain beneath, for example grass, desert, snow, or mountain, supplies the shore color. One set of twelve pieces therefore serves every biome. No tile combination of water and another terrain is needed.
 
 ## POI markers
 
-Single-image markers (`MARKER_TYPES`) sit on the standard grass background (`#5a9b4a`, with the usual mottle ellipses and a dirt clearing under the building) so they abut grass terrain seamlessly. All building art stays inset from the tile edges. The set covers `settlement`, `dungeon`, `castle`, `tavern`, `inn`, `blacksmith`, `general-store`, `alchemist`, `temple`, `shrine`, `wizard-tower`, `academy`, `barracks`, `ruins`, `cave-entrance`, `mine`, `port`, `farm`, `graveyard`, `camp`, and `standing-stones`. (`dungeon` predates the grass-base rule and keeps its stone background; every marker since sits on grass.)
+Single-image markers (`MARKER_TYPES`) sit on the standard grass background (`#5a9b4a`), with the usual mottle ellipses and a dirt clearing under the building. This lets each marker abut grass terrain without a seam. All building art stays inset from the tile edges.
+
+The set covers `settlement`, `dungeon`, `castle`, `tavern`, `inn`, `blacksmith`, `general-store`, `alchemist`, `temple`, `shrine`, `wizard-tower`, `academy`, `barracks`, `ruins`, `cave-entrance`, `mine`, `port`, `farm`, `graveyard`, `camp`, and `standing-stones`.
+
+`dungeon` predates the grass-base rule, so it keeps its stone background. Every marker added after `dungeon` sits on grass.
 
 ## Interior pieces
 
-`interior/` holds building-interior tiles (castle halls, shops) selected by kind via `palette.getInteriorPiece(kind)`, mirroring the road-piece pattern. Every piece shares a byte-identical flagstone floor base: fill `#a89f8d` with a `#8f8776` grout grid on a 16px pitch, including half-width grout strokes centered on the tile edges so the grid continues across any seam. Kinds:
+`interior/` holds building-interior tiles, for example castle halls and shops. `palette.getInteriorPiece(kind)` selects a tile by kind, in the same pattern as road pieces. Every piece shares a byte-identical flagstone floor base: fill `#a89f8d` with a `#8f8776` grout grid on a 16-pixel pitch. This base includes half-width grout strokes centered on the tile edges, so the grid continues across any seam. The kinds are:
 
-- `floor-1..3` — floor variants; differ only in inset cracks/pebbles and tinted inner grid cells (tints never touch a tile edge).
-- `wall-h`, `wall-v`, `wall-corner-*` — a 16px stone wall band centered on the tile, sharing one cross-section (fill `#6f6a60`, dark `#4c4841` edges, `#55514a` course line, `#8a857a` highlight one unit inside the top/left face) so straights and corners join cleanly. Corner names describe the open edges: `wall-corner-ne` connects north and east, so it caps a room's *south-west* corner.
-- `wall-tee-*`, `wall-cross` — three- and four-way junctions on the same cross-section. Like the road tees, a tee is named for its odd arm: `wall-tee-n` runs east-west with a branch north.
-- `door-h`, `door-v` — a wall with a framed wooden door leaf in the gap.
-- `stairs-up`, `stairs-down` — treads lightening toward the ascent / darkening into the descent, with a direction chevron.
+- `floor-1` through `floor-3`: floor variants. They differ only in inset cracks, pebbles, and tinted inner grid cells. Tints never touch a tile edge.
+- `wall-h`, `wall-v`, and `wall-corner-*`: a 16-pixel stone wall band centered on the tile. These pieces share one cross-section: fill `#6f6a60`, dark `#4c4841` edges, a `#55514a` course line, and an `#8a857a` highlight one unit inside the top or left face. This shared cross-section lets straight pieces and corner pieces join cleanly. Corner names describe the open edges. For example, `wall-corner-ne` connects north and east, so it caps the south-west corner of a room.
+- `wall-tee-*` and `wall-cross`: three-way and four-way junctions on the same cross-section. Like the road tees, a tee is named for its single arm. For example, `wall-tee-n` runs east-west with a branch to the north.
+- `door-h` and `door-v`: a wall with a framed wooden door leaf in the gap.
+- `stairs-up` and `stairs-down`: treads that lighten toward the top and darken toward the bottom, with a direction chevron.
 
-Interior pieces are the only art the rules read. `INTERIOR_KINDS` in `TilePalette.js` lists each piece with what it means (`wall`, `door`, `stairs-up`, `stairs-down`, `floor`), and `kindOf(imageRef)` is how the rest of the app asks. Adding an interior piece means giving it a meaning there; `plain` is what everything else gets.
+Interior pieces are the only art that the game rules read. `INTERIOR_KINDS` in `TilePalette.js` lists each piece with its meaning: `wall`, `door`, `stairs-up`, `stairs-down`, or `floor`. The rest of the app asks for this meaning through `kindOf(imageRef)`. To add an interior piece, you must give it a meaning in `INTERIOR_KINDS`. Every other piece gets the meaning `plain`.
 
 ## Adding a new tile
 
-1. Add the SVG(s) under `assets/tiles/<type>/`, following the background/inset-detail conventions above if it's a terrain type with variants.
-2. Register it in `TilePalette.js` (`VARIANT_COUNTS`/`ROAD_KINDS`/`MARKER_TYPES`, `INTERIOR_KINDS` with its rule meaning, or via `addCustom` for a runtime-loaded tile).
-3. Update `tests/TilePalette.test.js` if you added a new built-in.
-4. Check it renders and abuts correctly in `tests/tile-preview.html` (see `docs/testing.md` for how to visually verify).
+1. Add the SVG file or files under `assets/tiles/<type>/`. If the type is a terrain type with variants, follow the conventions in Terrain Variants above.
+2. Register the tile in `TilePalette.js`. Use `VARIANT_COUNTS`, `ROAD_KINDS`, or `MARKER_TYPES` for most types. Use `INTERIOR_KINDS` with the piece's rule meaning for an interior piece. Use `addCustom` for a tile that loads at runtime.
+3. If you added a new built-in tile, update `tests/TilePalette.test.js`.
+4. Make sure that the tile draws correctly and abuts its neighbors in `tests/tile-preview.html`. See `docs/testing.md` for the visual check procedure.

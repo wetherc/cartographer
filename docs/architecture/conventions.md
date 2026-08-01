@@ -2,297 +2,316 @@
 
 *Back to the [architecture overview](../architecture.md).*
 
-The patterns that keep the codebase consistent: how the hot paths stay fast,
-how the UI stays coherent, and how code gets tested. Every convention here
-earned its place by drifting or costing something at least once, so each one
-records a decision already made rather than a goal.
+These are the patterns that keep the codebase consistent: how the hot paths
+stay fast, how the UI stays coherent, and how the tests work. Each convention
+here earned its place by drifting or by costing something at least once.
+Each one records a decision already made, not a goal to reach.
 
 ## Performance
 
-Most collections
-(characters, encounters, NPCs, quests, handouts, library templates) are
-small-n, and their linear scans are cheap in absolute terms. Leave them alone
-rather than optimizing preemptively. Cost concentrates in a handful of places,
-each with an established pattern that new code touching the same area should
-follow.
+Most collections (characters, encounters, NPCs, quests, handouts, library
+templates) are small in size, and their linear scans cost little in absolute
+terms. Leave them alone. Do not optimize them ahead of a real need. Cost
+concentrates in a small number of places. Each place has an established
+pattern. New code that touches the same area must follow that pattern.
 
 ### Canvas redraws coalesce through one requestAnimationFrame
 
 `MapCanvas.render()` only *schedules* a frame. Bursts of pointermove and wheel
-events, and multi-setter updates like the party-marker sync, collapse into a
-single redraw. Within a frame, `MapRenderer` gathers shared derived data into
-one `frame` object that every render pass reads. Pull a new render pass from
-that object, or extend it, rather than re-scanning `node.tiles`.
+events, and multi-setter updates such as the party-marker sync, collapse into
+one redraw. Within a frame, `MapRenderer` gathers shared derived data into one
+`frame` object. Every render pass reads that object. If you add a new render
+pass, read from that object, or extend it. Do not re-scan `node.tiles`.
 
-Per-frame DOM chrome hanging off the render loop (`MapControls.update` via
-`onViewChange`) compares against what it last wrote and bails before touching
-the DOM when nothing changed. `mapWiring.js`'s `refreshMapDescription` does the
-same with the text of the map's screen-reader live region, where the comparison buys
-correctness as much as speed: rewriting a live region's text node re-announces
-it to a screen reader, so a write that changes nothing is an interruption
-rather than an update.
+Per-frame DOM chrome hanging off the render loop (`MapControls.update` through
+`onViewChange`) compares the new value against what it last wrote. It skips
+the DOM write when nothing changed. `mapWiring.js`'s `refreshMapDescription`
+does the same for the text of the map's screen-reader live region. Here the
+comparison buys correctness as well as speed. A rewrite of a live region's
+text node re-announces it to a screen reader. A write that changes nothing is
+an interruption, not an update.
 
 ### Per-tile lookups go through TileIndex
 
-`src/map/TileIndex.js` keeps a WeakMap-cached layout per node: `tileAt(node,
-id)` resolves an id and `tileAtXY(node, x, y)` a grid coordinate, both O(1)
-and neither allocating. Any new code that resolves tiles in a loop (painting,
-fog, hit-testing) should use these instead of scanning the flat `tiles` array.
+`src/map/TileIndex.js` keeps a WeakMap-cached layout for each node.
+`tileAt(node, id)` resolves an id. `tileAtXY(node, x, y)` resolves a grid
+coordinate. Both run at O(1) and allocate nothing. In new code that resolves
+tiles in a loop (painting, fog, hit-testing), use these functions. Do not scan
+the flat `tiles` array.
 
-The cache is safe because nodes are replaced immutably on every tile mutation:
-a stale node object can never serve fresh reads. That makes the reverse a hard
-requirement: any new mutation path must keep replacing the node rather than
-mutating tiles in place, or the layout breaks.
+The cache is safe because the code replaces nodes immutably on every tile
+mutation. A stale node object can never serve a fresh read. The reverse also
+holds as a hard requirement: a new mutation path must keep replacing the node.
+It must not mutate tiles in place, or the layout breaks.
 
-What the layout holds is positional (an id-to-position map plus a
-flat cell-to-position buffer over the node's extent) and holds no tiles at
-all, because that is what lets a mutation hand the new node the previous
-node's maps rather than re-index from scratch. `withTileReplaced`,
-`withTilesReplaced`, and `withTileAppended` are the three helpers that carry
-the layout forward, and `setTile` plus the fog writers are built on them, so a
-paint or fog drag costs O(cells crossed) across the whole stroke instead of a
-full re-index per cell. Measured on a 40-cell drag: 1.74 ms down to 0.05 ms at
-30x30, and 30.0 ms down to 0.10 ms at 100x100. A mutation that *removes* a
-tile shifts every later position and so still rebuilds.
+The layout holds only position data: an id-to-position map plus a flat
+cell-to-position buffer over the node's extent. It holds no tiles at all. This
+lets a mutation hand the new node the previous node's maps instead of
+re-indexing from scratch. `withTileReplaced`, `withTilesReplaced`, and
+`withTileAppended` are the three helpers that carry the layout forward.
+`setTile` and the fog writers build on these three helpers. As a result, a
+paint or fog drag costs O(cells crossed) across the whole stroke, instead of a
+full re-index for each cell. Measured on a 40-cell drag: 1.74 ms falls to 0.05
+ms at 30x30, and 30.0 ms falls to 0.10 ms at 100x100. A mutation that
+*removes* a tile shifts every later position, so it still rebuilds the index.
 
-Appends are recorded in override maps private to the new node, never written
-into the shared base, so two nodes branching off one parent can never see each
-other's tiles. That branching case is not hypothetical: a stroke plus its
-pre-stroke undo snapshot is exactly two nodes sharing one parent. New mutation
-helpers should either route through those three or hand their finished list to
-`withNodeTiles`, which leaves the new node uncached: correct in every case, at
-the cost of one rebuild.
+The code records appends in override maps private to the new node. It never
+writes them into the shared base. As a result, two nodes that branch off one
+parent can never see each other's tiles. This branching case is not
+hypothetical: a stroke plus its pre-stroke undo snapshot is exactly two nodes
+that share one parent. In a new mutation helper, route through those three
+helpers, or hand the finished list to `withNodeTiles`. `withNodeTiles` leaves
+the new node uncached. It is correct in every case, at the cost of one
+rebuild.
 
 ### Tiles are frozen once a node holds them
 
-That invariant is enforced at runtime. `src/map/TileFreeze.js` freezes
-a tile as it enters a node, so a later write to it is a `TypeError` at the
-write instead of a render that silently disagrees with state. The three carry
-helpers freeze the tile they were handed, and `withNodeTiles` freezes the list
-and its contents.
+The code enforces that rule at runtime. `src/map/TileFreeze.js` freezes a tile
+as it enters a node. A later write to that tile then raises a `TypeError` at
+the write. Without this rule, a render instead silently disagrees with the
+state, with no error. The three carry helpers freeze the tile
+they receive. `withNodeTiles` freezes the list and its contents.
 
-Freezing a *tile* is bounded work; freezing an *array* walks its elements.
-That is why the per-cell helpers deliberately leave the list writable, and why
-membership protection is applied only when a node is entered. Freezing covers the
-tile's `metadata` record and an `overlayRef` stack too, since both are handed
-out by reference.
+Freezing a *tile* is bounded work. Freezing an *array* walks each of its
+elements. For this reason, the per-cell helpers deliberately leave the list
+writable. The code applies membership protection only when a node is entered.
+Freezing also covers the tile's `metadata` record and an `overlayRef` stack,
+because the code hands out both by reference.
 
-`createTile` does not freeze: the generators build a layout by mutating
-freshly created tiles and only then hand the list over, which stays legal
+`createTile` does not freeze a tile. The generators build a layout by mutating
+freshly created tiles, and only then hand the list over. This stays legal
 because no node holds those tiles yet.
 
-Freezing is on in development and off elsewhere, because a throw reaching a GM
+Freezing is on in development and off elsewhere. A throw that reaches a GM
 mid-session is worse than the stale render it replaces. `setTileFreezing`
-overrides the detection.
+overrides this detection.
 
 ### Per-node derived data is WeakMap-cached
 
 The revealed-id set (`MapRenderer.js`), span blocks (`TilePaint.spanBlocks`),
 region groups (`RegionGroups.findRegionGroups`), and group image chunks
-(`groupImageChunks`) all follow the TileIndex pattern: a pure function of an
-immutable node caches its result keyed by the node object. That covers
-anything derivable from a node alone that a hot path recomputes. The
-returned arrays and sets are shared, so treat them as read-only.
+(`groupImageChunks`) all follow the TileIndex pattern. Each is a pure function
+of an immutable node, and each caches its result under the node object as the
+key. This pattern covers anything a hot path recomputes that the code can
+derive from a node alone. The returned arrays and sets are shared. Treat them
+as read-only.
 
 Chunks are the one entry keyed on something narrower than the node: the group
-object, which the group cache makes stable per node, stamped with
-`node.tiles`. A chunk's contents depend on the group's geometry and its member
-tiles' art and on nothing else the node carries. Keying them on the node meant
-a stroke, which replaces the node per cell while leaving the
-canvas's groups memoized against the pre-stroke node, could not reuse a chunk
-for the whole stroke. So a derived value is keyed on what it actually reads,
-and stamped rather than nested when part of that is a node field.
+object. The group cache makes the group object stable for each node, and
+stamps it with `node.tiles`. A chunk's contents depend only on the group's
+geometry and on its member tiles' art. Keying chunks on the node instead
+breaks reuse across a stroke. A stroke replaces the node for each cell, while
+the canvas's groups stay memoized against the pre-stroke node. So the code
+cannot reuse a chunk for the whole stroke this way. For this reason, key a
+derived value on what it
+actually reads. Stamp a node field onto the key instead of nesting the key
+inside the node, when part of what it reads is a node field.
 
-The tile pass itself iterates only the visible cell range (invert the view
-transform once, look cells up by coordinate). That keeps it O(visible), never
-O(total tiles), with no regex parse per tile per frame and no id string built
-and hashed per visible cell per frame.
+The tile pass itself iterates only the visible cell range: it inverts the
+view transform once, then looks up cells by coordinate. This keeps the pass at
+O(visible), never at O(total tiles). It parses no regular expression for each
+tile in each frame, and builds and hashes no id string for each visible cell
+in each frame.
 
-Derived data carries the coordinates it parsed rather than leaving the reader
-to parse them again: a region group holds a `cells` array index-aligned with
-its `tileIds`, which is what lets the overlay's clip path walk a group's
-revealed members without a parse or an allocation per tile. The renderer's
-block and marker passes follow from the same rule. A rect that is consumed
-immediately is arithmetic on the cell extent, not a `tileRect` object, since
-these run per block and per marker every frame; `tileRect` remains the right
-call for the once-per-frame chrome (selection, cursor, marquee, keyboard
-scroll-into-view). Anything a pass memoizes against the view snapshot is
-released at the end of the frame (`MapMarkers.releaseFrame`), so an idle map
-holds no reference to the finished view or the node behind it.
+Derived data carries the coordinates it already parsed, so the reader does
+not parse them again. For example, a region group holds a `cells` array that
+is index-aligned with its `tileIds`. This lets the overlay's clip path walk a
+group's revealed members with no parse and no allocation for each tile. The
+renderer's block and marker passes follow the same rule. When a pass consumes
+a rect immediately, the code computes it as arithmetic on the cell extent,
+not as a `tileRect` object. These passes run for each block and each marker
+in every frame. `tileRect` remains the right choice for chrome that
+runs once for each frame (selection, cursor, marquee, keyboard
+scroll-into-view). The code releases anything a pass memoizes against the view
+snapshot at the end of the frame (`MapMarkers.releaseFrame`). As a result, an
+idle map holds no reference to the finished view or to the node behind it.
 
-The same pattern covers the combat rosters: `combatants.js` memoizes an
-id-index Map per characters/encounters array (safe because every mutation goes
-through `replaceById`, which replaces the array), so participant lookups
-during a fight are O(1) without any explicit invalidation.
+The same pattern covers the combat rosters. `combatants.js` memoizes an
+id-index Map for each characters or encounters array. This is safe because
+every mutation goes through `replaceById`, which replaces the array. As a
+result, participant lookups during a fight run at O(1), with no explicit
+invalidation step.
 
 ### Strokes defer derived work to the stroke's end
 
-A paint/erase/fog drag updates per cell through `MapCanvas.refreshNodeTiles`
-(node swap plus redraw only); region-group recompute and the screen-reader map
-description settle once in `onStrokeEnd` (`mapAuthoring.js`). Before adding
-per-cell gesture work, check whether anyone can observe it mid-drag; if not,
-defer it the same way.
+A paint, erase, or fog drag updates each cell through
+`MapCanvas.refreshNodeTiles`, which only swaps the node and redraws. The
+region-group recompute and the screen-reader map description settle once, in
+`onStrokeEnd` (`mapAuthoring.js`). Before you add per-cell gesture work, check
+whether anyone can observe that work mid-drag. If not, defer it the same way.
 
 ### Fog reveals iterate the radius only
 
-`revealAround` iterates the radius's bounding square by coordinate and copies
+`revealAround` iterates the radius's bounding square by coordinate, and copies
 the tile array once. It also returns the *same* node object when nothing was
-newly revealed, so the WeakMap caches above stay warm on a party step through
-explored ground. Other hot-path mutation helpers preserve identity on a no-op
-for the same reason.
+newly revealed. As a result, the WeakMap caches above stay warm on a party
+step through explored ground. Other hot-path mutation helpers preserve
+identity on a no-op, for the same reason.
 
 ### Persistence writes the change, not the campaign
 
-A save writes the campaign string once and appends one delta describing the
-edit (`storage/HistoryLog.js`); the snapshot ring it replaced copied the
-previous save's whole string to a second key first, 70,488 bytes per save
-against 139,996 for the example campaign. The previous state a delta needs is
-cached in memory, stamped with the raw string it was parsed from, so the
-steady state costs one `getItem` and one string compare rather than a parse.
+A save writes the campaign string once, and appends one delta that describes
+the edit (`storage/HistoryLog.js`). The snapshot ring this replaced first
+copied the previous save's whole string to a second key. That cost 70,488
+bytes for each save, against 139,996 bytes for the example campaign. The code
+caches the
+previous state a delta needs in memory, stamped with the raw string it was
+parsed from. As a result, the steady state costs one `getItem` call and one
+string compare, instead of a parse.
 
-Code touching save/history paths should keep that shape: never
-parse-and-restringify a whole campaign per write, and respect the byte cap and
-quota fallbacks (drop the oldest steps, then the log) already in place.
+Code that touches save and history paths must keep that shape. Never parse
+and restringify a whole campaign for each write. Respect the byte cap and the
+quota fallbacks already in place (drop the oldest steps first, then the log).
 
 ### Growing lists render incrementally
 
-The travelogue panel builds its DOM skeleton once and prepends only entries
-newer than the last-rendered id (pure `entriesAfter`, `src/log/Travelogue.js`),
-rebuilding only when that anchor id vanishes (log cleared or replaced). The
-same diff-by-anchor-id approach fits any append-mostly list, and beats
-clearing and rebuilding per event.
+The travelogue panel builds its DOM skeleton once, then prepends only the
+entries newer than the last-rendered id (pure `entriesAfter`,
+`src/log/Travelogue.js`). It rebuilds only when that anchor id vanishes (the
+log is cleared or replaced). The same diff-by-anchor-id approach fits any
+append-mostly list, and it performs better than clearing and rebuilding the
+list for each event.
 
 ### Derived merged lists are memoized at their single mutation point
 
-The library's `active*` getters cache their merged defaults-plus-customs lists
-in module state, invalidated only by `setActiveLibrary`
-(`src/library/Library.js`), which every mutation path already routes through.
-The projections over them (entry-only lists, per-type filters, the spell id
-index) live in the same cache object, so a getter never re-allocates on a
-repeat call. A further derived collection (the planned feat catalog) hangs off
-the same cache-and-invalidate point rather than re-merging per call.
+The library's `active*` getters cache their merged defaults-plus-customs
+lists in module state. Only `setActiveLibrary` (`src/library/Library.js`)
+invalidates this cache, and every mutation path already routes through it.
+The projections over these lists (entry-only lists, filters for each type,
+the spell id index) live in the same cache object. As a result, a getter
+never re-allocates data on a repeat call. A further derived collection (the
+planned
+feat catalog) must hang off the same cache-and-invalidate point, rather than
+re-merge data for each call.
 
-Callers must treat the returned arrays as read-only, since they are shared.
-The four built-in catalogs behind them (`defaultEquipmentTemplates()`,
+Callers must treat the returned arrays as read-only, because the code shares
+them. The four built-in catalogs behind them (`defaultEquipmentTemplates()`,
 `DEFAULT_BESTIARY`, `DEFAULT_NPC_TEMPLATES`, `DEFAULT_SPELLS`) are
-`deepFreeze`d (`src/util/deepFreeze.js`), so that contract is enforced rather
-than documented. A path that instead copies library data into campaign state
-has to say so, which is what `Encounter.fromTemplate`,
-`Library.activeEnemyArmor`, `EquipmentPresets.copyEnemyWeapon`, and
-`Character.copySpellbook` are for.
+`deepFreeze`d (`src/util/deepFreeze.js`). As a result, the code enforces this
+contract, instead of only documenting it. A path that copies library data into campaign
+state instead must say so. `Encounter.fromTemplate`, `Library.activeEnemyArmor`,
+`EquipmentPresets.copyEnemyWeapon`, and `Character.copySpellbook` exist for
+this reason.
 
 ## UI and style
 
-Patterns that keep the UI consistent. New code should follow them rather than
-re-deciding locally. These are the policies; for the components and tokens they
-apply to, see [UI components](ui-components.md).
+These are the patterns that keep the UI consistent. New code must follow
+them, instead of deciding the same question again locally. This section
+states the policies. For the components and tokens they apply to, see
+[UI components](ui-components.md).
 
 ### CSS custom properties are the only source of design values
 
 Color, spacing, radius, and type values all come from custom properties, and
-they all live in `styles/base.css`. Never write an inline fallback
-(`var(--border, rgba(...))`). A `var(--surface-2)` that doesn't exist renders
-as *nothing*, which is visible; a fallback hides the typo instead.
+all of these properties live in `styles/base.css`. Never write an inline
+fallback (`var(--border, rgba(...))`). When a `var(--surface-2)` reference
+does not exist, it renders as *nothing*, and that is visible. A fallback
+hides the typo instead.
 
-If a needed token doesn't exist (say, a contrast color for a new accent), add
-it to `base.css` as a `light-dark()` pair next to its relatives; every `*`
-accent token has a matching `*-contrast` token for text drawn on top of it.
+If a needed token does not exist (for example, a contrast color for a new
+accent), add it to `base.css` as a `light-dark()` pair next to its relatives.
+Every `*` accent token has a matching `*-contrast` token for text drawn on top
+of it.
 
 ### Dialog discipline
 
-`confirmModal` is only for questions with two real answers. Pure notifications
-use `alertModal` (blocking, needs acknowledgment) or `app.toasts.show`
-(non-blocking, self-dismissing), never a confirm with a dead Cancel button.
-The same event should get the same surface everywhere: a no-op undo is a
-toast, whichever undo stack it came from.
+Use `confirmModal` only for questions with two real answers. For pure
+notifications, use `alertModal` (blocking, needs acknowledgment) or
+`app.toasts.show` (non-blocking, self-dismissing). Never use a confirm dialog
+with a dead Cancel button. Give the same event the same surface everywhere:
+a no-op undo is a toast, no matter which undo stack it came from.
 
 ### Every destructive action confirms first
 
-Plain entity deletes use `confirmDelete(name, detail?)` (`Modal.js`), which
-owns the `Delete "X"?` wording and the danger-styled Delete button, so no site
-restates the options object. Deletes whose message doesn't fit that shape (a
-node's "and everything inside it", the library's revert-vs-delete pair) and
-non-delete destruction (Discard, Replace, Reset) still go through
-`confirmModal` with `danger: true` and an imperative `confirmLabel`, with the
-affected thing named in the message.
+For plain entity deletes, use `confirmDelete(name, detail?)` (`Modal.js`).
+This function owns the `Delete "X"?` wording and the danger-styled Delete
+button, so no call site restates the options object. Some deletes have a
+message that does not fit that shape: a node's "and everything inside it", or
+the library's revert-versus-delete pair. Non-delete destruction (Discard,
+Replace, Reset) also does not fit that shape. For these cases, still use
+`confirmModal`, with `danger: true`, an imperative `confirmLabel`, and the
+affected item named in the message.
 
-Anything that throws away more state than one click created qualifies,
-including bulk variants (remove-all, clear) of otherwise safe single-step
-actions.
+This rule applies to any action that throws away more state than one click
+created. It includes bulk variants (remove-all, clear) of actions that are
+otherwise safe as single steps.
 
 ### Buttons and empty states come from src/ui/buttons.js
 
-`iconButton` and `textButton` own the `btn` class assembly, always set an
-aria-label on icon-only buttons, and default the hover `title` to it. The ~40
-hand-rolled copies they replaced had drifted on exactly those attributes.
-`emptyState(message)` is the one "nothing here" paragraph. `segSwitch` is the one
-segmented group of mutually exclusive buttons, and it owns the pairing of the
-active class with `aria-pressed` that its four call sites each used to repeat. A
-new panel should have no `document.createElement('button')` of its own unless it
-is genuinely a different control (a tab, a chip, a select-like row).
+`iconButton` and `textButton` own the `btn` class assembly. They always set
+an aria-label on icon-only buttons, and default the hover `title` to that
+label. The approximately 40 hand-rolled copies they replaced had drifted on
+exactly these attributes. `emptyState(message)` is the one "nothing here"
+paragraph. `segSwitch` is the one segmented group of mutually exclusive
+buttons. It owns the pairing of the active class with `aria-pressed`. Each of
+its four call sites used to repeat that pairing on its own. A new
+panel must call no `document.createElement('button')` of its own, unless the
+control is genuinely different (a tab, a chip, a select-like row).
 
 ### Numbers off a form or a file go through src/util/num.js
 
-`clampInt(value, min, max, fallback)` floors, clamps, and reads anything
-unparseable (blank, text, `undefined`, zero) as `fallback`, which defaults to
-`min`.
+`clampInt(value, min, max, fallback)` floors a value, clamps it, and reads
+anything it cannot parse (blank, text, `undefined`, zero) as `fallback`.
+`fallback` defaults to `min`.
 
-One step up from that, a whole value with several such fields gets a named
-normalizer beside the constants it validates against, not a second copy of the
-coercion at each reader: `Equipment.normalizeDamagePart` is what both the
-library importer and the item form's damage editor call, so the supported die
-sizes and damage types are checked in one place.
+For a whole value that has several such fields, add a named normalizer beside
+the constants it checks against. Do not add a second copy of the coercion at
+each reader. `Equipment.normalizeDamagePart` is the function that both the
+library importer and the item form's damage editor call. As a result, the
+code checks the supported die sizes and damage types in one place.
 
 ### Destructive controls are danger-styled and always visible
 
-A delete/discard/clear button passes `variant: 'danger'` and is never
-hover-revealed. Hiding a destructive control until hover makes it
-undiscoverable without making it safer; the confirm dialog is what makes it
-safe.
+A delete, discard, or clear button passes `variant: 'danger'`, and no such
+button is ever hover-revealed. Hiding a destructive control until hover makes
+it hard to discover, but does not make it safer. The confirm dialog is what
+makes it safe.
 
 ### Dismiss-left, primary-right, everywhere a dismiss exists
 
-Modals, inline forms (`formFields.buildInlineForm`), the spell-detail action bar,
-and the inventory give form all order Cancel/Close on the left and the
-affirmative action on the right. A new form surface must not invent a third
-ordering.
+Modals, inline forms (`formFields.buildInlineForm`), the spell-detail action
+bar, and the inventory give form all order Cancel or Close on the left. Each
+of these puts the affirmative action on the right. A new form surface must
+not invent a third order.
 
 ### Damage is a minus, healing is a cross
 
-`icon('minus')`/`icon('heal')`, wherever HP moves. The character sheet's
-steppers and the encounter panel's amount buttons share the pair, danger-red
-and success-green respectively. A pictorial glyph (a sword) was tried for
-damage and reverted: subtract/add reads instantly, iconography doesn't. The
-sword stays reserved for attack actions (the combat screen's action bar and
-its foe markers), not HP arithmetic.
+Use `icon('minus')` and `icon('heal')` wherever HP moves. The character
+sheet's steppers and the encounter panel's amount buttons share this pair,
+in danger red and success green. The team tried a pictorial glyph (a sword)
+for damage, then reverted it: a subtract or add symbol reads instantly, and
+an icon does not. The sword stays reserved for attack actions (the combat
+screen's action bar and its foe markers), not for HP arithmetic.
 
 ### Recurring widget shapes live in base.css, not per-feature sheets
 
-`.seg-switch` is the segmented toggle (mode/theme/role
-switches, the dice tray's d20 mode), `.row-select` the selectable list row
-(world tree, roster), `.section-label` the in-panel sub-heading (uppercase,
-tracked, muted; the one treatment for the role), `.empty-state` the "nothing
-here" paragraph. Each replaced two to four byte-identical or drifted
-per-feature blocks; a new switch, list row, or group heading should reuse the
-class and keep only layout (margins, grid placement) in its own component
-class. Badges everywhere pad `0 var(--space-1)`.
+`.seg-switch` is the segmented toggle (mode, theme, and role switches, the
+dice tray's d20 mode). `.row-select` is the selectable list row (world tree,
+roster). `.section-label` is the in-panel sub-heading: uppercase, tracked,
+muted, the one treatment for that role. `.empty-state` is the "nothing here"
+paragraph. Each of these classes replaced two to four blocks that were
+byte-identical or had drifted, one per feature. In a new switch, list row, or
+group heading, reuse the class, and keep only layout (margins, grid
+placement) in its own component class. Badges everywhere pad
+`0 var(--space-1)`.
 
 ### Over-map chrome uses the --overlay-* tokens
 
-`--overlay-bg`, `--overlay-text`, `--overlay-npc` in `base.css` are
-deliberately pinned dark in both themes: map controls, toasts, tooltips, and
-the onboarding scrim float over map art, not the page surface, so they don't
-follow `light-dark()`. Translucent variants derive via `color-mix` from the
-same tokens rather than restating the hex.
+`--overlay-bg`, `--overlay-text`, and `--overlay-npc` in `base.css` are
+deliberately pinned dark in both themes. Map controls, toasts, tooltips, and
+the onboarding scrim float over map art, not over the page surface, so they
+do not follow `light-dark()`. Derive translucent variants through
+`color-mix` from the same tokens, instead of restating the hex value.
 
 ## Testing
 
-The recurring split across this codebase: **pure logic takes its side effects
-(RNG, current time, and so on) as arguments and returns data**, so it can be
-unit tested with `node --test` and no DOM. Thin wrapper code then wires that
-logic to the DOM or canvas and is verified visually instead.
+This split recurs across the codebase: **pure logic takes its side effects
+(RNG, the current time, and so on) as arguments, and returns data.** Code
+written this way can be unit tested with `node --test`, with no DOM
+needed. Thin wrapper code then wires that logic to the DOM or canvas, and the
+team verifies that wrapper code visually instead.
 
-The split, area by area:
+Here is the split, area by area:
 
 | Pure, unit-tested | DOM glue, verified visually |
 | --- | --- |
@@ -305,14 +324,17 @@ The split, area by area:
 | `view/StatBars.js`, `view/Shortcuts.js` | `ui/CharacterBars.js`, `app/shortcuts.js` |
 | `map/NodeEdits.js`, `storage/SaveNotices.js` | `app/nodeActions.js`, `app/campaignActions.js` |
 
-The bottom four rows are all the same move, and it is worth making deliberately
-when you touch a wiring module: the decision a piece of glue makes usually does
+The bottom four rows all make the same move. Make this move deliberately when
+you touch a wiring module. The decision a piece of glue makes usually does
 not need the DOM at all. A submit handler that reads six inputs and builds an
-object is a control read plus a pure function. A keydown handler is a lookup plus
-a click. Splitting there gets the part with the rules under test and leaves the
-part that cannot be tested as small as it can be. `pnpm coverage` will show which
-modules have not had that done to them yet.
+object is a control read plus a pure function. A keydown handler is a lookup
+plus a click. When you split code this way, the part with the rules goes
+under test. The part that cannot be tested stays as small as possible.
+`pnpm coverage` shows which modules still need this split.
 
-See `docs/testing.md` for the practical how-to: running single test files,
-reading the coverage report, the pre-commit hook, and how to visually verify
-against the dev server.
+See `docs/testing.md` for the practical steps:
+
+- how to run single test files
+- how to read the coverage report
+- what the pre-commit hook does
+- how to verify a change visually against the dev server

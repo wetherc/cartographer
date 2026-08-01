@@ -1,34 +1,34 @@
 # Contributing to Campaign Builder
 
-Thank you for considering contributing.
+Thank you for your interest in this project.
 
 ## Core Philosophy
 
-- **Framework-Free Vanilla JS:** The application logic is written in plain, modern JavaScript (ES modules) and interacts with standard browser APIs. There are no runtime frameworks.
-- **Build Step for Production:** While development happens on source files, a build process is used to bundle and minify assets for optimized production deployment. This is a developer-facing convenience and does not change the framework-free nature of the runtime code.
-- **Separation of Concerns:** The code is organized to separate pure, stateful logic from DOM/UI rendering code.
+- **Framework-Free Vanilla JS:** The application logic is plain, modern JavaScript (ES modules). It uses standard browser APIs. The project has no runtime frameworks.
+- **Build Step for Production:** Development happens on the source files. A build process bundles and minifies the assets for production. This process is a convenience for developers. It does not change the framework-free nature of the runtime code.
+- **Separation of Concerns:** The code separates pure, stateful logic from the code that shows the UI in the DOM.
 
 ## Development Setup
 
-This project uses `pnpm` for managing development tools and running a local development server.
+This project uses `pnpm` to manage development tools and to run a local development server.
 
 1.  **Install Dependencies:**
-    The development environment uses `esbuild` for bundling, `typescript` for type-checking, and `eslint` for linting. Install them by running:
+    The development environment uses `esbuild` for bundling, `typescript` for type checking, and `eslint` for linting. Run this command to install them:
     ```bash
     pnpm install
     ```
 
 2.  **Run the Local Dev Server:**
-    A live-reloading development server is included. It automatically rebuilds assets as you make changes to the source files.
+    The project includes a live-reloading development server. The server rebuilds the assets each time you change a source file.
     ```bash
     pnpm run dev
     ```
-    Then open the local URL shown in your terminal (usually `http://localhost:8080`) in your browser.
+    Open the local URL that appears in your terminal (usually `http://localhost:8080`) in your browser.
 
 ## Development Workflow
 
 - **Production Build:**
-  To generate a production-ready build in the `dist/` directory, run:
+  Run this command to generate a production build in the `dist/` directory:
   ```bash
   pnpm run build
   ```
@@ -46,13 +46,13 @@ This project uses `pnpm` for managing development tools and running a local deve
   ```
 
 - **Run Type Checker:**
-  Types live in `src/types/*.ts` as declaration files. `.js` files reference them via JSDoc (`@typedef {import('../types/map.js').Tile}`).
+  Types live in `src/types/*.ts` as declaration files. The `.js` files reference them with JSDoc comments (`@typedef {import('../types/map.js').Tile}`).
   ```bash
   pnpm run typecheck
   ```
 
-- **Automated Checks (Recommended):**
-  A versioned pre-commit hook is provided to run the linter, test suite, and type checker automatically before each commit. Enable it once per clone with:
+- **Automated Checks:**
+  The project provides a versioned pre-commit hook. The hook runs the linter, the test suite, and the type checker before each commit. The hook is optional, and it catches these errors before you push. Enable the hook once for each clone with this command:
   ```bash
   git config core.hooksPath hooks
   ```
@@ -60,6 +60,6 @@ This project uses `pnpm` for managing development tools and running a local deve
 ## Making a Contribution
 
 - Add unit tests for any new pure logic.
-- For any UI/canvas change, visually verify it in a browser to ensure it looks and feels right.
+- If you change the UI or the canvas, open it in a browser. Make sure that it looks and works correctly.
 - Keep pull requests focused on a single feature or bug fix.
-- Ensure all automated checks are passing before submitting a pull request.
+- Before you submit a pull request, make sure that all automated checks pass.

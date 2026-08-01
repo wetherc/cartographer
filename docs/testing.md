@@ -2,14 +2,14 @@
 
 ## Unit tests
 
-Node's built-in test runner, no framework dependency:
+The built-in test runner of Node runs the tests. The project uses no test framework as a dependency.
 
 ```
 node --test tests/TilePalette.test.js    # single file — prefer this while iterating
 node --test tests/*.test.js              # full suite before committing
 ```
 
-Each `tests/*.test.js` file pairs with one `src/**/*.js` module. Tests exercise pure functions/classes directly (e.g. `roll(selection, rng)`, `MapNavigator`, `findRegionGroups`) with an injected RNG or plain fixture data — no DOM, no canvas, no mocking of browser APIs.
+Each `tests/*.test.js` file pairs with one `src/**/*.js` module. The tests call pure functions and classes directly, for example `roll(selection, rng)`, `MapNavigator`, and `findRegionGroups`. The tests use an injected random number generator or plain fixture data. The tests use no DOM, no canvas, and no mock of a browser API.
 
 ## Coverage
 
@@ -17,9 +17,9 @@ Each `tests/*.test.js` file pairs with one `src/**/*.js` module. Tests exercise 
 pnpm coverage
 ```
 
-Node's own coverage report, one row per file plus a total. The script passes `--test-coverage-exclude='tests/**'` because the runner otherwise reports the test files alongside the modules they exercise. A test file runs top to bottom, so it always scores near 100%, and leaving them in pulls the total several points above what the app code scores.
+Node itself produces the coverage report, with one row for each file plus a total. The script passes `--test-coverage-exclude='tests/**'`. Without this flag, the runner also reports the test files next to the modules the tests exercise. A test file runs from top to bottom, so it always scores near 100 percent. If the test files stay in the report, they raise the total several points above the real score of the app code.
 
-The report only counts files some test imported. A module with no test at all is missing from the table rather than sitting at 0%, so compare the row list against `src/` to see the real picture. A high line count on a module that is mostly `el(...)` calls means a test constructed the DOM, not that anything checked what it built.
+The report counts only files that a test imports. A module with no test does not appear in the table at 0 percent. It is missing from the table completely. Compare the row list against `src/` to see the real picture. A high line count on a module that is mostly `el(...)` calls means that a test built the DOM. It does not mean that a test checked what the DOM built.
 
 ## Typecheck
 
@@ -27,9 +27,9 @@ The report only counts files some test imported. A module with no test at all is
 pnpm --package=typescript dlx tsc --noEmit
 ```
 
-(Not `pnpx tsc` — with no local TypeScript install, the bare `tsc` binary name resolves to npm's placeholder package, which exits without checking anything.)
+(Not `pnpx tsc`. There is no local install of TypeScript. Because of this, the bare `tsc` command name resolves to the placeholder package of npm. This package exits immediately. It does not type-check the code.)
 
-Catches JSDoc/type-declaration mismatches in `.js` files against `src/types/*.ts`. Run this after any non-trivial change, not just ones that touch types directly — `checkJs` will flag call-signature mismatches anywhere.
+The typecheck finds mismatches between the JSDoc type declarations in `.js` files and `src/types/*.ts`. Run the typecheck after any change that is not trivial. Run it even when the change does not touch types directly. `checkJs` flags a call-signature mismatch anywhere in the code.
 
 ## Lint
 
@@ -37,11 +37,13 @@ Catches JSDoc/type-declaration mismatches in `.js` files against `src/types/*.ts
 pnpm --package=eslint dlx eslint .
 ```
 
-Flat config in `eslint.config.js`, core rules only (no plugin packages). `no-undef` is deliberately off — the typecheck already resolves identifiers with full DOM knowledge; the linter covers what tsc doesn't (unused vars, shadowing, `var`, loose equality, and similar).
+The flat config lives in `eslint.config.js`. It uses only core rules, with no plugin packages. `no-undef` is off on purpose. The typecheck already resolves identifiers with full knowledge of the DOM. The linter covers what tsc does not cover: unused variables, shadowing, `var`, and loose equality.
 
 ## Pre-commit hook
 
-`hooks/pre-commit` runs all three of the above (lint, full test suite, typecheck) and blocks the commit on any failure. Enable once per clone:
+`hooks/pre-commit` runs the lint, the full test suite, and the typecheck. It blocks the commit if any of the three fails.
+
+Enable the hook one time for each clone:
 
 ```
 git config core.hooksPath hooks
@@ -49,15 +51,17 @@ git config core.hooksPath hooks
 
 ## Visual verification
 
-Unit tests and the typecheck don't touch the DOM or `<canvas>`, so any change to rendering, layout, or interaction needs a manual check in a browser. Convention used so far:
+The unit tests and the typecheck do not touch the DOM or the `<canvas>` element. Because of this, a change to rendering, to layout, or to interaction needs a manual check in a browser. Follow this procedure:
 
-1. Serve the project root (e.g. `pnpx http-server -p 8934`) and use Playwright's browser tools against `http://localhost:8934/...` — do not start a second server if one is already running.
-2. Manual preview pages live in `tests/` alongside the automated suite but are excluded from it by the `.test.js` naming convention (e.g. `tests/tile-preview.html`, `tests/map-canvas-preview.html`, `tests/ui-panels-preview.html`, `tests/save-manager-preview.html`). They build a small hand-constructed scenario (a palette, a tile grid, a couple of hierarchy levels, a sample character) and mount the real modules exactly as `main.js` would.
-3. Check the browser console for errors (a 404 on an asset path is easy to miss otherwise) in addition to taking a screenshot.
-4. For interaction (clicks, drag, wheel), dispatch synthetic `PointerEvent`/`WheelEvent`s via `browser_evaluate` when a plain click isn't precise enough (e.g. clicking a specific tile inside a canvas rather than the canvas element as a whole, or a specific button among several with the same tag).
+1. Serve the project root, for example with `pnpx http-server -p 8934`. Use the browser tools of Playwright against `http://localhost:8934/...`. If a server is already running, do not start a second one.
+2. Manual preview pages live in `tests/`, next to the automated suite. The `.test.js` naming convention excludes them from the automated suite, for example `tests/tile-preview.html`, `tests/map-canvas-preview.html`, `tests/ui-panels-preview.html`, and `tests/save-manager-preview.html`. Each page builds a small scenario by hand: a palette, a tile grid, a couple of hierarchy levels, and a sample character. Each page mounts the real modules in the same way as `main.js`.
+3. Take a screenshot of the page. Also read the browser console for errors. A 404 error on an asset path is easy to miss without this step.
+4. For interaction such as a click, a drag, or a wheel event: if a plain click is not precise enough, dispatch a synthetic `PointerEvent` or `WheelEvent` through `browser_evaluate`. For example, click a specific tile inside a canvas instead of the whole canvas element. Another example is a click on one button among several buttons with the same tag.
 
-Keep preview pages up to date as the modules they demo change shape; an out-of-date preview page can mask a real bug the next time it is used.
+Keep the preview pages current as the modules they show change shape. An old preview page can hide a real error the next time someone uses it.
 
 ## Browser-only APIs (localStorage, Blob, FileReader)
 
-Some modules (`storage/SaveManager.js`'s `trySaveToLocalStorage`/`loadFromLocalStorage`/`downloadState`/`readStateFromFile`) wrap browser APIs that don't exist in Node's test runner, so they can't be unit tested at all — not even with a DOM-less stub. Rather than pulling in a polyfill or mocking dependency, treat these the same as canvas rendering: keep them as thin wrappers around already-unit-tested pure functions (`serialize`/`deserialize`), and verify the wrapper itself in a real browser via Playwright (a real Chromium instance has working `localStorage`, so a save-then-load click sequence is a real end-to-end check rather than only a visual one).
+Some modules wrap browser APIs that do not exist in the test runner of Node. Examples are `trySaveToLocalStorage`, `loadFromLocalStorage`, `downloadState`, and `readStateFromFile` in `storage/SaveManager.js`'s exports. These modules cannot get a unit test at all, not even with a DOM-less stub.
+
+The project does not add a polyfill or a mock dependency for this. Instead, treat these modules the same as canvas rendering. Keep them as thin wrappers around pure functions that already have a unit test: `serialize` and `deserialize`. Make sure that the wrapper itself works in a real browser through Playwright. A real Chromium instance has working `localStorage`. Because of this, a save-then-load click sequence is a real end-to-end check, not only a visual one.

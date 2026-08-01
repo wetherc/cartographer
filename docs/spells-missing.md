@@ -1,16 +1,17 @@
 # Curated spells vs. the full SRD
 
-The built-in spell corpus (`src/data/spells.js`) is a curated
-cross-section rather than the complete SRD. The SRD 5.1 lists 319 spells; the app
-ships 30. This document records what the cut was, why, and how to close the
+The built-in spell corpus (`src/data/spells.js`) is a curated cross-section
+of the SRD, not the complete SRD. The SRD 5.1 lists 319 spells. The app ships
+30. This document records what the cut was, why, and how a GM can close the
 gap for a table that wants more.
 
 ## What ships
 
-Every level band (cantrip through 9th), all six caster lists (bard, cleric,
-druid, sorcerer, warlock, wizard — paladin and ranger share entries from the
-leveled bands), and all four effect kinds the resolver handles (attack, save,
-heal, utility) are represented:
+The list covers every level band, from cantrip through 9th level. It covers
+all six caster lists: bard, cleric, druid, sorcerer, warlock, and wizard.
+Paladin and ranger share entries from the leveled bands. The list also
+covers all four effect kinds that the resolver handles: attack, save, heal,
+and utility. The table below shows the full list.
 
 | Level | Spells |
 | ----- | ------ |
@@ -25,63 +26,78 @@ heal, utility) are represented:
 | 8th | Power Word Stun |
 | 9th | Meteor Swarm |
 
-The selection favors spells whose rules resolve fully inside the current
-mechanics: a d20 spell attack against AC, a save against the caster's DC with
-damage (halved or negated), dice of healing, and slot/cantrip scaling. Utility
-spells with prose-only rules (Guidance, Light, Mage Armor, Counterspell,
-Revivify) are included where they are common enough that a GM would miss them,
-with their effects carried in the description text.
+The selection favors spells whose rules the current mechanics can resolve in
+full. These rules are:
+
+- a d20 spell attack against AC
+- a save against the caster's DC, with damage that is halved or negated
+- dice of healing
+- damage or effect scaling by spell slot level, and by caster level for
+  cantrips
+
+The list also includes utility spells with rules that exist only as prose:
+Guidance, Light, Mage Armor, Counterspell, and Revivify. These spells are
+common enough that a GM notices when they are missing. Their effects
+stay in the description text of each spell.
 
 ## Why the rest are missing
 
-The omissions are not data-entry backlog. Each waits on a mechanic the app
-does not have yet, and adding it today would produce an entry whose printed
-rules the app cannot honor:
+The omissions are not data-entry backlog. Each omitted spell needs a
+mechanic that the app does not have yet. Adding the spell today prints rules
+that the app cannot honor.
 
 - **Condition-imposing spells** (Ray of Enfeeblement, Bane, Blindness/Deafness,
-  Slow, Banishment, Dominate Person, ...). A failed save does add the condition
-  to the target as a chip, timed by the spell's duration, and the chip now ends
-  when the caster stops concentrating and can be shaken off by a repeated save
-  where the spell allows one. What it still cannot do is have a rule effect:
-  nothing reads "paralyzed" and grants advantage or skips a turn. Hold Person is
-  included as the representative of this family.
-- **Area/geometry spells** (Grease, Web, Sleep by HP total, Wall of Fire,
-  Hunger of Hadar). Area targeting is reduced to picking the creatures caught:
-  a spell with `targetCount: 0` offers every reachable combatant and the caster
-  ticks whoever the blast covers. There is no map-geometry template, so shape,
-  placement, and zone persistence cannot be honored. Fireball-style "pick the
-  targets in the blast" works; lingering zones do not.
-- **Buff/debuff riders on rolls** (Shield's +5 AC reaction, Haste's extra
-  action, Enlarge/Reduce). These modify the action economy or later rolls,
-  neither of which the app models. Multi-projectile spells are no longer part of
-  this group: a spell can fire several separately-rolled projectiles and the
-  caster splits them between creatures, which is how Scorching Ray, Eldritch
-  Blast, and Magic Missile are modeled.
-- **Summoning and companions** (Find Familiar, Conjure Animals, Animate Dead).
-  No mechanism for spawning controlled combatants.
-- **Exploration/social utility** (Detect Magic, Identify, Charm Person,
-  Suggestion, Divination, teleportation). Pure-prose rules; these work today
-  as `utility` entries and are omitted only to keep the built-in list focused.
-  They are the easiest category to add by hand.
-- **Eldritch invocations** are not modeled, so the invocation-adjacent entries
-  beyond Eldritch Blast are left out. Pact magic itself is modeled: a warlock
-  casts from its own pact pool rather than the standard slot table.
+  Slow, Banishment, Dominate Person, and others). A failed save adds the
+  condition to the target as a chip. The spell's duration times the chip.
+  The chip ends when the caster stops concentrating. A repeated save can
+  also remove the chip, where the spell allows one. The app still cannot
+  give the condition a rule effect: nothing reads "paralyzed" and grants
+  advantage, or skips a turn. Hold Person represents this family in the
+  built-in list.
+- **Area and geometry spells** (Grease, Web, Sleep by HP total, Wall of Fire,
+  Hunger of Hadar). Area targeting only lets the caster pick the creatures
+  that the spell catches. A spell with `targetCount: 0` offers every
+  reachable combatant, and the caster selects whoever the blast covers. The
+  app has no map-geometry template, so it cannot honor shape, placement, or
+  zone persistence. A spell that works like Fireball, where the caster
+  picks targets in the blast, works today. A spell with a lingering zone
+  does not work.
+- **Buff and debuff riders on rolls** (Shield's +5 AC reaction, Haste's
+  extra action, Enlarge/Reduce). These riders change the action economy, or
+  change later rolls. The app models neither of these. Multi-projectile
+  spells no longer belong to this group. A spell can fire several
+  projectiles, each rolled separately, and the caster splits them between
+  creatures. This is how Scorching Ray, Eldritch Blast, and Magic Missile
+  work today.
+- **Summoning and companions** (Find Familiar, Conjure Animals, Animate
+  Dead). The app has no mechanism to spawn controlled combatants.
+- **Exploration and social utility spells** (Detect Magic, Identify, Charm
+  Person, Suggestion, Divination, teleportation). These spells have rules
+  that exist only as prose. They work today as `utility` entries. The
+  built-in list omits them only to stay focused. Of all the missing
+  categories, a GM can add this one by hand most easily.
+- The app does not model **eldritch invocations**. For this reason, the
+  built-in list leaves out entries related to invocations, beyond Eldritch
+  Blast itself. The app does model pact magic: a warlock casts from its own
+  pact pool, not from the standard slot table.
 
 ## Closing the gap
 
-The built-in schema is identical to a GM-authored spell, so no code change is
-needed to add any missing spell:
+The built-in schema is identical to the schema for a GM-authored spell.
+Because of this, a GM does not need a code change to add any missing spell.
 
-- **Author in the Library.** Library mode's Spells rail creates new spells or
-  overrides built-ins (a custom spell whose name matches a default replaces it
-  in place). Attack, save, heal, and utility effects plus slot/cantrip scaling
-  cover most of the SRD's mechanical surface today.
-- **Import JSON.** A library export (`campaign-library.json`) is portable; a
-  hand-built or shared file with additional spells merges in on import.
-- Spells whose rules the resolver cannot yet honor can still be added as
-  `utility` entries with the rules in the description — the GM adjudicates by
-  hand, as at a physical table.
+- **Author in the Library.** The Spells rail in Library mode creates new
+  spells, or overrides built-in spells. A custom spell whose name matches a
+  default spell replaces that default in place. Attack, save, heal, and
+  utility effects, together with scaling by slot level and cantrip level,
+  cover most of the mechanical surface of the SRD today.
+- **Import JSON.** A library export (`campaign-library.json`) is portable.
+  A hand-built or shared file with additional spells merges in when a GM
+  imports it.
+- A GM can still add a spell whose rules the resolver cannot honor as a
+  `utility` entry, with the rules written in the description. The GM then
+  adjudicates the spell by hand, the same way as at a physical table.
 
-Once conditions carry rule effects, the action economy exists, and
-concentration is enforced, the families above become modelable and belong in
-`src/data/spells.js`.
+When conditions carry a rule effect, when the action economy exists, and
+when concentration is enforced, the spell families listed above become
+possible to model. At that point they belong in `src/data/spells.js`.
