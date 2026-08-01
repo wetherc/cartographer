@@ -3,21 +3,22 @@ import { downloadJSON, readFileText } from './fileIO.js';
 
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
 
-/** The localStorage key the custom library lives under — its own key, not the
- * campaign save's, because the library is deliberately campaign-independent:
- * New / Import / Load example replace the campaign and leave it untouched. */
+/** The localStorage key that the custom library uses. This key is separate
+ * from the campaign save's key, because the library is deliberately
+ * independent of the campaign. New, Import, and Load Example replace the
+ * campaign and leave the library untouched. */
 export const LIBRARY_KEY = 'campaign-builder:library';
 
-/** Where an exported library file is auto-loaded from, relative to the served
- * project root. The file is committed holding an empty library, so the startup
- * fetch always has something to read; a GM's export overwrites it in place.
- * Everything else under library/ is gitignored. */
+/** Where the app loads an exported library file from at startup, relative to
+ * the served project root. The committed file holds an empty library, so the
+ * startup fetch always has something to read. A GM's export overwrites this
+ * file in place. Everything else under library/ is in gitignore. */
 export const LIBRARY_FILE = 'library/campaign-library.json';
 
 /**
- * Read the custom library from localStorage: null when none has been stored
- * (a corrupt entry also reads as none), so the caller can fall back to the
- * library file.
+ * Read the custom library from localStorage. The function returns null when
+ * no library is stored. A corrupt entry also reads as null, so the caller
+ * can fall back to the library file.
  * @param {string} [key]
  * @returns {CustomLibrary | null}
  */
@@ -32,11 +33,11 @@ export function loadCustomLibrary(key = LIBRARY_KEY) {
 }
 
 /**
- * Persist the custom library, reporting failure (a full origin quota) instead
- * of throwing.
+ * Save the custom library. The function reports failure (a full origin
+ * quota) instead of throwing an error.
  * @param {CustomLibrary} library
  * @param {string} [key]
- * @returns {boolean} whether the write landed
+ * @returns {boolean} true when the write lands
  */
 export function saveCustomLibrary(library, key = LIBRARY_KEY) {
   try {
@@ -48,8 +49,8 @@ export function saveCustomLibrary(library, key = LIBRARY_KEY) {
 }
 
 /**
- * Drop the stored custom library entirely, so the next page load falls back
- * to the library file (if present) or the built-in defaults.
+ * Delete the stored custom library entirely, so the next page load falls
+ * back to the library file, if present, or the built-in defaults.
  * @param {string} [key]
  */
 export function clearCustomLibrary(key = LIBRARY_KEY) {
@@ -57,9 +58,10 @@ export function clearCustomLibrary(key = LIBRARY_KEY) {
 }
 
 /**
- * Fetch the library file served from the project root, or null when it isn't
- * there (a deployment that dropped it) or doesn't parse. The committed file
- * holds an empty library, which the caller treats the same as no file.
+ * Fetch the library file served from the project root, or return null when
+ * the file is not there (a deployment that does not include it) or when the
+ * file does not parse. The committed file holds an empty library, and the
+ * caller treats this the same as no file.
  * @param {string} [url]
  * @returns {Promise<CustomLibrary | null>}
  */
@@ -74,8 +76,9 @@ export async function fetchLibraryFile(url = LIBRARY_FILE) {
 }
 
 /**
- * Trigger a browser download of the custom library as a portable .json file,
- * pretty-printed since the whole point is a file the GM keeps and may edit.
+ * Start a browser download of the custom library as a portable .json file.
+ * The file is pretty-printed, because the GM keeps this file and can edit
+ * it.
  * @param {CustomLibrary} library
  * @param {string} [filename]
  */
@@ -84,8 +87,9 @@ export function downloadLibrary(library, filename = 'campaign-library.json') {
 }
 
 /**
- * Read a custom library from a File (the Import picker). Rejects only on a
- * read or parse error; a structurally-off file normalizes instead.
+ * Read a custom library from a File object (the Import picker). The function
+ * rejects only on a read error or a parse error. A file with a structural
+ * error normalizes instead of failing.
  * @param {File} file
  * @returns {Promise<CustomLibrary>}
  */

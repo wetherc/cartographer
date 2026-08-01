@@ -1,67 +1,77 @@
 import { tileIdAt } from '../map/MapGeometry.js';
 
 /**
- * Positional encoding for a node's tiles: the on-disk form that stops writing a
- * tile's identity and art reference once per cell. Pure, and deliberately
- * separate from `SaveManager.js` — this is the one place that knows the encoded
- * shape, so nothing else has to.
+ * Positional encoding for the tiles of a node. This is the on-disk form. It
+ * stores a tile's identity and art reference one time per cell, not once per
+ * tile record.
  *
- * After the default-omission packing, a tile costs about
- * `{"id":"12,34","imageRef":"assets/tiles/grass/grass-1.svg"}` — 60 characters of
- * which both fields are recoverable from the tile's grid position plus a small
- * per-node palette, and neither is a default any omission rule could reach. Since
- * the node list is the overwhelming majority of a save and grows without bound
- * (authoring adds tiles, and play adds a revealed flag per tile that fog never
- * reclaims), this is the part of the save worth encoding rather than trimming.
+ * This module is pure. It stays separate from `SaveManager.js`. This module
+ * is the only place that knows the encoded shape.
  *
- * The encoded node replaces `tiles` with:
- *   - `refs`   the distinct art entries, stated once. An entry is a bare
- *              `imageRef` string, or `[imageRef, overlayRef]` when the tile has an
- *              overlay (itself a ref or a draw-ordered stack).
- *   - `cells`  row-major run-length indices into `refs`; a bare number is one
- *              cell, `[index, count]` a run, and `-1` means no tile at all, which
- *              is what lets a sparse-but-gridded interior encode.
- *   - `fog`    `revealed` as its own alternating run-length stream starting with
- *              an unrevealed run. Separate from the terrain on purpose: it is the
- *              one field play changes, and a reveal is a disc, so it is clustered
- *              and run-lengths handle it extremely well.
- *   - `tiles`  whatever is left over, keyed by id, omitted when empty.
+ * After default-omission packing, a tile costs about
+ * `{"id":"12,34","imageRef":"assets/tiles/grass/grass-1.svg"}` (60 characters).
+ * The encoder can recover both fields from the tile's grid position and a
+ * small per-node palette. Neither field is a default that an omission rule
+ * can remove. The node list is the largest part of a save. It grows without
+ * limit: authoring adds tiles, and play adds a revealed flag to each tile
+ * that fog never removes. This makes the node list the part of the save
+ * worth encoding, not trimming.
  *
- * Two properties keep the codec unable to lose data. It is opt-in per node:
- * anything the positional assumption is not provably true for is left exactly as
- * the tile packing produced it, because non-grid tile ids are legitimate. And it
- * never *picks* the fields it carries out of line — it deletes the four it
- * represents itself and keeps the remainder, so a `Tile` member added later
- * survives a save even if this module never learns about it, the same way
- * `packTile` does.
+ * The encoded node replaces `tiles` with four fields:
+ *   - `refs`   the distinct art entries, stated one time. An entry is a bare
+ *              `imageRef` string, or the pair `[imageRef, overlayRef]` when
+ *              the tile has an overlay. An overlay is a ref or a stack in
+ *              draw order.
+ *   - `cells`  row-major run-length indices into `refs`. A bare number is one
+ *              cell. `[index, count]` is a run. `-1` means no tile at that
+ *              position. This lets the codec encode a sparse but gridded
+ *              interior.
+ *   - `fog`    the `revealed` field as its own alternating run-length stream,
+ *              starting with an unrevealed run. The codec keeps this separate
+ *              from the terrain data because play changes only this field,
+ *              and a reveal covers a disc-shaped area, so run-length
+ *              encoding works well for it.
+ *   - `tiles`  the fields that remain, keyed by tile id. The codec omits this
+ *              field when it is empty.
  *
- * Like a packed tile, an encoded node exists only inside the serialized string.
- * Nothing in memory may ever hold one: the renderer reads `tile.metadata` without
- * checking, so `decodeNodeTiles` runs on load before any validation.
+ * Two properties stop the codec from losing data. First, encoding is opt-in
+ * per node: when the positional assumption does not provably hold, the codec
+ * leaves the node exactly as the tile packing produced it, because non-grid
+ * tile ids are legitimate. Second, the codec never picks the fields it
+ * carries by name. It deletes the four fields it represents itself and keeps
+ * the remainder. This way, a `Tile` member added later survives a save even
+ * when this module does not know about it, the same way `packTile` works.
+ *
+ * Like a packed tile, an encoded node exists only inside the serialized
+ * string. Nothing in memory can hold one: the renderer reads `tile.metadata`
+ * without a check, so `decodeNodeTiles` must run on load before any
+ * validation.
  */
 
 /**
- * The run length at which `[index, count]` starts paying for itself. `[3,2]` is
- * six characters against `3,3`'s four, so pairing a run of two makes a randomly
- * varied terrain field *larger*; three is where it stops losing.
+ * The run length at which `[index, count]` becomes shorter than the same run
+ * written as bare numbers. `[3,2]` is six characters. `3,3` is four
+ * characters. A run of two makes a randomly varied terrain field larger. A
+ * run of three is the point where the pair form stops losing.
  */
 const RUN_MIN = 3;
 
-/** The reserved `cells` index meaning "no tile at this position". */
+/** The reserved `cells` index that means no tile is at this position. */
 const EMPTY = -1;
 
 /**
- * Positions a node may hold before encoding is refused. A node this large cannot
- * be authored or generated, so the cap only exists so a malformed `width` or
- * `height` cannot make the encoder allocate its way out of memory.
+ * The maximum number of positions a node can hold before the codec refuses to
+ * encode it. A node this large cannot be authored or generated. The cap
+ * exists only so that a malformed `width` or `height` value cannot make the
+ * encoder allocate too much memory.
  */
 const MAX_POSITIONS = 1_000_000;
 
 /**
- * Grid position of a canonical `x,y` tile id within a node, or -1 when the id
- * cannot be encoded positionally. Canonical is stricter than parseable: `"01,2"`
- * parses as (1, 2) but is a different string, and re-encoding it as `"1,2"` would
- * silently rename the tile.
+ * The grid position of a canonical `x,y` tile id within a node, or -1 when
+ * the codec cannot encode the id by position. Canonical is stricter than
+ * parseable. For example, `"01,2"` parses as (1, 2) but is a different
+ * string. Re-encoding it as `"1,2"` silently renames the tile.
  * @param {string} id
  * @param {number} width
  * @param {number} height
@@ -78,10 +88,10 @@ function positionOf(id, width, height) {
 }
 
 /**
- * A tile's art as a palette entry: the bare `imageRef` when it has no overlay,
- * else the pair. Both fields together, rather than two palettes and two index
- * streams, because a tile carries both and splitting them costs more than it
- * saves.
+ * A tile's art as one palette entry: the bare `imageRef` when the tile has no
+ * overlay, or the pair otherwise. The codec keeps both fields together
+ * instead of using two palettes and two index streams, because a tile
+ * carries both fields, and splitting them costs more than it saves.
  * @param {Record<string, any>} tile
  * @returns {string | [string, string | string[]]}
  */
@@ -91,11 +101,12 @@ function artEntry(tile) {
 }
 
 /**
- * Lay a node's tiles out by grid position, or null when the node does not
- * qualify for positional encoding: a bad dimension, an id that is not a
- * canonical in-bounds `x,y`, two tiles on one position, or an unreadable
- * `imageRef`. Qualification is conservative on purpose — a node that fails is
- * stored in the per-tile form rather than coerced into the grid.
+ * Lay a node's tiles out by grid position, or return null when the node does
+ * not qualify for positional encoding. A node fails to qualify when it has a
+ * bad dimension, an id that is not a canonical in-bounds `x,y` pair, two
+ * tiles at one position, or an unreadable `imageRef`. Qualification is
+ * deliberately strict: a node that fails is stored in the per-tile form
+ * instead of forced into the grid.
  * @param {Record<string, any>} node
  * @param {number} width
  * @param {number} height
@@ -117,9 +128,9 @@ function layOut(node, width, height) {
 }
 
 /**
- * The run-length index stream for a laid-out node, and the palette it indexes.
- * A trailing run of empties is dropped entirely rather than written, which is
- * most of a sparse interior's stream.
+ * The run-length index stream for a laid-out node, and the palette that the
+ * stream indexes. The codec drops a trailing run of empty cells instead of
+ * writing it. This run is most of the stream for a sparse interior.
  * @param {(Record<string, any> | null)[]} slots
  * @returns {{ refs: (string | [string, string | string[]])[], cells: (number | [number, number])[] }}
  */
@@ -158,16 +169,17 @@ function encodeCells(slots) {
     runIndex = index;
     runCount = 1;
   }
-  // A trailing empty run carries nothing the decoder cannot infer from the
-  // stream simply ending.
+  // A trailing empty run carries no information. The decoder can infer it
+  // from the end of the stream.
   if (runCount && runIndex !== EMPTY) flush();
   return { refs, cells };
 }
 
 /**
- * `revealed` as alternating run lengths, starting with an unrevealed run, or an
- * empty list when nothing is revealed. A trailing unrevealed run is dropped, the
- * decoder defaulting every unstated position to fogged.
+ * The `revealed` field as alternating run lengths, starting with an
+ * unrevealed run, or an empty list when nothing is revealed. The codec drops
+ * a trailing unrevealed run. The decoder defaults every unstated position to
+ * fogged.
  * @param {(Record<string, any> | null)[]} slots
  * @returns {number[]}
  */
@@ -194,10 +206,11 @@ function encodeFog(slots) {
 }
 
 /**
- * The fields of a packed tile the codec does not represent itself, keyed by id —
- * `metadata`, `childNodeId`, `span`, and anything a later `Tile` member adds.
- * Built by deletion rather than by naming the fields to keep, so a field this
- * module has never heard of is carried rather than dropped.
+ * The fields of a packed tile that the codec does not represent itself,
+ * keyed by id: `metadata`, `childNodeId`, `span`, and any field a later
+ * `Tile` member adds. The codec builds this list by deletion, not by naming
+ * the fields to keep, so a field unknown to this module is carried, not
+ * dropped.
  * @param {(Record<string, any> | null)[]} slots
  * @returns {Record<string, any>[]}
  */
@@ -218,15 +231,15 @@ function encodeLeftovers(slots) {
 }
 
 /**
- * A packed node in its positional form, or the node unchanged when it does not
- * qualify. Pure; the node passed in is never touched.
+ * A packed node in its positional form, or the node unchanged when it does
+ * not qualify. This function is pure: it never changes the node passed in.
  *
- * The palette is built by row-major traversal rather than by `tiles` array
- * order, so the output does not depend on the order tile mutations happened to
- * leave the array in. That matters beyond tidiness: the undo ring skips a
- * snapshot byte-identical to the newest and the cross-tab watcher compares raw
- * strings, so re-serializing an unchanged campaign has to produce the same
- * string.
+ * The codec builds the palette by row-major traversal, not by the order of
+ * the `tiles` array, so the output does not depend on the order that tile
+ * mutations leave the array in. This matters for more than tidiness. The
+ * undo ring skips a snapshot that is byte-identical to the newest one, and
+ * the cross-tab watcher compares raw strings. Because of this, re-serializing
+ * an unchanged campaign must produce the same string.
  * @param {Record<string, any>} node a node whose tiles are already packed
  * @returns {Record<string, any>}
  */
@@ -242,8 +255,9 @@ export function encodeNodeTiles(node) {
   const leftovers = encodeLeftovers(slots);
   /** @type {Record<string, any>} */
   const encoded = { ...node };
-  // Deleted and conditionally re-added, so the leftovers land at the end of the
-  // record and a node with none carries no `tiles` key at all.
+  // The codec deletes this field, then adds it back only when needed. This
+  // puts the leftovers at the end of the record, and a node with no
+  // leftovers carries no `tiles` key.
   delete encoded.tiles;
   encoded.refs = refs;
   encoded.cells = cells;
@@ -253,9 +267,10 @@ export function encodeNodeTiles(node) {
 }
 
 /**
- * The revealed bit per position, read from an alternating run-length stream.
- * Stops at the first unreadable run rather than throwing: a corrupt fog stream
- * should cost the GM some revealed ground, not the load.
+ * The revealed bit for each position, read from an alternating run-length
+ * stream. The function stops at the first unreadable run instead of
+ * throwing an error. A corrupt fog stream costs the GM some revealed ground,
+ * not the entire load.
  * @param {unknown} fog
  * @param {number} size
  * @returns {Uint8Array}
@@ -277,8 +292,8 @@ function decodeFog(fog, size) {
 }
 
 /**
- * One `cells` element as an index and a run length, or null when it is neither a
- * bare index nor an `[index, count]` pair.
+ * One `cells` element as an index and a run length, or null when the element
+ * is neither a bare index nor an `[index, count]` pair.
  * @param {unknown} element
  * @returns {{ index: number, count: number } | null}
  */
@@ -309,18 +324,19 @@ function leftoversById(tiles) {
 }
 
 /**
- * A node read back out of its positional form, or the node unchanged when it is
- * not in one — the branch is the presence of a `cells` array, so a save written
- * before this encoding existed passes straight through. Pure.
+ * A node read back out of its positional form, or the node unchanged when it
+ * is not in that form. The function checks for a `cells` array to decide, so
+ * a save written before this encoding existed passes through unchanged. This
+ * function is pure.
  *
- * The tiles this returns are still *packed*: their default-valued fields stay
- * omitted, and the load path's existing tile-defaults backfill fills them, so
- * the codec never states what a default is.
+ * The tiles this function returns are still packed: their default-valued
+ * fields stay omitted. The load path's existing tile-defaults step fills
+ * them in, so the codec never states what a default value is.
  *
- * Every malformed input degrades rather than throwing. A load that throws is
- * worse than a shortened map, and Import persists what it reads before
- * reloading, so an unreadable palette entry skips its cell, an unreadable run
- * ends the stream, and neither invents a tile.
+ * Every malformed input degrades instead of throwing an error. A load that
+ * throws is worse than a shortened map. Import saves what it reads before it
+ * reloads, so an unreadable palette entry skips its cell, and an unreadable
+ * run ends the stream. Neither case invents a tile.
  * @param {Record<string, any>} node
  * @returns {Record<string, any>}
  */
@@ -336,8 +352,9 @@ export function decodeNodeTiles(node) {
   const height = Number.isInteger(node.height) && node.height >= 1 ? node.height : 0;
   const size = width * height;
   if (!size || size > MAX_POSITIONS) {
-    // Nothing can be placed without usable dimensions. Keep the leftovers, which
-    // carry their own ids, rather than dropping the node's tiles outright.
+    // The codec cannot place a tile without usable dimensions. Keep the
+    // leftovers, which carry their own ids, instead of dropping the node's
+    // tiles outright.
     decoded.tiles = [...leftovers.values()];
     return decoded;
   }
@@ -359,9 +376,9 @@ export function decodeNodeTiles(node) {
       const extra = leftovers.get(id);
       /** @type {Record<string, any>} */
       const tile = extra ? { ...extra } : {};
-      // Assigned after the leftovers so the codec's own fields win: a
-      // hand-edited save cannot make a leftover record contradict the palette or
-      // the fog stream.
+      // Assign these fields after the leftovers so the codec's own fields
+      // win. A hand-edited save cannot make a leftover record contradict
+      // the palette or the fog stream.
       tile.id = id;
       tile.imageRef = imageRef;
       const overlay = pair ? entry[1] : null;

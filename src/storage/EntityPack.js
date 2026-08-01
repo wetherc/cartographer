@@ -1,26 +1,27 @@
 /**
- * Packing an entity for storage: the same "omit what the load path fills back
- * in" trade `packTile` makes for tiles, applied to the entity collections a save
- * carries. Pure, and deliberately ignorant of which entities exist — a caller
- * hands in the entity and its `withDefaults`, nothing more.
+ * Packing an entity for storage. This applies the same trade `packTile` makes
+ * for tiles (omit what the load path fills back in) to the entity
+ * collections a save carries. The code is pure, and it does not know which
+ * entities exist. A caller passes in the entity and its `withDefaults`,
+ * nothing more.
  *
- * Nothing here states what a default *is*. It asks the unpacker instead: a field
- * is dropped only after `withDefaults` has been shown to put that exact value
- * back for that exact entity. That matters because several defaults are derived
- * rather than constant — `Encounter.withDefaults` resolves `weapon` and `armor`
- * from the encounter's own level and tier — so a table of per-type defaults would
- * omit a level-7 boss's weapon on the grounds that it matches what a level-1 mob
- * would have been given, and loading would then hand the boss different gear.
- * Validating each omission against the real unpacker makes packing and loading
- * unable to disagree by construction rather than by convention.
+ * No table here states what a default value is. The code asks the unpacker
+ * instead. It removes a field only after `withDefaults` shows that it puts
+ * back that exact value for that exact entity. This matters because several
+ * defaults are derived, not constant. `Encounter.withDefaults` resolves
+ * `weapon` and `armor` from the encounter's own level and tier. A table of
+ * per-type defaults then removes a level-7 boss's weapon field, because it
+ * matches what a level-1 mob gets by default. Loading then gives the boss
+ * the wrong gear. Checking each removal against the real unpacker makes
+ * packing and loading agree by construction, not by convention.
  */
 
 /**
- * Whether two JSON-shaped values are structurally identical. Key order is
- * ignored, which is the whole reason this is not a `JSON.stringify` comparison:
- * a `withDefaults` spreads the entity and then names the fields it fills, so
- * deleting a field moves it to the end of the key order without changing the
- * value.
+ * True when two JSON-shaped values are structurally identical. The function
+ * ignores key order, so it does not just compare `JSON.stringify` output. A
+ * `withDefaults` spreads the entity and then names the fields it fills, so
+ * removing a field moves it to the end of the key order without changing
+ * its value.
  * @param {unknown} a
  * @param {unknown} b
  * @returns {boolean}
@@ -40,17 +41,18 @@ export function sameValue(a, b) {
 }
 
 /**
- * One entity with every field omitted that its own `withDefaults` restores
- * identically. The comparison target is `withDefaults(entity)` rather than
- * `entity` itself, since that is what a load produces and therefore what the
- * stored form has to round-trip to; a `withDefaults` that changes its input
- * still packs correctly.
+ * One entity with every field removed that its own `withDefaults` restores
+ * identically. The comparison target is `withDefaults(entity)`, not `entity`
+ * itself, because that is what a load produces. The stored form must round
+ * trip to that value. A `withDefaults` that changes its input still packs
+ * correctly.
  *
- * Greedy and order-dependent: dropping `level` first can leave a derived
- * `weapon` undroppable, or the reverse. That costs compression only, never
- * correctness, so one pass in key order is enough. A field `withDefaults` does
- * not fill can never be dropped, because its absence changes the result — which
- * is why nothing has to enumerate the fields that must survive.
+ * The function is greedy and order-dependent. Removing `level` first can
+ * leave a derived `weapon` field impossible to remove, or the reverse. This
+ * costs compression only, never correctness, so one pass in key order is
+ * enough. A field `withDefaults` does not fill can never be removed, because
+ * its absence changes the result. This is why no list of fields that must
+ * survive is needed.
  * @param {any} entity
  * @param {(entity: any) => any} withDefaults
  * @returns {Record<string, any>}
@@ -69,9 +71,9 @@ export function packEntity(entity, withDefaults) {
 }
 
 /**
- * `packEntity` over a collection. Entries that are not records pass through
- * untouched: `deserialize` drops those on the way in, so a save should not
- * contain one, and packing is not the place to start deleting data.
+ * `packEntity` applied over a collection. Entries that are not records pass
+ * through unchanged. `deserialize` removes those on the way in, so a save
+ * must not contain one, and this packing step must not start deleting data.
  * @param {any[]} list
  * @param {(entity: any) => any} withDefaults
  * @returns {any[]}

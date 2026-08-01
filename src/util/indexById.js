@@ -1,7 +1,8 @@
 /**
- * Build a Map from an id-keyed collection so repeated lookups by id are O(1)
- * instead of a linear `.find` per access. Pure. Later ids win on collision,
- * matching the last-write-wins behavior of the array scans it replaces.
+ * Build a Map from a collection keyed by id. Repeated lookups by id become
+ * O(1) instead of a linear scan with `.find`.
+ * This function is pure. When ids collide, the later id wins, the same
+ * behavior as the array scan it replaces.
  * @template {{ id: string }} T
  * @param {readonly T[]} items
  * @returns {Map<string, T>}
@@ -13,9 +14,9 @@ export function indexById(items) {
 }
 
 /**
- * Build a Map keyed by an arbitrary derived key rather than a fixed `id`
- * field, for collections keyed on something other than `id` (e.g. names).
- * Pure. Later entries win on collision.
+ * Build a Map keyed by a derived key instead of a fixed `id` field. Use this
+ * for collections keyed on something other than `id`, for example names.
+ * This function is pure. When keys collide, the later entry wins.
  * @template T
  * @param {readonly T[]} items
  * @param {(item: T) => string} keyOf

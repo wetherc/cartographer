@@ -1,6 +1,7 @@
 /**
- * Clamp a number into `[min, max]` without touching its precision. Both bounds
- * are optional, so this also reads as "at least" or "at most" on its own.
+ * Clamp a number into the range `[min, max]` without changing its precision.
+ * Both bounds are optional. With one bound only, this function acts as
+ * "at least" or "at most".
  * @param {number} value
  * @param {number} [min]
  * @param {number} [max]
@@ -11,14 +12,15 @@ export function clamp(value, min = -Infinity, max = Infinity) {
 }
 
 /**
- * Coerce an unknown value into an integer inside `[min, max]`. Anything that
- * does not parse to a nonzero number — a blank input, text, `undefined`, zero
- * — reads as `fallback`, and the fallback is clamped too, so callers whose
- * fallback is their minimum can leave it off.
+ * Coerce an unknown value into an integer inside `[min, max]`. If the value
+ * does not parse to a nonzero number (a blank input, text, `undefined`, or
+ * zero), the function returns `fallback`. The function clamps the fallback
+ * too, so a caller whose fallback equals its minimum can omit it.
  *
- * This is the one place that decides what a garbled number means. It exists
- * because every form field, catalog import, and stepper in the app needs the
- * same answer, and writing the coercion inline let the sites drift apart.
+ * This function is the one place that decides what an invalid number means.
+ * Every form field, catalog import, and stepper in the app needs the same
+ * answer. Inline coercion at each site let the logic drift apart between
+ * sites.
  * @param {unknown} value
  * @param {number} [min]
  * @param {number} [max]

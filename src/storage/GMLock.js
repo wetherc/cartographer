@@ -1,32 +1,39 @@
 /**
- * Cross-tab exclusivity through heartbeat locks in localStorage. The GM view is
- * the original case, which the names come from. Role is per-tab, but only one tab
- * at a time may hold GM, so the GM tab claims a heartbeat-refreshed lock and
- * every other tab of the same origin is forced into the Player view while that
- * lock is live. The TTL lets a crashed GM tab's lock expire rather than wedging
- * the campaign; a clean close releases it. Player tabs use the same machinery
- * under a per-character key so two tabs cannot play one character.
+ * This module gives cross-tab exclusivity through heartbeat locks in
+ * localStorage. The GM view is the original case, and the names in this
+ * module come from it.
  *
- * Pure decision logic (claim/hold/expiry) is separated from thin localStorage
- * wrappers, matching SaveManager. `createHeartbeatLock` at the bottom is the
- * stateful tab-side driver both callers use.
+ * Role is per-tab, but only one tab can hold the GM role at a time. The GM
+ * tab claims a heartbeat-refreshed lock. While that lock is live, every other
+ * tab of the same origin runs in the Player view.
+ *
+ * The TTL lets a crashed GM tab's lock expire instead of leaving the campaign
+ * permanently locked. A clean close releases the lock. Player tabs use the
+ * same mechanism under a per-character key, so two tabs cannot play the same
+ * character.
+ *
+ * This module separates pure decision logic (claim, hold, expiry) from thin
+ * localStorage wrappers, the same pattern as SaveManager. `createHeartbeatLock`,
+ * at the bottom of the file, is the stateful driver that both callers use for
+ * one tab.
  */
 
 /** @typedef {{ id: string, at: number }} GMLockRecord */
 
 export const GM_LOCK_KEY = 'campaign-builder:gm-lock';
 
-/** How long a lock outlives its last heartbeat before other tabs treat it as
- * abandoned (a crashed or frozen GM tab). */
+/** How long a lock stays valid after its last heartbeat. After this time,
+ * other tabs treat the lock as abandoned by a crashed or frozen GM tab. */
 export const GM_LOCK_TTL = 15000;
 
-/** How often the holding tab refreshes its heartbeat; well under the TTL so a
- * single missed beat never expires a healthy lock. */
+/** How often the tab that holds the lock refreshes its heartbeat. This
+ * interval stays well under the TTL, so one missed beat never expires a
+ * healthy lock. */
 export const GM_LOCK_HEARTBEAT = 5000;
 
 /**
- * Whether a lock record is live: present, well-formed, and heartbeaten within
- * the TTL. Pure.
+ * Report whether a lock record is live: present, well-formed, and
+ * heartbeaten within the TTL. This function is pure.
  * @param {GMLockRecord | null} record
  * @param {number} now
  * @param {number} [ttl]
@@ -37,7 +44,7 @@ export function isLockActive(record, now, ttl = GM_LOCK_TTL) {
 }
 
 /**
- * Whether a live lock belongs to some other tab. Pure.
+ * Report whether a live lock belongs to another tab. This function is pure.
  * @param {GMLockRecord | null} record
  * @param {string} id this tab's id
  * @param {number} now
@@ -49,9 +56,10 @@ export function isHeldByOther(record, id, now, ttl = GM_LOCK_TTL) {
 }
 
 /**
- * Attempt to claim (or refresh) the lock: succeeds when it is free, expired,
- * or already ours, returning the record to store; null means another tab holds
- * it. Pure — the caller persists the result.
+ * Try to claim or refresh the lock. The attempt succeeds when the lock is
+ * free, expired, or already held by this tab, and returns the record to
+ * store. A null result means another tab holds the lock. This function is
+ * pure: the caller must persist the result.
  * @param {GMLockRecord | null} record the currently stored lock
  * @param {string} id this tab's id
  * @param {number} now
@@ -63,7 +71,7 @@ export function claimLock(record, id, now, ttl = GM_LOCK_TTL) {
 }
 
 /**
- * Read the stored lock, tolerating a missing or corrupt entry.
+ * Read the stored lock. Return null for a missing or corrupt entry.
  * @param {string} [key]
  * @returns {GMLockRecord | null}
  */
@@ -86,8 +94,8 @@ export function saveLock(record, key = GM_LOCK_KEY) {
 }
 
 /**
- * Release the lock, but only if this tab still holds it — never clobber a
- * lock another tab has since claimed.
+ * Release the lock only if this tab still holds it. Do not remove a lock
+ * that another tab has since claimed.
  * @param {string} id this tab's id
  * @param {string} [key]
  */
@@ -97,26 +105,28 @@ export function releaseLock(id, key = GM_LOCK_KEY) {
 
 /**
  * @typedef {object} HeartbeatLock
- * @property {(key: string) => boolean} claim take (or refresh) the lock under
- *   `key`, releasing whatever this tab held before. False means another tab
- *   holds it and this tab holds nothing.
+ * @property {(key: string) => boolean} claim take or refresh the lock under
+ *   `key`, releasing whatever this tab held before. A false result means
+ *   another tab holds the lock and this tab holds nothing.
  * @property {() => void} release give up whatever this tab holds, if anything.
  * @property {() => string | null} heldKey the key this tab currently holds.
  * @property {string} tabId this tab's lock id, for tests and diagnostics.
  */
 
 /**
- * One tab's side of a heartbeat lock. It claims a key, refreshes the record on
- * an interval so other tabs can see it is alive, and releases it when the tab
- * goes away. The key is an argument rather than fixed, because one lock instance
- * moves between keys. A player tab that switches which character it plays
+ * This function builds one tab's side of a heartbeat lock. It claims a key,
+ * refreshes the record on an interval so other tabs can see it is alive, and
+ * releases the key when the tab closes.
+ *
+ * The key is an argument, not a fixed value, because one lock instance can
+ * move between keys. For example, a player tab that switches character
  * releases the old character's lock and claims the new one.
  *
- * `onYield` runs when another tab takes over the key this tab holds, which
- * happens if this tab was frozen or backgrounded long enough for its record to
- * expire. The heartbeat has already stopped and the lock is no longer held by
- * the time it runs, so the callback only has to undo whatever the lock was
- * guarding.
+ * `onYield` runs when another tab takes over the key this tab holds. This
+ * happens when this tab was frozen or in the background long enough for its
+ * record to expire. By the time `onYield` runs, the heartbeat has already
+ * stopped and the lock is no longer held, so the callback only needs to undo
+ * whatever the lock was guarding.
  *
  * @param {object} options
  * @param {() => void} options.onYield
@@ -163,9 +173,9 @@ export function createHeartbeatLock({
     held = null;
   }
 
-  // A takeover reaches this tab as a storage event on the key it holds. Yield
-  // rather than keep running, since the other tab is now the one whose writes
-  // other tabs will follow.
+  // A takeover reaches this tab as a storage event on the key it holds. This
+  // tab yields instead of continuing, because other tabs now follow the
+  // other tab's writes.
   window.addEventListener('storage', (event) => {
     if (held === null || event.key !== held) return;
     if (!isHeldByOther(loadLock(held), tabId, now(), ttl)) return;
@@ -174,8 +184,9 @@ export function createHeartbeatLock({
     onYield();
   });
 
-  // Release on the way out so a follower can take over without waiting out the
-  // TTL. pagehide also covers tab discard and navigation.
+  // Release the lock when the tab closes, so a follower can take over
+  // without waiting for the TTL to expire. pagehide also covers tab discard
+  // and navigation.
   window.addEventListener('pagehide', release);
 
   return { claim, release, heldKey: () => held, tabId };

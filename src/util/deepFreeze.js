@@ -1,12 +1,13 @@
 /**
- * Recursively freeze a value and everything reachable from it, returning the
- * same value. Used on the built-in catalogs (equipment, bestiary, NPC
- * templates, spells), which are module constants handed out by reference and
- * merged into the library's memoized lists: every consumer is expected to treat
- * them as read-only, and a path that instead writes one into campaign state has
- * to copy it. Freezing turns a missed copy into a throw at the write rather
- * than a shared object two campaign entities silently edit through each other.
- * Pure apart from the freezing itself; cycles are handled.
+ * Freeze a value and everything reachable from it. Return the same value.
+ * The built-in catalogs (equipment, bestiary, NPC templates, spells) use this
+ * function. These catalogs are module constants that the library shares by
+ * reference and merges into its memoized lists.
+ * Every consumer must treat these catalogs as read-only. A path that writes
+ * one into campaign state must copy it first.
+ * Freezing turns a missed copy into an error at the write. Without freezing,
+ * two campaign entities can edit one shared object through each other.
+ * This function is pure except for the freeze itself. It handles cycles.
  * @template T
  * @param {T} value
  * @param {WeakSet<object>} [seen]

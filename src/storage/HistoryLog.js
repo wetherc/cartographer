@@ -1,54 +1,60 @@
 /**
- * Undo and redo as a log of invertible deltas against the persisted campaign,
- * replacing the ring of whole-campaign snapshots this module was written to
- * retire.
+ * This module implements undo and redo as a log of invertible deltas against
+ * the persisted campaign. It replaces an earlier ring of whole-campaign
+ * snapshots.
  *
- * The ring stored up to ten complete serialized saves beside the canonical one,
- * so a history step cost a whole campaign and every save wrote twice the
- * campaign's bytes synchronously — and it offered no redo at all, because a
- * stack of past states cannot describe a future one. A log of deltas costs the
- * size of the edit instead, and redo falls out of the same structure: an op
- * records both its old and its new value, so `invertOps` is a swap and undo and
- * redo are the same walk in opposite directions.
+ * The ring stored up to ten complete serialized saves beside the canonical
+ * save. Each history step cost a whole campaign, and each save wrote twice
+ * the campaign's bytes synchronously. The ring also offered no redo, because
+ * a stack of past states cannot describe a future state.
+ * A log of deltas costs only the size of the edit. Redo uses the same
+ * structure: each op records its old value and its new value, so `invertOps`
+ * only swaps the two. Undo and redo are the same walk in opposite directions.
  *
- * Storage layout, one key per record so a push is one small write:
+ * Storage layout: one key per record, so a push is one small write.
  *
- * - `campaign-builder:history` — the index, `{ version, deltas, cursor }`, where
- *   `deltas` is the ordered sequence numbers and `cursor` is how many of them the
- *   persisted save currently reflects. Deltas past the cursor are the redo tail.
- * - `campaign-builder:history:d<seq>` — one delta, a `JSON.stringify`d op list.
+ * - `campaign-builder:history`: the index, `{ version, deltas, cursor }`.
+ *   `deltas` is the ordered list of sequence numbers. `cursor` is how many of
+ *   them the persisted save currently reflects. Deltas past the cursor are
+ *   the redo tail.
+ * - `campaign-builder:history:d<seq>`: one delta, a `JSON.stringify`d list of
+ *   ops.
  *
- * There is deliberately no base snapshot. The plan this implements called for
- * one — a packed campaign the log applies onto — but the canonical save already
- * is that state, and undo and redo only ever apply a delta to the *current*
- * state, never to a stored base. So the base's only remaining job would have been
- * to let the oldest deltas be folded into it at the byte cap, and dropping those
- * deltas outright does the same thing: it costs undo depth either way, and it
- * avoids rewriting a multi-megabyte base synchronously on every cap hit. The
- * deferred idea the base does serve — replaying base plus log at load, so the
- * canonical save need not be written at all — is out of scope here, and is what
- * would bring it back.
+ * This module deliberately stores no base snapshot: a packed campaign that
+ * the log applies onto. The canonical save already holds that state, and
+ * undo and redo apply a delta only to the *current* state, never to a stored
+ * base.
+ * A base snapshot's only remaining job is to let the oldest deltas fold into
+ * it at the byte cap. Dropping those deltas instead has the same effect: it
+ * costs undo depth either way, and it avoids rewriting a multi-megabyte base
+ * synchronously on every cap hit.
+ * A base snapshot also lets the app replay base plus log at load time. If
+ * the app does this, it does not need to write the canonical save at all.
+ * This idea is out of scope here. Adding it back is what restores a base
+ * snapshot to this module.
  *
- * `version` on the index is what makes an upgrade safe. A delta is never
- * migrated: it was written against a specific `CampaignState` shape by a specific
- * app version, so a log stamped with anything but the current schema version is
- * discarded rather than applied. One upgrade costs undo depth, which pre-GA save
- * compatibility allows.
+ * The `version` field on the index makes an app upgrade safe. This module
+ * never migrates a delta: an app version writes a delta against a specific
+ * `CampaignState` shape. A log stamped with any version other than the
+ * current schema version is discarded, not applied. Each app upgrade costs
+ * undo depth. Pre-GA save compatibility allows this cost.
  *
- * The one property of the ring worth keeping — that a push moves strings around
- * rather than parsing and re-stringifying a campaign — a diff cannot keep, since
- * it needs the previous state as a value. The cost is paid once: the last
- * persisted state is cached in memory, stamped with the raw string it came from,
- * so the steady state costs one `getItem` and one string compare. The stamp is
- * also the correctness guard, since a tab that declines the cross-tab reload
- * prompt keeps editing against a save another tab replaced; comparing the raw
- * string catches that where a bare cache would have diffed against a state that
- * is no longer stored.
+ * One property of the ring is worth keeping: a push moves strings around
+ * instead of parsing and re-stringifying a campaign. A diff cannot keep this
+ * property, because it needs the previous state as a value.
+ * This module pays that cost once. It caches the last persisted state in
+ * memory, stamped with the raw string it came from. In the normal case, this
+ * costs one `getItem` call and one string comparison.
+ * The stamp is also a correctness guard. A tab that declines the cross-tab
+ * reload prompt keeps editing against a save that another tab has since
+ * replaced. Comparing the raw string catches this case. Without the stamp, a
+ * plain cache diffs against a state that is no longer stored.
  *
- * Every write here goes after the campaign write, never before: the index must
- * never describe a state that was not stored. A quota failure costs depth rather
- * than the whole log, and reports it, because Undo silently becoming single-step
- * is the defect that reporting contract exists for.
+ * Every write in this module happens after the campaign write, never before.
+ * The index must never describe a state that was not stored. A quota
+ * failure costs undo depth rather than the whole log, and this module
+ * reports the failure. Undo silently becoming single-step is the defect that
+ * this reporting contract exists to catch.
  */
 
 import { applyOps, diffState, invertOps } from './StateDiff.js';
@@ -61,14 +67,15 @@ import { loadAssetTable } from './AssetStore.js';
 /** @typedef {{ version: number, deltas: number[], cursor: number }} HistoryIndex */
 /** @typedef {{ ok: boolean, evictedAll: boolean }} HistoryResult */
 
-/** The localStorage key the history index lives under. */
+/** The localStorage key that holds the history index. */
 export const HISTORY_KEY = 'campaign-builder:history';
 
 /**
- * How many bytes of deltas to keep. The ring it replaces cost ten whole
- * campaigns — 0.73 MB for the example campaign — so this is both more depth and
- * less storage for any realistic edit, while still bounding a log that a handout
- * insertion can add 250,000 characters to in one step.
+ * How many bytes of deltas this module keeps. The ring it replaces cost ten
+ * whole campaigns (0.73 MB for the example campaign). This cap gives more
+ * undo depth and uses less storage for any realistic edit. The cap still
+ * bounds a log, because a single handout insertion can add 250,000
+ * characters in one step.
  */
 export const HISTORY_BYTE_CAP = 512 * 1024;
 
@@ -76,8 +83,9 @@ export const HISTORY_BYTE_CAP = 512 * 1024;
 const EMPTY_INDEX = { version: CURRENT_VERSION, deltas: [], cursor: 0 };
 
 /**
- * The last persisted campaign as a value, stamped with the raw string it was
- * parsed from so a save made by another tab invalidates it.
+ * The last persisted campaign as a value. This module stamps it with the raw
+ * string it was parsed from, so a save from another tab invalidates the
+ * cache.
  * @type {{ raw: string, state: CampaignState } | null}
  */
 let cached = null;
@@ -99,10 +107,11 @@ function isRecord(value) {
 }
 
 /**
- * Remove the index and every record under it. The scan is by key prefix rather
- * than by walking the index, so it also reclaims the previous ring's
- * `<key>:<seq>` snapshots — the upgrade path drops them rather than converting
- * them, since a whole-campaign snapshot is not a delta and cannot become one.
+ * Delete the index and every record under it. This module scans by key
+ * prefix instead of walking the index, so it also deletes the previous
+ * ring's `<key>:<seq>` snapshots. The upgrade path deletes these snapshots
+ * instead of converting them, because a whole-campaign snapshot is not a
+ * delta and cannot become one.
  */
 export function clearHistoryLog() {
   /** @type {string[]} */
@@ -115,11 +124,11 @@ export function clearHistoryLog() {
 }
 
 /**
- * The stored index, or an empty one. Anything unreadable — a corrupt record, the
- * previous ring's array of sequence numbers, or a log written under an older
- * schema version — clears the whole log rather than being partially trusted,
- * since a delta that does not describe this app's state shape would corrupt the
- * campaign it was applied to.
+ * The stored index, or an empty index when none exists. This function clears
+ * the whole log instead of partially trusting anything unreadable: a corrupt
+ * record, the previous ring's array of sequence numbers, or a log written
+ * under an older schema version. A delta that does not match this app's
+ * state shape corrupts the campaign it is applied to.
  * @returns {HistoryIndex}
  */
 function readIndex() {
@@ -163,9 +172,10 @@ function writeIndex(index) {
 }
 
 /**
- * One stored delta, or null when its key is missing or unreadable. A missing key
- * is tolerated rather than thrown on: the previous ring already skipped one, and
- * a throw on a load or undo path is a campaign the GM cannot get back to.
+ * One stored delta, or null when its key is missing or unreadable. This
+ * function tolerates a missing key instead of throwing an error on it. The
+ * previous ring also skipped missing keys. An error on a load or undo path
+ * leaves the GM unable to recover the campaign.
  * @param {number} seq
  * @returns {DiffOp[] | null}
  */
@@ -181,9 +191,9 @@ function readDelta(seq) {
 }
 
 /**
- * The persisted campaign as a value, or null when nothing is stored or what is
- * stored cannot be read. Reuses the cache only when the stored string is still
- * the one it was built from.
+ * The persisted campaign as a value, or null when nothing is stored or the
+ * stored value cannot be read. This function reuses the cache only when the
+ * stored string still matches the string the cache was built from.
  * @returns {CampaignState | null}
  */
 function lastPersisted() {
@@ -200,10 +210,10 @@ function lastPersisted() {
 }
 
 /**
- * Drop the oldest deltas until the log fits the byte cap. Returns the surviving
- * sequence numbers; the dropped keys are removed. Hitting the cap is the design
- * rather than a failure, so it is not reported as lost depth — the alternative,
- * an unbounded log, is what puts the origin over quota.
+ * Remove the oldest deltas until the log fits the byte cap. Return the
+ * surviving sequence numbers, and remove the corresponding keys. Hitting the
+ * cap is by design, not a failure, so this function does not report it as
+ * lost depth. The alternative, an unbounded log, puts the origin over quota.
  * @param {number[]} deltas
  * @returns {number[]}
  */
@@ -220,9 +230,10 @@ function trimToCap(deltas) {
 }
 
 /**
- * Append one delta describing `before` -> `after`, dropping any redo tail the
- * new edit invalidates. Reports as the ring did: `ok` is whether this step is
- * undoable, `evictedAll` whether a full origin cost the GM depth beyond the
+ * Append one delta describing the change from `before` to `after`. Remove
+ * any redo tail that the new edit invalidates. This function reports the
+ * same way the ring did: `ok` states whether this step is undoable, and
+ * `evictedAll` states whether a full origin cost the GM depth beyond the
  * ordinary cap.
  * @param {CampaignState | null} before
  * @param {CampaignState} after
@@ -230,19 +241,21 @@ function trimToCap(deltas) {
  */
 function recordDelta(before, after) {
   const index = readIndex();
-  // Nothing stored to diff against — a first save, or a stored save this app
-  // cannot read. Either way the campaign is now the oldest state there is.
+  // Nothing is stored to diff against: this is a first save, or a stored
+  // save that this app cannot read. Either way, the campaign is now the
+  // oldest state there is.
   if (!before) return { ok: true, evictedAll: false };
   const ops = diffState(before, after);
-  // An unchanged campaign saved again is not a history step, which also replaces
-  // the ring's skip-if-identical-to-the-newest check.
+  // Saving an unchanged campaign again is not a history step. This also
+  // replaces the ring's skip-if-identical-to-the-newest check.
   if (!ops.length) return { ok: true, evictedAll: false };
   const json = JSON.stringify(ops);
   const seq = Math.max(-1, ...index.deltas) + 1;
   const tail = index.deltas.slice(index.cursor);
-  // One edit larger than the whole cap (generating a node inserts every one of
-  // its tiles as one op) cannot be stored without leaving no room for anything
-  // else. Drop the log rather than the campaign, and say so.
+  // One edit larger than the whole cap cannot be stored without leaving no
+  // room for anything else. For example, generating a node inserts every one
+  // of its tiles as one op. Delete the log instead of the campaign, and
+  // report this.
   if (json.length * 2 > HISTORY_BYTE_CAP) {
     clearHistoryLog();
     return { ok: false, evictedAll: true };
@@ -254,8 +267,8 @@ function recordDelta(before, after) {
       localStorage.setItem(deltaKey(seq), json);
       break;
     } catch {
-      // A full origin degrades depth-first: give up the oldest step and retry,
-      // rather than losing the whole log for one write.
+      // A full origin degrades depth first: give up the oldest step and
+      // retry the write, instead of losing the whole log for one write.
       if (deltas.length < 2) {
         clearHistoryLog();
         return { ok: false, evictedAll: true };
@@ -266,8 +279,9 @@ function recordDelta(before, after) {
     }
   }
   const kept = trimToCap(deltas);
-  // The index goes last: an index naming a key that was never written is a
-  // history step that cannot be applied, where an unnamed key is merely garbage.
+  // The index write happens last. An index that names a key that was never
+  // written describes a history step that cannot be applied. An unnamed key
+  // is only unused data.
   if (!writeIndex({ version: CURRENT_VERSION, deltas: kept, cursor: kept.length })) {
     clearHistoryLog();
     return { ok: false, evictedAll: true };
@@ -277,9 +291,9 @@ function recordDelta(before, after) {
 }
 
 /**
- * Persist a campaign and record the step that produced it. This is the one save
- * path: the delta is written after the campaign, so a failed campaign write
- * leaves the log describing exactly what is stored.
+ * Persist a campaign and record the step that produced it. This is the only
+ * save path. This module writes the delta after the campaign, so a failed
+ * campaign write leaves the log describing exactly what is stored.
  * @param {CampaignState} state
  * @returns {ReturnType<typeof trySaveToLocalStorage> & { history: HistoryResult }}
  */
@@ -292,9 +306,10 @@ export function saveCampaign(state) {
 }
 
 /**
- * Step the cursor by one delta, persisting the state it names. Shared by undo
- * and redo, which differ only in which delta they read and which way they apply
- * it. Returns null when there is nothing in that direction.
+ * Move the cursor by one delta and persist the state it names. Undo and redo
+ * share this function. They differ only in which delta they read and which
+ * way they apply it. This function returns null when there is nothing in
+ * that direction.
  * @param {number} direction -1 to undo, 1 to redo
  * @returns {{ save: ReturnType<typeof trySaveToLocalStorage>, state: CampaignState } | null}
  */
@@ -306,8 +321,8 @@ function step(direction) {
   if (!current) return null;
   const ops = readDelta(index.deltas[at]);
   if (!ops) {
-    // The step's own record is gone, so neither direction of the log can be
-    // trusted to describe the campaign any more.
+    // The step's own record is gone. Neither direction of the log can
+    // describe the campaign correctly anymore.
     clearHistoryLog();
     return null;
   }
@@ -320,8 +335,9 @@ function step(direction) {
     return null;
   }
   const save = trySaveToLocalStorage(restored);
-  // Campaign first, index second, for the same reason a save records after
-  // writing: never leave the cursor claiming a state that was not stored.
+  // This function writes the campaign first and the index second, for the
+  // same reason a save records after writing. The cursor must never claim a
+  // state that was not stored.
   if (!save.ok) return { save, state: restored };
   cached = { raw: save.json, state: restored };
   writeIndex({ version: CURRENT_VERSION, deltas: index.deltas, cursor: index.cursor + direction });
@@ -329,8 +345,8 @@ function step(direction) {
 }
 
 /**
- * Restore the state before the most recent recorded edit, persisting it. Null
- * when there is nothing to undo.
+ * Restore the state before the most recent recorded edit, and persist it.
+ * This function returns null when there is nothing to undo.
  * @returns {{ save: ReturnType<typeof trySaveToLocalStorage>, state: CampaignState } | null}
  */
 export function undoCampaign() {
@@ -338,8 +354,8 @@ export function undoCampaign() {
 }
 
 /**
- * Re-apply the edit the last undo reversed, persisting the result. Null when the
- * cursor is already at the head.
+ * Reapply the edit that the last undo reversed, and persist the result. This
+ * function returns null when the cursor is already at the head.
  * @returns {{ save: ReturnType<typeof trySaveToLocalStorage>, state: CampaignState } | null}
  */
 export function redoCampaign() {
@@ -347,8 +363,8 @@ export function redoCampaign() {
 }
 
 /**
- * How many steps each direction currently offers, for enabling the header
- * controls.
+ * How many undo and redo steps are currently available. The header controls
+ * use this value to decide whether to enable themselves.
  * @returns {{ undo: number, redo: number }}
  */
 export function historyDepth() {

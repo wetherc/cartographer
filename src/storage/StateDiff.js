@@ -1,40 +1,41 @@
 /**
- * Structural diffs between two campaign states, so the undo history can cost the
- * size of an edit rather than the size of the campaign.
+ * Structural diffs between two campaign states. These let the undo history
+ * cost the size of an edit, not the size of the campaign.
  *
- * `diffState(before, after)` returns a list of ops, `applyOps(state, ops)` walks
- * one forward, and `invertOps(ops)` swaps every op's before and after values —
- * which is what makes undo and redo the same code over the same log. Every
- * function here is pure and `applyOps` never mutates its input: library defaults
- * are deep-frozen and copied into campaign state, so writing in place would throw
- * rather than merely surprise.
+ * `diffState(before, after)` returns a list of ops. `applyOps(state, ops)`
+ * walks one forward. `invertOps(ops)` swaps every op's before and after
+ * values, which makes undo and redo the same code over the same log. Every
+ * function here is pure, and `applyOps` never mutates its input. Library
+ * defaults are deep-frozen and copied into campaign state, so writing in
+ * place throws an error, not just causes a surprise.
  *
- * This operates on parsed `CampaignState` values, not on serialized text. A
- * textual diff over JSON would be both larger and unable to survive a key-order
- * change, and it would have to understand the on-disk packing — the tile codec
- * especially, whose `cells`/`fog` streams a diff must never see. The cost of
- * running on parsed state is that a payload rides inline in an op: an op that
- * inserts a handout carries its whole `data:` URL, where one that retitles the
- * same handout carries nothing.
+ * This module works on parsed `CampaignState` values, not on serialized
+ * text. A textual diff over JSON is larger, cannot survive a key-order
+ * change, and must understand the on-disk packing, especially the tile
+ * codec, whose `cells` and `fog` streams a diff must
+ * never see. The cost of running on parsed state is that a payload rides
+ * inline in an op: an op that inserts a handout carries its whole `data:`
+ * URL, while one that renames the same handout carries nothing.
  */
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/storage.js').DiffOp} DiffOp */
 
 /**
- * The collections a diff pairs by element id rather than by array index, and the
- * field holding that id. Diffing them positionally would turn one insertion into
- * a rewrite of the whole tail — a tile painted into a 1,600-tile node would cost
- * the node.
+ * The collections a diff pairs by element id, not by array index, and the
+ * field that holds that id. Diffing them by position turns one insertion
+ * into a rewrite of the whole tail. A tile drawn into a 1,600-tile node
+ * then costs the whole node.
  *
- * A path is looked up by replacing every id segment with `*`, so both directions
- * read the table the same way. This is the module's entire schema coupling; keep
- * it here rather than spreading path knowledge through the walkers.
+ * The code looks up a path by replacing every id segment with `*`, so both
+ * directions read the table the same way. This table is the module's only
+ * coupling to the schema. Keep that coupling here, not spread through the
+ * walker functions.
  *
- * Every other array is a leaf, compared and replaced whole. That is deliberate:
- * `proficiencies.skills`, an overlay stack, and `combat.order` are
- * all small, and several are ordered sequences rather than keyed sets, where
- * pairing by id would be wrong rather than just wasteful.
+ * Every other array is a leaf, compared and replaced whole. This is
+ * deliberate. `proficiencies.skills`, an overlay stack, and `combat.order`
+ * are all small. Several are ordered sequences, not keyed sets, and there
+ * pairing by id is wrong, not just wasteful.
  * @type {Record<string, string>}
  */
 export const ID_KEYED = {
@@ -60,13 +61,15 @@ function isRecord(value) {
 }
 
 /**
- * Structural equality over the JSON-shaped values a campaign state holds. A key
- * whose value is `undefined` counts as absent, because the log is JSON and an
- * `undefined` would not survive being written and read back.
+ * Structural equality over the JSON-shaped values a campaign state holds.
+ * A key whose value is `undefined` counts as absent, because the log is
+ * JSON, and an `undefined` value does not survive being written and read
+ * back.
  *
- * `EntityPack` has its own deep compare, shaped around proving that a
- * `withDefaults` restores an omitted field. Sharing one would couple a packing
- * concern to a diffing one for a dozen lines, so this stays local.
+ * `EntityPack` has its own deep compare, built around proving that a
+ * `withDefaults` restores an omitted field. Sharing one function couples a
+ * packing concern to a diffing concern for a dozen lines, so this
+ * function stays local to this module.
  * @param {unknown} a
  * @param {unknown} b
  * @returns {boolean}
@@ -110,10 +113,10 @@ function childPattern(pattern, segment, keyed) {
 }
 
 /**
- * The element ids of an id-keyed collection, or null when the array cannot be
- * paired by id — a missing or non-string id, or a duplicate. Falling back to a
- * whole-array comparison there is what keeps a hand-edited save from being
- * diffed into something that cannot be applied.
+ * The element ids of an id-keyed collection, or null when the array cannot
+ * be paired by id: a missing id, a non-string id, or a duplicate id. In
+ * that case the code falls back to a whole-array comparison, which keeps a
+ * hand-edited save from being diffed into an op list that cannot be applied.
  * @param {unknown[]} list
  * @param {string} idField
  * @returns {string[] | null}
@@ -142,7 +145,8 @@ function sameSequence(a, b) {
 }
 
 /**
- * The ops turning `before` into `after`. Pure; the returned list is JSON-safe.
+ * The ops that turn `before` into `after`. The function is pure, and the
+ * returned list is JSON-safe.
  * @param {CampaignState | Record<string, unknown>} before
  * @param {CampaignState | Record<string, unknown>} after
  * @returns {DiffOp[]}
@@ -194,13 +198,14 @@ function diffRecord(before, after, path, pattern, ops) {
 }
 
 /**
- * Diff an id-keyed collection: pair by id, and record each insertion's and
- * removal's index so inverting the op restores the element's position instead of
- * appending it. That index is what keeps the capped travelogue cheap — once it is
- * full, every logged event removes the oldest entry and appends a new one, and
- * without the index the inverse of that pair would need the whole id sequence.
+ * Diff an id-keyed collection. The function pairs elements by id, and
+ * records each insertion's and removal's index, so inverting the op
+ * restores the element's position instead of appending it. This index keeps
+ * the capped travelogue cheap. Once the travelogue is full, every logged
+ * event removes the oldest entry and appends a new one. Without the index,
+ * the inverse of that pair needs the whole id sequence.
  *
- * An `order` op is therefore emitted only for a genuine permutation of the
+ * The function emits an `order` op only for a genuine permutation of the
  * elements both states share.
  * @param {unknown[]} before
  * @param {unknown[]} after
@@ -237,10 +242,11 @@ function diffKeyed(before, after, path, pattern, idField, ops) {
 }
 
 /**
- * The ops turning `after` back into `before`. A swap of each op's two values,
- * with the index and the order marker carried through — `i` means "this
- * element's index in whichever state holds it", which is the same fact read from
- * either direction. Pure, and its own inverse.
+ * The ops that turn `after` back into `before`. This is a swap of each op's
+ * two values, with the index and the order marker carried through. `i`
+ * means "this element's index in whichever state holds it", the same fact
+ * read from either direction. The function is pure, and it is its own
+ * inverse.
  * @param {DiffOp[]} ops
  * @returns {DiffOp[]}
  */
@@ -257,18 +263,19 @@ export function invertOps(ops) {
 }
 
 /**
- * Apply a list of ops, returning a new state and leaving `state` untouched.
+ * Apply a list of ops, returning a new state and leaving `state` unchanged.
  *
- * Ops are grouped rather than applied in list order, which is what lets
- * `invertOps` be a pure swap with no reversal: removals first, then field
- * changes, then insertions by ascending index, then permutations. Insertion
- * indices are only meaningful once the removals are done, and a permutation only
- * once the collection holds its final members.
+ * The function groups ops instead of applying them in list order. This lets
+ * `invertOps` stay a pure swap, with no reversal step: removals run first,
+ * then field changes, then insertions by ascending index, then
+ * permutations. Insertion indices are meaningful only once the removals are
+ * done, and a permutation is meaningful only once the collection holds its
+ * final members.
  *
- * An op whose path no longer resolves is skipped rather than throwing. A stored
- * log outlives the state it was written against — a delta key can go missing, a
- * schema step can move a field — and a throw on the load path would be a save
- * that cannot boot.
+ * An op whose path no longer resolves is skipped, not thrown as an error. A
+ * stored log outlives the state it was written against. A delta key can go
+ * missing, and a schema step can move a field. An error on the load path
+ * produces a save that cannot start.
  * @template {object} T
  * @param {T} state
  * @param {DiffOp[]} ops
@@ -290,8 +297,8 @@ export function applyOps(state, ops) {
     else if (!('f' in op)) insertions.push(op);
     else changes.push(op);
   }
-  // A stable sort by index gives ascending order within each collection, which is
-  // all that matters; ops for different collections cannot interfere.
+  // A stable sort by index gives ascending order within each collection.
+  // Ops for different collections cannot interfere with each other.
   insertions.sort((a, b) => (a.i ?? 0) - (b.i ?? 0));
   let next = /** @type {Record<string, unknown>} */ (state);
   for (const op of [...removals, ...changes, ...insertions, ...orders]) {
@@ -310,8 +317,8 @@ function applyOp(node, op) {
 }
 
 /**
- * Walk to the op's parent container, copying each container on the way so the
- * input state is shared rather than written to.
+ * Walk to the op's parent container, copying each container on the way, so
+ * the input state is shared and never written to.
  * @param {unknown} node
  * @param {DiffOp} op
  * @param {number} index
@@ -365,7 +372,7 @@ function write(container, segment, idField, pattern, op) {
     writeKeyed(container, idField, segment, op);
     return;
   }
-  if (Array.isArray(container)) return; // a positional array is a leaf; nothing addresses inside it
+  if (Array.isArray(container)) return; // A positional array is a leaf. Nothing addresses inside it.
   const record = /** @type {Record<string, unknown>} */ (container);
   if (!('t' in op)) delete record[String(segment)];
   else record[String(segment)] = op.t;
@@ -392,10 +399,10 @@ function writeKeyed(list, idField, id, op) {
 }
 
 /**
- * Reorder an id-keyed collection to the op's target sequence. Ids the collection
- * does not hold are ignored and elements the sequence does not name keep their
- * relative order at the end, so a log written against a slightly different state
- * degrades instead of dropping elements.
+ * Reorder an id-keyed collection to the op's target sequence. The function
+ * ignores ids the collection does not hold. Elements the sequence does not
+ * name keep their relative order at the end. A log written against a
+ * slightly different state degrades instead of losing elements.
  * @param {unknown[] | Record<string, unknown>} container
  * @param {string | number} segment
  * @param {string} pattern
@@ -429,8 +436,9 @@ function writeOrder(container, segment, pattern, op) {
 }
 
 /**
- * Byte cost of a serialized op list in localStorage (UTF-16: two bytes per code
- * unit), for sizing the delta log against the origin quota. Pure.
+ * The byte cost of a serialized op list in localStorage (UTF-16 uses two
+ * bytes per code unit). This sizes the delta log against the origin quota.
+ * The function is pure.
  * @param {DiffOp[]} ops
  * @returns {number}
  */

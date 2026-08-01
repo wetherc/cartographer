@@ -1,12 +1,12 @@
 /**
  * Memoize a one-argument pure function on the identity of its argument. The
- * cache is a WeakMap, so an entry disappears with the object it was keyed on
- * and nothing has to be invalidated by hand.
+ * cache is a WeakMap. An entry disappears with the object it was keyed on, so
+ * nothing needs manual removal.
  *
- * Only safe for arguments that are never mutated in place, which is the rule
- * the entity layer already follows: every writer returns a new object, so an
- * object that has been handed out can never change. Applying this to a value
- * something else mutates would serve a stale result forever.
+ * This function is safe only for arguments that are never mutated in place.
+ * The entity layer follows this rule: every writer returns a new object, so a
+ * returned object never changes. If you apply this to a value that something
+ * else mutates, the cache serves a stale result forever.
  * @template {object} T
  * @template R
  * @param {(input: T) => R} compute

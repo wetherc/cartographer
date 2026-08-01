@@ -1,27 +1,30 @@
 import { isNearQuota } from './SaveManager.js';
 
 /**
- * What the GM is told after a write. The decisions are here rather than beside
- * the toast calls in `app/campaignActions.js` because most of them are about
- * *not* speaking: autosave writes every ten seconds while the campaign is dirty,
- * and an origin that is over quota degrades every one of those writes, so a
- * notice that fired per write would bury the one that mattered.
+ * What the GM sees after a write. This module holds the decisions instead of
+ * the toast calls in `app/campaignActions.js`, because most of the decisions
+ * are about when to stay silent. Autosave writes every ten seconds while the
+ * campaign is dirty. When the origin is over quota, every one of those
+ * writes degrades. A notice on every write buries the one notice that
+ * matters.
  */
 
-/** Roughly what a browser gives one origin in localStorage. */
+/** The approximate storage limit a browser gives one origin in localStorage. */
 export const QUOTA_BYTES = 5 * 1024 * 1024;
 
 /**
- * How much the footprint has to grow before the near-quota warning is repeated.
- * Ten percent, so trimming one image quiets it and adding a second one does not.
+ * How much the footprint must grow before the near-quota warning repeats.
+ * The value is ten percent, so trimming one image stops the warning, and
+ * adding a second image does not.
  */
 export const RENOTIFY_GROWTH = 1.1;
 
 /**
- * What a write's outcome means for the GM. A quota-full write is a failure the
- * caller must not reload onto. A write that landed the campaign but not its
- * images is still a save, since the map, the party, and every entity are stored,
- * but saying nothing would make the next load look like corruption.
+ * What a write's outcome means for the GM. A quota-full write is a failure,
+ * and the caller must not reload after it. A write that saves the campaign
+ * but not its images is still a save, because the map, the party, and every
+ * entity are stored. The function still reports this case, because silence
+ * makes the next load look like data corruption.
  * @param {{ ok: boolean, assetsOk: boolean }} result
  * @returns {{ landed: boolean, message: string | null }}
  */
@@ -44,9 +47,9 @@ export function saveOutcome({ ok, assetsOk }) {
 }
 
 /**
- * Which undo-history degradation a write caused. A write the log could not take
- * at all clears the history; one that had to evict its oldest steps shortens it.
- * An empty string is the healthy case.
+ * Which undo-history degradation a write caused. A write that the log cannot
+ * take at all clears the history. A write that must remove its oldest steps
+ * shortens the history. An empty string is the healthy case.
  * @param {{ ok: boolean, evictedAll: boolean }} history
  * @returns {'' | 'shortened' | 'cleared'}
  */
@@ -56,8 +59,9 @@ export function historyLoss({ ok, evictedAll }) {
 }
 
 /**
- * The notice for a degradation, given the one last reported. Null covers both
- * quiet cases: nothing was lost, and the same loss is already on screen.
+ * The notice for a degradation, given the last one reported. A null return
+ * covers two quiet cases: nothing was lost, or the same loss is already on
+ * screen.
  * @param {'' | 'shortened' | 'cleared'} loss
  * @param {'' | 'shortened' | 'cleared'} reported
  * @returns {string | null}
@@ -70,8 +74,9 @@ export function historyLossMessage(loss, reported) {
 }
 
 /**
- * The Save button's tooltip: how much of the origin's quota the campaign spends.
- * Always shown, so the number is there before it becomes a problem.
+ * The Save button's tooltip. It shows how much of the origin's quota the
+ * campaign uses. The tooltip shows at all times, so the number is visible
+ * before it becomes a problem.
  * @param {number} footprint bytes
  * @returns {string}
  */
@@ -80,10 +85,11 @@ export function footprintTooltip(footprint) {
 }
 
 /**
- * The near-quota warning, and the footprint to remember having warned at. Under
- * the threshold the remembered footprint resets to 0, so dropping below it and
- * climbing back over is reported again. Over it, the warning waits for material
- * growth rather than repeating per autosave.
+ * The near-quota warning, and the footprint to remember as the point of the
+ * last warning. Under the threshold, the remembered footprint resets to 0,
+ * so a drop below the threshold followed by a rise above it triggers the
+ * warning again. Over the threshold, the warning waits for real growth in
+ * the footprint instead of repeating on every autosave.
  * @param {number} footprint bytes
  * @param {number} warnedAt the footprint of the last warning, 0 for none
  * @returns {{ message: string | null, warnedAt: number }}
@@ -97,7 +103,7 @@ export function footprintWarning(footprint, warnedAt) {
   };
 }
 
-/** Bytes as the one-decimal megabyte figure both notices quote.
+/** Bytes as the one-decimal megabyte figure that both notices quote.
  * @param {number} bytes @returns {string} */
 function megabytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1);
