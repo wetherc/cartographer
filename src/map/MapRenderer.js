@@ -5,7 +5,12 @@ import { overlayList } from './TileGrid.js';
 import { tileAtXY } from './TileIndex.js';
 import { MapMarkers } from './MapMarkers.js';
 import { MapDecorations } from './MapDecorations.js';
+import { TileRaster, imageSrcForRef } from './TileRaster.js';
 import { memoizeByIdentity } from '../util/memoize.js';
+
+// Re-exported because callers outside the map, such as the handout panel and
+// the PNG export, resolve a ref through this module.
+export { imageSrcForRef };
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
@@ -36,20 +41,6 @@ export function anyRevealed(tileIds, revealedIds) {
   if (!revealedIds) return true;
   for (const id of tileIds) if (revealedIds.has(id)) return true;
   return false;
-}
-
-/**
- * The `src` to load a tile image ref from. A built-in ref is a
- * project-relative path and needs the leading slash. A GM-supplied tile's
- * art is a `data:` URL and is used as-is, because prefixing it produces an
- * unloadable path. Every place that turns a ref into an image goes through
- * here. The PNG export used to keep its own copy of this logic and lacked
- * the `data:` case, so custom art exported as placeholders. This is a pure function.
- * @param {string} imageRef
- * @returns {string}
- */
-export function imageSrcForRef(imageRef) {
-  return imageRef.startsWith('data:') ? imageRef : `/${imageRef}`;
 }
 
 /**
@@ -94,35 +85,34 @@ export function imageSrcForRef(imageRef) {
 export class MapRenderer {
   /**
    * @param {CanvasRenderingContext2D} ctx
-   * @param {{ tileSize: number, getNodeName?: (nodeId: string) => string | undefined, onImageLoad?: () => void }} options
+   * @param {{ tileSize: number, getNodeName?: (nodeId: string) => string | undefined, onImageLoad?: () => void, rasterize?: boolean, raster?: TileRaster }} options
    */
   constructor(ctx, options) {
     this.ctx = ctx;
     this.tileSize = options.tileSize;
     this.getNodeName = options.getNodeName;
     this.onImageLoad = options.onImageLoad;
-    /** @type {Map<string, HTMLImageElement>} */
-    this.imageCache = new Map();
+    // A caller that rebuilds this class per draw, such as the generator
+    // preview, passes its own cache in. Otherwise every rebuild re-rasterizes
+    // art it already has.
+    this._raster =
+      options.raster ??
+      new TileRaster({
+        onLoad: () => this.onImageLoad?.(),
+        enabled: options.rasterize ?? true,
+      });
     this._markers = new MapMarkers(this);
     this._decorations = new MapDecorations(this);
   }
 
   /**
-   * The decoded image for a tile ref, loaded once and kept for the session.
-   * An unbounded cache is fine while refs are the built-in SVG set, which is
-   * small and finite. Add eviction before large custom raster tiles arrive.
-   * @param {string} imageRef
-   * @returns {HTMLImageElement}
+   * The decoded source images, keyed by ref. The PNG export seeds this map
+   * from the live canvas, and the generator preview shares one map across its
+   * rerenders, so it stays part of this class's surface.
+   * @returns {Map<string, HTMLImageElement>}
    */
-  _getImage(imageRef) {
-    let img = this.imageCache.get(imageRef);
-    if (!img) {
-      img = new Image();
-      img.src = imageSrcForRef(imageRef);
-      img.onload = () => this.onImageLoad?.();
-      this.imageCache.set(imageRef, img);
-    }
-    return img;
+  get imageCache() {
+    return this._raster.images;
   }
 
   /**
@@ -144,6 +134,7 @@ export class MapRenderer {
       const groupCover = this._renderGroupImages(view, frame);
       this._renderSpanImages(view, frame, groupCover);
       this._renderTiles(view, groupCover);
+      this._renderCellGrid(view, frame);
       this._renderRegionGroups(view, frame);
       this._decorations.renderMarquee(view);
       this._decorations.renderSelection(view);
@@ -225,8 +216,8 @@ export class MapRenderer {
    */
   _drawBlockImage(rect, imageRef) {
     const { ctx } = this;
-    const img = this._getImage(imageRef);
-    if (img.complete && img.naturalWidth > 0) {
+    const img = this._raster.source(imageRef, rect.w, rect.h);
+    if (img) {
       ctx.drawImage(img, rect.x, rect.y, rect.w, rect.h);
     } else {
       ctx.fillStyle = '#333';
@@ -298,6 +289,70 @@ export class MapRenderer {
   }
 
   /**
+   * Rule a one-pixel line along every cell boundary in view, so a GM can count
+   * cells and match a tile to its coordinate labels.
+   *
+   * This grid used to be an accident. Each tile was drawn straight from its
+   * SVG, and the rasterizer left the outermost pixel row of each tile
+   * partly transparent, so the dark map backdrop showed through at every
+   * boundary. Drawing tiles from a cached raster fills those pixels, which
+   * took the grid away. It is drawn on purpose here instead, in the backdrop
+   * color it used to come from.
+   *
+   * The grid stops at the fog, because a flat fog rectangle never showed the
+   * backdrop through and so never carried a grid. Cells are clipped rather
+   * than stroked one at a time, which would draw every shared boundary twice
+   * and leave it darker than the outer edges.
+   * @param {MapView} view
+   * @param {{ revealedIds: Set<string> | null }} frame
+   */
+  _renderCellGrid(view, frame) {
+    const node = view.node;
+    if (!node) return;
+    const { ctx } = this;
+    const size = this.tileSize * view.scale;
+    // A grid finer than about three pixels per cell reads as a flat wash over
+    // the terrain rather than as lines.
+    if (size < 3) return;
+    const minX = Math.max(0, Math.floor(-view.offsetX / size));
+    const minY = Math.max(0, Math.floor(-view.offsetY / size));
+    const maxX = Math.min(node.width, Math.ceil((view.canvasWidth - view.offsetX) / size));
+    const maxY = Math.min(node.height, Math.ceil((view.canvasHeight - view.offsetY) / size));
+    const left = minX * size + view.offsetX;
+    const right = maxX * size + view.offsetX;
+    const top = minY * size + view.offsetY;
+    const bottom = maxY * size + view.offsetY;
+
+    ctx.save();
+    if (frame.revealedIds) {
+      const clip = new Path2D();
+      for (let y = minY; y < maxY; y++) {
+        for (let x = minX; x < maxX; x++) {
+          if (!tileAtXY(node, x, y)?.revealed) continue;
+          clip.rect(x * size + view.offsetX, y * size + view.offsetY, size, size);
+        }
+      }
+      ctx.clip(clip);
+    }
+    ctx.strokeStyle = 'rgba(36, 31, 22, 0.55)';
+    ctx.lineWidth = 1;
+    // One path for every line, so the whole grid costs one stroke call.
+    ctx.beginPath();
+    for (let x = minX; x <= maxX; x++) {
+      const sx = Math.round(x * size + view.offsetX) + 0.5;
+      ctx.moveTo(sx, top);
+      ctx.lineTo(sx, bottom);
+    }
+    for (let y = minY; y <= maxY; y++) {
+      const sy = Math.round(y * size + view.offsetY) + 0.5;
+      ctx.moveTo(left, sy);
+      ctx.lineTo(right, sy);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /**
    * Draw one visible tile: the per-cell body of _renderTiles.
    * @param {MapView} view
    * @param {import('../types/map.js').Tile} tile
@@ -321,8 +376,8 @@ export class MapRenderer {
     // as-yet-unpainted cell, has an empty base. Let the map backdrop show
     // through instead of drawing a placeholder under the path.
     if (tile.imageRef && !groupCover.has(tile.id)) {
-      const img = this._getImage(tile.imageRef);
-      if (img.complete && img.naturalWidth > 0) {
+      const img = this._raster.source(tile.imageRef, size, size);
+      if (img) {
         ctx.drawImage(img, sx, sy, size, size);
       } else {
         ctx.fillStyle = '#333';
@@ -334,10 +389,8 @@ export class MapRenderer {
     // sit on sand or snow instead of replacing the tile beneath it. A stack
     // draws bottom-up, for example a river channel over its shoreline.
     for (const ref of overlayList(tile)) {
-      const overlay = this._getImage(ref);
-      if (overlay.complete && overlay.naturalWidth > 0) {
-        ctx.drawImage(overlay, sx, sy, size, size);
-      }
+      const overlay = this._raster.source(ref, size, size);
+      if (overlay) ctx.drawImage(overlay, sx, sy, size, size);
     }
 
     // A drawn tile carrying a POI type gets a prominent outline. A POI

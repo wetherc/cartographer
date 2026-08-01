@@ -82,7 +82,14 @@ export async function renderNodeToCanvas(node, options = {}) {
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas 2d context unavailable.');
 
-  const renderer = new MapRenderer(ctx, { tileSize, getNodeName: options.getNodeName });
+  // Rasterization off: this pass draws each ref once, so a pixel cache saves
+  // nothing, and an exported handout must come from the vector art at full
+  // size rather than through a quantized raster.
+  const renderer = new MapRenderer(ctx, {
+    tileSize,
+    getNodeName: options.getNodeName,
+    rasterize: false,
+  });
   const refs = collectImageRefs(node);
   // Seed from the live cache first, then fill the gaps. Copy the entries in
   // instead of sharing the cache, so the export never writes into the cache

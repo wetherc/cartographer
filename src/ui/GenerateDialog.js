@@ -1,4 +1,5 @@
 import { MapRenderer } from '../map/MapRenderer.js';
+import { TileRaster } from '../map/TileRaster.js';
 import { randomSeed } from '../util/Rng.js';
 import { clampInt } from '../util/num.js';
 import { textButton } from './buttons.js';
@@ -91,11 +92,10 @@ export function generateDialog(options) {
 
       const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
       // tileSize depends on the candidate's grid size, so it is set per
-      // render, and the renderer rebuilds per draw. Its image cache acts
-      // as module-level only for the lifetime of the dialog, which is
-      // fine for a preview.
-      /** @type {Map<string, HTMLImageElement>} */
-      const imageCache = new Map();
+      // render, and the renderer rebuilds per draw. The image and raster
+      // caches live as long as the dialog, so a rerender neither reloads art
+      // nor rasterizes it again.
+      const raster = new TileRaster({ onLoad: () => renderPreview() });
 
       readChoice = () => ({
         archetype: archetypeSelect.value,
@@ -111,8 +111,7 @@ export function generateDialog(options) {
           1,
           Math.floor(canvas.width / Math.max(candidate.width, candidate.height)),
         );
-        const renderer = new MapRenderer(ctx, { tileSize, onImageLoad: renderPreview });
-        renderer.imageCache = imageCache; // shares loads across rerenders
+        const renderer = new MapRenderer(ctx, { tileSize, raster });
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         renderer.render({
           canvasWidth: canvas.width,

@@ -158,7 +158,8 @@ The canvas code splits so that each file owns one concern:
     owns the <canvas> and the view state: node, pan/zoom,
     markers, selection
     |
-    +-- MapRenderer ......... terrain / fog / region passes
+    +-- MapRenderer ......... terrain / fog / grid / region passes
+    |     +-- TileRaster ....... tile art, rasterized once per drawn size
     |     +-- MapMarkers ....... party, encounter, NPC, token markers
     |     +-- MapDecorations ... cursor, marquee, selection, POI,
     |                            coordinate chrome
@@ -178,6 +179,30 @@ The core of the draw pass is simple: for each tile, draw a fog rectangle if
 the tile is not revealed. Otherwise, draw the image at `tile.imageRef`. The
 group, span, and marker passes described elsewhere on this page add to that
 base.
+
+Tile art does not come straight from the SVG file. `TileRaster`
+(`src/map/TileRaster.js`) draws each image ref once into an offscreen canvas at
+the size the map draws it, and every later frame copies those pixels. A canvas
+re-rasterizes an SVG on every `drawImage` call, and Build mode draws every tile
+in the node, so a 40x40 map used to run about 1,600 rasterizations per frame.
+That cost 769 ms of script for one paint stroke across the example world, and it
+now costs 29 ms.
+
+The raster is the same size as the tile on screen, down to the pixel. An earlier
+version rounded the size up to a power of two to hold fewer rasters. That
+averaged away the hairline strokes in the art, such as the grid lines on grass
+and the ripples on water, and the whole map went flat at the zoom that fits it
+on screen. A destination wider than 256 pixels skips the cache and draws the
+vector art, so one large landmark stays crisp at high zoom, and the cache drops
+itself once it holds 32 MB.
+
+The one-pixel grid along the cell boundaries is drawn by
+`MapRenderer._renderCellGrid`. It was not always drawn. The SVG rasterizer left
+the outermost pixel row of each tile partly transparent, so the dark map
+backdrop showed through at every boundary, and the grid was a side effect of
+that. A cached raster fills those pixels, so the grid is explicit now. The pass
+is clipped to the revealed cells, because a flat fog rectangle never showed the
+backdrop through and so never carried a grid.
 
 A pointerup counts as a tile click only if the total drag distance stays
 below a small threshold. Without that check, a pointer that ends a pan
