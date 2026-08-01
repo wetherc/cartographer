@@ -29,6 +29,14 @@ test('slugify gives two spellings of the same name the same id', () => {
   assert.equal(slugify('Healing potion'), slugify('  HEALING   POTION '));
 });
 
+test('slugify collapses punctuation too, and trims the dashes it makes', () => {
+  assert.equal(slugify("  D'artagnan the 3rd! "), 'd-artagnan-the-3rd');
+  assert.equal(slugify('Potion of Healing (Greater)'), 'potion-of-healing-greater');
+  // Nothing usable is left, so the caller decides on a fallback. Roster's
+  // slugId is the one that supplies "entry".
+  assert.equal(slugify('!!!'), '');
+});
+
 test('splitList reads the comma-joined convention, dropping empty segments', () => {
   assert.deepEqual(splitList('a,b,c'), ['a', 'b', 'c']);
   assert.deepEqual(splitList('a,,c'), ['a', 'c']);

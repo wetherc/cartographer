@@ -228,8 +228,12 @@ export function mountInventoryPanel(
             const character = current;
             if (!character) return;
             // The id comes from the name, so adding the same item twice
-            // stacks quantity onto the existing row instead of making a duplicate.
-            const id = slugify(fields.name);
+            // stacks quantity onto the existing row instead of making a
+            // duplicate. This is why the panel slugifies instead of calling
+            // `slugId`: a roster id has to be unique, and a stack id has to
+            // repeat. A name of punctuation alone slugifies to nothing, so
+            // "item" stands in and keeps the row addressable.
+            const id = slugify(fields.name) || 'item';
             commit(addItem(character, { ...fields, id }), {
               verb: 'pickup',
               itemName: fields.name,

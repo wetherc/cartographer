@@ -15,13 +15,21 @@ export function capitalize(text) {
 
 /**
  * Derive an id from a name: "Healing Potion" becomes "healing-potion". Use
- * this where a GM-typed name must become a key. Runs of whitespace collapse
- * to one dash instead of several.
+ * this where a GM-typed name must become a key. Every run of characters that
+ * an id cannot hold, whitespace and punctuation alike, collapses to one dash,
+ * and the leading and trailing dashes come off. A name with no usable
+ * characters gives an empty string. This is the one slug rule in the app.
+ * `Roster.slugId` adds the "entry" fallback and the collision suffix on top
+ * of it.
  * @param {string} name
  * @returns {string}
  */
 export function slugify(name) {
-  return name.trim().toLowerCase().replace(/\s+/g, '-');
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 }
 
 /**

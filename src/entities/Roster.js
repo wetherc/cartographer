@@ -5,23 +5,21 @@
  * helpers, so id-collision and list-update rules live in one tested place.
  */
 
+import { slugify } from '../util/text.js';
+
 /**
- * Derive a kebab-case id from a display name. If the id collides with an
- * existing id, add a suffix (`-2`, `-3`, and so on) until the id matches
- * none of the existing ids. A name with no usable characters falls back to
- * "entry".
+ * Derive a kebab-case id from a display name, unique against the ids already
+ * in use. `util/text.js` `slugify` supplies the kebab-case rule. This function
+ * adds the two parts a roster needs on top of it: a name with no usable
+ * characters falls back to "entry", and an id that collides with an existing
+ * one takes a suffix (`-2`, `-3`, and so on) until it matches none of them.
  * @param {string} name
  * @param {Iterable<string>} existingIds
  * @returns {string}
  */
 export function slugId(name, existingIds) {
   const taken = new Set(existingIds);
-  const base =
-    name
-      .trim()
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '') || 'entry';
+  const base = slugify(name) || 'entry';
   if (!taken.has(base)) return base;
   let n = 2;
   while (taken.has(`${base}-${n}`)) n += 1;
