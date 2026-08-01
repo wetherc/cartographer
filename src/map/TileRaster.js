@@ -39,7 +39,8 @@ const BYTE_LIMIT = 32 * 1024 * 1024;
  * A vector rasterizer keeps a hairline visible at any size, but a 32-pixel
  * raster scaled down to 17.8 pixels averages it away, and the whole map goes
  * flat at the zoom that fits it on screen. Rastering at the destination size
- * makes the pixels identical to what the SVG produced.
+ * keeps the hairlines: a fractional destination still scales the raster down
+ * by the sub-pixel remainder of the ceil, which softens nothing visible.
  *
  * A zoom sweep therefore does mint a raster per zoom level. That costs one
  * rasterization pass per level, which is what the SVG path paid on every

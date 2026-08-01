@@ -168,7 +168,11 @@ export function mountLibraryPanel(container, callbacks) {
       // `getEntries` builds a fresh row object per entry, so the identity
       // guard already misses on every read and the filter gets its repaint
       // per keystroke. The one thing outside the rows is the empty
-      // message, which names the filter when there is one.
+      // message, which differs between a filtered and an unfiltered list.
+      // Only that boolean is in the guard. If the message ever names the
+      // filter text, put the text itself here: two filters that both match
+      // nothing produce equal empty row lists, and the boolean would then
+      // leave a stale name on screen.
       dependsOn: () => filter.trim() !== '',
     });
   }
