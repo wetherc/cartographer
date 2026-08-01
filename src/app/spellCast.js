@@ -39,7 +39,7 @@ import { splitTrimmedList } from '../util/text.js';
  * @param {Spell} spell
  * @returns {{ id: string, name: string, ac: number }[]}
  */
-function combatTargets(app, combat, caster, spell) {
+export function combatTargets(app, combat, caster, spell) {
   const kind = spell.effect.kind;
   if (kind === 'utility') return [];
   return combatantsAsTargets(app, combat, caster, { allies: kind === 'heal' });
@@ -60,7 +60,7 @@ function combatTargets(app, combat, caster, spell) {
  * @param {Spell} spell
  * @returns {{ id: string, name: string, ac: number }[]}
  */
-function rosterTargets(app, spell) {
+export function rosterTargets(app, spell) {
   const { state } = app;
   const kind = spell.effect.kind;
   if (kind === 'utility') return [];
@@ -343,49 +343,51 @@ export async function castSpellOutOfCombat(app, caster, spell) {
 }
 
 /**
- * The shared cast pipeline behind both entry points. This mirrors
- * `weaponAttack`. A pre-roll dialog picks the slot level, the target, and
- * situational modes. Then the pure `castSpell` resolver rolls the effect,
- * and this function applies the result and logs it. A caster with no spell
- * ability falls back to a flat DC 10 and a +0 attack bonus.
+ * Everything a cast needs to work out before it can open a dialog: the caster
+ * view, the targets with their save bonuses filled in, the spendable slot
+ * levels, the save DC, the target cap, the component check, and the dialog's
+ * own field list. Nothing here touches the DOM, so the whole pre-dialog
+ * decision is testable.
  *
- * The function reads the caster entity through `toCaster`, so a party
- * Character, a foe Encounter, and an NPC all resolve the same way. When a
- * slot is spent, `withCasterState` splices the change back onto the real
- * entity, and the caller's `writeBack` function stores it in the right
- * collection. Damage or healing lands on each target the same way a weapon
- * hit does: encounters and characters track HP, and an NPC with no HP field
- * keeps only the log line.
- *
- * A caster from a class with ritual casting can cast a spell with a ritual
- * for the extra ten minutes instead of a slot. This spends nothing and
- * writes nothing back. A concentration spell cast by a party character
- * starts that character concentrating and ends whatever spell it held before.
- * @template {import('../types/entities.js').Character
- *   | import('../types/entities.js').Encounter
- *   | import('../types/npc.js').NPC} T
+ * A refusal comes back as `{ ok: false, message }` and the caller shows the
+ * message. There are two refusals: nothing to target, and no slot high enough
+ * for a leveled spell.
+ * @typedef {{ ok: false, message: string }} CastRefused
+ * @typedef {{
+ *   ok: true,
+ *   entity: any,
+ *   spell: Spell,
+ *   caster: import('../types/entities.js').SpellCaster,
+ *   targets: import('./combatants.js').CombatTarget[],
+ *   saveAbility: import('../types/spell.js').Ability | null,
+ *   slotLevels: number[],
+ *   sourceClass: string | undefined,
+ *   dc: number,
+ *   material: ReturnType<typeof materialCheck>,
+ *   fields: import('../types/modal.js').ModalField[],
+ * }} CastPlan
+ */
+
+/**
+ * Work out the pre-dialog half of a cast. A caster with no spell ability
+ * falls back to a flat DC 10. The caster entity is read through `toCaster`,
+ * so a party Character, a foe Encounter, and an NPC all resolve the same way.
+ * A caster from a class with ritual casting is offered the ritual box, which
+ * trades the slot for extra time.
  * @param {AppContext} app
- * @param {T} entity the real combatant that casts the spell
+ * @param {any} entity the real combatant that casts the spell
  * @param {Spell} spell
  * @param {import('./combatants.js').CombatTarget[]} offered
- * @param {(next: T) => void} writeBack stores the updated entity
- * @param {boolean} concentrates true when this caster can hold a spell open.
- *   Only a party character can, because an encounter and an NPC have no
- *   concentration field. The call site passes this value, because it
- *   already knows the combatant kind.
- * @param {string | null} [preferredTargetId] a target picked before the
- *   dialog opened, from the combat board selection. The dialog pre-fills
- *   this target where it is offered.
+ * @returns {CastPlan | CastRefused}
  */
-async function runCast(app, entity, spell, offered, writeBack, concentrates, preferredTargetId) {
+export function castPlan(app, entity, spell, offered) {
   // The pure spell helper functions take a `SpellCaster`: a caster's class,
   // level, stats, resources, and spellbook. This is exactly what `toCaster`
   // returns. The helpers read this view, and the code writes back only to
   // the real entity.
   const caster = toCaster(entity);
   if (spell.effect.kind !== 'utility' && offered.length === 0) {
-    app.toasts.show('No target available.');
-    return;
+    return { ok: false, message: 'No target available.' };
   }
   // Each target of a save spell gets its own bonus where the app can read
   // one. The dialog shows what a target will add, and the resolver rolls it.
@@ -433,35 +435,80 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
     ritual: ritualOffered,
   });
   if (!fields) {
-    app.toasts.show(`No level ${spell.level}+ slot left for ${spell.name}.`);
-    return;
+    return { ok: false, message: `No level ${spell.level}+ slot left for ${spell.name}.` };
   }
-  if (preferredTargetId) prefillTarget(fields, preferredTargetId);
+  return {
+    ok: true,
+    entity,
+    spell,
+    caster,
+    targets,
+    saveAbility,
+    slotLevels,
+    sourceClass,
+    dc,
+    material,
+    fields,
+  };
+}
 
-  // A projectile spell fires a different number of projectiles at each slot
-  // level, and its allocation must add up to that number. The grid is
-  // restated whenever the level changes, including when the ritual box
-  // changes it, because a ritual always resolves at the spell's own level.
+/**
+ * The dialog's live response to a changed slot level. A projectile spell
+ * fires a different number of projectiles at each slot level, and its
+ * allocation must add up to that number, so the grid's total and caption are
+ * restated whenever the level changes. Ticking the ritual box also changes
+ * the level, because a ritual always resolves at the spell's own level, and
+ * it hides the slot picker it overrides.
+ *
+ * This takes the form as an interface, not as elements, so a fake form
+ * records what a change would do to the dialog.
+ * @param {CastPlan} plan
+ * @returns {(name: string, form: import('../types/modal.js').ModalFormHandle) => void}
+ */
+export function castChangeHandler(plan) {
+  const { spell, caster, slotLevels, fields } = plan;
   const allocates = fields.some((f) => f.name === 'allocation');
-  const values = await promptModal(`Cast ${spell.name}`, fields, {
-    submitLabel: 'Cast',
-    wide: true,
-    onChange: (name, form) => {
-      if (name !== 'slot' && name !== 'ritual') return;
-      const asRitual = form.get('ritual') === '1';
-      if (name === 'ritual' && slotLevels.length > 0) form.setHidden('slot', asRitual);
-      if (!allocates) return;
-      const total = castCap(
-        spell,
-        effectiveSlot(spell, form.get('slot'), asRitual),
-        caster.level ?? 1,
-      );
-      form.setTotal('allocation', total);
-      form.setLabel('allocation', allocationLabel(total));
-    },
-  });
-  if (!values) return;
+  return (name, form) => {
+    if (name !== 'slot' && name !== 'ritual') return;
+    const asRitual = form.get('ritual') === '1';
+    if (name === 'ritual' && slotLevels.length > 0) form.setHidden('slot', asRitual);
+    if (!allocates) return;
+    const total = castCap(
+      spell,
+      effectiveSlot(spell, form.get('slot'), asRitual),
+      caster.level ?? 1,
+    );
+    form.setTotal('allocation', total);
+    form.setLabel('allocation', allocationLabel(total));
+  };
+}
 
+/**
+ * Resolve a cast from the dialog's answers, then write back and apply what it
+ * did. This is everything the cast does once the GM has submitted, so it runs
+ * and is tested without a browser.
+ *
+ * The pure `castSpell` resolver rolls the effect, and this function applies
+ * the result and logs it. When a slot is spent, `withCasterState` splices the
+ * change back onto the real entity, and the caller's `writeBack` function
+ * stores it in the right collection. Damage or healing lands on each target
+ * the same way a weapon hit does: encounters and characters track HP, and an
+ * NPC with no HP field keeps only the log line. A ritual spends nothing and
+ * writes nothing back. A concentration spell cast by a party character starts
+ * that character concentrating and ends whatever spell it held before.
+ * @param {AppContext} app
+ * @param {CastPlan} plan
+ * @param {Record<string, string>} values the dialog's answers
+ * @param {{ writeBack: (next: any) => void, concentrates: boolean, rng?: () => number }} opts
+ *   `writeBack` stores the updated entity. `concentrates` is true when this
+ *   caster can hold a spell open. Only a party character can, because an
+ *   encounter and an NPC have no concentration field. The call site passes
+ *   this value, because it already knows the combatant kind. `rng` is the
+ *   source for every roll the cast makes, injected the way the pure modules
+ *   take theirs.
+ */
+export function resolveCast(app, plan, values, { writeBack, concentrates, rng = Math.random }) {
+  const { entity, spell, caster, targets, saveAbility, sourceClass, dc, material } = plan;
   const asRitual = values.ritual === '1';
   const slotLevel = spell.level > 0 ? effectiveSlot(spell, values.slot, asRitual) : spell.level;
   const mode = /** @type {import('../types/dice.js').RollMode} */ (values.mode ?? 'normal');
@@ -494,6 +541,7 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
     saveDC,
     attackMode: spell.effect.kind === 'attack' ? mode : 'normal',
     ritual: asRitual,
+    rng,
   });
   if (!result.ok) {
     // A dialog opened with only the ritual box submits with no slot to
@@ -528,8 +576,10 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
     // Only a Character reaches here with an inventory. `materialCheck`
     // already requires one.
     if (consumed) {
-      next = /** @type {T} */ (
-        removeItem(/** @type {import('../types/entities.js').Character} */ (next), consumed.id, 1)
+      next = removeItem(
+        /** @type {import('../types/entities.js').Character} */ (next),
+        consumed.id,
+        1,
       );
     }
     if (holds) {
@@ -538,7 +588,7 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
         spell,
         result.slotLevel,
       );
-      next = /** @type {T} */ (started.character);
+      next = started.character;
       displaced = started.dropped;
     }
     writeBack(next);
@@ -571,6 +621,41 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
   }
 
   applyOutcomes(app, spell, result, entity.id);
+}
+
+/**
+ * The shared cast pipeline behind both entry points. This mirrors
+ * `weaponAttack`: `castPlan` works out what the dialog offers, the dialog
+ * takes the slot level, the target, and the situational modes, and
+ * `resolveCast` rolls and applies the cast. The dialog is the only part of
+ * the pipeline that needs a browser.
+ * @template {import('../types/entities.js').Character
+ *   | import('../types/entities.js').Encounter
+ *   | import('../types/npc.js').NPC} T
+ * @param {AppContext} app
+ * @param {T} entity the real combatant that casts the spell
+ * @param {Spell} spell
+ * @param {import('./combatants.js').CombatTarget[]} offered
+ * @param {(next: T) => void} writeBack stores the updated entity
+ * @param {boolean} concentrates true when this caster can hold a spell open
+ * @param {string | null} [preferredTargetId] a target picked before the
+ *   dialog opened, from the combat board selection. The dialog pre-fills
+ *   this target where it is offered.
+ */
+async function runCast(app, entity, spell, offered, writeBack, concentrates, preferredTargetId) {
+  const plan = castPlan(app, entity, spell, offered);
+  if (!plan.ok) {
+    app.toasts.show(plan.message);
+    return;
+  }
+  if (preferredTargetId) prefillTarget(plan.fields, preferredTargetId);
+  const values = await promptModal(`Cast ${spell.name}`, plan.fields, {
+    submitLabel: 'Cast',
+    wide: true,
+    onChange: castChangeHandler(plan),
+  });
+  if (!values) return;
+  resolveCast(app, plan, values, { writeBack, concentrates });
 }
 
 /**
@@ -608,7 +693,7 @@ export function prefillTarget(fields, targetId) {
  * @param {Record<string, string>} values
  * @returns {import('../entities/Casting.js').CastTarget[]}
  */
-function chosenTargets(targets, values) {
+export function chosenTargets(targets, values) {
   if (values.allocation !== undefined) {
     const assigned = parseAssignments(values.allocation);
     return targets
@@ -627,7 +712,7 @@ function chosenTargets(targets, values) {
  * @param {{ name?: string }[]} targets
  * @returns {string}
  */
-function targetSummary(targets) {
+export function targetSummary(targets) {
   if (targets.length === 1) return targets[0].name ?? '';
   return `${targets.length} targets`;
 }
@@ -645,7 +730,7 @@ function targetSummary(targets) {
  *   cast imposes, so the app can find the effect again when the caster stops
  *   holding the spell
  */
-function applyOutcomes(app, spell, result, casterId) {
+export function applyOutcomes(app, spell, result, casterId) {
   const kind = spell.effect.kind;
   const summary = targetSummary(result.targets);
   if (kind === 'attack') {
