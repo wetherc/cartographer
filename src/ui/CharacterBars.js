@@ -4,20 +4,21 @@ import { barReadout, pipReadout, slotColumnLabel, slotLineReadout } from '../vie
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
 /**
- * Build a stat bar (HP) shown on the card's head, one full-width line per pool:
- * a visible label, the fill track, and the numbers. Absence of the pool (older
- * saves) renders no bar rather than a fake full one.
+ * Build a stat bar (HP) shown on the card's head. Each pool gets one
+ * full-width line with a label, a fill track, and the numbers. If the pool
+ * is absent, for example in an older save, the bar does not draw at all.
  *
- * The returned `update` rewrites the fill, the numbers, and the label for a new
- * value of the same pool, so ticking HP touches four properties instead of
+ * update rewrites the fill, the numbers, and the label for a new value of
+ * the same pool. A tick of HP changes four properties instead of
  * rebuilding the line.
  * @param {ResourcePool} pool
  * @param {{ modifier: string, label: string, critical?: boolean, bonus?: number,
  *   flank?: { before: HTMLElement, after: HTMLElement } }} opts
- *   `modifier` selects the fill colour; `critical` arms the low-fill red
- *   state; `bonus` appends a "+N" readout for temporary points on top of the
- *   pool (bonus HP); `flank` places a control on either side of the track
- *   (damage/heal steppers), keeping the numeric readout after them.
+ *   modifier selects the fill color. critical turns on the low-fill red
+ *   state. bonus appends a plus-N readout for temporary points on top of
+ *   the pool, for example bonus HP. flank places a control, for example a
+ *   damage or heal stepper, on each side of the track, and keeps the
+ *   numeric readout after them.
  * @returns {{ element: HTMLElement, update: (pool: ResourcePool, bonus: number) => void }}
  */
 export function buildStatBar(pool, opts) {
@@ -34,8 +35,8 @@ export function buildStatBar(pool, opts) {
   );
   if (!opts.flank) wrap.setAttribute('role', 'img');
 
-  // The bonus readout only exists while there is a bonus, so it is created and
-  // removed by `update` rather than hidden.
+  // The bonus readout exists only while there is a bonus. update creates
+  // and removes it instead of hiding it.
   /** @type {HTMLElement | null} */
   let bonusEl = null;
 
@@ -62,24 +63,27 @@ export function buildStatBar(pool, opts) {
 }
 
 /**
- * Compact spell-slot readout: a column per spell level, the ordinal centered
- * above a two-wide grid of pips, filled pips being the slots still unspent.
- * Columns wrap under the pip area (not the label) when a high-level caster
- * outgrows the card width. With `onToggle` each pip is a button: clicking a
- * filled pip spends a slot of that level, clicking an empty one restores one
- * (slots drain and refill left to right, so it reads as toggling that pip).
- * Without it (a spectator's view) the line is a plain readout.
- * `allowRestore` false keeps the spend half and disables the empty pips, which
- * is a player's view of their own slots: they may cast, but getting a slot back
- * is the GM's to grant.
- * A non-caster (no slot pools) renders nothing.
+ * A compact spell-slot readout. It shows one column per spell level, with
+ * the ordinal centered above a two-wide grid of pips. A filled pip is a
+ * slot still unspent. Columns wrap under the pip area, not the label, when
+ * a high-level caster outgrows the card width.
  *
- * `update` takes the same pools with new `current` values and re-points the
- * pips. It assumes the maxima are unchanged, since the pip count comes from
- * them; a caster who gains a slot gets a rebuilt line instead.
+ * If onToggle is set, each pip is a button. A click on a filled pip spends
+ * a slot of that level. A click on an empty pip restores one. Slots drain
+ * and refill from left to right, so this reads as toggling that pip.
+ * Without onToggle, for a spectator's view, the line is a plain readout.
+ *
+ * If allowRestore is false, the line keeps the spend half but disables the
+ * empty pips. This is a player's view of their own slots: a player can
+ * cast, but only the GM can grant a slot back. A non-caster with no slot
+ * pools gets no line.
+ *
+ * update takes the same pools with new current values and moves the pips
+ * to match. It assumes the maxima are unchanged, since the pip count comes
+ * from them. A caster who gains a slot needs a rebuilt line instead.
  * @param {ResourcePool[]} pools
  * @param {((pool: ResourcePool, spent: boolean) => void) | null} onToggle
- * @param {boolean} [allowRestore] whether clicking an empty pip may put a slot back
+ * @param {boolean} [allowRestore] whether clicking an empty pip can put a slot back
  * @returns {{ element: HTMLElement, update: (pools: ResourcePool[]) => void }}
  */
 export function buildSlotLine(pools, onToggle, allowRestore = true) {
@@ -90,8 +94,8 @@ export function buildSlotLine(pools, onToggle, allowRestore = true) {
     el('span', 'stat-bar__label u-muted', 'Slots'),
     groups,
   );
-  // One pip element per slot, in pool order, so `update` can walk pools and
-  // pips together without reading the DOM's shape back.
+  // Each pip element matches one slot, in pool order. update can walk
+  // pools and pips together without reading the shape of the DOM.
   /** @type {HTMLElement[][]} */
   const pipsByPool = [];
   for (const pool of pools) {
@@ -105,8 +109,8 @@ export function buildSlotLine(pools, onToggle, allowRestore = true) {
       if (onToggle) {
         pip = el('button', 'slot-line__pip');
         pip.setAttribute('type', 'button');
-        // The pool this pip belongs to is read at click time, so a spend acts
-        // on the live counts rather than the ones present when it was built.
+        // The pool for this pip is read at click time. A spend acts on the
+        // live counts, not the counts present when the pip was built.
         const index = pipsByPool.length;
         pip.addEventListener('click', () => {
           const live = livePools[index];

@@ -1,14 +1,14 @@
 /**
- * The four composite fields a form dialog can hold: the checkbox group, the tag
- * entry, the assignment pill grid, and the distribution grid. Each owns its own
- * working state and its own rendering, which is what made them the bulk of
- * `Modal.js`'s field switch;
- * split out here they follow the same `{ element, get, set }` contract as the
- * item form's list editors, so `Modal.js` treats a composite field as one value
- * and the pickers are reusable outside a dialog.
+ * This file holds the four composite fields a form dialog can hold: the
+ * checkbox group, the tag entry, the assignment pill grid, and the
+ * distribution grid. Each field owns its own working state and its own
+ * rendering. These fields formed the bulk of `Modal.js`'s field switch before
+ * this split. Each field follows the same `{ element, get, set }` contract as
+ * the item form's list editors. This lets `Modal.js` treat a composite field
+ * as one value, and lets the pickers work outside a dialog too.
  *
- * Every builder reports edits by letting an `input` event reach `element`, which
- * is what a dialog's `onChange` listens on.
+ * Every builder reports edits by letting an `input` event reach `element`.
+ * A dialog's `onChange` listens on that event.
  */
 
 import { emptyState, removableChip } from './buttons.js';
@@ -20,10 +20,11 @@ import { splitList, splitTrimmedList } from '../util/text.js';
 
 /**
  * A scrollable checkbox group whose value is the comma-joined checked values.
- * `max` caps the picks by disabling the unchecked boxes once reached;
- * `fixedHeight` pins the box's height so a refilter doesn't reflow the dialog,
- * with `emptyText` filling it while there are no options. `className` overrides
- * the box's classes for a caller mounting it outside a dialog.
+ * `max` caps the picks: it disables the unchecked boxes once the cap is
+ * reached. `fixedHeight` pins the box's height, so a refilter does not reflow
+ * the dialog, and `emptyText` fills the box while there are no options.
+ * `className` overrides the box's classes for a caller that mounts it outside
+ * a dialog.
  * @param {{
  *   options?: FieldOption[],
  *   value?: string,
@@ -43,8 +44,8 @@ export function buildMultiselect(spec) {
 
   /** @type {HTMLInputElement[]} */
   let checks = [];
-  /** The option set currently rendered, so `set` can write a new selection over
-   * it without the caller restating the options. */
+  /** The option set now on screen. `set` uses this to write a new selection
+   * over it without the caller restating the options. */
   let current = spec.options ?? [];
   let max = spec.max ?? Infinity;
 
@@ -53,8 +54,8 @@ export function buildMultiselect(spec) {
     for (const check of checks) check.disabled = full && !check.checked;
   };
 
-  // Rebuild the checkbox rows for a fresh option set, checking those in
-  // `selected`. Reused by the initial render and by every refilter.
+  // Rebuild the checkbox rows for a fresh option set, and check the options in
+  // `selected`. The initial render and every refilter reuse this function.
   const render = (/** @type {FieldOption[]} */ options, /** @type {Set<string>} */ selected) => {
     element.textContent = '';
     current = options;
@@ -83,8 +84,9 @@ export function buildMultiselect(spec) {
         .map((c) => c.value)
         .join(','),
     set: (value) => render(current, new Set(splitList(value))),
-    // A refilter keeps whatever is currently checked, even if it drops out of
-    // the new option set, so a valid pick isn't silently lost mid-edit.
+    // A refilter keeps whatever is now checked, even when a checked option
+    // drops out of the new option set. This keeps a valid pick from being
+    // lost mid-edit.
     setOptions: (options, newMax) => {
       if (newMax !== undefined) max = newMax;
       render(options, new Set(checks.filter((c) => c.checked).map((c) => c.value)));
@@ -93,10 +95,10 @@ export function buildMultiselect(spec) {
 }
 
 /**
- * A pill list with an inline text entry: Enter finalizes the typed text as a
- * pill, the x removes one, Backspace in an empty entry removes the last. The
- * value is the comma-joined pills plus any un-finalized text, so nothing typed
- * is lost on submit.
+ * A pill list with an inline text entry. Enter finalizes the typed text as a
+ * pill. The x removes one pill. Backspace in an empty entry removes the last
+ * pill. The value is the comma-joined pills plus any un-finalized text, so
+ * submit loses nothing typed.
  * @param {{ value?: string }} spec
  * @returns {CompositeField}
  */
@@ -124,7 +126,7 @@ export function buildTagsField(spec) {
 
   entry.addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
-      event.preventDefault(); // finalize the pill, don't submit the dialog
+      event.preventDefault(); // Finalize the pill. Do not submit the dialog.
       const text = entry.value.trim();
       if (text && !tags.includes(text)) tags.push(text);
       entry.value = '';
@@ -150,11 +152,12 @@ export function buildTagsField(spec) {
 }
 
 /**
- * An assignment grid: each row (e.g. an ability) holds at most one of the option
- * values (e.g. the standard array), and every value is held by at most one row.
- * Clicking assigns, clicking the held pill un-assigns, and clicking a pill
- * another row holds moves it here. The value is the comma-joined `row:value`
- * pairs of the assigned rows.
+ * An assignment grid. Each row, for example an ability, holds at most one of
+ * the option values, for example an entry from the standard array. Every
+ * value belongs to at most one row. A click assigns a value. A click on the
+ * held pill un-assigns it. A click on a pill another row holds moves that
+ * pill to this row. The value is the comma-joined `row:value` pairs of the
+ * assigned rows.
  * @param {{ options?: FieldOption[], rows?: { value: string, label: string }[], value?: string }} spec
  * @returns {CompositeField}
  */
@@ -199,17 +202,18 @@ export function buildPillGrid(spec) {
 }
 
 /**
- * A distribution grid: one number input per row, and a live line saying how many
- * of `total` are still unassigned. The form will not submit until they sum to
- * exactly `total`, enforced through the first input's own validity so the
- * browser reports it the way it reports any other invalid field. The value is
- * the comma-joined `row:count` pairs, zeroed rows left out.
+ * A distribution grid: one number input per row, and a live line that states
+ * how many of `total` are still unassigned. The form will not submit until
+ * the rows sum to exactly `total`. The first input's own validity enforces
+ * this, so the browser reports the error the way it reports any other
+ * invalid field. The value is the comma-joined `row:count` pairs, with
+ * zeroed rows left out.
  *
- * `setTotal` restates how many there are to distribute, for a total another
- * field decides (the cast dialog's slot level, which sets how many projectiles a
- * spell fires). Raising it leaves the rows alone and asks for the difference;
- * lowering it trims from the last rows down, so what the GM assigned first
- * survives.
+ * `setTotal` restates how many items there are to distribute, for a total
+ * that another field decides, for example the cast dialog's slot level,
+ * which sets how many projectiles a spell fires. A raise leaves the rows
+ * alone and asks for the difference. A lowering trims from the last rows
+ * down, so the rows the GM assigned first keep their value.
  * @param {{
  *   rows?: FieldOption[],
  *   total?: number,
@@ -220,9 +224,9 @@ export function buildPillGrid(spec) {
  */
 export function buildAllocation(spec) {
   const element = el('div', 'modal__allocation u-col u-g1');
-  // The rows scroll and the remaining line does not, so a long target list can
-  // never push the one piece of feedback that says why Cast is refused out of
-  // sight.
+  // The rows scroll and the remaining line does not. A long target list can
+  // never push the one piece of feedback that explains why Cast is refused
+  // out of sight.
   const box = el('div', 'field modal__allocation-rows u-col u-g1');
   const rows = spec.rows ?? [];
   let total = Math.max(0, Math.floor(spec.total ?? 0));
@@ -237,8 +241,8 @@ export function buildAllocation(spec) {
     input.min = '0';
     input.max = String(total);
     input.value = '0';
-    // The row's name sits in a sibling span rather than a <label>, since this
-    // whole field is already mounted inside the dialog's field label.
+    // The row's name sits in a sibling span, not a <label>, because the whole
+    // field is already mounted inside the dialog's field label.
     input.setAttribute('aria-label', row.label);
     box.appendChild(
       el(
@@ -298,10 +302,11 @@ export function buildAllocation(spec) {
 }
 
 /**
- * Assign `value` to `row`, returning the new assignment map. Clicking the pill
- * the row already holds clears it. Clicking a pill another row holds swaps the
- * two rows' values, so a GM re-assigning a score never has to un-assign first,
- * and the row that loses it takes this row's old value rather than emptying.
+ * Assign `value` to `row`, and return the new assignment map. A click on the
+ * pill the row already holds clears the row. A click on a pill another row
+ * holds swaps the two rows' values. A GM who re-assigns a score never has to
+ * un-assign it first, and the row that loses the value takes this row's old
+ * value instead of becoming empty.
  * @param {Record<string, string>} assigned
  * @param {string} row
  * @param {string} value
@@ -324,7 +329,7 @@ export function assignPill(assigned, row, value) {
 }
 
 /**
- * Read the `row:value` pair list a pill grid stores its state as.
+ * Read the `row:value` pair list that a pill grid stores its state as.
  * @param {string} value
  * @returns {Record<string, string>}
  */
@@ -339,7 +344,7 @@ export function parseAssignments(value) {
 }
 
 /**
- * The inverse of `parseAssignments`.
+ * The reverse of `parseAssignments`.
  * @param {Record<string, string>} assigned
  * @returns {string}
  */

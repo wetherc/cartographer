@@ -1,11 +1,12 @@
 /**
- * Shared building blocks for the inline Library-rail authoring forms. The item,
- * spell, bestiary, and NPC-template editors all render inline in the rail (not
- * in a modal) and want the same captioned controls, row grouping, and
- * action-button pair; these are the primitives they build from, so the DOM
- * shape and class vocabulary stay identical across every form. `buildInlineForm`
- * assembles those primitives into the wrapper, name field, and action row all
- * four forms share, leaving each form only its own fields to describe.
+ * Shared building blocks for the inline Library-rail authoring forms. The
+ * item, spell, bestiary, and NPC-template editors all render inline in
+ * the rail, not in a modal, and want the same captioned controls, row
+ * grouping, and action-button pair. These are the primitives they build
+ * from, so the DOM shape and class vocabulary stay identical across every
+ * form. buildInlineForm assembles those primitives into the wrapper, name
+ * field, and action row that all four forms share, leaving each form
+ * only its own fields to describe.
  */
 
 import { clampInt } from '../util/num.js';
@@ -13,11 +14,11 @@ import { textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
 
 /**
- * The options every builder here accepts on top of its own. `className` is
- * appended to the builder's base class rather than replacing it, so a caller
- * that wants one sizing or layout modifier still gets the shared `field`
- * presentation. `ariaLabel` covers the controls that stand alone in a toolbar
- * with no visible caption to name them.
+ * The options every builder here accepts on top of its own. `className`
+ * is appended to the builder's base class, not a replacement for it, so a
+ * caller that wants one sizing or layout modifier still gets the shared
+ * `field` presentation. `ariaLabel` covers the controls that stand alone
+ * in a toolbar with no visible caption to name them.
  * @typedef {{ className?: string, ariaLabel?: string }} FieldOpts
  */
 
@@ -52,11 +53,11 @@ export function labeled(caption, control, opts = {}) {
 }
 
 /**
- * A horizontal grouping of related fields. Type-specific fields toggle in and
- * out per row, so appearing controls extend their own line instead of
- * reflowing the whole form. A caller needing a modifier class on the row builds
- * it with `el` instead; the variadic children are worth more here than an
- * options bag.
+ * A horizontal grouping of related fields. Type-specific fields toggle in
+ * and out per row, so an appearing control extends its own line instead
+ * of reflowing the whole form. A caller that needs a modifier class on
+ * the row builds it with `el` instead. The variadic children are worth
+ * more here than an options bag.
  * @param {...import('./dom.js').Child} children
  * @returns {HTMLDivElement}
  */
@@ -80,8 +81,8 @@ export function checkbox(caption, checked, opts = {}) {
 }
 
 /**
- * A text input pre-filled and classed as a form field. `type` covers the
- * search variant, which wants the browser's clear affordance.
+ * A text input, pre-filled and classed as a form field. `type` covers the
+ * search variant, which uses the browser's clear affordance.
  * @param {string} value
  * @param {string} [placeholder]
  * @param {FieldOpts & { type?: 'text' | 'search' }} [opts]
@@ -96,9 +97,9 @@ export function textField(value, placeholder = '', opts = {}) {
 }
 
 /**
- * A number input pre-filled and classed as a form field. An empty-string value
- * leaves the input blank, for an optional number whose placeholder stands in
- * for "unset".
+ * A number input, pre-filled and classed as a form field. An empty-string
+ * value leaves the input blank, for an optional number whose placeholder
+ * stands in for "unset".
  * @param {number | ''} value
  * @param {FieldOpts & { min?: number, max?: number, placeholder?: string }} [opts]
  * @returns {HTMLInputElement}
@@ -114,7 +115,7 @@ export function numberField(value, opts = {}) {
 }
 
 /**
- * A multi-line text input pre-filled and classed as a form field.
+ * A multi-line text input, pre-filled and classed as a form field.
  * @param {string} value
  * @param {FieldOpts & { placeholder?: string, rows?: number }} [opts]
  * @returns {HTMLTextAreaElement}
@@ -128,11 +129,12 @@ export function textareaField(value, opts = {}) {
 }
 
 /**
- * A <select> over the given options, pre-selected. Options are either bare
- * strings (value === label) or `{ value, label }` pairs, so the same helper
- * serves plain enum pickers and labelled choices (weapons, dispositions). An
- * option may be marked `disabled` for a choice that is shown but unavailable
- * (a spell level the character cannot yet cast).
+ * A <select> over the given options, pre-selected. An option is either a
+ * bare string, where value equals label, or a `{ value, label }` pair, so
+ * the same helper serves plain enum pickers and labeled choices, for
+ * example weapons or dispositions. An option can carry `disabled` for a
+ * choice that shows but is not available, for example a spell level the
+ * character cannot yet cast.
  * @param {(string | { value: string, label: string, disabled?: boolean })[]} options
  * @param {string} value
  * @param {FieldOpts} [opts]
@@ -145,9 +147,10 @@ export function select(options, value, opts = {}) {
 }
 
 /**
- * Replace a `<select>`'s options and selection. Pickers whose choices depend on
- * another field (the item form's preset list follows the item type) refill
- * themselves through this, so options are built in one place.
+ * Replace a `<select>`'s options and selection. A picker whose choices
+ * depend on another field, for example the item form's preset list
+ * following the item type, refills itself through this function, so
+ * options build in one place.
  * @param {HTMLSelectElement} picker
  * @param {(string | { value: string, label: string, disabled?: boolean })[]} options
  * @param {string} value
@@ -166,10 +169,11 @@ export function setOptions(picker, options, value) {
 }
 
 /**
- * The stat-block input group shared by the bestiary and NPC template forms:
- * one number field per key, laid out two per row so the block stays compact,
- * with the same clamped read-back the modal dialogs use. The caller keeps the
- * `statInputs` handles for change listeners (the bestiary form's re-stamping).
+ * The stat-block input group shared by the bestiary and NPC template
+ * forms: one number field per key, laid out two per row so the block
+ * stays compact, with the same clamped read-back the modal dialogs use.
+ * The caller keeps the `statInputs` handles for change listeners, for
+ * example the bestiary form's re-stamping.
  * @param {string[]} keys
  * @param {Record<string, number>} stats
  * @returns {{
@@ -192,11 +196,12 @@ export function statInputRows(keys, stats) {
 }
 
 /**
- * The envelope every inline authoring form shares. `nameInput` goes first and
- * gets the wide name-input styling, `rows` follow in order, and the action row
- * closes the form. Submitting reads the form through `assemble`, which returns
- * the finished value or null to refuse the submit; `afterSubmit` runs on an
- * accepted submit, for a form that clears itself to accept another entry.
+ * The envelope every inline authoring form shares. `nameInput` goes first
+ * and gets the wide name-input styling. `rows` follow in order, and the
+ * action row closes the form. Submitting reads the form through
+ * `assemble`, which returns the finished value, or null to refuse the
+ * submit. `afterSubmit` runs on an accepted submit, for a form that
+ * clears itself to accept another entry.
  * @template T
  * @param {{
  *   nameInput: HTMLInputElement,
@@ -226,8 +231,9 @@ export function buildInlineForm({
   const actions = formActions({
     submitLabel,
     onSubmit: () => {
-      // A nameless entry is unusable in every rail list, so no form submits one.
-      // Anything else a form needs to refuse it refuses by assembling to null.
+      // A nameless entry is unusable in every rail list, so no form
+      // submits one. A form refuses anything else it needs to by
+      // assembling to null.
       if (!nameInput.value.trim()) return;
       const fields = assemble();
       if (fields === null) return;
@@ -242,15 +248,16 @@ export function buildInlineForm({
 }
 
 /**
- * A form's action row: a primary submit button plus an optional cancel, both
- * text-labelled and same-sized (no icon set has a non-destructive "cancel"
- * glyph). `buildInlineForm` owns the only call, so every form's buttons are
- * ordered and styled alike.
+ * A form's action row: a primary submit button plus an optional cancel,
+ * both text-labeled and the same size. No icon set has a non-destructive
+ * "cancel" glyph. `buildInlineForm` owns the only call, so every form's
+ * buttons are ordered and styled alike.
  * @param {{ submitLabel: string, onSubmit: () => void, onCancel?: (() => void) | null }} opts
  * @returns {HTMLDivElement}
  */
 function formActions({ submitLabel, onSubmit, onCancel = null }) {
-  // Dismiss-left, primary-right, the same ordering as every modal.
+  // Dismiss sits on the left and primary on the right, the same ordering
+  // as every modal.
   return fieldRow(
     onCancel && textButton('Cancel', onCancel),
     textButton(submitLabel, onSubmit, { variant: 'primary' }),

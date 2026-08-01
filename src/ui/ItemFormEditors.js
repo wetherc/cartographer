@@ -7,23 +7,24 @@ import { clampInt } from '../util/num.js';
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 
 /**
- * The item form's two list editors — the structured damage-dice editor and
- * the inflicted-status-effects chips — split out of ItemForm.js, which keeps
- * the form layout and submit logic. Each is a self-contained widget: it owns
- * its working copy of the data and hands the form `element` to mount, `get`
- * to read the current value at submit, and `set` for the preset picker to
- * overwrite it.
+ * This module builds the item form's two list editors: the structured
+ * damage-dice editor and the inflicted-status-effects chips. It is split
+ * out of ItemForm.js, which keeps the form layout and submit logic. Each
+ * editor is a self-contained widget. It owns its working copy of the
+ * data, and hands the form `element` to mount, `get` to read the current
+ * value at submit, and `set` for the preset picker to overwrite it.
  */
 
 /**
- * The structured damage editor: one row per damage term (dice count, die
- * size, flat bonus, damage type). The first term is the weapon's base roll and
- * always present; later terms are removable riders added with the "+ damage"
- * button.
+ * The structured damage editor: one row per damage term, with dice count,
+ * die size, flat bonus, and damage type. The first term is the weapon's
+ * base roll and is always present. Later terms are removable riders added
+ * with the "+ damage" button.
  *
- * `fixType` pins every term to one type and drops the type picker, which is what
- * restorative dice want: healing has exactly one flavor, so offering the 13
- * damage types there only lets a GM author a heal spell that says "fire".
+ * `fixType` pins every term to one type and drops the type picker.
+ * Restorative dice want this: healing has exactly one flavor. Offering
+ * the 13 damage types there only lets a GM author a heal spell that
+ * says "fire".
  * @param {DamagePart[]} initial
  * @param {string | null} [fixType]
  * @returns {{
@@ -45,9 +46,9 @@ export function buildDamageEditor(initial, fixType = null) {
     damageParts.forEach((part, index) => {
       const row = el('div', 'u-row u-g1');
 
-      // A term with a flat bonus may roll no dice, so the count's floor follows
-      // the bonus rather than sitting at 1. Keeping the two in step here is what
-      // stops the editor handing back a term the normalizer would rewrite.
+      // A term with a flat bonus can roll no dice, so the count's floor
+      // follows the bonus, instead of sitting at 1. This keeps the editor
+      // from handing back a term the normalizer rewrites.
       const countInput = numberField(part.count, {
         className: 'inventory-panel__dice-count',
         ariaLabel: 'Number of dice',
@@ -71,9 +72,9 @@ export function buildDamageEditor(initial, fixType = null) {
         part.sides = Number(dieSelect.value);
       });
 
-      // The flat amount riding this term's dice, e.g. Magic Missile's 1d4+1. It
-      // is not doubled on a critical hit, which is where it differs from adding
-      // another die.
+      // This is the flat amount riding this term's dice, for example
+      // Magic Missile's 1d4+1. It is not doubled on a critical hit, which
+      // is where it differs from adding another die.
       const bonusInput = numberField(part.bonus ?? 0, {
         className: 'inventory-panel__dice-count',
         ariaLabel: 'Flat bonus',
@@ -94,7 +95,7 @@ export function buildDamageEditor(initial, fixType = null) {
         bonusInput,
       );
 
-      // With one type there is nothing to pick, so the row names it in text.
+      // With one type, there is nothing to pick, so the row names it in text.
       if (fixed) {
         part.damageType = fixed;
         row.appendChild(el('span', 'inventory-panel__damage-type', fixed));
@@ -108,8 +109,8 @@ export function buildDamageEditor(initial, fixType = null) {
         row.appendChild(typeSelectEl);
       }
 
-      // The first term is the weapon's base roll and always present; later
-      // terms are removable riders.
+      // The first term is the weapon's base roll and is always present.
+      // Later terms are removable riders.
       if (index > 0) {
         row.appendChild(
           iconButton('minus', 'Remove damage term', () => {
@@ -148,9 +149,9 @@ export function buildDamageEditor(initial, fixType = null) {
     setFixedType: (type) => {
       if (fixed === type) return;
       fixed = type;
-      // Terms carrying a type the new vocabulary does not allow are re-typed, so
-      // switching a spell's effect from damage to healing cannot leave "fire"
-      // dice behind.
+      // A term carrying a type the new vocabulary does not allow gets
+      // re-typed. This stops a switch from damage to healing from
+      // leaving "fire" dice behind.
       damageParts = damageParts.map((p) => normalizeDamagePart(p, types()));
       render();
     },

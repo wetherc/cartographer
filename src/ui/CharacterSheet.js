@@ -29,9 +29,10 @@ import { numberField } from './formFields.js';
 /** @typedef {import('../types/view.js').SheetPermissions} SheetPermissions */
 
 /**
- * The pools the head and the stepper list own between them: HP on its bar,
- * spell and pact slots on the pip line, and everything else as a stepper row.
- * Hit dice are the exception, rendered by the progression section instead.
+ * This returns the pools the head and the stepper list do not already own.
+ * The head shows HP on its bar and spell and pact slots on the pip line.
+ * Everything else here becomes a stepper row. Hit dice are the exception.
+ * The progression section renders them instead.
  * @param {Character} character
  * @returns {ResourcePool[]}
  */
@@ -42,26 +43,28 @@ function customPools(character) {
 }
 
 /**
- * Mount a character card: a glanceable head (name / race / HP healthbar / spell
- * slots) over the full sheet — XP control, ability scores, and resource pools
- * (HP included) with spend/restore steppers. The card does not collapse; the
- * head and body always read top to bottom. The body's sections are dealt into
- * two columns that sit side by side on a card wide enough for both and stack in
- * source order on a narrow one, with the castable-spells section spanning the
- * full width beneath them.
- * Renders an empty state when no character is selected (`null`).
- * `getPermissions` scopes what the viewer may touch: without `editBase` the
- * stats and XP render read-only and the bonus-HP and base-AC fields are absent,
- * without `play` the pool steppers and condition controls disappear too (a
- * spectator's view of the sheet), the HP damage/heal steppers additionally
- * require `hp`, and putting a spent spell slot or pool point back requires
- * `restore` (all three GM-only — damage, healing, and recovery are adjudicated,
- * not self-served).
+ * Mount a character card. A glanceable head, with name, race, HP
+ * healthbar, and spell slots, sits over the full sheet, which shows XP
+ * control, ability scores, and resource pools, HP included, with spend and
+ * restore steppers. The card does not collapse. The head and body always
+ * read top to bottom. The sections of the body sit in two columns, side by
+ * side on a card wide enough for both, and stack in source order on a
+ * narrow one. The castable-spells section spans the full width beneath them.
  *
- * The sheet is built once and then re-pointed: a change that leaves its shape
- * alone (any pool level, bonus HP, base AC, the name, the conditions) writes
- * into the elements already on screen, and only a change of shape rebuilds. See
- * `view/SheetStructure.js` for what counts as shape.
+ * The sheet shows an empty state when no character is selected (`null`).
+ * `getPermissions` scopes what the viewer can touch. Without `editBase`,
+ * the stats and XP render read-only, and the bonus-HP and base-AC fields
+ * do not show. Without `play`, the pool steppers and condition controls
+ * also disappear, for a spectator's view of the sheet. The HP damage and
+ * heal steppers also require `hp`. Putting a spent spell slot or pool
+ * point back requires `restore`. All three are GM-only, since damage,
+ * healing, and recovery are adjudicated, not self-served.
+ *
+ * The sheet builds once and then re-points. A change that leaves its shape
+ * unchanged, for example any pool level, bonus HP, base AC, the name, or
+ * the conditions, writes into the elements already on screen. Only a
+ * change of shape rebuilds it. See `view/SheetStructure.js` for what
+ * counts as shape.
  * @param {HTMLElement} container
  * @param {Character | null} initial
  * @param {(character: Character) => void} [onChange]
@@ -75,19 +78,21 @@ function customPools(character) {
  *     held: import('../types/entities.js').ConcentrationState,
  *   ) => void,
  * } | null} [spells]
- *   When provided, the sheet renders a read-only castable-spells section
- *   (cantrips and prepared spells, each opening a Cast/Close detail); learning
- *   and preparing live in the Spellbook tab. Omitted, no such section appears.
- *   `catalogStamp` returns a value that changes whenever the spell catalog
- *   `resolveSpells` reads does, so a library edit rebuilds the section instead
- *   of leaving the pre-edit spell on screen.
- *   `onConcentrationEnd` is called when the caster stops holding a spell from
- *   this sheet, with the spell they were holding. The sheet only owns one
- *   character, so taking the effect off the creatures that spell was affecting is
- *   the host's to do.
+ *   If `spells` is set, the sheet renders a read-only castable-spells
+ *   section, with cantrips and prepared spells, each opening a Cast or
+ *   Close detail. Learning and preparing spells live in the Spellbook tab.
+ *   If `spells` is omitted, no such section appears. `catalogStamp`
+ *   returns a value that changes whenever the spell catalog that
+ *   `resolveSpells` reads also changes. This makes a library edit rebuild
+ *   the section instead of leaving the pre-edit spell on screen.
+ *   `onConcentrationEnd` runs when the caster stops holding a spell from
+ *   this sheet, with the spell they were holding. The sheet owns only one
+ *   character, so the host must remove the effect from the creatures that
+ *   spell was affecting.
  * @param {(message: string) => void} [notify]
- *   Non-blocking surface for progression results (hit-die heals, level-up
- *   feature announcements); the host passes its toast stack.
+ *   This is a non-blocking surface for progression results, for example
+ *   hit-die heals and level-up feature announcements. The host passes its
+ *   toast stack.
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountCharacterSheet(
@@ -162,8 +167,8 @@ export function mountCharacterSheet(
       name.textContent = live().name;
     });
 
-    // Top line: name / race. The HP bar and the spell-slot pips get a
-    // full-width line each below it, so both read at a glance.
+    // The top line shows name and race. The HP bar and the spell-slot pips
+    // each get a full-width line below it, so both read at a glance.
     const summary = el(
       'div',
       'character-sheet__summary u-col u-g1',
@@ -175,18 +180,20 @@ export function mountCharacterSheet(
       ),
     );
 
-    // Two headline blocks lead the sheet, one per column: the name over the HP
-    // bar on the left, the level/AC/XP banner over the spell-slot pips on the
-    // right. On a wide card they read across from each other, line for line.
+    // Two headline blocks lead the sheet, one per column. The name sits
+    // over the HP bar on the left. The level, AC, and XP banner sits over
+    // the spell-slot pips on the right. On a wide card, they read across
+    // from each other, line for line.
     const head = el('div', 'character-sheet__head u-col u-g1', summary);
     const headSide = el('div', 'character-sheet__head-side u-col u-g1');
 
-    // Under them the body lays its sections out in two columns: the numbers a
-    // player reads constantly (XP, the HP/AC fields, ability scores, pools) and
-    // the state that moves during play (progression, conditions). Below the
-    // width where both keep a readable measure everything stacks in the order it
-    // is appended here. Castable spells go straight in the body and span both
-    // columns, since a caster's list wants the whole width.
+    // Under them, the body lays its sections out in two columns. One
+    // column holds the numbers a player reads constantly: XP, the HP and
+    // AC fields, ability scores, and pools. The other holds the state that
+    // moves during play: progression and conditions. Below the width where
+    // both columns keep a readable measure, everything stacks in the order
+    // it is appended here. Castable spells go in the body and span both
+    // columns, since a caster's list needs the whole width.
     const body = el('div', 'character-sheet__body', head, headSide);
     const main = el('div', 'character-sheet__col character-sheet__col--main');
     const side = el('div', 'character-sheet__col character-sheet__col--side');
@@ -211,8 +218,8 @@ export function mountCharacterSheet(
         );
         flank = { before: damageButton, after: healButton };
       }
-      // Reads "HP  - [bar] +  current/max +bonus": steppers hug the track,
-      // the numbers sit after them on the right.
+      // This reads as "HP - [bar] + current/max +bonus". The steppers sit
+      // next to the track, and the numbers sit after them on the right.
       const bar = buildStatBar(hp, {
         modifier: 'hp',
         label: 'HP',
@@ -275,8 +282,8 @@ export function mountCharacterSheet(
     // The banner is built after the pip line but reads above it.
     headSide.prepend(banner);
     body.append(main, side);
-    // Base AC is edited without changing the sheet's shape, so the derived
-    // badge has to follow it.
+    // An edit to base AC does not change the sheet's shape, so the derived
+    // badge must follow it.
     writers.push(() => {
       acBadge.textContent = `AC ${armorClass(live())}`;
     });
@@ -306,7 +313,7 @@ export function mountCharacterSheet(
     }
 
     /**
-     * Follow a field's value when it changes elsewhere, without overwriting a
+     * Follow a field's value when it changes elsewhere. Do not overwrite a
      * number the viewer is part-way through typing.
      * @param {HTMLInputElement} input
      * @param {() => number} read
@@ -318,8 +325,8 @@ export function mountCharacterSheet(
       });
     }
 
-    // The XP award is an action (input + button), so it stays on its own full
-    // width row above the aligned field grid rather than in it.
+    // The XP award is an action, an input plus a button. It stays on its
+    // own full-width row above the aligned field grid.
     if (perms.editBase) {
       const { row: xpRow, input: xpInput } = buildFieldRow('XP', 0, 'XP to add', () => {});
       xpRow.classList.add('character-sheet__xp-row');
@@ -335,12 +342,12 @@ export function mountCharacterSheet(
       main.appendChild(xpRow);
     }
 
-    // The editable HP/AC fields sit in a grid that mirrors the ability-score
-    // grid below, so their keys and inputs line up in the same columns.
+    // The editable HP and AC fields sit in a grid that mirrors the
+    // ability-score grid below. Their keys and inputs line up in the same columns.
     const fields = el('div', 'character-sheet__fields');
 
-    // The GM's per-character max HP override; current HP clamps down if the
-    // new maximum is below it.
+    // This is the GM's per-character override for max HP. Current HP
+    // clamps down if the new maximum is below it.
     if (perms.editBase && hp) {
       const { row } = buildFieldRow('MAX HP', hp.max, `Maximum HP for ${character.name}`, (value) =>
         commit(setMaxHP(live(), value)),
@@ -348,9 +355,9 @@ export function mountCharacterSheet(
       fields.appendChild(row);
     }
 
-    // Bonus HP from items/boons, tracked on top of the intrinsic pool; damage
-    // drains it first. Awarding it is a GM ruling like any other healing, so the
-    // field is absent from a player's sheet rather than shown read-only.
+    // Bonus HP from items or boons is tracked on top of the intrinsic
+    // pool, and damage drains it first. Awarding bonus HP is a GM ruling
+    // like any other healing, so the field does not show on a player's sheet.
     if (perms.editBase && hp) {
       const { row, input } = buildFieldRow(
         'BONUS HP',
@@ -359,14 +366,14 @@ export function mountCharacterSheet(
         (value) => commit(setBonusHP(live(), value)),
       );
       fields.appendChild(row);
-      // Damage drains bonus HP, so the field moves without being edited.
+      // Damage drains bonus HP, so this field can change without being edited.
       followField(input, () => live().bonusHP ?? 0);
     }
 
-    // Unarmored base AC, normally 10; effects like Mage Armor raise it. Only
-    // in play while no body armor is equipped. GM-set: a player raising their
-    // own defence is not theirs to decide, and the derived AC badge above still
-    // shows everyone the result.
+    // Unarmored base AC is normally 10. Effects such as Mage Armor raise
+    // it. It applies only in play while no body armor is equipped. The GM
+    // sets it, since a player cannot raise their own defense. The derived
+    // AC badge above still shows the result to everyone.
     if (perms.editBase) {
       const { row, input } = buildFieldRow(
         'BASE AC',
@@ -381,23 +388,25 @@ export function mountCharacterSheet(
     if (fields.children.length > 0) main.appendChild(fields);
 
     const statsList = el('div', 'character-sheet__stats');
-    // Each ability reads as one d20-style badge showing the *effective* score
-    // (base plus equipped-item buffs) over its derived modifier — the number a
-    // player actually rolls with. The base and every contributing source live
-    // one click away in the breakdown popover, so the common "what's my STR?"
-    // question is answered at a glance without parsing "16 = 18 +4". Scores are
-    // no longer edited inline; a dedicated character/level-up editor owns that.
-    // Stats and equipment are both part of the sheet's shape, so a badge never
-    // has to be re-pointed: it is rebuilt when its score can have moved.
+    // Each ability shows as one d20-style badge with the effective score,
+    // base plus equipped-item buffs, over its derived modifier. This is
+    // the number a player rolls with. The base and every contributing
+    // source sit one click away, in the breakdown popover. This answers
+    // the common question "what is my STR" at a glance, without the need
+    // to parse "16 = 18 +4". Scores are no longer edited inline. A
+    // dedicated character or level-up editor owns that. Stats and
+    // equipment are both part of the sheet's shape, so a badge is never
+    // re-pointed. It is rebuilt when its score can have moved.
     for (const key of Object.keys(character.stats)) {
       statsList.appendChild(statBadge(character, key));
     }
     main.appendChild(statsList);
 
-    // Classes, pending levels/improvements, features, and hit dice: the
-    // progression section owns them (null for a classless legacy character).
-    // It reads the live character rather than a snapshot, because a hit-die
-    // spend has to heal the HP the head may have changed since.
+    // The progression section owns classes, pending levels and
+    // improvements, features, and hit dice. It returns null for a
+    // classless legacy character. It reads the live character, not a
+    // snapshot, since a hit-die spend must heal the HP that the head can
+    // have changed since.
     const progress = buildProgressSection(live, {
       editBase: perms.editBase,
       play: perms.play,
@@ -406,9 +415,9 @@ export function mountCharacterSheet(
     });
     if (progress) side.appendChild(progress);
 
-    // HP and spell slots are managed on the always-visible head lines, and hit
-    // dice in the progression section, so the stepper list at the bottom only
-    // carries the custom pools.
+    // HP and spell slots are managed on the always-visible head lines. Hit
+    // dice are managed in the progression section. The stepper list at the
+    // bottom carries only the custom pools.
     const pools = customPools(character);
     if (pools.length > 0) {
       const resources = el('div', 'character-sheet__resources u-col u-g2');
@@ -430,7 +439,8 @@ export function mountCharacterSheet(
             ),
           );
         }
-        // Spending is the player's, restoring is the GM's, same as spell slots.
+        // A player can spend a pool point. Only the GM can restore one,
+        // the same rule as spell slots.
         if (perms.restore) {
           row.appendChild(
             iconButton(
@@ -446,10 +456,11 @@ export function mountCharacterSheet(
       main.appendChild(resources);
     }
 
-    // Read-only castable spells grouped by level, each opening a
-    // Cast/Close detail. Only for casters (the builder returns null otherwise)
-    // and only when the host wired spell callbacks in. It goes in the body
-    // rather than either column, so it spans the full card width beneath them.
+    // This is a read-only list of castable spells grouped by level, each
+    // opening a Cast or Close detail. It shows only for casters, since the
+    // builder returns null otherwise, and only when the host wires in
+    // spell callbacks. It sits in the body, not in either column, so it
+    // spans the full card width beneath them.
     if (spells) {
       const spellsSection = buildSpellsSection(character, {
         play: perms.play,
@@ -465,9 +476,9 @@ export function mountCharacterSheet(
       el('span', 'section-label', 'Conditions'),
     );
     /**
-     * Stop holding the spell this character was concentrating on, whichever
-     * control said so, and tell the host which spell ended so the creatures it
-     * was affecting go free.
+     * Stop the character from holding the spell it was concentrating on,
+     * from whichever control triggered this. Tell the host which spell
+     * ended, so the creatures it affected go free.
      * @param {Character} from the character to drop it from
      */
     function endConcentration(from) {
@@ -477,12 +488,12 @@ export function mountCharacterSheet(
     }
 
     // The bar reads and reports the whole list, so it stays mounted across
-    // ticks; only its chips are rebuilt, and only when they can have changed.
+    // ticks. Only its chips are rebuilt, and only when they can have changed.
     const conditionsBar = mountConditionsBar(conditions, {
       getConditions: () => current?.conditions ?? [],
-      // Taking the Concentrating chip off by hand is a way of saying the spell
-      // ended, so the state behind it goes too; otherwise the chip and the held
-      // spell could disagree.
+      // Removing the Concentrating chip by hand means the spell ended, so
+      // the state behind it must end too. Without this, the chip and the held
+      // spell can disagree.
       onChange: (next) => {
         const held = live();
         const kept = next.some((c) => c.name.toLowerCase() === CONCENTRATING.toLowerCase());
@@ -492,8 +503,8 @@ export function mountCharacterSheet(
       },
       canEdit: () => getPermissions().play,
     });
-    // The held spell named beside the chip that marks it, with the control that
-    // ends it early — a caster may stop concentrating whenever they like.
+    // This names the held spell beside the chip that marks it, with a
+    // control to end it early. A caster can stop concentrating at any time.
     const concentration = el('div', 'character-sheet__concentration u-row u-wrap u-g1');
     conditions.appendChild(concentration);
     /** @type {import('../types/entities.js').ConcentrationState | null | undefined} */
@@ -535,7 +546,7 @@ export function mountCharacterSheet(
   render();
   return {
     getCharacter: () => current,
-    /** Sync in an externally-updated character (e.g. from a sibling panel) and re-render. */
+    /** Sync an externally updated character, for example from a sibling panel, and rerender. */
     setCharacter: (next) => {
       current = next;
       render();

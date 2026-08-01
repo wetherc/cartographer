@@ -30,17 +30,18 @@ import {
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
 
 /**
- * The item create/edit form, shared by the add row and the per-item editor.
- * Every mechanical field is here: type-specific armor/shield/AC/buff controls,
- * and for weapons and bows a 5e preset picker, handling (which fixes the
- * damage ability), a structured damage-dice editor (base roll plus permanent
- * riders like + 1d4 fire), and inflicted status effects — the last two built
- * as widgets in ItemFormEditors.js. Submitting calls
- * `onSubmit` with the assembled fields (no id — the caller owns identity) and
- * clears the form only when adding (editing keeps the values on screen).
- * With `template` the form describes a reusable blueprint (the Library rail's
- * editor) rather than a stack in someone's pack, so the quantity field is
- * hidden and submits report quantity 1.
+ * The item create and edit form, shared by the add row and the per-item
+ * editor. Every mechanical field is here: type-specific armor, shield,
+ * AC, and buff controls, and for weapons and bows a 5e preset picker,
+ * handling, which fixes the damage ability, a structured damage-dice
+ * editor, base roll plus permanent riders such as + 1d4 fire, and
+ * inflicted status effects. The last two build as widgets in
+ * ItemFormEditors.js. A submit calls `onSubmit` with the assembled
+ * fields, with no id, since the caller owns identity, and clears the form
+ * only when adding. Editing keeps the values on screen. If `template` is
+ * set, the form describes a reusable blueprint, for the Library rail's
+ * editor, rather than a stack in someone's pack. The quantity field is
+ * hidden, and submits report quantity 1.
  * @param {{
  *   item?: InventoryItem | null,
  *   submitLabel: string,
@@ -68,17 +69,17 @@ export function buildItemForm({
     className: 'inventory-panel__quantity-input',
   });
 
-  // "gear" is the catch-all for miscellaneous, non-equippable items (rope,
-  // rations, trinkets); say so where the GM picks it.
+  // gear is the catch-all for miscellaneous, non-equippable items, for
+  // example rope, rations, and trinkets. The picker states this where the GM picks it.
   const typeSelect = select(
     ITEM_TYPES.map((t) => ({ value: t, label: t === 'gear' ? 'gear (misc.)' : t })),
     item ? (item.type ?? 'gear') : ITEM_TYPES[0],
     { className: 'inventory-panel__type-select' },
   );
 
-  // Body armor: its 5e weight class (which alone fixes the DEX scaling —
-  // never the GM's input) and a configurable base AC defaulting to a
-  // representative value for the chosen weight.
+  // Body armor has a 5e weight class, which alone fixes the DEX scaling,
+  // never the GM's input, and a configurable base AC. The base AC
+  // defaults to a representative value for the chosen weight.
   const weightSelect = select(
     ARMOR_WEIGHTS.map((w) => ({
       value: w.key,
@@ -102,12 +103,13 @@ export function buildItemForm({
   const weightField = labeled('Weight', weightSelect);
   const baseACField = labeled('Base AC', baseACInput);
 
-  // Shields are always +2 AC (5e), so no input — just say so.
+  // A shield always adds +2 AC in 5e, so there is no input. The form only
+  // states the value.
   const shieldNote = el('span', 'inventory-panel__note', `+${SHIELD_AC} AC`);
   const shieldField = labeled('Shield', shieldNote);
 
-  // Non-armor equippables (helmets, rings, bows...) may carry a flat AC
-  // bonus while equipped.
+  // A non-armor equippable, for example a helmet, ring, or bow, can carry
+  // a flat AC bonus while equipped.
   const acInput = numberField(item?.acBonus ?? 0, {
     min: 0,
     className: 'inventory-panel__ac-input',
@@ -115,8 +117,8 @@ export function buildItemForm({
   acInput.title = 'Flat AC bonus while equipped';
   const acField = labeled('AC bonus', acInput);
 
-  // Any equippable may buff an ability score while worn (e.g. +2 STR). Only the
-  // first stored bonus is editable here; the dash is "no buff".
+  // Any equippable can buff an ability score while worn, for example +2
+  // STR. Only the first stored bonus is editable here. The dash means no buff.
   const [firstBuff] = Object.entries(item?.statBonuses ?? {});
   const buffStatSelect = select(
     [{ value: '', label: '—' }, ...ABILITY_SCORES],
@@ -128,15 +130,16 @@ export function buildItemForm({
   const buffStatField = labeled('Buff', buffStatSelect);
   const buffAmountField = labeled('Amount', buffAmountInput);
 
-  // A library preset to start from — the 5e defaults merged with the GM's
-  // Library-tab overrides and custom entries — offered for every type with at
-  // least one entry: picking one fills the type's mechanical fields — and the
-  // name and description when still blank — all of which stay editable after.
+  // This is a library preset to start from: the 5e defaults merged with
+  // the GM's Library-tab overrides and custom entries. It appears for
+  // every type with at least one entry. Picking a preset fills the
+  // type's mechanical fields, and the name and description when still
+  // blank. Every field stays editable after.
   const CUSTOM_PRESET = { value: '', label: 'Custom' };
   const presetSelect = select([CUSTOM_PRESET], '');
   const presetField = labeled('Preset', presetSelect);
 
-  /** The merged library entries backing a type's picker; empty hides the picker.
+  /** The merged library entries backing a type's picker. An empty result hides the picker.
    * @param {string} type
    * @returns {EquipmentTemplate[]} */
   const presetsFor = (type) => activeEquipment(/** @type {ItemType} */ (type));
@@ -152,7 +155,7 @@ export function buildItemForm({
   );
   const damageField = labeled('Damage', damage.element);
 
-  // Status effects the weapon inflicts, as removable chips plus an add row.
+  // This shows status effects the weapon inflicts, as removable chips plus an add row.
   const effects = buildEffectsEditor(item?.statusEffects ?? []);
   const effectsField = labeled('Inflicts', effects.element);
 
@@ -160,8 +163,9 @@ export function buildItemForm({
     const type = typeSelect.value;
     const preset = presetsFor(type).find((p) => p.name === presetSelect.value);
     if (!preset) return;
-    // Fill whichever mechanical fields the template carries; custom library
-    // entries may also bring an AC bonus, a stat buff, or inflicted effects.
+    // This fills whichever mechanical fields the template carries. A
+    // custom library entry can also bring an AC bonus, a stat buff, or
+    // inflicted effects.
     if (preset.damage?.length) {
       handlingSelect.value = preset.handling ?? 'melee';
       damage.set(preset.damage);
@@ -184,17 +188,17 @@ export function buildItemForm({
     nameInput.value = preset.name;
   });
 
-  // The form lays out as fixed rows (name, description, type/qty, then the
-  // type-specific rows) so toggling a type only shows or hides whole rows —
-  // the shared controls never reflow around appearing fields.
+  // The form lays out as fixed rows: name, description, type and
+  // quantity, then the type-specific rows. Toggling a type only shows or
+  // hides whole rows. The shared controls never reflow around appearing fields.
   const presetRow = fieldRow(presetField);
   const armorRow = fieldRow(weightField, baseACField, shieldField);
   const weaponRow = fieldRow(handlingField);
   const damageRow = fieldRow(damageField);
   const effectsRow = fieldRow(effectsField);
-  // AC bonus is its own row; the stat buff pairs its select with its amount.
-  // Keeping them apart avoids a number input and a select sharing a row with
-  // mismatched heights, which misaligned their captions.
+  // AC bonus is its own row. The stat buff pairs its select with its
+  // amount. Keeping them apart avoids a number input and a select sharing
+  // a row with mismatched heights, which misaligned their captions.
   const acRow = fieldRow(acField);
   const buffRow = fieldRow(buffStatField, buffAmountField);
 
@@ -225,8 +229,8 @@ export function buildItemForm({
   buffStatSelect.addEventListener('change', syncTypeFields);
   syncTypeFields();
 
-  // Reading the controls happens here; deciding which of their values belong on
-  // the item is ItemDraft's job.
+  // Reading the controls happens here. Deciding which of their values
+  // belong on the item is the job of ItemDraft.
   /** @returns {Omit<InventoryItem, 'id'> | null} */
   const assemble = () =>
     assembleItem({
@@ -249,7 +253,7 @@ export function buildItemForm({
     nameInput,
     rows: [
       descriptionInput,
-      // A library template is a blueprint, not a stack — no quantity to set.
+      // A library template is a blueprint, not a stack. It has no quantity to set.
       template
         ? fieldRow(labeled('Type', typeSelect))
         : fieldRow(labeled('Type', typeSelect), labeled('Qty', quantityInput)),
@@ -265,8 +269,8 @@ export function buildItemForm({
     submitLabel,
     onSubmit,
     onCancel,
-    // The add row keeps taking entries, so it clears itself; the per-item editor
-    // keeps the values on screen.
+    // The add row keeps taking entries, so it clears itself. The
+    // per-item editor keeps the values on screen.
     afterSubmit: item
       ? null
       : () => {

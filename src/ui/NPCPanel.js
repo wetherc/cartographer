@@ -6,14 +6,15 @@ import { mountListPanel } from './listPanel.js';
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**
- * Mount the NPC panel: one row per NPC relevant to the party's location, each
- * showing name, role, a disposition badge, and notes, with edit and delete
- * affordances plus a "New NPC" control. Like the encounter panel it owns no
- * roster state — `getNPCs` supplies the visible rows and every mutation flows
- * back through a callback; modals live in main.js. When `getRole` reports a
- * player view, the roster is read-only: rows render without edit/delete and
- * the add control is omitted. With `pinAdd` the add button leads the list and
- * stays pinned while it scrolls (the Build rail), instead of trailing it.
+ * Mount the NPC panel: one row per NPC relevant to the party's location. Each
+ * row shows name, role, a disposition badge, and notes, with edit and delete
+ * controls plus a "New NPC" control. Like the encounter panel, this panel
+ * owns no roster state. `getNPCs` supplies the visible rows, and every
+ * mutation flows back through a callback. Modals live in main.js. When
+ * `getRole` reports a player view, the roster is read-only: rows render
+ * without edit or delete, and the panel omits the add control. With `pinAdd`
+ * set, the add button leads the list and stays pinned while the list scrolls
+ * (the Build rail), instead of trailing the list.
  * @param {HTMLElement} container
  * @param {{
  *   getNPCs: () => NPC[],
@@ -44,8 +45,9 @@ export function mountNPCPanel(container, callbacks) {
         el('span', `badge npc-panel__badge npc-panel__badge--${npc.disposition}`, npc.disposition),
       );
 
-      // Role, location, and notes are each optional; the cast is needed because
-      // `filter(Boolean)` does not narrow the array's union for the typechecker.
+      // Role, location, and notes are each optional. The cast is needed
+      // because `filter(Boolean)` does not narrow the array's union type for
+      // the typechecker.
       return /** @type {Node[]} */ (
         [
           head,

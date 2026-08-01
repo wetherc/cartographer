@@ -8,15 +8,15 @@ import { groupSpellsByLevel } from '../entities/SpellView.js';
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
 /**
- * The active combatant's actions, under an Actions heading: the weapons that
- * open an attack roll, then the spells that open the cast dialog, grouped by
- * spell level under the same headings the spellbook uses ("Cantrips", "Level
- * 2"). A caster with a dozen spells was otherwise one long run of buttons with
- * no way to tell a cantrip from a third-level slot without reading each title.
+ * This bar shows the active combatant's actions under an Actions heading.
+ * Weapon buttons open an attack roll. Spell buttons open the cast dialog and
+ * group by spell level, under the same headings as the spellbook (Cantrips,
+ * Level 2). Without this grouping, a caster with many spells shows one long
+ * list of buttons with no way to tell a cantrip from a third-level spell.
  *
- * The bar renders whatever lists it is handed and decides nothing itself (who
- * may act, and what they hold, is the host's call), so it comes back null when
- * there is nothing to offer and the column skips it.
+ * The bar draws whatever lists it receives and makes no decisions of its own.
+ * The host decides who can act and what they hold. The bar returns null when
+ * it has nothing to offer, and the column skips it.
  * @param {{ weapons: (InventoryItem | EnemyWeapon)[], spells: Spell[] }} actions
  * @param {{
  *   onWeaponAttack: (weapon: InventoryItem | EnemyWeapon) => void,
@@ -70,7 +70,7 @@ export function combatActionBar(actions, callbacks) {
 }
 
 /**
- * One labelled run of action buttons, indented under the Actions heading.
+ * One labeled row of action buttons, indented under the Actions heading.
  * @param {string} label
  * @param {HTMLElement[]} buttons
  */

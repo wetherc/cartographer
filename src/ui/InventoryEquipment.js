@@ -12,25 +12,28 @@ import { select } from './formFields.js';
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /**
- * The Equipment tab of the inventory panel: slot pickers for what's worn and
- * wielded, split out of InventoryPanel.js, which keeps the mount, tabs, and
- * disclosure shell; the item rows live in InventoryRows.js.
+ * This is the Equipment tab of the inventory panel: slot pickers for what a
+ * character wears and wields. It is split out of InventoryPanel.js, which
+ * keeps the mount, tabs, and disclosure shell. The item rows live in
+ * InventoryRows.js.
  */
 
 /**
- * Equipment slot rows: a labeled select per slot, its options limited to the
- * inventory items whose type the slot accepts (a potion never appears in the
- * armor pickers), ordered by the slot's preference then name. An already-
- * equipped item that no longer passes the filter (a legacy save) still shows,
- * so it can be seen and unequipped.
+ * Equipment slot rows. Each row shows a labeled select for one slot. Its
+ * options are limited to inventory items whose type the slot accepts, so a
+ * potion never appears in the armor pickers. Options sort by the slot's
+ * preference, then by name. An already-equipped item that no longer passes
+ * the filter, for example in a legacy save, still shows, so a GM can see
+ * it and unequip it.
  *
- * The character arrives as a getter because these rows outlive changes made
- * elsewhere on the sheet: a slot's options only depend on the inventory, so the
- * panel leaves the rows standing when a sibling panel commits an unrelated
- * change, and the equip below has to write against that newer character.
+ * The character arrives as a getter because these rows outlive changes
+ * made elsewhere on the sheet. A slot's options depend only on the
+ * inventory, so the panel leaves the rows standing when a sibling panel
+ * commits an unrelated change. The equip call below must write against
+ * that newer character.
  * @param {() => Character} getCharacter
  * @param {(next: Character) => void} commit
- * @param {boolean} playable false renders the pickers disabled (read-only view)
+ * @param {boolean} playable false renders the pickers disabled, for a read-only view
  * @returns {HTMLElement}
  */
 export function buildEquipment(getCharacter, commit, playable) {

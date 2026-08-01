@@ -4,10 +4,10 @@ import { icon } from './icons.js';
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 
 /**
- * Mount a breadcrumb trail. Call update(nodes) whenever the navigator's
- * current node changes; clicking a crumb (other than the last) invokes onSelect.
- * A leading map icon anchors it as "location," and a chevron separator reads as
- * "contains" so parent-to-child order is legible at a glance.
+ * Mount a breadcrumb trail. Call update(nodes) when the current node of the
+ * navigator changes. A click on a crumb, except the last, runs onSelect.
+ * A map icon marks the first crumb as the location. A chevron between crumbs
+ * shows that each node contains the next node.
  * @param {HTMLElement} container
  * @param {(nodeId: string) => void} onSelect
  * @returns {{ update: (nodes: MapNode[]) => void }}

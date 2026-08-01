@@ -17,20 +17,22 @@ import { buildTabs } from './Tabs.js';
  */
 
 /**
- * Mount one Library-rail list (equipment, bestiary, or NPC templates): every
- * built-in default plus the GM's overrides and additions, each row tagged by
- * source. Editing goes through either `buildEditor` (an inline form rendered
- * in place of the list, the item form's home turf) or `onEdit` (a modal
- * dialog); overrides and customs get a remove button that reverts or deletes.
+ * Mount one Library-rail list, for equipment, bestiary, or NPC templates.
+ * It shows every built-in default plus the GM's overrides and additions,
+ * with each row tagged by source. Editing goes through either
+ * `buildEditor`, an inline form rendered in place of the list, the item
+ * form's home turf, or `onEdit`, a modal dialog. Overrides and customs
+ * get a remove button that reverts or deletes.
  *
- * Owns no library state: `getEntries` supplies the rows and every mutation
- * flows back through a callback, matching the other panels. When `subtabs`
- * are given, a tab strip above the filter narrows the list to one subtab at a
- * time and `getEntries` receives the active subtab's id.
+ * This panel owns no library state. `getEntries` supplies the rows, and
+ * every mutation flows back through a callback, matching the other
+ * panels. When `subtabs` are given, a tab strip above the filter narrows
+ * the list to one subtab at a time, and `getEntries` receives the active
+ * subtab's id.
  *
- * The add button, the tab strip, and the filter input are built once and stay
- * put; only the lists redraw. That is what lets a keystroke in the filter
- * re-run the search without rebuilding the input the GM is typing into.
+ * The add button, the tab strip, and the filter input are built once and
+ * stay in place. Only the lists redraw. This lets a keystroke in the
+ * filter rerun the search without rebuilding the input the GM is typing into.
  * @param {HTMLElement} container
  * @param {{
  *   getEntries: (subtab?: string) => LibraryRow[],
@@ -49,17 +51,18 @@ export function mountLibraryPanel(container, callbacks) {
   const root = el('div', 'library-panel');
   container.appendChild(root);
 
-  /** Case-insensitive name filter, kept across re-renders. */
+  /** This is a case-insensitive name filter, kept across rerenders. */
   let filter = '';
-  /** The selected subtab id, kept across re-renders like the filter. */
+  /** This is the selected subtab id, kept across rerenders like the filter. */
   const subtabs = callbacks.subtabs ?? [];
   let activeSubtab = subtabs[0]?.id ?? null;
-  /** Whether an inline editor is open, in which case the list is hidden. */
+  /** True when an inline editor is open. The list is hidden in that case. */
   let editing = false;
 
-  // The chrome hides while an inline editor is open rather than being torn
-  // down, so the filter text and the selected subtab come back untouched. The
-  // editor is tall, and a list scrolling behind it would bury the Save button.
+  // The chrome hides while an inline editor is open, instead of being
+  // torn down. The filter text and the selected subtab come back
+  // untouched. The editor is tall, and a list scrolling behind it
+  // buries the Save button.
   const chrome = el('div');
   const editorHost = el('div');
   root.append(chrome, editorHost);
@@ -162,9 +165,9 @@ export function mountLibraryPanel(container, callbacks) {
       buildBody,
       actions: rowActions,
       buildExtras,
-      // The rows are built fresh out of the library on every read, so the
-      // identity guard would never match anyway, and the filter needs the
-      // repaint on every keystroke.
+      // The rows are built fresh from the library on every read, so the
+      // identity guard never matches anyway. The filter also needs
+      // the repaint on every keystroke.
       alwaysRender: true,
     });
   }
@@ -197,13 +200,13 @@ export function mountLibraryPanel(container, callbacks) {
       {
         icon: 'edit',
         label: `Edit ${entry.name}`,
-        // Editing a default doesn't touch the built-in list — it stores an
-        // override in the custom library; say so on the control.
+        // Editing a default does not touch the built-in list. It stores
+        // an override in the custom library. The control states this.
         title: entry.source === 'default' ? 'Customize' : 'Edit',
         onClick: () => {
           if (callbacks.buildEditor) {
             openEditor(entry.key);
-            // The list is hidden behind the editor now; redrawing it is waste.
+            // The list is hidden behind the editor now, so redrawing it wastes work.
             return false;
           }
           return callbacks.onEdit?.(entry.key);

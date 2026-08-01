@@ -1,10 +1,11 @@
 import { el } from './dom.js';
 
 /**
- * Mount a toast stack: small transient status messages confirming actions
- * (Save, Export, Undo, ...) that otherwise succeed silently. The stack is a
- * polite live region, so screen readers announce each message without focus
- * theft. Messages auto-dismiss; clicking one dismisses it early.
+ * Mount a toast stack: small transient status messages that confirm
+ * actions, for example Save, Export, or Undo, that otherwise succeed
+ * silently. The stack is a polite live region, so screen readers announce
+ * each message without taking focus. A message auto-dismisses. A click on
+ * a message dismisses it early.
  * @param {HTMLElement} container
  * @param {{ duration?: number }} [options]
  * @returns {{ show: (message: string) => void }}
@@ -21,7 +22,7 @@ export function mountToasts(container, options = {}) {
     const toast = el('div', 'toast', message);
     const dismiss = () => {
       toast.classList.add('toast--leaving');
-      // Matches the CSS fade-out duration; remove after it completes.
+      // This matches the CSS fade-out duration. Remove the toast after the fade completes.
       setTimeout(() => toast.remove(), 250);
     };
     toast.addEventListener('click', dismiss);
@@ -35,9 +36,10 @@ export function mountToasts(container, options = {}) {
 const PENDING_KEY = 'campaign-builder:pending-toast';
 
 /**
- * Queue a toast to show after the next page load — for actions (Undo, Import,
- * campaign replacement) that reload the page and would otherwise eat their own
- * confirmation. sessionStorage keeps it tab-local.
+ * Queue a toast to show after the next page load. Use this for actions,
+ * for example Undo, Import, or campaign replacement, that reload the page
+ * and otherwise lose their own confirmation. sessionStorage keeps
+ * the toast tab-local.
  * @param {string} message
  */
 export function queueToastAfterReload(message) {

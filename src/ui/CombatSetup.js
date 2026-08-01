@@ -8,18 +8,21 @@ import { openDialog } from './Modal.js';
 /** @typedef {import('../types/combat.js').ParticipantView} ParticipantView */
 
 /**
- * Show the combat setup dialog: one row per potential combatant with an
- * editable initiative value, an optional "Roll initiative" button that fills
- * every row from `rollInitiative` (d20 + DEX modifier in the app, an injected
- * roll in tests), and a Start combat submit. Rolled values stay editable, so a
- * result can still be overridden by hand before starting.
+ * Show the combat setup dialog. It lists one row per potential combatant with
+ * an editable initiative value. An optional Roll initiative button fills
+ * every row from `rollInitiative` (a d20 roll plus DEX modifier in the app,
+ * or an injected roll in tests). A Start combat button submits the form.
+ * Rolled values stay editable, so the GM can override a result by hand
+ * before starting.
  *
- * This is the GM's entry into combat — the initiative panel itself only shows
- * a running fight — so the caller gates who can open it. Resolves to the
- * participants with their final initiative values on Start, or null if
- * cancelled.
- * Like the initiative panel, a row's name and side come from `describe`
- * rather than the participant, which carries only the numbers.
+ * This is the GM's entry into combat. The initiative panel itself only shows
+ * a running fight, so the caller must gate who can open this dialog. On
+ * Start, this function resolves to the participants with their final
+ * initiative values. On cancel, it resolves to null.
+ *
+ * As in the initiative panel, a row's name and side come from `describe`,
+ * not from the participant, because the participant carries only the
+ * numbers.
  * @param {Participant[]} roster
  * @param {{
  *   describe?: (participant: Participant) => ParticipantView | null,
@@ -33,8 +36,8 @@ export function combatSetupModal(roster, callbacks = {}) {
   const inputs = new Map();
 
   /**
-   * The setup rows show a name and a side and nothing else, so the fallback for
-   * an unresolvable id needs only those two fields.
+   * The setup rows show only a name and a side. The fallback for an
+   * unresolvable id needs only those two fields.
    * @param {Participant} participant
    * @returns {Pick<ParticipantView, 'name' | 'side'>}
    */
@@ -99,8 +102,9 @@ export function combatSetupModal(roster, callbacks = {}) {
 
       const cancel = textButton('Cancel', () => close('cancel'));
 
-      // The submit button carries a value so an Escape dismissal (returnValue
-      // stays empty) reads as a cancel rather than starting the fight.
+      // The submit button carries a value. This makes an Escape dismissal,
+      // where returnValue stays empty, read as a cancel, not as starting the
+      // fight.
       const start = textButton('Start combat', undefined, {
         icon: 'sword',
         variant: 'primary',

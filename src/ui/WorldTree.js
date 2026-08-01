@@ -7,18 +7,18 @@ import { buildWorldTree } from '../map/WorldTree.js';
 /** @typedef {import('../map/WorldTree.js').WorldTreeNode} WorldTreeNode */
 
 /**
- * Mount the world tree: a nested list mirroring the MapNode hierarchy, always
- * showing the whole tree rather than only the path to the current node. It is
- * the Build-mode counterpart to the Play-mode breadcrumb, over the same
- * TileGrid data. Selecting a node invokes onSelect; if onAddChild/onEdit/
- * onDelete are supplied, each row also gets an add-child, edit-settings, and
- * delete affordance (used in Build mode). With `getWarning`, a row whose node
- * has something wrong gets a warning badge carrying the sentence, so a GM sees
- * an unreachable or sealed node at the moment they break it, not when they next
- * happen to view it. With `collapsible`, every row with
- * children gets an expand/collapse chevron; collapse state lives in the mount
- * and survives update() calls. Call update() after any structural change to
- * the tree.
+ * Mount the world tree: a nested list that mirrors the MapNode hierarchy.
+ * It always shows the whole tree, not only the path to the current node.
+ * It is the Build-mode counterpart to the Play-mode breadcrumb, over the
+ * same TileGrid data. A click on a node runs onSelect. If onAddChild,
+ * onEdit, or onDelete are set, each row also gets an add-child,
+ * edit-settings, and delete control, used in Build mode. If getWarning is
+ * set, a row whose node has something wrong gets a warning badge that
+ * carries the message. This lets a GM see an unreachable or sealed node
+ * at the moment it breaks, not the next time they view it. If
+ * collapsible is set, every row with children gets an expand or collapse
+ * chevron. Collapse state lives in the mount and survives calls to
+ * update(). Call update() after any structural change to the tree.
  * @param {HTMLElement} container
  * @param {{
  *   getNodes: () => MapNode[],
@@ -41,9 +41,9 @@ export function mountWorldTree(container, opts) {
   const collapsed = new Set();
 
   /**
-   * The chevron for a row that has children. Collapsing hides the child list
-   * where it stands instead of re-rendering the tree: the subtree's DOM is
-   * already built and a collapse changes nothing else about it.
+   * Build the chevron for a row with children. A collapse hides the
+   * child list in place instead of rerendering the tree. The DOM of the
+   * subtree is already built, and a collapse changes nothing else about it.
    * @param {WorldTreeNode} treeNode
    * @param {HTMLUListElement} childList
    * @returns {HTMLButtonElement}
@@ -76,8 +76,8 @@ export function mountWorldTree(container, opts) {
 
   /** @param {WorldTreeNode} treeNode @returns {HTMLLIElement} */
   function renderNode(treeNode) {
-    // Built before the row so the chevron can close over it. A collapsed
-    // subtree is still rendered, just hidden.
+    // This builds before the row, so the chevron can close over it. A
+    // collapsed subtree still renders. It is only hidden.
     const childList = treeNode.children.length
       ? el('ul', 'world-tree__children', ...treeNode.children.map(renderNode))
       : null;
@@ -103,8 +103,9 @@ export function mountWorldTree(container, opts) {
     const row = el(
       'div',
       'world-tree__row u-row u-g1',
-      // Collapsible trees give every row a fixed-width toggle slot so labels
-      // line up; only rows with children get a live chevron in that slot.
+      // A collapsible tree gives every row a fixed-width toggle slot, so
+      // labels line up. Only a row with children gets a live chevron in
+      // that slot.
       opts.collapsible &&
         (childList
           ? collapseToggle(treeNode, childList)
@@ -134,16 +135,16 @@ export function mountWorldTree(container, opts) {
     return el('li', 'world-tree__item', row, childList);
   }
 
-  /** @type {string | null} what the tree on screen was built from */
+  /** @type {string | null} the signature the tree on screen was built from */
   let shownSignature = null;
 
   /**
-   * Everything the markup reads: each node's id, name, parent, and warning,
-   * plus which row is current. Compared by value rather than by node identity
-   * because a party step replaces the node it revealed fog on without changing
-   * any of these, and that step is the most frequent caller of update(). The
-   * warning is part of the signature so a paint stroke that seals or unseals a
-   * node redraws its badge.
+   * This returns everything the markup reads: each node's id, name,
+   * parent, and warning, plus which row is current. It compares by
+   * value, not by node identity, since a party step replaces the node it
+   * revealed fog on without changing any of these fields, and that step
+   * is the most frequent caller of update(). The warning sits in the
+   * signature, so a paint stroke that seals or unseals a node redraws its badge.
    * @param {MapNode[]} nodes
    * @param {string} currentId
    */
@@ -156,9 +157,9 @@ export function mountWorldTree(container, opts) {
 
   function update() {
     const nodes = opts.getNodes();
-    // Callers refresh the tree after anything that might have moved a node, so
-    // it is asked to redraw far more often than it actually changes. Bail when
-    // the markup would come out the same, since rebuilding costs the scroll
+    // A caller refreshes the tree after anything that can have moved a
+    // node, so it redraws far more often than it changes. Stop when the
+    // markup comes out the same, since a rebuild costs the scroll
     // position and any focus inside the tree.
     const signature = signatureOf(nodes, opts.getCurrentId());
     if (signature === shownSignature) return;

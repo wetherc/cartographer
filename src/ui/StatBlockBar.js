@@ -6,17 +6,18 @@ import { classNames, el } from './dom.js';
 /** @typedef {import('../types/entities.js').StatModifier} StatModifier */
 
 /**
- * A row of stat chips ("STR 14", "AC 13") covering the fixed stat set (the six
- * ability scores plus AC) — stats can't be added or removed, only changed.
- * The bar runs in one of two modes:
+ * A row of stat chips, for example "STR 14" or "AC 13", covering the fixed
+ * stat set: the six ability scores plus AC. A stat can only change value,
+ * never be added or removed. The bar runs in one of two modes.
  *
- * - `base` (Build authoring): clicking a chip sets the stat's base value.
- * - `temp` (Play): chips show the effective value (base plus active timed
- *   modifiers, with the remaining rounds); clicking one adds a +/- adjustment
- *   for a number of combat rounds. Base values aren't editable here.
+ * - `base` (Build authoring): a click on a chip sets the stat's base value.
+ * - `temp` (Play): a chip shows the effective value, base plus active
+ *   timed modifiers, with the remaining rounds. A click on a chip adds a
+ *   plus or minus adjustment for a number of combat rounds. Base values
+ *   are not editable here.
  *
- * Reads current values via callbacks and reports each change through the
- * matching `on*` callback, so the owner only has to persist it.
+ * The bar reads current values through callbacks and reports each change
+ * through the matching `on*` callback. The owner only has to persist the change.
  * @param {HTMLElement} container
  * @param {{
  *   mode: 'base' | 'temp',
@@ -80,8 +81,8 @@ export function mountStatBlockBar(container, callbacks) {
         chip.title = `Set ${name}`;
         chip.addEventListener('click', () => editBase(name, base[name]));
       } else {
-        // Show the value combat actually uses; a modified stat also shows its
-        // base and how long the adjustment lasts.
+        // This shows the value combat uses. A modified stat also shows its
+        // base value and how long the adjustment lasts.
         const rounds = Math.max(0, ...active.map((m) => m.rounds));
         chip.textContent = modified
           ? `${name} ${base[name]}→${effective} (${rounds}r)`

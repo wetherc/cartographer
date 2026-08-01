@@ -28,16 +28,17 @@ import { promptSpellDetail } from './SpellDetail.js';
 
 /**
  * Mount the Spellbook tab: a browsable, per-level list of every spell the
- * character's class can learn, merged with any spell it already knows. Each
- * entry shows its known/prepared standing and opens a detail modal whose
- * actions manage the book — Learn a new spell, Prepare/Unprepare a known
- * leveled one, or Forget it. Non-casters (and any character with no spells to
- * show) get an empty state. Editing is gated by `getPermissions().play`; a
- * spectator sees details but no management actions.
+ * character's class can learn, merged with any spell the character already
+ * knows. Each entry shows its known or prepared standing and opens a detail
+ * modal whose actions manage the book: Learn a new spell, Prepare or
+ * Unprepare a known leveled spell, or Forget it. A non-caster, and any
+ * character with no spells to show, gets an empty state. `getPermissions().play`
+ * gates editing. A spectator sees details but no management actions.
  *
- * The panel owns no character state: every action produces a new character via
- * the pure spellbook helpers and hands it to `onChange`, then re-renders from
- * the value the host writes back through `setCharacter`.
+ * The panel owns no character state. Every action produces a new character
+ * through the pure spellbook helpers and hands the new character to
+ * `onChange`. The panel then re-renders from the value the host writes back
+ * through `setCharacter`.
  * @param {HTMLElement} container
  * @param {Character | null} initial
  * @param {(character: Character) => void} onChange
@@ -45,11 +46,12 @@ import { promptSpellDetail } from './SpellDetail.js';
  * @param {{ learnable: (character: Character) => Spell[],
  *   resolveSpells: (ids: string[]) => Spell[],
  *   catalogStamp: () => unknown }} opts
- *   `learnable` returns every spell the class may learn (cantrips and leveled);
- *   `resolveSpells` maps stored ids to Spell objects, so known spells outside
- *   the learnable set (e.g. from an import) still appear; `catalogStamp` returns
- *   a value that changes whenever the spell catalog behind those two does, which
- *   is how the panel knows a library edit means a rebuild.
+ *   `learnable` returns every spell the class can learn, both cantrips and
+ *   leveled spells. `resolveSpells` maps stored ids to Spell objects, so a
+ *   known spell outside the learnable set, for example one from an import,
+ *   still appears. `catalogStamp` returns a value that changes whenever the
+ *   spell catalog behind those two functions changes. This is how the panel
+ *   knows that a library edit means a rebuild.
  * @returns {{ setCharacter: (character: Character | null) => void }}
  */
 export function mountSpellbookPanel(container, initial, onChange, getPermissions, opts) {
@@ -58,12 +60,12 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
   const root = el('div', 'spellbook u-col u-g3');
   container.appendChild(root);
 
-  /** Restate what a spellbook change shows, one closure per row plus one for
-   * the prepared/cantrip counts. @type {(() => void)[]} */
+  /** Restate what a spellbook change shows: one closure per row, plus one for
+   * the prepared and cantrip counts. @type {(() => void)[]} */
   let writers = [];
-  /** @type {unknown[] | null} what the list on screen was built from */
+  /** @type {unknown[] | null} What the list on screen was built from. */
   let shownDeps = null;
-  /** @type {Set<string>} the ids the classes offer, from the last build */
+  /** @type {Set<string>} The ids the classes offer, from the last build. */
   let learnableIds = new Set();
 
   /** @param {Character} character @returns {string[]} */
@@ -81,17 +83,17 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
       knownIds(character),
       learnableIds,
       getPermissions().play,
-      // The catalog the learnable list is drawn from: editing a spell in the
-      // Library changes the rows without touching the character.
+      // The catalog the learnable list draws from. An edit to a spell in the
+      // Library changes the rows without a change to the character.
       opts.catalogStamp(),
     );
   }
 
   /**
    * Show the current spellbook. Learning, preparing, and forgetting change
-   * badges and counts but leave the rows themselves alone, so the usual case
-   * writes into the list already on screen instead of rebuilding a class-wide
-   * spell list that can run to a few hundred rows.
+   * badges and counts, but leave the rows alone. The usual case writes into
+   * the list already on screen, instead of rebuilding a class-wide spell
+   * list that can run to a few hundred rows.
    */
   function refresh() {
     const character = current;
@@ -110,11 +112,12 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
   }
 
   /**
-   * The class a learn is recorded under: for a multiclass caster, a picker
-   * over the caster classes whose spell list carries the spell (all of them
-   * when none does — an out-of-class grant still needs an ability to cast
-   * with); a lone candidate is used silently. Null when the picker is
-   * cancelled, which aborts the learn.
+   * The class a learn records under. For a multiclass caster, this shows a
+   * picker over the caster classes whose spell list carries the spell, or
+   * over every caster class when none carries it, because an out-of-class
+   * grant still needs an ability to cast with. A lone candidate class is used
+   * without a picker. A cancelled picker returns null, which aborts the
+   * learn.
    * @param {Character} character
    * @param {Spell} spell
    * @returns {Promise<string | null | undefined>} undefined = no caster class.
@@ -144,8 +147,8 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
   }
 
   /**
-   * The detail modal for one spell, with the management actions its current
-   * standing allows, then applies the chosen one.
+   * Show the detail modal for one spell, with the management actions its
+   * current standing allows, then apply the chosen action.
    * @param {Character} character
    * @param {Spell} spell
    */
@@ -196,8 +199,9 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
       return;
     }
 
-    // The browsable list: learnable spells (by class) plus any already-known
-    // spell that falls outside it, so imports and out-of-class grants still show.
+    // The browsable list: the class's learnable spells, plus any already-known
+    // spell outside that set. This keeps imports and out-of-class grants
+    // visible.
     const known = opts.resolveSpells(knownIds(character));
     const learnable = opts.learnable(character);
     learnableIds = new Set(learnable.map((spell) => spell.id));
@@ -235,7 +239,7 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
         if (!live) return;
         const counts = getSpellbook(live);
         // A caster with no prepared-rule class never prepares, so the
-        // prepared count would only ever read 0/0. Show cantrips alone.
+        // prepared count always reads 0/0. Show cantrips alone.
         const prepared = hasPreparedCaster(live)
           ? `Prepared ${counts.prepared.length}/${preparedLimit(live)} · `
           : '';
@@ -260,9 +264,9 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
   }
 
   /**
-   * One spell row: a name button (opens the detail) with known/prepared badges.
-   * The badges and the click both read the live character, since the row stays
-   * on screen across the changes made through it.
+   * One spell row: a name button that opens the detail, with known or
+   * prepared badges. The badges and the click both read the live character,
+   * because the row stays on screen across the changes made through it.
    * @param {Spell} spell
    * @returns {HTMLElement}
    */

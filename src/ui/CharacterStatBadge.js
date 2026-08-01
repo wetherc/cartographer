@@ -7,11 +7,11 @@ import { openDialog } from './Modal.js';
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /**
- * Open a popover breaking one ability score into its parts: the base value,
- * each equipped item that shifts it (with its signed delta), and the resulting
- * total and modifier. This is where the base score lives now that the badge
- * shows only the effective total. Duration is not modeled yet — item buffs read
- * "while equipped"; a future condition/spell source can add a real duration.
+ * Open a popover that breaks one ability score into its parts: the base
+ * value, each equipped item that shifts it, with its signed delta, and the
+ * resulting total and modifier. The base score lives here, since the badge
+ * shows only the effective total. Duration is not modeled yet. Item buffs
+ * read "while equipped". A future condition or spell source can add a real duration.
  * @param {string} key
  * @param {{ base: number, total: number, sources: { source: string, delta: number }[] }} breakdown
  */
@@ -52,8 +52,8 @@ function openStatBreakdown(key, breakdown) {
 /**
  * Draw the face-on d20 wireframe behind an ability score: the hexagonal
  * silhouette, the central point-down face the score sits in, and the facet
- * edges out to the remaining corners. Strokes inherit currentColor so the
- * buffed/debuffed tint colors the whole die.
+ * edges out to the remaining corners. Strokes inherit currentColor, so the
+ * buffed or debuffed tint colors the whole die.
  * @returns {SVGSVGElement}
  */
 function d20Face() {
@@ -65,8 +65,9 @@ function d20Face() {
       'aria-hidden': 'true',
     })
   );
-  // Point-up hexagon corners; the central face joins the two upper-side
-  // corners to the bottom point, so its centroid is the badge's midpoint.
+  // These are point-up hexagon corners. The central face joins the two
+  // upper-side corners to the bottom point, so its centroid is the
+  // midpoint of the badge.
   const A = '50,3';
   const B = '90.7,26.5';
   const C = '90.7,73.5';
@@ -85,10 +86,11 @@ function d20Face() {
 }
 
 /**
- * Build one ability-score badge: a d20-style die showing the effective score
- * (base + equipped buffs) over its derived modifier, labeled with the ability
- * key. The whole badge is a button opening {@link openStatBreakdown}. A buffed
- * or debuffed total is tinted so a modified score is obvious at a glance.
+ * Build one ability-score badge: a d20-style die that shows the effective
+ * score, base plus equipped buffs, over its derived modifier, labeled with
+ * the ability key. The whole badge is a button that opens
+ * {@link openStatBreakdown}. A buffed or debuffed total is tinted, so a
+ * modified score is easy to see.
  * @param {Character} character
  * @param {string} key
  * @returns {HTMLElement}

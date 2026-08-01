@@ -6,10 +6,10 @@ import { textButton } from './buttons.js';
 /** @typedef {import('../types/time.js').GameClock} GameClock */
 
 /**
- * Mount the in-game clock: a "Day N, Watch" readout with controls to advance
- * one watch and to take a short or long rest. The panel owns no state — it
- * reads the clock via `getClock` and every button calls back so the caller
- * advances time and applies rest recovery to the party.
+ * Mount the in-game clock: a "Day N, Watch" readout with controls to
+ * advance one watch and to take a short or long rest. The panel owns no
+ * state. It reads the clock through `getClock`, and every button calls
+ * back, so the caller advances time and applies rest recovery to the party.
  * @param {HTMLElement} container
  * @param {{
  *   getClock: () => GameClock,
@@ -23,7 +23,7 @@ export function mountTimePanel(container, callbacks) {
   const root = el('div', 'time-panel');
   container.appendChild(root);
 
-  /** Every control here changes the clock, so each one re-renders the readout.
+  /** Every control here changes the clock, so each one rerenders the readout.
    * @param {string} label @param {() => void} onClick @param {import('./icons.js').IconName} [glyph] */
   const button = (label, onClick, glyph) =>
     textButton(

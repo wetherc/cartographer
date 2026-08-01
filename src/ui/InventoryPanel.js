@@ -16,32 +16,32 @@ import { slugify } from '../util/text.js';
 /** @typedef {import('../entities/InventoryLog.js').InventoryEvent} InventoryEvent */
 
 /**
- * Mount the character's kit across two separate host elements — Equipment
- * (slot pickers for what's worn and wielded, built in InventoryEquipment.js)
- * and Inventory (a searchable, type-filterable item list grouped
- * under collapsible type headings, with add, consume, discard, and full
- * post-creation editing via the shared item form;
- * the rows themselves are built in InventoryRows.js). The two hosts live under
- * separate top-level tabs, so the panel renders each into its own element and
- * owns neither the tab strip nor any collapse behaviour. Renders an empty state
- * in both hosts when no character is selected (`null`).
- * Item interactions (add, consume, discard) are reported through `onEvent`
- * with the acting character, so the caller can log them; equipment changes
- * and edits commit silently.
+ * Mount the character's kit across two separate host elements. Equipment
+ * shows slot pickers for what a character wears and wields, built in
+ * InventoryEquipment.js. Inventory shows a searchable, type-filterable
+ * item list, grouped under collapsible type headings, with add, consume,
+ * discard, and full post-creation editing through the shared item form.
+ * The rows themselves are built in InventoryRows.js. The two hosts live
+ * under separate top-level tabs, so the panel renders each into its own
+ * element and owns neither the tab strip nor any collapse behavior. The
+ * panel shows an empty state in both hosts when no character is selected
+ * (`null`). Item interactions, add, consume, and discard, are reported
+ * through `onEvent` with the acting character, so the caller can log them.
+ * Equipment changes and edits commit silently.
  * @param {HTMLElement} equipmentHost the Equipment tab's panel element
  * @param {HTMLElement} inventoryHost the Inventory tab's panel element
  * @param {Character | null} initial
- * With a `canPlay` callback returning false the panel renders read-only: no
- * equipment changes, no consume/remove/edit controls (a spectator's or another
- * player's view of this character).
- * With `transfer` wired, each row grows a give control: pick another party
- * member and a count, and the panel hands the stack over through
- * `transfer.send` — the caller owns moving the items and re-rendering, since
- * both characters change.
- * Item stats and what the party owns are GM-adjudicated: the add form and the
- * per-row edit form only appear when `canEdit` returns true, so a player tab
- * can use, give, and discard its items but never write itself a new one or
- * rewrite what one does.
+ * If `canPlay` returns false, the panel renders read-only. It shows no
+ * equipment changes and no consume, remove, or edit controls, for a
+ * spectator's or another player's view of this character.
+ * If `transfer` is set, each row grows a give control: a picker for
+ * another party member and a count. The panel hands the stack over
+ * through `transfer.send`. The caller owns moving the items and
+ * rerendering, since both characters change.
+ * Item stats and what the party owns are GM-adjudicated. The add form and
+ * the per-row edit form appear only when `canEdit` returns true, so a
+ * player tab can use, give, and discard its items, but never write itself
+ * a new one or rewrite what one does.
  * @param {(character: Character) => void} [onChange]
  * @param {(event: InventoryEvent, character: Character) => void} [onEvent]
  * @param {() => boolean} [canPlay]
@@ -61,29 +61,30 @@ export function mountInventoryPanel(
   transfer = undefined,
 ) {
   let current = initial;
-  // The search and filter choices survive a re-render but stay per-mount, so
-  // they persist while the GM works through the list.
+  // The search and filter choices survive a rerender but stay per-mount.
+  // They persist while the GM works through the list.
   let searchQuery = '';
   /** @type {ItemType | ''} */
   let typeFilter = '';
-  // Which type headings the GM has folded away. Collapsed rather than expanded
-  // is the stored set so a type carried for the first time opens by default.
+  // This stores which type headings the GM has folded away. It stores the
+  // collapsed set, not the expanded one, so a type shown for the first
+  // time opens by default.
   /** @type {Set<ItemType>} */
   const collapsedTypes = new Set();
-  /** Which item's edit or give form is open; shared with the row builders. */
+  /** This tracks which item's edit or give form is open. It is shared with the row builders. */
   const view = {
     /** @type {string | null} */ editingId: null,
     /** @type {string | null} */ givingId: null,
   };
 
-  /** @type {(() => void) | null} refill the mounted Inventory tab's item list */
+  /** @type {(() => void) | null} Refill the mounted Inventory tab's item list. */
   let refillList = null;
-  /** What the two hosts on screen were built for, so a sync can tell whether
-   * anything this panel draws has actually changed. */
+  /** This records what the two hosts on screen were built for, so a sync
+   * can tell whether anything this panel draws has changed. */
   let shown = { character: initial, playable: false, editable: false };
 
-  /** The item list alone, leaving the search box (and its focus), the type
-   * filter, and the add form where they are. */
+  /** Refresh the item list alone. Leave the search box, its focus, the
+   * type filter, and the add form where they are. */
   function refreshList() {
     refillList?.();
   }
@@ -98,20 +99,21 @@ export function mountInventoryPanel(
     shown = { ...shown, character: next };
     onChange(next);
     if (event) onEvent(event, next);
-    // Equipping never changes a row, but adding or spending an item changes
-    // what the slot pickers can offer, so the narrow scope only runs one way.
+    // Equipping never changes a row, but adding or spending an item
+    // changes what the slot pickers can offer. The narrow scope runs one
+    // way for that reason.
     renderEquipment();
     if (scope === 'all') refreshList();
   }
 
-  /** The character a row or a slot picker writes against, read when the control
-   * is used rather than when it was built. Only ever called from a control that
-   * exists, which means a character is selected. */
+  /** This is the character a row or a slot picker writes against, read
+   * when the control is used, not when it was built. It runs only from a
+   * control that exists, which means a character is selected. */
   const liveCharacter = () => /** @type {Character} */ (current);
 
   /** @type {import('./InventoryRows.js').RowContext} */
-  // A row's own render() only opens or closes its edit/give form, which lives
-  // inside the list.
+  // A row's own render() only opens or closes its edit or give form,
+  // which lives inside the list.
   const rowContext = {
     view,
     getCharacter: liveCharacter,
@@ -132,9 +134,9 @@ export function mountInventoryPanel(
   }
 
   /**
-   * One type heading and the rows under it: a disclosure whose open state lives
-   * in `collapsedTypes`, so folding a heading away survives the list refills a
-   * consume or a give triggers.
+   * One type heading and the rows under it. This is a disclosure whose
+   * open state lives in `collapsedTypes`, so folding a heading away
+   * survives the list refills that a consume or a give triggers.
    * @param {{ type: ItemType, items: InventoryItem[] }} group
    * @param {boolean} playable
    * @returns {HTMLElement}
@@ -164,9 +166,10 @@ export function mountInventoryPanel(
   }
 
   /**
-   * The Inventory tab: the search box and type filter over the grouped item
-   * list, plus the add form for a GM. The controls re-fill only the list on input,
-   * so typing in the search box never loses focus to a re-render.
+   * The Inventory tab: the search box and type filter over the grouped
+   * item list, plus the add form for a GM. The controls refill only the
+   * list on input, so typing in the search box never loses focus to a
+   * rerender.
    * @param {boolean} playable
    * @returns {HTMLElement}
    */
@@ -184,9 +187,9 @@ export function mountInventoryPanel(
     const controls = el('div', 'inventory-panel__controls', searchInput, filterSelect);
 
     const list = el('div', 'inventory-panel__list');
-    // Reads the character afresh on every call rather than closing over the one
-    // the tab was built for, so a consume or a give can refill the list without
-    // rebuilding the controls above it.
+    // This reads the character afresh on every call, instead of closing
+    // over the one the tab was built for. A consume or a give can refill
+    // the list without rebuilding the controls above it.
     const fillList = () => {
       const character = current;
       list.innerHTML = '';
@@ -214,9 +217,9 @@ export function mountInventoryPanel(
       fillList();
     });
 
-    // Picking an item up is a GM ruling on what the party found, not something
-    // a player writes for themselves, so the add form follows `canEdit` rather
-    // than `canPlay`.
+    // Picking an item up is a GM ruling on what the party found, not
+    // something a player writes for itself, so the add form follows
+    // `canEdit`, not `canPlay`.
     if (canEdit()) {
       panel.appendChild(
         buildItemForm({
@@ -224,8 +227,8 @@ export function mountInventoryPanel(
           onSubmit: (fields) => {
             const character = current;
             if (!character) return;
-            // The id comes from the name so adding the same item twice stacks
-            // quantity onto the existing row instead of making a duplicate.
+            // The id comes from the name, so adding the same item twice
+            // stacks quantity onto the existing row instead of making a duplicate.
             const id = slugify(fields.name);
             commit(addItem(character, { ...fields, id }), {
               verb: 'pickup',
@@ -253,12 +256,12 @@ export function mountInventoryPanel(
   render();
   return {
     getCharacter: () => current,
-    /** Sync in an externally-updated character (e.g. from a sibling panel) and
-     * re-render, unless nothing this panel draws changed. The sibling panels
-     * commit on every HP tick and spell slot, and each commit reaches every
-     * panel; the kit is only part of what they hand over, and the entity layer
-     * replaces rather than mutates, so an unchanged reference is an unchanged
-     * list. */
+    /** Sync an externally updated character, for example from a sibling
+     * panel, and rerender, unless nothing this panel draws changed. The
+     * sibling panels commit on every HP tick and spell slot, and each
+     * commit reaches every panel. The kit is only part of what they hand
+     * over. The entity layer replaces rather than mutates, so an
+     * unchanged reference means an unchanged list. */
     setCharacter: (next) => {
       const prev = current;
       current = next;

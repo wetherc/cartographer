@@ -5,9 +5,9 @@ import { getHP } from '../entities/Character.js';
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /**
- * A compact HP bar for a roster row: a filled track whose width and color band
- * track current/max HP, with the numbers as an accessible label. Characters
- * without an HP pool (none authored yet) get an empty, unlabeled track.
+ * A compact HP bar for a roster row. A filled track shows current and max
+ * HP through its width and color band, with the numbers as an accessible
+ * label. A character with no HP pool authored yet gets an empty, unlabeled track.
  * @param {Character} character
  * @returns {HTMLElement}
  */
@@ -27,17 +27,18 @@ function hpMeter(character) {
 }
 
 /**
- * Mount the party roster: one row per character (select + delete) and a
- * "new character" button. Pure DOM wiring — creation/deletion semantics
- * (modals, id generation, list updates) are supplied via callbacks so the
- * roster stays as thin as the other panels.
+ * Mount the party roster: one row per character, with select and delete,
+ * and a New character button. This is pure DOM wiring. Callbacks supply
+ * the creation and deletion logic, for example modals, id generation, and
+ * list updates, so the roster stays as thin as the other panels.
  * @param {HTMLElement} container
- * With `onAwardXP`, a non-empty roster also offers an "Award XP" action that
- * grants the same amount to every party member at once (the caller prompts for
- * the amount), so leveling after an encounter doesn't mean visiting each sheet.
- * With a `canManage` callback returning false the roster is browse-only:
- * rows still select (any viewer may look at a sheet) but the add/delete/award
- * controls disappear — roster membership is the GM's to manage.
+ * If onAwardXP is set, a non-empty roster also offers an Award XP action.
+ * This grants the same amount to every party member at once, with the
+ * caller prompting for the amount, so leveling after an encounter does not
+ * mean a visit to each sheet. If canManage returns false, the roster is
+ * browse-only. Rows still select, since any viewer can look at a sheet,
+ * but the add, delete, and award controls disappear. Roster membership
+ * belongs to the GM to manage.
  * @param {{
  *   getCharacters: () => Character[],
  *   getSelectedId: () => string | null,
@@ -49,10 +50,11 @@ function hpMeter(character) {
  *   canManage?: () => boolean,
  *   canPlace?: () => boolean,
  * }} options
- * With `onPlace`, each managed row also offers a "place on map" action so the
- * GM can move one character to any node/tile (or back to the party) without
- * touching the rest of the party; `canPlace` (checked per render, like
- * `canManage`) hides that action while splitting the party is disallowed.
+ * If onPlace is set, each managed row also offers a Place on map action.
+ * This lets the GM move one character to any node or tile, or back to the
+ * party, without changing the rest of the party. canPlace, checked per
+ * render like canManage, hides that action while splitting the party is
+ * not allowed.
  * @returns {{ update: () => void }}
  */
 export function mountCharacterRoster(container, options) {

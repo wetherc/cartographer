@@ -14,9 +14,10 @@ import {
 
 /**
  * The NPC template create/edit form, inline in the Library rail like the item
- * and spell forms: the NPC's fields minus placement, which belongs to a
- * spawned NPC rather than its blueprint. Submitting calls `onSubmit` with the
- * assembled template; editing a built-in default stores a custom override.
+ * and spell forms. The form holds the NPC's fields minus placement, which
+ * belongs to a spawned NPC, not to its template. Submit calls `onSubmit` with
+ * the assembled template. An edit of a built-in default stores a custom
+ * override.
  * @param {{
  *   template?: NPCTemplate | null,
  *   submitLabel: string,
@@ -32,8 +33,8 @@ export function buildNPCTemplateForm({ template = null, submitLabel, onSubmit, o
   const dispositionSelect = select(dispositionOptions(), template?.disposition ?? 'neutral');
   const notesInput = textareaField(template?.notes ?? '', { placeholder: 'Notes', rows: 3 });
 
-  // One number field per ability score, so an NPC's modifiers derive from real
-  // stats rather than a flat default.
+  // One number field per ability score. An NPC's modifiers derive from these
+  // real stats, not from a flat default.
   const statBlock = statInputRows(ABILITY_SCORES, template?.stats ?? {});
 
   return buildInlineForm({

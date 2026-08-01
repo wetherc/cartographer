@@ -1,22 +1,24 @@
 import { classNames, el } from './dom.js';
 
 /**
- * Wire an accessible tab strip following the ARIA tabs pattern. The container
- * holds a `[role=tablist]` of `[role=tab]` buttons (each `aria-controls` its
- * panel) followed by the `[role=tabpanel]` elements; this only manages
- * selection state, so the caller owns the markup and the panels' content.
+ * Wire an accessible tab strip that follows the ARIA tabs pattern. The
+ * container holds a `[role=tablist]` of `[role=tab]` buttons, each with
+ * `aria-controls` for its panel, followed by the `[role=tabpanel]`
+ * elements. This function manages only the selection state. The caller
+ * owns the markup and the content of the panels.
  *
- * Selecting a tab shows its panel and hides the rest, and moves the roving
- * `tabindex` so the arrow keys (Left/Right/Home/End) cycle tabs while only the
- * active tab is in the document tab order. The initially-selected tab is the
- * one already marked `aria-selected="true"` in the markup, defaulting to first.
+ * A selection of a tab shows its panel and hides the rest, and moves the
+ * roving `tabindex`, so the arrow keys, Left, Right, Home, and End, cycle
+ * tabs while only the active tab sits in the document tab order. The
+ * initially selected tab is the one already marked `aria-selected="true"`
+ * in the markup, or the first tab by default.
  * @param {HTMLElement} tablist the `[role=tablist]` element
  * @param {{
  *   resolvePanel?: (panelId: string) => HTMLElement | null,
  *   onSelect?: (tabId: string) => void,
- * }} [options] `resolvePanel` finds a panel that is not in the document yet,
- *   which is how `buildTabs` wires a strip it has only just built; `onSelect`
- *   fires for every selection including the initial one.
+ * }} [options] `resolvePanel` finds a panel that is not yet in the
+ *   document, which is how `buildTabs` wires a strip it has just built.
+ *   `onSelect` fires for every selection, including the initial one.
  * @returns {{ select: (tabId: string) => void }}
  */
 export function wireTabs(tablist, options = {}) {
@@ -65,19 +67,20 @@ export function wireTabs(tablist, options = {}) {
   };
 }
 
-/** Distinguishes the generated ids of one strip from another's. */
+/** This keeps the generated ids of one strip separate from another's. */
 let stripCount = 0;
 
 /**
- * Build a tab strip and pair it with panels the caller has already created.
- * Most strips are written out in `index.html` and only need `wireTabs`, but the
- * encounter and library panels decide their tabs at runtime, and both used to
- * hand-roll the buttons, the ARIA attributes, and the arrow keys. The tab and
- * panel ids are generated, since `aria-controls` needs a pairing the caller has
- * no reason to invent.
+ * Build a tab strip and pair it with panels the caller has already
+ * created. Most strips are written out in `index.html` and need only
+ * `wireTabs`. The encounter and library panels decide their tabs at
+ * runtime instead, and both used to hand-roll the buttons, the ARIA
+ * attributes, and the arrow keys. The tab and panel ids are generated
+ * here, since `aria-controls` needs a pairing the caller has no reason to invent.
  *
- * Selection only flips `hidden` on the panels, so a tab click costs nothing —
- * the panels' contents outlive it and refresh on their own schedule.
+ * A selection only flips `hidden` on the panels, so a tab click costs
+ * nothing. The contents of the panels outlive the click and refresh on
+ * their own schedule.
  * @param {{
  *   ariaLabel: string,
  *   className?: string,

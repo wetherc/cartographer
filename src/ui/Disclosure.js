@@ -1,9 +1,10 @@
 /**
- * Wire an accessible disclosure: `button` toggles `body`'s visibility, with
- * `aria-expanded` kept in sync and a rotating chevron cue via a CSS class.
- * The caller owns both elements and their content; this only manages state,
- * so panels that re-render can persist expansion across renders by passing
- * the previous state back in and listening on `onToggle`.
+ * Wire an accessible disclosure. The `button` toggles the visibility of
+ * `body`. This function keeps `aria-expanded` in sync and rotates a chevron
+ * cue through a CSS class. The caller owns both elements and their content.
+ * This function only manages state. A panel that re-renders can persist
+ * expansion across renders by passing the previous state back in and by
+ * listening on `onToggle`.
  * @param {HTMLButtonElement} button
  * @param {HTMLElement} body
  * @param {{ expanded?: boolean, onToggle?: (expanded: boolean) => void }} [options]

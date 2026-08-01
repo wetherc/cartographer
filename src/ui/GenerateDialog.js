@@ -11,12 +11,13 @@ import { openDialog } from './Modal.js';
  */
 
 /**
- * The Generate dialog: archetype/size/levels fields plus a live preview of the
- * candidate layout and its seed. Every field change re-renders the preview
- * through `makeCandidate` (a pure seeded build the caller memoizes), Reroll
- * draws a new seed, and the seed field is editable so a liked layout is
- * reproducible later. Resolves with the accepted choice, or null on cancel —
- * nothing is stamped into the node until the caller applies the result.
+ * The Generate dialog: archetype, size, and levels fields, plus a live
+ * preview of the candidate layout and its seed. Every field change
+ * rerenders the preview through `makeCandidate`, a pure seeded build the
+ * caller memoizes. Reroll draws a new seed. The seed field is editable,
+ * so a GM can reproduce a liked layout later. The dialog resolves with
+ * the accepted choice, or null on cancel. Nothing stamps into the node
+ * until the caller applies the result.
  * @param {{
  *   archetypes: { value: string, label: string }[],
  *   makeCandidate: (choice: GenerateChoice) => { width: number, height: number, tiles: import('../types/map.js').Tile[] },
@@ -24,8 +25,8 @@ import { openDialog } from './Modal.js';
  * @returns {Promise<GenerateChoice | null>}
  */
 export function generateDialog(options) {
-  // Set once the dialog closes, so an image finishing its load can no longer
-  // draw into the detached preview canvas.
+  // This is set once the dialog closes, so an image that finishes
+  // loading can no longer draw into the detached preview canvas.
   let closed = false;
   /** @type {() => GenerateChoice} */
   let readChoice;
@@ -63,8 +64,9 @@ export function generateDialog(options) {
 
       const levelsInput = field('Levels (dungeon only)', numberField(1, { min: 1 }));
 
-      // Seed row: the editable seed plus a Reroll button drawing a fresh one.
-      // The preview canvas below always shows the layout this exact seed builds.
+      // This is the seed row: the editable seed plus a Reroll button that
+      // draws a fresh one. The preview canvas below always shows the
+      // layout this exact seed builds.
       const seedInput = numberField(randomSeed());
       // renderPreview is declared below, so the handler reaches it at click time.
       const reroll = textButton('Reroll', () => {
@@ -88,9 +90,10 @@ export function generateDialog(options) {
       body.push(canvas);
 
       const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
-      // tileSize is per-render (it depends on the candidate's grid size), so the
-      // renderer is rebuilt per draw; its image cache is module-level in effect
-      // only for the dialog's lifetime, which is fine for a preview.
+      // tileSize depends on the candidate's grid size, so it is set per
+      // render, and the renderer rebuilds per draw. Its image cache acts
+      // as module-level only for the lifetime of the dialog, which is
+      // fine for a preview.
       /** @type {Map<string, HTMLImageElement>} */
       const imageCache = new Map();
 
@@ -109,7 +112,7 @@ export function generateDialog(options) {
           Math.floor(canvas.width / Math.max(candidate.width, candidate.height)),
         );
         const renderer = new MapRenderer(ctx, { tileSize, onImageLoad: renderPreview });
-        renderer.imageCache = imageCache; // share loads across re-renders
+        renderer.imageCache = imageCache; // shares loads across rerenders
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         renderer.render({
           canvasWidth: canvas.width,
@@ -134,9 +137,9 @@ export function generateDialog(options) {
         input.addEventListener('change', renderPreview);
       }
       const cancel = textButton('Cancel', () => close('cancel'));
-      // Submitting sets returnValue to the submit button's value; Escape leaves
-      // it '', so dismissal (Escape or Cancel) resolves null rather than
-      // accidentally generating.
+      // A submit sets returnValue to the submit button's value. Escape
+      // leaves returnValue empty, so a dismissal, by Escape or Cancel,
+      // resolves null instead of generating by accident.
       const submit = textButton('Generate', undefined, {
         variant: 'primary',
         type: 'submit',

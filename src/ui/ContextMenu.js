@@ -1,18 +1,20 @@
 /**
- * A small floating menu anchored to a screen position — the right-click
- * counterpart to Modal.js, for choices that don't warrant a full dialog.
- * Native-menu semantics: focus moves into the first item, arrows cycle,
- * Escape or clicking anywhere outside dismisses without choosing, and
- * choosing an item closes the menu before running its action. At most one
- * menu is open at a time; opening another closes the first.
+ * A small floating menu anchored to a screen position. It is the right-click
+ * counterpart to Modal.js, for choices that do not need a full dialog. It
+ * follows native-menu behavior: focus moves to the first item, arrow keys
+ * cycle through items, and Escape or a click outside the menu dismisses it
+ * without a choice. Choosing an item closes the menu before it runs the
+ * action. Only one menu stays open at a time. Opening another menu closes
+ * the first.
  */
 
 import { el } from './dom.js';
 
 /**
- * Clamp a menu's top-left corner so the whole menu stays inside the viewport,
- * flipping off the edges rather than sliding under them.
- * @param {number} x @param {number} y desired position (e.g. the pointer)
+ * Clamp a menu's top-left corner so the whole menu stays inside the
+ * viewport. This flips the menu off an edge rather than sliding it under
+ * the edge.
+ * @param {number} x @param {number} y desired position, for example the pointer position
  * @param {number} width @param {number} height menu size
  * @param {number} viewportWidth @param {number} viewportHeight
  * @param {number} [margin] minimum gap kept from every viewport edge
@@ -29,8 +31,9 @@ export function clampToViewport(x, y, width, height, viewportWidth, viewportHeig
 let closeCurrent = null;
 
 /**
- * Open the context menu at a screen position. No return value: selection and
- * dismissal both resolve through the items' own callbacks (or nothing).
+ * Open the context menu at a screen position. This function returns nothing.
+ * Selection and dismissal both resolve through each item's own callback, or
+ * through no callback at all.
  * @param {{ label: string, onSelect: () => void }[]} items
  * @param {{ clientX: number, clientY: number }} position
  */
@@ -38,7 +41,8 @@ export function openContextMenu(items, position) {
   closeCurrent?.();
   if (items.length === 0) return;
 
-  // Return focus to whatever had it once the menu closes, matching Modal.js.
+  // Return focus to the previously focused element when the menu closes.
+  // This matches Modal.js.
   const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
 
   const menu = el('div', 'context-menu u-col');
@@ -63,8 +67,9 @@ export function openContextMenu(items, position) {
     opener?.focus();
   }
 
-  /** Any press outside the menu dismisses it (capture phase, so a click on
-   * another widget closes the menu even if that widget stops propagation).
+  /** Any pointer press outside the menu dismisses it. This listener uses the
+   * capture phase, so it closes the menu even when another widget stops
+   * event propagation.
    * @param {PointerEvent} event */
   function onOutsidePointer(event) {
     if (!(event.target instanceof Node) || !menu.contains(event.target)) close();
@@ -94,7 +99,8 @@ export function openContextMenu(items, position) {
   document.body.appendChild(menu);
   closeCurrent = close;
 
-  // Position after mounting so the real size is measurable for the clamp.
+  // Position the menu after mounting it, so the clamp can measure its real
+  // size.
   const rect = menu.getBoundingClientRect();
   const spot = clampToViewport(
     position.clientX,

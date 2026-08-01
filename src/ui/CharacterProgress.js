@@ -19,18 +19,20 @@ import { SKILL_IDS, skillName } from '../data/skills.js';
 /** @typedef {import('../types/entities.js').Character} Character */
 
 /**
- * The character sheet's progression section: the class list, the pending-level
- * assignment flow (a multiclass character's XP levels wait here until spent),
- * pending ability-score improvements (apply an increase, take a feat, undo the
- * last choice), the unlocked class features, and the hit-dice pools with their
- * short-rest spend. All rule logic lives in the entity modules (LevelAssign,
- * LevelUp, HitDice); this is DOM wiring over them, verified visually.
+ * This is the progression section of the character sheet. It shows the
+ * class list, the pending-level assignment flow (a multiclass character's
+ * XP levels wait here until spent), pending ability-score improvements
+ * (apply an increase, take a feat, undo the last choice), the unlocked
+ * class features, and the hit-dice pools with their short-rest spend. All
+ * rule logic lives in the entity modules LevelAssign, LevelUp, and
+ * HitDice. This file is DOM wiring over them, verified visually.
  */
 
 /**
- * Follow up a newly taken class with its multiclass skill pick, when the
- * class's reduced grant includes one. Skills already held are excluded;
- * cancelling (or nothing left to pick) keeps the assignment without a skill.
+ * After a character takes a new class, prompt for its multiclass skill
+ * pick, if the class's reduced grant includes one. The prompt excludes
+ * skills the character already holds. A cancel, or an empty pick list,
+ * keeps the assignment without a skill.
  * @param {Character} character
  * @param {string} classId
  * @returns {Promise<Character>}
@@ -62,22 +64,24 @@ async function pickMulticlassSkill(character, classId) {
 }
 
 /**
- * Build the progression section, or null when the character has nothing
- * progression-shaped (a classless character without hit-dice pools).
+ * Build the progression section. Return null when the character has
+ * nothing progression-shaped, for example a classless character with no
+ * hit-dice pools.
  *
- * The section is laid out from the character as it is at build time, but every
- * action reads `getCharacter()` again when it fires. The sheet keeps this DOM
- * across changes it can write in place, so a hit-die spend that healed against a
- * build-time snapshot would undo whatever the HP bar has done since.
+ * The section lays out from the character as it is at build time, but
+ * every action reads getCharacter() again when it fires. The sheet keeps
+ * this DOM across changes it can write in place. If a hit-die spend heals
+ * against a build-time snapshot, it undoes whatever the HP bar has
+ * done since.
  * @param {() => Character} getCharacter
  * @param {{
  *   editBase: boolean,
  *   play: boolean,
  *   onCommit: (character: Character) => void,
  *   notify: (message: string) => void,
- * }} opts `editBase` gates the level/ASI/feat choices (they change the base
- *   character), `play` the hit-die spend; `notify` surfaces roll results and
- *   dead-end explanations as toasts.
+ * }} opts editBase gates the level, ASI, and feat choices, since they
+ *   change the base character. play gates the hit-die spend. notify shows
+ *   roll results and dead-end explanations as toasts.
  * @returns {HTMLElement | null}
  */
 export function buildProgressSection(getCharacter, opts) {
@@ -125,8 +129,8 @@ export function buildProgressSection(getCharacter, opts) {
       { submitLabel: 'Assign' },
     );
     if (!values) return;
-    // Read again after the dialog: it was open long enough for the sheet's HP
-    // or slots to move underneath it.
+    // Read the character again after the dialog closes. The dialog stays
+    // open long enough for the sheet's HP or slots to change underneath it.
     const from = getCharacter();
     const isNew = classLevelOf(from, values.class) === 0;
     let next = assignLevel(from, values.class);

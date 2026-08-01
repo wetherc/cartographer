@@ -8,13 +8,14 @@ import { mountListPanel } from './listPanel.js';
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**
- * Mount the quest/session log: active quests first, completed ones below,
- * each with a toggle-complete, edit, and delete affordance, plus a "New quest"
- * control. The panel owns no state — `getQuests` supplies the rows and every
- * mutation flows back through a callback, matching the other panels. Modals
- * (add/edit/confirm) live in main.js. When `getRole` reports a player view,
- * the log is read-only: rows render with a static status glyph and no
- * edit/delete, and the add control is omitted.
+ * Mount the quest/session log: active quests first, then completed quests
+ * below, each with a toggle-complete, edit, and delete control, plus a
+ * "New quest" control. The panel owns no state. `getQuests` supplies the
+ * rows, and every mutation flows back through a callback, matching the other
+ * panels. Modals for add, edit, and confirm live in main.js. When `getRole`
+ * reports a player view, the log is read-only: rows render with a static
+ * status glyph and no edit or delete control, and the panel omits the add
+ * control.
  * @param {HTMLElement} container
  * @param {{
  *   getQuests: () => Quest[],
@@ -30,8 +31,8 @@ export function mountQuestPanel(container, callbacks) {
   return mountListPanel(container, {
     className: 'quest-panel',
     gate: () => !callbacks.getRole || isGM(callbacks.getRole()),
-    // The two status groups are one flat list; `groupOf` re-splits it into the
-    // Active and Completed sections.
+    // The two status groups start as one flat list. `groupOf` re-splits the
+    // list into the Active and Completed sections.
     getRows: () => {
       const { active, completed } = groupByStatus(callbacks.getQuests());
       return [...active, ...completed];
@@ -47,8 +48,8 @@ export function mountQuestPanel(container, callbacks) {
       /** @type {Node} */
       let toggle;
       if (ctx.gm) {
-        // A completed quest's toggle shows a check; an active one shows a plus to
-        // add/mark-done, so the glyph tracks the quest's state.
+        // A completed quest's toggle shows a check. An active quest's toggle
+        // shows a plus, to mark it done. The glyph tracks the quest's state.
         toggle = ctx.action(
           {
             icon: done ? 'check' : 'add',
@@ -59,7 +60,7 @@ export function mountQuestPanel(container, callbacks) {
           quest,
         );
       } else {
-        // Players see the status glyph without the affordance to flip it.
+        // A player sees the status glyph with no control to flip it.
         toggle = el('span', 'quest-panel__status', icon(done ? 'check' : 'add'));
       }
 
@@ -67,9 +68,8 @@ export function mountQuestPanel(container, callbacks) {
         'div',
         'quest-panel__body u-col u-g1',
         el('span', 'quest-panel__title', quest.title),
-        // A ternary rather than `&&`: an empty string is a legal child that `el`
-        // would append as an empty text node, where absent notes should add
-        // nothing at all.
+        // A ternary, not `&&`: an empty string is a legal child that `el`
+        // appends as an empty text node. Absent notes must add nothing.
         quest.notes ? el('span', 'u-muted', quest.notes) : null,
       );
 

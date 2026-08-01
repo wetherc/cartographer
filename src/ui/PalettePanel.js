@@ -11,17 +11,18 @@ import { wireDisclosure } from './Disclosure.js';
 
 /**
  * Mount the tile palette: a picker of paint brushes for Build mode. The active
- * brush determines what clicking a tile does — an Inspect brush (null) selects
- * a tile for the inspector, an Erase brush removes a tile, a Region brush
- * drag-selects a block of tiles to link to a child node, and any tile swatch
- * paints that image. Selecting a brush invokes onBrushChange; the active brush
- * is highlighted. Swatches are also drag sources so a tile can be dragged onto
- * the grid, in addition to click-to-paint. Hovering a swatch shows its label in
- * the supplied tooltip (swatches are image-only, so the name has no other
- * visible surface). A scale row (1x/2x/3x) sizes painted tile art: at 2x/3x a
- * paint places one tile whose image is drawn stretched across a 2x2/3x3 block
- * — a purely visual footprint for landmarks (an academy, a keep), no region
- * link involved. Roads and erasing ignore it.
+ * brush controls what a click on a tile does. An Inspect brush (null) selects
+ * a tile for the inspector. An Erase brush removes a tile. A Region brush
+ * drag-selects a block of tiles to link to a child node. Any tile swatch
+ * paints that image. A brush pick invokes onBrushChange, and the panel
+ * highlights the active brush. Swatches are also drag sources, so a GM can
+ * drag a tile onto the grid in addition to click-to-paint. A hover over a
+ * swatch shows its label in the supplied tooltip, because a swatch is
+ * image-only and has no other visible label. A scale row (1x, 2x, 3x) sizes
+ * painted tile art. At 2x or 3x, a paint places one tile whose image draws
+ * stretched across a 2x2 or 3x3 block. This is a visual footprint only, for
+ * landmarks such as an academy or a keep, and involves no region link. Roads
+ * and erasing ignore the scale row.
  * @param {HTMLElement} container
  * @param {TilePalette} palette
  * @param {(brush: Brush) => void} onBrushChange
@@ -38,7 +39,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
 
   /** @type {HTMLElement[]} */
   const selectables = [];
-  /** @type {{ el: HTMLElement, type: string }[]} swatches, tagged with their palette type for kind-filtering */
+  /** @type {{ el: HTMLElement, type: string }[]} Swatches, tagged with their palette type for kind-filtering. */
   const swatchEntries = [];
   const inspectBtnRef = { el: /** @type {HTMLElement | null} */ (null) };
 
@@ -61,7 +62,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
     onBrushChange(brush);
   }
 
-  // Tools row: Inspect (default) and Erase.
+  // Tools row: Inspect (the default) and Erase.
   const tools = el('div', 'palette__tools');
 
   /**
@@ -80,7 +81,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
     return node;
   }
 
-  // Inspect is the starting brush, so it carries the active styling from mount.
+  // Inspect is the starting brush. It carries the active styling from mount.
   const inspectBtn = toolButton('Inspect', 'edit', null);
   inspectBtn.classList.add('palette__item--active');
   inspectBtnRef.el = inspectBtn;
@@ -93,7 +94,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   tools.append(inspectBtn, regionBtn, erasePathBtn, eraseBtn);
   root.appendChild(tools);
 
-  // Scale row: how large the next painted tile's art draws (1x1 up to 3x3).
+  // Scale row: how large the next painted tile's art draws, from 1x1 to 3x3.
   const scaleRow = el(
     'div',
     'palette__scale u-row u-g2',
@@ -121,9 +122,10 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   }
   root.appendChild(scaleRow);
 
-  // Swatches, grouped into collapsible sections so terrain, overlays (roads,
-  // rivers, coasts), buildings, and interior pieces aren't commingled in one
-  // grid. Terrain starts open (the most common brush); the rest start collapsed.
+  // Swatches group into collapsible sections, so terrain, overlays (roads,
+  // rivers, coasts), buildings, and interior pieces do not mix in one grid.
+  // Terrain starts open, because it is the most common brush. The rest start
+  // collapsed.
   const TERRAIN_TYPES = new Set([
     'grass',
     'forest',
@@ -182,7 +184,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
       });
       swatch.addEventListener('pointerleave', () => tooltip.hide());
     } else {
-      // No tooltip supplied: fall back to the native one.
+      // No tooltip supplied. Fall back to the native one.
       swatch.title = entry.label;
     }
 
@@ -202,18 +204,19 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   root.appendChild(sectionsEl);
 
   /**
-   * Filter the swatch grid to the terrain a node kind can use (interiors show
-   * only interior/custom pieces, regions everything else). If the active brush
-   * is now hidden, fall back to Inspect so a stale hidden brush can't paint.
+   * Filter the swatch grid to the terrain a node kind can use. An interior
+   * shows only interior or custom pieces. A region shows everything else. If
+   * this hides the active brush, fall back to Inspect, so a hidden brush
+   * cannot paint.
    * @param {string} kind
    */
   function setKind(kind) {
     for (const { el: swatch, type } of swatchEntries) {
       swatch.hidden = !allowsPaletteType(kind, type);
     }
-    // A section with nothing visible for this kind hides wholesale (Interior
-    // on outdoor nodes; Terrain/Roads/Buildings inside), so no empty
-    // disclosure headers linger.
+    // A section with nothing visible for this kind hides in full, for example
+    // Interior on outdoor nodes, or Terrain, Roads, and Buildings inside. This
+    // leaves no empty disclosure headers.
     for (const { wrap, swatches } of sections.values()) {
       wrap.hidden = swatches.every((swatch) => swatch.hidden);
     }

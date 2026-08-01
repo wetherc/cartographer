@@ -26,13 +26,14 @@ export function entryItem(entry) {
 }
 
 /**
- * Mount the travelogue panel: a newest-first list of auto-recorded events
- * (party movement, combat outcomes) with a Clear control. The panel owns no
- * state — `getEntries` supplies the rows and `onClear` empties the master list
- * kept by the caller, matching the other thin DOM-wrapper panels. Rendering is
- * append-only: `update` prepends only the entries logged since the last call
- * (via `entriesAfter`) and rebuilds from scratch only when the log was cleared
- * or replaced, so a `logEvent` costs one row, not a full re-render.
+ * Mount the travelogue panel: a newest-first list of auto-recorded
+ * events, for example party movement or combat outcomes, with a Clear
+ * control. The panel owns no state. `getEntries` supplies the rows, and
+ * `onClear` empties the master list kept by the caller, matching the
+ * other thin DOM-wrapper panels. Rendering is append-only. `update`
+ * prepends only the entries logged since the last call, through
+ * `entriesAfter`, and rebuilds from scratch only when the log was cleared
+ * or replaced. A `logEvent` costs one row, not a full rerender.
  * @param {HTMLElement} container
  * @param {{ getEntries: () => LogEntry[], onClear: () => Promise<boolean> | boolean }} callbacks
  * @returns {{ update: () => void }}
@@ -52,14 +53,15 @@ export function mountTravelogPanel(container, callbacks) {
 
   container.appendChild(el('div', 'travelog', empty, list, clearButton));
 
-  /** Id of the newest rendered entry; null when the list renders empty. */
+  /** Id of the newest rendered entry. Null when the list renders empty. */
   let newestId = /** @type {string | null} */ (null);
 
   function update() {
     const entries = callbacks.getEntries();
     const fresh = entriesAfter(entries, newestId);
-    if (fresh === null) list.textContent = ''; // cleared or replaced: rebuild
-    // Newest first: prepending oldest-to-new leaves the newest row on top.
+    if (fresh === null) list.textContent = ''; // the log was cleared or replaced, so rebuild
+    // The list is newest first. Prepending in oldest-to-newest order
+    // leaves the newest row on top.
     for (const entry of fresh ?? entries) list.prepend(entryItem(entry));
     while (list.children.length > TRAVELOG_LIMIT) list.lastElementChild?.remove();
 

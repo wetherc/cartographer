@@ -9,21 +9,22 @@ import { promptSpellDetail } from './SpellDetail.js';
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
 /**
- * The character-sheet spellbook: a read-only view of the spells the character
- * can cast right now, grouped by spell level: cantrips plus the leveled
- * spells its known-rule makes castable (prepared ones under a prepared-rule
- * class, every known one under a known-rule class). Clicking a spell
- * opens its detail, which offers Cast (in play) and Close; there is no
- * learn/prepare/forget here, that lives in the Spellbook tab. A character with
- * no caster class and an empty spellbook renders nothing (returns null).
+ * This builds the character-sheet spellbook: a read-only view of the
+ * spells the character can cast right now, grouped by spell level. It
+ * shows cantrips plus the leveled spells that the known-rule makes
+ * castable, prepared ones under a prepared-rule class, and every known
+ * one under a known-rule class. A click on a spell opens its detail,
+ * which offers Cast, in play, and Close. Learning, preparing, and
+ * forgetting a spell live in the Spellbook tab, not here. A character
+ * with no caster class and an empty spellbook renders nothing and returns null.
  * @param {Character} character
  * @param {{
  *   play: boolean,
  *   resolveSpells: (ids: string[]) => Spell[],
  *   onCast: (spell: Spell) => void,
  * }} opts
- *   `resolveSpells` maps stored ids to Spell objects (unknown ids drop out);
- *   `onCast` opens the cast dialog for a chosen spell.
+ *   `resolveSpells` maps stored ids to Spell objects. An unknown id drops
+ *   out. `onCast` opens the cast dialog for a chosen spell.
  * @returns {HTMLElement | null}
  */
 export function buildSpellsSection(character, opts) {
@@ -38,9 +39,10 @@ export function buildSpellsSection(character, opts) {
     el('span', 'section-label', className ? `Spells (${className})` : 'Spells'),
   );
 
-  // One group per spell level the character can actually cast from, ascending:
-  // cantrips first, then each level with something castable. A caster with a
-  // wide spread reads which slot level a spell will cost off the heading.
+  // This makes one group per spell level the character can cast from, in
+  // ascending order: cantrips first, then each level with something
+  // castable. The heading tells a caster with a wide spread which slot
+  // level a spell costs.
   const groups = groupSpellsByLevel([
     ...opts.resolveSpells(book.cantrips),
     ...opts.resolveSpells(castableLeveledIds(character)),
@@ -49,8 +51,9 @@ export function buildSpellsSection(character, opts) {
     section.appendChild(emptyState('Nothing castable'));
     return section;
   }
-  // The groups sit side by side across the section's full width and wrap, so a
-  // caster with several levels prepared does not turn into one long column.
+  // The groups sit side by side across the full width of the section and
+  // wrap. A caster with several levels prepared does not turn into one
+  // long column.
   const levels = el('div', 'character-sheet__spell-levels');
   for (const group of groups) levels.appendChild(buildGroup(group.label, group.spells, opts));
   section.appendChild(levels);
@@ -58,9 +61,9 @@ export function buildSpellsSection(character, opts) {
 }
 
 /**
- * One spell level's row of castable chips, under its level heading. Each chip
- * opens the spell's detail on click; the detail offers Cast (when the viewer may
- * play the character). Only called for a level that has spells.
+ * One spell level's row of castable chips, under its level heading. A
+ * click on a chip opens the spell's detail, which offers Cast when the
+ * viewer can play the character. This runs only for a level that has spells.
  * @param {string} title
  * @param {Spell[]} spells
  * @param {{ play: boolean, onCast: (spell: Spell) => void }} opts

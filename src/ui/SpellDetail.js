@@ -13,9 +13,10 @@ import { openDialog } from './Modal.js';
  */
 
 /**
- * The one-line effect summary shown under the meta grid: a spell attack and its
- * damage, a save (ability + DC) with its damage and rider, or healing dice.
- * Utility spells have no line (their rules live in the description).
+ * The one-line effect summary shown under the meta grid: a spell attack and
+ * its damage, a save (ability plus DC) with its damage and rider, or healing
+ * dice. A utility spell has no line, because its rules live in the
+ * description.
  * @param {Spell} spell
  * @param {number | null} saveDC the caster's save DC, or null when unknown
  * @returns {string | null}
@@ -26,8 +27,8 @@ function effectSummary(spell, saveDC) {
     const damage = formatDamage(effect.damage) || 'no damage';
     const shots = effect.projectiles;
     if (!shots) return `Spell attack — ${damage}`;
-    // With projectiles the dice are per projectile, so the line says how many
-    // there are before it says what one deals.
+    // With projectiles, the dice apply per projectile. The line states the
+    // count before it states what one projectile deals.
     const growth = shots.perStep ? ` (+${shots.perStep} per level)` : '';
     const roll = shots.autoHit ? 'hits automatically' : 'spell attack';
     return `${shots.count} projectile${shots.count === 1 ? '' : 's'}${growth}, ${roll} — ${damage} each`;
@@ -46,8 +47,9 @@ function effectSummary(spell, saveDC) {
 }
 
 /**
- * The components line: the letters, then what the M is where the spell names it.
- * A consumed material says so, since that is the one a caster has to be holding.
+ * The components line: the letters, then what the M component is when the
+ * spell names it. A consumed material states this, because it is the one a
+ * caster must hold.
  * @param {Spell} spell
  * @returns {string}
  */
@@ -69,11 +71,11 @@ function metaCell(term, value) {
 }
 
 /**
- * Show a read-only spell detail modal — school/level line, casting meta,
- * effect summary, and description — with a caller-supplied set of action
- * buttons plus an always-present Close. Resolves the clicked action's `id`, or
- * null when Closed or dismissed. The sheet passes a Cast action; the spellbook
- * passes Learn/Forget/Prepare actions.
+ * Show a read-only spell detail modal: a school and level line, casting
+ * meta, effect summary, and description, with a caller-supplied set of
+ * action buttons plus an always-present Close button. Resolves to the
+ * clicked action's `id`, or null when Closed or dismissed. The sheet passes
+ * a Cast action. The spellbook passes Learn, Forget, and Prepare actions.
  * @param {Spell} spell
  * @param {SpellAction[]} actions
  * @param {{ saveDC?: number | null }} [options]
@@ -87,11 +89,11 @@ export function promptSpellDetail(spell, actions, options = {}) {
       const levelText = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
       const summary = effectSummary(spell, options.saveDC ?? null);
 
-      // Falsy entries are the optional lines (no effect summary, no
-      // description); Node[] is what openDialog's body takes.
+      // Falsy entries are the optional lines: no effect summary, no
+      // description. Node[] is the type openDialog's body takes.
       const body = /** @type {Node[]} */ (
         [
-          // School / level line, with concentration and ritual as trailing tags.
+          // School and level line, with concentration and ritual as trailing tags.
           el(
             'p',
             'spell-detail__subtitle u-row u-wrap u-g2',
@@ -115,7 +117,7 @@ export function promptSpellDetail(spell, actions, options = {}) {
         ].filter(Boolean)
       );
 
-      // Dismiss-left, primary-right — the same ordering as every modal.
+      // Dismiss on the left, primary on the right, the same order as every modal.
       const dismiss = textButton('Close', () => close('close'));
       const buttons = actions.map((action) =>
         textButton(action.label, () => close(action.id), { variant: action.variant }),

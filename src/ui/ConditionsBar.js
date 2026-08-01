@@ -7,12 +7,13 @@ import { el } from './dom.js';
 /** @typedef {import('../types/entities.js').Condition} Condition */
 
 /**
- * A row of status-condition chips with an add control, shared by the character
- * sheet and the encounter panel. Self-contained: it reads the current list via
- * `getConditions`, opens its own add dialog, and reports the whole new list
- * through `onChange`, so the owner only has to persist it.
- * With a `canEdit` callback returning false the bar renders read-only: chips
- * without remove buttons and no add control (a spectator's view).
+ * A row of status-condition chips with an add control, shared by the
+ * character sheet and the encounter panel. This bar is self-contained: it
+ * reads the current list through `getConditions`, opens its own add dialog,
+ * and reports the whole new list through `onChange`. The owner only has to
+ * persist that list.
+ * When `canEdit` returns false, the bar renders read-only: chips with no
+ * remove button and no add control. This is the spectator's view.
  * @param {HTMLElement} container
  * @param {{ getConditions: () => Condition[], onChange: (next: Condition[]) => void, canEdit?: () => boolean }} callbacks
  * @returns {{ update: () => void }}
@@ -62,7 +63,8 @@ export function mountConditionsBar(container, callbacks) {
     const conditions = callbacks.getConditions();
     for (const condition of conditions) root.appendChild(buildChip(condition));
     if (!canEdit()) return;
-    // With no chips to give it context, a bare "+" is cryptic — spell it out.
+    // With no chips for context, a plain icon button is unclear. Use a
+    // labeled button instead.
     const addButton = conditions.length
       ? iconButton('add', 'Add condition', add, { className: 'conditions-bar__add' })
       : textButton('Condition', add, {

@@ -1,11 +1,12 @@
 import { append, el } from './dom.js';
 
 /**
- * A cursor-following tooltip surfacing a tile's metadata (POI type, notes)
- * while hovering the map in Play mode — the read side of the Build-mode tile
- * inspector, which previously wrote data nothing displayed back during play.
- * Positioned fixed so no container offset math is needed, and nudged left
- * when it would spill past the viewport edge.
+ * A cursor-following tooltip that shows a tile's metadata, POI type and
+ * notes, while the map is hovered in Play mode. It is the read side of
+ * the Build-mode tile inspector, which previously wrote data that nothing
+ * displayed back during play. It uses fixed positioning, so no container
+ * offset math is needed, and it shifts left when it spills past the
+ * edge of the viewport.
  * @param {HTMLElement} container
  * @returns {{
  *   show: (content: { title: string, notes: string, npcs?: string }, clientX: number, clientY: number) => void,

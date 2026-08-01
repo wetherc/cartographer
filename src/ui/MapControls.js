@@ -2,14 +2,14 @@ import { iconButton } from './buttons.js';
 import { el } from './dom.js';
 
 /**
- * Mount the on-canvas map controls: zoom in/out, fit-to-extent, and a live
- * zoom-percentage readout. Nothing on the map otherwise advertises that it
- * pans and zooms, and these buttons give keyboard users a reachable
+ * Mount the on-canvas map controls: zoom in, zoom out, fit-to-extent, and
+ * a live zoom-percentage readout. Nothing else on the map shows that it
+ * pans and zooms, so these buttons give keyboard users a reachable
  * alternative to the wheel-only zoom.
- * With a `fog` group, a second GM-only cluster offers a reveal brush, a hide
- * brush (toggles — strokes on the map then reveal/hide fog instead of moving
- * the party), and a reveal-whole-node action. The caller owns the active-tool
- * state; `getTool` drives the pressed styling.
+ * If a `fog` group is set, a second GM-only cluster offers a reveal
+ * brush, a hide brush, toggles that make a stroke on the map reveal or
+ * hide fog instead of moving the party, and a reveal-whole-node action.
+ * The caller owns the active-tool state. `getTool` drives the pressed styling.
  * @param {HTMLElement} container
  * @param {{
  *   onZoomIn: () => void,
@@ -47,9 +47,9 @@ export function mountMapControls(container, callbacks) {
   /** @type {'reveal' | 'hide' | null | undefined} */
   let lastTool;
 
-  // Called from the canvas's per-frame view-change hook, so bail before any
-  // DOM write when nothing shown here changed — a pan otherwise rewrites the
-  // readout and toggle attributes at frame rate.
+  // This runs from the canvas's per-frame view-change hook. Stop before
+  // any DOM write when nothing shown here changed. Otherwise a pan
+  // rewrites the readout and toggle attributes at frame rate.
   function update() {
     const zoom = `${Math.round(callbacks.getZoom() * 100)}%`;
     const active = callbacks.fog?.getTool() ?? null;

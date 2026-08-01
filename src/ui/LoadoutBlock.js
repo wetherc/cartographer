@@ -4,19 +4,20 @@ import { chip } from './buttons.js';
 /** @typedef {import('../combat/Loadout.js').Loadout} Loadout */
 
 /**
- * A combatant's loadout as a short block of labelled lines: what they are
- * wearing, what they can swing, how many spells they have, and what is left in
- * their slot pools. Shared by the board's cards and the active-combatant column,
- * so the two cannot describe the same combatant differently.
+ * A combatant's loadout as a short block of labeled lines: what the
+ * combatant wears, what it can swing, how many spells it has, and what
+ * is left in its slot pools. The board's cards and the active-combatant
+ * column share this block, so the two cannot describe the same
+ * combatant differently.
  *
- * `detailed` is the column's fuller form: weapons print their damage roll and
- * the slot pools each get a chip. A card gets names and a compact slot summary
- * instead, since a card sits next to five others.
+ * `detailed` is the column's fuller form. Weapons print their damage
+ * roll, and each slot pool gets a chip. A card gets names and a compact
+ * slot summary instead, since a card sits next to five others.
  *
- * The block draws exactly what it is handed. Whether the viewer may see a
- * combatant's spells at all is decided before this point (see
- * `combat/Loadout.js`), which is why an empty list here means nothing to draw
- * rather than nothing to know.
+ * The block draws exactly what it is handed. Whether the viewer can see
+ * a combatant's spells at all is decided before this point, see
+ * `combat/Loadout.js`. This is why an empty list here means nothing to
+ * draw, not nothing to know.
  * @param {Loadout} loadout
  * @param {{ detailed?: boolean }} [options]
  * @returns {HTMLElement | null}
@@ -73,9 +74,9 @@ function line(label, value) {
 }
 
 /**
- * The spell counts in words, or null for a combatant with none. Cantrips are
- * counted apart from leveled spells because a cantrip costs nothing to cast and
- * a leveled spell spends a slot.
+ * The spell counts in words, or null for a combatant with none. Cantrips
+ * are counted apart from leveled spells, since a cantrip costs nothing to
+ * cast and a leveled spell spends a slot.
  * @param {Loadout['spells']} spells
  * @returns {string | null}
  */

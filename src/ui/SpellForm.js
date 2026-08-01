@@ -28,8 +28,8 @@ import {
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/spell.js').SpellEffect} SpellEffect */
 
-/** How each casting-time kind reads in the picker. The counted kinds double as
- * the caption over the amount field beside it. @type {Record<string, string>} */
+/** How each casting-time kind reads in the picker. A counted kind also serves
+ * as the caption over the amount field beside it. @type {Record<string, string>} */
 const CASTING_TIME_LABELS = {
   action: 'Action',
   bonus: 'Bonus action',
@@ -39,7 +39,7 @@ const CASTING_TIME_LABELS = {
   special: 'Special',
 };
 
-/** The same for durations. @type {Record<string, string>} */
+/** The same map for durations. @type {Record<string, string>} */
 const DURATION_LABELS = {
   instantaneous: 'Instantaneous',
   rounds: 'Rounds',
@@ -50,7 +50,7 @@ const DURATION_LABELS = {
   special: 'Special',
 };
 
-/** The component letters a spell may require, with their 5e meanings. */
+/** The component letters a spell can require, with their 5e meanings. */
 const COMPONENTS = [
   { letter: 'V', title: 'Verbal' },
   { letter: 'S', title: 'Somatic' },
@@ -61,10 +61,11 @@ const COMPONENTS = [
  * The spell create/edit form, inline in the Library rail like the item form.
  * Every field of a Spell is here: descriptive metadata, a class multi-select,
  * component letters, and an effect section that swaps its inner controls with
- * the chosen effect kind (attack damage, save ability/damage/condition, heal
- * dice, or nothing for utility). Submitting calls `onSubmit` with the assembled
- * spell minus its id — the caller owns identity and the merge key. Editing a
- * built-in default stores the result as a custom override.
+ * the chosen effect kind: attack damage, a save with its ability, damage, and
+ * condition, heal dice, or nothing for utility. Submit calls `onSubmit`
+ * with the assembled spell minus its id, because the caller owns identity and
+ * the merge key. An edit of a built-in default stores the result as a custom
+ * override.
  * @param {{
  *   spell?: Spell | null,
  *   submitLabel: string,
@@ -82,7 +83,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   );
   const schoolSelect = select([...SPELL_SCHOOLS], spell?.school ?? SPELL_SCHOOLS[0]);
 
-  // Class list: a checkbox per playable class; the ticked set is the spell's
+  // Class list: a checkbox per playable class. The ticked set is the spell's
   // available spell lists.
   const classChecks = CLASS_LIST.map((cls) => {
     const { label, input } = checkbox(cls.name, spell?.classes.includes(cls.id) ?? false);
@@ -99,7 +100,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
 
   const rangeInput = textField(spell?.range ?? 'Self', '60 feet');
 
-  // --- Casting time: a kind, plus whatever that kind carries ----------------
+  // --- Casting time: a kind, plus whatever fields that kind carries --------
   const castingTime = parseCastingTime(spell?.castingTime ?? '1 action');
   const timeKindSelect = select(
     kindOptions(CASTING_TIME_KINDS, CASTING_TIME_LABELS),
@@ -115,7 +116,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const timeTextInput = textField(castingTime.text ?? '', 'as written');
   const timeTextField = labeled('Casting time text', timeTextInput);
 
-  // --- Duration: the same shape, plus the "up to" distinction ---------------
+  // --- Duration: the same shape, plus the "up to" distinction --------------
   const duration = parseDuration(spell?.duration ?? 'Instantaneous');
   const durationKindSelect = select(kindOptions(DURATION_KINDS, DURATION_LABELS), duration.kind);
   const durationAmountInput = numberField(duration.amount ?? 1, {
@@ -136,9 +137,9 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const componentsField = labeled('Components', wrapChecks(componentChecks.map((c) => c.label)));
   const materialCheck = componentChecks[COMPONENTS.findIndex((c) => c.letter === 'M')];
 
-  // What the M component is. Only a consumed material is enforced against the
-  // caster's inventory, so the cost is documentation and the checkbox is the
-  // field that changes what a cast does.
+  // What the M component is. The system enforces only a consumed material
+  // against the caster's inventory. The cost field is documentation only. The
+  // checkbox is the field that changes what a cast does.
   const materialInput = textField(spell?.materials?.text ?? '', 'a pinch of sulfur');
   const materialField = labeled('Material', materialInput);
   const materialCostInput = numberField(spell?.materials?.costGP ?? 0, {
@@ -149,8 +150,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const consumed = checkbox('Consumed on cast', spell?.materials?.consumed ?? false);
   consumed.label.title = 'The cast destroys the material, so the caster must be holding it';
 
-  // How many creatures one cast reaches. 0 marks an area spell, where the count
-  // depends on the map rather than the spell, so the caster picks any number.
+  // How many creatures one cast reaches. 0 marks an area spell, where the map,
+  // not the spell, decides the count, so the caster picks any number.
   const targetCountInput = numberField(spell?.targetCount ?? 1, {
     min: 0,
     max: MAX_TARGET_COUNT,
@@ -167,14 +168,15 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     className: 'spell-form__description',
   });
 
-  // --- Effect section: swaps controls by kind -------------------------------
+  // --- Effect section: swaps controls by kind -----------------------------
   const kindSelect = select([...SPELL_EFFECT_KINDS], spell?.effect.kind ?? 'utility');
   const saveEffect = spell?.effect.kind === 'save' ? spell.effect : null;
   const abilitySelect = select([...SPELL_ABILITIES], saveEffect?.saveAbility ?? 'DEX');
   const halfOnSave = checkbox('Half on save', saveEffect?.halfOnSave ?? false);
   // The condition a failed save imposes, picked from the same list the
-  // conditions bar offers so the name always matches a real chip. An imported
-  // spell naming something else keeps it as its own option rather than losing it.
+  // conditions bar offers, so the name always matches a real chip. An
+  // imported spell that names something else keeps that name as its own
+  // option, and does not lose it.
   const storedCondition = saveEffect?.condition ?? '';
   const conditionSelect = select(
     [
@@ -185,8 +187,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     storedCondition,
   );
 
-  // A save may deal no damage (condition-only), so its damage is gated; attack
-  // and heal always carry dice.
+  // A save can deal no damage and impose only a condition, so its damage is
+  // gated. An attack and a heal always carry dice.
   const dealsDamage = checkbox(
     'Deals damage',
     spell?.effect.kind === 'attack' || (saveEffect?.damage.length ?? 0) > 0,
@@ -202,7 +204,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const abilityField = labeled('Save', abilitySelect);
   const conditionField = labeled('Condition', conditionSelect);
 
-  // --- Projectiles: several separately-rolled attacks from one cast ----------
+  // --- Projectiles: several separately-rolled attacks from one cast -------
   const shots = spell?.effect.kind === 'attack' ? (spell.effect.projectiles ?? null) : null;
   const fires = checkbox('Fires projectiles', !!shots);
   fires.label.title = 'Each projectile rolls its own attack and picks its own target';
@@ -221,7 +223,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const autoHit = checkbox('Hits automatically', shots?.autoHit ?? false);
   autoHit.label.title = 'No attack roll, as with Magic Missile';
 
-  // --- Scaling --------------------------------------------------------------
+  // --- Scaling -------------------------------------------------------------
   const scales = checkbox('Scales per level', !!spell?.scaling);
   const scalingDamage = buildDamageEditor(
     spell?.scaling?.damagePerLevel ?? [{ count: 1, sides: 6, damageType: 'fire' }],
@@ -252,12 +254,12 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const effectRow = fieldRow(labeled('Effect', kindSelect), abilityField);
   const projectilesRow = fieldRow(fires.label);
   const projectileFieldsRow = fieldRow(shotCountField, shotPerStepField, autoHit.label);
-  // The save's two toggles share a row; the condition picker gets its own.
+  // The save's two toggles share a row. The condition picker gets its own row.
   const saveTogglesRow = fieldRow(halfOnSave.label, dealsDamage.label);
   const conditionRow = fieldRow(conditionField);
   const scalingRow = fieldRow(scales.label);
   // Keep the multi-line dice editor and the lone targets number on separate
-  // rows; sharing a flex row leaves the small number field floating beside the
+  // rows. A shared flex row leaves the small number field floating beside the
   // taller editor.
   const scalingDamageRow = fieldRow(scalingDamageField);
   const scalingTargetsRow = fieldRow(targetsField);
@@ -267,40 +269,40 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     abilityField.hidden = kind !== 'save';
     saveTogglesRow.hidden = kind !== 'save';
     conditionRow.hidden = kind !== 'save';
-    // Only an attack fires projectiles, and their count fields only matter once
-    // it does.
+    // Only an attack fires projectiles. Their count fields matter only once
+    // the attack does.
     projectilesRow.hidden = kind !== 'attack';
     const firesShots = kind === 'attack' && fires.input.checked;
     projectileFieldsRow.hidden = !firesShots;
-    // Attack always shows damage; save shows it when "Deals damage" is on; heal
-    // shows healing; utility shows neither. Projectiles change what the dice
-    // mean, so the caption says which.
+    // Attack always shows damage. Save shows damage when "Deals damage" is on.
+    // Heal shows healing. Utility shows neither. Projectiles change what the
+    // dice mean, so the caption states which meaning applies.
     const showDamage = kind === 'attack' || (kind === 'save' && dealsDamage.input.checked);
     setCaption(damageField, firesShots ? 'Damage / projectile' : 'Damage');
     damageField.hidden = !showDamage;
     healField.hidden = kind !== 'heal';
-    // Restorative dice are healing, never a damage type, and the same holds for
-    // the per-level dice that add to them.
+    // Restorative dice are healing, never a damage type. The same rule holds
+    // for the per-level dice that add to them.
     const fixed = kind === 'heal' ? HEALING_TYPE : null;
     effectDamage.setFixedType(fixed);
     scalingDamage.setFixedType(fixed);
-    // The one damage editor element is reused; park it under whichever label is
-    // visible.
+    // The one damage editor element is reused. Park it under whichever label
+    // is visible.
     if (kind === 'heal') healField.appendChild(effectDamage.element);
     else if (showDamage) damageField.appendChild(effectDamage.element);
   }
   kindSelect.addEventListener('change', syncEffectFields);
 
-  // The material fields only mean something under a ticked M, and unticking M
-  // drops them from the assembled spell the same way switching effect kind drops
-  // the fields the new kind does not carry.
+  // The material fields mean something only under a ticked M. Unticking M
+  // drops them from the assembled spell, the same way a switch of effect kind
+  // drops the fields the new kind does not carry.
   function syncComponents() {
     materialRow.hidden = !materialCheck.input.checked;
   }
   materialCheck.input.addEventListener('change', syncComponents);
 
-  // Each timing kind shows only what it carries: an amount for the counted
-  // kinds, a trigger clause for a reaction, the original text for `special`.
+  // Each timing kind shows only what it carries: an amount for a counted
+  // kind, a trigger clause for a reaction, or the original text for `special`.
   function syncTiming() {
     const timeKind = timeKindSelect.value;
     const timed = TIMED_CASTING_KINDS.includes(
@@ -332,9 +334,9 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   }
   scales.input.addEventListener('change', syncScaling);
 
-  // Both readers hand their raw control values to the parser rather than
-  // validating here, so the form and an imported file agree on what a timing
-  // value may hold.
+  // Both readers hand their raw control values to the parser instead of
+  // validating here. This keeps the form and an imported file in agreement
+  // on what a timing value can hold.
   /** @returns {import('../types/spell.js').CastingTime} */
   function readCastingTime() {
     const kind = timeKindSelect.value;
@@ -356,9 +358,9 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     });
   }
 
-  // Reading the controls is this file's job; deciding what the values mean is
-  // SpellDraft's, so the whole submitted form is gathered as plain values and
-  // handed over in one piece.
+  // Reading the controls is this file's job. Deciding what the values mean is
+  // SpellDraft's job. The whole submitted form gathers as plain values and
+  // hands over in one piece.
   /** @returns {Omit<Spell, 'id'>} */
   function assemble() {
     return assembleSpell({
@@ -441,7 +443,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   return form;
 }
 
-/** The kind picker's options: each kind with its human label.
+/** The kind picker's options: each kind paired with its human label.
  * @param {readonly string[]} kinds
  * @param {Record<string, string>} labels
  * @returns {{ value: string, label: string }[]} */
@@ -449,16 +451,17 @@ function kindOptions(kinds, labels) {
   return kinds.map((kind) => ({ value: kind, label: labels[kind] }));
 }
 
-/** Rewrite a captioned field's caption, so one amount input can name itself
- * 'Minutes' or 'Hours' as the kind beside it changes.
+/** Rewrite a captioned field's caption. This lets one amount input name
+ * itself 'Minutes' or 'Hours' as the kind beside it changes.
  * @param {HTMLElement} field @param {string} caption */
 function setCaption(field, caption) {
   const span = field.querySelector('span');
   if (span) span.textContent = caption;
 }
 
-/** Wrap a set of checkbox labels into a group — inline by default, or a
- * multi-column grid when `grid` is set (used for the long class list).
+/** Wrap a set of checkbox labels into a group: inline by default, or a
+ * multi-column grid when `grid` is set. The grid form serves the long class
+ * list.
  * @param {HTMLElement[]} labels @param {boolean} [grid] */
 function wrapChecks(labels, grid = false) {
   return el(

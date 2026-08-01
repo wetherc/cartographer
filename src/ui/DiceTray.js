@@ -10,15 +10,18 @@ import { capitalize } from '../util/text.js';
 const MODES = ['normal', 'advantage', 'disadvantage'];
 
 /**
- * Mount a dice tray widget, collapsed by default to a D20 icon behind an
- * accessible disclosure button; expanding reveals the full tray (+/- counters
- * per die type, +/- modifier, roll button, result display). Only the latest
- * result shows in the tray; past rolls are the caller's to keep — `onRoll`
- * fires with each formatted result (the app records them in the travelogue).
- * `rollSelection` rolls programmatically (e.g. a weapon attack from the
- * initiative panel): it loads the given counts/modifier/target into the tray,
- * expands it so the result is visible, and rolls — without firing `onRoll`,
- * since such callers log under their own name.
+ * Mount a dice tray widget. By default it collapses to a D20 icon behind an
+ * accessible disclosure button. Expanding it reveals the full tray: a
+ * plus/minus counter for each die type, a plus/minus modifier, a roll
+ * button, and a result display. The tray shows only the latest result. The
+ * caller keeps past rolls: `onRoll` fires with each formatted result, and
+ * the app records it in the travelogue.
+ *
+ * `rollSelection` rolls the tray programmatically, for example for a weapon
+ * attack from the initiative panel. It loads the given counts, modifier, and
+ * target into the tray, expands the tray so the result is visible, and
+ * rolls. It does not fire `onRoll`, because such callers log the roll under
+ * their own name.
  * @param {HTMLElement} container
  * @param {{ onRoll?: (text: string) => void }} [opts]
  * @returns {{
@@ -28,7 +31,7 @@ const MODES = ['normal', 'advantage', 'disadvantage'];
  */
 export function mountDiceTray(container, opts = {}) {
   const selection = emptySelection();
-  /** @type {(() => void)[]} re-syncs each stepper's count readout to the selection */
+  /** @type {(() => void)[]} functions that re-sync each stepper's count readout to the selection */
   const refreshers = [];
 
   const summary = el(
@@ -90,9 +93,9 @@ export function mountDiceTray(container, opts = {}) {
     ),
   );
 
-  // Advantage/disadvantage segmented toggle: rolls every d20 twice, keeping
-  // the higher (advantage) or lower (disadvantage) die. The choice is sticky
-  // until changed, so a GM can set it once and attack through it.
+  // The advantage/disadvantage toggle rolls every d20 twice. It keeps the
+  // higher die for advantage and the lower die for disadvantage. The choice
+  // stays sticky until changed, so a GM can set it once and attack through it.
   const modeName = el('span', 'dice-tray__label u-muted', 'd20 mode');
   const modeSwitch = segSwitch({
     ariaLabel: 'Roll d20s normally, with advantage, or with disadvantage',
@@ -102,13 +105,15 @@ export function mountDiceTray(container, opts = {}) {
       selection.mode = mode;
     },
   });
-  // The selection is the value of record here, and a programmatic roll writes
-  // straight to it, so the buttons re-read it rather than holding it.
+  // The selection is the value of record here. A programmatic roll writes
+  // straight to it, so the buttons re-read the selection rather than holding
+  // their own copy.
   refreshers.push(() => modeSwitch.sync(selection.mode ?? 'normal'));
   root.appendChild(el('div', 'dice-tray__row u-row u-g2', modeName, modeSwitch.element));
 
-  // Optional difficulty target: when set, each roll also reports success or
-  // failure against it (meets-it-beats-it), in the tray and travelogue alike.
+  // The difficulty target is optional. When set, each roll also reports
+  // success or failure against it, using a meets-it-or-beats-it rule, in the
+  // tray and the travelogue.
   const targetInput = numberField('', {
     placeholder: 'none',
     className: 'dice-tray__target',
@@ -150,8 +155,8 @@ export function mountDiceTray(container, opts = {}) {
     rollSelection: (next, target = null) => {
       for (const die of DIE_TYPES) selection.counts[die] = next.counts[die] ?? 0;
       selection.modifier = next.modifier ?? 0;
-      // Callers that don't name a mode inherit the tray's toggle, so weapon
-      // attacks respect a standing advantage/disadvantage choice.
+      // A caller that does not name a mode inherits the tray's toggle, so
+      // weapon attacks respect a standing advantage/disadvantage choice.
       selection.mode = next.mode ?? selection.mode ?? 'normal';
       targetInput.value = target === null ? '' : String(target);
       for (const refresh of refreshers) refresh();

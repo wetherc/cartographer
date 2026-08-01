@@ -2,34 +2,37 @@ import { emptyState, iconButton, textButton } from './buttons.js';
 import { el } from './dom.js';
 
 /**
- * The list panel every rail is built from. Six panels used to hand-roll the
- * same skeleton — a wrapper div, a `render()` that clears it, an empty-state
- * branch, a row loop ending in edit/remove icon buttons, an "New ..." control,
- * and a returned `{ update: render }` — and each re-implemented the
- * await-the-handler-then-re-render idiom per button. That idiom is the reason
- * this module exists: a click handler here is awaited, and the panel re-renders
- * unless the handler reports that nothing happened by returning `false` or
- * `null` (the shape a cancelled dialog already returns). A `void` handler
- * counts as a change and re-renders.
+ * This is the list panel every rail builds from. Six panels used to
+ * hand-roll the same skeleton: a wrapper div, a `render()` that clears
+ * it, an empty-state branch, a row loop ending in edit or remove icon
+ * buttons, a "New ..." control, and a returned `{ update: render }`. Each
+ * panel also reimplemented the await-the-handler-then-rerender idiom per
+ * button. That idiom is why this module exists. A click handler here is
+ * awaited, and the panel rerenders unless the handler reports that
+ * nothing happened, by returning `false` or `null`, the shape a
+ * cancelled dialog already returns. A `void` handler counts as a change
+ * and rerenders.
  *
- * The caller keeps every decision about markup: `buildBody` returns the row's
- * content, the three optional `*Class` options say whether that content and the
- * action buttons get wrapper divs, and `buildExtras` appends whatever hangs
- * below the row's head (a stat bar, a read-aloud body). The helper owns the
- * plumbing around that: the root element, the GM/player gate, the row loop with
- * its optional group headings, and the add controls.
+ * The caller keeps every decision about markup. `buildBody` returns the
+ * row's content. The three optional `*Class` options say whether that
+ * content and the action buttons get wrapper divs. `buildExtras` appends
+ * whatever hangs below the row's head, for example a stat bar or a
+ * read-aloud body. The helper owns the plumbing around that: the root
+ * element, the GM or player gate, the row loop with its optional group
+ * headings, and the add controls.
  *
- * `update()` also carries the cheap re-render guard. It reads the rows once and
- * bails when neither the GM flag nor any row object has changed. Entities here
- * are immutable — a mutation hands back a new object — so unchanged references
- * really do mean unchanged output, and the five panel refreshes a party step
- * fires collapse into no DOM work. A panel whose output depends on state
- * outside its rows must opt out with `alwaysRender`.
+ * `update()` also carries the cheap rerender guard. It reads the rows
+ * once and stops when neither the GM flag nor any row object has
+ * changed. Entities here are immutable, since a mutation hands back a
+ * new object, so unchanged references mean unchanged output. The five
+ * panel refreshes that a party step fires collapse into no DOM work. A
+ * panel whose output depends on state outside its rows must opt out with
+ * `alwaysRender`.
  */
 
 /**
- * One wired button on a row. `pressed` sets `aria-pressed`, for the toggles
- * that flip a quest's status or a handout's visibility.
+ * One wired button on a row. `pressed` sets `aria-pressed`, for the
+ * toggles that flip a quest's status or a handout's visibility.
  * @template T
  * @typedef {{
  *   icon: import('./icons.js').IconName,
@@ -42,7 +45,7 @@ import { el } from './dom.js';
  */
 
 /**
- * One of the panel's add controls, e.g. "New quest" or "From bestiary".
+ * One of the panel's add controls, for example "New quest" or "From bestiary".
  * @typedef {{
  *   label: string,
  *   icon?: import('./icons.js').IconName,
@@ -53,9 +56,10 @@ import { el } from './dom.js';
  */
 
 /**
- * What a row builder is handed: the resolved GM flag, the panel's `render` so
- * a bespoke control can refresh the list, and `action` to build a wired button
- * with the same await-then-render semantics the `actions` option gets.
+ * This is what a row builder is handed: the resolved GM flag, the
+ * panel's `render` so a bespoke control can refresh the list, and
+ * `action` to build a wired button with the same await-then-render
+ * behavior the `actions` option gets.
  * @template T
  * @typedef {{
  *   gm: boolean,
@@ -67,11 +71,11 @@ import { el } from './dom.js';
 /**
  * @template T
  * @typedef {object} ListPanelOptions
- * @property {string} className root element's class; also the row class stem
- *   (`<className>__row`).
- * @property {string} [rowClass] the row's class, when it cannot be derived from
- *   `className` — a panel whose list is nested inside a wider panel names its
- *   rows after the outer one.
+ * @property {string} className the root element's class. It is also the
+ *   row class stem (`<className>__row`).
+ * @property {string} [rowClass] the row's class, when it cannot be
+ *   derived from `className`. A panel whose list is nested inside a
+ *   wider panel names its rows after the outer one.
  * @property {(gm: boolean) => T[]} getRows the rows to show, already scoped and
  *   ordered by the caller.
  * @property {(entry: T, ctx: RowContext<T>) => Node | Node[]} buildBody the
@@ -92,14 +96,14 @@ import { el } from './dom.js';
  * @property {string} [groupWrapperClass] collects each group's rows in a div.
  * @property {string} [groupHeadingClass]
  * @property {(gm: boolean) => (AddButton | null | false)[]} [addButtons]
- * @property {'inline' | 'leading' | 'trailing'} [addPlacement] where the add
- *   controls go: loose at the end of the list (the default), leading the panel
- *   in a pinned `.panel-actions` row, or trailing it in a plain one.
- * @property {string} [addClass] class on each add button, unless the button
- *   names its own. Skipped in `leading` placement, whose pinned row styles the
- *   buttons itself.
- * @property {() => boolean} [gate] false for the read-only player view, which
- *   drops the add controls; defaults to GM.
+ * @property {'inline' | 'leading' | 'trailing'} [addPlacement] where the
+ *   add controls go: loose at the end of the list, the default, leading
+ *   the panel in a pinned `.panel-actions` row, or trailing it in a plain one.
+ * @property {string} [addClass] class on each add button, unless the
+ *   button names its own. This is skipped in `leading` placement, since
+ *   its pinned row styles the buttons itself.
+ * @property {() => boolean} [gate] false for the read-only player view,
+ *   which drops the add controls. Defaults to GM.
  * @property {boolean} [alwaysRender] skip `update`'s unchanged-rows guard.
  */
 
@@ -121,8 +125,8 @@ export function mountListPanel(container, options) {
   let lastGM = null;
 
   /**
-   * Wire one button so its handler is awaited and the panel re-renders unless
-   * the handler says nothing changed.
+   * Wire one button so its handler is awaited and the panel rerenders
+   * unless the handler says nothing changed.
    * @param {RowAction<T>} spec
    * @param {T} entry
    * @returns {HTMLButtonElement}
@@ -214,8 +218,8 @@ export function mountListPanel(container, options) {
     const ctx = { gm, render, action };
 
     const addButtons = buildAddButtons(gm);
-    // Leading placement puts the add controls above the list so a long one
-    // never buries them; the Build rail's authoring panels all want that.
+    // Leading placement puts the add controls above the list, so a long
+    // list never buries them. The Build rail's authoring panels all want that.
     if (placement === 'leading' && addButtons.length > 0) {
       root.appendChild(actionsRow(addButtons, true));
     }
@@ -279,8 +283,8 @@ function actionsRow(buttons, pinned) {
 }
 
 /**
- * Whether two row lists are the same objects in the same order. Sound only
- * because the entity layer never mutates in place.
+ * Whether two row lists hold the same objects in the same order. This is
+ * sound only because the entity layer never mutates in place.
  * @param {unknown[]} a
  * @param {unknown[]} b
  * @returns {boolean}

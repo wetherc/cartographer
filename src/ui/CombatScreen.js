@@ -16,37 +16,39 @@ import { entryItem } from './TravelogPanel.js';
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
 /**
- * The combat screen: a turn ribbon over the active combatant's column and the
- * board. The screen owns no combat state: `getView` hands it the
- * already-resolved view, or null when no fight is running, in which case it
- * empties (the mode switch has hidden the screen by then anyway). Which
- * combatant the left column details is the host's transient choice
- * (`getInspectedId`), defaulting to whoever's turn it is; clicking a ribbon
- * chip inspects without advancing the turn.
+ * The combat screen shows a turn ribbon over the active combatant's column
+ * and the board. The screen owns no combat state. `getView` hands it the
+ * already-resolved view, or null when no fight is running. When the view is
+ * null, the screen empties, because the mode switch has already hidden it.
+ * The host chooses which combatant the left column shows in detail
+ * (`getInspectedId`). It defaults to the combatant whose turn it is. Clicking
+ * a ribbon chip inspects that combatant without advancing the turn.
  *
- * The board's cards double as the target picker: clicking one reports through
- * `onSelectTarget` and the host's `getSelectedTargetId` says which is held.
- * The selection feeds the action bar under the active combatant (the current
- * turn's weapons and spells, offered only when the viewer may act that turn),
- * whose picks report through `onWeaponAttack`/`onCastSpell`.
+ * The board's cards double as the target picker. Clicking one reports
+ * through `onSelectTarget`, and the host's `getSelectedTargetId` names which
+ * target is held. The selection feeds the action bar under the active
+ * combatant: the current turn's weapons and spells, offered only when the
+ * viewer can act that turn. Its picks report through `onWeaponAttack` and
+ * `onCastSpell`.
  *
- * Every card carries its combatant's loadout (`getLoadout`): what they are
- * wearing, what they can swing, and, where the viewer is allowed the detail,
- * their spell counts and remaining slots. HP and AC alone told a player nothing
- * about what their turn could do. The host decides how much of a loadout a
- * viewer may see, so the screen draws whatever it is handed.
+ * Every card carries its combatant's loadout (`getLoadout`): what they wear,
+ * what they can swing, and, where the viewer can see the detail, their spell
+ * counts and remaining slots. HP and AC alone told a player nothing about
+ * what their turn can do. The host decides how much of a loadout a viewer
+ * can see. The screen draws whatever it receives.
  *
- * Turn flow and HP edits report back through the callbacks; the host routes
- * them to the same actions the sidebar panel uses. A fight whose party or foe
- * side is entirely down keeps the screen: a banner names the outcome and End
- * combat takes the emphasis, since closing the fight is the GM's call.
+ * Turn flow and HP edits report back through the callbacks. The host routes
+ * them to the same actions the sidebar panel uses. When the party side or the
+ * foe side is entirely down, the screen stays open. A banner names the
+ * outcome, and the End combat control takes emphasis, because closing the
+ * fight is the GM's decision.
  *
- * `diceDock` is an empty slot under the active column, where the host parks the
- * app's dice-tray card while the mode is active. The right column is the
- * fight's log (`getLogEntries`, already filtered by the host), given the width
- * its lines need. A visually hidden live region announces
- * each turn, and both the ribbon and the board are one tab stop each: arrow
- * keys move between the chips and between the cards.
+ * `diceDock` is an empty slot under the active column. The host parks the
+ * app's dice-tray card there while the mode is active. The right column
+ * shows the fight's log (`getLogEntries`, already filtered by the host), with
+ * the width its lines need. A visually hidden live region announces each
+ * turn. The ribbon and the board each form one tab stop. Arrow keys move
+ * focus between the chips and between the cards.
  * @param {HTMLElement} container
  * @param {{
  *   getView: () => CombatView | null,
@@ -76,7 +78,7 @@ export function mountCombatScreen(container, callbacks) {
   const logList = el('ul', 'combat-log__list travelog__list u-col u-g1');
   const logEmpty = el('p', 'u-muted', 'Nothing logged yet.');
   const diceDock = el('div', 'combat-screen__dice-dock');
-  // The left rail: the active combatant over the borrowed dice tray, so the
+  // The left rail shows the active combatant over the borrowed dice tray. The
   // numbers a turn needs and the dice it rolls sit under one hand.
   const left = el('div', 'combat-screen__left', active, diceDock);
   const side = el(
@@ -84,14 +86,15 @@ export function mountCombatScreen(container, callbacks) {
     'combat-screen__log',
     el('section', 'combat-log', el('h3', 'combat-board__heading', 'Combat log'), logEmpty, logList),
   );
-  // Turn changes are spoken, not only ringed: polite, so a screen reader
-  // finishes what it was saying first. Lives outside the cleared regions.
+  // A turn change is announced, not only shown with a highlight. The polite
+  // setting lets a screen reader finish speaking first. This element stays
+  // outside the cleared regions.
   const announcer = el('div', 'sr-only');
   announcer.setAttribute('aria-live', 'polite');
-  // A side going down ends the fighting but not the fight: the screen stays
-  // until the GM ends it, so the party can heal, loot, and read the log first. A
-  // status region rather than a rebuilt node, so it is spoken once when it
-  // appears instead of on every refresh.
+  // A defeated side ends the fighting but not the fight. The screen stays open
+  // until the GM ends it, so the party can heal, loot, and read the log. This
+  // is a status region, not a rebuilt node, so a screen reader speaks it once
+  // when it appears, not on every refresh.
   const notice = el('div', 'combat-screen__notice');
   notice.setAttribute('role', 'status');
   notice.hidden = true;
@@ -105,16 +108,17 @@ export function mountCombatScreen(container, callbacks) {
   );
   container.appendChild(root);
 
-  // The damage/heal amount survives re-renders (every HP edit is one), so the
-  // GM can land the same number on several combatants without retyping it.
+  // The damage or heal amount survives re-renders. Every HP edit triggers a
+  // re-render. This lets the GM apply the same number to several combatants
+  // without retyping it.
   let hpAmount = 1;
 
-  /** The last turn spoken, as `round:id`, so a refresh that moves nothing
-   * (an HP edit, a condition tick) stays silent. */
+  /** The last turn spoken, stored as `round:id`. A refresh that moves nothing,
+   * for example an HP edit or a condition tick, stays silent. */
   let announcedTurn = /** @type {string | null} */ (null);
 
-  /** Per-render loadout cache: the inspected combatant is also a board card,
-   * so one frame would otherwise resolve its loadout twice. */
+  /** Per-render loadout cache. The inspected combatant is also a board card,
+   * so without this cache one frame resolves its loadout twice. */
   const loadouts = /** @type {Map<string, Loadout>} */ (new Map());
 
   /** @param {string} id */
@@ -129,8 +133,9 @@ export function mountCombatScreen(container, callbacks) {
 
   function render() {
     loadouts.clear();
-    // A rebuild replaces whatever held focus, so note where the keyboard was
-    // (a ribbon chip, a board card) and put it back on the matching element.
+    // A rebuild replaces whatever held focus. Note where the keyboard focus
+    // was, on a ribbon chip or a board card, and restore it to the matching
+    // element.
     const focused = /** @type {HTMLElement | null} */ (document.activeElement);
     const refocus =
       focused && root.contains(focused) && focused.dataset.combatantId
@@ -170,8 +175,9 @@ export function mountCombatScreen(container, callbacks) {
   }
 
   /**
-   * The banner over the board once one side is down: the outcome, and for the
-   * GM the reminder that the fight stays open until they close it.
+   * The banner over the board once one side is down. It states the outcome
+   * and, for the GM, reminds them that the fight stays open until they close
+   * it.
    * @param {'victory' | 'defeat' | null} outcome
    * @param {boolean} gm
    */
@@ -188,14 +194,14 @@ export function mountCombatScreen(container, callbacks) {
         ? { line: 'The party is victorious.', gmTail: 'End combat when the party is done here.' }
         : { line: 'The party is defeated.', gmTail: 'End combat when you are ready.' };
     const text = gm ? `${result.line} ${result.gmTail}` : result.line;
-    // Shown before the text lands: a status region hidden at the moment of the
-    // change is not read out.
+    // Show the region before the text lands. A status region hidden at the
+    // moment of change is not read aloud.
     notice.hidden = false;
     if (notice.textContent !== text) notice.textContent = text;
   }
 
-  /** The fight's log entries, newest on top, rebuilt whole (a fight logs tens
-   * of lines, nothing worth diffing). */
+  /** The fight's log entries, newest on top, rebuilt whole. A fight logs only
+   * tens of lines, so nothing is worth a diff. */
   function renderLog() {
     logList.innerHTML = '';
     const entries = callbacks.getLogEntries();
@@ -205,8 +211,9 @@ export function mountCombatScreen(container, callbacks) {
   }
 
   /**
-   * Speak the turn when it actually moved: round and name, keyed so HP edits
-   * and other refreshes repeat nothing.
+   * Announce the turn only when it changes: state the round and the name.
+   * The key stops HP edits and other refreshes from repeating the
+   * announcement.
    * @param {CombatView} view
    */
   function announceTurn(view) {
@@ -219,9 +226,10 @@ export function mountCombatScreen(container, callbacks) {
   }
 
   /**
-   * Make a set of buttons one tab stop: the anchor (or the first) holds
-   * tabindex 0, the rest -1. Re-run per render, since the buttons are rebuilt;
-   * the arrow-key movement is wired once at mount (`wireRoving`).
+   * Make a set of buttons into one tab stop. The anchor, or the first button
+   * when there is no anchor, gets tabindex 0. The rest get tabindex -1. Run
+   * this once per render, because each render rebuilds the buttons.
+   * `wireRoving` wires the arrow-key movement once at mount.
    * @param {HTMLElement} scope
    * @param {string} selector
    * @param {string | null} anchorId the combatant whose button starts focusable
@@ -235,9 +243,9 @@ export function mountCombatScreen(container, callbacks) {
   }
 
   /**
-   * The arrow-key half of the roving tab stop, attached once to a persistent
-   * container: the buttons inside are queried per keypress, since every render
-   * replaces them. Wraps at the ends.
+   * The arrow-key half of the roving tab stop. This attaches once to a
+   * persistent container. It queries the buttons inside on each keypress,
+   * because every render replaces them. Focus wraps at the ends of the list.
    * @param {HTMLElement} scope
    * @param {string} selector
    */
@@ -261,12 +269,13 @@ export function mountCombatScreen(container, callbacks) {
   wireRoving(board, '.combatant-card--selectable');
 
   /**
-   * The turn ribbon, across the top of the screen: one chip per participant in
-   * order, the current turn ringed and marked `aria-current`, with the round
-   * counter and the GM's turn controls beside it.
+   * The turn ribbon across the top of the screen. It shows one chip per
+   * participant in order. The current turn shows a ring and the
+   * `aria-current` attribute. The round counter and the GM's turn controls
+   * sit beside it.
    * @param {CombatView} view
    * @param {boolean} gm
-   * @param {boolean} settled one side is down, so End combat leads
+   * @param {boolean} settled true when one side is down, so the End combat control leads
    */
   function renderRibbon(view, gm, settled) {
     ribbon.appendChild(el('span', 'combat-ribbon__round', `Round ${view.round}`));
@@ -304,19 +313,21 @@ export function mountCombatScreen(container, callbacks) {
       });
       chips.appendChild(button);
     });
-    // One tab stop: the current turn's chip anchors it, arrows walk the rest.
+    // One tab stop. The current turn's chip anchors it. Arrow keys move focus
+    // through the rest.
     roveGroup(ribbon, '.combat-ribbon__chip', view.rows[view.turnIndex]?.id ?? null);
-    // Ending the turn belongs to whoever is taking it. The GM moves the fight
-    // along from any turn; a player gets the control only on the turn of the
-    // character their tab is bound to, and it reads as finishing their own turn
-    // rather than as running the fight. Ending the whole combat stays the GM's.
+    // Ending a turn belongs to whoever is taking it. The GM can advance the
+    // fight from any turn. A player sees the control only on the turn of the
+    // character their tab is bound to. This reads as finishing their own turn,
+    // not as running the fight. Ending the whole combat stays the GM's action.
     const acting = view.rows[view.turnIndex];
     const mayEndTurn = gm || Boolean(acting?.mayAct);
-    // Back to map is everyone's, including a player: looking something up on the
-    // map mid-fight is not a GM privilege, and the header's mode switch is hidden
-    // in the Player view, so without this a player tab could not leave the screen
-    // at all. Leaving changes nothing about the fight, which keeps running; the
-    // Play sidebar's Open combat comes back here.
+    // Back to map is available to everyone, including a player. Looking
+    // something up on the map mid-fight is not a GM privilege. The header's
+    // mode switch is hidden in the Player view, so without this control a
+    // player tab cannot leave the screen. Leaving changes nothing about the
+    // fight, which keeps running. The Play sidebar's Open combat control
+    // returns here.
     ribbon.appendChild(
       el(
         'div',
@@ -325,9 +336,9 @@ export function mountCombatScreen(container, callbacks) {
         mayEndTurn
           ? textButton(gm ? 'Next turn' : 'End my turn', callbacks.onNext, {
               icon: 'chevron',
-              // Once a side is down, ending the fight is the next thing to do
-              // and takes the emphasis; turns still advance for anyone who
-              // wants one more round of healing.
+              // Once a side is down, ending the fight is the next step and
+              // takes the emphasis. Turns still advance for anyone who wants
+              // one more round of healing.
               variant: settled ? undefined : 'primary',
             })
           : null,
@@ -342,10 +353,10 @@ export function mountCombatScreen(container, callbacks) {
   }
 
   /**
-   * The left column: whoever is inspected, or whoever's turn it is. HP is
-   * editable by the GM, exact for a viewer who may act for this combatant,
-   * and banded otherwise; concentration shows with its Drop control for a
-   * viewer who may act.
+   * The left column shows the inspected combatant, or the combatant whose
+   * turn it is. The GM can edit HP. HP shows exact for a viewer who can act
+   * for this combatant, and banded otherwise. Concentration shows with its
+   * Drop control for a viewer who can act.
    * @param {CombatView} view
    * @param {boolean} gm
    */
@@ -369,8 +380,9 @@ export function mountCombatScreen(container, callbacks) {
     facts.appendChild(fact('Initiative', String(row.initiative)));
     if (row.ac !== null) facts.appendChild(fact('AC', String(row.ac)));
     if (row.hp) {
-      // Exact where the viewer may act for this combatant — the GM anywhere, a
-      // player on their own character, whose sheet already shows the numbers.
+      // HP shows exact where the viewer can act for this combatant. The GM
+      // sees exact HP anywhere. A player sees exact HP for their own
+      // character, matching their sheet.
       facts.appendChild(
         fact(
           'HP',
@@ -412,9 +424,9 @@ export function mountCombatScreen(container, callbacks) {
       active.appendChild(line);
     }
 
-    // The action bar belongs to the turn, not the inspection: it shows only
-    // while the column is on the current combatant and the viewer may act for
-    // them, so inspecting a foe never offers its weapons to a player.
+    // The action bar belongs to the turn, not the inspection. It shows only
+    // when the column displays the current combatant and the viewer can act
+    // for them. Inspecting a foe never offers its weapons to a player.
     const bar =
       current && row.mayAct
         ? combatActionBar(callbacks.getActions(), {
@@ -423,9 +435,9 @@ export function mountCombatScreen(container, callbacks) {
           })
         : null;
 
-    // The loadout in full, minus whatever the bar is about to offer as buttons:
-    // the weapons would otherwise be listed twice in one column, and the bar's
-    // buttons already name their damage.
+    // This shows the loadout in full, minus whatever the bar already offers
+    // as buttons. Without this, the weapons list twice in one column. The
+    // bar's buttons already name their damage.
     const loadout = loadoutOf(row.id);
     const block = loadoutBlock(bar ? { ...loadout, weapons: [] } : loadout, { detailed: true });
     if (block) active.appendChild(block);
@@ -459,8 +471,8 @@ export function mountCombatScreen(container, callbacks) {
   }
 
   /**
-   * The GM's HP edit: an amount and a damage/heal pair, the Encounters
-   * panel's idiom on the inspected combatant.
+   * The GM's HP edit control: an amount field with a Damage button and a Heal
+   * button. This matches the pattern the Encounters panel uses.
    * @param {CombatantRow} row
    */
   function hpControls(row) {
@@ -480,9 +492,10 @@ export function mountCombatScreen(container, callbacks) {
       variant: 'success',
       ariaLabel: `Heal ${name}`,
     });
-    // The buttons apply the tracked amount, not the field text, so while the
-    // field holds something unusable (cleared, zero, negative) they disable
-    // rather than quietly land whatever number was last valid.
+    // The buttons apply the tracked amount, not the field text. When the
+    // field holds an unusable value, for example empty, zero, or negative,
+    // the buttons disable. This stops the buttons from applying an old valid
+    // number.
     amount.addEventListener('input', () => {
       const parsed = Number.parseInt(amount.value, 10);
       const valid = Number.isFinite(parsed) && parsed > 0;
@@ -490,8 +503,8 @@ export function mountCombatScreen(container, callbacks) {
       damage.disabled = !valid;
       heal.disabled = !valid;
     });
-    // The amount sits on its own line above both buttons, captioned, so it is
-    // clear it feeds either one.
+    // The amount sits on its own line above both buttons, with a caption, so
+    // it is clear that it feeds either button.
     return el(
       'div',
       'combat-screen__hp-controls u-g2',
@@ -536,8 +549,8 @@ export function mountCombatScreen(container, callbacks) {
 }
 
 /**
- * A name's initials for the ribbon chip, at most two, or a question mark for
- * an id nothing resolves.
+ * A name's initials for the ribbon chip, at most two characters. Returns a
+ * question mark when no name resolves for the id.
  * @param {string | null} name
  */
 export function initialsOf(name) {
@@ -547,8 +560,9 @@ export function initialsOf(name) {
   return (
     parts
       .slice(0, 2)
-      // Spread before indexing: [0] would split a surrogate pair, turning a
-      // name that starts with an emoji or a rare CJK character into garbage.
+      // Spread the string before indexing. Indexing with [0] can split a
+      // surrogate pair. This can turn a name that starts with an emoji or a
+      // rare CJK character into garbage.
       .map((part) => [...part][0].toUpperCase())
       .join('')
   );

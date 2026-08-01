@@ -12,19 +12,20 @@ import { clampInt } from '../util/num.js';
 /** @typedef {import('../entities/InventoryLog.js').InventoryEvent} InventoryEvent */
 
 /**
- * The per-item rows of the inventory panel's Inventory tab — the row itself,
- * its inline edit form, and the give form — split out of InventoryPanel.js,
- * which keeps the mount and render plumbing; the Equipment tab lives in
- * InventoryEquipment.js.
+ * This module builds the per-item rows of the inventory panel's Inventory
+ * tab: the row itself, its inline edit form, and the give form. It is
+ * split out of InventoryPanel.js, which keeps the mount and render
+ * plumbing. The Equipment tab lives in InventoryEquipment.js.
  *
- * The panel's per-mount view state (which row is being edited or given away)
- * and its commit/render plumbing arrive through a context object, so these
- * builders stay stateless while the state keeps living in the mount.
+ * The panel's per-mount view state, which row is being edited or given
+ * away, and its commit and render plumbing arrive through a context
+ * object. This keeps these builders stateless while the state keeps
+ * living in the mount.
  *
- * `getCharacter` is a getter rather than a value because a row outlives changes
- * made elsewhere on the sheet: the panel leaves the list standing when a sibling
- * panel commits something the rows do not show, so a consume or a give has to
- * write against the character as it is when the button is pressed.
+ * `getCharacter` is a getter, not a value, because a row outlives changes
+ * made elsewhere on the sheet. The panel leaves the list standing when a
+ * sibling panel commits something the rows do not show. A consume or a
+ * give must write against the character as it is when the button is pressed.
  *
  * @typedef {{
  *   view: { editingId: string | null, givingId: string | null },
@@ -39,8 +40,8 @@ import { clampInt } from '../util/num.js';
 
 /**
  * One inventory row: name, stack count, description, and the mechanical
- * summary — plus edit, give, use-one, and discard controls when playable. The
- * open edit form (shared with the add form) renders in the row's place.
+ * summary, plus edit, give, use-one, and discard controls when playable.
+ * The open edit form, shared with the add form, renders in the row's place.
  * @param {InventoryItem} item
  * @param {boolean} playable
  * @param {RowContext} ctx
@@ -71,10 +72,11 @@ export function buildRow(item, playable, ctx) {
   const main = el(
     'div',
     'inventory-panel__item',
-    // No type beside the name: the heading the row sits under already says it.
+    // The row shows no type beside the name. The heading it sits under already says it.
     el('div', 'u-row u-g2', el('span', 'inventory-panel__label', `${item.name} x${item.quantity}`)),
-    // One badge per effect, so a modifier-heavy item (damage riders, stat
-    // bonuses, inflicted statuses) wraps into pills instead of one long line.
+    // This shows one badge per effect. A modifier-heavy item, for example
+    // damage riders, stat bonuses, or inflicted statuses, wraps into
+    // pills instead of one long line.
     effects.length > 0 &&
       el(
         'div',
@@ -98,8 +100,8 @@ export function buildRow(item, playable, ctx) {
     );
   }
 
-  // Hand-off to another party member; only offered when someone else exists
-  // to receive. The give form opens inline under the row.
+  // This is a hand-off to another party member. It shows only when
+  // someone else exists to receive. The give form opens inline under the row.
   const recipients = transfer
     ? transfer.recipients().filter((r) => r.id !== getCharacter().id)
     : [];
@@ -113,11 +115,12 @@ export function buildRow(item, playable, ctx) {
     );
   }
 
-  // Taking one off the stack is a consumable's whole point, so a potion offers
-  // it down to its last charge. Anything else only offers it while there is a
-  // stack to thin — dropping one of twenty arrows is a real move, dropping the
-  // one sword you carry is what the discard button is for. The two read as the
-  // same state change and log differently: one was used up, one was let go.
+  // Taking one off the stack is the whole point of a consumable, so a
+  // potion offers it down to its last charge. Anything else offers it
+  // only while there is a stack to thin. Dropping one of twenty arrows is
+  // a real move. The discard button exists for dropping the one sword a
+  // character carries. The two actions cause the same state change but
+  // log differently: one was used up, one was let go.
   const usable = isConsumable(item);
   if (usable || item.quantity > 1) {
     row.appendChild(
@@ -135,9 +138,9 @@ export function buildRow(item, playable, ctx) {
     'remove',
     item.quantity > 1 ? `Discard all ${item.quantity} ${item.name}` : `Discard ${item.name}`,
     async () => {
-      // Discarding one item is as recoverable as consuming it; a multi-stack
-      // discard destroys state the GM cannot rebuild with one click, so it
-      // gets the same confirm treatment as every other destructive action.
+      // Discarding one item is as recoverable as consuming it. A
+      // multi-stack discard destroys state the GM cannot rebuild with one
+      // click, so it gets the same confirm step as every other destructive action.
       if (item.quantity > 1) {
         const ok = await confirmModal(`Discard all ${item.quantity} ${item.name}?`, {
           danger: true,
@@ -161,8 +164,8 @@ export function buildRow(item, playable, ctx) {
 
 /**
  * The inline give form under a row: recipient picker, a count clamped to
- * the stack, and confirm/cancel. Confirming defers to `transfer.send` —
- * the caller updates both characters and syncs this panel back in.
+ * the stack, and confirm or cancel. A confirm defers to `transfer.send`.
+ * The caller updates both characters and syncs this panel back in.
  * @param {InventoryItem} item
  * @param {{ id: string, name: string }[]} recipients
  * @param {RowContext} ctx
@@ -181,7 +184,7 @@ function buildGiveForm(item, recipients, { view, render, transfer }) {
     className: 'inventory-panel__give-count',
     ariaLabel: `How many ${item.name} to give`,
   });
-  // A 1-stack has nothing to choose; skip the input and give the one.
+  // A 1-stack has nothing to choose. Skip the input and give the one.
   countInput.hidden = item.quantity === 1;
 
   const giveButton = textButton('Give', () => {
@@ -195,7 +198,8 @@ function buildGiveForm(item, recipients, { view, render, transfer }) {
     render();
   });
 
-  // Dismiss-left, affirmative-right — the same ordering as every modal.
+  // Dismiss sits on the left, and the affirmative action sits on the
+  // right, the same order as every modal.
   return el(
     'div',
     'inventory-panel__give u-row u-g1',

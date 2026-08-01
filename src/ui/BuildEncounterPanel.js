@@ -6,17 +6,17 @@ import { mountListPanel } from './listPanel.js';
 /** @typedef {import('../types/entities.js').Encounter} Encounter */
 
 /**
- * Mount the Build-rail encounter authoring list: one row per encounter staged
- * in the node being viewed (plus unplaced ones), each with edit and delete
- * actions, its full stat block (every stat editable in place — this is where
- * base stats are tuned), and a "New encounter" button. Selecting a placed
- * encounter's name focuses the map on its tile. Unlike the Play-mode
- * EncounterPanel this carries no combat machinery — it exists so a GM
- * authoring a map can stage, move, and re-tune its encounters in place,
- * without walking the party there first.
+ * Mount the Build-rail encounter authoring list. Each row shows one
+ * encounter staged in the viewed node, or an unplaced one, with edit and
+ * delete actions, its full stat block, and a New encounter button. A GM can
+ * edit every stat in place here. A click on a placed encounter's name
+ * focuses the map on its tile. Unlike the Play-mode EncounterPanel, this
+ * panel has no combat logic. It lets a GM who builds a map stage, move, and
+ * retune encounters in place, before the party reaches the node.
  *
- * Owns no roster state: `getEncounters` supplies the rows (pre-scoped by the
- * caller to the viewed node) and every mutation flows back through a callback.
+ * This panel owns no roster state. getEncounters supplies the rows, already
+ * scoped by the caller to the viewed node. Every change flows back through a
+ * callback.
  * @param {HTMLElement} container
  * @param {{
  *   getEncounters: () => Encounter[],
@@ -40,8 +40,8 @@ export function mountBuildEncounterPanel(container, callbacks) {
       const where = encounter.location ? `@ (${encounter.location.tileId})` : 'unplaced';
       const text = `${encounter.name} (${encounter.currentHP}/${encounter.maxHP}) ${where}`;
 
-      // A placed encounter's name is a button that brings its tile into view;
-      // an unplaced one has nowhere to focus, so it stays plain text.
+      // A placed encounter's name is a button that brings its tile into view.
+      // An unplaced encounter has no tile to focus, so its name stays plain text.
       /** @type {HTMLElement} */
       let label;
       if (encounter.location) {
@@ -70,8 +70,8 @@ export function mountBuildEncounterPanel(container, callbacks) {
       },
     ],
     buildExtras: (encounter, row, ctx) => {
-      // The enemy's gear at a glance; both pieces are edited through the same
-      // form the edit button opens.
+      // This shows the enemy's gear at a glance. The edit button opens the
+      // same form for both pieces.
       if (encounter.weapon || encounter.armor) {
         const parts = [];
         if (encounter.weapon)
@@ -80,8 +80,8 @@ export function mountBuildEncounterPanel(container, callbacks) {
         row.appendChild(el('div', 'u-muted', parts.join(' | ')));
       }
 
-      // Base stat authoring lives here: every stat (the six abilities + AC)
-      // is a chip that sets its value; edits write back through onUpdate.
+      // Base stats are set here. Each stat, the six abilities and AC, is a
+      // chip that sets its value. An edit writes back through onUpdate.
       mountStatBlockBar(row, {
         mode: 'base',
         getStatBlock: () => encounter.statBlock ?? {},
@@ -94,16 +94,16 @@ export function mountBuildEncounterPanel(container, callbacks) {
         },
       });
     },
-    // Spawning from a saved template (the campaign bestiary + the library)
-    // sits beside New encounter — authoring belongs to the Build rail.
+    // The button to spawn from a saved template, from the campaign bestiary
+    // or the library, sits beside New encounter. Authoring belongs to the Build rail.
     addButtons: () => [
       { label: 'New encounter', icon: 'add', onClick: callbacks.onAdd },
       callbacks.onAddFromTemplate
         ? { label: 'From bestiary', icon: 'scroll', onClick: callbacks.onAddFromTemplate }
         : null,
     ],
-    // "New encounter" leads the panel and stays pinned while the list
-    // scrolls, so staging another enemy never means scrolling past the roster.
+    // New encounter leads the panel and stays fixed while the list scrolls.
+    // A GM can stage another enemy without scrolling past the roster.
     addPlacement: 'leading',
   });
 }

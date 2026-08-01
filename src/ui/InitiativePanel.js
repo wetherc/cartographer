@@ -7,10 +7,10 @@ import { el } from './dom.js';
 /** @typedef {import('../types/combat.js').ParticipantView} ParticipantView */
 
 /**
- * One line of status for a running fight: the round and whose turn it is. The
- * name resolves through `describe` rather than the order, so a rename
- * mid-fight shows up on the next render, and an id nothing holds any more
- * still reads as a turn.
+ * One line of status for a running fight: the round and whose turn it
+ * is. The name resolves through `describe`, not the order, so a
+ * mid-fight rename shows on the next render, and an id nothing holds any
+ * more still reads as a turn.
  * @param {CombatState} state
  * @param {(participant: Participant) => ParticipantView | null} describe
  * @returns {string}
@@ -22,12 +22,13 @@ export function initiativeStatus(state, describe) {
 }
 
 /**
- * Mount the sidebar's combat card. The fight itself runs on the full-width
- * combat screen; this card is the pointer to it (the round and whose turn it
- * is, plus the button into combat mode), so a tab sitting in Play (a player
- * display, the GM checking the map mid-fight) can see a fight is on and jump
- * to it. The card owns no combat state: it reads through `getState` and stays
- * empty while nothing is running (the container is hidden then anyway).
+ * Mount the sidebar's combat card. The fight itself runs on the
+ * full-width combat screen. This card is the pointer to it: the round
+ * and whose turn it is, plus the button into combat mode. A tab sitting
+ * in Play, for example a player display or the GM checking the map
+ * mid-fight, can see a fight is on and jump to it. The card owns no
+ * combat state. It reads through `getState` and stays empty while
+ * nothing is running, since the container is hidden then anyway.
  * @param {HTMLElement} container
  * @param {{
  *   getState: () => CombatState | null,

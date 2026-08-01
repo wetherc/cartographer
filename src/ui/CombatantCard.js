@@ -8,25 +8,26 @@ import { loadoutBlock } from './LoadoutBlock.js';
 /** @typedef {import('../combat/Loadout.js').Loadout} Loadout */
 
 /**
- * One combatant on the combat board: name, HP, AC, initiative, and condition
- * chips, built from a {@link CombatantRow} and rebuilt whole on every refresh
- * (a fight holds a handful of cards, so there is nothing worth diffing). Foes
- * carry a sword icon beside the name so the side never rests on color alone,
- * and a defeated combatant keeps its card, struck through, so the order on
- * screen keeps matching the initiative order.
+ * This card shows one combatant on the combat board: name, HP, AC, initiative,
+ * and condition chips. It builds from a {@link CombatantRow} and rebuilds
+ * whole on every refresh, because a fight holds only a few cards and nothing
+ * is worth a diff. A foe carries a sword icon beside the name, so the side
+ * never depends on color alone. A defeated combatant keeps its card, struck
+ * through, so the order on screen still matches the initiative order.
  *
- * With `onSelect` the card is the board's target picker: a toggle button whose
- * `aria-pressed` marks the current selection. The card announces the pick and
- * nothing else; which action the target feeds is the screen's business.
+ * With `onSelect`, the card acts as the board's target picker: a toggle button
+ * whose `aria-pressed` marks the current selection. The card only announces
+ * the pick. The screen decides which action the target feeds.
  *
  * `loadout` is the armor, weapons, spells, and slots block, already trimmed to
- * what this viewer may see; the card draws whatever survived that and leaves the
- * block out when nothing did.
+ * what this viewer can see. The card draws whatever survives that trim and
+ * leaves out the block when nothing survives.
  *
- * HP is exact where the viewer may act for the combatant (`row.mayAct`: the GM
- * everywhere, a player on their own character, matching the sheet they can
- * already read) and the coarse band everywhere else. AC is public information —
- * shown exact to every viewer.
+ * HP shows exact where the viewer can act for the combatant (`row.mayAct`):
+ * the GM sees exact HP everywhere, and a player sees exact HP for their own
+ * character, matching the sheet they can already read. Everywhere else, HP
+ * shows as a coarse band. AC is public information: every viewer sees the
+ * exact value.
  * @param {CombatantRow} row
  * @param {{
  *   selected?: boolean,
@@ -66,7 +67,7 @@ export function combatantCard(row, selection = {}) {
     button.addEventListener('click', () => selection.onSelect?.(row.id));
   }
   if (row.defeated) {
-    // The struck-through name says it by eye; this says it out loud.
+    // The strikethrough shows this visually. This label states it for a screen reader.
     card.setAttribute('aria-label', `${row.name ?? 'Unknown combatant'}, defeated`);
   }
 
@@ -94,7 +95,7 @@ export function combatantCard(row, selection = {}) {
   return card;
 }
 
-/** The foe marker beside the name; decorative, the group heading names the side. */
+/** The foe marker beside the name. It is decorative. The group heading names the side. */
 function foeMark() {
   const mark = el('span', 'combatant-card__foe-mark', icon('sword'));
   mark.setAttribute('aria-hidden', 'true');
@@ -102,9 +103,9 @@ function foeMark() {
 }
 
 /**
- * The card's HP line. A viewer who may act for the combatant gets the exact
- * numbers over the shared stat-bar track; anyone else gets the coarse band the
- * rest of the player view uses.
+ * The card's HP line. A viewer who can act for the combatant sees exact
+ * numbers over the shared stat-bar track. Every other viewer sees the coarse
+ * band used in the rest of the player view.
  * @param {{ current: number, max: number }} hp
  * @param {boolean} exact
  */

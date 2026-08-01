@@ -1,13 +1,14 @@
 /**
- * Small helpers around the native <dialog> element, so features like "new node"
- * and "confirm delete" share one focus-managed, escape-closable modal instead
- * of hand-rolling overlay markup each time. Each call builds a dialog, appends
- * it to <body>, and removes it on close, resolving a Promise with the result.
+ * This file holds small helpers around the native <dialog> element. Features
+ * such as "new node" and "confirm delete" share one focus-managed,
+ * escape-closable modal instead of custom overlay markup in each feature.
+ * Each call builds a dialog, appends it to <body>, and removes it on close.
+ * Each call resolves a Promise with the result.
  *
- * `openDialog` is the shared lifecycle underneath all of that, and the dialogs
- * that live in their own modules (the spell detail, combat setup, the generator,
- * the stat breakdown) build on it too, so focus restoration and dismissal
- * semantics have one owner.
+ * `openDialog` gives the shared lifecycle under all of that. Dialogs that
+ * live in their own modules (the spell detail, combat setup, the generator,
+ * the stat breakdown) also build on `openDialog`. This gives focus
+ * restoration and dismissal one single owner.
  */
 
 import { textButton } from './buttons.js';
@@ -23,8 +24,8 @@ import { clamp } from '../util/num.js';
 /** @typedef {import('../types/modal.js').CompositeField} CompositeField */
 
 /**
- * What a dialog's builder hands back: the content between the title and the
- * button row, the buttons themselves, and which element takes focus once the
+ * What a dialog builder returns: the content between the title and the
+ * button row, the buttons, and the element that takes focus when the
  * dialog opens.
  * @typedef {{
  *   body?: Node[],
@@ -34,21 +35,24 @@ import { clamp } from '../util/num.js';
  */
 
 /**
- * Open a modal dialog and resolve once it closes. This owns the lifecycle every
- * dialog in the app needs and none of them should re-implement: remembering
- * which element opened it so keyboard users are not dropped at the top of the
- * document, appending to `<body>`, showing it modally, focusing the right
- * control, and on close removing the element, restoring focus, and resolving.
- * Escape-to-dismiss comes free with `<dialog>`.
+ * Open a modal dialog and resolve when it closes. This owns the lifecycle every
+ * dialog in the app needs: it remembers which element opened the dialog so a
+ * keyboard user does not land at the top of the document, appends the dialog
+ * to `<body>`, shows it modally, focuses the right control, and on close
+ * removes the element, restores focus, and resolves the promise. No dialog in
+ * the app must re-implement this lifecycle. Escape-to-dismiss comes free with
+ * `<dialog>`.
  *
- * `build` receives a `close(value)` it wires into its own buttons, and returns
- * the parts to assemble. `result` turns the dialog's return value into whatever
- * the caller promised — it runs while the dialog is still in the document, so a
- * mapper may read its own inputs, and it may return a promise when the value is
- * not known until in-flight work settles (a file decode).
+ * `build` receives a `close(value)` function that it wires into its own
+ * buttons, and returns the parts to assemble. `result` turns the dialog's
+ * return value into the value the caller expects. `result` runs while the
+ * dialog is still in the document, so a mapper can read its own inputs.
+ * `result` can return a promise when the value is not known until in-flight
+ * work settles, for example a file decode.
  *
- * With `form` the parts go inside a `<form method="dialog">`, which is what
- * makes Enter submit and a submit button's `value` become the return value.
+ * With `form` set, the parts go inside a `<form method="dialog">`. This makes
+ * Enter submit the form, and makes a submit button's `value` become the
+ * return value.
  * @template T
  * @param {{
  *   className?: string,
@@ -98,10 +102,10 @@ export function openDialog(spec) {
 }
 
 /**
- * The composite fields and the action button are not `<input>`s, but the form
+ * The composite fields and the action button are not `<input>`s. The form
  * keeps one element per field so it can attach the change listener, toggle
- * `disabled`, and focus the first field without asking what kind each one is.
- * This is the one place that says so.
+ * `disabled`, and focus the first field without a check on each field kind.
+ * This function is the one place that casts the element to `HTMLInputElement`.
  * @param {HTMLElement} element
  * @returns {HTMLInputElement}
  */
@@ -110,16 +114,16 @@ function asInput(element) {
 }
 
 /**
- * Show a form modal. Resolves to a record of field name -> string value on
- * submit, or null if cancelled/dismissed. With `wide` the form lays fields
- * out two per row (a field marked `full` spans both columns), for dialogs
- * with too many fields to read comfortably as one tall stack. `onChange`
- * fires on every edit with the changed field's name and a get/set handle on
- * the whole form, so one field can drive another (e.g. re-stamping default
- * stats when an enemy's tier changes). Fields marked `advanced` collect into
- * one collapsed `<details>` captioned by `advancedLabel`, placed where the
- * first of them appears, so a plain Enter submits their defaults without the
- * form having to show them.
+ * Show a form modal. Resolves to a record of field name to string value on
+ * submit, or null if cancelled or dismissed. With `wide` set, the form lays
+ * fields out two per row. A field marked `full` spans both columns. Use
+ * `wide` for a dialog with too many fields to read as one tall stack.
+ * `onChange` fires on every edit with the changed field's name and a
+ * get/set handle on the whole form, so one field can drive another, for
+ * example re-stamping default stats when an enemy's tier changes. Fields
+ * marked `advanced` collect into one collapsed `<details>` captioned by
+ * `advancedLabel`, placed where the first advanced field appears. This lets a
+ * plain Enter submit their defaults without the form showing them.
  * @param {string} title
  * @param {ModalField[]} fields
  * @param {{
@@ -133,39 +137,40 @@ function asInput(element) {
 export function promptModal(title, fields, options = {}) {
   /** @type {Record<string, HTMLInputElement | HTMLSelectElement>} */
   const inputs = {};
-  /** Value accessors per field — file inputs resolve to a data: URL rather
-   * than the input's fakepath value. */
+  /** Value accessors per field. A file input resolves to a data: URL, not
+   * the input's fake path value. */
   /** @type {Record<string, () => string>} */
   const getters = {};
   /** In-flight reads per field, awaited before the submitted record is
-   * collected. A file field's value is only known once its decode settles, and
-   * collecting synchronously stored an empty value for a GM who submitted
-   * quickly after picking. Deliberately kept separate from `getters` rather
-   * than letting one getter return a promise: `onChange`'s `get(name)` handle
-   * is read synchronously by five callers and must stay a string. */
+   * collected. A file field's value is known only after its decode settles.
+   * Collecting synchronously stored an empty value for a GM who submitted
+   * quickly after a pick. This map stays separate from `getters`, because
+   * `onChange`'s `get(name)` handle is read synchronously by five callers
+   * and must stay a string, not a promise. */
   /** @type {Record<string, Promise<void>>} */
   const reads = {};
-  /** Extra elements a field wants appended after its input (the file field's
-   * inline error line). */
+  /** Extra elements a field appends after its input, for example the file
+   * field's inline error line. */
   /** @type {Record<string, HTMLElement>} */
   const extras = {};
-  /** Option rebuilders per multiselect field, so onChange can refilter a
-   * checkbox group in place (preserving what's checked). */
+  /** Option rebuilders per multiselect field. `onChange` uses these to
+   * refilter a checkbox group in place and keep what is checked. */
   /** @type {Record<string, (options: FieldOption[], max?: number) => void>} */
   const rebuilders = {};
-  /** Total setters per allocation field, so onChange can restate how many there
-   * are to distribute when another field decides that count. */
+  /** Total setters per allocation field. `onChange` uses these to restate the
+   * count to distribute when another field decides that count. */
   /** @type {Record<string, (total: number) => void>} */
   const totals = {};
-  /** Label text nodes per field, so onChange can restate a caption (e.g.
-   * "Class skills (choose 2)"). */
+  /** Label text nodes per field. `onChange` uses these to restate a caption,
+   * for example "Class skills (choose 2)". */
   /** @type {Record<string, Text>} */
   const labelTexts = {};
-  /** Value setters for the composite fields, whose state isn't an input.value;
-   * plain fields fall through to the default assignment. */
+  /** Value setters for the composite fields, whose state is not an
+   * input.value. A plain field falls through to the default assignment. */
   /** @type {Record<string, (value: string) => void>} */
   const setters = {};
-  /** The whole field wrapper per name, so onChange can show/hide a field. */
+  /** The whole field wrapper per name. `onChange` uses these to show or hide
+   * a field. */
   /** @type {Record<string, HTMLElement>} */
   const wrappers = {};
 
@@ -176,8 +181,8 @@ export function promptModal(title, fields, options = {}) {
     build: (close) => {
       /** @type {Node[]} */
       const body = [];
-      /** The advanced fields' shared container, created when the first one
-       * appears and mounted in its place. */
+      /** The shared container for advanced fields. It is created when the
+       * first advanced field appears, and mounted in its place. */
       /** @type {HTMLElement | null} */
       let advancedBox = null;
       for (const field of fields) {
@@ -203,8 +208,8 @@ export function promptModal(title, fields, options = {}) {
           input = select(choices, String(field.value ?? choices[0]?.value ?? ''));
           getters[field.name] = () => input.value;
         } else if (field.type === 'checkbox') {
-          // The box sits after its caption rather than under it, so the label
-          // reads as one line; the wrapper class carries that layout.
+          // The box sits after its caption, not under it, so the label reads
+          // as one line. The wrapper class carries that layout.
           const box = el('input');
           box.type = 'checkbox';
           box.checked = !!field.value;
@@ -215,17 +220,17 @@ export function promptModal(title, fields, options = {}) {
             box.checked = !!value && value !== '0';
           };
         } else if (field.type === 'file') {
-          // A picked image is decoded, downscaled, and re-encoded under a size cap
-          // by `readImageFile` before it becomes the field's value; leaving the
-          // input untouched keeps the field's initial value (an existing image
-          // survives an edit).
+          // `readImageFile` decodes, downscales, and re-encodes a picked image
+          // under a size cap before it becomes the field's value. The input
+          // stays untouched, so the field keeps its initial value and an
+          // existing image survives an edit.
           input = el('input');
           input.type = 'file';
           input.accept = 'image/*';
           let dataUrl = field.value !== undefined ? String(field.value) : '';
-          // A rejected pick reports inline rather than through `alertModal`: this
-          // dialog is still open, and a second modal over it steals focus from the
-          // form the GM is in the middle of.
+          // A rejected pick reports inline, not through `alertModal`. This
+          // dialog stays open. A second modal on top steals focus from the
+          // form the GM is editing.
           const error = el('p', 'modal__error');
           error.setAttribute('role', 'alert');
           error.hidden = true;
@@ -239,9 +244,10 @@ export function promptModal(title, fields, options = {}) {
                 dataUrl = url;
               },
               (/** @type {Error} */ failure) => {
-                // Clear the selection so re-picking the same file fires `change`
-                // again — a file input is silent when the pick matches its current
-                // value, which would make the obvious retry do nothing.
+                // Clear the selection so a re-pick of the same file fires
+                // `change` again. A file input stays silent when a pick
+                // matches its current value, so without this the retry does
+                // nothing.
                 picked.value = '';
                 error.textContent = failure.message;
                 error.hidden = false;
@@ -256,10 +262,10 @@ export function promptModal(title, fields, options = {}) {
           field.type === 'pillgrid' ||
           field.type === 'allocation'
         ) {
-          // The composite fields own their own state and rendering, so the
-          // dialog only holds their handle: one element to mount, one reader for
-          // the submitted record, one writer for `onChange`'s `set`. A
-          // multiselect adds the refilter `setOptions` routes to.
+          // Each composite field owns its own state and rendering. The dialog
+          // holds only its handle: one element to mount, one reader for the
+          // submitted record, one writer for `onChange`'s `set`. A multiselect
+          // also adds the refilter that `setOptions` routes to.
           const composite =
             field.type === 'multiselect'
               ? buildMultiselect(field)
@@ -274,10 +280,11 @@ export function promptModal(title, fields, options = {}) {
           if (composite.setOptions) rebuilders[field.name] = composite.setOptions;
           if (composite.setTotal) totals[field.name] = composite.setTotal;
         } else if (field.type === 'button') {
-          // An in-form action (e.g. "Reroll scores"): clicking it fires the
-          // form's onChange under the field's name; it contributes no value to
-          // the submitted record. The field's label sits on the button itself.
-          // The listener reaches `button` at click time, after the binding settles.
+          // This is an in-form action, for example "Reroll scores". A click
+          // fires the form's onChange under the field's name and adds no
+          // value to the submitted record. The field's label sits on the
+          // button itself. The listener reaches `button` at click time, after
+          // the binding settles.
           const button = textButton(field.label, () => button.dispatchEvent(new Event('input')));
           labelText.nodeValue = '';
           input = asInput(button);
@@ -288,17 +295,17 @@ export function promptModal(title, fields, options = {}) {
           if (field.value !== undefined) plain.value = String(field.value);
           if (field.min !== undefined) plain.min = String(field.min);
           if (field.max !== undefined && field.type === 'number') plain.max = String(field.max);
-          // min/max only constrain the spinner; a typed out-of-range number is
-          // clamped once the edit commits (blur/Enter), not per keystroke, so a
-          // "1" on the way to "12" isn't rewritten under the user.
+          // min/max constrain only the spinner. A typed out-of-range number is
+          // clamped when the edit commits (blur or Enter), not per keystroke.
+          // This lets a "1" on the way to "12" stay as typed.
           if (field.type === 'number') {
             plain.addEventListener('change', () => {
               const value = Number(plain.value);
               if (plain.value === '' || Number.isNaN(value)) return;
               const min = plain.min === '' ? -Infinity : Number(plain.min);
               const max = plain.max === '' ? Infinity : Number(plain.max);
-              // Not clampInt: a number field may legitimately hold a decimal,
-              // and this only enforces the field's own bounds.
+              // Not clampInt: a number field can hold a decimal. This only
+              // enforces the field's own bounds.
               const clamped = clamp(value, min, max);
               if (clamped !== value) {
                 plain.value = String(clamped);
@@ -309,8 +316,8 @@ export function promptModal(title, fields, options = {}) {
           input = plain;
           getters[field.name] = () => plain.value;
         }
-        // The composite fields and buttons set their own classes; everything
-        // else gets the shared input treatment.
+        // The composite fields and buttons set their own classes. Every other
+        // field gets the shared input treatment.
         if (
           !['multiselect', 'tags', 'pillgrid', 'allocation', 'button', 'checkbox'].includes(
             field.type ?? '',
@@ -382,10 +389,11 @@ export function promptModal(title, fields, options = {}) {
         initialFocus: fields.length ? inputs[fields[0].name] : submit,
       };
     },
-    // Wait out any field still being read before collecting, so a submit that
-    // races a file decode gets the picked image rather than an empty value. The
-    // values are still read before the dialog leaves the document, since this
-    // runs while it is still mounted and a getter reads its own input.
+    // Wait for any field still being read before collecting. This gives a
+    // submit that races a file decode the picked image, not an empty value.
+    // The values are still read before the dialog leaves the document, because
+    // this code runs while the dialog is still mounted, and a getter reads its
+    // own input.
     result: (returnValue) =>
       returnValue === 'cancel'
         ? null
@@ -396,10 +404,10 @@ export function promptModal(title, fields, options = {}) {
 }
 
 /**
- * Show a single-button acknowledgement modal (an alert): an optional heading, a
- * message, and one dismiss button. Resolves when dismissed. Used where there's
- * nothing to confirm or cancel — e.g. announcing an encounter the party walks
- * into.
+ * Show a single-button acknowledgement modal, an alert, with an optional
+ * heading, a message, and one dismiss button. Resolves when dismissed. Use
+ * this where there is nothing to confirm or cancel, for example to announce
+ * an encounter the party walks into.
  * @param {string} message
  * @param {{ label?: string, title?: string }} [options]
  * @returns {Promise<void>}
@@ -437,8 +445,9 @@ export function confirmModal(message, options = {}) {
 
 /**
  * The standard delete confirmation: `Delete "<name>"?` with the danger-styled
- * Delete button, so every delete across the app reads and looks the same.
- * `detail` appends a consequence sentence (e.g. what else is lost).
+ * Delete button. This makes every delete across the app read and look the
+ * same. `detail` appends a consequence sentence, for example what else is
+ * lost.
  * @param {string} name what's being deleted, shown quoted in the message
  * @param {string} [detail]
  * @returns {Promise<boolean>}

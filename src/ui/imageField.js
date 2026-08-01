@@ -1,47 +1,49 @@
 /**
- * Reading a GM-picked image into a bounded `data:` URL.
+ * This file reads a GM-picked image into a bounded `data:` URL.
  *
- * A picked file goes straight into the campaign save, and the save is copied
- * whole into every undo-history slot, so an uncapped pick is not merely large:
- * one 2 MB photo is roughly 2.7 MB of base64 in the save and ten times that
- * across the ring, which puts the origin past its localStorage quota and makes
- * the whole campaign — map structure included — unsaveable. So a pick is
- * decoded, downscaled, and re-encoded under a character ceiling before anything
+ * A picked file goes straight into the campaign save, and the save is
+ * copied whole into every undo-history slot. An uncapped pick is more
+ * than merely large. One 2 MB photo becomes roughly 2.7 MB of base64 in
+ * the save, and ten times that across the ring. This puts the origin
+ * past its localStorage quota and makes the whole campaign, map
+ * structure included, unsaveable. To prevent this, a pick is decoded,
+ * downscaled, and re-encoded under a character ceiling before anything
  * stores it.
  *
- * The dimension and attempt arithmetic is pure and unit-tested; the decode and
- * re-encode need `createImageBitmap`/`Image` and a canvas and are verified
- * visually, per the project's split.
+ * The dimension and attempt arithmetic is pure and has unit tests. The
+ * decode and re-encode steps need `createImageBitmap`, `Image`, and a
+ * canvas, and are verified visually, per the project's split.
  */
 
 /**
- * Largest file accepted at all, checked before anything is decoded so a
- * mistaken pick of a huge file costs nothing.
+ * The largest file accepted at all. This is checked before anything
+ * decodes, so a mistaken pick of a huge file costs nothing.
  */
 export const MAX_SOURCE_BYTES = 12_000_000;
 
 /**
- * Longest edge of a stored image. The only place a handout image renders is
- * `HandoutPanel`'s `max-width: 100%` sidebar figure, a few hundred CSS pixels
- * wide with no full-size view, so this is already generous retina headroom. A
- * lightbox, if one ever lands, is what would justify raising it.
+ * The longest edge of a stored image. The only place a handout image
+ * draws is `HandoutPanel`'s `max-width: 100%` sidebar figure, a few
+ * hundred CSS pixels wide with no full-size view, so this already gives
+ * generous retina headroom. A lightbox, if one ever lands, justifies
+ * raising this value.
  */
 export const MAX_EDGE = 1280;
 
 /**
- * Ceiling on the stored `data:` URL's length. localStorage charges two bytes per
- * character, so this is about half a megabyte of quota per image.
+ * The ceiling on the stored `data:` URL's length. localStorage charges
+ * two bytes per character, so this is about half a megabyte of quota per image.
  */
 export const MAX_ENCODED_CHARS = 250_000;
 
-/** Re-encode qualities tried in order, before the edge is reduced. */
+/** These are the re-encode qualities tried in order, before the edge is reduced. */
 export const QUALITY_STEPS = [0.82, 0.7, 0.55];
 
 /**
- * Fit `width` x `height` inside a square of `maxEdge`, preserving the aspect
- * ratio and never upscaling. Neither returned dimension is below 1, so a
- * sliver-shaped source cannot round its short side to zero and produce a canvas
- * that will not encode. Pure.
+ * Fit `width` x `height` inside a square of `maxEdge`, preserving the
+ * aspect ratio and never upscaling. Neither returned dimension goes
+ * below 1, so a sliver-shaped source cannot round its short side to zero
+ * and produce a canvas that will not encode. This function is pure.
  * @param {number} width
  * @param {number} height
  * @param {number} maxEdge
@@ -58,10 +60,11 @@ export function fitDimensions(width, height, maxEdge) {
 }
 
 /**
- * The (edge, quality) pairs to try, in order, for a source of the given size:
- * every quality step at the full permitted edge, then the same steps at half
- * that edge. Finite and monotonically smaller, so the encode loop below is
- * data rather than control flow and cannot spin. Pure.
+ * The (edge, quality) pairs to try, in order, for a source of the given
+ * size: every quality step at the full permitted edge, then the same
+ * steps at half that edge. The list is finite and monotonically smaller,
+ * so the encode loop below reads as data, not control flow, and cannot
+ * spin. This function is pure.
  * @param {number} width
  * @param {number} height
  * @param {number} [maxEdge]
@@ -78,10 +81,11 @@ export function encodeAttempts(width, height, maxEdge = MAX_EDGE) {
 }
 
 /**
- * Decode a picked file to a bitmap, falling back to an `Image` and an object URL
- * where `createImageBitmap` is unavailable. Rejects for anything that will not
- * decode as an image, which is also how a mislabelled non-image file is caught —
- * the input's `accept` filter is a hint the OS picker can be talked out of.
+ * Decode a picked file to a bitmap, with a fallback to an `Image` and an
+ * object URL where `createImageBitmap` is unavailable. This rejects
+ * anything that will not decode as an image, which also catches a
+ * mislabeled non-image file. The input's `accept` filter is only a hint,
+ * and the OS picker can be talked out of it.
  * @param {File} file
  * @returns {Promise<{ source: CanvasImageSource, width: number, height: number, release: () => void }>}
  */
@@ -117,12 +121,12 @@ async function decodeImage(file) {
 }
 
 /**
- * The shortest encoding of `source` at the given size, as a `data:` URL. JPEG is
- * always a candidate; PNG only for a PNG source, where flat art routinely
- * encodes smaller losslessly than any JPEG of it, and where a photo's PNG never
- * wins so the extra candidate costs one encode. The canvas is filled white
- * first because the JPEG candidate flattens alpha, and unfilled alpha flattens
- * to black.
+ * The shortest encoding of `source` at the given size, as a `data:` URL.
+ * JPEG is always a candidate. PNG is a candidate only for a PNG source,
+ * where flat art routinely encodes smaller losslessly than any JPEG of
+ * it. A photo's PNG never wins, so the extra candidate costs only one
+ * encode. The canvas fills white first, because the JPEG candidate
+ * flattens alpha, and unfilled alpha flattens to black.
  * @param {CanvasImageSource} source
  * @param {{ width: number, height: number, quality: number }} attempt
  * @param {boolean} keepLossless
@@ -145,8 +149,8 @@ function encodeAt(source, attempt, keepLossless) {
 
 /**
  * Read a picked image file into a `data:` URL bounded by the caps above.
- * Rejects with a GM-facing message rather than a code, since the caller's only
- * job is to show it.
+ * This rejects with a GM-facing message rather than a code, since the
+ * caller's only job is to show it.
  * @param {File} file
  * @returns {Promise<string>}
  */
@@ -170,9 +174,9 @@ export async function readImageFile(file) {
       if (encoded.length <= MAX_ENCODED_CHARS) return encoded;
       if (!shortest || encoded.length < shortest.length) shortest = encoded;
     }
-    // Every attempt was over the ceiling. Reporting that is better than storing
-    // an image that will fail the save later, where the GM cannot tell which
-    // edit caused it.
+    // Every attempt exceeded the ceiling. Reporting this now is better
+    // than storing an image that fails the save later, where the GM
+    // cannot tell which edit caused it.
     throw new Error('That image is too detailed to store. Try a smaller one.');
   } finally {
     decoded.release();

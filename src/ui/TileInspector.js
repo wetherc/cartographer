@@ -11,12 +11,12 @@ import { capitalize } from '../util/text.js';
 const POI_TYPES = ['', 'settlement', 'landmark', 'dungeon', 'shop', 'quest', 'custom'];
 
 /**
- * Mount the tile inspector: a form over a single tile's TileMetadata (POI type,
- * discoverable flag, notes). In Build mode the fields are editable and each
- * edit calls onChange with a metadata patch; in Play mode the same panel is
- * read-only so a GM can see a tile's notes during a session without being able
- * to edit them (the surface for playtesting gap #9). Call setTile(tile,
- * editable) to point it at the selected tile, or setTile(null) to clear it.
+ * Mount the tile inspector: a form over a single tile's TileMetadata, with
+ * POI type, discoverable flag, and notes. In Build mode, the fields are
+ * editable, and each edit calls onChange with a metadata patch. In Play
+ * mode, the same panel is read-only, so a GM can see a tile's notes
+ * during a session without editing them. Call setTile(tile, editable) to
+ * point the inspector at the selected tile, or setTile(null) to clear it.
  * @param {HTMLElement} container
  * @param {{
  *   onChange: (patch: Partial<TileMetadata>) => void,
@@ -73,8 +73,9 @@ export function mountTileInspector(container, opts) {
 
   form.append(coordLabel, typeField, discField, notesField);
 
-  // Region link (optional): which child node this tile zooms into. Only shown
-  // when the caller supplies linking, i.e. in Build mode.
+  // The region link is optional. It names which child node this tile
+  // zooms into. It shows only when the caller supplies linking, for
+  // example in Build mode.
   const linkSelect = select([], '');
   const linkField = el(
     'label',
@@ -93,10 +94,11 @@ export function mountTileInspector(container, opts) {
     form.append(linkField, newRegionBtn);
   }
 
-  // Set-spawn (optional, Build mode): make the selected tile the party's start
-  // position, so a GM can place where the party begins while authoring a map.
-  // Both buttons above and here are only mounted when their callback exists, so
-  // the optional call in each handler can never find it missing.
+  // Set-spawn is optional, for Build mode. It makes the selected tile the
+  // party's start position, so a GM can place where the party begins
+  // while authoring a map. Both buttons, above and here, mount only when
+  // their callback exists, so the optional call in each handler always
+  // finds it present.
   const spawnBtn = textButton(
     'Set party start here',
     () => {
