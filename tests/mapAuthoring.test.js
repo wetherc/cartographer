@@ -4,6 +4,7 @@ import { createMapAuthoring } from '../src/app/mapAuthoring.js';
 import { TileGrid, createMapNode, createTile, getTile } from '../src/map/TileGrid.js';
 import { MapNavigator } from '../src/map/MapNavigator.js';
 import { fillTiles } from './helpers/grid.js';
+import { stubApp } from './helpers/app.js';
 
 const INTERIOR = 'assets/tiles/interior/interior';
 
@@ -21,17 +22,10 @@ function authoring() {
   );
   const navigator = new MapNavigator(grid, 'keep');
 
-  /** @type {string[]} */
-  const calls = [];
-  const app = /** @type {any} */ ({
-    palette: null,
-    grid,
-    navigator,
-    partyTracker: null,
-    toasts: { show: () => {} },
-    state: { mode: 'build' },
-    actions: { markDirty: () => calls.push('markDirty') },
-  });
+  const app = stubApp({ grid, navigator, state: { mode: 'build' } });
+  // The gestures record through the app as well as through the env below, so
+  // one list holds a stroke's whole trail of derived-state calls.
+  const calls = app.calls;
   const env = /** @type {any} */ ({
     selectedTileId: null,
     activeBrush: { type: 'interior', imageRef: `${INTERIOR}-door-v.svg` },

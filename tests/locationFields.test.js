@@ -3,30 +3,13 @@ import assert from 'node:assert/strict';
 
 import { locationFields, readLocation } from '../src/app/locationFields.js';
 import { createMapNode } from '../src/map/TileGrid.js';
-
-/**
- * The two grid methods these fields use, over a plain list of nodes. Breadcrumbs
- * walk `parentId` upwards, which is what the picker labels each map by.
- * @param {import('../src/types/map.js').MapNode[]} nodes
- */
-function fakeApp(nodes) {
-  const map = new Map(nodes.map((node) => [node.id, node]));
-  /** @param {string} id */
-  const getBreadcrumb = (id) => {
-    const trail = [];
-    for (let node = map.get(id); node; node = node.parentId ? map.get(node.parentId) : undefined) {
-      trail.unshift(node);
-    }
-    return trail;
-  };
-  return {
-    grid: { nodes: map, getNode: (/** @type {string} */ id) => map.get(id), getBreadcrumb },
-  };
-}
+import { stubApp, stubGrid } from './helpers/app.js';
 
 const world = createMapNode('world', 'Aldenmoor', null, 8, 8);
 const region = createMapNode('vale', 'Green Vale', 'world', 4, 6);
-const app = fakeApp([world, region]);
+// The fields read the grid alone: the node lookup, and the breadcrumb walk the
+// picker labels each map by.
+const app = stubApp({ grid: stubGrid([world, region]) });
 
 test('the picker offers the unplaced option first, then every map by its path', () => {
   const [picker] = locationFields(app, null);

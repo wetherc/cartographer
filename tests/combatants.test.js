@@ -11,36 +11,20 @@ import {
 import { createCharacter, withHP, getHP, damageCharacter } from '../src/entities/Character.js';
 import { createEncounter, applyDamage, effectiveStatBlock } from '../src/entities/Encounter.js';
 import { createNPC } from '../src/entities/NPC.js';
+import { stubApp as baseStubApp } from './helpers/app.js';
 
 const HERE = { nodeId: 'n1', tileId: '0,0' };
 
 /**
- * A minimal AppContext stand-in with just the surface combatants.js touches:
- * the three rosters, the party position, and stub actions/views that record
- * log lines and refresh calls.
+ * A stub app holding the three rosters, plus the party position these targeting
+ * helpers resolve "here" against.
+ * @param {{ characters?: any[], encounters?: any[], npcs?: any[] }} [rosters]
  */
-function stubApp({ characters = [], encounters = [], npcs = [] } = {}) {
-  const app = {
-    state: { characters, encounters, npcs },
-    partyTracker: { getPosition: () => HERE },
-    logs: [],
-    dirty: false,
-    refreshes: [],
-    actions: {},
-    views: {
-      encounterPanel: { update: () => app.refreshes.push('encounterPanel') },
-      initiativePanel: { update: () => app.refreshes.push('initiativePanel') },
-      combatScreen: { update: () => app.refreshes.push('combatScreen') },
-    },
-  };
-  app.actions.logEvent = (kind, message) => app.logs.push(message);
-  app.actions.markDirty = () => {
-    app.dirty = true;
-  };
-  app.actions.refreshSelectedCharacter = () => app.refreshes.push('character');
-  app.actions.syncEncounterMarkers = () => app.refreshes.push('markers');
-  app.actions.syncCombatLocation = () => app.refreshes.push('combatLocation');
-  return /** @type {any} */ (app);
+function stubApp(rosters = {}) {
+  return baseStubApp({
+    state: rosters,
+    partyTracker: /** @type {any} */ ({ getPosition: () => HERE }),
+  });
 }
 
 function fixtures() {
@@ -69,11 +53,11 @@ test('findCombatant store writes back to the owning collection', () => {
   const found = findCombatant(app, 'goblin');
   found.store({ ...goblin, currentHP: 3 });
   assert.equal(app.state.encounters[0].currentHP, 3);
-  assert.ok(app.refreshes.includes('markers'), 'encounter store syncs the map markers');
+  assert.ok(app.calls.includes('syncEncounterMarkers'), 'encounter store syncs the map markers');
   const character = findCombatant(app, 'hero');
   character.store({ ...hero, name: 'Hero II' });
   assert.equal(app.state.characters[0].name, 'Hero II');
-  assert.ok(app.refreshes.includes('character'));
+  assert.ok(app.calls.includes('refreshSelectedCharacter'));
 });
 
 test('findCombatant store writes an NPC back to its collection', () => {
@@ -150,8 +134,8 @@ test('applyToTarget damages an HP-less character without logging a drop', () => 
   const ghost = createCharacter('ghost', 'Ghost');
   const app = stubApp({ characters: [ghost] });
   applyToTarget(app, 'ghost', 5, false);
-  assert.equal(app.logs.length, 0, 'no HP pool means no drop-to-0 line');
-  assert.equal(app.dirty, true, 'the write still lands');
+  assert.equal(app.log.length, 0, 'no HP pool means no drop-to-0 line');
+  assert.equal(app.dirty, 1, 'the write still lands');
 });
 
 test('combatantsAsTargets lists foes and drops downed ones', () => {
@@ -214,12 +198,12 @@ test('applyToTarget damages an encounter and logs its defeat exactly once', () =
   const app = stubApp({ encounters: [goblin] });
   applyToTarget(app, 'goblin', 4, false);
   assert.equal(app.state.encounters[0].currentHP, 6);
-  assert.equal(app.logs.length, 0);
+  assert.equal(app.log.length, 0);
   applyToTarget(app, 'goblin', 10, false);
-  assert.deepEqual(app.logs, ['Defeated Goblin.']);
+  assert.deepEqual(app.log, ['Defeated Goblin.']);
   applyToTarget(app, 'goblin', 5, false);
-  assert.deepEqual(app.logs, ['Defeated Goblin.'], 'damage on a downed encounter stays quiet');
-  assert.equal(app.dirty, true);
+  assert.deepEqual(app.log, ['Defeated Goblin.'], 'damage on a downed encounter stays quiet');
+  assert.equal(app.dirty, 3, 'one write per hit');
 });
 
 test('applyToTarget heals an encounter without a defeat log', () => {
@@ -228,7 +212,7 @@ test('applyToTarget heals an encounter without a defeat log', () => {
   const app = stubApp({ encounters: [hurt] });
   applyToTarget(app, 'goblin', 3, true);
   assert.equal(app.state.encounters[0].currentHP, 7);
-  assert.equal(app.logs.length, 0);
+  assert.equal(app.log.length, 0);
 });
 
 test('applyToTarget logs a character dropping to 0 HP exactly once and heals back', () => {
@@ -236,9 +220,9 @@ test('applyToTarget logs a character dropping to 0 HP exactly once and heals bac
   const app = stubApp({ characters: [hero] });
   applyToTarget(app, 'hero', 999, false);
   assert.equal(getHP(app.state.characters[0]).current, 0);
-  assert.deepEqual(app.logs, ['Hero drops to 0 HP.']);
+  assert.deepEqual(app.log, ['Hero drops to 0 HP.']);
   applyToTarget(app, 'hero', 5, false);
-  assert.deepEqual(app.logs, ['Hero drops to 0 HP.'], 'no re-log while already down');
+  assert.deepEqual(app.log, ['Hero drops to 0 HP.'], 'no re-log while already down');
   applyToTarget(app, 'hero', 4, true);
   assert.equal(getHP(app.state.characters[0]).current, 4);
 });
@@ -249,8 +233,8 @@ test('applyToTarget ignores non-positive amounts, unknown ids, and HP-less NPCs'
   applyToTarget(app, 'sage', 5, false);
   applyToTarget(app, 'nobody', 5, false);
   applyToTarget(app, 'sage', 0, false);
-  assert.equal(app.dirty, false);
-  assert.equal(app.logs.length, 0);
+  assert.equal(app.dirty, 0);
+  assert.equal(app.log.length, 0);
 });
 
 test('logDefeatTransition fires only on the standing-to-defeated edge', () => {
@@ -258,9 +242,9 @@ test('logDefeatTransition fires only on the standing-to-defeated edge', () => {
   const down = applyDamage(goblin, 99);
   const app = stubApp();
   logDefeatTransition(app, goblin, applyDamage(goblin, 2));
-  assert.equal(app.logs.length, 0, 'still standing');
+  assert.equal(app.log.length, 0, 'still standing');
   logDefeatTransition(app, down, down);
-  assert.equal(app.logs.length, 0, 'already down');
+  assert.equal(app.log.length, 0, 'already down');
   logDefeatTransition(app, goblin, down);
-  assert.deepEqual(app.logs, ['Defeated Goblin.']);
+  assert.deepEqual(app.log, ['Defeated Goblin.']);
 });

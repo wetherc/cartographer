@@ -5,6 +5,7 @@ import { TileGrid, createMapNode, createTile, setTile } from '../src/map/TileGri
 import { MapNavigator } from '../src/map/MapNavigator.js';
 import { PartyTracker } from '../src/party/PartyTracker.js';
 import { fillTiles, gridTiles } from './helpers/grid.js';
+import { stubApp } from './helpers/app.js';
 
 const INTERIOR = 'assets/tiles/interior/interior';
 
@@ -37,38 +38,12 @@ function world({ interior = false, mode = 'play' } = {}) {
   const navigator = new MapNavigator(grid, 'world');
   const partyTracker = new PartyTracker(grid, { nodeId: 'world', tileId: '2,5' });
 
-  /** @type {string[]} */
-  const calls = [];
-  /** @type {string[]} */
-  const log = [];
-  const state = /** @type {any} */ ({
-    role: 'gm',
-    mode,
-    splitParty: false,
-    characters: [],
-    npcs: [],
-    encounters: [],
-  });
-  const app = /** @type {any} */ ({
-    grid,
-    navigator,
-    partyTracker,
-    state,
-    actions: {
-      logEvent: (_kind, message) => log.push(message),
-      markDirty: () => calls.push('markDirty'),
-      maybeTriggerEncounter: () => calls.push('maybeTriggerEncounter'),
-      syncCombatLocation: () => calls.push('syncCombatLocation'),
-      getSelectedCharacterId: () => null,
-      getBoundCharacterId: () => null,
-    },
-    views: {
-      encounterPanel: { update: () => {} },
-      initiativePanel: { update: () => {} },
-      npcPanel: { update: () => {} },
-      handoutPanel: { update: () => {} },
-    },
-  });
+  const app = stubApp({ grid, navigator, partyTracker, state: { role: 'gm', mode } });
+  const state = app.state;
+  // The handlers record through the app as well as through the env below, so one
+  // list holds a gesture's whole trail of syncs, in the order they ran.
+  const calls = app.calls;
+  const log = app.log;
   const env = /** @type {any} */ ({
     goToNode: (id) => {
       navigator.goTo(id);

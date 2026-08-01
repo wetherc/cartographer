@@ -5,6 +5,7 @@ import { MapNavigator } from '../src/map/MapNavigator.js';
 import { PartyTracker } from '../src/party/PartyTracker.js';
 import { buildBlankCampaign } from '../src/campaign/Campaigns.js';
 import { rehydrateCampaign, SYNCED_STATE_KEYS } from '../src/app/rehydrate.js';
+import { stubApp } from './helpers/app.js';
 
 /**
  * A campaign with one grid node, distinguishable from the blank one by name so a
@@ -20,44 +21,19 @@ function campaignNamed(name) {
   return campaign;
 }
 
-/** A stand-in AppContext: the real engine objects, counting stubs for the DOM. */
+/** A stub app over the real engine objects, so the swap has a grid to adopt. */
 function fakeApp() {
   const campaign = campaignNamed('Before');
-  /** @type {string[]} */
-  const called = [];
-  /** @param {string} name */
-  const stub = (name) => () => void called.push(name);
-  const views = {};
-  for (const name of [
-    'partyPanels',
-    'encounterPanel',
-    'buildEncounters',
-    'buildNPCs',
-    'initiativePanel',
-    'combatScreen',
-    'npcPanel',
-    'questPanel',
-    'handoutPanel',
-    'travelogPanel',
-  ]) {
-    views[name] = { update: stub(name) };
-  }
-  const app = {
+  const state = { ...campaign, mode: 'play', role: 'player' };
+  delete state.grid;
+  delete state.party;
+  const app = stubApp({
     grid: campaign.grid,
     navigator: new MapNavigator(campaign.grid, 'world'),
     partyTracker: new PartyTracker(campaign.grid, campaign.party),
-    state: { ...campaign, grid: undefined, party: undefined, mode: 'play', role: 'player' },
-    views,
-    actions: {
-      resyncMap: stub('resyncMap'),
-      syncEncounterMarkers: stub('syncEncounterMarkers'),
-      syncNPCMarkers: stub('syncNPCMarkers'),
-      refreshMapDescription: stub('refreshMapDescription'),
-    },
-  };
-  delete app.state.grid;
-  delete app.state.party;
-  return { app: /** @type {any} */ (app), called };
+    state: /** @type {any} */ (state),
+  });
+  return app;
 }
 
 test('replaceNodes swaps a grid contents without replacing the grid object', () => {
@@ -81,7 +57,7 @@ test('the synced field list matches the campaign shape exactly', () => {
 });
 
 test('rehydrate adopts another tab world, party, and collections', () => {
-  const { app } = fakeApp();
+  const app = fakeApp();
   const next = campaignNamed('After');
   next.party = { nodeId: 'world', tileId: '1,1' };
   next.quests = [{ id: 'q1', title: 'Find the seal', notes: '', status: 'active' }];
@@ -96,7 +72,7 @@ test('rehydrate adopts another tab world, party, and collections', () => {
 });
 
 test('rehydrate leaves this tab own mode and role alone', () => {
-  const { app } = fakeApp();
+  const app = fakeApp();
   app.state.mode = 'play';
   app.state.role = 'player';
 
@@ -107,7 +83,7 @@ test('rehydrate leaves this tab own mode and role alone', () => {
 });
 
 test('rehydrate keeps the node this tab is viewing', () => {
-  const { app } = fakeApp();
+  const app = fakeApp();
   const next = campaignNamed('After');
   next.grid.addNode(createMapNode('cave', 'Cave', 'world', 2, 2));
   app.navigator.goTo('world');
@@ -120,7 +96,7 @@ test('rehydrate keeps the node this tab is viewing', () => {
 });
 
 test('rehydrate follows the party when the viewed node is gone', () => {
-  const { app } = fakeApp();
+  const app = fakeApp();
   app.grid.addNode(createMapNode('cave', 'Cave', 'world', 2, 2));
   app.navigator.goTo('cave');
 
@@ -131,7 +107,7 @@ test('rehydrate follows the party when the viewed node is gone', () => {
 });
 
 test('rehydrate refreshes the map and every campaign-backed panel', () => {
-  const { app, called } = fakeApp();
+  const app = fakeApp();
 
   rehydrateCampaign(app, campaignNamed('After'));
 
@@ -140,6 +116,10 @@ test('rehydrate refreshes the map and every campaign-backed panel', () => {
     'syncEncounterMarkers',
     'syncNPCMarkers',
     'refreshMapDescription',
+  ]) {
+    assert.ok(app.calls.includes(name), `expected ${name} to be called`);
+  }
+  for (const name of [
     'partyPanels',
     'encounterPanel',
     'buildEncounters',
@@ -151,7 +131,7 @@ test('rehydrate refreshes the map and every campaign-backed panel', () => {
     'handoutPanel',
     'travelogPanel',
   ]) {
-    assert.ok(called.includes(name), `expected ${name} to be refreshed`);
+    assert.ok(app.refreshes.includes(name), `expected ${name} to be refreshed`);
   }
 });
 
@@ -161,7 +141,7 @@ test('rehydrate refreshes the map and every campaign-backed panel', () => {
 // The map caches are keyed on node identity, so a node the save did not
 // change must come back as the object the caches already know.
 test('rehydrate keeps the live node objects that the adopted save did not change', () => {
-  const { app } = fakeApp();
+  const app = fakeApp();
   const before = app.grid.getNode('world');
 
   rehydrateCampaign(app, campaignNamed('Before'));
@@ -170,7 +150,7 @@ test('rehydrate keeps the live node objects that the adopted save did not change
 });
 
 test('rehydrate replaces a node the adopted save changed', () => {
-  const { app } = fakeApp();
+  const app = fakeApp();
   const before = app.grid.getNode('world');
 
   rehydrateCampaign(app, campaignNamed('After'));
@@ -181,7 +161,7 @@ test('rehydrate replaces a node the adopted save changed', () => {
 });
 
 test('rehydrate keeps the live entities that the adopted save did not change', () => {
-  const { app } = fakeApp();
+  const app = fakeApp();
   app.state.encounters = [
     { id: 'e1', name: 'Goblin Scout', hp: { current: 7, max: 7 } },
     { id: 'e2', name: 'Orc Brute', hp: { current: 15, max: 15 } },
@@ -196,7 +176,7 @@ test('rehydrate keeps the live entities that the adopted save did not change', (
 });
 
 test('rehydrate replaces only the entity that changed', () => {
-  const { app } = fakeApp();
+  const app = fakeApp();
   app.state.encounters = [
     { id: 'e1', name: 'Goblin Scout', hp: { current: 7, max: 7 } },
     { id: 'e2', name: 'Orc Brute', hp: { current: 15, max: 15 } },
@@ -214,7 +194,7 @@ test('rehydrate replaces only the entity that changed', () => {
 });
 
 test('rehydrate throws rather than half-applying an unusable party position', () => {
-  const { app } = fakeApp();
+  const app = fakeApp();
   const next = campaignNamed('After');
   next.party = { nodeId: 'nowhere', tileId: '0,0' };
 
@@ -222,7 +202,7 @@ test('rehydrate throws rather than half-applying an unusable party position', ()
 });
 
 test('a revealed tile survives the swap, so fog is not re-fogged by adopting', () => {
-  const { app } = fakeApp();
+  const app = fakeApp();
   const next = campaignNamed('After');
   const node = /** @type {import('../src/types/map.js').MapNode} */ (next.grid.getNode('world'));
   next.grid.updateNode(setTile(node, { ...createTile('3,3', 'grass.png'), revealed: true }));

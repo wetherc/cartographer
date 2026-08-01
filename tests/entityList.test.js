@@ -2,23 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { wireEntityList } from '../src/app/entityList.js';
+import { stubApp } from './helpers/app.js';
 
 /**
- * A stand-in AppContext holding one list, plus a dirty counter so the tests can
- * assert which paths mark the campaign changed.
+ * A stub app holding one list. `app.dirty` counts the `markDirty` calls, which
+ * is how the tests assert which paths mark the campaign changed.
  * @param {{ id: string, title: string }[]} quests
  */
 function fakeApp(quests = []) {
-  const app = {
-    state: { quests },
-    dirty: 0,
-    actions: {
-      markDirty: () => {
-        app.dirty += 1;
-      },
-    },
-  };
-  return app;
+  return stubApp({ state: { quests: /** @type {any} */ (quests) } });
 }
 
 /**
@@ -30,7 +22,7 @@ function wire(app, dialogs = {}) {
   const prompts = [];
   /** @type {string[]} */
   const confirms = [];
-  const handlers = wireEntityList(/** @type {any} */ (app), {
+  const handlers = wireEntityList(app, {
     key: 'quests',
     noun: 'quest',
     fields: (quest) => [
@@ -99,7 +91,7 @@ test('editing replaces the entry in place and trims its title', async () => {
 
 test('the edit dialog gets the spec edit options and keeps the entry id', async () => {
   const app = fakeApp([{ id: 'a', title: 'A' }]);
-  const handlers = wireEntityList(/** @type {any} */ (app), {
+  const handlers = wireEntityList(app, {
     key: 'quests',
     noun: 'handout',
     fields: () => [],
@@ -155,8 +147,8 @@ test('deleting an id that is gone asks nothing and reports failure', async () =>
 });
 
 test('a list keyed on another title field slugs and confirms against it', async () => {
-  const app = { state: { quests: [] }, actions: { markDirty: () => {} } };
-  const handlers = wireEntityList(/** @type {any} */ (app), {
+  const app = stubApp();
+  const handlers = wireEntityList(app, {
     key: 'quests',
     noun: 'feat',
     titleKey: 'name',
