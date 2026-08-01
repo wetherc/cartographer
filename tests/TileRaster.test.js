@@ -70,6 +70,16 @@ test('rasterSize returns 0 past the ceiling, which means do not cache', () => {
   assert.equal(rasterSize(1024), 0);
 });
 
+test('a raster built with no options caches and brings its own factories', () => {
+  const raster = new TileRaster();
+  assert.equal(raster.enabled, true);
+  assert.equal(raster.onLoad, undefined);
+  // The browser factories are installed but not called, so construction stays
+  // safe outside a document.
+  assert.equal(typeof raster.createImage, 'function');
+  assert.equal(typeof raster.createCanvas, 'function');
+});
+
 test('image decodes a ref once and reuses it', () => {
   const { raster, images } = harness();
   const first = raster.image('a.svg');

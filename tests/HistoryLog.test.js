@@ -285,6 +285,91 @@ test('a failed campaign write records no step, so the log matches what is stored
   assert.deepEqual(historyDepth(), { undo: 0, redo: 0 });
 });
 
+test('an index write that cannot land clears the log and reports the lost depth', () => {
+  const store = installLocalStorage();
+  saveCampaign(state());
+  saveCampaign(state([quest('q1', 'One')]));
+  const realSetItem = localStorage.setItem;
+  localStorage.setItem = (key, value) => {
+    if (key === HISTORY_KEY) throw new Error('QuotaExceededError');
+    realSetItem(key, value);
+  };
+  const result = saveCampaign(state([quest('q1', 'One'), quest('q2', 'Two')]));
+  localStorage.setItem = realSetItem;
+  assert.equal(result.ok, true, 'the campaign still saves');
+  assert.deepEqual(result.history, { ok: false, evictedAll: true });
+  assert.equal(storedDeltas(store), 0, 'no record survives an index that never landed');
+  assert.equal(localStorage.getItem(HISTORY_KEY), null);
+  assert.deepEqual(persistedTitles(), ['One', 'Two']);
+});
+
+test('a record that is unreadable, not merely missing, drops the log the same way', () => {
+  for (const corrupt of ['not json', '{"ops":1}']) {
+    const store = installLocalStorage();
+    saveCampaign(state());
+    saveCampaign(state([quest('q1', 'One')]));
+    const index = /** @type {any} */ (storedIndex());
+    localStorage.setItem(`${HISTORY_KEY}:d${index.deltas[0]}`, corrupt);
+    assert.equal(undoCampaign(), null, corrupt);
+    assert.equal(storedDeltas(store), 0);
+    assert.deepEqual(persistedTitles(), ['One'], 'the campaign itself is untouched');
+  }
+});
+
+test('a campaign that cannot be read leaves undo with nothing to apply a delta to', () => {
+  const seed = () => {
+    installLocalStorage();
+    localStorage.setItem(
+      HISTORY_KEY,
+      JSON.stringify({ version: CURRENT_VERSION, deltas: [0], cursor: 1 }),
+    );
+    localStorage.setItem(`${HISTORY_KEY}:d0`, JSON.stringify([{ p: ['splitParty'], f: false }]));
+  };
+  seed();
+  localStorage.setItem('campaign-builder:save', 'not json');
+  assert.equal(undoCampaign(), null, 'an unreadable save');
+  assert.equal(
+    localStorage.getItem('campaign-builder:save'),
+    'not json',
+    'and the stored string is left for the GM, not cleared',
+  );
+  seed();
+  assert.equal(undoCampaign(), null, 'no save at all');
+});
+
+test('a log naming a record that has gone missing still records the next step', () => {
+  saveCampaign(state());
+  saveCampaign(state([quest('q1', 'One')]));
+  const index = /** @type {any} */ (storedIndex());
+  // A phantom sequence number: the index names it, but its record is gone, so
+  // the byte total has to read it as costing nothing.
+  localStorage.setItem(
+    HISTORY_KEY,
+    JSON.stringify({ ...index, deltas: [...index.deltas, 7], cursor: 2 }),
+  );
+  const result = saveCampaign(state([quest('q1', 'One'), quest('q2', 'Two')]));
+  assert.deepEqual(result.history, { ok: true, evictedAll: false });
+  assert.deepEqual(historyDepth(), { undo: 3, redo: 0 });
+  undoCampaign();
+  assert.deepEqual(persistedTitles(), ['One'], 'the step that was recorded still applies');
+});
+
+test('an undo whose campaign write fails leaves the cursor where it was', () => {
+  saveCampaign(state());
+  saveCampaign(state([quest('q1', 'One')]));
+  const realSetItem = localStorage.setItem;
+  localStorage.setItem = (key, value) => {
+    if (key === 'campaign-builder:save') throw new Error('QuotaExceededError');
+    realSetItem(key, value);
+  };
+  const undone = /** @type {any} */ (undoCampaign());
+  localStorage.setItem = realSetItem;
+  assert.equal(undone.save.ok, false);
+  assert.deepEqual(undone.state.quests, [], 'the restored state is still handed back');
+  assert.deepEqual(historyDepth(), { undo: 1, redo: 0 }, 'the cursor never claims what is stored');
+  assert.deepEqual(persistedTitles(), ['One'], 'and the stored campaign is unchanged');
+});
+
 test('a save made by another tab is diffed against, not against the stale cache', () => {
   saveCampaign(state([quest('q1', 'One')]));
   // What a second tab's write looks like from here: the campaign key changes

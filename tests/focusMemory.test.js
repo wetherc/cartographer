@@ -173,6 +173,22 @@ test('a number input carries no caret', () => {
   assert.equal(after.focused, 1);
 });
 
+test('an input with no type attribute is treated as a text field', () => {
+  const field = (start) => node('INPUT', { className: 'field' }, { selectionStart: start });
+  const before = field(2);
+  assert.equal(controlSignature(before), 'INPUT||field|');
+  const memo = captureFocus(root([before]), before);
+  assert.equal(memo.selectionStart, 2, 'the caret is read, as it is for an explicit text type');
+});
+
+test('a memo that carries only a caret start selects nothing', () => {
+  // `selectionEnd` is optional on the memo, so a caller that built one by hand
+  // gets a collapsed caret rather than a range.
+  const box = node('TEXTAREA', { className: 'body' });
+  restoreFocus(root([box]), { signature: controlSignature(box), index: 0, selectionStart: 4 });
+  assert.deepEqual(box.range, [4, 4]);
+});
+
 test('a text field with no readable caret carries none', () => {
   const before = node('INPUT', { type: 'text' }, { selectionStart: null });
   const memo = captureFocus(root([before]), before);

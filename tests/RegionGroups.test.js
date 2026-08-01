@@ -137,6 +137,15 @@ test('groupImageRef tie-breaks two tiles on the same row by the smaller x', () =
   assert.equal(groupImageRef(node, { tileIds: ['1,0', '0,0'] }), 'left.svg');
 });
 
+test('groupImageRef skips a member whose id carries no coordinates', () => {
+  let node = createMapNode('n', 'Node', null, 2, 1);
+  node = setTile(node, createTile('bogus', 'odd.svg', { childNodeId: 'region' }));
+  node = setTile(node, createTile('0,0', 'left.svg', { childNodeId: 'region' }));
+  // The unplaceable member comes first, so it would win on arrival order. With
+  // no coordinates to compare it is passed over instead.
+  assert.equal(groupImageRef(node, { tileIds: ['bogus', '0,0'] }), 'left.svg');
+});
+
 test('groupImageChunks splits a 4x4 block into four 2x2 chunks with their own images', () => {
   const node = fillTiles(createMapNode('n', 'Node', null, 4, 4), (id) =>
     createTile(id, `forest-${id}.svg`, { childNodeId: 'region' }),

@@ -13,6 +13,7 @@ import {
   cantripLimit,
   preparedLimit,
   hasRitualCasting,
+  hasPreparedCaster,
 } from '../src/entities/Classes.js';
 
 test('casterSlots is empty for an unknown class', () => {
@@ -158,4 +159,47 @@ test('one ritual-casting class in a multiclass is enough', () => {
     ),
     false,
   );
+});
+
+test('hasPreparedCaster picks out the classes that prepare their spells', () => {
+  assert.equal(hasPreparedCaster(character({ class: 'wizard' })), true);
+  assert.equal(hasPreparedCaster(character({ class: 'cleric' })), true);
+  // Known-rule casters never prepare, and neither does a martial or a
+  // classless character.
+  assert.equal(hasPreparedCaster(character({ class: 'bard' })), false);
+  assert.equal(hasPreparedCaster(character({ class: 'sorcerer' })), false);
+  assert.equal(hasPreparedCaster(character({ class: 'fighter' })), false);
+  assert.equal(hasPreparedCaster(character({ class: undefined })), false);
+  // One prepared class in a multiclass is enough.
+  assert.equal(
+    hasPreparedCaster(
+      character({
+        level: 5,
+        classes: [
+          { classId: 'sorcerer', level: 3 },
+          { classId: 'cleric', level: 2 },
+        ],
+      }),
+    ),
+    true,
+  );
+});
+
+test('preparedLimit counts prepared-rule classes only', () => {
+  // A bard casts from its known list, so it prepares nothing.
+  assert.equal(preparedLimit(character({ class: 'bard', level: 5, stats: { CHA: 16 } })), 0);
+  // Beside a cleric, only the cleric levels count: WIS mod (+3) + level 2.
+  const mixed = character({
+    level: 5,
+    stats: { CHA: 16, WIS: 16 },
+    classes: [
+      { classId: 'bard', level: 3 },
+      { classId: 'cleric', level: 2 },
+    ],
+  });
+  assert.equal(preparedLimit(mixed), 5);
+});
+
+test('preparedLimit is 0 for a prepared caster with no score in its spell ability', () => {
+  assert.equal(preparedLimit(character({ class: 'wizard', level: 5, stats: {} })), 0);
 });

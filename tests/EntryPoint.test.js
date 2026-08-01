@@ -132,9 +132,9 @@ test('resolveEntryTile skips pool tiles whose ids do not parse when scoring', ()
       createTile('3,3', 'assets/tiles/interior/interior-floor-2.svg'),
     ],
   };
-  // Preferred '3,3' is a wall/void miss here; the malformed-id tile is skipped
-  // in scoring, leaving the one real coord as the nearest.
-  assert.equal(resolveEntryTile(node, '3,3'), '3,3');
+  // '0,0' holds no tile, so scoring runs over the pool. The malformed-id tile
+  // is skipped there, leaving the one real coord as the nearest.
+  assert.equal(resolveEntryTile(node, '0,0'), '3,3');
 });
 
 test('computeRegionEntryTile falls back to centre when no region group matches', async () => {
@@ -368,6 +368,46 @@ test('a one-cell block returns to the cell beside it', async () => {
   );
 });
 
+test('a tile exit with no readable coordinates returns north of the block centre', async () => {
+  const { computeParentReturnTile } = await import('../src/map/EntryPoint.js');
+  const parent = returnParent(); // block spans columns 4..6 and rows 4..6
+  const exit = /** @type {import('../src/types/map.js').MapExit} */ ({
+    kind: 'tile',
+    tileId: 'bogus',
+    via: 'door',
+    targetNodeId: 'region',
+    targetName: 'Saltmere Coast',
+  });
+  // Neither the exit nor the party position gives a coordinate in the child, so
+  // the side defaults to north and the child centre stands in for the exit.
+  assert.equal(
+    computeParentReturnTile(parent, returnChild(), exit, { nodeId: 'region', tileId: '0,0' }),
+    '5,3',
+  );
+});
+
+test('a child only one cell across returns to the middle of its block on that axis', async () => {
+  const { computeParentReturnTile } = await import('../src/map/EntryPoint.js');
+  const parent = returnParent(); // block spans columns 4..6 and rows 4..6
+  // A single column carries no position to project, so the return lands on the
+  // middle column of the block, one row above it.
+  const column = returnChild({ width: 1, tiles: gridTiles(1, 8) });
+  assert.equal(
+    computeParentReturnTile(parent, column, edgeExit('north'), {
+      nodeId: 'child',
+      tileId: '0,0',
+    }),
+    '5,3',
+  );
+  // The same holds on the other axis: a single row returns beside the middle
+  // row of the block.
+  const row = returnChild({ height: 1, tiles: gridTiles(8, 1) });
+  assert.equal(
+    computeParentReturnTile(parent, row, edgeExit('west'), { nodeId: 'child', tileId: '0,0' }),
+    '3,5',
+  );
+});
+
 test('leaving through a door uses the side the door sits nearest', async () => {
   const { computeParentReturnTile } = await import('../src/map/EntryPoint.js');
   const parent = returnParent();
@@ -565,4 +605,21 @@ test('resolveReturnTile falls back to the first candidate for an unparseable tar
     tiles: [createTile('1,1', 'grass.svg'), createTile('2,2', 'grass.svg')],
   };
   assert.equal(resolveReturnTile(parent, 'not-a-coord', 'child'), '1,1');
+});
+
+test('resolveReturnTile skips candidates whose ids do not parse when scoring', async () => {
+  const { resolveReturnTile } = await import('../src/map/EntryPoint.js');
+  const parent = {
+    id: 'region',
+    name: 'Coast',
+    parentId: null,
+    width: 4,
+    height: 4,
+    kind: /** @type {const} */ ('region'),
+    environ: null,
+    tiles: [createTile('bogus', 'grass.svg'), createTile('3,3', 'grass.svg')],
+  };
+  // '1,1' holds no tile, so the pool is scored. The malformed-id tile carries
+  // no distance, so the one real coord wins even though it comes second.
+  assert.equal(resolveReturnTile(parent, '1,1', 'child'), '3,3');
 });

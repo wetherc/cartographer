@@ -7,7 +7,8 @@ import {
   loadInitialCampaignSafe,
 } from '../src/campaign/Campaigns.js';
 import { TilePalette } from '../src/map/TilePalette.js';
-import { getTile } from '../src/map/TileGrid.js';
+import { createTile, getTile } from '../src/map/TileGrid.js';
+import { buildingTile } from '../src/campaign/ExampleWorld.js';
 import { createCharacter, getHP, getClasses } from '../src/entities/Character.js';
 import { isHitDicePool } from '../src/entities/HitDice.js';
 import { mulberry32 } from '../src/util/Rng.js';
@@ -198,4 +199,21 @@ test('example campaign placements land on real tiles across seeds', () => {
     const ids = campaign.encounters.map((e) => e.id);
     assert.equal(new Set(ids).size, ids.length, `seed ${seed}: duplicate encounter ids`);
   }
+});
+
+test('buildingTile finds the tile a town drew a building on, else its entry', () => {
+  const palette = new TilePalette();
+  const inn = /** @type {import('../src/map/TilePalette.js').PaletteEntry} */ (palette.get('inn'));
+  const gen = {
+    width: 3,
+    height: 3,
+    entry: '1,2',
+    tiles: [createTile('0,0', 'grass-1.svg'), createTile('2,1', inn.imageRef)],
+  };
+  assert.equal(buildingTile(gen, palette, 'inn'), '2,1');
+  // The town's layout is random, so a building may not come up at all. The NPC
+  // who works there then stands at the town's entry instead.
+  assert.equal(buildingTile(gen, palette, 'blacksmith'), '1,2');
+  // An image id the palette does not carry falls back the same way.
+  assert.equal(buildingTile(gen, palette, 'no-such-building'), '1,2');
 });

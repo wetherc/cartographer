@@ -821,3 +821,32 @@ test('a spell the caster does not know is refused before the ritual check', () =
   const result = castSpell(caster(), detectMagic, { slotLevel: 1, ritual: true });
   assert.deepEqual(result, { ok: false, reason: 'not-known' });
 });
+
+test('an unreadable stated allocation gives that target nothing', () => {
+  // The cast dialog reads its allocation inputs with Number(), so a blank or
+  // garbage box arrives as NaN. It must not eat the whole count.
+  assert.deepEqual(
+    allocateProjectiles(
+      [
+        { id: 'a', projectiles: Number.NaN },
+        { id: 'b', projectiles: 2 },
+      ],
+      3,
+    ),
+    [0, 2],
+  );
+});
+
+test('a projectile target with no AC entered is resolved against 10', () => {
+  // Three rays at natural 11: enough to beat AC 10 with the +5 spell bonus.
+  const hit = [face(20, 11), ...Array(2).fill(face(6, 6))];
+  const result = castSpell(rayCaster(), scorchingRay, {
+    slotLevel: 2,
+    targets: [{ id: 't', name: 'Orc' }],
+    rng: seq([...hit, ...hit, ...hit]),
+  });
+  const [o] = result.outcomes;
+  assert.equal(o.ac, 10);
+  assert.equal(o.hits, 3);
+  assert.equal(o.damage.total, 36);
+});

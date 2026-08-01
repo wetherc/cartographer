@@ -301,3 +301,16 @@ test('a short rest heals HP but leaves spent slots spent; a long rest refills th
   assert.equal(getHP(slept).current, 10);
   assert.equal(getSlotPools(slept)[0].current, 2, 'long rest refills slots');
 });
+
+test('a class id outside the catalog grants no slots of its own', () => {
+  // A wizard 3 beside a hand-typed class still reads the wizard table at 3.
+  const mixed = classed([
+    { classId: 'wizard', level: 3 },
+    { classId: 'warlord', level: 2 },
+  ]);
+  assert.deepEqual(characterSlots(mixed), [4, 2]);
+  assert.equal(characterPactSlots(mixed), null);
+  // With no catalog class at all, the legacy full-caster table applies.
+  const homebrew = classed([{ classId: 'warlord', level: 5 }]);
+  assert.deepEqual(characterSlots(homebrew), slotsForLevel(5));
+});

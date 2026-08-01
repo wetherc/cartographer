@@ -693,3 +693,24 @@ test('equippedIndex follows a character through an edit rather than caching the 
   assert.equal(equippedIndex(bare).size, 0);
   assert.equal(equippedIndex(hero).size, 1, 'the earlier character keeps its own answer');
 });
+
+test('a character saved before equipment slots existed wears nothing', () => {
+  const hero = heroWithSword();
+  const { equipment: _slots, ...legacy } = hero;
+  assert.equal(equippedIndex(/** @type {any} */ (legacy)).size, 0);
+  assert.equal(getEquipped(/** @type {any} */ (legacy), 'mainHand'), null);
+});
+
+test('an unarmored character with no stored base AC falls back to 10', () => {
+  const hero = createCharacter('c1', 'Hero', { DEX: 14 }); // +2
+  const { baseAC: _base, ...legacy } = hero;
+  assert.equal(armorClass(/** @type {any} */ (legacy)), 12, '10 + DEX mod');
+});
+
+test('body armor with no stated weight is treated as light', () => {
+  let hero = createCharacter('c1', 'Hero', { DEX: 18 }); // +4
+  hero = addItem(hero, item('plate', 'Old Mail', { type: 'armor', baseAC: 12 }));
+  hero = equip(hero, 'chest', 'plate');
+  assert.equal(armorClass(hero), 16, '12 + full DEX (+4)');
+  assert.deepEqual(itemEffects(hero.inventory[0]), ['light armor, AC 12 + DEX']);
+});

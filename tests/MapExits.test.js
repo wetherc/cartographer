@@ -239,6 +239,29 @@ test('an interior door boxed in by floor on every side is not a way out', () => 
   );
 });
 
+test('an interior door whose id carries no coordinates is not a way out', () => {
+  const interior = node({
+    id: 'child',
+    name: 'Vault',
+    kind: 'interior',
+    width: 5,
+    height: 5,
+    tiles: [
+      createTile('bogus', `${INTERIOR}-door-h.svg`),
+      createTile('2,2', `${INTERIOR}-floor-1.svg`),
+    ],
+  });
+  // Without coordinates there is no border test and no neighbor to check, so
+  // the door cannot be shown to open outward and the interior falls back.
+  assert.deepEqual(
+    findExits(
+      interior,
+      parentWithBlock(() => true),
+    ).map((e) => e.kind),
+    ['fallback'],
+  );
+});
+
 test('an interior exits up its stairs, and skips ones that lead further in', () => {
   const interior = node({
     id: 'child',
@@ -582,6 +605,20 @@ test('an edge band is a bounded pill just outside the map border', () => {
 
   const east = band('east');
   assert.ok(east.x >= geom.offsetX + geom.width * 48);
+});
+
+test('a band for an exit that has no side is placed along the north border', () => {
+  const tileExit = /** @type {import('../src/types/map.js').MapExit} */ ({
+    kind: 'tile',
+    tileId: '2,2',
+    via: 'door',
+    targetNodeId: 'region',
+    targetName: 'Saltmere Coast',
+  });
+  const placed = edgeExitBand(tileExit, geom);
+  const north = band('north');
+  assert.equal(placed.y, north.y);
+  assert.ok(placed.y + placed.h <= geom.offsetY);
 });
 
 test('a band clamps onto the canvas when the map edge is panned out of view', () => {

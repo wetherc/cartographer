@@ -142,6 +142,17 @@ test('withTileAppended puts the tile last', () => {
   assert.equal(tileAtXY(node, 5, 5).imageRef, 'far.png');
 });
 
+test('withTileAppended leaves a never-indexed node uncached and still resolves', () => {
+  // Nothing has looked a tile up on this node, so there is no layout to carry
+  // forward. The append hands back a plain node, and the first lookup builds
+  // the layout from scratch.
+  const node = withTileAppended(createMapNode('n', 'Node', null, 8, 8), createTile('2,3', 'a.png'));
+  assert.equal(node.tiles.length, 1);
+  assert.equal(tileAt(node, '2,3').imageRef, 'a.png');
+  assert.equal(tileAtXY(node, 2, 3).imageRef, 'a.png');
+  assert.equal(tilePosition(node, '2,3'), 0);
+});
+
 test('updateTileMetadata is a no-op on a missing tile id', () => {
   const node = nodeWith('0,0');
   assert.equal(updateTileMetadata(node, '4,4', { notes: 'x' }), node);

@@ -492,6 +492,58 @@ test('normalizeLibrary keeps a damage term’s flat bonus, dice or not', () => {
   );
 });
 
+test('normalizeLibrary keeps a spell entry that states every descriptive field', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      {
+        id: 'ember-dart',
+        name: 'Ember Dart',
+        school: 'evocation',
+        classes: ['wizard', 7, 'sorcerer'],
+        range: '60 feet',
+        description: 'A mote of fire streaks to the target.',
+        targetCount: 2,
+        effect: { kind: 'attack', damage: [{ count: 1, sides: 6, damageType: 'fire' }] },
+        scaling: { targetsPerLevel: 1 },
+      },
+      // The same fields written as values the schema cannot use.
+      {
+        name: 'Muddle',
+        school: 7,
+        classes: 'wizard',
+        range: { far: true },
+        description: null,
+        targetCount: null,
+      },
+    ],
+  });
+  const [dart, muddle] = lib.spells;
+  assert.equal(dart.id, 'ember-dart', 'a stated id is kept, not sluggified from the name');
+  assert.equal(dart.school, 'evocation');
+  assert.deepEqual(dart.classes, ['wizard', 'sorcerer'], 'non-string classes drop');
+  assert.equal(dart.range, '60 feet');
+  assert.equal(dart.description, 'A mote of fire streaks to the target.');
+  assert.equal(dart.targetCount, 2);
+  assert.deepEqual(dart.scaling, { targetsPerLevel: 1 }, 'targets scale without damage dice');
+  assert.equal(muddle.id, 'muddle');
+  assert.equal(muddle.school, 'abjuration');
+  assert.deepEqual(muddle.classes, []);
+  assert.equal(muddle.range, 'Self');
+  assert.equal(muddle.description, '');
+  assert.equal('targetCount' in muddle, false, 'an explicit null reads as no target count');
+});
+
+test('normalizeLibrary carries a caster class that states nothing else', () => {
+  const lib = normalizeLibrary({
+    npcs: [{ name: 'Hedge Witch', class: 'druid', casterLevel: 'later' }],
+  });
+  const witch = lib.npcs[0];
+  assert.equal(witch.class, 'druid');
+  assert.equal('subclass' in witch, false);
+  assert.equal('casterLevel' in witch, false, 'an unusable level is left for a default to fill');
+  assert.deepEqual(witch.spellbook, { cantrips: [], known: [], prepared: [] });
+});
+
 test('normalizeLibrary keeps a named material and implies the M letter', () => {
   const lib = normalizeLibrary({
     spells: [

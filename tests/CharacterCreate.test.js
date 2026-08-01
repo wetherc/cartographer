@@ -368,3 +368,26 @@ test('the custom method leaves typed scores alone', () => {
   assert.equal(form.labels.statMethod, 'Ability scores');
   assert.equal(form.hidden.reroll, true);
 });
+
+test('one point left reads in the singular', () => {
+  // 15/15/14/9/8/8 spends 26 of the 27-point budget.
+  const state = statState({
+    statMethod: 'point-buy',
+    'stat-STR': '15',
+    'stat-DEX': '15',
+    'stat-CON': '14',
+    'stat-INT': '9',
+  });
+  const form = fakeForm(state);
+  characterFormChange('stat-INT', form);
+  assert.equal(form.labels.statMethod, 'Ability scores (1 point left)');
+});
+
+test('a score outside the buyable range captions the range instead of a budget', () => {
+  const state = statState({ statMethod: 'point-buy', 'stat-STR': '16' });
+  const form = fakeForm(state);
+  characterFormChange('stat-STR', form);
+  // An unbuyable score has no cost, so there is no budget to walk back down.
+  assert.equal(state['stat-STR'], '16');
+  assert.equal(form.labels.statMethod, 'Ability scores (point buy uses 8-15)');
+});

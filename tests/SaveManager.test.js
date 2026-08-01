@@ -133,6 +133,19 @@ test('packing keeps a tile field it does not know about', () => {
   assert.equal(restored.tiles[0].future, 'kept', 'a packer that picked named fields would drop it');
 });
 
+test('packing drops a metadata block that is not a record, and the load path refills it', () => {
+  const grid = new TileGrid();
+  let node = createMapNode('world', 'World', null, 1, 1);
+  // A hand-edited save can carry this. Nothing downstream checks for the block
+  // before reading through it, so it must not survive the round trip.
+  node = setTile(node, { ...createTile('0,0', 'grass.svg'), metadata: null });
+  grid.addNode(node);
+  const json = serialize(buildState({ grid }));
+  assert.equal(json.includes('metadata'), false);
+  const restored = deserialize(json).nodes[0];
+  assert.deepEqual(restored.tiles[0].metadata, createTile('0,0', 'grass.svg').metadata);
+});
+
 test('packing shrinks a save dominated by default tiles', () => {
   const grid = new TileGrid();
   grid.addNode(fillTiles(createMapNode('world', 'World', null, 20, 20)));

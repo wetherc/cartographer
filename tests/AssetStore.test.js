@@ -154,6 +154,14 @@ test('a full origin can lose the images and still store the campaign', () => {
   assert.equal(loaded.handouts[0].image.startsWith('asset:'), true, 'the image did not');
 });
 
+test('a sidecar stored as a list reads as no images', () => {
+  // The table is a record of keys to payloads. A list has no keys to look a
+  // reference up by, so it is unusable rather than merely odd.
+  localStorage.setItem(ASSETS_KEY, JSON.stringify([PAYLOAD]));
+  assert.deepEqual(loadAssetTable(), {});
+  assert.deepEqual(detachAssets({ assets: [PAYLOAD] }).assets, {});
+});
+
 test('a corrupt sidecar reads as no images rather than throwing', () => {
   trySaveToLocalStorage(stateWithHandoutImage());
   localStorage.setItem(ASSETS_KEY, 'not json');

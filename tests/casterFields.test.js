@@ -170,3 +170,27 @@ test('refilterSpellsOnChange refilters the spell picker only on caster field cha
   assert.equal(refilterSpellsOnChange('casterLevel', form), true);
   assert.equal(calls.length, 2);
 });
+
+test('maxSpellLevelForClass reads an unusable caster level as level 1', () => {
+  assert.equal(maxSpellLevelForClass('wizard', 0), 1);
+  assert.equal(maxSpellLevelForClass('wizard', Number.NaN), 1);
+  assert.equal(maxSpellLevelForClass('paladin', 0), 0, 'a half caster still has no L1 slots');
+});
+
+test('a blank caster-level box refilters as level 1', () => {
+  const calls = [];
+  const form = {
+    values: { casterClass: 'wizard', casterLevel: '' },
+    get(name) {
+      return this.values[name];
+    },
+    setOptions(name, options) {
+      calls.push({ name, options });
+    },
+  };
+  assert.equal(refilterSpellsOnChange('casterLevel', form), true);
+  assert.ok(
+    calls[0].options.every((o) => o.label.startsWith('Cantrip') || o.label.startsWith('L1 ')),
+    'a level-1 wizard slots nothing above 1st',
+  );
+});

@@ -159,3 +159,14 @@ test('no access draws nothing at all', () => {
   const loadout = buildLoadout({ kind: 'character', entity: armedHero() }, [CANTRIP], 'none');
   assert.equal(isEmptyLoadout(loadout), true);
 });
+
+test('a foe with no authored armor reports none', () => {
+  const ooze = {
+    ...createEncounter('ooze', 'Gray Ooze', 10, { AC: 8 }, HERE),
+    armor: null,
+    weapon: null,
+  };
+  const loadout = buildLoadout({ kind: 'encounter', entity: ooze });
+  assert.deepEqual(loadout.armor, []);
+  assert.deepEqual(loadout.weapons, []);
+});

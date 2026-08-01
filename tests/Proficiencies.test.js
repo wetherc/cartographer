@@ -165,3 +165,18 @@ test('withDefaults fills empty lists on a pre-proficiency save and keeps stored 
   assert.deepEqual(loaded.proficiencies, c.proficiencies);
   assert.deepEqual(loaded.expertise, ['stealth']);
 });
+
+test('a character saved before expertise existed gains an empty expertise list', () => {
+  const legacy = /** @type {any} */ ({
+    id: 'c1',
+    name: 'Old',
+    level: 3,
+    stats: {},
+    resources: [],
+    inventory: [],
+    conditions: [],
+  });
+  const next = withProficiencies(legacy, { skills: ['stealth'] });
+  assert.deepEqual(next.expertise, []);
+  assert.deepEqual(getProficiencies(next).skills, ['stealth']);
+});

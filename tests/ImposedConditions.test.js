@@ -155,3 +155,16 @@ test('addCondition carries a source through, and a replacement takes over the ch
   // A hand-added chip stores no source key at all.
   assert.deepEqual(addCondition([], 'Prone'), [{ name: 'Prone', rounds: null }]);
 });
+
+test('a source with no recorded bonus retries the save at a flat bonus of 0', () => {
+  const chip = createCondition('Paralyzed', 10, source({ saveBonus: undefined }));
+  // A d20 face of 15 alone meets the DC of 15, so a 0 bonus is enough.
+  const passed = repeatSaves([chip], { rng: seq([face(20, 15)]) });
+  assert.equal(passed.results[0].save.total, 15);
+  assert.equal(passed.results[0].ended, true);
+  assert.deepEqual(passed.conditions, []);
+  // One face lower fails, which proves nothing was added to the roll.
+  const failed = repeatSaves([chip], { rng: seq([face(20, 14)]) });
+  assert.equal(failed.results[0].save.total, 14);
+  assert.equal(failed.results[0].ended, false);
+});

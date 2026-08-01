@@ -240,6 +240,22 @@ test('a malformed encoded node degrades instead of throwing', () => {
     fogged.tiles.map((/** @type {any} */ t) => t.revealed === true),
     [false, false, false, false],
   );
+  // A run whose index or count is a number JSON can hold but arithmetic cannot
+  // (`1e999` parses as Infinity) ends the stream where an unreadable run does.
+  for (const run of [
+    ['x', 2],
+    [JSON.parse('1e999'), 2],
+    [0, 'x'],
+    [0, JSON.parse('1e999')],
+  ]) {
+    assert.deepEqual(
+      decodeNodeTiles({ ...base, refs: ['a'], cells: [0, run] }).tiles.map(
+        (/** @type {any} */ t) => t.id,
+      ),
+      ['0,0'],
+      JSON.stringify(run),
+    );
+  }
   // Unusable dimensions keep the out-of-line records, which carry their own ids.
   const dimensionless = decodeNodeTiles({
     ...base,
@@ -249,6 +265,15 @@ test('a malformed encoded node degrades instead of throwing', () => {
     tiles: [{ id: '4,4', childNodeId: 'c' }],
   });
   assert.deepEqual(dimensionless.tiles, [{ id: '4,4', childNodeId: 'c' }]);
+  // One bad dimension is enough, whichever of the two it is.
+  const flat = decodeNodeTiles({
+    ...base,
+    height: 'two',
+    refs: ['a'],
+    cells: [0],
+    tiles: [{ id: '4,4', childNodeId: 'c' }],
+  });
+  assert.deepEqual(flat.tiles, [{ id: '4,4', childNodeId: 'c' }]);
   // The codec's own fields win over a leftover record that contradicts them.
   const contradicted = decodeNodeTiles({
     ...base,

@@ -334,3 +334,14 @@ test('withDefaults gives an older save no choices at all', () => {
   assert.deepEqual(getASIChoices(/** @type {any} */ ({ resources: [] })), {});
   assert.deepEqual(listASIChoices(/** @type {any} */ ({ resources: [] })), []);
 });
+
+test('a class id outside the catalog unlocks no features', () => {
+  const homebrew = classed([
+    { classId: 'warlord', level: 4 },
+    { classId: 'fighter', level: 1 },
+  ]);
+  assert.deepEqual(unlockedFeatures(homebrew), [
+    { classId: 'fighter', level: 1, name: 'Fighting Style' },
+    { classId: 'fighter', level: 1, name: 'Second Wind' },
+  ]);
+});

@@ -189,6 +189,63 @@ test('a collection whose elements have no id falls back the same way', () => {
   assert.deepEqual(ops, [{ p: ['npcs'], f: [{ name: 'x' }], t: [{ name: 'y' }] }]);
 });
 
+test('a collection holding an element that is not a record falls back as well', () => {
+  const ops = assertRoundTrip({ npcs: [{ id: 'a' }, null] }, { npcs: [{ id: 'a' }] });
+  assert.deepEqual(ops, [{ p: ['npcs'], f: [{ id: 'a' }, null], t: [{ id: 'a' }] }]);
+});
+
+test('applyOps ignores an op that addresses inside a positional array', () => {
+  // `combat.order` is a leaf: it is an ordered sequence, so nothing pairs its
+  // elements by id. A log written when it was keyed must not reach inside it.
+  const state = { combat: { order: [{ id: 'a', initiative: 12 }] } };
+  const applied = applyOps(state, [
+    { p: ['combat', 'order', 'a'], f: { id: 'a', initiative: 12 }, t: { id: 'a', initiative: 3 } },
+  ]);
+  assert.deepEqual(applied, state);
+});
+
+test('an insertion of an id the collection already holds replaces that element', () => {
+  const state = { quests: [{ id: 'q1', title: 'Old' }] };
+  const applied = applyOps(state, [{ p: ['quests', 'q1'], t: { id: 'q1', title: 'New' }, i: 0 }]);
+  assert.deepEqual(applied, { quests: [{ id: 'q1', title: 'New' }] });
+});
+
+test('an insertion with no recorded index goes on the end', () => {
+  const state = { quests: [{ id: 'q1' }] };
+  const applied = applyOps(state, [{ p: ['quests', 'q2'], t: { id: 'q2' } }]);
+  assert.deepEqual(applied, { quests: [{ id: 'q1' }, { id: 'q2' }] });
+});
+
+test('an order op is ignored unless it names an id-keyed collection with a sequence', () => {
+  const state = {
+    quests: [{ id: 'q1' }, { id: 'q2' }],
+    party: { nodeId: 'world' },
+    nodes: [{ id: 'world', tiles: [{ id: '0,0' }] }],
+  };
+  const cases = [
+    // The target sequence is not a list.
+    { k: 'order', p: ['quests'], t: 'nope' },
+    // `party` is a record, not an id-keyed collection.
+    { k: 'order', p: ['party'], t: ['nodeId'] },
+    // One segment too deep: the collection to reorder is the parent, so the
+    // path resolves to the array itself and there is nothing to write into.
+    { k: 'order', p: ['nodes', 'world', 'tiles', 'stray'], t: ['0,0'] },
+  ];
+  for (const op of cases) {
+    assert.deepEqual(applyOps(state, [op]), state, JSON.stringify(op));
+  }
+});
+
+test('an order op keeps a member that carries no id at all', () => {
+  const state = { npcs: [{ id: 'a' }, null, { id: 'b' }] };
+  const applied = applyOps(state, [{ k: 'order', p: ['npcs'], t: ['b', 'a'] }]);
+  assert.deepEqual(
+    applied,
+    { npcs: [{ id: 'b' }, { id: 'a' }, null] },
+    'the unnamed member trails the sequence rather than being lost',
+  );
+});
+
 test('applyOps never mutates its input, even when the input is frozen', () => {
   const before = Object.freeze({
     npcs: Object.freeze([Object.freeze({ id: 'a', name: 'Ash' })]),

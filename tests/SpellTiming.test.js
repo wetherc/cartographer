@@ -146,3 +146,30 @@ test('durationInRounds converts the tickable durations and refuses the rest', ()
   assert.equal(durationInRounds({ kind: 'until-dispelled' }), null);
   assert.equal(durationInRounds({ kind: 'special', text: 'when the sun rises' }), null);
 });
+
+test('a structured reaction keeps its trigger and drops an empty one', () => {
+  assert.deepEqual(parseCastingTime({ kind: 'reaction', trigger: '  when you are hit  ' }), {
+    kind: 'reaction',
+    trigger: 'when you are hit',
+  });
+  assert.deepEqual(parseCastingTime({ kind: 'reaction', trigger: '   ' }), { kind: 'reaction' });
+  assert.deepEqual(parseCastingTime({ kind: 'reaction' }), { kind: 'reaction' });
+});
+
+test('a structured special keeps its text and coerces a non-string away', () => {
+  assert.deepEqual(parseCastingTime({ kind: 'special', text: ' a night of chanting ' }), {
+    kind: 'special',
+    text: 'a night of chanting',
+  });
+  assert.deepEqual(parseCastingTime({ kind: 'special', text: 12 }), { kind: 'special', text: '' });
+  assert.deepEqual(parseDuration({ kind: 'special', text: ' until the moon sets ' }), {
+    kind: 'special',
+    text: 'until the moon sets',
+  });
+  assert.deepEqual(parseDuration({ kind: 'special' }), { kind: 'special', text: '' });
+});
+
+test('a casting time with no amount prints as one unit', () => {
+  assert.equal(formatCastingTime({ kind: 'minutes' }), '1 minute');
+  assert.equal(formatCastingTime({ kind: 'hours' }), '1 hour');
+});

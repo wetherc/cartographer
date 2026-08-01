@@ -594,3 +594,22 @@ test('a template with null gear spawns an unarmed encounter', () => {
   assert.equal(spawned.weapon, null);
   assert.equal(spawned.armor, null);
 });
+
+test('dropping the caster class off an encounter saved without resources leaves no pools', () => {
+  const enc = createEncounter('e1', 'Acolyte', 20, { WIS: 14 }, null, {
+    level: 3,
+    class: 'cleric',
+  });
+  const { resources: _pools, ...legacy } = enc;
+  const edited = editEncounter(/** @type {any} */ (legacy), {
+    name: 'Acolyte',
+    maxHP: 20,
+    level: 3,
+    tier: 'mob',
+    location: null,
+    class: '',
+  });
+  assert.deepEqual(edited.resources, []);
+  assert.equal(edited.casterLevel, undefined);
+  assert.equal(edited.spellbook, undefined);
+});

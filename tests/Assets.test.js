@@ -149,6 +149,26 @@ test('restoring ignores a table entry that is not a string', () => {
   assert.equal(restoreAssets(before).nodes[0].tiles[0].imageRef, 'asset:k');
 });
 
+test('a tile with no image fields and a non-payload handout image pass through', () => {
+  // An interior tile can carry an overlay and no base art, and a handout can
+  // point at a built-in file instead of an uploaded payload.
+  const before = state(
+    [{ id: '0,0', overlayRef: 'assets/tiles/road/road-ns.svg' }, tile({ id: '1,0' })],
+    [{ id: 'h1', title: 'Regional map', image: 'assets/handouts/region.png' }],
+  );
+  const hoisted = hoistAssets(before);
+  assert.equal('assets' in hoisted, false);
+  assert.equal(hoisted.nodes[0].tiles[0], before.nodes[0].tiles[0], 'the same tile object back');
+  assert.equal(hoisted.handouts[0], before.handouts[0], 'and the same handout object');
+});
+
+test('a non-string entry inside an overlay stack is left alone', () => {
+  const before = state([tile({ overlayRef: [null, PAYLOAD, 7] })]);
+  const hoisted = hoistAssets(before);
+  assert.deepEqual(hoisted.nodes[0].tiles[0].overlayRef, [null, `asset:${assetKey(PAYLOAD)}`, 7]);
+  assert.deepEqual(restoreAssets(hoisted), before);
+});
+
 test('hoisting tolerates malformed nodes, tiles, and handouts', () => {
   const before = {
     version: 3,

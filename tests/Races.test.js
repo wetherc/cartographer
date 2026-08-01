@@ -129,3 +129,19 @@ test('every catalog race can be assigned and resolved', () => {
     assert.equal(resolveRace(c)?.speed, def.speed, def.id);
   }
 });
+
+test('an ability the character has no score for reads as 10 before the increase', () => {
+  const partial = /** @type {any} */ ({
+    id: 'c1',
+    name: 'Durnan',
+    level: 1,
+    stats: { STR: 14 },
+    resources: [],
+    inventory: [],
+    conditions: [],
+  });
+  const c = withRace(partial, 'dwarf');
+  assert.equal(c.stats.CON, 12); // 10 + 2
+  assert.equal(c.stats.WIS, 11); // 10 + 1
+  assert.equal(c.stats.STR, 14); // untouched
+});
