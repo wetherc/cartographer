@@ -206,6 +206,13 @@ tell a real edit from a repeated autosave. It pairs a collection by element
 `id`, so an insertion at the front does not make every later entity look
 changed.
 
+The world's nodes go through the same `reconcile` call before
+`grid.replaceNodes`, and for a stronger reason than the panels. The map
+caches (`revealedIdsOf` in `map/MapRenderer.js`, `findRegionGroups` in
+`map/RegionGroups.js`, and `spanBlocks` in `map/TilePaint.js`) are keyed on
+node identity. A node the save did not change comes back as the object those
+caches already know, so an adoption that moved nothing leaves them warm.
+
 ### encounterWiring.js (plus encounterForm.js, weaponAttack.js, spellCast.js, combatants.js)
 
 This module owns the Encounters panel, the sidebar's Initiative card, the

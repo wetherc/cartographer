@@ -61,8 +61,12 @@ export const SYNCED_STATE_KEYS = [
  */
 export function rehydrateCampaign(app, campaign) {
   // The navigator, the party tracker, and the canvas each hold the grid that
-  // built them, so the world is swapped through that object.
-  app.grid.replaceNodes([...campaign.grid.nodes.values()]);
+  // built them, so the world is swapped through that object. The nodes pass
+  // through `reconcile` like the state fields below, and for a stronger
+  // reason: the map caches (`revealedIdsOf`, `findRegionGroups`,
+  // `spanBlocks`) are keyed on node identity, so a node the save did not
+  // change must stay the object those caches already know.
+  app.grid.replaceNodes(reconcile([...app.grid.nodes.values()], [...campaign.grid.nodes.values()]));
 
   const state = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (app.state));
   const loaded = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (campaign));

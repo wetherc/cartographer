@@ -158,6 +158,28 @@ test('rehydrate refreshes the map and every campaign-backed panel', () => {
 // A follower tab adopts an autosave every ten idle seconds, and most of those
 // carry no edit at all. The entities the save did not change must come back as
 // the objects the panels already hold, or every panel rebuilds every row.
+// The map caches are keyed on node identity, so a node the save did not
+// change must come back as the object the caches already know.
+test('rehydrate keeps the live node objects that the adopted save did not change', () => {
+  const { app } = fakeApp();
+  const before = app.grid.getNode('world');
+
+  rehydrateCampaign(app, campaignNamed('Before'));
+
+  assert.equal(app.grid.getNode('world'), before);
+});
+
+test('rehydrate replaces a node the adopted save changed', () => {
+  const { app } = fakeApp();
+  const before = app.grid.getNode('world');
+
+  rehydrateCampaign(app, campaignNamed('After'));
+
+  const after = app.grid.getNode('world');
+  assert.notEqual(after, before);
+  assert.equal(after?.name, 'After');
+});
+
 test('rehydrate keeps the live entities that the adopted save did not change', () => {
   const { app } = fakeApp();
   app.state.encounters = [
