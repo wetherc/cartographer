@@ -1,9 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createMapTravel } from '../src/app/mapTravel.js';
-import { TileGrid, createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
+import {
+  TileGrid,
+  createMapNode,
+  createTile,
+  setTile,
+  updateTileMetadata,
+} from '../src/map/TileGrid.js';
 import { MapNavigator } from '../src/map/MapNavigator.js';
 import { PartyTracker } from '../src/party/PartyTracker.js';
+import { createCharacter } from '../src/entities/Character.js';
+import { createNPC } from '../src/entities/NPC.js';
 import { fillTiles, gridTiles } from './helpers/grid.js';
 import { stubApp } from './helpers/app.js';
 
@@ -15,9 +23,30 @@ const INTERIOR = 'assets/tiles/interior/interior';
  * standing next to that tile. Every view call the handlers make appends its
  * name to `calls`, so a test asserts which syncs a gesture ran rather than
  * reaching into a canvas.
- * @param {{ interior?: boolean, mode?: 'play' | 'build' }} [opts]
+ *
+ * `role` and `splitParty` set who the tab moves. `characters` seeds the
+ * roster, and `selected` is the id the split-party path picks up: the GM's
+ * roster selection on a GM tab, and the tab's own character on a player tab.
+ * `tooltips` records what the hover handler asked the tooltip to show.
+ * @param {{
+ *   interior?: boolean,
+ *   mode?: 'play' | 'build',
+ *   role?: 'gm' | 'player',
+ *   splitParty?: boolean,
+ *   characters?: any[],
+ *   npcs?: any[],
+ *   selected?: string | null,
+ * }} [opts]
  */
-function world({ interior = false, mode = 'play' } = {}) {
+function world({
+  interior = false,
+  mode = 'play',
+  role = 'gm',
+  splitParty = false,
+  characters = [],
+  npcs = [],
+  selected = null,
+} = {}) {
   const grid = new TileGrid();
   const parent = fillTiles(createMapNode('world', 'World', null, 6, 6), (id) =>
     createTile(id, 'grass.svg'),
@@ -38,7 +67,21 @@ function world({ interior = false, mode = 'play' } = {}) {
   const navigator = new MapNavigator(grid, 'world');
   const partyTracker = new PartyTracker(grid, { nodeId: 'world', tileId: '2,5' });
 
-  const app = stubApp({ grid, navigator, partyTracker, state: { role: 'gm', mode } });
+  const app = stubApp({
+    grid,
+    navigator,
+    partyTracker,
+    state: { role, mode, splitParty, characters, npcs },
+    actions: {
+      getSelectedCharacterId: () => selected,
+      getBoundCharacterId: () => selected,
+      maybeTriggerEncounter: (/** @type {any} */ at, /** @type {string} */ who) => {
+        app.calls.push('maybeTriggerEncounter');
+        app.triggers.push({ at: at ?? null, who: who ?? null });
+      },
+    },
+  });
+  app.triggers = [];
   const state = app.state;
   // The handlers record through the app as well as through the env below, so one
   // list holds a gesture's whole trail of syncs, in the order they ran.
@@ -62,8 +105,16 @@ function world({ interior = false, mode = 'play' } = {}) {
     regionTree: { update: () => calls.push('regionTree') },
     syncPartyMarker: () => calls.push('syncPartyMarker'),
     syncExits: () => calls.push('syncExits'),
-    tileTooltip: { show: () => {}, hide: () => {} },
+    tileTooltip: {
+      show: (/** @type {any} */ content, /** @type {number} */ x, /** @type {number} */ y) => {
+        calls.push('tooltip');
+        tooltips.push({ ...content, x, y });
+      },
+      hide: () => calls.push('tooltipHidden'),
+    },
   });
+  /** @type {any[]} */
+  const tooltips = [];
   const travel = createMapTravel(app, env);
   /** @param {string} tileId */
   const clickTile = (tileId) => {
@@ -71,7 +122,38 @@ function world({ interior = false, mode = 'play' } = {}) {
     const [x, y] = tileId.split(',').map(Number);
     travel.onCellClick(x, y, node.tiles.find((t) => t.id === tileId) ?? null);
   };
-  return { app, env, travel, grid, navigator, partyTracker, state, calls, log, clickTile };
+  return {
+    app,
+    env,
+    travel,
+    grid,
+    navigator,
+    partyTracker,
+    state,
+    calls,
+    log,
+    tooltips,
+    clickTile,
+  };
+}
+
+/** The tile object the node in view holds under an id. */
+function tileOf(navigator, id) {
+  return navigator.getCurrentNode().tiles.find((t) => t.id === id);
+}
+
+/**
+ * Mark one tile of the node in view revealed. A fresh world starts fogged, and
+ * the hover tooltip reads nothing off a tile the party has not uncovered.
+ * @param {any} w
+ * @param {string} id
+ */
+function reveal(w, id) {
+  const node = w.navigator.getCurrentNode();
+  w.grid.updateNode({
+    ...node,
+    tiles: node.tiles.map((t) => (t.id === id ? { ...t, revealed: true } : t)),
+  });
 }
 
 test('walking into a region recomputes its ways out', () => {
@@ -161,4 +243,309 @@ test('a door leads out only once the mover stands on it', () => {
   clickTile('0,2');
   assert.equal(navigator.getCurrentNode().id, 'world');
   assert.equal(log.at(-1), 'The party returns to World.');
+});
+
+test('a player tab meets nobody, because only the GM tab writes the roster', () => {
+  const sage = createNPC('sage', 'Sage', { location: { nodeId: 'world', tileId: '2,5' } });
+  const gm = world({ npcs: [sage] });
+  gm.travel.meetNPCsHere();
+  assert.deepEqual(gm.log, ['The party meets Sage.']);
+  assert.equal(gm.state.npcs[0].met, true);
+
+  const player = world({ role: 'player', npcs: [sage] });
+  player.travel.meetNPCsHere();
+  assert.deepEqual(player.log, []);
+  assert.equal(player.state.npcs[0].met, false);
+});
+
+test('meeting an NPC happens once, and an empty tile meets nobody', () => {
+  const sage = createNPC('sage', 'Sage', { location: { nodeId: 'world', tileId: '2,5' } });
+  const elsewhere = createNPC('smith', 'Smith', {
+    location: { nodeId: 'world', tileId: '0,0' },
+  });
+  const { travel, log, state } = world({ npcs: [sage, elsewhere] });
+  travel.meetNPCsHere();
+  const roster = state.npcs;
+  travel.meetNPCsHere();
+  assert.deepEqual(log, ['The party meets Sage.'], 'an already-met NPC is not met again');
+  assert.equal(state.npcs, roster, 'nothing new to meet leaves the roster identical');
+});
+
+test('teleportToNode brings the view to a node without moving anyone', () => {
+  // A player tab and a click on the node the party already occupies both pan
+  // the camera. Neither reaches the confirm dialog.
+  const player = world({ role: 'player' });
+  player.travel.teleportToNode('child');
+  assert.equal(player.navigator.getCurrentNode().id, 'child');
+  assert.equal(player.partyTracker.getPosition().nodeId, 'world', 'the party stayed put');
+  assert.deepEqual(player.log, []);
+
+  const here = world();
+  here.travel.teleportToNode('world');
+  assert.equal(here.calls.filter((c) => c === 'goToNode').length, 1);
+  assert.deepEqual(here.log, []);
+});
+
+test('teleportToNode ignores an id no node holds', () => {
+  const { travel, calls, navigator } = world();
+  travel.teleportToNode('nowhere');
+  assert.equal(navigator.getCurrentNode().id, 'world');
+  assert.deepEqual(calls, []);
+});
+
+test('discoverTile logs a find once, with the notes when the GM wrote any', () => {
+  const { travel, grid, navigator, log } = world();
+  const withNotes = updateTileMetadata(navigator.getCurrentNode(), '1,1', {
+    discoverable: true,
+    poiType: 'shrine',
+    notes: 'a cracked altar',
+  });
+  grid.updateNode(updateTileMetadata(withNotes, '3,3', { discoverable: true }));
+  travel.discoverTile(tileOf(navigator, '1,1'));
+  travel.discoverTile(tileOf(navigator, '3,3'));
+  assert.deepEqual(log, ['Discovered shrine: a cracked altar.', 'Discovered a hidden location.']);
+  // The flag is stored, so the same tile read fresh discovers nothing more.
+  travel.discoverTile(tileOf(navigator, '1,1'));
+  travel.discoverTile(tileOf(navigator, '0,0'));
+  assert.equal(log.length, 2, 'a found tile and a plain tile both stay quiet');
+});
+
+test('clickSubject moves the whole party unless the split-party toggle is on', () => {
+  const hero = createCharacter('hero', 'Hero');
+  const off = world({ characters: [hero], selected: 'hero' });
+  assert.equal(off.travel.clickSubject(), null, 'splitting off means the party moves together');
+
+  const gm = world({ characters: [hero], splitParty: true, selected: 'hero' });
+  assert.equal(gm.travel.clickSubject()?.id, 'hero', 'the GM moves its roster selection');
+
+  const player = world({
+    role: 'player',
+    characters: [hero],
+    splitParty: true,
+    selected: 'hero',
+  });
+  assert.equal(player.travel.clickSubject()?.id, 'hero', 'a bound tab moves its own character');
+
+  const spectator = world({ role: 'player', characters: [hero], splitParty: true });
+  assert.equal(spectator.travel.clickSubject(), null, 'an unbound tab moves no one');
+
+  const stale = world({ characters: [hero], splitParty: true, selected: 'deleted' });
+  assert.equal(stale.travel.clickSubject(), null, 'a selection nothing holds moves no one');
+});
+
+test('moveOneCharacter steps a character alone and rejoins it on the party tile', () => {
+  const hero = createCharacter('hero', 'Hero');
+  const { travel, state, partyTracker, navigator, app } = world({
+    characters: [hero],
+    splitParty: true,
+    selected: 'hero',
+  });
+  travel.moveOneCharacter(tileOf(navigator, '0,0'), hero);
+  assert.deepEqual(state.characters[0].location, { nodeId: 'world', tileId: '0,0' });
+  assert.deepEqual(app.triggers.at(-1), {
+    at: { nodeId: 'world', tileId: '0,0' },
+    who: 'Hero',
+  });
+  // Stepping onto the party's own tile drops the individual position again.
+  travel.moveOneCharacter(
+    tileOf(navigator, partyTracker.getPosition().tileId),
+    state.characters[0],
+  );
+  assert.equal(state.characters[0].location, null);
+});
+
+test('a split-party click moves only the selected character', () => {
+  const hero = createCharacter('hero', 'Hero');
+  const { clickTile, state, partyTracker } = world({
+    characters: [hero],
+    splitParty: true,
+    selected: 'hero',
+  });
+  clickTile('1,1');
+  assert.deepEqual(state.characters[0].location, { nodeId: 'world', tileId: '1,1' });
+  assert.equal(partyTracker.getPosition().tileId, '2,5', 'the party did not follow');
+});
+
+test('a spectator click moves nobody and leaves the map alone', () => {
+  const { clickTile, partyTracker, calls, log } = world({ role: 'player' });
+  clickTile('1,1');
+  assert.equal(partyTracker.getPosition().tileId, '2,5');
+  assert.deepEqual(calls, []);
+  assert.deepEqual(log, []);
+});
+
+test('a spectator click on a region tile navigates the view without moving anyone', () => {
+  const { clickTile, navigator, partyTracker, log } = world({ role: 'player' });
+  clickTile('2,4');
+  assert.equal(navigator.getCurrentNode().id, 'child', 'the view follows the click');
+  assert.equal(partyTracker.getPosition().nodeId, 'world', 'the party stayed behind');
+  assert.deepEqual(log, [], 'nobody entered, so nothing is logged');
+});
+
+test('a split-party click into a region carries that character in and names the discovery', () => {
+  const hero = createCharacter('hero', 'Hero');
+  const first = world({ characters: [hero], splitParty: true, selected: 'hero' });
+  first.clickTile('2,4');
+  assert.equal(first.state.characters[0].location?.nodeId, 'child');
+  assert.deepEqual(first.log, ['Hero discovers Saltmere.']);
+  assert.equal(first.app.triggers.at(-1)?.who, 'Hero');
+
+  // A second click, with the character already inside, only re-enters the view.
+  const inside = first.state.characters[0].location;
+  first.travel.onCellClick(2, 4, null);
+  first.clickTile('0,0');
+  assert.deepEqual(first.state.characters[0].location, {
+    nodeId: 'child',
+    tileId: '0,0',
+  });
+  assert.notDeepEqual(inside, first.state.characters[0].location);
+});
+
+test('entering a region already visited logs an entry rather than a discovery', () => {
+  const { clickTile, log, travel, navigator } = world();
+  clickTile('2,4');
+  assert.deepEqual(log, ['Discovered Saltmere.']);
+  travel.exitToParent({ kind: 'edge', side: 'south', targetNodeId: 'world', targetName: 'World' });
+  clickTile('2,4');
+  assert.equal(navigator.getCurrentNode().id, 'child');
+  assert.equal(log.at(-1), 'Entered Saltmere.');
+});
+
+test('a character already standing in a region enters it again without a second step', () => {
+  const hero = createCharacter('hero', 'Hero');
+  const { clickTile, state, travel } = world({
+    characters: [hero],
+    splitParty: true,
+    selected: 'hero',
+  });
+  clickTile('2,4');
+  const landed = state.characters[0].location;
+  travel.exitToParent({ kind: 'edge', side: 'south', targetNodeId: 'world', targetName: 'World' });
+  const outside = state.characters[0].location;
+  assert.equal(outside?.nodeId, 'world');
+  clickTile('2,4');
+  assert.equal(state.characters[0].location?.nodeId, 'child');
+  assert.equal(state.characters[0].location?.tileId, landed?.tileId);
+});
+
+test('exitToParent takes a lone character out and logs its own return', () => {
+  const hero = createCharacter('hero', 'Hero');
+  const { clickTile, travel, state, log, partyTracker } = world({
+    characters: [hero],
+    splitParty: true,
+    selected: 'hero',
+  });
+  clickTile('2,4');
+  travel.exitToParent({ kind: 'edge', side: 'south', targetNodeId: 'world', targetName: 'World' });
+  assert.deepEqual(state.characters[0].location, { nodeId: 'world', tileId: '2,5' });
+  assert.equal(log.at(-1), 'Hero returns to World.');
+  assert.equal(partyTracker.getPosition().tileId, '2,5', 'the party never moved');
+});
+
+test('exitToParent only follows the camera out for a tab that moves nobody', () => {
+  const { clickTile, travel, partyTracker, log, navigator } = world({ role: 'player' });
+  clickTile('2,4');
+  travel.exitToParent({ kind: 'edge', side: 'south', targetNodeId: 'world', targetName: 'World' });
+  assert.equal(navigator.getCurrentNode().id, 'world');
+  assert.equal(partyTracker.getPosition().nodeId, 'world');
+  assert.deepEqual(log, []);
+});
+
+test('exitToParent leaves the party where it stands and only pans the view', () => {
+  // The GM looks into a child the party is not in. Leaving that view must not
+  // drag the party out of wherever it actually stands.
+  const { travel, navigator, partyTracker, log } = world();
+  navigator.zoomIn('2,4');
+  assert.equal(navigator.getCurrentNode().id, 'child');
+  travel.exitToParent({ kind: 'edge', side: 'south', targetNodeId: 'world', targetName: 'World' });
+  assert.equal(navigator.getCurrentNode().id, 'world');
+  assert.deepEqual(partyTracker.getPosition(), { nodeId: 'world', tileId: '2,5' });
+  assert.deepEqual(log, []);
+});
+
+test('the hover tooltip stays hidden outside play mode and over nothing worth showing', () => {
+  const building = world({ mode: 'build' });
+  building.travel.onCellHover(tileOf(building.navigator, '1,1'), 5, 5);
+  assert.deepEqual(building.tooltips, []);
+
+  const playing = world();
+  reveal(playing, '0,0');
+  playing.travel.onCellHover(null, 5, 5);
+  playing.travel.onCellHover(tileOf(playing.navigator, '0,0'), 5, 5);
+  assert.deepEqual(playing.tooltips, [], 'a plain revealed tile carries nothing to say');
+});
+
+test('the hover tooltip stays hidden over an unrevealed or undiscovered tile', () => {
+  const w = world();
+  const { travel, grid, navigator, tooltips } = w;
+  reveal(w, '1,1');
+  reveal(w, '3,3');
+  const revealed = navigator.getCurrentNode();
+  grid.updateNode(updateTileMetadata(revealed, '1,1', { discoverable: true, poiType: 'cave' }));
+  const withHidden = navigator.getCurrentNode();
+  grid.updateNode({
+    ...withHidden,
+    tiles: withHidden.tiles.map((t) =>
+      t.id === '3,3' ? { ...t, revealed: false, metadata: { ...t.metadata, poiType: 'cave' } } : t,
+    ),
+  });
+  travel.onCellHover(tileOf(navigator, '1,1'), 5, 5);
+  travel.onCellHover(tileOf(navigator, '3,3'), 5, 5);
+  assert.deepEqual(tooltips, [], 'a POI the party has not found or uncovered stays secret');
+});
+
+test('the hover tooltip names the POI and who stands there, and hides GM notes from players', () => {
+  const sage = createNPC('sage', 'Sage', { location: { nodeId: 'world', tileId: '1,1' } });
+  const seed = (/** @type {any} */ w) => {
+    reveal(w, '1,1');
+    const node = w.navigator.getCurrentNode();
+    w.grid.updateNode(
+      updateTileMetadata(node, '1,1', { poiType: 'shrine', notes: 'a cracked altar' }),
+    );
+    w.travel.onCellHover(tileOf(w.navigator, '1,1'), 12, 34);
+  };
+  const gm = world({ npcs: [sage] });
+  seed(gm);
+  assert.deepEqual(gm.tooltips, [
+    { title: 'Shrine', npcs: 'Sage', notes: 'a cracked altar', x: 12, y: 34 },
+  ]);
+
+  const player = world({ role: 'player', npcs: [sage] });
+  seed(player);
+  assert.equal(player.tooltips[0].notes, '', 'notes are the GM secret');
+  assert.equal(player.tooltips[0].npcs, 'Sage');
+});
+
+test('the hover tooltip shows a GM note on a tile with nothing else on it', () => {
+  const gm = world();
+  reveal(gm, '1,1');
+  const node = gm.navigator.getCurrentNode();
+  gm.grid.updateNode(updateTileMetadata(node, '1,1', { notes: 'the ford is washed out' }));
+  gm.travel.onCellHover(tileOf(gm.navigator, '1,1'), 0, 0);
+  assert.deepEqual(gm.tooltips, [
+    { title: '', npcs: '', notes: 'the ford is washed out', x: 0, y: 0 },
+  ]);
+
+  const player = world({ role: 'player' });
+  reveal(player, '1,1');
+  const same = player.navigator.getCurrentNode();
+  player.grid.updateNode(updateTileMetadata(same, '1,1', { notes: 'the ford is washed out' }));
+  player.travel.onCellHover(tileOf(player.navigator, '1,1'), 0, 0);
+  assert.deepEqual(player.tooltips, [], 'a note-only tile shows a player nothing');
+});
+
+test('a lone character leaves an interior through the door it stands on', () => {
+  const hero = createCharacter('hero', 'Hero');
+  const w = world({ interior: true, characters: [hero], splitParty: true, selected: 'hero' });
+  w.clickTile('2,4');
+  assert.equal(w.navigator.getCurrentNode().id, 'child');
+  // The first click walks the character onto the door; it stays inside.
+  w.clickTile('0,2');
+  assert.deepEqual(w.state.characters[0].location, { nodeId: 'child', tileId: '0,2' });
+  assert.equal(w.navigator.getCurrentNode().id, 'child');
+  // Clicking the door from on top of it is leaving through it.
+  w.clickTile('0,2');
+  assert.equal(w.navigator.getCurrentNode().id, 'world');
+  assert.equal(w.state.characters[0].location?.nodeId, 'world');
+  assert.equal(w.log.at(-1), 'Hero returns to World.');
 });

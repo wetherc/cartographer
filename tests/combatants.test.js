@@ -6,12 +6,34 @@ import {
   describeCombatant,
   combatantsAsTargets,
   applyToTarget,
+  applyConditionToTarget,
+  commitEncounters,
+  commitNPCs,
+  endSpellEffects,
   logDefeatTransition,
+  retryImposedSaves,
+  spellsOf,
+  targetSaveBonus,
+  weaponsOf,
 } from '../src/app/combatants.js';
-import { createCharacter, withHP, getHP, damageCharacter } from '../src/entities/Character.js';
+import {
+  addItem,
+  createCharacter,
+  learnCantrip,
+  learnSpell,
+  prepareSpell,
+  withHP,
+  getHP,
+  damageCharacter,
+} from '../src/entities/Character.js';
+import { equip } from '../src/entities/Equipment.js';
 import { createEncounter, applyDamage, effectiveStatBlock } from '../src/entities/Encounter.js';
 import { createNPC } from '../src/entities/NPC.js';
+import { addCondition } from '../src/entities/Conditions.js';
+import { begin as beginConcentration } from '../src/entities/Concentration.js';
+import { saveBonus } from '../src/entities/Checks.js';
 import { stubApp as baseStubApp } from './helpers/app.js';
+import { item } from './helpers/fixtures.js';
 
 const HERE = { nodeId: 'n1', tileId: '0,0' };
 
@@ -234,6 +256,298 @@ test('applyToTarget ignores non-positive amounts, unknown ids, and HP-less NPCs'
   applyToTarget(app, 'nobody', 5, false);
   applyToTarget(app, 'sage', 0, false);
   assert.equal(app.dirty, 0);
+  assert.equal(app.log.length, 0);
+});
+
+test('commitEncounters skips the panel and the dirty mark when told to', () => {
+  const app = stubApp();
+  commitEncounters(app, { panel: false, dirty: false });
+  assert.ok(!app.refreshes.includes('encounterPanel'), 'the caller re-renders its own rows');
+  assert.equal(app.dirty, 0, 'the caller marks the campaign dirty itself');
+  assert.ok(app.refreshes.includes('initiativePanel'), 'the running order still refreshes');
+  assert.ok(app.calls.includes('syncEncounterMarkers'));
+  assert.ok(app.calls.includes('syncCombatLocation'));
+});
+
+test('commitEncounters refreshes the panel and marks dirty by default', () => {
+  const app = stubApp();
+  commitEncounters(app);
+  assert.ok(app.refreshes.includes('encounterPanel'));
+  assert.equal(app.dirty, 1);
+});
+
+test('commitNPCs refreshes the markers and the story panel, leaving the order alone', () => {
+  const app = stubApp();
+  commitNPCs(app);
+  assert.ok(app.calls.includes('syncNPCMarkers'));
+  assert.ok(app.refreshes.includes('npcPanel'));
+  assert.ok(!app.refreshes.includes('initiativePanel'), 'an NPC edit leaves the fight running');
+  assert.equal(app.dirty, 1);
+});
+
+test('targetSaveBonus reads a character save and reports nothing for anyone else', () => {
+  const { hero, goblin, sage } = fixtures();
+  const app = stubApp({ characters: [hero], encounters: [goblin], npcs: [sage] });
+  assert.equal(targetSaveBonus(app, 'hero', 'STR'), saveBonus(hero, 'STR'));
+  assert.equal(targetSaveBonus(app, 'goblin', 'STR'), undefined, 'a foe records no saves');
+  assert.equal(targetSaveBonus(app, 'sage', 'STR'), undefined);
+  assert.equal(targetSaveBonus(app, 'nobody', 'STR'), undefined);
+});
+
+/** A character holding an equipped, damage-carrying sword. */
+function swordBearer() {
+  const armed = addItem(
+    createCharacter('hero', 'Hero'),
+    item('sword', 'Sword', {
+      type: 'weapon',
+      handling: 'melee',
+      damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
+    }),
+  );
+  return equip(armed, 'mainHand', 'sword');
+}
+
+test('weaponsOf lists what each kind of combatant can swing', () => {
+  const club = { name: 'Club', handling: 'melee', damage: [{ count: 1, sides: 4 }] };
+  const armedFoe = createEncounter('ogre', 'Ogre', 20, {}, HERE, {
+    weapon: /** @type {any} */ (club),
+  });
+  const barehanded = createEncounter('slime', 'Slime', 8, {}, HERE, { weapon: null });
+  const { sage } = fixtures();
+  const app = stubApp({
+    characters: [swordBearer()],
+    encounters: [armedFoe, barehanded],
+    npcs: [sage],
+  });
+  assert.deepEqual(
+    weaponsOf(app, 'hero').map((w) => w.name),
+    ['Sword'],
+  );
+  assert.deepEqual(
+    weaponsOf(app, 'ogre').map((w) => w.name),
+    ['Club'],
+  );
+  assert.deepEqual(weaponsOf(app, 'slime'), [], 'a foe with no assigned weapon has nothing');
+  assert.deepEqual(weaponsOf(app, 'sage'), [], 'NPCs carry no weapons');
+  assert.deepEqual(weaponsOf(app, 'nobody'), []);
+});
+
+test('spellsOf lists a character cantrip plus what its known-rule makes castable', () => {
+  const mage = {
+    ...createCharacter('hero', 'Hero', { INT: 16 }),
+    classes: [{ classId: 'wizard', level: 3 }],
+    level: 3,
+  };
+  let hero = learnCantrip(mage, 'fire-bolt', 'wizard');
+  hero = learnSpell(hero, 'hold-person', 'wizard');
+  const app = stubApp({ characters: [hero] });
+  assert.deepEqual(
+    spellsOf(app, 'hero').map((s) => s.id),
+    ['fire-bolt'],
+    'a wizard prepares before it casts, so the known spell stays off the list',
+  );
+  const prepared = stubApp({ characters: [prepareSpell(hero, 'hold-person')] });
+  assert.deepEqual(
+    spellsOf(prepared, 'hero')
+      .map((s) => s.id)
+      .sort(),
+    ['fire-bolt', 'hold-person'],
+  );
+});
+
+test('spellsOf reads a foe or NPC spellbook whole and an unknown id as nothing', () => {
+  const caster = createEncounter('lich', 'Lich', 40, {}, HERE, {
+    class: 'wizard',
+    casterLevel: 9,
+    spellbook: { cantrips: ['fire-bolt'], known: ['hold-person'], prepared: [] },
+  });
+  const npcCaster = createNPC('seer', 'Seer', {
+    location: HERE,
+    class: 'wizard',
+    spellbook: { cantrips: [], known: ['hold-person'], prepared: [] },
+  });
+  const app = stubApp({ encounters: [caster], npcs: [npcCaster] });
+  assert.deepEqual(
+    spellsOf(app, 'lich')
+      .map((s) => s.id)
+      .sort(),
+    ['fire-bolt', 'hold-person'],
+    'a foe dialog marks every picked spell castable, prepared list or not',
+  );
+  assert.deepEqual(
+    spellsOf(app, 'seer').map((s) => s.id),
+    ['hold-person'],
+  );
+  assert.deepEqual(spellsOf(app, 'nobody'), []);
+});
+
+/** The source stamp a cast leaves on a chip it imposes. */
+function heldBy(extra = {}) {
+  return {
+    spellId: 'hold-person',
+    spellName: 'Hold Person',
+    casterId: 'mage',
+    saveAbility: 'WIS',
+    saveDC: 13,
+    ...extra,
+  };
+}
+
+test('applyConditionToTarget chips a character and a foe and refuses an NPC', () => {
+  const { hero, goblin, sage } = fixtures();
+  const app = stubApp({ characters: [hero], encounters: [goblin], npcs: [sage] });
+  assert.equal(applyConditionToTarget(app, 'hero', 'Paralyzed', 10, heldBy()), true);
+  assert.deepEqual(app.state.characters[0].conditions, [
+    { name: 'Paralyzed', rounds: 10, source: heldBy() },
+  ]);
+  assert.equal(applyConditionToTarget(app, 'goblin', 'Blinded', null), true);
+  assert.deepEqual(app.state.encounters[0].conditions, [{ name: 'Blinded', rounds: null }]);
+  assert.equal(applyConditionToTarget(app, 'sage', 'Blinded', null), false, 'NPCs hold no chips');
+  assert.equal(applyConditionToTarget(app, 'nobody', 'Blinded', null), false);
+  assert.equal(app.dirty, 2, 'only the two that landed wrote');
+});
+
+test('endSpellEffects takes one cast off every target and names each one freed', () => {
+  const source = heldBy();
+  const hero = { ...fixtures().hero, conditions: addCondition([], 'Paralyzed', 10, source) };
+  const goblin = { ...fixtures().goblin, conditions: addCondition([], 'Paralyzed', 10, source) };
+  const app = stubApp({ characters: [hero], encounters: [goblin] });
+  endSpellEffects(app, 'mage', 'hold-person');
+  assert.deepEqual(app.state.characters[0].conditions, []);
+  assert.deepEqual(app.state.encounters[0].conditions, []);
+  assert.deepEqual(app.log, ['Hero is no longer Paralyzed.', 'Goblin is no longer Paralyzed.']);
+  assert.equal(app.dirty, 1);
+  assert.ok(app.calls.includes('refreshSelectedCharacter'));
+  assert.ok(app.calls.includes('syncEncounterMarkers'));
+});
+
+test('endSpellEffects leaves the other roster untouched when only one holds a chip', () => {
+  const goblin = { ...fixtures().goblin, conditions: addCondition([], 'Paralyzed', 10, heldBy()) };
+  const { hero } = fixtures();
+  const app = stubApp({ characters: [hero], encounters: [goblin] });
+  const before = app.state.characters;
+  endSpellEffects(app, 'mage', 'hold-person');
+  assert.equal(app.state.characters, before, 'an untouched roster keeps its array identity');
+  assert.ok(!app.calls.includes('refreshSelectedCharacter'));
+  assert.deepEqual(app.log, ['Goblin is no longer Paralyzed.']);
+});
+
+test('endSpellEffects does nothing when no chip carries that cast', () => {
+  const hero = { ...fixtures().hero, conditions: addCondition([], 'Paralyzed', 10, heldBy()) };
+  const app = stubApp({ characters: [hero] });
+  endSpellEffects(app, 'mage', 'bless');
+  endSpellEffects(app, 'cleric', 'hold-person');
+  assert.equal(app.dirty, 0);
+  assert.equal(app.log.length, 0);
+  assert.deepEqual(app.state.characters[0].conditions, hero.conditions);
+});
+
+test('retryImposedSaves shakes a chip loose on a success and logs the roll', () => {
+  // DC 1 is under the floor of a d20 plus any bonus, so the retry always
+  // succeeds and the outcome does not depend on the roll.
+  const source = heldBy({ saveEnds: true, saveDC: 1 });
+  const hero = { ...fixtures().hero, conditions: addCondition([], 'Paralyzed', 10, source) };
+  const app = stubApp({ characters: [hero] });
+  retryImposedSaves(app, 'hero');
+  assert.deepEqual(app.state.characters[0].conditions, []);
+  assert.equal(app.log.length, 1);
+  assert.match(app.log[0], /^Hero shakes off Paralyzed \(WIS save \d+ vs DC 1\)\.$/);
+  assert.equal(app.dirty, 1);
+});
+
+test('retryImposedSaves keeps the chip on a failure and writes nothing', () => {
+  // DC 99 is over the ceiling of a d20 plus any bonus, so the retry always
+  // fails.
+  const source = heldBy({ saveEnds: true, saveDC: 99 });
+  const goblin = { ...fixtures().goblin, conditions: addCondition([], 'Paralyzed', 10, source) };
+  const app = stubApp({ encounters: [goblin] });
+  retryImposedSaves(app, 'goblin');
+  assert.deepEqual(app.state.encounters[0].conditions.length, 1);
+  assert.equal(app.dirty, 0, 'a failed retry changes nothing to store');
+  assert.match(app.log[0], /^Goblin is still Paralyzed \(WIS save \d+ vs DC 99\)\.$/);
+});
+
+test('retryImposedSaves writes a freed foe back to the encounter roster', () => {
+  const source = heldBy({ saveEnds: true, saveDC: 1 });
+  const goblin = { ...fixtures().goblin, conditions: addCondition([], 'Paralyzed', 10, source) };
+  const app = stubApp({ encounters: [goblin] });
+  retryImposedSaves(app, 'goblin');
+  assert.deepEqual(app.state.encounters[0].conditions, []);
+  assert.equal(app.dirty, 1);
+  assert.match(app.log[0], /^Goblin shakes off Paralyzed \(WIS save \d+ vs DC 1\)\.$/);
+});
+
+test('retryImposedSaves rolls a foe chip against the bonus the cast recorded', () => {
+  const source = heldBy({ saveEnds: true, saveDC: 99, saveBonus: 4, saveAbility: undefined });
+  const goblin = { ...fixtures().goblin, conditions: addCondition([], 'Stunned', null, source) };
+  const app = stubApp({ encounters: [goblin] });
+  retryImposedSaves(app, 'goblin');
+  assert.match(app.log[0], /^Goblin is still Stunned \(save \d+ vs DC 99\)\.$/);
+});
+
+test('retryImposedSaves rolls nothing for an NPC, an unknown id, or a chip with no retry', () => {
+  const { sage } = fixtures();
+  const hero = { ...fixtures().hero, conditions: addCondition([], 'Paralyzed', 10, heldBy()) };
+  const app = stubApp({ characters: [hero], npcs: [sage] });
+  retryImposedSaves(app, 'sage');
+  retryImposedSaves(app, 'nobody');
+  retryImposedSaves(app, 'hero');
+  assert.equal(app.log.length, 0, 'a chip whose source allows no retry is never rolled');
+  assert.equal(app.dirty, 0);
+});
+
+/** A spell object shaped the way the concentration model reads one. */
+const HOLD_PERSON = {
+  id: 'hold-person',
+  name: 'Hold Person',
+  duration: { kind: 'minutes', amount: 1 },
+};
+
+test('damage makes a concentrating character save for the spell and holds it', () => {
+  // A CON of 30 puts the floor of the save above the DC 10 that light damage
+  // sets, so the character always holds.
+  const stout = withHP(createCharacter('hero', 'Hero', { CON: 30 }), 60);
+  const { character } = beginConcentration(stout, /** @type {any} */ (HOLD_PERSON), 2);
+  const app = stubApp({ characters: [character] });
+  applyToTarget(app, 'hero', 4, false);
+  assert.equal(app.state.characters[0].concentration?.spellId, 'hold-person');
+  assert.equal(app.log.length, 1);
+  assert.match(app.log[0], /^Hero holds concentration on Hold Person \(CON save \d+ vs DC 10\)\.$/);
+});
+
+test('damage a concentrating character cannot save against ends the spell and sweeps it', () => {
+  // 80 damage sets DC 40, above the ceiling of any d20 save here, so the
+  // character always loses the spell while staying on its feet.
+  const source = heldBy({ spellId: 'hold-person', casterId: 'hero' });
+  const tough = withHP(createCharacter('hero', 'Hero'), 200);
+  const { character } = beginConcentration(tough, /** @type {any} */ (HOLD_PERSON), 2);
+  const goblin = { ...fixtures().goblin, conditions: addCondition([], 'Paralyzed', 10, source) };
+  const app = stubApp({ characters: [character], encounters: [goblin] });
+  applyToTarget(app, 'hero', 80, false);
+  assert.equal(app.state.characters[0].concentration, null);
+  assert.deepEqual(app.state.encounters[0].conditions, [], 'the target walks free with the spell');
+  assert.match(app.log[0], /^Hero loses concentration on Hold Person \(CON save \d+ vs DC 40\)\.$/);
+  assert.equal(app.log[1], 'Goblin is no longer Paralyzed.');
+});
+
+test('a concentrating character dropped to 0 HP loses the spell without a save', () => {
+  const hero = withHP(createCharacter('hero', 'Hero'), 10);
+  const { character } = beginConcentration(hero, /** @type {any} */ (HOLD_PERSON), 2);
+  const app = stubApp({ characters: [character] });
+  applyToTarget(app, 'hero', 999, false);
+  assert.equal(app.state.characters[0].concentration, null);
+  assert.deepEqual(app.log, [
+    'Hero drops to 0 HP.',
+    'Hero falls and loses concentration on Hold Person.',
+  ]);
+});
+
+test('healing a concentrating character never touches the spell', () => {
+  const hero = damageCharacter(withHP(createCharacter('hero', 'Hero'), 20), 8);
+  const { character } = beginConcentration(hero, /** @type {any} */ (HOLD_PERSON), 2);
+  const app = stubApp({ characters: [character] });
+  applyToTarget(app, 'hero', 5, true);
+  assert.equal(app.state.characters[0].concentration?.spellId, 'hold-person');
   assert.equal(app.log.length, 0);
 });
 
