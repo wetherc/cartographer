@@ -93,9 +93,25 @@ function reconcileRecord(live, incoming) {
   /** @type {Record<string, unknown>} */
   const out = {};
   for (const key of keys) {
-    const kept = key in live ? reconcile(live[key], incoming[key]) : incoming[key];
+    // An own-property check, not `in`: a save can carry an own `__proto__`
+    // key, which `in` would match on every object through the prototype
+    // chain.
+    const kept = Object.prototype.hasOwnProperty.call(live, key)
+      ? reconcile(live[key], incoming[key])
+      : incoming[key];
     if (kept !== live[key]) changed = true;
-    out[key] = kept;
+    if (key === '__proto__') {
+      // A plain assignment to this key sets the prototype instead of
+      // storing the value, so the property is defined directly.
+      Object.defineProperty(out, key, {
+        value: kept,
+        writable: true,
+        enumerable: true,
+        configurable: true,
+      });
+    } else {
+      out[key] = kept;
+    }
   }
   return changed ? out : live;
 }

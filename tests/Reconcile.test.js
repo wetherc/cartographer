@@ -204,3 +204,20 @@ test('a deep nesting keeps every untouched branch', () => {
   assert.notEqual(out.characters[0].resources, live.characters[0].resources);
   assert.equal(out.characters[0].resources[0].current, 2);
 });
+
+// JSON.parse creates an own `__proto__` data property. A plain `in` check
+// matches that key on every object, and a plain assignment to it sets the
+// prototype instead of storing the value.
+test('an own __proto__ key stays data, not a prototype', () => {
+  const live = { a: 1 };
+  const incoming = JSON.parse('{"a":1,"__proto__":{"x":1}}');
+  const out = reconcile(live, incoming);
+  assert.equal(Object.getPrototypeOf(out), Object.prototype);
+  assert.deepEqual(Object.getOwnPropertyDescriptor(out, '__proto__')?.value, { x: 1 });
+});
+
+test('a structurally equal save with an own __proto__ key comes back live', () => {
+  const live = JSON.parse('{"a":1,"__proto__":{"x":1}}');
+  const incoming = JSON.parse('{"a":1,"__proto__":{"x":1}}');
+  assert.equal(reconcile(live, incoming), live);
+});
