@@ -42,11 +42,11 @@ import { deepFreeze } from '../util/deepFreeze.js';
 let defaultEquipment = null;
 
 /**
- * The application's built-in equipment, one flat template list assembled from
- * the 5e preset arrays in Equipment.js — the same entries the item form's
- * preset pickers and the enemy gear pickers have always offered. Assembled
- * once and frozen, so it is shared read-only data like the other three
- * built-in catalogs rather than a fresh copy per call.
+ * The application's built-in equipment. This is one flat template list, built
+ * from the 5e preset arrays in Equipment.js. The item form's preset pickers
+ * and the enemy gear pickers use these same entries. The function builds the
+ * list once and freezes it, so every call shares one read-only list, like the
+ * other three built-in catalogs, instead of copying it each time.
  * @returns {EquipmentTemplate[]}
  */
 export function defaultEquipmentTemplates() {
@@ -77,9 +77,9 @@ export function defaultEquipmentTemplates() {
 }
 
 /**
- * The application's built-in bestiary: a handful of 5e-flavored stock enemies
- * so "From bestiary" works out of the box. Effective AC is the stat block's
- * AC plus the armor's bonus, matching effectiveStatBlock.
+ * The application's built-in bestiary. A small set of 5e stock enemies makes
+ * "From bestiary" work by default. The effective AC is the stat block's AC
+ * plus the armor's bonus, the same rule that effectiveStatBlock uses.
  * @type {EncounterTemplate[]}
  */
 export const DEFAULT_BESTIARY = deepFreeze([
@@ -170,8 +170,8 @@ export const DEFAULT_BESTIARY = deepFreeze([
 ]);
 
 /**
- * The application's built-in NPC archetypes: enough stock townsfolk that a GM
- * can drop a recognizable somebody onto the map without typing stats.
+ * The application's built-in NPC archetypes. These stock townsfolk let a GM
+ * place a recognizable NPC on the map without typing stats.
  * @type {NPCTemplate[]}
  */
 export const DEFAULT_NPC_TEMPLATES = deepFreeze([
@@ -212,12 +212,12 @@ export const DEFAULT_NPC_TEMPLATES = deepFreeze([
   },
 ]);
 
-/** @returns {CustomLibrary} no customizations */
+/** @returns {CustomLibrary} A library with no customizations. */
 export function emptyLibrary() {
   return { equipment: [], bestiary: [], npcs: [], spells: [] };
 }
 
-/** Whether a custom library holds any entries at all.
+/** True when a custom library has no entries in any list.
  * @param {CustomLibrary} library
  * @returns {boolean} */
 export function isLibraryEmpty(library) {
@@ -229,26 +229,28 @@ export function isLibraryEmpty(library) {
   );
 }
 
-/** The merge key for an equipment template: a custom entry shadows a default
- * only when both name (case-insensitive) and item type match, so a homebrew
- * gear item named "Dagger" doesn't swallow the weapon.
+/** The merge key for an equipment template. A custom entry replaces a
+ * default only when both the name (case-insensitive) and the item type
+ * match. This stops a homebrew gear item named "Dagger" from replacing the
+ * weapon of the same name.
  * @param {EquipmentTemplate} entry
  * @returns {string} */
 export const equipmentKey = (entry) => `${entry.type}:${entry.name.trim().toLowerCase()}`;
 
-/** The merge key for bestiary, NPC, and spell templates: the name,
- * case-insensitive.
+/** The merge key for bestiary, NPC, and spell templates. The key is the
+ * name, case-insensitive.
  * @param {{ name: string }} entry
  * @returns {string} */
 export const nameKey = (entry) => entry.name.trim().toLowerCase();
 
 /**
- * Merge custom entries over a default list: a custom entry whose key matches
- * a default replaces it in place (source 'override'); the rest append in
- * their own order (source 'custom'). Expects one custom per key — two would
- * resolve as last-wins in the override branch and first-wins in the append
- * loop — which normalizeLibrary guarantees for every library that is loaded and
- * upsertEntry for every one that is edited. Pure.
+ * Merge custom entries over a default list. A custom entry whose key matches
+ * a default replaces that default in place, with source 'override'. The rest
+ * append in their own order, with source 'custom'. This function expects one
+ * custom entry per key. Two entries with the same key resolve as last-wins
+ * in the override branch, and first-wins in the append loop.
+ * normalizeLibrary guarantees one entry per key for every loaded library, and
+ * upsertEntry guarantees it for every edit. This function is pure.
  * @template {object} T
  * @param {T[]} defaults
  * @param {T[]} customs
@@ -276,7 +278,7 @@ export function mergedEntries(defaults, customs, keyOf) {
 }
 
 /**
- * Insert or replace a custom entry by key. Pure.
+ * Insert or replace a custom entry by key. This function is pure.
  * @template {object} T
  * @param {T[]} customs
  * @param {T} entry
@@ -291,8 +293,8 @@ export function upsertEntry(customs, entry, keyOf) {
 }
 
 /**
- * Drop the custom entry with the given key — deleting a custom entry, or
- * reverting an override back to its default. Pure.
+ * Remove the custom entry with the given key. This removes a custom entry,
+ * or reverts an override back to its default. This function is pure.
  * @template {object} T
  * @param {T[]} customs
  * @param {string} key
@@ -304,28 +306,30 @@ export function removeEntry(customs, key, keyOf) {
 }
 
 /**
- * The id a stored name-keyed entry (bestiary template or spell) should carry.
- * Ids are internal — only the name key merges — and campaign state stores them:
- * characters, bestiary templates, and NPC templates all hold spell ids, so a
- * custom entry keeps its id across a rename or every reference to it would be
- * dropped as unknown. A renamed default or override instead takes a fresh id,
- * because its old id still belongs to the built-in entry that resurfaces once
- * the override stops matching it. Pure.
- * A name that lands on another merged entry takes that entry's id, because the
- * stored result overrides it: an override and the default it hides must share
- * one id, or the id index (last wins) leaves one of them unreachable. Only a
- * name matching nothing derives a fresh slug, which must avoid every id in the
- * list's namespace — including the ids of defaults currently hidden behind an
- * override, since those resurface as soon as the override is renamed. Pure.
+ * The id that a stored name-keyed entry (a bestiary template or a spell)
+ * must carry. Ids are internal: only the name key merges. Campaign state
+ * stores these ids directly, because characters, bestiary templates, and NPC
+ * templates all hold spell ids. A custom entry keeps its id across a rename.
+ * Otherwise every reference to it is dropped as unknown. A renamed
+ * default or override instead takes a fresh id. Its old id still belongs to
+ * the built-in entry, which resurfaces once the override no longer matches
+ * it. This function is pure.
+ * A name that matches another merged entry takes that entry's id, because
+ * the stored result overrides it. An override and the default it hides must
+ * share one id. Otherwise the id index, which keeps the last entry, leaves
+ * one of them unreachable. Only a name that matches nothing gets a fresh
+ * slug. This slug must avoid every id in the list, including the ids of
+ * defaults that an override currently hides, since those ids resurface as
+ * soon as the override is renamed. This function is pure.
  * @param {{
  *   found?: { entry: { id: string }, source: LibrarySource } | null,
  *   target?: { entry: { id: string } } | null,
  *   renamed: boolean,
  *   newKey: string,
  *   takenIds: () => string[],
- * }} args `found` is the merged entry being edited (null for a new entry),
- *   `target` the merged entry the submitted name resolves to (null when the
- *   name is new), `renamed` whether the name key changed.
+ * }} args `found` is the merged entry under edit (null for a new entry).
+ *   `target` is the merged entry that the submitted name matches (null when
+ *   the name is new). `renamed` is true when the name key changed.
  * @returns {string}
  */
 export function storedEntryId({ found, target, renamed, newKey, takenIds }) {
@@ -335,12 +339,12 @@ export function storedEntryId({ found, target, renamed, newKey, takenIds }) {
 }
 
 /**
- * Coerce an unknown value into a clean DamagePart array, dropping terms that
- * aren't well-formed dice and clamping the rest onto the supported die sizes
- * and damage types. Pure.
+ * Coerce an unknown value into a clean DamagePart array. This function drops
+ * terms that are not well-formed dice, and clamps the rest onto the
+ * supported die sizes and damage types. This function is pure.
  * @param {unknown} value
- * @param {string[]} [allowed] the types these terms may carry; damage types by
- *   default, `HEALING_TYPES` for restorative dice
+ * @param {string[]} [allowed] The types these terms can carry. Damage types
+ *   by default, or `HEALING_TYPES` for restorative dice.
  * @returns {DamagePart[]}
  */
 function normalizeDamageParts(value, allowed = undefined) {
@@ -351,11 +355,12 @@ function normalizeDamageParts(value, allowed = undefined) {
 }
 
 /**
- * Normalize one parsed spell into a valid Spell, defaulting descriptive fields
- * and repairing the effect into one of the four discriminated shapes. An
- * unrecognized effect kind falls back to a text-only utility effect, so a
- * malformed import still round-trips as a castable-nothing spell rather than
- * being dropped. Pure.
+ * Normalize one parsed spell into a valid Spell. This function defaults
+ * descriptive fields and repairs the effect into one of the four
+ * discriminated shapes. An unrecognized effect kind falls back to a
+ * text-only utility effect. This way a malformed import still round-trips as
+ * a spell that casts nothing, instead of being dropped. This function is
+ * pure.
  * @param {Record<string, any>} raw
  * @param {string} id
  * @returns {Spell}
@@ -365,8 +370,8 @@ function normalizeSpell(raw, id) {
   /** @type {import('../types/spell.js').SpellEffect} */
   let effect;
   if (kind === 'attack') {
-    // Projectiles stay absent when the entry says nothing, which is the single
-    // attack roll every entry authored before the field implies.
+    // Projectiles stay absent when the entry says nothing. This matches the
+    // single attack roll that every entry written before this field assumed.
     const projectiles = normalizeProjectiles(raw.effect.projectiles);
     effect = {
       kind: 'attack',
@@ -384,8 +389,8 @@ function normalizeSpell(raw, id) {
       ...(typeof raw.effect.condition === 'string' && raw.effect.condition
         ? { condition: raw.effect.condition }
         : {}),
-      // A repeated save only means something alongside a condition, and stays
-      // absent otherwise, so an entry authored before the field reads as a
+      // A repeated save only has meaning alongside a condition, so it stays
+      // absent otherwise. An entry written before this field reads as a
       // condition that runs for the spell's whole duration.
       ...(raw.effect.saveEnds && typeof raw.effect.condition === 'string' && raw.effect.condition
         ? { saveEnds: true }
@@ -397,7 +402,7 @@ function normalizeSpell(raw, id) {
     effect = { kind: 'utility' };
   }
 
-  // Scaling dice add to whatever the effect deals, so a heal spell's per-level
+  // Scaling dice add to whatever the effect deals. A heal spell's per-level
   // dice are restorative too.
   const scalingDamage = normalizeDamageParts(
     raw.scaling?.damagePerLevel,
@@ -412,19 +417,19 @@ function normalizeSpell(raw, id) {
         }
       : undefined;
 
-  // An absent target count stays absent, which the resolver reads as one
-  // creature, so no entry authored before the field existed becomes an area
-  // spell by omission. Anything present goes through the shared normalizer.
+  // An absent target count stays absent. The resolver reads this as one
+  // creature, so no entry written before this field existed becomes an area
+  // spell by omission. The shared normalizer processes any value present.
   const targetCount =
     raw.targetCount === undefined || raw.targetCount === null
       ? undefined
       : normalizeTargetCount(raw.targetCount);
 
-  // A named material is an M component whether or not the entry remembered to
-  // list the letter, so the block implies it. Repairing it here rather than in
-  // the form is what keeps an imported entry from losing its material the next
-  // time a GM edits it, since the form only reveals the material fields under a
-  // ticked M.
+  // A named material is an M component, even when the entry did not list the
+  // letter. The material block implies the M component. This function
+  // repairs it here, not in the form, so an imported entry does not lose its
+  // material the next time a GM edits it. The form only shows the material
+  // fields when M is checked.
   const materials = normalizeMaterials(raw.materials);
   const letters = Array.isArray(raw.components)
     ? raw.components.filter((/** @type {unknown} */ c) => typeof c === 'string')
@@ -437,9 +442,9 @@ function normalizeSpell(raw, id) {
     level: clampInt(raw.level, 0, 9),
     school: SPELL_SCHOOLS.includes(raw.school) ? raw.school : SPELL_SCHOOLS[0],
     classes: Array.isArray(raw.classes) ? raw.classes.filter((c) => typeof c === 'string') : [],
-    // Timing is structured, but an entry may carry either the object or the
-    // printed string an older library wrote; the parsers read both and keep
-    // anything they can't classify as text.
+    // Timing is structured, but an entry can carry either the object or the
+    // printed string that an older library wrote. The parsers read both
+    // forms, and keep anything unclassified as plain text.
     castingTime: parseCastingTime(raw.castingTime ?? '1 action'),
     range: typeof raw.range === 'string' ? raw.range : 'Self',
     components: letters,
@@ -455,8 +460,9 @@ function normalizeSpell(raw, id) {
 }
 
 /**
- * Repair a parsed spellbook into `{ cantrips, known, prepared }` of string ids,
- * dropping anything non-string. A missing/garbage spellbook reads as empty.
+ * Repair a parsed spellbook into `{ cantrips, known, prepared }` of string
+ * ids. This function drops anything that is not a string. A missing or
+ * invalid spellbook reads as empty.
  * @param {unknown} raw
  * @returns {import('../types/entities.js').Spellbook}
  */
@@ -468,10 +474,11 @@ function normalizeSpellbook(raw) {
 }
 
 /**
- * The caster fields to carry onto a bestiary/NPC template from parsed JSON: the
- * class, an optional caster level, and a repaired spellbook — but only when the
- * class is a real caster class, so a non-caster template stays clean. Returns an
- * object to spread into the template literal.
+ * The caster fields to copy onto a bestiary or NPC template from parsed
+ * JSON: the class, an optional caster level, and a repaired spellbook. The
+ * function adds these fields only when the class is a real caster class, so
+ * a non-caster template stays clean. It returns an object to spread into the
+ * template literal.
  * @param {Record<string, any>} e
  * @returns {{ class?: string, subclass?: string, casterLevel?: number, spellbook?: import('../types/entities.js').Spellbook }}
  */
@@ -486,14 +493,15 @@ function casterTemplateFrom(e) {
 }
 
 /**
- * Keep one entry per merge key, the last one winning, at the position of the
- * key's first appearance. Two customs sharing a key have no defined meaning —
- * one of them can never be reached — and the merge resolves the collision
- * inconsistently (last wins where the key matches a default, first wins where
- * it does not), so a library is deduped on the way in rather than every reader
- * having to guess. Last wins because that is what upsertEntry does, so a file
- * written by appending edits reads back as the newest version of each entry.
- * Pure.
+ * Keep one entry per merge key. The last entry with a given key wins, at the
+ * position of that key's first appearance. Two custom entries that share a
+ * key have no defined meaning, because one of them can never be reached. The
+ * merge also resolves this collision inconsistently: last wins where the key
+ * matches a default, first wins where it does not. This function dedupes a
+ * library on the way in, so no reader downstream has to guess. Last wins
+ * here because that is what upsertEntry does, so a file built by appending
+ * edits reads back as the newest version of each entry. This function is
+ * pure.
  * @template {object} T
  * @param {T[]} entries
  * @param {(entry: T) => string} keyOf
@@ -505,15 +513,17 @@ function dedupeByKey(entries, keyOf) {
 }
 
 /**
- * Normalize a parsed custom-library JSON of any provenance (an exported file,
- * a hand-edited one, garbage) into a valid CustomLibrary, dropping entries
- * missing their essentials rather than throwing. Bestiary templates get an id
- * (sluggified from the name when absent), a positive max HP, and a stat block
- * closed over the fixed stat set; NPC templates get every field defaulted and
- * an unknown disposition read as neutral; spells get an id, defaulted
- * descriptive fields, and a repaired effect (see normalizeSpell). Each list is
- * also deduped by its merge key, so no reader downstream sees two entries
- * competing for one key.
+ * Normalize parsed custom-library JSON from any source (an exported file, a
+ * hand-edited file, or invalid data) into a valid CustomLibrary. This
+ * function drops entries that are missing essential fields, instead of
+ * throwing an error.
+ * Bestiary templates get an id (built from the name when absent), a positive
+ * max HP, and a stat block over the fixed stat set. NPC templates get every
+ * field defaulted, and an unknown disposition reads as neutral. Spells get
+ * an id, defaulted descriptive fields, and a repaired effect (see
+ * normalizeSpell).
+ * Each list is also deduped by its merge key, so no reader downstream sees
+ * two entries competing for one key.
  * @param {unknown} parsed
  * @returns {CustomLibrary}
  */
@@ -524,7 +534,8 @@ export function normalizeLibrary(parsed) {
   /** @type {(value: unknown) => Record<string, any>[]} */
   const arrayOf = (value) =>
     Array.isArray(value) ? value.filter((e) => e && typeof e === 'object') : [];
-  /** The name merge key over a raw record whose name each list already checked.
+  /** The name merge key for a raw record. Each list already made sure that
+   * the record has a name.
    * @param {Record<string, any>} e
    * @returns {string} */
   const rawNameKey = (e) => nameKey({ name: e.name });
@@ -536,8 +547,8 @@ export function normalizeLibrary(parsed) {
     equipmentKey,
   );
 
-  // The name-keyed lists dedupe before their id derivation, not after, so a
-  // dropped duplicate never claims a slug the entry that survives could use.
+  // The name-keyed lists dedupe before id derivation, not after. This way a
+  // dropped duplicate never claims a slug that the surviving entry can use.
   /** @type {string[]} */
   const bestiaryIds = [];
   const bestiary = dedupeByKey(
@@ -554,8 +565,9 @@ export function normalizeLibrary(parsed) {
       statBlock: normalizeStatBlock(typeof e.statBlock === 'object' ? e.statBlock : {}),
       level: clampInt(e.level, 1),
       tier: e.tier === 'legend' ? 'legend' : 'mob',
-      // null survives (deliberately unarmed); absent stays absent so a
-      // default can stamp in; anything non-object drops.
+      // A null value survives, for a deliberately unarmed entry. An absent
+      // value stays absent, so a default can fill it in. Any non-object
+      // value drops.
       ...(e.weapon === null || (e.weapon && typeof e.weapon === 'object')
         ? { weapon: e.weapon }
         : {}),
@@ -594,23 +606,24 @@ export function normalizeLibrary(parsed) {
 }
 
 /* --------------------------------------------------------------------------
- * Active library registry. The one deliberate piece of module state in the
- * project: the pickers that offer presets (the item form, the enemy gear
- * selects, "From bestiary") are mounted far from the wiring that loads the
- * GM's customizations, so they read the merged lists through these getters
- * instead of having a library threaded through every mount call. libraryWiring
- * sets it at startup and after every edit/import; everything below it is the
- * pure merge logic above applied to the registered customs.
+ * Active library registry. This is the one deliberate piece of module state
+ * in the project. The pickers that offer presets (the item form, the enemy
+ * gear selects, "From bestiary") mount far from the wiring that loads the
+ * GM's customizations. These getters let the pickers read the merged lists
+ * directly, instead of passing a library through every mount call.
+ * libraryWiring sets this state at startup and after every edit or import.
+ * Everything below applies the pure merge logic above to the registered
+ * custom entries.
  * ------------------------------------------------------------------------ */
 
 /** @type {CustomLibrary} */
 let active = emptyLibrary();
 
 /**
- * Merged lists derived from `active`, built lazily and kept until the next
- * setActiveLibrary. Every getter below is called repeatedly per library
- * render and picker open; without this, each call rebuilt the defaults and
- * re-ran the merge.
+ * Merged lists derived from `active`. The module builds these lazily and
+ * keeps them until the next call to setActiveLibrary. Every getter below
+ * runs repeatedly on each library render and picker open. Without this
+ * cache, each call rebuilds the defaults and reruns the merge.
  * @type {{
  *   equipment?: { entry: EquipmentTemplate, source: LibrarySource }[],
  *   equipmentAll?: EquipmentTemplate[],
@@ -638,8 +651,9 @@ export function getActiveLibrary() {
   return active;
 }
 
-/** The merged equipment list (defaults + the active customizations), tagged
- * by source, in default order with new custom entries appended.
+/** The merged equipment list: defaults plus the active customizations,
+ * tagged by source. Default order comes first, with new custom entries
+ * appended.
  * @returns {{ entry: EquipmentTemplate, source: LibrarySource }[]} */
 export function activeEquipmentEntries() {
   return (cache.equipment ??= mergedEntries(
@@ -649,8 +663,8 @@ export function activeEquipmentEntries() {
   ));
 }
 
-/** The merged equipment templates of one item type, e.g. the weapon picker's
- * choices. Pass no type for the whole list.
+/** The merged equipment templates of one item type, for example the weapon
+ * picker's choices. Omit the type argument for the whole list.
  * @param {import('../types/entities.js').ItemType} [type]
  * @returns {EquipmentTemplate[]} */
 export function activeEquipment(type) {
@@ -665,8 +679,8 @@ export function activeEquipment(type) {
   return list;
 }
 
-/** Every merged template usable as an enemy weapon: weapon-typed with a
- * damage roll.
+/** Every merged template that an enemy can use as a weapon: weapon-typed,
+ * with a damage roll.
  * @returns {EquipmentTemplate[]} */
 export function activeWeapons() {
   return (cache.weapons ??= activeEquipmentEntries()
@@ -674,8 +688,8 @@ export function activeWeapons() {
     .filter((e) => WEAPON_TYPES.includes(e.type) && (e.damage?.length ?? 0) > 0));
 }
 
-/** Every merged body-armor template as an enemy armor choice: name plus the
- * flat bonus its base AC carries over the unarmored 10.
+/** Every merged body-armor template as an enemy armor choice: the name, plus
+ * the flat bonus that its base AC adds over the unarmored value of 10.
  * @returns {import('../types/entities.js').EnemyArmor[]} */
 export function activeArmors() {
   return (cache.armors ??= activeEquipmentEntries()
@@ -685,18 +699,20 @@ export function activeArmors() {
 }
 
 /** A merged armor template as an enemy's worn armor, or null for an unknown
- * name — the library-aware twin of Equipment.js's enemyArmor.
+ * name. This function is the library-aware twin of enemyArmor in
+ * Equipment.js.
  * @param {string} name
  * @returns {import('../types/entities.js').EnemyArmor | null} */
 export function activeEnemyArmor(name) {
-  // Copied out: the merged list is memoized and shared, so handing an element
-  // of it to an encounter would put library data inside campaign state.
+  // This copies the entry out. The merged list is memoized and shared, so
+  // passing one of its elements directly to an encounter puts library
+  // data inside campaign state.
   const found = activeArmors().find((a) => a.name === name);
   return found ? { ...found } : null;
 }
 
-/** The merged bestiary (built-in stock enemies + the active customizations),
- * tagged by source.
+/** The merged bestiary: built-in stock enemies plus the active
+ * customizations, tagged by source.
  * @returns {{ entry: EncounterTemplate, source: LibrarySource }[]} */
 export function activeBestiaryEntries() {
   return (cache.bestiary ??= mergedEntries(DEFAULT_BESTIARY, active.bestiary, nameKey));
@@ -714,7 +730,7 @@ export function activeNPCEntries() {
   return (cache.npcs ??= mergedEntries(DEFAULT_NPC_TEMPLATES, active.npcs, nameKey));
 }
 
-/** The merged spell corpus (curated built-ins + the active customizations),
+/** The merged spell list: curated built-ins plus the active customizations,
  * tagged by source.
  * @returns {{ entry: Spell, source: LibrarySource }[]} */
 export function activeSpellEntries() {
@@ -727,18 +743,20 @@ export function activeSpells() {
   return (cache.spellList ??= activeSpellEntries().map((e) => e.entry));
 }
 
-/** The merged spells indexed by id, memoized alongside the merge so casting and
- * spellbook rendering resolve spell ids in O(1) instead of a linear scan.
+/** The merged spells, indexed by id and memoized alongside the merge.
+ * Casting and spellbook rendering can then resolve a spell id in O(1) time,
+ * instead of a linear scan.
  * @returns {Map<string, Spell>} */
 export function activeSpellIndex() {
   return (cache.spellIndex ??= indexById(activeSpells()));
 }
 
 /**
- * Resolve stored spell ids to Spell objects through the memoized index,
- * deduplicating and dropping ids the library no longer knows (a spell removed
- * from the custom library). The one id -> Spell path for spellbook rendering
- * and casting, so every consumer agrees on ordering and unknown-id handling.
+ * Resolve stored spell ids to Spell objects through the memoized index. This
+ * function removes duplicate ids and drops any id the library no longer
+ * knows, for example a spell removed from the custom library. This is the
+ * one path from id to Spell for spellbook rendering and casting, so every
+ * consumer agrees on ordering and on how it handles an unknown id.
  * @param {string[]} ids
  * @returns {Spell[]}
  */

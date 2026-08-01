@@ -7,8 +7,8 @@ import { buildExampleContent } from './ExampleContent.js';
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 
 /**
- * Everything that makes up one campaign's state, as the app works with it at
- * runtime (SaveManager's CampaignState is the serialized counterpart).
+ * Everything that makes up one campaign's state at runtime. SaveManager's
+ * CampaignState is the serialized form of this state.
  * @typedef {{
  *   grid: TileGrid,
  *   party: import('../types/map.js').PartyPosition,
@@ -26,9 +26,9 @@ import { buildExampleContent } from './ExampleContent.js';
  */
 
 /**
- * A genuinely blank campaign: one empty world node to author into, nobody in
- * the party, nothing to fight. This is what a first run and the "New" button
- * produce, so demo content only ever appears when explicitly asked for.
+ * A blank campaign has one empty world node, no characters in the party, and
+ * no enemies. The first run of the app and the "New" button produce this
+ * campaign. Demo content appears only when the GM asks for it.
  * @returns {Campaign}
  */
 export function buildBlankCampaign() {
@@ -51,18 +51,21 @@ export function buildBlankCampaign() {
 }
 
 /**
- * The example campaign, loadable on demand via the "Load example" button: the
- * 32x32 overworld plus four linked subregions, populated end to end as a
- * playable arc. Goblin raids out of the Northmarch turn out to be marching
- * under the seal of King Ostrand, the risen wight in the Barrow of the Old
- * King; the quest chain runs from crossroads rumors through the raiders' camp
- * (Chieftain Snagtooth), the wyvern Skalvyr guarding the hermit who keeps the
- * barrow's warding key, an optional bargain with the mire hag, and down into
- * the barrow to put Ostrand back in his tomb. Field enemies dot each biome,
- * Briarwick is staffed with NPCs, and handouts, a bestiary, and a two-member
- * party round out the demo. The maps come from ExampleWorld.js and the
- * populace from ExampleContent.js. `rng` is injectable so tests can seed the
- * generated subregions.
+ * The example campaign loads on demand through the "Load example" button. It
+ * has a 32x32 overworld and four linked subregions, populated end to end as a
+ * playable story.
+ *
+ * Goblin raids out of the Northmarch march under the seal of King Ostrand,
+ * the risen wight in the Barrow of the Old King. The quest chain runs from
+ * crossroads rumors through the raiders' camp (Chieftain Snagtooth), the
+ * wyvern Skalvyr guarding the hermit who holds the barrow's warding key, an
+ * optional bargain with the mire hag, and down into the barrow to put
+ * Ostrand back in his tomb.
+ *
+ * Field enemies appear in each biome. Briarwick has NPCs. Handouts, a
+ * bestiary, and a two-member party complete the demo. The maps come from
+ * ExampleWorld.js. The populace comes from ExampleContent.js. `rng` is
+ * injectable so a test run can seed the generated subregions.
  * @param {TilePalette} palette
  * @param {() => number} [rng]
  * @returns {Campaign}
@@ -73,19 +76,19 @@ export function buildExampleCampaign(palette, rng = Math.random) {
 }
 
 /**
- * The campaign the app boots with: the saved one if a save exists, otherwise a
- * blank campaign (the demo world is opt-in via "Load example", never a silent
- * default). An empty character roster is legitimate authored state, so no default
- * character is ever injected.
+ * The app boots with the saved campaign if a save exists. If no save exists,
+ * the app boots with a blank campaign. The demo world loads only through the
+ * "Load example" button, never by default. An empty character roster is
+ * valid authored state, so the app never adds a default character.
  * @returns {Campaign}
  */
 export function loadInitialCampaign() {
   const saved = loadFromLocalStorage();
   if (!saved) return buildBlankCampaign();
-  // deserialize (SaveManager) already defaults every missing top-level field and
-  // runs each collection's entity withDefaults, so saved is a complete
-  // CampaignState here; only party and clock, which it fills with null, still
-  // need a runtime default.
+  // SaveManager's deserialize sets a default for every missing top-level field
+  // and runs withDefaults for each entity. saved is a complete CampaignState
+  // here. Only party and clock still need a runtime default, because
+  // deserialize fills them with null.
   return {
     grid: toTileGrid(saved),
     party: saved.party ?? { nodeId: 'world', tileId: '0,0' },
@@ -103,13 +106,14 @@ export function loadInitialCampaign() {
 }
 
 /**
- * The boot entry point: `loadInitialCampaign`, but a save that cannot be read
- * at all yields a blank campaign instead of an exception. Without this a single
- * unreadable field white-screens the app, and because Import persists what it
- * reads before reloading, the unreadable campaign is already the stored save —
- * so the GM would be left with no app to press Undo in. `failed` lets the
- * caller say so once the toasts are mounted; the previous save is still in the
- * undo ring, and Undo restores it.
+ * The boot entry point. It calls `loadInitialCampaign`, but a save that the
+ * app cannot read at all produces a blank campaign instead of an exception.
+ *
+ * Without this, one unreadable field causes a white screen. Import writes
+ * what it reads before it reloads the app, so the unreadable campaign is
+ * already the stored save, and the GM has no app left to press Undo
+ * in. `failed` lets the caller report the error once the toasts mount. The
+ * previous save is still in the undo ring, and Undo restores it.
  * @returns {{ campaign: Campaign, failed: boolean }}
  */
 export function loadInitialCampaignSafe() {

@@ -9,15 +9,16 @@ import { parseCoords, tileIdAt } from '../map/MapGeometry.js';
 /** @typedef {import('../types/map.js').Tile} Tile */
 
 /**
- * One generated subregion's layout plus the tile ids the story content is
- * staged on (picked from the generated tiles, since layouts are random).
+ * One generated subregion's layout, plus the tile ids the story content
+ * stands on. The story content picks these tiles from the generated tiles,
+ * because layouts are random.
  * @typedef {{ width: number, height: number, tiles: Tile[], entry: string }} GeneratedNode
  */
 
 /**
  * The example world's maps and staged story locations: the overworld grid,
- * the six generated subregions, and the tile ids the bosses, pickets, the
- * hermit, and the crypt shade were placed on.
+ * the six generated subregions, and the tile ids where the bosses, the
+ * pickets, the hermit, and the crypt shade stand.
  * @typedef {{
  *   grid: TileGrid,
  *   gens: Record<string, GeneratedNode>,
@@ -39,11 +40,12 @@ import { parseCoords, tileIdAt } from '../map/MapGeometry.js';
 const WORLD_SIZE = 32;
 
 /**
- * The shoreline column per row: the ocean reaches inland to this x. The edge
- * varies down the map — a narrow strand in the north, a deep bay mid-map
- * where Saltmere sits, a headland jutting west below it, and a cove in the
- * south — so the coastline exercises the straight, outer-corner, and
- * inner-corner shoreline pieces rather than running as one straight seam.
+ * The shoreline column for each row: the ocean reaches inland to this x
+ * value. The edge changes down the map. A narrow strand sits in the north, a
+ * deep bay sits mid-map where Saltmere stands, a headland juts west below
+ * the bay, and a cove sits in the south. This shape uses the straight,
+ * outer-corner, and inner-corner shoreline pieces instead of one straight
+ * line.
  * @param {number} y
  * @returns {number}
  */
@@ -59,11 +61,11 @@ function coastEdgeX(y) {
 }
 
 /**
- * Terrain type for an example-world cell, from hand-shaped features rather
- * than noise so the demo map always has the same recognizable geography: an
- * ocean along the west edge with a bay and a headland, a broad forest across
- * the north, snowfields over the northeastern peaks, a mountain range down
- * the east edge with foothills below it, a lake in the southwest, farmland
+ * Terrain type for an example-world cell. The function uses hand-shaped
+ * features, not noise, so the map always shows the same geography: an ocean
+ * along the west edge with a bay and a headland, a broad forest across the
+ * north, snowfields over the northeastern peaks, a mountain range down the
+ * east edge with foothills below it, a lake in the southwest, farmland
  * around Briarwick, a marsh in the southern lowlands, and badlands in the
  * far southeast corner, on a grass base.
  * @param {number} x @param {number} y
@@ -89,8 +91,8 @@ const RIVER_BEND_Y = 25;
 /** The row the tributary follows west out of the foothills to join the river. */
 const TRIB_Y = 12;
 
-/** Coordinates of a tile in this file's hand-written maps, all of which use grid
- * ids, so an id that doesn't parse is a typo rather than a case to handle.
+/** Coordinates of a tile in this file's hand-written maps. All of these maps use
+ * grid ids, so an id that does not parse is a typo, not a case to handle.
  * @param {string} id @returns {[number, number]} */
 function tileXY(id) {
   const { x, y } = /** @type {{ x: number, y: number }} */ (parseCoords(id));
@@ -109,11 +111,11 @@ function tileDistance(a, b) {
 }
 
 /**
- * A picker for staging story content on a generated map: each call returns
- * the unused candidate tile farthest from the node's entry (keeping at least
- * `gap` tiles between picks while possible), so bosses and landmarks land
- * deep in the layout rather than at the door. Falls back to the entry tile
- * only when a degenerate layout has no candidates at all.
+ * A picker for staging story content on a generated map. Each call returns
+ * the unused candidate tile farthest from the node's entry, and keeps at
+ * least `gap` tiles between picks while possible, so bosses and landmarks
+ * land deep in the layout instead of at the door. If a degenerate layout has
+ * no candidates at all, the picker returns the entry tile.
  * @param {GeneratedNode} gen
  * @param {(tile: Tile) => boolean} ok
  * @param {number} [gap]
@@ -147,8 +149,8 @@ function isOpenGround(t) {
 }
 
 /**
- * Bare dungeon floor — not stairs, doors, or walls — where an encounter can
- * plausibly stand.
+ * Bare dungeon floor, not stairs, doors, or walls, where an encounter can
+ * stand.
  * @param {Tile} t
  * @returns {boolean}
  */
@@ -157,8 +159,9 @@ function isBareFloor(t) {
 }
 
 /**
- * Replace a generated tile's art with a POI marker so a story encounter has a
- * visible anchor (a camp for the raiders, a cave mouth for the wyvern...).
+ * Replace a generated tile's art with a POI marker, so a story encounter has
+ * a visible anchor: a camp for the raiders, a cave mouth for the wyvern, and
+ * more.
  * @param {GeneratedNode} gen @param {TilePalette} palette
  * @param {string} tileId @param {string} imageId @param {string} notes
  */
@@ -173,7 +176,8 @@ function stampMarker(gen, palette, tileId, imageId, notes) {
 
 /**
  * The tile a generated town drew a given building on, for placing the NPC who
- * works there; falls back to the town's entry if that building didn't come up.
+ * works there. If that building did not come up, the function falls back to
+ * the town's entry.
  * @param {GeneratedNode} gen @param {TilePalette} palette
  * @param {string} imageId
  * @returns {string}
@@ -185,11 +189,11 @@ export function buildingTile(gen, palette, imageId) {
 
 /**
  * Build the example campaign's maps: the hand-shaped 32x32 overworld with its
- * roads, river, coastline, and linked entrance blocks, plus the six generated
- * subregions (two wilderness regions, two towns, the dungeon, the keep), with
- * story locations (boss lairs, pickets, the hermitage) staged onto the
- * generated tiles. Content that populates these locations lives in
- * ExampleContent.js.
+ * roads, river, coastline, and linked entrance blocks, plus the six
+ * generated subregions (two wilderness regions, two towns, the dungeon, and
+ * the keep). Story locations (boss lairs, pickets, the hermitage) stand
+ * staged onto the generated tiles. Content that populates these locations
+ * lives in ExampleContent.js.
  * @param {TilePalette} palette
  * @param {() => number} [rng]
  * @returns {ExampleWorld}
@@ -198,11 +202,11 @@ export function buildExampleWorld(palette, rng = Math.random) {
   const grid = new TileGrid();
 
   // Linked entrance blocks on the overworld: 4x4 for the two wilderness
-  // regions (rendered as four scaled 2x2 images), 2x2 for Briarwick, and a
+  // regions (drawn as four scaled 2x2 images), 2x2 for Briarwick, and a
   // single marker tile each for the dungeon interior, the port town of
   // Saltmere, and the keep of Thornhold. Each block sits inside matching
-  // terrain so the overview hints at what's inside, and Briarwick's block
-  // carries a settlement POI marker so the scaled block art reads as a town.
+  // terrain, so the overview hints at what is inside. Briarwick's block
+  // carries a settlement POI marker, so the scaled block art reads as a town.
   /** @type {Record<string, { nodeId: string, poi?: { tileId: string, imageId: string, poiType: import('../types/map.js').POIType, notes?: string } }>} */
   const links = {};
   for (let y = 2; y <= 5; y++)
@@ -253,8 +257,8 @@ export function buildExampleWorld(palette, rng = Math.random) {
     },
   };
 
-  // Visible overworld landmarks with GM notes, so the world map itself offers
-  // things to investigate between the linked regions.
+  // Visible overworld landmarks with GM notes. These landmarks give the
+  // world map things to investigate between the linked regions.
   /** @type {Record<string, { imageId: string, notes: string }>} */
   const worldPOIs = {
     '9,12': {
@@ -308,15 +312,18 @@ export function buildExampleWorld(palette, rng = Math.random) {
       const link = links[id];
 
       // Roads and the river run as overlays over the terrain base, so they
-      // read as features laid on the land rather than replacing it. end-*
-      // names the tile's open edge: the westmost road tile connects to the
-      // road on its east, so it takes end-e (and vice versa at the far edge).
+      // read as features laid on the land instead of replacing it. end-*
+      // names the tile's open edge. The westmost road tile connects to the
+      // road on its east, so it takes end-e, and the far edge takes the
+      // opposite value.
+      //
       // An east-west road crosses the map at y=16, starting past the ocean
-      // shore; a branch at x=12 tees off south to end just above Briarwick's
-      // block, and another at x=6 tees off north to Saltmere's gate. The
-      // river flows from the north edge, gathers a tributary out of the
+      // shore. A branch at x=12 tees off south to end just above Briarwick's
+      // block. Another branch at x=6 tees off north to Saltmere's gate.
+      //
+      // The river flows from the north edge, gathers a tributary out of the
       // foothills at y=12, passes under the highway on a bridge, then bends
-      // west below Briarwick to drain into the lake — its mouth tile stacks
+      // west below Briarwick to drain into the lake. Its mouth tile stacks
       // the channel over the shoreline overlay.
       const onHighway = y === 16 && x >= 4;
       const onBranch = x === 12 && y > 16 && y <= 22;
@@ -405,11 +412,11 @@ export function buildExampleWorld(palette, rng = Math.random) {
   grid.addNode(world);
 
   // Subregion maps come from the same generators the Build tab's "Generate"
-  // action uses, so the demo shows off every archetype: two wilderness
-  // regions, two towns, a dungeon interior, and a castle interior. The
-  // layouts are random per load, so story content inside them (the boss
-  // lairs, the hermit's shelter, NPC posts) is staged onto the generated
-  // tiles afterwards rather than at fixed coordinates.
+  // action uses, so the demo shows every archetype: two wilderness regions,
+  // two towns, a dungeon interior, and a castle interior. The layouts are
+  // random for each load. Story content inside them (the boss lairs, the
+  // hermit's shelter, NPC posts) stands staged onto the generated tiles
+  // after generation, not at fixed coordinates.
   const regions = [
     {
       id: 'northmarch',

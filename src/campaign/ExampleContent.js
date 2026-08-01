@@ -14,8 +14,8 @@ import { buildingTile } from './ExampleWorld.js';
 /** @typedef {import('./ExampleWorld.js').ExampleWorld} ExampleWorld */
 
 /**
- * A placed enemy: tiered default ability scores for its level, plus the
- * stat-block extras (AC, Speed...) a GM would want at the table.
+ * A placed enemy. It combines default ability scores for the level and tier
+ * with the stat block extras (AC, Speed, and more) a GM needs at the table.
  * @param {string} id @param {string} name @param {number} hp
  * @param {number} level @param {EnemyTier} tier
  * @param {string} nodeId @param {string} tileId
@@ -32,7 +32,7 @@ const enemy = (id, name, hp, level, tier, nodeId, tileId, extras) =>
   );
 
 /**
- * A reusable bestiary blueprint for the campaign's rank-and-file enemies.
+ * A reusable bestiary blueprint for the campaign's common enemies.
  * @param {string} id @param {string} name @param {number} hp
  * @param {number} level @param {EnemyTier} tier
  * @param {Record<string, number>} extras
@@ -48,8 +48,9 @@ const template = (id, name, hp, level, tier, extras) => ({
 });
 
 /**
- * The example party: a front-line knight and a half-elf cleric, both level 3,
- * with enough kit to demo inventory, equipment slots, and spell-slot tracking.
+ * The example party. It has a front-line knight and a half-elf cleric, both
+ * level 3, with enough gear to show inventory, equipment slots, and
+ * spell slot tracking.
  * @returns {import('../types/entities.js').Character[]}
  */
 function exampleParty() {
@@ -143,8 +144,8 @@ function exampleParty() {
     mirelle,
     assembleProficiencies(mirelle, { skills: ['insight', 'religion'] }),
   );
-  // A ready-made Cleric spellbook so the sheet's spell section and combat Cast
-  // buttons have something to show in the example campaign.
+  // A ready-made cleric spellbook, so the sheet's spell section and the
+  // combat Cast buttons have content to show in the example campaign.
   mirelle.spellbook = {
     cantrips: ['sacred-flame', 'guidance', 'light'],
     known: ['cure-wounds', 'healing-word', 'guiding-bolt', 'hold-person'],
@@ -187,10 +188,9 @@ function exampleParty() {
 /**
  * Everything that populates the example world: the party, placed enemies,
  * the quest chain, the NPCs of Briarwick, Saltmere, and Thornhold, handouts,
- * and the bestiary. Takes the
- * built maps so NPCs and bosses land on the staged story tiles (generated
- * layouts are random per load). The maps themselves come from
- * ExampleWorld.js; Campaigns.js assembles the two halves.
+ * and the bestiary. It takes the built maps, so NPCs and bosses land on the
+ * staged story tiles. Generated layouts are random for each load. The maps
+ * come from ExampleWorld.js. Campaigns.js combines the two halves.
  * @param {TilePalette} palette
  * @param {ExampleWorld} world
  * @returns {Omit<import('./Campaigns.js').Campaign, 'grid'>}
@@ -212,7 +212,7 @@ export function buildExampleContent(palette, world) {
     party: { nodeId: 'world', tileId: '16,16' },
     characters: exampleParty(),
     encounters: [
-      // Field enemies on the overworld, one flavor per biome.
+      // Field enemies on the overworld, one type for each biome.
       enemy('goblin-scout', 'Goblin Scout', 7, 1, 'mob', 'world', '18,15', { AC: 13, Speed: 30 }),
       enemy('gray-wolf-1', 'Gray Wolf', 11, 1, 'mob', 'world', '24,16', { AC: 13, Speed: 40 }),
       enemy('gray-wolf-2', 'Gray Wolf', 11, 1, 'mob', 'world', '25,17', { AC: 13, Speed: 40 }),
@@ -226,8 +226,8 @@ export function buildExampleContent(palette, world) {
         Speed: 40,
       }),
       enemy('winter-wolf', 'Winter Wolf', 34, 3, 'mob', 'world', '26,3', { AC: 13, Speed: 50 }),
-      // The bay: drowned dead walking the shallows below Saltmere, and the
-      // thing knocking in the abandoned silver mine.
+      // The bay: drowned dead walk the shallows below Saltmere, and
+      // something knocks in the abandoned silver mine.
       enemy('drowned-watchman-1', 'Drowned Watchman', 22, 2, 'mob', 'world', '6,10', {
         AC: 11,
         Speed: 20,
