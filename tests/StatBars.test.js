@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   CRITICAL_RATIO,
+  WOUNDED_RATIO,
   barReadout,
   ordinal,
   pipReadout,
@@ -33,6 +34,28 @@ test('the critical state arms at the threshold and only for a bar that wants it'
   assert.equal(barReadout(pool(4, 12), { label: 'HP', critical: true }).critical, false);
   assert.equal(barReadout(low, { label: 'HP' }).critical, false);
   assert.equal(CRITICAL_RATIO, 0.25);
+});
+
+test('the band steps down at the same two fractions the player bands use', () => {
+  /** @param {number} current @param {number} max */
+  const band = (current, max) => barReadout(pool(current, max), { label: 'HP' }).band;
+  assert.equal(band(12, 12), 'ok');
+  assert.equal(band(7, 12), 'ok');
+  assert.equal(band(6, 12), 'mid'); // exactly half
+  assert.equal(band(4, 12), 'mid');
+  assert.equal(band(3, 12), 'low'); // exactly a quarter
+  assert.equal(band(0, 12), 'low');
+  // An unauthored pool colors nothing, rather than reading as near death.
+  assert.equal(band(0, 0), 'none');
+  assert.equal(WOUNDED_RATIO, 0.5);
+});
+
+test('an overheal fills the track instead of running past its end', () => {
+  const readout = barReadout(pool(16, 12), { label: 'HP' });
+  assert.equal(readout.percent, 100);
+  assert.equal(readout.band, 'ok');
+  // The numbers stay honest about what the pool holds.
+  assert.equal(readout.text, '16/12');
 });
 
 test('the accessible name spells the numbers out and mentions bonus points', () => {

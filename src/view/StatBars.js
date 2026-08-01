@@ -1,4 +1,5 @@
 import { isPactPool, slotLevelOf } from '../entities/SpellSlots.js';
+import { clamp } from '../util/num.js';
 
 /**
  * What the HP bar and the spell-slot pips say, apart from the elements that
@@ -12,25 +13,46 @@ import { isPactPool, slotLevelOf } from '../entities/SpellSlots.js';
 /** The fill fraction at or below which a bar reads as critical. */
 export const CRITICAL_RATIO = 0.25;
 
+/** The fill fraction at or below which a bar reads as wounded. */
+export const WOUNDED_RATIO = 0.5;
+
+/**
+ * The coarse step a fill fraction falls in.
+ * @param {number} ratio
+ * @returns {'low' | 'mid' | 'ok'}
+ */
+function bandOf(ratio) {
+  if (ratio <= CRITICAL_RATIO) return 'low';
+  if (ratio <= WOUNDED_RATIO) return 'mid';
+  return 'ok';
+}
+
 /**
  * The HP bar's readout for a pool. `percent` is the fill width, rounded,
  * because a fractional percentage adds nothing on a bar a few hundred
- * pixels wide. A pool with no maximum reads as empty, instead of dividing
- * by zero. This is what an older save with no HP recorded looks like.
+ * pixels wide. It is clamped to the track, so an overheal above the maximum
+ * fills the bar rather than running past its end. A pool with no maximum
+ * reads as empty, instead of dividing by zero. This is what an older save
+ * with no HP recorded looks like.
  *
  * `critical` is only ever true for a bar set up for it, so a resource that
- * merely happens to be low does not turn red.
- * @param {ResourcePool} pool
+ * merely happens to be low does not turn red. `band` is the three-step
+ * coarse version of the same fraction, for the compact bars that color the
+ * whole fill instead of flipping one critical state. A pool with no maximum
+ * gets the "none" band, which colors nothing.
+ * @param {{ current: number, max: number }} pool
  * @param {{ label: string, bonus?: number, critical?: boolean }} opts
- * @returns {{ percent: number, critical: boolean, text: string, ariaLabel: string }}
+ * @returns {{ percent: number, critical: boolean, band: 'none' | 'low' | 'mid' | 'ok',
+ *   text: string, ariaLabel: string }}
  */
 export function barReadout(pool, opts) {
   const bonus = opts.bonus ?? 0;
-  const ratio = pool.max > 0 ? pool.current / pool.max : 0;
+  const ratio = pool.max > 0 ? clamp(pool.current / pool.max, 0, 1) : 0;
   const bonusReadout = bonus ? `, plus ${bonus} bonus` : '';
   return {
     percent: Math.round(ratio * 100),
     critical: Boolean(opts.critical) && ratio <= CRITICAL_RATIO,
+    band: pool.max <= 0 ? 'none' : bandOf(ratio),
     text: `${pool.current}/${pool.max}`,
     ariaLabel: `${opts.label} ${pool.current} of ${pool.max}${bonusReadout}`,
   };

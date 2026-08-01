@@ -3,7 +3,7 @@ import { classNames, el } from './dom.js';
 import { captureFocus, restoreFocus } from './focusMemory.js';
 import { repaintNeeded } from './listPanel.js';
 import { getHP } from '../entities/Character.js';
-import { clamp } from '../util/num.js';
+import { buildStatBar } from './CharacterBars.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -20,25 +20,18 @@ export function rosterDependsOn(selectedId, placeShown) {
 }
 
 /**
- * A compact HP bar for a roster row. A filled track shows current and max
- * HP through its width and color band, with the numbers as an accessible
- * label. A character with no HP pool authored yet gets an empty, unlabeled track.
+ * A roster row's HP pill: the shared stat bar in its compact, banded form,
+ * so the row reads at a glance and matches the bar on the sheet. A character
+ * with no HP pool authored yet gets an empty, unlabeled track.
  * @param {Character} character
  * @returns {HTMLElement}
  */
 function hpMeter(character) {
   const hp = getHP(character);
-  const meter = el('span', 'character-roster__hp');
-  if (!hp || hp.max <= 0) return meter;
-  const ratio = clamp(hp.current / hp.max, 0, 1);
-  meter.dataset.band = ratio <= 0.25 ? 'low' : ratio <= 0.5 ? 'mid' : 'ok';
-  meter.setAttribute('role', 'img');
-  meter.setAttribute('aria-label', `HP ${hp.current}/${hp.max}`);
-  meter.title = `HP ${hp.current}/${hp.max}`;
-  const fill = el('span', 'character-roster__hp-fill');
-  fill.style.width = `${ratio * 100}%`;
-  meter.append(fill, el('span', 'character-roster__hp-text', `${hp.current}/${hp.max}`));
-  return meter;
+  if (!hp || hp.max <= 0) {
+    return el('span', 'stat-bar stat-bar--compact', el('span', 'stat-bar__track'));
+  }
+  return buildStatBar(hp, { modifier: 'hp', label: 'HP', compact: true, band: true }).element;
 }
 
 /**

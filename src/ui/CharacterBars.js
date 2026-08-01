@@ -1,37 +1,53 @@
-import { el } from './dom.js';
+import { classNames, el } from './dom.js';
 import { barReadout, pipReadout, slotColumnLabel, slotLineReadout } from '../view/StatBars.js';
 
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
 /**
- * Build a stat bar (HP) shown on the card's head. Each pool gets one
- * full-width line with a label, a fill track, and the numbers. If the pool
- * is absent, for example in an older save, the bar does not draw at all.
+ * Build a stat bar (HP). The full form is one wide line with a label, a fill
+ * track, and the numbers after it, for a character sheet's head. Two
+ * narrower forms drop the label: `showLabel: false` keeps the numbers beside
+ * the track, for a combat board card, and `compact` puts them over a
+ * fixed-width track, for a roster row that has only a pill's worth of space.
+ * The label still names the bar to a screen reader in every form. If the
+ * pool is absent, for example in an older save, the caller draws no bar.
  *
  * update rewrites the fill, the numbers, and the label for a new value of
  * the same pool. A tick of HP changes four properties instead of
  * rebuilding the line.
- * @param {ResourcePool} pool
+ * @param {{ current: number, max: number }} pool
  * @param {{ modifier: string, label: string, critical?: boolean, bonus?: number,
+ *   showLabel?: boolean, compact?: boolean, band?: boolean, className?: string,
  *   flank?: { before: HTMLElement, after: HTMLElement } }} opts
  *   modifier selects the fill color. critical turns on the low-fill red
- *   state. bonus appends a plus-N readout for temporary points on top of
- *   the pool, for example bonus HP. flank places a control, for example a
- *   damage or heal stepper, on each side of the track, and keeps the
- *   numeric readout after them.
- * @returns {{ element: HTMLElement, update: (pool: ResourcePool, bonus: number) => void }}
+ *   state. band colors the whole fill by remaining fraction instead, in
+ *   three steps, for a bar read at a glance rather than watched. bonus
+ *   appends a plus-N readout for temporary points on top of the pool, for
+ *   example bonus HP. flank places a control, for example a damage or heal
+ *   stepper, on each side of the track, and keeps the numeric readout after
+ *   them. className adds a caller's own class to the wrapper.
+ * @returns {{ element: HTMLElement, update: (pool: { current: number, max: number },
+ *   bonus: number) => void }}
  */
 export function buildStatBar(pool, opts) {
+  const compact = Boolean(opts.compact);
+  const showLabel = opts.showLabel ?? !compact;
   const fill = el('span', `stat-bar__fill stat-bar__fill--${opts.modifier}`);
-  const text = el('span', 'stat-bar__text u-muted');
+  // The numbers recede next to a label. Alone on a card, or over a compact
+  // track, they are the readout, so they keep the body color.
+  const text = el('span', classNames(['stat-bar__text', showLabel && 'u-muted']));
+  const track = el('span', 'stat-bar__track', fill);
+  // The compact form centers the numbers on the track, so they belong
+  // inside it. Every other form sets them beside it.
+  if (compact) track.appendChild(text);
   const wrap = el(
     'span',
-    'stat-bar u-row u-g2',
-    el('span', 'stat-bar__label u-muted', opts.label),
+    classNames(['stat-bar u-row u-g2', compact && 'stat-bar--compact', opts.className]),
+    showLabel ? el('span', 'stat-bar__label u-muted', opts.label) : null,
     opts.flank?.before,
-    el('span', 'stat-bar__track', fill),
+    track,
     opts.flank?.after,
-    text,
+    compact ? null : text,
   );
   if (!opts.flank) wrap.setAttribute('role', 'img');
 
@@ -40,13 +56,16 @@ export function buildStatBar(pool, opts) {
   /** @type {HTMLElement | null} */
   let bonusEl = null;
 
-  /** @param {ResourcePool} next @param {number} bonus */
+  /** @param {{ current: number, max: number }} next @param {number} bonus */
   function update(next, bonus) {
     const readout = barReadout(next, { label: opts.label, bonus, critical: opts.critical });
     fill.style.width = `${readout.percent}%`;
     fill.classList.toggle('stat-bar__fill--critical', readout.critical);
+    if (opts.band) wrap.dataset.band = readout.band;
     text.textContent = readout.text;
     wrap.setAttribute('aria-label', readout.ariaLabel);
+    // A compact pill can squeeze its numbers, so the hover text repeats them.
+    if (compact) wrap.title = readout.ariaLabel;
     if (bonus && !bonusEl) {
       bonusEl = el('span', 'stat-bar__bonus');
       bonusEl.title = 'Bonus HP';

@@ -6,6 +6,8 @@
  * branch on it.
  */
 
+import { CRITICAL_RATIO, WOUNDED_RATIO } from './StatBars.js';
+
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /** @type {ViewRole[]} */
@@ -25,7 +27,10 @@ export function isGM(role) {
  * monster's condition without leaking its stat block. The bands, by
  * fraction of max: full is "Unharmed", above half is "Healthy", above a
  * quarter is "Bloodied", anything still standing is "Badly wounded", and
- * zero or below is "Down". A non-positive max reads "Unknown".
+ * zero or below is "Down". A non-positive max reads "Unknown". The two
+ * fractions are the thresholds the HP bars color by, from
+ * `view/StatBars.js`, so a band a player reads matches the band the GM's
+ * bar shows.
  * @param {number} current
  * @param {number} max
  * @returns {string}
@@ -35,7 +40,7 @@ export function hpBand(current, max) {
   if (current <= 0) return 'Down';
   const fraction = current / max;
   if (fraction >= 1) return 'Unharmed';
-  if (fraction > 0.5) return 'Healthy';
-  if (fraction > 0.25) return 'Bloodied';
+  if (fraction > WOUNDED_RATIO) return 'Healthy';
+  if (fraction > CRITICAL_RATIO) return 'Bloodied';
   return 'Badly wounded';
 }

@@ -725,8 +725,9 @@ keep only layout (margins, grid placement) in the component's own class.
 
 Three more shared shapes live one sheet up, next to the widget they were built
 for: `.disclosure` / `__chevron` / `--open` and `.stat-bar` / `__track` /
-`__fill` (plus `--mana` and `--critical`) in `widgets.css`, and `.tabs` /
-`__tab` / `__panel` in `layout.css`.
+`__fill` (plus `--mana` and `--critical`, the `--compact` pill variant, and
+the `data-band` fill colors) in `widgets.css`, and `.tabs` / `__tab` /
+`__panel` in `layout.css`.
 
 ### Utilities
 

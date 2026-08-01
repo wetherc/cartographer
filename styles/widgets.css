@@ -158,6 +158,41 @@
   font-family: var(--font-mono);
 }
 
+/* At-a-glance health, for a roster row with no space for a label column: a
+   fixed-width track with the raw numbers centered on top of the fill. */
+.stat-bar--compact {
+  flex: 0 0 auto;
+  width: 4.5rem;
+}
+
+.stat-bar--compact .stat-bar__track {
+  position: relative;
+  height: 0.9rem;
+  border-radius: var(--radius-sm);
+}
+
+.stat-bar--compact .stat-bar__text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--text-label);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+/* Banded fill: the whole bar takes the color of the remaining fraction,
+   rather than flipping one critical state. An unauthored pool bands to
+   "none" and stays an empty track. */
+.stat-bar[data-band='mid'] .stat-bar__fill {
+  background: var(--warning);
+}
+
+.stat-bar[data-band='low'] .stat-bar__fill {
+  background: var(--danger);
+}
+
 /* Temporary points riding on top of the pool (bonus HP). */
 .stat-bar__bonus {
   font-family: var(--font-mono);
