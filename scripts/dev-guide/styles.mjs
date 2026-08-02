@@ -350,6 +350,8 @@ export const CSS = String.raw`
   .kw { color: #7fb7a3; }
   .st { color: #c9a668; }
   .num { color: #a9c4d9; }
+  .type { color: #9fc6e0; }
+  .fn { color: #e0cf9e; }
 
   .caption {
     font-family: var(--f-mono);

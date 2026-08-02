@@ -30,21 +30,27 @@ const TOKEN = new RegExp(
   '(\\/\\*[\\s\\S]*?\\*\\/|\\/\\/[^\\n]*)' + // 1: comment
     `|('(?:\\\\.|[^'\\\\\\n])*'|"(?:\\\\.|[^"\\\\\\n])*"|\`(?:\\\\.|[^\`\\\\])*\`)` + // 2: string
     '|\\b(0[xXbBoO][0-9a-fA-F]+|\\d[\\d_]*(?:\\.\\d+)?)\\b' + // 3: number
-    `|(?<![.$])\\b(${KEYWORDS})\\b`, // 4: keyword, but not a property name
+    `|(?<![.$])\\b(${KEYWORDS})\\b` + // 4: keyword, but not a property name
+    '|\\b([A-Z][\\w$]*)\\b' + // 5: type or class name
+    '|([a-z_$][\\w$]*)(?=\\s*\\()', // 6: function or method name
   'g',
 );
 
+const TOKEN_CLASSES = ['cm', 'st', 'num', 'kw', 'type', 'fn'];
+
 /**
  * Every snippet on the page is JavaScript or a TypeScript declaration, so one
- * small tokenizer covers them all: comments, strings, numbers, and keywords.
- * Anything it does not recognize stays plain.
+ * small tokenizer covers them all: comments, strings, numbers, keywords,
+ * capitalized type names, and function names. A property key gets no color,
+ * which is what keeps it apart from the type it is declared with. Anything
+ * the tokenizer does not recognize stays plain.
  * @param {string} code
  */
 function highlight(code) {
   let out = '';
   let last = 0;
   for (const m of code.matchAll(TOKEN)) {
-    const cls = m[1] ? 'cm' : m[2] ? 'st' : m[3] ? 'num' : 'kw';
+    const cls = TOKEN_CLASSES[m.slice(1).findIndex((g) => g !== undefined)];
     out += esc(code.slice(last, m.index));
     out += `<span class="${cls}">${esc(m[0])}</span>`;
     last = m.index + m[0].length;

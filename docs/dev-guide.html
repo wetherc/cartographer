@@ -356,6 +356,8 @@
   .kw { color: #7fb7a3; }
   .st { color: #c9a668; }
   .num { color: #a9c4d9; }
+  .type { color: #9fc6e0; }
+  .fn { color: #e0cf9e; }
 
   .caption {
     font-family: var(--f-mono);
@@ -746,15 +748,15 @@
 
       <figure class="snip">
 <figcaption class="snippet-label">src/types/app.ts:183-192  |  AppContext</figcaption>
-<pre><code><span class="kw">export</span> <span class="kw">interface</span> AppContext {
-  palette: TilePalette;
-  grid: TileGrid;
-  navigator: MapNavigator;
-  partyTracker: PartyTracker;
-  toasts: { show(message: string): <span class="kw">void</span> };
-  state: AppState;
-  views: AppViews;
-  actions: AppActions;
+<pre><code><span class="kw">export</span> <span class="kw">interface</span> <span class="type">AppContext</span> {
+  palette: <span class="type">TilePalette</span>;
+  grid: <span class="type">TileGrid</span>;
+  navigator: <span class="type">MapNavigator</span>;
+  partyTracker: <span class="type">PartyTracker</span>;
+  toasts: { <span class="fn">show</span>(message: string): <span class="kw">void</span> };
+  state: <span class="type">AppState</span>;
+  views: <span class="type">AppViews</span>;
+  actions: <span class="type">AppActions</span>;
 }</code></pre>
 
 </figure>
@@ -780,28 +782,28 @@
 
       <figure class="snip">
 <figcaption class="snippet-label">src/main.js:70-91</figcaption>
-<pre><code>wireCampaignActions(app); <span class="cm">// dirty flag + header campaign controls; provides markDirty</span>
+<pre><code><span class="fn">wireCampaignActions</span>(app); <span class="cm">// dirty flag + header campaign controls; provides markDirty</span>
 <span class="cm">// The library loads before anything that offers its presets (the item form,</span>
 <span class="cm">// the enemy gear pickers), so the merged lists are live from the first open.</span>
-wireLibrary(app); <span class="cm">// Library mode: equipment/bestiary/NPC templates + custom-library file</span>
+<span class="fn">wireLibrary</span>(app); <span class="cm">// Library mode: equipment/bestiary/NPC templates + custom-library file</span>
 <span class="cm">// The combat screen mounts before the encounters module, because that</span>
 <span class="cm">// module's refresh paths reach `views.combatScreen` while it is still</span>
 <span class="cm">// mounting.</span>
-wireCombatScreen(app); <span class="cm">// combat mode's full-width board</span>
-wireEncounters(app); <span class="cm">// encounter + initiative panels, bestiary</span>
-wireStory(app); <span class="cm">// travelogue (logEvent), NPCs, quests, handouts</span>
-wireParty(app); <span class="cm">// roster, sheet, inventory, time</span>
+<span class="fn">wireCombatScreen</span>(app); <span class="cm">// combat mode's full-width board</span>
+<span class="fn">wireEncounters</span>(app); <span class="cm">// encounter + initiative panels, bestiary</span>
+<span class="fn">wireStory</span>(app); <span class="cm">// travelogue (logEvent), NPCs, quests, handouts</span>
+<span class="fn">wireParty</span>(app); <span class="cm">// roster, sheet, inventory, time</span>
 <span class="cm">// This call draws the first map, which also marks the encounter and NPC</span>
 <span class="cm">// tiles and rebuilds the Build-rail lists those markers share a node scope</span>
 <span class="cm">// with. The two modules that own those lists are wired above.</span>
-<span class="kw">const</span> mapEnv = wireMapView(app); <span class="cm">// canvas, trees, inspector, palette, fog, map tools</span>
-wireGenerateAction(app, mapEnv); <span class="cm">// shares the map's context rather than routing through actions</span>
-wireDiceTray(app); <span class="cm">// dice tray + the roll entries it writes to the travelogue</span>
+<span class="kw">const</span> mapEnv = <span class="fn">wireMapView</span>(app); <span class="cm">// canvas, trees, inspector, palette, fog, map tools</span>
+<span class="fn">wireGenerateAction</span>(app, mapEnv); <span class="cm">// shares the map's context rather than routing through actions</span>
+<span class="fn">wireDiceTray</span>(app); <span class="cm">// dice tray + the roll entries it writes to the travelogue</span>
 <span class="cm">// This must run last: mounting the role switch applies the starting role</span>
 <span class="cm">// straight away. That refreshes four panels and re-points the character</span>
 <span class="cm">// sheet, so everything it touches must already be registered.</span>
-wireSessionControls(app); <span class="cm">// mode/role switches (applies the initial role), tabs, sidebar</span>
-wireShortcuts(app);</code></pre>
+<span class="fn">wireSessionControls</span>(app); <span class="cm">// mode/role switches (applies the initial role), tabs, sidebar</span>
+<span class="fn">wireShortcuts</span>(app);</code></pre>
 <p class="caption">The same lines, straight out of the composition root.</p>
 </figure>
     </section>
@@ -824,37 +826,37 @@ wireShortcuts(app);</code></pre>
 
       <figure class="snip">
 <figcaption class="snippet-label">src/ui/TimePanel.js:22-54  |  mountTimePanel</figcaption>
-<pre><code><span class="kw">export</span> <span class="kw">function</span> mountTimePanel(container, callbacks) {
-  <span class="kw">const</span> root = el(<span class="st">'div'</span>, <span class="st">'time-panel'</span>);
-  container.appendChild(root);
+<pre><code><span class="kw">export</span> <span class="kw">function</span> <span class="fn">mountTimePanel</span>(container, callbacks) {
+  <span class="kw">const</span> root = <span class="fn">el</span>(<span class="st">'div'</span>, <span class="st">'time-panel'</span>);
+  container.<span class="fn">appendChild</span>(root);
 
   <span class="cm">/** Every control here changes the clock, so each one rerenders the readout.
    * @param {string} label @param {() =&gt; void} onClick @param {import('./icons.js').IconName} [glyph] */</span>
   <span class="kw">const</span> button = (label, onClick, glyph) =&gt;
-    textButton(
+    <span class="fn">textButton</span>(
       label,
       () =&gt; {
-        onClick();
-        render();
+        <span class="fn">onClick</span>();
+        <span class="fn">render</span>();
       },
       { icon: glyph, className: <span class="st">'time-panel__btn'</span> },
     );
 
-  <span class="kw">function</span> render() {
+  <span class="kw">function</span> <span class="fn">render</span>() {
     root.innerHTML = <span class="st">''</span>;
-    root.append(
-      el(<span class="st">'div'</span>, <span class="st">'time-panel__readout u-row u-g2'</span>, icon(<span class="st">'clock'</span>), formatClock(callbacks.getClock())),
-      el(
+    root.<span class="fn">append</span>(
+      <span class="fn">el</span>(<span class="st">'div'</span>, <span class="st">'time-panel__readout u-row u-g2'</span>, <span class="fn">icon</span>(<span class="st">'clock'</span>), <span class="fn">formatClock</span>(callbacks.<span class="fn">getClock</span>())),
+      <span class="fn">el</span>(
         <span class="st">'div'</span>,
         <span class="st">'time-panel__actions'</span>,
-        button(<span class="st">'Advance'</span>, callbacks.onAdvance),
-        button(<span class="st">'Short rest'</span>, callbacks.onShortRest),
-        button(<span class="st">'Long rest'</span>, callbacks.onLongRest),
+        <span class="fn">button</span>(<span class="st">'Advance'</span>, callbacks.onAdvance),
+        <span class="fn">button</span>(<span class="st">'Short rest'</span>, callbacks.onShortRest),
+        <span class="fn">button</span>(<span class="st">'Long rest'</span>, callbacks.onLongRest),
       ),
     );
   }
 
-  render();
+  <span class="fn">render</span>();
   <span class="kw">return</span> { update: render };
 }</code></pre>
 <p class="caption">Most list panels get this shape from <code>mountListPanel</code> in <code>src/ui/listPanel.js</code> instead of hand-rolling it.</p>
@@ -871,17 +873,17 @@ wireShortcuts(app);</code></pre>
 
       <figure class="snip">
 <figcaption class="snippet-label">src/ui/listPanel.js:319-324  |  repaintNeeded</figcaption>
-<pre><code><span class="kw">export</span> <span class="kw">function</span> repaintNeeded(last, next) {
+<pre><code><span class="kw">export</span> <span class="kw">function</span> <span class="fn">repaintNeeded</span>(last, next) {
   <span class="kw">if</span> (!last) <span class="kw">return</span> <span class="kw">true</span>;
   <span class="kw">if</span> (last.gm !== next.gm) <span class="kw">return</span> <span class="kw">true</span>;
-  <span class="kw">if</span> (!Object.is(last.dependsOn, next.dependsOn)) <span class="kw">return</span> <span class="kw">true</span>;
-  <span class="kw">return</span> !sameRows(last.rows, next.rows);
+  <span class="kw">if</span> (!<span class="type">Object</span>.<span class="fn">is</span>(last.dependsOn, next.dependsOn)) <span class="kw">return</span> <span class="kw">true</span>;
+  <span class="kw">return</span> !<span class="fn">sameRows</span>(last.rows, next.rows);
 }</code></pre>
 
 </figure>
       <figure class="snip">
 <figcaption class="snippet-label">src/ui/listPanel.js:333-337  |  sameRows</figcaption>
-<pre><code><span class="kw">function</span> sameRows(a, b) {
+<pre><code><span class="kw">function</span> <span class="fn">sameRows</span>(a, b) {
   <span class="kw">if</span> (a.length !== b.length) <span class="kw">return</span> <span class="kw">false</span>;
   <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; a.length; i += <span class="num">1</span>) <span class="kw">if</span> (a[i] !== b[i]) <span class="kw">return</span> <span class="kw">false</span>;
   <span class="kw">return</span> <span class="kw">true</span>;
@@ -900,14 +902,14 @@ wireShortcuts(app);</code></pre>
 
       <figure class="snip">
 <figcaption class="snippet-label">src/util/memoize.js:15-26  |  memoizeByIdentity</figcaption>
-<pre><code><span class="kw">export</span> <span class="kw">function</span> memoizeByIdentity(compute) {
+<pre><code><span class="kw">export</span> <span class="kw">function</span> <span class="fn">memoizeByIdentity</span>(compute) {
   <span class="cm">/** @type {WeakMap&lt;T, { value: R }&gt;} */</span>
-  <span class="kw">const</span> cache = <span class="kw">new</span> WeakMap();
+  <span class="kw">const</span> cache = <span class="kw">new</span> <span class="type">WeakMap</span>();
   <span class="kw">return</span> (input) =&gt; {
-    <span class="kw">let</span> entry = cache.get(input);
+    <span class="kw">let</span> entry = cache.<span class="fn">get</span>(input);
     <span class="kw">if</span> (!entry) {
-      entry = { value: compute(input) };
-      cache.set(input, entry);
+      entry = { value: <span class="fn">compute</span>(input) };
+      cache.<span class="fn">set</span>(input, entry);
     }
     <span class="kw">return</span> entry.value;
   };
@@ -934,7 +936,7 @@ wireShortcuts(app);</code></pre>
 
       <figure class="snip">
 <figcaption class="snippet-label">src/types/map.ts:15-33  |  Tile</figcaption>
-<pre><code><span class="kw">export</span> <span class="kw">interface</span> Tile {
+<pre><code><span class="kw">export</span> <span class="kw">interface</span> <span class="type">Tile</span> {
   id: string;
   imageRef: string;
   <span class="cm">/** Image or images drawn on top of imageRef, for example a road or path.
@@ -943,7 +945,7 @@ wireShortcuts(app);</code></pre>
    * first entry at the bottom, so overlays can stack, for example a river
    * channel over the shoreline where it drains into a lake. */</span>
   overlayRef: string | string[] | <span class="kw">null</span>;
-  metadata: TileMetadata;
+  metadata: <span class="type">TileMetadata</span>;
   revealed: boolean;
   <span class="cm">/** Id of the MapNode this tile zooms into, if any. */</span>
   childNodeId: string | <span class="kw">null</span>;
@@ -971,8 +973,8 @@ wireShortcuts(app);</code></pre>
 
       <figure class="snip">
 <figcaption class="snippet-label">src/map/FogOfWar.js:24-51  |  revealAround</figcaption>
-<pre><code><span class="kw">export</span> <span class="kw">function</span> revealAround(node, centerId, radius) {
-  <span class="kw">const</span> center = parseCoords(centerId);
+<pre><code><span class="kw">export</span> <span class="kw">function</span> <span class="fn">revealAround</span>(node, centerId, radius) {
+  <span class="kw">const</span> center = <span class="fn">parseCoords</span>(centerId);
   <span class="kw">if</span> (!center) <span class="kw">return</span> node;
 
   <span class="cm">// This code walks the bounding square of the disc by coordinate instead of</span>
@@ -980,7 +982,7 @@ wireShortcuts(app);</code></pre>
   <span class="cm">// step instead of O(total tiles) and builds no id string per cell. A step</span>
   <span class="cm">// that reveals nothing new returns the same node. This keeps the WeakMap</span>
   <span class="cm">// caches for tile layout, region groups, and span blocks warm.</span>
-  <span class="kw">const</span> r = Math.ceil(radius);
+  <span class="kw">const</span> r = <span class="type">Math</span>.<span class="fn">ceil</span>(radius);
   <span class="kw">const</span> radiusSq = radius * radius;
   <span class="cm">/** @type {Map&lt;number, import('../types/map.js').Tile&gt; | null} */</span>
   <span class="kw">let</span> changed = <span class="kw">null</span>;
@@ -989,15 +991,15 @@ wireShortcuts(app);</code></pre>
       <span class="kw">const</span> dx = x - center.x;
       <span class="kw">const</span> dy = y - center.y;
       <span class="kw">if</span> (dx * dx + dy * dy &gt; radiusSq) <span class="kw">continue</span>;
-      <span class="kw">const</span> pos = cellPosition(node, x, y);
+      <span class="kw">const</span> pos = <span class="fn">cellPosition</span>(node, x, y);
       <span class="kw">if</span> (pos === <span class="kw">undefined</span>) <span class="kw">continue</span>;
       <span class="kw">const</span> tile = node.tiles[pos];
       <span class="kw">if</span> (tile.revealed) <span class="kw">continue</span>;
-      (changed ??= <span class="kw">new</span> Map()).set(pos, { ...tile, revealed: <span class="kw">true</span> });
+      (changed ??= <span class="kw">new</span> <span class="type">Map</span>()).<span class="fn">set</span>(pos, { ...tile, revealed: <span class="kw">true</span> });
     }
   }
   <span class="kw">if</span> (!changed) <span class="kw">return</span> node;
-  <span class="kw">return</span> withTilesReplaced(node, changed);
+  <span class="kw">return</span> <span class="fn">withTilesReplaced</span>(node, changed);
 }</code></pre>
 <p class="caption">Reveal is monotonic, and the function returns the same node when nothing new was revealed.</p>
 </figure>
@@ -1031,7 +1033,7 @@ wireShortcuts(app);</code></pre>
 
       <figure class="snip">
 <figcaption class="snippet-label">src/storage/SaveManager.js:90-112  |  packTile</figcaption>
-<pre><code><span class="kw">function</span> packTile(tile) {
+<pre><code><span class="kw">function</span> <span class="fn">packTile</span>(tile) {
   <span class="cm">/** @type {Record&lt;string, any&gt;} */</span>
   <span class="kw">const</span> packed = { ...tile };
   <span class="kw">if</span> (packed.overlayRef == <span class="kw">null</span>) <span class="kw">delete</span> packed.overlayRef;
@@ -1039,7 +1041,7 @@ wireShortcuts(app);</code></pre>
   <span class="kw">if</span> (packed.childNodeId == <span class="kw">null</span>) <span class="kw">delete</span> packed.childNodeId;
   <span class="cm">// An absent span and a span of 1 mean the same one-cell image, per `Tile`.</span>
   <span class="kw">if</span> (!(<span class="kw">typeof</span> packed.span === <span class="st">'number'</span> &amp;&amp; packed.span &gt; <span class="num">1</span>)) <span class="kw">delete</span> packed.span;
-  <span class="kw">const</span> source = record(tile.metadata);
+  <span class="kw">const</span> source = <span class="fn">record</span>(tile.metadata);
   <span class="kw">if</span> (!source) {
     <span class="kw">delete</span> packed.metadata;
     <span class="kw">return</span> packed;
@@ -1050,7 +1052,7 @@ wireShortcuts(app);</code></pre>
   <span class="kw">if</span> (metadata.discoverable !== <span class="kw">true</span>) <span class="kw">delete</span> metadata.discoverable;
   <span class="kw">if</span> (metadata.discovered !== <span class="kw">true</span>) <span class="kw">delete</span> metadata.discovered;
   <span class="kw">if</span> (!metadata.notes) <span class="kw">delete</span> metadata.notes;
-  <span class="kw">if</span> (Object.keys(metadata).length) packed.metadata = metadata;
+  <span class="kw">if</span> (<span class="type">Object</span>.<span class="fn">keys</span>(metadata).length) packed.metadata = metadata;
   <span class="kw">else</span> <span class="kw">delete</span> packed.metadata;
   <span class="kw">return</span> packed;
 }</code></pre>
