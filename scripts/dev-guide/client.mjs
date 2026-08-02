@@ -17,6 +17,10 @@ export const CLIENT = String.raw`
     return n;
   }
 
+  function count(n, noun) {
+    return n.toLocaleString() + ' ' + noun + (n === 1 ? '' : 's');
+  }
+
   /* ---------- contents rail ---------- */
 
   var rail = $('rail');
@@ -63,7 +67,7 @@ export const CLIENT = String.raw`
       b.type = 'button';
       b.setAttribute('aria-pressed', 'false');
       b.appendChild(el('span', null, d.name));
-      b.appendChild(el('small', null, d.files + ' files / ' + d.lines.toLocaleString() + ' lines'));
+      b.appendChild(el('small', null, count(d.files, 'file') + ' / ' + count(d.lines, 'line')));
       b.addEventListener('click', function () { selectDir(selected === d.id ? null : d.id); });
       chipById[d.id] = b;
       chips.appendChild(b);
