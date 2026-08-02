@@ -18,26 +18,38 @@ function num(n) {
   return n.toLocaleString('en-US');
 }
 
+const KEYWORDS = [
+  'async', 'await', 'break', 'case', 'catch', 'class', 'const', 'continue', 'default',
+  'delete', 'do', 'else', 'export', 'extends', 'false', 'finally', 'for', 'from',
+  'function', 'if', 'import', 'in', 'instanceof', 'interface', 'let', 'new', 'null',
+  'of', 'readonly', 'return', 'switch', 'this', 'throw', 'true', 'try', 'typeof',
+  'undefined', 'var', 'void', 'while', 'yield',
+].join('|');
+
+const TOKEN = new RegExp(
+  '(\\/\\*[\\s\\S]*?\\*\\/|\\/\\/[^\\n]*)' + // 1: comment
+    `|('(?:\\\\.|[^'\\\\\\n])*'|"(?:\\\\.|[^"\\\\\\n])*"|\`(?:\\\\.|[^\`\\\\])*\`)` + // 2: string
+    '|\\b(0[xXbBoO][0-9a-fA-F]+|\\d[\\d_]*(?:\\.\\d+)?)\\b' + // 3: number
+    `|(?<![.$])\\b(${KEYWORDS})\\b`, // 4: keyword, but not a property name
+  'g',
+);
+
 /**
- * Comment highlighting only. A full tokenizer would guess at the language,
- * and a wrong guess is worse than plain text.
+ * Every snippet on the page is JavaScript or a TypeScript declaration, so one
+ * small tokenizer covers them all: comments, strings, numbers, and keywords.
+ * Anything it does not recognize stays plain.
  * @param {string} code
  */
 function highlight(code) {
-  return esc(code)
-    .split('\n')
-    .map((line) => {
-      const trimmed = line.trimStart();
-      if (trimmed.startsWith('/*') || trimmed.startsWith('*') || trimmed.startsWith('//')) {
-        return '<span class="cm">' + line + '</span>';
-      }
-      const tail = line.indexOf(' //');
-      if (tail >= 0) {
-        return line.slice(0, tail) + '<span class="cm">' + line.slice(tail) + '</span>';
-      }
-      return line;
-    })
-    .join('\n');
+  let out = '';
+  let last = 0;
+  for (const m of code.matchAll(TOKEN)) {
+    const cls = m[1] ? 'cm' : m[2] ? 'st' : m[3] ? 'num' : 'kw';
+    out += esc(code.slice(last, m.index));
+    out += `<span class="${cls}">${esc(m[0])}</span>`;
+    last = m.index + m[0].length;
+  }
+  return out + esc(code.slice(last));
 }
 
 /**

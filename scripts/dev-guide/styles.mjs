@@ -349,6 +349,7 @@ export const CSS = String.raw`
   .cm { color: #7c8c86; }
   .kw { color: #7fb7a3; }
   .st { color: #c9a668; }
+  .num { color: #a9c4d9; }
 
   .caption {
     font-family: var(--f-mono);
