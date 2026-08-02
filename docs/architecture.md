@@ -1,5 +1,7 @@
 # Architecture
 
+*Explanation. [`docs/README.md`](README.md) lists every document by kind.*
+
 Campaign Builder is a single-page browser app. It has no build step, no
 framework, and no runtime dependencies.
 
@@ -11,18 +13,22 @@ If you can read plain JavaScript, you can read the whole codebase.
 
 Each deeper subsystem has its own guide:
 
-| Guide | What it covers |
-| --- | --- |
-| [The app wiring layer](architecture/app-wiring.md) | How `main.js` composes the app, the `AppContext` object, and what each `src/app/` module owns |
-| [The map](architecture/map.md) | Tiles, the node hierarchy, region grouping, rendering, fog of war, and party movement |
-| [Entities](architecture/entities.md) | Encounters, resources, and the character model (classes, races, proficiencies, leveling) |
-| [Combat](architecture/combat.md) | Combat mode: the full-width fight screen, who owns the running fight, and how the screen stays current |
-| [Persistence](architecture/persistence.md) | How a campaign becomes a string, the packing layers, undo history, and the custom library |
-| [UI components](architecture/ui-components.md) | The shared widget builders, the panel contract, the design tokens, and the CSS class vocabulary |
-| [Conventions](architecture/conventions.md) | Performance patterns, UI and CSS rules, and how code here gets tested |
+| Guide | Kind | What it covers |
+| --- | --- | --- |
+| [The app wiring layer](architecture/app-wiring.md) | Reference | How `main.js` composes the app, the `AppContext` object, and what each `src/app/` module owns |
+| [The map](architecture/map.md) | Explanation | Tiles, the node hierarchy, region grouping, rendering, fog of war, and party movement |
+| [Entities](architecture/entities.md) | Explanation | Encounters, resources, and the character model (classes, races, proficiencies, leveling) |
+| [Combat](architecture/combat.md) | Explanation | Combat mode: the full-width fight screen, who owns the running fight, and how the screen stays current |
+| [Persistence](architecture/persistence.md) | Explanation | How a campaign becomes a string, the packing layers, undo history, and the custom library |
+| [UI components](architecture/ui-components.md) | Reference | The shared widget builders, the panel contract, the design tokens, and the CSS class vocabulary |
+| [Conventions](architecture/conventions.md) | Reference | Performance patterns, UI and CSS rules, and how code here gets tested |
 
 Read this page first. After that, start with the guide that covers the area
 you change. Each guide stands alone.
+
+If you have not changed anything here yet, do the
+[first code change](tutorial-first-code-change.md) tutorial. It walks the
+whole loop once, from a running app to a tested change.
 
 ## The big picture
 

@@ -1,6 +1,6 @@
 # Conventions
 
-*Back to the [architecture overview](../architecture.md).*
+*Reference. Back to the [architecture overview](../architecture.md).*
 
 These are the patterns that keep the codebase consistent: how the hot paths
 stay fast, how the UI stays coherent, and how the tests work. Each convention

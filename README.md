@@ -30,10 +30,10 @@ With Campaign Builder, you can:
 
 ![Play mode in the dark theme](docs/images/play-mode-dark.png)
 
-See [`docs/gm-guide.md`](docs/gm-guide.md) for more, including the Library mode.
+New to the app? Follow [`docs/tutorial-gm-first-session.md`](docs/tutorial-gm-first-session.md). It loads the example campaign and runs one session end to end. After that, [`docs/gm-guide.md`](docs/gm-guide.md) gives the steps for each task, and [`docs/gm-reference.md`](docs/gm-reference.md) describes every control and rule.
 
 ## Contributing
 
 This project welcomes contributions. See the [**`CONTRIBUTING.md`**](CONTRIBUTING.md) file for guidance on how to install the development environment, run the tests, and understand the codebase.
 
-See [`docs/gm-guide.md`](docs/gm-guide.md) for a walkthrough for the GM on how to run and build a campaign. See [`docs/architecture.md`](docs/architecture.md) for the module layout and the map data model. See [`docs/testing.md`](docs/testing.md) for how to test changes and check them visually. See [`docs/tile-assets.md`](docs/tile-assets.md) for the conventions for tile art.
+[`docs/README.md`](docs/README.md) lists every document and says what kind it is: a tutorial, a how-to guide, a reference, or an explanation. Start with [`docs/tutorial-first-code-change.md`](docs/tutorial-first-code-change.md) to make one change end to end. Read [`docs/architecture.md`](docs/architecture.md) for the module layout and the map data model, [`docs/testing.md`](docs/testing.md) for how to test a change and check it visually, and [`docs/tile-assets.md`](docs/tile-assets.md) for the conventions for tile art.

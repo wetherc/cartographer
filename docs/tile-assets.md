@@ -1,5 +1,8 @@
 # Tile assets
 
+*Reference. To draw and register a new tile, follow
+[Adding a tile](adding-a-tile.md).*
+
 Built-in tile art lives under `assets/tiles/<type>/`. Each tile type has its own subfolder: `grass/`, `forest/`, `mountain/`, `water/`, `desert/`, `swamp/`, `snow/`, `hills/`, `farmland/`, `road/`, `river/`, `coast/`, `interior/`, and one folder for each POI marker, for example `settlement/`, `castle/`, `tavern/`. `TilePalette` (`src/map/TilePalette.js`) defines the catalog and the paths that it expects. Anyone who adds or renames files must first read `VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`, `MARKER_TYPES`, and `INTERIOR_KINDS` in that file.
 
 ## Terrain variants
@@ -61,9 +64,19 @@ The set covers `settlement`, `dungeon`, `castle`, `tavern`, `inn`, `blacksmith`,
 
 Interior pieces are the only art that the game rules read. `INTERIOR_KINDS` in `TilePalette.js` lists each piece with its meaning: `wall`, `door`, `stairs-up`, `stairs-down`, or `floor`. The rest of the app asks for this meaning through `kindOf(imageRef)`. To add an interior piece, you must give it a meaning in `INTERIOR_KINDS`. Every other piece gets the meaning `plain`.
 
-## Adding a new tile
+## Registry tables
 
-1. Add the SVG file or files under `assets/tiles/<type>/`. If the type is a terrain type with variants, follow the conventions in Terrain Variants above.
-2. Register the tile in `TilePalette.js`. Use `VARIANT_COUNTS`, `ROAD_KINDS`, or `MARKER_TYPES` for most types. Use `INTERIOR_KINDS` with the piece's rule meaning for an interior piece. Use `addCustom` for a tile that loads at runtime.
-3. If you added a new built-in tile, update `tests/TilePalette.test.js`.
-4. Make sure that the tile draws correctly and abuts its neighbors in `tests/tile-preview.html`. See `docs/testing.md` for the visual check procedure.
+`TilePalette.js` holds one table per tile family. A tile exists for the app
+only when its family table names it.
+
+| Table | What it registers |
+| --- | --- |
+| `VARIANT_COUNTS` | How many variants each terrain type has |
+| `ROAD_KINDS` | The fifteen road connector kinds |
+| `RIVER_KINDS` | The fifteen river connector kinds |
+| `COAST_KINDS` | The twelve shoreline pieces |
+| `MARKER_TYPES` | The single-image POI markers |
+| `INTERIOR_KINDS` | Each interior piece with its rule meaning |
+
+`addCustom` registers a tile that a GM loads at runtime. A runtime tile is
+not in these tables.

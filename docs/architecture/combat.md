@@ -1,6 +1,6 @@
 # Combat
 
-*Back to the [architecture overview](../architecture.md).*
+*Explanation. Back to the [architecture overview](../architecture.md).*
 
 A fight runs in its own mode. `combat` is the fourth `AppMode`, alongside
 `play`, `build`, and `library`. Like Library mode, it replaces the map columns

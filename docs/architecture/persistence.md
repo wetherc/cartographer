@@ -1,6 +1,6 @@
 # Persistence
 
-*Back to the [architecture overview](../architecture.md).*
+*Explanation. Back to the [architecture overview](../architecture.md).*
 
 A campaign lives in the browser's localStorage. This storage limit is near 5 MB
 for each origin. This one limit shaped almost everything in `src/storage/`.

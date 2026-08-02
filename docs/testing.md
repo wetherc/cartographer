@@ -1,111 +1,178 @@
-# Testing
+# Testing a change
 
-## Unit tests
+*How-to guide. Each section is one task. For why the suite is shaped this
+way, and what it cannot reach, read
+[Testing strategy](testing-strategy.md).*
 
-The built-in test runner of Node runs the tests. The project uses no test framework as a dependency.
+## Run the unit tests
 
-```
-node --test tests/TilePalette.test.js    # single file — prefer this while iterating
-pnpm test                                # full suite before committing
-```
+While you work on one module, run its file alone:
 
-## The report format
-
-The suite holds more than 1,700 tests. A flat list of that many names is hard to read, so `pnpm test` runs a custom reporter, `tests/reporters/module-tree.js`. It buffers the run and prints a tree at the end.
-
-The tree has three levels. The top level is the area under `src/` that the tests exercise, such as `entities` or `storage`. The reporter reads each test file and picks the `src/` subdirectory that the file imports from most. A file that imports nothing from `src/` lands under `other`. The second level is the test file itself, with its test count and its run time. The third level is the tests of that file. A test that takes 100 ms or more shows its time.
-
-A failure prints its error under the test, and again in a `Failures` recap at the bottom. The last line gives the totals.
-
-Two switches change the output:
-
-```
-TEST_QUIET=1 pnpm test    # module lines and failures only, no passing test names
-pnpm run test:flat        # the default TAP output of Node, for debugging the reporter itself
+```bash
+node --test tests/TilePalette.test.js
 ```
 
-Each `tests/*.test.js` file pairs with one `src/**/*.js` module. The tests call pure functions and classes directly, for example `roll(selection, rng)`, `MapNavigator`, and `findRegionGroups`. The tests use an injected random number generator or plain fixture data. The tests use no DOM, no canvas, and no mock of a browser API.
+Before a commit, run the whole suite:
 
-## Coverage
-
-```
-pnpm coverage
+```bash
+pnpm test
 ```
 
-Node measures the coverage, and the same reporter prints it: one row for each file, grouped by `src/` area, with the line, branch, and function percentages and the uncovered line ranges. A total row closes the table. The script passes `--test-coverage-exclude='tests/**'`. Without this flag, the runner also reports the test files next to the modules the tests exercise. A test file runs from top to bottom, so it always scores near 100 percent. If the test files stay in the report, they raise the total several points above the real score of the app code.
+Node runs the tests with its built-in runner. The project has no test
+framework.
 
-The report counts only files that a test loaded. A module that nothing imports does not show up at 0 percent. It is missing from the table completely, and the total is then an average over the tested files alone. `tests/moduleLoad.test.js` closes that gap: it imports every file under `src/` except `main.js`, so every module has a row and the total covers the whole tree. That test doubles as a load check. A renamed export or a circular import in a file with no test of its own fails there.
+`pnpm test` prints a summary: the area under `src/`, then one line for each
+test file in it, with its test count and run time. A passing file lists no
+test names. A failing file lists its tests, marks the ones that failed, and
+prints the error under each. Every failure appears again in a `Failures`
+recap at the bottom, and the last line gives the totals. `TEST_VERBOSE=1`
+lists the name of every test, and a test that takes 100 ms or more shows
+its time.
 
-Because of this, the total sits far below the per-file numbers of the pure modules, and that is the honest figure. The rows that pull it down are the ones the suite cannot reach:
+Anything a test file writes to stdout or stderr is held and counted on the
+line of that file, as `11 printed lines`. Several suites drive a path that
+warns on purpose, such as the fallback for an unreadable save in
+`Campaigns.test.js`. Without this, those warnings print above the tree and
+read as loose errors. A file that fails shows the text of what it printed.
+Any other file shows it only with `TEST_OUTPUT=1`.
 
-| What | Why it scores low |
-| --- | --- |
-| `src/ui/*` panels, dialogs, and widgets | They build and mount elements. A DOM-less runner can call almost none of it. |
-| `src/app/*Wiring.js` | Each one mounts panels and registers handlers against a live app. The per-feature logic that suites do cover was pulled out into the neighboring `src/app/` modules. |
-| The canvas renderers: `MapRenderer`, `MapMarkers`, `MapDecorations`, `CanvasText`, `MapExport` | They draw to a 2D context. What they draw is a visual question. |
-| `src/storage/fileIO.js` | Download and upload primitives, which need a browser. |
-| `src/main.js` | Not loaded at all. It builds the app when it loads, so it needs a document. |
+Three switches change the output:
 
-Every one of those is checked in a browser instead, by the procedure below. Treat a low number on one of them as expected, and a low number anywhere else as work to do. Watch for the reverse case too: a high line count on a module that is mostly `el(...)` calls means a test built the DOM, not that a test checked what the DOM built.
-
-## Typecheck
-
-```
-pnpm --package=typescript dlx tsc --noEmit
-```
-
-(Not `pnpx tsc`. There is no local install of TypeScript. Because of this, the bare `tsc` command name resolves to the placeholder package of npm. This package exits immediately. It does not type-check the code.)
-
-The typecheck finds mismatches between the JSDoc type declarations in `.js` files and `src/types/*.ts`. Run the typecheck after any change that is not trivial. Run it even when the change does not touch types directly. `checkJs` flags a call-signature mismatch anywhere in the code.
-
-## Lint
-
-```
-pnpm --package=eslint dlx eslint .
+```bash
+TEST_VERBOSE=1 pnpm test  # list every test, not only the failures
+TEST_OUTPUT=1 pnpm test   # also print what each file wrote
+pnpm run test:flat        # the default TAP output of Node
 ```
 
-The flat config lives in `eslint.config.js`. It uses only core rules, with no plugin packages. `no-undef` is off on purpose. The typecheck already resolves identifiers with full knowledge of the DOM. The linter covers what tsc does not cover: unused variables, shadowing, `var`, and loose equality.
+`hooks/pre-commit` runs the suite through the same reporter, so a clean
+commit prints one line per module.
 
-## Pre-commit hook
+## Run the typecheck
 
-`hooks/pre-commit` runs the lint, the full test suite, and the typecheck. It blocks the commit if any of the three fails.
-
-Enable the hook one time for each clone:
-
+```bash
+pnpm run typecheck
 ```
+
+This compares the JSDoc types in the `.js` files against the declarations
+in `src/types/*.ts`. Run it after any change that is not trivial, even when
+the change does not touch a type. `checkJs` reports a call-signature
+mismatch anywhere in the tree.
+
+## Run the linter
+
+```bash
+pnpm run lint
+```
+
+The flat config lives in `eslint.config.js` and uses core rules only.
+`no-undef` is off, because the typecheck already resolves identifiers with
+full knowledge of the DOM. The linter covers unused variables, shadowing,
+`var`, and loose equality.
+
+## Enable the pre-commit hook
+
+Run this command once for each clone:
+
+```bash
 git config core.hooksPath hooks
 ```
 
-## Visual verification
+`hooks/pre-commit` formats the staged files, regenerates the developer
+guide when the source tree changed, and then runs the linter, the full
+suite, and the typecheck. It blocks the commit if any of the three fails.
 
-The unit tests and the typecheck do not touch the DOM or the `<canvas>` element. Because of this, a change to rendering, to layout, or to interaction needs a manual check in a browser. Follow this procedure:
+## Read the coverage report
 
-1. Serve the project root, for example with `pnpx http-server -p 8934`. Use the browser tools of Playwright against `http://localhost:8934/...`. If a server is already running, do not start a second one.
-2. Manual preview pages live in `tests/`, next to the automated suite. The `.test.js` naming convention excludes them from the automated suite, for example `tests/tile-preview.html`, `tests/map-canvas-preview.html`, `tests/ui-panels-preview.html`, and `tests/save-manager-preview.html`. Each page builds a small scenario by hand: a palette, a tile grid, a couple of hierarchy levels, and a sample character. Each page mounts the real modules in the same way as `main.js`.
-3. Take a screenshot of the page. Also read the browser console for errors. A 404 error on an asset path is easy to miss without this step.
-4. For interaction such as a click, a drag, or a wheel event: if a plain click is not precise enough, dispatch a synthetic `PointerEvent` or `WheelEvent` through `browser_evaluate`. For example, click a specific tile inside a canvas instead of the whole canvas element. Another example is a click on one button among several buttons with the same tag.
-
-Keep the preview pages current as the modules they show change shape. An old preview page can hide a real error the next time someone uses it.
-
-## Keyboard focus across a panel rebuild
-
-Several panels rebuild by clearing their root element. `src/ui/focusMemory.js` puts the keyboard position back after the clear, and `src/ui/listPanel.js` calls it for every panel it builds. Its unit tests run against stub nodes, so they prove the matching rule and not the browser behavior. Check the browser behavior when you change a panel's controls or their labels.
-
-The check needs a control that survives the rebuild. Focus one, for example the damage amount field on an encounter row, then trigger the rebuild and read `document.activeElement`. A cross-tab save adoption is the easiest trigger:
-
-```js
-const key = 'campaign-builder:save';
-window.dispatchEvent(
-  new StorageEvent('storage', { key, newValue: localStorage.getItem(key), storageArea: localStorage }),
-);
+```bash
+pnpm coverage
 ```
 
-Two things make this check report a false result. Focusing a control that is hidden, for example one on an unselected tab, does nothing at all, so compare `document.activeElement` against the control before you trigger the rebuild. Reading the old element afterwards also proves nothing, because the rebuilt control is a different element with the same signature. Compare the accessible names instead.
+Node measures the coverage, and the same reporter prints it: one row per
+file, grouped by `src/` area, with the line, branch, and function
+percentages and the uncovered line ranges. A total row closes the table.
 
-The `rehydrate-focus` scenario of `bench/app-bench.js` runs the same check over ten adoptions and reports `focusKept`.
+The total sits far below the per-file numbers of the pure modules. That is
+expected. [Testing strategy](testing-strategy.md) lists the rows that pull
+it down, and the rows that must not.
 
-## Browser-only APIs (localStorage, Blob, FileReader)
+## Check a change in the browser
 
-Some modules wrap browser APIs that do not exist in the test runner of Node. Examples are `trySaveToLocalStorage`, `loadFromLocalStorage`, `downloadState`, and `readStateFromFile` in `storage/SaveManager.js`'s exports. These modules cannot get a unit test at all, not even with a DOM-less stub.
+The unit tests build no DOM and no canvas. A change to rendering, to
+layout, or to interaction needs an eye on it.
 
-The project does not add a polyfill or a mock dependency for this. Instead, treat these modules the same as canvas rendering. Keep them as thin wrappers around pure functions that already have a unit test: `serialize` and `deserialize`. Make sure that the wrapper itself works in a real browser through Playwright. A real Chromium instance has working `localStorage`. Because of this, a save-then-load click sequence is a real end-to-end check, not only a visual one.
+1. Start the app with `pnpm run dev`, and open the address it prints. If a
+   server is already running, do not start a second one.
+2. Drive the page with the browser tools of Playwright.
+3. Take a screenshot of the result.
+4. Read the browser console. A 404 on an asset path shows up nowhere else.
+5. Check both themes with the theme switch in the header.
+
+For an interaction that a plain click cannot reach, dispatch a synthetic
+`PointerEvent` or `WheelEvent` through `browser_evaluate`. Use this to
+click one tile inside a canvas, or one button among several with the same
+tag.
+
+## Check a module against a preview page
+
+The preview pages live in `tests/`, beside the automated suite. The
+`.test.js` naming convention keeps them out of the suite.
+
+| Page | What it mounts |
+| --- | --- |
+| `tests/tile-preview.html` | The tiles of the palette, side by side |
+| `tests/map-canvas-preview.html` | The map canvas over a hand-built grid |
+| `tests/ui-panels-preview.html` | The character sheet, inventory, and encounter panels |
+| `tests/save-manager-preview.html` | The save and load path |
+
+Each page builds a small scenario by hand and mounts the real modules the
+way `main.js` does. These pages read `src/` and `assets/` directly, so
+serve the project root to open one:
+
+```bash
+python3 -m http.server 8934
+```
+
+Then open `http://localhost:8934/tests/tile-preview.html`.
+
+Keep a preview page current when the modules it mounts change shape. A
+stale page can hide a real error the next time someone opens it.
+
+## Check keyboard focus across a panel rebuild
+
+Several panels rebuild by clearing their root element.
+`src/ui/focusMemory.js` puts the keyboard position back, and
+`src/ui/listPanel.js` calls it for every panel it builds. Its unit tests
+run against stub nodes, so they prove the matching rule and not the browser
+behavior. Do this check when you change the controls of a panel or their
+labels.
+
+1. Focus a control that survives the rebuild, for example the damage amount
+   field on an encounter row.
+2. Compare `document.activeElement` against that control. A hidden control,
+   for example one on an unselected tab, takes no focus at all.
+3. Trigger a rebuild. A cross-tab save adoption is the easiest trigger:
+
+   ```js
+   const key = 'campaign-builder:save';
+   window.dispatchEvent(
+     new StorageEvent('storage', { key, newValue: localStorage.getItem(key), storageArea: localStorage }),
+   );
+   ```
+
+4. Compare the accessible names before and after. Do not compare the
+   elements. The rebuilt control is a different element with the same
+   signature.
+
+The `rehydrate-focus` scenario of `bench/app-bench.js` runs the same check
+over ten adoptions and reports `focusKept`.
+
+## Check a browser-only wrapper
+
+Some modules wrap browser APIs that the Node runner does not have, for
+example `trySaveToLocalStorage`, `loadFromLocalStorage`, `downloadState`,
+and `readStateFromFile` in `storage/SaveManager.js`. These have no unit
+test at all.
+
+Check them in a real browser instead. A Chromium instance has working
+`localStorage`, so a save-then-load click sequence is an end-to-end check,
+not only a visual one.

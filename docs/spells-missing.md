@@ -1,5 +1,8 @@
 # Curated spells vs. the full SRD
 
+*Explanation. To add a spell of your own, follow the steps in the
+[GM guide](gm-guide.md#add-a-spell-the-app-does-not-ship).*
+
 The built-in spell corpus (`src/data/spells.js`) is a curated cross-section
 of the SRD, not the complete SRD. The SRD 5.1 lists 319 spells. The app ships
 30. This document records what the cut was, why, and how a GM can close the
@@ -81,22 +84,22 @@ that the app cannot honor.
   Blast itself. The app does model pact magic: a warlock casts from its own
   pact pool, not from the standard slot table.
 
-## Closing the gap
+## Why the gap is a GM's to close
 
-The built-in schema is identical to the schema for a GM-authored spell.
-Because of this, a GM does not need a code change to add any missing spell.
+The built-in schema is identical to the schema for a GM-authored spell. A
+missing spell therefore needs no code change. The Spells rail in Library
+mode creates one, and a custom spell whose name matches a default replaces
+that default in place. A library export (`campaign-library.json`) is
+portable, so a shared file of extra spells merges into any browser.
 
-- **Author in the Library.** The Spells rail in Library mode creates new
-  spells, or overrides built-in spells. A custom spell whose name matches a
-  default spell replaces that default in place. Attack, save, heal, and
-  utility effects, together with scaling by slot level and cantrip level,
-  cover most of the mechanical surface of the SRD today.
-- **Import JSON.** A library export (`campaign-library.json`) is portable.
-  A hand-built or shared file with additional spells merges in when a GM
-  imports it.
-- A GM can still add a spell whose rules the resolver cannot honor as a
-  `utility` entry, with the rules written in the description. The GM then
-  adjudicates the spell by hand, the same way as at a physical table.
+Attack, save, heal, and utility effects, together with scaling by slot
+level and by cantrip level, cover most of the mechanical surface of the SRD
+today. A spell outside that surface still works as a `utility` entry with
+its rules in the description. The GM then adjudicates it by hand, the same
+way as at a physical table.
+
+The [GM guide](gm-guide.md#add-a-spell-the-app-does-not-ship) gives the
+steps.
 
 When conditions carry a rule effect, when the action economy exists, and
 when concentration is enforced, the spell families listed above become

@@ -1,6 +1,6 @@
 # UI components
 
-*Back to the [architecture overview](../architecture.md).*
+*Reference. Back to the [architecture overview](../architecture.md).*
 
 This codebase has no component framework. A "component" here is a plain
 function that builds DOM elements and returns a handle. The consistency comes

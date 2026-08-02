@@ -1,6 +1,6 @@
 # The app wiring layer
 
-*Back to the [architecture overview](../architecture.md).*
+*Reference. Back to the [architecture overview](../architecture.md).*
 
 `src/main.js` is the composition root. It builds one shared context object.
 Then it calls a series of `wireX(app)` functions, one per feature area. Each

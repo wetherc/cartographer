@@ -1,6 +1,6 @@
 # Entities
 
-*Back to the [architecture overview](../architecture.md).*
+*Explanation. Back to the [architecture overview](../architecture.md).*
 
 `src/entities/` holds the three things that a campaign's rules operate on:
 encounters, resource pools, and characters. All three follow one update

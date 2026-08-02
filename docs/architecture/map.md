@@ -1,6 +1,6 @@
 # The map
 
-*Back to the [architecture overview](../architecture.md).*
+*Explanation. Back to the [architecture overview](../architecture.md).*
 
 The map is a tiled world. The GM paints it in Build mode. The party explores
 it in Play mode. A small data model of nodes and tiles sits underneath it.
