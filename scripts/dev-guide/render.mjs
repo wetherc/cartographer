@@ -294,7 +294,7 @@ export function renderGuide(data) {
           Saving flattens live state into a <code>CampaignState</code>, then runs it through four
           packing layers before <code>JSON.stringify</code>. Loading reverses the chain, with
           migrations first. Browser storage caps near 5 MB, so each layer earns its place. On the
-          example campaign the chain gives back ${shrink}% of the string.
+          example campaign the chain removes ${shrink}% of the string.
         </p>
       </div>
 
@@ -365,10 +365,10 @@ export function renderGuide(data) {
       <h3>Checking the DOM and the canvas</h3>
       <div class="prose">
         <p>
-          Components that interact with the DOM are checked in a real browser, not in a mock. If running
-          an automated test against your change, serve the project and drive the visual test with
-          Playwright. Screenshot test results to evaluate the visual styles, and read the console for 404s
-          on asset paths. Manual preview pages live in <code>tests/</code> and stay out of the automated
+          Code that touches the DOM or the canvas is checked in a real browser, not in a mock.
+          Serve the project, open the change, and read the console for 404s on asset paths.
+          Playwright can drive and screenshot that check when you want it automated.
+          Manual preview pages live in <code>tests/</code> and stay out of the automated
           run because they do not end in <code>.test.js</code>:
           ${tests.previews.map((p) => `<code>${esc(p)}</code>`).join(', ')}.
           Each one mounts the real modules the way <code>main.js</code> does.
@@ -376,7 +376,7 @@ export function renderGuide(data) {
         <p>
           Coverage counts every module, because <code>tests/moduleLoad.test.js</code> imports all
           of <code>src/</code> except <code>main.js</code>. A low row under <code>src/ui/</code>
-          or <code>src/app/</code> is expected. A low row anywhere else represents under-tested code paths.
+          or <code>src/app/</code> is expected. A low row anywhere else means the module needs tests.
         </p>
       </div>
     </section>

@@ -121,8 +121,9 @@ function declarationLine(lines, symbol) {
 
 /**
  * The line that closes the block opened on `start`. Braces inside strings,
- * template literals, and comments do not count. A declaration with no brace
- * on its first line ends at that line.
+ * template literals, and comments do not count. A template literal can span
+ * lines, so its state carries from one line to the next. A declaration with
+ * no brace on its first line ends at that line.
  * @param {string[]} lines
  * @param {number} start
  */
@@ -130,10 +131,11 @@ function blockEnd(lines, start) {
   let depth = 0;
   let opened = false;
   let inBlockComment = false;
+  let inString = '';
 
   for (let i = start; i < lines.length; i += 1) {
     const line = lines[i];
-    let inString = '';
+    if (inString && inString !== '`') inString = '';
 
     for (let c = 0; c < line.length; c += 1) {
       const ch = line[c];
@@ -170,7 +172,7 @@ function blockEnd(lines, start) {
       }
     }
 
-    if (!opened && /[;=]\s*$/.test(line.trim())) return i;
+    if (!opened && !inString && /[;=]\s*$/.test(line.trim())) return i;
   }
 
   return start;

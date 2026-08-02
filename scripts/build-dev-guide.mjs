@@ -164,17 +164,13 @@ function main() {
   );
 }
 
-/** @param {any} data */
+/**
+ * A short hash of everything the page shows, so any change to the collected
+ * data changes the stamp in the footer.
+ * @param {any} data
+ */
 function fingerprint(data) {
-  const stable = JSON.stringify({
-    dirs: data.dirs,
-    steps: data.steps,
-    snippets: data.snippets,
-    measured: data.measured,
-    keys: data.storageKeys,
-    version: data.pkg.version,
-  });
-  return createHash('sha256').update(stable).digest('hex').slice(0, 12);
+  return createHash('sha256').update(JSON.stringify(data)).digest('hex').slice(0, 12);
 }
 
 main();

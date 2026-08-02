@@ -87,7 +87,7 @@ export const CLIENT = String.raw`
     verdict.innerHTML = '';
     if (!dir) {
       verdict.appendChild(el('div', 'verdict-title', 'Nothing selected'));
-      verdict.appendChild(el('p', null, 'Pick a directory. The highlighted neighbours are the ones it imports today. The faded ones are the ones it does not.'));
+      verdict.appendChild(el('p', null, 'Pick a directory. The highlighted neighbors are the ones it imports today. The faded ones are the ones it does not.'));
       return;
     }
     verdict.appendChild(el('div', 'verdict-title', dir.id === 'main' ? 'src/main.js' : 'src/' + dir.name));
@@ -443,7 +443,7 @@ export const CLIENT = String.raw`
   function paintProgress() {
     var done = checkState.filter(Boolean).length;
     checkProgress.textContent = done + ' of ' + DATA.checklist.length + ' cleared'
-      + (done === DATA.checklist.length ? '. Ship it.' : '');
+      + (done === DATA.checklist.length ? '. Ready to commit.' : '');
   }
 
   paintProgress();

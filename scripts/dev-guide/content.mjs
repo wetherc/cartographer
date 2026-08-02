@@ -42,6 +42,7 @@ export const DIRECTORY_META = {
     role: 'roll(selection, rng). The generator is an argument, which is what makes the layer testable.',
   },
   party: { kind: 'pure', role: 'Party position and split-party tokens. Moving the party reveals fog.' },
+  quest: { kind: 'pure', role: 'Quest records and their status transitions.' },
   library: {
     kind: 'pure',
     role: 'Merges the built-in catalogs with the GM customs, tagging each entry default, override, or custom.',
@@ -80,9 +81,9 @@ export const STAGE_NOTES = {
   tiles:
     'packTile deletes default-valued fields from a copy, so a field it has never heard of still survives the round trip. withTileDefaults puts the defaults back on load.',
   entities:
-    'packEntity round-trips the entity through the real unpacker to verify the fidelity of the restore. A fixed table of defaults would mis-restore an encounter whose weapon comes from its level and tier.',
+    'packEntity drops a field only when the real unpacker restores the same value. A fixed table of defaults would mis-restore an encounter whose weapon comes from its level and tier.',
   assets:
-    'Inline data: URLs move into an assets table keyed by content hash, and the tile keeps an asset: reference. The example campaign ships no uploaded art, so this layer is flat here. In later versions, custom map tile art is planned so this step is largely pre-emptive in advance of that. Until then, gains will likely still be seen in cases where a GM uploads asset art to associate with one or more Handouts.',
+    'Inline data: URLs move into an assets table keyed by content hash, and the tile keeps an asset: reference. The example campaign ships no uploaded art, so this layer changes nothing here. It pays off when a GM uploads art for a handout, and it will matter more once custom tile art ships.',
   codec:
     'Each node becomes an art palette plus a row-major run-length list of indices, plus a run-length fog track. It is opt-in per node and bails by returning the same object, so a node with ids it cannot parse is left alone.',
 };
@@ -106,7 +107,7 @@ export const ROUTER_TREE = {
     ],
   },
   glue: {
-    q: 'Is it one panel, or a behaviour that crosses features?',
+    q: 'Is it one panel, or a behavior that crosses features?',
     opts: [
       { label: 'One panel', note: 'A list, a form, a card.', answer: 'ui' },
       {
@@ -205,7 +206,7 @@ export const CHECKLIST = [
     [],
   ],
   [
-    'Colour, spacing, radius, and type come from tokens',
+    'Color, spacing, radius, and type come from tokens',
     'styles/base.css only, and never an inline var() fallback.',
     [],
   ],

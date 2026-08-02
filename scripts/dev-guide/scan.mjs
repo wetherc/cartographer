@@ -8,11 +8,16 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, resolve, dirname } from 'node:path';
 
-/** @param {string} dir @returns {string[]} */
+/**
+ * Every file under `dir`, at any depth. Dotfiles such as `.DS_Store` are
+ * skipped, so a file the OS drops in never changes a count.
+ * @param {string} dir @returns {string[]}
+ */
 export function walk(dir) {
   /** @type {string[]} */
   const out = [];
   for (const name of readdirSync(dir)) {
+    if (name.startsWith('.')) continue;
     const full = join(dir, name);
     const info = statSync(full);
     if (info.isDirectory()) out.push(...walk(full));
@@ -75,7 +80,7 @@ export function scanImportEdges(root) {
     const from = areaOf(src, file);
     if (!edges[from]) edges[from] = new Set();
     const text = readFileSync(file, 'utf8');
-    const pattern = /^\s*(?:import|export)\s[^;]*?from\s+['"]([^'"]+)['"]/gm;
+    const pattern = /^\s*(?:import|export)\s+(?:[^;]*?from\s+)?['"]([^'"]+)['"]/gm;
     let match;
     while ((match = pattern.exec(text)) !== null) {
       const spec = match[1];
