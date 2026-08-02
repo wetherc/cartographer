@@ -360,6 +360,8 @@
   .num { color: #cf9469; }
   .type { color: #ebc175; }
   .fn { color: #73ade9; }
+  .prop { color: #d07277; }
+  .var { color: #dbe1e8; }
 
   .caption {
     font-family: var(--f-mono);
@@ -751,14 +753,14 @@
       <figure class="snip">
 <figcaption class="snippet-label">src/types/app.ts:183-192  |  AppContext</figcaption>
 <pre><code><span class="kw">export</span> <span class="kw">interface</span> <span class="type">AppContext</span> {
-  palette: <span class="type">TilePalette</span>;
-  grid: <span class="type">TileGrid</span>;
-  navigator: <span class="type">MapNavigator</span>;
-  partyTracker: <span class="type">PartyTracker</span>;
-  toasts: { <span class="fn">show</span>(message: string): <span class="kw">void</span> };
-  state: <span class="type">AppState</span>;
-  views: <span class="type">AppViews</span>;
-  actions: <span class="type">AppActions</span>;
+  <span class="prop">palette</span>: <span class="type">TilePalette</span>;
+  <span class="prop">grid</span>: <span class="type">TileGrid</span>;
+  <span class="prop">navigator</span>: <span class="type">MapNavigator</span>;
+  <span class="prop">partyTracker</span>: <span class="type">PartyTracker</span>;
+  <span class="prop">toasts</span>: { <span class="fn">show</span>(<span class="prop">message</span>: <span class="type">string</span>): <span class="kw">void</span> };
+  <span class="prop">state</span>: <span class="type">AppState</span>;
+  <span class="prop">views</span>: <span class="type">AppViews</span>;
+  <span class="prop">actions</span>: <span class="type">AppActions</span>;
 }</code></pre>
 
 </figure>
@@ -798,7 +800,7 @@
 <span class="cm">// This call draws the first map, which also marks the encounter and NPC</span>
 <span class="cm">// tiles and rebuilds the Build-rail lists those markers share a node scope</span>
 <span class="cm">// with. The two modules that own those lists are wired above.</span>
-<span class="kw">const</span> mapEnv = <span class="fn">wireMapView</span>(app); <span class="cm">// canvas, trees, inspector, palette, fog, map tools</span>
+<span class="kw">const</span> <span class="var">mapEnv</span> = <span class="fn">wireMapView</span>(app); <span class="cm">// canvas, trees, inspector, palette, fog, map tools</span>
 <span class="fn">wireGenerateAction</span>(app, mapEnv); <span class="cm">// shares the map's context rather than routing through actions</span>
 <span class="fn">wireDiceTray</span>(app); <span class="cm">// dice tray + the roll entries it writes to the travelogue</span>
 <span class="cm">// This must run last: mounting the role switch applies the starting role</span>
@@ -829,37 +831,37 @@
       <figure class="snip">
 <figcaption class="snippet-label">src/ui/TimePanel.js:22-54  |  mountTimePanel</figcaption>
 <pre><code><span class="kw">export</span> <span class="kw">function</span> <span class="fn">mountTimePanel</span>(container, callbacks) {
-  <span class="kw">const</span> root = <span class="fn">el</span>(<span class="st">'div'</span>, <span class="st">'time-panel'</span>);
+  <span class="kw">const</span> <span class="var">root</span> = <span class="fn">el</span>(<span class="st">'div'</span>, <span class="st">'time-panel'</span>);
   container.<span class="fn">appendChild</span>(root);
 
   <span class="cm">/** Every control here changes the clock, so each one rerenders the readout.
    * @param {string} label @param {() =&gt; void} onClick @param {import('./icons.js').IconName} [glyph] */</span>
-  <span class="kw">const</span> button = (label, onClick, glyph) =&gt;
+  <span class="kw">const</span> <span class="var">button</span> = (label, onClick, glyph) =&gt;
     <span class="fn">textButton</span>(
       label,
       () =&gt; {
         <span class="fn">onClick</span>();
         <span class="fn">render</span>();
       },
-      { icon: glyph, className: <span class="st">'time-panel__btn'</span> },
+      { <span class="prop">icon</span>: glyph, <span class="prop">className</span>: <span class="st">'time-panel__btn'</span> },
     );
 
   <span class="kw">function</span> <span class="fn">render</span>() {
-    root.innerHTML = <span class="st">''</span>;
+    root.<span class="prop">innerHTML</span> = <span class="st">''</span>;
     root.<span class="fn">append</span>(
       <span class="fn">el</span>(<span class="st">'div'</span>, <span class="st">'time-panel__readout u-row u-g2'</span>, <span class="fn">icon</span>(<span class="st">'clock'</span>), <span class="fn">formatClock</span>(callbacks.<span class="fn">getClock</span>())),
       <span class="fn">el</span>(
         <span class="st">'div'</span>,
         <span class="st">'time-panel__actions'</span>,
-        <span class="fn">button</span>(<span class="st">'Advance'</span>, callbacks.onAdvance),
-        <span class="fn">button</span>(<span class="st">'Short rest'</span>, callbacks.onShortRest),
-        <span class="fn">button</span>(<span class="st">'Long rest'</span>, callbacks.onLongRest),
+        <span class="fn">button</span>(<span class="st">'Advance'</span>, callbacks.<span class="prop">onAdvance</span>),
+        <span class="fn">button</span>(<span class="st">'Short rest'</span>, callbacks.<span class="prop">onShortRest</span>),
+        <span class="fn">button</span>(<span class="st">'Long rest'</span>, callbacks.<span class="prop">onLongRest</span>),
       ),
     );
   }
 
   <span class="fn">render</span>();
-  <span class="kw">return</span> { update: render };
+  <span class="kw">return</span> { <span class="prop">update</span>: render };
 }</code></pre>
 <p class="caption">Most list panels get this shape from <code>mountListPanel</code> in <code>src/ui/listPanel.js</code> instead of hand-rolling it.</p>
 </figure>
@@ -877,17 +879,17 @@
 <figcaption class="snippet-label">src/ui/listPanel.js:319-324  |  repaintNeeded</figcaption>
 <pre><code><span class="kw">export</span> <span class="kw">function</span> <span class="fn">repaintNeeded</span>(last, next) {
   <span class="kw">if</span> (!last) <span class="kw">return</span> <span class="kw">true</span>;
-  <span class="kw">if</span> (last.gm !== next.gm) <span class="kw">return</span> <span class="kw">true</span>;
-  <span class="kw">if</span> (!<span class="type">Object</span>.<span class="fn">is</span>(last.dependsOn, next.dependsOn)) <span class="kw">return</span> <span class="kw">true</span>;
-  <span class="kw">return</span> !<span class="fn">sameRows</span>(last.rows, next.rows);
+  <span class="kw">if</span> (last.<span class="prop">gm</span> !== next.<span class="prop">gm</span>) <span class="kw">return</span> <span class="kw">true</span>;
+  <span class="kw">if</span> (!<span class="type">Object</span>.<span class="fn">is</span>(last.<span class="prop">dependsOn</span>, next.<span class="prop">dependsOn</span>)) <span class="kw">return</span> <span class="kw">true</span>;
+  <span class="kw">return</span> !<span class="fn">sameRows</span>(last.<span class="prop">rows</span>, next.<span class="prop">rows</span>);
 }</code></pre>
 
 </figure>
       <figure class="snip">
 <figcaption class="snippet-label">src/ui/listPanel.js:333-337  |  sameRows</figcaption>
 <pre><code><span class="kw">function</span> <span class="fn">sameRows</span>(a, b) {
-  <span class="kw">if</span> (a.length !== b.length) <span class="kw">return</span> <span class="kw">false</span>;
-  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; a.length; i += <span class="num">1</span>) <span class="kw">if</span> (a[i] !== b[i]) <span class="kw">return</span> <span class="kw">false</span>;
+  <span class="kw">if</span> (a.<span class="prop">length</span> !== b.<span class="prop">length</span>) <span class="kw">return</span> <span class="kw">false</span>;
+  <span class="kw">for</span> (<span class="kw">let</span> <span class="var">i</span> = <span class="num">0</span>; i &lt; a.<span class="prop">length</span>; i += <span class="num">1</span>) <span class="kw">if</span> (a[i] !== b[i]) <span class="kw">return</span> <span class="kw">false</span>;
   <span class="kw">return</span> <span class="kw">true</span>;
 }</code></pre>
 
@@ -906,14 +908,14 @@
 <figcaption class="snippet-label">src/util/memoize.js:15-26  |  memoizeByIdentity</figcaption>
 <pre><code><span class="kw">export</span> <span class="kw">function</span> <span class="fn">memoizeByIdentity</span>(compute) {
   <span class="cm">/** @type {WeakMap&lt;T, { value: R }&gt;} */</span>
-  <span class="kw">const</span> cache = <span class="kw">new</span> <span class="type">WeakMap</span>();
+  <span class="kw">const</span> <span class="var">cache</span> = <span class="kw">new</span> <span class="type">WeakMap</span>();
   <span class="kw">return</span> (input) =&gt; {
-    <span class="kw">let</span> entry = cache.<span class="fn">get</span>(input);
+    <span class="kw">let</span> <span class="var">entry</span> = cache.<span class="fn">get</span>(input);
     <span class="kw">if</span> (!entry) {
-      entry = { value: <span class="fn">compute</span>(input) };
+      entry = { <span class="prop">value</span>: <span class="fn">compute</span>(input) };
       cache.<span class="fn">set</span>(input, entry);
     }
-    <span class="kw">return</span> entry.value;
+    <span class="kw">return</span> entry.<span class="prop">value</span>;
   };
 }</code></pre>
 
@@ -939,23 +941,23 @@
       <figure class="snip">
 <figcaption class="snippet-label">src/types/map.ts:15-33  |  Tile</figcaption>
 <pre><code><span class="kw">export</span> <span class="kw">interface</span> <span class="type">Tile</span> {
-  id: string;
-  imageRef: string;
+  <span class="prop">id</span>: <span class="type">string</span>;
+  <span class="prop">imageRef</span>: <span class="type">string</span>;
   <span class="cm">/** Image or images drawn on top of imageRef, for example a road or path.
    * This lets path pieces layer over the terrain beneath instead of
    * replacing it. Null means no overlay. An array draws in order, with the
    * first entry at the bottom, so overlays can stack, for example a river
    * channel over the shoreline where it drains into a lake. */</span>
-  overlayRef: string | string[] | <span class="kw">null</span>;
-  metadata: <span class="type">TileMetadata</span>;
-  revealed: boolean;
+  <span class="prop">overlayRef</span>: <span class="type">string</span> | <span class="type">string</span>[] | <span class="kw">null</span>;
+  <span class="prop">metadata</span>: <span class="type">TileMetadata</span>;
+  <span class="prop">revealed</span>: <span class="type">boolean</span>;
   <span class="cm">/** Id of the MapNode this tile zooms into, if any. */</span>
-  childNodeId: string | <span class="kw">null</span>;
+  <span class="prop">childNodeId</span>: <span class="type">string</span> | <span class="kw">null</span>;
   <span class="cm">/** Side length, in tiles, of the block that this tile's image draws
    * scaled across, anchored here and extending right and down. This is
    * purely visual, and implies no region link. Absent or 1 means a normal
    * one-cell image. */</span>
-  span?: number;
+  <span class="prop">span</span>?: <span class="type">number</span>;
 }</code></pre>
 
 </figure>
@@ -976,7 +978,7 @@
       <figure class="snip">
 <figcaption class="snippet-label">src/map/FogOfWar.js:24-51  |  revealAround</figcaption>
 <pre><code><span class="kw">export</span> <span class="kw">function</span> <span class="fn">revealAround</span>(node, centerId, radius) {
-  <span class="kw">const</span> center = <span class="fn">parseCoords</span>(centerId);
+  <span class="kw">const</span> <span class="var">center</span> = <span class="fn">parseCoords</span>(centerId);
   <span class="kw">if</span> (!center) <span class="kw">return</span> node;
 
   <span class="cm">// This code walks the bounding square of the disc by coordinate instead of</span>
@@ -984,20 +986,20 @@
   <span class="cm">// step instead of O(total tiles) and builds no id string per cell. A step</span>
   <span class="cm">// that reveals nothing new returns the same node. This keeps the WeakMap</span>
   <span class="cm">// caches for tile layout, region groups, and span blocks warm.</span>
-  <span class="kw">const</span> r = <span class="type">Math</span>.<span class="fn">ceil</span>(radius);
-  <span class="kw">const</span> radiusSq = radius * radius;
+  <span class="kw">const</span> <span class="var">r</span> = <span class="type">Math</span>.<span class="fn">ceil</span>(radius);
+  <span class="kw">const</span> <span class="var">radiusSq</span> = radius * radius;
   <span class="cm">/** @type {Map&lt;number, import('../types/map.js').Tile&gt; | null} */</span>
-  <span class="kw">let</span> changed = <span class="kw">null</span>;
-  <span class="kw">for</span> (<span class="kw">let</span> y = center.y - r; y &lt;= center.y + r; y++) {
-    <span class="kw">for</span> (<span class="kw">let</span> x = center.x - r; x &lt;= center.x + r; x++) {
-      <span class="kw">const</span> dx = x - center.x;
-      <span class="kw">const</span> dy = y - center.y;
+  <span class="kw">let</span> <span class="var">changed</span> = <span class="kw">null</span>;
+  <span class="kw">for</span> (<span class="kw">let</span> <span class="var">y</span> = center.<span class="prop">y</span> - r; y &lt;= center.<span class="prop">y</span> + r; y++) {
+    <span class="kw">for</span> (<span class="kw">let</span> <span class="var">x</span> = center.<span class="prop">x</span> - r; x &lt;= center.<span class="prop">x</span> + r; x++) {
+      <span class="kw">const</span> <span class="var">dx</span> = x - center.<span class="prop">x</span>;
+      <span class="kw">const</span> <span class="var">dy</span> = y - center.<span class="prop">y</span>;
       <span class="kw">if</span> (dx * dx + dy * dy &gt; radiusSq) <span class="kw">continue</span>;
-      <span class="kw">const</span> pos = <span class="fn">cellPosition</span>(node, x, y);
+      <span class="kw">const</span> <span class="var">pos</span> = <span class="fn">cellPosition</span>(node, x, y);
       <span class="kw">if</span> (pos === <span class="kw">undefined</span>) <span class="kw">continue</span>;
-      <span class="kw">const</span> tile = node.tiles[pos];
-      <span class="kw">if</span> (tile.revealed) <span class="kw">continue</span>;
-      (changed ??= <span class="kw">new</span> <span class="type">Map</span>()).<span class="fn">set</span>(pos, { ...tile, revealed: <span class="kw">true</span> });
+      <span class="kw">const</span> <span class="var">tile</span> = node.<span class="prop">tiles</span>[pos];
+      <span class="kw">if</span> (tile.<span class="prop">revealed</span>) <span class="kw">continue</span>;
+      (changed ??= <span class="kw">new</span> <span class="type">Map</span>()).<span class="fn">set</span>(pos, { ...tile, <span class="prop">revealed</span>: <span class="kw">true</span> });
     }
   }
   <span class="kw">if</span> (!changed) <span class="kw">return</span> node;
@@ -1037,25 +1039,25 @@
 <figcaption class="snippet-label">src/storage/SaveManager.js:90-112  |  packTile</figcaption>
 <pre><code><span class="kw">function</span> <span class="fn">packTile</span>(tile) {
   <span class="cm">/** @type {Record&lt;string, any&gt;} */</span>
-  <span class="kw">const</span> packed = { ...tile };
-  <span class="kw">if</span> (packed.overlayRef == <span class="kw">null</span>) <span class="kw">delete</span> packed.overlayRef;
-  <span class="kw">if</span> (packed.revealed !== <span class="kw">true</span>) <span class="kw">delete</span> packed.revealed;
-  <span class="kw">if</span> (packed.childNodeId == <span class="kw">null</span>) <span class="kw">delete</span> packed.childNodeId;
+  <span class="kw">const</span> <span class="var">packed</span> = { ...tile };
+  <span class="kw">if</span> (packed.<span class="prop">overlayRef</span> == <span class="kw">null</span>) <span class="kw">delete</span> packed.<span class="prop">overlayRef</span>;
+  <span class="kw">if</span> (packed.<span class="prop">revealed</span> !== <span class="kw">true</span>) <span class="kw">delete</span> packed.<span class="prop">revealed</span>;
+  <span class="kw">if</span> (packed.<span class="prop">childNodeId</span> == <span class="kw">null</span>) <span class="kw">delete</span> packed.<span class="prop">childNodeId</span>;
   <span class="cm">// An absent span and a span of 1 mean the same one-cell image, per `Tile`.</span>
-  <span class="kw">if</span> (!(<span class="kw">typeof</span> packed.span === <span class="st">'number'</span> &amp;&amp; packed.span &gt; <span class="num">1</span>)) <span class="kw">delete</span> packed.span;
-  <span class="kw">const</span> source = <span class="fn">record</span>(tile.metadata);
+  <span class="kw">if</span> (!(<span class="kw">typeof</span> packed.<span class="prop">span</span> === <span class="st">'number'</span> &amp;&amp; packed.<span class="prop">span</span> &gt; <span class="num">1</span>)) <span class="kw">delete</span> packed.<span class="prop">span</span>;
+  <span class="kw">const</span> <span class="var">source</span> = <span class="fn">record</span>(tile.<span class="prop">metadata</span>);
   <span class="kw">if</span> (!source) {
-    <span class="kw">delete</span> packed.metadata;
+    <span class="kw">delete</span> packed.<span class="prop">metadata</span>;
     <span class="kw">return</span> packed;
   }
   <span class="cm">/** @type {Record&lt;string, any&gt;} */</span>
-  <span class="kw">const</span> metadata = { ...source };
-  <span class="kw">if</span> (metadata.poiType == <span class="kw">null</span>) <span class="kw">delete</span> metadata.poiType;
-  <span class="kw">if</span> (metadata.discoverable !== <span class="kw">true</span>) <span class="kw">delete</span> metadata.discoverable;
-  <span class="kw">if</span> (metadata.discovered !== <span class="kw">true</span>) <span class="kw">delete</span> metadata.discovered;
-  <span class="kw">if</span> (!metadata.notes) <span class="kw">delete</span> metadata.notes;
-  <span class="kw">if</span> (<span class="type">Object</span>.<span class="fn">keys</span>(metadata).length) packed.metadata = metadata;
-  <span class="kw">else</span> <span class="kw">delete</span> packed.metadata;
+  <span class="kw">const</span> <span class="var">metadata</span> = { ...source };
+  <span class="kw">if</span> (metadata.<span class="prop">poiType</span> == <span class="kw">null</span>) <span class="kw">delete</span> metadata.<span class="prop">poiType</span>;
+  <span class="kw">if</span> (metadata.<span class="prop">discoverable</span> !== <span class="kw">true</span>) <span class="kw">delete</span> metadata.<span class="prop">discoverable</span>;
+  <span class="kw">if</span> (metadata.<span class="prop">discovered</span> !== <span class="kw">true</span>) <span class="kw">delete</span> metadata.<span class="prop">discovered</span>;
+  <span class="kw">if</span> (!metadata.<span class="prop">notes</span>) <span class="kw">delete</span> metadata.<span class="prop">notes</span>;
+  <span class="kw">if</span> (<span class="type">Object</span>.<span class="fn">keys</span>(metadata).<span class="prop">length</span>) packed.<span class="prop">metadata</span> = metadata;
+  <span class="kw">else</span> <span class="kw">delete</span> packed.<span class="prop">metadata</span>;
   <span class="kw">return</span> packed;
 }</code></pre>
 <p class="caption">Fields are deleted from a copy, so a field this function has never heard of still survives the round trip.</p>

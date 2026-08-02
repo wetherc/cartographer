@@ -354,6 +354,8 @@ export const CSS = String.raw`
   .num { color: #cf9469; }
   .type { color: #ebc175; }
   .fn { color: #73ade9; }
+  .prop { color: #d07277; }
+  .var { color: #dbe1e8; }
 
   .caption {
     font-family: var(--f-mono);

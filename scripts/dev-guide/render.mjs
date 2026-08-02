@@ -26,24 +26,29 @@ const KEYWORDS = [
   'undefined', 'var', 'void', 'while', 'yield',
 ].join('|');
 
+const PRIMITIVES = 'string|number|boolean|any|unknown|never|object|symbol|bigint';
+
 const TOKEN = new RegExp(
   '(\\/\\*[\\s\\S]*?\\*\\/|\\/\\/[^\\n]*)' + // 1: comment
     `|('(?:\\\\.|[^'\\\\\\n])*'|"(?:\\\\.|[^"\\\\\\n])*"|\`(?:\\\\.|[^\`\\\\])*\`)` + // 2: string
     '|\\b(0[xXbBoO][0-9a-fA-F]+|\\d[\\d_]*(?:\\.\\d+)?)\\b' + // 3: number
     `|(?<![.$])\\b(${KEYWORDS})\\b` + // 4: keyword, but not a property name
-    '|\\b([A-Z][\\w$]*)\\b' + // 5: type or class name
-    '|([a-z_$][\\w$]*)(?=\\s*\\()', // 6: function or method name
+    `|(?<![.$])\\b(${PRIMITIVES})\\b` + // 5: primitive type
+    '|\\b([A-Z][\\w$]*)\\b' + // 6: type or class name
+    '|([a-z_$][\\w$]*)(?=\\s*\\()' + // 7: function or method name
+    '|([a-z_$][\\w$]*)(?=\\??:)' + // 8: property key or typed parameter
+    '|(?<=(?<!\\.)\\.)([a-z_$][\\w$]*)' + // 9: property access, but not a spread
+    '|(?<=\\b(?:const|let|var)\\s+)([a-z_$][\\w$]*)', // 10: declared variable
   'g',
 );
 
-const TOKEN_CLASSES = ['cm', 'st', 'num', 'kw', 'type', 'fn'];
+const TOKEN_CLASSES = ['cm', 'st', 'num', 'kw', 'type', 'type', 'fn', 'prop', 'prop', 'var'];
 
 /**
  * Every snippet on the page is JavaScript or a TypeScript declaration, so one
  * small tokenizer covers them all: comments, strings, numbers, keywords,
- * capitalized type names, and function names. A property key gets no color,
- * which is what keeps it apart from the type it is declared with. Anything
- * the tokenizer does not recognize stays plain.
+ * type names, function and method names, property keys and accesses, and
+ * declared variable names. Anything it does not recognize stays plain.
  * @param {string} code
  */
 function highlight(code) {
