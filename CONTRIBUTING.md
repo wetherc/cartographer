@@ -25,6 +25,9 @@ This project uses `pnpm` to manage development tools and to run a local developm
     ```
     Open the local URL that appears in your terminal (usually `http://localhost:8080`) in your browser.
 
+3.  **Make One Change:**
+    [`docs/tutorial-first-code-change.md`](docs/tutorial-first-code-change.md) walks the whole loop once: change a module, test it, and see the result in the browser. [`docs/README.md`](docs/README.md) lists every other document and says what kind it is.
+
 ## Development Workflow
 
 - **Production Build:**
@@ -39,10 +42,10 @@ This project uses `pnpm` to manage development tools and to run a local developm
   # Run the full test suite
   pnpm test
 
-  # Same run, but print only the module lines and any failures
-  TEST_QUIET=1 pnpm test
+  # Same run, but list the name of every test
+  TEST_VERBOSE=1 pnpm test
   ```
-  The results print as a tree: the area under `src/`, then the test file, then its tests. See [`docs/testing.md`](docs/testing.md) for the format.
+  The results group by the area under `src/`, with one line for each test file. Only a failing file lists its individual tests. See [`docs/testing.md`](docs/testing.md) for the format.
 
 - **Run Linter:**
   ```bash

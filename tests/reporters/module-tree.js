@@ -2,10 +2,11 @@
 // one flat list of every test.
 //
 // The suite has well over a thousand tests, so the default output scrolls past
-// anything useful. This reporter buffers the run and prints a three-level tree
-// at the end: the source area (`entities`, `ui`, `storage`, ...), then the test
-// file inside it, then the tests of that file. Failures print their error under
-// the test that produced it, and again in a recap at the bottom.
+// anything useful. This reporter buffers the run and prints a summary at the
+// end: the source area (`entities`, `ui`, `storage`, ...), then one line for
+// each test file inside it, with its test count and run time. Individual test
+// names appear only for a failure, which also prints its error, and again in a
+// recap at the bottom. Set `TEST_VERBOSE=1` for the name of every test.
 //
 // The area of a test file comes from its own imports. The reporter reads the
 // file and counts how often each `../src/<area>/` path appears. The most common
@@ -13,13 +14,12 @@
 //
 // What a test file prints is held and counted under that file, because several
 // suites exercise a path that warns on purpose. Set `TEST_OUTPUT=1` to see the
-// text of it, which a failing file shows anyway. Set `TEST_QUIET=1` to print
-// only the per-module lines and the failures.
+// text of it, which a failing file shows anyway.
 
 import { readFileSync } from 'node:fs';
 import { basename, relative, resolve } from 'node:path';
 
-const QUIET = process.env.TEST_QUIET === '1';
+const VERBOSE = process.env.TEST_VERBOSE === '1';
 const SHOW_OUTPUT = process.env.TEST_OUTPUT === '1';
 const COLOR = Boolean(process.stdout.isTTY) && process.env.NO_COLOR === undefined;
 
@@ -74,6 +74,16 @@ function areaOf(file) {
  */
 function moduleOf(file) {
   return basename(file).replace(/\.test\.js$/, '');
+}
+
+/**
+ * `1 test`, `2 tests`. Only regular plurals are needed here.
+ * @param {number} n
+ * @param {string} word
+ * @returns {string}
+ */
+function plural(n, word) {
+  return `${n} ${word}${n === 1 ? '' : 's'}`;
 }
 
 /**
@@ -280,27 +290,28 @@ export default async function* moduleTree(source) {
     const count = list.reduce((n, entry) => n + entry.results.length, 0);
     const failed = list.reduce((n, entry) => n + entry.failed, 0);
     const tally = failed ? c.red(`${failed} failed`) : c.green('all passing');
-    const modules = `${list.length} ${list.length === 1 ? 'module' : 'modules'}`;
-    yield `${c.bold(c.cyan(area))} ${c.dim(`(${modules}, ${count} tests, ${tally}${c.dim(')')}`)}\n`;
+    const modules = plural(list.length, 'module');
+    const tests = plural(count, 'test');
+    yield `${c.bold(c.cyan(area))} ${c.dim(`(${modules}, ${tests}, ${tally}${c.dim(')')}`)}\n`;
 
     for (const entry of list) {
       const mark = entry.failed ? c.red('x') : c.green('.');
       const label = c.bold(moduleOf(entry.file));
       const counts = entry.failed
         ? c.red(`${entry.failed}/${entry.results.length} failed`)
-        : `${entry.results.length} tests`;
+        : plural(entry.results.length, 'test');
       const noise = entry.output.join('').split('\n').filter(Boolean).length;
-      const printed = noise ? c.dim(`, ${noise} printed ${noise === 1 ? 'line' : 'lines'}`) : '';
+      const printed = noise ? c.dim(`, ${plural(noise, 'printed line')}`) : '';
       yield `  ${mark} ${label} ${c.dim(`${counts}, ${duration(entry.ms)}`)}${printed}\n`;
       if (noise && (SHOW_OUTPUT || entry.failed)) {
         for (const line of entry.output.join('').split('\n')) {
           if (line) yield `    ${c.dim(`| ${line}`)}\n`;
         }
       }
-      if (QUIET && !entry.failed) continue;
+      if (!VERBOSE && !entry.failed) continue;
 
       for (const result of entry.results) {
-        if (QUIET && result.status !== 'fail') continue;
+        if (!VERBOSE && result.status !== 'fail') continue;
         const indent = '    '.padEnd(4 + result.nesting * 2);
         const glyph =
           result.status === 'fail'
@@ -332,7 +343,7 @@ export default async function* moduleTree(source) {
 
   if (totals) {
     const parts = [
-      `${totals.tests} tests`,
+      plural(totals.tests, 'test'),
       c.green(`${totals.passed} passed`),
       totals.failed ? c.red(`${totals.failed} failed`) : '0 failed',
     ];
