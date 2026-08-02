@@ -51,8 +51,15 @@ This project uses `pnpm` to manage development tools and to run a local developm
   pnpm run typecheck
   ```
 
+- **Developer Guide:**
+  `docs/dev-guide.html` is an interactive tour of the codebase. Open it in a browser to see the import map, the mount order of `src/main.js`, the packing layers of a save, and a checklist for a pull request. The page is generated, so do not edit it by hand. Rebuild it with this command:
+  ```bash
+  pnpm run guide
+  ```
+  Counts, import edges, mount order, registry entries, storage keys, code snippets, and save sizes are read out of the repository each time. The prose and the classifications live in `scripts/dev-guide/content.mjs`. Every file and symbol that the prose names is checked during the build, so a rename fails the build instead of leaving stale text behind. `pnpm run guide:check` reports whether the committed page matches the current tree.
+
 - **Automated Checks:**
-  The project provides a versioned pre-commit hook. The hook runs the linter, the test suite, and the type checker before each commit. The hook is optional, and it catches these errors before you push. Enable the hook once for each clone with this command:
+  The project provides a versioned pre-commit hook. The hook runs the linter, the test suite, and the type checker before each commit. It also regenerates the developer guide when a commit touches the source tree. The hook is optional, and it catches these errors before you push. Enable the hook once for each clone with this command:
   ```bash
   git config core.hooksPath hooks
   ```

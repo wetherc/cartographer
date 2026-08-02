@@ -18,6 +18,15 @@ if [ -n "$staged" ]; then
   echo "$staged" | tr '\n' '\0' | xargs -0 git add
 fi
 
+# The developer guide is generated from the source tree, so a commit that
+# changes the tree regenerates it and stages the result. This keeps its
+# counts, snippets, and line references from drifting out of date.
+if git diff --cached --name-only --diff-filter=ACMR | grep -qE '^(src/|package\.json|scripts/dev-guide/|scripts/build-dev-guide\.mjs)'; then
+  echo "pre-commit: dev guide"
+  node scripts/build-dev-guide.mjs
+  git add docs/dev-guide.html
+fi
+
 echo "pre-commit: eslint"
 pnpm --package=eslint dlx eslint .
 

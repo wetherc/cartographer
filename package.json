@@ -12,7 +12,9 @@
     "bench:pure": "node bench/pure-bench.js",
     "build": "node scripts/build.cjs",
     "dev": "node scripts/build.cjs --watch",
-    "deploy": "bash scripts/deploy.sh"
+    "deploy": "bash scripts/deploy.sh",
+    "guide": "node scripts/build-dev-guide.mjs",
+    "guide:check": "node scripts/build-dev-guide.mjs --check"
   },
   "keywords": [],
   "author": "",
