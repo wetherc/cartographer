@@ -31,7 +31,11 @@ echo "pre-commit: eslint"
 pnpm --package=eslint dlx eslint .
 
 echo "pre-commit: unit tests"
-node --test tests/*.test.js
+# TEST_QUIET keeps the gate to one line per module. A failure still prints its
+# tests and its error.
+TEST_QUIET=1 node --test \
+  --test-reporter=./tests/reporters/module-tree.js --test-reporter-destination=stdout \
+  tests/*.test.js
 
 echo "pre-commit: typecheck"
 pnpm --package=typescript dlx tsc --noEmit

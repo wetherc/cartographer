@@ -11,12 +11,16 @@
 // file and counts how often each `../src/<area>/` path appears. The most common
 // one wins. A file that imports nothing from `src/` lands under `other`.
 //
-// Set `TEST_QUIET=1` to print only the per-module lines and the failures.
+// What a test file prints is held and counted under that file, because several
+// suites exercise a path that warns on purpose. Set `TEST_OUTPUT=1` to see the
+// text of it, which a failing file shows anyway. Set `TEST_QUIET=1` to print
+// only the per-module lines and the failures.
 
 import { readFileSync } from 'node:fs';
-import { basename, relative } from 'node:path';
+import { basename, relative, resolve } from 'node:path';
 
 const QUIET = process.env.TEST_QUIET === '1';
+const SHOW_OUTPUT = process.env.TEST_OUTPUT === '1';
 const COLOR = Boolean(process.stdout.isTTY) && process.env.NO_COLOR === undefined;
 
 const c = {
@@ -109,6 +113,7 @@ function errorLines(details, indent) {
  * @property {Result[]} results
  * @property {number} failed
  * @property {number} ms
+ * @property {string[]} output what the file wrote to stdout and stderr
  */
 
 /**
@@ -212,7 +217,7 @@ export default async function* moduleTree(source) {
   const entryFor = (file) => {
     let entry = files.get(file);
     if (!entry) {
-      entry = { file, results: [], failed: 0, ms: 0 };
+      entry = { file, results: [], failed: 0, ms: 0, output: [] };
       files.set(file, entry);
     }
     return entry;
@@ -248,7 +253,12 @@ export default async function* moduleTree(source) {
     } else if (event.type === 'test:coverage') {
       coverage = data.summary;
     } else if (event.type === 'test:stderr' || event.type === 'test:stdout') {
-      yield data.message;
+      // Hold what a file printed and show it under that file, so a warning a
+      // test expects cannot look like a loose error at the top of the run.
+      // `test:stderr` names its file relative to the working directory, while
+      // the test events name it absolutely. Resolve so both land on one entry.
+      const file = data.file ? resolve(data.file) : 'unknown';
+      entryFor(file).output.push(String(data.message));
     }
   }
 
@@ -279,7 +289,14 @@ export default async function* moduleTree(source) {
       const counts = entry.failed
         ? c.red(`${entry.failed}/${entry.results.length} failed`)
         : `${entry.results.length} tests`;
-      yield `  ${mark} ${label} ${c.dim(`${counts}, ${duration(entry.ms)}`)}\n`;
+      const noise = entry.output.join('').split('\n').filter(Boolean).length;
+      const printed = noise ? c.dim(`, ${noise} printed ${noise === 1 ? 'line' : 'lines'}`) : '';
+      yield `  ${mark} ${label} ${c.dim(`${counts}, ${duration(entry.ms)}`)}${printed}\n`;
+      if (noise && (SHOW_OUTPUT || entry.failed)) {
+        for (const line of entry.output.join('').split('\n')) {
+          if (line) yield `    ${c.dim(`| ${line}`)}\n`;
+        }
+      }
       if (QUIET && !entry.failed) continue;
 
       for (const result of entry.results) {
