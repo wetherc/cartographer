@@ -6,7 +6,22 @@ The built-in test runner of Node runs the tests. The project uses no test framew
 
 ```
 node --test tests/TilePalette.test.js    # single file — prefer this while iterating
-node --test tests/*.test.js              # full suite before committing
+pnpm test                                # full suite before committing
+```
+
+## The report format
+
+The suite holds more than 1,700 tests. A flat list of that many names is hard to read, so `pnpm test` runs a custom reporter, `tests/reporters/module-tree.js`. It buffers the run and prints a tree at the end.
+
+The tree has three levels. The top level is the area under `src/` that the tests exercise, such as `entities` or `storage`. The reporter reads each test file and picks the `src/` subdirectory that the file imports from most. A file that imports nothing from `src/` lands under `other`. The second level is the test file itself, with its test count and its run time. The third level is the tests of that file. A test that takes 100 ms or more shows its time.
+
+A failure prints its error under the test, and again in a `Failures` recap at the bottom. The last line gives the totals.
+
+Two switches change the output:
+
+```
+TEST_QUIET=1 pnpm test    # module lines and failures only, no passing test names
+pnpm run test:flat        # the default TAP output of Node, for debugging the reporter itself
 ```
 
 Each `tests/*.test.js` file pairs with one `src/**/*.js` module. The tests call pure functions and classes directly, for example `roll(selection, rng)`, `MapNavigator`, and `findRegionGroups`. The tests use an injected random number generator or plain fixture data. The tests use no DOM, no canvas, and no mock of a browser API.
@@ -17,7 +32,7 @@ Each `tests/*.test.js` file pairs with one `src/**/*.js` module. The tests call 
 pnpm coverage
 ```
 
-Node itself produces the coverage report, with one row for each file plus a total. The script passes `--test-coverage-exclude='tests/**'`. Without this flag, the runner also reports the test files next to the modules the tests exercise. A test file runs from top to bottom, so it always scores near 100 percent. If the test files stay in the report, they raise the total several points above the real score of the app code.
+Node measures the coverage, and the same reporter prints it: one row for each file, grouped by `src/` area, with the line, branch, and function percentages and the uncovered line ranges. A total row closes the table. The script passes `--test-coverage-exclude='tests/**'`. Without this flag, the runner also reports the test files next to the modules the tests exercise. A test file runs from top to bottom, so it always scores near 100 percent. If the test files stay in the report, they raise the total several points above the real score of the app code.
 
 The report counts only files that a test loaded. A module that nothing imports does not show up at 0 percent. It is missing from the table completely, and the total is then an average over the tested files alone. `tests/moduleLoad.test.js` closes that gap: it imports every file under `src/` except `main.js`, so every module has a row and the total covers the whole tree. That test doubles as a load check. A renamed export or a circular import in a file with no test of its own fails there.
 

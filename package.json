@@ -4,8 +4,9 @@
   "description": "A self-contained suite for creating and managing the world of a D&D (or equivalent) campaign.",
   "main": "src/main.js",
   "scripts": {
-    "test": "node --test tests/*.test.js",
-    "coverage": "node --test --experimental-test-coverage --test-coverage-exclude='tests/**' tests/*.test.js",
+    "test": "node --test --test-reporter=./tests/reporters/module-tree.js --test-reporter-destination=stdout tests/*.test.js",
+    "test:flat": "node --test tests/*.test.js",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-exclude='tests/**' --test-reporter=./tests/reporters/module-tree.js --test-reporter-destination=stdout tests/*.test.js",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "bench": "node bench/app-bench.js",

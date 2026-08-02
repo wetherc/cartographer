@@ -38,7 +38,11 @@ This project uses `pnpm` to manage development tools and to run a local developm
   ```bash
   # Run the full test suite
   pnpm test
+
+  # Same run, but print only the module lines and any failures
+  TEST_QUIET=1 pnpm test
   ```
+  The results print as a tree: the area under `src/`, then the test file, then its tests. See [`docs/testing.md`](docs/testing.md) for the format.
 
 - **Run Linter:**
   ```bash
