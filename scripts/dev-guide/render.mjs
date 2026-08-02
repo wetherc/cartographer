@@ -57,7 +57,12 @@ function highlight(code) {
   for (const m of code.matchAll(TOKEN)) {
     const cls = TOKEN_CLASSES[m.slice(1).findIndex((g) => g !== undefined)];
     out += esc(code.slice(last, m.index));
-    out += `<span class="${cls}">${esc(m[0])}</span>`;
+    // A token that spans lines (a block comment, a template literal) is split
+    // into one span per line, so a line of the output never holds an open tag.
+    out += m[0]
+      .split('\n')
+      .map((part) => `<span class="${cls}">${esc(part)}</span>`)
+      .join('\n');
     last = m.index + m[0].length;
   }
   return out + esc(code.slice(last));
@@ -70,10 +75,18 @@ function highlight(code) {
 function block(snip, note) {
   const range = snip.endLine > snip.line ? `${snip.line}-${snip.endLine}` : String(snip.line);
   const name = snip.symbol ? '  |  ' + snip.symbol : '';
+  const digits = String(snip.endLine).length;
+  const body = highlight(snip.code)
+    .split('\n')
+    .map(
+      (html, i) =>
+        `<span class="line"><span class="lno" aria-hidden="true">${snip.line + i}</span>${html}</span>`,
+    )
+    .join('');
   return [
     '<figure class="snip">',
     `<figcaption class="snippet-label">${esc(snip.file)}:${range}${esc(name)}</figcaption>`,
-    `<pre><code>${highlight(snip.code)}</code></pre>`,
+    `<pre style="--lnw:${digits}ch"><code>${body}</code></pre>`,
     note ? `<p class="caption">${note}</p>` : '',
     '</figure>',
   ].join('\n');
@@ -89,6 +102,15 @@ const EXTRA_CSS = `
     color: var(--text-muted);
   }
   .snip pre { margin-top: var(--sp-1); }
+  .snip .line { display: block; min-height: 1.55em; }
+  .snip .lno {
+    display: inline-block;
+    width: var(--lnw, 3ch);
+    margin-right: 1.5ch;
+    text-align: right;
+    color: #5a6a64;
+    user-select: none;
+  }
   .step-call { font-family: var(--f-mono); font-size: 0.95rem; }
   .reg-line { margin-bottom: var(--sp-1); }
   .stamp { font-family: var(--f-mono); font-size: 0.7rem; letter-spacing: 0.08em; color: var(--text-muted); }
