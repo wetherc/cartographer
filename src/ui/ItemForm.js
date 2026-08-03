@@ -197,19 +197,18 @@ export function buildItemForm({
     nameInput.value = preset.name;
   });
 
-  // The form lays out as fixed rows: name, description, type and
-  // quantity, then the type-specific rows. Toggling a type only shows or
-  // hides whole rows. The shared controls never reflow around appearing fields.
-  const presetRow = fieldRow(presetField);
+  // The form lays out as fixed rows: name, description, then type with
+  // quantity and preset on one line, then the type-specific rows. A field
+  // that a type does not need hides alone inside its row, and a row hides
+  // when everything in it does, so the shared controls never reflow around
+  // appearing fields.
   const armorRow = fieldRow(weightField, baseACField, shieldField);
   const weaponRow = fieldRow(handlingField);
   const damageRow = fieldRow(damageField);
   const effectsRow = fieldRow(effectsField);
-  // AC bonus is its own row. The stat buff pairs its select with its
-  // amount. Keeping them apart avoids a number input and a select sharing
-  // a row with mismatched heights, which misaligned their captions.
-  const acRow = fieldRow(acField);
-  const buffRow = fieldRow(buffStatField, buffAmountField);
+  // The flat AC bonus shares a row with the stat buff. Both are small
+  // worn-item numbers, and each hides on its own when the type drops it.
+  const acRow = fieldRow(acField, buffStatField, buffAmountField);
   const focusRow = fieldRow(focusField);
 
   const syncTypeFields = () => {
@@ -223,10 +222,9 @@ export function buildItemForm({
     handlingField.hidden = damageField.hidden = effectsField.hidden = !weaponish;
     armorRow.hidden = weightField.hidden && shieldField.hidden;
     weaponRow.hidden = damageRow.hidden = effectsRow.hidden = !weaponish;
-    acRow.hidden = acField.hidden;
-    buffRow.hidden = buffStatField.hidden;
+    acRow.hidden = acField.hidden && buffStatField.hidden;
     const presets = presetsFor(type);
-    presetRow.hidden = presetField.hidden = presets.length === 0;
+    presetField.hidden = presets.length === 0;
     if (presets.length > 0) {
       setOptions(
         presetSelect,
@@ -266,15 +264,13 @@ export function buildItemForm({
       descriptionInput,
       // A library template is a blueprint, not a stack. It has no quantity to set.
       template
-        ? fieldRow(labeled('Type', typeSelect))
-        : fieldRow(labeled('Type', typeSelect), labeled('Qty', quantityInput)),
-      presetRow,
+        ? fieldRow(labeled('Type', typeSelect), presetField)
+        : fieldRow(labeled('Type', typeSelect), labeled('Qty', quantityInput), presetField),
       armorRow,
       weaponRow,
       damageRow,
       effectsRow,
       acRow,
-      buffRow,
       focusRow,
     ],
     assemble,

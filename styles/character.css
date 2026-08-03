@@ -628,10 +628,12 @@
    ========================================================================== */
 
 /* The type picker fills its caption, and the caption claims a wide share of
-   the row, so a long type name reads without wrapping. */
+   the row, so a long type name reads without wrapping. The cap keeps the
+   picker from swallowing the whole line on a wide card. */
 .form__label:has(.item-form__type-select) {
   flex: 1 1 7rem;
   min-width: 7rem;
+  max-width: 16rem;
 }
 
 .item-form__type-select {

@@ -1,5 +1,5 @@
 import { DIE_SIZES, DAMAGE_TYPES, normalizeDamagePart } from '../entities/Equipment.js';
-import { iconButton, removableChip } from './buttons.js';
+import { iconButton, removableChip, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { numberField, select, textField } from './formFields.js';
 import { clampInt } from '../util/num.js';
@@ -117,15 +117,17 @@ export function buildDamageEditor(initial, fixType = null) {
       element.appendChild(row);
     });
 
+    // A visible label, not a bare plus: the button sits on its own line
+    // under the terms, so an icon alone does not say what it adds.
     element.appendChild(
-      iconButton(
-        'plus',
+      textButton(
         'Add damage term',
         () => {
           damageParts.push({ count: 1, sides: 4, damageType: fixed ?? 'fire' });
           render();
         },
         {
+          icon: 'plus',
           className: 'item-form__damage-add',
           title: 'Add a permanent extra damage term (e.g. + 1d4 fire)',
         },
