@@ -114,7 +114,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   );
   const timeAmountInput = numberField(castingTime.amount ?? 1, {
     min: 1,
-    className: 'inventory-panel__quantity-input',
+    className: 'form__number',
   });
   const timeAmountField = labeled('Minutes', timeAmountInput);
   const triggerInput = textField(castingTime.trigger ?? '', 'which you take when ...');
@@ -127,7 +127,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const durationKindSelect = select(kindOptions(DURATION_KINDS, DURATION_LABELS), duration.kind);
   const durationAmountInput = numberField(duration.amount ?? 1, {
     min: 1,
-    className: 'inventory-panel__quantity-input',
+    className: 'form__number',
   });
   const durationAmountField = labeled('Rounds', durationAmountInput);
   const upTo = checkbox('Up to', duration.upTo ?? false);
@@ -150,7 +150,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const materialField = labeled('Material', materialInput);
   const materialCostInput = numberField(spell?.materials?.costGP ?? 0, {
     min: 0,
-    className: 'inventory-panel__quantity-input',
+    className: 'form__number',
   });
   const materialCostField = labeled('Cost (gp)', materialCostInput);
   const consumed = checkbox('Consumed on cast', spell?.materials?.consumed ?? false);
@@ -161,7 +161,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const targetCountInput = numberField(spell?.targetCount ?? 1, {
     min: 0,
     max: MAX_TARGET_COUNT,
-    className: 'inventory-panel__quantity-input',
+    className: 'form__number',
   });
   targetCountInput.title = '0 = an area: the caster picks any number of creatures';
   const targetCountField = labeled('Targets', targetCountInput);
@@ -217,14 +217,14 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   // --- Rider: what the imposed chip adds to the target's later rolls -------
   const storedRider = chipEffect?.rider ?? null;
   const riderDiceInput = numberField(storedRider?.dice ?? 0, {
-    className: 'inventory-panel__quantity-input',
+    className: 'form__number',
   });
   riderDiceInput.title = 'Negative for a penalty die, as with Bane';
   const riderDiceField = labeled('Rider dice', riderDiceInput);
   const riderDieSelect = select([...RIDER_DICE], storedRider?.die ?? DEFAULT_RIDER_DIE);
   const riderDieField = labeled('Die', riderDieSelect);
   const riderFlatInput = numberField(storedRider?.flat ?? 0, {
-    className: 'inventory-panel__quantity-input',
+    className: 'form__number',
   });
   const riderFlatField = labeled('Flat', riderFlatInput);
   const riderRollChecks = RIDER_ROLLS.map((roll) =>
@@ -242,13 +242,13 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const shotCountInput = numberField(shots?.count ?? 1, {
     min: 1,
     max: MAX_TARGET_COUNT,
-    className: 'inventory-panel__quantity-input',
+    className: 'form__number',
   });
   const shotCountField = labeled('Projectiles', shotCountInput);
   const shotPerStepInput = numberField(shots?.perStep ?? 0, {
     min: 0,
     max: MAX_TARGET_COUNT,
-    className: 'inventory-panel__quantity-input',
+    className: 'form__number',
   });
   const shotPerStepField = labeled('Extra / level', shotPerStepInput);
   const autoHit = checkbox('Hits automatically', shots?.autoHit ?? false);
@@ -263,7 +263,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const scalingDamageField = labeled('Extra dice / level', scalingDamage.element);
   const targetsInput = numberField(spell?.scaling?.targetsPerLevel ?? 0, {
     min: 0,
-    className: 'inventory-panel__quantity-input',
+    className: 'form__number',
   });
   const targetsField = labeled('Extra targets / level', targetsInput);
 

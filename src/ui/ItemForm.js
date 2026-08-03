@@ -62,12 +62,12 @@ export function buildItemForm({
   const nameInput = textField(item?.name ?? '', 'Item name');
 
   const descriptionInput = textField(item?.description ?? '', 'Description (optional)', {
-    className: 'inventory-panel__name-input',
+    className: 'form__wide',
   });
 
   const quantityInput = numberField(item?.quantity ?? 1, {
     min: 1,
-    className: 'inventory-panel__quantity-input',
+    className: 'form__number',
   });
 
   // gear is the catch-all for miscellaneous, non-equippable items, for
@@ -75,7 +75,7 @@ export function buildItemForm({
   const typeSelect = select(
     ITEM_TYPES.map((t) => ({ value: t, label: t === 'gear' ? 'gear (misc.)' : t })),
     item ? (item.type ?? 'gear') : ITEM_TYPES[0],
-    { className: 'inventory-panel__type-select' },
+    { className: 'item-form__type-select' },
   );
 
   // Body armor has a 5e weight class, which alone fixes the DEX scaling,
@@ -95,7 +95,7 @@ export function buildItemForm({
   );
   const baseACInput = numberField(item?.baseAC ?? ARMOR_WEIGHTS[0].defaultBaseAC, {
     min: 1,
-    className: 'inventory-panel__ac-input',
+    className: 'form__number',
   });
   weightSelect.addEventListener('change', () => {
     const weight = ARMOR_WEIGHTS.find((w) => w.key === weightSelect.value);
@@ -106,14 +106,14 @@ export function buildItemForm({
 
   // A shield always adds +2 AC in 5e, so there is no input. The form only
   // states the value.
-  const shieldNote = el('span', 'inventory-panel__note', `+${SHIELD_AC} AC`);
+  const shieldNote = el('span', 'item-form__note', `+${SHIELD_AC} AC`);
   const shieldField = labeled('Shield', shieldNote);
 
   // A non-armor equippable, for example a helmet, ring, or bow, can carry
   // a flat AC bonus while equipped.
   const acInput = numberField(item?.acBonus ?? 0, {
     min: 0,
-    className: 'inventory-panel__ac-input',
+    className: 'form__number',
   });
   acInput.title = 'Flat AC bonus while equipped';
   const acField = labeled('AC bonus', acInput);
@@ -126,7 +126,7 @@ export function buildItemForm({
     firstBuff?.[0] ?? '',
   );
   const buffAmountInput = numberField(firstBuff ? Number(firstBuff[1]) : 1, {
-    className: 'inventory-panel__ac-input',
+    className: 'form__number',
   });
   const buffStatField = labeled('Buff', buffStatSelect);
   const buffAmountField = labeled('Amount', buffAmountInput);

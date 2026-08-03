@@ -47,12 +47,7 @@ function withOpts(control, { className, ariaLabel }) {
  * @returns {HTMLLabelElement}
  */
 export function labeled(caption, control, opts = {}) {
-  const label = el(
-    'label',
-    'inventory-panel__field-label u-col u-g1 u-muted',
-    el('span', '', caption),
-    control,
-  );
+  const label = el('label', 'form__label u-col u-g1 u-muted', el('span', '', caption), control);
   return withOpts(label, opts);
 }
 
@@ -66,7 +61,7 @@ export function labeled(caption, control, opts = {}) {
  * @returns {HTMLDivElement}
  */
 export function fieldRow(...children) {
-  return el('div', 'inventory-panel__form-row', ...children);
+  return el('div', 'form__row', ...children);
 }
 
 /**
@@ -209,7 +204,7 @@ export function setOptions(picker, options, value) {
 
 /**
  * The envelope every inline authoring form shares. `nameInput` goes first
- * and gets the wide name-input styling. `rows` follow in order, and the
+ * and takes the shared `form__wide` sizing. `rows` follow in order, and the
  * action row closes the form. Submitting reads the form through
  * `assemble`, which returns the finished value, or null to refuse the
  * submit. `afterSubmit` runs on an accepted submit, for a form that
@@ -237,8 +232,8 @@ export function buildInlineForm({
   afterSubmit = null,
   className = '',
 }) {
-  const form = el('div', classNames(['inventory-panel__form u-col u-g2', className]));
-  nameInput.classList.add('inventory-panel__name-input');
+  const form = el('div', classNames(['form u-col u-g2', className]));
+  nameInput.classList.add('form__wide');
 
   const actions = formActions({
     submitLabel,

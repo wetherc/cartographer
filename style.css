@@ -9,6 +9,7 @@
 @import url('styles/build.css'); /* Build mode: world tree, tile palette, tile inspector */
 @import url('styles/layout.css'); /* play-surface columns, map viewport/controls, toasts */
 @import url('styles/widgets.css'); /* breadcrumb, dice tray, disclosure headers, HP healthbar */
+@import url('styles/forms.css'); /* inline authoring forms: wrapper, rows, captions, control sizes */
 @import url('styles/character.css'); /* character sheet, inventory */
 @import url('styles/session.css'); /* encounters, in-game time, NPCs, initiative */
 @import url('styles/party.css'); /* status conditions, party roster */

@@ -580,7 +580,7 @@
   margin: var(--space-1) 0;
 }
 
-.inventory-panel__editor .inventory-panel__form {
+.inventory-panel__editor .form {
   margin-top: 0;
 }
 
@@ -618,62 +618,30 @@
   font-size: var(--text-label);
 }
 
-/* A column of fixed rows: name, description, type/qty, then whole
-   type-specific rows toggling below — appearing fields extend their own row
-   instead of reflowing the controls around them. */
-.inventory-panel__form {
-  align-items: stretch;
-  margin-top: var(--space-3);
-}
+/* ==========================================================================
+   Item authoring form
 
-.inventory-panel__form-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--space-2);
-}
+   The controls only the item editor has. Its wrapper, rows, and captions are
+   the shared .form primitives (forms.css); these are the item-specific sizes
+   on top. The form mounts inline in the inventory panel and in the Library
+   rail, so it carries its own class stem rather than the panel's.
+   ========================================================================== */
 
-/* The display:flex above would otherwise defeat the hidden attribute the
-   type-specific rows toggle with. */
-.inventory-panel__form-row[hidden] {
-  display: none;
-}
-
-.inventory-panel__name-input {
-  min-width: 0;
-}
-
-/* Captioned form controls: a small label stacked over its input. The u-col
-   display would otherwise defeat the hidden attribute the AC field toggles
-   with. */
-.inventory-panel__field-label[hidden] {
-  display: none;
-}
-
-.inventory-panel__field-label:has(.inventory-panel__type-select) {
+/* The type picker fills its caption, and the caption claims a wide share of
+   the row, so a long type name reads without wrapping. */
+.form__label:has(.item-form__type-select) {
   flex: 1 1 7rem;
   min-width: 7rem;
 }
 
-.inventory-panel__type-select {
+.item-form__type-select {
   width: 100%;
   font-size: var(--text-label);
 }
 
-.inventory-panel__quantity-input {
-  width: 3.5rem;
-  text-align: center;
-}
-
-/* AC bonus for defensive item types; hidden for the rest. */
-.inventory-panel__ac-input {
-  width: 3.5rem;
-  text-align: center;
-}
-
 /* Fixed-value readouts in the add form (a shield's non-negotiable +2 AC),
    sized to sit level with the neighboring inputs. */
-.inventory-panel__note {
+.item-form__note {
   display: inline-flex;
   align-items: center;
   min-height: 2rem;
@@ -683,31 +651,31 @@
 
 /* Weapon damage editor: one row per dice term (count, die, damage type),
    the base roll first, riders after, then the add-a-term button. */
-.inventory-panel__dice-count {
+.item-form__dice-count {
   width: 3rem;
   text-align: center;
 }
 
 /* Marks the next input as the term's flat bonus, so "1 d4 + 1 force" reads as
    one damage roll rather than as four unrelated controls. */
-.inventory-panel__damage-plus {
+.item-form__damage-plus {
   color: var(--text-muted);
 }
 
 /* Names a term's type where there is only one to have, in place of a
    single-option picker. */
-.inventory-panel__damage-type {
+.item-form__damage-type {
   color: var(--text-muted);
 }
 
 /* The damage editor stacks its rows in a stretch flex column; keep the add
    button sized to its label instead of spanning the full width. */
-.inventory-panel__damage-add {
+.item-form__damage-add {
   align-self: flex-start;
 }
 
 /* Inflicted status effects: removable chips plus the add row. Named apart
    from .inventory-panel__effects, the read-only pill row on an item row. */
-.inventory-panel__effect-input {
+.item-form__effect-input {
   width: 8rem;
 }

@@ -638,7 +638,7 @@ clamp-on-`change` for both, reading `min`/`max` off the element so a dialog
 that restates a field's range through `setRange` still gets it enforced.
 
 `buildInlineForm` is the envelope that all four forms share. It wraps the
-form, puts the name field first with the wide name-input styling, appends
+form, puts the name field first with the shared `form__wide` sizing, appends
 `rows` in order, and closes with the action row (Cancel left of the primary
 submit, matching the modals). A submit reads the whole form through
 `assemble`, which returns the finished value or `null` to refuse the
@@ -822,9 +822,11 @@ sheet can override an earlier one, so the order is the contract:
 3. `build.css`: Build mode's world tree, palette, tile inspector
 4. `layout.css`: play-surface columns, map viewport, toasts
 5. `widgets.css`: breadcrumb, dice tray, disclosure, stat bars
-6. `character.css`, `session.css`, `party.css`, `story.css`, `library.css`,
+6. `forms.css`: the inline authoring form's wrapper, rows, captions, and
+   control sizes
+7. `character.css`, `session.css`, `party.css`, `story.css`, `library.css`,
    `spells.css`: one sheet per feature area
-7. `responsive.css`: narrow-viewport stacking. **Keep this one last.**
+8. `responsive.css`: narrow-viewport stacking. **Keep this one last.**
 
 Add a new feature sheet to the feature block, with an `@import` and a
 comment that says what it covers. Nothing is imported from a `.js` file.
@@ -892,6 +894,7 @@ keep only layout (margins, grid placement) in the component's own class.
 | `.btn` + `--primary`/`--danger`/`--success`/`--icon` | every button, built through `buttons.js` |
 | `.btn-bare` | the reset for a control that is a button with no button chrome, built through `bareButton` |
 | `.field` | every input, select, and textarea |
+| `.form`, `__row`, `__label`, `__wide`, `__number` | the inline authoring form and its parts, built through `formFields.js` |
 | `.card`, `.card__title` | a bordered panel with an uppercase heading |
 | `.seg-switch`, `__btn`, `__btn--active` | segmented toggle (mode, theme, role, dice-tray d20) |
 | `.row-select`, `--current` | selectable full-width list row (world tree, roster) |
@@ -1093,12 +1096,6 @@ Against the contract:
   most panels, `options` or `opts` in others, and a bare function in a few.
   `mountPalettePanel` takes four positionals, and `mountSpellbookPanel`
   takes five.
-- **Feature vocabulary sits in the shared layer.** `formFields.js` stamps
-  `inventory-panel__field-label`, `inventory-panel__form-row`,
-  `inventory-panel__form`, and `inventory-panel__name-input` on every inline
-  form, wherever that form is used, and the rules for them live in
-  `character.css`. The spell and item forms then restate those class names
-  to match.
 - **`mountListPanel` takes nine separate class-name options** (`className`,
   `rowClass`, `bodyClass`, `actionsClass`, `headClass`, `groupWrapperClass`,
   `groupHeadingClass`, `addClass`, `rowModifiers`), each typed out by each

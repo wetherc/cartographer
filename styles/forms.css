@@ -1,0 +1,51 @@
+/* ==========================================================================
+   Inline authoring forms
+
+   The wrapper, row, caption, and control sizes that every inline form builds
+   from (formFields.js). The item, spell, bestiary, and NPC-template editors
+   all mount these, and the modal fields come from the same builders, so a
+   rule here changes every form at once. A size or layout a single form needs
+   belongs with that form's feature sheet instead.
+   ========================================================================== */
+
+/* A column of fixed rows: name, description, type/qty, then whole
+   type-specific rows toggling below. An appearing field extends its own row
+   instead of reflowing the controls around it. */
+.form {
+  align-items: stretch;
+  margin-top: var(--space-3);
+}
+
+.form__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+
+/* The display:flex above would otherwise defeat the hidden attribute the
+   type-specific rows toggle with. */
+.form__row[hidden] {
+  display: none;
+}
+
+/* Captioned form controls: a small label stacked over its input. The u-col
+   display would otherwise defeat the hidden attribute the AC field toggles
+   with. */
+.form__label[hidden] {
+  display: none;
+}
+
+/* A field that takes the full width of its line and may shrink below its
+   content width: the name input every form leads with, and any other field
+   that owns its row. */
+.form__wide {
+  min-width: 0;
+}
+
+/* A count or small modifier: narrow enough to read as a number rather than as
+   a text field, with the digits centered. */
+.form__number {
+  width: 3.5rem;
+  text-align: center;
+}

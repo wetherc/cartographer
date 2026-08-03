@@ -50,7 +50,7 @@ export function buildDamageEditor(initial, fixType = null) {
       // follows the bonus, instead of sitting at 1. This keeps the editor
       // from handing back a term the normalizer rewrites.
       const countInput = numberField(part.count, {
-        className: 'inventory-panel__dice-count',
+        className: 'item-form__dice-count',
         ariaLabel: 'Number of dice',
       });
       const countFloor = () => ((part.bonus ?? 0) === 0 ? 1 : 0);
@@ -76,7 +76,7 @@ export function buildDamageEditor(initial, fixType = null) {
       // Magic Missile's 1d4+1. It is not doubled on a critical hit, which
       // is where it differs from adding another die.
       const bonusInput = numberField(part.bonus ?? 0, {
-        className: 'inventory-panel__dice-count',
+        className: 'item-form__dice-count',
         ariaLabel: 'Flat bonus',
       });
       bonusInput.title = 'A flat amount added to this term, e.g. the +1 of 1d4+1';
@@ -88,17 +88,12 @@ export function buildDamageEditor(initial, fixType = null) {
         syncCount();
       });
 
-      row.append(
-        countInput,
-        dieSelect,
-        el('span', 'inventory-panel__damage-plus', '+'),
-        bonusInput,
-      );
+      row.append(countInput, dieSelect, el('span', 'item-form__damage-plus', '+'), bonusInput);
 
       // With one type, there is nothing to pick, so the row names it in text.
       if (fixed) {
         part.damageType = fixed;
-        row.appendChild(el('span', 'inventory-panel__damage-type', fixed));
+        row.appendChild(el('span', 'item-form__damage-type', fixed));
       } else {
         const typeSelectEl = select([...DAMAGE_TYPES], part.damageType, {
           ariaLabel: 'Damage type',
@@ -131,7 +126,7 @@ export function buildDamageEditor(initial, fixType = null) {
           render();
         },
         {
-          className: 'inventory-panel__damage-add',
+          className: 'item-form__damage-add',
           title: 'Add a permanent extra damage term (e.g. + 1d4 fire)',
         },
       ),
@@ -180,7 +175,7 @@ export function buildEffectsEditor(initial) {
       );
     }
     const effectInput = textField('', 'e.g. burning', {
-      className: 'inventory-panel__effect-input',
+      className: 'item-form__effect-input',
     });
     const addEffect = () => {
       const effect = effectInput.value.trim();
