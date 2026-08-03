@@ -20,6 +20,7 @@ export function emptyProficiencies() {
   return {
     saves: [],
     skills: [],
+    expertise: [],
     weapons: { categories: [], named: [] },
     armor: [],
     tools: [],
@@ -56,6 +57,29 @@ export function normalizeWeaponProficiencies(weapons) {
   return {
     categories: /** @type {WeaponCategory[]} */ (merged(weapons?.categories ?? [])),
     named: merged(weapons?.named ?? []),
+  };
+}
+
+/**
+ * Clean a written proficiency set: every list deduplicated, the weapon lists
+ * sorted into their two namespaces, and expertise cut down to the skills the
+ * set actually grants. Expertise doubles a proficiency, so it cannot exist
+ * without one, and this is the only place that invariant is enforced. Every
+ * writer goes through here, so no caller has to prune by hand. A missing list
+ * reads as empty. This function is pure.
+ * @param {Partial<Proficiencies> & { weapons?: WeaponProficiencies | string[] }} [proficiencies]
+ * @returns {Proficiencies}
+ */
+export function normalizeProficiencies(proficiencies) {
+  const skills = merged(proficiencies?.skills ?? []);
+  return {
+    saves: merged(proficiencies?.saves ?? []),
+    skills,
+    expertise: merged(proficiencies?.expertise ?? []).filter((id) => skills.includes(id)),
+    weapons: normalizeWeaponProficiencies(proficiencies?.weapons),
+    armor: merged(proficiencies?.armor ?? []),
+    tools: merged(proficiencies?.tools ?? []),
+    languages: merged(proficiencies?.languages ?? []),
   };
 }
 
@@ -103,9 +127,13 @@ export function assembleProficiencies(character, choices = {}) {
   const cls = getClass(primaryClass(character)?.classId);
   const race = resolveRace(character);
   const background = resolveBackground(character);
-  return {
+  return normalizeProficiencies({
     saves: merged(cls?.savingThrows ?? []),
     skills: merged(race?.skills ?? [], background?.skills ?? [], choices.skills ?? []),
+    // Expertise is a player's own pick, not a grant, so re-assembling the
+    // lists keeps whatever the character already had. The normalizer drops
+    // any entry whose skill the new lists no longer grant.
+    expertise: getProficiencies(character).expertise,
     // A race's weapon grant is a flat list like the pre-split saves, so the
     // same normalizer sorts every source into the two namespaces.
     weapons: normalizeWeaponProficiencies([
@@ -116,43 +144,42 @@ export function assembleProficiencies(character, choices = {}) {
     armor: merged(cls?.armor ?? []),
     tools: merged(race?.tools ?? [], background?.tools ?? []),
     languages: merged(race?.languages ?? [], choices.languages ?? []),
-  };
+  });
 }
 
 /**
  * Set the character's proficiency lists (the hand-edit path, and how an
  * assembled set is applied). Each list is deduplicated, and a missing list
  * reads as empty. The weapon lists accept either the split shape or a flat
- * legacy list. The function prunes expertise entries whose skill is no
- * longer proficient, keeping the subset invariant. This function is pure.
+ * legacy list. A patch that says nothing about expertise keeps the character's
+ * own, so a caller editing one list does not clear a player's picks. The
+ * normalizer then prunes any entry whose skill the new lists no longer grant.
+ * This function is pure.
  * @param {Character} character
  * @param {Partial<Proficiencies> & { weapons?: WeaponProficiencies | string[] }} proficiencies
  * @returns {Character}
  */
 export function withProficiencies(character, proficiencies) {
-  const next = {
-    saves: merged(proficiencies.saves ?? []),
-    skills: merged(proficiencies.skills ?? []),
-    weapons: normalizeWeaponProficiencies(proficiencies.weapons),
-    armor: merged(proficiencies.armor ?? []),
-    tools: merged(proficiencies.tools ?? []),
-    languages: merged(proficiencies.languages ?? []),
+  return {
+    ...character,
+    proficiencies: normalizeProficiencies({
+      ...proficiencies,
+      expertise: proficiencies.expertise ?? getProficiencies(character).expertise,
+    }),
   };
-  const expertise = (character.expertise ?? []).filter((id) => next.skills.includes(id));
-  return { ...character, proficiencies: next, expertise };
 }
 
 /**
- * Set the character's expertise skills. The list is deduplicated and
- * filtered to skills the character is proficient in. Expertise doubles a
- * proficiency, so it cannot exist without one. This function is pure.
+ * Set the character's expertise skills, leaving the other lists alone. The
+ * list is deduplicated and filtered to skills the character is proficient in.
+ * Expertise doubles a proficiency, so it cannot exist without one. This
+ * function is pure.
  * @param {Character} character
  * @param {string[]} skillIds
  * @returns {Character}
  */
 export function withExpertise(character, skillIds) {
-  const skills = getProficiencies(character).skills;
-  return { ...character, expertise: merged(skillIds).filter((id) => skills.includes(id)) };
+  return withProficiencies(character, { ...getProficiencies(character), expertise: skillIds });
 }
 
 /**
@@ -179,5 +206,5 @@ export function isProficientSkill(character, skillId) {
  * @returns {boolean} whether the character has expertise in this skill
  */
 export function hasExpertise(character, skillId) {
-  return (character.expertise ?? []).includes(skillId);
+  return getProficiencies(character).expertise.includes(skillId);
 }

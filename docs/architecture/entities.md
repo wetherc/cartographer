@@ -123,11 +123,20 @@ definition. `resolveRace` prefers the live catalog and falls back to a stored
 
 ### Proficiencies
 
-`entities/Proficiencies.js` assembles the six proficiency lists plus expertise
-from class, race, and background (`assembleProficiencies`). It applies or
-hand-edits them with `withProficiencies`, which keeps expertise a subset of
-skills. The `isProficient*` and `hasExpertise` predicates return `false` for a
-legacy character with no lists.
+`entities/Proficiencies.js` assembles the seven proficiency lists from class,
+race, and background (`assembleProficiencies`). It applies or hand-edits them
+with `withProficiencies`, and it sets the expertise list on its own with
+`withExpertise`. Both writers run `normalizeProficiencies`, which is the one
+place that deduplicates the lists and cuts expertise down to the skills the
+character is actually proficient in. Expertise doubles a proficiency, so it
+cannot exist without one, and no writer has to remember to prune. A patch that
+names no expertise keeps whatever the character already had, so editing the
+tool list does not clear a player's picks.
+
+Expertise used to sit beside the lists as `Character.expertise`. A save written
+that way loads with it folded inside, so no migration step is involved. The
+`isProficient*` and `hasExpertise` predicates return `false` for a legacy
+character with no lists at all.
 
 ### Hit points and hit dice
 

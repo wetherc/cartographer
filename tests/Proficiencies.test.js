@@ -10,6 +10,7 @@ import {
   isProficientSkill,
   isProficientWeapon,
   hasExpertise,
+  normalizeProficiencies,
   normalizeWeaponProficiencies,
 } from '../src/entities/Proficiencies.js';
 import { createCharacter, withDefaults } from '../src/entities/Character.js';
@@ -73,25 +74,64 @@ test('withProficiencies stores deduplicated lists and defaults missing ones', ()
   assert.deepEqual(c.proficiencies.languages, []);
 });
 
+test('normalizeProficiencies reads an absent set, and an absent list, as empty', () => {
+  assert.deepEqual(normalizeProficiencies(), emptyProficiencies());
+  assert.deepEqual(normalizeProficiencies({ skills: ['stealth'] }).expertise, []);
+});
+
+test('normalizeProficiencies deduplicates every list and prunes expertise', () => {
+  const p = normalizeProficiencies({
+    saves: ['DEX', 'DEX'],
+    skills: ['stealth', 'stealth', 'arcana'],
+    expertise: ['stealth', 'stealth', 'perception'],
+    tools: ["thieves' tools", "thieves' tools"],
+  });
+  assert.deepEqual(p.saves, ['DEX']);
+  assert.deepEqual(p.skills, ['stealth', 'arcana']);
+  assert.deepEqual(p.expertise, ['stealth'], 'perception is not a granted skill');
+  assert.deepEqual(p.tools, ["thieves' tools"]);
+});
+
 test('withProficiencies prunes expertise whose skill proficiency was removed', () => {
   let c = withProficiencies(createCharacter('c1', 'Nim'), { skills: ['stealth', 'athletics'] });
   c = withExpertise(c, ['stealth', 'athletics']);
   c = withProficiencies(c, { skills: ['athletics'] });
-  assert.deepEqual(c.expertise, ['athletics']);
+  assert.deepEqual(c.proficiencies.expertise, ['athletics']);
+});
+
+test('withProficiencies keeps expertise a patch says nothing about', () => {
+  let c = withProficiencies(createCharacter('c1', 'Nim'), { skills: ['stealth'] });
+  c = withExpertise(c, ['stealth']);
+  c = withProficiencies(c, { skills: ['stealth'], tools: ["thieves' tools"] });
+  assert.deepEqual(c.proficiencies.expertise, ['stealth']);
+});
+
+test('withProficiencies takes an expertise list the patch does name', () => {
+  let c = withProficiencies(createCharacter('c1', 'Nim'), { skills: ['stealth', 'arcana'] });
+  c = withExpertise(c, ['stealth']);
+  c = withProficiencies(c, { skills: ['stealth', 'arcana'], expertise: ['arcana'] });
+  assert.deepEqual(c.proficiencies.expertise, ['arcana']);
 });
 
 test('withExpertise deduplicates and filters to proficient skills', () => {
   const proficient = withProficiencies(createCharacter('c1', 'Nim'), { skills: ['stealth'] });
   const c = withExpertise(proficient, ['stealth', 'stealth', 'arcana']);
-  assert.deepEqual(c.expertise, ['stealth']);
+  assert.deepEqual(c.proficiencies.expertise, ['stealth']);
+});
+
+test('withExpertise leaves the other proficiency lists alone', () => {
+  const p = withProficiencies(createCharacter('c1', 'Nim'), {
+    saves: ['DEX'],
+    skills: ['stealth'],
+    tools: ["thieves' tools"],
+  });
+  const c = withExpertise(p, ['stealth']);
+  assert.deepEqual(c.proficiencies.saves, ['DEX']);
+  assert.deepEqual(c.proficiencies.tools, ["thieves' tools"]);
 });
 
 test('proficiency predicates read the lists, defaulting for legacy characters', () => {
-  const legacy = {
-    ...createCharacter('c1', 'Nim'),
-    proficiencies: undefined,
-    expertise: undefined,
-  };
+  const legacy = { ...createCharacter('c1', 'Nim'), proficiencies: undefined };
   assert.equal(isProficientSave(legacy, 'DEX'), false);
   assert.equal(isProficientSkill(legacy, 'stealth'), false);
   assert.equal(hasExpertise(legacy, 'stealth'), false);
@@ -156,14 +196,33 @@ test('withDefaults splits a pre-split save whose weapons were one flat list', ()
 test('withDefaults fills empty lists on a pre-proficiency save and keeps stored ones', () => {
   const legacy = withDefaults({ id: 'c1', name: 'Old', level: 3 });
   assert.deepEqual(legacy.proficiencies, emptyProficiencies());
-  assert.deepEqual(legacy.expertise, []);
 
   const c = withExpertise(withProficiencies(rogueElf(), assembleProficiencies(rogueElf())), [
     'stealth',
   ]);
   const loaded = withDefaults(JSON.parse(JSON.stringify(c)));
   assert.deepEqual(loaded.proficiencies, c.proficiencies);
-  assert.deepEqual(loaded.expertise, ['stealth']);
+  assert.deepEqual(loaded.proficiencies.expertise, ['stealth']);
+});
+
+test('a save that kept expertise beside the lists loads with it inside them', () => {
+  const beside = /** @type {any} */ ({
+    id: 'c1',
+    name: 'Old',
+    level: 3,
+    proficiencies: {
+      saves: ['DEX'],
+      skills: ['stealth', 'arcana'],
+      weapons: { categories: ['simple'], named: [] },
+      armor: [],
+      tools: [],
+      languages: [],
+    },
+    expertise: ['stealth', 'perception'],
+  });
+  const loaded = withDefaults(beside);
+  assert.deepEqual(loaded.proficiencies.expertise, ['stealth'], 'a skill not granted is dropped');
+  assert.equal('expertise' in loaded, false, 'the old field does not survive the load');
 });
 
 test('a character saved before expertise existed gains an empty expertise list', () => {
@@ -177,6 +236,6 @@ test('a character saved before expertise existed gains an empty expertise list',
     conditions: [],
   });
   const next = withProficiencies(legacy, { skills: ['stealth'] });
-  assert.deepEqual(next.expertise, []);
+  assert.deepEqual(next.proficiencies.expertise, []);
   assert.deepEqual(getProficiencies(next).skills, ['stealth']);
 });

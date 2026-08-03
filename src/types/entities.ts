@@ -295,14 +295,16 @@ export interface WeaponProficiencies {
 }
 
 /** A character's proficiencies, one list per kind. Saves hold ability keys
- * (STR through CHA). Skills hold skill ids (see data/skills.js). Weapons
- * split into categories and named weapons. Armor holds the armor
- * categories. Tools and languages are free strings. The app assembles this
- * from class, race, and background, and the player can edit it by hand
- * afterward. */
+ * (STR through CHA). Skills hold skill ids (see data/skills.js). Expertise
+ * holds the skill ids rolled with double proficiency, and is always a subset
+ * of `skills`. Weapons split into categories and named weapons. Armor holds
+ * the armor categories. Tools and languages are free strings. The app
+ * assembles this from class, race, and background, and the player can edit it
+ * by hand afterward. */
 export interface Proficiencies {
   saves: string[];
   skills: string[];
+  expertise: string[];
   weapons: WeaponProficiencies;
   armor: string[];
   tools: string[];
@@ -382,9 +384,6 @@ export interface Character {
   /** Proficiency lists (see Proficiencies.js). Absent on older saves, which
    * load as having none. */
   proficiencies?: Proficiencies;
-  /** Skill ids rolled with double proficiency. Always a subset of
-   * `proficiencies.skills`. Absent on older saves. */
-  expertise?: string[];
   /** Ability-score-improvement choices already made, one per claimed class ASI
    * level (see LevelUp.js). Absent on older saves, which load as none made. */
   asiChoices?: AsiChoices;

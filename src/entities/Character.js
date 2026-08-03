@@ -13,7 +13,7 @@ import { derive } from './Progression.js';
 import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
-import { emptyProficiencies, normalizeWeaponProficiencies } from './Proficiencies.js';
+import { emptyProficiencies, normalizeProficiencies } from './Proficiencies.js';
 import { getClasses, sanitizeClasses, totalLevel } from './Multiclass.js';
 import { migrateASIChoices } from './LevelUp.js';
 import { clamp } from '../util/num.js';
@@ -320,9 +320,10 @@ export function unprepareSpell(character, spellId) {
  * means "no HP tracking". A pre-equipment save gets empty slots, with the
  * pre-piecewise 'armor' slot carrying over into 'chest'. A pre-spellbook
  * save gains an empty spellbook. A pre-proficiency save gains empty
- * proficiency and expertise lists. A save whose weapon proficiencies are
- * one flat list has them sorted into the category and named lists they are
- * now kept in. A pre-multiclass save's scalar `class` and `subclass` fields
+ * proficiency lists. A save whose weapon proficiencies are one flat list has
+ * them sorted into the category and named lists they are now kept in. A save
+ * that keeps expertise beside the proficiencies, rather than inside them, has
+ * it folded in. A pre-multiclass save's scalar `class` and `subclass` fields
  * fold into a one-entry class list at the character's level. The class
  * list is sanitized on the way in, so a hand-edited one whose levels
  * oversell the character's level comes back trimmed to fit, instead of
@@ -342,8 +343,11 @@ export function withDefaults(character) {
   const {
     class: legacyClass,
     subclass: legacySubclass,
+    expertise: legacyExpertise,
     ...rest
-  } = /** @type {Character & { class?: string, subclass?: string }} */ (character);
+  } = /** @type {Character & { class?: string, subclass?: string, expertise?: string[] }} */ (
+    character
+  );
   const classes = sanitizeClasses(
     character.classes ??
       (legacyClass
@@ -366,12 +370,11 @@ export function withDefaults(character) {
     location: character.location ?? null,
     spellbook: character.spellbook ?? emptySpellbook(),
     proficiencies: character.proficiencies
-      ? {
+      ? normalizeProficiencies({
           ...character.proficiencies,
-          weapons: normalizeWeaponProficiencies(character.proficiencies.weapons),
-        }
+          expertise: character.proficiencies.expertise ?? legacyExpertise,
+        })
       : emptyProficiencies(),
-    expertise: character.expertise ?? [],
     asiChoices: migrateASIChoices(character.asiChoices ?? {}, classes[0]?.classId ?? ''),
   });
 }
@@ -404,7 +407,6 @@ export function createCharacter(id, name, stats = {}, race = '') {
     location: null,
     spellbook: emptySpellbook(),
     proficiencies: emptyProficiencies(),
-    expertise: [],
   };
 }
 

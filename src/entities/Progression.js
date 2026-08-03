@@ -2,7 +2,10 @@ import { syncSlotsToLevel } from './SpellSlots.js';
 import { syncHitDice, reconcileMaxHP } from './HitDice.js';
 import { withClasses as setClassList } from './Multiclass.js';
 import { withRace as setRace, withCustomRace as setCustomRace } from './Races.js';
-import { withProficiencies as setProficiencies } from './Proficiencies.js';
+import {
+  withProficiencies as setProficiencies,
+  withExpertise as setExpertise,
+} from './Proficiencies.js';
 import {
   applyASI as recordASI,
   takeFeat as recordFeat,
@@ -76,6 +79,10 @@ export const withCustomRace = deriving(setCustomRace);
 /** Set the proficiency lists, then re-derive. See Proficiencies.withProficiencies.
  * @type {(character: Character, proficiencies: Partial<Proficiencies>) => Character} */
 export const withProficiencies = deriving(setProficiencies);
+
+/** Set the expertise skills, then re-derive. See Proficiencies.withExpertise.
+ * @type {(character: Character, skillIds: string[]) => Character} */
+export const withExpertise = deriving(setExpertise);
 
 /** Spend the first pending ASI slot on an ability increase, then re-derive.
  * This step grants the retroactive HP that a CON increase is worth. See

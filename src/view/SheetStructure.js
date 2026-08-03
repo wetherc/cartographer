@@ -65,7 +65,6 @@ export function sheetDeps(character, perms, catalogStamp) {
     character.classes,
     character.asiChoices,
     character.proficiencies,
-    character.expertise,
     character.inventory,
     character.equipment,
     character.spellbook,
