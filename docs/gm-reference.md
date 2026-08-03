@@ -210,6 +210,10 @@ tile stays revealed. An encounter marker and an NPC marker appear at
 detection range, which is twice the fog reveal radius. The Nearby
 encounters tab lists encounters within four times the reveal radius.
 
+Hovering a tile in Play mode, with the pointer or with the keyboard cursor,
+names the point of interest and the NPCs on it. This follows the same
+detection range as the markers, so a tile out of range says nothing.
+
 ### Encounter fields
 
 | Field | Meaning |

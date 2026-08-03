@@ -368,12 +368,21 @@ export function createMapTravel(app, env) {
       return;
     }
     const nodeId = navigator.getCurrentNode().id;
-    const npcNames = state.npcs
-      .filter((n) => n.location && n.location.nodeId === nodeId && n.location.tileId === tile.id)
-      .map((n) => n.name);
-    const poiType = tile.metadata.poiType;
+    // The POI outline and the NPC circle draw only within detection range of
+    // the party or a character token. The tooltip follows the same rule, so
+    // hovering a far tile, with the pointer or with the keyboard cursor, does
+    // not name what the map keeps unmarked.
+    const inRange = env.mapCanvas.markerVisible(tile.id);
+    const npcNames = inRange
+      ? state.npcs
+          .filter(
+            (n) => n.location && n.location.nodeId === nodeId && n.location.tileId === tile.id,
+          )
+          .map((n) => n.name)
+      : [];
+    const poiType = inRange ? tile.metadata.poiType : null;
     // Notes are the GM's secret. Players see the POI type and who stands
-    // here. The marker is already visible once the tile is revealed.
+    // here.
     const gm = isGM(state.role);
     const visible = poiType || npcNames.length > 0 || (gm && tile.metadata.notes);
     if (!visible) {

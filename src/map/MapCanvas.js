@@ -3,6 +3,7 @@ import { MapRenderer } from './MapRenderer.js';
 import { MapCanvasPointer } from './MapCanvasPointer.js';
 import { MapCanvasKeyboard } from './MapCanvasKeyboard.js';
 import { parseCoords, clampZoom, fitToExtent } from './MapGeometry.js';
+import { markerAnchors, withinMarkerRange } from './MapMarkers.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -298,6 +299,18 @@ export class MapCanvas {
   setNPCTiles(tileIds) {
     this.npcTileIds = tileIds;
     this.render();
+  }
+
+  /**
+   * Whether a tile is close enough to the party or a character token for its
+   * markers to draw. Anything that tells the player what sits on a tile reads
+   * this, so the hover tooltip says no more than the map already shows.
+   * @param {string} tileId
+   * @returns {boolean}
+   */
+  markerVisible(tileId) {
+    if (this.revealAll) return true;
+    return withinMarkerRange(markerAnchors(this), this.markerRange, tileId);
   }
 
   /**

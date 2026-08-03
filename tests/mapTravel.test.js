@@ -36,6 +36,7 @@ const INTERIOR = 'assets/tiles/interior/interior';
  *   characters?: any[],
  *   npcs?: any[],
  *   selected?: string | null,
+ *   markerRange?: string[] | null,
  * }} [opts]
  */
 function world({
@@ -46,6 +47,7 @@ function world({
   characters = [],
   npcs = [],
   selected = null,
+  markerRange = null,
 } = {}) {
   const grid = new TileGrid();
   const parent = fillTiles(createMapNode('world', 'World', null, 6, 6), (id) =>
@@ -99,6 +101,11 @@ function world({
     mapCanvas: {
       setNode: () => calls.push('setNode'),
       refreshNode: () => calls.push('refreshNode'),
+      // The real canvas measures the tile against the party and the character
+      // tokens. `markerRange` here lists the tiles that are close enough, and
+      // null means every tile is.
+      markerVisible: (/** @type {string} */ tileId) =>
+        markerRange === null || markerRange.includes(tileId),
     },
     breadcrumb: { update: () => calls.push('breadcrumb') },
     worldTree: { update: () => calls.push('worldTree') },
@@ -514,6 +521,26 @@ test('the hover tooltip names the POI and who stands there, and hides GM notes f
   seed(player);
   assert.equal(player.tooltips[0].notes, '', 'notes are the GM secret');
   assert.equal(player.tooltips[0].npcs, 'Sage');
+});
+
+test('the hover tooltip says nothing about a tile whose markers are out of range', () => {
+  // The regression this pins: the keyboard cursor and the pointer both run this
+  // handler over any revealed tile, so a tile too far away for its NPC circle
+  // and POI outline to draw used to name the NPC standing on it anyway.
+  const sage = createNPC('sage', 'Sage', { location: { nodeId: 'world', tileId: '1,1' } });
+  const w = world({ role: 'player', npcs: [sage], markerRange: [] });
+  reveal(w, '1,1');
+  const node = w.navigator.getCurrentNode();
+  w.grid.updateNode(updateTileMetadata(node, '1,1', { poiType: 'shrine' }));
+  w.travel.onCellHover(tileOf(w.navigator, '1,1'), 12, 34);
+  assert.deepEqual(w.tooltips, []);
+
+  const near = world({ role: 'player', npcs: [sage], markerRange: ['1,1'] });
+  reveal(near, '1,1');
+  const sameNode = near.navigator.getCurrentNode();
+  near.grid.updateNode(updateTileMetadata(sameNode, '1,1', { poiType: 'shrine' }));
+  near.travel.onCellHover(tileOf(near.navigator, '1,1'), 12, 34);
+  assert.deepEqual(near.tooltips, [{ title: 'Shrine', npcs: 'Sage', notes: '', x: 12, y: 34 }]);
 });
 
 test('the hover tooltip shows a GM note on a tile with nothing else on it', () => {

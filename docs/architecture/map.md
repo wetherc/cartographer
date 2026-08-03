@@ -306,6 +306,14 @@ twice the fog reveal radius, so a marker can be sensed slightly beyond the
 fog edge, but never from across the map. A node the party is not currently
 in shows no markers at all outside Build mode.
 
+`markerAnchors` and `withinMarkerRange` in `MapMarkers.js` are the pure
+halves of that rule, and `MapCanvas.markerVisible(tileId)` answers it for
+code outside the render loop. The Play-mode hover tooltip in `mapTravel.js`
+calls it before it names the POI type or the NPCs on a tile. The tooltip runs
+for a pointer hover and for the keyboard cursor alike, so without that call
+either one would read out what the map deliberately leaves unmarked. GM notes
+are not gated, because they are not drawn on the map at all.
+
 ## The party
 
 `PartyTracker` (`src/party/PartyTracker.js`) owns the party's

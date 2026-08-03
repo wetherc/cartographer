@@ -39,6 +39,47 @@ const npcCircle = (ctx, sx, sy, size) => {
 };
 
 /**
+ * The tiles that markers are detected from: every character token's tile plus
+ * the party's tile. A scout who wandered off senses danger around their own
+ * position, not only the party's position. This is pure, so both the renderer
+ * and the hover tooltip can use the one rule.
+ * @param {{ characterTokens?: { tileId: string }[], partyTileId?: string | null }} source
+ * @returns {{ x: number, y: number }[]}
+ */
+export function markerAnchors(source) {
+  /** @type {{ x: number, y: number }[]} */
+  const anchors = [];
+  for (const token of source.characterTokens ?? []) {
+    const coords = parseCoords(token.tileId);
+    if (coords) anchors.push(coords);
+  }
+  if (source.partyTileId) {
+    const coords = parseCoords(source.partyTileId);
+    if (coords) anchors.push(coords);
+  }
+  return anchors;
+}
+
+/**
+ * Whether a tile is within `range` grid cells of any anchor. This uses the
+ * same Euclidean rule as FogOfWar.withinRadius.
+ * @param {{ x: number, y: number }[]} anchors
+ * @param {number} range
+ * @param {string} tileId
+ * @returns {boolean}
+ */
+export function withinMarkerRange(anchors, range, tileId) {
+  const coords = parseCoords(tileId);
+  if (!coords) return false;
+  const rangeSq = range * range;
+  return anchors.some((a) => {
+    const dx = coords.x - a.x;
+    const dy = coords.y - a.y;
+    return dx * dx + dy * dy <= rangeSq;
+  });
+}
+
+/**
  * The marker layer of the map render: the gold party dot, per-character
  * tokens, red encounter diamonds, and blue NPC circles, plus the shared
  * detection-range rule that gates them. This layer is split out of
@@ -69,16 +110,7 @@ export class MapMarkers {
    */
   _markerAnchors(view) {
     if (this._anchorsView === view) return this._anchors;
-    /** @type {{ x: number, y: number }[]} */
-    const anchors = [];
-    for (const token of view.characterTokens ?? []) {
-      const coords = parseCoords(token.tileId);
-      if (coords) anchors.push(coords);
-    }
-    if (view.partyTileId) {
-      const coords = parseCoords(view.partyTileId);
-      if (coords) anchors.push(coords);
-    }
+    const anchors = markerAnchors(view);
     this._anchorsView = view;
     this._anchors = anchors;
     return anchors;
@@ -107,14 +139,7 @@ export class MapMarkers {
    */
   markerVisible(view, tileId) {
     if (view.revealAll) return true;
-    const coords = parseCoords(tileId);
-    if (!coords) return false;
-    const rangeSq = view.markerRange * view.markerRange;
-    return this._markerAnchors(view).some((a) => {
-      const dx = coords.x - a.x;
-      const dy = coords.y - a.y;
-      return dx * dx + dy * dy <= rangeSq;
-    });
+    return withinMarkerRange(this._markerAnchors(view), view.markerRange, tileId);
   }
 
   /**
