@@ -48,7 +48,7 @@ import { captureFocus, restoreFocus } from './focusMemory.js';
  *   icon: import('./icons.js').IconName,
  *   label: string,
  *   title?: string,
- *   variant?: string,
+ *   variant?: import('./buttons.js').ButtonVariant,
  *   pressed?: boolean,
  *   onClick: (entry: T) => unknown,
  * }} RowAction
@@ -59,7 +59,7 @@ import { captureFocus, restoreFocus } from './focusMemory.js';
  * @typedef {{
  *   label: string,
  *   icon?: import('./icons.js').IconName,
- *   variant?: string,
+ *   variant?: import('./buttons.js').ButtonVariant,
  *   className?: string,
  *   onClick: () => unknown,
  * }} AddButton

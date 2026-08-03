@@ -15,6 +15,8 @@ import { icon } from './icons.js';
  * but wears no button chrome. badge and sectionLabel round the set out.
  */
 
+/** @typedef {'primary' | 'danger' | 'success'} ButtonVariant */
+
 /**
  * An icon-only `btn btn--icon` button. The aria-label is required, since an
  * icon-only button has no other accessible name. It becomes the hover title
@@ -22,7 +24,7 @@ import { icon } from './icons.js';
  * @param {import('./icons.js').IconName} name
  * @param {string} ariaLabel
  * @param {(event: MouseEvent) => void} onClick
- * @param {{ variant?: string, className?: string, title?: string }} [opts]
+ * @param {{ variant?: ButtonVariant, className?: string, title?: string }} [opts]
  * variant maps to a `btn--*` modifier, for example 'danger' or 'success'.
  * @returns {HTMLButtonElement}
  */
@@ -44,7 +46,7 @@ export function iconButton(name, ariaLabel, onClick, opts = {}) {
  * @param {string} label
  * @param {(event: MouseEvent) => void} [onClick] Omit onClick for a submit
  *   button. The dialog reads its return value instead of a listener.
- * @param {{ icon?: import('./icons.js').IconName, variant?: string, className?: string,
+ * @param {{ icon?: import('./icons.js').IconName, variant?: ButtonVariant, className?: string,
  *   title?: string, ariaLabel?: string, type?: 'button' | 'submit', value?: string }} [opts]
  * @returns {HTMLButtonElement}
  */
@@ -216,10 +218,10 @@ export function chip(label, opts = {}) {
  * @returns {HTMLSpanElement}
  */
 export function removableChip(label, onRemove, opts = {}) {
-  const remove = el('button', 'chip__remove', '×');
-  remove.type = 'button';
-  remove.setAttribute('aria-label', `Remove ${opts.removeLabel ?? label}`);
-  remove.addEventListener('click', onRemove);
+  const remove = bareButton(['×'], onRemove, {
+    className: 'chip__remove',
+    ariaLabel: `Remove ${opts.removeLabel ?? label}`,
+  });
   const wrapper = chip(label, opts);
   wrapper.append(remove);
   return wrapper;

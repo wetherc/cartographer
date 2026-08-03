@@ -1,6 +1,6 @@
 import { emptyState, textButton } from './buttons.js';
 import { el } from './dom.js';
-import { select, setOptions, textareaField } from './formFields.js';
+import { labeled, select, setOptions, textareaField } from './formFields.js';
 import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/map.js').Tile} Tile */
@@ -53,7 +53,7 @@ export function mountTileInspector(container, opts) {
       poiType: typeSelect.value === '' ? null : /** @type {POIType} */ (typeSelect.value),
     });
   });
-  const typeField = el('label', 'tile-inspector__field u-col u-g1 u-muted', 'POI type', typeSelect);
+  const typeField = labeled('POI type', typeSelect, { className: 'tile-inspector__field' });
 
   // Discoverable
   const discInput = el('input');
@@ -69,7 +69,7 @@ export function mountTileInspector(container, opts) {
   // Notes
   const notesInput = textareaField('', { rows: 4, className: 'tile-inspector__notes' });
   notesInput.addEventListener('input', () => opts.onChange({ notes: notesInput.value }));
-  const notesField = el('label', 'tile-inspector__field u-col u-g1 u-muted', 'Notes', notesInput);
+  const notesField = labeled('Notes', notesInput, { className: 'tile-inspector__field' });
 
   form.append(coordLabel, typeField, discField, notesField);
 

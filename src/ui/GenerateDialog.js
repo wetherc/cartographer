@@ -4,7 +4,7 @@ import { randomSeed } from '../util/Rng.js';
 import { clampInt } from '../util/num.js';
 import { textButton } from './buttons.js';
 import { el } from './dom.js';
-import { numberField, select } from './formFields.js';
+import { labeled, numberField, select } from './formFields.js';
 import { openDialog } from './Modal.js';
 
 /**
@@ -42,7 +42,7 @@ export function generateDialog(options) {
 
       /** @template {HTMLElement} T @param {string} caption @param {T} control @returns {T} */
       const field = (caption, control) => {
-        body.push(el('label', 'modal__field u-col u-g1 u-muted', caption, control));
+        body.push(labeled(caption, control, { className: 'modal__field' }));
         return control;
       };
 

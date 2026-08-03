@@ -393,10 +393,7 @@ body {
 }
 
 .chip__remove {
-  border: none;
-  background: none;
   color: var(--text-muted);
-  cursor: pointer;
   padding: 0 0.15rem;
   font-size: 1rem;
   line-height: 1;

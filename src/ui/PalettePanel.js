@@ -68,7 +68,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
    * @param {string} label
    * @param {import('./icons.js').IconName} glyph
    * @param {Brush} value
-   * @param {string} [variant]
+   * @param {import('./buttons.js').ButtonVariant} [variant]
    */
   function toolButton(label, glyph, value, variant) {
     const node = textButton(label, () => select(value, node), {
