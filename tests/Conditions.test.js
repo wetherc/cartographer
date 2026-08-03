@@ -46,3 +46,27 @@ test('tickConditions leaves indefinite conditions untouched', () => {
   const list = [createCondition('Charmed', null)];
   assert.deepEqual(tickConditions(list), list);
 });
+
+test('a chip stores only the halves it was given', () => {
+  const rider = { rolls: ['attack'], dice: 1, die: 'd4' };
+  assert.deepEqual(createCondition('Bless', 10, { rider }), {
+    name: 'Bless',
+    rounds: 10,
+    rider,
+  });
+  // A hand-added chip stores neither key, so an old save stays the shape it was.
+  assert.deepEqual(createCondition('Prone'), { name: 'Prone', rounds: null });
+  const list = addCondition([], 'Bless', 10, { rider });
+  assert.equal(list[0].rider, rider);
+});
+
+test('a replacement chip takes over the rider as well as the source', () => {
+  const blessed = addCondition([], 'Bless', 10, {
+    rider: { rolls: ['attack'], dice: 1, die: 'd4' },
+  });
+  // The GM adds a plain chip with the same name, so the GM owns it now.
+  const plain = addCondition(blessed, 'bless', 3);
+  assert.equal(plain.length, 1);
+  assert.equal(plain[0].rider, undefined);
+  assert.equal(plain[0].rounds, 3);
+});

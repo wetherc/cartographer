@@ -13,7 +13,7 @@ const SCHOOLS = new Set([
   'necromancy',
   'transmutation',
 ]);
-const KINDS = new Set(['attack', 'save', 'heal', 'utility']);
+const KINDS = new Set(['attack', 'save', 'heal', 'buff', 'utility']);
 const ABILITIES = new Set(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']);
 const CASTER_IDS = new Set(CLASS_LIST.filter((c) => c.spellListId).map((c) => c.spellListId));
 

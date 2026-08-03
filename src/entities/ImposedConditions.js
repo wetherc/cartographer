@@ -84,7 +84,9 @@ export function repeatSaves(list, { bonusOf = recordedBonus, rng = Math.random }
   const conditions = list.filter((condition) => {
     const source = condition.source;
     if (!source?.saveEnds) return true;
-    const save = resolveSave(bonusOf(source), source.saveDC ?? 10, { rng });
+    // The whole list rides the retry, including the chip being retried. A
+    // penalty that a spell imposes applies to the save that shakes it off.
+    const save = resolveSave(bonusOf(source), source.saveDC ?? 10, { rng, conditions: list });
     results.push({ condition, save, ended: save.success });
     return !save.success;
   });

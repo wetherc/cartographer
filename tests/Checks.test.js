@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { saveBonus, savingThrow, resolveSave } from '../src/entities/Checks.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { withProficiencies } from '../src/entities/Proficiencies.js';
+import { createCondition } from '../src/entities/Conditions.js';
 
 /**
  * A deterministic RNG replaying a queue of unit values, one per call, matching
@@ -111,4 +112,52 @@ test('resolveSave defaults to a normal roll with a live RNG', () => {
   assert.ok(result.natural >= 1 && result.natural <= 20);
   assert.equal(result.roll.selection.mode, 'normal');
   assert.equal(result.total, result.natural);
+});
+
+test('a rider on the roller joins the save and reports what it added', () => {
+  const blessed = [
+    createCondition('Bless', 10, { rider: { rolls: ['attack', 'save'], dice: 1, die: 'd4' } }),
+  ];
+  // The rider die draws first, then the d20.
+  const made = resolveSave(2, 15, {
+    conditions: blessed,
+    rng: seq([face(4, 4), face(20, 10)]),
+  });
+  assert.equal(made.total, 16, '10 on the d20, +2 bonus, +4 from Bless');
+  assert.equal(made.success, true);
+  assert.deepEqual(made.rider, { modifier: 4, note: 'Bless +1d4 [4]' });
+  // The natural stays the raw d20, so a readout can still name the die.
+  assert.equal(made.natural, 10);
+});
+
+test('a save with no rider chip reports none and rolls the same as before', () => {
+  const plain = resolveSave(2, 15, { rng: seq([face(20, 10)]) });
+  assert.equal(plain.total, 12);
+  assert.equal(plain.rider, null);
+  const irrelevant = resolveSave(2, 15, {
+    conditions: [createCondition('Guidance', 10, { rider: { rolls: ['check'], dice: 1 } })],
+    rng: seq([face(20, 10)]),
+  });
+  assert.equal(irrelevant.total, 12, 'a check rider does not touch a save');
+  assert.equal(irrelevant.rider, null);
+});
+
+test('savingThrow reads the character’s own chips without being asked', () => {
+  const baned = {
+    ...hero(),
+    conditions: [
+      createCondition('Bane', 10, { rider: { rolls: ['attack', 'save'], dice: -1, die: 'd4' } }),
+    ],
+  };
+  const rolled = savingThrow(baned, 'CON', 15, { rng: seq([face(4, 3), face(20, 10)]) });
+  assert.equal(rolled.total, 10, '10 + 3 CON - 3 from Bane');
+  assert.equal(rolled.success, false);
+  assert.equal(rolled.rider?.note, 'Bane -1d4 [3]');
+});
+
+test('a character with no conditions field rolls a plain save', () => {
+  const bare = /** @type {any} */ ({ ...hero(), conditions: undefined });
+  const rolled = savingThrow(bare, 'CON', 15, { rng: seq([face(20, 10)]) });
+  assert.equal(rolled.total, 13, '10 + 3 CON, with nothing to ride it');
+  assert.equal(rolled.rider, null);
 });

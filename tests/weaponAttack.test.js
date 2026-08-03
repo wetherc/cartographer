@@ -354,3 +354,38 @@ test('weaponAttack ignores a participant with nothing to swing', async () => {
   await weaponAttack(app, /** @type {any} */ (combat), combat.order[0], /** @type {any} */ (SWORD));
   assert.deepEqual(app.toastMessages, [], 'an NPC never reaches the dialog or the toast');
 });
+
+test('a rider chip on the attacker joins the attack roll and the log', () => {
+  const blessed = {
+    ...withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12),
+    conditions: [
+      { name: 'Bless', rounds: 10, rider: { rolls: ['attack', 'save'], dice: 1, die: 'd4' } },
+    ],
+  };
+  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 12 }, HERE);
+  // A 5 on the d20 plus STR +3 plus proficiency +2 is 10, which misses AC 12.
+  // The Bless d4 lands on 3, so the attack reaches 13 and hits.
+  const app = stubApp({ characters: [blessed], encounters: [goblin], rng: scripted([d20(5)]) });
+  rollWeaponAttack(app, {
+    attacker: blessed,
+    defender: { id: 'goblin', name: 'Goblin', ac: 12 },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([2 / 4, 4 / 8]),
+  });
+  assert.deepEqual(app.rolls, [{ selection: { counts: { d20: 1 }, modifier: 8 }, target: 12 }]);
+  assert.match(app.log[0], /proficiency \+2, Bless \+1d4 \[3\]\): 13 to hit vs AC 12 — hit\.$/);
+});
+
+test('an attacker with no rider chip rolls exactly what it rolled before', () => {
+  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
+  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: { ...hero, conditions: [{ name: 'Prone', rounds: null }] },
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  assert.deepEqual(app.rolls, [{ selection: { counts: { d20: 1 }, modifier: 5 }, target: 10 }]);
+  assert.equal(/Bless|\[/.test(app.log[0]), false, 'nothing extra reaches the log');
+});

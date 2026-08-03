@@ -1,5 +1,6 @@
 import type { RaceSnapshot } from './race.js';
 import type { ClassRef, WeaponCategory } from './class.js';
+import type { DieType } from './dice.js';
 
 export interface EncounterLocation {
   nodeId: string;
@@ -24,12 +25,33 @@ export interface ConditionSource {
   saveEnds?: boolean;
 }
 
+/** Which rolls a rider touches. `check` has no roller yet, so a check rider
+ * shows on the chip and the GM applies it in the dice tray. */
+export type RiderRoll = 'attack' | 'save' | 'check';
+
+/** A bonus or penalty that a condition adds to the holder's later rolls.
+ * Bless adds 1d4 to attack rolls and saving throws. Bane subtracts the same,
+ * which is the identical shape with a negative dice count. */
+export interface RollRider {
+  /** Which rolls it touches. A rider that touches nothing is not a rider. */
+  rolls: RiderRoll[];
+  /** How many dice to roll. A negative count subtracts them. Absent means none. */
+  dice?: number;
+  /** Which die the count refers to. Absent means d4. */
+  die?: DieType;
+  /** A flat amount on top of the dice, negative to subtract. Absent means none. */
+  flat?: number;
+}
+
 /** A status or condition with an optional remaining-rounds counter. Null means indefinite. */
 export interface Condition {
   name: string;
   rounds: number | null;
   /** What imposed the condition, for a spell-imposed condition. Absent for a hand-added one. */
   source?: ConditionSource;
+  /** What the condition adds to the holder's later rolls. Absent for a chip
+   * that only names a state. */
+  rider?: RollRider;
 }
 
 /** Enemy authoring tier. A mob is rank-and-file. A legend runs above-normal stats for its level. */

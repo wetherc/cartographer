@@ -1,4 +1,4 @@
-import type { DamagePart } from './entities.js';
+import type { DamagePart, RollRider } from './entities.js';
 
 /** The six ability scores, the keys of a character's stat block. */
 export type Ability = 'STR' | 'DEX' | 'CON' | 'INT' | 'WIS' | 'CHA';
@@ -52,6 +52,10 @@ export interface SpellSaveEffect {
    * end of each of its turns, ending the effect on a success (Hold Person).
    * Absent means the condition runs for the spell's whole duration. */
   saveEnds?: boolean;
+  /** What the imposed condition adds to the target's later rolls (Bane's
+   * -1d4). It rides on the chip, so it lasts as long as the chip does. Only
+   * meaningful alongside a condition. */
+  rider?: RollRider;
 }
 
 /** Restorative magic: healing dice applied to the target. */
@@ -60,13 +64,28 @@ export interface SpellHealEffect {
   healing: DamagePart[];
 }
 
+/** A spell that puts a condition chip on each willing target, with no roll
+ * to resolve. The chip carries the cast's source, so it comes off when the
+ * caster stops holding the spell. Bless, Bane's opposite number, and
+ * Guidance work this way, as does a chip that only names a state such as
+ * Invisible. */
+export interface SpellBuffEffect {
+  kind: 'buff';
+  /** What the chip is called. Absent means the chip carries the spell's own
+   * name, which is what a GM who types nothing wants. */
+  condition?: string;
+  /** What the chip adds to the target's later rolls. Absent means the chip
+   * only names a state. */
+  rider?: RollRider;
+}
+
 /** A spell with no roll to resolve. Its rules live in the description text. */
 export interface SpellUtilityEffect {
   kind: 'utility';
 }
 
 export type SpellEffect =
-  SpellAttackEffect | SpellSaveEffect | SpellHealEffect | SpellUtilityEffect;
+  SpellAttackEffect | SpellSaveEffect | SpellHealEffect | SpellBuffEffect | SpellUtilityEffect;
 
 /** How a spell grows when cast with a higher-level slot (leveled spells), or
  * as the caster levels up (cantrips scale at levels 5, 11, and 17). */

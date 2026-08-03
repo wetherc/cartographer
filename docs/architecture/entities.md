@@ -401,11 +401,13 @@ rather than only on a long rest.
 `entities/Checks.js` holds both halves of a save. `saveBonus(character, ability)`
 returns what a character adds: the ability modifier taken from the
 equipment-adjusted scores, plus the proficiency bonus when the class granted
-that save. `resolveSave(bonus, dc, { mode, rng })` rolls one d20 through the
-shared dice roller and reports `{ roll, total, dc, natural, success }`. It
-succeeds on a tie with the DC. `savingThrow(character, ability, dc, opts)`
-composes the two functions and adds `proficient`, so a readout can state why
-the number is what it is.
+that save. `resolveSave(bonus, dc, { mode, rng, conditions })` rolls one d20
+through the shared dice roller and reports
+`{ roll, total, dc, natural, success, rider }`. It succeeds on a tie with the
+DC. `savingThrow(character, ability, dc, opts)` composes the two functions and
+adds `proficient`, so a readout can state why the number is what it is.
+`conditions` are the chips the roller holds; see
+[Riders on later rolls](#riders-on-later-rolls) below.
 
 The two entry points exist because a character does not always roll a save.
 `Casting.js`'s save effect resolves every target through `resolveSave`, and
@@ -517,10 +519,70 @@ save effect. `Library.normalizeSpell` accepts this alongside a condition and
 drops it when there is no condition. Hold Person and Power Word Stun ship
 with it.
 
-The chip still carries no mechanical effect, so a paralyzed creature acts
-normally, and the retry is the only rule that reads the condition. A spell
-whose only target shook the effect off also leaves the caster concentrating,
-because nothing tracks how many targets a cast has left.
+Most chips still carry no mechanical effect, so a paralyzed creature acts
+normally. The retry and the rider below are the two rules that read a chip. A
+spell whose only target shook the effect off also leaves the caster
+concentrating, because nothing tracks how many targets a cast has left.
+
+## Riders on later rolls
+
+A chip can change the rolls its holder makes afterwards. Bless adds 1d4 to an
+ally's attack rolls and saving throws. Bane subtracts the same from a foe's.
+`Condition.rider` holds that as `{ rolls, dice, die, flat }`: which rolls it
+touches, how many dice, which die, and a flat amount. The dice count is
+signed, so Bane is Bless with a minus sign and there is no second field for
+the direction. `entities/Riders.js` owns the model:
+
+- `normalizeRider(value)` coerces a written block, the same tolerant parse
+  that every other spell field gets. A rider that touches no roll, or that
+  adds neither dice nor a flat amount, reads as absent.
+- `activeRiders(conditions, kind)` picks the chips that touch one roll kind.
+- `rollRiders(conditions, kind, rng)` rolls them and returns
+  `{ modifier, note }`. The note names each chip and the faces it rolled, so a
+  log line can explain the number.
+- `riderText` and `riderSummary` render a rider for a chip tooltip or a spell
+  readout.
+
+The rider dice roll inside `rollRiders` rather than joining the caller's own
+dice selection. A bonus and a penalty then resolve the same way, and a save,
+which has no dice tray, works identically to an attack, which has one.
+
+Three roll sites read riders:
+
+- `app/weaponAttack.js` reads the attacker's own chips before it loads the
+  tray, and puts the note in the log beside the dialog's own modifiers.
+- `Casting.js` rolls the caster's chips once per projectile, because each
+  projectile is its own attack roll. An auto-hit projectile rolls no attack,
+  so no rider touches it. The caster view carries no conditions, so
+  `app/spellCast.js` passes them in from the real combatant as
+  `casterConditions`.
+- `Checks.resolveSave` rolls the roller's chips. Every save in the app goes
+  through it, so `savingThrow`, a spell's save effect, and a repeated save all
+  get riders from that one place. `savingThrow` reads the character's own
+  chips without being asked, which means a blessed caster holds a spell
+  against damage more easily.
+
+Ability checks have no roller yet, so a `check` rider only shows: on the chip
+tooltip and in the spell detail. The GM applies it in the dice tray. Guidance
+ships that way.
+
+A rider reaches a target one of two ways. A save spell's `effect.rider` rides
+the chip that a failed save imposes, which is how Bane works. A `buff` effect
+puts a chip on each willing target with no roll at all, which is how Bless and
+Guidance work. A buff names its chip through `effect.condition`, and
+`Casting.buffCondition` falls back to the spell's own name when it names none.
+The chip carries the same `ConditionSource` a failed save writes, so
+`endSpellEffects` sweeps a buff off every recipient when the caster stops
+concentrating.
+
+Two riders on one creature both apply, so Bless and Bane cancel out over the
+long run rather than one winning. Two chips of the same name cannot coexist:
+`addCondition` matches case-insensitively, and the newer chip replaces the
+older one along with its source and its rider.
+
+The hand-add dialog in `ui/ConditionsBar.js` takes a name and a duration only.
+A chip a GM adds by hand carries no rider, and a chip merely named `Bless`
+changes no roll. The dice tray already takes a bonus die for that case.
 
 ## The UI layer over entities
 

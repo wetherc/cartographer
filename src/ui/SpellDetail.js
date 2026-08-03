@@ -1,4 +1,6 @@
 import { formatDamage } from '../entities/Equipment.js';
+import { buffCondition } from '../entities/Casting.js';
+import { riderSummary } from '../entities/Riders.js';
 import { formatCastingTime, formatDuration } from '../entities/SpellTiming.js';
 import { capitalize } from '../util/text.js';
 import { textButton } from './buttons.js';
@@ -14,9 +16,10 @@ import { openDialog } from './Modal.js';
 
 /**
  * The one-line effect summary shown under the meta grid: a spell attack and
- * its damage, a save (ability plus DC) with its damage and rider, or healing
- * dice. A utility spell has no line, because its rules live in the
- * description.
+ * its damage, a save (ability plus DC) with its damage and the chip it
+ * imposes, healing dice, or the chip a buff hands out. A chip that changes
+ * later rolls states what it adds. A utility spell has no line, because its
+ * rules live in the description.
  * @param {Spell} spell
  * @param {number | null} saveDC the caster's save DC, or null when unknown
  * @returns {string | null}
@@ -37,11 +40,16 @@ function effectSummary(spell, saveDC) {
     const dc = saveDC !== null ? ` DC ${saveDC}` : '';
     const dmg = formatDamage(effect.damage);
     const half = effect.halfOnSave ? ' (half on save)' : '';
-    const cond = effect.condition ? `, ${effect.condition}` : '';
+    const rider = effect.rider ? ` (${riderSummary(effect.rider)})` : '';
+    const cond = effect.condition ? `, ${effect.condition}${rider}` : '';
     return `${effect.saveAbility} save${dc} — ${dmg || 'no damage'}${half}${cond}`;
   }
   if (effect.kind === 'heal') {
     return `Healing — ${formatDamage(effect.healing) || 'no dice'}`;
+  }
+  if (effect.kind === 'buff') {
+    const chip = buffCondition(spell);
+    return effect.rider ? `${chip} — ${riderSummary(effect.rider)}` : chip;
   }
   return null;
 }

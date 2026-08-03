@@ -1,4 +1,5 @@
 import { normalizeMaterials, normalizeProjectiles, normalizeTargetCount } from './Casting.js';
+import { normalizeRider } from './Riders.js';
 import { parseCastingTime, parseDuration } from './SpellTiming.js';
 import { clampInt } from '../util/num.js';
 
@@ -31,6 +32,8 @@ import { clampInt } from '../util/num.js';
  * @property {string} [condition] empty for none
  * @property {boolean} [fires] whether the attack kind fires projectiles
  * @property {{ count: unknown, perStep: unknown, autoHit: boolean }} [projectiles]
+ * @property {{ rolls: string[], dice: unknown, die: string, flat: unknown }} [rider]
+ *   what the imposed chip adds to the target's later rolls
  */
 
 /**
@@ -61,7 +64,9 @@ import { clampInt } from '../util/num.js';
  * leave a save ability on an attack. A save can deal no damage at all (a
  * condition-only spell), which is what its damage gate expresses. Attack
  * and heal always carry their dice. An unusable projectile block drops out,
- * instead of becoming a spell that fires nothing.
+ * instead of becoming a spell that fires nothing. A rider rides a chip, so
+ * a save keeps one only alongside a condition, while a buff always has a
+ * chip to carry it.
  * @param {EffectDraft} draft
  * @returns {SpellEffect}
  */
@@ -76,15 +81,26 @@ export function assembleEffect(draft) {
   }
   if (draft.kind === 'save') {
     const condition = (draft.condition ?? '').trim();
+    const rider = condition ? normalizeRider(draft.rider) : null;
     return {
       kind: 'save',
       saveAbility: /** @type {import('../types/spell.js').Ability} */ (draft.saveAbility),
       damage: draft.dealsDamage ? draft.damage : [],
       halfOnSave: Boolean(draft.halfOnSave),
       ...(condition ? { condition } : {}),
+      ...(rider ? { rider } : {}),
     };
   }
   if (draft.kind === 'heal') return { kind: 'heal', healing: draft.damage };
+  if (draft.kind === 'buff') {
+    const condition = (draft.condition ?? '').trim();
+    const rider = normalizeRider(draft.rider);
+    return {
+      kind: 'buff',
+      ...(condition ? { condition } : {}),
+      ...(rider ? { rider } : {}),
+    };
+  }
   return { kind: 'utility' };
 }
 

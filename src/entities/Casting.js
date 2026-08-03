@@ -1,6 +1,7 @@
 import { damageReadout, roll, rollDamage } from '../dice/DiceRoller.js';
 import { resolveSave } from './Checks.js';
 import { carriesSpellFocus } from './Equipment.js';
+import { rollRiders } from './Riders.js';
 import { spendResource } from './Character.js';
 import { isSpellCastable } from './SpellView.js';
 import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
@@ -19,7 +20,9 @@ import { clamp } from '../util/num.js';
  * needs. An attack spell needs AC. A save spell needs a save bonus, with an
  * optional advantage or disadvantage mode on that save. Healing targets need
  * only id and name. `projectiles` states how many rays of a multi-projectile
- * spell this target catches, which the caster allocates.
+ * spell this target catches, which the caster allocates. `conditions` are the
+ * chips the target already holds, so a rider on one of them can ride its
+ * saving throw.
  * @typedef {{
  *   id?: string,
  *   name?: string,
@@ -27,6 +30,7 @@ import { clamp } from '../util/num.js';
  *   saveBonus?: number,
  *   saveMode?: RollMode,
  *   projectiles?: number,
+ *   conditions?: import('../types/entities.js').Condition[],
  * }} CastTarget
  */
 
@@ -173,6 +177,18 @@ export function materialCheck(caster, spell) {
 }
 
 /**
+ * What a buff spell's chip is called: the name the effect states, or the
+ * spell's own name when it states none. The cast and the detail modal both
+ * read this, so the chip a GM sees promised is the chip that lands.
+ * @param {Spell} spell
+ * @returns {string}
+ */
+export function buffCondition(spell) {
+  const named = spell.effect.kind === 'buff' ? spell.effect.condition?.trim() : '';
+  return named || spell.name;
+}
+
+/**
  * How many projectiles one cast fires: the effect's base `count`, plus
  * `perStep` more for each scaling increment. An effect with no `projectiles`
  * fires one attack, which is the single roll every other attack spell makes.
@@ -316,6 +332,8 @@ function slotPoolToSpend(caster, slotLevel) {
  *   roll, whether it saved, and the damage it takes (full, half when
  *   `halfOnSave`, or none).
  * - `heal`: the healing rolled once, applied identically to each target.
+ * - `buff`: no rolls, and one entry per target naming the `condition` chip it
+ *   takes and the `rider` that chip carries.
  * - `utility`: no rolls, and an empty `outcomes`.
  *
  * @template {SpellCaster} T
@@ -329,8 +347,11 @@ function slotPoolToSpend(caster, slotLevel) {
  *   casterLevel?: number,
  *   attackMode?: RollMode,
  *   ritual?: boolean,
+ *   casterConditions?: import('../types/entities.js').Condition[],
  *   rng?: RandomFn,
- * }} [options]
+ * }} [options] `casterConditions` are the chips the caster holds. A rider on
+ *   one of them joins every spell attack roll the cast makes. The caster view
+ *   carries no conditions, so the call site reads them off the real combatant.
  * @returns {(
  *   { ok: false, reason: 'not-known' | 'bad-slot-level' | 'no-slot' | 'not-ritual' } |
  *   { ok: true, caster: T, spell: Spell, slotLevel: number, spent: boolean,
@@ -348,6 +369,7 @@ export function castSpell(caster, spell, options = {}) {
     casterLevel = caster.level ?? 1,
     attackMode = 'normal',
     ritual = false,
+    casterConditions = [],
     rng = Math.random,
   } = options;
 
@@ -386,6 +408,7 @@ export function castSpell(caster, spell, options = {}) {
     spellAttackBonus,
     saveDC,
     attackMode,
+    casterConditions,
     rng,
   });
 
@@ -405,40 +428,64 @@ export function castSpell(caster, spell, options = {}) {
 
 /**
  * One projectile's resolution: its attack roll, null when the spell hits
- * automatically, the natural d20, whether it crit or hit, and the damage it
- * dealt, which is null on a miss.
+ * automatically, the natural d20, whether it crit or hit, the damage it
+ * dealt, which is null on a miss, and what the caster's rider chips added to
+ * the roll, which is null when it held none.
  * @typedef {{
  *   attack: DiceResult | null,
  *   natural: number,
  *   crit: boolean,
  *   hit: boolean,
  *   damage: ReturnType<typeof rollDamage> | null,
+ *   rider: { modifier: number, note: string } | null,
  * }} ProjectileShot
  */
 
 /**
  * Roll one projectile against an AC: a d20 plus the caster's spell attack
- * bonus. A natural 20 doubles this projectile's dice alone, and a natural 1
- * always misses. An `autoHit` projectile skips the d20 entirely and can
- * neither miss nor crit.
- * @param {DamagePart[]} parts what one projectile deals
- * @param {number} ac
- * @param {number} attackBonus
- * @param {RollMode} mode
- * @param {boolean | undefined} autoHit
- * @param {RandomFn} rng
+ * bonus, plus whatever the caster's rider chips add. A natural 20 doubles
+ * this projectile's dice alone, and a natural 1 always misses. An `autoHit`
+ * projectile skips the d20 entirely and can neither miss nor crit, so no
+ * rider applies to it either.
+ *
+ * The riders roll per projectile, because each projectile is its own attack
+ * roll and a blessed caster rolls the d4 again for each one.
+ * @param {{
+ *   parts: DamagePart[],
+ *   ac: number,
+ *   attackBonus: number,
+ *   mode: RollMode,
+ *   autoHit: boolean | undefined,
+ *   casterConditions: import('../types/entities.js').Condition[],
+ *   rng: RandomFn,
+ * }} shot `parts` is what one projectile deals
  * @returns {ProjectileShot}
  */
-function rollProjectile(parts, ac, attackBonus, mode, autoHit, rng) {
+function rollProjectile({ parts, ac, attackBonus, mode, autoHit, casterConditions, rng }) {
   if (autoHit) {
-    return { attack: null, natural: 0, crit: false, hit: true, damage: rollDamage(parts, 0, rng) };
+    return {
+      attack: null,
+      natural: 0,
+      crit: false,
+      hit: true,
+      damage: rollDamage(parts, 0, rng),
+      rider: null,
+    };
   }
-  const attack = roll({ counts: { d20: 1 }, modifier: attackBonus, mode }, rng);
+  const rider = rollRiders(casterConditions, 'attack', rng);
+  const attack = roll({ counts: { d20: 1 }, modifier: attackBonus + rider.modifier, mode }, rng);
   const natural = attack.results.find((r) => r.die === 'd20')?.rolls[0] ?? 0;
   const crit = natural === 20;
   const hit = natural !== 1 && (crit || attack.total >= ac);
   const doubled = crit ? parts.map((p) => ({ ...p, count: p.count * 2 })) : parts;
-  return { attack, natural, crit, hit, damage: hit ? rollDamage(doubled, 0, rng) : null };
+  return {
+    attack,
+    natural,
+    crit,
+    hit,
+    damage: hit ? rollDamage(doubled, 0, rng) : null,
+    rider: rider.note ? rider : null,
+  };
 }
 
 /**
@@ -479,26 +526,35 @@ function mergeDamage(rolls) {
  *   spellAttackBonus: number,
  *   saveDC: number,
  *   attackMode: RollMode,
+ *   casterConditions: import('../types/entities.js').Condition[],
  *   rng: RandomFn,
  * }} ctx
  * @returns {object[]}
  */
 function resolveEffect(spell, ctx) {
   const { effect } = spell;
-  const { steps, targets, spellAttackBonus, saveDC, attackMode, rng } = ctx;
+  const { steps, targets, spellAttackBonus, saveDC, attackMode, casterConditions, rng } = ctx;
 
   if (effect.kind === 'attack') {
     const baseParts = scaledParts(effect.damage, spell.scaling, steps);
     const shot = (/** @type {number} */ ac) =>
-      rollProjectile(baseParts, ac, spellAttackBonus, attackMode, effect.projectiles?.autoHit, rng);
+      rollProjectile({
+        parts: baseParts,
+        ac,
+        attackBonus: spellAttackBonus,
+        mode: attackMode,
+        autoHit: effect.projectiles?.autoHit,
+        casterConditions,
+        rng,
+      });
 
     // A single-projectile spell reports its one roll flat. This is what
     // every attack outcome looked like before projectiles existed.
     if (!effect.projectiles) {
       return targets.map((target) => {
         const ac = target.ac ?? 10;
-        const { attack, natural, crit, hit, damage } = shot(ac);
-        return { target, attack, natural, crit, hit, ac, damage };
+        const { attack, natural, crit, hit, damage, rider } = shot(ac);
+        return { target, attack, natural, crit, hit, ac, damage, rider };
       });
     }
 
@@ -538,18 +594,29 @@ function resolveEffect(spell, ctx) {
     return targets.map((target) => {
       // The caller already works out the target's bonus. It comes from a
       // party character's own saves, or is hand-entered for a foe.
-      const { roll: save, success: saved } = resolveSave(target.saveBonus ?? 0, saveDC, {
+      // The target's own chips ride its save, so a bane'd foe rolls at -1d4
+      // against the next save spell too.
+      const {
+        roll: save,
+        success: saved,
+        rider,
+      } = resolveSave(target.saveBonus ?? 0, saveDC, {
         mode: target.saveMode ?? 'normal',
+        conditions: target.conditions ?? [],
         rng,
       });
       const taken = saved ? (effect.halfOnSave ? Math.floor(damage.total / 2) : 0) : damage.total;
+      const condition = !saved ? (effect.condition ?? null) : null;
       return {
         target,
         save,
         dc: saveDC,
         saved,
         taken,
-        condition: !saved ? (effect.condition ?? null) : null,
+        rider,
+        condition,
+        // The rider rides the chip, so it lands only when the chip does.
+        conditionRider: condition ? (effect.rider ?? null) : null,
       };
     });
   }
@@ -557,6 +624,13 @@ function resolveEffect(spell, ctx) {
   if (effect.kind === 'heal') {
     const healing = rollDamage(scaledParts(effect.healing, spell.scaling, steps), 0, rng);
     return targets.map((target) => ({ target, healing }));
+  }
+
+  // A buff rolls nothing. It names the chip each target takes and what that
+  // chip adds to the target's later rolls.
+  if (effect.kind === 'buff') {
+    const condition = buffCondition(spell);
+    return targets.map((target) => ({ target, condition, rider: effect.rider ?? null }));
   }
 
   return [];

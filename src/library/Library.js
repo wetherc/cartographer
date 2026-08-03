@@ -11,6 +11,7 @@ import {
   normalizeTargetCount,
 } from '../entities/Casting.js';
 import { parseCastingTime, parseDuration } from '../entities/SpellTiming.js';
+import { normalizeRider } from '../entities/Riders.js';
 import {
   DEFAULT_SPELLS,
   SPELL_SCHOOLS,
@@ -380,6 +381,11 @@ function normalizeSpell(raw, id) {
       ...(projectiles ? { projectiles } : {}),
     };
   } else if (kind === 'save') {
+    const condition =
+      typeof raw.effect.condition === 'string' && raw.effect.condition ? raw.effect.condition : '';
+    // A rider rides the chip, so it means nothing without one, the same as a
+    // repeated save.
+    const rider = condition ? normalizeRider(raw.effect.rider) : null;
     effect = {
       kind: 'save',
       saveAbility: SPELL_ABILITIES.includes(raw.effect.saveAbility)
@@ -387,18 +393,27 @@ function normalizeSpell(raw, id) {
         : 'DEX',
       damage: normalizeDamageParts(raw.effect.damage),
       halfOnSave: !!raw.effect.halfOnSave,
-      ...(typeof raw.effect.condition === 'string' && raw.effect.condition
-        ? { condition: raw.effect.condition }
-        : {}),
+      ...(condition ? { condition } : {}),
       // A repeated save only has meaning alongside a condition, so it stays
       // absent otherwise. An entry written before this field reads as a
       // condition that runs for the spell's whole duration.
-      ...(raw.effect.saveEnds && typeof raw.effect.condition === 'string' && raw.effect.condition
-        ? { saveEnds: true }
-        : {}),
+      ...(raw.effect.saveEnds && condition ? { saveEnds: true } : {}),
+      ...(rider ? { rider } : {}),
     };
   } else if (kind === 'heal') {
     effect = { kind: 'heal', healing: normalizeDamageParts(raw.effect.healing, HEALING_TYPES) };
+  } else if (kind === 'buff') {
+    // An unnamed chip stays absent, and the cast falls back to the spell's
+    // own name. A buff with neither a chip name nor a rider is still a valid
+    // spell: it puts a chip named after itself on each target.
+    const rider = normalizeRider(raw.effect.rider);
+    effect = {
+      kind: 'buff',
+      ...(typeof raw.effect.condition === 'string' && raw.effect.condition.trim()
+        ? { condition: raw.effect.condition.trim() }
+        : {}),
+      ...(rider ? { rider } : {}),
+    };
   } else {
     effect = { kind: 'utility' };
   }

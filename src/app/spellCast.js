@@ -1,6 +1,7 @@
 import { promptModal } from '../ui/Modal.js';
 import { parseAssignments } from '../ui/ModalFields.js';
 import { castSpell, materialCheck, maxTargets, scalingSteps } from '../entities/Casting.js';
+import { riderSummary } from '../entities/Riders.js';
 import { removeItem, spellSource } from '../entities/Character.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { spellSaveDC, spellAttackBonus, hasRitualCasting } from '../entities/Classes.js';
@@ -19,6 +20,7 @@ import {
   applyToTarget,
   applyConditionToTarget,
   targetSaveBonus,
+  targetConditions,
   endSpellEffects,
 } from './combatants.js';
 import { splitTrimmedList } from '../util/text.js';
@@ -30,9 +32,10 @@ import { splitTrimmedList } from '../util/text.js';
 
 /**
  * The combatants a spell can target, by effect kind. An attack or a save
- * spell reaches the caster's foes. A heal reaches its own side (allies,
- * including the caster). A utility spell targets no one. The list comes from
- * the shared `combatantsAsTargets` function over the combat running order.
+ * spell reaches the caster's foes. A heal or a buff reaches its own side
+ * (allies, including the caster). A utility spell targets no one. The list
+ * comes from the shared `combatantsAsTargets` function over the combat
+ * running order.
  * @param {AppContext} app
  * @param {CombatState} combat
  * @param {Participant} caster
@@ -42,13 +45,23 @@ import { splitTrimmedList } from '../util/text.js';
 export function combatTargets(app, combat, caster, spell) {
   const kind = spell.effect.kind;
   if (kind === 'utility') return [];
-  return combatantsAsTargets(app, combat, caster, { allies: kind === 'heal' });
+  return combatantsAsTargets(app, combat, caster, { allies: helps(kind) });
+}
+
+/**
+ * Whether an effect kind reaches the caster's own side. A heal and a buff do.
+ * An attack and a save do not.
+ * @param {import('../types/spell.js').SpellEffect['kind']} kind
+ * @returns {boolean}
+ */
+function helps(kind) {
+  return kind === 'heal' || kind === 'buff';
 }
 
 /**
  * The combatants an out-of-combat cast can reach. There is no initiative
- * order to limit the scope. A heal reaches the whole party (allies, caster
- * included). An attack or a save spell reaches the foes on the party's tile:
+ * order to limit the scope. A heal or a buff reaches the whole party (allies,
+ * caster included). An attack or a save spell reaches the foes on the party's tile:
  * the undefeated encounters and NPCs staged there. A utility spell targets
  * no one. The target shape matches `combatTargets`.
  *
@@ -64,7 +77,7 @@ export function rosterTargets(app, spell) {
   const { state } = app;
   const kind = spell.effect.kind;
   if (kind === 'utility') return [];
-  if (kind === 'heal') {
+  if (helps(kind)) {
     return state.characters.map((c) => asTarget(c, 'character'));
   }
   const position = app.partyTracker.getPosition();
@@ -77,15 +90,15 @@ export function rosterTargets(app, spell) {
  * The label a target shows in the picker: the number the cast rolls against.
  * An attack rolls against AC. A save rolls against the target's own bonus in
  * the spell's ability, when the app knows it. The app omits the bonus for a
- * foe whose save the GM must type in. A heal rolls against nothing, so only
- * the name shows.
+ * foe whose save the GM must type in. A heal and a buff roll against nothing,
+ * so only the name shows.
  * @param {Spell} spell
  * @param {import('./combatants.js').CombatTarget} target
  * @returns {string}
  */
 function targetLabel(spell, target) {
   const kind = spell.effect.kind;
-  if (kind === 'heal') return target.name;
+  if (helps(kind)) return target.name;
   if (kind === 'save') {
     if (target.saveBonus === undefined) return target.name;
     return `${target.name} (${spell.effect.saveAbility} ${formatModifier(target.saveBonus)})`;
@@ -208,7 +221,7 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
     }
   }
   if (kind !== 'utility') {
-    const noun = kind === 'heal' ? 'Recipient' : 'Target';
+    const noun = helps(kind) ? 'Recipient' : 'Target';
     const options = targets.map((t) => ({ value: t.id, label: targetLabel(spell, t) }));
     const projectiles = spell.effect.kind === 'attack' ? spell.effect.projectiles : undefined;
     if (projectiles && cap > 1) {
@@ -394,11 +407,18 @@ export function castPlan(app, entity, spell, offered) {
   // one. The dialog shows what a target will add, and the resolver rolls it.
   // This happens once here, not in the two target assemblies, because the
   // saved ability is a property of the spell, not of the target.
+  // A target's own chips ride the same save, so they travel with the bonus.
   const saveAbility = spell.effect.kind === 'save' ? spell.effect.saveAbility : null;
   const targets = saveAbility
     ? offered.map((t) => {
         const bonus = targetSaveBonus(app, t.id, saveAbility);
-        return bonus === undefined ? t : { ...t, saveBonus: bonus };
+        const conditions = targetConditions(app, t.id);
+        if (bonus === undefined && conditions.length === 0) return t;
+        return {
+          ...t,
+          ...(bonus === undefined ? {} : { saveBonus: bonus }),
+          ...(conditions.length > 0 ? { conditions } : {}),
+        };
       })
     : offered;
 
@@ -549,6 +569,9 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
     saveDC,
     attackMode: spell.effect.kind === 'attack' ? mode : 'normal',
     ritual: asRitual,
+    // The caster view carries no conditions, so the chips come off the real
+    // combatant. A Bless on the caster rides its spell attack rolls.
+    casterConditions: entity.conditions ?? [],
     rng,
   });
   if (!result.ok) {
@@ -761,9 +784,11 @@ export function applyOutcomes(app, spell, result, casterId) {
       }
       const verb = o.crit ? 'critically hits' : o.hit ? 'hits' : 'misses';
       if (!o.hit) {
+        // A rider on the caster changed the number, so the miss line says so.
+        const rode = o.rider ? ` (${o.rider.note})` : '';
         app.actions.logEvent(
           'combat',
-          `${spell.name}: ${o.attack.total} to hit vs AC ${o.ac} — ${verb} ${o.target.name}.`,
+          `${spell.name}: ${o.attack.total} to hit vs AC ${o.ac}${rode} — ${verb} ${o.target.name}.`,
         );
         continue;
       }
@@ -794,20 +819,29 @@ export function applyOutcomes(app, spell, result, casterId) {
       // target whose own save it cannot read. It re-derives a character's
       // bonus at retry time.
       const imposed = o.condition
-        ? applyConditionToTarget(app, o.target.id, o.condition, rounds, {
-            spellId: spell.id,
-            spellName: spell.name,
-            casterId,
-            saveAbility: ability,
-            saveDC: o.dc,
-            saveBonus: o.target.saveBonus ?? 0,
-            ...(effect.saveEnds ? { saveEnds: true } : {}),
-          })
+        ? applyConditionToTarget(
+            app,
+            o.target.id,
+            o.condition,
+            rounds,
+            {
+              spellId: spell.id,
+              spellName: spell.name,
+              casterId,
+              saveAbility: ability,
+              saveDC: o.dc,
+              saveBonus: o.target.saveBonus ?? 0,
+              ...(effect.saveEnds ? { saveEnds: true } : {}),
+            },
+            o.conditionRider,
+          )
         : false;
       const cond = o.condition ? `, ${o.condition}${imposed ? '' : ' (untracked)'}` : '';
+      // A rider the target already held changed the roll, so the line states it.
+      const rode = o.rider ? `, ${o.rider.note}` : '';
       app.actions.logEvent(
         'combat',
-        `${o.target.name} ${verdict} DC ${o.dc} (${bonus}: ${o.save.total}) — takes ${o.taken} damage${cond}.`,
+        `${o.target.name} ${verdict} DC ${o.dc} (${bonus}${rode}: ${o.save.total}) — takes ${o.taken} damage${cond}.`,
       );
       applyToTarget(app, o.target.id, o.taken, false);
     }
@@ -823,6 +857,29 @@ export function applyOutcomes(app, spell, result, casterId) {
       applyToTarget(app, o.target.id, o.healing.total, true);
     }
     app.toasts.show(`${spell.name} heals ${summary}.`);
+    return;
+  }
+  if (kind === 'buff') {
+    // A buff rolls nothing, so the whole cast is the chip it leaves. The chip
+    // carries the same source a failed save writes, which is what lets
+    // `endSpellEffects` sweep it when the caster stops concentrating.
+    const rounds = durationInRounds(spell.duration);
+    for (const o of /** @type {any[]} */ (result.outcomes)) {
+      const imposed = applyConditionToTarget(
+        app,
+        o.target.id,
+        o.condition,
+        rounds,
+        { spellId: spell.id, spellName: spell.name, casterId },
+        o.rider,
+      );
+      const adds = o.rider ? `: ${riderSummary(o.rider)}` : '';
+      app.actions.logEvent(
+        'combat',
+        `${o.target.name} gains ${o.condition}${adds}${imposed ? '' : ' (untracked)'}.`,
+      );
+    }
+    app.toasts.show(`${spell.name} on ${summary}.`);
     return;
   }
   app.toasts.show(`${spell.name} cast.`);

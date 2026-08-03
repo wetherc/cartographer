@@ -26,6 +26,7 @@ function effectDraft(extra = {}) {
     condition: '',
     fires: false,
     projectiles: { count: 1, perStep: 0, autoHit: false },
+    rider: { rolls: [], dice: 0, die: 'd4', flat: 0 },
     ...extra,
   };
 }
@@ -198,4 +199,52 @@ test('a save effect with no condition control at all carries none', () => {
 test('an attack whose projectile fields were never filled in fires none', () => {
   const effect = assembleEffect({ kind: 'attack', damage: fire, fires: true });
   assert.equal('projectiles' in effect, false);
+});
+
+test('a save keeps its rider only once it names a condition', () => {
+  const rider = { rolls: ['attack', 'save'], dice: -1, die: 'd4', flat: 0 };
+  const withChip = assembleEffect(
+    effectDraft({ kind: 'save', condition: 'Bane', rider, dealsDamage: false }),
+  );
+  assert.deepEqual(withChip, {
+    kind: 'save',
+    saveAbility: 'DEX',
+    damage: [],
+    halfOnSave: false,
+    condition: 'Bane',
+    rider: { rolls: ['attack', 'save'], dice: -1, die: 'd4' },
+  });
+  // A rider rides a chip, so no chip means no rider to store.
+  const noChip = assembleEffect(effectDraft({ kind: 'save', condition: '  ', rider }));
+  assert.equal('rider' in noChip, false);
+});
+
+test('a buff keeps its chip name and its rider, and drops neither for the other', () => {
+  const rider = { rolls: ['check'], dice: 1, die: 'd4', flat: 0 };
+  assert.deepEqual(assembleEffect(effectDraft({ kind: 'buff', condition: 'Guidance', rider })), {
+    kind: 'buff',
+    condition: 'Guidance',
+    rider: { rolls: ['check'], dice: 1, die: 'd4' },
+  });
+  // An unnamed buff is valid: the chip falls back to the spell's own name.
+  assert.deepEqual(assembleEffect(effectDraft({ kind: 'buff', rider })), {
+    kind: 'buff',
+    rider: { rolls: ['check'], dice: 1, die: 'd4' },
+  });
+  // A buff that adds nothing to a roll is still a chip.
+  assert.deepEqual(assembleEffect(effectDraft({ kind: 'buff', condition: 'Invisible' })), {
+    kind: 'buff',
+    condition: 'Invisible',
+  });
+});
+
+test('switching away from a chip kind drops the rider with the rest', () => {
+  const rider = { rolls: ['attack'], dice: 1, die: 'd4', flat: 0 };
+  assert.deepEqual(assembleEffect(effectDraft({ kind: 'attack', condition: 'Bane', rider })), {
+    kind: 'attack',
+    damage: fire,
+  });
+  assert.deepEqual(assembleEffect(effectDraft({ kind: 'utility', condition: 'Bane', rider })), {
+    kind: 'utility',
+  });
 });

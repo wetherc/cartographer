@@ -36,7 +36,7 @@ function source(over = {}) {
 }
 
 test('isImposedBy needs both the caster and the spell to match', () => {
-  const chip = createCondition('Paralyzed', 10, source());
+  const chip = createCondition('Paralyzed', 10, { source: source() });
   assert.equal(isImposedBy(chip, 'c1', 'hold-person'), true);
   assert.equal(isImposedBy(chip, 'c2', 'hold-person'), false, 'another caster of the same spell');
   assert.equal(isImposedBy(chip, 'c1', 'bless'), false, 'the same caster, another spell');
@@ -45,10 +45,10 @@ test('isImposedBy needs both the caster and the spell to match', () => {
 
 test('removeImposed takes off one cast’s chips and reports them', () => {
   const list = [
-    createCondition('Paralyzed', 10, source()),
+    createCondition('Paralyzed', 10, { source: source() }),
     createCondition('Prone', null),
-    createCondition('Frightened', 5, source({ spellId: 'bane', spellName: 'Bane' })),
-    createCondition('Charmed', 3, source({ casterId: 'c2' })),
+    createCondition('Frightened', 5, { source: source({ spellId: 'bane', spellName: 'Bane' }) }),
+    createCondition('Charmed', 3, { source: source({ casterId: 'c2' }) }),
   ];
   const { conditions, removed } = removeImposed(list, 'c1', 'hold-person');
   assert.deepEqual(
@@ -63,7 +63,10 @@ test('removeImposed takes off one cast’s chips and reports them', () => {
 });
 
 test('removeImposed preserves identity when nothing matched', () => {
-  const list = [createCondition('Prone', null), createCondition('Paralyzed', 10, source())];
+  const list = [
+    createCondition('Prone', null),
+    createCondition('Paralyzed', 10, { source: source() }),
+  ];
   const result = removeImposed(list, 'c9', 'hold-person');
   assert.equal(result.conditions, list, 'the caller can skip the write');
   assert.deepEqual(result.removed, []);
@@ -72,8 +75,8 @@ test('removeImposed preserves identity when nothing matched', () => {
 test('repeatSaves rolls only the chips whose spell allows a retry', () => {
   const list = [
     createCondition('Prone', null),
-    createCondition('Frightened', 5, source({ saveEnds: false })),
-    createCondition('Paralyzed', 10, source()),
+    createCondition('Frightened', 5, { source: source({ saveEnds: false }) }),
+    createCondition('Paralyzed', 10, { source: source() }),
   ];
   // One roll consumed, and it is the paralysis: 10 + 2 beats nothing else.
   const { results } = repeatSaves(list, { rng: seq([face(20, 10)]) });
@@ -86,7 +89,7 @@ test('repeatSaves rolls only the chips whose spell allows a retry', () => {
 });
 
 test('a successful retry takes the chip off, a failed one leaves it', () => {
-  const list = [createCondition('Paralyzed', 10, source())];
+  const list = [createCondition('Paralyzed', 10, { source: source() })];
   const made = repeatSaves(list, { rng: seq([face(20, 18)]) });
   assert.equal(made.results[0].ended, true);
   assert.deepEqual(made.conditions, [], '18 + 2 meets DC 15');
@@ -96,7 +99,7 @@ test('a successful retry takes the chip off, a failed one leaves it', () => {
 });
 
 test('a retry succeeds on a tie, matching every other save', () => {
-  const list = [createCondition('Paralyzed', 10, source({ saveDC: 12 }))];
+  const list = [createCondition('Paralyzed', 10, { source: source({ saveDC: 12 }) })];
   const { results } = repeatSaves(list, { rng: seq([face(20, 10)]) });
   assert.equal(results[0].save.total, 12);
   assert.equal(results[0].ended, true);
@@ -105,14 +108,16 @@ test('a retry succeeds on a tie, matching every other save', () => {
 test('bonusOf overrides the recorded bonus', () => {
   // What the app does for a party character: the stamped bonus was right when
   // the spell landed, but the live one counts now.
-  const list = [createCondition('Paralyzed', 10, source())];
+  const list = [createCondition('Paralyzed', 10, { source: source() })];
   const { results } = repeatSaves(list, { bonusOf: () => 9, rng: seq([face(20, 6)]) });
   assert.equal(results[0].save.total, 15);
   assert.equal(results[0].ended, true, '6 + 9 meets DC 15, where 6 + 2 would not');
 });
 
 test('a source with no DC recorded retries against DC 10', () => {
-  const list = [createCondition('Paralyzed', null, source({ saveDC: undefined, saveBonus: 0 }))];
+  const list = [
+    createCondition('Paralyzed', null, { source: source({ saveDC: undefined, saveBonus: 0 }) }),
+  ];
   const { results } = repeatSaves(list, { rng: seq([face(20, 10)]) });
   assert.equal(results[0].save.dc, 10);
   assert.equal(results[0].ended, true);
@@ -128,8 +133,10 @@ test('a list with nothing to retry rolls nothing and is handed straight back', (
 
 test('several retries in one turn each roll their own die', () => {
   const list = [
-    createCondition('Paralyzed', 10, source()),
-    createCondition('Charmed', 4, source({ spellId: 'charm', spellName: 'Charm Person' })),
+    createCondition('Paralyzed', 10, { source: source() }),
+    createCondition('Charmed', 4, {
+      source: source({ spellId: 'charm', spellName: 'Charm Person' }),
+    }),
   ];
   const { conditions, results } = repeatSaves(list, {
     rng: seq([face(20, 20), face(20, 1)]),
@@ -145,10 +152,10 @@ test('several retries in one turn each roll their own die', () => {
 });
 
 test('addCondition carries a source through, and a replacement takes over the chip', () => {
-  const first = addCondition([], 'Paralyzed', 10, source());
+  const first = addCondition([], 'Paralyzed', 10, { source: source() });
   assert.equal(first[0].source?.spellId, 'hold-person');
   // A second cast replaces the chip, and owns it from then on.
-  const second = addCondition(first, 'paralyzed', 4, source({ casterId: 'c2' }));
+  const second = addCondition(first, 'paralyzed', 4, { source: source({ casterId: 'c2' }) });
   assert.equal(second.length, 1);
   assert.equal(second[0].source?.casterId, 'c2');
   assert.equal(second[0].rounds, 4);
@@ -157,7 +164,7 @@ test('addCondition carries a source through, and a replacement takes over the ch
 });
 
 test('a source with no recorded bonus retries the save at a flat bonus of 0', () => {
-  const chip = createCondition('Paralyzed', 10, source({ saveBonus: undefined }));
+  const chip = createCondition('Paralyzed', 10, { source: source({ saveBonus: undefined }) });
   // A d20 face of 15 alone meets the DC of 15, so a 0 bonus is enough.
   const passed = repeatSaves([chip], { rng: seq([face(20, 15)]) });
   assert.equal(passed.results[0].save.total, 15);
@@ -167,4 +174,19 @@ test('a source with no recorded bonus retries the save at a flat bonus of 0', ()
   const failed = repeatSaves([chip], { rng: seq([face(20, 14)]) });
   assert.equal(failed.results[0].save.total, 14);
   assert.equal(failed.results[0].ended, false);
+});
+
+test('a rider on the creature rides the repeated save it rolls', () => {
+  const list = [
+    createCondition('Bane', 10, { rider: { rolls: ['attack', 'save'], dice: -1, die: 'd4' } }),
+    createCondition('Paralyzed', 10, { source: source() }),
+  ];
+  // The Bane die draws first, then the d20 for the paralysis retry.
+  const { results, conditions } = repeatSaves(list, {
+    rng: seq([face(4, 4), face(20, 16)]),
+  });
+  assert.equal(results.length, 1);
+  assert.equal(results[0].save.total, 14, '16 on the die, +2 recorded, -4 from Bane');
+  assert.equal(results[0].ended, false, '14 misses DC 15, so the penalty held the chip on');
+  assert.equal(conditions, list);
 });

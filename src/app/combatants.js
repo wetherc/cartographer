@@ -44,9 +44,16 @@ import { spellbookIds } from './casterFields.js';
  * CombatTarget is the shape combat dialogs and the spell resolver use. It
  * gives enough data to pick a target from a list (name), address the result
  * (id), and roll against it (ac). A save spell's targets also carry
- * `saveBonus` when the target is a party character with a known save. See
- * `targetSaveBonus`.
- * @typedef {{ id: string, name: string, ac: number, saveBonus?: number }} CombatTarget
+ * `saveBonus` when the target is a party character with a known save, and
+ * `conditions` when the target holds any chips, since a rider on one of them
+ * rides that save. See `targetSaveBonus` and `targetConditions`.
+ * @typedef {{
+ *   id: string,
+ *   name: string,
+ *   ac: number,
+ *   saveBonus?: number,
+ *   conditions?: import('../types/entities.js').Condition[],
+ * }} CombatTarget
  */
 
 /**
@@ -215,6 +222,21 @@ export function targetSaveBonus(app, id, ability) {
 }
 
 /**
+ * targetConditions gives the chips a combatant is holding, so a rider on one
+ * of them can ride the roll a cast makes it take. Characters and encounters
+ * both track conditions. An NPC tracks none, and an unknown id has none, so
+ * both read as an empty list.
+ * @param {AppContext} app
+ * @param {string} id
+ * @returns {import('../types/entities.js').Condition[]}
+ */
+export function targetConditions(app, id) {
+  const found = findCombatant(app, id);
+  if (!found || found.kind === 'npc') return [];
+  return found.entity.conditions ?? [];
+}
+
+/**
  * weaponsOf gives the weapons a combatant can attack with: a party
  * character's equipped weapons, or a foe encounter's assigned weapon. NPCs
  * carry no weapons yet. An id that resolves to nothing has nothing to swing.
@@ -298,27 +320,39 @@ export function logDefeatTransition(app, prev, next) {
 
 /**
  * Impose a condition on a combatant by id. This is the write path behind a
- * spell whose failed save carries a rider. Characters and encounters both
- * track conditions, so both get the chip. An NPC has no conditions field, so
- * the caller's log line is the only record. `rounds` is the counter the
- * round tick decrements, or null for a condition the GM clears by hand. The
- * function returns whether the chip landed, so the caller can report when it
- * did not.
+ * spell that puts a chip on a creature, whether from a failed save or from a
+ * buff. Characters and encounters both track conditions, so both get the
+ * chip. An NPC has no conditions field, so the caller's log line is the only
+ * record. `rounds` is the counter the round tick decrements, or null for a
+ * condition the GM clears by hand. The function returns whether the chip
+ * landed, so the caller can report when it did not.
  *
  * `source` names the cast behind the chip. This lets the effect end when the
  * cast ends, and lets the target retry the save where the spell allows it. A
- * hand-added chip has no source.
+ * hand-added chip has no source. `rider` is what the chip adds to the
+ * target's later rolls, which the roll sites read back off the chip.
  * @param {AppContext} app
  * @param {string} targetId
  * @param {string} name
  * @param {number | null} rounds
  * @param {import('../types/entities.js').ConditionSource} [source]
+ * @param {import('../types/entities.js').RollRider | null} [rider]
  * @returns {boolean}
  */
-export function applyConditionToTarget(app, targetId, name, rounds, source = undefined) {
+export function applyConditionToTarget(
+  app,
+  targetId,
+  name,
+  rounds,
+  source = undefined,
+  rider = null,
+) {
   const found = findCombatant(app, targetId);
   if (!found || found.kind === 'npc') return false;
-  const conditions = addCondition(found.entity.conditions, name, rounds, source);
+  const conditions = addCondition(found.entity.conditions, name, rounds, {
+    source,
+    ...(rider ? { rider } : {}),
+  });
   // The two branches do the same write. They are split because each store
   // function accepts only its own entity type.
   if (found.kind === 'character') found.store({ ...found.entity, conditions });
@@ -413,7 +447,10 @@ export function retryImposedSaves(app, combatantId) {
   }
   for (const { condition, save, ended } of results) {
     const ability = condition.source?.saveAbility;
-    const roll = `${ability ? `${ability} save` : 'save'} ${save.total} vs DC ${save.dc}`;
+    // A rider on the creature changed the number, so the line names it, the
+    // same way the attack and the cast logs do.
+    const rode = save.rider ? `, ${save.rider.note}` : '';
+    const roll = `${ability ? `${ability} save` : 'save'}${rode} ${save.total} vs DC ${save.dc}`;
     app.actions.logEvent(
       'combat',
       ended

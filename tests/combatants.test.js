@@ -409,8 +409,11 @@ test('applyConditionToTarget chips a character and a foe and refuses an NPC', ()
 
 test('endSpellEffects takes one cast off every target and names each one freed', () => {
   const source = heldBy();
-  const hero = { ...fixtures().hero, conditions: addCondition([], 'Paralyzed', 10, source) };
-  const goblin = { ...fixtures().goblin, conditions: addCondition([], 'Paralyzed', 10, source) };
+  const hero = { ...fixtures().hero, conditions: addCondition([], 'Paralyzed', 10, { source }) };
+  const goblin = {
+    ...fixtures().goblin,
+    conditions: addCondition([], 'Paralyzed', 10, { source }),
+  };
   const app = stubApp({ characters: [hero], encounters: [goblin] });
   endSpellEffects(app, 'mage', 'hold-person');
   assert.deepEqual(app.state.characters[0].conditions, []);
@@ -422,7 +425,10 @@ test('endSpellEffects takes one cast off every target and names each one freed',
 });
 
 test('endSpellEffects leaves the other roster untouched when only one holds a chip', () => {
-  const goblin = { ...fixtures().goblin, conditions: addCondition([], 'Paralyzed', 10, heldBy()) };
+  const goblin = {
+    ...fixtures().goblin,
+    conditions: addCondition([], 'Paralyzed', 10, { source: heldBy() }),
+  };
   const { hero } = fixtures();
   const app = stubApp({ characters: [hero], encounters: [goblin] });
   const before = app.state.characters;
@@ -433,7 +439,10 @@ test('endSpellEffects leaves the other roster untouched when only one holds a ch
 });
 
 test('endSpellEffects does nothing when no chip carries that cast', () => {
-  const hero = { ...fixtures().hero, conditions: addCondition([], 'Paralyzed', 10, heldBy()) };
+  const hero = {
+    ...fixtures().hero,
+    conditions: addCondition([], 'Paralyzed', 10, { source: heldBy() }),
+  };
   const app = stubApp({ characters: [hero] });
   endSpellEffects(app, 'mage', 'bless');
   endSpellEffects(app, 'cleric', 'hold-person');
@@ -446,7 +455,7 @@ test('retryImposedSaves shakes a chip loose on a success and logs the roll', () 
   // DC 1 is under the floor of a d20 plus any bonus, so the retry always
   // succeeds and the outcome does not depend on the roll.
   const source = heldBy({ saveEnds: true, saveDC: 1 });
-  const hero = { ...fixtures().hero, conditions: addCondition([], 'Paralyzed', 10, source) };
+  const hero = { ...fixtures().hero, conditions: addCondition([], 'Paralyzed', 10, { source }) };
   const app = stubApp({ characters: [hero] });
   retryImposedSaves(app, 'hero');
   assert.deepEqual(app.state.characters[0].conditions, []);
@@ -459,7 +468,10 @@ test('retryImposedSaves keeps the chip on a failure and writes nothing', () => {
   // DC 99 is over the ceiling of a d20 plus any bonus, so the retry always
   // fails.
   const source = heldBy({ saveEnds: true, saveDC: 99 });
-  const goblin = { ...fixtures().goblin, conditions: addCondition([], 'Paralyzed', 10, source) };
+  const goblin = {
+    ...fixtures().goblin,
+    conditions: addCondition([], 'Paralyzed', 10, { source }),
+  };
   const app = stubApp({ encounters: [goblin] });
   retryImposedSaves(app, 'goblin');
   assert.deepEqual(app.state.encounters[0].conditions.length, 1);
@@ -469,7 +481,10 @@ test('retryImposedSaves keeps the chip on a failure and writes nothing', () => {
 
 test('retryImposedSaves writes a freed foe back to the encounter roster', () => {
   const source = heldBy({ saveEnds: true, saveDC: 1 });
-  const goblin = { ...fixtures().goblin, conditions: addCondition([], 'Paralyzed', 10, source) };
+  const goblin = {
+    ...fixtures().goblin,
+    conditions: addCondition([], 'Paralyzed', 10, { source }),
+  };
   const app = stubApp({ encounters: [goblin] });
   retryImposedSaves(app, 'goblin');
   assert.deepEqual(app.state.encounters[0].conditions, []);
@@ -479,7 +494,10 @@ test('retryImposedSaves writes a freed foe back to the encounter roster', () => 
 
 test('retryImposedSaves rolls a foe chip against the bonus the cast recorded', () => {
   const source = heldBy({ saveEnds: true, saveDC: 99, saveBonus: 4, saveAbility: undefined });
-  const goblin = { ...fixtures().goblin, conditions: addCondition([], 'Stunned', null, source) };
+  const goblin = {
+    ...fixtures().goblin,
+    conditions: addCondition([], 'Stunned', null, { source }),
+  };
   const app = stubApp({ encounters: [goblin] });
   retryImposedSaves(app, 'goblin');
   assert.match(app.log[0], /^Goblin is still Stunned \(save \d+ vs DC 99\)\.$/);
@@ -487,7 +505,10 @@ test('retryImposedSaves rolls a foe chip against the bonus the cast recorded', (
 
 test('retryImposedSaves rolls nothing for an NPC, an unknown id, or a chip with no retry', () => {
   const { sage } = fixtures();
-  const hero = { ...fixtures().hero, conditions: addCondition([], 'Paralyzed', 10, heldBy()) };
+  const hero = {
+    ...fixtures().hero,
+    conditions: addCondition([], 'Paralyzed', 10, { source: heldBy() }),
+  };
   const app = stubApp({ characters: [hero], npcs: [sage] });
   retryImposedSaves(app, 'sage');
   retryImposedSaves(app, 'nobody');
@@ -521,7 +542,10 @@ test('damage a concentrating character cannot save against ends the spell and sw
   const source = heldBy({ spellId: 'hold-person', casterId: 'hero' });
   const tough = withHP(createCharacter('hero', 'Hero'), 200);
   const { character } = beginConcentration(tough, /** @type {any} */ (HOLD_PERSON), 2);
-  const goblin = { ...fixtures().goblin, conditions: addCondition([], 'Paralyzed', 10, source) };
+  const goblin = {
+    ...fixtures().goblin,
+    conditions: addCondition([], 'Paralyzed', 10, { source }),
+  };
   const app = stubApp({ characters: [character], encounters: [goblin] });
   applyToTarget(app, 'hero', 80, false);
   assert.equal(app.state.characters[0].concentration, null);
@@ -561,4 +585,18 @@ test('logDefeatTransition fires only on the standing-to-defeated edge', () => {
   assert.equal(app.log.length, 0, 'already down');
   logDefeatTransition(app, goblin, down);
   assert.deepEqual(app.log, ['Defeated Goblin.']);
+});
+
+test('a repeated save names the rider that changed it', () => {
+  const source = heldBy({ saveEnds: true, saveDC: 99 });
+  const goblin = {
+    ...fixtures().goblin,
+    conditions: [
+      ...addCondition([], 'Paralyzed', 10, { source }),
+      { name: 'Bane', rounds: 10, rider: { rolls: ['attack', 'save'], dice: -1, die: 'd4' } },
+    ],
+  };
+  const app = stubApp({ encounters: [goblin] });
+  retryImposedSaves(app, 'goblin');
+  assert.match(app.log[0], /Bane -1d4 \[\d\]/);
 });

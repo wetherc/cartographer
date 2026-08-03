@@ -837,3 +837,203 @@ test('the out-of-combat entry point refuses a cast with nothing to target', asyn
   await castSpellOutOfCombat(app, caster, firebolt);
   assert.deepEqual(app.toasted, ['No target available.']);
 });
+
+// -- riders ----------------------------------------------------------------
+
+const BLESS_RIDER = { rolls: ['attack', 'save'], dice: 1, die: 'd4' };
+const BANE_RIDER = { rolls: ['attack', 'save'], dice: -1, die: 'd4' };
+
+const bless = spell({
+  id: 'bless',
+  name: 'Bless',
+  level: 1,
+  concentration: true,
+  duration: { kind: 'rounds', amount: 10 },
+  targetCount: 3,
+  effect: { kind: 'buff', condition: 'Bless', rider: BLESS_RIDER },
+});
+
+const bane = spell({
+  id: 'bane',
+  name: 'Bane',
+  level: 1,
+  concentration: true,
+  duration: { kind: 'rounds', amount: 10 },
+  targetCount: 3,
+  effect: {
+    kind: 'save',
+    saveAbility: 'CHA',
+    damage: [],
+    halfOnSave: false,
+    condition: 'Bane',
+    rider: BANE_RIDER,
+  },
+});
+
+/** A caster who knows the two rider spells. */
+function riderMage(over = {}) {
+  const base = mage(over);
+  return {
+    ...base,
+    spellbook: {
+      ...base.spellbook,
+      known: [...base.spellbook.known, 'bless', 'bane'],
+      prepared: [...base.spellbook.prepared, 'bless', 'bane'],
+    },
+  };
+}
+
+test('a buff reaches the party, not the foes', () => {
+  const caster = riderMage();
+  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
+  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  assert.deepEqual(
+    rosterTargets(app, bless).map((t) => t.id),
+    ['mage'],
+  );
+  const fields = planFor(app, caster, bless).fields;
+  const picker = fields.find((/** @type {any} */ f) => f.name === 'targets' || f.name === 'target');
+  assert.match(picker.label, /Recipient/, 'a buff hands the chip to an ally');
+});
+
+test('a buff puts its chip and rider on every recipient', () => {
+  const caster = riderMage();
+  const ally = { ...mage(), id: 'rogue', name: 'Rogue' };
+  const app = stubApp({ characters: [caster, ally] });
+  const plan = planFor(app, caster, bless);
+  resolveCast(app, plan, submit({ targets: 'mage,rogue' }), {
+    writeBack: (next) => {
+      app.state.characters = app.state.characters.map((c) => (c.id === next.id ? next : c));
+    },
+    concentrates: true,
+    rng: () => assert.fail('a buff rolls no dice'),
+  });
+  const chips = app.state.characters.map((c) => c.conditions.find((x) => x.name === 'Bless'));
+  for (const chip of chips) {
+    assert.equal(chip.rounds, 10, 'the spell duration times the chip');
+    assert.deepEqual(chip.rider, BLESS_RIDER);
+    assert.equal(chip.source.spellId, 'bless');
+    assert.equal(chip.source.casterId, 'mage');
+  }
+  assert.ok(
+    app.log.some((line) =>
+      /Rogue gains Bless: \+1d4 to attack rolls and saving throws\.$/.test(line),
+    ),
+  );
+});
+
+test('dropping the concentration on a buff sweeps its chips off every recipient', () => {
+  const caster = riderMage();
+  const ally = { ...mage(), id: 'rogue', name: 'Rogue' };
+  const app = stubApp({ characters: [caster, ally] });
+  const write = (next) => {
+    app.state.characters = app.state.characters.map((c) => (c.id === next.id ? next : c));
+  };
+  resolveCast(app, planFor(app, caster, bless), submit({ targets: 'mage,rogue' }), {
+    writeBack: write,
+    concentrates: true,
+  });
+  for (const c of app.state.characters) {
+    assert.ok(
+      c.conditions.some((x) => x.name === 'Bless'),
+      `${c.name} took the chip before anything swept it`,
+    );
+  }
+  // Casting a second concentration spell displaces the first, which is the
+  // path that has to sweep the chips.
+  const holder = app.state.characters.find((c) => c.id === 'mage');
+  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
+  app.state.encounters = [goblin];
+  resolveCast(
+    app,
+    planFor(app, holder, holdPerson),
+    submit({ target: 'goblin', dc: '14', 'save-bonus': '20' }),
+    { writeBack: write, concentrates: true, rng: seq([d20(20)]) },
+  );
+  for (const c of app.state.characters) {
+    assert.equal(
+      c.conditions.some((x) => x.name === 'Bless'),
+      false,
+      `${c.name} walks free of the dropped Bless`,
+    );
+  }
+});
+
+test('an unnamed buff chip carries the spell’s own name', () => {
+  const caster = riderMage();
+  const app = stubApp({ characters: [caster] });
+  const plain = { ...bless, id: 'bless', name: 'Bless', effect: { kind: 'buff' } };
+  resolveCast(app, planFor(app, caster, plain), submit({ target: 'mage' }), {
+    writeBack: (next) => {
+      app.state.characters = [next];
+    },
+    concentrates: true,
+  });
+  const chip = app.state.characters[0].conditions.find((c) => c.name === 'Bless');
+  assert.equal(chip.rider, undefined, 'a chip with no rider stores no key');
+  assert.ok(app.log.some((line) => /Mage gains Bless\.$/.test(line)));
+});
+
+test('a buff on an NPC says so, because an NPC tracks no chips', () => {
+  const caster = riderMage();
+  const sage = createNPC('sage', 'Sage', HERE);
+  const app = stubApp({ characters: [caster], npcs: [sage] });
+  const target = { id: 'sage', name: 'Sage' };
+  // The roster path offers only the party for a buff, so the NPC comes in as
+  // an already-picked target the way the combat board would hand one over.
+  applyOutcomes(
+    app,
+    bless,
+    { outcomes: [{ target, condition: 'Bless', rider: BLESS_RIDER }], targets: [target] },
+    'mage',
+  );
+  assert.ok(app.log.some((line) => /Sage gains Bless.*\(untracked\)\.$/.test(line)));
+});
+
+test('a rider the caster holds joins the spell attack roll and the log', () => {
+  const caster = { ...mage(), conditions: [{ name: 'Bless', rounds: 10, rider: BLESS_RIDER }] };
+  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 30 }, HERE);
+  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const plan = planFor(app, caster, firebolt);
+  resolveCast(app, plan, submit({ target: 'goblin' }), {
+    writeBack: () => {},
+    concentrates: false,
+    rng: seq([face(4, 3), d20(5)]),
+  });
+  assert.ok(
+    app.log.some((line) => /Bless \+1d4 \[3\]/.test(line)),
+    'the miss line names the rider',
+  );
+});
+
+test('a rider the target holds rides its save against the next spell', () => {
+  const caster = mage();
+  const goblin = {
+    ...createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE),
+    conditions: [{ name: 'Bane', rounds: 10, rider: BANE_RIDER }],
+  };
+  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const plan = planFor(app, caster, burningHands);
+  resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '10' }), {
+    writeBack: () => {},
+    concentrates: false,
+    // Three d6 of damage, then the Bane d4, then the target's d20.
+    rng: seq([face(6, 1), face(6, 1), face(6, 1), face(4, 4), d20(5)]),
+  });
+  assert.match(app.log[1], /Goblin fails DC 14 \(DEX \+10, Bane -1d4 \[4\]: 11\)/);
+});
+
+test('a failed save against a rider spell lands the rider on the chip', () => {
+  const caster = riderMage();
+  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
+  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const plan = planFor(app, caster, bane);
+  resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '0' }), {
+    writeBack: () => {},
+    concentrates: false,
+    rng: seq([d20(3)]),
+  });
+  const chip = app.state.encounters[0].conditions.find((c) => c.name === 'Bane');
+  assert.deepEqual(chip.rider, BANE_RIDER);
+  assert.equal(chip.rounds, 10);
+});

@@ -102,6 +102,30 @@ test('the spellcasting-focus flag survives packing and reload', () => {
   );
 });
 
+test('a condition chip keeps its rider across packing and reload', () => {
+  const hero = createCharacter('c1', 'Hero');
+  hero.conditions = [
+    /** @type {any} */ ({
+      name: 'Bless',
+      rounds: 10,
+      source: { spellId: 'bless', spellName: 'Bless', casterId: 'c2' },
+      rider: { rolls: ['attack', 'save'], dice: 1, die: 'd4' },
+    }),
+  ];
+  const state = buildState({
+    grid: sampleGrid(),
+    party: { nodeId: 'world', tileId: '0,0' },
+    characters: [hero],
+    encounters: [],
+  });
+  const restored = deserialize(serialize(state));
+  assert.deepEqual(
+    restored.characters[0].conditions[0].rider,
+    { rolls: ['attack', 'save'], dice: 1, die: 'd4' },
+    'a chip that loses its rider stops changing the rolls it was written to change',
+  );
+});
+
 /** A node holding one of every tile variation the packer has to survive. */
 function variedNode() {
   let node = createMapNode('world', 'World', null, 4, 3);

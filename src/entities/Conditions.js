@@ -35,34 +35,43 @@ export const CONDITIONS = [
 ];
 
 /**
+ * The optional halves of a chip. `source` names the cast that wrote it.
+ * `rider` is what it adds to the holder's later rolls. Each is left off the
+ * stored chip entirely when there is none, so a hand-added chip stores no
+ * extra key.
+ * @typedef {{
+ *   source?: import('../types/entities.js').ConditionSource,
+ *   rider?: import('../types/entities.js').RollRider,
+ * }} ConditionExtras
+ */
+
+/**
  * @param {string} name
  * @param {number | null} [rounds] remaining rounds. Null means indefinite
- * @param {import('../types/entities.js').ConditionSource} [source] what imposed
- *   it, for a chip a cast wrote. Left off entirely when there is none, so a
- *   hand-added chip stores no extra key
+ * @param {ConditionExtras} [extras]
  * @returns {Condition}
  */
-export function createCondition(name, rounds = null, source = undefined) {
-  return source ? { name, rounds, source } : { name, rounds };
+export function createCondition(name, rounds = null, { source, rider } = {}) {
+  return { name, rounds, ...(source ? { source } : {}), ...(rider ? { rider } : {}) };
 }
 
 /**
  * Add a condition, or update its duration if present. The match is
  * case-insensitive by name, so "Poisoned" does not stack with "poisoned".
- * Returns a new list. A replaced chip's source goes with it: the new cast
- * owns the condition now, and a hand-added replacement means the GM owns it
- * instead.
+ * Returns a new list. A replaced chip's source and rider go with it: the new
+ * cast owns the condition now, and a hand-added replacement means the GM owns
+ * it instead.
  * @param {Condition[]} list
  * @param {string} name
  * @param {number | null} [rounds]
- * @param {import('../types/entities.js').ConditionSource} [source]
+ * @param {ConditionExtras} [extras]
  * @returns {Condition[]}
  */
-export function addCondition(list, name, rounds = null, source = undefined) {
+export function addCondition(list, name, rounds = null, extras = {}) {
   const key = name.trim().toLowerCase();
   if (!key) return list;
   const without = list.filter((c) => c.name.toLowerCase() !== key);
-  return [...without, createCondition(name.trim(), rounds, source)];
+  return [...without, createCondition(name.trim(), rounds, extras)];
 }
 
 /**

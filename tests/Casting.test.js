@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   MAX_TARGET_COUNT,
   allocateProjectiles,
+  buffCondition,
   canCast,
   cantripStep,
   castSpell,
@@ -904,4 +905,196 @@ test('a projectile target with no AC entered is resolved against 10', () => {
   assert.equal(o.ac, 10);
   assert.equal(o.hits, 3);
   assert.equal(o.damage.total, 36);
+});
+
+// ---- Riders on later rolls -------------------------------------------------
+
+const BLESS_RIDER = { rolls: ['attack', 'save'], dice: 1, die: 'd4' };
+const BANE_RIDER = { rolls: ['attack', 'save'], dice: -1, die: 'd4' };
+
+/** @type {any} */
+const blessSpell = {
+  id: 'bless',
+  name: 'Bless',
+  level: 1,
+  school: 'enchantment',
+  classes: ['wizard'],
+  castingTime: { kind: 'action' },
+  range: '30 ft',
+  components: ['V', 'S'],
+  duration: { kind: 'minutes', amount: 1, upTo: true },
+  concentration: true,
+  ritual: false,
+  description: '',
+  targetCount: 3,
+  effect: { kind: 'buff', condition: 'Bless', rider: BLESS_RIDER },
+};
+
+/** A buff that names no chip, so the chip falls back to the spell's name. */
+const unnamedBuff = { ...blessSpell, id: 'shielded', name: 'Shielded', effect: { kind: 'buff' } };
+
+function buffCaster() {
+  return caster({ spellbook: { cantrips: [], known: [], prepared: ['bless', 'shielded'] } });
+}
+
+test('buffCondition names the chip, or falls back to the spell', () => {
+  assert.equal(buffCondition(blessSpell), 'Bless');
+  assert.equal(buffCondition(unnamedBuff), 'Shielded');
+  // A non-buff spell has no chip of its own to name.
+  assert.equal(buffCondition(firebolt), 'Fire Bolt');
+});
+
+test('a buff rolls nothing and hands each target the chip and its rider', () => {
+  const result = castSpell(buffCaster(), blessSpell, {
+    slotLevel: 1,
+    targets: [
+      { id: 'a', name: 'Rogue' },
+      { id: 'b', name: 'Fighter' },
+    ],
+    rng: () => assert.fail('a buff rolls no dice'),
+  });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.effect, 'buff');
+  assert.equal(result.spent, true, 'a leveled buff still costs its slot');
+  assert.deepEqual(
+    result.outcomes.map((/** @type {any} */ o) => [o.target.id, o.condition, o.rider]),
+    [
+      ['a', 'Bless', BLESS_RIDER],
+      ['b', 'Bless', BLESS_RIDER],
+    ],
+  );
+});
+
+test('a buff with no rider still hands out its chip', () => {
+  const result = castSpell(buffCaster(), unnamedBuff, {
+    slotLevel: 1,
+    targets: [{ id: 'a', name: 'Rogue' }],
+  });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.deepEqual(result.outcomes, [
+    { target: { id: 'a', name: 'Rogue' }, condition: 'Shielded', rider: null },
+  ]);
+});
+
+test('a buff obeys the same target cap as every other spell', () => {
+  const result = castSpell(buffCaster(), blessSpell, {
+    slotLevel: 1,
+    targets: [1, 2, 3, 4].map((n) => ({ id: `t${n}`, name: `T${n}` })),
+  });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.targets.length, 3);
+  assert.equal(result.truncated, 1);
+});
+
+test('a rider on the caster joins every spell attack roll', () => {
+  const blessed = [{ name: 'Bless', rounds: 10, rider: BLESS_RIDER }];
+  // d4 rider, then the d20 attack, then the d10 of damage.
+  const result = castSpell(caster(), firebolt, {
+    targets: [{ id: 'x', name: 'Goblin', ac: 15 }],
+    spellAttackBonus: 5,
+    casterConditions: blessed,
+    rng: seq([face(4, 3), face(20, 8), face(10, 6)]),
+  });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  const shot = /** @type {any} */ (result.outcomes[0]);
+  assert.equal(shot.attack.total, 16, '8 on the die, +5 bonus, +3 from Bless');
+  assert.equal(shot.hit, true, '16 beats AC 15, which the raw 13 would not have');
+  assert.deepEqual(shot.rider, { modifier: 3, note: 'Bless +1d4 [3]' });
+});
+
+test('each projectile rolls its own rider die', () => {
+  const blessed = [{ name: 'Bless', rounds: 10, rider: BLESS_RIDER }];
+  const result = castSpell(rayCaster(), scorchingRay, {
+    slotLevel: 2,
+    targets: [{ id: 'x', name: 'Goblin', ac: 30 }],
+    spellAttackBonus: 0,
+    casterConditions: blessed,
+    // Three rays, each drawing a rider d4 and then a d20. All miss AC 30, so
+    // no damage die is drawn.
+    rng: seq([face(4, 1), face(20, 2), face(4, 2), face(20, 3), face(4, 3), face(20, 4)]),
+  });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  const shots = /** @type {any} */ (result.outcomes[0]).shots;
+  assert.deepEqual(
+    shots.map((/** @type {any} */ s) => s.attack.total),
+    [3, 5, 7],
+  );
+  assert.deepEqual(
+    shots.map((/** @type {any} */ s) => s.rider.note),
+    ['Bless +1d4 [1]', 'Bless +1d4 [2]', 'Bless +1d4 [3]'],
+  );
+});
+
+test('an auto-hit projectile draws no rider die, because it rolls no attack', () => {
+  const blessed = [{ name: 'Bless', rounds: 10, rider: BLESS_RIDER }];
+  // The caster's spellbook is keyed by id, so this keeps the ray's identity
+  // and changes only the projectile block under test.
+  const magicMissile = {
+    ...scorchingRay,
+    effect: { ...scorchingRay.effect, projectiles: { count: 1, autoHit: true } },
+  };
+  const result = castSpell(rayCaster(), /** @type {any} */ (magicMissile), {
+    slotLevel: 2,
+    targets: [{ id: 'x', name: 'Goblin', ac: 10 }],
+    casterConditions: blessed,
+    rng: seq([face(6, 3), face(6, 3)]),
+  });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(/** @type {any} */ (result.outcomes[0]).shots[0].rider, null);
+});
+
+test('a rider on the target rides the save, and the chip carries the spell rider', () => {
+  const baned = [{ name: 'Bane', rounds: 10, rider: BANE_RIDER }];
+  const holdish = {
+    ...burningHands,
+    id: 'burning-hands',
+    effect: {
+      kind: 'save',
+      saveAbility: 'DEX',
+      damage: [{ count: 3, sides: 6, damageType: 'fire' }],
+      halfOnSave: true,
+      condition: 'Blinded',
+      rider: BANE_RIDER,
+    },
+  };
+  const result = castSpell(caster(), /** @type {any} */ (holdish), {
+    slotLevel: 1,
+    targets: [{ id: 'x', name: 'Goblin', saveBonus: 2, conditions: baned }],
+    saveDC: 15,
+    // Three d6 of damage, then the Bane d4, then the target's d20.
+    rng: seq([face(6, 2), face(6, 2), face(6, 2), face(4, 4), face(20, 16)]),
+  });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  const o = /** @type {any} */ (result.outcomes[0]);
+  assert.equal(o.save.total, 14, '16 on the die, +2 bonus, -4 from Bane');
+  assert.equal(o.saved, false, 'the penalty is what dropped it under DC 15');
+  assert.deepEqual(o.rider, { modifier: -4, note: 'Bane -1d4 [4]' });
+  assert.equal(o.condition, 'Blinded');
+  assert.equal(o.conditionRider, BANE_RIDER);
+});
+
+test('a spell rider stays off a target that made its save', () => {
+  const withRider = {
+    ...burningHands,
+    effect: { ...burningHands.effect, condition: 'Blinded', rider: BANE_RIDER },
+  };
+  const result = castSpell(caster(), /** @type {any} */ (withRider), {
+    slotLevel: 1,
+    targets: [{ id: 'x', name: 'Goblin', saveBonus: 20 }],
+    saveDC: 5,
+    rng: seq([face(6, 1), face(6, 1), face(6, 1), face(20, 10)]),
+  });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  const o = /** @type {any} */ (result.outcomes[0]);
+  assert.equal(o.saved, true);
+  assert.equal(o.condition, null);
+  assert.equal(o.conditionRider, null, 'no chip landed, so nothing rides one');
 });

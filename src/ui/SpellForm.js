@@ -16,6 +16,7 @@ import {
 import { MAX_TARGET_COUNT } from '../entities/Casting.js';
 import { assembleSpell, effectDamageOf } from '../entities/SpellDraft.js';
 import { CONDITIONS } from '../entities/Conditions.js';
+import { RIDER_ROLLS, DEFAULT_RIDER_DIE } from '../entities/Riders.js';
 import {
   CASTING_TIME_KINDS,
   DURATION_KINDS,
@@ -49,6 +50,11 @@ const DURATION_LABELS = {
   'until-dispelled': 'Until dispelled',
   special: 'Special',
 };
+
+/** The dice a rider can use. Every rider in the SRD is a d4, and the rest are
+ * here so a homebrew spell is not stuck with one. The normalizer accepts any
+ * die; this is only what the picker offers. */
+const RIDER_DICE = ['d4', 'd6', 'd8', 'd10', 'd12'];
 
 /** The component letters a spell can require, with their 5e meanings. */
 const COMPONENTS = [
@@ -204,6 +210,30 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const abilityField = labeled('Save', abilitySelect);
   const conditionField = labeled('Condition', conditionSelect);
 
+  // --- Rider: what the imposed chip adds to the target's later rolls -------
+  const storedRider =
+    spell?.effect.kind === 'save' || spell?.effect.kind === 'buff'
+      ? (spell.effect.rider ?? null)
+      : null;
+  const riderDiceInput = numberField(storedRider?.dice ?? 0, {
+    className: 'inventory-panel__quantity-input',
+  });
+  riderDiceInput.title = 'Negative for a penalty die, as with Bane';
+  const riderDiceField = labeled('Rider dice', riderDiceInput);
+  const riderDieSelect = select([...RIDER_DICE], storedRider?.die ?? DEFAULT_RIDER_DIE);
+  const riderDieField = labeled('Die', riderDieSelect);
+  const riderFlatInput = numberField(storedRider?.flat ?? 0, {
+    className: 'inventory-panel__quantity-input',
+  });
+  const riderFlatField = labeled('Flat', riderFlatInput);
+  const riderRollChecks = RIDER_ROLLS.map((roll) =>
+    checkbox(roll, storedRider?.rolls.includes(roll) ?? false),
+  );
+  const riderRollsField = labeled(
+    'Applies to',
+    el('div', 'u-row u-wrap u-g2', ...riderRollChecks.map((c) => c.label)),
+  );
+
   // --- Projectiles: several separately-rolled attacks from one cast -------
   const shots = spell?.effect.kind === 'attack' ? (spell.effect.projectiles ?? null) : null;
   const fires = checkbox('Fires projectiles', !!shots);
@@ -257,6 +287,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   // The save's two toggles share a row. The condition picker gets its own row.
   const saveTogglesRow = fieldRow(halfOnSave.label, dealsDamage.label);
   const conditionRow = fieldRow(conditionField);
+  const riderRow = fieldRow(riderDiceField, riderDieField, riderFlatField);
+  const riderRollsRow = fieldRow(riderRollsField);
   const scalingRow = fieldRow(scales.label);
   // Keep the multi-line dice editor and the lone targets number on separate
   // rows. A shared flex row leaves the small number field floating beside the
@@ -268,7 +300,16 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     const kind = kindSelect.value;
     abilityField.hidden = kind !== 'save';
     saveTogglesRow.hidden = kind !== 'save';
-    conditionRow.hidden = kind !== 'save';
+    // Both kinds that put a chip on a creature pick its name. A buff needs no
+    // name (the chip falls back to the spell's own), so its picker offers the
+    // same None entry.
+    const chips = kind === 'save' || kind === 'buff';
+    conditionRow.hidden = !chips;
+    // A rider rides a chip. A save keeps one only once it names a condition;
+    // a buff always has a chip to carry it.
+    const rides = chips && (kind === 'buff' || conditionSelect.value !== '');
+    riderRow.hidden = !rides;
+    riderRollsRow.hidden = !rides;
     // Only an attack fires projectiles. Their count fields matter only once
     // the attack does.
     projectilesRow.hidden = kind !== 'attack';
@@ -326,6 +367,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   durationKindSelect.addEventListener('change', syncTiming);
   dealsDamage.input.addEventListener('change', syncEffectFields);
   fires.input.addEventListener('change', syncEffectFields);
+  conditionSelect.addEventListener('change', syncEffectFields);
 
   function syncScaling() {
     const hide = !scales.input.checked;
@@ -392,6 +434,12 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
         halfOnSave: halfOnSave.input.checked,
         dealsDamage: dealsDamage.input.checked,
         condition: conditionSelect.value,
+        rider: {
+          rolls: RIDER_ROLLS.filter((_, i) => riderRollChecks[i].input.checked),
+          dice: riderDiceInput.value,
+          die: riderDieSelect.value,
+          flat: riderFlatInput.value,
+        },
         fires: fires.input.checked,
         projectiles: {
           count: shotCountInput.value,
@@ -423,6 +471,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       projectileFieldsRow,
       saveTogglesRow,
       conditionRow,
+      riderRow,
+      riderRollsRow,
       damageField,
       healField,
       scalingRow,

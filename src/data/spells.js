@@ -1,7 +1,7 @@
 /**
  * The curated built-in spell corpus. This is a common cross-section of the
  * SRD, with every cantrip and leveled band represented, spanning all six
- * caster lists and all four effect kinds (attack, save, heal, utility). The
+ * caster lists and all five effect kinds (attack, save, heal, buff, utility). The
  * schema is identical to a GM-authored or imported spell, so the gap
  * between this set and the full SRD closes by hand-authoring or JSON
  * import with no code change. SRD spells not yet included are tracked in
@@ -29,7 +29,7 @@ export const SPELL_SCHOOLS = [
 export const SPELL_ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
 
 /** The effect kinds a spell resolves as. @type {import('../types/spell.js').SpellEffect['kind'][]} */
-export const SPELL_EFFECT_KINDS = ['attack', 'save', 'heal', 'utility'];
+export const SPELL_EFFECT_KINDS = ['attack', 'save', 'heal', 'buff', 'utility'];
 
 /** @type {Spell[]} */
 export const DEFAULT_SPELLS = deepFreeze([
@@ -159,7 +159,12 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: true,
     ritual: false,
     description: 'The target adds 1d4 to one ability check of its choice.',
-    effect: { kind: 'utility' },
+    targetCount: 1,
+    effect: {
+      kind: 'buff',
+      condition: 'Guidance',
+      rider: { rolls: ['check'], dice: 1, die: 'd4' },
+    },
   },
   {
     id: 'light',
@@ -283,7 +288,39 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: true,
     ritual: false,
     description: 'Up to three creatures add 1d4 to attack rolls and saving throws.',
-    effect: { kind: 'utility' },
+    targetCount: 3,
+    effect: {
+      kind: 'buff',
+      condition: 'Bless',
+      rider: { rolls: ['attack', 'save'], dice: 1, die: 'd4' },
+    },
+    scaling: { targetsPerLevel: 1 },
+  },
+  {
+    id: 'bane',
+    name: 'Bane',
+    level: 1,
+    school: 'enchantment',
+    classes: ['bard', 'cleric'],
+    castingTime: { kind: 'action' },
+    range: '30 feet',
+    components: ['V', 'S', 'M'],
+    materials: { text: 'a drop of blood', consumed: false },
+    duration: { kind: 'minutes', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'Up to three creatures that fail a CHA save subtract 1d4 from attack rolls and saving throws.',
+    targetCount: 3,
+    effect: {
+      kind: 'save',
+      saveAbility: 'CHA',
+      damage: [],
+      halfOnSave: false,
+      condition: 'Bane',
+      rider: { rolls: ['attack', 'save'], dice: -1, die: 'd4' },
+    },
+    scaling: { targetsPerLevel: 1 },
   },
   {
     id: 'thunderwave',

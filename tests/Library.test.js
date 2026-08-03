@@ -755,3 +755,35 @@ test('the active getters memoize their merged lists until the library changes', 
     setActiveLibrary(emptyLibrary());
   }
 });
+
+test('normalizeLibrary keeps a rider only alongside a chip to carry it', () => {
+  const rider = { rolls: ['attack', 'save'], dice: -1, die: 'd4' };
+  const lib = normalizeLibrary({
+    spells: [
+      { name: 'Bane', effect: { kind: 'save', saveAbility: 'CHA', condition: 'Bane', rider } },
+      // No condition, so nothing carries the rider.
+      { name: 'Scorch', effect: { kind: 'save', saveAbility: 'DEX', rider } },
+      // A buff always has a chip, named or not.
+      { name: 'Bless', effect: { kind: 'buff', condition: 'Bless', rider } },
+      { name: 'Shielded', effect: { kind: 'buff' } },
+      // Junk in the rider block drops the block, not the spell.
+      { name: 'Noise', effect: { kind: 'buff', rider: { rolls: ['wibble'], dice: 1 } } },
+    ],
+  });
+  assert.deepEqual(lib.spells[0].effect.rider, rider);
+  assert.equal(lib.spells[1].effect.rider, undefined);
+  assert.deepEqual(lib.spells[2].effect.rider, rider);
+  assert.deepEqual(lib.spells[3].effect, { kind: 'buff' });
+  assert.deepEqual(lib.spells[4].effect, { kind: 'buff' });
+});
+
+test('normalizeLibrary trims a buff’s chip name and drops an empty one', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      { name: 'Bless', effect: { kind: 'buff', condition: '  Bless  ' } },
+      { name: 'Plain', effect: { kind: 'buff', condition: '   ' } },
+    ],
+  });
+  assert.equal(lib.spells[0].effect.condition, 'Bless');
+  assert.equal(lib.spells[1].effect.condition, undefined);
+});

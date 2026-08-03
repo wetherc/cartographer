@@ -2,6 +2,7 @@ import { promptModal } from '../ui/Modal.js';
 import { rollDamage, attackTweak } from '../dice/DiceRoller.js';
 import { weaponAbility } from '../entities/Equipment.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
+import { rollRiders } from '../entities/Riders.js';
 import {
   abilityModOf,
   attackerStats,
@@ -86,9 +87,11 @@ export function readAttackTweaks(values) {
  * weapon's damage rolls, with the ability modifier folded into the base term
  * and proficiency left out, and the result applies to the defender through the
  * shared write path.
+ * A rider chip on the attacker, such as Bless, adds its own die to the roll.
+ *
  * The attack roll goes through the dice tray, which owns its own randomness.
- * `rng` is only the damage roll's source, injected the way the pure modules
- * take theirs.
+ * `rng` is the source for the damage roll and for the rider dice, injected
+ * the way the pure modules take theirs.
  * @param {AppContext} app
  * @param {{
  *   attacker: any,
@@ -113,8 +116,16 @@ export function rollWeaponAttack(
     tweaks.attackDie ?? 'd4',
     tweaks.attackFlat ?? 0,
   );
+  // A Bless or Bane chip on the attacker adds its die here, without the GM
+  // typing it into the dialog. Its dice roll outside the tray, the same way
+  // the dialog's penalty dice already do, so a bonus and a penalty read the
+  // same in the log.
+  const rider = rollRiders(attacker.conditions, 'attack', rng);
   const { result } = app.actions.rollDice(
-    { counts: { d20: 1, ...tweak.counts }, modifier: attackBonus + tweak.modifier },
+    {
+      counts: { d20: 1, ...tweak.counts },
+      modifier: attackBonus + tweak.modifier + rider.modifier,
+    },
     defender.ac,
   );
   const d20 = result.results.find((r) => r.die === 'd20');
@@ -128,9 +139,10 @@ export function rollWeaponAttack(
   // shows both dice and matches the tray's own readout.
   const modeNote = droppedNote(d20, result.selection.mode);
   const tweakNote = tweak.note ? `, ${tweak.note}` : '';
+  const riderNote = rider.note ? `, ${rider.note}` : '';
   app.actions.logEvent(
     'combat',
-    `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(attacker.level)}${tweakNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
+    `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(attacker.level)}${tweakNote}${riderNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
   );
   if (!hit) {
     app.toasts.show(
