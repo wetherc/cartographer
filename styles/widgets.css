@@ -112,6 +112,31 @@
 }
 
 /* ==========================================================================
+   Fact line
+   ========================================================================== */
+
+/* A label over the value it names. The label's own casing and size come from
+   .section-label, so only the box is set here. */
+.fact-line {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+/* The dense form: the label beside its value instead of above it. A caller
+   that wants the values to line up down a block gives the label a fixed
+   width in its own sheet. */
+.fact-line--row {
+  flex-direction: row;
+  gap: var(--space-2);
+}
+
+.fact-line__value {
+  min-width: 0;
+}
+
+/* ==========================================================================
    HP healthbar
    ========================================================================== */
 

@@ -535,6 +535,30 @@ union, so a misspelled name fails `tsc`.
 a new glyph, add its path data to `PATHS` and its name to the union rather
 than placing an inline SVG at the call site.
 
+## Fact lines
+
+```js
+factLine(label, value, { layout = 'stack', className }?) -> HTMLDivElement
+```
+
+`src/ui/FactLine.js` draws a label with the value it names. Three places
+grew their own version of this before it existed, under three names and
+three class families: the active combatant's initiative, AC, and HP in
+`CombatScreen.js`, the casting meta of `SpellDetail.js`, and the lines of
+`LoadoutBlock.js`. They all build it from here now.
+
+The label is a `sectionLabel`, which is what keeps every line of this kind
+cased and sized alike. The value takes any `Child`, so a caller can pass a
+built node where plain text will not do: the detailed loadout passes a row
+of slot chips.
+
+`layout: 'row'` puts the value beside the label instead of under it. Use it
+for a block of lines that reads as a table, and give the label a width in
+your own sheet so the values line up. The loadout block does both.
+
+This is not `buildStatBar`, despite the names sitting close together. A stat
+bar draws a fraction as a filled track. A fact line draws text.
+
 ## Dialogs
 
 `src/ui/Modal.js` wraps the native `<dialog>` element and is the most-imported
@@ -935,10 +959,11 @@ keep only layout (margins, grid placement) in the component's own class.
 | `.modal` and its parts | the native `<dialog>`, built through `Modal.js` |
 | `.sr-only` | visually hidden, still announced |
 
-Two more shared shapes live one sheet up, next to the widget they were built
-for: `.disclosure` / `__chevron` / `--open` and `.stat-bar` / `__track` /
-`__fill` (plus `--mana` and `--critical`, the `--compact` pill variant, and
-the `data-band` fill colors), both in `widgets.css`.
+Three more shared shapes live one sheet up, next to the widget they were
+built for, all three in `widgets.css`: `.disclosure` / `__chevron` /
+`--open`, `.stat-bar` / `__track` / `__fill` (plus `--mana` and
+`--critical`, the `--compact` pill variant, and the `data-band` fill
+colors), and `.fact-line` / `__label` / `__value` / `--row`.
 
 ### Utilities
 

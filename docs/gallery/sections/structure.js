@@ -6,7 +6,8 @@
 import { buildStatBar } from '../../../src/ui/CharacterBars.js';
 import { buildDisclosure } from '../../../src/ui/Disclosure.js';
 import { el } from '../../../src/ui/dom.js';
-import { emptyState } from '../../../src/ui/buttons.js';
+import { chip, emptyState } from '../../../src/ui/buttons.js';
+import { factLine } from '../../../src/ui/FactLine.js';
 import { mountListPanel } from '../../../src/ui/listPanel.js';
 import { buildTabs } from '../../../src/ui/Tabs.js';
 import { notify } from '../runtime.js';
@@ -89,6 +90,20 @@ export const structureSection = {
         buildStatBar({ current: 24, max: 32 }, { modifier: 'hp', label: 'Hit points', band: true })
           .element,
         buildStatBar({ current: 3, max: 9 }, { modifier: 'mana', label: 'Spell points' }).element,
+      ],
+    },
+    {
+      title: 'factLine',
+      notes:
+        'A label with the value it names. The value stacks under the label by default and sits beside it with layout row, which is the form a block of them reads as a table. The value takes a node as well as a string, so a line can hold chips.',
+      classes: '.fact-line .fact-line--row .fact-line__label .fact-line__value',
+      stack: true,
+      render: () => [
+        factLine('Casting time', '1 action'),
+        factLine('Wearing', 'Chain shirt', { layout: 'row' }),
+        factLine('Slots', el('span', 'u-row u-wrap u-g1', chip('L1: 2/4'), chip('L2: 1/3')), {
+          layout: 'row',
+        }),
       ],
     },
     {

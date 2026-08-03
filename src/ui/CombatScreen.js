@@ -5,6 +5,7 @@ import { hpBand } from '../view/ViewRole.js';
 import { fightOutcome } from '../combat/CombatView.js';
 import { combatantCard } from './CombatantCard.js';
 import { combatActionBar } from './CombatActionBar.js';
+import { factLine } from './FactLine.js';
 import { loadoutBlock } from './LoadoutBlock.js';
 import { entryItem } from './TravelogPanel.js';
 
@@ -377,14 +378,14 @@ export function mountCombatScreen(container, callbacks) {
     );
 
     const facts = el('div', 'combat-screen__facts');
-    facts.appendChild(fact('Initiative', String(row.initiative)));
-    if (row.ac !== null) facts.appendChild(fact('AC', String(row.ac)));
+    facts.appendChild(factLine('Initiative', String(row.initiative)));
+    if (row.ac !== null) facts.appendChild(factLine('AC', String(row.ac)));
     if (row.hp) {
       // HP shows exact where the viewer can act for this combatant. The GM
       // sees exact HP anywhere. A player sees exact HP for their own
       // character, matching their sheet.
       facts.appendChild(
-        fact(
+        factLine(
           'HP',
           row.mayAct ? `${row.hp.current}/${row.hp.max}` : hpBand(row.hp.current, row.hp.max),
         ),
@@ -455,19 +456,6 @@ export function mountCombatScreen(container, callbacks) {
       }
       active.appendChild(bar);
     }
-  }
-
-  /**
-   * @param {string} label
-   * @param {string} value
-   */
-  function fact(label, value) {
-    return el(
-      'div',
-      'combat-screen__fact',
-      sectionLabel(label),
-      el('span', 'combat-screen__fact-value', value),
-    );
   }
 
   /**

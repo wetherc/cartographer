@@ -77,12 +77,7 @@ export function mountTileInspector(container, opts) {
   // zooms into. It shows only when the caller supplies linking, for
   // example in Build mode.
   const linkSelect = select([], '');
-  const linkField = el(
-    'label',
-    'tile-inspector__field u-col u-g1 u-muted',
-    'Zooms into',
-    linkSelect,
-  );
+  const linkField = labeled('Zooms into', linkSelect, { className: 'tile-inspector__field' });
   const newRegionBtn = textButton('New region here', () => opts.linking?.onCreateNew(), {
     className: 'tile-inspector__new-region',
   });

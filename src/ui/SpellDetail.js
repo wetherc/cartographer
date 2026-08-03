@@ -3,8 +3,9 @@ import { buffCondition } from '../entities/Casting.js';
 import { riderSummary } from '../entities/Riders.js';
 import { formatCastingTime, formatDuration } from '../entities/SpellTiming.js';
 import { capitalize } from '../util/text.js';
-import { badge, sectionLabel, textButton } from './buttons.js';
+import { badge, textButton } from './buttons.js';
 import { el } from './dom.js';
+import { factLine } from './FactLine.js';
 import { openDialog } from './Modal.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -68,11 +69,6 @@ function componentsText(spell) {
   return `${letters} (${materials.text}${materials.consumed ? ', consumed' : ''})`;
 }
 
-/** @param {string} term @param {string} value @returns {HTMLElement} a labelled meta cell. */
-function metaCell(term, value) {
-  return el('div', 'u-col', sectionLabel(term), el('span', 'spell-detail__meta-value', value));
-}
-
 /**
  * Show a read-only spell detail modal: a school and level line, casting
  * meta, effect summary, and description, with a caller-supplied set of
@@ -107,10 +103,10 @@ export function promptSpellDetail(spell, actions, options = {}) {
           el(
             'div',
             'spell-detail__meta',
-            metaCell('Casting time', formatCastingTime(spell.castingTime)),
-            metaCell('Range', spell.range || '—'),
-            metaCell('Components', componentsText(spell)),
-            metaCell(
+            factLine('Casting time', formatCastingTime(spell.castingTime)),
+            factLine('Range', spell.range || '—'),
+            factLine('Components', componentsText(spell)),
+            factLine(
               'Duration',
               formatDuration(spell.duration, { concentration: spell.concentration }),
             ),

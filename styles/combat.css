@@ -107,13 +107,9 @@ body.mode-combat .app-buildrail {
   gap: var(--space-4);
 }
 
-.combat-screen__fact {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.combat-screen__fact-value {
+/* The facts are .fact-line. A number the GM reads mid-fight is set in mono so
+   the digits stay the same width as they change. */
+.combat-screen__facts .fact-line__value {
   font-family: var(--font-mono);
   font-weight: 700;
 }
@@ -271,21 +267,17 @@ body.mode-combat .app-buildrail {
   color: var(--text-muted);
 }
 
-.loadout__line {
-  display: flex;
-  gap: var(--space-2);
-  min-width: 0;
-}
-
-.loadout__label {
+/* The lines are .fact-line--row. The label column is fixed here so the values
+   line up down the block, and the label stays at the text weight because a
+   whole column of bold would outweigh the values it names. */
+.loadout .fact-line__label {
   flex: 0 0 4.5rem;
-  text-transform: uppercase;
+  font-weight: 400;
   letter-spacing: 0.06em;
 }
 
-.loadout__value {
+.loadout .fact-line__value {
   flex: 1;
-  min-width: 0;
   color: var(--text);
 }
 
@@ -293,7 +285,7 @@ body.mode-combat .app-buildrail {
   font-size: var(--text-body);
 }
 
-.loadout--detailed .loadout__label {
+.loadout--detailed .fact-line__label {
   flex-basis: 5.5rem;
   font-size: var(--text-label);
   line-height: 1.6;

@@ -1,5 +1,6 @@
 import { el } from './dom.js';
 import { chip } from './buttons.js';
+import { factLine } from './FactLine.js';
 
 /** @typedef {import('../combat/Loadout.js').Loadout} Loadout */
 
@@ -39,10 +40,8 @@ export function loadoutBlock(loadout, { detailed = false } = {}) {
   if (loadout.slots.length > 0) {
     lines.push(
       detailed
-        ? el(
-            'div',
-            'loadout__line loadout__line--slots',
-            el('span', 'loadout__label', 'Slots'),
+        ? line(
+            'Slots',
             el(
               'span',
               'loadout__chips u-row u-wrap u-g1',
@@ -60,17 +59,13 @@ export function loadoutBlock(loadout, { detailed = false } = {}) {
 }
 
 /**
- * One labelled line.
+ * One labelled line. The block reads as a table, so the label sits beside
+ * its value rather than above it.
  * @param {string} label
- * @param {string} value
+ * @param {import('./dom.js').Child} value
  */
 function line(label, value) {
-  return el(
-    'div',
-    'loadout__line',
-    el('span', 'loadout__label', label),
-    el('span', 'loadout__value', value),
-  );
+  return factLine(label, value, { layout: 'row' });
 }
 
 /**
