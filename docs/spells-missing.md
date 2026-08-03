@@ -43,9 +43,9 @@ full. These rules are:
 A rider chip runs for the spell's whole duration. Nothing spends it after one
 roll, so Guidance is the one built-in spell whose rider is wider than the
 printed rule: it grants 1d4 to a single ability check, and the chip stays
-until its duration runs out or the caster stops concentrating. The app rolls
-no ability checks yet, so the GM is already the one applying the die. Take the
-chip off after the check it paid for.
+until its duration runs out or the caster stops concentrating. A check rolled
+from the character sheet picks the die up on its own, and so does every check
+after it. Take the chip off after the check it paid for.
 
 The list also includes utility spells with rules that exist only as prose:
 Light, Mage Armor, Counterspell, and Revivify. These spells are common enough

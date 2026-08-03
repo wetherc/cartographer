@@ -1,7 +1,19 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { capitalize, slugify, splitList, splitTrimmedList } from '../src/util/text.js';
+import { article, capitalize, slugify, splitList, splitTrimmedList } from '../src/util/text.js';
+
+test('article picks "an" before a vowel letter and "a" otherwise', () => {
+  assert.equal(article('Acrobatics check'), 'an');
+  assert.equal(article('Insight check'), 'an');
+  assert.equal(article('Stealth check'), 'a');
+  assert.equal(article('DEX saving throw'), 'a');
+  assert.equal(article('INT saving throw'), 'an');
+});
+
+test('article reads an empty string as taking "a"', () => {
+  assert.equal(article(''), 'a');
+});
 
 test('capitalize uppercases only the first character', () => {
   assert.equal(capitalize('friendly'), 'Friendly');

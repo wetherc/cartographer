@@ -436,8 +436,32 @@ weapon attack's log names the ability and proficiency behind its total.
 
 A natural 1 and a natural 20 are ordinary results on a save, unlike on an
 attack roll, so the app reports `natural` for the log rather than acting on
-it. The app does not yet model skill checks, passive scores, or expertise.
-Only saves are modeled.
+it.
+
+Ability checks work the same way. `checkBonus` is the ability modifier plus the
+proficiency bonus for a skill the character is proficient in, doubled where the
+character has expertise. `checkAbility` says which ability a key rolls: a skill
+id resolves through `data/skills.js`, and one of the six ability keys stands for
+itself, which is how a bare Strength check works. `resolveCheck` and
+`abilityCheck` mirror the two save entry points, and the DC is nullable, because
+a GM often calls for a check with no number in mind and reads the total out
+loud. `passiveScore` is 10 plus a bonus, plus or minus 5 for advantage or
+disadvantage, and `passivePerception` applies it to the Perception bonus.
+
+`ui/CharacterChecks.js` puts the six saves and the 18 skills on the sheet, with
+a training dot that reads hollow, solid, or ringed for untrained, proficient, or
+expertise, and passive Perception under the skills. A row is a button when the
+host wires `onCheck`, and a plain line otherwise, which is a spectator's sheet.
+`app/checkRolls.js` is that handler. It takes the bonus from the pure helpers,
+rolls the rider dice, and hands one flat modifier to the dice tray, so the tray
+throws the only d20 and the log line breaks the number back down. A sheet roll
+carries no DC.
+
+Expertise is a GM grant. The Progression section of the sheet lists it and
+offers a multiselect over the character's proficient skills, which commits
+through `Progression.withExpertise`. No class feature grants it yet. An
+encounter and an NPC carry no proficiency lists, so their bonus is still
+whatever the GM types.
 
 ## Concentration
 
@@ -562,7 +586,7 @@ The rider dice roll inside `rollRiders` rather than joining the caller's own
 dice selection. A bonus and a penalty then resolve the same way, and a save,
 which has no dice tray, works identically to an attack, which has one.
 
-Three roll sites read riders:
+Four roll sites read riders:
 
 - `app/weaponAttack.js` reads the attacker's own chips before it loads the
   tray, and puts the note in the log beside the dialog's own modifiers.
@@ -577,17 +601,19 @@ Three roll sites read riders:
   get riders from that one place. `savingThrow` reads the character's own
   chips without being asked, which means a blessed caster holds a spell
   against damage more easily.
-
-Ability checks have no roller yet, so a `check` rider only shows: on the chip
-tooltip and in the spell detail. The GM applies it in the dice tray. Guidance
-ships that way.
+- `app/checkRolls.js` reads the roller's chips for a save or a check rolled from
+  the sheet. It calls `rollRiders` itself rather than going through
+  `resolveSave`, because the tray owns the d20 there, and the log names the
+  faces beside the ability modifier and the proficiency.
 
 A rider lasts as long as its chip. Nothing spends a rider after one roll, so a
 spell that grants a die to a single roll is wider here than in print. Guidance
 is the built-in case: its chip stays until the duration runs out or the caster
-stops concentrating, and the GM takes it off after the check it paid for. A
-per-use rider would need a counter on the chip and a roller that decrements
-it, and there is no check roller to decrement it yet.
+stops concentrating, and the GM takes it off after the check it paid for. The
+roll sites read chips and never write them, and `Condition.rider` has no uses
+field, so a per-use rider would need a counter on the chip and a decrement at
+every one of the four sites. A chip ends by its duration, a concentration drop,
+or a GM removal.
 
 A rider reaches a target one of two ways. A save spell's `effect.rider` rides
 the chip that a failed save imposes, which is how Bane works. A `buff` effect

@@ -11,7 +11,13 @@ import {
   featuresGained,
 } from '../entities/LevelUp.js';
 import { getProficiencies } from '../entities/Proficiencies.js';
-import { applyASI, takeFeat, undoLastChoice, withProficiencies } from '../entities/Progression.js';
+import {
+  applyASI,
+  takeFeat,
+  undoLastChoice,
+  withExpertise,
+  withProficiencies,
+} from '../entities/Progression.js';
 import { getHitDicePools, hitDieOfPool, spendHitDie } from '../entities/HitDice.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
@@ -23,10 +29,11 @@ import { splitList } from '../util/text.js';
  * This is the progression section of the character sheet. It shows the
  * class list, the pending-level assignment flow (a multiclass character's
  * XP levels wait here until spent), pending ability-score improvements
- * (apply an increase, take a feat, undo the last choice), the unlocked
- * class features, and the hit-dice pools with their short-rest spend. All
- * rule logic lives in the entity modules LevelAssign, LevelUp, and
- * HitDice. This file is DOM wiring over them, verified visually.
+ * (apply an increase, take a feat, undo the last choice), the GM's expertise
+ * grant, the unlocked class features, and the hit-dice pools with their
+ * short-rest spend. All rule logic lives in the entity modules LevelAssign,
+ * LevelUp, HitDice, and Proficiencies. This file is DOM wiring over them,
+ * verified visually.
  */
 
 /**
@@ -232,6 +239,44 @@ export function buildProgressSection(getCharacter, opts) {
         }),
       );
     }
+  }
+
+  // Expertise doubles a skill proficiency. No class feature grants it yet, so
+  // it is a GM grant with no maximum. Only proficient skills are offered,
+  // which is the one rule the normalizer enforces anyway.
+  async function runExpertise() {
+    const p = getProficiencies(getCharacter());
+    const values = await promptModal(
+      'Expertise',
+      [
+        {
+          name: 'skills',
+          label: 'Skills with a doubled proficiency',
+          type: 'multiselect',
+          options: p.skills.map((id) => ({ value: id, label: skillName(id) })),
+          value: p.expertise.join(','),
+        },
+      ],
+      { submitLabel: 'Set expertise' },
+    );
+    if (!values) return;
+    opts.onCommit(withExpertise(getCharacter(), splitList(values.skills)));
+  }
+
+  const { skills, expertise } = getProficiencies(character);
+  if (opts.editBase && skills.length > 0) {
+    const row = addRow();
+    addText(
+      row,
+      expertise.length > 0
+        ? `Expertise: ${expertise.map(skillName).join(', ')}`
+        : 'No expertise chosen',
+    );
+    row.appendChild(
+      textButton('Set expertise', runExpertise, {
+        ariaLabel: 'Choose which skills have expertise',
+      }),
+    );
   }
 
   const features = unlockedFeatures(character);

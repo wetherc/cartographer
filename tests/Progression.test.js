@@ -6,6 +6,7 @@ import {
   withRace,
   withCustomRace,
   withProficiencies,
+  withExpertise,
   applyASI,
   undoLastChoice,
   setStat,
@@ -146,4 +147,19 @@ test('withClasses and withProficiencies keep their underlying behavior', () => {
     getProficiencies(withProficiencies(c, { skills: ['stealth', 'stealth'] })).skills,
     ['stealth'],
   );
+});
+
+test('withExpertise re-derives and keeps expertise inside the proficient skills', () => {
+  const fighter = withProficiencies(classed([{ classId: 'fighter', level: 3 }]), {
+    skills: ['stealth'],
+  });
+  const expert = withExpertise(fighter, ['stealth', 'arcana']);
+  assert.deepEqual(getProficiencies(expert).expertise, ['stealth'], 'arcana is not proficient');
+  assert.deepEqual(getProficiencies(expert).skills, ['stealth'], 'the skills list is untouched');
+  // Deriving runs on the way out, so the hit-dice pools still match the classes.
+  assert.deepEqual(
+    getHitDicePools(expert).map((pool) => pool.max),
+    getHitDicePools(fighter).map((pool) => pool.max),
+  );
+  assert.deepEqual(getProficiencies(withExpertise(expert, [])).expertise, [], 'a clear works');
 });

@@ -14,6 +14,18 @@ export function capitalize(text) {
 }
 
 /**
+ * The indefinite article a phrase reads with: "an Acrobatics check" against "a
+ * Stealth check". The rule here is the spelling one, a vowel letter first, not
+ * the spoken one, so a phrase that starts with a consonant sound spelled with a
+ * vowel would come out wrong. Nothing the app names does.
+ * @param {string} phrase
+ * @returns {'a' | 'an'}
+ */
+export function article(phrase) {
+  return /^[aeiou]/i.test(phrase) ? 'an' : 'a';
+}
+
+/**
  * Derive an id from a name: "Healing Potion" becomes "healing-potion". Use
  * this where a GM-typed name must become a key. Every run of characters that
  * an id cannot hold, whitespace and punctuation alike, collapses to one dash,

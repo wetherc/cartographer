@@ -302,6 +302,26 @@ The expanded card adds the ability scores with their modifiers, the XP
 award control, custom resource pools, the Progression block, the hit-dice
 pool, and the class features unlocked by level.
 
+It also lists the six saving throws and the 18 skills with what each one
+adds. A dot in front of the name says how trained the character is: hollow
+for untrained, solid for proficient, and ringed for expertise, which doubles
+the proficiency bonus. Passive Perception sits under the skills. It is 10
+plus the Perception bonus, the score to compare a hidden thing against when
+nobody says they are looking.
+
+A click on a save or a skill rolls it. The dice tray opens with the d20 and
+the whole bonus, and the session log breaks the number down: the ability
+modifier, the proficiency or expertise, and any condition chip that adds to
+the roll, such as Bless on a save or Guidance on a check. The roll carries no
+DC, so nothing judges it. Read the total against whatever you had in mind. The
+tray's advantage and disadvantage toggle applies, and the log names the die it
+threw away. A player on a bound tab rolls their own character. A spectator sees
+the numbers and cannot roll.
+
+Expertise is a GM grant. The Set expertise button in the Progression block
+lists the skills the character is proficient in. The proficiency bonus doubles
+for the ones you pick. No class feature grants expertise yet.
+
 | Field | Who can set it | Meaning |
 | --- | --- | --- |
 | Max HP | GM | Overrides the derived maximum and clamps current HP |

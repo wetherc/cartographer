@@ -7,6 +7,7 @@ import { characterFields, characterFormChange, buildCharacter } from './characte
 import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
 import { endSpellEffects } from './combatants.js';
+import { rollCheck } from './checkRolls.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { removeById } from '../entities/Roster.js';
 import { createCharacterScope } from './characterScope.js';
@@ -251,6 +252,13 @@ export function wireParty(app) {
       onConcentrationEnd: (character, held) => endSpellEffects(app, character.id, held.spellId),
     },
     (message) => app.toasts.show(message),
+    // A save or skill row rolls through the dice tray and lands in the log.
+    // The handler outlives the render that built it, so it reads the selected
+    // character when it fires rather than closing over the one on screen.
+    (event) => {
+      const character = selectedCharacter();
+      if (character) rollCheck(app, character, event);
+    },
   );
 
   // The Spellbook tab manages learn, prepare, and forget actions for the
