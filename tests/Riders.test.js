@@ -5,6 +5,7 @@ import {
   DEFAULT_RIDER_DIE,
   normalizeRider,
   activeRiders,
+  chipRider,
   riderText,
   riderSummary,
   rollRiders,
@@ -77,15 +78,54 @@ test('activeRiders picks only the chips that touch this roll', () => {
     createCondition('Guidance', 10, { rider: { rolls: ['check'], dice: 1, die: 'd4' } }),
   ];
   assert.deepEqual(
-    activeRiders(chips, 'attack').map((c) => c.name),
+    activeRiders(chips, 'attack').map((r) => r.condition.name),
     ['Bless'],
   );
   assert.deepEqual(
-    activeRiders(chips, 'check').map((c) => c.name),
+    activeRiders(chips, 'check').map((r) => r.condition.name),
     ['Guidance'],
   );
   assert.deepEqual(activeRiders([], 'save'), []);
   assert.deepEqual(activeRiders(undefined, 'save'), []);
+});
+
+test('a chip whose rider is malformed reads as a chip with no rider', () => {
+  // Chips come out of the campaign save unchecked, so a hand-edited or
+  // half-written save can hold any of these. None of them may reach a roll.
+  const broken = [
+    { name: 'No rolls key', rounds: null, rider: { dice: 1, die: 'd4' } },
+    { name: 'Rolls not a list', rounds: null, rider: { rolls: 'attack', dice: 1 } },
+    { name: 'Unknown roll kind', rounds: null, rider: { rolls: ['damage'], dice: 1 } },
+    { name: 'Nothing to add', rounds: null, rider: { rolls: ['attack'] } },
+    { name: 'Rider not an object', rounds: null, rider: 'bless' },
+  ];
+  for (const chip of broken) {
+    assert.equal(chipRider(/** @type {any} */ (chip)), null, chip.name);
+  }
+  for (const kind of /** @type {const} */ (['attack', 'save', 'check'])) {
+    assert.deepEqual(activeRiders(/** @type {any} */ (broken), kind), [], kind);
+    assert.deepEqual(
+      rollRiders(/** @type {any} */ (broken), kind, () => 0.5),
+      {
+        modifier: 0,
+        note: '',
+      },
+    );
+  }
+});
+
+test('a rider that names a die the app does not have rolls the default die', () => {
+  // The die reaches the roller off the save, so an unknown one must not turn
+  // the modifier into NaN. It reads as the default d4 instead.
+  const chips = [
+    /** @type {any} */ ({
+      name: 'Odd',
+      rounds: null,
+      rider: { rolls: ['save'], dice: 1, die: 'd7' },
+    }),
+  ];
+  const { modifier } = rollRiders(chips, 'save', () => 0.99);
+  assert.equal(modifier, 4);
 });
 
 test('riderText and riderSummary read the rider back as signed text', () => {

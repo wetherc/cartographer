@@ -1,5 +1,5 @@
 import { CONDITIONS, addCondition, removeCondition } from '../entities/Conditions.js';
-import { riderSummary } from '../entities/Riders.js';
+import { chipRider, riderSummary } from '../entities/Riders.js';
 import { promptModal } from './Modal.js';
 import { chip, iconButton, removableChip, textButton } from './buttons.js';
 import { clampInt } from '../util/num.js';
@@ -30,7 +30,8 @@ export function mountConditionsBar(container, callbacks) {
       condition.rounds === null ? condition.name : `${condition.name} (${condition.rounds})`;
     // A rider goes in the tooltip, not the label. Chips already carry a round
     // counter and sit in a narrow row.
-    const title = condition.rider ? riderSummary(condition.rider) : '';
+    const rider = chipRider(condition);
+    const title = rider ? riderSummary(rider) : '';
     const element = !canEdit()
       ? chip(label)
       : removableChip(

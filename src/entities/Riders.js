@@ -65,15 +65,37 @@ function clampDice(dice) {
 }
 
 /**
- * The chips on a creature that touch one kind of roll. A chip with no rider,
- * such as a hand-added Poisoned, is not one of them.
+ * The rider a chip carries, cleaned, or null when it carries none.
+ *
+ * Chips live in the campaign save, and nothing sanitizes a save's chips on
+ * the way in. A hand-edited or half-written save can therefore hold a rider
+ * with no `rolls` list or with a die that does not exist. Every read of a
+ * stored rider goes through here, so a broken one reads as absent instead of
+ * throwing inside an attack roll.
+ * @param {Condition | undefined | null} condition
+ * @returns {RollRider | null}
+ */
+export function chipRider(condition) {
+  return normalizeRider(condition?.rider);
+}
+
+/**
+ * The chips on a creature that touch one kind of roll, each with its cleaned
+ * rider. A chip with no rider, such as a hand-added Poisoned, is not one of
+ * them.
  * @param {Condition[] | undefined} conditions
  * @param {RiderRoll} kind
- * @returns {Condition[]}
+ * @returns {{ condition: Condition, rider: RollRider }[]}
  */
 export function activeRiders(conditions, kind) {
   if (!Array.isArray(conditions)) return [];
-  return conditions.filter((c) => c.rider?.rolls.includes(kind));
+  /** @type {{ condition: Condition, rider: RollRider }[]} */
+  const found = [];
+  for (const condition of conditions) {
+    const rider = chipRider(condition);
+    if (rider?.rolls.includes(kind)) found.push({ condition, rider });
+  }
+  return found;
 }
 
 /**
@@ -121,7 +143,7 @@ export function riderSummary(rider) {
  * with no dice tray works identically to an attack site with one.
  *
  * The note names each chip and the faces it rolled, so a log line can explain
- * the number. A creature with no rider chip costs one array filter and
+ * the number. A creature with no rider chip costs one pass over its chips and
  * returns a zero modifier with an empty note, which every call site treats as
  * nothing to say.
  * @param {Condition[] | undefined} conditions
@@ -134,8 +156,7 @@ export function rollRiders(conditions, kind, rng = Math.random) {
   if (chips.length === 0) return { modifier: 0, note: '' };
   let modifier = 0;
   const notes = [];
-  for (const chip of chips) {
-    const rider = /** @type {RollRider} */ (chip.rider);
+  for (const { condition, rider } of chips) {
     const dice = rider.dice ?? 0;
     const die = rider.die ?? DEFAULT_RIDER_DIE;
     /** @type {number[]} */
@@ -147,8 +168,8 @@ export function rollRiders(conditions, kind, rng = Math.random) {
     modifier += (dice < 0 ? -sum : sum) + (rider.flat ?? 0);
     notes.push(
       faces.length > 0
-        ? `${chip.name} ${riderText(rider)} [${faces.join(',')}]`
-        : `${chip.name} ${riderText(rider)}`,
+        ? `${condition.name} ${riderText(rider)} [${faces.join(',')}]`
+        : `${condition.name} ${riderText(rider)}`,
     );
   }
   return { modifier, note: notes.join(', ') };
