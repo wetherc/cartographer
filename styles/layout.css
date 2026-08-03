@@ -1,6 +1,6 @@
 /* ==========================================================================
    Play-surface layout: main columns, map viewport + controls, onboarding,
-   toasts, tile tooltip, and the tabbed sidebar
+   toasts, tile tooltip, and the sidebar column
    ========================================================================== */
 
 .app-main {
@@ -239,12 +239,12 @@ body.mode-build .map-controls__fog {
   box-shadow: var(--shadow-2);
   pointer-events: auto;
   cursor: pointer;
-  animation: toast-in 0.2s ease-out;
+  animation: toast-in var(--transition-base) ease-out;
 }
 
 .toast--leaving {
   opacity: 0;
-  transition: opacity 0.25s;
+  transition: opacity var(--transition-base);
 }
 
 @keyframes toast-in {
@@ -293,61 +293,7 @@ body.mode-build .map-controls__fog {
   flex-shrink: 0;
 }
 
-/* Tabbed sidebar: a strip of tabs over the panel stacks. */
-.tabs {
-  display: flex;
-  gap: var(--space-1);
-  border-bottom: 1px solid var(--border);
-}
-
-.tabs__tab {
-  flex: 1;
-  padding: var(--space-2) var(--space-3);
-  border: none;
-  border-bottom: 2px solid transparent;
-  background: none;
-  font: inherit;
-  font-size: var(--text-label);
-  font-weight: 600;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.tabs__tab:hover {
-  color: var(--text);
-}
-
-.tabs__tab[aria-selected='true'] {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-
-.tabs__tab:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -2px;
-}
-
-/* Sixteen panels are declared in index.html, so this stack stays a rule rather
-   than u-col on every one of them. */
-.tabs__panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-/* The display:flex above would otherwise defeat the hidden attribute the tab
-   strip toggles them with. */
-.tabs__panel[hidden] {
-  display: none;
-}
-
-/* The Equipment and Spellbook tabs are form-like: on a wide hiDPI display their
-   rows stretch uncomfortably, so cap their measure. Inventory keeps the full
-   width for its dense, multi-column item rows, and the Character tab keeps it
-   too because the sheet splits into columns rather than stretching. */
-.tabs__panel--narrow {
-  max-width: 34rem;
-}
+/* The tab strip over the panel stacks is a .tabs primitive (base.css). */
 
 .sidebar-toggle {
   align-self: flex-end;

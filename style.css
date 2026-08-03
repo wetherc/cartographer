@@ -4,10 +4,10 @@
    (responsive.css must stay last), so add new imports with that in mind.
    ========================================================================== */
 
-@import url('styles/base.css'); /* design tokens, element base, .btn/.field/.card primitives */
-@import url('styles/shell.css'); /* app header/shell, modal dialog, mode + role switches */
+@import url('styles/base.css'); /* design tokens, element base, every shared primitive */
+@import url('styles/shell.css'); /* app header/shell, context menu, mode + role switches */
 @import url('styles/build.css'); /* Build mode: world tree, tile palette, tile inspector */
-@import url('styles/layout.css'); /* play-surface columns, map viewport/controls, toasts, sidebar tabs */
+@import url('styles/layout.css'); /* play-surface columns, map viewport/controls, toasts */
 @import url('styles/widgets.css'); /* breadcrumb, dice tray, disclosure headers, HP healthbar */
 @import url('styles/character.css'); /* character sheet, inventory */
 @import url('styles/session.css'); /* encounters, in-game time, NPCs, initiative */

@@ -44,7 +44,7 @@ gaps](#known-gaps).
   src/ui/Tabs.js, Disclosure.js, Toast.js, ContextMenu.js, dom.js
           |
           v
-  styles/base.css ............ design tokens + .btn/.field/.card primitives
+  styles/base.css ............ design tokens + every shared primitive
 ```
 
 Feature panels never hand-roll a button, an empty state, a dialog, or a
@@ -781,11 +781,10 @@ expected to go away when image payloads move to real files.
 `styles/`, in cascade order, with a one-line comment for each. A later
 sheet can override an earlier one, so the order is the contract:
 
-1. `base.css`: design tokens, element base, the `.btn`/`.field`/`.card`
-   primitives
-2. `shell.css`: header, modal dialog, mode and role switches
+1. `base.css`: design tokens, element base, every shared primitive
+2. `shell.css`: header, context menu, mode and role switches
 3. `build.css`: Build mode's world tree, palette, tile inspector
-4. `layout.css`: play-surface columns, map viewport, toasts, sidebar tabs
+4. `layout.css`: play-surface columns, map viewport, toasts
 5. `widgets.css`: breadcrumb, dice tray, disclosure, stat bars
 6. `character.css`, `session.css`, `party.css`, `story.css`, `library.css`,
    `spells.css`: one sheet per feature area
@@ -809,7 +808,8 @@ defined in one `:root` block in `styles/base.css`:
 | Over-map chrome | `--overlay-bg`, `--overlay-text`, `--overlay-npc` |
 | Spacing | `--space-1` (0.25rem) through `--space-6` (2rem) |
 | Type | `--font-sans`, `--font-mono`, `--text-display`, `--text-heading`, `--text-body`, `--text-label`, `--line-body` |
-| Radius | `--radius-sm`, `--radius`, `--radius-lg` |
+| Radius | `--radius-sm`, `--radius`, `--radius-lg`, `--radius-pill` |
+| Motion | `--transition-press` (40ms), `--transition-fast` (120ms), `--transition-base` (250ms) |
 
 The token system holds together only while both of these rules hold:
 
@@ -854,6 +854,7 @@ keep only layout (margins, grid placement) in the component's own class.
 | Class | Role |
 | --- | --- |
 | `.btn` + `--primary`/`--danger`/`--success`/`--icon` | every button, built through `buttons.js` |
+| `.btn-bare` | the reset for a control that is a button with no button chrome |
 | `.field` | every input, select, and textarea |
 | `.card`, `.card__title` | a bordered panel with an uppercase heading |
 | `.seg-switch`, `__btn`, `__btn--active` | segmented toggle (mode, theme, role, dice-tray d20) |
@@ -863,13 +864,14 @@ keep only layout (margins, grid placement) in the component's own class.
 | `.chip`, `.chip__remove` | a small labeled tag, with or without an x, built through `buttons.js` |
 | `.badge` | a read-only status marker on a list row. The color comes from a per-feature modifier |
 | `.icon` | the SVG wrapper that `icon()` applies |
+| `.tabs`, `__tab`, `__panel` | a tab strip over a stack of panels |
+| `.modal` and its parts | the native `<dialog>`, built through `Modal.js` |
 | `.sr-only` | visually hidden, still announced |
 
-Three more shared shapes live one sheet up, next to the widget they were built
+Two more shared shapes live one sheet up, next to the widget they were built
 for: `.disclosure` / `__chevron` / `--open` and `.stat-bar` / `__track` /
 `__fill` (plus `--mana` and `--critical`, the `--compact` pill variant, and
-the `data-band` fill colors) in `widgets.css`, and `.tabs` / `__tab` /
-`__panel` in `layout.css`.
+the `data-band` fill colors), both in `widgets.css`.
 
 ### Utilities
 
@@ -1076,21 +1078,15 @@ Class contracts with no builder, so the class is typed at the call site:
 - **A bare button**, one with no `.btn` presentation, has no builder, so
   nineteen `<button>` elements are built by hand (the breadcrumb crumbs,
   disclosure headers, tree rows, palette swatches, menu items, spell-slot
-  pips). Each restates `font: inherit` and `cursor: pointer` in its own
-  rule, seventeen and twenty-five times across nine sheets.
+  pips). `.btn-bare` in `base.css` is the reset they should carry, and until
+  they do, each rule restates `font: inherit` and `cursor: pointer` for
+  itself.
 - **A clickable chip** is not what `chip` builds, since `chip` hardcodes a
   `<span>`. `StatBlockBar.js` and `CombatScreen.js` rebuild the chip shape
   around a `<button>` instead.
 
 Repeated by hand:
 
-- **Transition durations are untokenized**: `0.12s`, `120ms`, `0.15s`, `0.2s`,
-  and `0.25s` all appear, with no `--transition-*` token. So is the pill
-  radius, `999px`, in three sheets.
-- **The primitive rules are split across three sheets.** `.btn`, `.field`,
-  `.chip`, `.badge`, `.seg-switch`, `.empty-state`, and `.card` are in
-  `base.css`, `.tabs` is in `layout.css`, and `.modal` is in `shell.css`, so
-  there is no one file that holds the primitive layer.
 - **The list-CRUD panel skeleton is written six times** (quests, handouts,
   NPCs, build encounters, encounters, library), and the `<dialog>` lifecycle
   seven times, four of them outside `Modal.js`.

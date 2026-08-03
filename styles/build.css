@@ -54,7 +54,7 @@
 }
 
 .world-tree__toggle svg {
-  transition: transform 120ms ease;
+  transition: transform var(--transition-fast) ease;
 }
 
 .world-tree__toggle--open svg {

@@ -109,7 +109,7 @@
   margin-left: auto;
   flex-shrink: 0;
   color: var(--text-muted);
-  transition: transform 0.15s ease;
+  transition: transform var(--transition-fast) ease;
 }
 
 .disclosure--open .disclosure__chevron {
@@ -134,7 +134,7 @@
 .stat-bar__track {
   flex: 1;
   height: 0.4rem;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--surface-sunken);
   overflow: hidden;
 }
