@@ -78,7 +78,7 @@ export function wireGenerateAction(app, env) {
     if (
       node.tiles.length > 0 &&
       !(await confirmModal(`Replace every tile in "${node.name}" with a generated map?`, {
-        danger: true,
+        variant: 'danger',
         confirmLabel: 'Replace',
       }))
     ) {

@@ -111,7 +111,7 @@ export function createNodeActions(app, env) {
       return;
     }
     const ok = await confirmModal(`Delete "${node.name}" and everything inside it?`, {
-      danger: true,
+      variant: 'danger',
       confirmLabel: 'Delete',
     });
     if (!ok) return;
@@ -155,7 +155,7 @@ export function createNodeActions(app, env) {
     if (lost.length) {
       const ok = await confirmModal(
         `Shrinking "${node.name}" removes ${lost.length} tile${lost.length === 1 ? '' : 's'} outside the new bounds.`,
-        { danger: true, confirmLabel: 'Shrink' },
+        { variant: 'danger', confirmLabel: 'Shrink' },
       );
       if (!ok) return;
     }

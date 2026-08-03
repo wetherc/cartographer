@@ -81,7 +81,7 @@ const COMPONENTS = [
  * @returns {HTMLElement}
  */
 export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel = null }) {
-  const nameInput = textField(spell?.name ?? '', 'Spell name');
+  const nameInput = textField(spell?.name ?? '', { placeholder: 'Spell name' });
 
   const levelSelect = select(
     ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
@@ -104,7 +104,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     ),
   );
 
-  const rangeInput = textField(spell?.range ?? 'Self', '60 feet');
+  const rangeInput = textField(spell?.range ?? 'Self', { placeholder: '60 feet' });
 
   // --- Casting time: a kind, plus whatever fields that kind carries --------
   const castingTime = parseCastingTime(spell?.castingTime ?? '1 action');
@@ -117,9 +117,11 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     className: 'form__number',
   });
   const timeAmountField = labeled('Minutes', timeAmountInput);
-  const triggerInput = textField(castingTime.trigger ?? '', 'which you take when ...');
+  const triggerInput = textField(castingTime.trigger ?? '', {
+    placeholder: 'which you take when ...',
+  });
   const triggerField = labeled('Reaction to', triggerInput);
-  const timeTextInput = textField(castingTime.text ?? '', 'as written');
+  const timeTextInput = textField(castingTime.text ?? '', { placeholder: 'as written' });
   const timeTextField = labeled('Casting time text', timeTextInput);
 
   // --- Duration: the same shape, plus the "up to" distinction --------------
@@ -132,7 +134,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const durationAmountField = labeled('Rounds', durationAmountInput);
   const upTo = checkbox('Up to', duration.upTo ?? false);
   upTo.label.title = 'The caster may end the spell before the time runs out';
-  const durationTextInput = textField(duration.text ?? '', 'as written');
+  const durationTextInput = textField(duration.text ?? '', { placeholder: 'as written' });
   const durationTextField = labeled('Duration text', durationTextInput);
 
   const componentChecks = COMPONENTS.map(({ letter, title }) => {
@@ -146,7 +148,9 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   // What the M component is. The system enforces only a consumed material
   // against the caster's inventory. The cost field is documentation only. The
   // checkbox is the field that changes what a cast does.
-  const materialInput = textField(spell?.materials?.text ?? '', 'a pinch of sulfur');
+  const materialInput = textField(spell?.materials?.text ?? '', {
+    placeholder: 'a pinch of sulfur',
+  });
   const materialField = labeled('Material', materialInput);
   const materialCostInput = numberField(spell?.materials?.costGP ?? 0, {
     min: 0,

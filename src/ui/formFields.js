@@ -95,17 +95,17 @@ export function checkbox(caption, checked, opts = {}) {
 
 /**
  * A text input, pre-filled and classed as a form field. `type` covers the
- * search variant, which uses the browser's clear affordance.
+ * search variant, which uses the browser's clear affordance. The placeholder
+ * is an option here, the same as on the number and textarea fields.
  * @param {string} value
- * @param {string} [placeholder]
- * @param {FieldOpts & { type?: 'text' | 'search' }} [opts]
+ * @param {FieldOpts & { placeholder?: string, type?: 'text' | 'search' }} [opts]
  * @returns {HTMLInputElement}
  */
-export function textField(value, placeholder = '', opts = {}) {
+export function textField(value, opts = {}) {
   const input = el('input', 'field');
   input.type = opts.type ?? 'text';
   input.value = value;
-  input.placeholder = placeholder;
+  if (opts.placeholder) input.placeholder = opts.placeholder;
   return withOpts(input, opts);
 }
 

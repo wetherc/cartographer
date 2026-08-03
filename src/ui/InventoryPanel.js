@@ -167,7 +167,8 @@ export function mountInventoryPanel(
    * @returns {HTMLElement}
    */
   function buildInventoryTab(playable) {
-    const searchInput = textField(searchQuery, 'Search items', {
+    const searchInput = textField(searchQuery, {
+      placeholder: 'Search items',
       type: 'search',
       className: 'inventory-panel__search',
       ariaLabel: 'Search items by name or description',

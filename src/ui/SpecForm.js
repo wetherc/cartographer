@@ -120,7 +120,9 @@ function renderField(field) {
             max: field.max,
             placeholder: field.placeholder,
           })
-        : textField(field.value === undefined ? '' : String(field.value), field.placeholder);
+        : textField(field.value === undefined ? '' : String(field.value), {
+            placeholder: field.placeholder,
+          });
     return {
       node: labeled(field.label, input),
       input,

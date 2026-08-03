@@ -144,7 +144,10 @@ export function wireLibrary(app) {
       source === 'override'
         ? `Revert this ${noun} to the built-in default?`
         : `Delete this custom ${noun}?`,
-      { danger: source === 'custom', confirmLabel: source === 'override' ? 'Revert' : 'Delete' },
+      {
+        variant: source === 'custom' ? 'danger' : 'primary',
+        confirmLabel: source === 'override' ? 'Revert' : 'Delete',
+      },
     );
     if (ok) apply(key);
     return ok;
@@ -406,7 +409,7 @@ export function wireLibrary(app) {
     if (!isLibraryEmpty(custom)) {
       const ok = await confirmModal(
         'Replace your library customizations with this file? Built-in defaults are unaffected.',
-        { danger: true, confirmLabel: 'Replace' },
+        { variant: 'danger', confirmLabel: 'Replace' },
       );
       if (!ok) return;
     }
@@ -423,7 +426,7 @@ export function wireLibrary(app) {
     }
     const ok = await confirmModal(
       'Remove all library customizations? Built-in defaults are unaffected. Export first to keep a copy.',
-      { danger: true, confirmLabel: 'Reset' },
+      { variant: 'danger', confirmLabel: 'Reset' },
     );
     if (!ok) return;
     custom = emptyLibrary();

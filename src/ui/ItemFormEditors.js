@@ -174,7 +174,8 @@ export function buildEffectsEditor(initial) {
         }),
       );
     }
-    const effectInput = textField('', 'e.g. burning', {
+    const effectInput = textField('', {
+      placeholder: 'e.g. burning',
       className: 'item-form__effect-input',
     });
     const addEffect = () => {

@@ -18,7 +18,7 @@ import { openDialog } from './Modal.js';
 function openStatBreakdown(key, breakdown) {
   const { base, total, sources } = breakdown;
   openDialog({
-    className: 'modal stat-breakdown',
+    className: 'stat-breakdown',
     title: `${key} ${total}`,
     build: (close) => {
       const mod = el(

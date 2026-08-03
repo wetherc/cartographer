@@ -52,6 +52,9 @@ import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from
  * With `form` set, the parts go inside a `<form method="dialog">`. This makes
  * Enter submit the form, and makes a submit button's `value` become the
  * return value.
+ *
+ * `className` is appended to the shared `modal` class, so a dialog names only
+ * what makes it different.
  * @template T
  * @param {{
  *   className?: string,
@@ -65,7 +68,7 @@ import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from
 export function openDialog(spec) {
   return new Promise((resolve) => {
     const opener = /** @type {HTMLElement | null} */ (document.activeElement);
-    const dialog = el('dialog', spec.className ?? 'modal');
+    const dialog = el('dialog', classNames(['modal', spec.className]));
 
     /** @type {HTMLElement} */
     let host = dialog;
@@ -174,7 +177,7 @@ export function promptModal(title, fields, options = {}) {
   const wrappers = {};
 
   return openDialog({
-    className: options.wide ? 'modal modal--wide' : 'modal',
+    className: options.wide ? 'modal--wide' : '',
     title,
     form: true,
     build: (close) => {
@@ -307,7 +310,9 @@ export function promptModal(title, fields, options = {}) {
                   max: field.max,
                   placeholder: field.placeholder,
                 })
-              : textField(field.value === undefined ? '' : String(field.value), field.placeholder);
+              : textField(field.value === undefined ? '' : String(field.value), {
+                  placeholder: field.placeholder,
+                });
           input = plain;
           getters[field.name] = () => plain.value;
         }
@@ -411,9 +416,11 @@ export function alertModal(message, options = {}) {
 }
 
 /**
- * Show a confirm modal. Resolves true if confirmed, false otherwise.
+ * Show a confirm modal. Resolves true if confirmed, false otherwise. `variant`
+ * styles the confirm button, and names the same variants a button does, so a
+ * destructive confirm reads as `variant: 'danger'` here and everywhere else.
  * @param {string} message
- * @param {{ confirmLabel?: string, danger?: boolean }} [options]
+ * @param {{ confirmLabel?: string, variant?: 'primary' | 'danger' }} [options]
  * @returns {Promise<boolean>}
  */
 export function confirmModal(message, options = {}) {
@@ -422,7 +429,7 @@ export function confirmModal(message, options = {}) {
       const text = el('p', 'modal__message', message);
       const cancel = textButton('Cancel', () => close('cancel'));
       const confirm = textButton(options.confirmLabel ?? 'Confirm', () => close('confirm'), {
-        variant: options.danger ? 'danger' : 'primary',
+        variant: options.variant ?? 'primary',
       });
       return { body: [text], actions: [cancel, confirm], initialFocus: confirm };
     },
@@ -441,5 +448,5 @@ export function confirmModal(message, options = {}) {
  */
 export function confirmDelete(name, detail = '') {
   const message = `Delete "${name}"?${detail ? ` ${detail}` : ''}`;
-  return confirmModal(message, { danger: true, confirmLabel: 'Delete' });
+  return confirmModal(message, { variant: 'danger', confirmLabel: 'Delete' });
 }

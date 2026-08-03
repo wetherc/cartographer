@@ -617,8 +617,8 @@ labeled(caption, control)          -> HTMLLabelElement   // wraps the control
 fieldRow(...children)              -> HTMLDivElement     // one horizontal group
 checkbox(caption, checked)         -> { label, input }
 checkboxInput(checked)             -> HTMLInputElement   // the bare box
-textField(value, placeholder?)     -> HTMLInputElement
-numberField(value, { min, max }?)  -> HTMLInputElement
+textField(value, opts?)            -> HTMLInputElement
+numberField(value, opts?)          -> HTMLInputElement
 textareaField(value, opts?)        -> HTMLTextAreaElement
 select(options, value)             -> HTMLSelectElement
 setOptions(select, options, value)                // refill an existing picker
@@ -1084,14 +1084,9 @@ change happens to pass through one of these, close it.
 
 Against the contract:
 
-- **`className` does not mean one thing yet.** It appends in `formFields.js`,
-  `buttons.js`, and `buildTabs`. It replaces in `buildMultiselect`
-  (`ModalFields.js`) and `openDialog` (`Modal.js`). `icon` applies it
-  through `classList.add`, so a space-separated string throws. `emptyState`,
-  `fieldRow`, `checkboxInput`, `buildTagsField`, `openContextMenu`, and
-  `mountToasts` take no `className` at all.
-- **`confirmModal` takes `{ danger: true }`** where every other builder takes
-  `variant: 'danger'`.
+- **Several builders take no `className` at all.** `emptyState`, `fieldRow`,
+  `checkboxInput`, `buildTagsField`, `openContextMenu`, and `mountToasts`
+  give the caller no way to add a class.
 - **Mount signatures have drifted.** The second argument is `callbacks` in
   most panels, `options` or `opts` in others, and a bare function in a few.
   `mountPalettePanel` takes four positionals, and `mountSpellbookPanel`

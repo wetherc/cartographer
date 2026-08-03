@@ -273,7 +273,7 @@ export function wireCampaignActions(app) {
   mustGetElement('new-btn').addEventListener('click', async () => {
     const ok = await confirmModal(
       'Start a new blank campaign? The current campaign is replaced, including anything saved.',
-      { danger: true, confirmLabel: 'New campaign' },
+      { variant: 'danger', confirmLabel: 'New campaign' },
     );
     if (ok) replaceCampaign(buildBlankCampaign(), 'Started a new blank campaign.');
   });
@@ -281,7 +281,7 @@ export function wireCampaignActions(app) {
   mustGetElement('example-btn').addEventListener('click', async () => {
     const ok = await confirmModal(
       'Load the example campaign? The current campaign is replaced, including anything saved.',
-      { danger: true, confirmLabel: 'Load example' },
+      { variant: 'danger', confirmLabel: 'Load example' },
     );
     if (ok) replaceCampaign(buildExampleCampaign(app.palette), 'Loaded the example campaign.');
   });
@@ -412,7 +412,7 @@ export function wireCampaignActions(app) {
     syncPromptOpen = true;
     const ok = await confirmModal(
       'Another tab saved this campaign. Reload to match it? Your unsaved changes here are discarded.',
-      { danger: true, confirmLabel: 'Reload' },
+      { variant: 'danger', confirmLabel: 'Reload' },
     );
     syncPromptOpen = false;
     if (ok) {

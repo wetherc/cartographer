@@ -33,7 +33,7 @@ export function generateDialog(options) {
   let readChoice;
 
   return openDialog({
-    className: 'modal modal--generate',
+    className: 'modal--generate',
     title: 'Generate map',
     form: true,
     build: (close) => {

@@ -86,7 +86,7 @@ function metaCell(term, value) {
  */
 export function promptSpellDetail(spell, actions, options = {}) {
   return openDialog({
-    className: 'modal modal--wide spell-detail',
+    className: 'modal--wide spell-detail',
     title: spell.name,
     build: (close) => {
       const levelText = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;

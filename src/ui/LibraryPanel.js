@@ -130,7 +130,8 @@ export function mountLibraryPanel(container, callbacks) {
 
   /** @returns {HTMLInputElement} */
   function buildFilter() {
-    const filterInput = textField(filter, 'Filter by name...', {
+    const filterInput = textField(filter, {
+      placeholder: 'Filter by name...',
       type: 'search',
       className: 'library-panel__filter',
       ariaLabel: 'Filter entries by name',

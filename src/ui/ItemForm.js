@@ -59,9 +59,10 @@ export function buildItemForm({
   onCancel = null,
   template = false,
 }) {
-  const nameInput = textField(item?.name ?? '', 'Item name');
+  const nameInput = textField(item?.name ?? '', { placeholder: 'Item name' });
 
-  const descriptionInput = textField(item?.description ?? '', 'Description (optional)', {
+  const descriptionInput = textField(item?.description ?? '', {
+    placeholder: 'Description (optional)',
     className: 'form__wide',
   });
 

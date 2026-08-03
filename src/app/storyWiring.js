@@ -55,7 +55,7 @@ export function wireStory(app) {
     onClear: async () => {
       if (state.travelog.length === 0) return false;
       const ok = await confirmModal('Clear the travelogue? Its recorded events are lost.', {
-        danger: true,
+        variant: 'danger',
         confirmLabel: 'Clear',
       });
       if (ok) {

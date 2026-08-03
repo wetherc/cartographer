@@ -9,7 +9,7 @@
  * accessible label.
  */
 
-import { setAttrs } from './dom.js';
+import { classNames, setAttrs } from './dom.js';
 
 /** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'} IconName */
 
@@ -100,7 +100,9 @@ const PATHS = {
 };
 
 /**
- * Build a detached SVG icon element.
+ * Build a detached SVG icon element. `className` is appended to the shared
+ * `icon` class and may name several classes at once, the same as every other
+ * builder's `className`.
  * @param {IconName} name
  * @param {{ size?: number, className?: string }} [options]
  * @returns {SVGSVGElement}
@@ -109,8 +111,9 @@ export function icon(name, options = {}) {
   const size = String(options.size ?? 18);
   const svg = document.createElementNS(SVG_NS, 'svg');
   setAttrs(svg, { ...SVG_ATTRS, width: size, height: size });
-  svg.classList.add('icon');
-  if (options.className) svg.classList.add(options.className);
+  // An SVG element's `className` is read-only, so the class list is written
+  // as an attribute rather than assigned.
+  svg.setAttribute('class', classNames(['icon', options.className]));
 
   for (const d of PATHS[name] ?? []) {
     const path = document.createElementNS(SVG_NS, 'path');
