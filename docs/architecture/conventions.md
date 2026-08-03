@@ -244,9 +244,10 @@ label. The approximately 40 hand-rolled copies they replaced had drifted on
 exactly these attributes. `emptyState(message)` is the one "nothing here"
 paragraph. `segSwitch` is the one segmented group of mutually exclusive
 buttons. It owns the pairing of the active class with `aria-pressed`. Each of
-its four call sites used to repeat that pairing on its own. A new
-panel must call no `document.createElement('button')` of its own, unless the
-control is genuinely different (a tab, a chip, a select-like row).
+its four call sites used to repeat that pairing on its own. A control that is a
+button for the keyboard but carries no `btn` chrome, a tab or a tree row for
+example, is a `bareButton` with its own class. A new panel builds no `<button>`
+element of its own.
 
 ### Numbers off a form or a file go through src/util/num.js
 

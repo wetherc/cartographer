@@ -1,4 +1,4 @@
-import { textButton } from './buttons.js';
+import { badge, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { textField } from './formFields.js';
 import { mountListPanel } from './listPanel.js';
@@ -180,11 +180,11 @@ export function mountLibraryPanel(container, callbacks) {
   /** @param {LibraryRow} entry @returns {Node[]} */
   function buildBody(entry) {
     const name = el('span', 'library-panel__name', entry.name);
-    const badge = badgeText(entry.source);
-    if (!badge) return [name];
+    const text = badgeText(entry.source);
+    if (!text) return [name];
     return [
       name,
-      el('span', `badge library-panel__badge library-panel__badge--${entry.source}`, badge),
+      badge(text, { className: `library-panel__badge library-panel__badge--${entry.source}` }),
     ];
   }
 

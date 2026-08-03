@@ -1,5 +1,5 @@
 import { DIE_TYPES, roll, emptySelection, formatResult } from '../dice/DiceRoller.js';
-import { wireDisclosure } from './Disclosure.js';
+import { buildDisclosure } from './Disclosure.js';
 import { icon } from './icons.js';
 import { iconButton, segSwitch, textButton } from './buttons.js';
 import { el } from './dom.js';
@@ -34,18 +34,14 @@ export function mountDiceTray(container, opts = {}) {
   /** @type {(() => void)[]} functions that re-sync each stepper's count readout to the selection */
   const refreshers = [];
 
-  const summary = el(
-    'button',
-    'disclosure dice-tray__summary u-row u-g2',
-    icon('d20', { size: 28, className: 'dice-tray__d20' }),
-    icon('chevron', { className: 'disclosure__chevron' }),
-  );
-  summary.type = 'button';
-  summary.setAttribute('aria-label', 'Dice tray');
-  container.appendChild(summary);
-
   const root = el('div', 'dice-tray');
-  const disclosure = wireDisclosure(summary, root);
+  const disclosure = buildDisclosure({
+    headChildren: [icon('d20', { size: 28, className: 'dice-tray__d20' })],
+    body: root,
+    className: 'dice-tray__summary',
+    ariaLabel: 'Dice tray',
+  });
+  container.appendChild(disclosure.head);
 
   /** @param {string} label @param {number} delta @param {() => number} read @param {(n: number) => void} apply */
   const stepper = (label, delta, read, apply) => {

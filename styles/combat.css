@@ -192,15 +192,11 @@ body.mode-combat .app-buildrail {
   border-left-color: var(--danger);
 }
 
-/* On the board the card is a button: the target picker. The resets undo the
-   browser's button centering; the accent ring marks the held selection, kept
-   distinct from the ribbon's focus-ring on the current turn. */
+/* On the board the card is a .btn-bare button: the target picker. The accent
+   ring marks the held selection, kept distinct from the ribbon's focus-ring on
+   the current turn. */
 .combatant-card--selectable {
   width: 100%;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
 }
 
 .combatant-card--selectable:hover {
@@ -413,8 +409,6 @@ body.mode-combat .app-buildrail {
   border-radius: var(--radius-pill);
   background: var(--surface-raised);
   color: var(--text);
-  font: inherit;
-  cursor: pointer;
 }
 
 .combat-ribbon__chip--current {

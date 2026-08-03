@@ -10,7 +10,9 @@ import { icon } from './icons.js';
  * a third primitive: the muted "nothing here" paragraph every list panel
  * shows. chip and removableChip are a fourth primitive: a small labeled
  * tag, with or without an x to remove it. segSwitch is a fifth primitive: a
- * segmented group of buttons where only one choice is active.
+ * segmented group of buttons where only one choice is active. bareButton is
+ * a sixth: a control that is a button for the keyboard and the screen reader
+ * but wears no button chrome. badge and sectionLabel round the set out.
  */
 
 /**
@@ -55,6 +57,58 @@ export function textButton(label, onClick, opts = {}) {
   if (opts.title) button.title = opts.title;
   if (onClick) button.addEventListener('click', onClick);
   return button;
+}
+
+/**
+ * A control that is a button for the keyboard and the screen reader but wears
+ * no button chrome: a breadcrumb crumb, a disclosure header, a tree row, a
+ * menu item, a spell-slot pip. `.btn-bare` strips the browser's button
+ * presentation back to the surrounding text, and the class the caller passes
+ * supplies whatever look the control does have.
+ *
+ * The children are the button's content, so a caller can nest an icon and a
+ * label without a second builder. A control whose visible text is not its
+ * accessible name, an icon-only one above all, passes `ariaLabel`.
+ * @param {import('./dom.js').Child[]} children
+ * @param {(event: MouseEvent) => void} [onClick] Omit for a button another
+ *   helper wires, for example a disclosure header.
+ * @param {{ className?: string, ariaLabel?: string, title?: string }} [opts]
+ * @returns {HTMLButtonElement}
+ */
+export function bareButton(children, onClick, opts = {}) {
+  const button = el('button', classNames(['btn-bare', opts.className]), ...children);
+  button.type = 'button';
+  if (opts.ariaLabel) button.setAttribute('aria-label', opts.ariaLabel);
+  if (opts.title) button.title = opts.title;
+  if (onClick) button.addEventListener('click', onClick);
+  return button;
+}
+
+/**
+ * A read-only status marker on a list row: a library entry's source, an NPC's
+ * disposition, a spell's known-or-prepared state. `variant` covers the three
+ * shared readings, `success`, `danger`, and `neutral`. A marker that means
+ * something outside that scale passes its own class instead.
+ * @param {string} label
+ * @param {{ variant?: 'success' | 'danger' | 'neutral', className?: string }} [opts]
+ * @returns {HTMLSpanElement}
+ */
+export function badge(label, opts = {}) {
+  const classes = ['badge', opts.variant ? `badge--${opts.variant}` : '', opts.className];
+  return el('span', classNames(classes), label);
+}
+
+/**
+ * The sub-heading inside a panel section: a spell group, a quest group, a
+ * palette section, a block of sheet fields. A heading that a screen reader
+ * should reach through the document outline passes `tag: 'h3'`; the rest stay
+ * spans, since they label the box beside them rather than open a section.
+ * @param {string} text
+ * @param {{ tag?: 'span' | 'h3' | 'h4', className?: string }} [opts]
+ * @returns {HTMLElement}
+ */
+export function sectionLabel(text, opts = {}) {
+  return el(opts.tag ?? 'span', classNames(['section-label', opts.className]), text);
 }
 
 /**
@@ -127,12 +181,29 @@ export function segSwitch({ ariaLabel, options, value, onChange, className = '' 
  * A small labeled tag. Examples are the status conditions on a sheet, the
  * effects a weapon inflicts, and the pills in a tag field. The label sits
  * in its own span, so a caller can append to the chip without changing the text.
+ *
+ * A chip that does something on click, a stat chip that opens its editor for
+ * example, passes `onClick`. That makes the chip a real `<button>`, which is
+ * what puts it in the tab order and gives it a button role. The tag follows
+ * from the option, so there is no way to build a chip that looks clickable and
+ * is not, or a button with no handler. A chip button also carries `.btn-bare`,
+ * which clears the browser's button font and padding before `.chip` applies
+ * the chip's own.
  * @param {string} label
- * @param {{ className?: string }} [opts]
- * @returns {HTMLSpanElement}
+ * @param {{ className?: string, onClick?: (event: MouseEvent) => void,
+ *   ariaLabel?: string, title?: string }} [opts]
+ * @returns {HTMLElement}
  */
 export function chip(label, opts = {}) {
-  return el('span', classNames(['chip', opts.className]), el('span', '', label));
+  if (!opts.onClick) return el('span', classNames(['chip', opts.className]), el('span', '', label));
+
+  const classes = classNames(['btn-bare', 'chip', opts.className]);
+  const button = el('button', classes, el('span', '', label));
+  button.type = 'button';
+  if (opts.ariaLabel) button.setAttribute('aria-label', opts.ariaLabel);
+  if (opts.title) button.title = opts.title;
+  button.addEventListener('click', opts.onClick);
+  return button;
 }
 
 /**

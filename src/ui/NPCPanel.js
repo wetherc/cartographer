@@ -1,9 +1,17 @@
+import { badge } from './buttons.js';
 import { el } from './dom.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountListPanel } from './listPanel.js';
 
 /** @typedef {import('../types/npc.js').NPC} NPC */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
+
+/**
+ * How a disposition reads: a friend is good news, a hostile is bad news, and
+ * anyone else is neither.
+ * @type {Record<NPC['disposition'], 'success' | 'danger' | 'neutral'>}
+ */
+const DISPOSITION_VARIANTS = { friendly: 'success', neutral: 'neutral', hostile: 'danger' };
 
 /**
  * Mount the NPC panel: one row per NPC relevant to the party's location. Each
@@ -42,7 +50,10 @@ export function mountNPCPanel(container, callbacks) {
         'div',
         'u-row u-g2',
         el('span', 'npc-panel__name', npc.name),
-        el('span', `badge npc-panel__badge npc-panel__badge--${npc.disposition}`, npc.disposition),
+        badge(npc.disposition, {
+          variant: DISPOSITION_VARIANTS[npc.disposition],
+          className: 'npc-panel__badge',
+        }),
       );
 
       // Role, location, and notes are each optional. The cast is needed

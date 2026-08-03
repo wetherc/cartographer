@@ -1,9 +1,8 @@
 import { addItem } from '../entities/Character.js';
 import { ITEM_TYPES, filterItems, groupItemsByType } from '../entities/Equipment.js';
 import { emptyState } from './buttons.js';
-import { wireDisclosure } from './Disclosure.js';
+import { buildDisclosure } from './Disclosure.js';
 import { el } from './dom.js';
-import { icon } from './icons.js';
 import { select, textField } from './formFields.js';
 import { buildItemForm } from './ItemForm.js';
 import { buildEquipment } from './InventoryEquipment.js';
@@ -143,19 +142,13 @@ export function mountInventoryPanel(
    */
   function buildGroup(group, playable) {
     const label = capitalize(group.type);
-    const head = el(
-      'button',
-      'disclosure section-label u-row u-g2',
-      el('span', '', label),
-      el('span', 'u-muted', `(${group.items.length})`),
-      icon('chevron', { className: 'disclosure__chevron' }),
-    );
-    head.type = 'button';
-
     const rows = el('div', 'inventory-panel__group-rows');
     for (const item of group.items) rows.appendChild(buildRow(item, playable, rowContext));
 
-    wireDisclosure(head, rows, {
+    const { head } = buildDisclosure({
+      label,
+      headChildren: [el('span', 'u-muted', `(${group.items.length})`)],
+      body: rows,
       expanded: !collapsedTypes.has(group.type),
       onToggle: (expanded) => {
         if (expanded) collapsedTypes.delete(group.type);

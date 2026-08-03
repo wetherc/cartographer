@@ -14,6 +14,7 @@ import { checkBonus, saveBonus, passivePerception } from '../entities/Checks.js'
 import { formatModifier, ABILITY_SCORES } from '../entities/Modifiers.js';
 import { isProficientSave, isProficientSkill, hasExpertise } from '../entities/Proficiencies.js';
 import { SKILL_ABILITIES, SKILL_IDS, skillName } from '../data/skills.js';
+import { bareButton, sectionLabel } from './buttons.js';
 import { el } from './dom.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -130,12 +131,11 @@ function buildRow(row, onCheck) {
     line.title = reading;
     return line;
   }
-  const button = el('button', 'check-row check-row--roll', ...parts);
-  button.type = 'button';
-  button.setAttribute('aria-label', `Roll ${reading}`);
-  button.title = `Roll ${reading}`;
-  button.addEventListener('click', () => onCheck({ kind: row.kind, key: row.key }));
-  return button;
+  return bareButton(parts, () => onCheck({ kind: row.kind, key: row.key }), {
+    className: 'check-row check-row--roll',
+    ariaLabel: `Roll ${reading}`,
+    title: `Roll ${reading}`,
+  });
 }
 
 /**
@@ -149,7 +149,7 @@ function buildRow(row, onCheck) {
 function buildBlock(title, rows, opts, footer) {
   const list = el('div', 'check-block__rows');
   for (const row of rows) list.appendChild(buildRow(row, opts.onCheck ?? null));
-  return el('div', 'check-block u-col u-g1', el('span', 'section-label', title), list, footer);
+  return el('div', 'check-block u-col u-g1', sectionLabel(title), list, footer);
 }
 
 /**

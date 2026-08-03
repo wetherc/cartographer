@@ -337,19 +337,15 @@ body {
   background: var(--accent-hover);
 }
 
-/* Selectable list row (world-tree nodes, roster members): a full-width text
-   button that highlights on hover and boxes the current row. */
+/* Selectable list row (world-tree nodes, roster members): a full-width
+   .btn-bare button that highlights on hover and boxes the current row. */
 .row-select {
   flex: 1;
-  text-align: left;
-  background: none;
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
   padding: var(--space-1) var(--space-2);
-  font: inherit;
   font-size: var(--text-label);
   color: var(--text);
-  cursor: pointer;
 }
 
 .row-select:hover {
@@ -417,6 +413,25 @@ body {
   padding: 0 var(--space-1);
   border-radius: var(--radius-sm);
   font-size: var(--text-label);
+}
+
+/* The three shared readings of a marker: good, bad, and nothing much. A tinted
+   background at this alpha keeps the text colour readable in both themes. A
+   feature whose marker means something outside this scale (a spell that is
+   prepared, a library entry that is custom) adds its own modifier instead. */
+.badge--success {
+  background: color-mix(in srgb, var(--success) 22%, transparent);
+  color: var(--success);
+}
+
+.badge--danger {
+  background: color-mix(in srgb, var(--danger) 22%, transparent);
+  color: var(--danger);
+}
+
+.badge--neutral {
+  background: var(--surface-sunken);
+  opacity: 0.85;
 }
 
 .field {
@@ -564,17 +579,14 @@ select.field option::checkmark {
   border-bottom: 1px solid var(--border);
 }
 
+/* A tab is a .btn-bare button, which is where the reset comes from. */
 .tabs__tab {
   flex: 1;
   padding: var(--space-2) var(--space-3);
-  border: none;
   border-bottom: 2px solid transparent;
-  background: none;
-  font: inherit;
   font-size: var(--text-label);
   font-weight: 600;
   color: var(--text-muted);
-  cursor: pointer;
 }
 
 .tabs__tab:hover {

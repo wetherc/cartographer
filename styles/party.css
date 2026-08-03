@@ -25,15 +25,12 @@
   gap: var(--space-1);
 }
 
-/* Stat-block chips take the shared .chip look and add the button bits: these
-   are clickable, to set the base value (Build) or apply a timed adjustment
-   (Play). AC rides in the seventh cell after the six abilities. */
+/* Stat-block chips are clickable chips, to set the base value (Build) or apply
+   a timed adjustment (Play), so the shared .chip and .btn-bare rules carry the
+   look. AC rides in the seventh cell after the six abilities. */
 .statblock-bar__chip {
   justify-content: center;
   padding: 0.1rem var(--space-2);
-  font: inherit;
-  font-size: var(--text-label);
-  cursor: pointer;
 }
 
 .statblock-bar__chip:hover {

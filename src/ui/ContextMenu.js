@@ -8,6 +8,7 @@
  * the first.
  */
 
+import { bareButton } from './buttons.js';
 import { el } from './dom.js';
 
 /**
@@ -54,13 +55,15 @@ export function openContextMenu(items, position) {
   menu.setAttribute('role', 'menu');
 
   const buttons = items.map((item) => {
-    const button = el('button', 'context-menu__item', item.label);
-    button.type = 'button';
+    const button = bareButton(
+      [item.label],
+      () => {
+        close();
+        item.onSelect();
+      },
+      { className: 'context-menu__item' },
+    );
     button.setAttribute('role', 'menuitem');
-    button.addEventListener('click', () => {
-      close();
-      item.onSelect();
-    });
     menu.appendChild(button);
     return button;
   });

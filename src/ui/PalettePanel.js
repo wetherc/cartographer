@@ -1,9 +1,8 @@
-import { icon } from './icons.js';
 import { textButton } from './buttons.js';
 import { el } from './dom.js';
 import { allowsPaletteType } from '../map/NodeKinds.js';
 import { isOverlayType } from '../map/TilePalette.js';
-import { wireDisclosure } from './Disclosure.js';
+import { buildDisclosure } from './Disclosure.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 /** @typedef {import('../map/TilePalette.js').PaletteEntry} PaletteEntry */
@@ -152,18 +151,10 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
   /** @type {Map<string, { wrap: HTMLElement, grid: HTMLElement, swatches: HTMLElement[] }>} */
   const sections = new Map();
   for (const label of ['Terrain', 'Overlays', 'Buildings', 'Interior']) {
-    const head = el(
-      'button',
-      'disclosure section-label u-row u-g2',
-      el('span', '', label),
-      icon('chevron', { className: 'disclosure__chevron' }),
-    );
-    head.type = 'button';
-
     const grid = el('div', 'palette__grid');
+    const { head } = buildDisclosure({ label, body: grid, expanded: label === 'Terrain' });
     const wrap = el('div', 'palette__section', head, grid);
 
-    wireDisclosure(head, grid, { expanded: label === 'Terrain' });
     sectionsEl.appendChild(wrap);
     sections.set(label, { wrap, grid, swatches: [] });
   }

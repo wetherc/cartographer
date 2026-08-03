@@ -3,7 +3,7 @@ import { buffCondition } from '../entities/Casting.js';
 import { riderSummary } from '../entities/Riders.js';
 import { formatCastingTime, formatDuration } from '../entities/SpellTiming.js';
 import { capitalize } from '../util/text.js';
-import { textButton } from './buttons.js';
+import { badge, sectionLabel, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { openDialog } from './Modal.js';
 
@@ -70,12 +70,7 @@ function componentsText(spell) {
 
 /** @param {string} term @param {string} value @returns {HTMLElement} a labelled meta cell. */
 function metaCell(term, value) {
-  return el(
-    'div',
-    'u-col',
-    el('span', 'section-label', term),
-    el('span', 'spell-detail__meta-value', value),
-  );
+  return el('div', 'u-col', sectionLabel(term), el('span', 'spell-detail__meta-value', value));
 }
 
 /**
@@ -106,8 +101,8 @@ export function promptSpellDetail(spell, actions, options = {}) {
             'p',
             'spell-detail__subtitle u-row u-wrap u-g2',
             `${levelText} · ${capitalize(spell.school)}`,
-            spell.concentration && el('span', 'badge spell-detail__tag', 'Concentration'),
-            spell.ritual && el('span', 'badge spell-detail__tag', 'Ritual'),
+            spell.concentration && badge('Concentration', { className: 'spell-detail__tag' }),
+            spell.ritual && badge('Ritual', { className: 'spell-detail__tag' }),
           ),
           el(
             'div',

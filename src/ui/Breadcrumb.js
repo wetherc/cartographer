@@ -1,3 +1,4 @@
+import { bareButton } from './buttons.js';
 import { el } from './dom.js';
 import { icon } from './icons.js';
 
@@ -35,10 +36,9 @@ export function mountBreadcrumb(container, onSelect) {
       /** @type {HTMLElement} */
       let crumb;
       if (!isLast) {
-        const button = el('button', 'breadcrumb__crumb', node.name);
-        button.type = 'button';
-        button.addEventListener('click', () => onSelect(node.id));
-        crumb = button;
+        crumb = bareButton([node.name], () => onSelect(node.id), {
+          className: 'breadcrumb__crumb',
+        });
       } else {
         crumb = el('span', 'breadcrumb__crumb', node.name);
         crumb.setAttribute('aria-current', 'location');

@@ -1,4 +1,5 @@
 import { mountStatBlockBar } from './StatBlockBar.js';
+import { bareButton } from './buttons.js';
 import { el } from './dom.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { mountListPanel } from './listPanel.js';
@@ -45,10 +46,10 @@ export function mountBuildEncounterPanel(container, callbacks) {
       /** @type {HTMLElement} */
       let label;
       if (encounter.location) {
-        label = el('button', 'build-encounters__label build-encounters__label--link', text);
-        label.setAttribute('type', 'button');
-        label.title = 'Show on map';
-        label.addEventListener('click', () => callbacks.onFocus(encounter));
+        label = bareButton([text], () => callbacks.onFocus(encounter), {
+          className: 'build-encounters__label build-encounters__label--link',
+          title: 'Show on map',
+        });
       } else {
         label = el('span', 'build-encounters__label', text);
       }

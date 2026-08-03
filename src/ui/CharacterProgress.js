@@ -1,5 +1,5 @@
 import { promptModal } from './Modal.js';
-import { textButton } from './buttons.js';
+import { sectionLabel, textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
 import { getClass } from '../entities/Classes.js';
 import { getClasses, pendingLevels, classLevelOf } from '../entities/Multiclass.js';
@@ -98,11 +98,7 @@ export function buildProgressSection(getCharacter, opts) {
   const hitDice = getHitDicePools(character);
   if (classes.length === 0 && hitDice.length === 0) return null;
 
-  const section = el(
-    'div',
-    'character-sheet__progress u-col u-g2',
-    el('span', 'section-label', 'Progression'),
-  );
+  const section = el('div', 'character-sheet__progress u-col u-g2', sectionLabel('Progression'));
 
   /** @param {string} [cls] @returns {HTMLElement} */
   const addRow = (cls) =>

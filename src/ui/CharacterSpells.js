@@ -1,7 +1,7 @@
 import { getSpellbook } from '../entities/Character.js';
 import { getClass, casterClassRefs, primaryCasterClass } from '../entities/Classes.js';
 import { groupSpellsByLevel, castableLeveledIds } from '../entities/SpellView.js';
-import { emptyState, textButton } from './buttons.js';
+import { emptyState, sectionLabel, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { promptSpellDetail } from './SpellDetail.js';
 
@@ -36,7 +36,7 @@ export function buildSpellsSection(character, opts) {
   const section = el(
     'div',
     'character-sheet__spells u-col u-g2',
-    el('span', 'section-label', className ? `Spells (${className})` : 'Spells'),
+    sectionLabel(className ? `Spells (${className})` : 'Spells'),
   );
 
   // This makes one group per spell level the character can cast from, in
@@ -90,5 +90,5 @@ function buildGroup(title, spells, opts) {
       ),
     );
   }
-  return el('div', 'u-col u-g1', el('span', 'section-label', title), list);
+  return el('div', 'u-col u-g1', sectionLabel(title), list);
 }

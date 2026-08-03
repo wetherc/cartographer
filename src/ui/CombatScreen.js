@@ -1,6 +1,6 @@
-import { el } from './dom.js';
+import { classNames, el } from './dom.js';
 import { icon } from './icons.js';
-import { chip, textButton } from './buttons.js';
+import { bareButton, chip, sectionLabel, textButton } from './buttons.js';
 import { hpBand } from '../view/ViewRole.js';
 import { fightOutcome } from '../combat/CombatView.js';
 import { combatantCard } from './CombatantCard.js';
@@ -283,34 +283,32 @@ export function mountCombatScreen(container, callbacks) {
     ribbon.appendChild(chips);
     view.rows.forEach((row, i) => {
       const current = i === view.turnIndex;
-      const button = el(
-        'button',
-        [
-          'combat-ribbon__chip',
-          `combat-ribbon__chip--${row.side}`,
-          current ? 'combat-ribbon__chip--current' : '',
-          row.defeated ? 'combat-ribbon__chip--defeated' : '',
-        ]
-          .filter(Boolean)
-          .join(' '),
-        row.side === 'foe' ? el('span', 'combat-ribbon__foe-mark', icon('sword')) : null,
-        el('span', 'combat-ribbon__initials', initialsOf(row.name)),
-        el('span', 'combat-ribbon__init', String(row.initiative)),
-      );
-      button.type = 'button';
-      if (current) button.setAttribute('aria-current', 'true');
       const name = row.name ?? 'Unknown combatant';
-      button.setAttribute(
-        'aria-label',
-        `${name}, initiative ${row.initiative}${current ? ', current turn' : ''}` +
-          `${row.defeated ? ', defeated' : ''}`,
+      const button = bareButton(
+        [
+          row.side === 'foe' ? el('span', 'combat-ribbon__foe-mark', icon('sword')) : null,
+          el('span', 'combat-ribbon__initials', initialsOf(row.name)),
+          el('span', 'combat-ribbon__init', String(row.initiative)),
+        ],
+        () => {
+          callbacks.onInspect(row.id);
+          render();
+        },
+        {
+          className: classNames([
+            'combat-ribbon__chip',
+            `combat-ribbon__chip--${row.side}`,
+            current && 'combat-ribbon__chip--current',
+            row.defeated && 'combat-ribbon__chip--defeated',
+          ]),
+          ariaLabel:
+            `${name}, initiative ${row.initiative}${current ? ', current turn' : ''}` +
+            `${row.defeated ? ', defeated' : ''}`,
+          title: name,
+        },
       );
-      button.title = name;
+      if (current) button.setAttribute('aria-current', 'true');
       button.dataset.combatantId = row.id;
-      button.addEventListener('click', () => {
-        callbacks.onInspect(row.id);
-        render();
-      });
       chips.appendChild(button);
     });
     // One tab stop. The current turn's chip anchors it. Arrow keys move focus
@@ -465,7 +463,7 @@ export function mountCombatScreen(container, callbacks) {
     return el(
       'div',
       'combat-screen__fact',
-      el('span', 'section-label', label),
+      sectionLabel(label),
       el('span', 'combat-screen__fact-value', value),
     );
   }
@@ -508,7 +506,7 @@ export function mountCombatScreen(container, callbacks) {
     return el(
       'div',
       'combat-screen__hp-controls u-g2',
-      el('span', 'section-label combat-screen__hp-label', 'Amount'),
+      sectionLabel('Amount', { className: 'combat-screen__hp-label' }),
       amount,
       damage,
       heal,

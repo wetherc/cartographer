@@ -1,3 +1,47 @@
+import { bareButton } from './buttons.js';
+import { classNames, el } from './dom.js';
+import { icon } from './icons.js';
+
+/**
+ * Build a disclosure and wire it in one call: the header button, its chevron
+ * cue, and the `wireDisclosure` state over the body the caller passes.
+ *
+ * A header with a `label` takes the shared section-label treatment, since that
+ * is what a collapsible group heading looks like everywhere here. A header
+ * built out of icons instead, the dice tray's d20 summary, leaves `label` out
+ * and names itself through `ariaLabel`. Anything that belongs between the
+ * label and the chevron, a count for example, goes in `headChildren`.
+ *
+ * The header and the body come back as siblings rather than inside a wrapper,
+ * so a panel can put them in whatever box its own layout needs.
+ * @param {{ body: HTMLElement, label?: string, headChildren?: import('./dom.js').Child[],
+ *   className?: string, ariaLabel?: string, expanded?: boolean,
+ *   onToggle?: (expanded: boolean) => void }} spec
+ * @returns {{ head: HTMLButtonElement, body: HTMLElement,
+ *   isExpanded: () => boolean, setExpanded: (expanded: boolean) => void }}
+ */
+export function buildDisclosure(spec) {
+  const head = bareButton(
+    [
+      spec.label !== undefined && el('span', '', spec.label),
+      ...(spec.headChildren ?? []),
+      icon('chevron', { className: 'disclosure__chevron' }),
+    ],
+    undefined,
+    {
+      className: classNames([
+        'disclosure',
+        spec.label !== undefined && 'section-label',
+        'u-row',
+        'u-g2',
+        spec.className,
+      ]),
+      ariaLabel: spec.ariaLabel,
+    },
+  );
+  return { head, body: spec.body, ...wireDisclosure(head, spec.body, spec) };
+}
+
 /**
  * Wire an accessible disclosure. The `button` toggles the visibility of
  * `body`. This function keeps `aria-expanded` in sync and rotates a chevron

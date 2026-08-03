@@ -1,4 +1,4 @@
-import { iconButton, textButton, emptyState } from './buttons.js';
+import { bareButton, iconButton, textButton, emptyState } from './buttons.js';
 import { classNames, el } from './dom.js';
 import { captureFocus, restoreFocus } from './focusMemory.js';
 import { repaintNeeded } from './listPanel.js';
@@ -98,18 +98,20 @@ export function mountCharacterRoster(container, options) {
 
     for (const character of characters) {
       const current = character.id === selectedId;
-      const select = el(
-        'button',
-        classNames([
-          'row-select character-roster__select u-row u-g2',
-          current && 'row-select--current',
-        ]),
-        el('span', 'character-roster__label', `${character.name} (Lv ${character.level})`),
-        hpMeter(character),
+      const select = bareButton(
+        [
+          el('span', 'character-roster__label', `${character.name} (Lv ${character.level})`),
+          hpMeter(character),
+        ],
+        () => options.onSelect(character.id),
+        {
+          className: classNames([
+            'row-select character-roster__select u-row u-g2',
+            current && 'row-select--current',
+          ]),
+        },
       );
-      select.type = 'button';
       if (current) select.setAttribute('aria-current', 'true');
-      select.addEventListener('click', () => options.onSelect(character.id));
 
       const row = el('div', 'character-roster__row u-row u-g1', select);
       if (manage && placeShown()) {

@@ -21,7 +21,7 @@ import { buildSpellsSection } from './CharacterSpells.js';
 import { buildSavesBlock, buildSkillsBlock } from './CharacterChecks.js';
 import { buildStatBar, buildSlotLine } from './CharacterBars.js';
 import { statBadge } from './CharacterStatBadge.js';
-import { iconButton, textButton, emptyState } from './buttons.js';
+import { iconButton, sectionLabel, textButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
 import { numberField } from './formFields.js';
 
@@ -496,7 +496,7 @@ export function mountCharacterSheet(
     const conditions = el(
       'div',
       'character-sheet__conditions u-col u-g1',
-      el('span', 'section-label', 'Conditions'),
+      sectionLabel('Conditions'),
     );
     /**
      * Stop the character from holding the spell it was concentrating on,

@@ -2,6 +2,7 @@ import { promptModal } from './Modal.js';
 import { STAT_KEYS } from '../entities/Modifiers.js';
 import { effectiveStat } from '../entities/Stats.js';
 import { clampInt } from '../util/num.js';
+import { chip } from './buttons.js';
 import { classNames, el } from './dom.js';
 
 /**
@@ -70,32 +71,29 @@ export function mountStatBlockBar(container, callbacks) {
       const effective = callbacks.mode === 'temp' ? total : base;
       const modified = effective !== base;
 
-      const chip = el(
-        'button',
-        classNames(['chip statblock-bar__chip', modified && 'statblock-bar__chip--modified']),
-      );
-      chip.type = 'button';
-      if (callbacks.mode === 'base') {
-        chip.textContent = `${name} ${base}`;
-        chip.setAttribute('aria-label', `Set ${name} (currently ${base})`);
-        chip.title = `Set ${name}`;
-        chip.addEventListener('click', () => editBase(name, base));
-      } else {
-        // This shows the value combat uses. A modified stat also shows its
-        // base value and how long the adjustment lasts.
-        chip.textContent = modified
-          ? `${name} ${base}→${effective} (${rounds}r)`
-          : `${name} ${effective}`;
-        chip.setAttribute(
-          'aria-label',
-          modified
-            ? `Modify ${name} (base ${base}, currently ${effective} for ${rounds} more rounds)`
-            : `Modify ${name} (currently ${effective})`,
-        );
-        chip.title = `Modify ${name} for a number of rounds`;
-        chip.addEventListener('click', () => addModifier(name));
-      }
-      root.appendChild(chip);
+      const className = classNames([
+        'statblock-bar__chip',
+        modified && 'statblock-bar__chip--modified',
+      ]);
+      // The temp-mode chip shows the value combat uses. A modified stat also
+      // shows its base value and how long the adjustment lasts.
+      const statChip =
+        callbacks.mode === 'base'
+          ? chip(`${name} ${base}`, {
+              className,
+              onClick: () => editBase(name, base),
+              ariaLabel: `Set ${name} (currently ${base})`,
+              title: `Set ${name}`,
+            })
+          : chip(modified ? `${name} ${base}→${effective} (${rounds}r)` : `${name} ${effective}`, {
+              className,
+              onClick: () => addModifier(name),
+              ariaLabel: modified
+                ? `Modify ${name} (base ${base}, currently ${effective} for ${rounds} more rounds)`
+                : `Modify ${name} (currently ${effective})`,
+              title: `Modify ${name} for a number of rounds`,
+            });
+      root.appendChild(statChip);
     }
   }
 

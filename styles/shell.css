@@ -81,16 +81,12 @@
   box-shadow: var(--shadow-3);
 }
 
+/* An item is a .btn-bare button, which is where the reset comes from. */
 .context-menu__item {
-  border: none;
   border-radius: var(--radius-sm);
-  background: none;
   padding: var(--space-1) var(--space-2);
-  font: inherit;
   font-size: var(--text-label);
   color: var(--text);
-  text-align: left;
-  cursor: pointer;
 }
 
 .context-menu__item:hover,

@@ -1,5 +1,5 @@
 import { el } from './dom.js';
-import { textButton } from './buttons.js';
+import { sectionLabel, textButton } from './buttons.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { groupSpellsByLevel } from '../entities/SpellView.js';
 
@@ -30,7 +30,7 @@ export function combatActionBar(actions, callbacks) {
   const bar = el(
     'div',
     'combat-action-bar',
-    el('h3', 'section-label combat-action-bar__heading', 'Actions'),
+    sectionLabel('Actions', { tag: 'h3', className: 'combat-action-bar__heading' }),
     groups,
   );
 

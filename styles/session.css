@@ -77,20 +77,8 @@
   text-transform: capitalize;
 }
 
-.npc-panel__badge--friendly {
-  background: color-mix(in srgb, var(--success) 22%, transparent);
-  color: var(--success);
-}
-
-.npc-panel__badge--neutral {
-  background: var(--surface-sunken);
-  opacity: 0.85;
-}
-
-.npc-panel__badge--hostile {
-  background: color-mix(in srgb, var(--danger) 22%, transparent);
-  color: var(--danger);
-}
+/* Disposition colour comes from the shared .badge--success / --neutral /
+   --danger modifiers (base.css). */
 
 .npc-panel__role {
   font-size: var(--text-label);

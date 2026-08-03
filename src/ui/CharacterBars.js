@@ -1,3 +1,4 @@
+import { bareButton } from './buttons.js';
 import { classNames, el } from './dom.js';
 import { barReadout, pipReadout, slotColumnLabel, slotLineReadout } from '../view/StatBars.js';
 
@@ -126,17 +127,19 @@ export function buildSlotLine(pools, onToggle, allowRestore = true) {
       /** @type {HTMLElement} */
       let pip;
       if (onToggle) {
-        pip = el('button', 'slot-line__pip');
-        pip.setAttribute('type', 'button');
         // The pool for this pip is read at click time. A spend acts on the
         // live counts, not the counts present when the pip was built.
         const index = pipsByPool.length;
-        pip.addEventListener('click', () => {
-          const live = livePools[index];
-          const spent = i < live.current;
-          if (!spent && !allowRestore) return;
-          onToggle(live, spent);
-        });
+        pip = bareButton(
+          [],
+          () => {
+            const live = livePools[index];
+            const spent = i < live.current;
+            if (!spent && !allowRestore) return;
+            onToggle(live, spent);
+          },
+          { className: 'slot-line__pip' },
+        );
       } else {
         pip = el('span');
       }

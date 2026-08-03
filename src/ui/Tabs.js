@@ -1,3 +1,4 @@
+import { bareButton } from './buttons.js';
 import { classNames, el } from './dom.js';
 
 /**
@@ -111,8 +112,7 @@ export function buildTabs(options) {
     spec.panel.setAttribute('aria-labelledby', tabId(spec.id));
     panels.set(panelId, spec.panel);
 
-    const tab = el('button', 'tabs__tab', spec.label);
-    tab.type = 'button';
+    const tab = bareButton([spec.label], undefined, { className: 'tabs__tab' });
     tab.id = tabId(spec.id);
     tab.setAttribute('role', 'tab');
     tab.setAttribute('aria-controls', panelId);

@@ -18,7 +18,7 @@ import {
 import { primaryClass } from '../entities/Multiclass.js';
 import { groupSpellsByLevel, spellStatus } from '../entities/SpellView.js';
 import { sameDeps, spellListDeps } from '../view/SheetStructure.js';
-import { emptyState } from './buttons.js';
+import { badge, bareButton, emptyState, sectionLabel } from './buttons.js';
 import { el } from './dom.js';
 import { promptModal } from './Modal.js';
 import { promptSpellDetail } from './SpellDetail.js';
@@ -256,7 +256,7 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
         el(
           'div',
           'u-col u-g1',
-          el('span', 'section-label', group.label),
+          sectionLabel(group.label),
           el('div', 'spellbook__list u-col', ...group.spells.map(buildRow)),
         ),
       );
@@ -272,13 +272,13 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
    */
   function buildRow(spell) {
     const badges = el('span', 'spellbook__row-badges');
-    const row = el(
-      'button',
-      'spellbook__row u-row u-g2',
-      el('span', 'spellbook__row-name', spell.name),
-      badges,
+    const row = bareButton(
+      [el('span', 'spellbook__row-name', spell.name), badges],
+      () => {
+        if (current) openSpell(current, spell);
+      },
+      { className: 'spellbook__row u-row u-g2' },
     );
-    row.type = 'button';
 
     const writeStatus = () => {
       const live = current;
@@ -286,15 +286,11 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
       const status = spellStatus(live, spell);
       row.classList.toggle('spellbook__row--known', status.known);
       badges.innerHTML = '';
-      if (status.prepared) badges.appendChild(badge('Prepared', 'prepared'));
-      else if (status.known) badges.appendChild(badge('Known', 'known'));
+      if (status.prepared) badges.appendChild(statusBadge('Prepared', 'prepared'));
+      else if (status.known) badges.appendChild(statusBadge('Known', 'known'));
     };
     writeStatus();
     writers.push(writeStatus);
-
-    row.addEventListener('click', () => {
-      if (current) openSpell(current, spell);
-    });
     return row;
   }
 
@@ -307,7 +303,14 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
   };
 }
 
-/** @param {string} text @param {string} kind @returns {HTMLElement} a status badge. */
-function badge(text, kind) {
-  return el('span', `badge spellbook__badge spellbook__badge--${kind}`, text);
+/**
+ * A known-or-prepared marker. The two states carry the spellbook's own colours
+ * rather than a shared variant: prepared is the mana colour, and known is a
+ * muted grey.
+ * @param {string} text
+ * @param {'known' | 'prepared'} kind
+ * @returns {HTMLElement}
+ */
+function statusBadge(text, kind) {
+  return badge(text, { className: `spellbook__badge spellbook__badge--${kind}` });
 }

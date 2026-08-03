@@ -376,23 +376,27 @@ also discards what the user typed into a row's input on every refresh.
 
 ### `src/ui/buttons.js`
 
-`src/ui/buttons.js` gives two button builders, a segmented switch, an
-empty-state paragraph, and the chip pair. Twenty-six modules import them. A
-panel must not call `document.createElement('button')` for an ordinary
-control. The raw calls that remain build controls with their own class
-vocabulary rather than `btn` (tabs, menu items, tree rows, palette swatches,
-disclosure headers, spell-slot pips). These helpers do not cover those
-controls, which is a gap in the shared layer rather than a reason to keep
-writing them by hand. See [Known gaps](#known-gaps).
+`src/ui/buttons.js` gives three button builders, a segmented switch, an
+empty-state paragraph, the chip pair, a status badge, and the section label.
+A panel must not build a `<button>` element itself. A control that carries the
+`btn` presentation is an `iconButton` or a `textButton`. A control that is a
+button for the keyboard but wears no button chrome is a `bareButton`, whatever
+class it goes on to take: a tab, a menu item, a tree row, a disclosure header,
+a spell-slot pip, a target card. The only `<button>` elements written by hand
+are the sixteen static tabs in `index.html` and the palette swatch, which is
+an image tile.
 
 ```js
 iconButton(name, ariaLabel, onClick, opts?) -> HTMLButtonElement
 textButton(label, onClick, opts?)           -> HTMLButtonElement
+bareButton(children, onClick?, opts?)       -> HTMLButtonElement
 segSwitch({ ariaLabel, options, value, onChange, className? })
                                             -> { element, getValue, setValue, sync }
 emptyState(message)                         -> HTMLParagraphElement
-chip(label, opts?)                          -> HTMLSpanElement
-removableChip(label, onRemove, opts?)       -> HTMLSpanElement
+chip(label, opts?)                          -> HTMLElement
+removableChip(label, onRemove, opts?)       -> HTMLElement
+badge(label, opts?)                         -> HTMLSpanElement
+sectionLabel(text, opts?)                   -> HTMLElement
 ```
 
 `iconButton` builds `btn btn--icon`. It requires an `ariaLabel`, because an
@@ -409,7 +413,14 @@ dialog's confirm button also passes `opts.type: 'submit'` with an
 Escape dismissal (with the value left empty) stays distinguishable from a
 confirm. Such a button needs no `onClick`, so the argument is optional.
 
-Both button builders take `opts.variant`, which maps straight to a `btn--*`
+`bareButton` builds `btn-bare`, the reset that strips the browser's button
+presentation back to the surrounding text. The look comes from
+`opts.className`, and the children are the button's content, so an icon and a
+label can nest without a second builder. `onClick` is optional, for a button
+another helper wires: `buildDisclosure` builds its header this way. A control
+whose visible content is not its accessible name passes `opts.ariaLabel`.
+
+Both `btn` builders take `opts.variant`, which maps straight to a `btn--*`
 CSS modifier:
 
 | `variant` | Result |
@@ -442,13 +453,27 @@ for the dice tray's selection object.
 "nothing here yet" line goes through it.
 
 `chip(label)` is a `<span class="chip">` holding the label in its own inner
-span, so a caller can append to the chip without disturbing the text.
+span, so a caller can append to the chip without disturbing the text. With
+`opts.onClick` it is a `<button class="btn-bare chip">` instead, which is what
+the stat-block chips use to open their editor. The tag follows from the option,
+so there is no way to build a chip that looks clickable and is not.
 `removableChip(label, onRemove)` adds the trailing x (`.chip__remove`) that
 calls `onRemove`. Pass `opts.removeLabel` when the visible label is not the
 thing being removed: the conditions bar shows "Poisoned (3)", but its
 button reads "Remove Poisoned". Status conditions, the effects a weapon
 inflicts, and tag-field pills all build through these. `opts.className`
 carries any per-feature modifier.
+
+`badge(label)` is the read-only marker on a list row. `opts.variant` covers the
+three shared readings, `success`, `danger`, and `neutral`, which is how an
+NPC's disposition colours itself. A marker that means something outside that
+scale passes `opts.className` for its own colour: a prepared spell takes the
+mana colour, and a custom library entry takes the accent.
+
+`sectionLabel(text)` is the sub-heading inside a panel section. It is a span by
+default, since these label the box beside them rather than open a section.
+`opts.tag` makes it an `h3` or `h4` for a heading a screen reader should reach
+through the document outline.
 
 ### `src/ui/icons.js`
 
@@ -691,6 +716,8 @@ refresh on their own schedule. Neither panel redraws to move a highlight.
 Use one of these two helpers, never a third strip built by hand.
 
 ```js
+buildDisclosure({ body, label?, headChildren?, className?, ariaLabel?, expanded?, onToggle? })
+  -> { head, body, isExpanded, setExpanded }
 wireDisclosure(button, body, { expanded?, onToggle? }?) -> { isExpanded, setExpanded }
 ```
 
@@ -700,6 +727,15 @@ wireDisclosure(button, body, { expanded?, onToggle? }?) -> { isExpanded, setExpa
 fires on init. Because a redrawing panel rebuilds its DOM, the documented
 pattern is to pass the last known state in as `expanded`, and record
 changes from `onToggle`.
+
+`buildDisclosure` builds the header too: a `bareButton` carrying `disclosure`,
+the chevron, and, when a `label` is given, `section-label` for the shared
+group-heading treatment. A header made of icons instead, the dice tray's d20
+summary, leaves `label` out and names itself through `ariaLabel`. Anything
+between the label and the chevron, an item count for example, goes in
+`headChildren`. The header and the body come back as siblings, so a panel can
+put them in whatever box its own layout needs. Use `wireDisclosure` directly
+only for a header a caller has to build itself.
 
 ## Toasts
 
@@ -854,15 +890,15 @@ keep only layout (margins, grid placement) in the component's own class.
 | Class | Role |
 | --- | --- |
 | `.btn` + `--primary`/`--danger`/`--success`/`--icon` | every button, built through `buttons.js` |
-| `.btn-bare` | the reset for a control that is a button with no button chrome |
+| `.btn-bare` | the reset for a control that is a button with no button chrome, built through `bareButton` |
 | `.field` | every input, select, and textarea |
 | `.card`, `.card__title` | a bordered panel with an uppercase heading |
 | `.seg-switch`, `__btn`, `__btn--active` | segmented toggle (mode, theme, role, dice-tray d20) |
 | `.row-select`, `--current` | selectable full-width list row (world tree, roster) |
-| `.section-label` | in-panel sub-heading: uppercase, tracked, muted |
+| `.section-label` | in-panel sub-heading: uppercase, tracked, muted, built through `sectionLabel` |
 | `.empty-state` | the "nothing here yet" paragraph |
 | `.chip`, `.chip__remove` | a small labeled tag, with or without an x, built through `buttons.js` |
-| `.badge` | a read-only status marker on a list row. The color comes from a per-feature modifier |
+| `.badge` + `--success`/`--danger`/`--neutral` | a read-only status marker on a list row. A colour outside the three shared readings comes from a per-feature modifier |
 | `.icon` | the SVG wrapper that `icon()` applies |
 | `.tabs`, `__tab`, `__panel` | a tab strip over a stack of panels |
 | `.modal` and its parts | the native `<dialog>`, built through `Modal.js` |
@@ -1070,20 +1106,13 @@ Against the contract:
 
 Class contracts with no builder, so the class is typed at the call site:
 
-- **`.badge`** has six call sites and a private `badge` helper inside
-  `SpellbookPanel.js`.
-- **`.section-label`** is typed as a string, and re-implemented ad hoc in
-  `character.css`: `.character-sheet__field-row` and `.stat-badge__key` each
-  restate the uppercase-and-tracked treatment with their own letter spacing.
-- **A bare button**, one with no `.btn` presentation, has no builder, so
-  nineteen `<button>` elements are built by hand (the breadcrumb crumbs,
-  disclosure headers, tree rows, palette swatches, menu items, spell-slot
-  pips). `.btn-bare` in `base.css` is the reset they should carry, and until
-  they do, each rule restates `font: inherit` and `cursor: pointer` for
-  itself.
-- **A clickable chip** is not what `chip` builds, since `chip` hardcodes a
-  `<span>`. `StatBlockBar.js` and `CombatScreen.js` rebuild the chip shape
-  around a `<button>` instead.
+- **`.section-label`** is re-implemented ad hoc in `character.css`:
+  `.character-sheet__field-row` and `.stat-badge__key` each restate the
+  uppercase-and-tracked treatment with their own letter spacing. The builder
+  exists, so these two rules are the remainder.
+- **`mountListPanel`'s group heading** is the one `.section-label` still typed
+  as a string, through the `groupHeadingClass` option that its callers pass.
+  Closing it belongs with the class-option gap above.
 
 Repeated by hand:
 

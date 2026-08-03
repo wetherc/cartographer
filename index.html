@@ -106,10 +106,10 @@
         </div>
         <section class="card belowmap-sheet" aria-label="Character detail">
           <div id="sheet-tabs" class="tabs" role="tablist" aria-label="Character detail">
-            <button class="tabs__tab" type="button" role="tab" id="tab-sheet" aria-controls="panel-sheet" aria-selected="true">Character</button>
-            <button class="tabs__tab" type="button" role="tab" id="tab-equipment" aria-controls="panel-equipment" aria-selected="false" tabindex="-1">Equipment</button>
-            <button class="tabs__tab" type="button" role="tab" id="tab-inventory" aria-controls="panel-inventory" aria-selected="false" tabindex="-1">Inventory</button>
-            <button class="tabs__tab" type="button" role="tab" id="tab-spellbook" aria-controls="panel-spellbook" aria-selected="false" tabindex="-1">Spellbook</button>
+            <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-sheet" aria-controls="panel-sheet" aria-selected="true">Character</button>
+            <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-equipment" aria-controls="panel-equipment" aria-selected="false" tabindex="-1">Equipment</button>
+            <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-inventory" aria-controls="panel-inventory" aria-selected="false" tabindex="-1">Inventory</button>
+            <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-spellbook" aria-controls="panel-spellbook" aria-selected="false" tabindex="-1">Spellbook</button>
           </div>
           <div id="panel-sheet" class="tabs__panel" role="tabpanel" aria-labelledby="tab-sheet">
             <div id="character-sheet-container"></div>
@@ -131,9 +131,9 @@
       <button id="sidebar-toggle" class="sidebar-toggle btn" type="button" aria-expanded="true" aria-controls="sidebar-panels">Hide panels</button>
       <div id="sidebar-panels" class="sidebar-panels u-col u-g2">
         <div id="sidebar-tabs" class="tabs" role="tablist" aria-label="Session panels">
-          <button class="tabs__tab" type="button" role="tab" id="tab-session" aria-controls="panel-session" aria-selected="true">Session</button>
-          <button class="tabs__tab" type="button" role="tab" id="tab-story" aria-controls="panel-story" aria-selected="false" tabindex="-1">Story</button>
-          <button class="tabs__tab" type="button" role="tab" id="tab-log" aria-controls="panel-log" aria-selected="false" tabindex="-1">Log</button>
+          <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-session" aria-controls="panel-session" aria-selected="true">Session</button>
+          <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-story" aria-controls="panel-story" aria-selected="false" tabindex="-1">Story</button>
+          <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-log" aria-controls="panel-log" aria-selected="false" tabindex="-1">Log</button>
         </div>
 
         <div class="tabs__panel" role="tabpanel" id="panel-session" aria-labelledby="tab-session">
@@ -174,9 +174,9 @@
     <aside id="build-tools" class="app-buildrail app-buildrail--stack" aria-label="Build tools">
       <p id="build-warning" class="build-warning" role="status"></p>
       <div id="build-tabs" class="tabs" role="tablist" aria-label="Build panels">
-        <button class="tabs__tab" type="button" role="tab" id="build-tab-paint" aria-controls="build-panel-paint" aria-selected="true">Paint</button>
-        <button class="tabs__tab" type="button" role="tab" id="build-tab-tile" aria-controls="build-panel-tile" aria-selected="false" tabindex="-1">Tile</button>
-        <button class="tabs__tab" type="button" role="tab" id="build-tab-encounters" aria-controls="build-panel-encounters" aria-selected="false" tabindex="-1">Encounters</button>
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="build-tab-paint" aria-controls="build-panel-paint" aria-selected="true">Paint</button>
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="build-tab-tile" aria-controls="build-panel-tile" aria-selected="false" tabindex="-1">Tile</button>
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="build-tab-encounters" aria-controls="build-panel-encounters" aria-selected="false" tabindex="-1">Encounters</button>
       </div>
 
       <div class="tabs__panel" role="tabpanel" id="build-panel-paint" aria-labelledby="build-tab-paint">
@@ -205,8 +205,8 @@
 
       <div class="tabs__panel" role="tabpanel" id="build-panel-encounters" aria-labelledby="build-tab-encounters" hidden>
         <div id="build-encounter-tabs" class="tabs" role="tablist" aria-label="Mob and NPC authoring">
-          <button class="tabs__tab" type="button" role="tab" id="build-tab-mobs" aria-controls="build-subpanel-mobs" aria-selected="true">Mobs</button>
-          <button class="tabs__tab" type="button" role="tab" id="build-tab-npcs" aria-controls="build-subpanel-npcs" aria-selected="false" tabindex="-1">NPCs</button>
+          <button class="btn-bare tabs__tab" type="button" role="tab" id="build-tab-mobs" aria-controls="build-subpanel-mobs" aria-selected="true">Mobs</button>
+          <button class="btn-bare tabs__tab" type="button" role="tab" id="build-tab-npcs" aria-controls="build-subpanel-npcs" aria-selected="false" tabindex="-1">NPCs</button>
         </div>
         <div class="tabs__panel" role="tabpanel" id="build-subpanel-mobs" aria-labelledby="build-tab-mobs">
           <section id="build-encounters-container" class="card" aria-label="Encounter authoring">
@@ -223,10 +223,10 @@
 
     <aside id="library-tools" class="app-buildrail app-buildrail--stack" aria-label="Library">
       <div id="library-tabs" class="tabs" role="tablist" aria-label="Library panels">
-        <button class="tabs__tab" type="button" role="tab" id="library-tab-equipment" aria-controls="library-panel-equipment" aria-selected="true">Equipment</button>
-        <button class="tabs__tab" type="button" role="tab" id="library-tab-bestiary" aria-controls="library-panel-bestiary" aria-selected="false" tabindex="-1">Bestiary</button>
-        <button class="tabs__tab" type="button" role="tab" id="library-tab-npcs" aria-controls="library-panel-npcs" aria-selected="false" tabindex="-1">NPCs</button>
-        <button class="tabs__tab" type="button" role="tab" id="library-tab-spells" aria-controls="library-panel-spells" aria-selected="false" tabindex="-1">Spells</button>
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="library-tab-equipment" aria-controls="library-panel-equipment" aria-selected="true">Equipment</button>
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="library-tab-bestiary" aria-controls="library-panel-bestiary" aria-selected="false" tabindex="-1">Bestiary</button>
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="library-tab-npcs" aria-controls="library-panel-npcs" aria-selected="false" tabindex="-1">NPCs</button>
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="library-tab-spells" aria-controls="library-panel-spells" aria-selected="false" tabindex="-1">Spells</button>
       </div>
 
       <div class="tabs__panel" role="tabpanel" id="library-panel-equipment" aria-labelledby="library-tab-equipment">

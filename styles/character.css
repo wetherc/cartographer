@@ -402,24 +402,19 @@
   gap: 0 var(--space-2);
 }
 
+/* A row that rolls is a .btn-bare button and a read-only row is a div, so the
+   shared rule sets only what both need. */
 .check-row {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   width: 100%;
   padding: 0.15rem var(--space-1);
-  border: none;
   border-radius: var(--radius);
-  background: transparent;
   color: var(--text-muted);
-  font: inherit;
   font-size: var(--text-label);
-  text-align: left;
 }
 
-.check-row--roll {
-  cursor: pointer;
-}
 .check-row--roll:hover {
   background: var(--surface-sunken);
   color: var(--text);

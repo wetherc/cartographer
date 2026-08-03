@@ -6,12 +6,10 @@
   font-size: var(--text-label);
 }
 
+/* A crumb is a .btn-bare button, except for the last one, which is the current
+   location and so a plain span. */
 .breadcrumb__crumb {
   color: var(--accent);
-  background: none;
-  border: none;
-  font: inherit;
-  cursor: pointer;
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
 }
@@ -94,15 +92,12 @@
    Disclosure (collapsible panel headers)
    ========================================================================== */
 
+/* A header is a .btn-bare button, so only the box it occupies is set here. A
+   header that carries .section-label as well takes the label type size from it,
+   which is what makes a collapsible group heading look like every other one. */
 .disclosure {
   width: 100%;
   padding: var(--space-1) 0;
-  border: none;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
 }
 
 .disclosure__chevron {
@@ -235,17 +230,7 @@
 }
 
 /* Interactive pip: click a filled one to spend the slot, an empty one to
-   restore it. A bare text button so the pip glyph stays the whole control. */
-.slot-line__pip {
-  border: none;
-  background: none;
-  padding: 0;
-  font: inherit;
-  line-height: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-
+   restore it. A .btn-bare button, so the pip glyph is the whole control. */
 .slot-line__pip:hover:not(:disabled) {
   transform: scale(1.25);
 }

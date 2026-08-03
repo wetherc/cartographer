@@ -1,5 +1,5 @@
 import { icon } from './icons.js';
-import { iconButton } from './buttons.js';
+import { bareButton, iconButton } from './buttons.js';
 import { el } from './dom.js';
 import { buildWorldTree } from '../map/WorldTree.js';
 
@@ -50,8 +50,9 @@ export function mountWorldTree(container, opts) {
    */
   function collapseToggle(treeNode, childList) {
     const nodeId = treeNode.node.id;
-    const toggle = el('button', 'world-tree__toggle', icon('chevron', { size: 14 }));
-    toggle.type = 'button';
+    const toggle = bareButton([icon('chevron', { size: 14 })], undefined, {
+      className: 'world-tree__toggle',
+    });
 
     /** @param {boolean} isCollapsed */
     const apply = (isCollapsed) => {
@@ -82,13 +83,13 @@ export function mountWorldTree(container, opts) {
       ? el('ul', 'world-tree__children', ...treeNode.children.map(renderNode))
       : null;
 
-    const select = el('button', 'row-select', treeNode.node.name);
-    select.type = 'button';
+    const select = bareButton([treeNode.node.name], () => opts.onSelect(treeNode.node.id), {
+      className: 'row-select',
+    });
     if (treeNode.node.id === opts.getCurrentId()) {
       select.classList.add('row-select--current');
       select.setAttribute('aria-current', 'true');
     }
-    select.addEventListener('click', () => opts.onSelect(treeNode.node.id));
 
     const warning = opts.getWarning?.(treeNode.node) ?? null;
     /** @type {HTMLSpanElement | null} */

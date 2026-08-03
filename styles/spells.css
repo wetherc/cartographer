@@ -163,8 +163,9 @@
   gap: 0.15rem;
 }
 
-/* Each spell is a full-width button: name left, badges right. Known spells sit
-   slightly brighter so the class list reads as "have / could learn". */
+/* Each spell is a full-width .btn-bare button: name left, badges right. Known
+   spells sit slightly brighter so the class list reads as "have / could
+   learn". */
 .spellbook__row {
   justify-content: space-between;
   width: 100%;
@@ -173,9 +174,6 @@
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text-muted);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
 }
 
 .spellbook__row:hover,

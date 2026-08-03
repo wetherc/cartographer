@@ -1,6 +1,6 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
-import { chip } from './buttons.js';
+import { bareButton, chip } from './buttons.js';
 import { hpBand } from '../view/ViewRole.js';
 import { loadoutBlock } from './LoadoutBlock.js';
 import { buildStatBar } from './CharacterBars.js';
@@ -58,14 +58,17 @@ export function combatantCard(row, selection = {}) {
     el('span', 'combatant-card__init', `Init ${row.initiative}`),
   );
 
-  const card = el(selectable ? 'button' : 'article', classes, header);
+  /** @type {HTMLElement} */
+  let card;
   if (selectable) {
-    const button = /** @type {HTMLButtonElement} */ (card);
-    button.type = 'button';
-    button.setAttribute('aria-pressed', String(Boolean(selection.selected)));
-    button.title = `Target ${row.name ?? 'Unknown combatant'}`;
-    button.dataset.combatantId = row.id;
-    button.addEventListener('click', () => selection.onSelect?.(row.id));
+    card = bareButton([header], () => selection.onSelect?.(row.id), {
+      className: classes,
+      title: `Target ${row.name ?? 'Unknown combatant'}`,
+    });
+    card.setAttribute('aria-pressed', String(Boolean(selection.selected)));
+    card.dataset.combatantId = row.id;
+  } else {
+    card = el('article', classes, header);
   }
   if (row.defeated) {
     // The strikethrough shows this visually. This label states it for a screen reader.
