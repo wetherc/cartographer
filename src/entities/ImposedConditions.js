@@ -86,6 +86,12 @@ export function repeatSaves(list, { bonusOf = recordedBonus, rng = Math.random }
     if (!source?.saveEnds) return true;
     // The whole list rides the retry, including the chip being retried. A
     // penalty that a spell imposes applies to the save that shakes it off.
+    //
+    // The list is the one this sweep started with, so a chip that an earlier
+    // retry in the same sweep already removed still rides a later one. The
+    // printed rules do not order the retries against each other, and reading
+    // the shrinking list instead would make the outcome depend on the order
+    // the chips happen to sit in. One list for the whole sweep is the choice.
     const save = resolveSave(bonusOf(source), source.saveDC ?? 10, { rng, conditions: list });
     results.push({ condition, save, ended: save.success });
     return !save.success;

@@ -59,6 +59,9 @@ test('normalizeRider repairs written input instead of rejecting it', () => {
   // A count past the ceiling is held there, sign kept.
   assert.equal(normalizeRider({ rolls: ['attack'], dice: 500 })?.dice, 20);
   assert.equal(normalizeRider({ rolls: ['attack'], dice: -500 })?.dice, -20);
+  // A flat amount has its own ceiling, so a typed 1e9 cannot reach a roll.
+  assert.equal(normalizeRider({ rolls: ['save'], flat: 1e9 })?.flat, 100);
+  assert.equal(normalizeRider({ rolls: ['save'], flat: -1e9 })?.flat, -100);
   // Fractions truncate, and an unreadable number counts as none.
   assert.equal(normalizeRider({ rolls: ['attack'], dice: 1.9, flat: 'x' })?.dice, 1);
   assert.equal(normalizeRider({ rolls: ['attack'], dice: 'x', flat: 3 })?.dice, undefined);

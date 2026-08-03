@@ -408,6 +408,10 @@ export function castPlan(app, entity, spell, offered) {
   // This happens once here, not in the two target assemblies, because the
   // saved ability is a property of the spell, not of the target.
   // A target's own chips ride the same save, so they travel with the bonus.
+  // Both are read when the dialog opens, not when it is submitted, so a chip
+  // that lands on a target while the dialog sits open misses this cast. The
+  // GM opens and submits a cast in one motion, and re-reading the roster
+  // under an open dialog would let the numbers on screen go stale instead.
   const saveAbility = spell.effect.kind === 'save' ? spell.effect.saveAbility : null;
   const targets = saveAbility
     ? offered.map((t) => {

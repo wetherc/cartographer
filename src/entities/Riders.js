@@ -9,6 +9,7 @@
  */
 
 import { DIE_SIDES } from '../dice/DiceRoller.js';
+import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
 /** @typedef {import('../types/entities.js').RollRider} RollRider */
@@ -29,6 +30,11 @@ export const DEFAULT_RIDER_DIE = /** @type {DieType} */ ('d4');
  * ceiling on written input, not a rule of the game. */
 const MAX_RIDER_DICE = 20;
 
+/** The largest flat amount one rider may add or subtract. The same kind of
+ * ceiling as the dice count: it holds a typo out of the roll instead of
+ * expressing a rule. */
+const MAX_RIDER_FLAT = 100;
+
 /**
  * Coerce a written rider block into a clean one, or return null when the
  * value says nothing usable. A rider that touches no roll changes nothing, so
@@ -45,9 +51,9 @@ export function normalizeRider(value) {
   const rolls = RIDER_ROLLS.filter((kind) => written.includes(kind));
   if (rolls.length === 0) return null;
   const dice = Math.trunc(Number(raw.dice));
-  const count = Number.isFinite(dice) ? clampDice(dice) : 0;
+  const count = Number.isFinite(dice) ? clamp(dice, -MAX_RIDER_DICE, MAX_RIDER_DICE) : 0;
   const flatValue = Math.trunc(Number(raw.flat));
-  const flat = Number.isFinite(flatValue) ? flatValue : 0;
+  const flat = Number.isFinite(flatValue) ? clamp(flatValue, -MAX_RIDER_FLAT, MAX_RIDER_FLAT) : 0;
   if (count === 0 && flat === 0) return null;
   const die = typeof raw.die === 'string' && raw.die in DIE_SIDES ? raw.die : DEFAULT_RIDER_DIE;
   return {
@@ -55,13 +61,6 @@ export function normalizeRider(value) {
     ...(count !== 0 ? { dice: count, die: /** @type {DieType} */ (die) } : {}),
     ...(flat !== 0 ? { flat } : {}),
   };
-}
-
-/** @param {number} dice @returns {number} the count held inside the ceiling, sign kept. */
-function clampDice(dice) {
-  if (dice > MAX_RIDER_DICE) return MAX_RIDER_DICE;
-  if (dice < -MAX_RIDER_DICE) return -MAX_RIDER_DICE;
-  return dice;
 }
 
 /**
