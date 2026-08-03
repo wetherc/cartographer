@@ -751,6 +751,19 @@ export function targetSummary(targets) {
 }
 
 /**
+ * The parenthetical a log line carries when the caster's chips changed the
+ * roll, or an empty string when they did not. A multi-projectile cast passes
+ * one entry per ray, because each ray rolls the riders again, and the rays
+ * that rolled nothing drop out.
+ * @param {({ note: string } | null | undefined)[]} riders
+ * @returns {string}
+ */
+function riderNote(riders) {
+  const notes = riders.filter((r) => r?.note).map((r) => /** @type {{ note: string }} */ (r).note);
+  return notes.length > 0 ? ` (${notes.join('; ')})` : '';
+}
+
+/**
  * Apply and log a resolved cast's outcomes: attack hits and misses, save
  * results with full, half, or no damage, and healing. Each target gets its
  * own log line, so a multi-target cast is auditable roll by roll. The toast
@@ -773,19 +786,23 @@ export function applyOutcomes(app, spell, result, casterId) {
       // every ray's dice.
       if (o.shots) {
         const tally = `${o.hits} of ${o.fired} hit ${o.target.name}`;
+        // Each ray rolls the caster's riders again, so the line names every
+        // ray's dice. The tally itself prints no to-hit numbers, and this is
+        // the only place the rays' own rolls are recorded.
+        const rode = riderNote(o.shots.map((/** @type {any} */ s) => s.rider));
         app.actions.logEvent(
           'combat',
           o.hits > 0
-            ? `${spell.name}: ${tally} for ${o.damage.detail}.`
-            : `${spell.name}: ${tally} (AC ${o.ac}).`,
+            ? `${spell.name}: ${tally}${rode} for ${o.damage.detail}.`
+            : `${spell.name}: ${tally}${rode} (AC ${o.ac}).`,
         );
         applyToTarget(app, o.target.id, o.damage?.total ?? 0, false);
         continue;
       }
       const verb = o.crit ? 'critically hits' : o.hit ? 'hits' : 'misses';
+      // A rider on the caster changed the number, so both outcomes say so.
+      const rode = riderNote([o.rider]);
       if (!o.hit) {
-        // A rider on the caster changed the number, so the miss line says so.
-        const rode = o.rider ? ` (${o.rider.note})` : '';
         app.actions.logEvent(
           'combat',
           `${spell.name}: ${o.attack.total} to hit vs AC ${o.ac}${rode} — ${verb} ${o.target.name}.`,
@@ -794,7 +811,7 @@ export function applyOutcomes(app, spell, result, casterId) {
       }
       app.actions.logEvent(
         'combat',
-        `${spell.name} ${verb} ${o.target.name} for ${o.damage?.detail || '0 damage'}.`,
+        `${spell.name} ${verb} ${o.target.name}${rode} for ${o.damage?.detail || '0 damage'}.`,
       );
       applyToTarget(app, o.target.id, o.damage?.total ?? 0, false);
     }

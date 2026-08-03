@@ -536,7 +536,13 @@ the direction. `entities/Riders.js` owns the model:
 - `normalizeRider(value)` coerces a written block, the same tolerant parse
   that every other spell field gets. A rider that touches no roll, or that
   adds neither dice nor a flat amount, reads as absent.
-- `activeRiders(conditions, kind)` picks the chips that touch one roll kind.
+- `chipRider(condition)` reads a stored chip's rider through that parse.
+  Chips live in the campaign save and nothing checks their shape on the way
+  in, so a hand-edited save can hold a rider with no roll list or with a die
+  that does not exist. Every read of a stored rider goes through this
+  function, and a rider the app cannot use reads as a chip that carries none.
+- `activeRiders(conditions, kind)` picks the chips that touch one roll kind
+  and pairs each with its cleaned rider.
 - `rollRiders(conditions, kind, rng)` rolls them and returns
   `{ modifier, note }`. The note names each chip and the faces it rolled, so a
   log line can explain the number.
@@ -555,7 +561,8 @@ Three roll sites read riders:
   projectile is its own attack roll. An auto-hit projectile rolls no attack,
   so no rider touches it. The caster view carries no conditions, so
   `app/spellCast.js` passes them in from the real combatant as
-  `casterConditions`.
+  `casterConditions`. Its log lines name every ray's dice, because the tally
+  line prints no to-hit numbers of its own.
 - `Checks.resolveSave` rolls the roller's chips. Every save in the app goes
   through it, so `savingThrow`, a spell's save effect, and a repeated save all
   get riders from that one place. `savingThrow` reads the character's own

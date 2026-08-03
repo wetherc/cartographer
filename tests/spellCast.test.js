@@ -1006,6 +1006,54 @@ test('a rider the caster holds joins the spell attack roll and the log', () => {
   );
 });
 
+test('a hit names the rider that got it there', () => {
+  const caster = { ...mage(), conditions: [{ name: 'Bless', rounds: 10, rider: BLESS_RIDER }] };
+  // AC 13 against a d20 of 9 plus a +2 spell attack bonus: the d4 is what
+  // carries the roll over the top, so the line has to say so.
+  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 13 }, HERE);
+  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const plan = planFor(app, caster, firebolt);
+  resolveCast(app, plan, submit({ target: 'goblin' }), {
+    writeBack: () => {},
+    concentrates: false,
+    rng: seq([face(4, 3), d20(9), face(10, 5)]),
+  });
+  assert.match(app.log.join('\n'), /Fire Bolt hits Goblin \(Bless \+1d4 \[3\]\) for/);
+});
+
+test('each ray of a projectile cast reports its own rider dice', () => {
+  const caster = {
+    ...mage({
+      resources: [createResource('slots-2', 'Level 2 slots', 'mana', 3)],
+      spellbook: { cantrips: [], known: ['scorching-ray'], prepared: ['scorching-ray'] },
+    }),
+    conditions: [{ name: 'Bless', rounds: 10, rider: BLESS_RIDER }],
+  };
+  const goblin = createEncounter('goblin', 'Goblin', 30, { AC: 13 }, HERE);
+  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const plan = planFor(app, caster, scorchingRay);
+  resolveCast(app, plan, submit({ slot: '2', allocation: 'goblin:2' }), {
+    writeBack: () => {},
+    concentrates: false,
+    // Each ray rolls its own d4 before its own d20, so the two rays roll
+    // different faces and both belong in the line.
+    rng: seq([
+      face(4, 2),
+      d20(15),
+      face(6, 3),
+      face(6, 3),
+      face(4, 4),
+      d20(15),
+      face(6, 3),
+      face(6, 3),
+    ]),
+  });
+  assert.match(
+    app.log.join('\n'),
+    /2 of 2 hit Goblin \(Bless \+1d4 \[2\]; Bless \+1d4 \[4\]\) for/,
+  );
+});
+
 test('a rider the target holds rides its save against the next spell', () => {
   const caster = mage();
   const goblin = {
