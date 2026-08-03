@@ -49,8 +49,11 @@ export function mountNPCPanel(container, callbacks) {
     gate: () => !callbacks.getRole || isGM(callbacks.getRole()),
     getRows: () => callbacks.getNPCs(),
     emptyMessage: 'No one of note here.',
-    bodyClass: 'npc-panel__body u-col',
-    actionsClass: 'npc-panel__controls',
+    classes: {
+      body: 'npc-panel__body u-col',
+      actions: 'npc-panel__controls',
+      add: 'npc-panel__add',
+    },
     buildBody: (npc) => {
       const getLocationLabel = callbacks.getLocationLabel;
       const head = el(
@@ -104,6 +107,5 @@ export function mountNPCPanel(container, callbacks) {
       return onAdd ? [{ label: 'New NPC', icon: 'add', onClick: onAdd }] : [];
     },
     addPlacement: callbacks.pinAdd ? 'leading' : 'inline',
-    addClass: 'npc-panel__add',
   });
 }

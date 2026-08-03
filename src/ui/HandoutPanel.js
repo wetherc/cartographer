@@ -55,10 +55,13 @@ export function mountHandoutPanel(container, callbacks) {
       return gm ? handouts : handouts.filter((h) => h.revealed);
     },
     emptyMessage: (gm) => (gm ? 'No handouts here.' : 'Nothing to show yet.'),
-    rowModifiers: (handout, gm) => [(!gm || handout.revealed) && 'handout-panel__row--revealed'],
-    // A player's row is title then content with no controls, so it needs
-    // no head row to line the buttons up against.
-    headClass: (_handout, gm) => (gm ? 'u-row u-g1' : null),
+    classes: {
+      rowModifiers: (handout, gm) => [(!gm || handout.revealed) && 'handout-panel__row--revealed'],
+      // A player's row is title then content with no controls, so it needs
+      // no head row to line the buttons up against.
+      head: (_handout, gm) => (gm ? 'u-row u-g1' : null),
+      add: 'handout-panel__add',
+    },
     buildBody: (handout, ctx) => {
       if (!ctx.gm) return el('div', 'handout-panel__title', handout.title);
 
@@ -96,6 +99,5 @@ export function mountHandoutPanel(container, callbacks) {
       if (!ctx.gm || handout.revealed) appendRevealedContent(row, handout);
     },
     addButtons: () => [{ label: 'New handout', icon: 'add', onClick: callbacks.onAdd }],
-    addClass: 'handout-panel__add',
   });
 }

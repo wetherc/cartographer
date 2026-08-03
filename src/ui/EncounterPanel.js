@@ -201,11 +201,13 @@ export function mountEncounterPanel(container, callbacks) {
   /** What both lists share. They differ only in rows and add controls. */
   const rowOptions = {
     className: 'encounter-panel__list',
-    rowClass: 'encounter-panel__row u-col u-g1',
-    headClass: 'u-row u-g2',
-    rowModifiers: /** @param {Encounter} e */ (e) => [
-      isDefeated(e) && 'encounter-panel__row--defeated',
-    ],
+    classes: {
+      row: 'encounter-panel__row u-col u-g1',
+      head: 'u-row u-g2',
+      rowModifiers: /** @param {Encounter} e */ (e) => [
+        isDefeated(e) && 'encounter-panel__row--defeated',
+      ],
+    },
     buildBody,
     actions,
     buildExtras,
@@ -260,7 +262,7 @@ export function mountEncounterPanel(container, callbacks) {
     ...rowOptions,
     getRows: () => callbacks.getNearbyEncounters(),
     emptyMessage: 'No encounters nearby.',
-    addClass: 'encounter-panel__add',
+    classes: { ...rowOptions.classes, add: 'encounter-panel__add' },
     addButtons: () => [
       // The caller creates and stores the encounter. A non-null return
       // only signals that the visible list can have changed.

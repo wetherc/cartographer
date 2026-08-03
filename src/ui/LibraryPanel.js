@@ -152,8 +152,11 @@ export function mountLibraryPanel(container, callbacks) {
   function mountList(host, subtabId) {
     return mountListPanel(host, {
       className: 'u-col u-g1',
-      rowClass: 'library-panel__row',
-      headClass: 'library-panel__head',
+      classes: {
+        row: 'library-panel__row',
+        head: 'library-panel__head',
+        groupHeading: 'library-panel__group',
+      },
       getRows: () => {
         const query = filter.trim().toLowerCase();
         return callbacks
@@ -162,7 +165,6 @@ export function mountLibraryPanel(container, callbacks) {
       },
       emptyMessage: () => (filter.trim() ? 'No entries match.' : 'No entries.'),
       groupOf: /** @param {LibraryRow} entry */ (entry) => entry.group ?? null,
-      groupHeadingClass: 'section-label library-panel__group',
       buildBody,
       actions: rowActions,
       buildExtras,

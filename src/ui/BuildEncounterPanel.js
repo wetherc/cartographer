@@ -35,8 +35,7 @@ export function mountBuildEncounterPanel(container, callbacks) {
     className: 'build-encounters',
     getRows: () => callbacks.getEncounters(),
     emptyMessage: 'No encounters on this map.',
-    rowClass: 'build-encounters__row u-col u-g1',
-    headClass: 'u-row u-g2',
+    classes: { row: 'build-encounters__row u-col u-g1', head: 'u-row u-g2' },
     buildBody: (encounter) => {
       const where = encounter.location ? `@ (${encounter.location.tileId})` : 'unplaced';
       const text = `${encounter.name} (${encounter.currentHP}/${encounter.maxHP}) ${where}`;

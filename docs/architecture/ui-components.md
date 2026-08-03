@@ -317,15 +317,26 @@ The caller decides what the markup is:
 | Option | What it does |
 | --- | --- |
 | `className` | the root element's class, and the stem of the row class (`quest-panel` gives `quest-panel__row`) |
-| `rowClass` | the row's class when it cannot come from `className` (a list nested in a wider panel names its rows after the outer one) |
+| `classes` | every class below the root, in one bag (see the table after this one) |
 | `getRows(gm)` | the entities to draw, already scoped and ordered |
 | `buildBody(entry, ctx)` | the row's content, left of the buttons: one node or an array |
 | `actions(entry, ctx)` | the row's buttons, as `{ icon, label, variant, onClick }` descriptors (`null` entries are dropped, so an optional control is a ternary) |
 | `buildExtras(entry, row, ctx)` | anything below the row's head: a stat bar, a read-aloud body |
-| `bodyClass` / `actionsClass` / `headClass` | whether the body nodes, the buttons, and the pair of them get wrapper divs |
-| `emptyMessage`, `rowModifiers`, `groupOf` | the empty-state text, extra row classes, and an optional section heading shown when consecutive rows change group |
-| `addButtons(gm)`, `addPlacement`, `addClass` | the add controls, and where they go: loose at the end of the list (`inline`, the default), leading it in a pinned `.panel-actions` row (`leading`), or trailing it in a plain one (`trailing`) |
+| `emptyMessage`, `groupOf` | the empty-state text, and an optional section heading shown when consecutive rows change group |
+| `addButtons(gm)`, `addPlacement` | the add controls, and where they go: loose at the end of the list (`inline`, the default), leading it in a pinned `.panel-actions` row (`leading`), or trailing it in a plain one (`trailing`) |
 | `gate()` | `false` for the read-only player view: no action buttons, no add controls |
+
+Everything the caller classes below the root goes in `classes`, so the option
+list above stays about behavior. Each entry is optional. An omitted one either
+falls back to the stem or drops the wrapper it would have named.
+
+| `classes` entry | What it does |
+| --- | --- |
+| `row` | the row's class when it cannot come from the stem (a list nested in a wider panel names its rows after the outer one) |
+| `rowModifiers(entry, gm)` | extra classes on one row, for example a completed quest or a defeated foe |
+| `body` / `actions` / `head` | whether the body nodes, the buttons, and the pair of them get wrapper divs |
+| `group` / `groupHeading` | the div that collects one group's rows, and a class added to the group heading, which is a `section-label` either way |
+| `add` | class on each add button, unless the button names its own. `leading` placement ignores it, since its pinned row styles the buttons itself |
 
 The helper owns the plumbing: the root element, clearing and rebuilding, the
 row loop, the group headings, and the handler contract below. That contract
@@ -1091,10 +1102,6 @@ Against the contract:
   most panels, `options` or `opts` in others, and a bare function in a few.
   `mountPalettePanel` takes four positionals, and `mountSpellbookPanel`
   takes five.
-- **`mountListPanel` takes nine separate class-name options** (`className`,
-  `rowClass`, `bodyClass`, `actionsClass`, `headClass`, `groupWrapperClass`,
-  `groupHeadingClass`, `addClass`, `rowModifiers`), each typed out by each
-  of its six callers.
 
 Class contracts with no builder, so the class is typed at the call site:
 
@@ -1102,9 +1109,6 @@ Class contracts with no builder, so the class is typed at the call site:
   `.character-sheet__field-row` and `.stat-badge__key` each restate the
   uppercase-and-tracked treatment with their own letter spacing. The builder
   exists, so these two rules are the remainder.
-- **`mountListPanel`'s group heading** is the one `.section-label` still typed
-  as a string, through the `groupHeadingClass` option that its callers pass.
-  Closing it belongs with the class-option gap above.
 
 Repeated by hand:
 

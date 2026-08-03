@@ -38,10 +38,13 @@ export function mountQuestPanel(container, callbacks) {
       return [...active, ...completed];
     },
     groupOf: (quest) => (quest.status === 'completed' ? 'Completed' : 'Active'),
-    groupWrapperClass: 'quest-panel__group',
-    groupHeadingClass: 'section-label quest-panel__group-title',
     emptyMessage: 'No quests yet.',
-    rowModifiers: (quest) => [quest.status === 'completed' && 'quest-panel__row--completed'],
+    classes: {
+      group: 'quest-panel__group',
+      groupHeading: 'quest-panel__group-title',
+      rowModifiers: (quest) => [quest.status === 'completed' && 'quest-panel__row--completed'],
+      add: 'quest-panel__add',
+    },
     buildBody: (quest, ctx) => {
       const done = quest.status === 'completed';
 
@@ -88,6 +91,5 @@ export function mountQuestPanel(container, callbacks) {
           ]
         : [],
     addButtons: () => [{ label: 'New quest', icon: 'add', onClick: callbacks.onAdd }],
-    addClass: 'quest-panel__add',
   });
 }
