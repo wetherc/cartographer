@@ -72,10 +72,14 @@ Turn advance and combat end are registered on `app.actions` as
 `advanceCombatTurn` and `endCombat`. Because of this, the screen's Next turn
 and End combat buttons run the exact code the fight has always run. This
 includes round-wrap condition ticks and concentration sweeps. The advance
-step skips combatants who are down. `advanceTurn` takes a defeated predicate
-and steps the pointer past them to the next combatant still standing. A
+step skips combatants who are down and those whose chips cost them the turn.
+`advanceTurn` takes a predicate and steps the pointer past them to the next
+combatant that can act. `CombatView.skipsTurn` is that predicate, and it covers
+the downed, the stunned, and a participant id that no longer resolves. A
 defeated goblin's turn never comes up, but its chip stays in the ribbon,
-struck through. If every participant is down, the pointer walks one full
+struck through. A stunned one keeps its place too, marked with a dashed edge
+rather than a strike, because it is still in the fight. If every participant is
+skipped, the pointer walks one full
 cycle and stops where it started. This keeps the round counter and timed
 effects moving until the GM closes the fight. `removeCombatant` follows the
 same pattern: anything that changes the fight goes through the module that
@@ -96,7 +100,8 @@ ring, even after the attack dialog stops honoring the pick.
 `buildCombatView(combat, resolve, viewer)` in `src/combat/CombatView.js` is a
 pure projection. It returns the round, the turn index, and one row per
 participant. Each row carries a name, side, initiative, HP, AC, conditions, a
-defeated flag, and whether this viewer can act for it. The wiring layer
+defeated flag, an incapacitated flag for a combatant whose chips cost it the
+turn, and whether this viewer can act for it. The wiring layer
 injects the resolver (`findCombatant` from `combatants.js`), because only the
 wiring layer sees every collection where an id can live. The order itself
 stores nothing on a row. Because of this, a rename, a disposition flip, or

@@ -37,6 +37,9 @@ full. These rules are:
 - dice of healing
 - a chip on the target that adds a die or a flat amount to its later attack
   rolls, saving throws, and ability checks, for as long as the chip lasts
+- a chip that slants later d20 rolls, crits a melee hit, fails a save without
+  a roll, or costs the holder its turn, for the eleven standard condition
+  names that carry rules
 - damage or effect scaling by spell slot level, and by caster level for
   cantrips
 
@@ -62,10 +65,14 @@ that the app cannot honor.
   Dominate Person, and others). A failed save adds the condition to the
   target as a chip. The spell's duration times the chip. The chip ends when
   the caster stops concentrating. A repeated save can also remove the chip,
-  where the spell allows one. The app still cannot give most conditions a
-  rule effect: nothing reads "paralyzed" and grants advantage, or skips a
-  turn. The one exception is a chip that changes a d20 roll, which Bane uses.
-  Hold Person and Bane represent this family in the built-in list.
+  where the spell allows one. Eleven condition names now carry a rule effect,
+  so a paralyzed target hands out advantage, crits on a melee hit, fails its
+  Strength and Dexterity saves, and loses its turns. What is still missing is
+  the rest of each spell's text: Slow halves speed and cuts an action,
+  Banishment removes the creature from the map, and Dominate Person hands
+  control to the caster. None of movement, the action economy, or one creature
+  driving another exists yet. Hold Person and Bane represent this family in the
+  built-in list.
 - **Area and geometry spells** (Grease, Web, Sleep by HP total, Wall of Fire,
   Hunger of Hadar). Area targeting only lets the caster pick the creatures
   that the spell catches. A spell with `targetCount: 0` offers every
@@ -112,6 +119,5 @@ way as at a physical table.
 The [GM guide](gm-guide.md#add-a-spell-the-app-does-not-ship) gives the
 steps.
 
-When conditions carry a rule effect, when the action economy exists, and
-when concentration is enforced, the spell families listed above become
-possible to model. At that point they belong in `src/data/spells.js`.
+When movement exists, when the action economy exists, and when concentration
+is enforced, the spell families listed above become possible to model. At that point they belong in `src/data/spells.js`.

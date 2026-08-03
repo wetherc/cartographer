@@ -240,8 +240,11 @@ while it lasts. In Build mode, the same chips set base values.
 | Bottom | The turn ribbon: one chip per combatant in initiative order |
 
 The current turn is ringed in the ribbon. A foe chip carries a sword. A
-defeated combatant is struck through. A click on a chip inspects that
-combatant without advancing the turn.
+defeated combatant is struck through. A combatant that cannot act, such as a
+stunned one, takes a dashed edge on both its ribbon chip and its board card,
+which marks it apart from a defeat: it is still in the fight, and only its
+turn is gone. A click on a chip inspects that combatant without advancing the
+turn.
 
 A player card shows spells and slots to its own bound tab. Another player's
 card shows armor and weapons only. A foe card shows no loadout at all
@@ -286,6 +289,44 @@ Armor class follows 5e as well.
 
 Timed conditions tick down at the start of each round and expire on their
 own.
+
+Eleven condition names carry rules. The app applies them wherever the roll is
+thrown: a weapon attack, a spell attack, a spell save, and a save or a check
+rolled from the character sheet.
+
+| Condition | What it does |
+| --- | --- |
+| Blinded | Attacks at disadvantage. Attacks against it have advantage |
+| Frightened | Attacks and ability checks at disadvantage |
+| Incapacitated | Loses its turn |
+| Invisible | Attacks with advantage. Attacks against it have disadvantage |
+| Paralyzed | Loses its turn. Attacks against it have advantage, and a melee hit is a critical hit. Fails STR and DEX saves outright |
+| Petrified | Loses its turn. Attacks against it have advantage. Fails STR and DEX saves outright |
+| Poisoned | Attacks and ability checks at disadvantage |
+| Prone | Attacks at disadvantage. Melee attacks against it have advantage, ranged attacks disadvantage |
+| Restrained | Attacks at disadvantage. Attacks against it have advantage. DEX saves at disadvantage |
+| Stunned | Loses its turn. Attacks against it have advantage. Fails STR and DEX saves outright |
+| Unconscious | Loses its turn. Attacks against it have advantage, and a melee hit is a critical hit. Fails STR and DEX saves outright |
+
+Charmed, Deafened, Exhaustion, and Grappled carry no rule. They need a
+relationship between two combatants, an exhaustion track, or movement, none of
+which the app has. Adjudicate them by hand. A chip you type yourself matches a
+row when it spells one of the names above, ignoring case, and carries no rule
+otherwise.
+
+Advantage and disadvantage from any number of sources fold by the 5e rule: if
+both are present the roll goes straight, and otherwise the one kind present
+wins. Chips on both sides of an attack count, and the log names every chip that
+slanted the roll, including the ones that cancelled. A roll that no chip
+touches still honors the dice tray's own advantage toggle.
+
+A combatant that loses its turn keeps its place in the initiative order. Next
+turn steps past it and says nothing. A save that fails outright never reaches
+the dice, and the log names the chip that failed it.
+
+NPCs carry condition chips as well. The chips sit on the NPC's row in the Story
+tab's NPC panel and on its card in the fight. The Build rail's NPC list is for
+authoring and shows none.
 
 ## Characters
 

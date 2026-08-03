@@ -533,8 +533,8 @@ target keep their own chips.
 
 `app/combatants.js` drives them, because only the wiring can see every
 collection that a target lives in. `endSpellEffects(app, casterId, spellId)`
-sweeps the characters and the encounters, then logs each creature that
-walked free. It runs whenever a caster stops holding a spell: the sheet's
+sweeps the characters, the encounters, and the NPCs, then logs each creature
+that walked free. It runs whenever a caster stops holding a spell: the sheet's
 Drop control and its hand-removed `Concentrating` chip (through
 `onConcentrationEnd`, wired in `app/partyWiring.js`), a failed CON save or a
 drop to 0 HP in `applyToTarget`, a displacing cast in `app/spellCast.js`, and
@@ -552,10 +552,81 @@ save effect. `Library.normalizeSpell` accepts this alongside a condition and
 drops it when there is no condition. Hold Person and Power Word Stun ship
 with it.
 
-Most chips still carry no mechanical effect, so a paralyzed creature acts
-normally. The retry and the rider below are the two rules that read a chip. A
-spell whose only target shook the effect off also leaves the caster
+The retry, the effect table below, and the rider are the three rules that read
+a chip. A spell whose only target shook the effect off also leaves the caster
 concentrating, because nothing tracks how many targets a cast has left.
+
+## What a condition does
+
+`Conditions.js` owns the pick-list and the list algebra. `Conditions.js` says
+which names exist; `entities/ConditionEffects.js` says what those names do.
+`CONDITION_EFFECTS` is a table keyed by the lowercased name, so a chip a GM
+typed by hand matches a row when it happens to spell one of them, and carries
+no rule when it does not. A row holds up to seven fields:
+
+- `attacks` slants the attack rolls its holder makes.
+- `attacksAgainst` slants the attack rolls made at its holder. It is one slant,
+  or a `{ melee, ranged }` pair for prone, which is the only condition that
+  helps one reach and hurts the other.
+- `checks` slants the holder's ability checks.
+- `saves` names the abilities whose saving throws the holder rolls at
+  disadvantage, and `autoFailSaves` names the abilities that fail with no roll.
+- `meleeAutoCrit` turns any melee hit on the holder into a critical one.
+- `noActions` costs the holder its turn.
+
+Eleven of the sixteen names in the pick-list carry a row. Charmed and grappled
+do not: charmed needs a charmer to point at, and no part of the app relates two
+combatants, while grappled sets speed to zero and nothing tracks movement.
+Deafened costs only hearing. Exhaustion scales by level and belongs with an
+exhaustion track rather than a flat row. Concentrating is a display chip over
+the concentration state described above.
+
+The reads over that table are pure and take chip lists only:
+
+- `conditionEffect(name)` is the table lookup, and `effectsOf(conditions)`
+  pairs each chip that carries a row with it, dropping the rest.
+- `combineModes(slants)` folds a set of slants by the 5e rule: any advantage
+  and any disadvantage cancel to a straight roll, and otherwise the one kind
+  present wins. Counting rather than pairing makes the arrival order
+  irrelevant. It answers null, not `'normal'`, when nothing applies, because
+  the dice tray injects its standing advantage toggle whenever a caller names
+  no mode, and a helper that always answered would cancel that toggle on every
+  roll.
+- `rollMode({ roller, target, kind, melee, ability })` is the mode one roll
+  takes from the chips on both sides. Only an attack reads the target's chips.
+  A save or a check is rolled against a number, and whoever set that number
+  does not slant it.
+- `modeReasons(query)` names the chips behind the mode, so a log line can
+  explain a cancelled pair rather than printing a straight roll with no reason.
+- `canAct(conditions)` is false when any chip holds `noActions`.
+- `autoCrits(conditions, { melee })` is true when a melee hit on the holder
+  crits. The printed rule is a hit from within 5 feet, and a melee weapon is as
+  close as the app can measure until map distance exists.
+- `saveOutcome(conditions, ability)` reports `{ autoFail, failedBy, mode }` for
+  one save. The caller checks `autoFail` first, because that save never reaches
+  the dice.
+
+Four sites read the table:
+
+- `app/weaponAttack.js` builds one query from both combatants and takes the
+  reach from `weapon.handling`, the only reach signal a weapon carries. It also
+  asks `autoCrits` for the defender, so a paralyzed target crits on any hit.
+- `app/spellCast.js` folds the chips' mode with the GM's dialog choice through
+  `combineModes`, so neither overrides the other. A save spell stamps
+  `autoFailSave` on a target that fails outright, and an attack spell treats a
+  touch range as melee reach. The caster view carries no chips, so the real
+  combatant's list arrives as `casterConditions`.
+- `app/checkRolls.js` handles a save or a check rolled from the sheet. An
+  automatic failure logs and stops before the tray opens.
+- `combat/CombatView.js` asks `canAct`. `skipsTurn(found)` is true for a
+  combatant that is downed, that resolves to nothing, or that cannot act, and
+  `app/encounterWiring.js` passes it to `advanceTurn`. The same answer marks the
+  row `incapacitated`, which is how a card and a ribbon chip show a combatant
+  that keeps its place in the order and loses the turn.
+
+Every attack, check, and save in the app reaches one of those four, so a chip
+applies wherever the roll is thrown. Nothing writes a chip from a roll: the
+sites read, and the GM or a spell writes.
 
 ## Riders on later rolls
 

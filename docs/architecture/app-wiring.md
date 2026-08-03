@@ -273,8 +273,8 @@ place that resolves a participant id across the three combatant collections
   A failed save against a spell with a `condition` adds that chip to the
   target. The chip carries a round counter, read from the spell's duration
   (`SpellTiming.durationInRounds`). The existing round tick clears the chip
-  when the spell ends. NPCs carry no conditions field, so the cast logs the
-  condition and notes that nothing tracks it.
+  when the spell ends. All three kinds hold chips, so the write branches only
+  to satisfy the store function of the collection the target lives in.
 - `commitEncounters(app)` and `commitNPCs(app)` are the refresh that follows
   a write to `state.encounters` or `state.npcs`. Two separate panels show
   the same entity: the Play sidebar's list and the Build rail's authoring
