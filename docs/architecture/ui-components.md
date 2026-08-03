@@ -19,6 +19,12 @@ are styled, what gets a toast) live in
 [Conventions](conventions.md#ui-and-style). This guide covers the API
 surface. Conventions covers the policy.
 
+[The builder contract](#the-builder-contract) below is the normative part:
+what any function in `src/ui/` must look like. The rest of the guide
+describes the builders that exist today. Where the two disagree, the places
+that have not caught up are listed under [Known
+gaps](#known-gaps).
+
 ## Two layers
 
 ```
@@ -44,6 +50,112 @@ surface. Conventions covers the policy.
 Feature panels never hand-roll a button, an empty state, a dialog, or a
 design value. They compose the layer below them. The wiring layer above owns
 the data and the decisions. See [The app wiring layer](app-wiring.md).
+
+## The builder contract
+
+Everything in `src/ui/` is a function that returns DOM, or a handle over
+DOM. These rules say what such a function looks like. They apply to a new
+builder and to any change to an existing one.
+
+### The name says the shape
+
+| Form | Returns | Owns |
+| --- | --- | --- |
+| `mount<Name>(container, callbacks)` | a handle, usually `{ update }` | creates the root element and appends it to `container` |
+| `build<Name>(spec)` | detached DOM, sometimes with readers beside it | nothing; the caller appends and decides the lifetime |
+| `wire<Name>(element, options?)` | a handle over markup the caller already has | state and ARIA only. It builds no elements |
+| `open<Name>(...)` | a `Promise` | a surface that comes and goes: a dialog, a menu. It resolves when the surface closes |
+| `noun(...)` | one element | a primitive with no lifecycle: `iconButton`, `chip`, `icon`, `textField` |
+
+A function that builds and mounts is a `mount`. A function that builds and
+hands the result back is a `build`. A builder is never named after the
+feature it was first written for.
+
+### Two positionals, then one options object
+
+A builder takes at most two positional arguments, then one options object. A
+value earns a positional slot only when it is required, has no default, and
+reads unambiguously in order at every call site: `iconButton(name,
+ariaLabel, onClick, opts)`, `chip(label, opts)`. Everything else is a named
+key in the object.
+
+- Options are optional. The parameter defaults to `{}`, and every key has a
+  defined behavior when it is absent.
+- One name means one thing everywhere. `className`, `variant`, `ariaLabel`,
+  `title`, `placeholder`, and `onChange` keep their meaning across modules.
+  A `placeholder` is a positional in one field builder and an option in
+  another only by accident, not by design.
+- No second spelling of an existing option. A per-variant boolean
+  (`{ danger: true }`) is not an alternative to `{ variant: 'danger' }`.
+- A `mount`'s second argument is named `callbacks` and holds functions. A
+  panel that spells it `options`, takes a bare function, or takes four
+  positionals is inconsistent with every other panel, and the caller has to
+  read the source to mount it.
+
+### `className` appends, always
+
+Every builder that returns an element accepts `opts.className` and appends
+it to its own base class through `classNames`:
+
+```js
+el('div', classNames(['chip', opts.className]))
+```
+
+- It appends. It never replaces. A caller that passes a class still gets
+  the shared presentation. A builder that assigns
+  `element.className = opts.className` throws away its own contract.
+- A space-separated string is valid. `classList.add(opts.className)` throws
+  on one, so combine through `classNames` instead.
+- No builder that returns an element leaves the option out. A missing
+  `className` is what pushes a caller into hand-rolling the element.
+
+`className` carries per-feature layout and one-off modifiers. It is not the
+way to reach a state the builder already knows about.
+
+### Semantic options, not class strings
+
+A caller says what it wants. The builder owns the class vocabulary that
+produces it.
+
+```js
+// yes
+badge(label, { variant: 'danger' });
+// no
+el('span', 'badge badge--danger', label);
+```
+
+`variant` is the single name for this, and maps to the `block--<variant>`
+modifier of whatever block the builder builds. The values are shared across
+builders: `primary`, `danger`, `success`, and the neutral default when the
+option is omitted.
+
+A class contract that exists in CSS, as a block plus its modifiers, with no
+builder that applies it, is a missing builder. That holds however few call
+sites type the class today, because typing the class is the only option
+they have.
+
+### Deliberately not doing
+
+These are settled, and recorded here so they are not reopened:
+
+- **`el` keeps its positional class string.** `el(tag, className,
+  ...children)` is the leaf that everything else builds on. Its value is
+  that the nesting in the source reads as the nesting on the page, and an
+  options bag costs exactly that.
+- **The four update strategies stay.** Wholesale rebuild, the list panel's
+  guarded rebuild, the character sheet's build-once-and-repoint, and
+  in-place mutation each answer a different cost. Forcing one would make
+  the sheet expensive or the small panels convoluted.
+- **The utility classes stay in the markup.** `u-row`, `u-col`, `u-g1`
+  through `u-g4`, and `u-muted` are written at the call site, not folded
+  into builder options. They style the space around and between elements,
+  which is the caller's business, while a builder owns only its own block.
+  A `gap` option on every builder would put the same token scale behind a
+  second vocabulary.
+- **No CSS-in-JS, no framework, no build step.** Styling lives in CSS
+  files. A builder applies the right class. It does not carry declarations.
+- **No component base class and no registry.** A component here is a
+  function. There is nothing to register with and nothing to extend.
 
 ## Mount points
 
@@ -267,9 +379,11 @@ also discards what the user typed into a row's input on every refresh.
 `src/ui/buttons.js` gives two button builders, a segmented switch, an
 empty-state paragraph, and the chip pair. Twenty-six modules import them. A
 panel must not call `document.createElement('button')` for an ordinary
-control. The raw calls that remain build controls with their own class vocabulary
-rather than `btn` (tabs, menu items, tree rows, palette swatches, disclosure
-headers), and these helpers do not cover those controls.
+control. The raw calls that remain build controls with their own class
+vocabulary rather than `btn` (tabs, menu items, tree rows, palette swatches,
+disclosure headers, spell-slot pips). These helpers do not cover those
+controls, which is a gap in the shared layer rather than a reason to keep
+writing them by hand. See [Known gaps](#known-gaps).
 
 ```js
 iconButton(name, ariaLabel, onClick, opts?) -> HTMLButtonElement
@@ -920,18 +1034,66 @@ Nothing in the app covers these gaps:
   under the usual 44 px guidance.
 - No `forced-colors` or `prefers-contrast` support.
 
-## Known duplication
+## Known gaps
 
-Reuse the right thing rather than adding to the pile.
+Places where the shared layer does not yet meet [the builder
+contract](#the-builder-contract), or where the same thing is written more
+than once. Reuse the right thing rather than adding to the pile, and when a
+change happens to pass through one of these, close it.
+
+Against the contract:
+
+- **`className` does not mean one thing yet.** It appends in `formFields.js`,
+  `buttons.js`, and `buildTabs`. It replaces in `buildMultiselect`
+  (`ModalFields.js`) and `openDialog` (`Modal.js`). `icon` applies it
+  through `classList.add`, so a space-separated string throws. `emptyState`,
+  `fieldRow`, `checkboxInput`, `buildTagsField`, `openContextMenu`, and
+  `mountToasts` take no `className` at all.
+- **`confirmModal` takes `{ danger: true }`** where every other builder takes
+  `variant: 'danger'`.
+- **Mount signatures have drifted.** The second argument is `callbacks` in
+  most panels, `options` or `opts` in others, and a bare function in a few.
+  `mountPalettePanel` takes four positionals, and `mountSpellbookPanel`
+  takes five.
+- **Feature vocabulary sits in the shared layer.** `formFields.js` stamps
+  `inventory-panel__field-label`, `inventory-panel__form-row`,
+  `inventory-panel__form`, and `inventory-panel__name-input` on every inline
+  form, wherever that form is used, and the rules for them live in
+  `character.css`. The spell and item forms then restate those class names
+  to match.
+- **`mountListPanel` takes nine separate class-name options** (`className`,
+  `rowClass`, `bodyClass`, `actionsClass`, `headClass`, `groupWrapperClass`,
+  `groupHeadingClass`, `addClass`, `rowModifiers`), each typed out by each
+  of its six callers.
+
+Class contracts with no builder, so the class is typed at the call site:
+
+- **`.badge`** has six call sites and a private `badge` helper inside
+  `SpellbookPanel.js`.
+- **`.section-label`** is typed as a string, and re-implemented ad hoc in
+  `character.css`: `.character-sheet__field-row` and `.stat-badge__key` each
+  restate the uppercase-and-tracked treatment with their own letter spacing.
+- **A bare button**, one with no `.btn` presentation, has no builder, so
+  nineteen `<button>` elements are built by hand (the breadcrumb crumbs,
+  disclosure headers, tree rows, palette swatches, menu items, spell-slot
+  pips). Each restates `font: inherit` and `cursor: pointer` in its own
+  rule, seventeen and twenty-five times across nine sheets.
+- **A clickable chip** is not what `chip` builds, since `chip` hardcodes a
+  `<span>`. `StatBlockBar.js` and `CombatScreen.js` rebuild the chip shape
+  around a `<button>` instead.
+
+Repeated by hand:
 
 - **Transition durations are untokenized**: `0.12s`, `120ms`, `0.15s`, `0.2s`,
-  and `0.25s` all appear, with no `--transition-*` token.
+  and `0.25s` all appear, with no `--transition-*` token. So is the pill
+  radius, `999px`, in three sheets.
+- **The primitive rules are split across three sheets.** `.btn`, `.field`,
+  `.chip`, `.badge`, `.seg-switch`, `.empty-state`, and `.card` are in
+  `base.css`, `.tabs` is in `layout.css`, and `.modal` is in `shell.css`, so
+  there is no one file that holds the primitive layer.
 - **The list-CRUD panel skeleton is written six times** (quests, handouts,
   NPCs, build encounters, encounters, library), and the `<dialog>` lifecycle
   seven times, four of them outside `Modal.js`.
-- **`.section-label` is re-implemented ad hoc** in `character.css`:
-  `.character-sheet__field-row` and `.stat-badge__key` each restate the
-  uppercase-and-tracked treatment with their own letter spacing.
 
 If a widget fits one of these shapes, reuse the existing class or JS
 builder rather than add the next copy. If a widget adds the shared
