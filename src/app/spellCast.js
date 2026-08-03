@@ -174,8 +174,8 @@ export function castCap(spell, slotLevel, casterLevel) {
  * @param {number} saveDC
  * @param {number} cap the number of targets this cast can reach. The value is Infinity for an area spell.
  * @param {{ material?: boolean, ritual?: boolean }} [opts] `material`: true when the
- *   cast will consume a material component. This adds the opt-out checkbox for a
- *   table that treats components as flavor. `ritual`: true when this caster can
+ *   cast requires the caster to hold a material component. This adds the opt-out
+ *   checkbox for a table that treats components as flavor. `ritual`: true when this caster can
  *   cast this spell as a ritual. This adds the box that trades the slot for extra time.
  * @returns {import('../types/modal.js').ModalField[] | null}
  */
@@ -277,8 +277,9 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
       ],
     });
   }
-  // Ticking this box casts the spell without touching the inventory. A table
-  // that treats components as flavor does not need to stock diamonds to cast Revivify.
+  // Ticking this box casts the spell without reading or touching the
+  // inventory. A table that treats components as flavor does not need to
+  // stock diamonds to cast Revivify, or a pouch to cast anything else.
   if (material) {
     fields.push({
       name: 'ignore-components',
@@ -521,9 +522,16 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
   // A missing component blocks the cast before the resolver runs, so a
   // refused cast never spends a slot. The check happens here, not in
   // `castSpell`, because the opt-out is a table ruling, not a rule of the spell.
-  const consume = material.required && values['ignore-components'] !== '1';
-  if (consume && !material.satisfied) {
-    app.toasts.show(`${spell.name} needs ${spell.materials?.text}.`);
+  const enforce = material.required && values['ignore-components'] !== '1';
+  if (enforce && !material.satisfied) {
+    // A destroyed or costed material has to be the material itself. A
+    // cost-free one names the focus first, because carrying a pouch covers
+    // every such component at once.
+    app.toasts.show(
+      material.consumes || (spell.materials?.costGP ?? 0) > 0
+        ? `${spell.name} needs ${spell.materials?.text}.`
+        : `${spell.name} needs a component pouch or a focus, or ${spell.materials?.text}.`,
+    );
     return;
   }
   // A target that carries its own bonus rolls that bonus. A foe with no save
@@ -567,7 +575,9 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
   // `withCasterState` splices the decremented slot pools onto the real
   // entity, a stack of the material comes off the inventory, and the
   // concentration state and its chip land beside them.
-  const consumed = consume && material.item ? material.item : null;
+  // Holding the material is not the same as spending it. A costed component
+  // must be in hand and stays there.
+  const consumed = enforce && material.consumes && material.item ? material.item : null;
   const holds = concentrates && spell.concentration;
   /** @type {import('../types/entities.js').ConcentrationState | null} */
   let displaced = null;

@@ -281,31 +281,52 @@ material describes it in `materials: { text, costGP?, consumed }`. Most
 spells carry no such block, which is why the field is optional rather than
 migrated in: Revivify names its diamonds, and Fire Bolt has nothing to name.
 
-Of the three fields, only `consumed` changes what happens at the table. A
-material that the cast destroys must be in the caster's inventory. One that
-the cast does not destroy is covered by a component pouch or a spellcasting
-focus. Requiring it blocks nearly every spell that carries an M, so the app
-does not require it. `Casting.materialCheck(caster, spell)` applies that
-rule and returns `{ required, satisfied, item }`: whether this cast needs a
-material, whether the caster is holding one, and which inventory stack it
-comes from.
+Both `consumed` and `costGP` change what happens at the table.
+`Casting.materialCheck(caster, spell)` applies the rule and returns
+`{ required, satisfied, item, consumes }`: whether the caster must hold the
+material, whether a stack of it is there, which stack it is, and whether the
+cast spends it.
+
+A material that the cast destroys must be in the inventory. So must one that
+carries a gp cost, because a pouch and a focus never cover a priced
+component. Anything else is covered, but only while the caster carries a
+component pouch or a spellcasting focus. A caster with neither holds the
+printed material itself.
+
+`required` and `consumes` are separate answers, because holding a material is
+not the same as spending it. Revivify's diamonds are destroyed and come off
+the stack. Chromatic Orb's 50 gp diamond has to be in hand and stays there.
+
+An item is a pouch or a focus when it sets `spellFocus`. The flag is the only
+signal, so a stack that a GM named "Component Pouch" without ticking the box
+is ordinary gear. `Equipment.isSpellFocus(item)` and
+`Equipment.carriesSpellFocus(inventory)` read it. `GEAR_PRESETS` ships four
+flagged entries (a component pouch and an arcane, druidic, and holy focus),
+and the item form offers the checkbox on every item type, because a staff is
+an arcane focus and an amulet is a holy symbol. Carrying the focus is enough.
+The app does not track which hand is free, and gear has no equipment slot.
+
 Matching a printed phrase against a stack name is inexact by nature, so the
 comparison is case-insensitive and runs in both directions: a stack named
-`Diamond` covers `diamonds worth 300 gp`. Encounters and NPCs have no
+`Diamond` covers `diamonds worth 300 gp`. A material with no printed text
+names nothing to look for and is never required. Encounters and NPCs have no
 inventory at all, and the app never asks them for a component.
 
 `app/spellCast.js` acts on the result. A cast whose material is missing stops
-before `castSpell` runs, which keeps a refused cast from spending a slot. A
-cast that succeeds takes one item from the stack, in the same write-back that
-stores the spent slot, and reports it through `InventoryLog`'s `use` verb.
-The cast dialog also offers an "Ignore components" checkbox, which skips both
-the check and the consumption, for tables that treat components as flavor.
+before `castSpell` runs, which keeps a refused cast from spending a slot. The
+refusal names the missing material, or the missing pouch, whichever is the
+cheaper fix. A cast that succeeds takes one item from the stack, but only
+when `consumes` is true, in the same write-back that stores the spent slot,
+and reports it through `InventoryLog`'s `use` verb. The cast dialog also
+offers an "Ignore components" checkbox, which skips both the check and the
+consumption, for tables that treat components as flavor.
 
 `normalizeSpell` adds the `M` letter to any entry that names a material
 without listing it, because the authoring form shows the material fields only
 under a ticked M. If the app skips this repair, an imported spell loses its
-material the first time a GM edits it. The app shows `costGP` but never
-checks it, because nothing in the app tracks how much money a party has.
+material the first time a GM edits it. The app reads `costGP` only as the
+signal that a focus cannot cover the component. It never charges the party
+for it, because nothing in the app tracks how much money a party has.
 
 ## Ritual casting
 

@@ -55,6 +55,21 @@ test('GEAR_PRESETS have a consistent schema', () => {
   }
 });
 
+test('GEAR_PRESETS ship the pouch and the three focus kinds, all flagged', () => {
+  const flagged = GEAR_PRESETS.filter((p) => p.spellFocus === true).map((p) => p.name);
+  assert.deepEqual(flagged.sort(), [
+    'Arcane Focus',
+    'Component Pouch',
+    'Druidic Focus',
+    'Holy Symbol',
+  ]);
+  assert.equal(
+    GEAR_PRESETS.find((p) => p.name === 'Bedroll')?.spellFocus,
+    undefined,
+    'ordinary gear carries no flag at all, so a saved item stays the shape it was',
+  );
+});
+
 test('CONSUMABLE_PRESETS have a consistent schema', () => {
   for (const preset of CONSUMABLE_PRESETS) {
     assert.equal(typeof preset.name, 'string');

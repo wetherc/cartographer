@@ -204,6 +204,11 @@ export interface InventoryItem {
   acBonus?: number;
   /** Ability-score buffs granted while equipped, for example { STR: 2 }. */
   statBonuses?: Record<string, number>;
+  /** Set on a component pouch or a spellcasting focus. Carrying one covers a
+   * spell's material component, as long as the material has no gp cost and
+   * the cast does not destroy it. Any item type can carry the flag, because a
+   * staff is an arcane focus and an amulet is a holy symbol. */
+  spellFocus?: boolean;
 }
 
 /** The wearable slots on a character. Older saves' 'armor' slot reads as

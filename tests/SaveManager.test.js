@@ -76,6 +76,32 @@ test('serialize/deserialize round-trips a full campaign state', () => {
   assert.equal(getHP(restored.characters[0])?.max, 12);
 });
 
+test('the spellcasting-focus flag survives packing and reload', () => {
+  const hero = createCharacter('c1', 'Hero');
+  hero.inventory = [
+    /** @type {any} */ ({
+      id: 'pouch',
+      name: 'Component Pouch',
+      quantity: 1,
+      notes: '',
+      type: 'gear',
+      spellFocus: true,
+    }),
+  ];
+  const state = buildState({
+    grid: sampleGrid(),
+    party: { nodeId: 'world', tileId: '0,0' },
+    characters: [hero],
+    encounters: [],
+  });
+  const restored = deserialize(serialize(state));
+  assert.equal(
+    restored.characters[0].inventory[0].spellFocus,
+    true,
+    'the packer must not drop the flag as if it were a default',
+  );
+});
+
 /** A node holding one of every tile variation the packer has to survive. */
 function variedNode() {
   let node = createMapNode('world', 'World', null, 4, 3);

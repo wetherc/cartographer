@@ -344,23 +344,38 @@ function materialSpell(materials) {
   return /** @type {any} */ ({ ...cureWounds, components: ['V', 'S', 'M'], materials });
 }
 
-/** @param {string} name @returns {any} an inventory item of that name */
-function item(name) {
-  return { id: name.toLowerCase(), name, quantity: 1, type: 'gear', weight: 0 };
+/** @param {string} name @param {boolean} [spellFocus]
+ * @returns {any} an inventory item of that name */
+function item(name, spellFocus = false) {
+  return {
+    id: name.toLowerCase(),
+    name,
+    quantity: 1,
+    type: 'gear',
+    weight: 0,
+    ...(spellFocus ? { spellFocus: true } : {}),
+  };
 }
 
-test('materialCheck requires only a consumed material, and finds it by name', () => {
+/** An inventory item that reads as a spellcasting focus. */
+const POUCH = item('Component Pouch', true);
+
+/** What materialCheck returns when the cast asks the caster for nothing. */
+const EXEMPT = { required: false, satisfied: true, item: null, consumes: false };
+
+test('materialCheck requires a consumed material, and finds it by name', () => {
   const spell = materialSpell({ text: 'diamonds worth 300 gp', costGP: 300, consumed: true });
   const holding = caster({ inventory: [item('Rope'), item('Diamond')] });
 
   const found = materialCheck(holding, spell);
   assert.equal(found.required, true);
   assert.equal(found.satisfied, true);
+  assert.equal(found.consumes, true);
   assert.equal(found.item?.name, 'Diamond', 'the printed text names the stack it comes from');
 
   assert.deepEqual(
     materialCheck(caster(), spell),
-    { required: true, satisfied: false, item: null },
+    { required: true, satisfied: false, item: null, consumes: true },
     'an empty inventory is a character holding nothing, not one exempt from holding it',
   );
 
@@ -368,20 +383,60 @@ test('materialCheck requires only a consumed material, and finds it by name', ()
   assert.equal(missing.required, true);
   assert.equal(missing.satisfied, false);
   assert.equal(missing.item, null);
+
+  assert.deepEqual(
+    materialCheck(caster({ inventory: [POUCH] }), spell),
+    { required: true, satisfied: false, item: null, consumes: true },
+    'a focus never covers a material that the cast destroys',
+  );
 });
 
-test('materialCheck leaves an unconsumed material and a component-free spell alone', () => {
-  const focus = materialSpell({ text: 'a piece of cured leather', consumed: false });
-  const empty = { required: false, satisfied: true, item: null };
+test('materialCheck covers a cost-free material with a pouch or a focus', () => {
+  const spell = materialSpell({ text: 'a piece of cured leather', consumed: false });
+
   assert.deepEqual(
-    materialCheck(caster({ inventory: [item('Rope')] }), focus),
-    empty,
-    'a pouch or focus covers what the cast does not destroy',
+    materialCheck(caster({ inventory: [item('Rope'), POUCH] }), spell),
+    EXEMPT,
+    'a pouch covers what the cast neither destroys nor prices',
   );
-  assert.deepEqual(materialCheck(caster({ inventory: [item('Rope')] }), cureWounds), empty);
+
+  const bare = materialCheck(caster({ inventory: [item('Rope')] }), spell);
+  assert.deepEqual(
+    bare,
+    { required: true, satisfied: false, item: null, consumes: false },
+    'without a pouch the caster holds the printed material itself',
+  );
+
+  const held = materialCheck(caster({ inventory: [item('Cured Leather')] }), spell);
+  assert.equal(held.satisfied, true);
+  assert.equal(held.consumes, false, 'holding a cost-free material does not spend it');
+});
+
+test('materialCheck requires a costed material whatever focus the caster carries', () => {
+  const spell = materialSpell({ text: 'a diamond worth 50 gp', costGP: 50, consumed: false });
+
+  const covered = materialCheck(caster({ inventory: [POUCH] }), spell);
+  assert.deepEqual(
+    covered,
+    { required: true, satisfied: false, item: null, consumes: false },
+    'a focus never covers a priced component',
+  );
+
+  const held = materialCheck(caster({ inventory: [item('Diamond')] }), spell);
+  assert.equal(held.satisfied, true);
+  assert.equal(held.consumes, false, 'a priced component stays in the pack after the cast');
+});
+
+test('materialCheck exempts a component-free spell, unnamed matter, and no inventory', () => {
+  assert.deepEqual(materialCheck(caster({ inventory: [item('Rope')] }), cureWounds), EXEMPT);
+  assert.deepEqual(
+    materialCheck(caster({ inventory: [item('Rope')] }), materialSpell({ consumed: true })),
+    EXEMPT,
+    'a material with no printed text names nothing to look for',
+  );
   assert.deepEqual(
     materialCheck({}, materialSpell({ text: 'diamonds', consumed: true })),
-    empty,
+    EXEMPT,
     'an inventory-less combatant is never asked to hold a component',
   );
 });

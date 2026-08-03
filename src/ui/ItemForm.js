@@ -11,6 +11,7 @@ import { buildDamageEditor, buildEffectsEditor } from './ItemFormEditors.js';
 import { el } from './dom.js';
 import {
   labeled,
+  checkbox,
   fieldRow,
   textField,
   numberField,
@@ -130,6 +131,12 @@ export function buildItemForm({
   const buffStatField = labeled('Buff', buffStatSelect);
   const buffAmountField = labeled('Amount', buffAmountInput);
 
+  // A component pouch or a spellcasting focus. Carrying one covers a spell's
+  // cost-free material component. Every type offers the box, because a staff
+  // is an arcane focus and an amulet is a holy symbol.
+  const focusBox = checkbox('Component pouch or spellcasting focus', item?.spellFocus ?? false);
+  const focusField = labeled('Casting', focusBox.label);
+
   // This is a library preset to start from: the 5e defaults merged with
   // the GM's Library-tab overrides and custom entries. It appears for
   // every type with at least one entry. Picking a preset fills the
@@ -178,6 +185,7 @@ export function buildItemForm({
       descriptionInput.value = preset.description;
     }
     if (preset.acBonus !== undefined) acInput.value = String(preset.acBonus);
+    focusBox.input.checked = preset.spellFocus === true;
     if (preset.statusEffects) effects.set(preset.statusEffects);
     const [buff] = Object.entries(preset.statBonuses ?? {});
     if (buff) {
@@ -201,6 +209,7 @@ export function buildItemForm({
   // a row with mismatched heights, which misaligned their captions.
   const acRow = fieldRow(acField);
   const buffRow = fieldRow(buffStatField, buffAmountField);
+  const focusRow = fieldRow(focusField);
 
   const syncTypeFields = () => {
     const type = typeSelect.value;
@@ -247,6 +256,7 @@ export function buildItemForm({
       handling: handlingSelect.value,
       damage: damage.get(),
       statusEffects: effects.get(),
+      spellFocus: focusBox.input.checked,
     });
 
   return buildInlineForm({
@@ -264,6 +274,7 @@ export function buildItemForm({
       effectsRow,
       acRow,
       buffRow,
+      focusRow,
     ],
     assemble,
     submitLabel,
@@ -277,6 +288,7 @@ export function buildItemForm({
           nameInput.value = '';
           descriptionInput.value = '';
           quantityInput.value = '1';
+          focusBox.input.checked = false;
         },
   });
 }

@@ -82,8 +82,22 @@ function mage(over = {}) {
     conditions: [],
     spellbook: {
       cantrips: ['firebolt'],
-      known: ['burning-hands', 'cure-wounds', 'hold-person', 'detect-magic', 'revivify'],
-      prepared: ['burning-hands', 'cure-wounds', 'hold-person', 'detect-magic', 'revivify'],
+      known: [
+        'burning-hands',
+        'cure-wounds',
+        'hold-person',
+        'detect-magic',
+        'revivify',
+        'mage-armor',
+      ],
+      prepared: [
+        'burning-hands',
+        'cure-wounds',
+        'hold-person',
+        'detect-magic',
+        'revivify',
+        'mage-armor',
+      ],
     },
     ...over,
   });
@@ -162,6 +176,18 @@ const revivify = spell({
   materials: { text: 'diamonds worth 300 gp', itemId: 'diamond', consumed: true, costGP: 300 },
   effect: { kind: 'heal', healing: [{ count: 1, sides: 4, damageType: 'healing' }] },
 });
+
+// A cost-free material that no cast destroys. A pouch or a focus covers it.
+const mageArmor = spell({
+  id: 'mage-armor',
+  name: 'Mage Armor',
+  level: 1,
+  materials: { text: 'a piece of cured leather', consumed: false },
+  effect: { kind: 'utility' },
+});
+
+/** An inventory stack that reads as a spellcasting focus. */
+const pouch = () => item('pouch', 'Component Pouch', { spellFocus: true });
 
 const scorchingRay = spell({
   id: 'scorching-ray',
@@ -621,6 +647,72 @@ test('a consumed component comes off the inventory and is logged as used', () =>
   assert.equal(written[0].inventory[0].quantity, 1);
   assert.equal(written[0].resources[0].current, 3, 'the slot and the diamond store together');
   assert.match(app.log[0], /Diamond/, 'the inventory line comes before the cast line');
+});
+
+test('a pouch or a focus covers a cost-free material, and its absence blocks the cast', () => {
+  const bare = mage();
+  const app = stubApp({ characters: [bare] });
+  const plan = planFor(app, bare, mageArmor);
+  assert.equal(plan.material.required, true, 'no focus, so the caster holds the leather itself');
+  resolveCast(app, plan, submit(), { writeBack: () => {}, concentrates: false });
+  assert.deepEqual(app.toasted, [
+    'Mage Armor needs a component pouch or a focus, or a piece of cured leather.',
+  ]);
+  assert.equal(app.log.length, 0, 'a refused cast spends nothing');
+
+  const equipped = mage({ inventory: [pouch()] });
+  const covered = stubApp({ characters: [equipped] });
+  const plan2 = planFor(covered, equipped, mageArmor);
+  assert.equal(plan2.material.required, false);
+  assert.equal(
+    plan2.fields.some((/** @type {any} */ f) => f.name === 'ignore-components'),
+    false,
+    'a covered component asks the GM nothing',
+  );
+  /** @type {any[]} */
+  const written = [];
+  resolveCast(covered, plan2, submit(), {
+    writeBack: (next) => written.push(next),
+    concentrates: false,
+  });
+  assert.match(covered.log[0], /Mage casts Mage Armor at level 1\./);
+  assert.equal(written[0].inventory.length, 1, 'the pouch is not spent');
+});
+
+test('a costed material must be held whatever focus the caster carries, and stays held', () => {
+  // A priced component that the cast does not destroy. The SRD says a focus
+  // never covers the price.
+  const orb = spell({
+    ...revivify,
+    id: 'chromatic-orb',
+    name: 'Chromatic Orb',
+    materials: { text: 'a diamond worth 50 gp', costGP: 50, consumed: false },
+  });
+  const caster = mage({ inventory: [pouch()], spellbook: mage().spellbook });
+  caster.spellbook.known.push('chromatic-orb');
+  caster.spellbook.prepared.push('chromatic-orb');
+  const monk = damageCharacter(withHP(mage({ id: 'monk', name: 'Monk' }), 20), 19);
+  const app = stubApp({ characters: [caster, monk] });
+
+  const plan = planFor(app, caster, orb);
+  assert.equal(plan.material.required, true);
+  assert.equal(plan.material.consumes, false);
+  resolveCast(app, plan, submit({ target: 'monk' }), { writeBack: () => {}, concentrates: false });
+  assert.deepEqual(app.toasted, ['Chromatic Orb needs a diamond worth 50 gp.']);
+
+  const holder = mage({ inventory: [pouch(), item('diamond', 'Diamond')] });
+  holder.spellbook.known.push('chromatic-orb');
+  holder.spellbook.prepared.push('chromatic-orb');
+  const rich = stubApp({ characters: [holder, monk] });
+  /** @type {any[]} */
+  const written = [];
+  resolveCast(rich, planFor(rich, holder, orb), submit({ target: 'monk' }), {
+    writeBack: (next) => written.push(next),
+    concentrates: false,
+    rng: seq([face(4, 2)]),
+  });
+  assert.equal(written[0].inventory.length, 2, 'a priced component is held, not spent');
+  assert.equal(written[0].inventory[1].quantity, 1);
 });
 
 test('a concentration cast holds the spell and drops what it held before', () => {

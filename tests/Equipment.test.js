@@ -29,6 +29,8 @@ import {
   equippedIndex,
   normalizeDamagePart,
   HEALING_TYPES,
+  isSpellFocus,
+  carriesSpellFocus,
 } from '../src/entities/Equipment.js';
 import {
   WEAPON_PRESETS,
@@ -448,6 +450,30 @@ test('gear and consumable presets are named and described', () => {
     }
   }
   assert.ok(CONSUMABLE_PRESETS.some((p) => p.name === 'Potion of Healing'));
+});
+
+test('a spellcasting focus is read from the flag, never from the name', () => {
+  /** @type {any} */
+  const pouch = { id: 'p', name: 'Component Pouch', quantity: 1, notes: '', spellFocus: true };
+  /** @type {any} */
+  const impostor = { id: 'i', name: 'Component Pouch', quantity: 1, notes: '' };
+  /** @type {any} */
+  const wand = { id: 'w', name: 'Wand of the War Mage', quantity: 1, notes: '', spellFocus: true };
+
+  assert.equal(isSpellFocus(pouch), true);
+  assert.equal(isSpellFocus(impostor), false, 'the name alone makes nothing a focus');
+  assert.equal(isSpellFocus(wand), true, 'any flagged item is a focus, whatever it is called');
+
+  assert.equal(carriesSpellFocus([impostor, wand]), true);
+  assert.equal(carriesSpellFocus([impostor]), false);
+  assert.equal(carriesSpellFocus([]), false);
+  assert.equal(carriesSpellFocus(undefined), false, 'a combatant with no inventory holds no focus');
+  assert.equal(
+    itemSummary(pouch),
+    'spellcasting focus',
+    'the inventory row says which stack covers a spell',
+  );
+  assert.equal(itemSummary(impostor), '');
 });
 
 test('enemyArmor reads a preset as a flat bonus over the unarmored 10', () => {

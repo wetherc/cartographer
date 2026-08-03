@@ -141,14 +141,37 @@ export const ARMOR_PRESETS = [
 
 /**
  * Standard adventuring gear: picking one fills a new gear item's name and
- * description. Names follow the 5e equipment list.
- * @type {{ name: string, description: string }[]}
+ * description. Names follow the 5e equipment list. The four entries that set
+ * `spellFocus` are the component pouch and the three focus kinds. Carrying
+ * one of them covers a spell's cost-free material component, which is the
+ * rule `Casting.materialCheck` applies.
+ * @type {{ name: string, description: string, spellFocus?: boolean }[]}
  */
 export const GEAR_PRESETS = [
+  {
+    name: 'Arcane Focus',
+    description: 'Orb, rod, staff, or wand; covers cost-free material components',
+    spellFocus: true,
+  },
   { name: 'Bedroll', description: 'Sleeping roll for camping' },
+  {
+    name: 'Component Pouch',
+    description: 'Holds the cost-free material components of any spell',
+    spellFocus: true,
+  },
   { name: 'Crowbar', description: 'Grants advantage on checks where leverage applies' },
+  {
+    name: 'Druidic Focus',
+    description: 'Sprig of mistletoe, totem, or yew wand; covers cost-free material components',
+    spellFocus: true,
+  },
   { name: 'Grappling Hook', description: 'Anchors a rope to a ledge or battlement' },
   { name: "Healer's Kit", description: 'Ten uses; stabilizes a dying creature' },
+  {
+    name: 'Holy Symbol',
+    description: 'Amulet, emblem, or reliquary; covers cost-free material components',
+    spellFocus: true,
+  },
   { name: 'Lantern (hooded)', description: 'Bright light 30 ft; burns oil' },
   { name: 'Oil Flask', description: 'One pint; fuels a lantern or splashes a target' },
   { name: 'Rations (1 day)', description: 'Dry food for one day of travel' },

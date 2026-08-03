@@ -218,6 +218,31 @@ export function itemType(item) {
 }
 
 /**
+ * Whether an item is a component pouch or a spellcasting focus. The flag is
+ * the only signal. A stack named "Component Pouch" that nobody flagged is
+ * ordinary gear, and a flagged "Wand of the War Mage" is a focus. Both preset
+ * pickers and the item form set the flag, so there are two ways to get one.
+ * @param {InventoryItem} item
+ * @returns {boolean}
+ */
+export function isSpellFocus(item) {
+  return item.spellFocus === true;
+}
+
+/**
+ * Whether an inventory holds a pouch or a focus. Carrying one is enough. The
+ * app does not track which hand is free, and gear has no equipment slot, so
+ * requiring the focus to be equipped would make the common case unreachable.
+ * A value that is not an array, which is every combatant without an
+ * inventory, holds nothing.
+ * @param {InventoryItem[] | undefined} inventory
+ * @returns {boolean}
+ */
+export function carriesSpellFocus(inventory) {
+  return Array.isArray(inventory) && inventory.some(isSpellFocus);
+}
+
+/**
  * Whether a slot accepts an item's type. The pickers filter by this rule, and
  * `equip` enforces it.
  * @param {EquipmentSlot} slot
@@ -407,6 +432,9 @@ export function itemEffects(item) {
     if (delta !== 0) parts.push(`${delta > 0 ? '+' : ''}${delta} ${stat}`);
   }
   if (item.statusEffects?.length) parts.push(`inflicts ${item.statusEffects.join(', ')}`);
+  // This is what tells a GM, from the inventory list alone, which stack is
+  // covering the cost-free components of every spell.
+  if (isSpellFocus(item)) parts.push('spellcasting focus');
   return parts;
 }
 

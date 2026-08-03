@@ -24,6 +24,7 @@ export interface EquipmentTemplate {
   baseAC?: number;
   acBonus?: number;
   statBonuses?: Record<string, number>;
+  spellFocus?: boolean;
 }
 
 /** A reusable NPC blueprint: an NPC minus identity, placement, and met

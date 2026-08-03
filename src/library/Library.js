@@ -67,6 +67,7 @@ export function defaultEquipmentTemplates() {
       name: p.name,
       type: /** @type {import('../types/entities.js').ItemType} */ ('gear'),
       description: p.description,
+      ...(p.spellFocus ? { spellFocus: true } : {}),
     })),
     ...CONSUMABLE_PRESETS.map((p) => ({
       name: p.name,

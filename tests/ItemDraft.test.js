@@ -25,6 +25,7 @@ function draft(extra = {}) {
     handling: 'melee',
     damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
     statusEffects: [],
+    spellFocus: false,
     ...extra,
   };
 }
@@ -36,6 +37,16 @@ test('a plain stack keeps only the fields every item has', () => {
     notes: '',
     type: 'gear',
   });
+});
+
+test('the spellcasting-focus flag survives on any type, and an unticked box is absent', () => {
+  assert.equal(assembleItem(draft({ spellFocus: true }))?.spellFocus, true);
+  assert.equal(
+    assembleItem(draft({ type: 'weapon', name: 'Quarterstaff', spellFocus: true }))?.spellFocus,
+    true,
+    'a staff is an arcane focus, so no type gates the flag',
+  );
+  assert.equal('spellFocus' in assembleItem(draft()), false);
 });
 
 test('a stack of zero or fewer is refused the way an empty name is', () => {

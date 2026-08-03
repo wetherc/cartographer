@@ -161,7 +161,16 @@ function exampleParty() {
       handling: 'melee',
       damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }],
     },
-    { id: 'holy-symbol', name: 'Symbol of the Dawn', quantity: 1, notes: '', type: 'gear' },
+    {
+      id: 'holy-symbol',
+      name: 'Symbol of the Dawn',
+      quantity: 1,
+      notes: '',
+      type: 'gear',
+      // The example cleric carries a focus, so her cost-free material
+      // components are covered the way a real cleric's are.
+      spellFocus: true,
+    },
     {
       id: 'healing-herbs',
       name: 'Healing Herbs',

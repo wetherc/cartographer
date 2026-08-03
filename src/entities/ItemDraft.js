@@ -47,6 +47,7 @@ export const EQUIPPABLE_TYPES = [
  * @property {string} handling
  * @property {DamagePart[]} damage
  * @property {string[]} statusEffects
+ * @property {boolean} spellFocus
  */
 
 /**
@@ -85,6 +86,9 @@ export function assembleItem(draft) {
         }
       : {}),
     ...(acBonus > 0 ? { acBonus } : {}),
+    // No type gate. A quarterstaff is an arcane focus and an amulet is a
+    // holy symbol, so any item can be one.
+    ...(draft.spellFocus ? { spellFocus: true } : {}),
     ...(buffStat && buffAmount !== 0 ? { statBonuses: { [buffStat]: buffAmount } } : {}),
     ...(WEAPON_TYPES.includes(type)
       ? {
