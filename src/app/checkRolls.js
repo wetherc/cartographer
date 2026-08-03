@@ -11,6 +11,7 @@
 
 import { droppedNote } from '../combat/AttackResolve.js';
 import { checkAbility, checkBonus, saveBonus } from '../entities/Checks.js';
+import { modeReasons, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { hasExpertise, isProficientSave, isProficientSkill } from '../entities/Proficiencies.js';
 import { rollRiders } from '../entities/Riders.js';
@@ -71,6 +72,11 @@ function rollName(event) {
  * chips threw in. A Bless chip therefore reaches a save and a Guidance chip an
  * ability check, without the GM adding anything by hand.
  *
+ * The chips also set the roll's mode. A poisoned character rolls an ability
+ * check at disadvantage, and a restrained one rolls a Dexterity save the same
+ * way. A chip that stops a creature moving fails its Strength and Dexterity
+ * saves outright, and that failure is logged without a die.
+ *
  * A sheet roll carries no DC. The GM reads the total against whatever they had
  * in mind, which is why nothing here judges success. A natural 1 or 20 is an
  * ordinary result on both rolls, so the log names it and the app does not act
@@ -85,6 +91,19 @@ function rollName(event) {
  *   dice. The d20 belongs to the tray, which owns its own randomness.
  */
 export function rollCheck(app, character, event, { rng = Math.random } = {}) {
+  const name = rollName(event);
+  const phrase = `${article(name)} ${name}`;
+  // A creature that cannot move fails a Strength or Dexterity save outright.
+  // That failure never reaches the tray, so the sheet reports it on its own.
+  const outcome = event.kind === 'save' ? saveOutcome(character.conditions, event.key) : null;
+  if (outcome?.autoFail) {
+    app.actions.logEvent(
+      'roll',
+      `${character.name} automatically fails ${phrase} (${outcome.failedBy}).`,
+    );
+    app.toasts.show(`${character.name} automatically fails ${phrase}.`);
+    return;
+  }
   const bonus =
     event.kind === 'save' ? saveBonus(character, event.key) : checkBonus(character, event.key);
   const proficiency = proficiencyPart(character, event);
@@ -96,22 +115,36 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   // Rider dice roll outside the tray, the way an attack's do, so a bonus and a
   // penalty read the same in the log.
   const rider = rollRiders(character.conditions, event.kind, rng);
+  // The chips also slant the roll. A sheet roll has no other side, so only the
+  // character's own chips count, and the save's ability decides whether a chip
+  // such as Restrained applies.
+  const conditionQuery = /** @type {const} */ ({
+    roller: character.conditions,
+    kind: event.kind,
+    ability,
+  });
+  // A null mode means no chip slanted the roll, and the key stays off the
+  // selection so the tray's standing toggle still applies.
+  const mode = rollMode(conditionQuery);
   const { result } = app.actions.rollDice({
     counts: { d20: 1 },
     modifier: bonus + rider.modifier,
+    ...(mode ? { mode } : {}),
   });
   const d20 = result.results.find((r) => r.die === 'd20');
   const natural = d20?.rolls[0] ?? 0;
   const parts = [`${ability} ${formatModifier(abilityMod)}`];
   if (proficiency.word) parts.push(proficiency.word);
   if (rider.note) parts.push(rider.note);
+  // Naming the chips keeps a cancelled pair readable: the line says why the
+  // roll came out straight, not just that it did.
+  const reasons = modeReasons(conditionQuery);
+  if (reasons) parts.push(reasons);
   // An advantage or disadvantage roll names the discarded d20, matching the
   // tray's own readout. The tray injects its standing toggle when the caller
   // names no mode, so the note can appear without this module asking for it.
   const modeNote = droppedNote(d20, result.selection.mode);
   const naturalNote = natural === 1 || natural === 20 ? ` Natural ${natural}.` : '';
-  const name = rollName(event);
-  const phrase = `${article(name)} ${name}`;
   app.actions.logEvent(
     'roll',
     `${character.name} rolls ${phrase} (${parts.join(', ')}): ${result.total}${modeNote}.${naturalNote}`,

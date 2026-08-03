@@ -140,6 +140,48 @@ test('a Bless chip rides a save and not an ability check', () => {
   assert.doesNotMatch(checkApp.log[0], /Bless/);
 });
 
+test('a chip that slants nothing leaves the mode off the tray selection', () => {
+  const character = hero({ conditions: [{ name: 'Charmed' }] });
+  const app = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(app, character, { kind: 'check', key: 'stealth' }, { rng: () => 0 });
+  assert.equal('mode' in app.rolls[0].selection, false, 'the tray keeps its standing toggle');
+  assert.doesNotMatch(app.log[0], /Charmed/);
+});
+
+test('a poisoned character rolls an ability check at disadvantage', () => {
+  const character = hero({ conditions: [{ name: 'Poisoned' }] });
+  const app = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(app, character, { kind: 'check', key: 'stealth' }, { rng: () => 0 });
+  assert.equal(app.rolls[0].selection.mode, 'disadvantage');
+  assert.match(app.log[0], /Poisoned disadvantage/);
+});
+
+test('a restrained character rolls a Dexterity save at disadvantage and others straight', () => {
+  const character = hero({ conditions: [{ name: 'Restrained' }] });
+  const app = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(app, character, { kind: 'save', key: 'DEX' }, { rng: () => 0 });
+  assert.equal(app.rolls[0].selection.mode, 'disadvantage');
+  assert.match(app.log[0], /Restrained disadvantage/);
+
+  const other = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(other, character, { kind: 'save', key: 'CON' }, { rng: () => 0 });
+  assert.equal('mode' in other.rolls[0].selection, false, 'the chip names DEX alone');
+});
+
+test('a chip that stops movement fails a body save with no roll', () => {
+  const character = hero({ conditions: [{ name: 'Unconscious' }] });
+  const app = stubApp({ rng: scripted([face(20, 20)]) });
+  rollCheck(app, character, { kind: 'save', key: 'DEX' }, { rng: () => 0 });
+  assert.deepEqual(app.rolls, [], 'the tray is never asked for a die');
+  assert.equal(app.log[0], 'Rook automatically fails a DEX saving throw (Unconscious).');
+  assert.deepEqual(app.toastMessages, ['Rook automatically fails a DEX saving throw.']);
+
+  // A save the chip says nothing about still rolls.
+  const wisdom = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(wisdom, character, { kind: 'save', key: 'WIS' }, { rng: () => 0 });
+  assert.equal(wisdom.rolls.length, 1);
+});
+
 test('a roll spends no chip and dirties nothing', () => {
   const character = hero({ conditions: [chip('Guidance', ['check'])] });
   const app = stubApp({ rng: scripted([face(20, 10)]) });

@@ -551,6 +551,73 @@ test('a made save logs the roll and no condition', () => {
   assert.equal(app.state.encounters[0].currentHP, 1);
 });
 
+/** An encounter holding the named condition chips. */
+function chipped(encounter, ...names) {
+  return { ...encounter, conditions: names.map((name) => ({ name })) };
+}
+
+test('the chips on both sides slant a spell attack', () => {
+  const caster = mage({ conditions: [{ name: 'Blinded' }] });
+  const goblin = chipped(createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE), 'Prone');
+  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const plan = planFor(app, caster, firebolt);
+  resolveCast(app, plan, submit({ target: 'goblin' }), {
+    writeBack: () => {},
+    concentrates: true,
+    // Blinded on the caster and Prone on a ranged target both point the same
+    // way, so the roll takes two d20s and keeps the low one.
+    rng: seq([d20(18), d20(2), face(10, 7)]),
+  });
+  assert.match(app.log[1], /misses Goblin\.$/);
+  assert.equal(app.state.encounters[0].currentHP, 10);
+});
+
+test("the dialog's mode and the chips cancel instead of overriding", () => {
+  const caster = mage();
+  const goblin = chipped(createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE), 'Prone');
+  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const plan = planFor(app, caster, firebolt);
+  resolveCast(app, plan, submit({ target: 'goblin', mode: 'advantage' }), {
+    writeBack: () => {},
+    concentrates: true,
+    // The GM's advantage and the prone target's ranged disadvantage cancel, so
+    // one d20 is thrown and the 18 behind it is never reached.
+    rng: seq([d20(2), d20(18), face(10, 7)]),
+  });
+  assert.match(app.log[1], /misses Goblin\.$/);
+});
+
+test('a paralyzed target fails a body save with no roll', () => {
+  const caster = mage();
+  const goblin = chipped(createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE), 'Paralyzed');
+  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const plan = planFor(app, caster, burningHands);
+  resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '20' }), {
+    writeBack: () => {},
+    concentrates: false,
+    // Only the damage dice are drawn. A bonus that would clear the DC twice
+    // over never reaches a d20.
+    rng: seq([face(6, 6), face(6, 6), face(6, 6)]),
+  });
+  assert.match(app.log[1], /Goblin fails DC 14 \(Paralyzed\) — takes 18 damage\.$/);
+  assert.equal(app.state.encounters[0].currentHP, 0);
+});
+
+test('a restrained target rolls its Dexterity save at disadvantage', () => {
+  const caster = mage();
+  const goblin = chipped(createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE), 'Restrained');
+  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const plan = planFor(app, caster, burningHands);
+  resolveCast(app, plan, submit({ target: 'goblin', dc: '25', 'save-bonus': '20' }), {
+    writeBack: () => {},
+    concentrates: false,
+    // The kept 2 leaves the save short of the DC that the dropped 18 would
+    // have cleared.
+    rng: seq([face(6, 6), face(6, 6), face(6, 6), d20(18), d20(2)]),
+  });
+  assert.match(app.log[1], /Goblin fails DC 25 \(DEX \+20: 22\) — takes 18 damage\.$/);
+});
+
 test('a utility cast logs the spell and says only that it was cast', () => {
   const caster = mage();
   const app = stubApp({ characters: [caster] });

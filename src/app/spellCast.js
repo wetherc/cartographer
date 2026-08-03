@@ -2,6 +2,7 @@ import { promptModal } from '../ui/Modal.js';
 import { parseAssignments } from '../ui/ModalFields.js';
 import { castSpell, materialCheck, maxTargets, scalingSteps } from '../entities/Casting.js';
 import { riderSummary } from '../entities/Riders.js';
+import { combineModes, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { removeItem, spellSource } from '../entities/Character.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { spellSaveDC, spellAttackBonus, hasRitualCasting } from '../entities/Classes.js';
@@ -561,9 +562,37 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
   // A target that carries its own bonus rolls that bonus. A foe with no save
   // the app can read falls back to the one number the GM typed for all such targets.
   const entered = Number(values['save-bonus']) || 0;
-  const castTargets = saveAbility
-    ? chosen.map((t) => ({ ...t, saveBonus: t.saveBonus ?? entered, saveMode: mode }))
-    : chosen;
+  // The caster view carries no conditions, so the chips come off the real
+  // combatant. A Bless on the caster rides its spell attack rolls, and a
+  // Blinded on it slants them.
+  const casterConditions = entity.conditions ?? [];
+  // The GM's dialog choice and the chips on the table are two sources of the
+  // same slant, so they fold together under the cancel rule. Neither one
+  // overrides the other.
+  let castTargets = chosen;
+  if (saveAbility) {
+    castTargets = chosen.map((t) => {
+      const outcome = saveOutcome(t.conditions, saveAbility);
+      return {
+        ...t,
+        saveBonus: t.saveBonus ?? entered,
+        saveMode: combineModes([mode, outcome.mode]) ?? 'normal',
+        ...(outcome.failedBy ? { autoFailSave: outcome.failedBy } : {}),
+      };
+    });
+  } else if (spell.effect.kind === 'attack') {
+    // A touch spell reaches as far as a melee weapon does, which is the split
+    // Prone needs. Every other range is a ranged attack.
+    const melee = /touch/i.test(spell.range ?? '');
+    castTargets = chosen.map((t) => ({
+      ...t,
+      attackMode:
+        combineModes([
+          mode,
+          rollMode({ roller: casterConditions, target: t.conditions, kind: 'attack', melee }),
+        ]) ?? 'normal',
+    }));
+  }
 
   const result = castSpell(caster, spell, {
     slotLevel,
@@ -573,9 +602,7 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
     saveDC,
     attackMode: spell.effect.kind === 'attack' ? mode : 'normal',
     ritual: asRitual,
-    // The caster view carries no conditions, so the chips come off the real
-    // combatant. A Bless on the caster rides its spell attack rolls.
-    casterConditions: entity.conditions ?? [],
+    casterConditions,
     rng,
   });
   if (!result.ok) {
@@ -860,9 +887,12 @@ export function applyOutcomes(app, spell, result, casterId) {
       const cond = o.condition ? `, ${o.condition}${imposed ? '' : ' (untracked)'}` : '';
       // A rider the target already held changed the roll, so the line states it.
       const rode = o.rider ? `, ${o.rider.note}` : '';
+      // A chip that fails the save outright threw no die, so the line names
+      // the chip where the roll would have gone.
+      const detail = o.autoFailedBy ? o.autoFailedBy : `${bonus}${rode}: ${o.save.total}`;
       app.actions.logEvent(
         'combat',
-        `${o.target.name} ${verdict} DC ${o.dc} (${bonus}${rode}: ${o.save.total}) — takes ${o.taken} damage${cond}.`,
+        `${o.target.name} ${verdict} DC ${o.dc} (${detail}) — takes ${o.taken} damage${cond}.`,
       );
       applyToTarget(app, o.target.id, o.taken, false);
     }

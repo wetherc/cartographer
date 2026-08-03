@@ -23,12 +23,19 @@ import { clamp } from '../util/num.js';
  * spell this target catches, which the caster allocates. `conditions` are the
  * chips the target already holds, so a rider on one of them can ride its
  * saving throw.
+ *
+ * `attackMode` overrides the cast's own mode for this target alone, because a
+ * chip such as Prone slants only the attack rolls aimed at its holder.
+ * `autoFailSave` names the chip that fails this target's save with no roll,
+ * which is what being unable to move does to a Strength or Dexterity save.
  * @typedef {{
  *   id?: string,
  *   name?: string,
  *   ac?: number,
  *   saveBonus?: number,
  *   saveMode?: RollMode,
+ *   attackMode?: RollMode,
+ *   autoFailSave?: string,
  *   projectiles?: number,
  *   conditions?: import('../types/entities.js').Condition[],
  * }} CastTarget
@@ -537,12 +544,14 @@ function resolveEffect(spell, ctx) {
 
   if (effect.kind === 'attack') {
     const baseParts = scaledParts(effect.damage, spell.scaling, steps);
-    const shot = (/** @type {number} */ ac) =>
+    // The target's own chips can slant the roll aimed at it, so the mode is
+    // read per target and falls back to the one the whole cast carries.
+    const shot = (/** @type {CastTarget} */ target, /** @type {number} */ ac) =>
       rollProjectile({
         parts: baseParts,
         ac,
         attackBonus: spellAttackBonus,
-        mode: attackMode,
+        mode: target.attackMode ?? attackMode,
         autoHit: effect.projectiles?.autoHit,
         casterConditions,
         rng,
@@ -553,7 +562,7 @@ function resolveEffect(spell, ctx) {
     if (!effect.projectiles) {
       return targets.map((target) => {
         const ac = target.ac ?? 10;
-        const { attack, natural, crit, hit, damage, rider } = shot(ac);
+        const { attack, natural, crit, hit, damage, rider } = shot(target, ac);
         return { target, attack, natural, crit, hit, ac, damage, rider };
       });
     }
@@ -566,7 +575,7 @@ function resolveEffect(spell, ctx) {
       const ac = target.ac ?? 10;
       /** @type {ProjectileShot[]} */
       const shots = [];
-      for (let n = 0; n < allocation[i]; n++) shots.push(shot(ac));
+      for (let n = 0; n < allocation[i]; n++) shots.push(shot(target, ac));
       const landed = shots.filter((s) => s.damage !== null);
       return {
         target,
@@ -596,15 +605,16 @@ function resolveEffect(spell, ctx) {
       // party character's own saves, or is hand-entered for a foe.
       // The target's own chips ride its save, so a bane'd foe rolls at -1d4
       // against the next save spell too.
-      const {
-        roll: save,
-        success: saved,
-        rider,
-      } = resolveSave(target.saveBonus ?? 0, saveDC, {
-        mode: target.saveMode ?? 'normal',
-        conditions: target.conditions ?? [],
-        rng,
-      });
+      // A target whose chip fails the save outright throws no die at all, so
+      // its `save` is null and the caller reports the chip instead of a total.
+      const rolled = target.autoFailSave
+        ? { roll: null, success: false, rider: null }
+        : resolveSave(target.saveBonus ?? 0, saveDC, {
+            mode: target.saveMode ?? 'normal',
+            conditions: target.conditions ?? [],
+            rng,
+          });
+      const { roll: save, success: saved, rider } = rolled;
       const taken = saved ? (effect.halfOnSave ? Math.floor(damage.total / 2) : 0) : damage.total;
       const condition = !saved ? (effect.condition ?? null) : null;
       return {
@@ -614,6 +624,7 @@ function resolveEffect(spell, ctx) {
         saved,
         taken,
         rider,
+        autoFailedBy: target.autoFailSave ?? null,
         condition,
         // The rider rides the chip, so it lands only when the chip does.
         conditionRider: condition ? (effect.rider ?? null) : null,
