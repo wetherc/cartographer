@@ -177,13 +177,17 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   // --- Effect section: swaps controls by kind -----------------------------
   const kindSelect = select([...SPELL_EFFECT_KINDS], spell?.effect.kind ?? 'utility');
   const saveEffect = spell?.effect.kind === 'save' ? spell.effect : null;
+  // The two kinds that put a chip on a creature. Both carry a condition name
+  // and a rider, so both fill the same two controls.
+  const chipEffect =
+    spell?.effect.kind === 'save' || spell?.effect.kind === 'buff' ? spell.effect : null;
   const abilitySelect = select([...SPELL_ABILITIES], saveEffect?.saveAbility ?? 'DEX');
   const halfOnSave = checkbox('Half on save', saveEffect?.halfOnSave ?? false);
-  // The condition a failed save imposes, picked from the same list the
+  // The condition the chip is called, picked from the same list the
   // conditions bar offers, so the name always matches a real chip. An
   // imported spell that names something else keeps that name as its own
   // option, and does not lose it.
-  const storedCondition = saveEffect?.condition ?? '';
+  const storedCondition = chipEffect?.condition ?? '';
   const conditionSelect = select(
     [
       { value: '', label: 'None' },
@@ -211,10 +215,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const conditionField = labeled('Condition', conditionSelect);
 
   // --- Rider: what the imposed chip adds to the target's later rolls -------
-  const storedRider =
-    spell?.effect.kind === 'save' || spell?.effect.kind === 'buff'
-      ? (spell.effect.rider ?? null)
-      : null;
+  const storedRider = chipEffect?.rider ?? null;
   const riderDiceInput = numberField(storedRider?.dice ?? 0, {
     className: 'inventory-panel__quantity-input',
   });
