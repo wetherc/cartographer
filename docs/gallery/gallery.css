@@ -1,0 +1,224 @@
+/* ==========================================================================
+   The gallery page's own chrome. Every class here is prefixed `gx-`, so
+   nothing in this file can collide with an app class or influence how a
+   demo widget renders. The widgets themselves are styled by the app's own
+   sheets, which style.css pulls in ahead of this one.
+   ========================================================================== */
+
+.gx-body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* --- header ------------------------------------------------------------ */
+
+.gx-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-5) var(--space-5) var(--space-4);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.gx-header__text {
+  max-width: 60ch;
+}
+
+.gx-header__title {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-display);
+}
+
+.gx-header__blurb {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: var(--line-body);
+}
+
+/* --- layout ------------------------------------------------------------ */
+
+.gx-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-5);
+  padding: var(--space-5);
+}
+
+.gx-nav {
+  position: sticky;
+  top: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 0 0 14rem;
+}
+
+.gx-nav__link {
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  text-decoration: none;
+}
+
+.gx-nav__link:hover {
+  background: var(--surface-raised);
+  color: var(--text);
+}
+
+.gx-main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* --- one section ------------------------------------------------------- */
+
+.gx-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  scroll-margin-top: var(--space-4);
+}
+
+.gx-section__title {
+  margin: 0;
+  font-size: var(--text-heading);
+}
+
+.gx-section__blurb {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  max-width: 70ch;
+  color: var(--text-muted);
+  line-height: var(--line-body);
+}
+
+/* --- one story --------------------------------------------------------- */
+
+.gx-story {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  /* The demo box sizes to its widget rather than stretching to match the
+     height of the snippet beside it. */
+  align-items: start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.gx-story__head {
+  grid-column: 1 / -1;
+}
+
+.gx-story__title {
+  margin: 0;
+  font-size: var(--text-body);
+}
+
+.gx-story__notes {
+  margin: var(--space-1) 0 0;
+  max-width: 70ch;
+  line-height: var(--line-body);
+}
+
+/* The demo sits on the sunken surface, so a widget with its own surface
+   color still reads as a separate box from the page behind it. */
+.gx-demo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+
+.gx-demo--stack {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.gx-code {
+  margin: 0;
+  padding: var(--space-3);
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  line-height: var(--line-body);
+}
+
+.gx-classes {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+  color: var(--text-muted);
+}
+
+/* --- token tables ------------------------------------------------------ */
+
+.gx-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.gx-swatch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+}
+
+.gx-swatch__chip {
+  height: 2.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.gx-icons {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6rem, 1fr));
+  gap: var(--space-2);
+  width: 100%;
+}
+
+.gx-icons__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+}
+
+@media (max-width: 60rem) {
+  .gx-layout {
+    flex-direction: column;
+  }
+
+  .gx-nav {
+    position: static;
+    flex-flow: row wrap;
+    flex-basis: auto;
+  }
+
+  .gx-story {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

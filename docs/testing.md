@@ -123,6 +123,7 @@ The preview pages live in `tests/`, beside the automated suite. The
 | `tests/map-canvas-preview.html` | The map canvas over a hand-built grid |
 | `tests/ui-panels-preview.html` | The character sheet, inventory, and encounter panels |
 | `tests/save-manager-preview.html` | The save and load path |
+| `docs/gallery.html` | Every shared builder in `src/ui/`, with its call and its classes |
 
 Each page builds a small scenario by hand and mounts the real modules the
 way `main.js` does. These pages read `src/` and `assets/` directly, so
@@ -136,6 +137,11 @@ Then open `http://localhost:8934/tests/tile-preview.html`.
 
 Keep a preview page current when the modules it mounts change shape. A
 stale page can hide a real error the next time someone opens it.
+
+The gallery is the page to check after a change to a shared builder, since
+it draws every one of them on one screen in both themes. Its stories live in
+`docs/gallery/sections/`, and a story's code snippet is read from the source
+of its own render function, so a changed call updates the snippet with it.
 
 ## Check keyboard focus across a panel rebuild
 

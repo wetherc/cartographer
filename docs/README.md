@@ -53,3 +53,9 @@ reference does not teach. An explanation gives no steps.
 `dev-guide.html` sits beside these documents. It is a generated tour of the
 codebase, not one of the four kinds. `CONTRIBUTING.md` in the project root
 tells you how to rebuild it.
+
+`gallery.html` sits beside them too. It renders every shared builder in
+`src/ui/` from the real modules, with the call that built each one and the
+classes that call produces. Open it over the dev server at
+`http://localhost:8934/docs/gallery.html`, since it loads ES modules. Reach
+for it when you need to see a widget before you use it.

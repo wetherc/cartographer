@@ -6,7 +6,7 @@
 // full DOM lib knowledge; ESLint here covers the style/logic rules tsc does not.
 export default [
   {
-    files: ['src/**/*.js', 'tests/**/*.js', 'bench/**/*.js'],
+    files: ['src/**/*.js', 'tests/**/*.js', 'bench/**/*.js', 'docs/gallery/**/*.js'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'module',

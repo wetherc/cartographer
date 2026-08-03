@@ -19,6 +19,15 @@ are styled, what gets a toast) live in
 [Conventions](conventions.md#ui-and-style). This guide covers the API
 surface. Conventions covers the policy.
 
+`docs/gallery.html` is the visual half of this guide. It renders every
+builder named here from the real modules, beside the call that built it and
+the classes that call produces. Open it over a dev server, since it loads ES
+modules: `python3 -m http.server 8934` from the project root, then
+`http://localhost:8934/docs/gallery.html`. To add a builder to it, add a
+story to the matching file under `docs/gallery/sections/`. The snippet comes
+from the source of the story's own render function, so there is no second
+copy of the call to keep in step.
+
 [The builder contract](#the-builder-contract) below is the normative part:
 what any function in `src/ui/` must look like. The rest of the guide
 describes the builders that exist today. Where the two disagree, the places

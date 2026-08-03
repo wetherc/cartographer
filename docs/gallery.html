@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Component gallery</title>
+    <link rel="stylesheet" href="../style.css" />
+    <link rel="stylesheet" href="gallery/gallery.css" />
+    <script>
+      // Re-apply the saved theme before the first paint, the same as
+      // index.html does, so a dark-theme reload does not flash light.
+      try {
+        const saved = localStorage.getItem('campaign-builder:theme');
+        if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+      } catch {
+        // A blocked localStorage leaves the OS preference in charge.
+      }
+    </script>
+  </head>
+  <body class="gx-body">
+    <header class="gx-header">
+      <div class="gx-header__text">
+        <h1 class="gx-header__title">Component gallery</h1>
+        <p class="gx-header__blurb">
+          Every shared builder in <code>src/ui/</code>, rendered from the real modules. Each entry
+          shows the widget, the call that built it, and the classes that call produces.
+        </p>
+      </div>
+      <div id="gx-theme" class="gx-header__theme"></div>
+    </header>
+
+    <div class="gx-layout">
+      <nav id="gx-nav" class="gx-nav" aria-label="Sections"></nav>
+      <main id="gx-main" class="gx-main"></main>
+    </div>
+
+    <script type="module" src="gallery/main.js"></script>
+  </body>
+</html>
