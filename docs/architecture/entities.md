@@ -573,6 +573,13 @@ Ability checks have no roller yet, so a `check` rider only shows: on the chip
 tooltip and in the spell detail. The GM applies it in the dice tray. Guidance
 ships that way.
 
+A rider lasts as long as its chip. Nothing spends a rider after one roll, so a
+spell that grants a die to a single roll is wider here than in print. Guidance
+is the built-in case: its chip stays until the duration runs out or the caster
+stops concentrating, and the GM takes it off after the check it paid for. A
+per-use rider would need a counter on the chip and a roller that decrements
+it, and there is no check roller to decrement it yet.
+
 A rider reaches a target one of two ways. A save spell's `effect.rider` rides
 the chip that a failed save imposes, which is how Bane works. A `buff` effect
 puts a chip on each willing target with no roll at all, which is how Bless and

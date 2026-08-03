@@ -36,9 +36,16 @@ full. These rules are:
 - a save against the caster's DC, with damage that is halved or negated
 - dice of healing
 - a chip on the target that adds a die or a flat amount to its later attack
-  rolls, saving throws, and ability checks
+  rolls, saving throws, and ability checks, for as long as the chip lasts
 - damage or effect scaling by spell slot level, and by caster level for
   cantrips
+
+A rider chip runs for the spell's whole duration. Nothing spends it after one
+roll, so Guidance is the one built-in spell whose rider is wider than the
+printed rule: it grants 1d4 to a single ability check, and the chip stays
+until its duration runs out or the caster stops concentrating. The app rolls
+no ability checks yet, so the GM is already the one applying the die. Take the
+chip off after the check it paid for.
 
 The list also includes utility spells with rules that exist only as prose:
 Light, Mage Armor, Counterspell, and Revivify. These spells are common enough
