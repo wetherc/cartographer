@@ -151,7 +151,11 @@ These are settled, and recorded here so they are not reopened:
   into builder options. They style the space around and between elements,
   which is the caller's business, while a builder owns only its own block.
   A `gap` option on every builder would put the same token scale behind a
-  second vocabulary.
+  second vocabulary. A builder may still apply a utility inside the element
+  it owns: `emptyState` adds `u-muted`, `labeled` adds `u-col u-g1 u-muted`,
+  `checkbox` adds `u-muted`, and `buildInlineForm` adds `u-col u-g2`. The
+  rule covers the caller's spacing and layout around and between builder
+  output, not the inside of a builder's own block.
 - **No CSS-in-JS, no framework, no build step.** Styling lives in CSS
   files. A builder applies the right class. It does not carry declarations.
 - **No component base class and no registry.** A component here is a
@@ -322,7 +326,7 @@ The caller decides what the markup is:
 | `buildBody(entry, ctx)` | the row's content, left of the buttons: one node or an array |
 | `actions(entry, ctx)` | the row's buttons, as `{ icon, label, variant, onClick }` descriptors (`null` entries are dropped, so an optional control is a ternary) |
 | `buildExtras(entry, row, ctx)` | anything below the row's head: a stat bar, a read-aloud body |
-| `emptyMessage`, `groupOf` | the empty-state text, and an optional section heading shown when consecutive rows change group |
+| `emptyMessage`, `groupOf` | the empty-state text, and an optional section heading shown when consecutive rows change group. A null group after a grouped row ends the current group: the rows that follow return to the root with no heading, and a later named group starts a fresh heading |
 | `addButtons(gm)`, `addPlacement` | the add controls, and where they go: loose at the end of the list (`inline`, the default), leading it in a pinned `.panel-actions` row (`leading`), or trailing it in a plain one (`trailing`) |
 | `gate()` | `false` for the read-only player view: no action buttons, no add controls |
 
@@ -394,8 +398,10 @@ A panel must not build a `<button>` element itself. A control that carries the
 button for the keyboard but wears no button chrome is a `bareButton`, whatever
 class it goes on to take: a tab, a menu item, a tree row, a disclosure header,
 a spell-slot pip, a target card. The only `<button>` elements written by hand
-are the sixteen static tabs in `index.html` and the palette swatch, which is
-an image tile.
+are the static ones in `index.html` (the sixteen tabs, the header file
+controls, the sidebar toggle, and the Build and Library mode controls) and the
+palette swatch, which is an image tile. Every button a feature module builds
+goes through the builders in this file.
 
 ```js
 iconButton(name, ariaLabel, onClick, opts?) -> HTMLButtonElement
@@ -461,7 +467,9 @@ elsewhere and can change without going through the switch. This is the case
 for the dice tray's selection object.
 
 `emptyState(message)` is the one `<p class="empty-state">`. Every list panel's
-"nothing here yet" line goes through it.
+"nothing here yet" line goes through it. The class alone sets only the margin,
+the padding, and the italic style. The builder pairs it with `u-muted`, which
+supplies the muted color and the label size.
 
 `chip(label)` is a `<span class="chip">` holding the label in its own inner
 span, so a caller can append to the chip without disturbing the text. With
@@ -501,12 +509,12 @@ Every icon is `aria-hidden="true"`. Icons here are decorative by
 definition. The enclosing control owns the accessible name. This is why
 `iconButton` requires a label.
 
-The 28 names available (`IconName` in `icons.js`):
+The 29 names available (`IconName` in `icons.js`):
 
 ```
 plus  minus  heal  remove  edit  save  export  import  dice  d20  add
 check  chevron  map  fit  sword  shield  clock  flag  scroll  sparkles
-eye  eye-off  lock  give  sun  moon  monitor
+eye  eye-off  lock  give  sun  moon  monitor  warning
 ```
 
 An unknown name yields an empty SVG rather than an error, so a typo shows
@@ -910,7 +918,7 @@ keep only layout (margins, grid placement) in the component's own class.
 | `.seg-switch`, `__btn`, `__btn--active` | segmented toggle (mode, theme, role, dice-tray d20) |
 | `.row-select`, `--current` | selectable full-width list row (world tree, roster) |
 | `.section-label` | in-panel sub-heading: uppercase, tracked, muted, built through `sectionLabel` |
-| `.empty-state` | the "nothing here yet" paragraph |
+| `.empty-state` | the "nothing here yet" paragraph. The class sets margin, padding, and italic only. `emptyState()` adds `u-muted` for the color and size |
 | `.chip`, `.chip__remove` | a small labeled tag, with or without an x, built through `buttons.js` |
 | `.badge` + `--success`/`--danger`/`--neutral` | a read-only status marker on a list row. A colour outside the three shared readings comes from a per-feature modifier |
 | `.icon` | the SVG wrapper that `icon()` applies |
