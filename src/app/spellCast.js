@@ -40,7 +40,7 @@ import { splitTrimmedList } from '../util/text.js';
  * @param {CombatState} combat
  * @param {Participant} caster
  * @param {Spell} spell
- * @returns {{ id: string, name: string, ac: number }[]}
+ * @returns {import('./combatants.js').CombatTarget[]}
  */
 export function combatTargets(app, combat, caster, spell) {
   const kind = spell.effect.kind;
@@ -71,7 +71,7 @@ function helps(kind) {
  * regions the party has not reached.
  * @param {AppContext} app
  * @param {Spell} spell
- * @returns {{ id: string, name: string, ac: number }[]}
+ * @returns {import('./combatants.js').CombatTarget[]}
  */
 export function rosterTargets(app, spell) {
   const { state } = app;

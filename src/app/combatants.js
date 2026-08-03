@@ -43,16 +43,17 @@ import { spellbookIds } from './casterFields.js';
 /**
  * CombatTarget is the shape combat dialogs and the spell resolver use. It
  * gives enough data to pick a target from a list (name), address the result
- * (id), and roll against it (ac). A save spell's targets also carry
- * `saveBonus` when the target is a party character with a known save, and
- * `conditions` when the target holds any chips, since a rider on one of them
- * rides that save. See `targetSaveBonus` and `targetConditions`.
+ * (id), and roll against it (ac). Every target carries `conditions`, the
+ * chips it holds, because a rider on one of them rides a save it takes and
+ * because a chip such as Prone slants the attack roll made against it. A save
+ * spell's targets also carry `saveBonus` when the target is a party character
+ * with a known save. See `targetSaveBonus`.
  * @typedef {{
  *   id: string,
  *   name: string,
  *   ac: number,
  *   saveBonus?: number,
- *   conditions?: import('../types/entities.js').Condition[],
+ *   conditions: import('../types/entities.js').Condition[],
  * }} CombatTarget
  */
 
@@ -187,22 +188,29 @@ export function describeCombatant(app, id) {
 /**
  * Project an entity into the shared CombatTarget shape. Use an encounter's
  * effective AC, a character's armor AC, or an NPC's raw stat (10 when
- * absent).
+ * absent). The chips come along, so an attack roll against this target can
+ * read them without a second lookup.
  * @param {Character | Encounter | NPC} entity
  * @param {Combatant['kind']} kind
  * @returns {CombatTarget}
  */
 export function asTarget(entity, kind) {
   let ac;
+  /** @type {import('../types/entities.js').Condition[]} */
+  let conditions = [];
   if (kind === 'encounter') {
-    ac = effectiveStatBlock(/** @type {Encounter} */ (entity)).AC ?? 10;
+    const encounter = /** @type {Encounter} */ (entity);
+    ac = effectiveStatBlock(encounter).AC ?? 10;
+    conditions = encounter.conditions ?? [];
   } else if (kind === 'character') {
-    ac = armorClass(/** @type {Character} */ (entity));
+    const character = /** @type {Character} */ (entity);
+    ac = armorClass(character);
+    conditions = character.conditions ?? [];
   } else {
     const npc = /** @type {NPC} */ (entity);
     ac = npc.stats?.AC ?? 10;
   }
-  return { id: entity.id, name: entity.name, ac };
+  return { id: entity.id, name: entity.name, ac, conditions };
 }
 
 /**

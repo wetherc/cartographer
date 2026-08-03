@@ -41,6 +41,27 @@ test('any other roll compares the total against AC, meeting it as a hit', () => 
   assert.equal(resolveAttack({ natural: 12, total: 14, ac: 15 }).outcome, 'miss');
 });
 
+test('autoCrit turns an ordinary hit into a critical one', () => {
+  assert.deepEqual(resolveAttack({ natural: 12, total: 15, ac: 15, autoCrit: true }), {
+    crit: true,
+    hit: true,
+    outcome: 'critical hit',
+  });
+});
+
+test('autoCrit never rescues a miss', () => {
+  assert.deepEqual(resolveAttack({ natural: 12, total: 9, ac: 15, autoCrit: true }), {
+    crit: false,
+    hit: false,
+    outcome: 'miss',
+  });
+  assert.deepEqual(resolveAttack({ natural: 1, total: 40, ac: 10, autoCrit: true }), {
+    crit: false,
+    hit: false,
+    outcome: 'natural 1, miss',
+  });
+});
+
 test('a crit doubles every damage die and leaves the terms otherwise alone', () => {
   const weapon = [part(1, 8, 'slashing'), part(1, 6, 'fire')];
   assert.deepEqual(damageParts(weapon, { crit: true }), [

@@ -31,12 +31,16 @@ export function attackerStats(attacker) {
  * hits and crits, regardless of AC. Any other roll compares the modified
  * total against AC. `outcome` is the phrasing the travelogue uses, so the log
  * and the toast always agree on what happened.
- * @param {{ natural: number, total: number, ac: number }} roll
+ *
+ * `autoCrit` turns any hit into a critical one. A paralyzed or unconscious
+ * defender does that to a melee attacker. It never turns a miss into a hit,
+ * so a natural 1 and a total under AC still fail.
+ * @param {{ natural: number, total: number, ac: number, autoCrit?: boolean }} roll
  * @returns {{ crit: boolean, hit: boolean, outcome: string }}
  */
-export function resolveAttack({ natural, total, ac }) {
-  const crit = natural === 20;
-  const hit = natural !== 1 && (crit || total >= ac);
+export function resolveAttack({ natural, total, ac, autoCrit = false }) {
+  const hit = natural !== 1 && (natural === 20 || total >= ac);
+  const crit = hit && (natural === 20 || autoCrit);
   const outcome = crit ? 'critical hit' : natural === 1 ? 'natural 1, miss' : hit ? 'hit' : 'miss';
   return { crit, hit, outcome };
 }

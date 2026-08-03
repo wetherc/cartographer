@@ -3,6 +3,7 @@ import { rollDamage, attackTweak } from '../dice/DiceRoller.js';
 import { weaponAbility } from '../entities/Equipment.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
+import { autoCrits, modeReasons, rollMode } from '../entities/ConditionEffects.js';
 import {
   abilityModOf,
   attackerStats,
@@ -88,6 +89,8 @@ export function readAttackTweaks(values) {
  * and proficiency left out, and the result applies to the defender through the
  * shared write path.
  * A rider chip on the attacker, such as Bless, adds its own die to the roll.
+ * The chips on both sides also set the roll's mode, and a hit on a helpless
+ * defender in melee is a critical one whatever the d20 showed.
  *
  * The attack roll goes through the dice tray, which owns its own randomness.
  * `rng` is the source for the damage roll and for the rider dice, injected
@@ -121,10 +124,24 @@ export function rollWeaponAttack(
   // the dialog's penalty dice already do, so a bonus and a penalty read the
   // same in the log.
   const rider = rollRiders(attacker.conditions, 'attack', rng);
+  // The chips on both sides decide the mode. Reach matters, because a prone
+  // defender is easier to hit in melee and harder to hit at range. `handling`
+  // is the only reach signal a weapon carries today.
+  const melee = weapon.handling !== 'ranged';
+  const conditionQuery = /** @type {const} */ ({
+    roller: attacker.conditions,
+    target: defender.conditions,
+    kind: 'attack',
+    melee,
+  });
+  // A null mode means no chip slanted the roll, and the key stays off the
+  // selection so the tray's standing toggle still applies.
+  const mode = rollMode(conditionQuery);
   const { result } = app.actions.rollDice(
     {
       counts: { d20: 1, ...tweak.counts },
       modifier: attackBonus + tweak.modifier + rider.modifier,
+      ...(mode ? { mode } : {}),
     },
     defender.ac,
   );
@@ -134,15 +151,22 @@ export function rollWeaponAttack(
     natural,
     total: result.total,
     ac: defender.ac,
+    // A helpless defender turns any melee hit into a critical one, without a
+    // natural 20.
+    autoCrit: autoCrits(defender.conditions, { melee }),
   });
   // An advantage or disadvantage attack notes the discarded d20, so the log
   // shows both dice and matches the tray's own readout.
   const modeNote = droppedNote(d20, result.selection.mode);
   const tweakNote = tweak.note ? `, ${tweak.note}` : '';
   const riderNote = rider.note ? `, ${rider.note}` : '';
+  // Naming the chips keeps a cancelled pair readable: the log says why the
+  // roll came out straight, not just that it did.
+  const reasons = modeReasons(conditionQuery);
+  const conditionNote = reasons ? `, ${reasons}` : '';
   app.actions.logEvent(
     'combat',
-    `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(attacker.level)}${tweakNote}${riderNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
+    `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(attacker.level)}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
   );
   if (!hit) {
     app.toasts.show(

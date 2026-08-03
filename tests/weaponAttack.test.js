@@ -381,11 +381,121 @@ test('an attacker with no rider chip rolls exactly what it rolled before', () =>
   const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
   const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
   rollWeaponAttack(app, {
-    attacker: { ...hero, conditions: [{ name: 'Prone', rounds: null }] },
+    attacker: { ...hero, conditions: [{ name: 'Charmed', rounds: null }] },
     defender: { id: 'goblin', name: 'Goblin', ac: 10 },
     weapon: /** @type {any} */ (SWORD),
     rng: scripted([4 / 8]),
   });
   assert.deepEqual(app.rolls, [{ selection: { counts: { d20: 1 }, modifier: 5 }, target: 10 }]);
   assert.equal(/Bless|\[/.test(app.log[0]), false, 'nothing extra reaches the log');
+});
+
+test('a chip that slants nothing leaves the mode off the tray selection', () => {
+  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
+  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10, conditions: [] },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  // No mode key at all, so the tray's standing advantage toggle still applies.
+  assert.equal('mode' in app.rolls[0].selection, false);
+});
+
+test('a poisoned attacker rolls at disadvantage and the log names the chip', () => {
+  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
+  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: { ...hero, conditions: [{ name: 'Poisoned', rounds: null }] },
+    defender: { id: 'goblin', name: 'Goblin', ac: 10, conditions: [] },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[0].selection.mode, 'disadvantage');
+  assert.match(app.log[0], /proficiency \+2, Poisoned disadvantage\)/);
+});
+
+test('a prone defender helps a melee swing and hinders a ranged one', () => {
+  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16, DEX: 16 }), 12);
+  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
+  const prone = { id: 'goblin', name: 'Goblin', ac: 10, conditions: [{ name: 'Prone' }] };
+  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: /** @type {any} */ (prone),
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[0].selection.mode, 'advantage');
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: /** @type {any} */ (prone),
+    weapon: /** @type {any} */ ({ ...SWORD, name: 'Bow', handling: 'ranged' }),
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[1].selection.mode, 'disadvantage');
+});
+
+test('the attacker and defender chips cancel to a straight roll', () => {
+  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
+  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: { ...hero, conditions: [{ name: 'Blinded', rounds: null }] },
+    defender: /** @type {any} */ ({
+      id: 'goblin',
+      name: 'Goblin',
+      ac: 10,
+      conditions: [{ name: 'Restrained' }],
+    }),
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  // A cancelled pair still names both chips, so the log says why the roll
+  // came out straight.
+  assert.equal(app.rolls[0].selection.mode, 'normal');
+  assert.match(app.log[0], /Blinded disadvantage, Restrained advantage/);
+});
+
+test('a melee hit on an unconscious defender crits without a natural 20', () => {
+  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const goblin = createEncounter('goblin', 'Goblin', 40, { AC: 10 }, HERE);
+  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: /** @type {any} */ ({
+      id: 'goblin',
+      name: 'Goblin',
+      ac: 10,
+      conditions: [{ name: 'Unconscious' }],
+    }),
+    weapon: /** @type {any} */ (SWORD),
+    rng: () => 0.999,
+  });
+  assert.match(app.log[0], /— critical hit\.$/);
+  // Two sword dice at 8 plus the STR modifier of 3.
+  assert.equal(app.state.encounters[0].currentHP, 40 - 19);
+});
+
+test('a ranged hit on an unconscious defender stays an ordinary hit', () => {
+  const hero = withHP(createCharacter('hero', 'Hero', { DEX: 16 }), 12);
+  const goblin = createEncounter('goblin', 'Goblin', 40, { AC: 10 }, HERE);
+  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: /** @type {any} */ ({
+      id: 'goblin',
+      name: 'Goblin',
+      ac: 10,
+      conditions: [{ name: 'Unconscious' }],
+    }),
+    weapon: /** @type {any} */ ({ ...SWORD, name: 'Bow', handling: 'ranged' }),
+    rng: () => 0.999,
+  });
+  assert.match(app.log[0], /— hit\.$/);
+  // One bow die at 8 plus the DEX modifier of 3.
+  assert.equal(app.state.encounters[0].currentHP, 40 - 11);
 });
