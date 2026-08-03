@@ -1,8 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { saveBonus, savingThrow, resolveSave } from '../src/entities/Checks.js';
+import {
+  saveBonus,
+  savingThrow,
+  resolveSave,
+  checkAbility,
+  checkBonus,
+  resolveCheck,
+  abilityCheck,
+  passiveScore,
+  passivePerception,
+} from '../src/entities/Checks.js';
 import { createCharacter } from '../src/entities/Character.js';
-import { withProficiencies } from '../src/entities/Proficiencies.js';
+import { withProficiencies, withExpertise } from '../src/entities/Proficiencies.js';
 import { createCondition } from '../src/entities/Conditions.js';
 
 /**
@@ -160,4 +170,146 @@ test('a character with no conditions field rolls a plain save', () => {
   const rolled = savingThrow(bare, 'CON', 15, { rng: seq([face(20, 10)]) });
   assert.equal(rolled.total, 13, '10 + 3 CON, with nothing to ride it');
   assert.equal(rolled.rider, null);
+});
+
+/** The hero, proficient in Stealth and Perception, with expertise in Stealth. */
+function expert() {
+  const proficient = withProficiencies(hero(), { skills: ['stealth', 'perception'] });
+  return withExpertise(proficient, ['stealth']);
+}
+
+test('checkAbility resolves a skill, an ability, and nothing else', () => {
+  assert.equal(checkAbility('stealth'), 'DEX');
+  assert.equal(checkAbility('animal-handling'), 'WIS');
+  assert.equal(checkAbility('STR'), 'STR', 'an ability key stands for itself');
+  assert.equal(checkAbility('juggling'), null);
+  assert.equal(checkAbility('toString'), null, 'an inherited property name is not a skill');
+});
+
+test('checkBonus is the ability modifier alone without proficiency', () => {
+  assert.equal(checkBonus(hero(), 'stealth'), 1, 'DEX 12');
+  assert.equal(checkBonus(hero(), 'insight'), -1, 'WIS 8');
+  assert.equal(checkBonus(hero(), 'DEX'), 1, 'a bare ability check');
+});
+
+test('checkBonus adds the proficiency bonus once, and twice with expertise', () => {
+  // Level 5 is a +3 proficiency bonus. Stealth reads DEX 12 (+1).
+  assert.equal(checkBonus(expert(), 'perception'), 2, '-1 WIS, +3 proficiency');
+  assert.equal(checkBonus(expert(), 'stealth'), 7, '+1 DEX, +3 twice for expertise');
+  assert.equal(checkBonus(expert(), 'arcana'), 0, 'a skill not granted stays ability-only');
+});
+
+test('checkBonus never adds proficiency to a bare ability or an unknown key', () => {
+  // A skills list is not validated against the skill table, so a stored 'DEX'
+  // must not turn every Dexterity check proficient.
+  const odd = withProficiencies(hero(), { skills: ['DEX', 'juggling'] });
+  assert.equal(checkBonus(odd, 'DEX'), 1, 'the ability modifier alone');
+  assert.equal(checkBonus(odd, 'juggling'), 0, 'an unknown key reads as a score of 10');
+});
+
+test('a character with no level counts as level 1 for both bonuses', () => {
+  const unleveled = /** @type {any} */ ({ ...expert(), level: undefined });
+  assert.equal(checkBonus(unleveled, 'stealth'), 5, '+1 DEX, +2 twice for expertise');
+  const saves = withProficiencies(unleveled, { saves: ['CON'] });
+  assert.equal(saveBonus(saves, 'CON'), 5, '+3 CON, +2 proficiency');
+});
+
+test('checkBonus reads the equipment-adjusted score', () => {
+  const gloves = {
+    id: 'i1',
+    name: 'Gloves of Thieving',
+    quantity: 1,
+    slot: 'accessory',
+    statBonuses: { DEX: 6 },
+  };
+  const worn = /** @type {any} */ ({
+    ...expert(),
+    inventory: [gloves],
+    equipment: { accessory: 'i1' },
+  });
+  assert.equal(checkBonus(worn, 'stealth'), 10, '12 + 6 = 18 (+4), plus 3 twice');
+});
+
+test('a check beats the DC on a tie and reports the ability it used', () => {
+  const made = abilityCheck(expert(), 'stealth', 17, { rng: seq([face(20, 10)]) });
+  assert.equal(made.total, 17, '10 on the d20, +7 for Stealth');
+  assert.equal(made.success, true);
+  assert.equal(made.ability, 'DEX');
+  assert.equal(made.proficient, true);
+  assert.equal(made.expert, true);
+  const missed = abilityCheck(expert(), 'perception', 17, { rng: seq([face(20, 10)]) });
+  assert.equal(missed.success, false, '12 is one under');
+  assert.equal(missed.expert, false);
+});
+
+test('a check with no DC rolls and judges nothing', () => {
+  const open = abilityCheck(expert(), 'stealth', null, { rng: seq([face(20, 15)]) });
+  assert.equal(open.total, 22);
+  assert.equal(open.dc, null);
+  assert.equal(open.success, null);
+  const bare = abilityCheck(expert(), 'stealth', undefined, { rng: seq([face(20, 15)]) });
+  assert.equal(bare.success, null, 'an absent DC is the same as none');
+});
+
+test('advantage keeps the higher die on a check', () => {
+  const up = resolveCheck(0, null, {
+    mode: 'advantage',
+    rng: seq([face(20, 4), face(20, 18)]),
+  });
+  assert.equal(up.total, 18);
+  assert.equal(up.natural, 18, 'the natural is the die that was kept');
+  const down = resolveCheck(0, 10, {
+    mode: 'disadvantage',
+    rng: seq([face(20, 4), face(20, 18)]),
+  });
+  assert.equal(down.total, 4);
+  assert.equal(down.success, false);
+});
+
+test('resolveCheck defaults to a normal roll with a live RNG', () => {
+  const result = resolveCheck(0, null);
+  assert.ok(result.natural >= 1 && result.natural <= 20);
+  assert.equal(result.roll.selection.mode, 'normal');
+  assert.equal(result.total, result.natural);
+});
+
+test('a check rider joins the check, and a save rider does not', () => {
+  const guided = [createCondition('Guidance', 10, { rider: { rolls: ['check'], dice: 1 } })];
+  const helped = resolveCheck(2, 15, { conditions: guided, rng: seq([face(4, 4), face(20, 10)]) });
+  assert.equal(helped.total, 16, '10 on the d20, +2 bonus, +4 from Guidance');
+  assert.deepEqual(helped.rider, { modifier: 4, note: 'Guidance +1d4 [4]' });
+
+  const saveOnly = resolveCheck(2, 15, {
+    conditions: [createCondition('Bless', 10, { rider: { rolls: ['save'], dice: 1 } })],
+    rng: seq([face(20, 10)]),
+  });
+  assert.equal(saveOnly.total, 12);
+  assert.equal(saveOnly.rider, null);
+});
+
+test('abilityCheck reads the character’s own chips without being asked', () => {
+  const guided = {
+    ...expert(),
+    conditions: [createCondition('Guidance', 10, { rider: { rolls: ['check'], dice: 1 } })],
+  };
+  const rolled = abilityCheck(guided, 'stealth', null, { rng: seq([face(4, 2), face(20, 10)]) });
+  assert.equal(rolled.total, 19, '10 + 7 for Stealth + 2 from Guidance');
+  assert.equal(rolled.rider?.note, 'Guidance +1d4 [2]');
+
+  const bare = /** @type {any} */ ({ ...expert(), conditions: undefined });
+  assert.equal(abilityCheck(bare, 'stealth', null, { rng: seq([face(20, 10)]) }).rider, null);
+});
+
+test('a passive score is 10 plus the bonus, moved 5 by advantage', () => {
+  assert.equal(passiveScore(3), 13);
+  assert.equal(passiveScore(-1), 9);
+  assert.equal(passiveScore(3, 'normal'), 13);
+  assert.equal(passiveScore(3, 'advantage'), 18);
+  assert.equal(passiveScore(3, 'disadvantage'), 8);
+});
+
+test('passive perception reads the character’s own Perception bonus', () => {
+  assert.equal(passivePerception(hero()), 9, 'WIS 8 is -1, and nothing is proficient');
+  assert.equal(passivePerception(expert()), 12, '-1 WIS, +3 proficiency');
+  assert.equal(passivePerception(expert(), 'advantage'), 17);
 });
