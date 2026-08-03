@@ -11,6 +11,7 @@
 import { effectiveStatBlock, isDefeated } from '../entities/Encounter.js';
 import { armorClass } from '../entities/Equipment.js';
 import { getHP } from '../entities/Character.js';
+import { canAct } from '../entities/ConditionEffects.js';
 
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -43,6 +44,7 @@ import { getHP } from '../entities/Character.js';
  *   ac: number | null,
  *   conditions: import('../types/entities.js').Condition[],
  *   defeated: boolean,
+ *   incapacitated: boolean,
  *   mayAct: boolean,
  * }} CombatantRow
  */
@@ -76,6 +78,28 @@ export function isDowned(found) {
     return Boolean(hp && hp.current <= 0);
   }
   return false;
+}
+
+/**
+ * Whether the turn pointer steps past a combatant. It does so for one that is
+ * out of the fight, and for one whose chips leave it unable to act, such as
+ * Stunned. A participant that resolves to nothing, deleted mid-fight or walked
+ * off the tile, also has no turn to take.
+ * @param {ResolvedCombatant | null} found
+ * @returns {boolean}
+ */
+export function skipsTurn(found) {
+  return !found || isDowned(found) || !canAct(conditionsOf(found));
+}
+
+/**
+ * The chips a combatant holds. Every kind tracks them, so this reads the
+ * same field on all three, and an older save without the field reads empty.
+ * @param {ResolvedCombatant} found
+ * @returns {import('../types/entities.js').Condition[]}
+ */
+export function conditionsOf(found) {
+  return found.entity.conditions ?? [];
 }
 
 /**
@@ -170,8 +194,11 @@ export function buildCombatView(combat, resolve, viewer) {
       initiative: participant.initiative,
       hp: found ? hpOf(found) : null,
       ac: found ? acOf(found) : null,
-      conditions: found && found.kind !== 'npc' ? (found.entity.conditions ?? []) : [],
+      conditions: found ? conditionsOf(found) : [],
       defeated: found ? isDowned(found) : false,
+      // A chip such as Stunned takes the turn without taking the combatant
+      // out of the fight, so the surfaces mark it apart from defeat.
+      incapacitated: found ? !canAct(conditionsOf(found)) : false,
       mayAct: mayActOn(found, who, participant.id),
     };
   });

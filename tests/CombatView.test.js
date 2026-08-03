@@ -2,7 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   sideOf,
+  conditionsOf,
   isDowned,
+  skipsTurn,
   hpOf,
   acOf,
   mayActOn,
@@ -157,8 +159,64 @@ test('buildCombatView carries conditions and the defeated flag', () => {
   );
   assert.equal(view.rows[0].conditions[0].name, 'Poisoned');
   assert.equal(view.rows[0].mayAct, true);
+  assert.equal(view.rows[0].incapacitated, false, 'Poisoned costs no turn');
   assert.equal(view.rows[1].defeated, true);
   assert.equal(view.rows[1].mayAct, false);
+});
+
+test('buildCombatView carries an NPC chip and marks who cannot act', () => {
+  const { hero, sage } = fixtures();
+  const stunned = { ...sage, conditions: [{ name: 'Stunned', rounds: 2 }] };
+  const combat = {
+    round: 1,
+    index: 0,
+    order: [
+      { id: 'sage', initiative: 11, modifier: 0 },
+      { id: 'hero', initiative: 8, modifier: 0 },
+    ],
+  };
+  const view = buildCombatView(
+    combat,
+    resolver({
+      sage: { kind: 'npc', entity: stunned },
+      hero: { kind: 'character', entity: hero },
+    }),
+    { gm: true },
+  );
+  assert.deepEqual(view.rows[0].conditions, [{ name: 'Stunned', rounds: 2 }]);
+  assert.equal(view.rows[0].incapacitated, true);
+  assert.equal(view.rows[0].defeated, false, 'a chip takes the turn, not the fight');
+  assert.equal(view.rows[1].incapacitated, false);
+});
+
+test('skipsTurn steps past the downed, the unresolved, and those who cannot act', () => {
+  const { hero, goblin, sage } = fixtures();
+  assert.equal(skipsTurn(null), true, 'a deleted combatant has no turn');
+  assert.equal(skipsTurn({ kind: 'character', entity: hero }), false);
+  assert.equal(skipsTurn({ kind: 'character', entity: damageCharacter(hero, 99) }), true);
+  assert.equal(skipsTurn({ kind: 'encounter', entity: applyDamage(goblin, 99) }), true);
+  const stunned = { ...sage, conditions: [{ name: 'Stunned', rounds: 1 }] };
+  assert.equal(skipsTurn({ kind: 'npc', entity: stunned }), true);
+  const poisoned = { ...sage, conditions: [{ name: 'Poisoned', rounds: 1 }] };
+  assert.equal(skipsTurn({ kind: 'npc', entity: poisoned }), false, 'Poisoned still takes a turn');
+});
+
+test('conditionsOf reads the chips off every kind and empties an older save', () => {
+  const { hero, goblin, sage } = fixtures();
+  const chip = [{ name: 'Prone', rounds: null }];
+  assert.deepEqual(
+    conditionsOf({ kind: 'character', entity: { ...hero, conditions: chip } }),
+    chip,
+  );
+  assert.deepEqual(
+    conditionsOf({ kind: 'encounter', entity: { ...goblin, conditions: chip } }),
+    chip,
+  );
+  assert.deepEqual(conditionsOf({ kind: 'npc', entity: { ...sage, conditions: chip } }), chip);
+  assert.deepEqual(
+    conditionsOf(/** @type {any} */ ({ kind: 'npc', entity: { id: 'x', name: 'Wisp' } })),
+    [],
+  );
 });
 
 test('fightOutcome settles only once a whole side is down', () => {

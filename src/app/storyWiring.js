@@ -86,6 +86,13 @@ export function wireStory(app) {
       return npc.location && !npc.met ? `${label} — not yet met` : label;
     },
     onDelete: deleteNPC,
+    // The chips on an NPC's row are combat state, so only the panel beside
+    // the party writes them. The combat screen shows the same chips.
+    onUpdate: (npc) => {
+      state.npcs = replaceById(state.npcs, npc);
+      commitNPCs(app);
+      app.views.combatScreen.update();
+    },
     // New NPCs from the Story tab default to where the party stands.
     onAdd: () => npcForm(app, null, { ...app.partyTracker.getPosition() }),
     onEdit: (npc) => npcForm(app, npc, null),

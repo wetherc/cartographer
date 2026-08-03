@@ -209,6 +209,7 @@ export function asTarget(entity, kind) {
   } else {
     const npc = /** @type {NPC} */ (entity);
     ac = npc.stats?.AC ?? 10;
+    conditions = npc.conditions ?? [];
   }
   return { id: entity.id, name: entity.name, ac, conditions };
 }
@@ -231,17 +232,15 @@ export function targetSaveBonus(app, id, ability) {
 
 /**
  * targetConditions gives the chips a combatant is holding, so a rider on one
- * of them can ride the roll a cast makes it take. Characters and encounters
- * both track conditions. An NPC tracks none, and an unknown id has none, so
- * both read as an empty list.
+ * of them can ride the roll a cast makes it take. All three kinds track
+ * conditions. An unknown id has none, so it reads as an empty list.
  * @param {AppContext} app
  * @param {string} id
  * @returns {import('../types/entities.js').Condition[]}
  */
 export function targetConditions(app, id) {
   const found = findCombatant(app, id);
-  if (!found || found.kind === 'npc') return [];
-  return found.entity.conditions ?? [];
+  return found ? (found.entity.conditions ?? []) : [];
 }
 
 /**
@@ -329,9 +328,9 @@ export function logDefeatTransition(app, prev, next) {
 /**
  * Impose a condition on a combatant by id. This is the write path behind a
  * spell that puts a chip on a creature, whether from a failed save or from a
- * buff. Characters and encounters both track conditions, so both get the
- * chip. An NPC has no conditions field, so the caller's log line is the only
- * record. `rounds` is the counter the round tick decrements, or null for a
+ * buff. All three kinds track conditions, so a character, a foe, and an NPC
+ * on the party's tile all take the chip. `rounds` is the counter the round
+ * tick decrements, or null for a
  * condition the GM clears by hand. The function returns whether the chip
  * landed, so the caller can report when it did not.
  *
@@ -356,17 +355,27 @@ export function applyConditionToTarget(
   rider = null,
 ) {
   const found = findCombatant(app, targetId);
-  if (!found || found.kind === 'npc') return false;
+  if (!found) return false;
   const conditions = addCondition(found.entity.conditions, name, rounds, {
     source,
     ...(rider ? { rider } : {}),
   });
-  // The two branches do the same write. They are split because each store
-  // function accepts only its own entity type.
-  if (found.kind === 'character') found.store({ ...found.entity, conditions });
-  else found.store({ ...found.entity, conditions });
+  storeConditions(found, conditions);
   app.actions.markDirty();
   return true;
+}
+
+/**
+ * Write a new condition list back to whatever holds the combatant. The three
+ * branches do the same write. They are split because each store function
+ * accepts only its own entity type.
+ * @param {Combatant} found
+ * @param {import('../types/entities.js').Condition[]} conditions
+ */
+function storeConditions(found, conditions) {
+  if (found.kind === 'character') found.store({ ...found.entity, conditions });
+  else if (found.kind === 'encounter') found.store({ ...found.entity, conditions });
+  else found.store({ ...found.entity, conditions });
 }
 
 /**
@@ -378,8 +387,8 @@ export function applyConditionToTarget(
  * from the caster's side alone.
  *
  * This is a wiring function, not a pure one, because only this layer can see
- * every collection a target can live in. NPCs track no conditions, so a
- * spell that landed on one leaves nothing to sweep.
+ * every collection a target can live in. All three collections are swept,
+ * including the NPC roster, since a spell can land on an NPC in the fight.
  * @param {AppContext} app
  * @param {string} casterId
  * @param {string} spellId
@@ -413,13 +422,19 @@ export function endSpellEffects(app, casterId, spellId) {
   };
   const characters = swept(state.characters);
   const encounters = swept(state.encounters);
+  const npcs = swept(state.npcs);
   if (freed.length === 0) return;
-  // Both writes land before anything is logged or refreshed. A panel that
-  // re-renders off one of them reads the other as swept too.
+  // Every write lands before anything is logged or refreshed. A panel that
+  // re-renders off one of them reads the others as swept too.
   if (characters) state.characters = characters;
   if (encounters) state.encounters = encounters;
+  if (npcs) state.npcs = npcs;
   if (characters) app.actions.refreshSelectedCharacter();
   if (encounters) commitEncounters(app, { dirty: false });
+  if (npcs) {
+    app.views.npcPanel.update();
+    app.views.combatScreen.update();
+  }
   app.actions.markDirty();
   for (const { name, condition } of freed) {
     app.actions.logEvent('combat', `${name} is no longer ${condition}.`);
@@ -429,15 +444,16 @@ export function endSpellEffects(app, casterId, spellId) {
 /**
  * Roll the repeated saves a combatant is owed as its turn ends, for
  * conditions whose spell allows one, and remove whatever it shakes loose. A
- * party character rolls its own live save bonus. A foe rolls the number the
- * GM entered when the spell was cast, the only bonus the app has for it.
+ * party character rolls its own live save bonus. A foe or an NPC rolls the
+ * number the GM entered when the spell was cast, the only bonus the app has
+ * for it.
  * Each roll is logged with its DC, so a table can see why an effect held.
  * @param {AppContext} app
  * @param {string} combatantId the participant whose turn just ended
  */
 export function retryImposedSaves(app, combatantId) {
   const found = findCombatant(app, combatantId);
-  if (!found || found.kind === 'npc') return;
+  if (!found) return;
   const character = found.kind === 'character' ? found.entity : null;
   const { conditions, results } = repeatSaves(found.entity.conditions, {
     bonusOf: (source) =>
@@ -447,10 +463,7 @@ export function retryImposedSaves(app, combatantId) {
   });
   if (results.length === 0) return;
   if (conditions !== found.entity.conditions) {
-    // The same split as `applyConditionToTarget`: one write, two branches.
-    // Each store function takes only its own entity type.
-    if (found.kind === 'character') found.store({ ...found.entity, conditions });
-    else found.store({ ...found.entity, conditions });
+    storeConditions(found, conditions);
     app.actions.markDirty();
   }
   for (const { condition, save, ended } of results) {

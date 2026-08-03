@@ -13,6 +13,7 @@ import {
   logDefeatTransition,
   retryImposedSaves,
   spellsOf,
+  targetConditions,
   targetSaveBonus,
   weaponsOf,
 } from '../src/app/combatants.js';
@@ -125,6 +126,19 @@ test('asTarget projects AC by kind', () => {
 
 test('asTarget defaults an NPC with no stat block to AC 10', () => {
   assert.equal(asTarget(/** @type {any} */ ({ id: 'x', name: 'Wisp' }), 'npc').ac, 10);
+  assert.deepEqual(asTarget(/** @type {any} */ ({ id: 'x', name: 'Wisp' }), 'npc').conditions, []);
+});
+
+test('asTarget carries an NPC chip through to the target', () => {
+  const sage = { ...fixtures().sage, conditions: [{ name: 'Prone', rounds: null }] };
+  assert.deepEqual(asTarget(sage, 'npc').conditions, [{ name: 'Prone', rounds: null }]);
+});
+
+test('targetConditions reads the chips off an NPC on the tile', () => {
+  const sage = { ...fixtures().sage, conditions: [{ name: 'Poisoned', rounds: 2 }] };
+  const app = stubApp({ npcs: [sage] });
+  assert.deepEqual(targetConditions(app, 'sage'), [{ name: 'Poisoned', rounds: 2 }]);
+  assert.deepEqual(targetConditions(app, 'nobody'), []);
 });
 
 test('combatantsAsTargets skips a participant absent from every roster', () => {
@@ -393,7 +407,7 @@ function heldBy(extra = {}) {
   };
 }
 
-test('applyConditionToTarget chips a character and a foe and refuses an NPC', () => {
+test('applyConditionToTarget chips a character, a foe, and an NPC', () => {
   const { hero, goblin, sage } = fixtures();
   const app = stubApp({ characters: [hero], encounters: [goblin], npcs: [sage] });
   assert.equal(applyConditionToTarget(app, 'hero', 'Paralyzed', 10, heldBy()), true);
@@ -402,9 +416,10 @@ test('applyConditionToTarget chips a character and a foe and refuses an NPC', ()
   ]);
   assert.equal(applyConditionToTarget(app, 'goblin', 'Blinded', null), true);
   assert.deepEqual(app.state.encounters[0].conditions, [{ name: 'Blinded', rounds: null }]);
-  assert.equal(applyConditionToTarget(app, 'sage', 'Blinded', null), false, 'NPCs hold no chips');
+  assert.equal(applyConditionToTarget(app, 'sage', 'Blinded', null), true);
+  assert.deepEqual(app.state.npcs[0].conditions, [{ name: 'Blinded', rounds: null }]);
   assert.equal(applyConditionToTarget(app, 'nobody', 'Blinded', null), false);
-  assert.equal(app.dirty, 2, 'only the two that landed wrote');
+  assert.equal(app.dirty, 3, 'only the three that landed wrote');
 });
 
 test('endSpellEffects takes one cast off every target and names each one freed', () => {
@@ -422,6 +437,16 @@ test('endSpellEffects takes one cast off every target and names each one freed',
   assert.equal(app.dirty, 1);
   assert.ok(app.calls.includes('refreshSelectedCharacter'));
   assert.ok(app.calls.includes('syncEncounterMarkers'));
+});
+
+test('endSpellEffects frees an NPC the cast had held', () => {
+  const source = heldBy();
+  const sage = { ...fixtures().sage, conditions: addCondition([], 'Paralyzed', 10, { source }) };
+  const app = stubApp({ npcs: [sage] });
+  endSpellEffects(app, 'mage', 'hold-person');
+  assert.deepEqual(app.state.npcs[0].conditions, []);
+  assert.deepEqual(app.log, ['Sage is no longer Paralyzed.']);
+  assert.ok(app.refreshes.includes('npcPanel'));
 });
 
 test('endSpellEffects leaves the other roster untouched when only one holds a chip', () => {
@@ -503,7 +528,17 @@ test('retryImposedSaves rolls a foe chip against the bonus the cast recorded', (
   assert.match(app.log[0], /^Goblin is still Stunned \(save \d+ vs DC 99\)\.$/);
 });
 
-test('retryImposedSaves rolls nothing for an NPC, an unknown id, or a chip with no retry', () => {
+test('retryImposedSaves frees an NPC that shakes its chip off', () => {
+  const source = heldBy({ saveEnds: true, saveDC: 1 });
+  const sage = { ...fixtures().sage, conditions: addCondition([], 'Stunned', 10, { source }) };
+  const app = stubApp({ npcs: [sage] });
+  retryImposedSaves(app, 'sage');
+  assert.deepEqual(app.state.npcs[0].conditions, []);
+  assert.equal(app.dirty, 1);
+  assert.match(app.log[0], /^Sage shakes off Stunned \(WIS save \d+ vs DC 1\)\.$/);
+});
+
+test('retryImposedSaves rolls nothing for an unknown id or a chip with no retry', () => {
   const { sage } = fixtures();
   const hero = {
     ...fixtures().hero,

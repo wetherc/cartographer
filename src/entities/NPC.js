@@ -33,6 +33,7 @@ export function createNPC(id, name, options = {}) {
     stats: { ...defaultStats(), ...options.stats },
     location: options.location ?? null,
     met: options.met ?? false,
+    conditions: [],
   };
   // A caster class stamps spell slots and an empty spellbook. An NPC has no
   // fighting level, so its caster level defaults to 1.
@@ -54,6 +55,7 @@ export function withDefaults(npc) {
       stats: { ...defaultStats(), ...npc.stats },
       location: npc.location ?? null,
       met: npc.met ?? false,
+      conditions: npc.conditions ?? [],
     },
     npc.casterLevel ?? 1,
   );

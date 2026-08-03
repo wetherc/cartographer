@@ -38,7 +38,7 @@ import {
   logDefeatTransition,
   retryImposedSaves,
 } from './combatants.js';
-import { isDowned } from '../combat/CombatView.js';
+import { skipsTurn } from '../combat/CombatView.js';
 import { npcForm } from './npcForm.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -363,11 +363,9 @@ export function wireEncounters(app) {
     // A defeated combatant keeps its place in the order but not its turn.
     // The pointer steps past it to the next combatant standing. A
     // participant that resolves to nothing, because it was deleted
-    // mid-fight, also has no turn to take.
-    const result = advanceTurn(combat, (p) => {
-      const found = findCombatant(app, p.id);
-      return !found || isDowned(found);
-    });
+    // mid-fight, also has no turn to take. A chip such as Stunned takes the
+    // turn the same way, without taking the combatant out of the fight.
+    const result = advanceTurn(combat, (p) => skipsTurn(findCombatant(app, p.id)));
     setCombat(result.state);
     // A new round elapsed. Tick down every combatant's timed conditions,
     // the enemies' timed stat modifiers, and the party's concentration
@@ -391,8 +389,10 @@ export function wireEncounters(app) {
         conditions: tickConditions(e.conditions),
         statMods: tickStatModifiers(e.statMods ?? []),
       }));
+      state.npcs = state.npcs.map((n) => ({ ...n, conditions: tickConditions(n.conditions) }));
       app.actions.refreshSelectedCharacter();
       app.views.encounterPanel.update();
+      app.views.npcPanel.update();
       // The sweep runs only after both collections are reassigned. The
       // sweep writes to the same two collections. Run earlier, the tick's
       // own write restores its result.

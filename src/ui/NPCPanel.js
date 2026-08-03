@@ -1,6 +1,7 @@
 import { badge } from './buttons.js';
 import { el } from './dom.js';
 import { isGM } from '../view/ViewRole.js';
+import { mountConditionsBar } from './ConditionsBar.js';
 import { mountListPanel } from './listPanel.js';
 
 /** @typedef {import('../types/npc.js').NPC} NPC */
@@ -23,10 +24,16 @@ const DISPOSITION_VARIANTS = { friendly: 'success', neutral: 'neutral', hostile:
  * without edit or delete, and the panel omits the add control. With `pinAdd`
  * set, the add button leads the list and stays pinned while the list scrolls
  * (the Build rail), instead of trailing the list.
+ *
+ * With `onUpdate`, a GM row also carries the condition chips, so an NPC drawn
+ * into a fight can be marked poisoned or stunned from the same list that
+ * shows it. Without the callback the row has no chips, which is what the
+ * authoring rail wants.
  * @param {HTMLElement} container
  * @param {{
  *   getNPCs: () => NPC[],
  *   onDelete: (id: string) => void,
+ *   onUpdate?: (npc: NPC) => void,
  *   onAdd?: () => Promise<unknown>,
  *   onEdit?: (npc: NPC) => Promise<unknown>,
  *   confirmDelete?: (npc: NPC) => Promise<boolean>,
@@ -67,6 +74,14 @@ export function mountNPCPanel(container, callbacks) {
           npc.notes && el('span', 'npc-panel__notes', npc.notes),
         ].filter(Boolean)
       );
+    },
+    buildExtras: (npc, row, ctx) => {
+      const onUpdate = callbacks.onUpdate;
+      if (!ctx.gm || !onUpdate) return;
+      mountConditionsBar(row, {
+        getConditions: () => npc.conditions ?? [],
+        onChange: (next) => onUpdate({ ...npc, conditions: next }),
+      });
     },
     actions: (npc, ctx) => {
       if (!ctx.gm) return [];

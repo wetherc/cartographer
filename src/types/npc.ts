@@ -1,4 +1,4 @@
-import { EncounterLocation, ResourcePool, Spellbook } from './entities';
+import { Condition, EncounterLocation, ResourcePool, Spellbook } from './entities';
 
 export type Disposition = 'friendly' | 'neutral' | 'hostile';
 
@@ -19,6 +19,9 @@ export interface NPC {
    * from the players' Story sidebar until met. An unplaced NPC is always known.
    */
   met: boolean;
+  /** Active status conditions (empty on older saves). An NPC that joins a
+   * fight takes chips the same way a character or a foe does. */
+  conditions: Condition[];
   /** Spellcaster class id (see Classes.js). A present value that names a
    * caster class lets this NPC cast. Absent marks a non-caster. */
   class?: string;

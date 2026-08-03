@@ -43,6 +43,7 @@ export function combatantCard(row, selection = {}) {
     'combatant-card',
     `combatant-card--${row.side}`,
     row.defeated ? 'combatant-card--defeated' : '',
+    row.incapacitated && !row.defeated ? 'combatant-card--incapacitated' : '',
     selectable ? 'combatant-card--selectable' : '',
     selection.selected ? 'combatant-card--selected' : '',
   ]
@@ -73,6 +74,10 @@ export function combatantCard(row, selection = {}) {
   if (row.defeated) {
     // The strikethrough shows this visually. This label states it for a screen reader.
     card.setAttribute('aria-label', `${row.name ?? 'Unknown combatant'}, defeated`);
+  } else if (row.incapacitated) {
+    // The chips below say which condition it is. The label says what the
+    // condition costs, which is the turn.
+    card.setAttribute('aria-label', `${row.name ?? 'Unknown combatant'}, cannot act`);
   }
 
   if (row.hp) card.appendChild(hpLine(row.hp, row.mayAct));

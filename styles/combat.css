@@ -218,6 +218,14 @@ body.mode-combat .app-buildrail {
   opacity: 0.6;
 }
 
+/* A combatant that cannot act is still in the fight, so it dims less than a
+   defeated one and keeps its name unstruck. The dashed edge separates the
+   two states without relying on the shade alone. */
+.combatant-card--incapacitated {
+  opacity: 0.8;
+  border-style: dashed;
+}
+
 .combatant-card__header {
   align-items: baseline;
 }
@@ -422,6 +430,12 @@ body.mode-combat .app-buildrail {
 
 .combat-ribbon__chip--defeated {
   opacity: 0.6;
+}
+
+/* The ribbon's match for the card's dashed edge. */
+.combat-ribbon__chip--incapacitated {
+  opacity: 0.8;
+  border-style: dashed;
 }
 
 .combat-ribbon__foe-mark {

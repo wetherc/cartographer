@@ -31,7 +31,15 @@ test('createNPC defaults role/notes empty, disposition neutral, unplaced, unmet,
     stats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 },
     location: null,
     met: false,
+    conditions: [],
   });
+});
+
+test('withDefaults fills an empty condition list on an NPC saved without one', () => {
+  const bare = /** @type {any} */ ({ id: 'n1', name: 'Bram' });
+  assert.deepEqual(withDefaults(bare).conditions, []);
+  const chipped = { ...createNPC('n2', 'Sela'), conditions: [{ name: 'Poisoned', rounds: 3 }] };
+  assert.deepEqual(withDefaults(chipped).conditions, [{ name: 'Poisoned', rounds: 3 }]);
 });
 
 test('npcsAt returns NPCs at the party node plus unplaced ones', () => {

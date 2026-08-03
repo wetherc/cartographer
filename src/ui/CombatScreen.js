@@ -300,10 +300,12 @@ export function mountCombatScreen(container, callbacks) {
             `combat-ribbon__chip--${row.side}`,
             current && 'combat-ribbon__chip--current',
             row.defeated && 'combat-ribbon__chip--defeated',
+            row.incapacitated && !row.defeated && 'combat-ribbon__chip--incapacitated',
           ]),
           ariaLabel:
             `${name}, initiative ${row.initiative}${current ? ', current turn' : ''}` +
-            `${row.defeated ? ', defeated' : ''}`,
+            `${row.defeated ? ', defeated' : ''}` +
+            `${row.incapacitated && !row.defeated ? ', cannot act' : ''}`,
           title: name,
         },
       );
