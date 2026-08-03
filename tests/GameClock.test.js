@@ -36,11 +36,11 @@ test('advanceToDawn moves to the next day at watch 0', () => {
 });
 
 test('formatClock reads day and watch name', () => {
-  assert.equal(formatClock({ day: 3, watch: 4 }), `Day 3, ${WATCHES[4]}`);
+  assert.equal(formatClock({ day: 3, watch: 4 }), 'Day 3, Dusk');
 });
 
 test('formatClock falls back to the first watch for an out-of-range index', () => {
-  assert.equal(formatClock({ day: 2, watch: 99 }), `Day 2, ${WATCHES[0]}`);
+  assert.equal(formatClock({ day: 2, watch: 99 }), 'Day 2, Dawn');
 });
 
 test('longRest fully restores every pool; shortRest restores half', () => {

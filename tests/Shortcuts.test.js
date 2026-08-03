@@ -55,7 +55,14 @@ test('an unbound key asks for nothing', () => {
   assert.equal(shortcutFor({ key: 'a', ctrlKey: true }, gmInPlay), null);
 });
 
-test('every documented shortcut line says something', () => {
-  assert.ok(SHORTCUT_HELP.length > 0);
-  for (const line of SHORTCUT_HELP) assert.ok(line.trim().length > 0);
+test('the help dialog documents every shortcut', () => {
+  assert.deepEqual(SHORTCUT_HELP, [
+    'Ctrl/Cmd+S — save the campaign',
+    'Ctrl/Cmd+Z — undo (Build: last edit; Play: previous save)',
+    'Ctrl/Cmd+Shift+Z — redo the last undone save',
+    'B / P — switch to Build / Play mode',
+    'On the map (click it first):',
+    'Arrows — move the cursor · Enter/Space — act',
+    '+ / - — zoom',
+  ]);
 });

@@ -34,8 +34,11 @@ test('an unknown size preset falls back to the medium dimensions', () => {
 });
 
 test('generateDungeon defaults entrance to edge and descend to true', () => {
-  const gen = generateDungeon(palette, GENERATOR_SIZES.small, mulberry32(3));
-  assert.ok(gen.tiles.length > 0);
+  const size = GENERATOR_SIZES.small;
+  const gen = generateDungeon(palette, size, mulberry32(3));
+  const [x, y] = gen.entry.split(',').map(Number);
+  const onEdge = x === 0 || y === 0 || x === size - 1 || y === size - 1;
+  assert.ok(onEdge, `default entrance puts the entry on the map edge, got ${gen.entry}`);
   // descend defaulted true, so a stairs-down tile is placed.
   assert.ok(gen.stairsDown, 'default descend places a stairs-down tile');
 });

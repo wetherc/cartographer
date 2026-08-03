@@ -43,6 +43,6 @@ test('an entry can snapshot several nodes at once (e.g. node + parent on generat
   );
 });
 
-test('the default limit is generous enough for a painting session', () => {
-  assert.ok(DEFAULT_EDIT_LIMIT >= 20);
+test('the default limit holds a painting session of thirty strokes', () => {
+  assert.equal(DEFAULT_EDIT_LIMIT, 30);
 });
