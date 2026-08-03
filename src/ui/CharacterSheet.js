@@ -18,6 +18,7 @@ import { drop as dropConcentration } from '../entities/Concentration.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { buildProgressSection } from './CharacterProgress.js';
 import { buildSpellsSection } from './CharacterSpells.js';
+import { buildSavesBlock, buildSkillsBlock } from './CharacterChecks.js';
 import { buildStatBar, buildSlotLine } from './CharacterBars.js';
 import { statBadge } from './CharacterStatBadge.js';
 import { iconButton, textButton, emptyState } from './buttons.js';
@@ -93,6 +94,10 @@ function customPools(character) {
  *   This is a non-blocking surface for progression results, for example
  *   hit-die heals and level-up feature announcements. The host passes its
  *   toast stack.
+ * @param {import('./CharacterChecks.js').CheckHandler | null} [onCheck]
+ *   This runs when a save or skill row is clicked, with the kind of roll and
+ *   the key that names it. Without it, the two blocks report their bonuses
+ *   and roll nothing.
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountCharacterSheet(
@@ -102,6 +107,7 @@ export function mountCharacterSheet(
   getPermissions = () => ({ editBase: true, play: true, hp: true, restore: true }),
   spells = null,
   notify = () => {},
+  onCheck = null,
 ) {
   let current = initial;
 
@@ -402,6 +408,16 @@ export function mountCharacterSheet(
     }
     main.appendChild(statsList);
 
+    // The saves and the skills read from the ability scores, the level, the
+    // proficiency lists, and the equipped items, and every one of those is
+    // already part of the sheet's shape. A change to any of them rebuilds the
+    // sheet, so neither block is ever re-pointed. Only a viewer who can act on
+    // the character gets rows that roll. A spectator sees the numbers.
+    const checkOpts = onCheck && perms.play ? { onCheck } : {};
+    // The six saves belong with the ability scores they derive from, so they
+    // close the left column's block of numbers.
+    main.appendChild(buildSavesBlock(character, checkOpts));
+
     // The progression section owns classes, pending levels and
     // improvements, features, and hit dice. It returns null for a
     // classless legacy character. It reads the live character, not a
@@ -455,6 +471,13 @@ export function mountCharacterSheet(
       });
       main.appendChild(resources);
     }
+
+    // The 18 skills go in the body rather than in either column, so they span
+    // the full card width and flow into as many short columns as it holds. In
+    // one column they would be the longest thing on the sheet.
+    const skills = buildSkillsBlock(character, checkOpts);
+    skills.classList.add('character-sheet__skills');
+    body.appendChild(skills);
 
     // This is a read-only list of castable spells grouped by level, each
     // opening a Cast or Close detail. It shows only for casters, since the

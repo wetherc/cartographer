@@ -109,10 +109,12 @@
     max-width: none;
   }
 
-  /* The castable-spells section, the one piece the build puts straight in the
-     body, spans both columns on a row of its own. */
+  /* The skill block and the castable-spells section, the two pieces the build
+     puts straight in the body, each span both columns on a row of their own,
+     in the order they are appended. */
+  .character-sheet__skills,
   .character-sheet__spells {
-    grid-area: 3 / 1 / auto / -1;
+    grid-column: 1 / -1;
   }
 }
 
@@ -386,6 +388,97 @@
 }
 .stat-breakdown__rows dt.stat-breakdown__total {
   color: var(--text);
+}
+
+/* The saving-throw and skill blocks. Both are the same list of rows: a
+   training dot, the name, the ability it rolls, and the bonus at the right
+   edge. */
+.check-block__rows {
+  display: grid;
+  /* The skill list is 18 rows long, so it flows into as many columns as the
+     column it sits in can hold a readable row in. The saves make one short
+     column of six at the same row width. */
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0 var(--space-2);
+}
+
+.check-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 0.15rem var(--space-1);
+  border: none;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: var(--text-label);
+  text-align: left;
+}
+
+.check-row--roll {
+  cursor: pointer;
+}
+.check-row--roll:hover {
+  background: var(--surface-sunken);
+  color: var(--text);
+}
+
+/* The name takes the slack, so every bonus lands on the same right edge. A
+   long skill name truncates rather than pushing the number out of line. */
+.check-row__name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.check-row__ability {
+  font-size: var(--text-label);
+  letter-spacing: 0.04em;
+}
+
+.check-row__bonus {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+/* The training dot says the same thing three ways by shape, so it does not
+   rest on color: hollow for untrained, solid for proficient, and solid inside
+   a ring for expertise. The ring is drawn with box-shadow, which sits outside
+   the dot's box and so does not move the row. */
+.check-row__dot {
+  flex: 0 0 auto;
+  width: 0.55rem;
+  height: 0.55rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  /* The expertise ring needs room to sit clear of the row's edge and of the
+     name beside it. */
+  margin: 0 0.2rem;
+}
+
+.check-row__dot--proficient,
+.check-row__dot--expert {
+  background: var(--text);
+  border-color: var(--text);
+}
+
+.check-row__dot--expert {
+  box-shadow:
+    0 0 0 1.5px var(--surface),
+    0 0 0 2.5px var(--text);
+}
+
+/* Passive Perception closes the skill block, set apart from the rows above it
+   because it is a score and not a roll. */
+.check-block__passive {
+  margin-top: var(--space-1);
+  padding-left: var(--space-1);
+  font-size: var(--text-label);
 }
 
 /* "Playing as" binding picker shown to player tabs above the roster. */
