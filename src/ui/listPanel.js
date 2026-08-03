@@ -117,7 +117,8 @@ import { captureFocus, restoreFocus } from './focusMemory.js';
  * @property {(entry: T, row: HTMLElement, ctx: RowContext<T>) => void} [buildExtras]
  *   appends below the row's head.
  * @property {(entry: T, gm: boolean) => string | null} [groupOf] emits a
- *   section heading whenever consecutive rows change group.
+ *   section heading whenever consecutive rows change group. A null group
+ *   ends the current group: its rows sit at the root with no heading.
  * @property {(gm: boolean) => (AddButton | null | false)[]} [addButtons]
  * @property {'inline' | 'leading' | 'trailing'} [addPlacement] where the
  *   add controls go: loose at the end of the list, the default, leading
@@ -271,14 +272,18 @@ export function mountListPanel(container, options) {
     let host = root;
     for (const entry of rows) {
       const group = options.groupOf?.(entry, gm) ?? null;
-      if (group !== null && group !== lastGroup) {
+      if (group !== lastGroup) {
+        // A null group ends the current group: the row goes back to the
+        // root with no heading, and a later named group starts fresh.
         lastGroup = group;
         host = root;
-        if (classes.group) {
-          host = el('div', classes.group);
-          root.appendChild(host);
+        if (group !== null) {
+          if (classes.group) {
+            host = el('div', classes.group);
+            root.appendChild(host);
+          }
+          host.appendChild(sectionLabel(group, { tag: 'h3', className: classes.groupHeading }));
         }
-        host.appendChild(sectionLabel(group, { tag: 'h3', className: classes.groupHeading }));
       }
       host.appendChild(buildRow(entry, ctx));
     }

@@ -212,10 +212,13 @@ export function wireLibrary(app) {
       const category = EQUIPMENT_SUBTABS.find((s) => s.id === subtab) ?? EQUIPMENT_SUBTABS[0];
       // Order entries by type within the subtab so the group headings stay
       // contiguous. The merged order (defaults first, then custom entries)
-      // stays intact within each type. A single-type subtab skips the
-      // heading, because the heading otherwise repeats the tab label.
-      return category.types.flatMap((type) =>
-        merged
+      // stays intact within each type. A heading that would repeat the tab
+      // label is skipped: a single-type subtab has no headings at all, and
+      // a multi-type subtab leaves its namesake type unheaded, so only the
+      // other types announce themselves.
+      return category.types.flatMap((type) => {
+        const group = TYPE_GROUPS[type] ?? type;
+        return merged
           .filter(({ entry }) => entry.type === type)
           .map(({ entry, source }) => ({
             key: equipmentKey(entry),
@@ -225,9 +228,9 @@ export function wireLibrary(app) {
               entry.description ||
               '',
             source,
-            group: category.types.length > 1 ? (TYPE_GROUPS[type] ?? type) : undefined,
-          })),
-      );
+            group: category.types.length > 1 && group !== category.label ? group : undefined,
+          }));
+      });
     },
     // The full item form appears inline in the rail. Editing a built-in
     // default stores the result as an override. A new name creates a new
