@@ -121,6 +121,10 @@ withDefaults)` does not read a table of default values. It omits a field only
 after it *proves* that the entity's own `withDefaults` restores that exact
 value. It deletes the field from a copy, runs `withDefaults`, and keeps the
 omission only when the result matches the loaded form of the original exactly.
+The same trial runs for fields inside nested records, such as the lists in a
+character's `proficiencies`. An empty `expertise` list goes because the load
+path fills the hole with the same empty list, and a record whose fields are
+all defaults goes whole.
 
 A static table of defaults does not work, because for entities the default
 value can depend on the entity itself. `Encounter.withDefaults` resolves

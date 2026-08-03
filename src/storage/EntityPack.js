@@ -41,15 +41,71 @@ export function sameValue(a, b) {
 }
 
 /**
+ * True when the value is a plain record: an object, but not an array and not
+ * null. Only records have fields worth trial-deleting.
+ * @param {unknown} value
+ * @returns {value is Record<string, any>}
+ */
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
+ * Every field path in the record, parents before their children. A path is
+ * the key sequence from the top of the entity down to one field, so
+ * `['proficiencies', 'expertise']` names a list nested one level in. Walking
+ * parents first lets packing drop a whole record before it spends trials on
+ * the fields inside it.
+ * @param {Record<string, any>} record
+ * @param {string[]} [prefix]
+ * @returns {Generator<string[]>}
+ */
+function* fieldPaths(record, prefix = []) {
+  for (const key of Object.keys(record)) {
+    const path = [...prefix, key];
+    yield path;
+    if (isRecord(record[key])) yield* fieldPaths(record[key], path);
+  }
+}
+
+/**
+ * A copy of the record with the field at `path` removed. Every record along
+ * the path is copied, so the input is never changed. When the path does not
+ * exist, because an earlier removal took its parent, the same record comes
+ * back, and the caller reads that identity as "nothing to try".
+ * @param {Record<string, any>} record
+ * @param {string[]} path
+ * @returns {Record<string, any>}
+ */
+function withoutPath(record, path) {
+  const [head, ...rest] = path;
+  if (!(head in record)) return record;
+  if (rest.length === 0) {
+    const copy = { ...record };
+    delete copy[head];
+    return copy;
+  }
+  const child = record[head];
+  if (!isRecord(child)) return record;
+  const next = withoutPath(child, rest);
+  return next === child ? record : { ...record, [head]: next };
+}
+
+/**
  * One entity with every field removed that its own `withDefaults` restores
  * identically. The comparison target is `withDefaults(entity)`, not `entity`
  * itself, because that is what a load produces. The stored form must round
  * trip to that value. A `withDefaults` that changes its input still packs
  * correctly.
  *
+ * Fields inside nested records pack the same way as top-level ones. A
+ * character's `proficiencies.expertise`, empty on most characters, is
+ * removable exactly when `withDefaults` fills the hole with the same empty
+ * list, which the trial checks directly.
+ *
  * The function is greedy and order-dependent. Removing `level` first can
  * leave a derived `weapon` field impossible to remove, or the reverse. This
- * costs compression only, never correctness, so one pass in key order is
+ * costs compression only, never correctness, so one pass in path order is
  * enough. A field `withDefaults` does not fill can never be removed, because
  * its absence changes the result. This is why no list of fields that must
  * survive is needed.
@@ -62,10 +118,9 @@ export function packEntity(entity, withDefaults) {
   const target = withDefaults(entity);
   /** @type {Record<string, any>} */
   let packed = { ...target };
-  for (const key of Object.keys(target)) {
-    const trial = { ...packed };
-    delete trial[key];
-    if (sameValue(withDefaults(trial), target)) packed = trial;
+  for (const path of fieldPaths(target)) {
+    const trial = withoutPath(packed, path);
+    if (trial !== packed && sameValue(withDefaults(trial), target)) packed = trial;
   }
   return packed;
 }

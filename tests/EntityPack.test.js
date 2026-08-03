@@ -82,6 +82,33 @@ test('packing targets what the unpacker produces, not the input', () => {
   assert.deepEqual(withMigration(packed), withMigration({ id: 'a', legacy: 'rogue', tags: [] }));
 });
 
+test('a restorable field inside a nested record is dropped, a kept one stays', () => {
+  const withNestedDefaults = (entity) => ({
+    ...entity,
+    lists: {
+      skills: entity.lists?.skills ?? [],
+      expertise: entity.lists?.expertise ?? [],
+    },
+  });
+  const packed = packEntity(
+    { id: 'a', lists: { skills: ['stealth'], expertise: [] } },
+    withNestedDefaults,
+  );
+  assert.deepEqual(packed, { id: 'a', lists: { skills: ['stealth'] } });
+});
+
+test('a whole nested record the unpacker restores goes before its fields are tried', () => {
+  const withNestedDefaults = (entity) => ({
+    ...entity,
+    lists: {
+      skills: entity.lists?.skills ?? [],
+      expertise: entity.lists?.expertise ?? [],
+    },
+  });
+  const packed = packEntity({ id: 'a', lists: { skills: [], expertise: [] } }, withNestedDefaults);
+  assert.deepEqual(packed, { id: 'a' });
+});
+
 test('a field the unpacker cannot restore is never dropped, however empty', () => {
   const passthrough = (entity) => ({ ...entity });
   assert.deepEqual(packEntity({ id: 'a', notes: '', hits: 0 }, passthrough), {

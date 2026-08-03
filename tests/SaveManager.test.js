@@ -14,6 +14,7 @@ import {
   withDefaults as withEncounterDefaults,
 } from '../src/entities/Encounter.js';
 import { createNPC, withDefaults as withNPCDefaults } from '../src/entities/NPC.js';
+import { withProficiencies } from '../src/entities/Proficiencies.js';
 import { createHandout, withDefaults as withHandoutDefaults } from '../src/handout/Handouts.js';
 import {
   buildState,
@@ -220,7 +221,9 @@ function populatedState() {
   grid.addNode(createMapNode('world', 'World', null, 1, 1));
   return buildState({
     grid,
-    characters: [createCharacter('c1', 'Hero')],
+    // The skill keeps `proficiencies` in the save, so the boilerplate check
+    // below sees the empty lists nested inside it, not just top-level ones.
+    characters: [withProficiencies(createCharacter('c1', 'Hero'), { skills: ['stealth'] })],
     encounters: [
       createEncounter('e1', 'Goblin', 7),
       createEncounter('e2', 'Ogre', 40, {}, null, { level: 7, tier: 'boss' }),
@@ -237,6 +240,8 @@ test('packing omits default entity fields and loading restores them', () => {
     '"statMods":[]',
     '"location":null',
     '"expertise":[]',
+    '"saves":[]',
+    '"languages":[]',
     '"bonusHP":0',
     '"met":false',
     '"revealed":false',
