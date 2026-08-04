@@ -213,7 +213,7 @@ caches (`revealedIdsOf` in `map/MapRenderer.js`, `findRegionGroups` in
 node identity. A node the save did not change comes back as the object those
 caches already know, so an adoption that moved nothing leaves them warm.
 
-### encounterWiring.js (plus encounterForm.js, weaponAttack.js, spellCast.js, combatants.js)
+### encounterWiring.js (plus creatureForm.js, weaponAttack.js, spellCast.js, combatants.js)
 
 This module owns the Encounters panel, the sidebar's Initiative card, the
 Build-rail encounter authoring list, and the walked-into-an-encounter alert.
@@ -222,12 +222,15 @@ flow is registered on `app.actions` (`advanceCombatTurn`, `endCombat`), so
 the combat screen drives the same fight through the same code. The fight
 itself renders in combat mode. [The combat guide](combat.md) covers it.
 
-The shared create-and-edit dialog (name, HP, level or tier, placement via
-`locationFields`) lives in `encounterForm.js` and backs both panels' add and
-edit actions. Edits go through the pure `Creature.editCreature`. It keeps
-live state (current HP clamped to a new max, stat block, conditions), and it
-resets the `met` flag when the creature moves. The bestiary spawn
-dialog is `encounterForm.js`'s `addFromBestiary`.
+The shared create-and-edit dialog (identity, disposition, an optional level
+and tier, placement via `locationFields`) lives in `creatureForm.js`. It
+backs every creature authoring flow: this module's panels, the Story
+sidebar's lists, and the Build-mode right-click menu. A caller that creates
+passes a seed, either a library template or a small preset such as the "New
+foe here" item's level-1 hostile. Edits go through the pure
+`Creature.editCreature`. It keeps live state (current HP clamped to a new
+max, stat block, conditions), and it resets the `met` flag when the creature
+moves. The bestiary spawn dialog is `creatureForm.js`'s `addFromLibrary`.
 
 `weaponAttack.js` resolves the 5e attacks that the combat screen's action
 bar triggers. `spellCast.js` resolves spells the same way. `weaponAttack.js`
@@ -301,9 +304,9 @@ The authoring forms share their fields the same way. An entity the GM can
 author in two places (a campaign creature in a dialog, a creature template
 in the Library rail) describes its fields once as a `ModalField[]`:
 
-- `encounterFields.js` holds the encounter's fields, the live behavior
-  (`encounterFieldsChange`), and `readEncounterFields`. `npcFields.js` does
-  the same for an NPC.
+- `creatureFields.js` holds the creature's fields, the live behavior
+  (`creatureFieldsChange`), and `readCreatureFields`. One spec covers foes
+  and townsfolk, because a blank level is what separates them.
 - `gearFields.js` holds the weapon and armor picker options, plus the None,
   preset, and hand-tuned read-back cascade.
 - `statFields.js` holds the stat-block fields and the clamped read-back.

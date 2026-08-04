@@ -11,7 +11,7 @@ import { mountHandoutPanel } from '../ui/HandoutPanel.js';
 import { createHandout, toggleRevealed, handoutsAt } from '../handout/Handouts.js';
 import { replaceById, removeById } from '../entities/Roster.js';
 import { wireEntityList } from './entityList.js';
-import { npcForm } from './npcForm.js';
+import { creatureForm } from './creatureForm.js';
 import { commitCreatures } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -99,8 +99,9 @@ export function wireStory(app) {
       app.views.combatScreen.update();
     },
     // New NPCs from the Story tab default to where the party stands.
-    onAdd: () => npcForm(app, null, { ...app.partyTracker.getPosition() }),
-    onEdit: (npc) => npcForm(app, npc, null),
+    onAdd: () =>
+      creatureForm(app, null, { ...app.partyTracker.getPosition() }, { disposition: 'neutral' }),
+    onEdit: (npc) => creatureForm(app, npc, null),
     confirmDelete: confirmDeleteNPC,
     getRole: () => state.role,
   });
@@ -115,11 +116,16 @@ export function wireStory(app) {
     getLocationLabel: (npc) => formatLocation(npc.location, (id) => app.grid.getNode(id)?.name),
     onDelete: deleteNPC,
     onAdd: () =>
-      npcForm(app, null, {
-        nodeId: app.navigator.getCurrentNode().id,
-        tileId: app.actions.getSelectedTileId() ?? '0,0',
-      }),
-    onEdit: (npc) => npcForm(app, npc, null),
+      creatureForm(
+        app,
+        null,
+        {
+          nodeId: app.navigator.getCurrentNode().id,
+          tileId: app.actions.getSelectedTileId() ?? '0,0',
+        },
+        { disposition: 'neutral' },
+      ),
+    onEdit: (npc) => creatureForm(app, npc, null),
     confirmDelete: confirmDeleteNPC,
     getRole: () => state.role,
     pinAdd: true, // Leads with "New NPC", to match the Mobs subtab.

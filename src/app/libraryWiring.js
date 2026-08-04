@@ -30,8 +30,7 @@ import {
 } from '../storage/LibraryStore.js';
 import { DEFAULT_SPELLS } from '../data/spells.js';
 import { itemSummary, formatDamage } from '../entities/Equipment.js';
-import { npcForm } from './npcForm.js';
-import { encounterForm } from './encounterForm.js';
+import { creatureForm } from './creatureForm.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
@@ -337,8 +336,7 @@ export function wireLibrary(app) {
       const found = activeCreatureEntries().find(({ entry }) => nameKey(entry) === key);
       if (!found) return;
       const position = { ...app.partyTracker.getPosition() };
-      if (found.entry.disposition === 'hostile') encounterForm(app, null, position, found.entry);
-      else npcForm(app, null, position, found.entry);
+      creatureForm(app, null, position, found.entry);
     },
   });
 

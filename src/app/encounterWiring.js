@@ -33,7 +33,7 @@ import { tickConditions } from '../entities/Conditions.js';
 import { tick as tickConcentration } from '../entities/Concentration.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
-import { encounterForm, deleteEncounter, addFromBestiary } from './encounterForm.js';
+import { creatureForm, deleteCreature, addFromLibrary } from './creatureForm.js';
 import {
   commitCreatures,
   describeCombatant,
@@ -43,7 +43,6 @@ import {
   retryImposedSaves,
 } from './combatants.js';
 import { skipsTurn } from '../combat/CombatView.js';
-import { npcForm } from './npcForm.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -51,7 +50,7 @@ import { npcForm } from './npcForm.js';
  * This module wires the Encounters panel, the Initiative panel, the bestiary
  * flow, and the walked-into-an-encounter alert. It is the only writer of
  * `state.combat`. It registers `maybeTriggerEncounter` on `app.actions` for
- * the party movement paths. The authoring dialogs are in encounterForm.js.
+ * the party movement paths. The authoring dialog is in creatureForm.js.
  * The attack resolution is in weaponAttack.js. This module connects them to
  * the panels.
  * @param {AppContext} app
@@ -163,7 +162,7 @@ export function wireEncounters(app) {
     // Authoring, including new foes and spawning from the bestiary, lives
     // in the Build rail. The Play panel edits an existing creature's HP and
     // placement, and saves one as a template mid-session.
-    onEdit: (creature) => encounterForm(app, creature, null),
+    onEdit: (creature) => creatureForm(app, creature, null),
     // Save a creature's blueprint (name, max HP, stat block) to the
     // bestiary. This avoids typing the next Goblin from scratch. Saves with
     // the same name stack as separate templates, because a template is a
@@ -205,13 +204,18 @@ export function wireEncounters(app) {
           nodeId: app.navigator.getCurrentNode().id,
         }).filter((c) => c.disposition === 'hostile'),
       onAdd: () =>
-        encounterForm(app, null, {
-          nodeId: app.navigator.getCurrentNode().id,
-          tileId: app.actions.getSelectedTileId() ?? '0,0',
-        }),
-      onAddFromTemplate: () => addFromBestiary(app),
-      onEdit: (creature) => encounterForm(app, creature, null),
-      onDelete: (creature) => deleteEncounter(app, creature),
+        creatureForm(
+          app,
+          null,
+          {
+            nodeId: app.navigator.getCurrentNode().id,
+            tileId: app.actions.getSelectedTileId() ?? '0,0',
+          },
+          { disposition: 'hostile', level: 1 },
+        ),
+      onAddFromTemplate: () => addFromLibrary(app),
+      onEdit: (creature) => creatureForm(app, creature, null),
+      onDelete: (creature) => deleteCreature(app, creature),
       // Persist base stat edits from the Build rail's chips. The Play panel
       // shows the same creature and picks up the change.
       onUpdate: (next) => {
@@ -229,9 +233,9 @@ export function wireEncounters(app) {
   /**
    * This is the Build-mode right-click menu for a tile of the viewed node.
    * It opens at the pointer. It can create a new foe or NPC on that tile,
-   * or edit one already staged there. Each choice opens the matching shared
-   * form: the foe dialog for a hostile creature, the NPC dialog for the
-   * rest.
+   * or edit one already staged there. Every choice opens the one shared
+   * creature dialog. The two "New" items differ only in their seed: a foe
+   * starts as a level-1 hostile, and an NPC starts as an unleveled neutral.
    * @param {number} x
    * @param {number} y
    * @param {number} clientX
@@ -245,12 +249,17 @@ export function wireEncounters(app) {
     const here = creaturesOnTile(state.creatures, location);
     openContextMenu(
       [
-        { label: 'New encounter here', onSelect: () => encounterForm(app, null, location) },
-        { label: 'New NPC here', onSelect: () => npcForm(app, null, location) },
+        {
+          label: 'New foe here',
+          onSelect: () => creatureForm(app, null, location, { disposition: 'hostile', level: 1 }),
+        },
+        {
+          label: 'New NPC here',
+          onSelect: () => creatureForm(app, null, location, { disposition: 'neutral' }),
+        },
         ...here.map((c) => ({
           label: `Edit ${c.name}`,
-          onSelect: () =>
-            c.disposition === 'hostile' ? encounterForm(app, c, null) : npcForm(app, c, null),
+          onSelect: () => creatureForm(app, c, null),
         })),
       ],
       { clientX, clientY },

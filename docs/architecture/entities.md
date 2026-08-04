@@ -108,13 +108,13 @@ commoner, and hit points are never absent. 0 HP is defeat with no death
 saves, which only characters roll. `isCreature` is what the combat code
 branches on, so a character and a creature never convert into each other.
 
-The authoring side still has two dialogs over one model. `app/npcFields.js`
-describes the townsperson fields, and `app/encounterFields.js` describes the
-foe fields. Both write `state.creatures` through `createCreature` and
-`editCreature`. The fields are the same `STAT_KEYS` inputs and the same gear
-pickers (`app/gearFields.js`). Only the gear fallback differs.
-`readEncounterFields` falls back to the default loadout of the tier.
-`readNPCFields` passes no fallback, so an empty picker means unarmed.
+The authoring side is one dialog over one model. `app/creatureFields.js`
+describes the fields, and `app/creatureForm.js` writes `state.creatures`
+through `createCreature` and `editCreature`. A blank level marks a
+townsperson: it stores no level and no tier, and the gear pickers start at
+None. A typed level pre-fills the pickers and the `STAT_KEYS` inputs with
+the level's defaults. The read-back has no gear fallback, so what the picker
+shows is what the creature gets, and an empty picker means unarmed.
 
 ## The character foundation
 

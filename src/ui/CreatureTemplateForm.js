@@ -1,10 +1,4 @@
-import {
-  encounterFields,
-  encounterFieldsChange,
-  readEncounterFields,
-} from '../app/encounterFields.js';
-import { npcFields, readNPCFields } from '../app/npcFields.js';
-import { refilterSpellsOnChange } from '../app/casterFields.js';
+import { creatureFields, creatureFieldsChange, readCreatureFields } from '../app/creatureFields.js';
 import { gearOptions } from '../app/gearFields.js';
 import { buildSpecForm } from './SpecForm.js';
 
@@ -15,11 +9,11 @@ import { buildSpecForm } from './SpecForm.js';
  * the item and spell forms. A template holds a blueprint, not a position or
  * a live HP total, so the placement fields stay out.
  *
- * The form renders one of the two authoring field specs. A hostile template
- * gets the foe spec, with level, tier, and the stat re-stamping that comes
- * with it. Every other template gets the people spec, with role, notes, and
- * a disposition select. The campaign dialogs render these same specs, so
- * this form and the dialogs cannot drift apart.
+ * The form renders the one creature authoring spec. The campaign dialog
+ * renders the same spec, so this form and the dialog cannot drift apart. A
+ * new template on the Foes subtab seeds as a level-1 hostile, and one on the
+ * People subtab seeds as an unleveled neutral, but the disposition select
+ * can take either anywhere.
  *
  * Submit calls `onSubmit` with the assembled template minus its id. The
  * caller owns identity and the merge key. An edit of a built-in default
@@ -41,36 +35,22 @@ export function buildCreatureTemplateForm({
   onCancel = null,
 }) {
   // The gear pickers offer the merged library, plus a hand-tuned entry the
-  // template already carries. This is the same list the campaign dialogs use.
+  // template already carries. This is the same list the campaign dialog uses.
   const gear = gearOptions(template);
-  if (hostile) {
-    return buildSpecForm({
-      fields: encounterFields(template, gear),
-      // A new template re-stamps the stat defaults as level or tier change,
-      // until a stat is hand-edited. An edit keeps the stored block.
-      onChange: encounterFieldsChange({ restampStats: !template }),
-      // The foe spec carries no disposition field, so the stored value is
-      // stamped here.
-      assemble: (values) => {
-        // The read-back types `stats` optional, because a surface can leave
-        // the block out. This form always shows it.
-        const { stats, ...fields } = readEncounterFields(values, gear);
-        return {
-          ...fields,
-          stats: stats ?? {},
-          disposition: /** @type {'hostile'} */ ('hostile'),
-        };
-      },
-      submitLabel,
-      onSubmit,
-      onCancel,
-    });
-  }
+  /** @type {import('../app/creatureFields.js').CreatureSeed} */
+  const seed =
+    template ?? (hostile ? { disposition: 'hostile', level: 1 } : { disposition: 'neutral' });
   return buildSpecForm({
-    fields: npcFields(template, gear),
-    // Refilter the spell picker for the chosen caster class and level.
-    onChange: refilterSpellsOnChange,
-    assemble: (values) => readNPCFields(values, gear),
+    fields: creatureFields(seed, gear),
+    // A new template re-stamps the stat defaults as level or tier change,
+    // until a stat is hand-edited. An edit keeps the stored block.
+    onChange: creatureFieldsChange({ restampStats: !template }),
+    assemble: (values) => {
+      // The read-back types `stats` optional, because a surface can leave
+      // the block out. This form always shows it.
+      const { stats, ...fields } = readCreatureFields(values, gear);
+      return { ...fields, stats: stats ?? {} };
+    },
     submitLabel,
     onSubmit,
     onCancel,

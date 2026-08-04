@@ -762,9 +762,8 @@ lay out two per row, honoring `full` and `newRow` as the wide dialog does.
 `assemble` receives the same field-name-to-string record that `promptModal`
 resolves to, so both surfaces read a form back through the same functions, and
 `onChange` receives the same `ModalFormHandle`, so a rule such as "re-stamp the
-default stats when the tier changes" runs on both. The specs themselves are in
-`app/encounterFields.js` and `app/npcFields.js`; see
-[App wiring](app-wiring.md). The controls come from
+default stats when the tier changes" runs on both. The spec itself is in
+`app/creatureFields.js`; see [App wiring](app-wiring.md). The controls come from
 `formFields.js` and `ModalFields.js`, the builders the dialog uses. The file,
 tags, pill-grid, allocation, and button kinds have no inline renderer, and a
 spec that reaches for one throws rather than dropping the field.
