@@ -196,6 +196,17 @@
 
 .stat-bar__text {
   font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The numbers sit at the end of the row, after the heal stepper on the sheet.
+   Their box is wide enough for three digits on each side of the slash, so a
+   pool crossing 9/10 or 99/100 does not widen the text and shove the track and
+   the steppers to its left. The compact form is excluded: its numbers are
+   absolutely placed over a fixed-width track and reserve nothing. */
+.stat-bar:not(.stat-bar--compact) .stat-bar__text {
+  flex-shrink: 0;
+  min-width: 4.75rem;
 }
 
 /* At-a-glance health, for a roster row with no space for a label column: a
