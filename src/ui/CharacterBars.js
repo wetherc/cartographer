@@ -12,7 +12,9 @@ import { barReadout, pipReadout, slotColumnLabel, slotLineReadout } from '../vie
  * @returns {HTMLElement}
  */
 export function emptyStatBar() {
-  return el('span', 'stat-bar stat-bar--compact', el('span', 'stat-bar__track'));
+  // `u-row` is what gives the track its flex line. Without it the track has
+  // no content to size against and the bar draws nothing at all.
+  return el('span', 'stat-bar stat-bar--compact u-row', el('span', 'stat-bar__track'));
 }
 
 /**

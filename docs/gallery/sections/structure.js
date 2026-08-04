@@ -3,7 +3,7 @@
  * panel that most feature rails are a configuration of.
  */
 
-import { buildStatBar } from '../../../src/ui/CharacterBars.js';
+import { buildStatBar, emptyStatBar } from '../../../src/ui/CharacterBars.js';
 import { buildDisclosure } from '../../../src/ui/Disclosure.js';
 import { el } from '../../../src/ui/dom.js';
 import { chip, emptyState } from '../../../src/ui/buttons.js';
@@ -83,13 +83,19 @@ export const structureSection = {
     {
       title: 'buildStatBar',
       notes:
-        'One wide line with a label, a fill track, and the numbers. band colors the fill by the fraction left, in three steps, for a bar read at a glance. update rewrites four properties rather than rebuilding the line.',
-      classes: '.stat-bar .stat-bar__track .stat-bar__fill .stat-bar__text',
+        'One wide line with a label, a fill track, and the numbers. band colors the fill by the fraction left, in three steps, for a bar read at a glance. compact drops the label and puts the numbers over the track, for a roster row. emptyStatBar draws the same track with no pool behind it. update rewrites four properties rather than rebuilding the line.',
+      classes: '.stat-bar .stat-bar--compact .stat-bar__track .stat-bar__fill .stat-bar__text',
       stack: true,
+      raised: true,
       render: () => [
         buildStatBar({ current: 24, max: 32 }, { modifier: 'hp', label: 'Hit points', band: true })
           .element,
         buildStatBar({ current: 3, max: 9 }, { modifier: 'mana', label: 'Spell points' }).element,
+        buildStatBar(
+          { current: 12, max: 30 },
+          { modifier: 'hp', label: 'Hit points', compact: true, band: true },
+        ).element,
+        emptyStatBar(),
       ],
     },
     {

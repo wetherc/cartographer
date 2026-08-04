@@ -141,6 +141,13 @@
   background: var(--surface-sunken);
 }
 
+/* A widget that paints the sunken color itself, for example the empty track
+   of a stat bar, disappears against the default demo panel. These stories
+   take the raised surface, which is what they sit on in the app. */
+.gx-demo--raised {
+  background: var(--surface);
+}
+
 .gx-demo--stack {
   flex-direction: column;
   align-items: stretch;

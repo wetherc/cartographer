@@ -1,6 +1,6 @@
 {
   "name": "campaign-builder",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "A self-contained suite for creating and managing the world of a D&D (or equivalent) campaign.",
   "main": "src/main.js",
   "scripts": {

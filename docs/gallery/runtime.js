@@ -9,7 +9,7 @@
  * browser holds is the source in the repository.
  */
 
-import { el } from '../../src/ui/dom.js';
+import { classNames, el } from '../../src/ui/dom.js';
 import { mountToasts } from '../../src/ui/Toast.js';
 
 /** @typedef {import('../../src/ui/dom.js').Child} Child */
@@ -22,6 +22,9 @@ import { mountToasts } from '../../src/ui/Toast.js';
  * @property {string} [classes] the class contract the call produces
  * @property {boolean} [stack] lay the demo out as a column, for a panel or
  *   a form rather than a row of controls
+ * @property {boolean} [raised] draw the demo on the raised surface. The demo
+ *   panel is sunken by default, which hides a widget that paints the sunken
+ *   color itself, for example an empty stat-bar track
  * @property {() => Child | Child[]} render builds the demo. Its source is
  *   the snippet, so write it as the call a caller would write.
  */
@@ -117,7 +120,10 @@ export function snippetOf(fn) {
  */
 export function buildStory(story) {
   const rendered = story.render();
-  const demo = el('div', story.stack ? 'gx-demo gx-demo--stack' : 'gx-demo');
+  const demo = el(
+    'div',
+    classNames(['gx-demo', story.stack && 'gx-demo--stack', story.raised && 'gx-demo--raised']),
+  );
   for (const node of Array.isArray(rendered) ? rendered : [rendered]) {
     if (node === null || node === undefined || node === false) continue;
     demo.append(node);
