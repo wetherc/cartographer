@@ -5,7 +5,7 @@ import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
 import { creatureFields, creatureFieldsChange, readCreatureFields } from './creatureFields.js';
 import { gearOptions } from './gearFields.js';
-import { commitCreatures } from './combatants.js';
+import { commitCreatures, rosterIds } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -83,14 +83,7 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
     state.creatures = replaceById(state.creatures, stored);
   } else {
     const { name, ...options } = fields;
-    stored = createCreature(
-      slugId(
-        name,
-        state.creatures.map((c) => c.id),
-      ),
-      name,
-      { ...options, location },
-    );
+    stored = createCreature(slugId(name, rosterIds(state)), name, { ...options, location });
     state.creatures = [...state.creatures, stored];
   }
   // A creature placed or moved onto the party's own tile is met on the spot.
@@ -195,10 +188,7 @@ export async function addFromLibrary(app) {
   }
   const created = fromTemplate(
     template,
-    slugId(
-      template.name,
-      state.creatures.map((c) => c.id),
-    ),
+    slugId(template.name, rosterIds(state)),
     readLocation(app, values),
   );
   state.creatures = [...state.creatures, created];

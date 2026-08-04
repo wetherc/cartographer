@@ -71,12 +71,17 @@ export const MIGRATIONS = {
   // becomes a hostile creature: `statBlock` renames to `stats`, `noticed`
   // renames to `met`, and absent gear takes the level and tier default,
   // because that is what absence meant in older saves. An NPC keeps its
-  // shape, with absent gear written as an explicit null. An NPC whose id
-  // collides with an encounter id gets a fresh slug, because the merged
-  // list has one id namespace. `state.bestiary` templates coerce the same
-  // way. `state.combat.order` is left alone on purpose: a stored id is
-  // ambiguous between the two old lists, and a stale participant already
-  // degrades to an unknown row.
+  // shape, with absent gear written as an explicit null. The merged list
+  // shares one id namespace, and `findCombatant` checks the party roster
+  // first, so a creature keeping a character's id would never resolve. A
+  // foe or NPC whose id collides with a character or with an earlier
+  // creature gets a fresh slug. `state.bestiary` templates coerce the same
+  // way. Ids stored elsewhere in the save (`state.combat.order`, a
+  // condition source's `casterId`) are left alone on purpose: a stored id
+  // is ambiguous between the old lists, and in the old resolution order it
+  // already named the entity that keeps the id here. A stale participant
+  // degrades to an unknown row, and a stale caster reference only stops
+  // the sweep that ends that spell's chips early.
   5: (state) => {
     const records = (/** @type {unknown} */ value) =>
       Array.isArray(value)
@@ -100,10 +105,22 @@ export const MIGRATIONS = {
         armor: e.armor === undefined ? stamp?.armor : e.armor,
       };
     };
+    const takenIds = records(state.characters).map((c) => (typeof c.id === 'string' ? c.id : ''));
+    /** The entry's id, reslugged when a character or an earlier creature
+     * already holds it. Every kept id joins the taken list. */
+    const claimId = (/** @type {Record<string, any>} */ entry, /** @type {string} */ fallback) => {
+      let id = typeof entry.id === 'string' ? entry.id : '';
+      if (takenIds.includes(id)) {
+        id = slugId(typeof entry.name === 'string' ? entry.name : fallback, takenIds);
+      }
+      takenIds.push(id);
+      return id;
+    };
     const foes = records(state.encounters).map((e) => {
       const { statBlock, noticed, ...rest } = e;
       return {
         ...rest,
+        id: claimId(e, 'foe'),
         ...leveled(e),
         disposition: 'hostile',
         stats: statBlock ?? {},
@@ -111,22 +128,13 @@ export const MIGRATIONS = {
         ...stampGear(e),
       };
     });
-    const foeIds = foes.map((e) => (typeof e.id === 'string' ? e.id : ''));
-    const takenIds = [...foeIds];
-    const folk = records(state.npcs).map((n) => {
-      let id = typeof n.id === 'string' ? n.id : '';
-      if (foeIds.includes(id)) {
-        id = slugId(typeof n.name === 'string' ? n.name : 'npc', takenIds);
-      }
-      takenIds.push(id);
-      return {
-        ...n,
-        id,
-        met: n.met === true,
-        weapon: n.weapon ?? null,
-        armor: n.armor ?? null,
-      };
-    });
+    const folk = records(state.npcs).map((n) => ({
+      ...n,
+      id: claimId(n, 'npc'),
+      met: n.met === true,
+      weapon: n.weapon ?? null,
+      armor: n.armor ?? null,
+    }));
     const bestiary = records(state.bestiary).map((t) => {
       const { statBlock, ...rest } = t;
       return {

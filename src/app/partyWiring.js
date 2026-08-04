@@ -6,7 +6,7 @@ import { casterClassRefs } from '../entities/Classes.js';
 import { characterFields, characterFormChange, buildCharacter } from './characterCreate.js';
 import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
-import { endSpellEffects } from './combatants.js';
+import { endSpellEffects, rosterIds } from './combatants.js';
 import { rollCheck } from './checkRolls.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
@@ -169,10 +169,7 @@ export function wireParty(app) {
         onChange: characterFormChange,
       });
       if (!values || !values.name.trim()) return;
-      const created = buildCharacter(
-        values,
-        state.characters.map((c) => c.id),
-      );
+      const created = buildCharacter(values, rosterIds(state));
       state.characters = [...state.characters, created];
       selectCharacter(created.id);
       app.actions.markDirty();

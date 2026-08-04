@@ -76,6 +76,19 @@ function cachedIndex(items) {
 }
 
 /**
+ * Every id already taken across the two combat rosters. A new character or
+ * creature slugs its id against this list, not only against its own roster.
+ * `findCombatant` resolves an id over both collections with the character
+ * checked first, so a creature sharing a character's id would receive that
+ * character's damage and conditions.
+ * @param {AppContext['state']} state
+ * @returns {string[]}
+ */
+export function rosterIds(state) {
+  return [...state.characters, ...state.creatures].map((e) => e.id);
+}
+
+/**
  * Resolve a combat participant id to the entity that holds it: a party
  * character, then a creature, checked in that order. Also return a store
  * function that writes an updated copy back to the right collection and

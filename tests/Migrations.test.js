@@ -143,6 +143,29 @@ test('step 5 keeps an NPC as it is, with explicit null gear and one id namespace
   assert.equal(sage.met, false);
 });
 
+test('step 5 re-slugs a creature whose id a party character holds', () => {
+  const migrated = MIGRATIONS[5]({
+    characters: [{ id: 'mirelle', name: 'Mirelle' }],
+    encounters: [{ id: 'mirelle', name: 'Mirelle', maxHP: 9, currentHP: 9 }],
+    npcs: [{ id: 'mirelle', name: 'Mirelle', disposition: 'neutral' }],
+    combat: { order: [{ id: 'mirelle', initiative: 12, modifier: 0 }] },
+  });
+  const [foe, npc] = migrated.creatures;
+  assert.notEqual(foe.id, 'mirelle', 'the foe cannot shadow behind the character');
+  assert.notEqual(npc.id, 'mirelle');
+  assert.notEqual(npc.id, foe.id, 'the two creatures also stay apart');
+  assert.deepEqual(
+    migrated.characters,
+    [{ id: 'mirelle', name: 'Mirelle' }],
+    'the character keeps its id',
+  );
+  assert.deepEqual(
+    migrated.combat.order,
+    [{ id: 'mirelle', initiative: 12, modifier: 0 }],
+    'stored participant ids are left alone; the old id names the character',
+  );
+});
+
 test('step 5 coerces bestiary templates the same way as encounters', () => {
   const migrated = MIGRATIONS[5]({
     bestiary: [{ id: 'wolf', name: 'Wolf', maxHP: 11, statBlock: { DEX: 15 }, level: 1 }],
