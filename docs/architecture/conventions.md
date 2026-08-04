@@ -9,7 +9,7 @@ Each one records a decision already made, not a goal to reach.
 
 ## Performance
 
-Most collections (characters, encounters, NPCs, quests, handouts, library
+Most collections (characters, creatures, quests, handouts, library
 templates) are small in size, and their linear scans cost little in absolute
 terms. Leave them alone. Do not optimize them ahead of a real need. Cost
 concentrates in a small number of places. Each place has an established
@@ -127,7 +127,7 @@ snapshot at the end of the frame (`MapMarkers.releaseFrame`). As a result, an
 idle map holds no reference to the finished view or to the node behind it.
 
 The same pattern covers the combat rosters. `combatants.js` memoizes an
-id-index Map for each characters or encounters array. This is safe because
+id-index Map for each characters or creatures array. This is safe because
 every mutation goes through `replaceById`, which replaces the array. As a
 result, participant lookups during a fight run at O(1), with no explicit
 invalidation step.

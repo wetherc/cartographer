@@ -3,8 +3,7 @@ import assert from 'node:assert/strict';
 import { buildLoadout, isEmptyLoadout, loadoutAccess } from '../src/combat/Loadout.js';
 import { createCharacter, addItem, withHP } from '../src/entities/Character.js';
 import { equip } from '../src/entities/Equipment.js';
-import { createEncounter } from '../src/entities/Encounter.js';
-import { createNPC } from '../src/entities/NPC.js';
+import { createCreature } from '../src/entities/Creature.js';
 import { createResource, spend } from '../src/entities/Resource.js';
 import { item } from './helpers/fixtures.js';
 
@@ -92,7 +91,13 @@ test('slots report what is left, leveled first and pact magic after', () => {
 
 test('a foe loadout reads its authored armor and single weapon', () => {
   const goblin = {
-    ...createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE),
+    ...createCreature('goblin', 'Goblin', {
+      disposition: 'hostile',
+      maxHP: 10,
+      stats: { AC: 13 },
+      location: HERE,
+      level: 1,
+    }),
     armor: { name: 'Hide Armor', acBonus: 2 },
     weapon: {
       name: 'Scimitar',
@@ -100,19 +105,19 @@ test('a foe loadout reads its authored armor and single weapon', () => {
       damage: [{ count: 1, sides: 6, bonus: 0, damageType: /** @type {const} */ ('slashing') }],
     },
   };
-  const loadout = buildLoadout({ kind: 'encounter', entity: goblin });
+  const loadout = buildLoadout({ kind: 'creature', entity: goblin });
   assert.deepEqual(loadout.armor, ['Hide Armor']);
   assert.deepEqual(loadout.weapons, [{ name: 'Scimitar', damage: '1d6 slashing' }]);
 });
 
 test('an unarmed NPC carries nothing, and neither does an unresolved id', () => {
-  const sage = createNPC('sage', 'Sage', { location: HERE });
-  assert.equal(isEmptyLoadout(buildLoadout({ kind: 'npc', entity: sage })), true);
+  const sage = createCreature('sage', 'Sage', { location: HERE });
+  assert.equal(isEmptyLoadout(buildLoadout({ kind: 'creature', entity: sage })), true);
   assert.equal(isEmptyLoadout(buildLoadout(null)), true);
 });
 
 test('an armed NPC reads its gear the way a foe does', () => {
-  const guard = createNPC('guard', 'Guard', {
+  const guard = createCreature('guard', 'Guard', {
     location: HERE,
     weapon: {
       name: 'Spear',
@@ -121,7 +126,7 @@ test('an armed NPC reads its gear the way a foe does', () => {
     },
     armor: { name: 'Chain Shirt', acBonus: 3 },
   });
-  const loadout = buildLoadout({ kind: 'npc', entity: guard });
+  const loadout = buildLoadout({ kind: 'creature', entity: guard });
   assert.deepEqual(loadout.armor, ['Chain Shirt']);
   assert.deepEqual(loadout.weapons, [{ name: 'Spear', damage: '1d6 piercing' }]);
 });
@@ -134,7 +139,10 @@ test('isEmptyLoadout is false as soon as anything shows', () => {
 
 test('the GM sees every combatant whole', () => {
   const viewer = { gm: true, boundCharacterId: null };
-  const goblin = { kind: /** @type {const} */ ('encounter'), entity: createEncounter('g', 'G', 5) };
+  const goblin = {
+    kind: /** @type {const} */ ('creature'),
+    entity: createCreature('g', 'G', { disposition: 'hostile', maxHP: 5 }),
+  };
   assert.equal(loadoutAccess({ kind: 'character', entity: caster() }, viewer, 'mage'), 'full');
   assert.equal(loadoutAccess(goblin, viewer, 'g'), 'full');
 });
@@ -153,10 +161,13 @@ test('a player sees another party member in public only', () => {
 
 test('a player sees nothing of a foe, and nothing of an unresolved id', () => {
   const viewer = { gm: false, boundCharacterId: 'hero' };
-  const goblin = { kind: /** @type {const} */ ('encounter'), entity: createEncounter('g', 'G', 5) };
-  const brigand = createNPC('b', 'Brigand', { location: HERE, disposition: 'hostile' });
+  const goblin = {
+    kind: /** @type {const} */ ('creature'),
+    entity: createCreature('g', 'G', { disposition: 'hostile', maxHP: 5 }),
+  };
+  const brigand = createCreature('b', 'Brigand', { location: HERE, disposition: 'hostile' });
   assert.equal(loadoutAccess(goblin, viewer, 'g'), 'none');
-  assert.equal(loadoutAccess({ kind: 'npc', entity: brigand }, viewer, 'b'), 'none');
+  assert.equal(loadoutAccess({ kind: 'creature', entity: brigand }, viewer, 'b'), 'none');
   assert.equal(loadoutAccess(null, viewer, 'gone'), 'none');
 });
 
@@ -177,11 +188,16 @@ test('no access draws nothing at all', () => {
 
 test('a foe with no authored armor reports none', () => {
   const ooze = {
-    ...createEncounter('ooze', 'Gray Ooze', 10, { AC: 8 }, HERE),
+    ...createCreature('ooze', 'Gray Ooze', {
+      disposition: 'hostile',
+      maxHP: 10,
+      stats: { AC: 8 },
+      location: HERE,
+    }),
     armor: null,
     weapon: null,
   };
-  const loadout = buildLoadout({ kind: 'encounter', entity: ooze });
+  const loadout = buildLoadout({ kind: 'creature', entity: ooze });
   assert.deepEqual(loadout.armor, []);
   assert.deepEqual(loadout.weapons, []);
 });

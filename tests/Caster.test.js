@@ -10,12 +10,11 @@ import {
   casterTemplateFields,
 } from '../src/entities/Caster.js';
 import {
-  createEncounter,
+  createCreature,
   toTemplate,
   fromTemplate,
-  editEncounter,
-} from '../src/entities/Encounter.js';
-import { createNPC } from '../src/entities/NPC.js';
+  editCreature,
+} from '../src/entities/Creature.js';
 import { getSlotPools, slotLevelOf } from '../src/entities/SpellSlots.js';
 import { spellSaveDC, spellAttackBonus } from '../src/entities/Classes.js';
 
@@ -57,7 +56,7 @@ test('a caster view reports the same DC and attack bonus as the character itself
   assert.equal(spellSaveDC(view, 'wizard'), 8 + 3 + 2, "the named class's ability powers the DC");
 });
 
-test('toCaster reads an encounter scalar class as a one-entry list at its caster level', () => {
+test('toCaster reads a creature scalar class as a one-entry list at its caster level', () => {
   const view = toCaster({
     id: 'e1',
     name: 'Acolyte',
@@ -75,7 +74,7 @@ test('toCaster yields an empty class list for a classless entity', () => {
   assert.deepEqual(toCaster({ id: 'x', name: 'Blank' }).classes, []);
 });
 
-test('toCaster reads an encounter statBlock as stats and casterLevel as level', () => {
+test('toCaster reads a pre-merge statBlock as stats and casterLevel as level', () => {
   const view = toCaster({
     id: 'e1',
     name: 'Cultist',
@@ -89,7 +88,7 @@ test('toCaster reads an encounter statBlock as stats and casterLevel as level', 
   assert.equal(view.stats.WIS, 14);
 });
 
-test('toCaster defaults an NPC with no level to 1', () => {
+test('toCaster defaults a creature with no level to 1', () => {
   const view = toCaster({ id: 'n1', name: 'Seer', class: 'bard', stats: { CHA: 12 } });
   assert.equal(view.level, 1);
   assert.equal(view.stats.CHA, 12);
@@ -226,8 +225,11 @@ test('casterTemplateFields carries the caster identity, not its live slots', () 
   assert.deepEqual(casterTemplateFields({ class: 'fighter' }), {});
 });
 
-test('createEncounter with a caster class stamps slots and a spellbook', () => {
-  const enc = createEncounter('e1', 'Acolyte', 20, { WIS: 14 }, null, {
+test('createCreature with a caster class stamps slots and a spellbook', () => {
+  const enc = createCreature('e1', 'Acolyte', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { WIS: 14 },
     level: 3,
     class: 'cleric',
   });
@@ -236,8 +238,11 @@ test('createEncounter with a caster class stamps slots and a spellbook', () => {
   assert.equal(slot(enc, 1).max, 4);
 });
 
-test('encounter caster round-trips through a bestiary template', () => {
-  const enc = createEncounter('e1', 'Acolyte', 20, { WIS: 14 }, null, {
+test('a creature caster round-trips through a bestiary template', () => {
+  const enc = createCreature('e1', 'Acolyte', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { WIS: 14 },
     level: 3,
     class: 'cleric',
   });
@@ -252,13 +257,17 @@ test('encounter caster round-trips through a bestiary template', () => {
   assert.deepEqual(spawned.spellbook.prepared, ['cure-wounds']);
 });
 
-test('editEncounter rebuilds slots on a caster-level change and clears them when dropped', () => {
-  const enc = createEncounter('e1', 'Acolyte', 20, { WIS: 14 }, null, {
+test('editCreature rebuilds slots on a caster-level change and clears them when dropped', () => {
+  const enc = createCreature('e1', 'Acolyte', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { WIS: 14 },
     level: 3,
     class: 'cleric',
   });
-  const leveled = editEncounter(enc, {
+  const leveled = editCreature(enc, {
     name: 'Acolyte',
+    disposition: 'hostile',
     maxHP: 20,
     level: 3,
     tier: 'mob',
@@ -267,8 +276,9 @@ test('editEncounter rebuilds slots on a caster-level change and clears them when
     casterLevel: 5,
   });
   assert.equal(slot(leveled, 3).max, 2, 'level-5 full caster gains 3rd-level slots');
-  const dropped = editEncounter(leveled, {
+  const dropped = editCreature(leveled, {
     name: 'Acolyte',
+    disposition: 'hostile',
     maxHP: 20,
     level: 3,
     tier: 'mob',
@@ -280,8 +290,8 @@ test('editEncounter rebuilds slots on a caster-level change and clears them when
   assert.equal(dropped.class, 'fighter', 'the new non-caster class is applied');
 });
 
-test('createNPC with a caster class builds slots at caster level', () => {
-  const npc = createNPC('n1', 'Hedge Witch', {
+test('an unleveled creature with a caster class builds slots at caster level', () => {
+  const npc = createCreature('n1', 'Hedge Witch', {
     class: 'druid',
     casterLevel: 4,
     stats: { WIS: 15 },

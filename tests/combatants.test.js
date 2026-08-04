@@ -7,8 +7,7 @@ import {
   combatantsAsTargets,
   applyToTarget,
   applyConditionToTarget,
-  commitEncounters,
-  commitNPCs,
+  commitCreatures,
   endSpellEffects,
   logDefeatTransition,
   retryImposedSaves,
@@ -28,8 +27,7 @@ import {
   damageCharacter,
 } from '../src/entities/Character.js';
 import { equip } from '../src/entities/Equipment.js';
-import { createEncounter, applyDamage, effectiveStatBlock } from '../src/entities/Encounter.js';
-import { createNPC } from '../src/entities/NPC.js';
+import { createCreature, applyDamage, effectiveStatBlock } from '../src/entities/Creature.js';
 import { addCondition } from '../src/entities/Conditions.js';
 import { begin as beginConcentration } from '../src/entities/Concentration.js';
 import { saveBonus } from '../src/entities/Checks.js';
@@ -39,9 +37,9 @@ import { item } from './helpers/fixtures.js';
 const HERE = { nodeId: 'n1', tileId: '0,0' };
 
 /**
- * A stub app holding the three rosters, plus the party position these targeting
+ * A stub app holding both rosters, plus the party position these targeting
  * helpers resolve "here" against.
- * @param {{ characters?: any[], encounters?: any[], npcs?: any[] }} [rosters]
+ * @param {{ characters?: any[], creatures?: any[] }} [rosters]
  */
 function stubApp(rosters = {}) {
   return baseStubApp({
@@ -52,9 +50,15 @@ function stubApp(rosters = {}) {
 
 function fixtures() {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 14 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const sage = createNPC('sage', 'Sage', { location: HERE, stats: { AC: 12 } });
-  const farAway = createNPC('hermit', 'Hermit', {
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const sage = createCreature('sage', 'Sage', { location: HERE, stats: { AC: 12 } });
+  const farAway = createCreature('hermit', 'Hermit', {
     location: { nodeId: 'n1', tileId: '5,5' },
   });
   return { hero, goblin, sage, farAway };
@@ -62,20 +66,22 @@ function fixtures() {
 
 test('findCombatant resolves each collection with the right kind', () => {
   const { hero, goblin, sage, farAway } = fixtures();
-  const app = stubApp({ characters: [hero], encounters: [goblin], npcs: [sage, farAway] });
+  const app = stubApp({ characters: [hero], creatures: [goblin, sage, farAway] });
   assert.equal(findCombatant(app, 'hero')?.kind, 'character');
-  assert.equal(findCombatant(app, 'goblin')?.kind, 'encounter');
-  assert.equal(findCombatant(app, 'sage')?.kind, 'npc');
-  assert.equal(findCombatant(app, 'hermit'), null, 'an NPC off the party tile is not a combatant');
+  assert.equal(findCombatant(app, 'goblin')?.kind, 'creature');
+  assert.equal(findCombatant(app, 'sage')?.kind, 'creature');
+  // A creature away from the party's tile still resolves. It renders by
+  // name mid-fight, and syncCombatLocation is what ends an emptied fight.
+  assert.equal(findCombatant(app, 'hermit')?.kind, 'creature');
   assert.equal(findCombatant(app, 'nobody'), null);
 });
 
 test('findCombatant store writes back to the owning collection', () => {
   const { hero, goblin, sage } = fixtures();
-  const app = stubApp({ characters: [hero], encounters: [goblin], npcs: [sage] });
+  const app = stubApp({ characters: [hero], creatures: [goblin, sage] });
   const found = findCombatant(app, 'goblin');
   found.store({ ...goblin, currentHP: 3 });
-  assert.equal(app.state.encounters[0].currentHP, 3);
+  assert.equal(app.state.creatures[0].currentHP, 3);
   assert.ok(app.calls.includes('syncEncounterMarkers'), 'encounter store syncs the map markers');
   const character = findCombatant(app, 'hero');
   character.store({ ...hero, name: 'Hero II' });
@@ -85,15 +91,15 @@ test('findCombatant store writes back to the owning collection', () => {
 
 test('findCombatant store writes an NPC back to its collection', () => {
   const { sage } = fixtures();
-  const app = stubApp({ npcs: [sage] });
+  const app = stubApp({ creatures: [sage] });
   findCombatant(app, 'sage').store({ ...sage, name: 'Sage the Wise' });
-  assert.equal(app.state.npcs[0].name, 'Sage the Wise');
+  assert.equal(app.state.creatures[0].name, 'Sage the Wise');
 });
 
 test('combatantsAsTargets drops a downed character on the hostile side', () => {
   const { goblin } = fixtures();
   const fallen = damageCharacter(withHP(createCharacter('foe', 'Turncoat'), 8), 999);
-  const app = stubApp({ characters: [fallen], encounters: [goblin] });
+  const app = stubApp({ characters: [fallen], creatures: [goblin] });
   const combat = {
     order: [
       { id: 'goblin', name: 'Goblin', side: 'foe' },
@@ -110,49 +116,52 @@ test('combatantsAsTargets drops a downed character on the hostile side', () => {
 
 test('findCombatant sees an updated entity after the collection is replaced', () => {
   const { goblin } = fixtures();
-  const app = stubApp({ encounters: [goblin] });
+  const app = stubApp({ creatures: [goblin] });
   findCombatant(app, 'goblin').store(applyDamage(goblin, 4));
   assert.equal(findCombatant(app, 'goblin').entity.currentHP, 6);
 });
 
 test('asTarget projects AC by kind', () => {
   const { hero, goblin, sage } = fixtures();
-  assert.equal(asTarget(goblin, 'encounter').ac, effectiveStatBlock(goblin).AC);
-  assert.equal(asTarget(sage, 'npc').ac, 12);
+  assert.equal(asTarget(goblin, 'creature').ac, effectiveStatBlock(goblin).AC);
+  assert.equal(asTarget(sage, 'creature').ac, 12);
   const heroTarget = asTarget(hero, 'character');
   assert.equal(heroTarget.name, 'Hero');
   assert.equal(typeof heroTarget.ac, 'number');
 });
 
 test('asTarget derives the AC of an NPC saved without a stat block', () => {
-  assert.equal(asTarget(/** @type {any} */ ({ id: 'x', name: 'Wisp' }), 'npc').ac, 10);
-  assert.deepEqual(asTarget(/** @type {any} */ ({ id: 'x', name: 'Wisp' }), 'npc').conditions, []);
+  assert.equal(asTarget(/** @type {any} */ ({ id: 'x', name: 'Wisp' }), 'creature').ac, 10);
+  assert.deepEqual(
+    asTarget(/** @type {any} */ ({ id: 'x', name: 'Wisp' }), 'creature').conditions,
+    [],
+  );
 });
 
 test("asTarget adds an NPC's armor to its stat block AC", () => {
-  const guard = createNPC('guard', 'Guard', {
+  const guard = createCreature('guard', 'Guard', {
     location: HERE,
     stats: { AC: 12 },
     armor: { name: 'Shield', acBonus: 2 },
   });
-  assert.equal(asTarget(guard, 'npc').ac, 14);
+  assert.equal(asTarget(guard, 'creature').ac, 14);
 });
 
 test('asTarget carries an NPC chip through to the target', () => {
   const sage = { ...fixtures().sage, conditions: [{ name: 'Prone', rounds: null }] };
-  assert.deepEqual(asTarget(sage, 'npc').conditions, [{ name: 'Prone', rounds: null }]);
+  assert.deepEqual(asTarget(sage, 'creature').conditions, [{ name: 'Prone', rounds: null }]);
 });
 
 test('targetConditions reads the chips off an NPC on the tile', () => {
   const sage = { ...fixtures().sage, conditions: [{ name: 'Poisoned', rounds: 2 }] };
-  const app = stubApp({ npcs: [sage] });
+  const app = stubApp({ creatures: [sage] });
   assert.deepEqual(targetConditions(app, 'sage'), [{ name: 'Poisoned', rounds: 2 }]);
   assert.deepEqual(targetConditions(app, 'nobody'), []);
 });
 
 test('combatantsAsTargets skips a participant absent from every roster', () => {
   const { hero, goblin } = fixtures();
-  const app = stubApp({ characters: [hero], encounters: [goblin] });
+  const app = stubApp({ characters: [hero], creatures: [goblin] });
   const combat = {
     order: [{ id: 'hero' }, { id: 'ghost' }, { id: 'goblin' }],
   };
@@ -166,7 +175,7 @@ test('combatantsAsTargets skips a participant absent from every roster', () => {
 
 test('combatantsAsTargets gives an actor nobody resolves nothing to target', () => {
   const { goblin } = fixtures();
-  const app = stubApp({ encounters: [goblin] });
+  const app = stubApp({ creatures: [goblin] });
   const combat = { order: [{ id: 'ghost' }, { id: 'goblin' }] };
   assert.deepEqual(
     combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[0]),
@@ -185,12 +194,14 @@ test('applyToTarget damages an HP-less character without logging a drop', () => 
 
 test('combatantsAsTargets lists foes and drops downed ones', () => {
   const { hero, goblin, sage } = fixtures();
-  const downed = applyDamage(createEncounter('orc', 'Orc', 8, {}, HERE), 8);
-  const brute = createNPC('brute', 'Brute', { location: HERE, disposition: 'hostile' });
+  const downed = applyDamage(
+    createCreature('orc', 'Orc', { disposition: 'hostile', maxHP: 8, location: HERE }),
+    8,
+  );
+  const brute = createCreature('brute', 'Brute', { location: HERE, disposition: 'hostile' });
   const app = stubApp({
     characters: [hero],
-    encounters: [goblin, downed],
-    npcs: [sage, brute],
+    creatures: [goblin, downed, sage, brute],
   });
   const combat = {
     order: [{ id: 'hero' }, { id: 'goblin' }, { id: 'orc' }, { id: 'sage' }, { id: 'brute' }],
@@ -205,8 +216,8 @@ test('combatantsAsTargets lists foes and drops downed ones', () => {
 
 test('describeCombatant reads the name and side off the live entity', () => {
   const { hero, goblin, sage } = fixtures();
-  const brute = createNPC('brute', 'Brute', { location: HERE, disposition: 'hostile' });
-  const app = stubApp({ characters: [hero], encounters: [goblin], npcs: [sage, brute] });
+  const brute = createCreature('brute', 'Brute', { location: HERE, disposition: 'hostile' });
+  const app = stubApp({ characters: [hero], creatures: [goblin, sage, brute] });
   assert.deepEqual(describeCombatant(app, 'hero'), { name: 'Hero', side: 'party' });
   assert.deepEqual(describeCombatant(app, 'goblin'), { name: 'Goblin', side: 'foe' });
   assert.deepEqual(describeCombatant(app, 'sage'), { name: 'Sage', side: 'party' });
@@ -220,7 +231,7 @@ test('describeCombatant reads the name and side off the live entity', () => {
 test('combatantsAsTargets with allies keeps downed allies targetable', () => {
   const { hero, goblin } = fixtures();
   const fallen = damageCharacter(withHP(createCharacter('mage', 'Mage'), 8), 999);
-  const app = stubApp({ characters: [hero, fallen], encounters: [goblin] });
+  const app = stubApp({ characters: [hero, fallen], creatures: [goblin] });
   const combat = {
     order: [
       { id: 'hero', name: 'Hero', side: 'party' },
@@ -240,9 +251,9 @@ test('combatantsAsTargets with allies keeps downed allies targetable', () => {
 
 test('applyToTarget damages an encounter and logs its defeat exactly once', () => {
   const { goblin } = fixtures();
-  const app = stubApp({ encounters: [goblin] });
+  const app = stubApp({ creatures: [goblin] });
   applyToTarget(app, 'goblin', 4, false);
-  assert.equal(app.state.encounters[0].currentHP, 6);
+  assert.equal(app.state.creatures[0].currentHP, 6);
   assert.equal(app.log.length, 0);
   applyToTarget(app, 'goblin', 10, false);
   assert.deepEqual(app.log, ['Defeated Goblin.']);
@@ -254,9 +265,9 @@ test('applyToTarget damages an encounter and logs its defeat exactly once', () =
 test('applyToTarget heals an encounter without a defeat log', () => {
   const { goblin } = fixtures();
   const hurt = applyDamage(goblin, 6);
-  const app = stubApp({ encounters: [hurt] });
+  const app = stubApp({ creatures: [hurt] });
   applyToTarget(app, 'goblin', 3, true);
-  assert.equal(app.state.encounters[0].currentHP, 7);
+  assert.equal(app.state.creatures[0].currentHP, 7);
   assert.equal(app.log.length, 0);
 });
 
@@ -338,7 +349,7 @@ test('applyToTarget stays quiet healing a character who was not dying', () => {
 
 test('applyToTarget ignores non-positive amounts and unknown ids', () => {
   const { sage } = fixtures();
-  const app = stubApp({ npcs: [sage] });
+  const app = stubApp({ creatures: [sage] });
   applyToTarget(app, 'nobody', 5, false);
   applyToTarget(app, 'sage', 0, false);
   assert.equal(app.dirty, 0);
@@ -346,31 +357,31 @@ test('applyToTarget ignores non-positive amounts and unknown ids', () => {
 });
 
 test('applyToTarget damages and heals an NPC, clamped to its own maximum', () => {
-  const guard = createNPC('guard', 'Guard', { location: HERE, maxHP: 8 });
-  const app = stubApp({ npcs: [guard] });
+  const guard = createCreature('guard', 'Guard', { location: HERE, maxHP: 8 });
+  const app = stubApp({ creatures: [guard] });
   applyToTarget(app, 'guard', 3, false);
-  assert.equal(app.state.npcs[0].currentHP, 5);
+  assert.equal(app.state.creatures[0].currentHP, 5);
   applyToTarget(app, 'guard', 99, true);
-  assert.equal(app.state.npcs[0].currentHP, 8);
+  assert.equal(app.state.creatures[0].currentHP, 8);
   assert.equal(app.dirty, 2);
   assert.deepEqual(app.log, [], 'a standing NPC logs nothing of its own');
-  assert.ok(app.refreshes.includes('combatScreen'), 'the fight screen shows the new HP');
+  assert.ok(app.refreshes.includes('initiativePanel'), 'the fight surfaces show the new HP');
 });
 
 test('applyToTarget logs an NPC defeat once and rolls it no death saves', () => {
-  const guard = createNPC('guard', 'Guard', { location: HERE, maxHP: 6 });
-  const app = stubApp({ npcs: [guard] });
+  const guard = createCreature('guard', 'Guard', { location: HERE, maxHP: 6 });
+  const app = stubApp({ creatures: [guard] });
   applyToTarget(app, 'guard', 6, false);
-  assert.equal(app.state.npcs[0].currentHP, 0);
+  assert.equal(app.state.creatures[0].currentHP, 0);
   assert.deepEqual(app.log, ['Defeated Guard.']);
-  assert.equal(app.state.npcs[0].deathSaves, undefined, 'an NPC has no dying tracker');
+  assert.equal(app.state.creatures[0].deathSaves, undefined, 'an NPC has no dying tracker');
   applyToTarget(app, 'guard', 4, false);
   assert.deepEqual(app.log, ['Defeated Guard.'], 'a hit on a downed NPC stays quiet');
 });
 
-test('commitEncounters skips the panel and the dirty mark when told to', () => {
+test('commitCreatures skips the encounter panel and the dirty mark when told to', () => {
   const app = stubApp();
-  commitEncounters(app, { panel: false, dirty: false });
+  commitCreatures(app, { panel: false, dirty: false });
   assert.ok(!app.refreshes.includes('encounterPanel'), 'the caller re-renders its own rows');
   assert.equal(app.dirty, 0, 'the caller marks the campaign dirty itself');
   assert.ok(app.refreshes.includes('initiativePanel'), 'the running order still refreshes');
@@ -378,25 +389,17 @@ test('commitEncounters skips the panel and the dirty mark when told to', () => {
   assert.ok(app.calls.includes('syncCombatLocation'));
 });
 
-test('commitEncounters refreshes the panel and marks dirty by default', () => {
+test('commitCreatures refreshes both sidebar panels and marks dirty by default', () => {
   const app = stubApp();
-  commitEncounters(app);
+  commitCreatures(app);
   assert.ok(app.refreshes.includes('encounterPanel'));
-  assert.equal(app.dirty, 1);
-});
-
-test('commitNPCs refreshes the markers and the story panel, leaving the order alone', () => {
-  const app = stubApp();
-  commitNPCs(app);
-  assert.ok(app.calls.includes('syncNPCMarkers'));
-  assert.ok(app.refreshes.includes('npcPanel'));
-  assert.ok(!app.refreshes.includes('initiativePanel'), 'an NPC edit leaves the fight running');
+  assert.ok(app.refreshes.includes('npcPanel'), 'both lists can show the same creature');
   assert.equal(app.dirty, 1);
 });
 
 test('targetSaveBonus reads a character save and reports nothing for anyone else', () => {
   const { hero, goblin, sage } = fixtures();
-  const app = stubApp({ characters: [hero], encounters: [goblin], npcs: [sage] });
+  const app = stubApp({ characters: [hero], creatures: [goblin, sage] });
   assert.equal(targetSaveBonus(app, 'hero', 'STR'), saveBonus(hero, 'STR'));
   assert.equal(targetSaveBonus(app, 'goblin', 'STR'), undefined, 'a foe records no saves');
   assert.equal(targetSaveBonus(app, 'sage', 'STR'), undefined);
@@ -418,15 +421,22 @@ function swordBearer() {
 
 test('weaponsOf lists what each kind of combatant can swing', () => {
   const club = { name: 'Club', handling: 'melee', damage: [{ count: 1, sides: 4 }] };
-  const armedFoe = createEncounter('ogre', 'Ogre', 20, {}, HERE, {
+  const armedFoe = createCreature('ogre', 'Ogre', {
+    disposition: 'hostile',
+    maxHP: 20,
+    location: HERE,
     weapon: /** @type {any} */ (club),
   });
-  const barehanded = createEncounter('slime', 'Slime', 8, {}, HERE, { weapon: null });
+  const barehanded = createCreature('slime', 'Slime', {
+    disposition: 'hostile',
+    maxHP: 8,
+    location: HERE,
+    weapon: null,
+  });
   const { sage } = fixtures();
   const app = stubApp({
     characters: [swordBearer()],
-    encounters: [armedFoe, barehanded],
-    npcs: [sage],
+    creatures: [armedFoe, barehanded, sage],
   });
   assert.deepEqual(
     weaponsOf(app, 'hero').map((w) => w.name),
@@ -443,11 +453,11 @@ test('weaponsOf lists what each kind of combatant can swing', () => {
 
 test('weaponsOf lists the weapon an armed NPC was given', () => {
   const club = { name: 'Club', handling: 'melee', damage: [{ count: 1, sides: 4 }] };
-  const guard = createNPC('guard', 'Guard', {
+  const guard = createCreature('guard', 'Guard', {
     location: HERE,
     weapon: /** @type {any} */ (club),
   });
-  const app = stubApp({ npcs: [guard] });
+  const app = stubApp({ creatures: [guard] });
   assert.deepEqual(
     weaponsOf(app, 'guard').map((w) => w.name),
     ['Club'],
@@ -478,17 +488,20 @@ test('spellsOf lists a character cantrip plus what its known-rule makes castable
 });
 
 test('spellsOf reads a foe or NPC spellbook whole and an unknown id as nothing', () => {
-  const caster = createEncounter('lich', 'Lich', 40, {}, HERE, {
+  const caster = createCreature('lich', 'Lich', {
+    disposition: 'hostile',
+    maxHP: 40,
+    location: HERE,
     class: 'wizard',
     casterLevel: 9,
     spellbook: { cantrips: ['fire-bolt'], known: ['hold-person'], prepared: [] },
   });
-  const npcCaster = createNPC('seer', 'Seer', {
+  const npcCaster = createCreature('seer', 'Seer', {
     location: HERE,
     class: 'wizard',
     spellbook: { cantrips: [], known: ['hold-person'], prepared: [] },
   });
-  const app = stubApp({ encounters: [caster], npcs: [npcCaster] });
+  const app = stubApp({ creatures: [caster, npcCaster] });
   assert.deepEqual(
     spellsOf(app, 'lich')
       .map((s) => s.id)
@@ -517,15 +530,15 @@ function heldBy(extra = {}) {
 
 test('applyConditionToTarget chips a character, a foe, and an NPC', () => {
   const { hero, goblin, sage } = fixtures();
-  const app = stubApp({ characters: [hero], encounters: [goblin], npcs: [sage] });
+  const app = stubApp({ characters: [hero], creatures: [goblin, sage] });
   assert.equal(applyConditionToTarget(app, 'hero', 'Paralyzed', 10, heldBy()), true);
   assert.deepEqual(app.state.characters[0].conditions, [
     { name: 'Paralyzed', rounds: 10, source: heldBy() },
   ]);
   assert.equal(applyConditionToTarget(app, 'goblin', 'Blinded', null), true);
-  assert.deepEqual(app.state.encounters[0].conditions, [{ name: 'Blinded', rounds: null }]);
+  assert.deepEqual(app.state.creatures[0].conditions, [{ name: 'Blinded', rounds: null }]);
   assert.equal(applyConditionToTarget(app, 'sage', 'Blinded', null), true);
-  assert.deepEqual(app.state.npcs[0].conditions, [{ name: 'Blinded', rounds: null }]);
+  assert.deepEqual(app.state.creatures[0].conditions, [{ name: 'Blinded', rounds: null }]);
   assert.equal(applyConditionToTarget(app, 'nobody', 'Blinded', null), false);
   assert.equal(app.dirty, 3, 'only the three that landed wrote');
 });
@@ -537,10 +550,10 @@ test('endSpellEffects takes one cast off every target and names each one freed',
     ...fixtures().goblin,
     conditions: addCondition([], 'Paralyzed', 10, { source }),
   };
-  const app = stubApp({ characters: [hero], encounters: [goblin] });
+  const app = stubApp({ characters: [hero], creatures: [goblin] });
   endSpellEffects(app, 'mage', 'hold-person');
   assert.deepEqual(app.state.characters[0].conditions, []);
-  assert.deepEqual(app.state.encounters[0].conditions, []);
+  assert.deepEqual(app.state.creatures[0].conditions, []);
   assert.deepEqual(app.log, ['Hero is no longer Paralyzed.', 'Goblin is no longer Paralyzed.']);
   assert.equal(app.dirty, 1);
   assert.ok(app.calls.includes('refreshSelectedCharacter'));
@@ -550,9 +563,9 @@ test('endSpellEffects takes one cast off every target and names each one freed',
 test('endSpellEffects frees an NPC the cast had held', () => {
   const source = heldBy();
   const sage = { ...fixtures().sage, conditions: addCondition([], 'Paralyzed', 10, { source }) };
-  const app = stubApp({ npcs: [sage] });
+  const app = stubApp({ creatures: [sage] });
   endSpellEffects(app, 'mage', 'hold-person');
-  assert.deepEqual(app.state.npcs[0].conditions, []);
+  assert.deepEqual(app.state.creatures[0].conditions, []);
   assert.deepEqual(app.log, ['Sage is no longer Paralyzed.']);
   assert.ok(app.refreshes.includes('npcPanel'));
 });
@@ -563,7 +576,7 @@ test('endSpellEffects leaves the other roster untouched when only one holds a ch
     conditions: addCondition([], 'Paralyzed', 10, { source: heldBy() }),
   };
   const { hero } = fixtures();
-  const app = stubApp({ characters: [hero], encounters: [goblin] });
+  const app = stubApp({ characters: [hero], creatures: [goblin] });
   const before = app.state.characters;
   endSpellEffects(app, 'mage', 'hold-person');
   assert.equal(app.state.characters, before, 'an untouched roster keeps its array identity');
@@ -605,9 +618,9 @@ test('retryImposedSaves keeps the chip on a failure and writes nothing', () => {
     ...fixtures().goblin,
     conditions: addCondition([], 'Paralyzed', 10, { source }),
   };
-  const app = stubApp({ encounters: [goblin] });
+  const app = stubApp({ creatures: [goblin] });
   retryImposedSaves(app, 'goblin');
-  assert.deepEqual(app.state.encounters[0].conditions.length, 1);
+  assert.deepEqual(app.state.creatures[0].conditions.length, 1);
   assert.equal(app.dirty, 0, 'a failed retry changes nothing to store');
   assert.match(app.log[0], /^Goblin is still Paralyzed \(WIS save \d+ vs DC 99\)\.$/);
 });
@@ -618,9 +631,9 @@ test('retryImposedSaves writes a freed foe back to the encounter roster', () => 
     ...fixtures().goblin,
     conditions: addCondition([], 'Paralyzed', 10, { source }),
   };
-  const app = stubApp({ encounters: [goblin] });
+  const app = stubApp({ creatures: [goblin] });
   retryImposedSaves(app, 'goblin');
-  assert.deepEqual(app.state.encounters[0].conditions, []);
+  assert.deepEqual(app.state.creatures[0].conditions, []);
   assert.equal(app.dirty, 1);
   assert.match(app.log[0], /^Goblin shakes off Paralyzed \(WIS save \d+ vs DC 1\)\.$/);
 });
@@ -631,7 +644,7 @@ test('retryImposedSaves rolls a foe chip against the bonus the cast recorded', (
     ...fixtures().goblin,
     conditions: addCondition([], 'Stunned', null, { source }),
   };
-  const app = stubApp({ encounters: [goblin] });
+  const app = stubApp({ creatures: [goblin] });
   retryImposedSaves(app, 'goblin');
   assert.match(app.log[0], /^Goblin is still Stunned \(save \d+ vs DC 99\)\.$/);
 });
@@ -639,9 +652,9 @@ test('retryImposedSaves rolls a foe chip against the bonus the cast recorded', (
 test('retryImposedSaves frees an NPC that shakes its chip off', () => {
   const source = heldBy({ saveEnds: true, saveDC: 1 });
   const sage = { ...fixtures().sage, conditions: addCondition([], 'Stunned', 10, { source }) };
-  const app = stubApp({ npcs: [sage] });
+  const app = stubApp({ creatures: [sage] });
   retryImposedSaves(app, 'sage');
-  assert.deepEqual(app.state.npcs[0].conditions, []);
+  assert.deepEqual(app.state.creatures[0].conditions, []);
   assert.equal(app.dirty, 1);
   assert.match(app.log[0], /^Sage shakes off Stunned \(WIS save \d+ vs DC 1\)\.$/);
 });
@@ -652,7 +665,7 @@ test('retryImposedSaves rolls nothing for an unknown id or a chip with no retry'
     ...fixtures().hero,
     conditions: addCondition([], 'Paralyzed', 10, { source: heldBy() }),
   };
-  const app = stubApp({ characters: [hero], npcs: [sage] });
+  const app = stubApp({ characters: [hero], creatures: [sage] });
   retryImposedSaves(app, 'sage');
   retryImposedSaves(app, 'nobody');
   retryImposedSaves(app, 'hero');
@@ -689,10 +702,10 @@ test('damage a concentrating character cannot save against ends the spell and sw
     ...fixtures().goblin,
     conditions: addCondition([], 'Paralyzed', 10, { source }),
   };
-  const app = stubApp({ characters: [character], encounters: [goblin] });
+  const app = stubApp({ characters: [character], creatures: [goblin] });
   applyToTarget(app, 'hero', 80, false);
   assert.equal(app.state.characters[0].concentration, null);
-  assert.deepEqual(app.state.encounters[0].conditions, [], 'the target walks free with the spell');
+  assert.deepEqual(app.state.creatures[0].conditions, [], 'the target walks free with the spell');
   assert.match(app.log[0], /^Hero loses concentration on Hold Person \(CON save \d+ vs DC 40\)\.$/);
   assert.equal(app.log[1], 'Goblin is no longer Paralyzed.');
 });
@@ -739,7 +752,7 @@ test('a repeated save names the rider that changed it', () => {
       { name: 'Bane', rounds: 10, rider: { rolls: ['attack', 'save'], dice: -1, die: 'd4' } },
     ],
   };
-  const app = stubApp({ encounters: [goblin] });
+  const app = stubApp({ creatures: [goblin] });
   retryImposedSaves(app, 'goblin');
   assert.match(app.log[0], /Bane -1d4 \[\d\]/);
 });

@@ -224,9 +224,9 @@ itself renders in combat mode. [The combat guide](combat.md) covers it.
 
 The shared create-and-edit dialog (name, HP, level or tier, placement via
 `locationFields`) lives in `encounterForm.js` and backs both panels' add and
-edit actions. Edits go through the pure `Encounter.editEncounter`. It keeps
+edit actions. Edits go through the pure `Creature.editCreature`. It keeps
 live state (current HP clamped to a new max, stat block, conditions), and it
-resets the `noticed` flag when the encounter moves. The bestiary spawn
+resets the `met` flag when the creature moves. The bestiary spawn
 dialog is `encounterForm.js`'s `addFromBestiary`.
 
 `weaponAttack.js` resolves the 5e attacks that the combat screen's action
@@ -236,7 +236,7 @@ applies are pure functions in `src/combat/AttackResolve.js`, which holds the
 unit tests. `resolveAttack` decides hit, crit, and the wording that both the
 log and the toast quote. `damageParts` assembles the dice that a hit rolls,
 and it doubles every count on a crit, including the dialog's added dice.
-`attackerStats` picks between an encounter's stat block and a character's
+`attackerStats` picks between a creature's stat block and a character's
 gear-buffed scores.
 
 The spell decides how many creatures a cast can name. `Casting.maxTargets`
@@ -254,14 +254,14 @@ change to the slot level restates it through the form's `setTotal`. See
 
 Which creatures a cast can reach depends on where it is cast from. In
 combat, the list comes from the initiative order, so it is whoever is in
-the fight. Out of combat, it is the party's own tile: the undefeated
-encounters staged on it, plus the NPCs standing on it. The tile is as close
+the fight. Out of combat, it is the party's own tile: the undefeated hostile
+creatures standing on it. The tile is as close
 to a range check as the app gets, since there is no distance between two
 tokens to measure yet.
 
-All of this builds on `combatants.js`, the one
-place that resolves a participant id across the three combatant collections
-(characters, encounters, NPCs):
+All of this builds on `combatants.js`, the one place that resolves a
+participant id across the two combatant collections (characters,
+creatures):
 
 - `findCombatant(app, id)` returns `{ entity, kind, store }`, where `store`
   writes an update back to the owning collection with its panel refreshes.
@@ -273,33 +273,29 @@ place that resolves a participant id across the three combatant collections
   A failed save against a spell with a `condition` adds that chip to the
   target. The chip carries a round counter, read from the spell's duration
   (`SpellTiming.durationInRounds`). The existing round tick clears the chip
-  when the spell ends. All three kinds hold chips, so the write branches only
+  when the spell ends. Both kinds hold chips, so the write branches only
   to satisfy the store function of the collection the target lives in.
-- `commitEncounters(app)` and `commitNPCs(app)` are the refresh that follows
-  a write to `state.encounters` or `state.npcs`. Two separate panels show
-  the same entity: the Play sidebar's list and the Build rail's authoring
-  list. A write from either side must refresh the other, because nothing
+- `commitCreatures(app)` is the refresh that follows a write to
+  `state.creatures`. Several panels can show the same creature: the Play
+  sidebar's Encounters and NPCs lists and the Build rail's two authoring
+  lists. A write from any side must refresh the others, because nothing
   about the write itself says which side it came from.
 
-  `commitEncounters` does four things after a write. It re-marks the danger
-  tiles on the viewed map. That call also rebuilds the Build-rail encounter
-  list, which is scoped to the same node. It refreshes the Play sidebar's
-  Encounters panel. It refreshes the initiative panel, whose wrapped update
-  also refreshes the combat screen. Authoring, moving, spawning, or
-  defeating an encounter on the party's tile can start or end a fight, so
-  this refresh matters. It also marks the campaign dirty. A caller passes
-  `{ panel: false }` from an Encounters panel row handler. The list helper
-  already re-renders its own rows once the handler resolves, so an update
-  here renders them twice. A caller passes `{ dirty: false }` when it marks
-  dirty itself.
-
-  `commitNPCs` does the same for NPCs, without the initiative panel. It
-  refreshes the NPC markers, the Build-rail NPC list, and the Story
-  sidebar's NPC panel, and it marks the campaign dirty.
+  `commitCreatures` does five things after a write. It re-marks the danger
+  and blue tiles on the viewed map. That call also rebuilds both Build-rail
+  lists, which are scoped to the same node. It refreshes the Play sidebar's
+  Encounters and NPCs panels. It refreshes the initiative panel, whose
+  wrapped update also refreshes the combat screen. Authoring, moving,
+  spawning, or defeating a creature on the party's tile can start or end a
+  fight, so this refresh matters. It also marks the campaign dirty. A
+  caller passes `{ panel: false }` from an Encounters panel row handler.
+  The list helper already re-renders its own rows once the handler
+  resolves, so an update here renders them twice. A caller passes
+  `{ dirty: false }` when it marks dirty itself.
 
 New combat features must route entity resolution, HP application, and the
 post-write refresh through these functions. They must not rewrite the
-character, encounter, and NPC cascade.
+character and creature cascade.
 
 The authoring forms share their fields the same way. An entity the GM can
 author in two places (a campaign encounter in a dialog, a bestiary template

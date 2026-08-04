@@ -1,6 +1,5 @@
-import { effectiveStatBlock } from '../entities/Encounter.js';
+import { effectiveStatBlock, isCreature } from '../entities/Creature.js';
 import { effectiveStats } from '../entities/Equipment.js';
-import { npcStatBlock } from '../entities/NPC.js';
 import { DIE_SIDES } from '../dice/DiceRoller.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 
@@ -16,21 +15,17 @@ import { abilityModifier } from '../entities/Modifiers.js';
 /** @typedef {import('../types/dice.js').DieType} DieType */
 
 /**
- * The stat map an attacker rolls from. An encounter carries a stat block that
- * its own modifiers apply to. An NPC carries one too, with its armor folded
- * in. A party character carries ability scores that equipped gear can buff.
- * Every kind gives the caller one ability-to-score map.
- *
- * The NPC test comes first, and it reads `disposition`, the field only an NPC
- * has. An NPC has no `statBlock`, so the encounter test would send it to the
- * character branch, where `effectiveStats` reads an inventory it does not
- * carry.
- * @param {import('../types/entities.js').Encounter | import('../types/entities.js').Character | import('../types/npc.js').NPC} attacker
+ * The stat map an attacker rolls from. A creature carries a stat block that
+ * its armor and timed modifiers apply to. A party character carries ability
+ * scores that equipped gear can buff. Both kinds give the caller one
+ * ability-to-score map.
+ * @param {import('../types/creature.js').Creature | import('../types/entities.js').Character} attacker
  * @returns {Record<string, number>}
  */
 export function attackerStats(attacker) {
-  if ('disposition' in attacker) return npcStatBlock(attacker);
-  return 'statBlock' in attacker ? effectiveStatBlock(attacker) : effectiveStats(attacker);
+  return isCreature(attacker)
+    ? effectiveStatBlock(/** @type {import('../types/creature.js').Creature} */ (attacker))
+    : effectiveStats(/** @type {import('../types/entities.js').Character} */ (attacker));
 }
 
 /**

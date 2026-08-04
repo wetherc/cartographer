@@ -4,7 +4,7 @@ import { isGM } from '../view/ViewRole.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { mountListPanel } from './listPanel.js';
 
-/** @typedef {import('../types/npc.js').NPC} NPC */
+/** @typedef {import('../types/creature.js').Creature} NPC */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**

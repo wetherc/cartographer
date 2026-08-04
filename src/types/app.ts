@@ -10,11 +10,11 @@
  * tile, the active brush, combat, or the dirty flag, stays private inside
  * the module that owns it.
  */
-import type { Character, Encounter, EncounterLocation, EncounterTemplate } from './entities.js';
+import type { Character, EncounterLocation } from './entities.js';
+import type { Creature, CreatureTemplate } from './creature.js';
 import type { LogEntry, LogEntryKind } from './log.js';
 import type { Quest } from './quest.js';
 import type { GameClock } from './time.js';
-import type { NPC } from './npc.js';
 import type { Handout } from './handout.js';
 import type { CombatState } from './combat.js';
 import type { ViewRole } from './view.js';
@@ -32,13 +32,13 @@ export type AppMode = 'play' | 'build' | 'library' | 'combat';
 /** The campaign data that a save serializes, plus the two view switches. */
 export interface AppState {
   characters: Character[];
-  encounters: Encounter[];
+  /** Every creature in the campaign: foes and townsfolk in one list. */
+  creatures: Creature[];
   travelog: LogEntry[];
   quests: Quest[];
   clock: GameClock;
-  npcs: NPC[];
   handouts: Handout[];
-  bestiary: EncounterTemplate[];
+  bestiary: CreatureTemplate[];
   /** GM toggle. True when characters can hold their own positions on the map. */
   splitParty: boolean;
   /** The running fight (order, round, current turn), or null when no fight is

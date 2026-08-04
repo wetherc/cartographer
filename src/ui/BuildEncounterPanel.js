@@ -4,7 +4,7 @@ import { el } from './dom.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { mountListPanel } from './listPanel.js';
 
-/** @typedef {import('../types/entities.js').Encounter} Encounter */
+/** @typedef {import('../types/creature.js').Creature} Encounter */
 
 /**
  * Mount the Build-rail encounter authoring list. Each row shows one
@@ -88,7 +88,7 @@ export function mountBuildEncounterPanel(container, callbacks) {
         onSetStat: (stat, value) => {
           callbacks.onUpdate({
             ...encounter,
-            statBlock: { ...encounter.statBlock, [stat]: value },
+            stats: { ...encounter.stats, [stat]: value },
           });
           ctx.render();
         },

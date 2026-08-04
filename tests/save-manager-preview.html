@@ -17,7 +17,7 @@
   <script type="module">
     import { createMapNode, createTile, setTile, TileGrid } from '../src/map/TileGrid.js';
     import { createCharacter, addXP } from '../src/entities/Character.js';
-    import { createEncounter } from '../src/entities/Encounter.js';
+    import { createCreature } from '../src/entities/Creature.js';
     import { buildState, trySaveToLocalStorage, loadFromLocalStorage, downloadState, toTileGrid } from '../src/storage/SaveManager.js';
 
     let world = createMapNode('world', 'World', null, 1, 1);
@@ -27,8 +27,8 @@
 
     const party = { nodeId: 'world', tileId: '0,0' };
     const characters = [addXP(createCharacter('c1', 'Hero'), 50)];
-    const encounters = [createEncounter('e1', 'Goblin', 7)];
-    const state = buildState({ grid, party, characters, encounters });
+    const creatures = [createCreature('e1', 'Goblin', { disposition: 'hostile', maxHP: 7, level: 1 })];
+    const state = buildState({ grid, party, characters, creatures });
 
     const output = document.getElementById('output');
 

@@ -37,8 +37,15 @@ export function buildEncounterTemplateForm({
     // A new template re-stamps the stat defaults as level or tier change,
     // until a stat is hand-edited. An edit keeps the stored block.
     onChange: encounterFieldsChange({ restampStats: !template }),
-    assemble: (values) =>
-      /** @type {Omit<EncounterTemplate, 'id'>} */ (readEncounterFields(values, gear)),
+    // The library still stores the pre-merge template shape, so the read
+    // back's `stats` record is written under `statBlock` here.
+    assemble: (values) => {
+      const { stats, ...fields } = readEncounterFields(values, gear);
+      return /** @type {Omit<EncounterTemplate, 'id'>} */ ({
+        ...fields,
+        statBlock: stats ?? {},
+      });
+    },
     submitLabel,
     onSubmit,
     onCancel,

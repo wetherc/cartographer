@@ -11,8 +11,7 @@ import {
 } from '../src/combat/AttackResolve.js';
 import { createCharacter, addItem } from '../src/entities/Character.js';
 import { equip } from '../src/entities/Equipment.js';
-import { createEncounter } from '../src/entities/Encounter.js';
-import { createNPC } from '../src/entities/NPC.js';
+import { createCreature } from '../src/entities/Creature.js';
 
 /** @param {number} count @param {number} sides @param {string} damageType */
 function part(count, sides, damageType) {
@@ -132,7 +131,7 @@ test('an advantage roll names the die it threw away', () => {
   assert.equal(droppedNote({ dropped: [4, 2] }, 'disadvantage'), ' at disadvantage (dropped 4,2)');
 });
 
-test("a character's stats come from equipped gear, an encounter's from its stat block", () => {
+test("a character's stats come from equipped gear, a creature's from its stat block", () => {
   let hero = createCharacter('h1', 'Mirelle', { STR: 10, DEX: 14 });
   hero = addItem(hero, {
     id: 'ring',
@@ -145,12 +144,16 @@ test("a character's stats come from equipped gear, an encounter's from its stat 
   hero = equip(hero, 'accessory', 'ring');
   assert.equal(attackerStats(hero).STR, 14);
 
-  const foe = createEncounter('e1', 'Ogre', 59, { STR: 19 });
+  const foe = createCreature('e1', 'Ogre', {
+    disposition: 'hostile',
+    maxHP: 59,
+    stats: { STR: 19 },
+  });
   assert.equal(attackerStats(foe).STR, 19);
 });
 
-test('attackerStats reads an NPC stat block, armor and all', () => {
-  const guard = createNPC('n1', 'Guard', {
+test("attackerStats folds a creature's worn armor into its AC", () => {
+  const guard = createCreature('n1', 'Guard', {
     stats: { STR: 15, AC: 12 },
     armor: { name: 'Shield', acBonus: 2 },
   });

@@ -17,7 +17,7 @@ does.
 ## The save pipeline at a glance
 
 ```
-  live state (TileGrid, characters, encounters, ...)
+  live state (TileGrid, characters, creatures, ...)
       |
       |  buildState            flatten to CampaignState; stamp schema version
       v
@@ -42,7 +42,7 @@ schema migrations, then shape coercion.
 
 The top-level shape is `CampaignState` (`src/types/storage.ts`). It holds a
 flat `nodes` array (the flattened node map of the `TileGrid`), plus `party`,
-`characters`, `encounters`, and the other collections. `storage/SaveManager.js`
+`characters`, `creatures`, and the other collections. `storage/SaveManager.js`
 owns `buildState`, `serialize`, `deserialize`, and `toTileGrid`, and all four
 are pure. `toTileGrid` rebuilds a working hierarchy by re-adding each node,
 because a `MapNode` already carries its own `parentId`.
@@ -134,8 +134,8 @@ what a level-1 mob receives. Loading then gives the boss different gear.
 Validating each omission against the real unpacker is what stops packing and
 loading from disagreeing with each other.
 
-`SaveManager`'s one `ENTITY_DEFAULTS` table names four pairs: `characters`,
-`encounters`, `npcs`, and `handouts`. Both directions read this table, so the
+`SaveManager`'s one `ENTITY_DEFAULTS` table names three pairs: `characters`,
+`creatures`, and `handouts`. Both directions read this table, so the
 two halves cannot drift apart. `quests` and `bestiary` are absent because
 neither has a `withDefaults` function to pack against, and both measured at
 zero default-valued bytes.

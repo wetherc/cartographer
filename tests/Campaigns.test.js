@@ -40,7 +40,7 @@ test('loadInitialCampaign restores a save and default-fills fields older saves l
   assert.deepEqual(campaign.travelog, []);
   assert.deepEqual(campaign.quests, []);
   assert.ok(campaign.clock, 'a missing clock is created, not left null');
-  assert.deepEqual(campaign.npcs, []);
+  assert.deepEqual(campaign.creatures, []);
   assert.deepEqual(campaign.handouts, []);
   assert.deepEqual(campaign.bestiary, []);
   assert.equal(campaign.splitParty, false);
@@ -75,7 +75,8 @@ test('loadInitialCampaign passes through every present field of a full save', ()
   assert.equal(campaign.travelog.length, 1);
   assert.equal(campaign.quests[0].id, 'q1');
   assert.deepEqual(campaign.clock, clock);
-  assert.equal(campaign.npcs[0].name, 'Barkeep');
+  // The pre-merge save's npcs list migrates into the creatures list.
+  assert.equal(campaign.creatures[0].name, 'Barkeep');
   assert.equal(campaign.handouts[0].title, 'Map');
   assert.equal(campaign.bestiary[0].id, 'b1');
   assert.equal(campaign.splitParty, true);
@@ -109,15 +110,14 @@ test('loadInitialCampaignSafe reports success for a readable save', () => {
 test('buildExampleCampaign defaults rng to Math.random when none is given', () => {
   const campaign = buildExampleCampaign(new TilePalette());
   assert.ok(campaign.grid.getNode('world'), 'built an overworld without an injected rng');
-  assert.ok(campaign.encounters.length > 0);
+  assert.ok(campaign.creatures.length > 0);
 });
 
 test('blank campaign has no demo content', () => {
   const campaign = buildBlankCampaign();
   assert.equal(campaign.characters.length, 0);
-  assert.equal(campaign.encounters.length, 0);
+  assert.equal(campaign.creatures.length, 0);
   assert.equal(campaign.quests.length, 0);
-  assert.equal(campaign.npcs.length, 0);
 });
 
 test('example campaign ships a full arc: quests, NPCs, bosses, field enemies', () => {
@@ -126,14 +126,15 @@ test('example campaign ships a full arc: quests, NPCs, bosses, field enemies', (
   assert.ok(campaign.quests.length >= 5, 'expected a quest chain');
   assert.ok(campaign.quests.every((q) => q.status === 'active' && q.notes.length > 0));
 
-  assert.ok(campaign.npcs.length >= 5, 'expected a staffed world');
-  assert.ok(campaign.npcs.every((n) => n.location !== null && n.notes.length > 0));
+  const folk = campaign.creatures.filter((c) => c.disposition !== 'hostile');
+  assert.ok(folk.length >= 5, 'expected a staffed world');
+  assert.ok(folk.every((n) => n.location !== null && (n.notes ?? '').length > 0));
 
-  const legends = campaign.encounters.filter((e) => e.tier === 'legend');
-  const mobs = campaign.encounters.filter((e) => e.tier === 'mob');
+  const legends = campaign.creatures.filter((e) => e.tier === 'legend');
+  const mobs = campaign.creatures.filter((e) => e.tier === 'mob');
   assert.ok(legends.length >= 4, 'expected minor bosses plus a major boss');
   assert.ok(mobs.length >= 8, 'expected field enemies');
-  const major = legends.reduce((a, b) => (b.level > a.level ? b : a));
+  const major = legends.reduce((a, b) => ((b.level ?? 0) > (a.level ?? 0) ? b : a));
   assert.equal(major.id, 'ostrand');
   assert.equal(major.location?.nodeId, 'barrow');
 
@@ -174,13 +175,9 @@ test('example campaign placements land on real tiles across seeds', () => {
       return tile;
     };
 
-    for (const e of campaign.encounters) {
-      assert.ok(e.location, `seed ${seed}: encounter ${e.id} unplaced`);
-      assertPlaced(e.location, `encounter ${e.id}`);
-    }
-    for (const n of campaign.npcs) {
-      assert.ok(n.location, `seed ${seed}: NPC ${n.id} unplaced`);
-      assertPlaced(n.location, `NPC ${n.id}`);
+    for (const c of campaign.creatures) {
+      assert.ok(c.location, `seed ${seed}: creature ${c.id} unplaced`);
+      assertPlaced(c.location, `creature ${c.id}`);
     }
     for (const h of campaign.handouts) {
       if (h.nodeId !== null)
@@ -189,15 +186,15 @@ test('example campaign placements land on real tiles across seeds', () => {
 
     // Story bosses stand on their stamped landmarks, and the barrow boss on
     // real dungeon floor rather than a wall or the void.
-    const snagtooth = campaign.encounters.find((e) => e.id === 'snagtooth');
+    const snagtooth = campaign.creatures.find((e) => e.id === 'snagtooth');
     const campTile = assertPlaced(/** @type {any} */ (snagtooth?.location), 'snagtooth');
     assert.equal(campTile.metadata.poiType, 'landmark', `seed ${seed}: camp not stamped`);
-    const ostrand = campaign.encounters.find((e) => e.id === 'ostrand');
+    const ostrand = campaign.creatures.find((e) => e.id === 'ostrand');
     const tombTile = assertPlaced(/** @type {any} */ (ostrand?.location), 'ostrand');
     assert.ok(tombTile.imageRef.includes('interior-floor'), `seed ${seed}: tomb not on floor`);
 
-    const ids = campaign.encounters.map((e) => e.id);
-    assert.equal(new Set(ids).size, ids.length, `seed ${seed}: duplicate encounter ids`);
+    const ids = campaign.creatures.map((e) => e.id);
+    assert.equal(new Set(ids).size, ids.length, `seed ${seed}: duplicate creature ids`);
   }
 });
 

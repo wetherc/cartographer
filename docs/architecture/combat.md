@@ -40,7 +40,7 @@ src/combat/Loadout.js ........ pure: what a combatant is wearing, swinging,
                                and holding in slots, and how much of that a
                                given viewer can see
 src/combat/Arrival.js ........ pure: the text of the walked-into-something
-                               alert, for encounters and hostile NPCs
+                               alert, for the hostile creatures on a tile
 src/ui/CombatScreen.js ....... the screen: active column, board, log column,
                                turn ribbon, outcome banner, live region,
                                keyboard handling
@@ -128,11 +128,10 @@ order that the GM built with no foes in it reads as undecided. A mutual wipe
 reads as a defeat: what happens to the party outweighs what happens to the
 monsters.
 
-An NPC row counts toward its side like any other. A hostile NPC is a foe, and a
-friendly or neutral one stands with the party. A whole side must go down before
-the fight settles, so one fallen friendly NPC settles nothing while a character
-still stands. A fight whose foe side is only hostile NPCs is now winnable, which
-it was not while an NPC could not be defeated.
+A creature row counts toward its side by disposition. A hostile creature is a
+foe, and a friendly or neutral one stands with the party. A whole side must go
+down before the fight settles, so one fallen friendly bystander settles
+nothing while a character still stands.
 
 ### Who can see what
 
@@ -213,26 +212,20 @@ alone.
 
 ## Starting a fight
 
-The party can fight two things on its tile. The first is a live encounter
-staged there. The second is a hostile NPC standing there. `threatsHere` in
-`encounterWiring.js` is the one test for both. Three places call it: the
+The party fights the live hostile creatures on its tile. `threatsHere` in
+`encounterWiring.js` is the one test. Three places call it: the
 arrival alert, the Start combat button, and the check that keeps a running
 fight alive.
 
-A hostile NPC alone is enough for a fight. It has a side, hit points, and an
-AC. A friendly or neutral NPC is not a threat. It joins a fight that starts
+A friendly or neutral creature is not a threat. It joins a fight that starts
 for another reason. A step onto its tile logs a meeting instead.
 
 `arrivalAlert` in `src/combat/Arrival.js` writes the text of the alert. It
-reads `name`, `currentHP`, and `maxHP`. An `Encounter` and an `NPC` both use
-these names. One function therefore names both kinds. The alert cannot
-describe an NPC differently from a foe.
+reads `name`, `currentHP`, and `maxHP` off each creature.
 
-The Start combat button sits in the Active tab of the Encounters panel. That
-tab lists encounters, not NPCs. The panel takes a `hasActive` callback to pick
-its own tab, and the wiring passes `threatsHere`. The tab that holds the
-button therefore comes forward for a hostile NPC. The tab itself stays
-empty.
+The Start combat button sits in the Active tab of the Encounters panel. The
+panel takes a `hasActive` callback to pick its own tab, and the wiring passes
+`threatsHere`, the same test the alert uses.
 
 ## Ending a fight
 
@@ -243,18 +236,16 @@ the log and the board away from whoever landed the hit, with no chance to
 heal first.
 
 The auto-drop keeps the fight running when the party leaves the tile or the
-encounter list changes for reasons other than a kill. `syncCombatLocation` is
-an action that the party-move paths and `commitEncounters` call. The plain
+creature list changes for reasons other than a kill. `syncCombatLocation` is
+an action that the party-move paths and `commitCreatures` call. The plain
 panel refresh never calls it, because that refresh also runs from the
 rehydrate loop, where a state write fights the save that the tab just
-adopted from another tab. The auto-drop reads `encountersAtTile` rather than
-`encountersOnTile`. The two differ only in that `encountersOnTile` filters
-out the defeated. Because of this, the drop counts every encounter staged on
-the party's tile, including the dead ones. It counts the hostile NPCs on the
-tile the same way, through `hostileNPCsOnTile`. A fight against an NPC alone
-therefore survives the next refresh. Walking off the tile still clears the
-fight. So does deleting the last thing to fight. A kill does not clear the
-fight.
+adopted from another tab. The auto-drop reads `hostileCreaturesAtTile`
+rather than `hostileCreaturesOnTile`. The two differ only in that the
+on-tile read filters out the defeated. Because of this, the drop counts
+every hostile creature staged on the party's tile, including the dead ones.
+Walking off the tile still clears the fight. So does deleting the last thing
+to fight. A kill does not clear the fight.
 
 The screen also grows a banner under the ribbon once `fightOutcome` settles.
 The banner states that the party is victorious or defeated, with a line for
@@ -284,10 +275,10 @@ the last fight's DOM behind.
   `views.initiativePanel.update()` and refreshes the combat screen inside
   that wrapper. Because of this, every call site that the sidebar card
   already had (party moves, role switches, the rehydrate loop,
-  `commitEncounters`) reaches the screen without extra code.
-- **Combatant writes.** The character and NPC `store`s that `findCombatant`
-  uses update the screen directly. The encounter branch reaches the screen
-  through `commitEncounters`.
+  `commitCreatures`) reaches the screen without extra code.
+- **Combatant writes.** The character `store` that `findCombatant` uses
+  updates the screen directly. The creature branch reaches the screen
+  through `commitCreatures`.
 - **The log.** `logEvent` refreshes the screen. Without this, a line that
   changes no combatant, such as a missed attack or a plain tray roll, never
   reaches the log column.

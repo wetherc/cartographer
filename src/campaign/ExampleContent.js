@@ -3,9 +3,8 @@ import { assembleProficiencies } from '../entities/Proficiencies.js';
 import { withProficiencies } from '../entities/Progression.js';
 import { classMaxHP, withHitDice } from '../entities/HitDice.js';
 import { withSpellSlots } from '../entities/SpellSlots.js';
-import { createEncounter } from '../entities/Encounter.js';
+import { createCreature, defaultEnemyGear } from '../entities/Creature.js';
 import { createClock } from '../time/GameClock.js';
-import { createNPC } from '../entities/NPC.js';
 import { defaultEnemyStats } from '../entities/Modifiers.js';
 import { buildingTile } from './ExampleWorld.js';
 
@@ -22,29 +21,40 @@ import { buildingTile } from './ExampleWorld.js';
  * @param {Record<string, number>} extras
  */
 const enemy = (id, name, hp, level, tier, nodeId, tileId, extras) =>
-  createEncounter(
-    id,
-    name,
-    hp,
-    { ...defaultEnemyStats(level, tier), ...extras },
-    { nodeId, tileId },
-    { level, tier },
-  );
+  createCreature(id, name, {
+    disposition: 'hostile',
+    maxHP: hp,
+    stats: { ...defaultEnemyStats(level, tier), ...extras },
+    location: { nodeId, tileId },
+    level,
+    tier,
+  });
 
 /**
- * A reusable bestiary blueprint for the campaign's common enemies.
+ * A townsperson or story figure, placed or roaming.
+ * @param {string} id @param {string} name
+ * @param {Parameters<typeof createCreature>[2]} options
+ */
+const person = (id, name, options) => createCreature(id, name, options);
+
+/**
+ * A reusable bestiary blueprint for the campaign's common enemies. The gear
+ * is the level and tier default, stored explicitly, because the merged
+ * template shape carries no absent-means-default rule.
  * @param {string} id @param {string} name @param {number} hp
  * @param {number} level @param {EnemyTier} tier
  * @param {Record<string, number>} extras
- * @returns {import('../types/entities.js').EncounterTemplate}
+ * @returns {import('../types/creature.js').CreatureTemplate}
  */
 const template = (id, name, hp, level, tier, extras) => ({
   id,
   name,
+  disposition: 'hostile',
   maxHP: hp,
-  statBlock: { ...defaultEnemyStats(level, tier), ...extras },
+  stats: { ...defaultEnemyStats(level, tier), ...extras },
   level,
   tier,
+  ...defaultEnemyGear(level, tier),
 });
 
 /**
@@ -220,7 +230,7 @@ export function buildExampleContent(palette, world) {
   return {
     party: { nodeId: 'world', tileId: '16,16' },
     characters: exampleParty(),
-    encounters: [
+    creatures: [
       // Field enemies on the overworld, one type for each biome.
       enemy('goblin-scout', 'Goblin Scout', 7, 1, 'mob', 'world', '18,15', { AC: 13, Speed: 30 }),
       enemy('gray-wolf-1', 'Gray Wolf', 11, 1, 'mob', 'world', '24,16', { AC: 13, Speed: 40 }),
@@ -296,6 +306,99 @@ export function buildExampleContent(palette, world) {
       enemy('ostrand', 'King Ostrand the Risen', 110, 8, 'legend', 'barrow', tombTile, {
         AC: 18,
         Speed: 30,
+      }),
+      // The people of the Marches share the same list as the field enemies.
+      person('caravan-master-dorn', 'Dorn', {
+        role: 'Caravan master, stranded at the crossroads',
+        disposition: 'neutral',
+        notes:
+          'Blunt and impatient. Pays for road news, and points anyone who looks capable at Bram in Briarwick.',
+        stats: { STR: 12, CON: 14, CHA: 12 },
+        location: { nodeId: 'world', tileId: '15,16' },
+      }),
+      person('innkeeper-bram', 'Bram', {
+        role: 'Innkeeper, the Waystation at Briarwick',
+        disposition: 'friendly',
+        notes:
+          'Knows every road north and gossips freely for a warm meal. First to mention the raids, the open graves, and the hermit Odo.',
+        stats: { INT: 12, WIS: 14, CHA: 13 },
+        location: { nodeId: 'briarwick', tileId: buildingTile(gens.briarwick, palette, 'inn') },
+      }),
+      person('reeve-maera', 'Reeve Maera', {
+        role: 'Reeve of Briarwick',
+        disposition: 'neutral',
+        notes:
+          "Keeps the shire records. Recognizes the pale crown as King Ostrand's seal — and knows the barrow was warded shut for a reason.",
+        stats: { INT: 14, WIS: 15, CHA: 12 },
+        location: {
+          nodeId: 'briarwick',
+          tileId: `${Math.floor(gens.briarwick.width / 2)},${Math.floor(gens.briarwick.height / 2)}`,
+        },
+      }),
+      person('sella-the-smith', 'Sella', {
+        role: 'Blacksmith of Briarwick',
+        disposition: 'friendly',
+        notes:
+          'Buys ore, sells and repairs arms. Can reforge the warding key if it comes back from the barrow broken — but only from Hollowvein silver, and the mine stands abandoned.',
+        stats: { STR: 15, CON: 14 },
+        location: {
+          nodeId: 'briarwick',
+          tileId: buildingTile(gens.briarwick, palette, 'blacksmith'),
+        },
+      }),
+      person('sister-alwyn', 'Sister Alwyn', {
+        role: 'Priestess of the Dawn, Briarwick temple',
+        disposition: 'friendly',
+        notes:
+          'Blesses weapons against the risen dead once the party learns what walks in the barrow. Quietly terrified of the open graves.',
+        stats: { INT: 12, WIS: 16, CHA: 14 },
+        location: { nodeId: 'briarwick', tileId: buildingTile(gens.briarwick, palette, 'temple') },
+      }),
+      person('hermit-odo', 'Odo', {
+        role: 'Hermit, keeper of the warding key',
+        disposition: 'neutral',
+        notes:
+          "Half-deaf and stubborn. Won't leave the hermitage while Skalvyr circles; hands over the key once the wyvern is dealt with.",
+        stats: { CON: 13, INT: 13, WIS: 16 },
+        location: { nodeId: 'graypeak', tileId: hermitTile },
+      }),
+      person('harbormaster-petra', 'Harbormaster Petra', {
+        role: 'Harbormaster of Saltmere',
+        disposition: 'neutral',
+        notes:
+          'Runs the port and taxes what Corvin thinks she cannot see. Pays a bounty on the drowned dead and keeps the tide-log that shows they walk up-current from the river mouth.',
+        stats: { STR: 12, WIS: 14, CHA: 13 },
+        location: {
+          nodeId: 'saltmere',
+          tileId: `${Math.floor(gens.saltmere.width / 2)},${Math.floor(gens.saltmere.height / 2)}`,
+        },
+      }),
+      person('corvin-the-smuggler', 'Corvin', {
+        role: 'Smuggler, working out of the Saltmere taproom',
+        disposition: 'neutral',
+        notes:
+          'Sells anything, including his chart of the coast. Refuses cargo bound near the barrow and will say why for coin: his last crew there came back one man short, and the man came back anyway.',
+        stats: { DEX: 15, INT: 13, CHA: 14 },
+        location: {
+          nodeId: 'saltmere',
+          tileId: buildingTile(gens.saltmere, palette, 'tavern'),
+        },
+      }),
+      person('lord-aldemar', 'Lord Aldemar Vane', {
+        role: 'Lord of Thornhold, heir to the wardens',
+        disposition: 'hostile',
+        notes:
+          "Proud and in denial: the raids are peasant panic and his house's ward cannot fail. Softens only when shown Snagtooth's orders under the pale seal; opens the crypt ledger once the shade in his hall is put down.",
+        stats: { STR: 14, INT: 12, WIS: 13, CHA: 15 },
+        location: { nodeId: 'thornhold', tileId: lordTile },
+      }),
+      person('farmer-hedda', 'Hedda', {
+        role: 'Farmer, the big steading on the south road',
+        disposition: 'friendly',
+        notes:
+          'Sells provisions and knows every field hand between Briarwick and the coast. Saw the burned farm the night it went up: the raiders worked in silence, in files, to a drum nobody was beating.',
+        stats: { CON: 14, WIS: 13 },
+        location: { nodeId: 'world', tileId: '9,20' },
       }),
     ],
     travelog: [],
@@ -379,100 +482,6 @@ export function buildExampleContent(palette, world) {
       },
     ],
     clock: createClock(),
-    npcs: [
-      createNPC('caravan-master-dorn', 'Dorn', {
-        role: 'Caravan master, stranded at the crossroads',
-        disposition: 'neutral',
-        notes:
-          'Blunt and impatient. Pays for road news, and points anyone who looks capable at Bram in Briarwick.',
-        stats: { STR: 12, CON: 14, CHA: 12 },
-        location: { nodeId: 'world', tileId: '15,16' },
-      }),
-      createNPC('innkeeper-bram', 'Bram', {
-        role: 'Innkeeper, the Waystation at Briarwick',
-        disposition: 'friendly',
-        notes:
-          'Knows every road north and gossips freely for a warm meal. First to mention the raids, the open graves, and the hermit Odo.',
-        stats: { INT: 12, WIS: 14, CHA: 13 },
-        location: { nodeId: 'briarwick', tileId: buildingTile(gens.briarwick, palette, 'inn') },
-      }),
-      createNPC('reeve-maera', 'Reeve Maera', {
-        role: 'Reeve of Briarwick',
-        disposition: 'neutral',
-        notes:
-          "Keeps the shire records. Recognizes the pale crown as King Ostrand's seal — and knows the barrow was warded shut for a reason.",
-        stats: { INT: 14, WIS: 15, CHA: 12 },
-        location: {
-          nodeId: 'briarwick',
-          tileId: `${Math.floor(gens.briarwick.width / 2)},${Math.floor(gens.briarwick.height / 2)}`,
-        },
-      }),
-      createNPC('sella-the-smith', 'Sella', {
-        role: 'Blacksmith of Briarwick',
-        disposition: 'friendly',
-        notes:
-          'Buys ore, sells and repairs arms. Can reforge the warding key if it comes back from the barrow broken — but only from Hollowvein silver, and the mine stands abandoned.',
-        stats: { STR: 15, CON: 14 },
-        location: {
-          nodeId: 'briarwick',
-          tileId: buildingTile(gens.briarwick, palette, 'blacksmith'),
-        },
-      }),
-      createNPC('sister-alwyn', 'Sister Alwyn', {
-        role: 'Priestess of the Dawn, Briarwick temple',
-        disposition: 'friendly',
-        notes:
-          'Blesses weapons against the risen dead once the party learns what walks in the barrow. Quietly terrified of the open graves.',
-        stats: { INT: 12, WIS: 16, CHA: 14 },
-        location: { nodeId: 'briarwick', tileId: buildingTile(gens.briarwick, palette, 'temple') },
-      }),
-      createNPC('hermit-odo', 'Odo', {
-        role: 'Hermit, keeper of the warding key',
-        disposition: 'neutral',
-        notes:
-          "Half-deaf and stubborn. Won't leave the hermitage while Skalvyr circles; hands over the key once the wyvern is dealt with.",
-        stats: { CON: 13, INT: 13, WIS: 16 },
-        location: { nodeId: 'graypeak', tileId: hermitTile },
-      }),
-      createNPC('harbormaster-petra', 'Harbormaster Petra', {
-        role: 'Harbormaster of Saltmere',
-        disposition: 'neutral',
-        notes:
-          'Runs the port and taxes what Corvin thinks she cannot see. Pays a bounty on the drowned dead and keeps the tide-log that shows they walk up-current from the river mouth.',
-        stats: { STR: 12, WIS: 14, CHA: 13 },
-        location: {
-          nodeId: 'saltmere',
-          tileId: `${Math.floor(gens.saltmere.width / 2)},${Math.floor(gens.saltmere.height / 2)}`,
-        },
-      }),
-      createNPC('corvin-the-smuggler', 'Corvin', {
-        role: 'Smuggler, working out of the Saltmere taproom',
-        disposition: 'neutral',
-        notes:
-          'Sells anything, including his chart of the coast. Refuses cargo bound near the barrow and will say why for coin: his last crew there came back one man short, and the man came back anyway.',
-        stats: { DEX: 15, INT: 13, CHA: 14 },
-        location: {
-          nodeId: 'saltmere',
-          tileId: buildingTile(gens.saltmere, palette, 'tavern'),
-        },
-      }),
-      createNPC('lord-aldemar', 'Lord Aldemar Vane', {
-        role: 'Lord of Thornhold, heir to the wardens',
-        disposition: 'hostile',
-        notes:
-          "Proud and in denial: the raids are peasant panic and his house's ward cannot fail. Softens only when shown Snagtooth's orders under the pale seal; opens the crypt ledger once the shade in his hall is put down.",
-        stats: { STR: 14, INT: 12, WIS: 13, CHA: 15 },
-        location: { nodeId: 'thornhold', tileId: lordTile },
-      }),
-      createNPC('farmer-hedda', 'Hedda', {
-        role: 'Farmer, the big steading on the south road',
-        disposition: 'friendly',
-        notes:
-          'Sells provisions and knows every field hand between Briarwick and the coast. Saw the burned farm the night it went up: the raiders worked in silence, in files, to a drum nobody was beating.',
-        stats: { CON: 14, WIS: 13 },
-        location: { nodeId: 'world', tileId: '9,20' },
-      }),
-    ],
     handouts: [
       {
         id: 'waystation-rumor',

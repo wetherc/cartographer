@@ -13,16 +13,14 @@ import { hoistAssets } from '../../src/storage/Assets.js';
 import { encodeNodeTiles } from '../../src/storage/TileCodec.js';
 import { withTileDefaults } from '../../src/map/TileGrid.js';
 import { withDefaults as withCharacterDefaults } from '../../src/entities/Character.js';
-import { withDefaults as withEncounterDefaults } from '../../src/entities/Encounter.js';
-import { withDefaults as withNPCDefaults } from '../../src/entities/NPC.js';
+import { withDefaults as withCreatureDefaults } from '../../src/entities/Creature.js';
 import { withDefaults as withHandoutDefaults } from '../../src/handout/Handouts.js';
 import { mulberry32 } from '../../src/util/Rng.js';
 import { PartyTracker } from '../../src/party/PartyTracker.js';
 
 const ENTITY_DEFAULTS = {
   characters: withCharacterDefaults,
-  encounters: withEncounterDefaults,
-  npcs: withNPCDefaults,
+  creatures: withCreatureDefaults,
   handouts: withHandoutDefaults,
 };
 

@@ -4,8 +4,7 @@ import { spliceReservedPools } from './Resource.js';
 import { isSlotPool, isCasterPool } from './SpellSlots.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
-/** @typedef {import('../types/entities.js').Encounter} Encounter */
-/** @typedef {import('../types/npc.js').NPC} NPC */
+/** @typedef {import('../types/creature.js').Creature} Creature */
 /** @typedef {import('../types/class.js').ClassRef} ClassRef */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 /** @typedef {import('../types/entities.js').Spellbook} Spellbook */
@@ -21,10 +20,11 @@ import { isSlotPool, isCasterPool } from './SpellSlots.js';
  */
 
 /**
- * The union of the caster-relevant fields across the three combatant
- * shapes. A Character, an Encounter, and an NPC are all assignable to it.
- * Every field that only some of them carry is optional. This is what lets
- * the readers and writers below take any combatant without a cast.
+ * The union of the caster-relevant fields across the combatant shapes. A
+ * Character and a Creature are both assignable to it. Every field that only
+ * one of them carries is optional. This is what lets the readers and
+ * writers below take any combatant without a cast. `statBlock` stays in the
+ * union so a pre-merge template still reads.
  * @typedef {{
  *   id: string,
  *   name: string,
@@ -56,8 +56,8 @@ import { isSlotPool, isCasterPool } from './SpellSlots.js';
 
 /**
  * An entity's classes as a list, whichever shape it stores them in. A
- * Character carries a `classes` list, while an Encounter and an NPC carry a
- * scalar `class` and `subclass` pair at their caster level. Normalizing here
+ * Character carries a `classes` list, while a Creature carries a scalar
+ * `class` and `subclass` pair at its caster level. Normalizing here
  * keeps `CasterView` one shape, so every class-aware spell helper reads the
  * list, and no caller must know which kind of combatant it was handed.
  * @param {CasterEntity} e
@@ -71,16 +71,15 @@ function casterClasses(e, level) {
 }
 
 /**
- * Present any combatant (a party Character, an Encounter (mob), or an NPC)
- * as a caster with the field shape the pure spell helpers read. This
- * bridges the three ways combatants differ from a Character. An Encounter
- * keeps its ability scores in `statBlock` (not `stats`), an NPC has no
- * fighting level, and both store one scalar class rather than a class
- * list. So `stats` falls back to `statBlock`, `level` falls back to the
- * explicit `casterLevel` (then the entity's own `level`, then 1), and
- * `classes` falls back to the scalar pair read as a one-entry list at that
- * caster level. The result is a plain read-only view. Write a spent slot
- * back onto the real entity with `withCasterState`.
+ * Present any combatant (a party Character or a Creature) as a caster with
+ * the field shape the pure spell helpers read. This bridges the ways a
+ * creature differs from a Character. A creature can lack a fighting level,
+ * and it stores one scalar class rather than a class list. So `level`
+ * falls back to the explicit `casterLevel` (then the entity's own `level`,
+ * then 1), and `classes` falls back to the scalar pair read as a one-entry
+ * list at that caster level. `stats` still falls back to `statBlock` for a
+ * pre-merge template. The result is a plain read-only view. Write a spent
+ * slot back onto the real entity with `withCasterState`.
  * @param {CasterEntity} entity
  * @returns {CasterView}
  */
@@ -100,9 +99,9 @@ export function toCaster(entity) {
 /**
  * Whether an entity is a spellcaster: it carries at least one caster class
  * and a spellbook. The function reads through `toCaster`, so a Character's
- * class list and an Encounter's or NPC's scalar class both answer. The
- * function excludes non-casters (and older saves).
- * @param {Character | Encounter | NPC} entity
+ * class list and a Creature's scalar class both answer. The function
+ * excludes non-casters (and older saves).
+ * @param {Character | Creature} entity
  * @returns {boolean}
  */
 export function isCaster(entity) {
@@ -184,7 +183,7 @@ export function ensureCasterFields(entity, defaultLevel = 1) {
 }
 
 /**
- * The caster fields to persist in a template (bestiary or NPC): the identity
+ * The caster fields to persist in a creature template: the identity
  * of the caster, not its live slots. Those slots rebuild from class and
  * level on spawn. Returns an empty object for a non-caster, to spread into
  * a template literal.

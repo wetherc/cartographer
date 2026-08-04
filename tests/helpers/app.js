@@ -81,11 +81,10 @@ const VIEW_NAMES = [
 function blankState() {
   return {
     characters: [],
-    encounters: [],
+    creatures: [],
     travelog: [],
     quests: [],
     clock: createClock(),
-    npcs: [],
     handouts: [],
     bestiary: [],
     splitParty: false,

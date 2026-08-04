@@ -13,8 +13,7 @@ import {
   targetSummary,
 } from '../src/app/spellCast.js';
 import { createResource } from '../src/entities/Resource.js';
-import { createEncounter } from '../src/entities/Encounter.js';
-import { createNPC } from '../src/entities/NPC.js';
+import { createCreature } from '../src/entities/Creature.js';
 import { damageCharacter, getHP, withHP } from '../src/entities/Character.js';
 import { stubApp as baseStubApp } from './helpers/app.js';
 import { item } from './helpers/fixtures.js';
@@ -53,7 +52,7 @@ const d20 = (value) => face(20, value);
  * A stub app holding the rosters, the party position, and a recorder for the
  * toasts. The cast path reports every refusal through a toast, so the messages
  * are what a test asserts on.
- * @param {{ characters?: any[], encounters?: any[], npcs?: any[] }} [rosters]
+ * @param {{ characters?: any[], creatures?: any[] }} [rosters]
  */
 function stubApp(rosters = {}) {
   /** @type {string[]} */
@@ -216,8 +215,14 @@ function submit(over = {}) {
 
 test('combatTargets follows the effect kind through the running order', () => {
   const caster = mage();
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const combat = /** @type {any} */ ({
     order: [
       { id: 'mage', initiative: 15, modifier: 0 },
@@ -247,22 +252,24 @@ test('combatTargets follows the effect kind through the running order', () => {
 test('rosterTargets reaches the whole party to heal and only the tile to harm', () => {
   const caster = mage();
   const away = mage({ id: 'monk', name: 'Monk' });
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const elsewhere = createEncounter(
-    'ogre',
-    'Ogre',
-    30,
-    { AC: 11 },
-    {
-      nodeId: 'n1',
-      tileId: '9,9',
-    },
-  );
-  const sage = createNPC('sage', 'Sage', { location: HERE, stats: { AC: 12 } });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const elsewhere = createCreature('ogre', 'Ogre', {
+    disposition: 'hostile',
+    maxHP: 30,
+    stats: { AC: 11 },
+    location: { nodeId: 'n1', tileId: '9,9' },
+    level: 1,
+  });
+  const sage = createCreature('sage', 'Sage', { location: HERE, stats: { AC: 12 } });
   const app = stubApp({
     characters: [caster, away],
-    encounters: [goblin, elsewhere],
-    npcs: [sage],
+    creatures: [goblin, elsewhere, sage],
   });
   assert.deepEqual(
     rosterTargets(app, cureWounds).map((t) => t.id),
@@ -271,8 +278,8 @@ test('rosterTargets reaches the whole party to heal and only the tile to harm', 
   );
   assert.deepEqual(
     rosterTargets(app, firebolt).map((t) => t.id),
-    ['goblin', 'sage'],
-    'a harmful cast reaches the party tile only',
+    ['goblin'],
+    'a harmful cast reaches the hostile creatures on the party tile only',
   );
   assert.deepEqual(rosterTargets(app, detectMagic), []);
 });
@@ -346,8 +353,14 @@ test('castPlan lets a utility spell through with no target at all', () => {
 
 test('castPlan fills in each target’s own save bonus and the class save DC', () => {
   const caster = mage();
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, holdPerson);
   assert.equal(plan.saveAbility, 'WIS');
   assert.equal(plan.dc, 14, '8 + proficiency 3 + INT 3');
@@ -423,8 +436,14 @@ test('upcasting a projectile spell restates the grid total and its caption', () 
     resources: [createResource('slots-2', 'Level 2 slots', 'mana', 3)],
     spellbook: { cantrips: [], known: ['scorching-ray'], prepared: ['scorching-ray'] },
   });
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, scorchingRay);
   const onChange = castChangeHandler(plan);
   const form = formStub({ slot: '3' });
@@ -451,8 +470,14 @@ test('ticking the ritual box hides the slot picker it overrides', () => {
 
 test('a change to any other field leaves the dialog alone', () => {
   const caster = mage();
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, holdPerson);
   const form = formStub({ slot: '1' });
   castChangeHandler(plan)('dc', /** @type {any} */ (form));
@@ -464,8 +489,14 @@ test('a change to any other field leaves the dialog alone', () => {
 
 test('a cantrip attack rolls, logs, and damages without spending anything', () => {
   const caster = mage();
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, firebolt);
   /** @type {any[]} */
   const written = [];
@@ -478,14 +509,20 @@ test('a cantrip attack rolls, logs, and damages without spending anything', () =
   assert.equal(app.dirty, 1, 'only the damage write marks the campaign dirty');
   assert.match(app.log[0], /^Mage casts Fire Bolt\.$/, 'a cantrip names no level');
   assert.match(app.log[1], /Fire Bolt hits Goblin for/);
-  assert.equal(app.state.encounters[0].currentHP, 3, '10 HP less the 7 rolled');
+  assert.equal(app.state.creatures[0].currentHP, 3, '10 HP less the 7 rolled');
   assert.deepEqual(app.toasted, ['Fire Bolt on Goblin.']);
 });
 
 test('a missed attack logs the roll against AC and leaves HP alone', () => {
   const caster = mage();
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, firebolt);
   resolveCast(app, plan, submit({ target: 'goblin' }), {
     writeBack: () => {},
@@ -493,7 +530,7 @@ test('a missed attack logs the roll against AC and leaves HP alone', () => {
     rng: seq([d20(2)]),
   });
   assert.match(app.log[1], /to hit vs AC 14 — misses Goblin\.$/);
-  assert.equal(app.state.encounters[0].currentHP, 10);
+  assert.equal(app.state.creatures[0].currentHP, 10);
 });
 
 test('a leveled cast spends the slot and stores the caster once', () => {
@@ -520,8 +557,14 @@ test('a leveled cast spends the slot and stores the caster once', () => {
 
 test('a failed save takes full damage and lands a tracked condition', () => {
   const caster = mage();
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, holdPerson);
   resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '2' }), {
     writeBack: () => {},
@@ -529,7 +572,7 @@ test('a failed save takes full damage and lands a tracked condition', () => {
     rng: seq([d20(3)]),
   });
   assert.match(app.log[1], /Goblin fails DC 14 \(WIS \+2: 5\) — takes 0 damage, Paralyzed\.$/);
-  const chip = app.state.encounters[0].conditions[0];
+  const chip = app.state.creatures[0].conditions[0];
   assert.equal(chip.name, 'Paralyzed');
   assert.equal(chip.source.spellId, 'hold-person');
   assert.equal(chip.source.saveEnds, true);
@@ -538,8 +581,14 @@ test('a failed save takes full damage and lands a tracked condition', () => {
 
 test('a made save logs the roll and no condition', () => {
   const caster = mage();
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, burningHands);
   resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '20' }), {
     writeBack: () => {},
@@ -548,7 +597,7 @@ test('a made save logs the roll and no condition', () => {
     rng: seq([face(6, 6), face(6, 6), face(6, 6), d20(10)]),
   });
   assert.match(app.log[1], /Goblin saves DC 14 .* takes 9 damage\.$/, 'half of 18 on a save');
-  assert.equal(app.state.encounters[0].currentHP, 1);
+  assert.equal(app.state.creatures[0].currentHP, 1);
 });
 
 /** An encounter holding the named condition chips. */
@@ -558,8 +607,17 @@ function chipped(encounter, ...names) {
 
 test('the chips on both sides slant a spell attack', () => {
   const caster = mage({ conditions: [{ name: 'Blinded' }] });
-  const goblin = chipped(createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE), 'Prone');
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = chipped(
+    createCreature('goblin', 'Goblin', {
+      disposition: 'hostile',
+      maxHP: 10,
+      stats: { AC: 13 },
+      location: HERE,
+      level: 1,
+    }),
+    'Prone',
+  );
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, firebolt);
   resolveCast(app, plan, submit({ target: 'goblin' }), {
     writeBack: () => {},
@@ -569,13 +627,22 @@ test('the chips on both sides slant a spell attack', () => {
     rng: seq([d20(18), d20(2), face(10, 7)]),
   });
   assert.match(app.log[1], /misses Goblin\.$/);
-  assert.equal(app.state.encounters[0].currentHP, 10);
+  assert.equal(app.state.creatures[0].currentHP, 10);
 });
 
 test("the dialog's mode and the chips cancel instead of overriding", () => {
   const caster = mage();
-  const goblin = chipped(createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE), 'Prone');
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = chipped(
+    createCreature('goblin', 'Goblin', {
+      disposition: 'hostile',
+      maxHP: 10,
+      stats: { AC: 13 },
+      location: HERE,
+      level: 1,
+    }),
+    'Prone',
+  );
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, firebolt);
   resolveCast(app, plan, submit({ target: 'goblin', mode: 'advantage' }), {
     writeBack: () => {},
@@ -589,8 +656,17 @@ test("the dialog's mode and the chips cancel instead of overriding", () => {
 
 test('a paralyzed target fails a body save with no roll', () => {
   const caster = mage();
-  const goblin = chipped(createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE), 'Paralyzed');
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = chipped(
+    createCreature('goblin', 'Goblin', {
+      disposition: 'hostile',
+      maxHP: 10,
+      stats: { AC: 13 },
+      location: HERE,
+      level: 1,
+    }),
+    'Paralyzed',
+  );
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, burningHands);
   resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '20' }), {
     writeBack: () => {},
@@ -600,13 +676,22 @@ test('a paralyzed target fails a body save with no roll', () => {
     rng: seq([face(6, 6), face(6, 6), face(6, 6)]),
   });
   assert.match(app.log[1], /Goblin fails DC 14 \(Paralyzed\) — takes 18 damage\.$/);
-  assert.equal(app.state.encounters[0].currentHP, 0);
+  assert.equal(app.state.creatures[0].currentHP, 0);
 });
 
 test('a restrained target rolls its Dexterity save at disadvantage', () => {
   const caster = mage();
-  const goblin = chipped(createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE), 'Restrained');
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = chipped(
+    createCreature('goblin', 'Goblin', {
+      disposition: 'hostile',
+      maxHP: 10,
+      stats: { AC: 13 },
+      location: HERE,
+      level: 1,
+    }),
+    'Restrained',
+  );
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, burningHands);
   resolveCast(app, plan, submit({ target: 'goblin', dc: '25', 'save-bonus': '20' }), {
     writeBack: () => {},
@@ -670,8 +755,14 @@ test('a cast the caster cannot make at all is refused plainly', () => {
 
 test('submitting no target refuses before the slot is spent', () => {
   const caster = mage();
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, burningHands);
   resolveCast(app, plan, submit({ targets: '' }), { writeBack: () => {}, concentrates: false });
   assert.deepEqual(app.toasted, ['Pick at least one target for Burning Hands.']);
@@ -784,8 +875,14 @@ test('a costed material must be held whatever focus the caster carries, and stay
 
 test('a concentration cast holds the spell and drops what it held before', () => {
   const caster = mage();
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, holdPerson);
   /** @type {any[]} */
   const written = [];
@@ -800,7 +897,7 @@ test('a concentration cast holds the spell and drops what it held before', () =>
   // Casting it again on a new victim drops the first hold, which frees the
   // creature the first cast paralyzed.
   const held = written[0];
-  const second = stubApp({ characters: [held], encounters: [app.state.encounters[0]] });
+  const second = stubApp({ characters: [held], creatures: [app.state.creatures[0]] });
   const plan2 = planFor(second, held, holdPerson);
   resolveCast(second, plan2, submit({ target: 'goblin', dc: '14', 'save-bonus': '0' }), {
     writeBack: () => {},
@@ -815,9 +912,21 @@ test('a concentration cast holds the spell and drops what it held before', () =>
 
 test('a cast above its target cap reports the targets it dropped', () => {
   const caster = mage();
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const wolf = createEncounter('wolf', 'Wolf', 10, { AC: 12 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin, wolf] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const wolf = createCreature('wolf', 'Wolf', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 12 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin, wolf] });
   const plan = planFor(app, caster, holdPerson);
   resolveCast(app, plan, submit({ targets: 'goblin, wolf', dc: '14', 'save-bonus': '0' }), {
     writeBack: () => {},
@@ -836,9 +945,21 @@ test('a multi-projectile cast logs one tally per creature', () => {
     resources: [createResource('slots-2', 'Level 2 slots', 'mana', 3)],
     spellbook: { cantrips: [], known: ['scorching-ray'], prepared: ['scorching-ray'] },
   });
-  const goblin = createEncounter('goblin', 'Goblin', 30, { AC: 13 }, HERE);
-  const wolf = createEncounter('wolf', 'Wolf', 30, { AC: 30 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin, wolf] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 30,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const wolf = createCreature('wolf', 'Wolf', {
+    disposition: 'hostile',
+    maxHP: 30,
+    stats: { AC: 30 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin, wolf] });
   const plan = planFor(app, caster, scorchingRay);
   resolveCast(app, plan, submit({ slot: '2', allocation: 'goblin:2,wolf:1' }), {
     writeBack: () => {},
@@ -853,7 +974,7 @@ test('a multi-projectile cast logs one tally per creature', () => {
     'the hits are tallied, not logged ray by ray',
   );
   assert.ok(app.log.some((m) => /Scorching Ray: 0 of 1 hit Wolf \(AC 31\)\./.test(m)));
-  assert.equal(app.state.encounters[1].currentHP, 30, 'the missed ray did nothing');
+  assert.equal(app.state.creatures[1].currentHP, 30, 'the missed ray did nothing');
 });
 
 test('a condition on a target the app cannot track is logged as untracked', () => {
@@ -883,8 +1004,14 @@ test('a condition on a target the app cannot track is logged as untracked', () =
 });
 
 test('the combat entry point stops when the participant is in no roster', async () => {
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ creatures: [goblin] });
   const combat = /** @type {any} */ ({
     order: [
       { id: 'ghost', initiative: 15, modifier: 0 },
@@ -952,8 +1079,14 @@ function riderMage(over = {}) {
 
 test('a buff reaches the party, not the foes', () => {
   const caster = riderMage();
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   assert.deepEqual(
     rosterTargets(app, bless).map((t) => t.id),
     ['mage'],
@@ -1009,8 +1142,14 @@ test('dropping the concentration on a buff sweeps its chips off every recipient'
   // Casting a second concentration spell displaces the first, which is the
   // path that has to sweep the chips.
   const holder = app.state.characters.find((c) => c.id === 'mage');
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  app.state.encounters = [goblin];
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  app.state.creatures = [goblin];
   resolveCast(
     app,
     planFor(app, holder, holdPerson),
@@ -1041,26 +1180,45 @@ test('an unnamed buff chip carries the spell’s own name', () => {
   assert.ok(app.log.some((line) => /Mage gains Bless\.$/.test(line)));
 });
 
-test('a buff on an NPC says so, because an NPC tracks no chips', () => {
+test('a buff on a creature lands as a chip, and an unknown id reads untracked', () => {
   const caster = riderMage();
-  const sage = createNPC('sage', 'Sage', HERE);
-  const app = stubApp({ characters: [caster], npcs: [sage] });
+  const sage = createCreature('sage', 'Sage', { location: HERE });
+  const app = stubApp({ characters: [caster], creatures: [sage] });
   const target = { id: 'sage', name: 'Sage' };
-  // The roster path offers only the party for a buff, so the NPC comes in as
-  // an already-picked target the way the combat board would hand one over.
+  // The roster path offers only the party for a buff, so the creature comes
+  // in as an already-picked target the way the combat board would hand one
+  // over.
   applyOutcomes(
     app,
     bless,
     { outcomes: [{ target, condition: 'Bless', rider: BLESS_RIDER }], targets: [target] },
     'mage',
   );
-  assert.ok(app.log.some((line) => /Sage gains Bless.*\(untracked\)\.$/.test(line)));
+  assert.ok(
+    app.log.some((line) => line.startsWith('Sage gains Bless') && !line.includes('(untracked)')),
+  );
+  assert.equal(app.state.creatures[0].conditions[0].name, 'Bless');
+
+  const gone = { id: 'stranger', name: 'Stranger' };
+  applyOutcomes(
+    app,
+    bless,
+    { outcomes: [{ target: gone, condition: 'Bless', rider: BLESS_RIDER }], targets: [gone] },
+    'mage',
+  );
+  assert.ok(app.log.some((line) => /Stranger gains Bless.*\(untracked\)\.$/.test(line)));
 });
 
 test('a rider the caster holds joins the spell attack roll and the log', () => {
   const caster = { ...mage(), conditions: [{ name: 'Bless', rounds: 10, rider: BLESS_RIDER }] };
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 30 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 30 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, firebolt);
   resolveCast(app, plan, submit({ target: 'goblin' }), {
     writeBack: () => {},
@@ -1077,8 +1235,14 @@ test('a hit names the rider that got it there', () => {
   const caster = { ...mage(), conditions: [{ name: 'Bless', rounds: 10, rider: BLESS_RIDER }] };
   // AC 13 against a d20 of 9 plus a +2 spell attack bonus: the d4 is what
   // carries the roll over the top, so the line has to say so.
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, firebolt);
   resolveCast(app, plan, submit({ target: 'goblin' }), {
     writeBack: () => {},
@@ -1096,8 +1260,14 @@ test('each ray of a projectile cast reports its own rider dice', () => {
     }),
     conditions: [{ name: 'Bless', rounds: 10, rider: BLESS_RIDER }],
   };
-  const goblin = createEncounter('goblin', 'Goblin', 30, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 30,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, scorchingRay);
   resolveCast(app, plan, submit({ slot: '2', allocation: 'goblin:2' }), {
     writeBack: () => {},
@@ -1124,10 +1294,16 @@ test('each ray of a projectile cast reports its own rider dice', () => {
 test('a rider the target holds rides its save against the next spell', () => {
   const caster = mage();
   const goblin = {
-    ...createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE),
+    ...createCreature('goblin', 'Goblin', {
+      disposition: 'hostile',
+      maxHP: 10,
+      stats: { AC: 13 },
+      location: HERE,
+      level: 1,
+    }),
     conditions: [{ name: 'Bane', rounds: 10, rider: BANE_RIDER }],
   };
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, burningHands);
   resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '10' }), {
     writeBack: () => {},
@@ -1140,15 +1316,21 @@ test('a rider the target holds rides its save against the next spell', () => {
 
 test('a failed save against a rider spell lands the rider on the chip', () => {
   const caster = riderMage();
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [caster], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, bane);
   resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '0' }), {
     writeBack: () => {},
     concentrates: false,
     rng: seq([d20(3)]),
   });
-  const chip = app.state.encounters[0].conditions.find((c) => c.name === 'Bane');
+  const chip = app.state.creatures[0].conditions.find((c) => c.name === 'Bane');
   assert.deepEqual(chip.rider, BANE_RIDER);
   assert.equal(chip.rounds, 10);
 });

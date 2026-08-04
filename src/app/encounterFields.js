@@ -8,7 +8,7 @@
  * rail's row chips own it there.
  */
 
-import { defaultEnemyGear } from '../entities/Encounter.js';
+import { defaultEnemyGear } from '../entities/Creature.js';
 import { defaultEnemyStats, ENEMY_TIERS, STAT_KEYS } from '../entities/Modifiers.js';
 import { clampInt } from '../util/num.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
@@ -21,13 +21,15 @@ import { readStats, statFields } from './statFields.js';
 /** @typedef {import('./gearFields.js').GearOptions} GearOptions */
 
 /**
- * The seed an encounter form fills itself from: a live encounter being
- * edited, a bestiary template being edited, or null while creating.
+ * The seed a foe form fills itself from: a live creature being edited, a
+ * bestiary template being edited, or null while creating. `statBlock` stays
+ * beside `stats` so a pre-merge library template still seeds the form.
  * @typedef {{
  *   name?: string,
  *   tier?: EnemyTier,
  *   maxHP?: number,
  *   level?: number,
+ *   stats?: Record<string, number>,
  *   statBlock?: Record<string, number>,
  *   class?: string,
  *   casterLevel?: number,
@@ -81,7 +83,9 @@ export function encounterFields(seed, gear, { stats = true } = {}) {
       value: seed ? (gear.currentArmor?.name ?? '') : defaultEnemyGear(1, 'mob').armor.name,
       options: gear.armorOptions,
     },
-    ...(stats ? statFields(STAT_KEYS, seed?.statBlock ?? defaultEnemyStats(1, 'mob')) : []),
+    ...(stats
+      ? statFields(STAT_KEYS, seed?.stats ?? seed?.statBlock ?? defaultEnemyStats(1, 'mob'))
+      : []),
     ...casterFields(seed),
   ];
 }
@@ -119,7 +123,7 @@ export function encounterFieldsChange({ restampStats }) {
 /**
  * Read the blueprint fields back out of a submitted form. The gear cascade,
  * the clamps, and the caster read-back are the same on both surfaces. The
- * result carries `statBlock` only when the form showed the block.
+ * result carries `stats` only when the form showed the block.
  * @param {Record<string, string>} values
  * @param {GearOptions} gear the same options the fields were built from
  * @param {{ stats?: boolean }} [options]
@@ -128,7 +132,7 @@ export function encounterFieldsChange({ restampStats }) {
  *   maxHP: number,
  *   level: number,
  *   tier: EnemyTier,
- *   statBlock?: Record<string, number>,
+ *   stats?: Record<string, number>,
  *   weapon: import('../types/entities.js').EnemyWeapon | null,
  *   armor: import('../types/entities.js').EnemyArmor | null,
  *   class?: string,
@@ -140,7 +144,7 @@ export function readEncounterFields(values, gear, { stats = true } = {}) {
   const level = clampInt(values.level, 1);
   const tier = /** @type {EnemyTier} */ (values.tier);
   // The empty value is the explicit "None" choice. It stores null, which
-  // suppresses the default-gear stamping that the fallback would otherwise do.
+  // marks the creature deliberately unarmed or unarmored.
   const { weapon, armor } = readGear(
     values.weapon,
     values.armor,
@@ -152,7 +156,7 @@ export function readEncounterFields(values, gear, { stats = true } = {}) {
     maxHP: clampInt(values.maxHP, 1),
     level,
     tier,
-    ...(stats ? { statBlock: readStats(STAT_KEYS, values) } : {}),
+    ...(stats ? { stats: readStats(STAT_KEYS, values) } : {}),
     weapon,
     armor,
     ...readCasterOptions(values),

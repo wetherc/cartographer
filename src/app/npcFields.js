@@ -7,14 +7,14 @@
  */
 
 import { normalizeStatBlock, STAT_KEYS } from '../entities/Modifiers.js';
-import { DEFAULT_NPC_HP, dispositionOptions } from '../entities/NPC.js';
+import { DEFAULT_CREATURE_HP, dispositionOptions } from '../entities/Creature.js';
 import { clampInt } from '../util/num.js';
 import { casterFields, readCasterOptions } from './casterFields.js';
 import { readGear } from './gearFields.js';
 import { readStats, statFields } from './statFields.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
-/** @typedef {import('../types/npc.js').Disposition} Disposition */
+/** @typedef {import('../types/creature.js').Disposition} Disposition */
 /** @typedef {import('./gearFields.js').GearOptions} GearOptions */
 
 /**
@@ -80,7 +80,7 @@ export function npcFields(seed, gear) {
       name: 'maxHP',
       label: 'Max HP',
       type: 'number',
-      value: seed?.maxHP ?? DEFAULT_NPC_HP,
+      value: seed?.maxHP ?? DEFAULT_CREATURE_HP,
       min: 1,
     },
     {
@@ -131,7 +131,7 @@ export function readNPCFields(values, gear) {
     disposition: /** @type {Disposition} */ (values.disposition),
     notes: values.notes.trim(),
     stats: readStats(STAT_KEYS, values),
-    maxHP: clampInt(values.maxHP, 1, Infinity, DEFAULT_NPC_HP),
+    maxHP: clampInt(values.maxHP, 1, Infinity, DEFAULT_CREATURE_HP),
     ...readGear(values.weapon, values.armor, gear),
     ...readCasterOptions(values),
   };

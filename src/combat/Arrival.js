@@ -1,9 +1,7 @@
 /**
  * The text of the walked-into-something alert. A step onto a tile can meet
- * two kinds of threat: an encounter staged there and a hostile NPC standing
- * there. Both carry a name and the same two hit-point fields, so one
- * formatter names both, and the alert cannot describe an NPC differently
- * from a foe.
+ * a hostile creature standing there, and this module writes the line that
+ * names it.
  *
  * Pure over its inputs. The wiring layer collects who is on the tile and
  * decides what to do with the result.
@@ -12,8 +10,8 @@
 import { hpBand } from '../view/ViewRole.js';
 
 /**
- * A threat as this module reads it: the fields an `Encounter` and an `NPC`
- * both carry.
+ * A threat as this module reads it: the name and hit-point fields of a
+ * creature.
  * @typedef {{ name: string, currentHP: number, maxHP: number }} ArrivalThreat
  */
 

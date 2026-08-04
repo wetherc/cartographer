@@ -9,7 +9,7 @@ import { exitForTile, findExits } from '../map/MapExits.js';
 import { revealAround } from '../map/FogOfWar.js';
 import { characterPosition, moveCharacter, recallAll } from '../party/CharacterTokens.js';
 import { confirmModal } from '../ui/Modal.js';
-import { meetNPCs } from '../entities/NPC.js';
+import { meetCreatures } from '../entities/CreatureMap.js';
 import { isGM } from '../view/ViewRole.js';
 import { capitalize } from '../util/text.js';
 
@@ -29,21 +29,28 @@ import { capitalize } from '../util/text.js';
 export function createMapTravel(app, env) {
   const { grid, navigator, partyTracker, state } = app;
 
-  /** Landing where a placed NPC stands is the introduction. Mark the NPC
-   * met, so it starts to appear in the players' Story sidebar, and log the
-   * meeting. Only the GM's tab moves the party, so only the GM's tab
-   * changes the roster. */
-  function meetNPCsHere() {
+  /** Landing where a placed creature stands is the introduction. Mark the
+   * creature met, and log the meeting once per creature: "encounters" for a
+   * hostile one, "meets" for the rest. A met non-hostile creature starts to
+   * appear in the players' Story sidebar. Only the GM's tab moves the
+   * party, so only the GM's tab changes the roster. */
+  function meetCreaturesHere() {
     if (!isGM(state.role)) return;
-    const { npcs, met } = meetNPCs(state.npcs, partyTracker.getPosition());
+    const { creatures, met } = meetCreatures(state.creatures, partyTracker.getPosition());
     if (met.length === 0) return;
-    state.npcs = npcs;
-    for (const npc of met) app.actions.logEvent('travel', `The party meets ${npc.name}.`);
+    state.creatures = creatures;
+    for (const c of met) {
+      const verb = c.disposition === 'hostile' ? 'encounters' : 'meets';
+      app.actions.logEvent(
+        c.disposition === 'hostile' ? 'combat' : 'travel',
+        `The party ${verb} ${c.name}.`,
+      );
+    }
   }
 
   /** The party can change nodes. Re-filter every location-scoped panel. */
   function refreshLocationPanels() {
-    meetNPCsHere();
+    meetCreaturesHere();
     // A move can carry the party off a running fight's tile, which ends it.
     app.actions.syncCombatLocation();
     app.views.encounterPanel.update();
@@ -373,12 +380,18 @@ export function createMapTravel(app, env) {
     // hovering a far tile, with the pointer or with the keyboard cursor, does
     // not name what the map keeps unmarked.
     const inRange = env.mapCanvas.markerVisible(tile.id);
+    // The tooltip names the non-hostile creatures standing here. A hostile
+    // one is the danger marker's business, and the alert names it.
     const npcNames = inRange
-      ? state.npcs
+      ? state.creatures
           .filter(
-            (n) => n.location && n.location.nodeId === nodeId && n.location.tileId === tile.id,
+            (c) =>
+              c.disposition !== 'hostile' &&
+              c.location &&
+              c.location.nodeId === nodeId &&
+              c.location.tileId === tile.id,
           )
-          .map((n) => n.name)
+          .map((c) => c.name)
       : [];
     const poiType = inRange ? tile.metadata.poiType : null;
     // Notes are the GM's secret. Players see the POI type and who stands
@@ -402,7 +415,7 @@ export function createMapTravel(app, env) {
 
   return {
     teleportToNode,
-    meetNPCsHere,
+    meetCreaturesHere,
     refreshLocationPanels,
     discoverTile,
     clickSubject,

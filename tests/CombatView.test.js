@@ -12,17 +12,22 @@ import {
   fightOutcome,
 } from '../src/combat/CombatView.js';
 import { createCharacter, withHP, damageCharacter } from '../src/entities/Character.js';
-import { createEncounter, applyDamage, effectiveStatBlock } from '../src/entities/Encounter.js';
+import { createCreature, applyDamage, effectiveStatBlock } from '../src/entities/Creature.js';
 import { armorClass } from '../src/entities/Equipment.js';
-import { createNPC, damageNPC } from '../src/entities/NPC.js';
 
 const HERE = { nodeId: 'n1', tileId: '0,0' };
 
 function fixtures() {
   const hero = withHP(createCharacter('hero', 'Hero', { DEX: 14 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const sage = createNPC('sage', 'Sage', { location: HERE, stats: { AC: 12 } });
-  const brigand = createNPC('brigand', 'Brigand', { location: HERE, disposition: 'hostile' });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const sage = createCreature('sage', 'Sage', { location: HERE, stats: { AC: 12 } });
+  const brigand = createCreature('brigand', 'Brigand', { location: HERE, disposition: 'hostile' });
   return { hero, goblin, sage, brigand };
 }
 
@@ -34,19 +39,19 @@ function resolver(byId) {
 test('sideOf puts encounters and hostile NPCs against the party', () => {
   const { hero, goblin, sage, brigand } = fixtures();
   assert.equal(sideOf({ kind: 'character', entity: hero }), 'party');
-  assert.equal(sideOf({ kind: 'encounter', entity: goblin }), 'foe');
-  assert.equal(sideOf({ kind: 'npc', entity: sage }), 'party');
-  assert.equal(sideOf({ kind: 'npc', entity: brigand }), 'foe');
+  assert.equal(sideOf({ kind: 'creature', entity: goblin }), 'foe');
+  assert.equal(sideOf({ kind: 'creature', entity: sage }), 'party');
+  assert.equal(sideOf({ kind: 'creature', entity: brigand }), 'foe');
 });
 
 test('isDowned reads a defeated encounter and a 0 HP character', () => {
   const { hero, goblin, sage } = fixtures();
-  assert.equal(isDowned({ kind: 'encounter', entity: goblin }), false);
-  assert.equal(isDowned({ kind: 'encounter', entity: applyDamage(goblin, 99) }), true);
+  assert.equal(isDowned({ kind: 'creature', entity: goblin }), false);
+  assert.equal(isDowned({ kind: 'creature', entity: applyDamage(goblin, 99) }), true);
   assert.equal(isDowned({ kind: 'character', entity: hero }), false);
   assert.equal(isDowned({ kind: 'character', entity: damageCharacter(hero, 99) }), true);
-  assert.equal(isDowned({ kind: 'npc', entity: sage }), false);
-  assert.equal(isDowned({ kind: 'npc', entity: damageNPC(sage, 99) }), true);
+  assert.equal(isDowned({ kind: 'creature', entity: sage }), false);
+  assert.equal(isDowned({ kind: 'creature', entity: applyDamage(sage, 99) }), true);
 });
 
 test('isDowned is false for a character without an HP pool', () => {
@@ -56,26 +61,26 @@ test('isDowned is false for a character without an HP pool', () => {
 
 test('hpOf projects each kind', () => {
   const { hero, goblin, sage } = fixtures();
-  assert.deepEqual(hpOf({ kind: 'encounter', entity: goblin }), { current: 10, max: 10 });
+  assert.deepEqual(hpOf({ kind: 'creature', entity: goblin }), { current: 10, max: 10 });
   assert.deepEqual(hpOf({ kind: 'character', entity: damageCharacter(hero, 4) }), {
     current: 8,
     max: 12,
   });
-  assert.deepEqual(hpOf({ kind: 'npc', entity: sage }), { current: 4, max: 4 });
+  assert.deepEqual(hpOf({ kind: 'creature', entity: sage }), { current: 4, max: 4 });
   assert.equal(hpOf({ kind: 'character', entity: createCharacter('b', 'B') }), null);
 });
 
 test('acOf projects each kind', () => {
   const { hero, goblin, sage } = fixtures();
-  assert.equal(acOf({ kind: 'encounter', entity: goblin }), effectiveStatBlock(goblin).AC);
+  assert.equal(acOf({ kind: 'creature', entity: goblin }), effectiveStatBlock(goblin).AC);
   assert.equal(acOf({ kind: 'character', entity: hero }), armorClass(hero));
-  assert.equal(acOf({ kind: 'npc', entity: sage }), 12);
-  assert.equal(acOf({ kind: 'npc', entity: createNPC('w', 'Wisp', {}) }), 10);
-  const armored = createNPC('g', 'Guard', {
+  assert.equal(acOf({ kind: 'creature', entity: sage }), 12);
+  assert.equal(acOf({ kind: 'creature', entity: createCreature('w', 'Wisp', {}) }), 10);
+  const armored = createCreature('g', 'Guard', {
     stats: { AC: 12 },
     armor: { name: 'Shield', acBonus: 2 },
   });
-  assert.equal(acOf({ kind: 'npc', entity: armored }), 14, 'the armor bonus counts');
+  assert.equal(acOf({ kind: 'creature', entity: armored }), 14, 'the armor bonus counts');
 });
 
 test('mayActOn lets the GM drive anyone and a player only their bound character', () => {
@@ -84,7 +89,7 @@ test('mayActOn lets the GM drive anyone and a player only their bound character'
   const bound = { gm: false, boundCharacterId: 'hero' };
   const other = { gm: false, boundCharacterId: 'someone-else' };
   const heroFound = { kind: /** @type {const} */ ('character'), entity: hero };
-  const goblinFound = { kind: /** @type {const} */ ('encounter'), entity: goblin };
+  const goblinFound = { kind: /** @type {const} */ ('creature'), entity: goblin };
   assert.equal(mayActOn(heroFound, gm, 'hero'), true);
   assert.equal(mayActOn(goblinFound, gm, 'goblin'), true);
   assert.equal(mayActOn(null, gm, 'gone'), true);
@@ -106,9 +111,9 @@ test('buildCombatView assembles a row per participant in order', () => {
     ],
   };
   const resolve = resolver({
-    goblin: { kind: 'encounter', entity: goblin },
+    goblin: { kind: 'creature', entity: goblin },
     hero: { kind: 'character', entity: hero },
-    sage: { kind: 'npc', entity: sage },
+    sage: { kind: 'creature', entity: sage },
   });
   const view = buildCombatView(combat, resolve, { gm: true });
   assert.equal(view.round, 3);
@@ -162,7 +167,7 @@ test('buildCombatView carries a death-save tracker, and only from a character', 
     combat,
     resolver({
       hero: { kind: 'character', entity: dying },
-      goblin: { kind: 'encounter', entity: goblin },
+      goblin: { kind: 'creature', entity: goblin },
     }),
     { gm: true },
   );
@@ -195,7 +200,7 @@ test('buildCombatView carries conditions and the defeated flag', () => {
     combat,
     resolver({
       hero: { kind: 'character', entity: poisoned },
-      goblin: { kind: 'encounter', entity: dead },
+      goblin: { kind: 'creature', entity: dead },
     }),
     { gm: false, boundCharacterId: 'hero' },
   );
@@ -220,7 +225,7 @@ test('buildCombatView carries an NPC chip and marks who cannot act', () => {
   const view = buildCombatView(
     combat,
     resolver({
-      sage: { kind: 'npc', entity: stunned },
+      sage: { kind: 'creature', entity: stunned },
       hero: { kind: 'character', entity: hero },
     }),
     { gm: true },
@@ -236,11 +241,15 @@ test('skipsTurn steps past the downed, the unresolved, and those who cannot act'
   assert.equal(skipsTurn(null), true, 'a deleted combatant has no turn');
   assert.equal(skipsTurn({ kind: 'character', entity: hero }), false);
   assert.equal(skipsTurn({ kind: 'character', entity: damageCharacter(hero, 99) }), true);
-  assert.equal(skipsTurn({ kind: 'encounter', entity: applyDamage(goblin, 99) }), true);
+  assert.equal(skipsTurn({ kind: 'creature', entity: applyDamage(goblin, 99) }), true);
   const stunned = { ...sage, conditions: [{ name: 'Stunned', rounds: 1 }] };
-  assert.equal(skipsTurn({ kind: 'npc', entity: stunned }), true);
+  assert.equal(skipsTurn({ kind: 'creature', entity: stunned }), true);
   const poisoned = { ...sage, conditions: [{ name: 'Poisoned', rounds: 1 }] };
-  assert.equal(skipsTurn({ kind: 'npc', entity: poisoned }), false, 'Poisoned still takes a turn');
+  assert.equal(
+    skipsTurn({ kind: 'creature', entity: poisoned }),
+    false,
+    'Poisoned still takes a turn',
+  );
 });
 
 test('conditionsOf reads the chips off every kind and empties an older save', () => {
@@ -251,12 +260,12 @@ test('conditionsOf reads the chips off every kind and empties an older save', ()
     chip,
   );
   assert.deepEqual(
-    conditionsOf({ kind: 'encounter', entity: { ...goblin, conditions: chip } }),
+    conditionsOf({ kind: 'creature', entity: { ...goblin, conditions: chip } }),
     chip,
   );
-  assert.deepEqual(conditionsOf({ kind: 'npc', entity: { ...sage, conditions: chip } }), chip);
+  assert.deepEqual(conditionsOf({ kind: 'creature', entity: { ...sage, conditions: chip } }), chip);
   assert.deepEqual(
-    conditionsOf(/** @type {any} */ ({ kind: 'npc', entity: { id: 'x', name: 'Wisp' } })),
+    conditionsOf(/** @type {any} */ ({ kind: 'creature', entity: { id: 'x', name: 'Wisp' } })),
     [],
   );
 });
@@ -333,16 +342,16 @@ test('fightOutcome settles a fight whose foe side is only hostile NPCs', () => {
     );
   assert.equal(
     outcome({
-      sage: { kind: 'npc', entity: damageNPC(sage, 99) },
-      brigand: { kind: 'npc', entity: brigand },
+      sage: { kind: 'creature', entity: applyDamage(sage, 99) },
+      brigand: { kind: 'creature', entity: brigand },
     }),
     null,
     'a fallen friendly NPC does not lose the fight while the hero stands',
   );
   assert.equal(
     outcome({
-      sage: { kind: 'npc', entity: sage },
-      brigand: { kind: 'npc', entity: damageNPC(brigand, 99) },
+      sage: { kind: 'creature', entity: sage },
+      brigand: { kind: 'creature', entity: applyDamage(brigand, 99) },
     }),
     'victory',
     'the whole foe side is down',

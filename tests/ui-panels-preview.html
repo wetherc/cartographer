@@ -20,7 +20,7 @@
   <script type="module">
     import { createCharacter, addResource } from '../src/entities/Character.js';
     import { createResource } from '../src/entities/Resource.js';
-    import { createEncounter } from '../src/entities/Encounter.js';
+    import { createCreature } from '../src/entities/Creature.js';
     import { mountCharacterSheet } from '../src/ui/CharacterSheet.js';
     import { mountInventoryPanel } from '../src/ui/InventoryPanel.js';
     import { mountEncounterPanel } from '../src/ui/EncounterPanel.js';
@@ -44,7 +44,7 @@
     // The panel keeps no list of its own. The two getters supply the rows,
     // and every edit comes back through a callback, so this page holds the
     // encounters the way main.js holds them.
-    let encounters = [createEncounter('e1', 'Goblin', 7), createEncounter('e2', 'Wolf', 11)];
+    let encounters = [createCreature('e1', 'Goblin', { disposition: 'hostile', maxHP: 7, level: 1 }), createCreature('e2', 'Wolf', { disposition: 'hostile', maxHP: 11, level: 1 })];
 
     const encounterPanel = mountEncounterPanel(document.getElementById('encounter-container'), {
       getActiveEncounters: () => encounters.slice(0, 1),

@@ -19,7 +19,7 @@ import { mountMapControls } from '../ui/MapControls.js';
 import { mountTileTooltip } from '../ui/TileTooltip.js';
 import { mountExitList } from '../ui/ExitList.js';
 import { wireTabs } from '../ui/Tabs.js';
-import { isDefeated } from '../entities/Encounter.js';
+import { isDefeated } from '../entities/Creature.js';
 import { isGM } from '../view/ViewRole.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -110,7 +110,7 @@ export function wireMapView(app) {
   env.nodeActions = nodeActions;
   env.snapshotEdit = authoring.snapshotEdit;
   app.actions.undoStroke = authoring.undoStroke;
-  app.actions.meetNPCs = travel.meetNPCsHere;
+  app.actions.meetNPCs = travel.meetCreaturesHere;
 
   /** Show the party marker only on the node where the party stands. Resolve
    * each character's named token for the node in view: their own location, or
@@ -125,8 +125,7 @@ export function wireMapView(app) {
     mapCanvas.setCharacterTokens(
       state.splitParty ? characterTokens(state.characters, position, nodeId) : [],
     );
-    syncEncounterMarkers();
-    syncNPCMarkers();
+    syncCreatureMarkers();
     syncExits();
     refreshMapDescription();
   }
@@ -184,43 +183,28 @@ export function wireMapView(app) {
   /** @type {ReturnType<typeof mountExitList> | null} assigned after the viewport mounts */
   let exitList = null;
 
-  /** Mark the tiles of the current node that carry a live, undefeated
-   * encounter. The map shows the danger once the party comes within
-   * detection range. */
-  function syncEncounterMarkers() {
+  /** Mark the tiles of the current node that hold a placed creature: the
+   * danger marker for a live, undefeated hostile, and the distinct blue
+   * marker for everyone else. The map shows both once the party comes
+   * within detection range. One pass covers both layers, and it refreshes
+   * both Build-rail authoring lists, which show the same node scope. The
+   * function is registered under both old action names, so every current
+   * caller reaches it. */
+  function syncCreatureMarkers() {
     const nodeId = navigator.getCurrentNode().id;
+    const placed = state.creatures.filter((c) => c.location && c.location.nodeId === nodeId);
+    /** @param {import('../types/creature.js').Creature} c */
+    const tileOf = (c) =>
+      /** @type {import('../types/entities.js').EncounterLocation} */ (c.location).tileId;
     mapCanvas.setEncounterTiles(
-      state.encounters
-        .filter((e) => e.location && e.location.nodeId === nodeId && !isDefeated(e))
-        .map(
-          (e) =>
-            /** @type {import('../types/entities.js').EncounterLocation} */ (e.location).tileId,
-        ),
+      placed.filter((c) => c.disposition === 'hostile' && !isDefeated(c)).map(tileOf),
     );
-    // The Build-rail authoring list shows the same node scope. It refreshes
-    // wherever the markers refresh: on navigation and on every encounter change.
+    mapCanvas.setNPCTiles(placed.filter((c) => c.disposition !== 'hostile').map(tileOf));
     app.views.buildEncounters.update();
-  }
-  app.actions.syncEncounterMarkers = syncEncounterMarkers;
-
-  /** Mark the tiles of the current node that hold a placed NPC with a
-   * distinct blue marker. The map shows the marker once the party comes
-   * within detection range. */
-  function syncNPCMarkers() {
-    const nodeId = navigator.getCurrentNode().id;
-    mapCanvas.setNPCTiles(
-      state.npcs
-        .filter((n) => n.location && n.location.nodeId === nodeId)
-        .map(
-          (n) =>
-            /** @type {import('../types/entities.js').EncounterLocation} */ (n.location).tileId,
-        ),
-    );
-    // The Build-rail NPC list shows the same node scope. It refreshes
-    // wherever the markers refresh: on navigation and on every NPC change.
     app.views.buildNPCs.update();
   }
-  app.actions.syncNPCMarkers = syncNPCMarkers;
+  app.actions.syncEncounterMarkers = syncCreatureMarkers;
+  app.actions.syncNPCMarkers = syncCreatureMarkers;
 
   let lastDescription = '';
 

@@ -216,17 +216,18 @@ export function tickStatModifiers(mods) {
 /**
  * Apply a GM edit to a creature's blueprint fields and placement, keeping
  * its live state. currentHP survives (clamped to the new maximum), and the
- * stat block and conditions stay untouched, so re-tuning a fight in
- * progress does not reset it. A move clears the `met` flag, so the party
- * landing on the new spot logs a fresh meeting. A blank level removes the
- * level and the tier together.
+ * conditions stay untouched, so re-tuning a fight in progress does not
+ * reset it. The stat block stays untouched too, unless the edit carries a
+ * `stats` record, which is what a dialog with stat fields submits. A move
+ * clears the `met` flag, so the party landing on the new spot logs a fresh
+ * meeting. A blank level removes the level and the tier together.
  *
  * A caster edit that changes the class or caster level rebuilds the slot
  * pools (at full). Dropping the caster class (or setting a non-caster)
  * strips the spell fields. An unchanged class and level keep the current
  * slots, spent and all.
  * @param {Creature} creature
- * @param {{ name: string, disposition: Disposition, maxHP: number, location: EncounterLocation | null, level?: number, tier?: EnemyTier, role?: string, notes?: string, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} edits
+ * @param {{ name: string, disposition: Disposition, maxHP: number, location: EncounterLocation | null, stats?: Record<string, number>, level?: number, tier?: EnemyTier, role?: string, notes?: string, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} edits
  * @returns {Creature}
  */
 export function editCreature(creature, edits) {
@@ -245,6 +246,7 @@ export function editCreature(creature, edits) {
     weapon: edits.weapon === undefined ? creature.weapon : edits.weapon,
     armor: edits.armor === undefined ? creature.armor : edits.armor,
     met: moved ? false : creature.met,
+    ...(edits.stats !== undefined ? { stats: normalizeStatBlock(edits.stats) } : {}),
     ...(edits.level != null ? { level: edits.level, tier: edits.tier ?? 'mob' } : {}),
     ...(edits.role !== undefined ? { role: edits.role } : {}),
     ...(edits.notes !== undefined ? { notes: edits.notes } : {}),

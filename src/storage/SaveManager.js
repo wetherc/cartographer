@@ -6,8 +6,7 @@ import { detachAssets, loadAssetTable, persistAssets } from './AssetStore.js';
 import { packEntities } from './EntityPack.js';
 import { encodeNodeTiles, decodeNodeTiles } from './TileCodec.js';
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
-import { withDefaults as withEncounterDefaults } from '../entities/Encounter.js';
-import { withDefaults as withNPCDefaults } from '../entities/NPC.js';
+import { withDefaults as withCreatureDefaults } from '../entities/Creature.js';
 import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
@@ -37,11 +36,10 @@ export function buildState(campaign) {
     grid,
     party = null,
     characters = [],
-    encounters = [],
+    creatures = [],
     travelog = [],
     quests = [],
     clock = null,
-    npcs = [],
     handouts = [],
     bestiary = [],
     splitParty = false,
@@ -51,11 +49,10 @@ export function buildState(campaign) {
     nodes: [...grid.nodes.values()],
     party,
     characters,
-    encounters,
+    creatures,
     travelog,
     quests,
     clock,
-    npcs,
     handouts,
     bestiary,
     splitParty,
@@ -123,8 +120,7 @@ function packTile(tile) {
  */
 const ENTITY_DEFAULTS = {
   characters: withCharacterDefaults,
-  encounters: withEncounterDefaults,
-  npcs: withNPCDefaults,
+  creatures: withCreatureDefaults,
   handouts: withHandoutDefaults,
 };
 
@@ -330,11 +326,10 @@ export function deserialize(json, assets) {
       .map(withNodeDefaults),
     party: partyPosition(parsed.party),
     characters: entities('characters', parsed.characters),
-    encounters: entities('encounters', parsed.encounters),
+    creatures: entities('creatures', parsed.creatures),
     travelog: records(parsed.travelog),
     quests: records(parsed.quests),
     clock: record(parsed.clock),
-    npcs: entities('npcs', parsed.npcs),
     handouts: entities('handouts', parsed.handouts),
     bestiary: records(parsed.bestiary),
     splitParty: parsed.splitParty === true,

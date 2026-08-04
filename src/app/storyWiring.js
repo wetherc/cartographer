@@ -3,7 +3,7 @@ import { confirmModal, confirmDelete } from '../ui/Modal.js';
 import { mountTravelogPanel } from '../ui/TravelogPanel.js';
 import { appendEntry, createEntry } from '../log/Travelogue.js';
 import { mountNPCPanel } from '../ui/NPCPanel.js';
-import { npcsAt, knownNpcsAt, formatLocation } from '../entities/NPC.js';
+import { creaturesAt, knownCreaturesAt, formatLocation } from '../entities/CreatureMap.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountQuestPanel } from '../ui/QuestPanel.js';
 import { createQuest, toggleQuestStatus } from '../quest/Quests.js';
@@ -12,7 +12,7 @@ import { createHandout, toggleRevealed, handoutsAt } from '../handout/Handouts.j
 import { replaceById, removeById } from '../entities/Roster.js';
 import { wireEntityList } from './entityList.js';
 import { npcForm } from './npcForm.js';
-import { commitNPCs } from './combatants.js';
+import { commitCreatures } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -66,12 +66,17 @@ export function wireStory(app) {
     },
   });
 
+  /** The non-hostile creatures in a list's scope. A hostile creature lives
+   * on the Encounters side, whatever list it was authored from. */
+  const folkAt = (/** @type {{ nodeId: string } | null} */ position) =>
+    creaturesAt(state.creatures, position).filter((c) => c.disposition !== 'hostile');
+
   /** The confirm-and-delete flow shared by both NPC lists. */
   const deleteNPC = (/** @type {string} */ id) => {
-    state.npcs = removeById(state.npcs, id);
-    commitNPCs(app);
+    state.creatures = removeById(state.creatures, id);
+    commitCreatures(app);
   };
-  const confirmDeleteNPC = (/** @type {import('../types/npc.js').NPC} */ npc) =>
+  const confirmDeleteNPC = (/** @type {import('../types/creature.js').Creature} */ npc) =>
     confirmDelete(npc.name);
 
   app.views.npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
@@ -79,8 +84,8 @@ export function wireStory(app) {
     // The GM sees the whole node's roster, with unmet NPCs flagged.
     getNPCs: () =>
       isGM(state.role)
-        ? npcsAt(state.npcs, app.partyTracker.getPosition())
-        : knownNpcsAt(state.npcs, app.partyTracker.getPosition()),
+        ? folkAt(app.partyTracker.getPosition())
+        : knownCreaturesAt(state.creatures, app.partyTracker.getPosition()),
     getLocationLabel: (npc) => {
       const label = formatLocation(npc.location, (id) => app.grid.getNode(id)?.name);
       return npc.location && !npc.met ? `${label} — not yet met` : label;
@@ -89,8 +94,8 @@ export function wireStory(app) {
     // The chips on an NPC's row are combat state, so only the panel beside
     // the party writes them. The combat screen shows the same chips.
     onUpdate: (npc) => {
-      state.npcs = replaceById(state.npcs, npc);
-      commitNPCs(app);
+      state.creatures = replaceById(state.creatures, npc);
+      commitCreatures(app);
       app.views.combatScreen.update();
     },
     // New NPCs from the Story tab default to where the party stands.
@@ -101,11 +106,12 @@ export function wireStory(app) {
   });
 
   // This is the Build rail's NPC authoring list, the NPCs subtab beside the
-  // mob roster. It lists the NPCs placed in whatever node the GM views, plus
-  // unplaced NPCs, and lets the GM edit them without moving the party there.
-  // New NPCs default onto the Build-mode selected tile of the viewed node.
+  // mob roster. It lists the non-hostile creatures placed in whatever node
+  // the GM views, plus unplaced ones, and lets the GM edit them without
+  // moving the party there. New NPCs default onto the Build-mode selected
+  // tile of the viewed node.
   app.views.buildNPCs = mountNPCPanel(mustGetElement('build-npcs-container'), {
-    getNPCs: () => npcsAt(state.npcs, { nodeId: app.navigator.getCurrentNode().id }),
+    getNPCs: () => folkAt({ nodeId: app.navigator.getCurrentNode().id }),
     getLocationLabel: (npc) => formatLocation(npc.location, (id) => app.grid.getNode(id)?.name),
     onDelete: deleteNPC,
     onAdd: () =>

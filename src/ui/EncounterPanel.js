@@ -1,4 +1,4 @@
-import { addStatModifier, applyDamage, heal, isDefeated } from '../entities/Encounter.js';
+import { addStatModifier, applyDamage, heal, isDefeated } from '../entities/Creature.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { mountStatBlockBar } from './StatBlockBar.js';
 import { el } from './dom.js';
@@ -8,7 +8,7 @@ import { buildTabs } from './Tabs.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
 import { clampInt } from '../util/num.js';
 
-/** @typedef {import('../types/entities.js').Encounter} Encounter */
+/** @typedef {import('../types/creature.js').Creature} Encounter */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
 
 /**

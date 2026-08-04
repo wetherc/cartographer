@@ -1,44 +1,42 @@
 import { promptModal } from '../ui/Modal.js';
-import { createNPC } from '../entities/NPC.js';
-import { withCasterFields } from '../entities/Caster.js';
-import { isCasterClass } from '../entities/Classes.js';
-import { isSlotPool } from '../entities/SpellSlots.js';
+import { createCreature, editCreature } from '../entities/Creature.js';
 import { slugId, replaceById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
 import { refilterSpellsOnChange } from './casterFields.js';
 import { gearOptions } from './gearFields.js';
 import { npcFields, readNPCFields } from './npcFields.js';
-import { commitNPCs } from './combatants.js';
+import { commitCreatures } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
-/** @typedef {import('../types/npc.js').NPC} NPC */
+/** @typedef {import('../types/creature.js').Creature} Creature */
 
 /**
  * This is the shared create/edit dialog behind every NPC authoring flow: the
  * Story sidebar, the Build rail's NPC list, the Build-mode right-click menu,
- * and the Library rail's "Add to campaign". With an existing NPC it edits in
- * place. Without one it creates the NPC at the given default placement,
- * optionally pre-filled from a library template. Either way, the change
- * lands in `state.npcs`, the map markers and both NPC lists refresh, and an
- * NPC placed on the party's own tile is met on the spot. The function
- * returns the stored NPC, or null on cancel or a blank name.
+ * and the Library rail's "Add to campaign". With an existing creature it
+ * edits in place. Without one it creates the creature at the given default
+ * placement, optionally pre-filled from a library template. Either way, the
+ * change lands in `state.creatures`, the map markers and both NPC lists
+ * refresh, and a creature placed on the party's own tile is met on the spot.
+ * The function returns the stored creature, or null on cancel or a blank
+ * name.
  * @param {AppContext} app
- * @param {NPC | null} existing
+ * @param {Creature | null} existing
  * @param {import('../types/entities.js').EncounterLocation | null} defaultLocation
- *   placement preset for a new NPC
+ *   placement preset for a new creature
  * @param {import('../types/library.js').NPCTemplate | null} [template]
- *   template that fills a new NPC's fields (ignored when editing)
- * @returns {Promise<NPC | null>}
+ *   template that fills a new creature's fields (ignored when editing)
+ * @returns {Promise<Creature | null>}
  */
 export async function npcForm(app, existing, defaultLocation, template = null) {
   const { state } = app;
-  /** The source that seeds the dialog's fields: the NPC being edited, or a template. */
+  /** The source that seeds the dialog's fields: the creature being edited, or a template. */
   const seed = existing ?? template;
-  // The gear choice is the merged library list, the same one the encounter
-  // dialog offers. "None" marks an NPC that carries no weapon or armor, which
+  // The gear choice is the merged library list, the same one the foe dialog
+  // offers. "None" marks a creature that carries no weapon or armor, which
   // is what most townsfolk are.
   const gear = gearOptions(seed);
-  // This uses a two-column layout matching the encounter dialog: identity
+  // This uses a two-column layout matching the foe dialog: identity
   // (name/role), then disposition, full-width notes, hit points, gear, the
   // stat block, the caster section, then placement. The map picker's
   // breadcrumb labels run long, so it spans the full width.
@@ -63,40 +61,28 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
   if (!values) return null;
   const fields = readNPCFields(values, gear);
   if (!fields.name) return null;
-  /** @type {NPC} */
+  /** @type {Creature} */
   let stored;
   if (existing) {
-    // A cut to the maximum takes the current hit points down with it, the way
-    // an encounter edit does. Everything else about the live NPC survives.
-    const base = {
-      ...existing,
-      ...fields,
-      currentHP: Math.min(existing.currentHP, fields.maxHP),
-      location: readLocation(app, values),
-    };
-    // A caster class rebuilds slots at full and stamps the picked spellbook.
-    // Choosing "None" removes the caster fields and any slot pools.
-    if (isCasterClass(fields.class)) {
-      stored = withCasterFields(base, fields, fields.casterLevel);
-    } else {
-      const { class: _c, casterLevel: _l, spellbook: _b, ...rest } = base;
-      stored = { ...rest, resources: (base.resources ?? []).filter((r) => !isSlotPool(r)) };
-    }
-    state.npcs = replaceById(state.npcs, stored);
+    // editCreature keeps the live state: a cut to the maximum takes the
+    // current hit points down with it, conditions survive, and the caster
+    // reconciliation rebuilds or strips slots as the class fields say.
+    stored = editCreature(existing, { ...fields, location: readLocation(app, values) });
+    state.creatures = replaceById(state.creatures, stored);
   } else {
     const { name: _name, ...options } = fields;
-    stored = createNPC(
+    stored = createCreature(
       slugId(
         fields.name,
-        state.npcs.map((n) => n.id),
+        state.creatures.map((c) => c.id),
       ),
       fields.name,
       { ...options, location: readLocation(app, values) },
     );
-    state.npcs = [...state.npcs, stored];
+    state.creatures = [...state.creatures, stored];
   }
-  // An NPC placed or moved onto the party's own tile is met on the spot.
+  // A creature placed or moved onto the party's own tile is met on the spot.
   app.actions.meetNPCs();
-  commitNPCs(app);
+  commitCreatures(app);
   return stored;
 }

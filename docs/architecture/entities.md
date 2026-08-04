@@ -3,19 +3,19 @@
 *Explanation. Back to the [architecture overview](../architecture.md).*
 
 `src/entities/` holds the things that a campaign's rules operate on:
-encounters, resource pools, NPCs, and characters. They all follow one update
-style. This page describes that style first, then the creature, then the NPC,
-then the character model, which is the largest of them.
+creatures, resource pools, and characters. They all follow one update style.
+This page describes that style first, then the creature, then the character
+model, which is the largest of them.
 
 ## The shared shape: immutable updates
 
-`entities/Encounter.js`, `entities/Resource.js`, and `entities/Character.js`
-(types in `src/types/entities.ts`) are all plain immutable-update modules.
-Each function takes a value and returns a new value. It does not change
-the original:
+`entities/Creature.js`, `entities/Resource.js`, and `entities/Character.js`
+(types in `src/types/creature.ts` and `src/types/entities.ts`) are all plain
+immutable-update modules. Each function takes a value and returns a new
+value. It does not change the original:
 
 ```js
-const hurt   = applyDamage(encounter, 7);   // new encounter, old one untouched
+const hurt   = applyDamage(creature, 7);    // new creature, old one untouched
 const rested = restore(pool, 2);            // new resource pool
 const leveled = addXP(character, 250);      // new character
 ```
@@ -73,11 +73,11 @@ inline.
 ## The creature
 
 `entities/Creature.js` and `entities/CreatureMap.js` (types in
-`src/types/creature.ts`) hold the merged model that replaces the encounter and
-the NPC. One `Creature` covers a foe, a townsperson, and anything between. The
-`disposition` field decides its side in a fight. A hostile creature fights the
-party. Every other creature stands with the party. The two older modules still
-run while their consumers move over, and the sections below describe them.
+`src/types/creature.ts`) hold the one model for everything the party can meet
+on the map. One `Creature` covers a foe, a townsperson, and anything between.
+The `disposition` field decides its side in a fight. A hostile creature
+fights the party. Every other creature stands with the party. The state holds
+one `creatures` list, and every combat, map, and story surface reads it.
 
 A creature carries `maxHP`, `currentHP`, a `stats` block, a `weapon`, an
 `armor`, `conditions`, a `location`, and a `met` flag. `level` and `tier` are
@@ -103,54 +103,18 @@ the non-hostile roster. `discoveredHostiles` is the player view of the hostile
 roster, through the fog of war. `fromTemplate` reads older template shapes on
 purpose, because a library file has no version field.
 
-## The NPC
+Every creature follows the same combat rules. `maxHP` defaults to 4, the 5e
+commoner, and hit points are never absent. 0 HP is defeat with no death
+saves, which only characters roll. `isCreature` is what the combat code
+branches on, so a character and a creature never convert into each other.
 
-*This model is being replaced by the creature above.*
-
-`entities/NPC.js` (types in `src/types/npc.ts`) holds the named figures a
-campaign places on the map: an innkeeper, a guard captain, a rival. An NPC
-carries a role, a disposition toward the party, notes, and a `met` flag that
-the players' view filters on.
-
-An NPC is also a full combatant. It stands on one tile, and standing there is
-what puts it into a fight (`npcsOnTile`). To fight it needs the same numbers a
-foe needs, so it carries them under the same names an `Encounter` uses:
-`maxHP`, `currentHP`, a `weapon`, and an `armor`. Its `stats` block is closed
-over the fixed stat set through `normalizeStatBlock`, the same call the
-encounter uses, so AC sits beside the six ability scores and defaults to 10
-plus the DEX modifier.
-
-Three defaults differ from a foe's, because an NPC is a townsperson first:
-
-- `maxHP` defaults to 4, the 5e commoner. Hit points are never absent. An
-  optional field would put the silent no-op back, where damage to an NPC
-  changed nothing.
-- `weapon` and `armor` default to null, which means unarmed and unarmored. An
-  encounter fills these from its level and tier. An NPC has neither field, so
-  there is nothing to derive a loadout from, and the GM arms it by hand.
-- 0 HP is defeat with no death saves, the encounter rule rather than the
-  character rule.
-
-`npcStatBlock(npc)` is the AC read: the closed stat block plus the `acBonus` of
-the worn armor. It is the NPC twin of `Encounter.effectiveStatBlock`, minus the
-timed stat modifiers, which an NPC does not carry. `damageNPC`, `healNPC`, and
-`isNPCDefeated` are the same three clamped writers `Encounter.js` exports.
-
-The two models stay separate modules on purpose. They agree on field names, so
-the combat code branches on kind and reads the same names on each, rather than
-converting one into the other.
-
-The authoring side agrees too. `app/npcFields.js` describes the fields once.
-The campaign dialog and the Library rail's template form both render them. The
-fields are the same `STAT_KEYS` inputs and the same gear pickers
-(`app/gearFields.js`) that the encounter form uses. Only the gear fallback
-differs. `readEncounterFields` falls back to the default loadout of the tier.
+The authoring side still has two dialogs over one model. `app/npcFields.js`
+describes the townsperson fields, and `app/encounterFields.js` describes the
+foe fields. Both write `state.creatures` through `createCreature` and
+`editCreature`. The fields are the same `STAT_KEYS` inputs and the same gear
+pickers (`app/gearFields.js`). Only the gear fallback differs.
+`readEncounterFields` falls back to the default loadout of the tier.
 `readNPCFields` passes no fallback, so an empty picker means unarmed.
-
-On an NPC template, `maxHP`, `weapon`, and `armor` are all optional.
-`Library.normalizeLibrary` keeps a positive maximum. It leaves out anything
-else. A template written before NPCs had gear therefore goes through
-`createNPC` and takes the commoner defaults.
 
 ## The character foundation
 
@@ -400,8 +364,8 @@ The app does not track which hand is free, and gear has no equipment slot.
 Matching a printed phrase against a stack name is inexact by nature, so the
 comparison is case-insensitive and runs in both directions: a stack named
 `Diamond` covers `diamonds worth 300 gp`. A material with no printed text
-names nothing to look for and is never required. Encounters and NPCs have no
-inventory at all, and the app never asks them for a component.
+names nothing to look for and is never required. A creature has no
+inventory at all, and the app never asks it for a component.
 
 `app/spellCast.js` acts on the result. A cast whose material is missing stops
 before `castSpell` runs, which keeps a refused cast from spending a slot. The
@@ -479,7 +443,7 @@ the prepared count appear only for a character with a prepared-rule class
 alone. A multiclass character mixes the two rules per spell, and each learned
 spell follows its own class's rule.
 
-Foe and NPC casters are not affected. Their authoring dialogs stamp every
+Creature casters are not affected. Their authoring dialogs stamp every
 picked leveled spell into both `known` and `prepared` (`spellbookFromIds`),
 so whichever list their class reads, the whole picked set stays castable.
 
@@ -502,7 +466,7 @@ adds `proficient`, so a readout can state why the number is what it is.
 
 The two entry points exist because a character does not always roll a save.
 `Casting.js`'s save effect resolves every target through `resolveSave`, and
-its targets can be encounters or NPCs, which record no ability scores in a
+its targets can be creatures, which record no ability scores in a
 character's shape and carry no proficiency lists. The resolver therefore
 takes a bonus that the caller worked out, and only the character path goes
 through `saveBonus`.
@@ -541,9 +505,9 @@ carries no DC.
 
 Expertise is a GM grant. The Progression section of the sheet lists it and
 offers a multiselect over the character's proficient skills, which commits
-through `Progression.withExpertise`. No class feature grants it yet. An
-encounter and an NPC carry no proficiency lists, so their bonus is still
-whatever the GM types.
+through `Progression.withExpertise`. No class feature grants it yet. A
+creature carries no proficiency lists, so its bonus is still whatever the GM
+types.
 
 ## Concentration
 
@@ -584,8 +548,8 @@ function. A character knocked to 0 HP loses the spell outright without
 rolling. The round wrap in `app/encounterWiring.js` ticks the duration and
 logs a spell that ran out.
 
-Only characters concentrate. An encounter and an NPC have no field to write,
-so a foe's concentration is still a chip that the GM adds and removes by
+Only characters concentrate. A creature has no field to write, so a foe's
+concentration is still a chip that the GM adds and removes by
 hand. This is why `Concentrating` stays in the pick-list. The character
 sheet's `-1 HP` button is bookkeeping rather than a damage event, so it
 calls for no save. Damage that must test concentration goes through an
@@ -667,8 +631,7 @@ the same state differently. `CombatantRow.deathSaves` carries the tracker onto
 the board, where a card shows a Dying, Stable, or Dead chip beside its
 conditions.
 
-Only characters roll death saves. An encounter and an NPC are both defeated at
-0 HP.
+Only characters roll death saves. A creature is defeated at 0 HP.
 
 ## Conditions a spell imposed
 
@@ -694,7 +657,7 @@ target keep their own chips.
 
 `app/combatants.js` drives them, because only the wiring can see every
 collection that a target lives in. `endSpellEffects(app, casterId, spellId)`
-sweeps the characters, the encounters, and the NPCs, then logs each creature
+sweeps the characters and the creatures, then logs each one
 that walked free. It runs whenever a caster stops holding a spell: the sheet's
 Drop control and its hand-removed `Concentrating` chip (through
 `onConcentrationEnd`, wired in `app/partyWiring.js`), a failed CON save or a
@@ -705,7 +668,7 @@ for whoever's turn is ending. A party character rolls its live bonus there
 rather than the stamped one, so a save granted since the cast counts.
 
 The sweep always runs after the write that it follows, never before. Both
-touch `state.characters` and `state.encounters`. If the app stores a
+touch `state.characters` and `state.creatures`. If the app stores a
 pre-sweep copy, the chips come back.
 
 A spell states that its condition allows the retry with `saveEnds` on its

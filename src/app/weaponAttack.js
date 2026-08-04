@@ -42,11 +42,10 @@ const BONUS_DICE = /** @type {import('../types/dice.js').DieType[]} */ ([
 ]);
 
 /**
- * Who can attack and who is left to attack. The attacker is a party character,
- * an armed encounter, or an armed NPC. An unarmed NPC still resolves here, but
+ * Who can attack and who is left to attack. The attacker is a party character
+ * or an armed creature. An unarmed creature still resolves here, but
  * `weaponsOf` gives it no weapon, so the attack UI stays quiet for it.
- * Defenders come from the opposite side of the running order: encounters by id,
- * party characters with their armor AC, and NPCs standing on the tile. Downed
+ * Defenders come from the opposite side of the running order. Downed
  * combatants drop out.
  * @param {AppContext} app
  * @param {import('../types/combat.js').CombatState} combat
@@ -111,9 +110,10 @@ export function rollWeaponAttack(
 ) {
   const ability = weaponAbility(weapon);
   const abilityMod = abilityModOf(attackerStats(attacker), ability);
-  // A character and an encounter carry a level. An NPC carries neither, so it
-  // falls back to its caster level, and to 1 for a non-caster. Every combatant
-  // is proficient with what it holds until the weapon overhaul gates that.
+  // A character always carries a level, and a leveled creature does too. An
+  // unleveled creature falls back to its caster level, and to 1 for a
+  // non-caster. Every combatant is proficient with what it holds until the
+  // weapon overhaul gates that.
   const proficiency = proficiencyBonus(attacker.level ?? attacker.casterLevel ?? 1);
   const attackBonus = abilityMod + proficiency;
   // Bonus attack dice join the d20 in the tray's selection, so they roll in
@@ -199,9 +199,9 @@ export function rollWeaponAttack(
     'combat',
     `${weapon.name} ${blow} ${defender.name} for ${damage.detail || '0 damage'}${inflicts}.`,
   );
-  // Applies the damage on the spot through the shared write path. Encounters
-  // and characters track HP, and the function logs a defeat or a drop to 0
-  // only once. An HP-less NPC defender keeps only the log line.
+  // Applies the damage on the spot through the shared write path. Every
+  // combatant tracks HP, and the function logs a defeat or a drop to 0
+  // only once.
   applyToTarget(app, defender.id, damage.total, false, { crit });
   app.toasts.show(
     `${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${damage.text || 'no damage'}${inflicts}.`,
@@ -219,11 +219,10 @@ export function rollWeaponAttack(
  * misses. Otherwise the function compares the total against AC. On a hit,
  * the weapon's damage dice roll too: the ability modifier folds into the
  * base term, and proficiency never adds to damage. The function applies the
- * result to the defender automatically. Encounters lose HP on the spot,
- * party characters take it through bonus HP first, and HP-less NPCs get
- * only the log line. Party members attack with their equipped weapons, and
- * foes attack with the encounter's assigned weapon. Everything lands in the
- * travelogue and in a toast.
+ * result to the defender automatically. Creatures lose HP on the spot, and
+ * party characters take it through bonus HP first. Party members attack
+ * with their equipped weapons, and a creature attacks with its assigned
+ * weapon. Everything lands in the travelogue and in a toast.
  * @param {AppContext} app
  * @param {import('../types/combat.js').CombatState} combat
  * @param {import('../types/combat.js').Participant} participant

@@ -111,12 +111,8 @@ test('rehydrate refreshes the map and every campaign-backed panel', () => {
 
   rehydrateCampaign(app, campaignNamed('After'));
 
-  for (const name of [
-    'resyncMap',
-    'syncEncounterMarkers',
-    'syncNPCMarkers',
-    'refreshMapDescription',
-  ]) {
+  // One marker action covers both marker layers now, so only one is called.
+  for (const name of ['resyncMap', 'syncEncounterMarkers', 'refreshMapDescription']) {
     assert.ok(app.calls.includes(name), `expected ${name} to be called`);
   }
   for (const name of [
@@ -162,35 +158,35 @@ test('rehydrate replaces a node the adopted save changed', () => {
 
 test('rehydrate keeps the live entities that the adopted save did not change', () => {
   const app = fakeApp();
-  app.state.encounters = [
+  app.state.creatures = [
     { id: 'e1', name: 'Goblin Scout', hp: { current: 7, max: 7 } },
     { id: 'e2', name: 'Orc Brute', hp: { current: 15, max: 15 } },
   ];
-  const before = app.state.encounters;
+  const before = app.state.creatures;
   const next = campaignNamed('After');
-  next.encounters = JSON.parse(JSON.stringify(before));
+  next.creatures = JSON.parse(JSON.stringify(before));
 
   rehydrateCampaign(app, next);
 
-  assert.equal(app.state.encounters, before);
+  assert.equal(app.state.creatures, before);
 });
 
 test('rehydrate replaces only the entity that changed', () => {
   const app = fakeApp();
-  app.state.encounters = [
+  app.state.creatures = [
     { id: 'e1', name: 'Goblin Scout', hp: { current: 7, max: 7 } },
     { id: 'e2', name: 'Orc Brute', hp: { current: 15, max: 15 } },
   ];
-  const before = app.state.encounters;
+  const before = app.state.creatures;
   const next = campaignNamed('After');
-  next.encounters = JSON.parse(JSON.stringify(before));
-  next.encounters[1].hp.current = 9;
+  next.creatures = JSON.parse(JSON.stringify(before));
+  next.creatures[1].hp.current = 9;
 
   rehydrateCampaign(app, next);
 
-  assert.notEqual(app.state.encounters, before);
-  assert.equal(app.state.encounters[0], before[0]);
-  assert.equal(app.state.encounters[1].hp.current, 9);
+  assert.notEqual(app.state.creatures, before);
+  assert.equal(app.state.creatures[0], before[0]);
+  assert.equal(app.state.creatures[1].hp.current, 9);
 });
 
 test('rehydrate throws rather than half-applying an unusable party position', () => {

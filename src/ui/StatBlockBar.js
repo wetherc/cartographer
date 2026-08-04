@@ -22,7 +22,7 @@ import { classNames, el } from './dom.js';
  * @param {HTMLElement} container
  * @param {{
  *   mode: 'base' | 'temp',
- *   getEntity: () => import('../types/entities.js').Character | import('../types/entities.js').Encounter,
+ *   getEntity: () => import('../types/entities.js').Character | import('../types/creature.js').Creature,
  *   onSetStat?: (name: string, value: number) => void,
  *   onAddModifier?: (name: string, delta: number, rounds: number) => void,
  * }} callbacks

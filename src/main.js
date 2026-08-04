@@ -44,11 +44,10 @@ const app = /** @type {import('./types/app.js').AppContext} */ (
     toasts,
     state: {
       characters: initial.characters,
-      encounters: initial.encounters,
+      creatures: initial.creatures,
       travelog: initial.travelog,
       quests: initial.quests,
       clock: initial.clock,
-      npcs: initial.npcs,
       handouts: initial.handouts,
       bestiary: initial.bestiary,
       splitParty: initial.splitParty,

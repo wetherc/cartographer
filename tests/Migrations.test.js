@@ -83,3 +83,79 @@ test('the omission-only steps leave the payload alone', () => {
   assert.deepEqual(MIGRATIONS[2](state), state);
   assert.deepEqual(MIGRATIONS[3](state), state);
 });
+
+test('step 5 turns an encounter into a hostile creature with explicit gear', () => {
+  const migrated = MIGRATIONS[5]({
+    encounters: [
+      {
+        id: 'goblin',
+        name: 'Goblin',
+        maxHP: 7,
+        currentHP: 7,
+        statBlock: { STR: 8, AC: 13 },
+        level: 1,
+        tier: 'mob',
+        noticed: true,
+      },
+    ],
+    npcs: [],
+  });
+  assert.equal('encounters' in migrated, false, 'the old key is gone');
+  assert.equal('npcs' in migrated, false);
+  const goblin = migrated.creatures[0];
+  assert.equal(goblin.disposition, 'hostile');
+  assert.deepEqual(goblin.stats, { STR: 8, AC: 13 }, 'statBlock renames to stats');
+  assert.equal('statBlock' in goblin, false);
+  assert.equal(goblin.met, true, 'noticed renames to met');
+  assert.equal('noticed' in goblin, false);
+  assert.equal(goblin.weapon.name, 'Shortsword', 'absent gear takes the old level default');
+  assert.equal(goblin.armor.name, 'Leather Armor');
+});
+
+test('step 5 keeps explicit gear, null included, and defaults level and tier', () => {
+  const migrated = MIGRATIONS[5]({
+    encounters: [{ id: 'ooze', name: 'Ooze', maxHP: 10, currentHP: 10, weapon: null, armor: null }],
+  });
+  const ooze = migrated.creatures[0];
+  assert.equal(ooze.weapon, null, 'a deliberately unarmed foe stays unarmed');
+  assert.equal(ooze.armor, null);
+  assert.equal(ooze.level, 1);
+  assert.equal(ooze.tier, 'mob');
+  assert.equal(ooze.met, false);
+});
+
+test('step 5 keeps an NPC as it is, with explicit null gear and one id namespace', () => {
+  const migrated = MIGRATIONS[5]({
+    encounters: [{ id: 'goblin', name: 'Goblin', maxHP: 7, currentHP: 7 }],
+    npcs: [
+      { id: 'goblin', name: 'Goblin the Barkeep', disposition: 'friendly', met: true },
+      { id: 'sage', name: 'Sage', disposition: 'neutral' },
+    ],
+  });
+  const [foe, barkeep, sage] = migrated.creatures;
+  assert.equal(foe.id, 'goblin');
+  assert.notEqual(barkeep.id, 'goblin', 'a colliding NPC id is re-slugged');
+  assert.equal(barkeep.disposition, 'friendly');
+  assert.equal(barkeep.met, true);
+  assert.equal(barkeep.weapon, null, 'absent NPC gear reads as unarmed, never a default');
+  assert.equal(barkeep.armor, null);
+  assert.equal(sage.id, 'sage');
+  assert.equal(sage.met, false);
+});
+
+test('step 5 coerces bestiary templates the same way as encounters', () => {
+  const migrated = MIGRATIONS[5]({
+    bestiary: [{ id: 'wolf', name: 'Wolf', maxHP: 11, statBlock: { DEX: 15 }, level: 1 }],
+  });
+  const wolf = migrated.bestiary[0];
+  assert.equal(wolf.disposition, 'hostile');
+  assert.deepEqual(wolf.stats, { DEX: 15 });
+  assert.equal('statBlock' in wolf, false);
+  assert.equal(wolf.weapon.name, 'Shortsword');
+});
+
+test('step 5 defends itself against malformed collections', () => {
+  const migrated = MIGRATIONS[5]({ encounters: 'none', npcs: [null, 4], bestiary: 7 });
+  assert.deepEqual(migrated.creatures, []);
+  assert.deepEqual(migrated.bestiary, []);
+});

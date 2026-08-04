@@ -7,14 +7,18 @@ import { mountInitiativePanel } from '../ui/InitiativePanel.js';
 import { combatSetupModal } from '../ui/CombatSetup.js';
 import {
   effectiveStatBlock,
-  encountersAt,
-  encountersAtTile,
-  encountersNear,
-  encountersOnTile,
-  discoveredEncounters,
+  isDefeated,
   tickStatModifiers,
   toTemplate,
-} from '../entities/Encounter.js';
+} from '../entities/Creature.js';
+import {
+  creaturesAt,
+  creaturesNear,
+  creaturesOnTile,
+  discoveredHostiles,
+  hostileCreaturesAtTile,
+  hostileCreaturesOnTile,
+} from '../entities/CreatureMap.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import {
   createParticipant,
@@ -24,7 +28,6 @@ import {
   dropParticipant,
 } from '../combat/Initiative.js';
 import { abilityModifier } from '../entities/Modifiers.js';
-import { hostileNPCsOnTile, npcsOnTile } from '../entities/NPC.js';
 import { arrivalAlert } from '../combat/Arrival.js';
 import { tickConditions } from '../entities/Conditions.js';
 import { tick as tickConcentration } from '../entities/Concentration.js';
@@ -32,7 +35,7 @@ import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { isGM } from '../view/ViewRole.js';
 import { encounterForm, deleteEncounter, addFromBestiary } from './encounterForm.js';
 import {
-  commitEncounters,
+  commitCreatures,
   describeCombatant,
   endSpellEffects,
   findCombatant,
@@ -88,9 +91,10 @@ export function wireEncounters(app) {
 
   /**
    * If the party's current tile holds a threat, show it in a modal over the
-   * map. A threat is a live encounter staged there or a hostile NPC standing
-   * there. Both get named. A friendly or neutral NPC is not a threat, and
-   * the travelogue announces meeting one instead.
+   * map. A threat is an undefeated hostile creature standing there. A
+   * friendly or neutral creature is not a threat, and the travelogue
+   * announces meeting one instead. The first-meeting travelogue line lives
+   * in `meetCreaturesHere` (mapTravel.js), on the same arrival path.
    *
    * The threat stays in place: a party that flees or ignores it still sees it
    * in the sidebar for that node. This is only a walk-into-something alert.
@@ -107,29 +111,11 @@ export function wireEncounters(app) {
     position = app.partyTracker.getPosition(),
     subject = 'The party',
   ) => {
-    const here = encountersOnTile(state.encounters, position);
-    const hostiles = hostileNPCsOnTile(state.npcs, position);
-    if (here.length === 0 && hostiles.length === 0) return;
+    const here = hostileCreaturesOnTile(state.creatures, position);
+    if (here.length === 0) return;
     const node = app.grid.getNode(position.nodeId);
     const region = node ? node.name : position.nodeId;
-    // The travelogue logs each first meeting exactly once, using a persisted
-    // `noticed` flag. Walking back onto the tile shows the alert again but
-    // does not log it again. A hostile NPC needs no flag of its own, because
-    // `meetNPCs` already logs the introduction.
-    const fresh = here.filter((e) => !e.noticed);
-    if (fresh.length > 0) {
-      state.encounters = state.encounters.map((e) =>
-        fresh.some((f) => f.id === e.id) ? { ...e, noticed: true } : e,
-      );
-      for (const e of fresh) {
-        app.actions.logEvent(
-          'combat',
-          `${subject} encounters ${e.name} in ${region} (tile ${position.tileId}).`,
-        );
-      }
-      app.actions.markDirty();
-    }
-    const alert = arrivalAlert([...here, ...hostiles], {
+    const alert = arrivalAlert(here, {
       gm: isGM(state.role),
       subject,
       region,
@@ -139,116 +125,113 @@ export function wireEncounters(app) {
 
   app.views.encounterPanel = mountEncounterPanel(mustGetElement('encounter-container'), {
     // The panel shows only what is relevant to the party's current position,
-    // split into two tabs. The Active tab lists live encounters on the
-    // party's exact tile. This is what the party just walked into. Both
-    // roles see it, because the alert already announced it. The Nearby tab
-    // lists the rest within range. For the GM, this means encounters within
-    // four times the fog reveal radius of the party, plus unbound
-    // encounters. For a player, this means only discovered encounters: one
-    // on a tile the fog has revealed, or an unbound one the party walked
+    // split into two tabs. The Active tab lists the live hostile creatures
+    // on the party's exact tile. This is what the party just walked into.
+    // Both roles see it, because the alert already announced it. The Nearby
+    // tab lists the rest within range. For the GM, this means hostile
+    // creatures within four times the fog reveal radius of the party, plus
+    // unplaced ones. For a player, this means only discovered hostiles: one
+    // on a tile the fog has revealed, or an unplaced one the party walked
     // into.
-    getActiveEncounters: () => encountersOnTile(state.encounters, app.partyTracker.getPosition()),
+    getActiveEncounters: () =>
+      hostileCreaturesOnTile(state.creatures, app.partyTracker.getPosition()),
     getNearbyEncounters: () => {
       const position = app.partyTracker.getPosition();
-      const hereIds = new Set(encountersOnTile(state.encounters, position).map((e) => e.id));
+      const hereIds = new Set(hostileCreaturesOnTile(state.creatures, position).map((c) => c.id));
       const list = isGM(state.role)
-        ? encountersNear(state.encounters, position, app.partyTracker.revealRadius * 4)
-        : discoveredEncounters(
-            state.encounters,
-            position,
-            app.grid.getNode(position.nodeId) ?? null,
-          );
-      return list.filter((e) => !hereIds.has(e.id));
+        ? creaturesNear(state.creatures, position, app.partyTracker.revealRadius * 4).filter(
+            (c) => c.disposition === 'hostile',
+          )
+        : discoveredHostiles(state.creatures, position, app.grid.getNode(position.nodeId) ?? null);
+      return list.filter((c) => !hereIds.has(c.id));
     },
     onUpdate: (next) => {
       // Log the transition into defeat exactly once. Compare against the
-      // pre-update encounter so damage that keeps it down does not log again.
-      const prev = state.encounters.find((e) => e.id === next.id);
+      // pre-update creature so damage that keeps it down does not log again.
+      const prev = state.creatures.find((c) => c.id === next.id);
       if (prev) logDefeatTransition(app, prev, next);
-      state.encounters = replaceById(state.encounters, next);
+      state.creatures = replaceById(state.creatures, next);
       // The panel re-renders its own rows once this call resolves. It skips
       // that part of the refresh.
-      commitEncounters(app, { panel: false });
+      commitCreatures(app, { panel: false });
     },
     onDelete: (id) => {
-      state.encounters = removeById(state.encounters, id);
+      state.creatures = removeById(state.creatures, id);
       app.actions.removeCombatant(id);
-      commitEncounters(app, { panel: false });
+      commitCreatures(app, { panel: false });
     },
-    // Authoring, including new encounters and spawning from the bestiary,
-    // lives in the Build rail. The Play panel edits an existing encounter's
-    // HP and placement, and saves one as a template mid-session.
-    onEdit: (encounter) => encounterForm(app, encounter, null),
-    // Save an encounter's blueprint (name, max HP, stat block) to the
+    // Authoring, including new foes and spawning from the bestiary, lives
+    // in the Build rail. The Play panel edits an existing creature's HP and
+    // placement, and saves one as a template mid-session.
+    onEdit: (creature) => encounterForm(app, creature, null),
+    // Save a creature's blueprint (name, max HP, stat block) to the
     // bestiary. This avoids typing the next Goblin from scratch. Saves with
     // the same name stack as separate templates, because a template is a
     // snapshot, not a live link.
-    onSaveTemplate: (encounter) => {
+    onSaveTemplate: (creature) => {
       state.bestiary = [
         ...state.bestiary,
         toTemplate(
           slugId(
-            encounter.name,
+            creature.name,
             state.bestiary.map((t) => t.id),
           ),
-          encounter,
+          creature,
         ),
       ];
       app.actions.markDirty();
-      app.toasts.show(`Saved "${encounter.name}" to the bestiary.`);
+      app.toasts.show(`Saved "${creature.name}" to the bestiary.`);
     },
-    confirmDelete: (encounter) => confirmDelete(encounter.name),
+    confirmDelete: (creature) => confirmDelete(creature.name),
     // Only the GM can start combat. The button shows only to the GM, and
-    // only while the party stands on a tile holding a live encounter or a
-    // hostile NPC, with no fight running.
+    // only while the party stands on a tile holding a live hostile
+    // creature, with no fight running.
     canStartCombat: () => isGM(state.role) && current() === null && threatsHere(),
-    // The Active tab holds the Start combat button, so a hostile NPC under
-    // the party counts for the auto-switch even though the tab lists
-    // encounters only.
     hasActive: threatsHere,
     onStartCombat: startCombatSetup,
     getRole: () => state.role,
   });
 
-  // This is the Build rail's authoring list. It lists the encounters staged
-  // in the node the GM is viewing, plus unplaced ones, and lets the GM edit
-  // them without moving the party there. A new encounter defaults to the
-  // Build-mode selected tile of the viewed node, so the GM can select a
-  // tile and add an encounter there directly.
+  // This is the Build rail's foe authoring list. It lists the hostile
+  // creatures staged in the node the GM is viewing, plus unplaced ones, and
+  // lets the GM edit them without moving the party there. A new foe
+  // defaults to the Build-mode selected tile of the viewed node, so the GM
+  // can select a tile and add a foe there directly.
   app.views.buildEncounters = mountBuildEncounterPanel(
     mustGetElement('build-encounters-container'),
     {
       getEncounters: () =>
-        encountersAt(state.encounters, {
+        creaturesAt(state.creatures, {
           nodeId: app.navigator.getCurrentNode().id,
-        }),
+        }).filter((c) => c.disposition === 'hostile'),
       onAdd: () =>
         encounterForm(app, null, {
           nodeId: app.navigator.getCurrentNode().id,
           tileId: app.actions.getSelectedTileId() ?? '0,0',
         }),
       onAddFromTemplate: () => addFromBestiary(app),
-      onEdit: (encounter) => encounterForm(app, encounter, null),
-      onDelete: (encounter) => deleteEncounter(app, encounter),
+      onEdit: (creature) => encounterForm(app, creature, null),
+      onDelete: (creature) => deleteEncounter(app, creature),
       // Persist base stat edits from the Build rail's chips. The Play panel
-      // shows the same encounter and picks up the change.
+      // shows the same creature and picks up the change.
       onUpdate: (next) => {
-        state.encounters = replaceById(state.encounters, next);
+        state.creatures = replaceById(state.creatures, next);
         app.views.encounterPanel.update();
         app.actions.markDirty();
       },
-      // Selecting a placed encounter moves the map view to its staged location.
-      onFocus: (encounter) => {
-        if (encounter.location) app.actions.focusLocation(encounter.location);
+      // Selecting a placed creature moves the map view to its staged location.
+      onFocus: (creature) => {
+        if (creature.location) app.actions.focusLocation(creature.location);
       },
     },
   );
 
   /**
    * This is the Build-mode right-click menu for a tile of the viewed node.
-   * It opens at the pointer. It can create a new encounter or NPC on that
-   * tile, or edit one already staged there. Each choice opens the matching
-   * shared form.
+   * It opens at the pointer. It can create a new foe or NPC on that tile,
+   * or edit one already staged there. Each choice opens the matching shared
+   * form: the foe dialog for a hostile creature, the NPC dialog for the
+   * rest.
    * @param {number} x
    * @param {number} y
    * @param {number} clientX
@@ -259,62 +242,50 @@ export function wireEncounters(app) {
       nodeId: app.navigator.getCurrentNode().id,
       tileId: tileIdAt(x, y),
     };
-    const here = encountersOnTile(state.encounters, location);
-    const folkHere = npcsOnTile(state.npcs, location);
+    const here = creaturesOnTile(state.creatures, location);
     openContextMenu(
       [
         { label: 'New encounter here', onSelect: () => encounterForm(app, null, location) },
         { label: 'New NPC here', onSelect: () => npcForm(app, null, location) },
-        ...here.map((e) => ({
-          label: `Edit ${e.name}`,
-          onSelect: () => encounterForm(app, e, null),
-        })),
-        ...folkHere.map((n) => ({
-          label: `Edit ${n.name}`,
-          onSelect: () => npcForm(app, n, null),
+        ...here.map((c) => ({
+          label: `Edit ${c.name}`,
+          onSelect: () =>
+            c.disposition === 'hostile' ? encounterForm(app, c, null) : npcForm(app, c, null),
         })),
       ],
       { clientX, clientY },
     );
   };
 
-  // "In an encounter" means the party stands on a tile with at least one
-  // live encounter bound to it. This is the same condition the
+  // Whether the party stands on anything worth fighting: at least one live
+  // hostile creature on its exact tile. This is the same condition the
   // walked-into-it alert uses.
-  function encountersHere() {
-    return encountersOnTile(state.encounters, app.partyTracker.getPosition());
-  }
-
-  // The hostile NPCs under the party. A hostile NPC is a foe in its own
-  // right, so a tile holding one and nothing else is still a fight. Every
-  // place that asks "is there anything to fight here" reads both this and
-  // `encountersHere`.
-  function hostilesHere() {
-    return hostileNPCsOnTile(state.npcs, app.partyTracker.getPosition());
-  }
-
-  // Whether the party stands on anything worth fighting.
   function threatsHere() {
-    return encountersHere().length + hostilesHere().length > 0;
+    return hostileCreaturesOnTile(state.creatures, app.partyTracker.getPosition()).length > 0;
   }
 
   // The combatants are everyone involved in this encounter: the whole
-  // party, the live encounters on the party's tile, and any NPCs on that
-  // tile. Hostile NPCs line up as foes. Friendly and neutral NPCs line up
-  // with the party. Each combatant carries its DEX modifier. This modifier
-  // seeds the default value (10 + modifier, the passive baseline), adds to
-  // the d20 roll from Roll initiative, and shows beside the name. The GM
-  // can edit every value by hand.
+  // party, plus every creature on the party's tile. Hostile creatures line
+  // up as foes. Friendly and neutral ones line up with the party. Each
+  // combatant carries its DEX modifier. This modifier seeds the default
+  // value (10 + modifier, the passive baseline), adds to the d20 roll from
+  // Roll initiative, and shows beside the name. The GM can edit every value
+  // by hand.
   function combatRoster() {
     /** @type {(id: string, stats: Record<string, number> | undefined) => import('../types/combat.js').Participant} */
     const withDex = (id, stats) => {
       const mod = abilityModifier(stats?.DEX ?? 10);
       return createParticipant(id, 10 + mod, mod);
     };
+    // A defeated hostile stays staged but takes no part in a new fight. A
+    // bystander joins whatever its condition, the way NPCs always did.
+    const position = app.partyTracker.getPosition();
+    const roster = creaturesOnTile(state.creatures, position).filter(
+      (c) => c.disposition !== 'hostile' || !isDefeated(c),
+    );
     return [
       ...state.characters.map((c) => withDex(c.id, c.stats)),
-      ...encountersHere().map((e) => withDex(e.id, effectiveStatBlock(e))),
-      ...npcsOnTile(state.npcs, app.partyTracker.getPosition()).map((n) => withDex(n.id, n.stats)),
+      ...roster.map((c) => withDex(c.id, effectiveStatBlock(c))),
     ];
   }
 
@@ -400,12 +371,14 @@ export function wireEncounters(app) {
         }
         return ticked.character;
       });
-      state.encounters = state.encounters.map((e) => ({
-        ...e,
-        conditions: tickConditions(e.conditions),
-        statMods: tickStatModifiers(e.statMods ?? []),
+      // Every creature ticks the same way, so a bystander's timed stat
+      // modifier counts down too. A creature that carries no statMods field
+      // does not gain an empty one here.
+      state.creatures = state.creatures.map((c) => ({
+        ...c,
+        conditions: tickConditions(c.conditions),
+        ...(c.statMods ? { statMods: tickStatModifiers(c.statMods) } : {}),
       }));
-      state.npcs = state.npcs.map((n) => ({ ...n, conditions: tickConditions(n.conditions) }));
       app.actions.refreshSelectedCharacter();
       app.views.encounterPanel.update();
       app.views.npcPanel.update();
@@ -436,13 +409,13 @@ export function wireEncounters(app) {
     onOpen: () => app.actions.setMode('combat'),
   });
 
-  // Walking off the encounter's tile, or deleting the last encounter there,
-  // drops the running combat, because its participants are no longer here.
-  // Killing every foe does not drop it: the screen shows the foes as down
-  // and waits for the GM to press End combat. This way a last hit does not
-  // take the fight away from whoever landed it, and the party can still
+  // Walking off the fight's tile, or deleting the last hostile creature
+  // there, drops the running combat, because its participants are no longer
+  // here. Killing every foe does not drop it: the screen shows the foes as
+  // down and waits for the GM to press End combat. This way a last hit does
+  // not take the fight away from whoever landed it, and the party can still
   // heal up or read the log before leaving. The paths that move the party
-  // or delete an encounter call this action directly, not the panel
+  // or delete a creature call this action directly, not the panel
   // refresh. The refresh also runs from the rehydrate loop, where a state
   // write conflicts with the save just adopted from another tab and
   // echoes a dirty write back at it.
@@ -451,8 +424,8 @@ export function wireEncounters(app) {
     // Defeated combatants count here. A foe at 0 HP is a turn in the fight,
     // not the end of it. Only walking away, or deleting everything to fight,
     // ends a fight this way.
-    const stagedHere = encountersAtTile(state.encounters, app.partyTracker.getPosition());
-    if (stagedHere.length > 0 || hostilesHere().length > 0) return;
+    const stagedHere = hostileCreaturesAtTile(state.creatures, app.partyTracker.getPosition());
+    if (stagedHere.length > 0) return;
     setCombat(null);
     exitCombatMode();
     app.views.initiativePanel.update();

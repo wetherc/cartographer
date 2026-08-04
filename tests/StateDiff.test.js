@@ -80,13 +80,13 @@ test('an array outside the id table is replaced whole', () => {
 
 test('an id-keyed collection pairs by id rather than by position', () => {
   const before = {
-    npcs: [
+    creatures: [
       { id: 'a', name: 'Ash' },
       { id: 'b', name: 'Bree' },
     ],
   };
   const after = {
-    npcs: [
+    creatures: [
       { id: 'b', name: 'Bree' },
       { id: 'a', name: 'Asher' },
     ],
@@ -94,8 +94,8 @@ test('an id-keyed collection pairs by id rather than by position', () => {
   const ops = assertRoundTrip(before, after);
   // One field change plus one permutation, not two whole-element rewrites.
   assert.deepEqual(ops, [
-    { p: ['npcs', 'a', 'name'], f: 'Ash', t: 'Asher' },
-    { k: 'order', p: ['npcs'], f: ['a', 'b'], t: ['b', 'a'] },
+    { p: ['creatures', 'a', 'name'], f: 'Ash', t: 'Asher' },
+    { k: 'order', p: ['creatures'], f: ['a', 'b'], t: ['b', 'a'] },
   ]);
 });
 
@@ -158,12 +158,10 @@ test('a 40-cell stroke costs 40 ops rather than the node', () => {
 });
 
 test('a permutation of shared elements emits one order op naming both sequences', () => {
-  const before = { encounters: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] };
-  const after = { encounters: [{ id: 'c' }, { id: 'a' }, { id: 'b' }] };
+  const before = { creatures: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] };
+  const after = { creatures: [{ id: 'c' }, { id: 'a' }, { id: 'b' }] };
   const ops = assertRoundTrip(before, after);
-  assert.deepEqual(ops, [
-    { k: 'order', p: ['encounters'], f: ['a', 'b', 'c'], t: ['c', 'a', 'b'] },
-  ]);
+  assert.deepEqual(ops, [{ k: 'order', p: ['creatures'], f: ['a', 'b', 'c'], t: ['c', 'a', 'b'] }]);
 });
 
 test('an insertion, a removal, and a permutation together round-trip', () => {
@@ -173,25 +171,25 @@ test('an insertion, a removal, and a permutation together round-trip', () => {
 });
 
 test('a collection with a duplicate id falls back to a whole-array replacement', () => {
-  const before = { npcs: [{ id: 'a', name: 'one' }] };
+  const before = { creatures: [{ id: 'a', name: 'one' }] };
   const after = {
-    npcs: [
+    creatures: [
       { id: 'a', name: 'one' },
       { id: 'a', name: 'two' },
     ],
   };
   const ops = assertRoundTrip(before, after);
-  assert.deepEqual(ops, [{ p: ['npcs'], f: before.npcs, t: after.npcs }]);
+  assert.deepEqual(ops, [{ p: ['creatures'], f: before.creatures, t: after.creatures }]);
 });
 
 test('a collection whose elements have no id falls back the same way', () => {
-  const ops = assertRoundTrip({ npcs: [{ name: 'x' }] }, { npcs: [{ name: 'y' }] });
-  assert.deepEqual(ops, [{ p: ['npcs'], f: [{ name: 'x' }], t: [{ name: 'y' }] }]);
+  const ops = assertRoundTrip({ creatures: [{ name: 'x' }] }, { creatures: [{ name: 'y' }] });
+  assert.deepEqual(ops, [{ p: ['creatures'], f: [{ name: 'x' }], t: [{ name: 'y' }] }]);
 });
 
 test('a collection holding an element that is not a record falls back as well', () => {
-  const ops = assertRoundTrip({ npcs: [{ id: 'a' }, null] }, { npcs: [{ id: 'a' }] });
-  assert.deepEqual(ops, [{ p: ['npcs'], f: [{ id: 'a' }, null], t: [{ id: 'a' }] }]);
+  const ops = assertRoundTrip({ creatures: [{ id: 'a' }, null] }, { creatures: [{ id: 'a' }] });
+  assert.deepEqual(ops, [{ p: ['creatures'], f: [{ id: 'a' }, null], t: [{ id: 'a' }] }]);
 });
 
 test('applyOps ignores an op that addresses inside a positional array', () => {
@@ -237,25 +235,25 @@ test('an order op is ignored unless it names an id-keyed collection with a seque
 });
 
 test('an order op keeps a member that carries no id at all', () => {
-  const state = { npcs: [{ id: 'a' }, null, { id: 'b' }] };
-  const applied = applyOps(state, [{ k: 'order', p: ['npcs'], t: ['b', 'a'] }]);
+  const state = { creatures: [{ id: 'a' }, null, { id: 'b' }] };
+  const applied = applyOps(state, [{ k: 'order', p: ['creatures'], t: ['b', 'a'] }]);
   assert.deepEqual(
     applied,
-    { npcs: [{ id: 'b' }, { id: 'a' }, null] },
+    { creatures: [{ id: 'b' }, { id: 'a' }, null] },
     'the unnamed member trails the sequence rather than being lost',
   );
 });
 
 test('applyOps never mutates its input, even when the input is frozen', () => {
   const before = Object.freeze({
-    npcs: Object.freeze([Object.freeze({ id: 'a', name: 'Ash' })]),
+    creatures: Object.freeze([Object.freeze({ id: 'a', name: 'Ash' })]),
   });
-  const after = { npcs: [{ id: 'a', name: 'Asher' }] };
+  const after = { creatures: [{ id: 'a', name: 'Asher' }] };
   const ops = diffState(before, after);
   const applied = applyOps(before, ops);
   assert.deepEqual(applied, after);
-  assert.equal(before.npcs[0].name, 'Ash', 'the original is untouched');
-  assert.notEqual(applied.npcs, before.npcs);
+  assert.equal(before.creatures[0].name, 'Ash', 'the original is untouched');
+  assert.notEqual(applied.creatures, before.creatures);
 });
 
 test('invertOps is its own inverse', () => {
@@ -265,10 +263,10 @@ test('invertOps is its own inverse', () => {
 
 test('a sequence of edits walks forward and back through every intermediate state', () => {
   const states = [
-    { version: 5, npcs: [], quests: [] },
-    { version: 5, npcs: [{ id: 'a', name: 'Ash' }], quests: [] },
-    { version: 5, npcs: [{ id: 'a', name: 'Asher' }], quests: [{ id: 'q' }] },
-    { version: 5, npcs: [], quests: [{ id: 'q', title: 'Find it' }] },
+    { version: 5, creatures: [], quests: [] },
+    { version: 5, creatures: [{ id: 'a', name: 'Ash' }], quests: [] },
+    { version: 5, creatures: [{ id: 'a', name: 'Asher' }], quests: [{ id: 'q' }] },
+    { version: 5, creatures: [], quests: [{ id: 'q', title: 'Find it' }] },
   ];
   const log = [];
   for (let i = 1; i < states.length; i += 1) log.push(clone(diffState(states[i - 1], states[i])));
@@ -285,20 +283,20 @@ test('a sequence of edits walks forward and back through every intermediate stat
 });
 
 test('an op whose path no longer resolves is skipped rather than throwing', () => {
-  const state = { npcs: [{ id: 'a' }] };
+  const state = { creatures: [{ id: 'a' }] };
   const ops = [
-    { p: ['npcs', 'missing', 'name'], f: 'x', t: 'y' },
+    { p: ['creatures', 'missing', 'name'], f: 'x', t: 'y' },
     { p: ['absent', 'deeper'], t: 1 },
     { p: [], t: 1 },
-    { p: ['npcs', 'a', 'name'], t: 'Ash' },
+    { p: ['creatures', 'a', 'name'], t: 'Ash' },
   ];
-  assert.deepEqual(applyOps(state, ops), { npcs: [{ id: 'a', name: 'Ash' }] });
+  assert.deepEqual(applyOps(state, ops), { creatures: [{ id: 'a', name: 'Ash' }] });
 });
 
 test('an order op naming unknown ids keeps every element the collection holds', () => {
-  const state = { npcs: [{ id: 'a' }, { id: 'b' }] };
-  const applied = applyOps(state, [{ k: 'order', p: ['npcs'], t: ['b', 'zzz'] }]);
-  assert.deepEqual(applied, { npcs: [{ id: 'b' }, { id: 'a' }] });
+  const state = { creatures: [{ id: 'a' }, { id: 'b' }] };
+  const applied = applyOps(state, [{ k: 'order', p: ['creatures'], t: ['b', 'zzz'] }]);
+  assert.deepEqual(applied, { creatures: [{ id: 'b' }, { id: 'a' }] });
 });
 
 test('every id-keyed path in the table exists in a real campaign', () => {
@@ -342,8 +340,8 @@ test('the example campaign round-trips through a diff of unrelated edits', () =>
   after.nodes[0].name = 'Renamed';
   after.characters[0].xp += 250;
   after.characters[0].resources[0].current = 1;
-  after.encounters.push({ id: 'new-foe', name: 'Foe', hp: { current: 5, max: 5 } });
-  after.npcs.shift();
+  after.creatures.push({ id: 'new-foe', name: 'Foe', hp: { current: 5, max: 5 } });
+  after.creatures.shift();
   after.handouts.reverse();
   const ops = assertRoundTrip(before, after);
   assert.ok(
@@ -376,7 +374,7 @@ test('randomly mutated campaigns round-trip', () => {
           pick(pick(after.nodes).tiles).revealed = random() < 0.5;
           break;
         case 3:
-          after.npcs.push({ id: `npc-${round}-${m}`, name: 'Stranger' });
+          after.creatures.push({ id: `npc-${round}-${m}`, name: 'Stranger' });
           break;
         case 4:
           after.handouts.sort(() => (random() < 0.5 ? 1 : -1));

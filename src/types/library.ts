@@ -8,7 +8,7 @@ import type {
   EnemyWeapon,
 } from './entities.js';
 import type { Spellbook } from './entities.js';
-import type { Disposition } from './npc.js';
+import type { Disposition } from './creature.js';
 import type { Spell } from './spell.js';
 
 /** A reusable item blueprint: an InventoryItem minus identity and stack

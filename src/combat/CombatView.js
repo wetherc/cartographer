@@ -8,16 +8,14 @@
  * only the wiring layer can see every collection an id can live in.
  */
 
-import { effectiveStatBlock, isDefeated } from '../entities/Encounter.js';
+import { effectiveStatBlock, isDefeated } from '../entities/Creature.js';
 import { armorClass } from '../entities/Equipment.js';
 import { getHP } from '../entities/Character.js';
-import { npcStatBlock, isNPCDefeated } from '../entities/NPC.js';
 import { canAct } from '../entities/ConditionEffects.js';
 
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
 /** @typedef {import('../types/entities.js').Character} Character */
-/** @typedef {import('../types/entities.js').Encounter} Encounter */
-/** @typedef {import('../types/npc.js').NPC} NPC */
+/** @typedef {import('../types/creature.js').Creature} Creature */
 
 /**
  * A participant id resolved to whatever holds it. `kind` names the
@@ -25,8 +23,7 @@ import { canAct } from '../entities/ConditionEffects.js';
  * or an HP change mid-fight shows up on the next draw.
  * @typedef {(
  *   { kind: 'character', entity: Character }
- *   | { kind: 'encounter', entity: Encounter }
- *   | { kind: 'npc', entity: NPC }
+ *   | { kind: 'creature', entity: Creature }
  * )} ResolvedCombatant
  */
 
@@ -59,29 +56,29 @@ import { canAct } from '../entities/ConditionEffects.js';
 
 /**
  * Which side a resolved combatant fights on: the party's characters and its
- * friendly or neutral NPCs against the encounters and the hostile NPCs.
+ * friendly or neutral creatures against the hostile ones.
  * @param {ResolvedCombatant} found
  * @returns {'party' | 'foe'}
  */
 export function sideOf(found) {
-  if (found.kind === 'encounter') return 'foe';
-  if (found.kind === 'npc') return found.entity.disposition === 'hostile' ? 'foe' : 'party';
+  if (found.kind === 'creature') {
+    return found.entity.disposition === 'hostile' ? 'foe' : 'party';
+  }
   return 'party';
 }
 
 /**
- * Whether a combatant is out of the fight: a defeated encounter, a defeated
- * NPC, or a character at 0 HP.
+ * Whether a combatant is out of the fight: a defeated creature, or a
+ * character at 0 HP.
  *
- * A downed NPC counts toward its side. `fightOutcome` calls a side down only
- * when every row on it is, so a fallen friendly NPC alone does not lose the
- * fight, and a foe side made only of hostile NPCs is now winnable.
+ * A downed creature counts toward its side. `fightOutcome` calls a side down
+ * only when every row on it is, so a fallen friendly creature alone does not
+ * lose the fight.
  * @param {ResolvedCombatant} found
  * @returns {boolean}
  */
 export function isDowned(found) {
-  if (found.kind === 'encounter') return isDefeated(found.entity);
-  if (found.kind === 'npc') return isNPCDefeated(found.entity);
+  if (found.kind === 'creature') return isDefeated(found.entity);
   const hp = getHP(found.entity);
   return Boolean(hp && hp.current <= 0);
 }
@@ -109,9 +106,9 @@ export function conditionsOf(found) {
 }
 
 /**
- * The combatant's HP as a current/max pair. An encounter and an NPC both store
- * the pair. A character reads it off its HP pool, and a character without that
- * pool has no pair to show.
+ * The combatant's HP as a current/max pair. A creature stores the pair. A
+ * character reads it off its HP pool, and a character without that pool has
+ * no pair to show.
  * @param {ResolvedCombatant} found
  * @returns {{ current: number, max: number } | null}
  */
@@ -124,16 +121,15 @@ export function hpOf(found) {
 }
 
 /**
- * The combatant's armor class: an encounter's effective AC (stat modifiers
- * applied), a character's armor AC, or an NPC's stat block AC with its armor.
- * Every kind has one, so the return is never null.
+ * The combatant's armor class: a creature's effective AC (armor and stat
+ * modifiers applied), or a character's armor AC. Every kind has one, so the
+ * return is never null.
  * @param {ResolvedCombatant} found
  * @returns {number | null}
  */
 export function acOf(found) {
-  if (found.kind === 'encounter') return effectiveStatBlock(found.entity).AC ?? 10;
   if (found.kind === 'character') return armorClass(found.entity);
-  return npcStatBlock(found.entity).AC;
+  return effectiveStatBlock(found.entity).AC;
 }
 
 /**

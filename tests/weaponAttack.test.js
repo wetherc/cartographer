@@ -8,8 +8,7 @@ import {
 } from '../src/app/weaponAttack.js';
 import { roll } from '../src/dice/DiceRoller.js';
 import { createCharacter, withHP, getHP } from '../src/entities/Character.js';
-import { createEncounter } from '../src/entities/Encounter.js';
-import { createNPC } from '../src/entities/NPC.js';
+import { createCreature } from '../src/entities/Creature.js';
 import { stubApp as baseStubApp } from './helpers/app.js';
 
 const HERE = { nodeId: 'n1', tileId: '0,0' };
@@ -43,11 +42,11 @@ const d20 = (n) => (n - 1) / 20;
  * A stub app whose dice tray rolls the scripted sequence. `rolls` records each
  * selection the attack loaded into the tray, along with the AC it rolled
  * against.
- * @param {{ characters?: any[], encounters?: any[], npcs?: any[], rng?: () => number }} [opts]
+ * @param {{ characters?: any[], creatures?: any[], rng?: () => number }} [opts]
  */
-function stubApp({ characters = [], encounters = [], npcs = [], rng = () => 0.5 } = {}) {
+function stubApp({ characters = [], creatures = [], rng = () => 0.5 } = {}) {
   const app = baseStubApp({
-    state: { characters, encounters, npcs },
+    state: { characters, creatures },
     partyTracker: /** @type {any} */ ({ getPosition: () => HERE }),
     toasts: { show: (/** @type {string} */ message) => app.toastMessages.push(message) },
     actions: {
@@ -96,8 +95,14 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
 
 test('attackParticipants names the attacker and who is left to attack', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 10, { AC: 13 }, HERE);
-  const app = stubApp({ characters: [hero], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin] });
   const combat = { order: [{ id: 'hero' }, { id: 'goblin' }] };
   const sides = attackParticipants(app, /** @type {any} */ (combat), combat.order[0]);
   assert.equal(sides?.attacker.id, 'hero');
@@ -109,8 +114,8 @@ test('attackParticipants names the attacker and who is left to attack', () => {
 
 test('attackParticipants names an NPC attacker and skips an unknown participant', () => {
   const hero = withHP(createCharacter('hero', 'Hero'), 12);
-  const brigand = createNPC('brigand', 'Brigand', { location: HERE, disposition: 'hostile' });
-  const app = stubApp({ characters: [hero], npcs: [brigand] });
+  const brigand = createCreature('brigand', 'Brigand', { location: HERE, disposition: 'hostile' });
+  const app = stubApp({ characters: [hero], creatures: [brigand] });
   const combat = { order: [{ id: 'brigand' }, { id: 'hero' }, { id: 'ghost' }] };
   const sides = attackParticipants(app, /** @type {any} */ (combat), combat.order[0]);
   assert.equal(sides?.attacker.id, 'brigand');
@@ -123,12 +128,18 @@ test('attackParticipants names an NPC attacker and skips an unknown participant'
 
 test('a hit rolls the weapon damage, applies it, and logs both halves', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
   // A 15 on the d20 plus STR +3 plus proficiency +2 beats AC 10. The damage
   // die then lands on 5.
   const app = stubApp({
     characters: [hero],
-    encounters: [goblin],
+    creatures: [goblin],
     rng: scripted([d20(15)]),
   });
   rollWeaponAttack(app, {
@@ -145,15 +156,21 @@ test('a hit rolls the weapon damage, applies it, and logs both halves', () => {
   assert.match(app.log[0], /vs AC 10 — hit\.$/);
   assert.match(app.log[1], /^Sword hits Goblin for /);
   // 5 on the die plus the STR modifier.
-  assert.equal(app.state.encounters[0].currentHP, 20 - 8);
+  assert.equal(app.state.creatures[0].currentHP, 20 - 8);
   assert.match(app.toastMessages[0], /^Hit! Goblin takes /);
 });
 
 test('a natural 20 crits, doubles the damage dice, and says so', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 40, { AC: 25 }, HERE);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 40,
+    stats: { AC: 25 },
+    location: HERE,
+    level: 1,
+  });
   // Both damage dice land on 8, so the crit total is unmistakable.
-  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(20)]) });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(20)]) });
   rollWeaponAttack(app, {
     attacker: hero,
     defender: { id: 'goblin', name: 'Goblin', ac: 25 },
@@ -163,16 +180,22 @@ test('a natural 20 crits, doubles the damage dice, and says so', () => {
   assert.match(app.log[0], /— critical hit\.$/, 'a natural 20 beats any AC');
   assert.match(app.log[1], /^Sword critically hits Goblin for /);
   // Two dice at 8 plus the STR modifier of 3.
-  assert.equal(app.state.encounters[0].currentHP, 40 - 19);
+  assert.equal(app.state.creatures[0].currentHP, 40 - 19);
   assert.match(app.toastMessages[0], /^Critical hit!/);
 });
 
 test('a miss logs the roll, says who missed, and lands no damage', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 25 }, HERE);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 25 },
+    location: HERE,
+    level: 1,
+  });
   const app = stubApp({
     characters: [hero],
-    encounters: [goblin],
+    creatures: [goblin],
     rng: scripted([d20(5)]),
   });
   rollWeaponAttack(app, {
@@ -182,16 +205,22 @@ test('a miss logs the roll, says who missed, and lands no damage', () => {
   });
   assert.equal(app.log.length, 1, 'a miss logs the attack and nothing else');
   assert.match(app.log[0], /— miss\.$/);
-  assert.equal(app.state.encounters[0].currentHP, 20);
+  assert.equal(app.state.creatures[0].currentHP, 20);
   assert.deepEqual(app.toastMessages, ['10 vs AC 25: Hero misses Goblin.']);
 });
 
 test('a natural 1 misses however high the total', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 20 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 2 }, HERE);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 2 },
+    location: HERE,
+    level: 1,
+  });
   const app = stubApp({
     characters: [hero],
-    encounters: [goblin],
+    creatures: [goblin],
     rng: scripted([d20(1)]),
   });
   rollWeaponAttack(app, {
@@ -200,15 +229,21 @@ test('a natural 1 misses however high the total', () => {
     weapon: /** @type {any} */ (SWORD),
   });
   assert.match(app.log[0], /— natural 1, miss\.$/);
-  assert.equal(app.state.encounters[0].currentHP, 20);
+  assert.equal(app.state.creatures[0].currentHP, 20);
 });
 
 test('bonus attack dice join the d20 in the tray and are named in the log', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
   const app = stubApp({
     characters: [hero],
-    encounters: [goblin],
+    creatures: [goblin],
     rng: scripted([d20(12)]),
   });
   rollWeaponAttack(app, {
@@ -226,10 +261,16 @@ test('bonus attack dice join the d20 in the tray and are named in the log', () =
 
 test('penalty attack dice roll off the tray and come out of the modifier', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
   const app = stubApp({
     characters: [hero],
-    encounters: [goblin],
+    creatures: [goblin],
     rng: scripted([3 / 4, d20(12), 3 / 8]),
   });
   rollWeaponAttack(app, {
@@ -249,9 +290,15 @@ test('penalty attack dice roll off the tray and come out of the modifier', () =>
 
 test('bonus damage dice and a flat rider both add to a hit', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 40, { AC: 10 }, HERE);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 40,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
   // The attack d20 lands on 15, then every damage die lands on its maximum.
-  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
   rollWeaponAttack(app, {
     attacker: hero,
     defender: { id: 'goblin', name: 'Goblin', ac: 10 },
@@ -260,13 +307,19 @@ test('bonus damage dice and a flat rider both add to a hit', () => {
     rng: () => 0.999,
   });
   // 8 on the sword, 6 and 6 on the bonus dice, STR +3, and the flat +1.
-  assert.equal(app.state.encounters[0].currentHP, 40 - 24);
+  assert.equal(app.state.creatures[0].currentHP, 40 - 24);
 });
 
 test('an advantage roll names the die it threw away', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
-  const app = stubApp({ characters: [hero], encounters: [goblin] });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin] });
   // The tray owns advantage, so the stub rolls it the way the tray would.
   app.actions.rollDice = (/** @type {any} */ selection, /** @type {number} */ target) => {
     app.rolls.push({ selection, target });
@@ -282,18 +335,20 @@ test('an advantage roll names the die it threw away', () => {
 });
 
 test("a foe attacks with its own weapon and its stat block's ability", () => {
-  const goblin = createEncounter(
-    'goblin',
-    'Goblin',
-    10,
-    { STR: 14 },
-    HERE,
-    /** @type {any} */ ({
-      weapon: { name: 'Club', handling: 'melee', damage: [{ count: 1, sides: 4 }] },
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { STR: 14 },
+    location: HERE,
+    level: 1,
+    weapon: /** @type {any} */ ({
+      name: 'Club',
+      handling: 'melee',
+      damage: [{ count: 1, sides: 4 }],
     }),
-  );
+  });
   const hero = withHP(createCharacter('hero', 'Hero'), 20);
-  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(18)]) });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(18)]) });
   rollWeaponAttack(app, {
     attacker: goblin,
     defender: { id: 'hero', name: 'Hero', ac: 10 },
@@ -306,10 +361,16 @@ test("a foe attacks with its own weapon and its stat block's ability", () => {
 
 test('a weapon carrying status effects names them in the log and the toast', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
   const app = stubApp({
     characters: [hero],
-    encounters: [goblin],
+    creatures: [goblin],
     rng: scripted([d20(15)]),
   });
   rollWeaponAttack(app, {
@@ -324,10 +385,16 @@ test('a weapon carrying status effects names them in the log and the toast', () 
 
 test('a weapon with no damage roll still resolves and lands nothing', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 10 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
   const app = stubApp({
     characters: [hero],
-    encounters: [goblin],
+    creatures: [goblin],
     rng: scripted([d20(15)]),
   });
   rollWeaponAttack(app, {
@@ -336,14 +403,14 @@ test('a weapon with no damage roll still resolves and lands nothing', () => {
     weapon: /** @type {any} */ ({ name: 'Fist' }),
   });
   assert.match(app.log[1], /^Fist hits Goblin for 0 damage\.$/);
-  assert.equal(app.state.encounters[0].currentHP, 20, 'no damage means no write');
+  assert.equal(app.state.creatures[0].currentHP, 20, 'no damage means no write');
   assert.match(app.toastMessages[0], /Goblin takes no damage\.$/);
 });
 
 test('weaponAttack stops before the dialog when there is nobody to attack', async () => {
   const hero = withHP(createCharacter('hero', 'Hero'), 12);
-  const sage = createNPC('sage', 'Sage', { location: HERE });
-  const app = stubApp({ characters: [hero], npcs: [sage] });
+  const sage = createCreature('sage', 'Sage', { location: HERE });
+  const app = stubApp({ characters: [hero], creatures: [sage] });
   const combat = { order: [{ id: 'hero' }, { id: 'sage' }] };
   // The only other combatant is on the party's own side, so no defender is
   // left. The dialog never opens, which is what keeps this reachable without
@@ -366,7 +433,7 @@ test('an armed NPC attacks with its own stats and proficiency', () => {
     handling: 'melee',
     damage: [{ count: 1, sides: 4, damageType: 'bludgeoning' }],
   };
-  const brigand = createNPC('brigand', 'Brigand', {
+  const brigand = createCreature('brigand', 'Brigand', {
     location: HERE,
     disposition: 'hostile',
     stats: { STR: 16 },
@@ -374,7 +441,7 @@ test('an armed NPC attacks with its own stats and proficiency', () => {
   });
   const hero = withHP(createCharacter('hero', 'Hero'), 12);
   // A 15 on the d20 plus STR +3 plus proficiency +2 beats AC 10.
-  const app = stubApp({ characters: [hero], npcs: [brigand], rng: scripted([d20(15)]) });
+  const app = stubApp({ characters: [hero], creatures: [brigand], rng: scripted([d20(15)]) });
   rollWeaponAttack(app, {
     attacker: brigand,
     defender: { id: 'hero', name: 'Hero', ac: 10 },
@@ -388,7 +455,7 @@ test('an armed NPC attacks with its own stats and proficiency', () => {
 
 test('a caster NPC takes its proficiency from its caster level', () => {
   const fist = { name: 'Fist', handling: 'melee', damage: [{ count: 1, sides: 4 }] };
-  const cultist = createNPC('cultist', 'Cultist', {
+  const cultist = createCreature('cultist', 'Cultist', {
     location: HERE,
     disposition: 'hostile',
     class: 'cleric',
@@ -396,7 +463,7 @@ test('a caster NPC takes its proficiency from its caster level', () => {
     weapon: /** @type {any} */ (fist),
   });
   const hero = withHP(createCharacter('hero', 'Hero'), 12);
-  const app = stubApp({ characters: [hero], npcs: [cultist], rng: scripted([d20(10)]) });
+  const app = stubApp({ characters: [hero], creatures: [cultist], rng: scripted([d20(10)]) });
   rollWeaponAttack(app, {
     attacker: cultist,
     defender: { id: 'hero', name: 'Hero', ac: 20 },
@@ -413,10 +480,16 @@ test('a rider chip on the attacker joins the attack roll and the log', () => {
       { name: 'Bless', rounds: 10, rider: { rolls: ['attack', 'save'], dice: 1, die: 'd4' } },
     ],
   };
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 12 }, HERE);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 12 },
+    location: HERE,
+    level: 1,
+  });
   // A 5 on the d20 plus STR +3 plus proficiency +2 is 10, which misses AC 12.
   // The Bless d4 lands on 3, so the attack reaches 13 and hits.
-  const app = stubApp({ characters: [blessed], encounters: [goblin], rng: scripted([d20(5)]) });
+  const app = stubApp({ characters: [blessed], creatures: [goblin], rng: scripted([d20(5)]) });
   rollWeaponAttack(app, {
     attacker: blessed,
     defender: { id: 'goblin', name: 'Goblin', ac: 12 },
@@ -429,8 +502,14 @@ test('a rider chip on the attacker joins the attack roll and the log', () => {
 
 test('an attacker with no rider chip rolls exactly what it rolled before', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
-  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
   rollWeaponAttack(app, {
     attacker: { ...hero, conditions: [{ name: 'Charmed', rounds: null }] },
     defender: { id: 'goblin', name: 'Goblin', ac: 10 },
@@ -443,8 +522,14 @@ test('an attacker with no rider chip rolls exactly what it rolled before', () =>
 
 test('a chip that slants nothing leaves the mode off the tray selection', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
-  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
   rollWeaponAttack(app, {
     attacker: hero,
     defender: { id: 'goblin', name: 'Goblin', ac: 10, conditions: [] },
@@ -457,8 +542,14 @@ test('a chip that slants nothing leaves the mode off the tray selection', () => 
 
 test('a poisoned attacker rolls at disadvantage and the log names the chip', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
-  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
   rollWeaponAttack(app, {
     attacker: { ...hero, conditions: [{ name: 'Poisoned', rounds: null }] },
     defender: { id: 'goblin', name: 'Goblin', ac: 10, conditions: [] },
@@ -471,9 +562,15 @@ test('a poisoned attacker rolls at disadvantage and the log names the chip', () 
 
 test('a prone defender helps a melee swing and hinders a ranged one', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16, DEX: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
   const prone = { id: 'goblin', name: 'Goblin', ac: 10, conditions: [{ name: 'Prone' }] };
-  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
   rollWeaponAttack(app, {
     attacker: hero,
     defender: /** @type {any} */ (prone),
@@ -492,8 +589,14 @@ test('a prone defender helps a melee swing and hinders a ranged one', () => {
 
 test('the attacker and defender chips cancel to a straight roll', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 20, { AC: 10 }, HERE);
-  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
   rollWeaponAttack(app, {
     attacker: { ...hero, conditions: [{ name: 'Blinded', rounds: null }] },
     defender: /** @type {any} */ ({
@@ -513,8 +616,14 @@ test('the attacker and defender chips cancel to a straight roll', () => {
 
 test('a melee hit on an unconscious defender crits without a natural 20', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 40, { AC: 10 }, HERE);
-  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 40,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
   rollWeaponAttack(app, {
     attacker: hero,
     defender: /** @type {any} */ ({
@@ -528,13 +637,19 @@ test('a melee hit on an unconscious defender crits without a natural 20', () => 
   });
   assert.match(app.log[0], /— critical hit\.$/);
   // Two sword dice at 8 plus the STR modifier of 3.
-  assert.equal(app.state.encounters[0].currentHP, 40 - 19);
+  assert.equal(app.state.creatures[0].currentHP, 40 - 19);
 });
 
 test('a ranged hit on an unconscious defender stays an ordinary hit', () => {
   const hero = withHP(createCharacter('hero', 'Hero', { DEX: 16 }), 12);
-  const goblin = createEncounter('goblin', 'Goblin', 40, { AC: 10 }, HERE);
-  const app = stubApp({ characters: [hero], encounters: [goblin], rng: scripted([d20(15)]) });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 40,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
   rollWeaponAttack(app, {
     attacker: hero,
     defender: /** @type {any} */ ({
@@ -548,5 +663,5 @@ test('a ranged hit on an unconscious defender stays an ordinary hit', () => {
   });
   assert.match(app.log[0], /— hit\.$/);
   // One bow die at 8 plus the DEX modifier of 3.
-  assert.equal(app.state.encounters[0].currentHP, 40 - 11);
+  assert.equal(app.state.creatures[0].currentHP, 40 - 11);
 });

@@ -11,7 +11,7 @@ import {
 import { MapNavigator } from '../src/map/MapNavigator.js';
 import { PartyTracker } from '../src/party/PartyTracker.js';
 import { createCharacter } from '../src/entities/Character.js';
-import { createNPC } from '../src/entities/NPC.js';
+import { createCreature } from '../src/entities/Creature.js';
 import { fillTiles, gridTiles } from './helpers/grid.js';
 import { stubApp } from './helpers/app.js';
 
@@ -34,7 +34,7 @@ const INTERIOR = 'assets/tiles/interior/interior';
  *   role?: 'gm' | 'player',
  *   splitParty?: boolean,
  *   characters?: any[],
- *   npcs?: any[],
+ *   creatures?: any[],
  *   selected?: string | null,
  *   markerRange?: string[] | null,
  * }} [opts]
@@ -45,7 +45,7 @@ function world({
   role = 'gm',
   splitParty = false,
   characters = [],
-  npcs = [],
+  creatures = [],
   selected = null,
   markerRange = null,
 } = {}) {
@@ -73,7 +73,7 @@ function world({
     grid,
     navigator,
     partyTracker,
-    state: { role, mode, splitParty, characters, npcs },
+    state: { role, mode, splitParty, characters, creatures },
     actions: {
       getSelectedCharacterId: () => selected,
       getBoundCharacterId: () => selected,
@@ -253,29 +253,29 @@ test('a door leads out only once the mover stands on it', () => {
 });
 
 test('a player tab meets nobody, because only the GM tab writes the roster', () => {
-  const sage = createNPC('sage', 'Sage', { location: { nodeId: 'world', tileId: '2,5' } });
-  const gm = world({ npcs: [sage] });
-  gm.travel.meetNPCsHere();
+  const sage = createCreature('sage', 'Sage', { location: { nodeId: 'world', tileId: '2,5' } });
+  const gm = world({ creatures: [sage] });
+  gm.travel.meetCreaturesHere();
   assert.deepEqual(gm.log, ['The party meets Sage.']);
-  assert.equal(gm.state.npcs[0].met, true);
+  assert.equal(gm.state.creatures[0].met, true);
 
-  const player = world({ role: 'player', npcs: [sage] });
-  player.travel.meetNPCsHere();
+  const player = world({ role: 'player', creatures: [sage] });
+  player.travel.meetCreaturesHere();
   assert.deepEqual(player.log, []);
-  assert.equal(player.state.npcs[0].met, false);
+  assert.equal(player.state.creatures[0].met, false);
 });
 
 test('meeting an NPC happens once, and an empty tile meets nobody', () => {
-  const sage = createNPC('sage', 'Sage', { location: { nodeId: 'world', tileId: '2,5' } });
-  const elsewhere = createNPC('smith', 'Smith', {
+  const sage = createCreature('sage', 'Sage', { location: { nodeId: 'world', tileId: '2,5' } });
+  const elsewhere = createCreature('smith', 'Smith', {
     location: { nodeId: 'world', tileId: '0,0' },
   });
-  const { travel, log, state } = world({ npcs: [sage, elsewhere] });
-  travel.meetNPCsHere();
-  const roster = state.npcs;
-  travel.meetNPCsHere();
+  const { travel, log, state } = world({ creatures: [sage, elsewhere] });
+  travel.meetCreaturesHere();
+  const roster = state.creatures;
+  travel.meetCreaturesHere();
   assert.deepEqual(log, ['The party meets Sage.'], 'an already-met NPC is not met again');
-  assert.equal(state.npcs, roster, 'nothing new to meet leaves the roster identical');
+  assert.equal(state.creatures, roster, 'nothing new to meet leaves the roster identical');
 });
 
 test('teleportToNode brings the view to a node without moving anyone', () => {
@@ -502,7 +502,7 @@ test('the hover tooltip stays hidden over an unrevealed or undiscovered tile', (
 });
 
 test('the hover tooltip names the POI and who stands there, and hides GM notes from players', () => {
-  const sage = createNPC('sage', 'Sage', { location: { nodeId: 'world', tileId: '1,1' } });
+  const sage = createCreature('sage', 'Sage', { location: { nodeId: 'world', tileId: '1,1' } });
   const seed = (/** @type {any} */ w) => {
     reveal(w, '1,1');
     const node = w.navigator.getCurrentNode();
@@ -511,13 +511,13 @@ test('the hover tooltip names the POI and who stands there, and hides GM notes f
     );
     w.travel.onCellHover(tileOf(w.navigator, '1,1'), 12, 34);
   };
-  const gm = world({ npcs: [sage] });
+  const gm = world({ creatures: [sage] });
   seed(gm);
   assert.deepEqual(gm.tooltips, [
     { title: 'Shrine', npcs: 'Sage', notes: 'a cracked altar', x: 12, y: 34 },
   ]);
 
-  const player = world({ role: 'player', npcs: [sage] });
+  const player = world({ role: 'player', creatures: [sage] });
   seed(player);
   assert.equal(player.tooltips[0].notes, '', 'notes are the GM secret');
   assert.equal(player.tooltips[0].npcs, 'Sage');
@@ -527,15 +527,15 @@ test('the hover tooltip says nothing about a tile whose markers are out of range
   // The regression this pins: the keyboard cursor and the pointer both run this
   // handler over any revealed tile, so a tile too far away for its NPC circle
   // and POI outline to draw used to name the NPC standing on it anyway.
-  const sage = createNPC('sage', 'Sage', { location: { nodeId: 'world', tileId: '1,1' } });
-  const w = world({ role: 'player', npcs: [sage], markerRange: [] });
+  const sage = createCreature('sage', 'Sage', { location: { nodeId: 'world', tileId: '1,1' } });
+  const w = world({ role: 'player', creatures: [sage], markerRange: [] });
   reveal(w, '1,1');
   const node = w.navigator.getCurrentNode();
   w.grid.updateNode(updateTileMetadata(node, '1,1', { poiType: 'shrine' }));
   w.travel.onCellHover(tileOf(w.navigator, '1,1'), 12, 34);
   assert.deepEqual(w.tooltips, []);
 
-  const near = world({ role: 'player', npcs: [sage], markerRange: ['1,1'] });
+  const near = world({ role: 'player', creatures: [sage], markerRange: ['1,1'] });
   reveal(near, '1,1');
   const sameNode = near.navigator.getCurrentNode();
   near.grid.updateNode(updateTileMetadata(sameNode, '1,1', { poiType: 'shrine' }));

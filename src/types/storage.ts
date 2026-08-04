@@ -1,9 +1,9 @@
 import { MapNode, PartyPosition } from './map';
-import { Character, Encounter, EncounterTemplate } from './entities';
+import { Character } from './entities';
+import { Creature, CreatureTemplate } from './creature';
 import { LogEntry } from './log';
 import { Quest } from './quest';
 import { GameClock } from './time';
-import { NPC } from './npc';
 import { Handout } from './handout';
 import { CombatState } from './combat';
 import type { TileGrid } from '../map/TileGrid.js';
@@ -50,19 +50,18 @@ export interface CampaignState {
   nodes: MapNode[];
   party: PartyPosition | null;
   characters: Character[];
-  encounters: Encounter[];
+  /** Every creature in the campaign: foes and townsfolk in one list. */
+  creatures: Creature[];
   /** Auto-recorded party travelogue (empty on older saves). */
   travelog: LogEntry[];
   /** GM-authored quest and session log (empty on older saves). */
   quests: Quest[];
   /** In-game clock. Null on older saves, and until first advanced. */
   clock: GameClock | null;
-  /** Non-combatant NPCs (empty on older saves). */
-  npcs: NPC[];
   /** GM-authored lore and read-aloud handouts (empty on older saves). */
   handouts: Handout[];
-  /** Reusable encounter templates (empty on older saves). */
-  bestiary: EncounterTemplate[];
+  /** Reusable creature templates saved to this campaign. */
+  bestiary: CreatureTemplate[];
   /** True when the GM currently allows the party to split up (false on older saves). */
   splitParty: boolean;
   /** A running combat (order, round, current turn), or null when no fight

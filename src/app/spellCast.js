@@ -7,8 +7,7 @@ import { removeItem, spellSource } from '../entities/Character.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { spellSaveDC, spellAttackBonus, hasRitualCasting } from '../entities/Classes.js';
 import { formatModifier } from '../entities/Modifiers.js';
-import { encountersOnTile } from '../entities/Encounter.js';
-import { npcsOnTile } from '../entities/NPC.js';
+import { hostileCreaturesOnTile } from '../entities/CreatureMap.js';
 import { castableSlotLevels } from '../entities/SpellSlots.js';
 import { toCaster, withCasterState } from '../entities/Caster.js';
 import { replaceById } from '../entities/Roster.js';
@@ -62,14 +61,15 @@ function helps(kind) {
 /**
  * The combatants an out-of-combat cast can reach. There is no initiative
  * order to limit the scope. A heal or a buff reaches the whole party (allies,
- * caster included). An attack or a save spell reaches the foes on the party's tile:
- * the undefeated encounters and NPCs staged there. A utility spell targets
- * no one. The target shape matches `combatTargets`.
+ * caster included). An attack or a save spell reaches the foes on the party's
+ * tile: the undefeated hostile creatures standing there. A friendly or
+ * neutral bystander is not a foe, so it is never offered. A utility spell
+ * targets no one. The target shape matches `combatTargets`.
  *
  * The party's tile is the closest range check the app has, because the app
  * cannot measure distance between two tokens. Without this check, a cast
- * offers every encounter in the campaign, including encounters in
- * regions the party has not reached.
+ * offers every foe in the campaign, including foes in regions the party has
+ * not reached.
  * @param {AppContext} app
  * @param {Spell} spell
  * @returns {import('./combatants.js').CombatTarget[]}
@@ -82,9 +82,7 @@ export function rosterTargets(app, spell) {
     return state.characters.map((c) => asTarget(c, 'character'));
   }
   const position = app.partyTracker.getPosition();
-  const foes = encountersOnTile(state.encounters, position).map((e) => asTarget(e, 'encounter'));
-  const npcs = npcsOnTile(state.npcs, position).map((n) => asTarget(n, 'npc'));
-  return [...foes, ...npcs];
+  return hostileCreaturesOnTile(state.creatures, position).map((c) => asTarget(c, 'creature'));
 }
 
 /**
@@ -386,7 +384,7 @@ export async function castSpellOutOfCombat(app, caster, spell) {
 /**
  * Work out the pre-dialog half of a cast. A caster with no spell ability
  * falls back to a flat DC 10. The caster entity is read through `toCaster`,
- * so a party Character, a foe Encounter, and an NPC all resolve the same way.
+ * so a party Character and a Creature resolve the same way.
  * A caster from a class with ritual casting is offered the ritual box, which
  * trades the slot for extra time.
  * @param {AppContext} app
@@ -518,17 +516,17 @@ export function castChangeHandler(plan) {
  * the result and logs it. When a slot is spent, `withCasterState` splices the
  * change back onto the real entity, and the caller's `writeBack` function
  * stores it in the right collection. Damage or healing lands on each target
- * the same way a weapon hit does: encounters and characters track HP, and an
- * NPC with no HP field keeps only the log line. A ritual spends nothing and
- * writes nothing back. A concentration spell cast by a party character starts
- * that character concentrating and ends whatever spell it held before.
+ * the same way a weapon hit does: every combatant tracks HP. A ritual spends
+ * nothing and writes nothing back. A concentration spell cast by a party
+ * character starts that character concentrating and ends whatever spell it
+ * held before.
  * @param {AppContext} app
  * @param {CastPlan} plan
  * @param {Record<string, string>} values the dialog's answers
  * @param {{ writeBack: (next: any) => void, concentrates: boolean, rng?: () => number }} opts
  *   `writeBack` stores the updated entity. `concentrates` is true when this
- *   caster can hold a spell open. Only a party character can, because an
- *   encounter and an NPC have no concentration field. The call site passes
+ *   caster can hold a spell open. Only a party character can, because a
+ *   creature has no concentration field. The call site passes
  *   this value, because it already knows the combatant kind. `rng` is the
  *   source for every roll the cast makes, injected the way the pure modules
  *   take theirs.
@@ -694,8 +692,7 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
  * `resolveCast` rolls and applies the cast. The dialog is the only part of
  * the pipeline that needs a browser.
  * @template {import('../types/entities.js').Character
- *   | import('../types/entities.js').Encounter
- *   | import('../types/npc.js').NPC} T
+ *   | import('../types/creature.js').Creature} T
  * @param {AppContext} app
  * @param {T} entity the real combatant that casts the spell
  * @param {Spell} spell

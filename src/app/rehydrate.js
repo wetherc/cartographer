@@ -40,11 +40,10 @@ import { reconcile } from '../storage/Reconcile.js';
  */
 export const SYNCED_STATE_KEYS = [
   'characters',
-  'encounters',
+  'creatures',
   'travelog',
   'quests',
   'clock',
-  'npcs',
   'handouts',
   'bestiary',
   'splitParty',
@@ -84,7 +83,6 @@ export function rehydrateCampaign(app, campaign) {
   const { actions, views } = app;
   actions.resyncMap();
   actions.syncEncounterMarkers();
-  actions.syncNPCMarkers();
   actions.refreshMapDescription();
   // Every panel backed by campaign state. The library lists are deliberately
   // not in this list. The custom library is stored apart from the campaign,

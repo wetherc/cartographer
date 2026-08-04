@@ -98,7 +98,7 @@ export function isEmptyLoadout(loadout) {
 
 /**
  * The protective pieces worn, named: a character's body armor and shield, or
- * the authored armor of a foe or an NPC.
+ * the authored armor of a creature.
  * @param {ResolvedCombatant} found
  * @returns {string[]}
  */
@@ -115,7 +115,7 @@ function armorOf(found) {
 
 /**
  * The weapons available, each with its damage written out: a character's
- * equipped weapons in slot order, or the single weapon of a foe or an NPC.
+ * equipped weapons in slot order, or the single weapon of a creature.
  * This is the same
  * list the action bar offers, so a card and the bar always agree. This
  * function is named apart from combatants.js's `weaponsOf`, which returns

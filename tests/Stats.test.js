@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { effectiveStat } from '../src/entities/Stats.js';
 import { addItem, createCharacter } from '../src/entities/Character.js';
 import { equip } from '../src/entities/Equipment.js';
-import { addStatModifier, createEncounter } from '../src/entities/Encounter.js';
+import { addStatModifier, createCreature } from '../src/entities/Creature.js';
 import { item } from './helpers/fixtures.js';
 
 /** A character wearing a ring that shifts STR by `delta`. */
@@ -19,7 +19,7 @@ function ringBearer(delta = 2) {
 test('a stat with no source at all reads as its base value', () => {
   const hero = createCharacter('c1', 'Hero', { STR: 14 });
   assert.deepEqual(effectiveStat(hero, 'STR'), { base: 14, total: 14, rounds: 0, sources: [] });
-  const goblin = createEncounter('e1', 'Goblin', 10, { STR: 8 });
+  const goblin = createCreature('e1', 'Goblin', { maxHP: 10, stats: { STR: 8 }, level: 1 });
   assert.deepEqual(effectiveStat(goblin, 'STR'), { base: 8, total: 8, rounds: 0, sources: [] });
 });
 
@@ -58,7 +58,7 @@ test('a debuffing item shows its negative delta and lowers the total', () => {
 });
 
 test('timed modifiers alone stack, and rounds reports the longest one', () => {
-  let goblin = createEncounter('e1', 'Goblin', 10, { STR: 8 });
+  let goblin = createCreature('e1', 'Goblin', { maxHP: 10, stats: { STR: 8 }, level: 1 });
   goblin = addStatModifier(goblin, 'STR', 2, 3);
   goblin = addStatModifier(goblin, 'STR', 1, 5);
   goblin = addStatModifier(goblin, 'DEX', 4, 9);
@@ -91,7 +91,7 @@ test('both source kinds fold into one total, equipment first', () => {
 test("an encounter's worn armor is not a stat source, so the chips show the authored AC", () => {
   // effectiveStatBlock adds the armor bonus for combat math. This fold reports
   // what a GM authored, which is what the stat chips edit.
-  const goblin = createEncounter('e1', 'Goblin', 10, { AC: 12 });
+  const goblin = createCreature('e1', 'Goblin', { maxHP: 10, stats: { AC: 12 }, level: 1 });
   assert.equal(goblin.armor?.acBonus, 1);
   assert.deepEqual(effectiveStat(goblin, 'AC'), { base: 12, total: 12, rounds: 0, sources: [] });
 });

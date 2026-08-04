@@ -89,51 +89,10 @@ export interface EnemyArmor {
   acBonus: number;
 }
 
-export interface Encounter {
-  id: string;
-  name: string;
-  maxHP: number;
-  currentHP: number;
-  statBlock: Record<string, number>;
-  level: number;
-  tier: EnemyTier;
-  /** Map location where the encounter is staged. Null means the encounter is
-   * not location-bound, and always shows. */
-  location: EncounterLocation | null;
-  /** Active status conditions (empty on older saves). */
-  conditions: Condition[];
-  /** Timed stat adjustments. Each combat round reduces them by one. Empty on
-   * older saves. */
-  statMods?: StatModifier[];
-  /** True once the party walks into this encounter. This lets the
-   * travelogue record the first meeting exactly once. Absent on older saves. */
-  noticed?: boolean;
-  /** The enemy's weapon. The app stamps a level and tier default on creation
-   * and on older saves, so every enemy can attack. An explicit null means
-   * the enemy is deliberately weaponless, for example a non-bipedal beast or
-   * an ooze, and gets no default and no attack button. */
-  weapon?: EnemyWeapon | null;
-  /** The enemy's armor. The app stamps a level and tier default, like the
-   * weapon. The same null value marks the enemy as deliberately unarmored. */
-  armor?: EnemyArmor | null;
-  /** Spellcaster class id (see Classes.js). A present value that names a
-   * caster class makes this a spellcasting foe. An absent value marks a
-   * non-caster. */
-  class?: string;
-  /** The chosen subclass id, if any. */
-  subclass?: string;
-  /** Caster level, which drives the slot maxima and the save DC. It defaults
-   * to `level` when a caster class is assigned without an explicit value. */
-  casterLevel?: number;
-  /** Learned cantrips and spells (spell ids). Present only on casters. */
-  spellbook?: Spellbook;
-  /** Spell-slot pools (`slots-1` through `slots-9`). Present only on casters. */
-  resources?: ResourcePool[];
-}
-
-/** A reusable encounter blueprint saved to the campaign's bestiary, or to
- * the campaign-independent library. Weapon and armor carry the same null
- * rule as Encounter: null means deliberately none, and absent means stamp a
+/** A reusable foe blueprint in the campaign-independent library. This is
+ * the pre-merge shape. `normalizeLibrary` still reads it, and the tolerant
+ * `Creature.fromTemplate` spawns from it. Weapon and armor carry the old
+ * null rule: null means deliberately none, and absent means stamp a
  * default. Caster fields keep a spellcasting foe. The app rebuilds slot
  * pools from class and casterLevel on spawn, so the template stores no
  * resources. */

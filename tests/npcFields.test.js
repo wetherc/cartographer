@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { npcFields, readNPCFields } from '../src/app/npcFields.js';
 import { gearOptions } from '../src/app/gearFields.js';
-import { DEFAULT_NPC_HP } from '../src/entities/NPC.js';
+import { DEFAULT_CREATURE_HP } from '../src/entities/Creature.js';
 import { STAT_KEYS } from '../src/entities/Modifiers.js';
 
 /** @param {import('../src/types/modal.js').ModalField[]} fields @param {string} name */
@@ -15,7 +15,7 @@ function field(fields, name) {
 
 test('a new NPC starts at the commoner hit points, unarmed and unarmored', () => {
   const fields = npcFields(null, gearOptions(null));
-  assert.equal(field(fields, 'maxHP').value, DEFAULT_NPC_HP);
+  assert.equal(field(fields, 'maxHP').value, DEFAULT_CREATURE_HP);
   assert.equal(field(fields, 'weapon').value, '', 'an NPC has no tier default loadout');
   assert.equal(field(fields, 'armor').value, '');
 });
@@ -70,7 +70,7 @@ test('readNPCFields reads the hit points, the stats, and the gear back', () => {
 test('a blank or nonsense maximum reads as the commoner default', () => {
   const gear = gearOptions(null);
   const base = { name: 'X', role: '', disposition: 'neutral', notes: '', weapon: '', armor: '' };
-  assert.equal(readNPCFields({ ...base, maxHP: '' }, gear).maxHP, DEFAULT_NPC_HP);
-  assert.equal(readNPCFields({ ...base, maxHP: 'tough' }, gear).maxHP, DEFAULT_NPC_HP);
+  assert.equal(readNPCFields({ ...base, maxHP: '' }, gear).maxHP, DEFAULT_CREATURE_HP);
+  assert.equal(readNPCFields({ ...base, maxHP: 'tough' }, gear).maxHP, DEFAULT_CREATURE_HP);
   assert.equal(readNPCFields({ ...base, maxHP: '-6' }, gear).maxHP, 1, 'a negative clamps to 1');
 });

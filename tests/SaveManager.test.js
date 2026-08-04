@@ -9,11 +9,10 @@ import {
   withDefaults as withCharacterDefaults,
 } from '../src/entities/Character.js';
 import {
-  createEncounter,
+  createCreature,
   applyDamage,
-  withDefaults as withEncounterDefaults,
-} from '../src/entities/Encounter.js';
-import { createNPC, withDefaults as withNPCDefaults } from '../src/entities/NPC.js';
+  withDefaults as withCreatureDefaults,
+} from '../src/entities/Creature.js';
 import { withProficiencies } from '../src/entities/Proficiencies.js';
 import { createHandout, withDefaults as withHandoutDefaults } from '../src/handout/Handouts.js';
 import {
@@ -44,26 +43,32 @@ function sampleGrid() {
   return grid;
 }
 
-test('buildState collects grid nodes, party, characters, and encounters', () => {
+/** A hostile creature the fixtures share.
+ * @param {string} id @param {string} name @param {number} maxHP
+ * @param {Record<string, any>} [extra] */
+const foe = (id, name, maxHP, extra = {}) =>
+  createCreature(id, name, { disposition: 'hostile', maxHP, level: 1, ...extra });
+
+test('buildState collects grid nodes, party, characters, and creatures', () => {
   const grid = sampleGrid();
   const party = { nodeId: 'world', tileId: '0,0' };
   const characters = [createCharacter('c1', 'Hero')];
-  const encounters = [createEncounter('e1', 'Goblin', 7)];
+  const creatures = [foe('e1', 'Goblin', 7)];
 
-  const state = buildState({ grid, party, characters, encounters });
+  const state = buildState({ grid, party, characters, creatures });
   assert.equal(state.nodes.length, 3);
   assert.equal(state.party.nodeId, 'world');
   assert.equal(state.characters.length, 1);
-  assert.equal(state.encounters.length, 1);
+  assert.equal(state.creatures.length, 1);
 });
 
 test('serialize/deserialize round-trips a full campaign state', () => {
   const grid = sampleGrid();
   const party = { nodeId: 'world', tileId: '0,0' };
   const characters = [withHP(addXP(createCharacter('c1', 'Hero', { STR: 14 }, 'Dwarf'), 50), 12)];
-  const encounters = [applyDamage(createEncounter('e1', 'Goblin', 7), 3)];
+  const creatures = [applyDamage(foe('e1', 'Goblin', 7), 3)];
 
-  const state = buildState({ grid, party, characters, encounters });
+  const state = buildState({ grid, party, characters, creatures });
   const restored = deserialize(serialize(state));
 
   // Loading runs each collection's entity `withDefaults`, so what comes back is
@@ -71,7 +76,7 @@ test('serialize/deserialize round-trips a full campaign state', () => {
   assert.deepEqual(restored, {
     ...state,
     characters: state.characters.map(withCharacterDefaults),
-    encounters: state.encounters.map(withEncounterDefaults),
+    creatures: state.creatures.map(withCreatureDefaults),
   });
   assert.equal(restored.characters[0].race, 'Dwarf');
   assert.equal(getHP(restored.characters[0])?.max, 12);
@@ -224,11 +229,11 @@ function populatedState() {
     // The skill keeps `proficiencies` in the save, so the boilerplate check
     // below sees the empty lists nested inside it, not just top-level ones.
     characters: [withProficiencies(createCharacter('c1', 'Hero'), { skills: ['stealth'] })],
-    encounters: [
-      createEncounter('e1', 'Goblin', 7),
-      createEncounter('e2', 'Ogre', 40, {}, null, { level: 7, tier: 'boss' }),
+    creatures: [
+      foe('e1', 'Goblin', 7),
+      foe('e2', 'Ogre', 40, { level: 7, tier: 'legend' }),
+      createCreature('n1', 'Alda'),
     ],
-    npcs: [createNPC('n1', 'Alda')],
     handouts: [createHandout('h1', 'Rumor')],
   });
 }
@@ -252,28 +257,38 @@ test('packing omits default entity fields and loading restores them', () => {
   const restored = deserialize(json);
   const state = populatedState();
   assert.deepEqual(restored.characters, state.characters.map(withCharacterDefaults));
-  assert.deepEqual(restored.encounters, state.encounters.map(withEncounterDefaults));
-  assert.deepEqual(restored.npcs, state.npcs.map(withNPCDefaults));
+  assert.deepEqual(restored.creatures, state.creatures.map(withCreatureDefaults));
   assert.deepEqual(restored.handouts, state.handouts.map(withHandoutDefaults));
 });
 
 test('packing keeps a level-dependent default a type-wide table would have dropped', () => {
-  // The level-7 ogre's gear differs from what a level-1 mob is given, so it has
-  // to survive the round trip rather than being resolved again on load.
+  // The level-7 legend's gear differs from what a level-1 mob is given, so it
+  // has to survive the round trip rather than being resolved again on load.
   const state = populatedState();
   const restored = deserialize(serialize(state));
-  const ogre = restored.encounters.find((encounter) => encounter.id === 'e2');
-  assert.deepEqual(ogre.weapon, state.encounters[1].weapon);
-  assert.deepEqual(ogre.armor, state.encounters[1].armor);
+  const ogre = restored.creatures.find((creature) => creature.id === 'e2');
+  assert.deepEqual(ogre.weapon, state.creatures[1].weapon);
+  assert.deepEqual(ogre.armor, state.creatures[1].armor);
   assert.equal(ogre.level, 7);
 });
 
 test('a save written before entities were packed still loads whole', () => {
   const state = populatedState();
-  // Version 3 wrote every entity field explicitly; the defaults pass must agree.
-  const restored = deserialize(JSON.stringify({ ...state, version: 3 }));
+  // Version 3 wrote every entity field explicitly, under the old collection
+  // keys. The migration chain merges them, and the defaults pass must agree.
+  const { creatures, ...old } = state;
+  const restored = deserialize(
+    JSON.stringify({
+      ...old,
+      version: 3,
+      encounters: creatures
+        .filter((c) => c.disposition === 'hostile')
+        .map(({ disposition: _d, stats, met: _m, ...rest }) => ({ ...rest, statBlock: stats })),
+      npcs: creatures.filter((c) => c.disposition !== 'hostile'),
+    }),
+  );
   assert.deepEqual(restored.characters, state.characters.map(withCharacterDefaults));
-  assert.deepEqual(restored.encounters, state.encounters.map(withEncounterDefaults));
+  assert.deepEqual(restored.creatures, state.creatures.map(withCreatureDefaults));
 });
 
 test('serializing hoists image payloads and loading puts them back', () => {
@@ -410,11 +425,10 @@ test('buildState fills every omitted field with its empty value', () => {
       version: 0,
       party: null,
       characters: [],
-      encounters: [],
+      creatures: [],
       travelog: [],
       quests: [],
       clock: null,
-      npcs: [],
       handouts: [],
       bestiary: [],
       splitParty: false,
@@ -447,11 +461,10 @@ test('deserialize defaults missing fields instead of throwing', () => {
     nodes: [],
     party: null,
     characters: [],
-    encounters: [],
+    creatures: [],
     travelog: [],
     quests: [],
     clock: null,
-    npcs: [],
     handouts: [],
     bestiary: [],
     splitParty: false,
@@ -464,8 +477,7 @@ test('deserialize drops nodes and entities that are not records', () => {
     JSON.stringify({
       nodes: [{ id: 'world', tiles: [] }, {}, null, 7, 'world'],
       characters: [null, { id: 'c1', name: 'Hero' }],
-      encounters: 'none',
-      npcs: 3,
+      creatures: 'none',
       quests: null,
     }),
   );
@@ -475,8 +487,7 @@ test('deserialize drops nodes and entities that are not records', () => {
     'a node with no id has no place in the grid',
   );
   assert.equal(restored.characters.length, 1);
-  assert.deepEqual(restored.encounters, [], 'a non-array collection reads as empty');
-  assert.deepEqual(restored.npcs, []);
+  assert.deepEqual(restored.creatures, [], 'a non-array collection reads as empty');
   assert.deepEqual(restored.quests, []);
 });
 
@@ -601,7 +612,7 @@ test('toTileGrid preserves node kind/environ and backfills older nodes as region
     nodes: [{ id: 'old', name: 'Old', parentId: null, width: 1, height: 1, tiles: [] }],
     party: null,
     characters: [],
-    encounters: [],
+    creatures: [],
   });
   assert.equal(legacy.getNode('old').kind, 'region');
   assert.equal(legacy.getNode('old').environ, null);

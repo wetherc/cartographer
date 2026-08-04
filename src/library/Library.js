@@ -25,7 +25,7 @@ import {
   CONSUMABLE_PRESETS,
 } from '../entities/EquipmentPresets.js';
 import { normalizeStatBlock } from '../entities/Modifiers.js';
-import { DISPOSITIONS } from '../entities/NPC.js';
+import { DISPOSITIONS } from '../entities/Creature.js';
 import { isCasterClass } from '../entities/Classes.js';
 import { slugId } from '../entities/Roster.js';
 import { indexById } from '../util/indexById.js';
