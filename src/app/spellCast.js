@@ -32,10 +32,11 @@ import { splitTrimmedList } from '../util/text.js';
 
 /**
  * The combatants a spell can target, by effect kind. An attack or a save
- * spell reaches the caster's foes. A heal or a buff reaches its own side
- * (allies, including the caster). A utility spell targets no one. The list
- * comes from the shared `combatantsAsTargets` function over the combat
- * running order.
+ * spell reaches the caster's foes, plus any other creature in the fight,
+ * bystanders included. A heal or a buff reaches its own side (allies,
+ * including the caster). A utility spell targets no one. The list comes
+ * from the shared `combatantsAsTargets` function over the combat running
+ * order.
  * @param {AppContext} app
  * @param {CombatState} combat
  * @param {Participant} caster

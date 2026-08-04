@@ -257,7 +257,7 @@ except to the GM tab.
 Back to map leaves the screen without ending the fight. The Initiative card
 in the sidebar shows the round and holds Open combat. Only the GM can click
 End combat. A fight also ends when the party walks off the tile, or when
-the last encounter staged there is deleted.
+the last creature staged there is deleted.
 
 ### The rules the app applies
 

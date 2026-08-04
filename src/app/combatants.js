@@ -245,10 +245,13 @@ export function spellsOf(app, id) {
 
 /**
  * Assemble the combatants an action can target, from the running order. By
- * default, the action targets the acting participant's foes. For a heal, it
- * targets its own side, including the actor, as allies. Downed combatants
- * drop out of a hostile list but stay eligible as allies, because a heal's
- * whole point can be the downed combatant. This function resolves sides per
+ * default, the action targets the acting participant's foes, plus every
+ * other creature in the fight: a bystander lines up beside the party, but a
+ * party that turns on it is not stopped. A character on the actor's own
+ * side stays out of the hostile list. For a heal, the action targets its
+ * own side, including the actor, as allies. Downed combatants drop out of a
+ * hostile list but stay eligible as allies, because a heal's whole point
+ * can be the downed combatant. This function resolves sides per
  * participant, not from the order, so a creature that turns hostile
  * mid-fight becomes targetable as one. An actor whose own entity is gone can
  * target nothing.
@@ -265,8 +268,11 @@ export function combatantsAsTargets(app, combat, actor, { allies = false } = {})
     const found = findCombatant(app, p.id);
     if (!found) return [];
     const sameSide = sideOf(found) === actorSide;
-    if (sameSide !== allies) return [];
-    if (!allies && isDowned(found)) return [];
+    if (allies) {
+      return sameSide ? [asTarget(found.entity, found.kind)] : [];
+    }
+    const attackable = !sameSide || (found.kind === 'creature' && p.id !== actor.id);
+    if (!attackable || isDowned(found)) return [];
     return [asTarget(found.entity, found.kind)];
   });
 }

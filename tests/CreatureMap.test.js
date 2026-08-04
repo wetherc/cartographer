@@ -6,7 +6,7 @@ import {
   creaturesNear,
   creaturesOnTile,
   hostileCreaturesOnTile,
-  hostileCreaturesAtTile,
+  liveCreaturesOnTile,
   knownCreaturesAt,
   discoveredHostiles,
   meetCreatures,
@@ -94,7 +94,7 @@ test('creaturesOnTile takes the exact tile only, defeated ones included', () => 
   assert.deepEqual(creaturesOnTile(roster, null), []);
 });
 
-test('hostileCreaturesOnTile drops the defeated, hostileCreaturesAtTile keeps them', () => {
+test('hostileCreaturesOnTile drops the defeated and the bystanders', () => {
   const live = placed('live', 'n1', '2,2', { disposition: 'hostile', maxHP: 5 });
   const down = applyDamage(placed('down', 'n1', '2,2', { disposition: 'hostile', maxHP: 5 }), 5);
   const bystander = placed('bystander', 'n1', '2,2');
@@ -103,10 +103,20 @@ test('hostileCreaturesOnTile drops the defeated, hostileCreaturesAtTile keeps th
     hostileCreaturesOnTile(roster, at('n1', '2,2')).map((c) => c.id),
     ['live'],
   );
+});
+
+test('liveCreaturesOnTile keeps bystanders and drops only the defeated', () => {
+  const live = placed('live', 'n1', '2,2', { disposition: 'hostile', maxHP: 5 });
+  const down = applyDamage(placed('down', 'n1', '2,2', { disposition: 'hostile', maxHP: 5 }), 5);
+  const bystander = placed('bystander', 'n1', '2,2');
+  const downedBystander = applyDamage(placed('fallen', 'n1', '2,2', { maxHP: 5 }), 5);
+  const elsewhere = placed('elsewhere', 'n1', '3,3');
+  const roster = [live, down, bystander, downedBystander, elsewhere];
   assert.deepEqual(
-    hostileCreaturesAtTile(roster, at('n1', '2,2')).map((c) => c.id),
-    ['live', 'down'],
+    liveCreaturesOnTile(roster, at('n1', '2,2')).map((c) => c.id),
+    ['live', 'bystander'],
   );
+  assert.deepEqual(liveCreaturesOnTile(roster, null), []);
 });
 
 test('isOnTile is false for an unplaced creature and for a missing position', () => {

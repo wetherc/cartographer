@@ -209,8 +209,41 @@ test('combatantsAsTargets lists foes and drops downed ones', () => {
   const targets = combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[0]);
   assert.deepEqual(
     targets.map((t) => t.id),
-    ['goblin', 'brute'],
-    'the defeated orc drops out, the hostile NPC is a foe, the neutral sage is not',
+    ['goblin', 'sage', 'brute'],
+    'the defeated orc drops out, and the neutral sage stays attackable',
+  );
+});
+
+test('combatantsAsTargets never offers an allied character or the actor itself', () => {
+  const { hero, goblin, sage } = fixtures();
+  const mage = createCharacter('mage', 'Mage');
+  const app = stubApp({ characters: [hero, mage], creatures: [goblin, sage] });
+  const combat = { order: [{ id: 'hero' }, { id: 'mage' }, { id: 'goblin' }, { id: 'sage' }] };
+  // A character's hostile action reaches the foe and the bystander, but
+  // never a fellow character.
+  const heroTargets = combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[0]);
+  assert.deepEqual(
+    heroTargets.map((t) => t.id),
+    ['goblin', 'sage'],
+  );
+  // A creature's hostile action reaches every other combatant, but a
+  // creature never targets itself.
+  const goblinTargets = combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[2]);
+  assert.deepEqual(
+    goblinTargets.map((t) => t.id),
+    ['hero', 'mage', 'sage'],
+  );
+});
+
+test('combatantsAsTargets drops a downed bystander from the hostile list', () => {
+  const { hero, goblin } = fixtures();
+  const fallen = applyDamage(createCreature('sage', 'Sage', { location: HERE, maxHP: 4 }), 4);
+  const app = stubApp({ characters: [hero], creatures: [goblin, fallen] });
+  const combat = { order: [{ id: 'hero' }, { id: 'goblin' }, { id: 'sage' }] };
+  const targets = combatantsAsTargets(app, /** @type {any} */ (combat), combat.order[0]);
+  assert.deepEqual(
+    targets.map((t) => t.id),
+    ['goblin'],
   );
 });
 

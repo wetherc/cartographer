@@ -14,8 +14,8 @@ import { clampInt } from '../util/num.js';
 /**
  * Mount the encounter panel: an Active encounter and Nearby encounters tab
  * pair, always shown, each tab holding one list panel. The Active tab
- * lists the live encounters on the party's tile, what the party has
- * walked into, and carries the GM's Start combat button. Gaining an
+ * lists the live creatures on the party's tile, hostile or not, and
+ * carries the GM's Start combat button. Gaining an
  * active encounter switches to it. Losing the last one switches back to
  * Nearby, which lists everything else in range. Authoring buttons render
  * only when the caller passes onAdd or onAddFromTemplate. The Build rail
@@ -55,8 +55,8 @@ import { clampInt } from '../util/num.js';
  *
  * `hasActive` decides when the panel switches itself to the Active tab. It
  * defaults to "the Active tab has rows". A caller whose tile can hold
- * something the tab does not list, such as a hostile NPC, passes its own
- * test, so the tab that carries the Start combat button still comes forward.
+ * something the tab does not list passes its own test, so the tab that
+ * carries the Start combat button still comes forward.
  * @returns {{ update: () => void }}
  */
 export function mountEncounterPanel(container, callbacks) {

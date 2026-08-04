@@ -131,7 +131,9 @@ monsters.
 A creature row counts toward its side by disposition. A hostile creature is a
 foe, and a friendly or neutral one stands with the party. A whole side must go
 down before the fight settles, so one fallen friendly bystander settles
-nothing while a character still stands.
+nothing while a character still stands. The side does not shield a creature:
+a hostile action's target list carries every other creature in the fight,
+whatever its side, so the party can turn on a bystander mid-fight.
 
 ### Who can see what
 
@@ -212,20 +214,21 @@ alone.
 
 ## Starting a fight
 
-The party fights the live hostile creatures on its tile. `threatsHere` in
-`encounterWiring.js` is the one test. Three places call it: the
-arrival alert, the Start combat button, and the check that keeps a running
-fight alive.
+A fight can start wherever the party stands with a live creature.
+`creaturesHere` in `encounterWiring.js` is the gate on the Start combat
+button: every undefeated creature on the party's exact tile counts,
+whatever its disposition. A party that decides to attack a neutral
+bystander is not stopped.
 
-A friendly or neutral creature is not a threat. It joins a fight that starts
-for another reason. A step onto its tile logs a meeting instead.
-
-`arrivalAlert` in `src/combat/Arrival.js` writes the text of the alert. It
-reads `name`, `currentHP`, and `maxHP` off each creature.
+Only a hostile creature is a threat, and only a threat raises the arrival
+modal. A friendly or neutral creature opens nothing: the panel lists it,
+and a step onto its tile logs a meeting instead. `arrivalAlert` in
+`src/combat/Arrival.js` writes the text of the modal. It reads `name`,
+`currentHP`, and `maxHP` off each hostile creature there.
 
 The Start combat button sits in the Active tab of the Encounters panel. The
-panel takes a `hasActive` callback to pick its own tab, and the wiring passes
-`threatsHere`, the same test the alert uses.
+Active tab lists the same live creatures the gate counts, so the panel
+switches itself to that tab whenever the button can show.
 
 ## Ending a fight
 
@@ -240,12 +243,12 @@ creature list changes for reasons other than a kill. `syncCombatLocation` is
 an action that the party-move paths and `commitCreatures` call. The plain
 panel refresh never calls it, because that refresh also runs from the
 rehydrate loop, where a state write fights the save that the tab just
-adopted from another tab. The auto-drop reads `hostileCreaturesAtTile`
-rather than `hostileCreaturesOnTile`. The two differ only in that the
-on-tile read filters out the defeated. Because of this, the drop counts
-every hostile creature staged on the party's tile, including the dead ones.
-Walking off the tile still clears the fight. So does deleting the last thing
-to fight. A kill does not clear the fight.
+adopted from another tab. The auto-drop reads `creaturesOnTile`, which
+keeps defeated creatures and bystanders in the count. A combatant at 0 HP
+is a turn in the fight, not the end of it, and a fight the party picked
+with a neutral creature has no hostiles in it at all. Walking off the tile
+still clears the fight. So does deleting the last thing to fight. A kill
+does not clear the fight.
 
 The screen also grows a banner under the ribbon once `fightOutcome` settles.
 The banner states that the party is victorious or defeated, with a line for

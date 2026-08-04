@@ -109,8 +109,8 @@ export function creaturesOnTile(creatures, position) {
 
 /**
  * The undefeated hostile creatures placed exactly on a tile. This is the
- * threat that a step onto the tile walks into: it feeds the arrival alert,
- * and it is enough on its own to start a fight. This function is pure.
+ * threat that a step onto the tile walks into: it feeds the arrival alert
+ * and the out-of-combat foe target list. This function is pure.
  * @param {Creature[]} creatures
  * @param {EncounterLocation | null} position
  * @returns {Creature[]}
@@ -122,17 +122,17 @@ export function hostileCreaturesOnTile(creatures, position) {
 }
 
 /**
- * The hostile creatures placed exactly on a tile, defeated ones included.
- * This lists who stands there at all, rather than who can still fight. A
- * running fight reads this, since a foe dropping to 0 HP is a turn in the
- * fight and not the end of it, while a creature deleted or left behind is
- * gone for good. This function is pure.
+ * The undefeated creatures placed exactly on a tile, whatever their
+ * disposition. This is who the party stands with: it fills the Active tab
+ * of the Encounters panel, and it is enough to start a fight. A party can
+ * turn on a neutral creature, so a bystander counts here even though only
+ * a hostile one raises the arrival alert. This function is pure.
  * @param {Creature[]} creatures
  * @param {EncounterLocation | null} position
  * @returns {Creature[]}
  */
-export function hostileCreaturesAtTile(creatures, position) {
-  return creaturesOnTile(creatures, position).filter((c) => c.disposition === 'hostile');
+export function liveCreaturesOnTile(creatures, position) {
+  return creaturesOnTile(creatures, position).filter((c) => !isDefeated(c));
 }
 
 /**

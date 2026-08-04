@@ -225,15 +225,16 @@ change it.
 
 ### Run a fight
 
-1. Move the party onto a tile that holds a live encounter or a hostile NPC.
-   A modal names each one. A friendly or neutral NPC is not named. It is no
-   threat.
-2. Open the **Active encounter** tab and click **Start combat**. The button
-   also shows for a hostile NPC alone. The tab lists encounters only, so it
-   stays empty in that case.
+1. Move the party onto a tile that holds a live creature. A modal names
+   each hostile one. A friendly or neutral creature opens no modal, but it
+   still lists in the panel.
+2. Open the **Active encounter** tab and click **Start combat**. The tab
+   lists every live creature on the tile, and the button shows whenever
+   the tab has a row. A party set on fighting a bystander can do so.
 3. In the setup dialog, click **Roll initiative**, or type values by hand.
-   Hostile NPCs on the tile join the foes. Friendly and neutral NPCs join
-   the party.
+   Hostile creatures on the tile join the foes. Friendly and neutral
+   creatures join the party. The party can still attack a creature on its
+   own side.
 4. Start the fight. The combat screen takes the full width.
 
 ![Combat: the full-width fight screen with the board, log, and turn ribbon](images/combat-screen.png)

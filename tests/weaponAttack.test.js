@@ -409,12 +409,13 @@ test('a weapon with no damage roll still resolves and lands nothing', () => {
 
 test('weaponAttack stops before the dialog when there is nobody to attack', async () => {
   const hero = withHP(createCharacter('hero', 'Hero'), 12);
-  const sage = createCreature('sage', 'Sage', { location: HERE });
-  const app = stubApp({ characters: [hero], creatures: [sage] });
-  const combat = { order: [{ id: 'hero' }, { id: 'sage' }] };
-  // The only other combatant is on the party's own side, so no defender is
-  // left. The dialog never opens, which is what keeps this reachable without
-  // a browser.
+  const mage = withHP(createCharacter('mage', 'Mage'), 12);
+  const app = stubApp({ characters: [hero, mage], creatures: [] });
+  const combat = { order: [{ id: 'hero' }, { id: 'mage' }] };
+  // The only other combatant is an allied character, which a hostile action
+  // never reaches. A bystander creature would count as a defender now. The
+  // dialog never opens, which is what keeps this reachable without a
+  // browser.
   await weaponAttack(app, /** @type {any} */ (combat), combat.order[0], /** @type {any} */ (SWORD));
   assert.deepEqual(app.toastMessages, ['No defender left standing.']);
   assert.deepEqual(app.rolls, []);

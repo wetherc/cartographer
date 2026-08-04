@@ -16,8 +16,8 @@ import {
   creaturesNear,
   creaturesOnTile,
   discoveredHostiles,
-  hostileCreaturesAtTile,
   hostileCreaturesOnTile,
+  liveCreaturesOnTile,
 } from '../entities/CreatureMap.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import {
@@ -91,9 +91,10 @@ export function wireEncounters(app) {
   /**
    * If the party's current tile holds a threat, show it in a modal over the
    * map. A threat is an undefeated hostile creature standing there. A
-   * friendly or neutral creature is not a threat, and the travelogue
-   * announces meeting one instead. The first-meeting travelogue line lives
-   * in `meetCreaturesHere` (mapTravel.js), on the same arrival path.
+   * friendly or neutral creature is not a threat: it lists in the panel and
+   * the travelogue announces meeting it, but no modal opens. The
+   * first-meeting travelogue line lives in `meetCreaturesHere`
+   * (mapTravel.js), on the same arrival path.
    *
    * The threat stays in place: a party that flees or ignores it still sees it
    * in the sidebar for that node. This is only a walk-into-something alert.
@@ -124,19 +125,19 @@ export function wireEncounters(app) {
 
   app.views.encounterPanel = mountEncounterPanel(mustGetElement('encounter-container'), {
     // The panel shows only what is relevant to the party's current position,
-    // split into two tabs. The Active tab lists the live hostile creatures
-    // on the party's exact tile. This is what the party just walked into.
-    // Both roles see it, because the alert already announced it. The Nearby
-    // tab lists the rest within range. For the GM, this means hostile
+    // split into two tabs. The Active tab lists every live creature on the
+    // party's exact tile, bystanders included. This is who the party stands
+    // with, and it is what a fight started here would draw in. Only the
+    // hostile ones raised the arrival alert. The Nearby tab lists the
+    // remaining hostiles within range. For the GM, this means hostile
     // creatures within four times the fog reveal radius of the party, plus
     // unplaced ones. For a player, this means only discovered hostiles: one
     // on a tile the fog has revealed, or an unplaced one the party walked
     // into.
-    getActiveEncounters: () =>
-      hostileCreaturesOnTile(state.creatures, app.partyTracker.getPosition()),
+    getActiveEncounters: () => liveCreaturesOnTile(state.creatures, app.partyTracker.getPosition()),
     getNearbyEncounters: () => {
       const position = app.partyTracker.getPosition();
-      const hereIds = new Set(hostileCreaturesOnTile(state.creatures, position).map((c) => c.id));
+      const hereIds = new Set(liveCreaturesOnTile(state.creatures, position).map((c) => c.id));
       const list = isGM(state.role)
         ? creaturesNear(state.creatures, position, app.partyTracker.revealRadius * 4).filter(
             (c) => c.disposition === 'hostile',
@@ -183,10 +184,10 @@ export function wireEncounters(app) {
     },
     confirmDelete: (creature) => confirmDelete(creature.name),
     // Only the GM can start combat. The button shows only to the GM, and
-    // only while the party stands on a tile holding a live hostile
-    // creature, with no fight running.
-    canStartCombat: () => isGM(state.role) && current() === null && threatsHere(),
-    hasActive: threatsHere,
+    // only while the party stands on a tile holding a live creature, with
+    // no fight running. A non-hostile creature is enough: a party that
+    // turns on a bystander is not stopped, it only gets no arrival alert.
+    canStartCombat: () => isGM(state.role) && current() === null && creaturesHere(),
     onStartCombat: startCombatSetup,
     getRole: () => state.role,
   });
@@ -266,11 +267,11 @@ export function wireEncounters(app) {
     );
   };
 
-  // Whether the party stands on anything worth fighting: at least one live
-  // hostile creature on its exact tile. This is the same condition the
-  // walked-into-it alert uses.
-  function threatsHere() {
-    return hostileCreaturesOnTile(state.creatures, app.partyTracker.getPosition()).length > 0;
+  // Whether the party stands on anything a fight could involve: at least
+  // one live creature on its exact tile, whatever its disposition. The
+  // arrival alert keeps its own, hostile-only read.
+  function creaturesHere() {
+    return liveCreaturesOnTile(state.creatures, app.partyTracker.getPosition()).length > 0;
   }
 
   // The combatants are everyone involved in this encounter: the whole
@@ -418,8 +419,8 @@ export function wireEncounters(app) {
     onOpen: () => app.actions.setMode('combat'),
   });
 
-  // Walking off the fight's tile, or deleting the last hostile creature
-  // there, drops the running combat, because its participants are no longer
+  // Walking off the fight's tile, or deleting the last creature there,
+  // drops the running combat, because its participants are no longer
   // here. Killing every foe does not drop it: the screen shows the foes as
   // down and waits for the GM to press End combat. This way a last hit does
   // not take the fight away from whoever landed it, and the party can still
@@ -430,10 +431,11 @@ export function wireEncounters(app) {
   // echoes a dirty write back at it.
   app.actions.syncCombatLocation = () => {
     if (!current()) return;
-    // Defeated combatants count here. A foe at 0 HP is a turn in the fight,
-    // not the end of it. Only walking away, or deleting everything to fight,
-    // ends a fight this way.
-    const stagedHere = hostileCreaturesAtTile(state.creatures, app.partyTracker.getPosition());
+    // Defeated combatants count here. A combatant at 0 HP is a turn in the
+    // fight, not the end of it. Only walking away, or deleting everyone in
+    // the fight, ends a fight this way. Non-hostile creatures count too,
+    // because a fight the party picked with one has no hostiles at all.
+    const stagedHere = creaturesOnTile(state.creatures, app.partyTracker.getPosition());
     if (stagedHere.length > 0) return;
     setCombat(null);
     exitCombatMode();
