@@ -225,9 +225,12 @@ change it.
 
 ### Run a fight
 
-1. Move the party onto a tile that holds a live encounter. A modal names
-   the encounter and its coordinates.
-2. Open the **Active encounter** tab and click **Start combat**.
+1. Move the party onto a tile that holds a live encounter or a hostile NPC.
+   A modal names each one. A friendly or neutral NPC is not named. It is no
+   threat.
+2. Open the **Active encounter** tab and click **Start combat**. The button
+   also shows for a hostile NPC alone. The tab lists encounters only, so it
+   stays empty in that case.
 3. In the setup dialog, click **Roll initiative**, or type values by hand.
    Hostile NPCs on the tile join the foes. Friendly and neutral NPCs join
    the party.

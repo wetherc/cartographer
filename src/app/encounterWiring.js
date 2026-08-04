@@ -24,11 +24,12 @@ import {
   dropParticipant,
 } from '../combat/Initiative.js';
 import { abilityModifier } from '../entities/Modifiers.js';
-import { npcsOnTile } from '../entities/NPC.js';
+import { hostileNPCsOnTile, npcsOnTile } from '../entities/NPC.js';
+import { arrivalAlert } from '../combat/Arrival.js';
 import { tickConditions } from '../entities/Conditions.js';
 import { tick as tickConcentration } from '../entities/Concentration.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
-import { isGM, hpBand } from '../view/ViewRole.js';
+import { isGM } from '../view/ViewRole.js';
 import { encounterForm, deleteEncounter, addFromBestiary } from './encounterForm.js';
 import {
   commitEncounters,
@@ -86,11 +87,15 @@ export function wireEncounters(app) {
   };
 
   /**
-   * If the party's current tile has a live encounter, show it in a modal
-   * over the map. The encounter stays in place: a party that flees or
-   * ignores it still sees it in the sidebar for that node. This is only a
-   * walk-into-something alert. The readout follows the viewer role. The GM
-   * sees exact HP. A player sees the coarse status band. The app calls this
+   * If the party's current tile holds a threat, show it in a modal over the
+   * map. A threat is a live encounter staged there or a hostile NPC standing
+   * there. Both get named. A friendly or neutral NPC is not a threat, and
+   * the travelogue announces meeting one instead.
+   *
+   * The threat stays in place: a party that flees or ignores it still sees it
+   * in the sidebar for that node. This is only a walk-into-something alert.
+   * The readout follows the viewer role. The GM sees exact HP. A player sees
+   * the coarse status band. The app calls this
    * after a real move, not on the initial render, so a fresh load does not
    * show a popup. It defaults to the whole party at its shared position. A
    * player who moves their own token passes that character's tile and name
@@ -103,12 +108,14 @@ export function wireEncounters(app) {
     subject = 'The party',
   ) => {
     const here = encountersOnTile(state.encounters, position);
-    if (here.length === 0) return;
+    const hostiles = hostileNPCsOnTile(state.npcs, position);
+    if (here.length === 0 && hostiles.length === 0) return;
     const node = app.grid.getNode(position.nodeId);
     const region = node ? node.name : position.nodeId;
     // The travelogue logs each first meeting exactly once, using a persisted
     // `noticed` flag. Walking back onto the tile shows the alert again but
-    // does not log it again.
+    // does not log it again. A hostile NPC needs no flag of its own, because
+    // `meetNPCs` already logs the introduction.
     const fresh = here.filter((e) => !e.noticed);
     if (fresh.length > 0) {
       state.encounters = state.encounters.map((e) =>
@@ -122,20 +129,12 @@ export function wireEncounters(app) {
       }
       app.actions.markDirty();
     }
-    const gm = isGM(state.role);
-    const names = here.map((e) =>
-      gm
-        ? `${e.name} (${e.currentHP}/${e.maxHP} HP)`
-        : `${e.name} (${hpBand(e.currentHP, e.maxHP)})`,
-    );
-    const list =
-      names.length > 1
-        ? `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
-        : names[0];
-    alertModal(`${subject} has come upon ${list} here in ${region}.`, {
-      title: here.length > 1 ? 'Encounters!' : 'Encounter!',
-      label: 'Continue',
+    const alert = arrivalAlert([...here, ...hostiles], {
+      gm: isGM(state.role),
+      subject,
+      region,
     });
+    if (alert) alertModal(alert.message, { title: alert.title, label: 'Continue' });
   };
 
   app.views.encounterPanel = mountEncounterPanel(mustGetElement('encounter-container'), {
@@ -200,9 +199,13 @@ export function wireEncounters(app) {
     },
     confirmDelete: (encounter) => confirmDelete(encounter.name),
     // Only the GM can start combat. The button shows only to the GM, and
-    // only while the party stands on a live encounter's tile with no fight
-    // running.
-    canStartCombat: () => isGM(state.role) && current() === null && encountersHere().length > 0,
+    // only while the party stands on a tile holding a live encounter or a
+    // hostile NPC, with no fight running.
+    canStartCombat: () => isGM(state.role) && current() === null && threatsHere(),
+    // The Active tab holds the Start combat button, so a hostile NPC under
+    // the party counts for the auto-switch even though the tab lists
+    // encounters only.
+    hasActive: threatsHere,
     onStartCombat: startCombatSetup,
     getRole: () => state.role,
   });
@@ -280,6 +283,19 @@ export function wireEncounters(app) {
   // walked-into-it alert uses.
   function encountersHere() {
     return encountersOnTile(state.encounters, app.partyTracker.getPosition());
+  }
+
+  // The hostile NPCs under the party. A hostile NPC is a foe in its own
+  // right, so a tile holding one and nothing else is still a fight. Every
+  // place that asks "is there anything to fight here" reads both this and
+  // `encountersHere`.
+  function hostilesHere() {
+    return hostileNPCsOnTile(state.npcs, app.partyTracker.getPosition());
+  }
+
+  // Whether the party stands on anything worth fighting.
+  function threatsHere() {
+    return encountersHere().length + hostilesHere().length > 0;
   }
 
   // The combatants are everyone involved in this encounter: the whole
@@ -432,8 +448,11 @@ export function wireEncounters(app) {
   // echoes a dirty write back at it.
   app.actions.syncCombatLocation = () => {
     if (!current()) return;
+    // Defeated combatants count here. A foe at 0 HP is a turn in the fight,
+    // not the end of it. Only walking away, or deleting everything to fight,
+    // ends a fight this way.
     const stagedHere = encountersAtTile(state.encounters, app.partyTracker.getPosition());
-    if (stagedHere.length > 0) return;
+    if (stagedHere.length > 0 || hostilesHere().length > 0) return;
     setCombat(null);
     exitCombatMode();
     app.views.initiativePanel.update();

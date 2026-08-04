@@ -105,16 +105,17 @@ The two models stay separate modules on purpose. They agree on field names, so
 the combat code branches on kind and reads the same names on each, rather than
 converting one into the other.
 
-The authoring side agrees too. `app/npcFields.js` describes the fields once,
-and both the campaign dialog and the Library rail's template form render them.
-It renders the same `STAT_KEYS` inputs and the same gear pickers
-(`app/gearFields.js`) the encounter form renders. The one difference is the
-gear fallback: `readEncounterFields` falls back to the tier's default loadout,
-and `readNPCFields` passes no fallback, so an empty picker means unarmed. On an
-NPC template, `maxHP`, `weapon`, and `armor` are all optional.
-`Library.normalizeLibrary` keeps a positive maximum and leaves anything else
-out, which sends a template written before NPCs had gear through `createNPC`
-and its commoner defaults.
+The authoring side agrees too. `app/npcFields.js` describes the fields once.
+The campaign dialog and the Library rail's template form both render them. The
+fields are the same `STAT_KEYS` inputs and the same gear pickers
+(`app/gearFields.js`) that the encounter form uses. Only the gear fallback
+differs. `readEncounterFields` falls back to the default loadout of the tier.
+`readNPCFields` passes no fallback, so an empty picker means unarmed.
+
+On an NPC template, `maxHP`, `weapon`, and `armor` are all optional.
+`Library.normalizeLibrary` keeps a positive maximum. It leaves out anything
+else. A template written before NPCs had gear therefore goes through
+`createNPC` and takes the commoner defaults.
 
 ## The character foundation
 

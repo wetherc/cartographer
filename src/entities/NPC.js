@@ -216,6 +216,20 @@ export function npcsOnTile(npcs, position) {
 }
 
 /**
+ * The hostile NPCs placed exactly on a tile. A hostile NPC is a threat the
+ * party walks into, so it belongs in the arrival alert and it is enough on
+ * its own to start a fight. A defeated one stays in the list, the way a
+ * defeated encounter stays staged, so a fight does not end under the GM.
+ * This function is pure.
+ * @param {NPC[]} npcs
+ * @param {EncounterLocation | null} position
+ * @returns {NPC[]}
+ */
+export function hostileNPCsOnTile(npcs, position) {
+  return npcsOnTile(npcs, position).filter((n) => n.disposition === 'hostile');
+}
+
+/**
  * Human-readable placement for an NPC row: the node's name plus the tile
  * coordinates, or a fixed label for an unplaced (appears-everywhere) NPC.
  * @param {EncounterLocation | null} location

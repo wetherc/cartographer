@@ -6,6 +6,7 @@ import {
   knownNpcsAt,
   meetNPCs,
   npcsOnTile,
+  hostileNPCsOnTile,
   isOnTile,
   withDefaults,
   formatLocation,
@@ -189,6 +190,31 @@ test('npcsOnTile matches only NPCs standing exactly on the tile', () => {
   );
   assert.deepEqual(npcsOnTile(npcs, { nodeId: 'region', tileId: '3,2' }), []);
   assert.deepEqual(npcsOnTile(npcs, null), []);
+});
+
+test('hostileNPCsOnTile keeps the hostile ones, defeated included', () => {
+  const here = { nodeId: 'world', tileId: '3,2' };
+  const npcs = [
+    createNPC('friend', 'Bram', { location: here, disposition: 'friendly' }),
+    createNPC('neutral', 'Dorn', { location: here }),
+    createNPC('foe', 'Brigand', { location: here, disposition: 'hostile' }),
+    createNPC('elsewhere', 'Thug', {
+      location: { nodeId: 'world', tileId: '9,9' },
+      disposition: 'hostile',
+    }),
+    createNPC('unplaced', 'Rumor', { disposition: 'hostile' }),
+  ];
+  assert.deepEqual(
+    hostileNPCsOnTile(npcs, here).map((n) => n.id),
+    ['foe'],
+  );
+  // A downed foe still holds the tile, so a fight over it does not end.
+  const downed = npcs.map((n) => (n.id === 'foe' ? damageNPC(n, 99) : n));
+  assert.deepEqual(
+    hostileNPCsOnTile(downed, here).map((n) => n.id),
+    ['foe'],
+  );
+  assert.deepEqual(hostileNPCsOnTile(npcs, null), []);
 });
 
 test('isOnTile is the same membership test for one NPC', () => {

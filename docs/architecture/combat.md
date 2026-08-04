@@ -39,6 +39,8 @@ src/combat/CombatView.js ..... pure: projects a CombatState into rows a
 src/combat/Loadout.js ........ pure: what a combatant is wearing, swinging,
                                and holding in slots, and how much of that a
                                given viewer can see
+src/combat/Arrival.js ........ pure: the text of the walked-into-something
+                               alert, for encounters and hostile NPCs
 src/ui/CombatScreen.js ....... the screen: active column, board, log column,
                                turn ribbon, outcome banner, live region,
                                keyboard handling
@@ -209,6 +211,29 @@ controls sit beside the ribbon: Back to map for everyone, the turn-end
 button for whoever can take the current turn, and End combat for the GM
 alone.
 
+## Starting a fight
+
+The party can fight two things on its tile. The first is a live encounter
+staged there. The second is a hostile NPC standing there. `threatsHere` in
+`encounterWiring.js` is the one test for both. Three places call it: the
+arrival alert, the Start combat button, and the check that keeps a running
+fight alive.
+
+A hostile NPC alone is enough for a fight. It has a side, hit points, and an
+AC. A friendly or neutral NPC is not a threat. It joins a fight that starts
+for another reason. A step onto its tile logs a meeting instead.
+
+`arrivalAlert` in `src/combat/Arrival.js` writes the text of the alert. It
+reads `name`, `currentHP`, and `maxHP`. An `Encounter` and an `NPC` both use
+these names. One function therefore names both kinds. The alert cannot
+describe an NPC differently from a foe.
+
+The Start combat button sits in the Active tab of the Encounters panel. That
+tab lists encounters, not NPCs. The panel takes a `hasActive` callback to pick
+its own tab, and the wiring passes `threatsHere`. The tab that holds the
+button therefore comes forward for a hostile NPC. The tab itself stays
+empty.
+
 ## Ending a fight
 
 A fight ends when the GM ends it, or when its participants are genuinely gone.
@@ -225,8 +250,11 @@ rehydrate loop, where a state write fights the save that the tab just
 adopted from another tab. The auto-drop reads `encountersAtTile` rather than
 `encountersOnTile`. The two differ only in that `encountersOnTile` filters
 out the defeated. Because of this, the drop counts every encounter staged on
-the party's tile, including the dead ones. Walking off the tile or deleting
-the last encounter still clears the fight. A kill does not clear the fight.
+the party's tile, including the dead ones. It counts the hostile NPCs on the
+tile the same way, through `hostileNPCsOnTile`. A fight against an NPC alone
+therefore survives the next refresh. Walking off the tile still clears the
+fight. So does deleting the last thing to fight. A kill does not clear the
+fight.
 
 The screen also grows a banner under the ribbon once `fightOutcome` settles.
 The banner states that the party is victorious or defeated, with a line for

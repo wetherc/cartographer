@@ -45,12 +45,18 @@ import { clampInt } from '../util/num.js';
  *   confirmDelete?: (encounter: Encounter) => Promise<boolean>,
  *   onStartCombat?: () => void,
  *   canStartCombat?: () => boolean,
+ *   hasActive?: () => boolean,
  *   getRole?: () => ViewRole,
  * }} callbacks
  * If `onStartCombat` is set, the Active tab's action row gains a Start
  * combat button whenever `canStartCombat` allows it, when no fight is
  * already running. This is the entry into the initiative flow, which
  * players do not get.
+ *
+ * `hasActive` decides when the panel switches itself to the Active tab. It
+ * defaults to "the Active tab has rows". A caller whose tile can hold
+ * something the tab does not list, such as a hostile NPC, passes its own
+ * test, so the tab that carries the Start combat button still comes forward.
  * @returns {{ update: () => void }}
  */
 export function mountEncounterPanel(container, callbacks) {
@@ -274,11 +280,11 @@ export function mountEncounterPanel(container, callbacks) {
   });
 
   function update() {
-    // Gaining an active encounter jumps to its tab exactly once. Losing
-    // the last one falls back to Nearby. Between these events, the
+    // Walking onto something jumps to the Active tab exactly once. Walking
+    // off the last of it falls back to Nearby. Between these events, the
     // selection belongs to the user. Either tab stays selectable even
     // when empty.
-    const hasActive = callbacks.getActiveEncounters().length > 0;
+    const hasActive = callbacks.hasActive?.() ?? callbacks.getActiveEncounters().length > 0;
     if (hasActive !== hadActive) tabs.select(hasActive ? 'active' : 'nearby');
     hadActive = hasActive;
     activeList.update();
