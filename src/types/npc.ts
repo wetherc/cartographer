@@ -7,7 +7,9 @@ import {
   Spellbook,
 } from './entities';
 
-export type Disposition = 'friendly' | 'neutral' | 'hostile';
+import type { Disposition } from './creature';
+
+export type { Disposition } from './creature';
 
 /** A campaign character: named, placed, and given a disposition. An NPC is a
  * full combatant, with hit points, an AC, and optional arms. */

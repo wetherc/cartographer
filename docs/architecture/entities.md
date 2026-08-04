@@ -4,8 +4,8 @@
 
 `src/entities/` holds the things that a campaign's rules operate on:
 encounters, resource pools, NPCs, and characters. They all follow one update
-style. This page describes that style first, then the NPC, then the character
-model, which is the largest of them.
+style. This page describes that style first, then the creature, then the NPC,
+then the character model, which is the largest of them.
 
 ## The shared shape: immutable updates
 
@@ -70,7 +70,42 @@ deriving writers move a maximum through `Resource.js`:
 patch. The resource and inventory writers used to each spell out that patch
 inline.
 
+## The creature
+
+`entities/Creature.js` and `entities/CreatureMap.js` (types in
+`src/types/creature.ts`) hold the merged model that replaces the encounter and
+the NPC. One `Creature` covers a foe, a townsperson, and anything between. The
+`disposition` field decides its side in a fight. A hostile creature fights the
+party. Every other creature stands with the party. The two older modules still
+run while their consumers move over, and the sections below describe them.
+
+A creature carries `maxHP`, `currentHP`, a `stats` block, a `weapon`, an
+`armor`, `conditions`, a `location`, and a `met` flag. `level` and `tier` are
+optional authoring inputs. They pick the default stats and gear for a new foe.
+A townsperson has no level.
+
+The gear rule is explicit. `createCreature` resolves the weapon and the armor
+once, at creation. An absent value takes the level default when the creature
+has a level. It takes null when the creature has none. A stored null means
+unarmed or unarmored on purpose. `withDefaults` backfills gear to null only.
+No read path derives gear from the level again, so an absent field has one
+meaning everywhere.
+
+`isCreature(entity)` tells a creature from a character: a creature always
+carries a `disposition`, and a character never does. Every consumer that must
+tell the two apart reads this one test.
+
+`effectiveStatBlock(creature)` is the one AC read: the closed stat block, plus
+the `acBonus` of the worn armor, plus every active timed stat modifier.
+`CreatureMap.js` holds the placement reads. `meetCreatures` marks every
+creature on the party's tile as met. `knownCreaturesAt` is the player view of
+the non-hostile roster. `discoveredHostiles` is the player view of the hostile
+roster, through the fog of war. `fromTemplate` reads older template shapes on
+purpose, because a library file has no version field.
+
 ## The NPC
+
+*This model is being replaced by the creature above.*
 
 `entities/NPC.js` (types in `src/types/npc.ts`) holds the named figures a
 campaign places on the map: an innkeeper, a guard captain, a rival. An NPC

@@ -1,5 +1,6 @@
 import { normalizeStatBlock } from './Modifiers.js';
-import { WEAPON_PRESETS, enemyArmor, copyEnemyWeapon } from './EquipmentPresets.js';
+import { copyEnemyWeapon } from './EquipmentPresets.js';
+import { defaultEnemyGear } from './Creature.js';
 import { copySpellbook } from './Character.js';
 import { withinRadius } from '../map/FogOfWar.js';
 import { withCasterFields, ensureCasterFields, casterTemplateFields } from './Caster.js';
@@ -14,54 +15,10 @@ import { isSlotPool } from './SpellSlots.js';
 /** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
 /** @typedef {import('../types/entities.js').EnemyArmor} EnemyArmor */
 
-/**
- * Resolve one default loadout against the shared preset lists. Called while
- * this module loads rather than per encounter, so a rename in
- * EquipmentPresets.js raises one named error at startup instead of a non-null
- * cast crashing on `undefined.name` the first time a campaign loads.
- * @param {string} weaponName
- * @param {string} armorName
- * @returns {{ weapon: (typeof WEAPON_PRESETS)[number], armor: EnemyArmor }}
- */
-function requireLoadout(weaponName, armorName) {
-  const weapon = WEAPON_PRESETS.find((p) => p.name === weaponName);
-  const armor = enemyArmor(armorName);
-  if (!weapon) throw new Error(`Unknown weapon preset: ${weaponName}`);
-  if (!armor) throw new Error(`Unknown armor preset: ${armorName}`);
-  return { weapon, armor };
-}
-
-/**
- * The arms an unequipped enemy defaults to, per tier and level band: mobs carry
- * simple gear that steps up with level, legends carry heavy gear from the
- * start. This is read-only reference data. `defaultEnemyGear` hands out copies.
- */
-const DEFAULT_LOADOUTS = {
-  mob: {
-    low: requireLoadout('Shortsword', 'Leather Armor'),
-    high: requireLoadout('Longsword', 'Chain Shirt'),
-  },
-  legend: {
-    low: requireLoadout('Longsword', 'Chain Mail'),
-    high: requireLoadout('Greatsword', 'Plate'),
-  },
-};
-
-/**
- * A generic weapon and armor for an enemy of a given level and tier, so every
- * enemy can attack out of the box. Both come from the shared 5e preset lists
- * (armor bonuses read as the preset's margin over the unarmored 10) as fresh
- * copies, so everything stays editable on the encounter without writing
- * through to the presets.
- * @param {number} level
- * @param {EnemyTier} tier
- * @returns {{ weapon: EnemyWeapon, armor: EnemyArmor }}
- */
-export function defaultEnemyGear(level, tier) {
-  const lvl = Math.max(1, Math.floor(level) || 1);
-  const loadout = DEFAULT_LOADOUTS[tier === 'legend' ? 'legend' : 'mob'][lvl < 5 ? 'low' : 'high'];
-  return { weapon: copyEnemyWeapon(loadout.weapon), armor: { ...loadout.armor } };
-}
+// The default-loadout table moved to Creature.js. This re-export keeps the
+// current consumers of this module working until they read Creature.js
+// directly.
+export { defaultEnemyGear } from './Creature.js';
 
 /**
  * The weapon and armor an encounter carries: whatever it already
