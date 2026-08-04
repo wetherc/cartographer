@@ -258,9 +258,65 @@ test('applyToTarget logs a character dropping to 0 HP exactly once and heals bac
   assert.equal(getHP(app.state.characters[0]).current, 0);
   assert.deepEqual(app.log, ['Hero drops to 0 HP.']);
   applyToTarget(app, 'hero', 5, false);
-  assert.deepEqual(app.log, ['Hero drops to 0 HP.'], 'no re-log while already down');
+  assert.equal(app.log[1], 'Hero takes a failed death save from the hit.');
+  assert.equal(
+    app.log.filter((/** @type {string} */ line) => line === 'Hero drops to 0 HP.').length,
+    1,
+    'no re-log while already down',
+  );
   applyToTarget(app, 'hero', 4, true);
   assert.equal(getHP(app.state.characters[0]).current, 4);
+});
+
+test('applyToTarget starts the death-save tracker on the drop to 0 HP', () => {
+  const hero = withHP(createCharacter('hero', 'Hero'), 10);
+  const app = stubApp({ characters: [hero] });
+  applyToTarget(app, 'hero', 12, false);
+  const down = app.state.characters[0];
+  assert.deepEqual(down.deathSaves, { successes: 0, failures: 0, stable: false });
+  assert.ok(
+    down.conditions.some((/** @type {any} */ c) => c.name === 'Unconscious'),
+    'the chip comes with the tracker',
+  );
+});
+
+test('applyToTarget fails a death save per hit while down, twice on a crit', () => {
+  const hero = withHP(createCharacter('hero', 'Hero'), 10);
+  const app = stubApp({ characters: [hero] });
+  applyToTarget(app, 'hero', 12, false);
+  applyToTarget(app, 'hero', 3, false);
+  assert.equal(app.state.characters[0].deathSaves.failures, 1);
+  applyToTarget(app, 'hero', 3, false, { crit: true });
+  assert.equal(app.state.characters[0].deathSaves.failures, 3);
+  assert.deepEqual(app.log.slice(-2), [
+    'Hero takes two failed death saves from the hit.',
+    'Hero dies.',
+  ]);
+});
+
+test('applyToTarget un-stabilizes a stable character that takes a hit', () => {
+  const hero = /** @type {any} */ ({
+    ...withHP(createCharacter('hero', 'Hero'), 10),
+    deathSaves: { successes: 0, failures: 0, stable: true },
+  });
+  const app = stubApp({ characters: [damageCharacter(hero, 10)] });
+  applyToTarget(app, 'hero', 4, false);
+  assert.deepEqual(app.state.characters[0].deathSaves, {
+    successes: 0,
+    failures: 1,
+    stable: false,
+  });
+});
+
+test('applyToTarget clears the death-save tracker when a heal lands above 0 HP', () => {
+  const hero = withHP(createCharacter('hero', 'Hero'), 10);
+  const app = stubApp({ characters: [hero] });
+  applyToTarget(app, 'hero', 12, false);
+  applyToTarget(app, 'hero', 4, true);
+  const up = app.state.characters[0];
+  assert.equal(up.deathSaves, null);
+  assert.ok(!up.conditions.some((/** @type {any} */ c) => c.name === 'Unconscious'));
+  assert.equal(app.log.at(-1), 'Hero regains consciousness.');
 });
 
 test('applyToTarget ignores non-positive amounts, unknown ids, and HP-less NPCs', () => {

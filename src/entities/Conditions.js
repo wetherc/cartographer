@@ -10,6 +10,14 @@
 export const CONCENTRATING = 'Concentrating';
 
 /**
+ * The chip that a creature carries while it is at 0 HP. `entities/DeathSaves.js`
+ * writes and removes it, and the chip is named here so the two modules agree
+ * on the spelling. It stays in the pick-list below because a foe has no death
+ * saves behind it, and a person still adds it by hand.
+ */
+export const UNCONSCIOUS = 'Unconscious';
+
+/**
  * The standard 5e status conditions, plus concentration and exhaustion,
  * offered as suggestions in the UI. A condition is a free string, so the GM
  * can add one that is not listed here. This is only the pick-list.
@@ -31,7 +39,7 @@ export const CONDITIONS = [
   'Prone',
   'Restrained',
   'Stunned',
-  'Unconscious',
+  UNCONSCIOUS,
 ];
 
 /**

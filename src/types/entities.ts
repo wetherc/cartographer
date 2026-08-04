@@ -360,6 +360,18 @@ export interface ConcentrationState {
   remaining: number | null;
 }
 
+/** The death-save tracker a character carries at 0 HP (see DeathSaves.js).
+ * Three successes stabilize, and three failures kill. `stable` marks a
+ * character who is out of danger but still at 0 HP and still unconscious; its
+ * counters are reset, because damage starts the saves over. A character with
+ * three or more failures is dead, and the state stays so that a readout can
+ * say so. */
+export interface DeathSaveState {
+  successes: number;
+  failures: number;
+  stable: boolean;
+}
+
 export interface Character {
   id: string;
   name: string;
@@ -397,6 +409,9 @@ export interface Character {
   /** The spell this character holds open, or null when it holds none.
    * Absent on older saves, which load as holding nothing. */
   concentration?: ConcentrationState | null;
+  /** The death saves this character is rolling at 0 HP, or null when it is
+   * not dying. Absent on older saves, which load as not dying. */
+  deathSaves?: DeathSaveState | null;
   /** Equipped items by slot. Absent on older saves, where all slots are empty. */
   equipment?: Equipment;
   /** Temporary hit points from items or boons, absorbed before the HP pool

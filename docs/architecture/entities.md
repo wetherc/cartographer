@@ -509,6 +509,62 @@ sheet's `-1 HP` button is bookkeeping rather than a damage event, so it
 calls for no save. Damage that must test concentration goes through an
 attack or a cast.
 
+## Death saves
+
+A party character at 0 HP is not dead yet. It rolls death saves until three
+succeed or three fail. `entities/DeathSaves.js` models this over a
+`deathSaves` field on the character, which holds `successes`, `failures`, and
+`stable`. A character who is not dying has this field set to null.
+
+- `isDying`, `isStable`, and `isDead` read the four positions apart: standing,
+  rolling, out of danger at 0 HP, and killed by three failures.
+- `dropToDying(character)` starts the tracker. A second call on a character
+  who already holds one changes nothing, so the failures already rolled
+  survive.
+- `clearDying(character)` takes the tracker away, which is what a heal above 0
+  HP and a natural 20 both do.
+- `stabilize(character)` sets `stable` and resets the counters. The character
+  stays at 0 HP and stays unconscious. A dead character cannot be stabilized.
+- `judgeDeathSave(state, roll)` maps one rolled d20 to the next tracker state
+  and names the outcome: `revive`, `success`, `stable`, `failure`, or `dead`.
+- `rollDeathSave(character, opts)` rolls the save and applies the outcome. It
+  is the headless path, for tests and for callers with no dice tray.
+- `recordDamage(character, { crit })` is damage on a character already at 0 HP.
+
+The DC is a flat 10. A natural 20 revives the character at 1 HP, whatever the
+counters hold. A natural 1 counts as two failures, and it fails even when a
+rider pushes the total past the DC. Otherwise the total beats the DC on a tie,
+as every other save does.
+
+The roll goes through `Checks.resolveSave` with a bonus of 0, because a death
+save adds no ability modifier and no proficiency. Going through that function
+is what lets a rider such as Bless reach the roll. No ability key is passed, so
+the automatic failure that unconsciousness imposes on Strength and Dexterity
+saves does not catch a death save.
+
+Two rules skip the roll. Damage on a character who is already at 0 HP is an
+automatic failure, and a critical hit counts as two. Damage on a stable
+character makes it dying again, with that failure against it, which is the 2014
+rule. The hit that drops the character to 0 HP in the first place costs no
+failure. Damage large enough for instant death is out of scope.
+
+`Unconscious` goes on with the tracker and comes off with it, so no caller must
+remember both halves. `Conditions.js` exports the chip's name as `UNCONSCIOUS`.
+That chip is what gives an attacker advantage and a melee hit an automatic
+crit, through the condition-effect table below, so the crit rule needs no
+special case here.
+
+`app/combatants.js`'s `applyToTarget` drives all of this, in `foldDeathSaves`.
+Every hit and every heal arrives through that one function, so the three cases
+(the drop to 0, a hit while down, and a heal back above 0) are decided in one
+place. The consequence folds into the same write as the HP change.
+`applyToTarget` takes `opts.crit` for the doubled failure, and
+`app/weaponAttack.js` passes it. Spell damage does not crit here and leaves it
+off.
+
+Only characters roll death saves. An encounter is defeated at 0 HP, and an NPC
+tracks no HP at all.
+
 ## Conditions a spell imposed
 
 A failed save against a spell can leave the target with a condition, and

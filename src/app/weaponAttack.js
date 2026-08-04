@@ -197,7 +197,7 @@ export function rollWeaponAttack(
   // Applies the damage on the spot through the shared write path. Encounters
   // and characters track HP, and the function logs a defeat or a drop to 0
   // only once. An HP-less NPC defender keeps only the log line.
-  applyToTarget(app, defender.id, damage.total, false);
+  applyToTarget(app, defender.id, damage.total, false, { crit });
   app.toasts.show(
     `${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${damage.text || 'no damage'}${inflicts}.`,
   );

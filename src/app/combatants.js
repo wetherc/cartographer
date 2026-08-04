@@ -14,6 +14,7 @@ import { addCondition } from '../entities/Conditions.js';
 import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
 import { saveBonus } from '../entities/Checks.js';
 import { checkOnDamage, drop as dropConcentration } from '../entities/Concentration.js';
+import { clearDying, dropToDying, recordDamage } from '../entities/DeathSaves.js';
 import { replaceById } from '../entities/Roster.js';
 import { castableLeveledIds } from '../entities/SpellView.js';
 import { resolveSpellIds } from '../library/Library.js';
@@ -490,14 +491,18 @@ export function retryImposedSaves(app, combatantId) {
  * campaign dirty.
  *
  * Damage to a concentrating character also triggers the save that holds the
- * spell. This happens here because every hit, weapon and spell alike,
- * arrives through this path.
+ * spell, and damage to a character at 0 HP costs it a death save. Both happen
+ * here because every hit, weapon and spell alike, arrives through this path.
+ *
+ * `opts.crit` says the damage came from a critical hit, which counts as two
+ * failed death saves instead of one. A caller that cannot crit leaves it off.
  * @param {AppContext} app
  * @param {string} targetId
  * @param {number} amount
  * @param {boolean} isHeal
+ * @param {{ crit?: boolean }} [opts]
  */
-export function applyToTarget(app, targetId, amount, isHeal) {
+export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
   if (amount <= 0) return;
   const found = findCombatant(app, targetId);
   if (!found) return;
@@ -513,14 +518,15 @@ export function applyToTarget(app, targetId, amount, isHeal) {
     return;
   }
   if (found.kind === 'character') {
+    const wasDown = (getHP(found.entity)?.current ?? 0) <= 0;
     let next = isHeal
       ? restoreResource(found.entity, HP_RESOURCE_ID, amount)
       : damageCharacter(found.entity, amount);
     // Log the drop to 0 exactly once. Further damage on a downed character
     // must not repeat it.
-    const downed =
-      !isHeal && (getHP(found.entity)?.current ?? 0) > 0 && (getHP(next)?.current ?? 0) <= 0;
+    const downed = !isHeal && !wasDown && (getHP(next)?.current ?? 0) <= 0;
     if (downed) app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
+    next = foldDeathSaves(app, next, { isHeal, downed, wasDown, crit: opts.crit ?? false });
     const broke = isHeal ? null : breakConcentration(app, next, amount, downed);
     if (broke) next = broke.character;
     found.store(next);
@@ -530,6 +536,40 @@ export function applyToTarget(app, targetId, amount, isHeal) {
     // the pre-sweep copy back.
     if (broke?.ended) endSpellEffects(app, next.id, broke.ended);
   }
+}
+
+/**
+ * foldDeathSaves applies the death-save consequence of one hit or one heal,
+ * folded into the same write as the HP change. There are three cases.
+ *
+ * The hit that drops a character to 0 HP starts the tracker and puts the
+ * Unconscious chip on. That hit costs no failure itself.
+ *
+ * A hit on a character who was already at 0 HP is an automatic failure, with
+ * no roll. A critical hit counts as two. This also un-stabilizes a stable
+ * character, which is the 2014 rule.
+ *
+ * A heal that brings a dying character above 0 HP clears the tracker and the
+ * chip. A heal of 0 HP worth, which cannot happen here, would leave it alone.
+ * @param {AppContext} app
+ * @param {Character} character already damaged or healed
+ * @param {{ isHeal: boolean, downed: boolean, wasDown: boolean, crit: boolean }} edge
+ * @returns {Character}
+ */
+function foldDeathSaves(app, character, { isHeal, downed, wasDown, crit }) {
+  if (isHeal) {
+    if (!character.deathSaves || (getHP(character)?.current ?? 0) <= 0) return character;
+    app.actions.logEvent('combat', `${character.name} regains consciousness.`);
+    return clearDying(character);
+  }
+  if (downed) return dropToDying(character);
+  if (!wasDown || !character.deathSaves) return character;
+  const hit = recordDamage(character, { crit });
+  if (hit.failures === 0) return character;
+  const failures = hit.failures === 2 ? 'two failed death saves' : 'a failed death save';
+  app.actions.logEvent('combat', `${character.name} takes ${failures} from the hit.`);
+  if (hit.dead) app.actions.logEvent('combat', `${character.name} dies.`);
+  return hit.character;
 }
 
 /**
