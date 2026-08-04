@@ -112,13 +112,13 @@ test('rehydrate refreshes the map and every campaign-backed panel', () => {
   rehydrateCampaign(app, campaignNamed('After'));
 
   // One marker action covers both marker layers now, so only one is called.
-  for (const name of ['resyncMap', 'syncEncounterMarkers', 'refreshMapDescription']) {
+  for (const name of ['resyncMap', 'syncCreatureMarkers', 'refreshMapDescription']) {
     assert.ok(app.calls.includes(name), `expected ${name} to be called`);
   }
   for (const name of [
     'partyPanels',
     'encounterPanel',
-    'buildEncounters',
+    'buildFoes',
     'buildNPCs',
     'initiativePanel',
     'combatScreen',

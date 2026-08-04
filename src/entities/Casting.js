@@ -154,9 +154,9 @@ export function normalizeMaterials(value) {
  * an inventory stack is a name. A stack satisfies the spell when either name
  * contains the other, case-insensitively, so "Diamond" covers "diamonds
  * worth 300 gp". A material with no printed text names nothing to look for,
- * so it is never required. A combatant with no inventory at all, such as an
- * Encounter or an NPC, is never required to hold anything, because it has
- * nowhere to hold it.
+ * so it is never required. A combatant with no inventory at all, such as a
+ * creature, is never required to hold anything, because it has nowhere to
+ * hold it.
  * @param {{ inventory?: import('../types/entities.js').InventoryItem[] }} caster
  * @param {Spell} spell
  * @returns {{

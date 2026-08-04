@@ -110,7 +110,7 @@ export function wireMapView(app) {
   env.nodeActions = nodeActions;
   env.snapshotEdit = authoring.snapshotEdit;
   app.actions.undoStroke = authoring.undoStroke;
-  app.actions.meetNPCs = travel.meetCreaturesHere;
+  app.actions.meetCreatures = travel.meetCreaturesHere;
 
   /** Show the party marker only on the node where the party stands. Resolve
    * each character's named token for the node in view: their own location, or
@@ -187,9 +187,7 @@ export function wireMapView(app) {
    * danger marker for a live, undefeated hostile, and the distinct blue
    * marker for everyone else. The map shows both once the party comes
    * within detection range. One pass covers both layers, and it refreshes
-   * both Build-rail authoring lists, which show the same node scope. The
-   * function is registered under both old action names, so every current
-   * caller reaches it. */
+   * both Build-rail authoring lists, which show the same node scope. */
   function syncCreatureMarkers() {
     const nodeId = navigator.getCurrentNode().id;
     const placed = state.creatures.filter((c) => c.location && c.location.nodeId === nodeId);
@@ -200,11 +198,10 @@ export function wireMapView(app) {
       placed.filter((c) => c.disposition === 'hostile' && !isDefeated(c)).map(tileOf),
     );
     mapCanvas.setNPCTiles(placed.filter((c) => c.disposition !== 'hostile').map(tileOf));
-    app.views.buildEncounters.update();
+    app.views.buildFoes.update();
     app.views.buildNPCs.update();
   }
-  app.actions.syncEncounterMarkers = syncCreatureMarkers;
-  app.actions.syncNPCMarkers = syncCreatureMarkers;
+  app.actions.syncCreatureMarkers = syncCreatureMarkers;
 
   let lastDescription = '';
 

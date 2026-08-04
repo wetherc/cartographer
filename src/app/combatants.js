@@ -133,7 +133,7 @@ export function findCombatant(app, id) {
  * @param {{ panel?: boolean, dirty?: boolean }} [options]
  */
 export function commitCreatures(app, { panel = true, dirty = true } = {}) {
-  app.actions.syncEncounterMarkers();
+  app.actions.syncCreatureMarkers();
   if (panel) app.views.encounterPanel.update();
   app.views.npcPanel.update();
   // Deleting the last hostile creature staged on the party's tile ends the

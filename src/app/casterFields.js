@@ -88,7 +88,7 @@ export function spellbookIds(spellbook) {
 
 /**
  * Returns the three caster fields (class, caster level, and a spell
- * multiselect) shared by the encounter and NPC dialogs. A seed from an
+ * multiselect) of the creature authoring spec. A seed from an
  * existing caster's class, level, and spellbook pre-selects these fields for
  * editing. The spell list offers the whole library, because a foe can know
  * any spell, and it is pre-checked from the seed's spellbook.
@@ -170,7 +170,7 @@ export function spellbookFromIds(ids) {
 }
 
 /**
- * Reads the caster fields back into `withCasterFields`/`createNPC` options. A
+ * Reads the caster fields back into `createCreature` options. A
  * non-caster class yields no caster options, an empty object, so the entity
  * stays a plain combatant.
  * @param {Record<string, string>} values

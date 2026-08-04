@@ -39,7 +39,7 @@ const OUTCOME_LINES = {
 
 /**
  * Resolve a participant id to the character behind it, when that character is
- * dying. A foe, an NPC, and a standing character have no death save to roll,
+ * dying. A creature and a standing character have no death save to roll,
  * and neither does a character who is already stable or dead.
  * @param {AppContext} app
  * @param {string} id

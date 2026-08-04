@@ -94,7 +94,7 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
     state.creatures = [...state.creatures, stored];
   }
   // A creature placed or moved onto the party's own tile is met on the spot.
-  app.actions.meetNPCs();
+  app.actions.meetCreatures();
   commitCreatures(app);
   return stored;
 }

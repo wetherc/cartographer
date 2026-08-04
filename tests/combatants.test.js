@@ -82,7 +82,7 @@ test('findCombatant store writes back to the owning collection', () => {
   const found = findCombatant(app, 'goblin');
   found.store({ ...goblin, currentHP: 3 });
   assert.equal(app.state.creatures[0].currentHP, 3);
-  assert.ok(app.calls.includes('syncEncounterMarkers'), 'encounter store syncs the map markers');
+  assert.ok(app.calls.includes('syncCreatureMarkers'), 'encounter store syncs the map markers');
   const character = findCombatant(app, 'hero');
   character.store({ ...hero, name: 'Hero II' });
   assert.equal(app.state.characters[0].name, 'Hero II');
@@ -418,7 +418,7 @@ test('commitCreatures skips the encounter panel and the dirty mark when told to'
   assert.ok(!app.refreshes.includes('encounterPanel'), 'the caller re-renders its own rows');
   assert.equal(app.dirty, 0, 'the caller marks the campaign dirty itself');
   assert.ok(app.refreshes.includes('initiativePanel'), 'the running order still refreshes');
-  assert.ok(app.calls.includes('syncEncounterMarkers'));
+  assert.ok(app.calls.includes('syncCreatureMarkers'));
   assert.ok(app.calls.includes('syncCombatLocation'));
 });
 
@@ -590,7 +590,7 @@ test('endSpellEffects takes one cast off every target and names each one freed',
   assert.deepEqual(app.log, ['Hero is no longer Paralyzed.', 'Goblin is no longer Paralyzed.']);
   assert.equal(app.dirty, 1);
   assert.ok(app.calls.includes('refreshSelectedCharacter'));
-  assert.ok(app.calls.includes('syncEncounterMarkers'));
+  assert.ok(app.calls.includes('syncCreatureMarkers'));
 });
 
 test('endSpellEffects frees an NPC the cast had held', () => {

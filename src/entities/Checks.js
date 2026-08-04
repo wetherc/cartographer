@@ -43,9 +43,9 @@ import { SKILL_ABILITIES, SKILL_IDS } from '../data/skills.js';
  * class grants that save. An ability with no score for the character reads
  * as 10, the same default the rest of the stat code uses.
  *
- * This function works for characters only. An encounter or an NPC keeps its
- * ability scores in a different field and carries no proficiency lists. A
- * foe's save bonus is still whatever the GM types into the cast dialog.
+ * This function works for characters only. A creature keeps its ability
+ * scores in a different field and carries no proficiency lists. A
+ * creature's save bonus is still whatever the GM types into the cast dialog.
  * @param {Character} character
  * @param {string} ability one of the six ability keys
  * @returns {number}

@@ -259,7 +259,7 @@ function pactPool(pact) {
 
 /**
  * The slot pools for a caster of the given type and level, all at full. This
- * is the standalone builder used for foes and NPCs, which, unlike
+ * is the standalone builder used for creatures, which, unlike
  * characters, carry no HP pool to order around. A non-slot caster type gets
  * an empty list.
  * @param {import('../types/class.js').CasterType} casterType

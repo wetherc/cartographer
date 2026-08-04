@@ -1,8 +1,8 @@
 /**
- * The stat-block field group shared by the modal authoring dialogs. The
- * encounter dialog and the NPC dialog both render STAT_KEYS (abilities plus
- * AC). Both use the same `stat-<KEY>` naming and the same clamped read-back,
- * so the two dialogs cannot drift apart.
+ * The stat-block field group shared by the authoring surfaces. The creature
+ * dialog and the template form both render STAT_KEYS (abilities plus AC).
+ * Both use the same `stat-<KEY>` naming and the same clamped read-back, so
+ * the two surfaces cannot drift apart.
  */
 
 import { clampInt } from '../util/num.js';

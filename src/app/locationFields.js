@@ -7,9 +7,9 @@ import { clampInt } from '../util/num.js';
 /**
  * Modal fields for placing something on the map: a map picker (every node,
  * labelled by its breadcrumb path, plus an unplaced option) and the tile
- * coordinates within the chosen node. The NPC dialogs and the bestiary spawn
- * dialog share this function, so every "put this at a location" flow reads
- * the same way.
+ * coordinates within the chosen node. The creature dialog and the bestiary
+ * spawn dialog share this function, so every "put this at a location" flow
+ * reads the same way.
  * @param {AppContext} app
  * @param {EncounterLocation | null} location
  * @param {{ unplacedLabel?: string }} [options] the label for the

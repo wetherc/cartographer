@@ -197,39 +197,36 @@ export function wireEncounters(app) {
   // lets the GM edit them without moving the party there. A new foe
   // defaults to the Build-mode selected tile of the viewed node, so the GM
   // can select a tile and add a foe there directly.
-  app.views.buildEncounters = mountBuildEncounterPanel(
-    mustGetElement('build-encounters-container'),
-    {
-      getEncounters: () =>
-        creaturesAt(state.creatures, {
+  app.views.buildFoes = mountBuildEncounterPanel(mustGetElement('build-encounters-container'), {
+    getEncounters: () =>
+      creaturesAt(state.creatures, {
+        nodeId: app.navigator.getCurrentNode().id,
+      }).filter((c) => c.disposition === 'hostile'),
+    onAdd: () =>
+      creatureForm(
+        app,
+        null,
+        {
           nodeId: app.navigator.getCurrentNode().id,
-        }).filter((c) => c.disposition === 'hostile'),
-      onAdd: () =>
-        creatureForm(
-          app,
-          null,
-          {
-            nodeId: app.navigator.getCurrentNode().id,
-            tileId: app.actions.getSelectedTileId() ?? '0,0',
-          },
-          { disposition: 'hostile', level: 1 },
-        ),
-      onAddFromTemplate: () => addFromLibrary(app),
-      onEdit: (creature) => creatureForm(app, creature, null),
-      onDelete: (creature) => deleteCreature(app, creature),
-      // Persist base stat edits from the Build rail's chips. The Play panel
-      // shows the same creature and picks up the change.
-      onUpdate: (next) => {
-        state.creatures = replaceById(state.creatures, next);
-        app.views.encounterPanel.update();
-        app.actions.markDirty();
-      },
-      // Selecting a placed creature moves the map view to its staged location.
-      onFocus: (creature) => {
-        if (creature.location) app.actions.focusLocation(creature.location);
-      },
+          tileId: app.actions.getSelectedTileId() ?? '0,0',
+        },
+        { disposition: 'hostile', level: 1 },
+      ),
+    onAddFromTemplate: () => addFromLibrary(app),
+    onEdit: (creature) => creatureForm(app, creature, null),
+    onDelete: (creature) => deleteCreature(app, creature),
+    // Persist base stat edits from the Build rail's chips. The Play panel
+    // shows the same creature and picks up the change.
+    onUpdate: (next) => {
+      state.creatures = replaceById(state.creatures, next);
+      app.views.encounterPanel.update();
+      app.actions.markDirty();
     },
-  );
+    // Selecting a placed creature moves the map view to its staged location.
+    onFocus: (creature) => {
+      if (creature.location) app.actions.focusLocation(creature.location);
+    },
+  });
 
   /**
    * This is the Build-mode right-click menu for a tile of the viewed node.
@@ -288,7 +285,7 @@ export function wireEncounters(app) {
       return createParticipant(id, 10 + mod, mod);
     };
     // A defeated hostile stays staged but takes no part in a new fight. A
-    // bystander joins whatever its condition, the way NPCs always did.
+    // bystander joins whatever its condition.
     const position = app.partyTracker.getPosition();
     const roster = creaturesOnTile(state.creatures, position).filter(
       (c) => c.disposition !== 'hostile' || !isDefeated(c),
@@ -302,7 +299,7 @@ export function wireEncounters(app) {
   /**
    * Resolve the name and side to show for a participant, from whatever
    * currently holds its id. Both panels use this function instead of
-   * reading the order directly. This way a combatant renamed, or an NPC
+   * reading the order directly. This way a combatant renamed, or a creature
    * whose disposition changes mid-fight, shows the change on the next
    * render.
    * @param {import('../types/combat.js').Participant} participant

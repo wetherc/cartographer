@@ -29,8 +29,8 @@ import { canAct } from '../entities/ConditionEffects.js';
 
 /**
  * Everything a combat surface needs to draw one participant. `name` is null
- * when nothing holds the id any more: an entity deleted mid-fight, or an NPC
- * who walked off. In that case the numeric fields fall back to neutral
+ * when nothing holds the id any more, because the entity was deleted
+ * mid-fight. In that case the numeric fields fall back to neutral
  * values, and the row still draws, so the order and the turn pointer keep
  * lining up. `hp` is null only for a character with no HP pool.
  * `deathSaves` is null for anything but a dying party character, because only a

@@ -60,7 +60,7 @@ export function slotsForClass(classId, characterLevel) {
 
 /**
  * The full spell-slot pools for a class at a character level, all at full.
- * This is caster-type-aware (full, half, third), so a foe or NPC caster
+ * This is caster-type-aware (full, half, third), so a creature caster
  * gets exactly the slots its class grants. Empty for a non-caster, pact
  * caster, or unknown class.
  * @param {string | undefined | null} classId

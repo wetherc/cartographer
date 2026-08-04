@@ -1,6 +1,6 @@
 /**
  * Shared building blocks for the inline Library-rail authoring forms. The
- * item, spell, bestiary, and NPC-template editors all render inline in
+ * item, spell, and creature-template editors all render inline in
  * the rail, not in a modal, and want the same captioned controls, row
  * grouping, and action-button pair. These are the primitives they build
  * from, so the DOM shape and class vocabulary stay identical across every

@@ -82,7 +82,7 @@ export function rehydrateCampaign(app, campaign) {
 
   const { actions, views } = app;
   actions.resyncMap();
-  actions.syncEncounterMarkers();
+  actions.syncCreatureMarkers();
   actions.refreshMapDescription();
   // Every panel backed by campaign state. The library lists are deliberately
   // not in this list. The custom library is stored apart from the campaign,
@@ -90,7 +90,7 @@ export function rehydrateCampaign(app, campaign) {
   for (const view of [
     views.partyPanels,
     views.encounterPanel,
-    views.buildEncounters,
+    views.buildFoes,
     views.buildNPCs,
     views.initiativePanel,
     views.combatScreen,

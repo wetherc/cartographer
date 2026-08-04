@@ -59,8 +59,8 @@ export interface AppViews {
   mapCanvas: MapCanvas;
   regionTree: Updatable;
   encounterPanel: Updatable;
-  /** Build-rail encounter authoring list, scoped to the node in view. */
-  buildEncounters: Updatable;
+  /** Build-rail foe authoring list, scoped to the node in view. */
+  buildFoes: Updatable;
   /** Build-rail NPC authoring list, scoped to the node in view. */
   buildNPCs: Updatable;
   initiativePanel: Updatable;
@@ -94,7 +94,7 @@ export interface AppActions {
   // player who moves their own token passes that character's tile and name.
   maybeTriggerEncounter(position?: PartyPosition, subject?: string): void;
   // encounterWiring: the Build-mode right-click menu for a tile of the node
-  // in view. It creates an encounter there, or edits one already staged
+  // in view. It creates a creature there, or edits one already staged
   // there, and floats at the pointer's screen position.
   openEncounterContextMenu(x: number, y: number, clientX: number, clientY: number): void;
   // encounterWiring: remove a deleted entity from the running initiative
@@ -109,18 +109,17 @@ export interface AppActions {
   endCombat(): void;
   // encounterWiring: drop the running fight when nothing is staged on the
   // party's tile any more, because the party walked off or the last
-  // encounter there was deleted. Only the paths that change those two facts
+  // creature there was deleted. Only the paths that change those two facts
   // call this function, never a plain panel refresh, so a refresh can never
   // write state.
   syncCombatLocation(): void;
   // mapWiring
   syncPartyMarker(): void;
-  syncEncounterMarkers(): void;
-  syncNPCMarkers(): void;
-  // mapWiring: mark placed NPCs on the party's tile as met, on GM tabs only,
-  // and log each introduction. This runs wherever the party lands somewhere
-  // new.
-  meetNPCs(): void;
+  syncCreatureMarkers(): void;
+  // mapWiring: mark placed creatures on the party's tile as met, on GM tabs
+  // only, and log each introduction. This runs wherever the party lands
+  // somewhere new.
+  meetCreatures(): void;
   refreshMapDescription(): void;
   // mapWiring: reread the node in view and every location view from the
   // grid, for a caller that replaced the world underneath them.
@@ -129,7 +128,7 @@ export interface AppActions {
   // spot for authoring flows that place something "here".
   getSelectedTileId(): string | null;
   // mapWiring: navigate to and center the map on a staged location, and
-  // select its tile (the Build encounter list's "show on map").
+  // select its tile (the Build foe list's "show on map").
   focusLocation(location: EncounterLocation): void;
   // mapWiring: navigate to and center the map on a position, and leave the
   // Build-mode tile selection alone (the roster follows a split party).
