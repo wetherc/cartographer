@@ -70,7 +70,27 @@
   text-align: center;
 }
 
-/* The advantage/disadvantage toggle is a .seg-switch (base.css). */
+/* The advantage/disadvantage toggle is a .seg-switch (base.css). "Normal",
+   "Advantage", and "Disadvantage" need more width than the stepper rows above
+   them, and the combat screen docks the tray in a column about 240px wide.
+   The switch therefore takes a line below its label and divides that line
+   between the three segments, which keeps every word whole at any tray width.
+   Without this the segments kept their natural widths and .seg-switch clipped
+   "Disadvantage" off the end. */
+.dice-tray__mode-row {
+  flex-wrap: wrap;
+}
+
+.dice-tray__mode-row > .seg-switch {
+  flex: 1 1 100%;
+}
+
+.dice-tray__mode-row .seg-switch__btn {
+  flex: 1;
+  padding-left: var(--space-1);
+  padding-right: var(--space-1);
+  text-align: center;
+}
 
 .dice-tray__roll {
   margin-top: var(--space-3);

@@ -105,7 +105,13 @@ export function mountDiceTray(container, opts = {}) {
   // straight to it, so the buttons re-read the selection rather than holding
   // their own copy.
   refreshers.push(() => modeSwitch.sync(selection.mode ?? 'normal'));
-  root.appendChild(el('div', 'dice-tray__row u-row u-g2', modeName, modeSwitch.element));
+  // This row wraps, unlike the stepper rows above it. The three mode words do
+  // not fit beside their label in the narrow left column of the combat screen,
+  // where the tray is docked, so the switch takes a line of its own and
+  // divides it between the three.
+  root.appendChild(
+    el('div', 'dice-tray__row dice-tray__mode-row u-row u-g2', modeName, modeSwitch.element),
+  );
 
   // The difficulty target is optional. When set, each roll also reports
   // success or failure against it, using a meets-it-or-beats-it rule, in the
