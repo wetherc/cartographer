@@ -544,7 +544,10 @@ saves does not catch a death save.
 
 A heal above 0 HP clears the tracker whatever it held, a dead one included.
 Nothing else brings a dead character back, so this is the GM's way of deciding
-that the death did not stand.
+that the death did not stand. That rule lives in `Character.restoreResource`,
+because that is the one function every heal in the app goes through: the combat
+screen's heal control, the sheet's HP stepper, a healing spell, and a rest. A
+character standing at 5 HP can therefore never still read as dying.
 
 Two rules skip the roll. Damage on a character who is already at 0 HP is an
 automatic failure, and a critical hit counts as two. Damage on a stable

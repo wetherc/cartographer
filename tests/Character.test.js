@@ -276,6 +276,58 @@ test('restoreResource leaves non-matching pools untouched', () => {
   assert.equal(restored.resources.find((r) => r.id === 'ki').current, 5, 'ki pool untouched');
 });
 
+test('healing HP above 0 ends a death-save tracker and takes the chip with it', () => {
+  const down = /** @type {any} */ ({
+    ...withHP(createCharacter('c1', 'Hero'), 10),
+    deathSaves: { successes: 1, failures: 2, stable: false },
+    conditions: [
+      { name: 'Unconscious', rounds: null },
+      { name: 'Poisoned', rounds: 3 },
+    ],
+  });
+  const zero = damageCharacter(down, 10);
+  const healed = restoreResource(zero, HP_RESOURCE_ID, 3);
+  assert.equal(getHP(healed).current, 3);
+  assert.equal(healed.deathSaves, null);
+  assert.deepEqual(
+    healed.conditions.map((c) => c.name),
+    ['Poisoned'],
+    'the other chip stays',
+  );
+});
+
+test('healing a dead character ends the tracker, since nothing else undoes death', () => {
+  const dead = /** @type {any} */ ({
+    ...withHP(createCharacter('c1', 'Hero'), 10),
+    deathSaves: { successes: 0, failures: 3, stable: false },
+    conditions: [{ name: 'Unconscious', rounds: null }],
+  });
+  const healed = restoreResource(damageCharacter(dead, 10), HP_RESOURCE_ID, 1);
+  assert.equal(healed.deathSaves, null);
+});
+
+test('a restore that leaves a character at 0 HP keeps the tracker', () => {
+  const state = { successes: 0, failures: 1, stable: false };
+  const down = /** @type {any} */ ({
+    ...withHP(createCharacter('c1', 'Hero'), 10),
+    deathSaves: state,
+    conditions: [{ name: 'Unconscious', rounds: null }],
+  });
+  const zero = damageCharacter(down, 10);
+  assert.deepEqual(
+    restoreResource(zero, HP_RESOURCE_ID, 0).deathSaves,
+    state,
+    'no points, no wake',
+  );
+  // Restoring a pool that is not HP cannot revive anyone, whatever it holds.
+  const other = restoreResource(
+    addResource(zero, createResource('ki', 'Ki', 'custom', 5)),
+    'ki',
+    5,
+  );
+  assert.deepEqual(other.deathSaves, state);
+});
+
 test('addItem merges one stack while leaving other stacks alone', () => {
   let hero = createCharacter('c1', 'Hero');
   hero = addItem(hero, item('arrow', 'Arrow', { quantity: 5 }));

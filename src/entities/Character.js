@@ -10,6 +10,7 @@ import { updateById } from './Roster.js';
 import { isSlotPool, isPactPool } from './SpellSlots.js';
 import { isHitDicePool } from './HitDice.js';
 import { derive } from './Progression.js';
+import { clearDying } from './DeathSaves.js';
 import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
@@ -493,16 +494,26 @@ export function spendResource(character, resourceId, amount) {
 }
 
 /**
+ * Put points back into one pool.
+ *
+ * Healing the HP pool above 0 also ends a death-save tracker, and takes the
+ * Unconscious chip with it. The rule lives here because this is the one
+ * function every heal goes through: the combat screen's heal control, the
+ * sheet's HP stepper, a healing spell, and a rest. Any of them can be the one
+ * that brings a character back, and a character standing at 5 HP must not
+ * still read as dying.
  * @param {Character} character
  * @param {string} resourceId
  * @param {number} amount
  * @returns {Character}
  */
 export function restoreResource(character, resourceId, amount) {
-  return {
+  const next = {
     ...character,
     resources: updateById(character.resources, resourceId, (r) => restorePool(r, amount)),
   };
+  if (resourceId !== HP_RESOURCE_ID || !character.deathSaves) return next;
+  return (getHP(next)?.current ?? 0) > 0 ? clearDying(next) : next;
 }
 
 /**

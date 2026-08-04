@@ -289,7 +289,8 @@ the combat screen and on its sheet, and the Unconscious chip.
   hit counts as two. Damage on a stable character starts the saves again.
 - The hit that drops the character to 0 HP costs no failure. Any healing above
   0 HP clears the tracker, a dead one included. That is how you decide the
-  death did not stand.
+  death did not stand. Healing from the combat screen, from the sheet's HP
+  stepper, from a spell, and from a rest all count.
 - The roll is a button, not automatic. Nobody rolls for the player at the turn
   advance.
 

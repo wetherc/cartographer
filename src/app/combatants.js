@@ -14,7 +14,7 @@ import { addCondition } from '../entities/Conditions.js';
 import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
 import { saveBonus } from '../entities/Checks.js';
 import { checkOnDamage, drop as dropConcentration } from '../entities/Concentration.js';
-import { clearDying, dropToDying, recordDamage } from '../entities/DeathSaves.js';
+import { dropToDying, recordDamage } from '../entities/DeathSaves.js';
 import { replaceById } from '../entities/Roster.js';
 import { castableLeveledIds } from '../entities/SpellView.js';
 import { resolveSpellIds } from '../library/Library.js';
@@ -519,6 +519,10 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
   }
   if (found.kind === 'character') {
     const wasDown = (getHP(found.entity)?.current ?? 0) <= 0;
+    // Read before the write. `restoreResource` ends the tracker itself when it
+    // heals a character above 0, so the healed copy no longer says it was
+    // dying, and this is the only place left that knows.
+    const wasDying = Boolean(found.entity.deathSaves);
     let next = isHeal
       ? restoreResource(found.entity, HP_RESOURCE_ID, amount)
       : damageCharacter(found.entity, amount);
@@ -526,7 +530,13 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
     // must not repeat it.
     const downed = !isHeal && !wasDown && (getHP(next)?.current ?? 0) <= 0;
     if (downed) app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
-    next = foldDeathSaves(app, next, { isHeal, downed, wasDown, crit: opts.crit ?? false });
+    next = foldDeathSaves(app, next, {
+      isHeal,
+      downed,
+      wasDown,
+      wasDying,
+      crit: opts.crit ?? false,
+    });
     const broke = isHeal ? null : breakConcentration(app, next, amount, downed);
     if (broke) next = broke.character;
     found.store(next);
@@ -549,18 +559,23 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
  * no roll. A critical hit counts as two. This also un-stabilizes a stable
  * character, which is the 2014 rule.
  *
- * A heal that brings a dying character above 0 HP clears the tracker and the
- * chip. A heal of 0 HP worth, which cannot happen here, would leave it alone.
+ * A heal that brings a dying character above 0 HP has already ended the
+ * tracker inside `restoreResource`, which every heal in the app goes through.
+ * All that is left here is to say so, and `wasDying` is what the caller read
+ * before the write.
  * @param {AppContext} app
  * @param {Character} character already damaged or healed
- * @param {{ isHeal: boolean, downed: boolean, wasDown: boolean, crit: boolean }} edge
+ * @param {{
+ *   isHeal: boolean, downed: boolean, wasDown: boolean, wasDying: boolean, crit: boolean,
+ * }} edge
  * @returns {Character}
  */
-function foldDeathSaves(app, character, { isHeal, downed, wasDown, crit }) {
+function foldDeathSaves(app, character, { isHeal, downed, wasDown, wasDying, crit }) {
   if (isHeal) {
-    if (!character.deathSaves || (getHP(character)?.current ?? 0) <= 0) return character;
-    app.actions.logEvent('combat', `${character.name} regains consciousness.`);
-    return clearDying(character);
+    if (wasDying && !character.deathSaves) {
+      app.actions.logEvent('combat', `${character.name} regains consciousness.`);
+    }
+    return character;
   }
   if (downed) return dropToDying(character);
   if (!wasDown || !character.deathSaves) return character;

@@ -319,6 +319,14 @@ test('applyToTarget clears the death-save tracker when a heal lands above 0 HP',
   assert.equal(app.log.at(-1), 'Hero regains consciousness.');
 });
 
+test('applyToTarget stays quiet healing a character who was not dying', () => {
+  const hero = damageCharacter(withHP(createCharacter('hero', 'Hero'), 10), 4);
+  const app = stubApp({ characters: [hero] });
+  applyToTarget(app, 'hero', 2, true);
+  assert.equal(getHP(app.state.characters[0]).current, 8);
+  assert.deepEqual(app.log, [], 'no consciousness line for an ordinary heal');
+});
+
 test('applyToTarget ignores non-positive amounts, unknown ids, and HP-less NPCs', () => {
   const { sage } = fixtures();
   const app = stubApp({ npcs: [sage] });
