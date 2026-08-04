@@ -326,7 +326,7 @@ Not every mount returns `update`. The other shapes are:
 | --- | --- | --- |
 | `{ setCharacter }`, plus `getCharacter` on two of them | `CharacterSheet`, `InventoryPanel`, `SpellbookPanel` | these three are scoped to one selected character, which they hold and draw from. A sibling panel's edit is pushed in through `setCharacter` rather than read again through a getter |
 | a domain handle | `segSwitch` (`{ element, getValue, setValue, sync }`), `ThemeToggle`, `PalettePanel`, `TileInspector`, `Toast` (`{ show }`) | a control, not a list. There is nothing to redraw from state |
-| `build<X>Form(...)` returning DOM plus readers | `ItemForm`, `SpellForm`, `EncounterTemplateForm`, `NPCTemplateForm`, `CharacterProgress` | inline forms are built per edit and thrown away, so they are constructed, not mounted |
+| `build<X>Form(...)` returning DOM plus readers | `ItemForm`, `SpellForm`, `CreatureTemplateForm`, `CharacterProgress` | inline forms are built per edit and thrown away, so they are constructed, not mounted |
 | `Promise<result>` | `combatSetupModal`, `generateDialog`, `promptSpellDetail`, everything in `Modal.js` | a dialog is one question with one answer |
 | `{ element, get, set }` | `buildDamageEditor`, `buildEffectsEditor` (`ItemFormEditors.js`) | a composite sub-widget inside a form: it owns a working copy, hands over `element` to mount, `get` to read at submit, and `set` so a preset picker can overwrite it |
 
@@ -747,7 +747,7 @@ Their tests live there too. See
 
 ### One spec, two surfaces
 
-The bestiary and NPC template forms build no controls of their own. An entity
+The creature template form builds no controls of its own. An entity
 the GM authors both in a dialog and in the rail describes its fields once as
 the `ModalField[]` that `promptModal` takes, and `src/ui/SpecForm.js` renders
 that same list inline:

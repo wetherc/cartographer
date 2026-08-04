@@ -479,13 +479,12 @@ the current session only.
 
 ## The library
 
-Library mode has four tabs.
+Library mode has three tabs.
 
 | Tab | Contents |
 | --- | --- |
 | Equipment | Every weapon, armor, gear item, and consumable the item form offers, across five category subtabs |
-| Bestiary | The stock enemies the From bestiary picker offers, plus the templates of the campaign |
-| NPCs | Stock townsfolk archetypes. The hand-off icon opens the New NPC dialog, pre-filled |
+| Creatures | Stock enemies and townsfolk, across two subtabs. Foes holds the hostile templates, and People holds the rest. The hand-off icon opens the matching campaign dialog, pre-filled |
 | Spells | The spell catalog the spellbook picks from, grouped by spell level |
 
 An edit to a built-in default stores an override. The row gains a

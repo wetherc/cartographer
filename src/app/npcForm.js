@@ -24,7 +24,7 @@ import { commitCreatures } from './combatants.js';
  * @param {Creature | null} existing
  * @param {import('../types/entities.js').EncounterLocation | null} defaultLocation
  *   placement preset for a new creature
- * @param {import('../types/library.js').NPCTemplate | null} [template]
+ * @param {import('../types/creature.js').CreatureTemplate | null} [template]
  *   template that fills a new creature's fields (ignored when editing)
  * @returns {Promise<Creature | null>}
  */

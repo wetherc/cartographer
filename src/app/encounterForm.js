@@ -1,6 +1,6 @@
 import { promptModal, confirmDelete, alertModal } from '../ui/Modal.js';
 import { createCreature, editCreature, fromTemplate } from '../entities/Creature.js';
-import { activeBestiary } from '../library/Library.js';
+import { activeCreatures } from '../library/Library.js';
 import { slugId, replaceById, removeById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
 import { encounterFields, encounterFieldsChange, readEncounterFields } from './encounterFields.js';
@@ -18,23 +18,27 @@ import { commitCreatures } from './combatants.js';
  * (current HP, stat block, conditions) survives, so the GM can edit
  * placement without deleting and recreating the foe.
  * Without an existing creature, this dialog creates a hostile one, with a
- * stat block pre-filled from the tier's level-appropriate defaults and
- * editable in place. The function returns the stored creature, or null if
- * the GM cancels or leaves the name blank.
+ * stat block pre-filled from the tier's level-appropriate defaults, or from
+ * a library template, and editable in place. The function returns the
+ * stored creature, or null if the GM cancels or leaves the name blank.
  * @param {AppContext} app
  * @param {Creature | null} existing
  * @param {import('../types/entities.js').EncounterLocation | null} defaultLocation placement preset for a new foe
+ * @param {import('../types/creature.js').CreatureTemplate | null} [template]
+ *   template that fills a new foe's fields (ignored when editing)
  * @returns {Promise<Creature | null>}
  */
-export async function encounterForm(app, existing, defaultLocation) {
+export async function encounterForm(app, existing, defaultLocation, template = null) {
   const { state } = app;
+  /** The source that seeds the dialog's fields: the creature being edited, or a template. */
+  const seed = existing ?? template;
   // The gear choice is the merged library list: the 5e presets plus the GM
   // overrides and custom entries. A hand-tuned entry that is not in the
   // library stays offered as-is. "None" marks a creature with no weapon and
   // no armor by design (for example a non-bipedal beast or an ooze), and
   // that creature gets no attack button in combat. The bestiary template
   // form shares this code.
-  const gear = gearOptions(existing);
+  const gear = gearOptions(seed);
   // Creation shows the stat block too, pre-filled with the tier's
   // level-appropriate defaults. A plain mob needs no stat typing, but every
   // score stays overridable. Edits to an existing creature omit the block,
@@ -47,7 +51,7 @@ export async function encounterForm(app, existing, defaultLocation) {
   const values = await promptModal(
     existing ? 'Edit encounter' : 'New encounter',
     [
-      ...encounterFields(existing, gear, { stats }),
+      ...encounterFields(seed, gear, { stats }),
       ...locationFields(app, existing ? existing.location : defaultLocation).map((field) =>
         field.name === 'nodeId' ? { ...field, full: true } : field,
       ),
@@ -55,7 +59,9 @@ export async function encounterForm(app, existing, defaultLocation) {
     {
       submitLabel: existing ? 'Save' : 'Add',
       wide: true,
-      onChange: encounterFieldsChange({ restampStats: stats }),
+      // A template's stat block is authoritative, so a level change does not
+      // re-stamp over it.
+      onChange: encounterFieldsChange({ restampStats: stats && !template }),
     },
   );
   if (!values) return null;
@@ -107,10 +113,9 @@ export async function deleteEncounter(app, creature) {
 
 /**
  * Spawn a fresh, full-health creature from a saved template. The template
- * source is the campaign bestiary plus the built-in and custom library. The
- * new creature appears at a chosen map and tile, and defaults to the
- * Build-mode selected tile of the viewed node. `fromTemplate` reads the
- * pre-merge library shape and the merged one alike.
+ * source is the campaign bestiary plus the hostile entries of the built-in
+ * and custom library. The new creature appears at a chosen map and tile,
+ * and defaults to the Build-mode selected tile of the viewed node.
  * This same dialog can remove a stale campaign template. The GM manages
  * library entries in the Library tab instead.
  * @param {AppContext} app
@@ -118,7 +123,7 @@ export async function deleteEncounter(app, creature) {
  */
 export async function addFromBestiary(app) {
   const { state } = app;
-  const library = activeBestiary();
+  const library = activeCreatures().filter((t) => t.disposition === 'hostile');
   if (state.bestiary.length === 0 && library.length === 0) {
     await alertModal(
       'The bestiary is empty. Save an encounter as a template first (the save icon on its row).',
@@ -184,13 +189,8 @@ export async function addFromBestiary(app) {
     app.toasts.show(`Deleted "${template.name}" from the bestiary.`);
     return null;
   }
-  // The library list still holds the pre-merge template shape, which the
-  // tolerant fromTemplate reads. The cast states that tolerance to the
-  // typechecker.
   const created = fromTemplate(
-    /** @type {import('../types/creature.js').CreatureTemplate} */ (
-      /** @type {unknown} */ (template)
-    ),
+    template,
     slugId(
       template.name,
       state.creatures.map((c) => c.id),

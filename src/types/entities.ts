@@ -89,28 +89,6 @@ export interface EnemyArmor {
   acBonus: number;
 }
 
-/** A reusable foe blueprint in the campaign-independent library. This is
- * the pre-merge shape. `normalizeLibrary` still reads it, and the tolerant
- * `Creature.fromTemplate` spawns from it. Weapon and armor carry the old
- * null rule: null means deliberately none, and absent means stamp a
- * default. Caster fields keep a spellcasting foe. The app rebuilds slot
- * pools from class and casterLevel on spawn, so the template stores no
- * resources. */
-export interface EncounterTemplate {
-  id: string;
-  name: string;
-  maxHP: number;
-  statBlock: Record<string, number>;
-  level: number;
-  tier: EnemyTier;
-  weapon?: EnemyWeapon | null;
-  armor?: EnemyArmor | null;
-  class?: string;
-  subclass?: string;
-  casterLevel?: number;
-  spellbook?: Spellbook;
-}
-
 export type ResourceType = 'item-count' | 'mana' | 'custom';
 
 export interface ResourcePool {
@@ -223,12 +201,12 @@ export interface Spellbook {
 }
 
 /** The fields that the spell helpers read from whoever is casting. A party
- * Character satisfies this type directly. An Encounter and an NPC reach it
- * through `Caster.toCaster`, which normalizes their scalar class pair and
- * `statBlock` into the list and `stats` shape here. Every helper that only
- * reads a caster, for example slot pools, save DC, attack bonus, spellbook,
- * or cast resolution, takes this type instead of Character. This way a
- * foe's or an NPC's cast needs no cast to a type it is not. The scalar
+ * Character satisfies this type directly. A Creature reaches it through
+ * `Caster.toCaster`, which normalizes its scalar class pair into the list
+ * shape here. Every helper that only reads a caster, for example slot
+ * pools, save DC, attack bonus, spellbook, or cast resolution, takes this
+ * type instead of Character. This way a creature's cast needs no cast to a
+ * type it is not. The scalar
  * `class` and `subclass` pair is here because an older Character save still
  * carries it, before `withDefaults` folds it into `classes`. */
 export interface SpellCaster {

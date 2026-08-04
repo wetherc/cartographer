@@ -2,8 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   defaultEquipmentTemplates,
-  DEFAULT_BESTIARY,
-  DEFAULT_NPC_TEMPLATES,
+  DEFAULT_CREATURES,
   emptyLibrary,
   isLibraryEmpty,
   equipmentKey,
@@ -19,10 +18,9 @@ import {
   activeWeapons,
   activeArmors,
   activeEnemyArmor,
-  activeBestiary,
-  activeBestiaryEntries,
+  activeCreatures,
+  activeCreatureEntries,
   activeEquipmentEntries,
-  activeNPCEntries,
   activeSpells,
   activeSpellEntries,
   activeSpellIndex,
@@ -152,23 +150,36 @@ test('storedEntryId slugs a new entry away from the taken ids', () => {
 
 test('normalizeLibrary keeps a supplied id, valid tier, and an armor object', () => {
   const lib = normalizeLibrary({
-    bestiary: [
+    creatures: [
       {
         name: 'Wyvern',
         id: 'wyvern-alpha',
+        disposition: 'hostile',
+        level: 4,
         tier: 'legend',
         armor: { name: 'Scales', acBonus: 3 },
       },
     ],
   });
-  const wyvern = lib.bestiary[0];
+  const wyvern = lib.creatures[0];
   assert.equal(wyvern.id, 'wyvern-alpha', 'a present string id is kept, not sluggified');
   assert.equal(wyvern.tier, 'legend', 'a valid tier survives');
   assert.deepEqual(wyvern.armor, { name: 'Scales', acBonus: 3 }, 'an armor object is kept');
 });
 
-test('normalizeLibrary keeps a fully-specified NPC verbatim', () => {
+test('normalizeLibrary reads a pre-merge file: bestiary is hostile, statBlock is stats', () => {
   const lib = normalizeLibrary({
+    bestiary: [
+      {
+        id: 'wyvern',
+        name: 'Wyvern',
+        maxHP: 30,
+        level: 4,
+        tier: 'legend',
+        statBlock: { STR: 19, AC: 13 },
+        weapon: null,
+      },
+    ],
     npcs: [
       {
         name: 'Smith',
@@ -182,38 +193,56 @@ test('normalizeLibrary keeps a fully-specified NPC verbatim', () => {
       },
     ],
   });
-  assert.deepEqual(lib.npcs, [
-    {
-      name: 'Smith',
-      role: 'Blacksmith',
-      disposition: 'friendly',
-      notes: 'Forges blades and gossip alike.',
-      stats: { STR: 15 },
-      maxHP: 11,
-      weapon: { name: 'Hammer', damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }] },
-      armor: { name: 'Apron', acBonus: 1 },
-    },
-  ]);
+  assert.equal(lib.creatures.length, 2);
+  const [wyvern, smith] = lib.creatures;
+  assert.equal(wyvern.disposition, 'hostile', 'a bestiary entry reads as hostile');
+  assert.equal(wyvern.stats.STR, 19, 'statBlock reads as stats');
+  assert.equal(wyvern.stats.AC, 13);
+  assert.equal(wyvern.weapon, null, 'explicit null gear survives');
+  assert.ok(wyvern.armor, 'absent gear on a leveled entry takes the level default');
+  assert.equal(smith.id, 'smith', 'an old NPC entry gains an id');
+  assert.equal(smith.disposition, 'friendly');
+  assert.equal(smith.role, 'Blacksmith');
+  assert.equal(smith.maxHP, 11);
+  assert.equal(smith.stats.STR, 15);
+  assert.deepEqual(smith.weapon, {
+    name: 'Hammer',
+    damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }],
+  });
 });
 
-test('normalizeLibrary leaves out NPC hit points and gear it cannot use', () => {
+test('normalizeLibrary dedupes one name across the three creature source lists', () => {
   const lib = normalizeLibrary({
-    npcs: [
+    creatures: [{ name: 'Twin', disposition: 'neutral', notes: 'current' }],
+    bestiary: [{ name: 'Twin', notes: 'old foe' }],
+    npcs: [{ name: 'twin', notes: 'old npc' }],
+  });
+  assert.equal(lib.creatures.length, 1);
+  assert.equal(lib.creatures[0].notes, 'old npc', 'the last entry with the key wins');
+});
+
+test('normalizeLibrary repairs hit points and gear it cannot use', () => {
+  const lib = normalizeLibrary({
+    creatures: [
       { name: 'Cooper' },
       { name: 'Ooze', maxHP: 'plenty', weapon: null, armor: null },
       { name: 'Dregs', maxHP: -4, weapon: 'club' },
       { name: 'Sturdy', maxHP: '9.7' },
+      { name: 'Brute', level: 2, tier: 'mob' },
     ],
   });
-  const [cooper, ooze, dregs, sturdy] = lib.npcs;
-  assert.equal('maxHP' in cooper, false, 'an absent maximum defaults at creation');
-  assert.equal('weapon' in cooper, false);
-  assert.equal('maxHP' in ooze, false, 'text is not a maximum');
+  const [cooper, ooze, dregs, sturdy, brute] = lib.creatures;
+  assert.equal(cooper.maxHP, 4, 'an absent maximum takes the commoner default');
+  assert.equal(cooper.weapon, null, 'absent gear on an unleveled entry reads as none');
+  assert.equal(cooper.armor, null);
+  assert.equal(ooze.maxHP, 4, 'text is not a maximum');
   assert.equal(ooze.weapon, null, 'a null weapon means deliberately unarmed');
   assert.equal(ooze.armor, null);
-  assert.equal('maxHP' in dregs, false, 'a non-positive maximum defaults at creation');
-  assert.equal('weapon' in dregs, false, 'non-object gear drops');
+  assert.equal(dregs.maxHP, 1, 'a negative maximum clamps to one');
+  assert.equal(dregs.weapon, null, 'non-object gear drops to none');
   assert.equal(sturdy.maxHP, 9, 'a numeric string floors to an integer');
+  assert.equal(brute.weapon?.name, 'Shortsword', 'a leveled entry takes the level default');
+  assert.equal(brute.armor?.name, 'Leather Armor');
 });
 
 test('activeWeapons excludes a weapon-typed template that carries no damage', () => {
@@ -246,13 +275,9 @@ test('normalizeLibrary keeps one entry per merge key, the last one winning', () 
       { name: 'Dagger', type: 'gear', notes: 'other type, kept' },
       { name: ' dagger ', type: 'weapon', notes: 'last' },
     ],
-    bestiary: [
+    creatures: [
       { name: 'Slime', maxHP: 5 },
       { name: 'SLIME', maxHP: 9 },
-    ],
-    npcs: [
-      { name: 'Mayor', role: 'first' },
-      { name: 'mayor', role: 'last' },
     ],
     spells: [
       { name: 'Spark', level: 1 },
@@ -264,13 +289,9 @@ test('normalizeLibrary keeps one entry per merge key, the last one winning', () 
     ['weapon:dagger', 'gear:Dagger'],
     'the surviving duplicate keeps the key position of the first',
   );
-  assert.equal(lib.bestiary.length, 1);
-  assert.equal(lib.bestiary[0].maxHP, 9);
-  assert.equal(lib.bestiary[0].id, 'slime', 'the dropped duplicate claims no slug');
-  assert.deepEqual(
-    lib.npcs.map((n) => n.role),
-    ['last'],
-  );
+  assert.equal(lib.creatures.length, 1);
+  assert.equal(lib.creatures[0].maxHP, 9);
+  assert.equal(lib.creatures[0].id, 'slime', 'the dropped duplicate claims no slug');
   assert.equal(lib.spells.length, 1);
   assert.equal(lib.spells[0].level, 3);
   assert.equal(lib.spells[0].id, 'spark');
@@ -283,39 +304,49 @@ test('normalizeLibrary drops invalid entries and repairs the valid ones', () => 
       { name: 'No Type' },
       { type: 'gear' },
     ],
-    bestiary: [
-      { name: 'Slime', maxHP: -3, level: 0, tier: 'boss', statBlock: { STR: 4, Speed: 20 } },
+    creatures: [
+      {
+        name: 'Slime',
+        disposition: 'imperious',
+        maxHP: -3,
+        level: 0,
+        tier: 'boss',
+        stats: { STR: 4, Speed: 20 },
+      },
+      { role: 'nameless' },
     ],
-    npcs: [{ name: 'Mayor', disposition: 'imperious' }, { role: 'nameless' }],
   });
   assert.equal(lib.equipment.length, 1);
   assert.equal(lib.equipment[0].name, 'Flame Blade');
-  assert.equal(lib.bestiary.length, 1);
-  const slime = lib.bestiary[0];
+  assert.equal(lib.creatures.length, 1, 'a nameless entry drops');
+  const slime = lib.creatures[0];
   assert.equal(slime.id, 'slime');
+  assert.equal(slime.disposition, 'neutral', 'an unknown disposition reads as neutral');
   assert.equal(slime.maxHP, 1);
-  assert.equal(slime.level, 1);
+  assert.equal(slime.level, 1, 'a zero level parses but clamps to one');
   assert.equal(slime.tier, 'mob');
-  assert.equal(slime.statBlock.STR, 4);
-  assert.equal(slime.statBlock.AC, 10, 'stat block closes over the fixed stat set');
-  assert.equal('Speed' in slime.statBlock, false);
-  assert.deepEqual(lib.npcs, [
-    { name: 'Mayor', role: '', disposition: 'neutral', notes: '', stats: {} },
-  ]);
+  assert.equal(slime.stats.STR, 4);
+  assert.equal(slime.stats.AC, 10, 'stat block closes over the fixed stat set');
+  assert.equal('Speed' in slime.stats, false);
 });
 
-test('normalizeLibrary keeps explicit null gear (deliberately unarmed) but not absent gear', () => {
+test('normalizeLibrary keeps explicit null gear and resolves absent gear by level', () => {
   const lib = normalizeLibrary({
-    bestiary: [
-      { name: 'Ooze', weapon: null, armor: null },
-      { name: 'Guard' },
+    creatures: [
+      { name: 'Ooze', level: 1, weapon: null, armor: null },
+      { name: 'Guard', level: 6, tier: 'mob' },
       { name: 'Broken', weapon: 'sword' },
     ],
   });
-  assert.equal(lib.bestiary[0].weapon, null);
-  assert.equal(lib.bestiary[0].armor, null);
-  assert.equal('weapon' in lib.bestiary[1], false);
-  assert.equal('weapon' in lib.bestiary[2], false, 'non-object gear drops');
+  assert.equal(lib.creatures[0].weapon, null, 'null gear survives on a leveled entry');
+  assert.equal(lib.creatures[0].armor, null);
+  assert.equal(lib.creatures[1].weapon?.name, 'Longsword', 'a level-6 mob takes the high loadout');
+  assert.equal(lib.creatures[1].armor?.name, 'Chain Shirt');
+  assert.equal(
+    lib.creatures[2].weapon,
+    null,
+    'non-object gear on an unleveled entry drops to none',
+  );
 });
 
 test('the active registry merges customs into every getter', () => {
@@ -331,8 +362,20 @@ test('the active registry merges customs into every getter', () => {
       // ...and adds a new armor.
       { name: 'Dragonhide', type: 'armor', armorWeight: 'medium', baseAC: 15 },
     ],
-    bestiary: [{ ...DEFAULT_BESTIARY[0], name: 'Hobgoblin', id: 'hobgoblin' }],
-    npcs: [{ name: 'Innkeeper', role: 'Spy', disposition: 'hostile', notes: '', stats: {} }],
+    creatures: [
+      { ...DEFAULT_CREATURES[0], name: 'Hobgoblin', id: 'hobgoblin' },
+      {
+        id: 'innkeeper',
+        name: 'Innkeeper',
+        role: 'Spy',
+        disposition: 'hostile',
+        notes: '',
+        maxHP: 4,
+        stats: {},
+        weapon: null,
+        armor: null,
+      },
+    ],
   });
   try {
     const longsword = activeWeapons().find((w) => w.name === 'Longsword');
@@ -348,15 +391,15 @@ test('the active registry merges customs into every getter', () => {
       'defaults stay offered',
     );
     assert.ok(activeEquipment('armor').some((e) => e.name === 'Dragonhide'));
-    assert.ok(activeBestiary().some((t) => t.name === 'Hobgoblin'));
+    assert.ok(activeCreatures().some((t) => t.name === 'Hobgoblin'));
     assert.ok(
-      activeBestiary().some((t) => t.name === 'Goblin'),
-      'built-in bestiary stays',
+      activeCreatures().some((t) => t.name === 'Goblin'),
+      'built-in creatures stay',
     );
-    const innkeeper = activeNPCEntries().find((e) => e.entry.name === 'Innkeeper');
+    const innkeeper = activeCreatureEntries().find((e) => e.entry.name === 'Innkeeper');
     assert.equal(innkeeper?.source, 'override');
     assert.equal(innkeeper?.entry.role, 'Spy');
-    assert.equal(activeNPCEntries().length, DEFAULT_NPC_TEMPLATES.length);
+    assert.equal(activeCreatureEntries().length, DEFAULT_CREATURES.length + 1);
   } finally {
     setActiveLibrary(emptyLibrary());
   }
@@ -561,9 +604,9 @@ test('normalizeLibrary keeps a spell entry that states every descriptive field',
 
 test('normalizeLibrary carries a caster class that states nothing else', () => {
   const lib = normalizeLibrary({
-    npcs: [{ name: 'Hedge Witch', class: 'druid', casterLevel: 'later' }],
+    creatures: [{ name: 'Hedge Witch', class: 'druid', casterLevel: 'later' }],
   });
-  const witch = lib.npcs[0];
+  const witch = lib.creatures[0];
   assert.equal(witch.class, 'druid');
   assert.equal('subclass' in witch, false);
   assert.equal('casterLevel' in witch, false, 'an unusable level is left for a default to fill');
@@ -637,9 +680,10 @@ test('normalizeLibrary repairs attack/heal effects, save conditions, and scaling
 
 test('normalizeLibrary carries caster fields (subclass, level, spellbook) onto a template', () => {
   const lib = normalizeLibrary({
-    bestiary: [
+    creatures: [
       {
         name: 'Cult Priest',
+        disposition: 'hostile',
         class: 'cleric',
         subclass: 'death',
         casterLevel: 5,
@@ -647,7 +691,7 @@ test('normalizeLibrary carries caster fields (subclass, level, spellbook) onto a
       },
     ],
   });
-  const priest = lib.bestiary[0];
+  const priest = lib.creatures[0];
   assert.equal(priest.class, 'cleric');
   assert.equal(priest.subclass, 'death');
   assert.equal(priest.casterLevel, 5);
@@ -720,18 +764,13 @@ test('getActiveLibrary reflects the library last set, empty by default', () => {
 test('with no customizations the active getters return the pure defaults', () => {
   setActiveLibrary(emptyLibrary());
   assert.equal(activeEquipment().length, defaultEquipmentTemplates().length);
-  assert.equal(activeBestiary().length, DEFAULT_BESTIARY.length);
+  assert.equal(activeCreatures().length, DEFAULT_CREATURES.length);
   assert.equal(activeEnemyArmor('Nonesuch'), null);
   assert.deepEqual(activeEnemyArmor('Leather Armor'), { name: 'Leather Armor', acBonus: 1 });
 });
 
 test('the built-in catalogs are frozen, so a consumer cannot edit shared data', () => {
-  for (const catalog of [
-    defaultEquipmentTemplates(),
-    DEFAULT_BESTIARY,
-    DEFAULT_NPC_TEMPLATES,
-    DEFAULT_SPELLS,
-  ]) {
+  for (const catalog of [defaultEquipmentTemplates(), DEFAULT_CREATURES, DEFAULT_SPELLS]) {
     assert.ok(Object.isFrozen(catalog), 'the list itself');
     assert.ok(Object.isFrozen(catalog[0]), 'and its entries');
   }
@@ -755,8 +794,7 @@ test('the active getters memoize their merged lists until the library changes', 
     assert.equal(activeEquipmentEntries(), activeEquipmentEntries());
     assert.equal(activeWeapons(), activeWeapons());
     assert.equal(activeArmors(), activeArmors());
-    assert.equal(activeBestiaryEntries(), activeBestiaryEntries());
-    assert.equal(activeNPCEntries(), activeNPCEntries());
+    assert.equal(activeCreatureEntries(), activeCreatureEntries());
 
     const before = activeEquipmentEntries();
     const beforeWeapons = activeWeapons();

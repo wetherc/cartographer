@@ -393,7 +393,7 @@ cannot diff against a save that another tab replaced.
 
 ## The custom library's own store
 
-The GM's custom library (equipment, bestiary, and NPC template overrides)
+The GM's custom library (equipment, creature, and spell overrides)
 persists separately in `storage/LibraryStore.js`, under its own localStorage
 key (`campaign-builder:library`). As a result, New, Import, and Load example
 never touch it.
@@ -405,7 +405,10 @@ and `fetchLibraryFile` seeds an empty browser from
 an empty library, so the startup fetch never asks for a missing file. A
 GM's export overwrites this file, and everything else under `library/` is
 gitignored. `normalizeLibrary` (in `library/Library.js`) makes every load
-tolerant, and it drops invalid entries instead of throwing an error.
+tolerant, and it drops invalid entries instead of throwing an error. The
+library file carries no version field. A file written before the creature
+merge holds `bestiary` and `npcs` lists, and `normalizeLibrary` reads both
+into the one `creatures` list on the way in.
 
 ## File IO
 

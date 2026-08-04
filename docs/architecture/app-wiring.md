@@ -298,7 +298,7 @@ post-write refresh through these functions. They must not rewrite the
 character and creature cascade.
 
 The authoring forms share their fields the same way. An entity the GM can
-author in two places (a campaign encounter in a dialog, a bestiary template
+author in two places (a campaign creature in a dialog, a creature template
 in the Library rail) describes its fields once as a `ModalField[]`:
 
 - `encounterFields.js` holds the encounter's fields, the live behavior
@@ -352,9 +352,13 @@ The helper owns the rest:
 
 ### libraryWiring.js
 
-This module owns the Library mode's four template lists (equipment,
-bestiary, NPCs, spells) and the custom-library file controls: export,
-import, reset, and the startup auto-load.
+This module owns the Library mode's three template lists (equipment,
+creatures, spells) and the custom-library file controls: export,
+import, reset, and the startup auto-load. The creature list shows two
+subtabs. Foes holds the hostile templates, and People holds the rest. An
+edit that changes a template's disposition moves it to the other subtab.
+"Add to campaign" opens the matching campaign dialog: the foe dialog for a
+hostile template, and the NPC dialog for the rest.
 
 The custom library is deliberately not campaign state. It belongs to the
 GM, not to any one campaign. `library/Library.js` holds the built-in
@@ -367,10 +371,10 @@ the wiring that loads customizations.
 
 Inside the wiring, every list's remove flow goes through one
 `makeRemoveHandler(noun, apply)`, so the revert-override-vs-delete-custom
-confirm wording lives there alone. The name-keyed lists (bestiary, spells)
+confirm wording lives there alone. The name-keyed lists (creatures, spells)
 store edits through one `makeKeyedStore`, which owns id derivation and makes
-a rename retire the old key. A fifth library kind, such as a feat catalog,
-must reuse both, rather than paste a fourth copy.
+a rename retire the old key. A fourth library kind, such as a feat catalog,
+must reuse both, rather than paste another copy.
 
 ### sessionControls.js
 

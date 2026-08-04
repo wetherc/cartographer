@@ -330,8 +330,8 @@ character carries.
 
 ## Curate the library
 
-Switch to **Library** mode. It has Equipment, Bestiary, NPCs, and Spells
-tabs.
+Switch to **Library** mode. It has Equipment, Creatures, and Spells tabs.
+The Creatures tab splits into Foes and People subtabs by disposition.
 
 ![Library mode: the Equipment tab with its category subtabs and a customized override](images/library-mode.png)
 

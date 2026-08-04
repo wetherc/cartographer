@@ -44,8 +44,7 @@ test('loadCustomLibrary normalizes a hand-edited entry instead of trusting it', 
   );
   const library = loadCustomLibrary();
   assert.deepEqual(library.equipment, [{ name: 'Rope', type: 'gear' }]);
-  assert.deepEqual(library.bestiary, []);
-  assert.deepEqual(library.npcs, []);
+  assert.deepEqual(library.creatures, []);
 });
 
 test('saveCustomLibrary reports a failed write instead of throwing', () => {
@@ -68,8 +67,7 @@ test('fetchLibraryFile returns the normalized library on a good response', async
   });
   assert.deepEqual(await fetchLibraryFile(), {
     equipment: [{ name: 'Rope', type: 'gear' }],
-    bestiary: [],
-    npcs: [],
+    creatures: [],
     spells: [],
   });
 });

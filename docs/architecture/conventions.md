@@ -185,11 +185,11 @@ feat catalog) must hang off the same cache-and-invalidate point, rather than
 re-merge data for each call.
 
 Callers must treat the returned arrays as read-only, because the code shares
-them. The four built-in catalogs behind them (`defaultEquipmentTemplates()`,
-`DEFAULT_BESTIARY`, `DEFAULT_NPC_TEMPLATES`, `DEFAULT_SPELLS`) are
+them. The three built-in catalogs behind them (`defaultEquipmentTemplates()`,
+`DEFAULT_CREATURES`, `DEFAULT_SPELLS`) are
 `deepFreeze`d (`src/util/deepFreeze.js`). As a result, the code enforces this
 contract, instead of only documenting it. A path that copies library data into campaign
-state instead must say so. `Encounter.fromTemplate`, `Library.activeEnemyArmor`,
+state instead must say so. `Creature.fromTemplate`, `Library.activeEnemyArmor`,
 `EquipmentPresets.copyEnemyWeapon`, and `Character.copySpellbook` exist for
 this reason.
 

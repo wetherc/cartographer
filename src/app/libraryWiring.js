@@ -4,8 +4,7 @@ import { wireTabs } from '../ui/Tabs.js';
 import { mountLibraryPanel } from '../ui/LibraryPanel.js';
 import { buildItemForm } from '../ui/ItemForm.js';
 import { buildSpellForm } from '../ui/SpellForm.js';
-import { buildEncounterTemplateForm } from '../ui/EncounterTemplateForm.js';
-import { buildNPCTemplateForm } from '../ui/NPCTemplateForm.js';
+import { buildCreatureTemplateForm } from '../ui/CreatureTemplateForm.js';
 import {
   emptyLibrary,
   isLibraryEmpty,
@@ -13,13 +12,12 @@ import {
   equipmentKey,
   nameKey,
   activeEquipmentEntries,
-  activeBestiaryEntries,
-  activeNPCEntries,
+  activeCreatureEntries,
   activeSpellEntries,
   upsertEntry,
   removeEntry,
   storedEntryId,
-  DEFAULT_BESTIARY,
+  DEFAULT_CREATURES,
 } from '../library/Library.js';
 import {
   loadCustomLibrary,
@@ -33,12 +31,12 @@ import {
 import { DEFAULT_SPELLS } from '../data/spells.js';
 import { itemSummary, formatDamage } from '../entities/Equipment.js';
 import { npcForm } from './npcForm.js';
+import { encounterForm } from './encounterForm.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
-/** @typedef {import('../types/library.js').NPCTemplate} NPCTemplate */
-/** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
+/** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
 /** @typedef {import('../types/spell.js').Spell} Spell */
 
 /** Build the one-line summary for a spell in the library row.
@@ -76,9 +74,35 @@ const EQUIPMENT_SUBTABS = [
   { id: 'gear', label: 'Gear', types: ['gear'] },
 ];
 
+/** The subtabs for the creature list. Foes are the hostile templates, and
+ * People are the rest. An edit that changes the disposition moves the entry
+ * to the other subtab. */
+const CREATURE_SUBTABS = [
+  { id: 'foes', label: 'Foes' },
+  { id: 'people', label: 'People' },
+];
+
+/** The one-line summary for a creature row. A foe leads with its combat
+ * numbers, and everyone else with who they are.
+ * @param {CreatureTemplate} entry
+ * @returns {string} */
+function creatureSummary(entry) {
+  if (entry.disposition === 'hostile') {
+    return [
+      entry.level != null
+        ? `${entry.maxHP} HP, level ${entry.level} ${entry.tier}`
+        : `${entry.maxHP} HP`,
+      entry.weapon ? `${entry.weapon.name} ${formatDamage(entry.weapon.damage)}` : '',
+    ]
+      .filter(Boolean)
+      .join(' | ');
+  }
+  return [entry.role, entry.disposition].filter(Boolean).join(' | ');
+}
+
 /**
  * Build the rail for the Library mode. It shows the merged built-in and
- * custom lists for equipment, bestiary, NPC templates, and spells, plus
+ * custom lists for equipment, creatures, and spells, plus
  * export, import, and reset controls for the custom library.
  * The custom library is not campaign state, by design. It persists in its
  * own key in localStorage, survives New, Import, and Load Example, and it
@@ -97,20 +121,19 @@ export function wireLibrary(app) {
   const hadStored = stored !== null;
 
   /**
-   * Refresh all four lists after a library change, and refresh the character
+   * Refresh all three lists after a library change, and refresh the character
    * panels too. The spellbook shows the catalog spells, so an edited or
    * removed entry must reach it as well.
    * Every caller is a user action or the promise callback for the file seed.
    * Both run after all wiring completes, so the party action is registered
-   * and the four panel constants below are already assigned.
+   * and the three panel constants below are already assigned.
    * Do not call this function during wiring. The panels are mounted after
    * this function is defined, so an early call throws an error instead of
    * skipping a refresh.
    */
   const refresh = () => {
     equipmentPanel.update();
-    bestiaryPanel.update();
-    npcPanel.update();
+    creaturePanel.update();
     spellPanel.update();
     app.actions.refreshSelectedCharacter();
   };
@@ -154,7 +177,7 @@ export function wireLibrary(app) {
   };
 
   /**
-   * Store an edited name-keyed entry (a bestiary template or a spell) under
+   * Store an edited name-keyed entry (a creature template or a spell) under
    * its key, which can change on rename.
    * A rename removes the old custom entry instead of leaving both entries in
    * place. An edit to a built-in entry stores a custom override.
@@ -167,7 +190,7 @@ export function wireLibrary(app) {
    * merged list. An overridden default hides its own id, but that id returns
    * when the override is renamed or removed. A new id that reuses it makes
    * one of the two entries unreachable through the last-wins id index.
-   * @param {'bestiary' | 'spells'} list which custom-library list to write
+   * @param {'creatures' | 'spells'} list which custom-library list to write
    * @param {() => { entry: { id: string, name: string }, source: import('../types/library.js').LibrarySource }[]} activeEntries
    * @param {{ id: string }[]} defaults the list's built-in entries
    * @returns {(key: string | null, fields: { name: string }) => void}
@@ -268,89 +291,54 @@ export function wireLibrary(app) {
     ),
   });
 
-  // --- Bestiary ------------------------------------------------------------
+  // --- Creatures -------------------------------------------------------------
 
-  const storeBestiary = makeKeyedStore('bestiary', activeBestiaryEntries, DEFAULT_BESTIARY);
+  const storeCreature = makeKeyedStore('creatures', activeCreatureEntries, DEFAULT_CREATURES);
 
-  const bestiaryPanel = mountLibraryPanel(mustGetElement('library-bestiary-container'), {
-    addLabel: 'New enemy',
-    getEntries: () =>
-      activeBestiaryEntries().map(({ entry, source }) => ({
-        key: nameKey(entry),
-        name: entry.name,
-        summary: [
-          `${entry.maxHP} HP, level ${entry.level} ${entry.tier}`,
-          entry.weapon ? `${entry.weapon.name} ${formatDamage(entry.weapon.damage)}` : '',
-        ]
-          .filter(Boolean)
-          .join(' | '),
-        source,
-      })),
-    // The full bestiary form appears inline in the rail. Editing a built-in
-    // default stores the result as an override. A new name creates a new
-    // custom entry.
-    buildEditor: (key, close) => {
+  const creaturePanel = mountLibraryPanel(mustGetElement('library-creatures-container'), {
+    addLabel: 'New creature',
+    subtabs: CREATURE_SUBTABS,
+    getEntries: (subtab) =>
+      activeCreatureEntries()
+        .filter(({ entry }) => (entry.disposition === 'hostile') === (subtab === 'foes'))
+        .map(({ entry, source }) => ({
+          key: nameKey(entry),
+          name: entry.name,
+          summary: creatureSummary(entry),
+          source,
+        })),
+    // The full creature form appears inline in the rail. The subtab picks
+    // the field spec for a new entry, and an existing entry's disposition
+    // picks it on edit. Editing a built-in default stores the result as an
+    // override. A new name creates a new custom entry.
+    buildEditor: (key, close, subtab) => {
       const found = key
-        ? activeBestiaryEntries().find(({ entry }) => nameKey(entry) === key)
+        ? activeCreatureEntries().find(({ entry }) => nameKey(entry) === key)
         : null;
-      return buildEncounterTemplateForm({
+      return buildCreatureTemplateForm({
         template: found?.entry ?? null,
+        hostile: found ? found.entry.disposition === 'hostile' : subtab === 'foes',
         submitLabel: found ? 'Save' : 'Add',
         onCancel: close,
         onSubmit: (fields) => {
-          storeBestiary(key, fields);
+          storeCreature(key, fields);
           close();
         },
       });
     },
-    onRemove: makeRemoveHandler('enemy', (key) =>
-      setCustom({ ...custom, bestiary: removeEntry(custom.bestiary, key, nameKey) }),
+    onRemove: makeRemoveHandler('creature', (key) =>
+      setCustom({ ...custom, creatures: removeEntry(custom.creatures, key, nameKey) }),
     ),
-  });
-
-  // --- NPC templates ---------------------------------------------------------
-
-  /** Store an edited NPC template under its key, which can change on rename.
-   * @param {string | null} key @param {NPCTemplate} template */
-  const storeNPCTemplate = (key, template) => {
-    let next = custom.npcs;
-    if (key && key !== nameKey(template)) next = removeEntry(next, key, nameKey);
-    setCustom({ ...custom, npcs: upsertEntry(next, template, nameKey) });
-  };
-
-  const npcPanel = mountLibraryPanel(mustGetElement('library-npcs-container'), {
-    addLabel: 'New NPC template',
-    getEntries: () =>
-      activeNPCEntries().map(({ entry, source }) => ({
-        key: nameKey(entry),
-        name: entry.name,
-        summary: [entry.role, entry.disposition].filter(Boolean).join(' — '),
-        source,
-      })),
-    // The full NPC template form appears inline in the rail, like the item form.
-    buildEditor: (key, close) => {
-      const found = key ? activeNPCEntries().find(({ entry }) => nameKey(entry) === key) : null;
-      return buildNPCTemplateForm({
-        template: found?.entry ?? null,
-        submitLabel: found ? 'Save' : 'Add',
-        onCancel: close,
-        onSubmit: (template) => {
-          storeNPCTemplate(key, template);
-          close();
-        },
-      });
-    },
-    onRemove: makeRemoveHandler('NPC template', (key) =>
-      setCustom({ ...custom, npcs: removeEntry(custom.npcs, key, nameKey) }),
-    ),
-    // Spawn a campaign NPC from a template. The normal NPC dialog opens
-    // pre-filled from the template, with placement set to the party
-    // position by default.
+    // Spawn a campaign creature from a template. The matching campaign
+    // dialog opens pre-filled from the template, with placement set to the
+    // party position by default.
     spawnLabel: 'Add to campaign',
     onSpawn: (key) => {
-      const found = activeNPCEntries().find(({ entry }) => nameKey(entry) === key);
+      const found = activeCreatureEntries().find(({ entry }) => nameKey(entry) === key);
       if (!found) return;
-      npcForm(app, null, { ...app.partyTracker.getPosition() }, found.entry);
+      const position = { ...app.partyTracker.getPosition() };
+      if (found.entry.disposition === 'hostile') encounterForm(app, null, position, found.entry);
+      else npcForm(app, null, position, found.entry);
     },
   });
 
@@ -418,7 +406,7 @@ export function wireLibrary(app) {
     }
     setCustom(imported);
     app.toasts.show(
-      `Library loaded: ${imported.equipment.length} equipment, ${imported.bestiary.length} bestiary, ${imported.npcs.length} NPC, ${imported.spells.length} spell entries.`,
+      `Library loaded: ${imported.equipment.length} equipment, ${imported.creatures.length} creature, ${imported.spells.length} spell entries.`,
     );
   });
 

@@ -25,17 +25,16 @@ import {
   CONSUMABLE_PRESETS,
 } from '../entities/EquipmentPresets.js';
 import { normalizeStatBlock } from '../entities/Modifiers.js';
-import { DISPOSITIONS } from '../entities/Creature.js';
+import { DEFAULT_CREATURE_HP, DISPOSITIONS, defaultEnemyGear } from '../entities/Creature.js';
 import { isCasterClass } from '../entities/Classes.js';
 import { slugId } from '../entities/Roster.js';
 import { indexById } from '../util/indexById.js';
 import { deepFreeze } from '../util/deepFreeze.js';
 
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
-/** @typedef {import('../types/library.js').NPCTemplate} NPCTemplate */
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
 /** @typedef {import('../types/library.js').LibrarySource} LibrarySource */
-/** @typedef {import('../types/entities.js').EncounterTemplate} EncounterTemplate */
+/** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 
@@ -79,17 +78,19 @@ export function defaultEquipmentTemplates() {
 }
 
 /**
- * The application's built-in bestiary. A small set of 5e stock enemies makes
- * "From bestiary" work by default. The effective AC is the stat block's AC
- * plus the armor's bonus, the same rule that effectiveStatBlock uses.
- * @type {EncounterTemplate[]}
+ * The application's built-in creatures. The hostile entries are a small set
+ * of 5e stock enemies, and the rest are stock townsfolk that a GM can place
+ * without typing stats. The effective AC is the stat block's AC plus the
+ * armor's bonus, the same rule that effectiveStatBlock uses.
+ * @type {CreatureTemplate[]}
  */
-export const DEFAULT_BESTIARY = deepFreeze([
+export const DEFAULT_CREATURES = deepFreeze([
   {
     id: 'goblin',
     name: 'Goblin',
+    disposition: 'hostile',
     maxHP: 7,
-    statBlock: { STR: 8, DEX: 14, CON: 10, INT: 10, WIS: 8, CHA: 8, AC: 14 },
+    stats: { STR: 8, DEX: 14, CON: 10, INT: 10, WIS: 8, CHA: 8, AC: 14 },
     level: 1,
     tier: 'mob',
     weapon: {
@@ -102,8 +103,9 @@ export const DEFAULT_BESTIARY = deepFreeze([
   {
     id: 'wolf',
     name: 'Wolf',
+    disposition: 'hostile',
     maxHP: 11,
-    statBlock: { STR: 12, DEX: 15, CON: 12, INT: 3, WIS: 12, CHA: 6, AC: 13 },
+    stats: { STR: 12, DEX: 15, CON: 12, INT: 3, WIS: 12, CHA: 6, AC: 13 },
     level: 1,
     tier: 'mob',
     weapon: {
@@ -116,8 +118,9 @@ export const DEFAULT_BESTIARY = deepFreeze([
   {
     id: 'bandit',
     name: 'Bandit',
+    disposition: 'hostile',
     maxHP: 11,
-    statBlock: { STR: 11, DEX: 12, CON: 12, INT: 10, WIS: 10, CHA: 10, AC: 11 },
+    stats: { STR: 11, DEX: 12, CON: 12, INT: 10, WIS: 10, CHA: 10, AC: 11 },
     level: 1,
     tier: 'mob',
     weapon: {
@@ -130,8 +133,9 @@ export const DEFAULT_BESTIARY = deepFreeze([
   {
     id: 'skeleton',
     name: 'Skeleton',
+    disposition: 'hostile',
     maxHP: 13,
-    statBlock: { STR: 10, DEX: 14, CON: 15, INT: 6, WIS: 8, CHA: 5, AC: 12 },
+    stats: { STR: 10, DEX: 14, CON: 15, INT: 6, WIS: 8, CHA: 5, AC: 12 },
     level: 1,
     tier: 'mob',
     weapon: {
@@ -144,8 +148,9 @@ export const DEFAULT_BESTIARY = deepFreeze([
   {
     id: 'orc',
     name: 'Orc',
+    disposition: 'hostile',
     maxHP: 15,
-    statBlock: { STR: 16, DEX: 12, CON: 16, INT: 7, WIS: 11, CHA: 10, AC: 11 },
+    stats: { STR: 16, DEX: 12, CON: 16, INT: 7, WIS: 11, CHA: 10, AC: 11 },
     level: 2,
     tier: 'mob',
     weapon: {
@@ -158,8 +163,9 @@ export const DEFAULT_BESTIARY = deepFreeze([
   {
     id: 'ogre',
     name: 'Ogre',
+    disposition: 'hostile',
     maxHP: 59,
-    statBlock: { STR: 19, DEX: 8, CON: 16, INT: 5, WIS: 7, CHA: 7, AC: 9 },
+    stats: { STR: 19, DEX: 8, CON: 16, INT: 5, WIS: 7, CHA: 7, AC: 9 },
     level: 4,
     tier: 'legend',
     weapon: {
@@ -169,54 +175,66 @@ export const DEFAULT_BESTIARY = deepFreeze([
     },
     armor: { name: 'Hide', acBonus: 2 },
   },
-]);
-
-/**
- * The application's built-in NPC archetypes. These stock townsfolk let a GM
- * place a recognizable NPC on the map without typing stats.
- * @type {NPCTemplate[]}
- */
-export const DEFAULT_NPC_TEMPLATES = deepFreeze([
   {
+    id: 'innkeeper',
     name: 'Innkeeper',
+    disposition: 'friendly',
     role: 'Innkeeper',
-    disposition: 'friendly',
     notes: 'Keeps the local inn and hears every rumor worth a mug of ale.',
-    stats: { STR: 10, DEX: 10, CON: 11, INT: 10, WIS: 11, CHA: 12 },
+    maxHP: 4,
+    stats: { STR: 10, DEX: 10, CON: 11, INT: 10, WIS: 11, CHA: 12, AC: 10 },
+    weapon: null,
+    armor: null,
   },
   {
+    id: 'town-guard',
     name: 'Town Guard',
-    role: 'Guard',
     disposition: 'neutral',
+    role: 'Guard',
     notes: 'Watches the gate and asks pointed questions after dark.',
-    stats: { STR: 13, DEX: 11, CON: 12, INT: 10, WIS: 10, CHA: 10 },
+    maxHP: 4,
+    stats: { STR: 13, DEX: 11, CON: 12, INT: 10, WIS: 10, CHA: 10, AC: 10 },
+    weapon: null,
+    armor: null,
   },
   {
+    id: 'traveling-merchant',
     name: 'Traveling Merchant',
+    disposition: 'friendly',
     role: 'Merchant',
-    disposition: 'friendly',
     notes: "Buys and sells oddities; prices drift with the buyer's desperation.",
-    stats: { STR: 9, DEX: 10, CON: 10, INT: 12, WIS: 11, CHA: 13 },
+    maxHP: 4,
+    stats: { STR: 9, DEX: 10, CON: 10, INT: 12, WIS: 11, CHA: 13, AC: 10 },
+    weapon: null,
+    armor: null,
   },
   {
+    id: 'village-elder',
     name: 'Village Elder',
-    role: 'Elder',
     disposition: 'friendly',
+    role: 'Elder',
     notes: "Holds the settlement's history and the favors owed within it.",
-    stats: { STR: 8, DEX: 8, CON: 10, INT: 12, WIS: 14, CHA: 11 },
+    maxHP: 4,
+    stats: { STR: 8, DEX: 8, CON: 10, INT: 12, WIS: 14, CHA: 11, AC: 9 },
+    weapon: null,
+    armor: null,
   },
   {
+    id: 'cult-initiate',
     name: 'Cult Initiate',
-    role: 'Cultist',
     disposition: 'hostile',
+    role: 'Cultist',
     notes: 'Serves a hidden master and carries a sign of the order.',
-    stats: { STR: 11, DEX: 12, CON: 10, INT: 10, WIS: 8, CHA: 11 },
+    maxHP: 4,
+    stats: { STR: 11, DEX: 12, CON: 10, INT: 10, WIS: 8, CHA: 11, AC: 11 },
+    weapon: null,
+    armor: null,
   },
 ]);
 
 /** @returns {CustomLibrary} A library with no customizations. */
 export function emptyLibrary() {
-  return { equipment: [], bestiary: [], npcs: [], spells: [] };
+  return { equipment: [], creatures: [], spells: [] };
 }
 
 /** True when a custom library has no entries in any list.
@@ -224,10 +242,7 @@ export function emptyLibrary() {
  * @returns {boolean} */
 export function isLibraryEmpty(library) {
   return (
-    library.equipment.length === 0 &&
-    library.bestiary.length === 0 &&
-    library.npcs.length === 0 &&
-    library.spells.length === 0
+    library.equipment.length === 0 && library.creatures.length === 0 && library.spells.length === 0
   );
 }
 
@@ -239,7 +254,7 @@ export function isLibraryEmpty(library) {
  * @returns {string} */
 export const equipmentKey = (entry) => `${entry.type}:${entry.name.trim().toLowerCase()}`;
 
-/** The merge key for bestiary, NPC, and spell templates. The key is the
+/** The merge key for creature and spell templates. The key is the
  * name, case-insensitive.
  * @param {{ name: string }} entry
  * @returns {string} */
@@ -490,7 +505,7 @@ function normalizeSpellbook(raw) {
 }
 
 /**
- * The caster fields to copy onto a bestiary or NPC template from parsed
+ * The caster fields to copy onto a creature template from parsed
  * JSON: the class, an optional caster level, and a repaired spellbook. The
  * function adds these fields only when the class is a real caster class, so
  * a non-caster template stays clean. It returns an object to spread into the
@@ -533,11 +548,13 @@ function dedupeByKey(entries, keyOf) {
  * hand-edited file, or invalid data) into a valid CustomLibrary. This
  * function drops entries that are missing essential fields, instead of
  * throwing an error.
- * Bestiary templates get an id (built from the name when absent), a positive
- * max HP, and a stat block over the fixed stat set. NPC templates get every
- * field defaulted, and an unknown disposition reads as neutral. Spells get
- * an id, defaulted descriptive fields, and a repaired effect (see
- * normalizeSpell).
+ * Creature templates get an id (built from the name when absent), a
+ * validated disposition, a positive max HP, a stat block over the fixed
+ * stat set, and explicit gear. A file written before the creature merge
+ * carries `bestiary` and `npcs` lists instead. Those entries read into the
+ * same pool: a bestiary entry defaults to hostile, and a `statBlock` field
+ * reads as `stats`. Spells get an id, defaulted descriptive fields, and a
+ * repaired effect (see normalizeSpell).
  * Each list is also deduped by its merge key, so no reader downstream sees
  * two entries competing for one key.
  * @param {unknown} parsed
@@ -565,54 +582,48 @@ export function normalizeLibrary(parsed) {
 
   // The name-keyed lists dedupe before id derivation, not after. This way a
   // dropped duplicate never claims a slug that the surviving entry can use.
+  // The pool merges the current list with the two pre-merge lists, and the
+  // dedupe runs across all three, so an old file that named one creature in
+  // both lists keeps one entry.
   /** @type {string[]} */
-  const bestiaryIds = [];
-  const bestiary = dedupeByKey(
-    arrayOf(source.bestiary).filter((e) => typeof e.name === 'string' && e.name.trim()),
+  const creatureIds = [];
+  const creatures = dedupeByKey(
+    [
+      ...arrayOf(source.creatures),
+      ...arrayOf(source.bestiary).map(
+        (e) => /** @type {Record<string, any>} */ ({ disposition: 'hostile', ...e }),
+      ),
+      ...arrayOf(source.npcs),
+    ].filter((e) => typeof e.name === 'string' && e.name.trim()),
     rawNameKey,
   ).map((e) => {
     const name = e.name.trim();
-    const id = typeof e.id === 'string' && e.id ? e.id : slugId(name, bestiaryIds);
-    bestiaryIds.push(id);
-    return /** @type {EncounterTemplate} */ ({
+    const id = typeof e.id === 'string' && e.id ? e.id : slugId(name, creatureIds);
+    creatureIds.push(id);
+    const level = Number(e.level);
+    const hasLevel = Number.isFinite(level);
+    const tier = e.tier === 'legend' ? 'legend' : 'mob';
+    const stamp = hasLevel ? defaultEnemyGear(clampInt(level, 1), tier) : null;
+    // A null value survives, for a deliberately unarmed entry. An absent or
+    // malformed value takes the level default on a leveled entry, and null
+    // on an unleveled one. That is what absence meant in each older shape.
+    /** @param {'weapon' | 'armor'} slot @returns {object | null} */
+    const gear = (slot) =>
+      e[slot] === null || (e[slot] && typeof e[slot] === 'object')
+        ? e[slot]
+        : (stamp?.[slot] ?? null);
+    const stats = e.stats ?? e.statBlock;
+    return /** @type {CreatureTemplate} */ ({
       id,
       name,
-      maxHP: clampInt(e.maxHP, 1),
-      statBlock: normalizeStatBlock(typeof e.statBlock === 'object' ? e.statBlock : {}),
-      level: clampInt(e.level, 1),
-      tier: e.tier === 'legend' ? 'legend' : 'mob',
-      // A null value survives, for a deliberately unarmed entry. An absent
-      // value stays absent, so a default can fill it in. Any non-object
-      // value drops.
-      ...(e.weapon === null || (e.weapon && typeof e.weapon === 'object')
-        ? { weapon: e.weapon }
-        : {}),
-      ...(e.armor === null || (e.armor && typeof e.armor === 'object') ? { armor: e.armor } : {}),
-      ...casterTemplateFrom(e),
-    });
-  });
-
-  const npcs = dedupeByKey(
-    arrayOf(source.npcs).filter((e) => typeof e.name === 'string' && e.name.trim()),
-    rawNameKey,
-  ).map((e) => {
-    // Hit points are optional on an NPC template. A positive number is kept,
-    // and anything else stays absent, so `createNPC` fills in the commoner
-    // default.
-    const maxHP = Math.floor(Number(e.maxHP));
-    return /** @type {NPCTemplate} */ ({
-      name: e.name.trim(),
-      role: typeof e.role === 'string' ? e.role : '',
       disposition: DISPOSITIONS.includes(e.disposition) ? e.disposition : 'neutral',
-      notes: typeof e.notes === 'string' ? e.notes : '',
-      stats: e.stats && typeof e.stats === 'object' ? e.stats : {},
-      ...(maxHP > 0 ? { maxHP } : {}),
-      // A null weapon or armor survives, for a deliberately unarmed entry. An
-      // absent value stays absent. Any other non-object drops.
-      ...(e.weapon === null || (e.weapon && typeof e.weapon === 'object')
-        ? { weapon: e.weapon }
-        : {}),
-      ...(e.armor === null || (e.armor && typeof e.armor === 'object') ? { armor: e.armor } : {}),
+      maxHP: clampInt(e.maxHP, 1, Infinity, DEFAULT_CREATURE_HP),
+      stats: normalizeStatBlock(stats && typeof stats === 'object' ? stats : {}),
+      weapon: gear('weapon'),
+      armor: gear('armor'),
+      ...(hasLevel ? { level: clampInt(level, 1), tier } : {}),
+      ...(typeof e.role === 'string' && e.role ? { role: e.role } : {}),
+      ...(typeof e.notes === 'string' && e.notes ? { notes: e.notes } : {}),
       ...casterTemplateFrom(e),
     });
   });
@@ -628,7 +639,7 @@ export function normalizeLibrary(parsed) {
     return normalizeSpell(e, id);
   });
 
-  return { equipment, bestiary, npcs, spells };
+  return { equipment, creatures, spells };
 }
 
 /* --------------------------------------------------------------------------
@@ -656,9 +667,8 @@ let active = emptyLibrary();
  *   equipmentByType?: Map<string, EquipmentTemplate[]>,
  *   weapons?: EquipmentTemplate[],
  *   armors?: import('../types/entities.js').EnemyArmor[],
- *   bestiary?: { entry: EncounterTemplate, source: LibrarySource }[],
- *   bestiaryList?: EncounterTemplate[],
- *   npcs?: { entry: NPCTemplate, source: LibrarySource }[],
+ *   creatures?: { entry: CreatureTemplate, source: LibrarySource }[],
+ *   creatureList?: CreatureTemplate[],
  *   spells?: { entry: Spell, source: LibrarySource }[],
  *   spellList?: Spell[],
  *   spellIndex?: Map<string, Spell>,
@@ -737,23 +747,17 @@ export function activeEnemyArmor(name) {
   return found ? { ...found } : null;
 }
 
-/** The merged bestiary: built-in stock enemies plus the active
- * customizations, tagged by source.
- * @returns {{ entry: EncounterTemplate, source: LibrarySource }[]} */
-export function activeBestiaryEntries() {
-  return (cache.bestiary ??= mergedEntries(DEFAULT_BESTIARY, active.bestiary, nameKey));
+/** The merged creature templates: built-in stock enemies and townsfolk plus
+ * the active customizations, tagged by source.
+ * @returns {{ entry: CreatureTemplate, source: LibrarySource }[]} */
+export function activeCreatureEntries() {
+  return (cache.creatures ??= mergedEntries(DEFAULT_CREATURES, active.creatures, nameKey));
 }
 
-/** The merged bestiary templates, for spawn pickers.
- * @returns {EncounterTemplate[]} */
-export function activeBestiary() {
-  return (cache.bestiaryList ??= activeBestiaryEntries().map((e) => e.entry));
-}
-
-/** The merged NPC templates, tagged by source.
- * @returns {{ entry: NPCTemplate, source: LibrarySource }[]} */
-export function activeNPCEntries() {
-  return (cache.npcs ??= mergedEntries(DEFAULT_NPC_TEMPLATES, active.npcs, nameKey));
+/** The merged creature templates, for spawn pickers.
+ * @returns {CreatureTemplate[]} */
+export function activeCreatures() {
+  return (cache.creatureList ??= activeCreatureEntries().map((e) => e.entry));
 }
 
 /** The merged spell list: curated built-ins plus the active customizations,

@@ -17,7 +17,7 @@ import { buildTabs } from './Tabs.js';
  */
 
 /**
- * Mount one Library-rail list, for equipment, bestiary, or NPC templates.
+ * Mount one Library-rail list, for equipment, creatures, or spells.
  * It shows every built-in default plus the GM's overrides and additions,
  * with each row tagged by source. Editing goes through either
  * `buildEditor`, an inline form rendered in place of the list, the item
@@ -40,7 +40,7 @@ import { buildTabs } from './Tabs.js';
  *   addLabel: string,
  *   onAdd?: () => Promise<unknown>,
  *   onEdit?: (key: string) => Promise<unknown>,
- *   buildEditor?: (key: string | null, close: () => void) => HTMLElement,
+ *   buildEditor?: (key: string | null, close: () => void, subtab?: string) => HTMLElement,
  *   onRemove: (key: string, source: LibrarySource) => Promise<unknown>,
  *   onSpawn?: (key: string) => void,
  *   spawnLabel?: string,
@@ -77,7 +77,9 @@ export function mountLibraryPanel(container, callbacks) {
     if (!buildEditor) return;
     editing = true;
     chrome.hidden = true;
-    editorHost.appendChild(buildEditor(key, update));
+    // The active subtab rides along, so a panel whose subtabs hold different
+    // entry kinds can pick the right form for a new entry.
+    editorHost.appendChild(buildEditor(key, update, activeSubtab ?? undefined));
   }
 
   chrome.appendChild(

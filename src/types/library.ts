@@ -1,14 +1,5 @@
-import type {
-  ItemType,
-  WeaponHandling,
-  DamagePart,
-  ArmorWeight,
-  EncounterTemplate,
-  EnemyArmor,
-  EnemyWeapon,
-} from './entities.js';
-import type { Spellbook } from './entities.js';
-import type { Disposition } from './creature.js';
+import type { ItemType, WeaponHandling, DamagePart, ArmorWeight } from './entities.js';
+import type { CreatureTemplate } from './creature.js';
 import type { Spell } from './spell.js';
 
 /** A reusable item blueprint: an InventoryItem minus identity and stack
@@ -29,29 +20,6 @@ export interface EquipmentTemplate {
   spellFocus?: boolean;
 }
 
-/** A reusable NPC blueprint: an NPC minus identity, placement, and met
- * state. Caster fields keep a spellcasting NPC. The app rebuilds slot pools
- * from class and casterLevel when the NPC is created, so the template
- * stores none. */
-export interface NPCTemplate {
-  name: string;
-  role: string;
-  disposition: Disposition;
-  notes: string;
-  stats: Record<string, number>;
-  /** The hit points a spawned NPC starts at, full. An absent value takes the
-   * commoner default. */
-  maxHP?: number;
-  /** What the NPC swings. Null is a deliberately unarmed NPC, and an absent
-   * value is the same thing for a template written before NPCs had gear. */
-  weapon?: EnemyWeapon | null;
-  /** What the NPC wears, for the AC bonus it adds. */
-  armor?: EnemyArmor | null;
-  class?: string;
-  casterLevel?: number;
-  spellbook?: Spellbook;
-}
-
 /**
  * The GM's custom library: overrides of built-in entries, matched by name
  * and, for equipment, also by item type, plus wholly new entries. This
@@ -60,8 +28,7 @@ export interface NPCTemplate {
  */
 export interface CustomLibrary {
   equipment: EquipmentTemplate[];
-  bestiary: EncounterTemplate[];
-  npcs: NPCTemplate[];
+  creatures: CreatureTemplate[];
   spells: Spell[];
 }
 
