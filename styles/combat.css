@@ -255,6 +255,20 @@ body.mode-combat .app-buildrail {
   color: var(--text-muted);
 }
 
+/* The death-save status chip sits in the condition row. Its border carries the
+   position, so the row does not depend on reading the word alone. Dying and
+   dead are warnings. Stable is the resolved one, so it takes the calm color. */
+.combatant-card__death-chip--dying,
+.combatant-card__death-chip--dead {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.combatant-card__death-chip--stable {
+  border-color: var(--success);
+  color: var(--success);
+}
+
 /* A combatant's armor, weapons, spells, and slots: labelled lines on a board
    card, and the same lines in a roomier form in the active column, where the
    slot pools become chips. The label column is fixed so the values line up down

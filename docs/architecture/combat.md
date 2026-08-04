@@ -113,7 +113,8 @@ inspected visually instead.
 `mayAct` is the one field that depends on the viewer. The GM can act for
 anyone, including foes. A player can act only for the party character that
 the tab is bound to. The screen uses this field to gate the action bar, the
-HP controls, the concentration Drop control, and the turn-end button. A
+HP controls, the concentration Drop control, the death-save Roll and
+Stabilize controls, and the turn-end button. A
 player gets the turn-end button only on their own character's turn. On a
 player's tab, this button reads "End my turn" instead of "Next turn".
 
@@ -144,7 +145,12 @@ the columns stack.
 
 The **active column** shows the inspected combatant. By default, it shows
 whoever's turn it is. The column shows the name, initiative, AC, HP,
-condition chips, and concentration with its Drop control. The HP value is
+condition chips, and concentration with its Drop control. A character at 0 HP
+also shows its death-save tracker: three success pips, three failure pips, and
+Roll and Stabilize controls. A stable character reads "Stable at 0 HP" and a
+dead one "Dead", with no controls. The block comes from
+`ui/DeathSaveBlock.js`, which the character sheet also uses, so the two
+surfaces cannot describe the same state differently. The HP value is
 exact where the viewer can act for the combatant: the GM anywhere, a player
 only on their own character. Otherwise the column shows a coarse band instead
 of the exact HP. The GM also gets a damage and heal amount field with a

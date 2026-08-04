@@ -4,9 +4,16 @@ import { bareButton, chip } from './buttons.js';
 import { hpBand } from '../view/ViewRole.js';
 import { loadoutBlock } from './LoadoutBlock.js';
 import { buildStatBar } from './CharacterBars.js';
+import { deathSaveStatus } from '../view/DeathSaveView.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
 /** @typedef {import('../combat/Loadout.js').Loadout} Loadout */
+
+/**
+ * The word each death-save position wears as a chip.
+ * @type {Record<import('../view/DeathSaveView.js').DeathSaveStatus, string>}
+ */
+const DEATH_SAVE_CHIPS = { dying: 'Dying', stable: 'Stable', dead: 'Dead' };
 
 /**
  * This card shows one combatant on the combat board: name, HP, AC, initiative,
@@ -89,7 +96,11 @@ export function combatantCard(row, selection = {}) {
   const loadout = selection.loadout ? loadoutBlock(selection.loadout) : null;
   if (loadout) card.appendChild(loadout);
 
-  if (row.conditions.length > 0) {
+  // A dying character's status goes in the same chip row as its conditions.
+  // The Unconscious chip says it cannot act. This chip says whether it is
+  // still rolling, out of danger, or gone.
+  const status = deathSaveStatus(row.deathSaves);
+  if (row.conditions.length > 0 || status) {
     card.appendChild(
       el(
         'div',
@@ -97,6 +108,11 @@ export function combatantCard(row, selection = {}) {
         ...row.conditions.map((c) =>
           chip(c.rounds !== null && c.rounds !== undefined ? `${c.name} (${c.rounds})` : c.name),
         ),
+        status
+          ? chip(DEATH_SAVE_CHIPS[status], {
+              className: `combatant-card__death-chip combatant-card__death-chip--${status}`,
+            })
+          : null,
       ),
     );
   }

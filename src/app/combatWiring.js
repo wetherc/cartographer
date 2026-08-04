@@ -11,6 +11,7 @@ import {
   spellsOf,
   weaponsOf,
 } from './combatants.js';
+import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
 import { weaponAttack } from './weaponAttack.js';
 import { castSpellAction } from './spellCast.js';
 
@@ -140,6 +141,11 @@ export function wireCombatScreen(app) {
       app.actions.markDirty();
       endSpellEffects(app, id, held.spellId);
     },
+    // A death save is the player's roll, so it comes from this button rather
+    // than from the turn advance. The tray throws the d20, and the write path
+    // refreshes this screen along with the sheet.
+    onRollDeathSave: (id) => rollDeathSaveFor(app, id),
+    onStabilize: (id) => stabilizeCharacter(app, id),
     // The log column shows the fight's slice of the travelogue: the combat
     // lines and dice rolls logged since this fight's setup opened, newest
     // first. Without the time bound, the column replayed every battle the

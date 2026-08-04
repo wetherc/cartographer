@@ -16,6 +16,7 @@ import { sheetDeps, sameDeps } from '../view/SheetStructure.js';
 import { CONCENTRATING } from '../entities/Conditions.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
 import { mountConditionsBar } from './ConditionsBar.js';
+import { deathSaveBlock } from './DeathSaveBlock.js';
 import { buildProgressSection } from './CharacterProgress.js';
 import { buildSpellsSection } from './CharacterSpells.js';
 import { buildSavesBlock, buildSkillsBlock } from './CharacterChecks.js';
@@ -98,6 +99,12 @@ function customPools(character) {
  *   This runs when a save or skill row is clicked, with the kind of roll and
  *   the key that names it. Without it, the two blocks report their bonuses
  *   and roll nothing.
+ * @param {{ onRoll: () => void, onStabilize: () => void } | null} [deathSaves]
+ *   The two controls of the death-save block, which shows only while the
+ *   character is at 0 HP. Both write through the host, not through the sheet:
+ *   a death save throws the dice tray and lands in the log, which the sheet
+ *   cannot reach. Without them, the block still shows its pips and offers no
+ *   controls.
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountCharacterSheet(
@@ -108,6 +115,7 @@ export function mountCharacterSheet(
   spells = null,
   notify = () => {},
   onCheck = null,
+  deathSaves = null,
 ) {
   let current = initial;
 
@@ -548,6 +556,26 @@ export function mountCharacterSheet(
       }
     }
     renderConcentration();
+    // The death-save tracker sits under concentration and shows only while
+    // the character is at 0 HP. The combat screen draws the same block from
+    // the same builder, so the two surfaces cannot describe it differently.
+    const dying = el('div', 'character-sheet__death-saves');
+    conditions.appendChild(dying);
+    /** @type {import('../types/entities.js').DeathSaveState | null | undefined} */
+    let shownDeathSaves;
+    function renderDeathSaves() {
+      const state = live().deathSaves;
+      shownDeathSaves = state;
+      dying.replaceChildren();
+      const block = deathSaveBlock(state, {
+        name: live().name,
+        canAct: getPermissions().play && Boolean(deathSaves),
+        onRoll: () => deathSaves?.onRoll(),
+        onStabilize: () => deathSaves?.onStabilize(),
+      });
+      if (block) dying.appendChild(block);
+    }
+    renderDeathSaves();
     side.appendChild(conditions);
     /** @type {import('../types/entities.js').Condition[]} */
     let shownConditions = character.conditions;
@@ -558,6 +586,7 @@ export function mountCharacterSheet(
         conditionsBar.update();
       }
       if (live().concentration !== shownConcentration) renderConcentration();
+      if (live().deathSaves !== shownDeathSaves) renderDeathSaves();
     });
 
     root.appendChild(body);

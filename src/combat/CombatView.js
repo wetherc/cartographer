@@ -35,6 +35,8 @@ import { canAct } from '../entities/ConditionEffects.js';
  * who walked off. In that case the numeric fields fall back to neutral
  * values, and the row still draws, so the order and the turn pointer keep
  * lining up. `hp` is null for an NPC, because an NPC carries no HP.
+ * `deathSaves` is null for anything but a dying party character, because only a
+ * character rolls them.
  * @typedef {{
  *   id: string,
  *   name: string | null,
@@ -46,6 +48,7 @@ import { canAct } from '../entities/ConditionEffects.js';
  *   defeated: boolean,
  *   incapacitated: boolean,
  *   mayAct: boolean,
+ *   deathSaves: import('../types/entities.js').DeathSaveState | null,
  * }} CombatantRow
  */
 
@@ -200,6 +203,9 @@ export function buildCombatView(combat, resolve, viewer) {
       // out of the fight, so the surfaces mark it apart from defeat.
       incapacitated: found ? !canAct(conditionsOf(found)) : false,
       mayAct: mayActOn(found, who, participant.id),
+      // Only a character carries the tracker. Everything else reads null, so
+      // the surfaces need no kind check of their own.
+      deathSaves: found?.kind === 'character' ? (found.entity.deathSaves ?? null) : null,
     };
   });
   return { round: combat.round, turnIndex: combat.index, rows };

@@ -238,8 +238,8 @@ while it lasts. In Build mode, the same chips set base values.
 
 | Area | Contents |
 | --- | --- |
-| Left column | The active combatant: initiative, AC, HP, conditions, concentration with its Drop control, damage and heal steppers, and the loadout |
-| Center | The board: one card per combatant, with HP bar, AC, conditions, and a short loadout |
+| Left column | The active combatant: initiative, AC, HP, conditions, concentration with its Drop control, death saves with their Roll and Stabilize controls, damage and heal steppers, and the loadout |
+| Center | The board: one card per combatant, with HP bar, AC, conditions, and a short loadout. A dying, stable, or dead character carries a chip for it |
 | Right column | The combat log, with the dice tray docked beneath it |
 | Bottom | The turn ribbon: one chip per combatant in initiative order |
 
@@ -274,6 +274,27 @@ Attack rolls follow 5e without change.
 The app applies the damage to the defender. An encounter loses HP on the
 spot, and a defeat is logged. A character loses bonus HP first, then real
 HP. An NPC carries no HP, so a hit on one stays a log line.
+
+A party character at 0 HP is dying, not dead. It gets a death-save tracker on
+the combat screen and on its sheet, and the Unconscious chip.
+
+- The save is 1d20 against DC 10, with no ability modifier and no proficiency.
+  A Bless chip still adds its die.
+- Three successes stabilize. The character stays at 0 HP and unconscious, and
+  rolls no more saves. The Stabilize button does the same thing without a roll.
+- Three failures kill. The app says so and changes nothing else. What happens
+  next is yours to decide.
+- A natural 20 wakes the character at 1 HP. A natural 1 counts as two failures.
+- Any damage while at 0 HP is an automatic failure, with no roll. A critical
+  hit counts as two. Damage on a stable character starts the saves again.
+- The hit that drops the character to 0 HP costs no failure. Any healing above
+  0 HP clears the tracker, a dead one included. That is how you decide the
+  death did not stand.
+- The roll is a button, not automatic. Nobody rolls for the player at the turn
+  advance.
+
+An encounter has no death saves. It is defeated at 0 HP, and an NPC carries no
+HP at all.
 
 Initiative uses the DEX modifier, which is `floor((DEX - 10) / 2)`. The
 default initiative value is 10 plus the modifier. Roll initiative rolls d20
@@ -362,6 +383,11 @@ DC, so nothing judges it. Read the total against whatever you had in mind. The
 tray's advantage and disadvantage toggle applies, and the log names the die it
 threw away. A player on a bound tab rolls their own character. A spectator sees
 the numbers and cannot roll.
+
+The Conditions block holds the chips, the held spell with its Drop control,
+and, while the character is at 0 HP, the death-save tracker with its Roll and
+Stabilize controls. The tracker shows the same pips and the same words as the
+combat screen.
 
 Expertise is a GM grant. The Set expertise button in the Progression block
 lists the skills the character is proficient in. The proficiency bonus doubles

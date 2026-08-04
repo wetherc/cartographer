@@ -8,6 +8,7 @@ import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Libr
 import { castSpellOutOfCombat } from './spellCast.js';
 import { endSpellEffects } from './combatants.js';
 import { rollCheck } from './checkRolls.js';
+import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { removeById } from '../entities/Roster.js';
 import { createCharacterScope } from './characterScope.js';
@@ -258,6 +259,19 @@ export function wireParty(app) {
     (event) => {
       const character = selectedCharacter();
       if (character) rollCheck(app, character, event);
+    },
+    // A death save also rolls through the tray and lands in the log, so it
+    // goes through the app rather than through the sheet's own commit path.
+    // Both handlers read the selected character when they fire.
+    {
+      onRoll: () => {
+        const character = selectedCharacter();
+        if (character) rollDeathSaveFor(app, character.id);
+      },
+      onStabilize: () => {
+        const character = selectedCharacter();
+        if (character) stabilizeCharacter(app, character.id);
+      },
     },
   );
 

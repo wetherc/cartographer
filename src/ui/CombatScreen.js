@@ -5,6 +5,7 @@ import { hpBand } from '../view/ViewRole.js';
 import { fightOutcome } from '../combat/CombatView.js';
 import { combatantCard } from './CombatantCard.js';
 import { combatActionBar } from './CombatActionBar.js';
+import { deathSaveBlock } from './DeathSaveBlock.js';
 import { factLine } from './FactLine.js';
 import { loadoutBlock } from './LoadoutBlock.js';
 import { entryItem } from './TravelogPanel.js';
@@ -68,6 +69,8 @@ import { entryItem } from './TravelogPanel.js';
  *   onApplyHP: (id: string, amount: number, isHeal: boolean) => void,
  *   getConcentration: (id: string) => { spellName: string } | null,
  *   onDropConcentration: (id: string) => void,
+ *   onRollDeathSave: (id: string) => void,
+ *   onStabilize: (id: string) => void,
  *   getLogEntries: () => import('../types/log.js').LogEntry[],
  * }} callbacks
  * @returns {{ update: () => void, diceDock: HTMLElement }}
@@ -357,7 +360,8 @@ export function mountCombatScreen(container, callbacks) {
    * The left column shows the inspected combatant, or the combatant whose
    * turn it is. The GM can edit HP. HP shows exact for a viewer who can act
    * for this combatant, and banded otherwise. Concentration shows with its
-   * Drop control for a viewer who can act.
+   * Drop control, and a death-save tracker with its Roll and Stabilize
+   * controls, for a viewer who can act.
    * @param {CombatView} view
    * @param {boolean} gm
    */
@@ -424,6 +428,17 @@ export function mountCombatScreen(container, callbacks) {
       }
       active.appendChild(line);
     }
+
+    // A dying character shows its tracker under concentration, with the Roll
+    // and Stabilize controls for a viewer who can act for it. The sheet shows
+    // the same block, from the same builder.
+    const dying = deathSaveBlock(row.deathSaves, {
+      name: row.name ?? 'Unknown combatant',
+      canAct: row.mayAct,
+      onRoll: () => callbacks.onRollDeathSave(row.id),
+      onStabilize: () => callbacks.onStabilize(row.id),
+    });
+    if (dying) active.appendChild(dying);
 
     // The action bar belongs to the turn, not the inspection. It shows only
     // when the column displays the current combatant and the viewer can act

@@ -265,3 +265,33 @@
   cursor: default;
   opacity: 0.7;
 }
+
+/* Death-save line. It shows on the combat screen and on the character sheet
+   while a character is at 0 HP, from one builder, so both read the same. The
+   pips are text glyphs: filled for a save already rolled, empty for one still
+   to come. Color separates the two halves, and the row carries an aria-label
+   with the counts in words, because a row of circles does not read aloud. */
+.death-saves__pips {
+  font-size: var(--text-label);
+  line-height: 1.1;
+}
+
+.death-saves__pip--success {
+  color: var(--success);
+}
+
+.death-saves__pip--failure {
+  color: var(--danger);
+}
+
+/* The first failure pip, which starts the second half of the row. */
+.death-saves__pip--split {
+  margin-left: var(--space-2);
+}
+
+/* A dead character's line is the loudest thing in its column. A stable one is
+   a resolved state, so it stays in the muted voice the label already has. */
+.death-saves--dead .death-saves__label {
+  color: var(--danger);
+  font-weight: 600;
+}

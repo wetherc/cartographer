@@ -542,6 +542,10 @@ is what lets a rider such as Bless reach the roll. No ability key is passed, so
 the automatic failure that unconsciousness imposes on Strength and Dexterity
 saves does not catch a death save.
 
+A heal above 0 HP clears the tracker whatever it held, a dead one included.
+Nothing else brings a dead character back, so this is the GM's way of deciding
+that the death did not stand.
+
 Two rules skip the roll. Damage on a character who is already at 0 HP is an
 automatic failure, and a critical hit counts as two. Damage on a stable
 character makes it dying again, with that failure against it, which is the 2014
@@ -561,6 +565,22 @@ place. The consequence folds into the same write as the HP change.
 `applyToTarget` takes `opts.crit` for the doubled failure, and
 `app/weaponAttack.js` passes it. Spell damage does not crit here and leaves it
 off.
+
+The roll itself comes from a button, on the combat screen's active column and
+on the character sheet, not from the turn advance. `retryImposedSaves`
+auto-rolls bookkeeping saves, but a death save is the player's roll, and the
+dice-tray convention wants a throw that somebody asked for.
+`app/deathSaves.js` owns both controls. It follows the split that
+`app/checkRolls.js` describes: the riders roll app-side, the tray throws the
+only d20, and `judgeDeathSave` reads the result. Going through the tray is why
+this path does not call `rollDeathSave`, which would throw a second d20.
+
+`view/DeathSaveView.js` turns one tracker into the words and the pip counts a
+surface draws, and `ui/DeathSaveBlock.js` builds the line from it. The combat
+screen and the character sheet both call that builder, so neither can describe
+the same state differently. `CombatantRow.deathSaves` carries the tracker onto
+the board, where a card shows a Dying, Stable, or Dead chip beside its
+conditions.
 
 Only characters roll death saves. An encounter is defeated at 0 HP, and an NPC
 tracks no HP at all.

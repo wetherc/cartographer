@@ -135,6 +135,42 @@ test('buildCombatView keeps a row for an id nothing resolves', () => {
   assert.equal(row.defeated, false);
   assert.deepEqual(row.conditions, []);
   assert.equal(row.mayAct, false, 'an unresolved id is not actionable for a player');
+  assert.equal(row.deathSaves, null);
+});
+
+test('buildCombatView carries a death-save tracker, and only from a character', () => {
+  const { hero, goblin } = fixtures();
+  const dying = {
+    ...damageCharacter(hero, 99),
+    deathSaves: { successes: 1, failures: 2, stable: false },
+  };
+  const combat = {
+    round: 1,
+    index: 0,
+    order: [
+      { id: 'hero', initiative: 12, modifier: 2 },
+      { id: 'goblin', initiative: 9, modifier: 0 },
+    ],
+  };
+  const view = buildCombatView(
+    combat,
+    resolver({
+      hero: { kind: 'character', entity: dying },
+      goblin: { kind: 'encounter', entity: goblin },
+    }),
+    { gm: true },
+  );
+  assert.deepEqual(view.rows[0].deathSaves, { successes: 1, failures: 2, stable: false });
+  assert.equal(view.rows[1].deathSaves, null, 'an encounter rolls no death saves');
+});
+
+test('buildCombatView reads a standing character as not dying', () => {
+  const { hero } = fixtures();
+  const combat = { round: 1, index: 0, order: [{ id: 'hero', initiative: 12, modifier: 2 }] };
+  const view = buildCombatView(combat, resolver({ hero: { kind: 'character', entity: hero } }), {
+    gm: true,
+  });
+  assert.equal(view.rows[0].deathSaves, null);
 });
 
 test('buildCombatView carries conditions and the defeated flag', () => {

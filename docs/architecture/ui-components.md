@@ -579,6 +579,26 @@ your own sheet so the values line up. The loadout block does both.
 This is not `buildStatBar`, despite the names sitting close together. A stat
 bar draws a fraction as a filled track. A fact line draws text.
 
+## Death-save block
+
+```js
+deathSaveBlock(state, { name, canAct, onRoll, onStabilize }) -> HTMLElement | null
+```
+
+`src/ui/DeathSaveBlock.js` draws the line a character at 0 HP carries: three
+success pips, three failure pips, and the Roll and Stabilize controls. A
+stable character reads "Stable at 0 HP" and a dead one "Dead", with no
+controls. The combat screen and the character sheet both call it, so neither
+can describe the same state differently.
+
+The function returns null when the character holds no tracker, which is the
+usual case, so a caller appends whatever comes back and tests nothing itself.
+`canAct` is what gates the controls: on the combat screen it is `row.mayAct`,
+and on the sheet it is the play permission.
+
+The words and the pip counts come from `view/DeathSaveView.js`, which is pure
+and unit tested. This module is the DOM around them.
+
 ## Dialogs
 
 `src/ui/Modal.js` wraps the native `<dialog>` element and is the most-imported
