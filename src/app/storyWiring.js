@@ -74,6 +74,7 @@ export function wireStory(app) {
   /** The confirm-and-delete flow shared by both NPC lists. */
   const deleteNPC = (/** @type {string} */ id) => {
     state.creatures = removeById(state.creatures, id);
+    app.actions.removeCombatant(id);
     commitCreatures(app);
   };
   const confirmDeleteNPC = (/** @type {import('../types/creature.js').Creature} */ npc) =>
