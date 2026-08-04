@@ -307,6 +307,9 @@ character carries.
 2. Set the disposition, the notes, and the placement.
 3. To place the NPC, pick a map and tile coordinates. Leave it unplaced to
    make it appear everywhere.
+4. An NPC is a combatant, so it has hit points, a stat block, and gear. A new
+   one is a commoner: 4 HP, no weapon, and no armor. Arm the ones that fight,
+   and give a tough one more HP.
 
 ### Reveal a handout
 

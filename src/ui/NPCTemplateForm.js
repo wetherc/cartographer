@@ -1,5 +1,6 @@
 import { npcFields, readNPCFields } from '../app/npcFields.js';
 import { refilterSpellsOnChange } from '../app/casterFields.js';
+import { gearOptions } from '../app/gearFields.js';
 import { buildSpecForm } from './SpecForm.js';
 
 /** @typedef {import('../types/library.js').NPCTemplate} NPCTemplate */
@@ -19,11 +20,14 @@ import { buildSpecForm } from './SpecForm.js';
  * @returns {HTMLElement}
  */
 export function buildNPCTemplateForm({ template = null, submitLabel, onSubmit, onCancel = null }) {
+  // The gear pickers offer the merged library, plus a hand-tuned entry the
+  // template already carries. This is the same list the encounter forms use.
+  const gear = gearOptions(template);
   return buildSpecForm({
-    fields: npcFields(template),
+    fields: npcFields(template, gear),
     // Refilter the spell picker for the chosen caster class and level.
     onChange: refilterSpellsOnChange,
-    assemble: (values) => readNPCFields(values),
+    assemble: (values) => readNPCFields(values, gear),
     submitLabel,
     onSubmit,
     onCancel,

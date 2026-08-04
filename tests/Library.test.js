@@ -176,6 +176,9 @@ test('normalizeLibrary keeps a fully-specified NPC verbatim', () => {
         disposition: 'friendly',
         notes: 'Forges blades and gossip alike.',
         stats: { STR: 15 },
+        maxHP: 11,
+        weapon: { name: 'Hammer', damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }] },
+        armor: { name: 'Apron', acBonus: 1 },
       },
     ],
   });
@@ -186,8 +189,31 @@ test('normalizeLibrary keeps a fully-specified NPC verbatim', () => {
       disposition: 'friendly',
       notes: 'Forges blades and gossip alike.',
       stats: { STR: 15 },
+      maxHP: 11,
+      weapon: { name: 'Hammer', damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }] },
+      armor: { name: 'Apron', acBonus: 1 },
     },
   ]);
+});
+
+test('normalizeLibrary leaves out NPC hit points and gear it cannot use', () => {
+  const lib = normalizeLibrary({
+    npcs: [
+      { name: 'Cooper' },
+      { name: 'Ooze', maxHP: 'plenty', weapon: null, armor: null },
+      { name: 'Dregs', maxHP: -4, weapon: 'club' },
+      { name: 'Sturdy', maxHP: '9.7' },
+    ],
+  });
+  const [cooper, ooze, dregs, sturdy] = lib.npcs;
+  assert.equal('maxHP' in cooper, false, 'an absent maximum defaults at creation');
+  assert.equal('weapon' in cooper, false);
+  assert.equal('maxHP' in ooze, false, 'text is not a maximum');
+  assert.equal(ooze.weapon, null, 'a null weapon means deliberately unarmed');
+  assert.equal(ooze.armor, null);
+  assert.equal('maxHP' in dregs, false, 'a non-positive maximum defaults at creation');
+  assert.equal('weapon' in dregs, false, 'non-object gear drops');
+  assert.equal(sturdy.maxHP, 9, 'a numeric string floors to an integer');
 });
 
 test('activeWeapons excludes a weapon-typed template that carries no damage', () => {

@@ -1,8 +1,8 @@
 /**
  * The stat-block field group shared by the modal authoring dialogs. The
- * encounter dialog renders STAT_KEYS (abilities plus AC). The NPC dialog
- * renders ABILITY_SCORES. Both dialogs use the same `stat-<KEY>` naming and
- * the same clamped read-back, so the two dialogs cannot drift apart.
+ * encounter dialog and the NPC dialog both render STAT_KEYS (abilities plus
+ * AC). Both use the same `stat-<KEY>` naming and the same clamped read-back,
+ * so the two dialogs cannot drift apart.
  */
 
 import { clampInt } from '../util/num.js';

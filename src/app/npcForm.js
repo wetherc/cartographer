@@ -6,6 +6,7 @@ import { isSlotPool } from '../entities/SpellSlots.js';
 import { slugId, replaceById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
 import { refilterSpellsOnChange } from './casterFields.js';
+import { gearOptions } from './gearFields.js';
 import { npcFields, readNPCFields } from './npcFields.js';
 import { commitNPCs } from './combatants.js';
 
@@ -33,14 +34,18 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
   const { state } = app;
   /** The source that seeds the dialog's fields: the NPC being edited, or a template. */
   const seed = existing ?? template;
+  // The gear choice is the merged library list, the same one the encounter
+  // dialog offers. "None" marks an NPC that carries no weapon or armor, which
+  // is what most townsfolk are.
+  const gear = gearOptions(seed);
   // This uses a two-column layout matching the encounter dialog: identity
-  // (name/role), then disposition, full-width notes, the stat block, the
-  // caster section, then placement. The map picker's breadcrumb labels run
-  // long, so it spans the full width.
+  // (name/role), then disposition, full-width notes, hit points, gear, the
+  // stat block, the caster section, then placement. The map picker's
+  // breadcrumb labels run long, so it spans the full width.
   const values = await promptModal(
     existing ? 'Edit NPC' : 'New NPC',
     [
-      ...npcFields(seed),
+      ...npcFields(seed, gear),
       // This field defaults to the caller's placement (the party's tile, the
       // Build-mode selected tile, or the right-clicked tile), but the GM can
       // choose any map or tile.
@@ -56,12 +61,19 @@ export async function npcForm(app, existing, defaultLocation, template = null) {
     },
   );
   if (!values) return null;
-  const fields = readNPCFields(values);
+  const fields = readNPCFields(values, gear);
   if (!fields.name) return null;
   /** @type {NPC} */
   let stored;
   if (existing) {
-    const base = { ...existing, ...fields, location: readLocation(app, values) };
+    // A cut to the maximum takes the current hit points down with it, the way
+    // an encounter edit does. Everything else about the live NPC survives.
+    const base = {
+      ...existing,
+      ...fields,
+      currentHP: Math.min(existing.currentHP, fields.maxHP),
+      location: readLocation(app, values),
+    };
     // A caster class rebuilds slots at full and stamps the picked spellbook.
     // Choosing "None" removes the caster fields and any slot pools.
     if (isCasterClass(fields.class)) {

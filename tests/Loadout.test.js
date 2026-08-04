@@ -105,10 +105,25 @@ test('a foe loadout reads its authored armor and single weapon', () => {
   assert.deepEqual(loadout.weapons, [{ name: 'Scimitar', damage: '1d6 slashing' }]);
 });
 
-test('an NPC carries nothing, and neither does an unresolved id', () => {
+test('an unarmed NPC carries nothing, and neither does an unresolved id', () => {
   const sage = createNPC('sage', 'Sage', { location: HERE });
   assert.equal(isEmptyLoadout(buildLoadout({ kind: 'npc', entity: sage })), true);
   assert.equal(isEmptyLoadout(buildLoadout(null)), true);
+});
+
+test('an armed NPC reads its gear the way a foe does', () => {
+  const guard = createNPC('guard', 'Guard', {
+    location: HERE,
+    weapon: {
+      name: 'Spear',
+      handling: /** @type {const} */ ('melee'),
+      damage: [{ count: 1, sides: 6, bonus: 0, damageType: /** @type {const} */ ('piercing') }],
+    },
+    armor: { name: 'Chain Shirt', acBonus: 3 },
+  });
+  const loadout = buildLoadout({ kind: 'npc', entity: guard });
+  assert.deepEqual(loadout.armor, ['Chain Shirt']);
+  assert.deepEqual(loadout.weapons, [{ name: 'Spear', damage: '1d6 piercing' }]);
 });
 
 test('isEmptyLoadout is false as soon as anything shows', () => {

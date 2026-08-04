@@ -98,7 +98,7 @@ export function isEmptyLoadout(loadout) {
 
 /**
  * The protective pieces worn, named: a character's body armor and shield, or
- * a foe's authored armor. NPCs record none.
+ * the authored armor of a foe or an NPC.
  * @param {ResolvedCombatant} found
  * @returns {string[]}
  */
@@ -110,13 +110,13 @@ function armorOf(found) {
       /** @returns {name is string} */ (name) => Boolean(name),
     );
   }
-  if (found.kind === 'encounter') return found.entity.armor ? [found.entity.armor.name] : [];
-  return [];
+  return found.entity.armor ? [found.entity.armor.name] : [];
 }
 
 /**
  * The weapons available, each with its damage written out: a character's
- * equipped weapons in slot order, or a foe's single weapon. This is the same
+ * equipped weapons in slot order, or the single weapon of a foe or an NPC.
+ * This is the same
  * list the action bar offers, so a card and the bar always agree. This
  * function is named apart from combatants.js's `weaponsOf`, which returns
  * the weapon objects themselves. This function returns display lines.
@@ -127,7 +127,7 @@ function weaponLines(found) {
   /** @type {{ name: string, damage?: import('../types/entities.js').DamagePart[] }[]} */
   let weapons = [];
   if (found.kind === 'character') weapons = equippedWeapons(found.entity);
-  else if (found.kind === 'encounter' && found.entity.weapon) weapons = [found.entity.weapon];
+  else if (found.entity.weapon) weapons = [found.entity.weapon];
   return weapons.map((weapon) => ({
     name: weapon.name,
     damage: formatDamage(weapon.damage ?? []),

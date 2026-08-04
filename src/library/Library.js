@@ -595,17 +595,27 @@ export function normalizeLibrary(parsed) {
   const npcs = dedupeByKey(
     arrayOf(source.npcs).filter((e) => typeof e.name === 'string' && e.name.trim()),
     rawNameKey,
-  ).map(
-    (e) =>
-      /** @type {NPCTemplate} */ ({
-        name: e.name.trim(),
-        role: typeof e.role === 'string' ? e.role : '',
-        disposition: DISPOSITIONS.includes(e.disposition) ? e.disposition : 'neutral',
-        notes: typeof e.notes === 'string' ? e.notes : '',
-        stats: e.stats && typeof e.stats === 'object' ? e.stats : {},
-        ...casterTemplateFrom(e),
-      }),
-  );
+  ).map((e) => {
+    // Hit points are optional on an NPC template. A positive number is kept,
+    // and anything else stays absent, so `createNPC` fills in the commoner
+    // default.
+    const maxHP = Math.floor(Number(e.maxHP));
+    return /** @type {NPCTemplate} */ ({
+      name: e.name.trim(),
+      role: typeof e.role === 'string' ? e.role : '',
+      disposition: DISPOSITIONS.includes(e.disposition) ? e.disposition : 'neutral',
+      notes: typeof e.notes === 'string' ? e.notes : '',
+      stats: e.stats && typeof e.stats === 'object' ? e.stats : {},
+      ...(maxHP > 0 ? { maxHP } : {}),
+      // A null weapon or armor survives, for a deliberately unarmed entry. An
+      // absent value stays absent. Any other non-object drops.
+      ...(e.weapon === null || (e.weapon && typeof e.weapon === 'object')
+        ? { weapon: e.weapon }
+        : {}),
+      ...(e.armor === null || (e.armor && typeof e.armor === 'object') ? { armor: e.armor } : {}),
+      ...casterTemplateFrom(e),
+    });
+  });
 
   /** @type {string[]} */
   const spellIds = [];

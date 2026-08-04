@@ -273,7 +273,7 @@ Attack rolls follow 5e without change.
 
 The app applies the damage to the defender. An encounter loses HP on the
 spot, and a defeat is logged. A character loses bonus HP first, then real
-HP. An NPC carries no HP, so a hit on one stays a log line.
+HP. An NPC loses HP the way an encounter does.
 
 A party character at 0 HP is dying, not dead. It gets a death-save tracker on
 the combat screen and on its sheet, and the Unconscious chip.
@@ -294,8 +294,7 @@ the combat screen and on its sheet, and the Unconscious chip.
 - The roll is a button, not automatic. Nobody rolls for the player at the turn
   advance.
 
-An encounter has no death saves. It is defeated at 0 HP, and an NPC carries no
-HP at all.
+An encounter and an NPC have no death saves. Both are defeated at 0 HP.
 
 Initiative uses the DEX modifier, which is `floor((DEX - 10) / 2)`. The
 default initiative value is 10 plus the modifier. Roll initiative rolls d20
@@ -460,7 +459,7 @@ unequips it.
 | Panel | Contents |
 | --- | --- |
 | Time | The in-game day and watch, Advance, Short rest, Long rest |
-| NPCs | Friendly, neutral, or hostile non-combatants with a disposition badge, notes, and a placement |
+| NPCs | Friendly, neutral, or hostile townsfolk with a disposition badge, notes, and a placement |
 | Quests | Active and completed quests |
 | Handouts | Read-aloud text or lore attached to a node or the campaign, with an optional image and an eye toggle |
 | Travelogue | An automatic log of region entry, teleports, defeats, rests, and discoveries, newest first |
