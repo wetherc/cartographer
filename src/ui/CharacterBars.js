@@ -5,6 +5,17 @@ import { barReadout, pipReadout, slotColumnLabel, slotLineReadout } from '../vie
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 
 /**
+ * An empty compact track, for a character with no HP pool authored yet. This
+ * lives here rather than at its one call site so that the `stat-bar` classes
+ * stay inside the module that owns them. It draws no numbers, since there is
+ * no pool to read out.
+ * @returns {HTMLElement}
+ */
+export function emptyStatBar() {
+  return el('span', 'stat-bar stat-bar--compact', el('span', 'stat-bar__track'));
+}
+
+/**
  * Build a stat bar (HP). The full form is one wide line with a label, a fill
  * track, and the numbers after it, for a character sheet's head. Two
  * narrower forms drop the label: `showLabel: false` keeps the numbers beside

@@ -5,14 +5,17 @@
   <title>UI panels preview</title>
   <link rel="stylesheet" href="../style.css" />
   <style>
-    body { display: flex; gap: 1rem; flex-wrap: wrap; }
+    /* Each panel gets a rail's worth of width. Without one, the sheet's own
+       layout collapses and the columns draw over each other. */
+    body { display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-start; padding: 1rem; }
+    body > section { flex: 0 0 21rem; min-width: 0; }
   </style>
 </head>
 <body>
-  <section id="character-sheet-container" class="panel"></section>
-  <section id="equipment-container" class="panel"></section>
-  <section id="inventory-container" class="panel"></section>
-  <section id="encounter-container" class="panel"></section>
+  <section id="character-sheet-container"></section>
+  <section id="equipment-container"></section>
+  <section id="inventory-container"></section>
+  <section id="encounter-container"></section>
 
   <script type="module">
     import { createCharacter, addResource } from '../src/entities/Character.js';
@@ -38,10 +41,23 @@
       },
     );
 
-    mountEncounterPanel(document.getElementById('encounter-container'), [
-      createEncounter('e1', 'Goblin', 7),
-      createEncounter('e2', 'Wolf', 11),
-    ]);
+    // The panel keeps no list of its own. The two getters supply the rows,
+    // and every edit comes back through a callback, so this page holds the
+    // encounters the way main.js holds them.
+    let encounters = [createEncounter('e1', 'Goblin', 7), createEncounter('e2', 'Wolf', 11)];
+
+    const encounterPanel = mountEncounterPanel(document.getElementById('encounter-container'), {
+      getActiveEncounters: () => encounters.slice(0, 1),
+      getNearbyEncounters: () => encounters,
+      onUpdate: (next) => {
+        encounters = encounters.map((e) => (e.id === next.id ? next : e));
+        encounterPanel.update();
+      },
+      onDelete: (id) => {
+        encounters = encounters.filter((e) => e.id !== id);
+        encounterPanel.update();
+      },
+    });
   </script>
 </body>
 </html>

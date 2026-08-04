@@ -2,7 +2,7 @@ import { removeItem, updateItem } from '../entities/Character.js';
 import { itemEffects, isConsumable } from '../entities/Equipment.js';
 import { buildItemForm } from './ItemForm.js';
 import { el } from './dom.js';
-import { iconButton, textButton } from './buttons.js';
+import { chip, iconButton, textButton } from './buttons.js';
 import { numberField, select } from './formFields.js';
 import { confirmModal } from './Modal.js';
 import { clampInt } from '../util/num.js';
@@ -81,7 +81,7 @@ export function buildRow(item, playable, ctx) {
       el(
         'div',
         'inventory-panel__effects',
-        ...effects.map((effect) => el('span', 'chip inventory-panel__effect', effect)),
+        ...effects.map((effect) => chip(effect, { className: 'inventory-panel__effect' })),
       ),
     item.description ? el('div', 'inventory-panel__description u-muted', item.description) : null,
   );

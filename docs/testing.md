@@ -47,6 +47,18 @@ pnpm run test:flat        # the default TAP output of Node
 `hooks/pre-commit` runs the suite through the same reporter, so a clean
 commit prints one line per module.
 
+## Know what the vocabulary tests check
+
+`tests/uiVocabulary.test.js` reads `src/` and `styles/` as text and holds
+the UI rules that no linter states: a builder owns its classes, a shared
+module names no feature's vocabulary, `innerHTML` is only ever cleared, and
+`style.css` imports every sheet. It runs with the rest of the suite. A
+failure names the file, the line, and the call to make instead.
+
+Adding a builder with a class of its own means adding its block to the
+owners table in that file. See
+[UI components](architecture/ui-components.md) for the rules themselves.
+
 ## Run the typecheck
 
 ```bash

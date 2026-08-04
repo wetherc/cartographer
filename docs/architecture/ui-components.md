@@ -143,6 +143,26 @@ builder that applies it, is a missing builder. That holds however few call
 sites type the class today, because typing the class is the only option
 they have.
 
+### What a test enforces
+
+Four of the rules on this page are checked by `tests/uiVocabulary.test.js`,
+which reads `src/` as text because the modules it covers build DOM and the
+runner has no document:
+
+- A class that a builder owns is never typed by hand anywhere else. Owners
+  are listed in the test. Call the builder and pass `className` for your own
+  modifier. `buildDisclosure` composing `section-label` onto its header is
+  the one recorded exception.
+- A shared module names its own block and the utility layer, nothing else.
+  This is what stops a widget from learning one feature's vocabulary.
+- `innerHTML` is only ever assigned `''`. Content is built with `el`.
+- `style.css` imports every sheet under `styles/`, and every import
+  resolves.
+
+A failure prints the file, the line, and the builder to call instead. If you
+add a builder with a class of its own, add its block to the owners table in
+the test.
+
 ### Deliberately not doing
 
 These are settled, and recorded here so they are not reopened:

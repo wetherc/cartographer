@@ -3,7 +3,7 @@ import { classNames, el } from './dom.js';
 import { captureFocus, restoreFocus } from './focusMemory.js';
 import { repaintNeeded } from './listPanel.js';
 import { getHP } from '../entities/Character.js';
-import { buildStatBar } from './CharacterBars.js';
+import { buildStatBar, emptyStatBar } from './CharacterBars.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -29,7 +29,7 @@ export function rosterDependsOn(selectedId, placeShown) {
 function hpMeter(character) {
   const hp = getHP(character);
   if (!hp || hp.max <= 0) {
-    return el('span', 'stat-bar stat-bar--compact', el('span', 'stat-bar__track'));
+    return emptyStatBar();
   }
   return buildStatBar(hp, { modifier: 'hp', label: 'HP', compact: true, band: true }).element;
 }
