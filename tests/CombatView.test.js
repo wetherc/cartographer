@@ -69,7 +69,7 @@ test('acOf projects each kind', () => {
   assert.equal(acOf({ kind: 'encounter', entity: goblin }), effectiveStatBlock(goblin).AC);
   assert.equal(acOf({ kind: 'character', entity: hero }), armorClass(hero));
   assert.equal(acOf({ kind: 'npc', entity: sage }), 12);
-  assert.equal(acOf({ kind: 'npc', entity: createNPC('w', 'Wisp', {}) }), null);
+  assert.equal(acOf({ kind: 'npc', entity: createNPC('w', 'Wisp', {}) }), 10);
 });
 
 test('mayActOn lets the GM drive anyone and a player only their bound character', () => {

@@ -1,8 +1,16 @@
-import { Condition, EncounterLocation, ResourcePool, Spellbook } from './entities';
+import {
+  Condition,
+  EncounterLocation,
+  EnemyArmor,
+  EnemyWeapon,
+  ResourcePool,
+  Spellbook,
+} from './entities';
 
 export type Disposition = 'friendly' | 'neutral' | 'hostile';
 
-/** A non-combatant campaign character: named, placed, and given a disposition, with no HP. */
+/** A campaign character: named, placed, and given a disposition. An NPC is a
+ * full combatant, with hit points, an AC, and optional arms. */
 export interface NPC {
   id: string;
   name: string;
@@ -10,10 +18,22 @@ export interface NPC {
   role: string;
   disposition: Disposition;
   notes: string;
-  /** The six ability scores (default 10s), for derived modifiers like initiative. */
+  /** The six ability scores (default 10s) plus AC, for derived modifiers like
+   * initiative and for the attacks that come at this NPC. AC defaults to 10
+   * plus the DEX modifier. */
   stats: Record<string, number>;
+  /** Hit points. A new NPC gets the 5e commoner's 4, and 0 current HP takes
+   * the NPC out of the fight with no death saves. */
+  maxHP: number;
+  currentHP: number;
   /** Where the NPC is found. Null means unplaced. */
   location: EncounterLocation | null;
+  /** What the NPC swings, or null for unarmed. Unlike an enemy an NPC has no
+   * level or tier, so no default loadout applies and the GM arms it by hand. */
+  weapon: EnemyWeapon | null;
+  /** What the NPC wears, or null for unarmored. Its `acBonus` adds to the AC
+   * of the stat block. */
+  armor: EnemyArmor | null;
   /**
    * True when the party lands on the NPC's tile. A placed NPC stays hidden
    * from the players' Story sidebar until met. An unplaced NPC is always known.

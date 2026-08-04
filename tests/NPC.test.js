@@ -10,6 +10,11 @@ import {
   withDefaults,
   formatLocation,
   dispositionOptions,
+  npcStatBlock,
+  damageNPC,
+  healNPC,
+  isNPCDefeated,
+  DEFAULT_NPC_HP,
 } from '../src/entities/NPC.js';
 
 test('dispositionOptions offers every disposition, capitalized', () => {
@@ -20,7 +25,7 @@ test('dispositionOptions offers every disposition, capitalized', () => {
   ]);
 });
 
-test('createNPC defaults role/notes empty, disposition neutral, unplaced, unmet, neutral stats', () => {
+test('createNPC defaults role/notes empty, disposition neutral, unplaced, unmet, commoner stats', () => {
   const npc = createNPC('n1', 'Bram');
   assert.deepEqual(npc, {
     id: 'n1',
@@ -28,11 +33,63 @@ test('createNPC defaults role/notes empty, disposition neutral, unplaced, unmet,
     role: '',
     disposition: 'neutral',
     notes: '',
-    stats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10 },
+    stats: { STR: 10, DEX: 10, CON: 10, INT: 10, WIS: 10, CHA: 10, AC: 10 },
+    maxHP: DEFAULT_NPC_HP,
+    currentHP: DEFAULT_NPC_HP,
     location: null,
     met: false,
+    weapon: null,
+    armor: null,
     conditions: [],
   });
+});
+
+test('createNPC takes hit points and gear, deriving AC from DEX when none is typed', () => {
+  const weapon = {
+    name: 'Club',
+    handling: 'melee',
+    damage: [{ dice: 1, die: 'd4', type: 'bludgeoning' }],
+  };
+  const npc = createNPC('n1', 'Guard', { maxHP: 11, stats: { DEX: 14 }, weapon });
+  assert.equal(npc.maxHP, 11);
+  assert.equal(npc.currentHP, 11);
+  assert.equal(npc.stats.AC, 12);
+  assert.deepEqual(npc.weapon, weapon);
+});
+
+test('createNPC clamps a nonsense maximum to a live NPC', () => {
+  assert.equal(createNPC('a', 'Zero', { maxHP: 0 }).maxHP, DEFAULT_NPC_HP);
+  assert.equal(createNPC('b', 'Negative', { maxHP: -5 }).maxHP, 1);
+  assert.equal(createNPC('c', 'Fraction', { maxHP: 7.8 }).maxHP, 7);
+});
+
+test('npcStatBlock adds the worn armor bonus to the stat block AC', () => {
+  const bare = createNPC('a', 'Bram', { stats: { AC: 13 } });
+  assert.equal(npcStatBlock(bare).AC, 13);
+  const armored = createNPC('b', 'Guard', {
+    stats: { AC: 13 },
+    armor: { name: 'Shield', acBonus: 2 },
+  });
+  assert.equal(npcStatBlock(armored).AC, 15);
+  assert.equal(armored.stats.AC, 13, 'the stored block is untouched');
+});
+
+test('npcStatBlock closes an old stat block over the fixed stat set', () => {
+  const legacy = /** @type {any} */ ({ stats: { DEX: 16, Speed: 30 } });
+  const block = npcStatBlock(legacy);
+  assert.equal(block.AC, 13);
+  assert.equal(block.STR, 10);
+  assert.equal('Speed' in block, false);
+});
+
+test('damageNPC and healNPC clamp to [0, maxHP], and 0 HP is defeat', () => {
+  const npc = createNPC('n1', 'Bram', { maxHP: 6 });
+  assert.equal(damageNPC(npc, 2).currentHP, 4);
+  assert.equal(damageNPC(npc, 99).currentHP, 0);
+  assert.equal(healNPC(npc, 5).currentHP, 6);
+  assert.equal(healNPC(damageNPC(npc, 4), 1).currentHP, 3);
+  assert.equal(isNPCDefeated(npc), false);
+  assert.equal(isNPCDefeated(damageNPC(npc, 6)), true);
 });
 
 test('withDefaults fills an empty condition list on an NPC saved without one', () => {
@@ -60,6 +117,21 @@ test('withDefaults backfills a sparse NPC', () => {
   assert.equal(restored.met, false);
   assert.equal(restored.stats.DEX, 16); // kept
   assert.equal(restored.stats.STR, 10); // backfilled
+  assert.equal(restored.stats.AC, 13); // derived from the kept DEX
+  assert.equal(restored.maxHP, DEFAULT_NPC_HP);
+  assert.equal(restored.currentHP, DEFAULT_NPC_HP);
+  assert.equal(restored.weapon, null);
+  assert.equal(restored.armor, null);
+});
+
+test('withDefaults keeps live hit points and gear, clamping current HP to the maximum', () => {
+  const armor = { name: 'Leather Armor', acBonus: 1 };
+  const hurt = { ...createNPC('n1', 'Bram', { maxHP: 9, armor }), currentHP: 3 };
+  const restored = withDefaults(hurt);
+  assert.equal(restored.currentHP, 3);
+  assert.deepEqual(restored.armor, armor);
+  const shrunk = withDefaults({ ...hurt, maxHP: 2 });
+  assert.equal(shrunk.currentHP, 2);
 });
 
 test('knownNpcsAt hides placed NPCs until met, keeps unplaced ones', () => {

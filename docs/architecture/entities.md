@@ -2,10 +2,10 @@
 
 *Explanation. Back to the [architecture overview](../architecture.md).*
 
-`src/entities/` holds the three things that a campaign's rules operate on:
-encounters, resource pools, and characters. All three follow one update
-style. This page describes that style first. The rest of the page covers
-the character model, the largest of the three.
+`src/entities/` holds the things that a campaign's rules operate on:
+encounters, resource pools, NPCs, and characters. They all follow one update
+style. This page describes that style first, then the NPC, then the character
+model, which is the largest of them.
 
 ## The shared shape: immutable updates
 
@@ -69,6 +69,41 @@ deriving writers move a maximum through `Resource.js`:
 `Roster.js`'s `updateById(list, id, fn)` is the matching helper for the by-id
 patch. The resource and inventory writers used to each spell out that patch
 inline.
+
+## The NPC
+
+`entities/NPC.js` (types in `src/types/npc.ts`) holds the named figures a
+campaign places on the map: an innkeeper, a guard captain, a rival. An NPC
+carries a role, a disposition toward the party, notes, and a `met` flag that
+the players' view filters on.
+
+An NPC is also a full combatant. It stands on one tile, and standing there is
+what puts it into a fight (`npcsOnTile`). To fight it needs the same numbers a
+foe needs, so it carries them under the same names an `Encounter` uses:
+`maxHP`, `currentHP`, a `weapon`, and an `armor`. Its `stats` block is closed
+over the fixed stat set through `normalizeStatBlock`, the same call the
+encounter uses, so AC sits beside the six ability scores and defaults to 10
+plus the DEX modifier.
+
+Three defaults differ from a foe's, because an NPC is a townsperson first:
+
+- `maxHP` defaults to 4, the 5e commoner. Hit points are never absent. An
+  optional field would put the silent no-op back, where damage to an NPC
+  changed nothing.
+- `weapon` and `armor` default to null, which means unarmed and unarmored. An
+  encounter fills these from its level and tier. An NPC has neither field, so
+  there is nothing to derive a loadout from, and the GM arms it by hand.
+- 0 HP is defeat with no death saves, the encounter rule rather than the
+  character rule.
+
+`npcStatBlock(npc)` is the AC read: the closed stat block plus the `acBonus` of
+the worn armor. It is the NPC twin of `Encounter.effectiveStatBlock`, minus the
+timed stat modifiers, which an NPC does not carry. `damageNPC`, `healNPC`, and
+`isNPCDefeated` are the same three clamped writers `Encounter.js` exports.
+
+The two models stay separate modules on purpose. They agree on field names, so
+the combat code branches on kind and reads the same names on each, rather than
+converting one into the other.
 
 ## The character foundation
 
@@ -585,8 +620,8 @@ the same state differently. `CombatantRow.deathSaves` carries the tracker onto
 the board, where a card shows a Dying, Stable, or Dead chip beside its
 conditions.
 
-Only characters roll death saves. An encounter is defeated at 0 HP, and an NPC
-tracks no HP at all.
+Only characters roll death saves. An encounter and an NPC are both defeated at
+0 HP.
 
 ## Conditions a spell imposed
 
