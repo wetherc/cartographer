@@ -9,7 +9,7 @@ import {
   getSpellbook,
   HP_RESOURCE_ID,
 } from '../entities/Character.js';
-import { isOnTile } from '../entities/NPC.js';
+import { isOnTile, npcStatBlock, damageNPC, healNPC, isNPCDefeated } from '../entities/NPC.js';
 import { addCondition } from '../entities/Conditions.js';
 import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
 import { saveBonus } from '../entities/Checks.js';
@@ -161,7 +161,9 @@ export function commitEncounters(app, { panel = true, dirty = true } = {}) {
  * other. This function does not refresh the initiative panel. An NPC edit
  * leaves the running order alone, and a delete does not remove the NPC's
  * participant. A deleted NPC renders as an unknown combatant until the fight
- * next refreshes.
+ * next refreshes. Damage does not come through here either. The store in
+ * `findCombatant` refreshes the combat screen, which is the surface that shows
+ * an NPC's hit points.
  * @param {AppContext} app
  */
 export function commitNPCs(app) {
@@ -188,8 +190,8 @@ export function describeCombatant(app, id) {
 
 /**
  * Project an entity into the shared CombatTarget shape. Use an encounter's
- * effective AC, a character's armor AC, or an NPC's raw stat (10 when
- * absent). The chips come along, so an attack roll against this target can
+ * effective AC, a character's armor AC, or an NPC's stat block AC with its
+ * armor. The chips come along, so an attack roll against this target can
  * read them without a second lookup.
  * @param {Character | Encounter | NPC} entity
  * @param {Combatant['kind']} kind
@@ -209,7 +211,7 @@ export function asTarget(entity, kind) {
     conditions = character.conditions ?? [];
   } else {
     const npc = /** @type {NPC} */ (entity);
-    ac = npc.stats?.AC ?? 10;
+    ac = npcStatBlock(npc).AC;
     conditions = npc.conditions ?? [];
   }
   return { id: entity.id, name: entity.name, ac, conditions };
@@ -246,8 +248,9 @@ export function targetConditions(app, id) {
 
 /**
  * weaponsOf gives the weapons a combatant can attack with: a party
- * character's equipped weapons, or a foe encounter's assigned weapon. NPCs
- * carry no weapons yet. An id that resolves to nothing has nothing to swing.
+ * character's equipped weapons, or the one weapon a foe encounter or an NPC
+ * was given. An unarmed NPC, which is what a new one is, has nothing to
+ * swing, and so does an id that resolves to nothing.
  * @param {AppContext} app
  * @param {string} id
  * @returns {(import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon)[]}
@@ -255,9 +258,8 @@ export function targetConditions(app, id) {
 export function weaponsOf(app, id) {
   const found = findCombatant(app, id);
   if (!found) return [];
-  if (found.kind === 'encounter') return found.entity.weapon ? [found.entity.weapon] : [];
   if (found.kind === 'character') return equippedWeapons(found.entity);
-  return [];
+  return found.entity.weapon ? [found.entity.weapon] : [];
 }
 
 /**
@@ -314,16 +316,27 @@ export function combatantsAsTargets(app, combat, actor, { allies = false } = {})
 
 /**
  * Log the transition into defeat exactly once, only when the update crosses
- * from standing to defeated. Further damage on a downed encounter stays
- * quiet. Every path that damages an encounter shares this function.
+ * from standing to defeated. Further damage on a downed combatant stays
+ * quiet. Every path that damages an encounter or an NPC shares this function.
+ * Both kinds leave the fight at 0 HP, but each module owns its own test, so
+ * the branch below asks the right one rather than reading `currentHP` here.
  * @param {AppContext} app
- * @param {Encounter} prev
- * @param {Encounter} next
+ * @param {Encounter | NPC} prev
+ * @param {Encounter | NPC} next
  */
 export function logDefeatTransition(app, prev, next) {
-  if (!isDefeated(prev) && isDefeated(next)) {
+  if (!downOf(prev) && downOf(next)) {
     app.actions.logEvent('combat', `Defeated ${next.name}.`);
   }
+}
+
+/**
+ * Whether an encounter or an NPC is out of the fight, each by its own rule.
+ * @param {Encounter | NPC} entity
+ * @returns {boolean}
+ */
+function downOf(entity) {
+  return 'statBlock' in entity ? isDefeated(entity) : isNPCDefeated(entity);
 }
 
 /**
@@ -485,9 +498,8 @@ export function retryImposedSaves(app, combatantId) {
 /**
  * Apply damage or healing to a combatant by id. This is the one write path
  * behind weapon hits, spell effects, and anything else that lands numbers on
- * a target. Encounters and party characters track HP. The defeat and
- * drops-to-0 transitions each log exactly once. An HP-less NPC keeps only
- * the caller's log line. This function stores the result and marks the
+ * a target. All three kinds track HP. The defeat and drops-to-0 transitions
+ * each log exactly once. This function stores the result and marks the
  * campaign dirty.
  *
  * Damage to a concentrating character also triggers the save that holds the
@@ -513,6 +525,16 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
     // off the danger layer, and a healed one must return to it. Doing this
     // again here only rebuilds the encounter list and the Build rail a
     // second time per hit.
+    found.store(next);
+    app.actions.markDirty();
+    return;
+  }
+  if (found.kind === 'npc') {
+    // An NPC follows the encounter rule: 0 HP takes it out of the fight, with
+    // no death saves and no dying tracker. Its store refreshes the combat
+    // screen, which is where the HP change shows.
+    const next = isHeal ? healNPC(found.entity, amount) : damageNPC(found.entity, amount);
+    if (!isHeal) logDefeatTransition(app, found.entity, next);
     found.store(next);
     app.actions.markDirty();
     return;

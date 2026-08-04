@@ -107,12 +107,18 @@ test('attackParticipants names the attacker and who is left to attack', () => {
   );
 });
 
-test('attackParticipants gives an NPC and an unknown participant nothing to swing', () => {
-  const sage = createNPC('sage', 'Sage', { location: HERE });
-  const app = stubApp({ npcs: [sage] });
-  const combat = { order: [{ id: 'sage' }, { id: 'ghost' }] };
-  assert.equal(attackParticipants(app, /** @type {any} */ (combat), combat.order[0]), null);
-  assert.equal(attackParticipants(app, /** @type {any} */ (combat), combat.order[1]), null);
+test('attackParticipants names an NPC attacker and skips an unknown participant', () => {
+  const hero = withHP(createCharacter('hero', 'Hero'), 12);
+  const brigand = createNPC('brigand', 'Brigand', { location: HERE, disposition: 'hostile' });
+  const app = stubApp({ characters: [hero], npcs: [brigand] });
+  const combat = { order: [{ id: 'brigand' }, { id: 'hero' }, { id: 'ghost' }] };
+  const sides = attackParticipants(app, /** @type {any} */ (combat), combat.order[0]);
+  assert.equal(sides?.attacker.id, 'brigand');
+  assert.deepEqual(
+    sides?.defenders.map((d) => d.id),
+    ['hero'],
+  );
+  assert.equal(attackParticipants(app, /** @type {any} */ (combat), combat.order[2]), null);
 });
 
 test('a hit rolls the weapon damage, applies it, and logs both halves', () => {
@@ -347,12 +353,57 @@ test('weaponAttack stops before the dialog when there is nobody to attack', asyn
   assert.deepEqual(app.rolls, []);
 });
 
-test('weaponAttack ignores a participant with nothing to swing', async () => {
-  const sage = createNPC('sage', 'Sage', { location: HERE });
-  const app = stubApp({ npcs: [sage] });
-  const combat = { order: [{ id: 'sage' }] };
+test('weaponAttack ignores a participant nothing resolves', async () => {
+  const app = stubApp({});
+  const combat = { order: [{ id: 'ghost' }] };
   await weaponAttack(app, /** @type {any} */ (combat), combat.order[0], /** @type {any} */ (SWORD));
-  assert.deepEqual(app.toastMessages, [], 'an NPC never reaches the dialog or the toast');
+  assert.deepEqual(app.toastMessages, [], 'a ghost never reaches the dialog or the toast');
+});
+
+test('an armed NPC attacks with its own stats and proficiency', () => {
+  const club = {
+    name: 'Club',
+    handling: 'melee',
+    damage: [{ count: 1, sides: 4, damageType: 'bludgeoning' }],
+  };
+  const brigand = createNPC('brigand', 'Brigand', {
+    location: HERE,
+    disposition: 'hostile',
+    stats: { STR: 16 },
+    weapon: /** @type {any} */ (club),
+  });
+  const hero = withHP(createCharacter('hero', 'Hero'), 12);
+  // A 15 on the d20 plus STR +3 plus proficiency +2 beats AC 10.
+  const app = stubApp({ characters: [hero], npcs: [brigand], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: brigand,
+    defender: { id: 'hero', name: 'Hero', ac: 10 },
+    weapon: /** @type {any} */ (club),
+    rng: scripted([2 / 4]),
+  });
+  assert.deepEqual(app.rolls, [{ selection: { counts: { d20: 1 }, modifier: 5 }, target: 10 }]);
+  assert.match(app.log[0], /^Brigand attacks Hero with Club \(STR \+3, proficiency \+2\)/);
+  assert.equal(getHP(app.state.characters[0]).current, 6, 'a d4 of 3 plus STR +3');
+});
+
+test('a caster NPC takes its proficiency from its caster level', () => {
+  const fist = { name: 'Fist', handling: 'melee', damage: [{ count: 1, sides: 4 }] };
+  const cultist = createNPC('cultist', 'Cultist', {
+    location: HERE,
+    disposition: 'hostile',
+    class: 'cleric',
+    casterLevel: 9,
+    weapon: /** @type {any} */ (fist),
+  });
+  const hero = withHP(createCharacter('hero', 'Hero'), 12);
+  const app = stubApp({ characters: [hero], npcs: [cultist], rng: scripted([d20(10)]) });
+  rollWeaponAttack(app, {
+    attacker: cultist,
+    defender: { id: 'hero', name: 'Hero', ac: 20 },
+    weapon: /** @type {any} */ (fist),
+    rng: scripted([0]),
+  });
+  assert.match(app.log[0], /proficiency \+4\): 14 to hit vs AC 20 — miss\.$/);
 });
 
 test('a rider chip on the attacker joins the attack roll and the log', () => {

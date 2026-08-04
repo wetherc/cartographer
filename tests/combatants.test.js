@@ -124,9 +124,18 @@ test('asTarget projects AC by kind', () => {
   assert.equal(typeof heroTarget.ac, 'number');
 });
 
-test('asTarget defaults an NPC with no stat block to AC 10', () => {
+test('asTarget derives the AC of an NPC saved without a stat block', () => {
   assert.equal(asTarget(/** @type {any} */ ({ id: 'x', name: 'Wisp' }), 'npc').ac, 10);
   assert.deepEqual(asTarget(/** @type {any} */ ({ id: 'x', name: 'Wisp' }), 'npc').conditions, []);
+});
+
+test("asTarget adds an NPC's armor to its stat block AC", () => {
+  const guard = createNPC('guard', 'Guard', {
+    location: HERE,
+    stats: { AC: 12 },
+    armor: { name: 'Shield', acBonus: 2 },
+  });
+  assert.equal(asTarget(guard, 'npc').ac, 14);
 });
 
 test('asTarget carries an NPC chip through to the target', () => {
@@ -327,14 +336,36 @@ test('applyToTarget stays quiet healing a character who was not dying', () => {
   assert.deepEqual(app.log, [], 'no consciousness line for an ordinary heal');
 });
 
-test('applyToTarget ignores non-positive amounts, unknown ids, and HP-less NPCs', () => {
+test('applyToTarget ignores non-positive amounts and unknown ids', () => {
   const { sage } = fixtures();
   const app = stubApp({ npcs: [sage] });
-  applyToTarget(app, 'sage', 5, false);
   applyToTarget(app, 'nobody', 5, false);
   applyToTarget(app, 'sage', 0, false);
   assert.equal(app.dirty, 0);
   assert.equal(app.log.length, 0);
+});
+
+test('applyToTarget damages and heals an NPC, clamped to its own maximum', () => {
+  const guard = createNPC('guard', 'Guard', { location: HERE, maxHP: 8 });
+  const app = stubApp({ npcs: [guard] });
+  applyToTarget(app, 'guard', 3, false);
+  assert.equal(app.state.npcs[0].currentHP, 5);
+  applyToTarget(app, 'guard', 99, true);
+  assert.equal(app.state.npcs[0].currentHP, 8);
+  assert.equal(app.dirty, 2);
+  assert.deepEqual(app.log, [], 'a standing NPC logs nothing of its own');
+  assert.ok(app.refreshes.includes('combatScreen'), 'the fight screen shows the new HP');
+});
+
+test('applyToTarget logs an NPC defeat once and rolls it no death saves', () => {
+  const guard = createNPC('guard', 'Guard', { location: HERE, maxHP: 6 });
+  const app = stubApp({ npcs: [guard] });
+  applyToTarget(app, 'guard', 6, false);
+  assert.equal(app.state.npcs[0].currentHP, 0);
+  assert.deepEqual(app.log, ['Defeated Guard.']);
+  assert.equal(app.state.npcs[0].deathSaves, undefined, 'an NPC has no dying tracker');
+  applyToTarget(app, 'guard', 4, false);
+  assert.deepEqual(app.log, ['Defeated Guard.'], 'a hit on a downed NPC stays quiet');
 });
 
 test('commitEncounters skips the panel and the dirty mark when told to', () => {
@@ -406,8 +437,21 @@ test('weaponsOf lists what each kind of combatant can swing', () => {
     ['Club'],
   );
   assert.deepEqual(weaponsOf(app, 'slime'), [], 'a foe with no assigned weapon has nothing');
-  assert.deepEqual(weaponsOf(app, 'sage'), [], 'NPCs carry no weapons');
+  assert.deepEqual(weaponsOf(app, 'sage'), [], 'an unarmed NPC has nothing');
   assert.deepEqual(weaponsOf(app, 'nobody'), []);
+});
+
+test('weaponsOf lists the weapon an armed NPC was given', () => {
+  const club = { name: 'Club', handling: 'melee', damage: [{ count: 1, sides: 4 }] };
+  const guard = createNPC('guard', 'Guard', {
+    location: HERE,
+    weapon: /** @type {any} */ (club),
+  });
+  const app = stubApp({ npcs: [guard] });
+  assert.deepEqual(
+    weaponsOf(app, 'guard').map((w) => w.name),
+    ['Club'],
+  );
 });
 
 test('spellsOf lists a character cantrip plus what its known-rule makes castable', () => {

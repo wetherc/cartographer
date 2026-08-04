@@ -14,7 +14,7 @@ import {
 import { createCharacter, withHP, damageCharacter } from '../src/entities/Character.js';
 import { createEncounter, applyDamage, effectiveStatBlock } from '../src/entities/Encounter.js';
 import { armorClass } from '../src/entities/Equipment.js';
-import { createNPC } from '../src/entities/NPC.js';
+import { createNPC, damageNPC } from '../src/entities/NPC.js';
 
 const HERE = { nodeId: 'n1', tileId: '0,0' };
 
@@ -45,7 +45,8 @@ test('isDowned reads a defeated encounter and a 0 HP character', () => {
   assert.equal(isDowned({ kind: 'encounter', entity: applyDamage(goblin, 99) }), true);
   assert.equal(isDowned({ kind: 'character', entity: hero }), false);
   assert.equal(isDowned({ kind: 'character', entity: damageCharacter(hero, 99) }), true);
-  assert.equal(isDowned({ kind: 'npc', entity: sage }), false, 'NPCs carry no HP');
+  assert.equal(isDowned({ kind: 'npc', entity: sage }), false);
+  assert.equal(isDowned({ kind: 'npc', entity: damageNPC(sage, 99) }), true);
 });
 
 test('isDowned is false for a character without an HP pool', () => {
@@ -60,7 +61,7 @@ test('hpOf projects each kind', () => {
     current: 8,
     max: 12,
   });
-  assert.equal(hpOf({ kind: 'npc', entity: sage }), null);
+  assert.deepEqual(hpOf({ kind: 'npc', entity: sage }), { current: 4, max: 4 });
   assert.equal(hpOf({ kind: 'character', entity: createCharacter('b', 'B') }), null);
 });
 
@@ -70,6 +71,11 @@ test('acOf projects each kind', () => {
   assert.equal(acOf({ kind: 'character', entity: hero }), armorClass(hero));
   assert.equal(acOf({ kind: 'npc', entity: sage }), 12);
   assert.equal(acOf({ kind: 'npc', entity: createNPC('w', 'Wisp', {}) }), 10);
+  const armored = createNPC('g', 'Guard', {
+    stats: { AC: 12 },
+    armor: { name: 'Shield', acBonus: 2 },
+  });
+  assert.equal(acOf({ kind: 'npc', entity: armored }), 14, 'the armor bonus counts');
 });
 
 test('mayActOn lets the GM drive anyone and a player only their bound character', () => {
@@ -117,7 +123,7 @@ test('buildCombatView assembles a row per participant in order', () => {
   assert.deepEqual(foe.hp, { current: 10, max: 10 });
   assert.equal(character.side, 'party');
   assert.equal(character.initiative, 12);
-  assert.equal(npc.hp, null);
+  assert.deepEqual(npc.hp, { current: 4, max: 4 }, 'a plain NPC is a commoner');
   assert.ok(
     view.rows.every((r) => r.mayAct),
     'the GM may act for everyone',
@@ -304,6 +310,42 @@ test('fightOutcome settles only once a whole side is down', () => {
     ),
     'defeat',
     'a mutual wipe reads as a defeat',
+  );
+});
+
+test('fightOutcome settles a fight whose foe side is only hostile NPCs', () => {
+  const { hero, brigand, sage } = fixtures();
+  const combat = {
+    round: 1,
+    index: 0,
+    order: [
+      { id: 'hero', initiative: 15, modifier: 2 },
+      { id: 'sage', initiative: 10, modifier: 0 },
+      { id: 'brigand', initiative: 8, modifier: 0 },
+    ],
+  };
+  /** @param {any} npcs */
+  const outcome = (npcs) =>
+    fightOutcome(
+      buildCombatView(combat, resolver({ hero: { kind: 'character', entity: hero }, ...npcs }), {
+        gm: true,
+      }),
+    );
+  assert.equal(
+    outcome({
+      sage: { kind: 'npc', entity: damageNPC(sage, 99) },
+      brigand: { kind: 'npc', entity: brigand },
+    }),
+    null,
+    'a fallen friendly NPC does not lose the fight while the hero stands',
+  );
+  assert.equal(
+    outcome({
+      sage: { kind: 'npc', entity: sage },
+      brigand: { kind: 'npc', entity: damageNPC(brigand, 99) },
+    }),
+    'victory',
+    'the whole foe side is down',
   );
 });
 

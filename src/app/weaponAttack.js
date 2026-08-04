@@ -42,11 +42,12 @@ const BONUS_DICE = /** @type {import('../types/dice.js').DieType[]} */ ([
 ]);
 
 /**
- * Who can attack and who is left to attack. The attacker is a party character
- * or an armed encounter. NPCs carry no weapons yet, so an NPC participant has
- * nothing to swing and resolves to null. Defenders come from the opposite side
- * of the running order: encounters by id, party characters with their armor AC,
- * and NPCs standing on the tile. Downed combatants drop out.
+ * Who can attack and who is left to attack. The attacker is a party character,
+ * an armed encounter, or an armed NPC. An unarmed NPC still resolves here, but
+ * `weaponsOf` gives it no weapon, so the attack UI stays quiet for it.
+ * Defenders come from the opposite side of the running order: encounters by id,
+ * party characters with their armor AC, and NPCs standing on the tile. Downed
+ * combatants drop out.
  * @param {AppContext} app
  * @param {import('../types/combat.js').CombatState} combat
  * @param {import('../types/combat.js').Participant} participant
@@ -54,7 +55,7 @@ const BONUS_DICE = /** @type {import('../types/dice.js').DieType[]} */ ([
  */
 export function attackParticipants(app, combat, participant) {
   const found = findCombatant(app, participant.id);
-  if (!found || found.kind === 'npc') return null;
+  if (!found) return null;
   return { attacker: found.entity, defenders: combatantsAsTargets(app, combat, participant) };
 }
 
@@ -110,7 +111,11 @@ export function rollWeaponAttack(
 ) {
   const ability = weaponAbility(weapon);
   const abilityMod = abilityModOf(attackerStats(attacker), ability);
-  const attackBonus = abilityMod + proficiencyBonus(attacker.level);
+  // A character and an encounter carry a level. An NPC carries neither, so it
+  // falls back to its caster level, and to 1 for a non-caster. Every combatant
+  // is proficient with what it holds until the weapon overhaul gates that.
+  const proficiency = proficiencyBonus(attacker.level ?? attacker.casterLevel ?? 1);
+  const attackBonus = abilityMod + proficiency;
   // Bonus attack dice join the d20 in the tray's selection, so they roll in
   // view. `attackTweak` rolls penalty dice and folds them into the modifier,
   // and keeps the values in its note for the log.
@@ -166,7 +171,7 @@ export function rollWeaponAttack(
   const conditionNote = reasons ? `, ${reasons}` : '';
   app.actions.logEvent(
     'combat',
-    `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiencyBonus(attacker.level)}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
+    `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiency}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
   );
   if (!hit) {
     app.toasts.show(

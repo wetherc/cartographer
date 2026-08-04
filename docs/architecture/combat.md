@@ -126,6 +126,12 @@ order that the GM built with no foes in it reads as undecided. A mutual wipe
 reads as a defeat: what happens to the party outweighs what happens to the
 monsters.
 
+An NPC row counts toward its side like any other. A hostile NPC is a foe, and a
+friendly or neutral one stands with the party. A whole side must go down before
+the fight settles, so one fallen friendly NPC settles nothing while a character
+still stands. A fight whose foe side is only hostile NPCs is now winnable, which
+it was not while an NPC could not be defeated.
+
 ### Who can see what
 
 `src/combat/Loadout.js` holds the second viewer rule. `loadoutAccess(found,

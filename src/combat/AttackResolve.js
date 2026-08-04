@@ -1,5 +1,6 @@
 import { effectiveStatBlock } from '../entities/Encounter.js';
 import { effectiveStats } from '../entities/Equipment.js';
+import { npcStatBlock } from '../entities/NPC.js';
 import { DIE_SIDES } from '../dice/DiceRoller.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 
@@ -16,13 +17,19 @@ import { abilityModifier } from '../entities/Modifiers.js';
 
 /**
  * The stat map an attacker rolls from. An encounter carries a stat block that
- * its own modifiers apply to. A party character carries ability scores that
- * equipped gear can buff. Either way, the caller gets one ability-to-score
- * map.
- * @param {import('../types/entities.js').Encounter | import('../types/entities.js').Character} attacker
+ * its own modifiers apply to. An NPC carries one too, with its armor folded
+ * in. A party character carries ability scores that equipped gear can buff.
+ * Every kind gives the caller one ability-to-score map.
+ *
+ * The NPC test comes first, and it reads `disposition`, the field only an NPC
+ * has. An NPC has no `statBlock`, so the encounter test would send it to the
+ * character branch, where `effectiveStats` reads an inventory it does not
+ * carry.
+ * @param {import('../types/entities.js').Encounter | import('../types/entities.js').Character | import('../types/npc.js').NPC} attacker
  * @returns {Record<string, number>}
  */
 export function attackerStats(attacker) {
+  if ('disposition' in attacker) return npcStatBlock(attacker);
   return 'statBlock' in attacker ? effectiveStatBlock(attacker) : effectiveStats(attacker);
 }
 

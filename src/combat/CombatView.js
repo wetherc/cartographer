@@ -11,6 +11,7 @@
 import { effectiveStatBlock, isDefeated } from '../entities/Encounter.js';
 import { armorClass } from '../entities/Equipment.js';
 import { getHP } from '../entities/Character.js';
+import { npcStatBlock, isNPCDefeated } from '../entities/NPC.js';
 import { canAct } from '../entities/ConditionEffects.js';
 
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
@@ -34,7 +35,7 @@ import { canAct } from '../entities/ConditionEffects.js';
  * when nothing holds the id any more: an entity deleted mid-fight, or an NPC
  * who walked off. In that case the numeric fields fall back to neutral
  * values, and the row still draws, so the order and the turn pointer keep
- * lining up. `hp` is null for an NPC, because an NPC carries no HP.
+ * lining up. `hp` is null only for a character with no HP pool.
  * `deathSaves` is null for anything but a dying party character, because only a
  * character rolls them.
  * @typedef {{
@@ -69,18 +70,20 @@ export function sideOf(found) {
 }
 
 /**
- * Whether a combatant is out of the fight: a defeated encounter or a
- * character at 0 HP. NPCs carry no HP yet, so they never read as downed.
+ * Whether a combatant is out of the fight: a defeated encounter, a defeated
+ * NPC, or a character at 0 HP.
+ *
+ * A downed NPC counts toward its side. `fightOutcome` calls a side down only
+ * when every row on it is, so a fallen friendly NPC alone does not lose the
+ * fight, and a foe side made only of hostile NPCs is now winnable.
  * @param {ResolvedCombatant} found
  * @returns {boolean}
  */
 export function isDowned(found) {
   if (found.kind === 'encounter') return isDefeated(found.entity);
-  if (found.kind === 'character') {
-    const hp = getHP(found.entity);
-    return Boolean(hp && hp.current <= 0);
-  }
-  return false;
+  if (found.kind === 'npc') return isNPCDefeated(found.entity);
+  const hp = getHP(found.entity);
+  return Boolean(hp && hp.current <= 0);
 }
 
 /**
@@ -106,32 +109,31 @@ export function conditionsOf(found) {
 }
 
 /**
- * The combatant's HP as a current/max pair, or null where it tracks none.
+ * The combatant's HP as a current/max pair. An encounter and an NPC both store
+ * the pair. A character reads it off its HP pool, and a character without that
+ * pool has no pair to show.
  * @param {ResolvedCombatant} found
  * @returns {{ current: number, max: number } | null}
  */
 export function hpOf(found) {
-  if (found.kind === 'encounter') {
-    return { current: found.entity.currentHP, max: found.entity.maxHP };
-  }
   if (found.kind === 'character') {
     const hp = getHP(found.entity);
     return hp ? { current: hp.current, max: hp.max } : null;
   }
-  return null;
+  return { current: found.entity.currentHP, max: found.entity.maxHP };
 }
 
 /**
  * The combatant's armor class: an encounter's effective AC (stat modifiers
- * applied), a character's armor AC, an NPC's raw stat or null when it has
- * none entered.
+ * applied), a character's armor AC, or an NPC's stat block AC with its armor.
+ * Every kind has one, so the return is never null.
  * @param {ResolvedCombatant} found
  * @returns {number | null}
  */
 export function acOf(found) {
   if (found.kind === 'encounter') return effectiveStatBlock(found.entity).AC ?? 10;
   if (found.kind === 'character') return armorClass(found.entity);
-  return found.entity.stats?.AC ?? null;
+  return npcStatBlock(found.entity).AC;
 }
 
 /**
