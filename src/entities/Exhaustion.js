@@ -15,15 +15,13 @@
  * printed number and the rolled number cannot disagree, and it carries the
  * penalty into a passive score for free.
  *
- * Every function here is pure, and this module imports nothing but the
- * condition list. That is deliberate: `Checks.js` reads it, and `Checks.js` is
+ * Every function here is pure, and this module imports nothing. That is
+ * deliberate: `Checks.js` reads it, and `Checks.js` is
  * what `DeathSaves.js` is built on, so any import of those from here would
  * close a cycle. The two rules that need to know about death, the guard that
  * keeps a long rest from easing a dead character and the revive that has to
  * bring a level-6 character back below six, therefore live with their callers.
  */
-
-import { removeCondition } from './Conditions.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
 
@@ -44,11 +42,19 @@ export const SPEED_PER_LEVEL = 5;
 
 /**
  * The name exhaustion went by while it was a hand-added condition chip, before
- * it had a level behind it. `exhaustionFields` folds such a chip into level 1
+ * it had a level behind it. `exhaustionFields` folds such a chip into a level
  * and drops it, and the name is gone from the `CONDITIONS` pick-list, so there
  * is only ever one way to say a character is exhausted.
  */
 export const LEGACY_CHIP = 'Exhaustion';
+
+/**
+ * What counts as a legacy exhaustion chip. A condition is a free string, so a
+ * GM may have typed "Exhausted" or "Exhaustion 3" instead of the pick-list
+ * name. The optional trailing number is the level the GM meant. Anything
+ * longer, such as "Exhausting aura", is somebody's own chip and stays.
+ */
+const LEGACY_CHIP_PATTERN = /^exhaust(?:ion|ed)?(?:\s+(\d+))?$/i;
 
 /**
  * The stored level, read tolerantly: a whole number from 0 to
@@ -159,19 +165,30 @@ export function exhaustionNote(entity) {
  * of each. It returns both fields it touches, because folding a legacy chip
  * changes the condition list as well as the level.
  *
- * A save written while exhaustion was a chip carried no level. Such a chip
+ * A save written while exhaustion was a chip carried no level. A bare chip
  * reads as level 1, which is the least the GM can have meant by adding it, and
- * the chip comes off. A save that already stores a level keeps it and drops any
- * stray chip beside it, so the two can never disagree.
+ * a chip with a number, such as "Exhaustion 3", reads as that level. Every
+ * matching chip comes off, and where several disagree the highest wins. A save
+ * that already stores a level keeps it and drops any stray chip beside it, so
+ * the two can never disagree.
  * @param {number | undefined} stored the level as the save holds it
  * @param {Condition[]} conditions the condition list, already defaulted
  * @returns {{ exhaustion: number, conditions: Condition[] }}
  */
 export function exhaustionFields(stored, conditions) {
-  const chipped = conditions.some((c) => c.name.toLowerCase() === LEGACY_CHIP.toLowerCase());
+  let chipped = false;
+  let chipLevel = 0;
+  for (const condition of conditions) {
+    const match = LEGACY_CHIP_PATTERN.exec(condition.name.trim());
+    if (!match) continue;
+    chipped = true;
+    chipLevel = Math.max(chipLevel, exhaustionLevel({ exhaustion: Number(match[1] ?? 1) }));
+  }
   const level = exhaustionLevel({ exhaustion: stored });
   return {
-    exhaustion: level || (chipped ? 1 : 0),
-    conditions: chipped ? removeCondition(conditions, LEGACY_CHIP) : conditions,
+    exhaustion: level || chipLevel,
+    conditions: chipped
+      ? conditions.filter((c) => !LEGACY_CHIP_PATTERN.test(c.name.trim()))
+      : conditions,
   };
 }

@@ -108,6 +108,30 @@ test('exhaustionFields drops a stray chip beside a stored level, keeping the lev
   assert.deepEqual(fields.conditions, [], 'and the chip goes, so the two cannot disagree');
 });
 
+test('exhaustionFields reads a hand-typed chip variant and its level', () => {
+  const numbered = exhaustionFields(undefined, [createCondition('Exhaustion 3')]);
+  assert.equal(numbered.exhaustion, 3, 'a trailing number is the level the GM meant');
+  assert.deepEqual(numbered.conditions, []);
+
+  const worded = exhaustionFields(undefined, [createCondition('exhausted')]);
+  assert.equal(worded.exhaustion, 1, 'a bare variant reads as level 1');
+  assert.deepEqual(worded.conditions, []);
+
+  const several = exhaustionFields(undefined, [
+    createCondition('Exhausted'),
+    createCondition('Exhaustion 9'),
+  ]);
+  assert.equal(several.exhaustion, MAX_EXHAUSTION, 'the highest wins, clamped at death');
+  assert.deepEqual(several.conditions, []);
+});
+
+test('exhaustionFields leaves a chip that only starts with the word', () => {
+  const conditions = [createCondition('Exhausting aura')];
+  const fields = exhaustionFields(undefined, conditions);
+  assert.equal(fields.exhaustion, 0);
+  assert.equal(fields.conditions, conditions, 'the same list back, untouched');
+});
+
 test('exhaustionFields defaults an unexhausted entity to zero', () => {
   assert.deepEqual(exhaustionFields(undefined, []), { exhaustion: 0, conditions: [] });
 });
