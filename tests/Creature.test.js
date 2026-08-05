@@ -324,6 +324,17 @@ test('damage and heal clamp to the [0, maxHP] range, and 0 HP is defeat', () => 
   assert.equal(back.currentHP, 10);
 });
 
+test('a heal off 0 HP takes the fatal level of exhaustion with it', () => {
+  const dead = { ...createCreature('c1', 'Guard', { maxHP: 10 }), currentHP: 0, exhaustion: 6 };
+  const back = heal(dead, 4);
+  assert.equal(back.currentHP, 4);
+  assert.equal(back.exhaustion, 5, 'the level that put it down must not put it down again');
+  const stillDown = heal(dead, 0);
+  assert.equal(stillDown.exhaustion, 6, 'a heal of nothing revives nothing');
+  const tired = heal({ ...dead, exhaustion: 2 }, 4);
+  assert.equal(tired.exhaustion, 2, 'a level below the fatal one is left alone');
+});
+
 test('toTemplate captures the blueprint, not the live state', () => {
   const spot = { nodeId: 'n1', tileId: '2,3' };
   const foe = createCreature('c1', 'Bandit', {

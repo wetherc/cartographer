@@ -64,10 +64,13 @@ test('easeExhaustion takes levels off and stops at zero', () => {
   assert.equal(easeExhaustion({}).exhaustion, 0);
 });
 
-test('easeExhaustion holds no death guard, so its callers must', () => {
-  // The guard lives in `Character.longRest`, because this module cannot read a
-  // death-save tracker without closing an import cycle. If that ever moves
-  // here, this test is the one to delete.
+test('easeExhaustion takes the fatal level off without asking, so its callers judge', () => {
+  // This module cannot read a death-save tracker without closing an import
+  // cycle, so each caller decides whether a level may come off.
+  // `DeathSaves.clearDying` and `Creature.heal` call it exactly because the
+  // fatal level must go. `Character.longRest` holds the opposite guard, and does
+  // not call it for a dead character. If either rule ever moves here, this test
+  // is the one to delete.
   assert.equal(easeExhaustion({ exhaustion: MAX_EXHAUSTION }).exhaustion, 5);
 });
 

@@ -16,7 +16,7 @@
 
 import { UNCONSCIOUS, addCondition, removeCondition } from './Conditions.js';
 import { resolveSave } from './Checks.js';
-import { d20Penalty } from './Exhaustion.js';
+import { atDeathLevel, d20Penalty, easeExhaustion } from './Exhaustion.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').DeathSaveState} DeathSaveState */
@@ -79,15 +79,40 @@ export function dropToDying(character) {
 /**
  * Take the tracker and the chip off, which is what a heal above 0 HP and a
  * natural 20 both do. A character that holds no tracker comes back unchanged.
+ *
+ * A character at the sixth level of exhaustion also loses one level here. That
+ * level is what killed the character, and a revive that left it in place would
+ * give a character who is alive and dead at the same time.
  * @param {Character} character
  * @returns {Character}
  */
 export function clearDying(character) {
   if (!character.deathSaves) return character;
-  return {
+  const revived = {
     ...character,
     deathSaves: null,
     conditions: removeCondition(character.conditions, UNCONSCIOUS),
+  };
+  return atDeathLevel(revived) ? easeExhaustion(revived) : revived;
+}
+
+/**
+ * Kill a character with the tracker instead of with damage. The sixth level of
+ * exhaustion is the one rule that does this. Three failures is what the whole
+ * app reads as dead, so the tracker says it here, and the Unconscious chip goes
+ * on beside it as it does for a character who bleeds out.
+ *
+ * HP is not touched. Exhaustion kills without damage, and the number the GM
+ * tracks must stay true. A character who is already dead comes back unchanged.
+ * @param {Character} character
+ * @returns {Character}
+ */
+export function killOutright(character) {
+  if (isDead(character)) return character;
+  return {
+    ...character,
+    deathSaves: { successes: 0, failures: DEATH_SAVE_LIMIT, stable: false },
+    conditions: addCondition(character.conditions, UNCONSCIOUS),
   };
 }
 

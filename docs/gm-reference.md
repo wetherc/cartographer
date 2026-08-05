@@ -393,6 +393,13 @@ feet off the walking speed. The penalty reaches the saving throws and the skills
 on the sheet, the passive Perception score, an attack with a weapon or a spell,
 and a death save. The log names the level and the number it took off.
 
+The sixth level kills. A character gets three failed death saves and goes
+unconscious, and the log says the character died of exhaustion. The HP number
+stays where it was, because exhaustion kills without damage. A creature goes to
+0 HP and drops out of the fight, the same as a killing blow. A revive undoes the
+fatal level as well: a heal that brings a character or a creature back takes the
+level from 6 down to 5, so nothing stands up dead.
+
 Two rolls do not get the penalty. Initiative throws a straight d20, so lower it
 by hand in the setup dialog. A creature's saving throw against a spell is a
 number you type into the cast dialog, so subtract the penalty as you type it.

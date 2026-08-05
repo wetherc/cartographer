@@ -4,7 +4,7 @@ import { copySpellbook } from './Character.js';
 import { withCasterFields, ensureCasterFields, casterTemplateFields } from './Caster.js';
 import { isCasterClass } from './Classes.js';
 import { isSlotPool } from './SpellSlots.js';
-import { exhaustionFields } from './Exhaustion.js';
+import { atDeathLevel, easeExhaustion, exhaustionFields } from './Exhaustion.js';
 import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -372,12 +372,19 @@ export function applyDamage(creature, amount) {
 
 /**
  * Heal, clamped so currentHP never exceeds maxHP.
+ *
+ * A heal that brings a creature off 0 HP also takes one level of exhaustion off
+ * a creature at the sixth level. That level is what put the creature down, and
+ * leaving it in place would take the creature out again on the next write. This
+ * is the creature half of the rule that `DeathSaves.clearDying` holds for a
+ * character.
  * @param {Creature} creature
  * @param {number} amount
  * @returns {Creature}
  */
 export function heal(creature, amount) {
-  return { ...creature, currentHP: Math.min(creature.maxHP, creature.currentHP + amount) };
+  const next = { ...creature, currentHP: Math.min(creature.maxHP, creature.currentHP + amount) };
+  return next.currentHP > 0 && atDeathLevel(next) ? easeExhaustion(next) : next;
 }
 
 /**

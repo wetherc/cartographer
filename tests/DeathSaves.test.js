@@ -8,6 +8,7 @@ import {
   isDying,
   isStable,
   judgeDeathSave,
+  killOutright,
   recordDamage,
   deathSaveBonus,
   rollDeathSave,
@@ -82,6 +83,29 @@ test('clearDying removes the tracker and the chip, leaving other chips alone', (
   );
   const standing = createCharacter('hero', 'Hero');
   assert.equal(clearDying(standing), standing);
+});
+
+test('clearDying takes the fatal level of exhaustion off a revived character', () => {
+  const next = clearDying(/** @type {any} */ ({ ...dying({ failures: 3 }), exhaustion: 6 }));
+  assert.equal(next.deathSaves, null);
+  assert.equal(next.exhaustion, 5, 'alive and dead at once is not a state a character can hold');
+  const tired = clearDying(/** @type {any} */ ({ ...dying(), exhaustion: 3 }));
+  assert.equal(tired.exhaustion, 3, 'a level below the fatal one is left alone');
+});
+
+test('killOutright kills with the tracker and leaves HP alone', () => {
+  const character = /** @type {any} */ ({ ...createCharacter('hero', 'Hero'), exhaustion: 6 });
+  const before = /** @type {any} */ (character).resources;
+  const next = killOutright(character);
+  assert.deepEqual(next.deathSaves, { successes: 0, failures: 3, stable: false });
+  assert.equal(isDead(next), true);
+  assert.deepEqual(
+    next.conditions.map((c) => c.name),
+    ['Unconscious'],
+  );
+  assert.equal(/** @type {any} */ (next).resources, before, 'exhaustion kills without damage');
+  const dead = dying({ failures: 3 });
+  assert.equal(killOutright(dead), dead, 'a dead character is not killed twice');
 });
 
 test('stabilize resets the counters and stays at 0 HP, but cannot revive the dead', () => {

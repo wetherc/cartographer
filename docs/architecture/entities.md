@@ -416,9 +416,27 @@ level cannot reach it.
 
 The module imports `Conditions.js` and nothing else. `Checks.js` reads this
 module, and `DeathSaves.js` is built on `Checks.js`. An import of either one
-from here closes a cycle. Two rules therefore live with their callers. The
-first is the guard that stops a long rest from easing a dead character. The
-second is the revive that reduces the level of a level-6 character.
+from here closes a cycle. The rules that mix exhaustion with death therefore
+live with their callers.
+
+`app/exhaustion.js` holds the write that kills. `setCombatantExhaustion` sets
+the level of one combatant by id, logs what the new level costs, and applies the
+sixth level. The two kinds of combatant die differently. A character gets three
+failed death saves from `DeathSaves.killOutright`, which is what the whole app
+reads as dead, and the Unconscious chip goes on beside it. A creature goes to 0
+HP through `Creature.applyDamage`, which is the only way a creature leaves a
+fight, and `logDefeatTransition` names it. HP is not touched for a character,
+because exhaustion kills without damage and the number the GM tracks must stay
+true. A combatant that is already dead takes the level and nothing else, so a
+second write cannot log a second death.
+
+A revive holds the opposite rule. A character or a creature that comes back at
+the sixth level would be alive and dead at the same time, so one level comes
+off. `DeathSaves.clearDying` does this for a character, which covers a heal
+above 0 HP and a natural 20 on a death save. `Creature.heal` does it for a
+creature when the heal brings it off 0 HP. This half is not in
+`app/exhaustion.js`, because a revive happens in more places than that module
+can see.
 
 Exhaustion was a hand-added condition chip before it had a level behind it.
 `exhaustionFields` is the load-path coercion, and both `withDefaults`
