@@ -11,6 +11,7 @@
 
 import { droppedNote } from '../combat/AttackResolve.js';
 import { checkAbility, checkBonus, saveBonus } from '../entities/Checks.js';
+import { unproficientWear } from '../entities/Equipment.js';
 import { modeReasons, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { hasExpertise, isProficientSave, isProficientSkill } from '../entities/Proficiencies.js';
@@ -123,9 +124,13 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
     kind: event.kind,
     ability,
   });
-  // A null mode means no chip slanted the roll, and the key stays off the
+  // Armor the character is not trained for slants every STR and DEX roll, per
+  // the 5e armor proficiency rule. The slant folds in with the chips, so an
+  // advantage chip cancels it the way two chips cancel each other.
+  const badWear = ability === 'STR' || ability === 'DEX' ? unproficientWear(character) : [];
+  // A null mode means nothing slanted the roll, and the key stays off the
   // selection so the tray's standing toggle still applies.
-  const mode = rollMode(conditionQuery);
+  const mode = rollMode(conditionQuery, badWear.length > 0 ? ['disadvantage'] : []);
   const { result } = app.actions.rollDice({
     counts: { d20: 1 },
     modifier: bonus + rider.modifier,
@@ -140,6 +145,9 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   // roll came out straight, not just that it did.
   const reasons = modeReasons(conditionQuery);
   if (reasons) parts.push(reasons);
+  if (badWear.length > 0) {
+    parts.push(`not proficient with ${badWear.join(' and ')}, disadvantage`);
+  }
   // An advantage or disadvantage roll names the discarded d20, matching the
   // tray's own readout. The tray injects its standing toggle when the caller
   // names no mode, so the note can appear without this module asking for it.

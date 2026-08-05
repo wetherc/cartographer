@@ -322,6 +322,23 @@ Armor class follows 5e as well.
 | Other equipped items | Their own flat AC bonus |
 | No body armor | Base AC (normally 10) plus the full DEX modifier |
 
+Armor proficiency follows 5e as well. A character that wears armor its
+proficiency lists do not cover pays for it in three places. A shield counts
+as its own entry in the armor list.
+
+- Every STR and DEX save or check from the sheet rolls at disadvantage. The
+  slant folds in with the condition chips, so an advantage chip cancels it.
+  The log says "not proficient" and names the worn piece.
+- The character cannot cast a spell. The refusal names the armor and spends
+  nothing. The cast dialog offers an "Ignore armor" box, which casts anyway,
+  for a table that waives the rule.
+- A spell that forces a STR or DEX save catches the wearer too: the target
+  rolls that save at disadvantage.
+
+The AC of the armor still applies. Wearing armor untrained changes rolls,
+not the armor itself. A creature has no proficiency lists and never pays
+this penalty.
+
 Timed conditions tick down at the start of each round and expire on their
 own.
 

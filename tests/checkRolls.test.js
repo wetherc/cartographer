@@ -243,3 +243,40 @@ test('the rider dice fall back to the real rng when the caller passes none', () 
   const rolled = app.rolls[0].selection.modifier - 3;
   assert.ok(rolled >= 1 && rolled <= 4, `a d4 rider landed in range, got ${rolled}`);
 });
+
+/** The hero in heavy armor its empty proficiency lists do not cover. */
+function armored(over = {}) {
+  return hero({
+    inventory: [
+      { id: 'plate', name: 'Plate', type: 'armor', armorWeight: 'heavy', baseAC: 18, quantity: 1 },
+    ],
+    equipment: { chest: 'plate' },
+    ...over,
+  });
+}
+
+test('untrained armor slants a STR or DEX roll and the log says why', () => {
+  const app = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(app, armored(), { kind: 'save', key: 'DEX' }, { rng: () => 0 });
+  assert.equal(app.rolls[0].selection.mode, 'disadvantage');
+  assert.match(app.log[0], /not proficient with heavy armor, disadvantage/);
+
+  const check = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(check, armored(), { kind: 'check', key: 'athletics' }, { rng: () => 0 });
+  assert.equal(check.rolls[0].selection.mode, 'disadvantage', 'a STR skill check too');
+});
+
+test('untrained armor leaves every other ability alone', () => {
+  const app = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(app, armored(), { kind: 'save', key: 'WIS' }, { rng: () => 0 });
+  assert.equal('mode' in app.rolls[0].selection, false);
+  assert.doesNotMatch(app.log[0], /not proficient/);
+});
+
+test('a trained wearer rolls straight and the tray keeps its toggle', () => {
+  const character = withProficiencies(armored(), { armor: ['heavy'] });
+  const app = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(app, character, { kind: 'save', key: 'DEX' }, { rng: () => 0 });
+  assert.equal('mode' in app.rolls[0].selection, false);
+  assert.doesNotMatch(app.log[0], /not proficient/);
+});

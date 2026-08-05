@@ -9,6 +9,7 @@ import {
   isProficientSave,
   isProficientSkill,
   isProficientWeapon,
+  isProficientArmor,
   hasExpertise,
   normalizeProficiencies,
   normalizeWeaponProficiencies,
@@ -238,4 +239,16 @@ test('a character saved before expertise existed gains an empty expertise list',
   const next = withProficiencies(legacy, { skills: ['stealth'] });
   assert.deepEqual(next.proficiencies.expertise, []);
   assert.deepEqual(getProficiencies(next).skills, ['stealth']);
+});
+
+test('isProficientArmor reads the armor list, and a shield is its own entry', () => {
+  const c = withProficiencies(createCharacter('c1', 'Nim'), { armor: ['light', 'medium'] });
+  assert.equal(isProficientArmor(c, 'light'), true);
+  assert.equal(isProficientArmor(c, 'medium'), true);
+  assert.equal(isProficientArmor(c, 'heavy'), false);
+  assert.equal(isProficientArmor(c, 'shield'), false, 'a weight grant does not cover a shield');
+
+  const shielded = withProficiencies(createCharacter('c2', 'Tor'), { armor: ['shield'] });
+  assert.equal(isProficientArmor(shielded, 'shield'), true);
+  assert.equal(isProficientArmor(shielded, 'light'), false);
 });

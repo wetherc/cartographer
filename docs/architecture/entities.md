@@ -292,6 +292,27 @@ Migration step 6 runs saved weapons through the coercer once. The library
 normalize gate runs its entries through it on every load, because library
 files carry no version.
 
+## Armor proficiency
+
+`Proficiencies.isProficientArmor(character, weight)` reads the armor list.
+The list holds weight classes plus `'shield'`, so a shield goes through the
+same check as a breastplate. `Equipment.unproficientWear(character)` turns
+the check into phrases: it reads the memoized `equippedIndex`, checks the
+chest piece against its weight class and an off-hand shield against the
+shield grant, and answers a list such as `['heavy armor', 'a shield']`. A
+character without proficiency lists predates them and answers an empty list,
+the same rule the weapon gate applies.
+
+Three call sites act on the list. `app/checkRolls.js` folds a disadvantage
+slant into a STR or DEX save or check, through the `extra` parameter of
+`rollMode`, so a chip that grants advantage cancels it. `app/spellCast.js`
+refuses a cast before the resolver runs, so a refused cast spends no slot,
+and the dialog offers an "Ignore armor" opt-out beside the component one.
+The same module marks a character target of a STR or DEX save spell with
+`armorPenalty`, and the resolver folds that slant into the target's save
+through the `extra` parameter of `saveOutcome`. The AC of the armor is not
+touched: wearing armor untrained changes rolls, not the armor.
+
 ## Spell timing
 
 A `Spell` (`types/spell.ts`) lives in the library rather than in a campaign

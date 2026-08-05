@@ -100,6 +100,18 @@ export function isProficientWeapon(character, name, category) {
 }
 
 /**
+ * Whether the character can wear armor of this weight class without penalty.
+ * A shield is its own entry in the armor list, so it goes through the same
+ * check.
+ * @param {Character} character
+ * @param {import('../types/class.js').ArmorProficiency} weight
+ * @returns {boolean}
+ */
+export function isProficientArmor(character, weight) {
+  return getProficiencies(character).armor.includes(weight);
+}
+
+/**
  * A character's proficiency lists, or all-empty ones for a character that
  * predates them (so callers never guard against undefined).
  * @param {Character} character

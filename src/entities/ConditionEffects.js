@@ -260,12 +260,14 @@ export function autoCrits(conditions, { melee = true } = {}) {
  * How a creature's chips affect one saving throw: whether it fails with no
  * roll, the chip that decided that, and the mode the roll takes otherwise.
  * The caller checks `autoFail` first, because a failed save never reaches the
- * dice.
+ * dice. `extra` takes slants from outside the chips, such as armor the roller
+ * is not trained for, and they fold in the same way `rollMode` folds them.
  * @param {Condition[] | undefined | null} conditions
  * @param {string} ability
+ * @param {(Slant | null)[]} [extra]
  * @returns {{ autoFail: boolean, failedBy: string | null, mode: RollMode | null }}
  */
-export function saveOutcome(conditions, ability) {
+export function saveOutcome(conditions, ability, extra = []) {
   const key = abilityKey(ability);
   for (const { condition, effect } of effectsOf(conditions)) {
     if (key && effect.autoFailSaves?.includes(key)) {
@@ -275,6 +277,6 @@ export function saveOutcome(conditions, ability) {
   return {
     autoFail: false,
     failedBy: null,
-    mode: rollMode({ roller: conditions, kind: 'save', ability }),
+    mode: rollMode({ roller: conditions, kind: 'save', ability }, extra),
   };
 }

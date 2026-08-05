@@ -1,4 +1,5 @@
 import { abilityModifier } from './Modifiers.js';
+import { isProficientArmor } from './Proficiencies.js';
 import { abilityLabel, hasWeaponProperty, weaponKind } from './Weapons.js';
 import { indexById } from '../util/indexById.js';
 import { memoizeByIdentity } from '../util/memoize.js';
@@ -372,6 +373,32 @@ export function armorClass(character) {
     ac += itemType(item) === 'shield' ? SHIELD_AC : (item.acBonus ?? 0);
   }
   return ac;
+}
+
+/**
+ * The worn pieces the character is not proficient with, as short phrases for
+ * a message, for example `['medium armor', 'shield']`. Body armor checks its
+ * weight class and a worn shield checks the shield grant. An empty list means
+ * the character wears nothing beyond its training. A character without
+ * proficiency lists predates them, so it reads as proficient with everything,
+ * the same as the weapon gate.
+ * @param {Character} character
+ * @returns {string[]}
+ */
+export function unproficientWear(character) {
+  if (!character.proficiencies) return [];
+  const worn = equippedIndex(character);
+  const phrases = [];
+  const body = worn.get('chest');
+  if (body && body.baseAC !== undefined) {
+    const weight = body.armorWeight ?? 'light';
+    if (!isProficientArmor(character, weight)) phrases.push(`${weight} armor`);
+  }
+  const off = worn.get('offHand');
+  if (off && itemType(off) === 'shield' && !isProficientArmor(character, 'shield')) {
+    phrases.push('a shield');
+  }
+  return phrases;
 }
 
 /**

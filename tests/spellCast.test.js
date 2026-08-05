@@ -15,6 +15,7 @@ import {
 import { createResource } from '../src/entities/Resource.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { damageCharacter, getHP, withHP } from '../src/entities/Character.js';
+import { emptyProficiencies } from '../src/entities/Proficiencies.js';
 import { stubApp as baseStubApp } from './helpers/app.js';
 import { item } from './helpers/fixtures.js';
 
@@ -1333,4 +1334,111 @@ test('a failed save against a rider spell lands the rider on the chip', () => {
   const chip = app.state.creatures[0].conditions.find((c) => c.name === 'Bane');
   assert.deepEqual(chip.rider, BANE_RIDER);
   assert.equal(chip.rounds, 10);
+});
+
+// -- the armor proficiency gate -------------------------------------------
+
+/** The mage in heavy armor its empty proficiency lists do not cover. */
+function armoredMage(over = {}) {
+  return mage({
+    proficiencies: emptyProficiencies(),
+    inventory: [item('plate', 'Plate', { type: 'armor', armorWeight: 'heavy', baseAC: 18 })],
+    equipment: { chest: 'plate' },
+    ...over,
+  });
+}
+
+test('castPlan adds the armor opt-out only for an untrained wearer', () => {
+  const caster = armoredMage();
+  const app = stubApp({ characters: [caster] });
+  const plan = planFor(app, caster, cureWounds);
+  assert.deepEqual(plan.armor, ['heavy armor']);
+  assert.equal(
+    plan.fields.some((f) => f.name === 'ignore-armor'),
+    true,
+  );
+
+  const bare = mage();
+  const plain = planFor(stubApp({ characters: [bare] }), bare, cureWounds);
+  assert.deepEqual(plain.armor, []);
+  assert.equal(
+    plain.fields.some((f) => f.name === 'ignore-armor'),
+    false,
+  );
+});
+
+test('untrained armor refuses the cast before a slot is spent', () => {
+  const caster = armoredMage();
+  const hurt = damageCharacter(withHP(mage({ id: 'monk', name: 'Monk' }), 20), 10);
+  const app = stubApp({ characters: [caster, hurt] });
+  const plan = planFor(app, caster, cureWounds);
+  /** @type {any[]} */
+  const written = [];
+  resolveCast(app, plan, submit({ target: 'monk' }), {
+    writeBack: (next) => written.push(next),
+    concentrates: true,
+    rng: seq([face(8, 5)]),
+  });
+  assert.deepEqual(app.toasted, ['Mage cannot cast in heavy armor without armor proficiency.']);
+  assert.deepEqual(written, [], 'no slot is spent');
+  assert.equal(getHP(app.state.characters[1]).current, 10, 'no heal lands');
+});
+
+test('the Ignore armor box casts anyway', () => {
+  const caster = armoredMage();
+  const hurt = damageCharacter(withHP(mage({ id: 'monk', name: 'Monk' }), 20), 10);
+  const app = stubApp({ characters: [caster, hurt] });
+  const plan = planFor(app, caster, cureWounds);
+  /** @type {any[]} */
+  const written = [];
+  resolveCast(app, plan, submit({ target: 'monk', 'ignore-armor': '1' }), {
+    writeBack: (next) => written.push(next),
+    concentrates: true,
+    rng: seq([face(8, 5)]),
+  });
+  assert.equal(written.length, 1, 'the slot is spent');
+  assert.match(app.log[0], /Mage casts Cure Wounds/);
+  assert.equal(getHP(app.state.characters[1]).current, 15);
+});
+
+test('a target in untrained armor rolls a body save at disadvantage', () => {
+  const caster = mage();
+  const wearer = armoredMage({ id: 'monk', name: 'Monk' });
+  const app = stubApp({ characters: [caster, wearer] });
+  const dexSave = spell({
+    id: 'quake',
+    name: 'Quake',
+    level: 1,
+    classes: ['wizard'],
+    effect: { kind: 'save', saveAbility: 'DEX', damage: [], halfOnSave: false },
+  });
+  const withSpell = mage({
+    spellbook: { cantrips: [], known: ['quake'], prepared: ['quake'] },
+  });
+  app.state.characters = [withSpell, wearer];
+  const plan = castPlan(app, withSpell, dexSave, [
+    /** @type {any} */ ({ id: 'monk', name: 'Monk', ac: 10 }),
+  ]);
+  assert.equal(plan.ok, true);
+  assert.equal(/** @type {any} */ (plan).targets[0].armorPenalty, true);
+  resolveCast(app, /** @type {any} */ (plan), submit({ target: 'monk', dc: '14' }), {
+    writeBack: () => {},
+    concentrates: false,
+    // Disadvantage keeps the 2 and drops the 18 that would have saved.
+    rng: seq([d20(18), d20(2)]),
+  });
+  assert.match(app.log[1], /Monk fails DC 14/);
+});
+
+test('untrained armor does not slant a mental save', () => {
+  const wearer = armoredMage({ id: 'monk', name: 'Monk' });
+  const caster = mage({
+    spellbook: { cantrips: [], known: ['hold-person'], prepared: ['hold-person'] },
+  });
+  const app = stubApp({ characters: [caster, wearer] });
+  const plan = castPlan(app, caster, holdPerson, [
+    /** @type {any} */ ({ id: 'monk', name: 'Monk', ac: 10 }),
+  ]);
+  assert.equal(plan.ok, true);
+  assert.equal(/** @type {any} */ (plan).targets[0].armorPenalty, undefined, 'WIS is untouched');
 });

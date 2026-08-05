@@ -4,6 +4,7 @@ import { castSpell, materialCheck, maxTargets, scalingSteps } from '../entities/
 import { riderSummary } from '../entities/Riders.js';
 import { combineModes, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { removeItem, spellSource } from '../entities/Character.js';
+import { unproficientWear } from '../entities/Equipment.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { spellSaveDC, spellAttackBonus, hasRitualCasting } from '../entities/Classes.js';
 import { formatModifier } from '../entities/Modifiers.js';
@@ -21,6 +22,7 @@ import {
   applyConditionToTarget,
   targetSaveBonus,
   targetConditions,
+  targetArmorPenalty,
   endSpellEffects,
 } from './combatants.js';
 import { splitTrimmedList } from '../util/text.js';
@@ -186,14 +188,16 @@ export function castCap(spell, slotLevel, casterLevel) {
  * @param {number[]} slotLevels the available slot levels at or above the spell's level
  * @param {number} saveDC
  * @param {number} cap the number of targets this cast can reach. The value is Infinity for an area spell.
- * @param {{ material?: boolean, ritual?: boolean }} [opts] `material`: true when the
+ * @param {{ material?: boolean, ritual?: boolean, armor?: boolean }} [opts] `material`: true when the
  *   cast requires the caster to hold a material component. This adds the opt-out
  *   checkbox for a table that treats components as flavor. `ritual`: true when this caster can
  *   cast this spell as a ritual. This adds the box that trades the slot for extra time.
+ *   `armor`: true when the caster wears armor it is not trained for. This adds
+ *   the opt-out checkbox that lets the GM waive the armor rule.
  * @returns {import('../types/modal.js').ModalField[] | null}
  */
 export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
-  const { material = false, ritual = false } = opts;
+  const { material = false, ritual = false, armor = false } = opts;
   const kind = spell.effect.kind;
   /** @type {import('../types/modal.js').ModalField[]} */
   const fields = [];
@@ -301,6 +305,16 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
       full: true,
     });
   }
+  // Untrained armor blocks a cast under the 5e armor proficiency rule.
+  // Ticking this box casts anyway, for a table that waives the rule.
+  if (armor) {
+    fields.push({
+      name: 'ignore-armor',
+      label: 'Ignore armor',
+      type: 'checkbox',
+      full: true,
+    });
+  }
   return fields;
 }
 
@@ -378,6 +392,7 @@ export async function castSpellOutOfCombat(app, caster, spell) {
  *   sourceClass: string | undefined,
  *   dc: number,
  *   material: ReturnType<typeof materialCheck>,
+ *   armor: string[],
  *   fields: import('../types/modal.js').ModalField[],
  * }} CastPlan
  */
@@ -413,15 +428,20 @@ export function castPlan(app, entity, spell, offered) {
   // GM opens and submits a cast in one motion, and re-reading the roster
   // under an open dialog would let the numbers on screen go stale instead.
   const saveAbility = spell.effect.kind === 'save' ? spell.effect.saveAbility : null;
+  // Untrained armor slants a STR or DEX save, so a character target in such
+  // armor carries the penalty flag alongside its bonus and chips.
+  const physical = saveAbility === 'STR' || saveAbility === 'DEX';
   const targets = saveAbility
     ? offered.map((t) => {
         const bonus = targetSaveBonus(app, t.id, saveAbility);
         const conditions = targetConditions(app, t.id);
-        if (bonus === undefined && conditions.length === 0) return t;
+        const penalized = physical && targetArmorPenalty(app, t.id);
+        if (bonus === undefined && conditions.length === 0 && !penalized) return t;
         return {
           ...t,
           ...(bonus === undefined ? {} : { saveBonus: bonus }),
           ...(conditions.length > 0 ? { conditions } : {}),
+          ...(penalized ? { armorPenalty: true } : {}),
         };
       })
     : offered;
@@ -455,9 +475,14 @@ export function castPlan(app, entity, spell, offered) {
   // Ritual casting is a class feature. A caster can cast a spell with a
   // ritual as a ritual only as a bard, cleric, druid, or wizard.
   const ritualOffered = spell.ritual && spell.level > 0 && hasRitualCasting(caster);
+  // The 5e armor proficiency rule stops a cast in armor the caster is not
+  // trained for. Only a Character wears tracked gear, so a creature never
+  // hits this. The dialog offers a GM opt-out beside the component one.
+  const armor = unproficientWear(entity);
   const fields = castFields(spell, targets, slotLevels, dc, cap, {
     material: material.required,
     ritual: ritualOffered,
+    armor: armor.length > 0,
   });
   if (!fields) {
     return { ok: false, message: `No level ${spell.level}+ slot left for ${spell.name}.` };
@@ -473,6 +498,7 @@ export function castPlan(app, entity, spell, offered) {
     sourceClass,
     dc,
     material,
+    armor,
     fields,
   };
 }
@@ -533,7 +559,7 @@ export function castChangeHandler(plan) {
  *   take theirs.
  */
 export function resolveCast(app, plan, values, { writeBack, concentrates, rng = Math.random }) {
-  const { entity, spell, caster, targets, saveAbility, sourceClass, dc, material } = plan;
+  const { entity, spell, caster, targets, saveAbility, sourceClass, dc, material, armor } = plan;
   const asRitual = values.ritual === '1';
   const slotLevel = spell.level > 0 ? effectiveSlot(spell, values.slot, asRitual) : spell.level;
   const mode = /** @type {import('../types/dice.js').RollMode} */ (values.mode ?? 'normal');
@@ -558,6 +584,15 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
     );
     return;
   }
+  // Untrained armor blocks the cast the same way a missing component does:
+  // before the resolver runs, so no slot is spent. The opt-out is a table
+  // ruling, so the check lives here and not in `castSpell`.
+  if (armor.length > 0 && values['ignore-armor'] !== '1') {
+    app.toasts.show(
+      `${entity.name} cannot cast in ${armor.join(' and ')} without armor proficiency.`,
+    );
+    return;
+  }
   // A target that carries its own bonus rolls that bonus. A foe with no save
   // the app can read falls back to the one number the GM typed for all such targets.
   const entered = Number(values['save-bonus']) || 0;
@@ -571,7 +606,13 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
   let castTargets = chosen;
   if (saveAbility) {
     castTargets = chosen.map((t) => {
-      const outcome = saveOutcome(t.conditions, saveAbility);
+      // A target's untrained armor slants its STR or DEX save. The slant
+      // folds in with the target's chips, so an advantage chip cancels it.
+      const outcome = saveOutcome(
+        t.conditions,
+        saveAbility,
+        t.armorPenalty ? ['disadvantage'] : [],
+      );
       return {
         ...t,
         saveBonus: t.saveBonus ?? entered,
@@ -751,9 +792,12 @@ export function prefillTarget(fields, targetId) {
  * or the single select's one id. The function resolves these back to the
  * target objects in the order they were offered. It drops unknown ids
  * rather than trusting them. A target allocated no projectile is not a target.
- * @param {{ id: string, name: string, ac: number }[]} targets
+ * The picked targets keep the type they were offered with, so a flag such as
+ * `armorPenalty` survives the pick.
+ * @template {{ id: string }} T
+ * @param {T[]} targets
  * @param {Record<string, string>} values
- * @returns {import('../entities/Casting.js').CastTarget[]}
+ * @returns {(T & { projectiles?: number })[]}
  */
 export function chosenTargets(targets, values) {
   if (values.allocation !== undefined) {

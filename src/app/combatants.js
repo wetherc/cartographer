@@ -1,7 +1,7 @@
 import { indexById } from '../util/indexById.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { applyDamage, effectiveStatBlock, heal, isDefeated } from '../entities/Creature.js';
-import { armorClass, equippedWeapons } from '../entities/Equipment.js';
+import { armorClass, equippedWeapons, unproficientWear } from '../entities/Equipment.js';
 import {
   damageCharacter,
   restoreResource,
@@ -45,12 +45,15 @@ import { spellbookIds } from './casterFields.js';
  * chips it holds, because a rider on one of them rides a save it takes and
  * because a chip such as Prone slants the attack roll made against it. A save
  * spell's targets also carry `saveBonus` when the target is a party character
- * with a known save. See `targetSaveBonus`.
+ * with a known save. See `targetSaveBonus`. `armorPenalty` marks a character
+ * that rolls a STR or DEX save at disadvantage because it wears armor it is
+ * not trained for. See `targetArmorPenalty`.
  * @typedef {{
  *   id: string,
  *   name: string,
  *   ac: number,
  *   saveBonus?: number,
+ *   armorPenalty?: boolean,
  *   conditions: import('../types/entities.js').Condition[],
  * }} CombatTarget
  */
@@ -216,6 +219,22 @@ export function targetSaveBonus(app, id, ability) {
 export function targetConditions(app, id) {
   const found = findCombatant(app, id);
   return found ? (found.entity.conditions ?? []) : [];
+}
+
+/**
+ * targetArmorPenalty says whether a target rolls STR and DEX saves at
+ * disadvantage because it wears armor it is not trained for. Only a party
+ * character can, because only a character tracks worn gear against
+ * proficiency lists. An unknown id has no penalty.
+ * @param {AppContext} app
+ * @param {string} id
+ * @returns {boolean}
+ */
+export function targetArmorPenalty(app, id) {
+  const found = findCombatant(app, id);
+  return found?.kind === 'character'
+    ? unproficientWear(/** @type {Character} */ (found.entity)).length > 0
+    : false;
 }
 
 /**

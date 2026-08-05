@@ -29,6 +29,7 @@ import {
   HEALING_TYPES,
   isSpellFocus,
   carriesSpellFocus,
+  unproficientWear,
 } from '../src/entities/Equipment.js';
 import {
   WEAPON_PRESETS,
@@ -45,6 +46,7 @@ import {
   removeItem,
   updateItem,
 } from '../src/entities/Character.js';
+import { withProficiencies } from '../src/entities/Proficiencies.js';
 import { item } from './helpers/fixtures.js';
 
 /** @returns {import('../src/types/entities.js').Character} */
@@ -778,4 +780,30 @@ test('body armor with no stated weight is treated as light', () => {
   hero = equip(hero, 'chest', 'plate');
   assert.equal(armorClass(hero), 16, '12 + full DEX (+4)');
   assert.deepEqual(itemEffects(hero.inventory[0]), ['light armor, AC 12 + DEX']);
+});
+
+test('unproficientWear names the worn pieces the character is not trained for', () => {
+  let hero = createCharacter('c1', 'Hero');
+  hero = addItem(hero, item('plate', 'Plate', { type: 'armor', armorWeight: 'heavy', baseAC: 18 }));
+  hero = addItem(hero, item('shield', 'Shield', { type: 'shield' }));
+  hero = equip(hero, 'chest', 'plate');
+  hero = equip(hero, 'offHand', 'shield');
+  assert.deepEqual(unproficientWear(hero), ['heavy armor', 'a shield']);
+
+  const trained = withProficiencies(hero, { armor: ['heavy'] });
+  assert.deepEqual(unproficientWear(trained), ['a shield'], 'the weight grant skips the shield');
+  const fully = withProficiencies(hero, { armor: ['heavy', 'shield'] });
+  assert.deepEqual(unproficientWear(fully), []);
+});
+
+test('unproficientWear reads bare armor as light and skips untracked gear', () => {
+  let hero = createCharacter('c1', 'Hero');
+  hero = addItem(hero, item('robe', 'Robe', { type: 'armor', baseAC: 11 }));
+  hero = equip(hero, 'chest', 'robe');
+  assert.deepEqual(unproficientWear(hero), ['light armor'], 'no weight class reads as light');
+
+  const bare = createCharacter('c2', 'Bare');
+  assert.deepEqual(unproficientWear(bare), [], 'nothing worn, nothing to flag');
+  const legacy = /** @type {any} */ ({ ...hero, proficiencies: undefined });
+  assert.deepEqual(unproficientWear(legacy), [], 'a pre-list character stays unpenalized');
 });
