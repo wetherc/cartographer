@@ -870,7 +870,9 @@ app is covered without a per-call change.
 
 Both the pointer and the keyboard show the hint, and the shown element gets
 `aria-describedby`, so a control reached by Tab reads the same text a hovered
-control does. A press, a scroll, or Escape hides it.
+control does. A hover waits one second, so a pointer crossing a rail of icon
+buttons flashes nothing. Keyboard focus shows the hint at once, since a Tab
+press is already a deliberate stop. A press, a scroll, or Escape hides it.
 
 The element is a popover, which puts it in the browser's top layer. A hint on
 a control inside a modal dialog would otherwise draw behind the dialog, since

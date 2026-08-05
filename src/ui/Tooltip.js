@@ -25,6 +25,13 @@ import { el } from './dom.js';
 /** How far the tooltip sits from its anchor and from the viewport edge. */
 const MARGIN = 8;
 
+/**
+ * How long the pointer rests on an element before its tooltip shows. Without
+ * a delay, moving the pointer across a rail of icon buttons flashes a box over
+ * each one in turn. The keyboard does not wait: see `mountTooltips`.
+ */
+const HOVER_DELAY = 1000;
+
 /** A rectangle in viewport coordinates, as `getBoundingClientRect` gives it. */
 /** @typedef {{ left: number, top: number, right: number, bottom: number, width: number, height: number }} Rect */
 
@@ -82,9 +89,10 @@ export function setTip(element, text) {
  * is built and whether or not it existed at mount time.
  *
  * Both a pointer and the keyboard show the tooltip, so a control reached by
- * Tab reads the same hint a hovered control does. A press, a scroll, or
- * Escape hides it: a tooltip that outlived the click that opened a dialog
- * used to hang over the dialog.
+ * Tab reads the same hint a hovered control does. A hovered control waits out
+ * {@link HOVER_DELAY} first, and the keyboard does not wait. A press, a
+ * scroll, or Escape hides it: a tooltip that outlived the click that opened a
+ * dialog used to hang over the dialog.
  * @param {HTMLElement} container
  * @returns {{ hide: () => void }}
  */
@@ -103,8 +111,17 @@ export function mountTooltips(container) {
 
   /** The element the tooltip currently describes. @type {HTMLElement | null} */
   let anchor = null;
+  /** The pending hover timer, or 0 when none is waiting. @type {number} */
+  let timer = 0;
+
+  /** Drop a hover that has not come due yet. */
+  function cancelPending() {
+    if (timer) clearTimeout(timer);
+    timer = 0;
+  }
 
   function hide() {
+    cancelPending();
     if (!anchor) return;
     // Only clear the description this module set. An element that names its
     // own describedby keeps it.
@@ -138,6 +155,23 @@ export function mountTooltips(container) {
     element.setAttribute('aria-describedby', tip.id);
   }
 
+  /**
+   * Show the tooltip once the pointer has rested on the element for the hover
+   * delay. Moving on before then cancels it, so crossing a row of buttons
+   * flashes nothing.
+   * @param {HTMLElement} element
+   */
+  function showAfterDelay(element) {
+    if (anchor === element) return;
+    // The pointer has left whatever the open tooltip described, so that one
+    // goes now rather than hanging over the new element for the delay.
+    hide();
+    timer = setTimeout(() => {
+      timer = 0;
+      show(element);
+    }, HOVER_DELAY);
+  }
+
   /** @param {Event} event @returns {HTMLElement | null} */
   function tipTarget(event) {
     const node = event.target;
@@ -147,9 +181,11 @@ export function mountTooltips(container) {
 
   document.addEventListener('pointerover', (event) => {
     const target = tipTarget(event);
-    if (target) show(target);
+    if (target) showAfterDelay(target);
     else hide();
   });
+  // The keyboard shows the hint at once. A Tab press is already a deliberate
+  // stop on the control, so there is nothing to wait out.
   document.addEventListener('focusin', (event) => {
     const target = tipTarget(event);
     if (target) show(target);

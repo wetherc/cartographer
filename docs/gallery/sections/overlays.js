@@ -108,7 +108,7 @@ export const overlaysSection = {
     {
       title: 'setTip',
       notes:
-        'The app has one tooltip element and one set of delegated listeners, mounted in main.js. A widget opts in with setTip, which writes a data-tip attribute and clears any native title. Hover or Tab to either control below. The box is a popover, so it also draws over a modal dialog.',
+        'The app has one tooltip element and one set of delegated listeners, mounted in main.js. A widget opts in with setTip, which writes a data-tip attribute and clears any native title. Hover either control below for a second, or Tab to it for the hint at once. The box is a popover, so it also draws over a modal dialog.',
       classes: '.tooltip',
       render: () => [
         setTip(
