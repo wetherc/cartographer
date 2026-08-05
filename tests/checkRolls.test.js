@@ -347,3 +347,32 @@ test('a chip and noisy armor slant the same roll once, and both are named', () =
   assert.match(app.log[0], /Poisoned disadvantage/);
   assert.match(app.log[0], /wearing Plate, disadvantage/);
 });
+
+test('exhaustion lowers the roll and the log states it beside the ability part', () => {
+  const character = withProficiencies(hero({ exhaustion: 2 }), { saves: ['DEX'] });
+  const app = stubApp({ rng: scripted([face(20, 11)]) });
+  rollCheck(app, character, { kind: 'save', key: 'DEX' }, { rng: () => 0 });
+  assert.equal(app.rolls[0].selection.modifier, 2, '+3 DEX, +3 proficiency, less 4');
+  assert.equal(
+    app.log[0],
+    'Rook rolls a DEX saving throw (DEX +3, proficiency +3, exhaustion 2 -4): 13.',
+  );
+});
+
+test('the log keeps the ability part right when exhaustion rides an untrained check', () => {
+  const app = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(app, hero({ exhaustion: 1 }), { kind: 'check', key: 'acrobatics' }, { rng: () => 0 });
+  assert.equal(app.rolls[0].selection.modifier, 1, '+3 DEX less 2');
+  assert.equal(app.log[0], 'Rook rolls an Acrobatics check (DEX +3, exhaustion 1 -2): 11.');
+});
+
+test('exhaustion and a Bless chip both reach one save, and both are named', () => {
+  const character = hero({ exhaustion: 3, conditions: [chip('Blessed', ['save'])] });
+  const app = stubApp({ rng: scripted([face(20, 14)]) });
+  rollCheck(app, character, { kind: 'save', key: 'CON' }, { rng: () => face(4, 3) });
+  assert.equal(app.rolls[0].selection.modifier, -4, '-1 CON, less 6, plus 3 on the d4');
+  assert.equal(
+    app.log[0],
+    'Rook rolls a CON saving throw (CON -1, exhaustion 3 -6, Blessed +1d4 [3]): 10.',
+  );
+});

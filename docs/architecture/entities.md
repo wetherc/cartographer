@@ -396,6 +396,24 @@ A chip would therefore leave the sheet at +5 where the roll gave -1.
 printed number and the rolled number agree. This also carries the penalty into
 a passive score with no extra code.
 
+Four more bonus sites hold the penalty, one for each remaining kind of d20
+test. `app/weaponAttack.js` subtracts it from the attack bonus, and both a
+character and a creature carry a level there. `Classes.spellAttackBonus`
+subtracts it from a spell attack. `Classes.spellSaveDC` does not, because a DC
+is a number the target rolls against and not a roll the caster makes.
+`DeathSaves.deathSaveBonus` is the whole bonus of a death save, and the two
+death-save paths both read it.
+
+The app logs the penalty as its own part, next to the ability modifier and the
+proficiency bonus. `app/checkRolls.js` must therefore subtract the penalty back
+out of the bonus to get the ability part. Without that step the log prints a
+modifier that the stat block does not have.
+
+Two d20 tests do not get the penalty yet. Initiative throws a straight d20 in
+`app/encounterWiring.js`, which no chip or slant reaches either. A creature's
+saving throw is a number the GM types into the cast dialog, so a creature's own
+level cannot reach it.
+
 The module imports `Conditions.js` and nothing else. `Checks.js` reads this
 module, and `DeathSaves.js` is built on `Checks.js`. An import of either one
 from here closes a cycle. Two rules therefore live with their callers. The

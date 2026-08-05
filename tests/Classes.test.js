@@ -142,6 +142,15 @@ test('spellSaveDC and spellAttackBonus fold proficiency and ability', () => {
   assert.equal(spellAttackBonus(character()), null);
 });
 
+test('exhaustion lowers the spell attack bonus and leaves the save DC alone', () => {
+  const cleric = character({ class: 'cleric', level: 5, stats: { WIS: 18 } });
+  const tired = { ...cleric, exhaustion: 2 };
+  assert.equal(spellAttackBonus(tired), 3 + 4 - 4);
+  assert.equal(spellSaveDC(tired), 8 + 3 + 4, 'a DC is not a roll the caster makes');
+  assert.equal(spellAttackBonus({ ...cleric, exhaustion: 0 }), 3 + 4);
+  assert.equal(spellAttackBonus({ ...character(), exhaustion: 3 }), null, 'a non-caster has none');
+});
+
 test('every class definition is internally consistent', () => {
   for (const def of CLASS_LIST) {
     if (def.casterType === 'none') {

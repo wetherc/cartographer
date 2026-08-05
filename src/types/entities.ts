@@ -266,6 +266,9 @@ export interface SpellCaster {
   stats: Record<string, number>;
   resources: ResourcePool[];
   spellbook?: Spellbook;
+  /** Exhaustion, 0 to 6. The spell attack bonus reads it. Both a Character
+   * and a Creature carry it. */
+  exhaustion?: number;
 }
 
 /** Weapon proficiencies, split by namespace the way MulticlassGrant already

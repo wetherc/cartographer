@@ -12,6 +12,7 @@
 import { droppedNote } from '../combat/AttackResolve.js';
 import { checkAbility, checkBonus, saveBonus } from '../entities/Checks.js';
 import { stealthPenalty, unproficientWear } from '../entities/Armor.js';
+import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
 import { modeReasons, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { hasExpertise, isProficientSave, isProficientSkill } from '../entities/Proficiencies.js';
@@ -69,9 +70,10 @@ function rollName(event) {
  * Roll one save or ability check for a character, then log it and toast the
  * total. The tray shows the d20 with the whole bonus already in its modifier
  * field, and the log line breaks that number back down: the ability modifier,
- * the proficiency or expertise it added, and whatever the character's condition
- * chips threw in. A Bless chip therefore reaches a save and a Guidance chip an
- * ability check, without the GM adding anything by hand.
+ * the proficiency or expertise it added, the exhaustion penalty, and whatever
+ * the character's condition chips threw in. A Bless chip therefore reaches a
+ * save and a Guidance chip an ability check, without the GM adding anything by
+ * hand.
  *
  * The chips also set the roll's mode. A poisoned character rolls an ability
  * check at disadvantage, and a restrained one rolls a Dexterity save the same
@@ -108,10 +110,15 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   const bonus =
     event.kind === 'save' ? saveBonus(character, event.key) : checkBonus(character, event.key);
   const proficiency = proficiencyPart(character, event);
-  // The ability part is what is left after proficiency, rather than a second
-  // read of the stat table. The breakdown then cannot drift from the bonus the
-  // tray rolled with, whatever `Checks.js` decides a bonus is made of.
-  const abilityMod = bonus - proficiency.amount;
+  // Exhaustion is already inside the bonus, so the breakdown has to take it
+  // back out. Without this the penalty would hide inside the ability part, and
+  // the log would print a modifier the stat block does not have.
+  const tired = d20Penalty(character);
+  // The ability part is what is left after proficiency and exhaustion, rather
+  // than a second read of the stat table. The breakdown then cannot drift from
+  // the bonus the tray rolled with, whatever `Checks.js` decides a bonus is
+  // made of.
+  const abilityMod = bonus - proficiency.amount - tired;
   const ability = event.kind === 'save' ? event.key : (checkAbility(event.key) ?? event.key);
   // Rider dice roll outside the tray, the way an attack's do, so a bonus and a
   // penalty read the same in the log.
@@ -150,6 +157,7 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   const natural = d20?.rolls[0] ?? 0;
   const parts = [`${ability} ${formatModifier(abilityMod)}`];
   if (proficiency.word) parts.push(proficiency.word);
+  if (tired) parts.push(`exhaustion ${exhaustionLevel(character)} ${tired}`);
   if (rider.note) parts.push(rider.note);
   // Naming the chips keeps a cancelled pair readable: the line says why the
   // roll came out straight, not just that it did.

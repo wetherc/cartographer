@@ -9,6 +9,7 @@ import {
   isStable,
   judgeDeathSave,
   recordDamage,
+  deathSaveBonus,
   rollDeathSave,
   stabilize,
 } from '../src/entities/DeathSaves.js';
@@ -245,4 +246,13 @@ test('a character who is not dying packs no deathSaves field', () => {
 test('a dying character keeps its tracker through a pack round trip', () => {
   const packed = packEntity(dying({ successes: 1, failures: 2 }), withDefaults);
   assert.deepEqual(packed.deathSaves, { successes: 1, failures: 2, stable: false });
+});
+
+test('exhaustion lowers a death save, because a death save is a d20 test', () => {
+  assert.equal(deathSaveBonus(dying()), 0, 'a rested character adds nothing');
+  assert.equal(deathSaveBonus(/** @type {any} */ ({ ...dying(), exhaustion: 3 })), -6);
+  const tired = /** @type {any} */ ({ ...dying(), exhaustion: 2 });
+  const { save, outcome } = rollDeathSave(tired, { rng: seq([face(20, 12)]) });
+  assert.equal(save?.total, 8, '12 on the die, less 4');
+  assert.equal(outcome, 'failure', 'the same 12 succeeds when rested');
 });

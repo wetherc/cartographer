@@ -14,11 +14,13 @@ import { HP_RESOURCE_ID, restoreResource } from '../entities/Character.js';
 import {
   DEATH_SAVE_DC,
   applyJudged,
+  deathSaveBonus,
   isDead,
   isDying,
   judgeDeathSave,
   stabilize,
 } from '../entities/DeathSaves.js';
+import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { rollRiders } from '../entities/Riders.js';
 import { findCombatant } from './combatants.js';
 
@@ -58,8 +60,8 @@ function dyingCharacter(app, id) {
  * therefore reaches a death save without the GM adding anything by hand.
  *
  * The save adds no ability modifier and no proficiency, so the tray's modifier
- * is the riders alone. A natural 20 wakes the character at 1 HP, which is the
- * one outcome that writes HP as well as the tracker.
+ * is the riders plus the exhaustion penalty. A natural 20 wakes the character at
+ * 1 HP, which is the one outcome that writes HP as well as the tracker.
  *
  * A character who is not dying rolls nothing. This covers a standing
  * character, a stable one, and a dead one, so a stale button cannot move the
@@ -78,7 +80,13 @@ export function rollDeathSaveFor(app, characterId, { rng = Math.random } = {}) {
   // Rider dice roll outside the tray, the way an attack's and a sheet check's
   // do, so a bonus and a penalty read the same in the log.
   const rider = rollRiders(character.conditions, 'save', rng);
-  const { result } = app.actions.rollDice({ counts: { d20: 1 }, modifier: rider.modifier });
+  // Exhaustion is the only standing part of the modifier. It is not a rider, so
+  // it joins the tray's number here and the log names it below.
+  const tired = deathSaveBonus(character);
+  const { result } = app.actions.rollDice({
+    counts: { d20: 1 },
+    modifier: tired + rider.modifier,
+  });
   const d20 = result.results.find((r) => r.die === 'd20');
   const natural = d20?.rolls[0] ?? 0;
   const judged = judgeDeathSave(state, { natural, total: result.total, dc: DEATH_SAVE_DC });
@@ -86,11 +94,12 @@ export function rollDeathSaveFor(app, characterId, { rng = Math.random } = {}) {
   if (judged.outcome === 'revive') next = restoreResource(next, HP_RESOURCE_ID, 1);
   found.store(next);
   app.actions.markDirty();
+  const tiredNote = tired ? `, exhaustion ${exhaustionLevel(character)} ${tired}` : '';
   const rode = rider.note ? `, ${rider.note}` : '';
   const naturalNote = natural === 1 || natural === 20 ? ` Natural ${natural}.` : '';
   app.actions.logEvent(
     'combat',
-    `${character.name} rolls a death save (${result.total}${rode} vs DC ${DEATH_SAVE_DC}): ` +
+    `${character.name} rolls a death save (${result.total}${tiredNote}${rode} vs DC ${DEATH_SAVE_DC}): ` +
       `${OUTCOME_LINES[judged.outcome](character.name)}${naturalNote}`,
   );
   app.toasts.show(OUTCOME_LINES[judged.outcome](character.name));

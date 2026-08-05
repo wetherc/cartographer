@@ -37,6 +37,7 @@ import { isSlotPool, isCasterPool } from './SpellSlots.js';
  *   statBlock?: Record<string, number>,
  *   resources?: ResourcePool[],
  *   spellbook?: Spellbook,
+ *   exhaustion?: number,
  * }} CasterEntity
  */
 
@@ -51,6 +52,7 @@ import { isSlotPool, isCasterPool } from './SpellSlots.js';
  *   stats: Record<string, number>,
  *   resources: ResourcePool[],
  *   spellbook?: Spellbook,
+ *   exhaustion?: number,
  * }} CasterView
  */
 
@@ -93,6 +95,10 @@ export function toCaster(entity) {
     stats: entity.stats ?? entity.statBlock ?? {},
     resources: entity.resources ?? [],
     spellbook: entity.spellbook,
+    // The spell attack bonus subtracts the exhaustion penalty, so the view has
+    // to carry the level. Dropping it here would leave a tired caster casting
+    // at full bonus.
+    exhaustion: entity.exhaustion,
   };
 }
 

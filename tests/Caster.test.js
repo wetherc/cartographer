@@ -300,3 +300,17 @@ test('an unleveled creature with a caster class builds slots at caster level', (
   assert.equal(slot(npc, 2).max, 3);
   assert.deepEqual(npc.spellbook, { cantrips: [], known: [], prepared: [] });
 });
+
+test('toCaster carries the exhaustion level, so a tired caster attacks worse', () => {
+  const creature = {
+    id: 'n1',
+    name: 'Tired cultist',
+    class: 'warlock',
+    casterLevel: 3,
+    statBlock: { CHA: 16 },
+    exhaustion: 2,
+  };
+  assert.equal(toCaster(creature).exhaustion, 2);
+  assert.equal(spellAttackBonus(toCaster(creature)), 2 + 3 - 4);
+  assert.equal(toCaster({ id: 'x', name: 'Blank' }).exhaustion, undefined);
+});

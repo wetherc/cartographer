@@ -439,6 +439,17 @@ test('targetSaveBonus reads a character save and reports nothing for anyone else
   assert.equal(targetSaveBonus(app, 'nobody', 'STR'), undefined);
 });
 
+test('a target save bonus carries exhaustion for a character and not for a creature', () => {
+  const { hero, goblin } = fixtures();
+  const app = stubApp({
+    characters: [{ ...hero, exhaustion: 2 }],
+    creatures: [{ ...goblin, exhaustion: 2 }],
+  });
+  assert.equal(targetSaveBonus(app, 'hero', 'STR'), saveBonus(hero, 'STR') - 4);
+  // A creature's save is still GM-typed, so its exhaustion cannot reach it.
+  assert.equal(targetSaveBonus(app, 'goblin', 'STR'), undefined);
+});
+
 /** A character holding an equipped, damage-carrying sword. */
 function swordBearer() {
   const armed = addItem(

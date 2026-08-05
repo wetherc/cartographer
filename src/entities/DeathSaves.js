@@ -16,6 +16,7 @@
 
 import { UNCONSCIOUS, addCondition, removeCondition } from './Conditions.js';
 import { resolveSave } from './Checks.js';
+import { d20Penalty } from './Exhaustion.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').DeathSaveState} DeathSaveState */
@@ -156,16 +157,31 @@ function countFailures(state, count) {
 }
 
 /**
+ * What a character adds to a death save. A death save takes no ability
+ * modifier and no proficiency, so exhaustion is the whole of it and the value
+ * is zero or negative.
+ *
+ * Both death-save paths read this one function. The headless
+ * {@link rollDeathSave} below hands it to `resolveSave`, and `app/deathSaves.js`
+ * hands it to the dice tray. Neither can drift from the other.
+ * @param {Character} character
+ * @returns {number}
+ */
+export function deathSaveBonus(character) {
+  return d20Penalty(character);
+}
+
+/**
  * Roll one death save for a character and apply the outcome. This is the
  * headless path, for tests and for callers with no dice tray. The UI path
  * rolls through the tray and calls {@link judgeDeathSave} with the same
  * numbers.
  *
- * The save goes through `Checks.resolveSave` with a bonus of 0, because a
- * death save adds no ability modifier and no proficiency. Going through that
- * function is what lets a rider such as Bless join the roll. No ability key is
- * passed, so the automatic failure that unconsciousness imposes on Strength
- * and Dexterity saves does not catch a death save.
+ * The save goes through `Checks.resolveSave` with {@link deathSaveBonus},
+ * which is 0 for a rested character and the exhaustion penalty for a tired
+ * one. Going through that function is what lets a rider such as Bless join the
+ * roll. No ability key is passed, so the automatic failure that unconsciousness
+ * imposes on Strength and Dexterity saves does not catch a death save.
  *
  * A character who is not dying rolls nothing, which covers a stable character
  * and a dead one.
@@ -180,7 +196,7 @@ function countFailures(state, count) {
 export function rollDeathSave(character, opts = {}) {
   const state = character.deathSaves;
   if (!state || !isDying(character)) return { character, save: null, outcome: null };
-  const save = resolveSave(0, DEATH_SAVE_DC, {
+  const save = resolveSave(deathSaveBonus(character), DEATH_SAVE_DC, {
     conditions: character.conditions ?? [],
     ...opts,
   });

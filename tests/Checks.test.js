@@ -313,3 +313,34 @@ test('passive perception reads the character’s own Perception bonus', () => {
   assert.equal(passivePerception(expert()), 12, '-1 WIS, +3 proficiency');
   assert.equal(passivePerception(expert(), 'advantage'), 17);
 });
+
+test('exhaustion takes 2 a level off a save, whether or not it is proficient', () => {
+  assert.equal(saveBonus(hero({ exhaustion: 1 }), 'CON'), 1, '+3 CON less 2');
+  assert.equal(saveBonus(hero({ exhaustion: 3 }), 'CON'), -3, '+3 CON less 6');
+  const proficient = withProficiencies(hero(), { saves: ['CON'] });
+  assert.equal(saveBonus({ ...proficient, exhaustion: 2 }, 'CON'), 2, '+3 and +3 less 4');
+  assert.equal(saveBonus(hero({ exhaustion: 0 }), 'CON'), 3, 'a rested character is unchanged');
+});
+
+test('exhaustion takes 2 a level off a check, an expertise one, and a bare ability', () => {
+  assert.equal(checkBonus(hero({ exhaustion: 1 }), 'stealth'), -1, '+1 DEX less 2');
+  assert.equal(checkBonus(hero({ exhaustion: 1 }), 'DEX'), -1, 'a bare ability too');
+  assert.equal(checkBonus({ ...expert(), exhaustion: 2 }, 'stealth'), 3, '+1 DEX, +6, less 4');
+  assert.equal(checkBonus({ ...expert(), exhaustion: 2 }, 'perception'), -2, '-1, +3, less 4');
+  const proficient = withProficiencies(hero(), { skills: ['stealth'] });
+  assert.equal(checkBonus({ ...proficient, exhaustion: 4 }, 'stealth'), -4, '+1, +3, less 8');
+});
+
+test('exhaustion reaches a passive score through the check bonus', () => {
+  assert.equal(passivePerception(hero({ exhaustion: 2 })), 5, '9 less 4');
+  assert.equal(passivePerception(hero({ exhaustion: 2 }), 'advantage'), 10);
+});
+
+test('a rolled save and check carry the exhaustion penalty in the total', () => {
+  const tired = hero({ exhaustion: 3 });
+  const save = savingThrow(tired, 'CON', 10, { rng: seq([face(20, 10)]) });
+  assert.equal(save.total, 7, '10 on the die, +3 CON, less 6');
+  assert.equal(save.rider, null, 'the penalty is in the bonus, not a rider');
+  const check = abilityCheck(tired, 'DEX', 10, { rng: seq([face(20, 10)]) });
+  assert.equal(check.total, 5, '10 on the die, +1 DEX, less 6');
+});

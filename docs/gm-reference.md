@@ -388,7 +388,15 @@ by hand. A chip that you type yourself matches a row when it spells one of the
 names above, and case does not matter. Any other chip carries no rule.
 
 Exhaustion is not in the list. It is a level from 0 to 6 rather than a chip, and
-the app stores it as its own number.
+the app stores it as its own number. Each level takes 2 off every d20 test and 5
+feet off the walking speed. The penalty reaches the saving throws and the skills
+on the sheet, the passive Perception score, an attack with a weapon or a spell,
+and a death save. The log names the level and the number it took off.
+
+Two rolls do not get the penalty. Initiative throws a straight d20, so lower it
+by hand in the setup dialog. A creature's saving throw against a spell is a
+number you type into the cast dialog, so subtract the penalty as you type it.
+A spell save DC is not a d20 test, and exhaustion does not lower it.
 
 Advantage and disadvantage from any number of sources fold by the 5e rule: if
 both are present the roll goes straight, and otherwise the one kind present

@@ -1081,3 +1081,45 @@ test('a thrown melee weapon rolls as a ranged attack for the throw', () => {
     'a throw is a ranged attack, so a prone target is harder to hit',
   );
 });
+
+test('exhaustion lowers an attack roll, and the log names the level', () => {
+  const hero = { ...makeHero({ STR: 16 }), exhaustion: 2 };
+  const app = stubApp({ characters: [hero], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  // STR +3 and proficiency +2, less 4 for two levels of exhaustion.
+  assert.equal(app.rolls[0].selection.modifier, 1);
+  assert.match(
+    app.log[0],
+    /^Hero attacks Goblin with Sword \(STR \+3, proficiency \+2, exhaustion 2 -4\): 16 to hit/,
+  );
+});
+
+test('a tired creature swings at the same penalty, and its damage is untouched', () => {
+  const goblin = {
+    ...createCreature('goblin', 'Goblin', {
+      disposition: 'hostile',
+      maxHP: 20,
+      stats: { STR: 16, AC: 10 },
+      location: HERE,
+      level: 1,
+    }),
+    exhaustion: 3,
+  };
+  const hero = makeHero({ STR: 10 });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(20)]) });
+  rollWeaponAttack(app, {
+    attacker: goblin,
+    defender: { id: 'hero', name: 'Hero', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  // STR +3 and proficiency +2, less 6. A creature is always proficient.
+  assert.equal(app.rolls[0].selection.modifier, -1);
+  assert.match(app.log[0], /exhaustion 3 -6\): 19 to hit/);
+  assert.match(app.log[1], /\+3\]\.$/, 'the damage keeps the whole ability modifier');
+});

@@ -8,6 +8,7 @@
 import { roll } from '../dice/DiceRoller.js';
 import { abilityModifier, proficiencyBonus, ABILITY_SCORES } from './Modifiers.js';
 import { effectiveStats } from './Equipment.js';
+import { d20Penalty } from './Exhaustion.js';
 import { isProficientSave, isProficientSkill, hasExpertise } from './Proficiencies.js';
 import { rollRiders } from './Riders.js';
 import { SKILL_ABILITIES, SKILL_IDS } from '../data/skills.js';
@@ -41,18 +42,24 @@ import { SKILL_ABILITIES, SKILL_IDS } from '../data/skills.js';
  * ability modifier, read from the equipment-adjusted scores so a
  * stat-boosting item counts. The value adds the proficiency bonus when the
  * class grants that save. An ability with no score for the character reads
- * as 10, the same default the rest of the stat code uses.
+ * as 10, the same default the rest of the stat code uses. Exhaustion takes 2
+ * off for each of its levels, because a saving throw is a d20 test.
  *
  * This function works for characters only. A creature keeps its ability
  * scores in a different field and carries no proficiency lists. A
  * creature's save bonus is still whatever the GM types into the cast dialog.
+ * An exhausted creature therefore saves at its full bonus, and the GM must
+ * subtract the penalty by hand.
  * @param {Character} character
  * @param {string} ability one of the six ability keys
  * @returns {number}
  */
 export function saveBonus(character, ability) {
   const mod = abilityModifier(effectiveStats(character)[ability] ?? 10);
-  return isProficientSave(character, ability) ? mod + proficiencyBonus(character.level ?? 1) : mod;
+  const proficient = isProficientSave(character, ability)
+    ? proficiencyBonus(character.level ?? 1)
+    : 0;
+  return mod + proficient + d20Penalty(character);
 }
 
 /**
@@ -161,7 +168,9 @@ export function checkAbility(key) {
  * when the character has expertise in it. A bare ability key is never
  * proficient, because proficiency in 5e attaches to a skill and not to an
  * ability. A key that names neither a skill nor an ability reads as a score
- * of 10, the same default the rest of the stat code uses.
+ * of 10, the same default the rest of the stat code uses. Exhaustion takes 2
+ * off for each of its levels, which also carries the penalty into a passive
+ * score, because {@link passiveScore} reads this value.
  *
  * This function works for characters only, for the same reason
  * {@link saveBonus} does. A foe carries no proficiency lists.
@@ -172,9 +181,10 @@ export function checkAbility(key) {
 export function checkBonus(character, key) {
   const ability = checkAbility(key);
   const mod = abilityModifier((ability ? effectiveStats(character)[ability] : undefined) ?? 10);
-  if (!SKILL_IDS.includes(key) || !isProficientSkill(character, key)) return mod;
+  const tired = d20Penalty(character);
+  if (!SKILL_IDS.includes(key) || !isProficientSkill(character, key)) return mod + tired;
   const bonus = proficiencyBonus(character.level ?? 1);
-  return mod + (hasExpertise(character, key) ? bonus * 2 : bonus);
+  return mod + (hasExpertise(character, key) ? bonus * 2 : bonus) + tired;
 }
 
 /**

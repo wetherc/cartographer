@@ -1,4 +1,5 @@
 import { abilityModifier, proficiencyBonus } from './Modifiers.js';
+import { d20Penalty } from './Exhaustion.js';
 import { slotsForCaster, slotPoolsForCaster } from './SpellSlots.js';
 import { getClasses } from './Multiclass.js';
 import { DEFAULT_CLASSES } from '../data/classes.js';
@@ -182,6 +183,11 @@ export function spellSaveDC(character, classId) {
  * A caster's spell attack bonus: proficiency bonus plus spell-ability
  * modifier, with the same class selection as `spellSaveDC`. Returns null
  * for a non-caster.
+ *
+ * Exhaustion takes 2 off for each of its levels, because a spell attack is a
+ * d20 test. `spellSaveDC` above deliberately has no such term. A save DC is a
+ * number the target rolls against, not a roll the caster makes, so exhaustion
+ * never lowers it.
  * @param {SpellCaster} character
  * @param {string} [classId]
  * @returns {number | null}
@@ -189,7 +195,7 @@ export function spellSaveDC(character, classId) {
 export function spellAttackBonus(character, classId) {
   const mod = spellAbilityModifier(character, classId);
   if (mod === null) return null;
-  return proficiencyBonus(character.level) + mod;
+  return proficiencyBonus(character.level) + mod + d20Penalty(character);
 }
 
 /**

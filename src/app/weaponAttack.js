@@ -2,6 +2,7 @@ import { promptModal } from '../ui/Modal.js';
 import { rollDamage, attackTweak } from '../dice/DiceRoller.js';
 import { attackAbility, hasWeaponProperty, weaponKind } from '../entities/Weapons.js';
 import { unproficientWear } from '../entities/Armor.js';
+import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
 import { isProficientWeapon } from '../entities/Proficiencies.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
@@ -159,7 +160,11 @@ export function rollWeaponAttack(
   const proficient = attacker.proficiencies
     ? isProficientWeapon(attacker, weapon.name, 'category' in weapon ? weapon.category : undefined)
     : true;
-  const attackBonus = abilityMod + (proficient ? proficiency : 0);
+  // An attack roll is a d20 test, so exhaustion takes 2 off it for each level.
+  // Both kinds of attacker carry the level, so a tired foe swings worse too.
+  // Damage is untouched: the penalty is on the roll, not on the hit.
+  const tired = d20Penalty(attacker);
+  const attackBonus = abilityMod + (proficient ? proficiency : 0) + tired;
   // Bonus attack dice join the d20 in the tray's selection, so they roll in
   // view. `attackTweak` rolls penalty dice and folds them into the modifier,
   // and keeps the values in its note for the log.
@@ -234,9 +239,10 @@ export function rollWeaponAttack(
   const reasons = picked ? `${picked} set by the GM` : slantReasons;
   const conditionNote = reasons ? `, ${reasons}` : '';
   const proficiencyNote = proficient ? `proficiency +${proficiency}` : 'not proficient';
+  const tiredNote = tired ? `, exhaustion ${exhaustionLevel(attacker)} ${tired}` : '';
   app.actions.logEvent(
     'combat',
-    `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, ${proficiencyNote}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
+    `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, ${proficiencyNote}${tiredNote}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
   );
   if (!hit) {
     app.toasts.show(

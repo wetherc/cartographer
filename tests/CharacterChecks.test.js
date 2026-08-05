@@ -130,3 +130,10 @@ test('the Stealth row is marked when the worn armor is noisy', () => {
     'the marker belongs to Stealth alone',
   );
 });
+
+test('the printed bonus already carries the exhaustion penalty', () => {
+  const tired = { ...expert(), exhaustion: 2 };
+  assert.equal(row(saveRows(tired), 'CON').bonus, 2, '+3 CON, +3 proficiency, less 4');
+  assert.equal(row(skillRows(tired), 'stealth').bonus, 3, '+1 DEX, +6 expertise, less 4');
+  assert.equal(row(skillRows(tired), 'athletics').bonus, -4, '+0 STR, less 4');
+});
