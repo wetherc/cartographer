@@ -16,6 +16,13 @@ import { mountListPanel } from './listPanel.js';
  * reports a player view, the log is read-only: rows render with a static
  * status glyph and no edit or delete control, and the panel omits the add
  * control.
+ *
+ * A quest's notes start hidden behind a per-row toggle, and the panel scrolls
+ * once the list outgrows its room. A long-running campaign collects dozens of
+ * quests with a paragraph each, which used to push the rest of the rail off
+ * the screen. The set of expanded rows lives in this closure, not in the
+ * campaign, so it is per browser and resets with a reload. Both roles get the
+ * toggle, since a player reads the notes too.
  * @param {HTMLElement} container
  * @param {{
  *   getQuests: () => Quest[],
@@ -28,6 +35,9 @@ import { mountListPanel } from './listPanel.js';
  * @returns {{ update: () => void }}
  */
 export function mountQuestPanel(container, callbacks) {
+  /** The ids of the quests showing their notes. @type {Set<string>} */
+  const expanded = new Set();
+
   return mountListPanel(container, {
     className: 'quest-panel',
     gate: () => !callbacks.getRole || isGM(callbacks.getRole()),
@@ -67,16 +77,34 @@ export function mountQuestPanel(container, callbacks) {
         toggle = el('span', 'quest-panel__status', icon(done ? 'check' : 'add'));
       }
 
+      const open = expanded.has(quest.id);
       const body = el(
         'div',
         'quest-panel__body u-col u-g1',
         el('span', 'quest-panel__title', quest.title),
         // A ternary, not `&&`: an empty string is a legal child that `el`
         // appends as an empty text node. Absent notes must add nothing.
-        quest.notes ? el('span', 'u-muted', quest.notes) : null,
+        quest.notes && open ? el('span', 'u-muted', quest.notes) : null,
       );
 
-      return [toggle, body];
+      // A quest with no notes has nothing to expand, so it gets no toggle.
+      const notesToggle = quest.notes
+        ? ctx.action(
+            {
+              icon: 'chevron',
+              label: open ? `Hide notes for ${quest.title}` : `Show notes for ${quest.title}`,
+              pressed: open,
+              onClick: () => {
+                if (open) expanded.delete(quest.id);
+                else expanded.add(quest.id);
+              },
+            },
+            quest,
+          )
+        : null;
+      if (notesToggle) notesToggle.classList.add('quest-panel__notes-toggle');
+
+      return notesToggle ? [toggle, body, notesToggle] : [toggle, body];
     },
     actions: (quest, ctx) =>
       ctx.gm

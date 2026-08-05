@@ -51,8 +51,25 @@
    Quest log
    ========================================================================== */
 
+/* The log scrolls itself once it outgrows this height, so a campaign with
+   many quests does not push the panels under it off the rail. */
+.quest-panel {
+  max-height: 24rem;
+  overflow-y: auto;
+}
+
 .quest-panel__group {
   margin-bottom: var(--space-2);
+}
+
+/* The chevron points right while the notes are hidden and turns down while
+   they show, so the row states which way the toggle goes. */
+.quest-panel__notes-toggle svg {
+  transition: transform var(--transition-fast) ease;
+}
+
+.quest-panel__notes-toggle[aria-pressed='true'] svg {
+  transform: rotate(90deg);
 }
 
 /* Typography comes from .section-label (base.css); only the margin is local. */
