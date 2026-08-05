@@ -19,10 +19,28 @@ const SWORD = {
   name: 'Sword',
   type: 'weapon',
   kind: 'melee',
+  category: 'martial',
   quantity: 1,
   notes: '',
   damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
 };
+
+/**
+ * A party attacker proficient with martial weapons, so the baseline attack
+ * keeps its proficiency bonus. The tests about the gate itself build a
+ * character without the grant.
+ * @param {Record<string, number>} [stats]
+ */
+function makeHero(stats) {
+  const base = withHP(createCharacter('hero', 'Hero', stats), 12);
+  return {
+    ...base,
+    proficiencies: {
+      ...base.proficiencies,
+      weapons: { categories: ['martial'], named: [] },
+    },
+  };
+}
 
 /**
  * An rng that hands back the given values in order, then repeats the last one.
@@ -65,6 +83,8 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
   assert.deepEqual(
     readAttackTweaks({
       mode: 'advantage',
+      'two-handed': '1',
+      range: 'long',
       'atk-count': '1',
       'atk-die': 'd6',
       'atk-flat': '2',
@@ -74,6 +94,8 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
     }),
     {
       mode: 'advantage',
+      twoHanded: true,
+      longRange: true,
       attackDice: 1,
       attackDie: 'd6',
       attackFlat: 2,
@@ -83,8 +105,12 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
     },
   );
   // An absent mode answer reads as `auto`, which leaves the chips in charge.
+  // An absent grip or range answer reads as the one-handed, normal-range
+  // attack.
   assert.deepEqual(readAttackTweaks({}), {
     mode: 'auto',
+    twoHanded: false,
+    longRange: false,
     attackDice: 0,
     attackDie: undefined,
     attackFlat: 0,
@@ -98,7 +124,7 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
 });
 
 test('attackParticipants names the attacker and who is left to attack', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 10,
@@ -131,7 +157,7 @@ test('attackParticipants names an NPC attacker and skips an unknown participant'
 });
 
 test('a hit rolls the weapon damage, applies it, and logs both halves', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -165,7 +191,7 @@ test('a hit rolls the weapon damage, applies it, and logs both halves', () => {
 });
 
 test('a natural 20 crits, doubles the damage dice, and says so', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 40,
@@ -189,7 +215,7 @@ test('a natural 20 crits, doubles the damage dice, and says so', () => {
 });
 
 test('a miss logs the roll, says who missed, and lands no damage', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -214,7 +240,7 @@ test('a miss logs the roll, says who missed, and lands no damage', () => {
 });
 
 test('a natural 1 misses however high the total', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 20 }), 12);
+  const hero = makeHero({ STR: 20 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -237,7 +263,7 @@ test('a natural 1 misses however high the total', () => {
 });
 
 test('bonus attack dice join the d20 in the tray and are named in the log', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -264,7 +290,7 @@ test('bonus attack dice join the d20 in the tray and are named in the log', () =
 });
 
 test('penalty attack dice roll off the tray and come out of the modifier', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -293,7 +319,7 @@ test('penalty attack dice roll off the tray and come out of the modifier', () =>
 });
 
 test('bonus damage dice and a flat rider both add to a hit', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 40,
@@ -315,7 +341,7 @@ test('bonus damage dice and a flat rider both add to a hit', () => {
 });
 
 test('an advantage roll names the die it threw away', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -364,7 +390,7 @@ test("a foe attacks with its own weapon and its stat block's ability", () => {
 });
 
 test('a weapon carrying status effects names them in the log and the toast', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -480,7 +506,7 @@ test('a caster NPC takes its proficiency from its caster level', () => {
 
 test('a rider chip on the attacker joins the attack roll and the log', () => {
   const blessed = {
-    ...withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12),
+    ...makeHero({ STR: 16 }),
     conditions: [
       { name: 'Bless', rounds: 10, rider: { rolls: ['attack', 'save'], dice: 1, die: 'd4' } },
     ],
@@ -506,7 +532,7 @@ test('a rider chip on the attacker joins the attack roll and the log', () => {
 });
 
 test('an attacker with no rider chip rolls exactly what it rolled before', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -526,7 +552,7 @@ test('an attacker with no rider chip rolls exactly what it rolled before', () =>
 });
 
 test('a chip that slants nothing leaves the mode off the tray selection', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -546,7 +572,7 @@ test('a chip that slants nothing leaves the mode off the tray selection', () => 
 });
 
 test('a poisoned attacker rolls at disadvantage and the log names the chip', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -566,7 +592,7 @@ test('a poisoned attacker rolls at disadvantage and the log names the chip', () 
 });
 
 test('a prone defender helps a melee swing and hinders a ranged one', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16, DEX: 16 }), 12);
+  const hero = makeHero({ STR: 16, DEX: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -593,7 +619,7 @@ test('a prone defender helps a melee swing and hinders a ranged one', () => {
 });
 
 test('the attacker and defender chips cancel to a straight roll', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -620,7 +646,7 @@ test('the attacker and defender chips cancel to a straight roll', () => {
 });
 
 test('a mode picked in the dialog reaches the roll and the log names the GM', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -641,7 +667,7 @@ test('a mode picked in the dialog reaches the roll and the log names the GM', ()
 });
 
 test('a picked mode beats the chips, including a picked straight roll', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -674,7 +700,7 @@ test('a picked mode beats the chips, including a picked straight roll', () => {
 });
 
 test('an auto mode leaves the chips in charge', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 20,
@@ -695,7 +721,7 @@ test('an auto mode leaves the chips in charge', () => {
 });
 
 test('a melee hit on an unconscious defender crits without a natural 20', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const hero = makeHero({ STR: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 40,
@@ -721,7 +747,7 @@ test('a melee hit on an unconscious defender crits without a natural 20', () => 
 });
 
 test('a ranged hit on an unconscious defender stays an ordinary hit', () => {
-  const hero = withHP(createCharacter('hero', 'Hero', { DEX: 16 }), 12);
+  const hero = makeHero({ DEX: 16 });
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 40,
@@ -744,4 +770,152 @@ test('a ranged hit on an unconscious defender stays an ordinary hit', () => {
   assert.match(app.log[0], /— hit\.$/);
   // One bow die at 8 plus the DEX modifier of 3.
   assert.equal(app.state.creatures[0].currentHP, 40 - 11);
+});
+
+test('a character without the proficiency loses the bonus and the log says so', () => {
+  const untrained = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [untrained], creatures: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: untrained,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  // STR +3 alone, with no proficiency on top.
+  assert.deepEqual(app.rolls, [{ selection: { counts: { d20: 1 }, modifier: 3 }, target: 10 }]);
+  assert.match(app.log[0], /\(STR \+3, not proficient\): 18 to hit/);
+});
+
+test('a named weapon grant matches whatever case the item name uses', () => {
+  const base = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const named = {
+    ...base,
+    proficiencies: {
+      ...base.proficiencies,
+      weapons: { categories: [], named: ['sword'] },
+    },
+  };
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [named], creatures: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: named,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  assert.deepEqual(app.rolls, [{ selection: { counts: { d20: 1 }, modifier: 5 }, target: 10 }]);
+  assert.match(app.log[0], /proficiency \+2/);
+});
+
+test('a two-handed swing of a versatile weapon rolls the two-handed dice', () => {
+  const hero = makeHero({ STR: 16 });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 40,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const longsword = {
+    ...SWORD,
+    name: 'Longsword',
+    properties: ['versatile'],
+    versatileDamage: [{ count: 1, sides: 10, damageType: 'slashing' }],
+  };
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (longsword),
+    tweaks: { twoHanded: true },
+    rng: () => 0.999,
+  });
+  // The d10 at its maximum plus the STR modifier, instead of the d8.
+  assert.equal(app.state.creatures[0].currentHP, 40 - 13);
+});
+
+test('a long-range shot rolls at disadvantage and the log names the range', () => {
+  const hero = makeHero({ DEX: 16 });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const bow = { ...SWORD, name: 'Bow', kind: 'ranged', range: { normal: 80, long: 320 } };
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10, conditions: [] },
+    weapon: /** @type {any} */ (bow),
+    tweaks: { longRange: true },
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[0].selection.mode, 'disadvantage');
+  assert.match(app.log[0], /long range disadvantage/);
+});
+
+test('an advantage chip and a long-range shot cancel to a straight roll', () => {
+  const hero = makeHero({ DEX: 16 });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const bow = { ...SWORD, name: 'Bow', kind: 'ranged', range: { normal: 80, long: 320 } };
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: /** @type {any} */ ({
+      id: 'goblin',
+      name: 'Goblin',
+      ac: 10,
+      conditions: [{ name: 'Restrained' }],
+    }),
+    weapon: /** @type {any} */ (bow),
+    tweaks: { longRange: true },
+    rng: scripted([4 / 8]),
+  });
+  // The log still names both slants, so the straight roll explains itself.
+  assert.equal(app.rolls[0].selection.mode, 'normal');
+  assert.match(app.log[0], /Restrained advantage, long range disadvantage/);
+});
+
+test('a GM-picked mode beats the long-range slant', () => {
+  const hero = makeHero({ DEX: 16 });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const bow = { ...SWORD, name: 'Bow', kind: 'ranged', range: { normal: 80, long: 320 } };
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10, conditions: [] },
+    weapon: /** @type {any} */ (bow),
+    tweaks: { mode: 'advantage', longRange: true },
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[0].selection.mode, 'advantage');
+  assert.match(app.log[0], /advantage set by the GM/);
+  assert.equal(/long range/.test(app.log[0]), false, 'the pick replaces the slant reasons');
 });

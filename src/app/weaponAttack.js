@@ -1,6 +1,7 @@
 import { promptModal } from '../ui/Modal.js';
 import { rollDamage, attackTweak } from '../dice/DiceRoller.js';
-import { attackAbility, weaponKind } from '../entities/Weapons.js';
+import { attackAbility, hasWeaponProperty, weaponKind } from '../entities/Weapons.js';
+import { isProficientWeapon } from '../entities/Proficiencies.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
 import { autoCrits, modeReasons, rollMode } from '../entities/ConditionEffects.js';
@@ -20,10 +21,15 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
 /**
  * The situational overrides a pre-roll dialog can add to one attack: the mode
  * of the d20, bonus or penalty dice and a flat bonus on the attack roll, and
- * extra dice and a flat rider on the damage. Every field defaults to nothing,
- * so a plain Enter in the dialog rolls the unmodified attack.
+ * extra dice and a flat rider on the damage. `twoHanded` swings a versatile
+ * weapon with both hands, so the damage uses the two-handed dice. `longRange`
+ * fires past the weapon's normal range, which slants the roll toward
+ * disadvantage. Every field defaults to nothing, so a plain Enter in the
+ * dialog rolls the unmodified attack.
  * @typedef {{
  *   mode?: AttackMode,
+ *   twoHanded?: boolean,
+ *   longRange?: boolean,
  *   attackDice?: number,
  *   attackDie?: import('../types/dice.js').DieType,
  *   attackFlat?: number,
@@ -85,6 +91,8 @@ export function attackParticipants(app, combat, participant) {
 export function readAttackTweaks(values) {
   return {
     mode: /** @type {AttackMode} */ (values['mode'] || 'auto'),
+    twoHanded: values['two-handed'] === '1',
+    longRange: values['range'] === 'long',
     attackDice: Number(values['atk-count']) || 0,
     attackDie: /** @type {import('../types/dice.js').DieType} */ (values['atk-die']),
     attackFlat: Number(values['atk-flat']) || 0,
@@ -135,10 +143,15 @@ export function rollWeaponAttack(
   const abilityMod = abilityModOf(stats, ability);
   // A character always carries a level, and a leveled creature does too. An
   // unleveled creature falls back to its caster level, and to 1 for a
-  // non-caster. Every combatant is proficient with what it holds until the
-  // weapon overhaul gates that.
+  // non-caster.
   const proficiency = proficiencyBonus(attacker.level ?? attacker.casterLevel ?? 1);
-  const attackBonus = abilityMod + proficiency;
+  // Only a character carries proficiency lists, so only a character can lack
+  // proficiency with a weapon. A creature's attack bonus bakes proficiency in,
+  // the way a 5e stat block does.
+  const proficient = attacker.proficiencies
+    ? isProficientWeapon(attacker, weapon.name, 'category' in weapon ? weapon.category : undefined)
+    : true;
+  const attackBonus = abilityMod + (proficient ? proficiency : 0);
   // Bonus attack dice join the d20 in the tray's selection, so they roll in
   // view. `attackTweak` rolls penalty dice and folds them into the modifier,
   // and keeps the values in its note for the log.
@@ -166,8 +179,11 @@ export function rollWeaponAttack(
   // passed on, so a picked `normal` also cancels the tray's standing toggle
   // for this roll. Under `auto`, a null mode means no chip slanted the roll,
   // and the key stays off the selection so the tray's toggle still applies.
+  // A shot past normal range adds one disadvantage slant. It folds in with
+  // the chip slants, so one advantage chip cancels it to a straight roll.
   const picked = tweaks.mode && tweaks.mode !== 'auto' ? tweaks.mode : null;
-  const mode = picked ?? rollMode(conditionQuery);
+  const longSlant = tweaks.longRange ? 'disadvantage' : null;
+  const mode = picked ?? rollMode(conditionQuery, [longSlant]);
   const { result } = app.actions.rollDice(
     {
       counts: { d20: 1, ...tweak.counts },
@@ -195,11 +211,18 @@ export function rollWeaponAttack(
   // roll came out straight, not just that it did.
   // A GM-picked mode replaces the chip reasons, because the chips no longer
   // decide the roll and naming them would say the opposite of what happened.
-  const reasons = picked ? `${picked} set by the GM` : modeReasons(conditionQuery);
+  const slantReasons = [
+    modeReasons(conditionQuery),
+    longSlant && !picked ? 'long range disadvantage' : '',
+  ]
+    .filter(Boolean)
+    .join(', ');
+  const reasons = picked ? `${picked} set by the GM` : slantReasons;
   const conditionNote = reasons ? `, ${reasons}` : '';
+  const proficiencyNote = proficient ? `proficiency +${proficiency}` : 'not proficient';
   app.actions.logEvent(
     'combat',
-    `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, proficiency +${proficiency}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
+    `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, ${proficiencyNote}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
   );
   if (!hit) {
     app.toasts.show(
@@ -209,8 +232,11 @@ export function rollWeaponAttack(
   }
   // A crit rolls every damage die twice, including the dialog's added dice.
   // The ability modifier still adds only once, and proficiency never
-  // reaches damage.
-  const parts = damageParts(weapon.damage ?? [], {
+  // reaches damage. A two-handed swing of a versatile weapon reads the
+  // two-handed dice instead of the one-handed ones.
+  const twoHanded =
+    tweaks.twoHanded && 'versatileDamage' in weapon && weapon.versatileDamage?.length;
+  const parts = damageParts((twoHanded ? weapon.versatileDamage : weapon.damage) ?? [], {
     crit,
     bonusDice: tweaks.damageDice ?? 0,
     bonusDie: tweaks.damageDie ?? 'd4',
@@ -279,6 +305,19 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
   // like all damage dice. The attack-roll dice do not double, because they
   // modify the d20, not the damage.
   const bonusDieOptions = BONUS_DICE.map((d) => ({ value: d, label: d }));
+  // A versatile weapon offers the two-handed grip. A ranged or thrown weapon
+  // with a stated range offers the long-range shot. Both sit in the open part
+  // of the dialog, because the GM decides them per swing.
+  const versatile =
+    hasWeaponProperty(weapon, 'versatile') &&
+    'versatileDamage' in weapon &&
+    weapon.versatileDamage?.length;
+  const range =
+    weaponKind(weapon) === 'ranged' || hasWeaponProperty(weapon, 'thrown')
+      ? 'range' in weapon
+        ? weapon.range
+        : undefined
+      : undefined;
   const values = await promptModal(
     `Attack with ${weapon.name}`,
     [
@@ -307,6 +346,32 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
         options: MODE_OPTIONS,
         full: true,
       },
+      ...(versatile
+        ? [
+            {
+              name: 'two-handed',
+              label: 'Wield two-handed',
+              type: /** @type {const} */ ('checkbox'),
+              value: false,
+              full: true,
+            },
+          ]
+        : []),
+      ...(range
+        ? [
+            {
+              name: 'range',
+              label: 'Range',
+              type: /** @type {const} */ ('select'),
+              value: 'normal',
+              options: [
+                { value: 'normal', label: `Normal (${range.normal} ft)` },
+                { value: 'long', label: `Long (${range.long} ft, disadvantage)` },
+              ],
+              full: true,
+            },
+          ]
+        : []),
       { name: 'atk-count', label: 'Attack: bonus dice', type: 'number', value: 0, advanced: true },
       {
         name: 'atk-die',

@@ -265,7 +265,17 @@ Attack rolls follow 5e without change.
 
 - The roll is 1d20, plus the ability modifier of the weapon, plus the
   proficiency bonus of the attacker, against the AC of the defender.
-- STR modifies a melee weapon. DEX modifies a finesse or ranged weapon.
+- A character adds the proficiency bonus only when its proficiency lists cover
+  the weapon, by category or by name. Without that, the roll takes the ability
+  modifier alone, and the log says "not proficient". A creature is always
+  proficient with its own weapon, the way a 5e stat block is.
+- STR modifies a melee weapon. DEX modifies a ranged weapon. A finesse weapon
+  uses the higher of the two.
+- A versatile weapon offers a "Wield two-handed" box in the attack dialog. The
+  box swaps the damage dice for the two-handed dice.
+- A ranged or thrown weapon offers a Range field in the attack dialog. A shot
+  at long range takes disadvantage, which folds in with the condition chips.
+  A mode you pick in the Roll field still beats it.
 - A natural 20 hits whatever the AC is, and every damage die rolls twice.
 - A natural 1 always misses.
 - On a hit, the damage dice roll with the ability modifier folded into the

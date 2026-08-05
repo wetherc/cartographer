@@ -200,6 +200,10 @@ function slantsFor({ roller, target, kind, melee = true, ability }) {
  * since most attacks are melee and a caller with no weapon in hand is asking
  * about a melee reach. `ability` is the save's ability, which is what
  * restrained needs to know it applies.
+ *
+ * `extra` takes slants that come from outside the chips, such as the long
+ * range of a ranged attack. They fold in before the count, so one advantage
+ * chip and one extra disadvantage still cancel to a normal roll.
  * @param {{
  *   roller?: Condition[] | null,
  *   target?: Condition[] | null,
@@ -207,10 +211,11 @@ function slantsFor({ roller, target, kind, melee = true, ability }) {
  *   melee?: boolean,
  *   ability?: string,
  * }} query
+ * @param {(Slant | null)[]} [extra]
  * @returns {RollMode | null}
  */
-export function rollMode(query) {
-  return combineModes(slantsFor(query).map((entry) => entry.slant));
+export function rollMode(query, extra = []) {
+  return combineModes([...slantsFor(query).map((entry) => entry.slant), ...extra]);
 }
 
 /**
