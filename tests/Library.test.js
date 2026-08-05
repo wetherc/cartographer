@@ -213,6 +213,7 @@ test('normalizeLibrary reads a pre-merge file: bestiary is hostile, statBlock is
     {
       name: 'Hammer',
       kind: 'melee',
+      category: 'simple',
       damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }],
     },
     'a creature weapon coerces to the property model on the way in',

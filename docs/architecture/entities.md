@@ -283,11 +283,25 @@ The property strings `light` and `heavy` also exist as armor weight classes.
 The two vocabularies live in separate constants (`WEAPON_PROPERTIES` in
 `Weapons.js`, `ARMOR_WEIGHTS` in `Equipment.js`) and never mix.
 
+`clampWeaponRange(value, fallback)` reads a range as whole feet, with the long
+range held at or above the normal one. A field under one foot, or one that does
+not read as a number, takes the matching fallback from `DEFAULT_RANGES`, which
+is 80/320 feet for a ranged weapon and 20/60 for a thrown melee one. The item
+form and the legacy coercer both clamp here, so an imported file cannot carry a
+range the form refuses to produce.
+
 `EquipmentPresets.coerceWeapon` reads a weapon-shaped value from any era and
-answers the current fields. A name match against `WEAPON_PRESETS` adopts the
-preset's property fields and keeps the value's own damage dice, because a GM
-can edit them. An unmatched legacy value maps from its `handling` and gets
-the simple category, which keeps the old always-proficient rolls unchanged.
+answers the current fields. The `kind` field says which era the value comes
+from, because every value the coercer answers carries one. A value that has it
+keeps its own fields, filtered to the known vocabulary. A value without it is
+legacy: a name match against `WEAPON_PRESETS` adopts the preset's property
+fields and keeps the value's own damage dice, because a GM can edit them, and
+an unmatched one maps from its `handling` and gets the simple category, which
+keeps the old always-proficient rolls unchanged. Reading `kind` first is what
+lets a GM edit a copy of a built-in weapon: the copy shares the built-in's
+name, and the library gate coerces every entry on every load, so a preset read
+over the top would undo the edit each time.
+
 Migration step 6 runs saved weapons through the coercer once. The library
 normalize gate runs its entries through it on every load, because library
 files carry no version.

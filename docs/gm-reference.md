@@ -468,7 +468,7 @@ heading per item type.
 | Category | simple, martial, or none for a natural weapon such as a bite |
 | Kind | melee (STR) or ranged (DEX) |
 | Properties | The 5e property flags: finesse, versatile, two-handed, light, heavy, reach, thrown, ammunition, loading |
-| Range | Normal and long range in feet, for a ranged or thrown weapon |
+| Range | Normal and long range in feet, for a ranged or thrown weapon. A blank or unreadable field takes 80/320 for a ranged weapon and 20/60 for a melee one, and the long range never saves shorter than the normal one |
 | Two-handed damage | The alternate dice of a versatile weapon |
 | Status effects | Tags that the weapon inflicts, for example burning or poisoned |
 | Weight class | For body armor: light, medium, or heavy |

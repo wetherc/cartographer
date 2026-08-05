@@ -108,6 +108,51 @@ test('coerceWeapon adopts the preset shape on a name match and keeps edited dice
   });
 });
 
+test('a customized copy of a preset keeps its own properties across a coerce', () => {
+  const edited = {
+    name: 'Longsword',
+    kind: 'melee',
+    category: 'martial',
+    properties: ['finesse'],
+    damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
+  };
+  assert.deepEqual(
+    coerceWeapon(edited),
+    { kind: 'melee', category: 'martial', properties: ['finesse'] },
+    'the preset does not overwrite an edit that shares its name',
+  );
+  assert.deepEqual(
+    coerceWeapon(coerceWeapon(edited)),
+    { kind: 'melee', category: 'martial', properties: ['finesse'] },
+    'a second pass is a no-op, so repeated loads do not drift',
+  );
+});
+
+test('coerceWeapon reads a legacy weapon with no handling as a simple one', () => {
+  assert.deepEqual(
+    coerceWeapon({ name: 'Old Club', damage: [{ count: 1, sides: 4, damageType: 'bludgeoning' }] }),
+    { kind: 'melee', category: 'simple' },
+    'the field was optional, so its absence still means a legacy weapon',
+  );
+  assert.deepEqual(
+    coerceWeapon({ name: 'Bite', kind: 'melee' }),
+    { kind: 'melee' },
+    'a new-shape weapon with no category stays a natural weapon',
+  );
+});
+
+test('coerceWeapon clamps a stated range and never lets the long one undercut', () => {
+  assert.deepEqual(
+    coerceWeapon({ name: 'Odd Bow', kind: 'ranged', range: { normal: -30, long: 'far' } }).range,
+    { normal: 80, long: 320 },
+    'unreadable feet fall back to the default for the kind',
+  );
+  assert.deepEqual(
+    coerceWeapon({ name: 'Odd Bow', kind: 'ranged', range: { normal: 120.7, long: 40 } }).range,
+    { normal: 120, long: 120 },
+  );
+});
+
 test('coerceWeapon maps an unmatched legacy weapon from its handling', () => {
   assert.deepEqual(coerceWeapon({ name: 'Odd Club', handling: 'melee' }), {
     kind: 'melee',

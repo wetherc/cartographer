@@ -1,4 +1,5 @@
 import { WEAPON_TYPES } from './Equipment.js';
+import { DEFAULT_RANGES, clampWeaponRange } from './Weapons.js';
 import { clampInt } from '../util/num.js';
 
 /**
@@ -102,8 +103,10 @@ export function assembleItem(draft) {
 /**
  * The weapon fields of a draft, in the same present-only style as the rest
  * of the item. The kind is always written. The range survives only on a
- * ranged or thrown weapon, and the long range never reads shorter than the
- * normal range. The versatile damage survives only with the versatile flag.
+ * ranged or thrown weapon, and it clamps through the shared
+ * `clampWeaponRange`, so a blank field reads as the default for the kind and
+ * the long range never reads shorter than the normal range. The versatile
+ * damage survives only with the versatile flag.
  * @param {ItemDraft} draft
  * @returns {Partial<InventoryItem>}
  */
@@ -115,14 +118,16 @@ function weaponFields(draft) {
     draft.properties
   );
   const ranged = kind === 'ranged' || properties.includes('thrown');
-  const normal = clampInt(draft.rangeNormal, 1, Infinity, 20);
-  const long = Math.max(normal, clampInt(draft.rangeLong, 1, Infinity, normal));
+  const range = clampWeaponRange(
+    { normal: draft.rangeNormal, long: draft.rangeLong },
+    DEFAULT_RANGES[kind],
+  );
   const versatile = properties.includes('versatile') ? draft.versatileDamage : [];
   return {
     kind,
     ...(category ? { category } : {}),
     ...(properties.length ? { properties } : {}),
-    ...(ranged ? { range: { normal, long } } : {}),
+    ...(ranged ? { range } : {}),
     ...(versatile.length ? { versatileDamage: versatile } : {}),
     damage: draft.damage,
     ...(draft.statusEffects.length ? { statusEffects: draft.statusEffects } : {}),

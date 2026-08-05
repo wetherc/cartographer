@@ -43,6 +43,40 @@ export const WEAPON_PROPERTIES = [
   { key: 'loading', label: 'Loading' },
 ];
 
+/** The default range in feet of a weapon that states none, by kind. A ranged
+ * weapon reads as a shortbow and a thrown melee weapon as a dagger.
+ * @type {Record<WeaponKind, import('../types/entities.js').WeaponRange>} */
+export const DEFAULT_RANGES = {
+  ranged: { normal: 80, long: 320 },
+  melee: { normal: 20, long: 60 },
+};
+
+/**
+ * A range as two whole counts of feet, with the long range never shorter than
+ * the normal one. A value that does not read as a number falls back to the
+ * matching field of `fallback`. Both the item form and the legacy coercer
+ * clamp here, so a hand-edited file cannot carry a range the form refuses to
+ * produce.
+ * @param {{ normal?: unknown, long?: unknown }} value
+ * @param {import('../types/entities.js').WeaponRange} fallback
+ * @returns {import('../types/entities.js').WeaponRange}
+ */
+export function clampWeaponRange(value, fallback) {
+  const normal = feet(value.normal, fallback.normal);
+  return { normal, long: Math.max(normal, feet(value.long, fallback.long)) };
+}
+
+/** One range field as whole feet. Anything under one foot, and anything that
+ * does not read as a number at all, falls back rather than clamping up to a
+ * one-foot reach.
+ * @param {unknown} value
+ * @param {number} fallback
+ * @returns {number} */
+function feet(value, fallback) {
+  const whole = Math.floor(Number(value));
+  return Number.isFinite(whole) && whole >= 1 ? whole : fallback;
+}
+
 /**
  * A weapon's kind. An absent `kind` reads as melee.
  * @param {InventoryItem | EnemyWeapon} weapon

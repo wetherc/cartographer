@@ -1,3 +1,5 @@
+import { DEFAULT_RANGES, WEAPON_PROPERTIES, clampWeaponRange } from './Weapons.js';
+
 /** @typedef {import('../types/entities.js').ItemType} ItemType */
 /** @typedef {import('../types/entities.js').ArmorWeight} ArmorWeight */
 
@@ -269,18 +271,9 @@ export function enemyArmor(name) {
   return preset ? { name: preset.name, acBonus: preset.baseAC - 10 } : null;
 }
 
-/** The valid property strings, for the coercer's filter. */
-const PROPERTY_KEYS = new Set([
-  'finesse',
-  'versatile',
-  'two-handed',
-  'light',
-  'heavy',
-  'reach',
-  'thrown',
-  'ammunition',
-  'loading',
-]);
+/** The valid property strings, for the coercer's filter. Weapons.js owns the
+ * vocabulary, so the filter reads it rather than restating it. */
+const PROPERTY_KEYS = new Set(WEAPON_PROPERTIES.map((p) => p.key));
 
 /**
  * Clone a damage array, dropping non-object terms. The coercer runs on
@@ -295,21 +288,30 @@ function cloneDamage(parts) {
 }
 
 /**
- * A weapon-shaped value from any era as the current weapon fields. The
- * function reads three sources, in this order:
+ * A weapon-shaped value from any era as the current weapon fields.
  *
- * 1. A name match against `WEAPON_PRESETS` (trimmed, case-insensitive)
- *    adopts the preset's kind, category, properties, range, and versatile
- *    damage. The input's own damage dice stay, because a GM can edit them.
- * 2. An input that already carries `kind` keeps its own fields, filtered to
- *    the known vocabulary.
- * 3. A legacy input maps its `handling`: 'ranged' becomes a ranged weapon
- *    with the shortbow range, 'finesse' becomes a melee weapon with the
- *    finesse property, and anything else becomes a plain melee weapon. An
- *    unmatched legacy weapon gets the 'simple' category, because every class
- *    is proficient with simple weapons, and that keeps the old
- *    always-proficient rolls unchanged. A new-shape weapon without a
- *    category keeps none: it is a natural weapon, for example a bite.
+ * The `kind` field decides which era the value comes from, because every
+ * value this function returns carries one. An input that has it keeps its own
+ * fields, filtered to the known vocabulary. This matters for a GM's
+ * customized copy of a built-in weapon: it shares the built-in's name, and
+ * re-reading the preset over it on every load would undo the edit.
+ *
+ * A legacy input, which is one without `kind`, reads from two sources in this
+ * order:
+ *
+ * 1. A name match against `WEAPON_PRESETS` (trimmed, case-insensitive) adopts
+ *    the preset's kind, category, properties, range, and versatile damage.
+ *    The input's own damage dice stay, because a GM can edit them.
+ * 2. Otherwise the `handling` field maps over: 'ranged' becomes a ranged
+ *    weapon with the shortbow range, 'finesse' becomes a melee weapon with
+ *    the finesse property, and anything else becomes a plain melee weapon.
+ *    An unmatched legacy weapon gets the 'simple' category, because every
+ *    class is proficient with simple weapons, and that keeps the old
+ *    always-proficient rolls unchanged. A new-shape weapon without a category
+ *    keeps none: it is a natural weapon, for example a bite.
+ *
+ * A stated range clamps to whole feet with the long range at least the normal
+ * one, the same way the item form clamps what a GM types.
  *
  * This is the one long-term reader of the legacy `handling` field. Exported
  * library JSON carries no version, so a file from before the overhaul can
@@ -325,47 +327,51 @@ function cloneDamage(parts) {
  * }}
  */
 export function coerceWeapon(raw) {
-  const name = typeof raw.name === 'string' ? raw.name.trim().toLowerCase() : '';
-  const preset = WEAPON_PRESETS.find((p) => p.name.toLowerCase() === name);
-  if (preset) {
-    return {
-      kind: preset.kind,
-      category: preset.category,
-      ...(preset.properties ? { properties: [...preset.properties] } : {}),
-      ...(preset.range ? { range: { ...preset.range } } : {}),
-      ...(preset.versatileDamage ? { versatileDamage: cloneDamage(preset.versatileDamage) } : {}),
-    };
+  const legacy = raw.kind !== 'melee' && raw.kind !== 'ranged';
+  if (legacy) {
+    const name = typeof raw.name === 'string' ? raw.name.trim().toLowerCase() : '';
+    const preset = WEAPON_PRESETS.find((p) => p.name.toLowerCase() === name);
+    if (preset) {
+      return {
+        kind: preset.kind,
+        category: preset.category,
+        ...(preset.properties ? { properties: [...preset.properties] } : {}),
+        ...(preset.range ? { range: { ...preset.range } } : {}),
+        ...(preset.versatileDamage ? { versatileDamage: cloneDamage(preset.versatileDamage) } : {}),
+      };
+    }
   }
   const kind = raw.kind === 'ranged' || raw.handling === 'ranged' ? 'ranged' : 'melee';
   const properties = Array.isArray(raw.properties)
     ? raw.properties.filter((/** @type {unknown} */ p) =>
-        PROPERTY_KEYS.has(/** @type {string} */ (p)),
+        PROPERTY_KEYS.has(/** @type {import('../types/entities.js').WeaponProperty} */ (p)),
       )
     : raw.handling === 'finesse'
       ? ['finesse']
       : [];
-  const range = raw.range;
-  const hasRange =
-    range &&
-    typeof range === 'object' &&
-    Number.isFinite(range.normal) &&
-    Number.isFinite(range.long);
+  const stated = raw.range && typeof raw.range === 'object' ? raw.range : null;
+  // A ranged weapon always ends up with a range, so a bow is never rangeless.
+  // A melee weapon keeps only a range it stated, because a sword needs none.
+  const range = stated
+    ? clampWeaponRange(stated, DEFAULT_RANGES[kind])
+    : kind === 'ranged'
+      ? { ...DEFAULT_RANGES.ranged }
+      : null;
   const versatile = cloneDamage(raw.versatileDamage);
+  // A legacy weapon reads as simple whether or not it stated a handling,
+  // because the field was optional and an absent one meant melee. Only a
+  // new-shape weapon can be category-free, which marks a natural weapon.
   const category =
     raw.category === 'martial' || raw.category === 'simple'
       ? raw.category
-      : typeof raw.handling === 'string'
+      : legacy
         ? 'simple'
         : undefined;
   return {
     kind,
     ...(category ? { category } : {}),
     ...(properties.length ? { properties: [...properties] } : {}),
-    ...(hasRange
-      ? { range: { normal: range.normal, long: range.long } }
-      : kind === 'ranged'
-        ? { range: { normal: 80, long: 320 } }
-        : {}),
+    ...(range ? { range } : {}),
     ...(versatile.length ? { versatileDamage: versatile } : {}),
   };
 }

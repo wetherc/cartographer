@@ -151,11 +151,20 @@ test('the range survives only on a ranged or thrown weapon', () => {
   assert.equal('range' in assembleItem(draft({ type: 'weapon' })), false);
 });
 
-test('an unreadable range falls back, and the long range never undercuts the normal', () => {
+test('an unreadable range falls back to the default for the kind', () => {
   const odd = assembleItem(
-    draft({ type: 'bow', kind: 'ranged', rangeNormal: 'far', rangeLong: 5 }),
+    draft({ type: 'bow', kind: 'ranged', rangeNormal: 'far', rangeLong: '' }),
   );
-  assert.deepEqual(odd?.range, { normal: 20, long: 20 });
+  assert.deepEqual(odd?.range, { normal: 80, long: 320 }, 'a ranged weapon reads as a shortbow');
+  const thrown = assembleItem(
+    draft({ type: 'weapon', properties: ['thrown'], rangeNormal: 'near', rangeLong: null }),
+  );
+  assert.deepEqual(thrown?.range, { normal: 20, long: 60 }, 'a melee weapon reads as a dagger');
+});
+
+test('the long range never undercuts the normal range', () => {
+  const odd = assembleItem(draft({ type: 'bow', kind: 'ranged', rangeNormal: 100, rangeLong: 5 }));
+  assert.deepEqual(odd?.range, { normal: 100, long: 100 });
 });
 
 test('versatile damage survives only with the versatile flag', () => {

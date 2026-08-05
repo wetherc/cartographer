@@ -1,8 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  DEFAULT_RANGES,
   WEAPON_KINDS,
   WEAPON_PROPERTIES,
+  clampWeaponRange,
   weaponKind,
   hasWeaponProperty,
   attackAbility,
@@ -62,4 +64,22 @@ test('the kind and property vocabularies carry unique keys and labels', () => {
   for (const entry of [...WEAPON_KINDS, ...WEAPON_PROPERTIES]) {
     assert.ok(entry.label.length > 0, entry.key);
   }
+});
+
+test('clampWeaponRange floors the feet and holds the long range at or above the normal', () => {
+  assert.deepEqual(clampWeaponRange({ normal: 25.9, long: 90.2 }, DEFAULT_RANGES.melee), {
+    normal: 25,
+    long: 90,
+  });
+  assert.deepEqual(
+    clampWeaponRange({ normal: 100, long: 30 }, DEFAULT_RANGES.ranged),
+    { normal: 100, long: 100 },
+    'a long range under the normal one reads as the normal one',
+  );
+  assert.deepEqual(
+    clampWeaponRange({ normal: 0, long: -5 }, DEFAULT_RANGES.ranged),
+    { normal: 80, long: 320 },
+    'a value under one foot falls back',
+  );
+  assert.deepEqual(clampWeaponRange({}, DEFAULT_RANGES.melee), { normal: 20, long: 60 });
 });
