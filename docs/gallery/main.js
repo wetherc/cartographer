@@ -3,7 +3,7 @@
  * section into the page and links the side navigation to them.
  *
  * The sections import the real modules from `src/ui/`. Nothing here is a
- * copy of a widget, so a builder that changes shape shows the change here on
+ * copy of a widget, so a builder that changes its markup shows the change here on
  * the next reload.
  */
 

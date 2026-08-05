@@ -97,7 +97,7 @@ export const tokensSection = {
     {
       title: 'Utilities',
       notes:
-        'u-muted is the small secondary text of captions and row metadata. u-row and u-col are the two flex shapes, neither setting a gap, so both pair with u-g1 through u-g4. These are written at the call site, not folded into builder options, because they style the space around an element rather than the element itself.',
+        'u-muted is the small secondary text of captions and row metadata. u-row and u-col are the two flex layouts, neither setting a gap, so both pair with u-g1 through u-g4. These are written at the call site, not folded into builder options, because they style the space around an element rather than the element itself.',
       classes: '.u-muted .u-row .u-col .u-wrap .u-g1 .u-g2 .u-g3 .u-g4',
       stack: true,
       render: () => [

@@ -632,7 +632,7 @@ return value to whatever the function promises. It runs while the dialog
 is still mounted, so it can read its own inputs, and it can return a
 promise when the value is not settled yet (this is how the file field's
 decode is awaited). With `form: true`, the parts go inside a
-`<form method="dialog">`, which is what makes Enter submit, and makes a
+`<form method="dialog">`, which makes Enter submit, and makes a
 submit button's `value` become the return value.
 
 The four dialogs that live outside `Modal.js` are all built this way:

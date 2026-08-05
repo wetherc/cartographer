@@ -2,7 +2,7 @@
  * Repository scanning for the developer guide.
  *
  * Everything here reads the working tree. Nothing is hard-coded about the
- * shape of the codebase, so the numbers and the lists in the guide follow the
+ * layout of the codebase, so the numbers and the lists in the guide follow the
  * repository as it changes.
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';

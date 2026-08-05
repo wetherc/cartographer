@@ -36,9 +36,10 @@ calls an action that `encounterWiring.js` registered. Neither file imports
 the other, so neither can create an import cycle or an
 initialization-order dependency on the other.
 
-One rule makes this safe: **the wiring modules read everything on the context
-at call time, inside event handlers. They never capture a value from the
-context while wiring runs.** A module wired early can provide an event
+**The wiring modules read everything on the context at call time, inside
+event handlers. They never capture a value from the context while wiring
+runs.** This rule makes the order safe. A module wired early can
+provide an event
 handler that calls a view that a later module registers. This works because
 the lookup happens when the event fires, not when the handler was created.
 Write `app.views.encounterPanel.update()` inside the handler. Do not pull
@@ -189,7 +190,7 @@ This module writes a loaded campaign over the running one. It replaces:
 - the ten campaign fields on `app.state`
 - every campaign-backed view, refreshed last
 
-This is what makes a follower tab's update cost a repaint, rather than a
+This makes a follower tab's update cost a repaint, rather than a
 page load. The parse was never the expensive part. After the tile codec (see
 [Persistence](persistence.md)), it takes well under a millisecond.
 

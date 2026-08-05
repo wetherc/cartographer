@@ -22,7 +22,7 @@ export const overlaysSection = {
     {
       title: 'promptModal',
       notes:
-        'One form, one answer. It resolves to a record of field name to string, or null when the GM dismisses it. With wide, the fields lay out two per row.',
+        'The form asks one question and returns one answer. It resolves to a record of field name to string, or null when the GM dismisses it. With wide, the fields lay out two per row.',
       classes: '.modal .modal__title .modal__actions',
       render: () =>
         textButton('Open promptModal', async () => {

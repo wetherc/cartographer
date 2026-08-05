@@ -117,7 +117,7 @@ const EXTRA_CSS = `
 `;
 
 export const SECTIONS = [
-  { id: 'layers', short: 'One rule' },
+  { id: 'layers', short: 'Module logic' },
   { id: 'root', short: 'Composition root' },
   { id: 'panels', short: 'Panel contract' },
   { id: 'map', short: 'Map model' },
@@ -190,16 +190,16 @@ export function renderGuide(data) {
     </header>
 
     <section id="layers">
-      <div class="sec-head"><span class="sec-num">01</span><h2>One rule holds the codebase up</h2></div>
+      <div class="sec-head"><span class="sec-num">01</span><h2>Pure logic and DOM glue</h2></div>
       <div class="prose">
         <p>
-          Every module is one of two kinds. <strong>Pure logic</strong> takes its inputs as
+          Every module is either pure logic or DOM glue. <strong>Pure logic</strong> takes its inputs as
           arguments, including the random number generator and the current time, and returns
           new values. It never touches the DOM. <strong>DOM glue</strong> connects that logic
           to elements and events.
         </p>
         <p>
-          Glue calls down into pure logic. Pure logic never calls up. That single direction is
+          DOM Glue calls down into pure logic. Pure logic never calls up. That single direction is
           why most of the tree can be tested with <code>node --test</code> and nothing else.
         </p>
       </div>
@@ -272,7 +272,7 @@ export function renderGuide(data) {
         </p>
       </div>
 
-      ${block(snippets.panel, 'Most list panels get this shape from <code>mountListPanel</code> in <code>src/ui/listPanel.js</code> instead of hand-rolling it.')}
+      ${block(snippets.panel, 'Most list panels get this pattern from <code>mountListPanel</code> in <code>src/ui/listPanel.js</code> instead of hand-rolling it.')}
 
       <h3>Why identity comparison is enough</h3>
       <div class="prose">
@@ -286,7 +286,7 @@ export function renderGuide(data) {
       ${block(snippets.repaint)}
       ${block(snippets.sameRows)}
 
-      <h3>The same rule, three more places</h3>
+      <h3>The same rule elsewhere</h3>
       <div class="prose">
         <ul>
           <li><strong>Tile lookups.</strong> <code>src/map/TileIndex.js</code> gives O(1) <code>tileAt(node, id)</code>. Safe because a tile write replaces the node.</li>

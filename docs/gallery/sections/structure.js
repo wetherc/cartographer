@@ -1,5 +1,5 @@
 /**
- * The composite shapes: tab strips, disclosures, stat bars, and the list
+ * The composite widgets: tab strips, disclosures, stat bars, and the list
  * panel that most feature rails are a configuration of.
  */
 

@@ -39,7 +39,7 @@ export const DIRECTORY_META = {
   combat: { kind: 'pure', role: 'Initiative order, attack resolution, and loadout reads.' },
   dice: {
     kind: 'pure',
-    role: 'roll(selection, rng). The generator is an argument, which is what makes the layer testable.',
+    role: 'roll(selection, rng). The generator is an argument, which makes the layer testable.',
   },
   party: { kind: 'pure', role: 'Party position and split-party tokens. Moving the party reveals fog.' },
   quest: { kind: 'pure', role: 'Quest records and their status transitions.' },
@@ -133,7 +133,7 @@ export const ROUTER_ANSWERS = {
   entities: {
     where: 'src/entities/, with any catalog data in src/data/',
     test: 'tests/<Module>.test.js. Inject the generator so the result is deterministic.',
-    trap: 'Never mutate in place. A writer returns a new object, which is what makes the panel repaint guard sound. Catalogs in src/data/ are deep-frozen, so copy before you write one into campaign state.',
+    trap: 'Never mutate in place. A writer returns a new object, which keeps the panel repaint guard sound. Catalogs in src/data/ are deep-frozen, so copy before you write one into campaign state.',
     refs: [
       ['src/util/deepFreeze.js', 'deepFreeze'],
       ['src/entities/Creature.js', 'fromTemplate'],

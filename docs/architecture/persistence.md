@@ -327,8 +327,7 @@ being left absent. As a result, a unit test can assert that the table covers
 every step. A transform filed under the wrong key cannot silently do
 nothing.
 
-The rule of thumb is this: any future change to the *meaning* of a stored
-field belongs in that table. Adding a field alone does not belong there,
+Any future change to the *meaning* of a stored field belongs in that table. Adding a field alone does not belong there,
 because the `withDefaults` functions already absorb its absence.
 
 ## Undo and redo: a log of deltas

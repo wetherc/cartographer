@@ -96,8 +96,8 @@ key. This pattern covers anything a hot path recomputes that the code can
 derive from a node alone. The returned arrays and sets are shared. Treat them
 as read-only.
 
-Chunks are the one entry keyed on something narrower than the node: the group
-object. The group cache makes the group object stable for each node, and
+Chunks are the one entry with a narrower key than the node. Their key is the
+group object. The group cache makes the group object stable for each node, and
 stamps it with `node.tiles`. A chunk's contents depend only on the group's
 geometry and on its member tiles' art. Keying chunks on the node instead
 breaks reuse across a stroke. A stroke replaces the node for each cell, while

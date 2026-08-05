@@ -19,8 +19,8 @@ Two core types form the base of the model. Both types are declared in
 - A **MapNode** is one whole map: a rectangular grid of tiles, plus a name, a
   kind (`'world'`, `'region'`, or `'interior'`), and dimensions.
 
-One fact surprises most readers: there is no separate "world" type, "region"
-type, or "dungeon" type. A world map is a MapNode. A region inside it is also
+There is no separate "world" type, "region" type, or "dungeon" type. A world
+map is a MapNode. A region inside it is also
 a MapNode. A town inside that region is a MapNode too, and so is a dungeon
 under the town. The difference between them is how they connect, and they
 connect in two directions at once:
@@ -188,8 +188,8 @@ caller keeps its own scale, because the bounds differ by what the label sits
 over: coordinate digits run large on empty canvas, and a character name stays
 small over tile art.
 
-The core of the draw pass is simple: for each tile, draw a fog rectangle if
-the tile is not revealed. Otherwise, draw the image at `tile.imageRef`. The
+The draw pass does one thing for each tile. It draws a fog rectangle if
+the tile is not revealed. Otherwise, it draws the image at `tile.imageRef`. The
 group, span, and marker passes described elsewhere on this page add to that
 base.
 
@@ -416,11 +416,12 @@ child leaves through its stairs down. Any other kind of link, such as a
 town's door into a keep, is not a stacked level, and has no stairway back at
 all.
 
-One answer drives everything that depends on the direction: which tiles
-`interiorExits` treats as a way out, where `computeRegionEntryTile` lands the
-party when it takes the stairs, where `computeParentReturnTile` puts the
-party when it comes back, which way the badge's chevron points in
-`MapMarkers`, and what the Build warning tells the GM to paint.
+Everything that depends on the direction reads this one answer. It decides
+which tiles `interiorExits` treats as a way out, where
+`computeRegionEntryTile` lands the party when it takes the stairs, where
+`computeParentReturnTile` puts the party when it comes back, which way the
+badge's chevron points in `MapMarkers`, and what the Build warning tells the
+GM to paint.
 
 A parent that links the same child from both a stairs-down tile and a
 stairs-up tile has authored two contradictory connections. The descent wins,
