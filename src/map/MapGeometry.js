@@ -101,6 +101,23 @@ export function tileRect(x, y, tileSize, offsetX, offsetY, scale) {
 }
 
 /**
+ * The screen-space pixel of the cell boundary at grid line `k`, rounded to a
+ * whole pixel. Every rectangle the renderer draws derives its edges from
+ * here, and the cell grid strokes its lines here too. With a fractional zoom
+ * scale, rounding each edge once keeps a tile, its fog, its block image, and
+ * the grid line between cells on the same pixel. Rounding a position and a
+ * width separately instead let tiles land a half pixel off the grid stroke,
+ * and the antialiased tile edge doubled some grid lines and not others.
+ * @param {number} k grid line index (a cell at x spans cellEdge(x) to cellEdge(x + 1))
+ * @param {number} size tile size in screen px (tileSize * scale)
+ * @param {number} offset pan offset in screen px
+ * @returns {number}
+ */
+export function cellEdge(k, size, offset) {
+  return Math.round(k * size + offset);
+}
+
+/**
  * The inverse of tileRect: the grid cell that contains a given screen point.
  * @param {number} screenX
  * @param {number} screenY
@@ -186,6 +203,8 @@ export function newBlockRect() {
 /**
  * The screen-space rectangle for a block spanning the cells minX to maxX by
  * minY to maxY. `visible` is false when the block falls entirely off the canvas.
+ * The edges come from cellEdge, so a block image lands on the same pixels as
+ * the tiles and the grid lines around it.
  *
  * The result is written into the caller's `out` argument instead of
  * returned fresh. The three renderer passes that use this run once per
@@ -199,10 +218,10 @@ export function newBlockRect() {
  * @returns {BlockRect} the same `out`, filled
  */
 export function blockRect(out, bounds, view, size) {
-  const x = bounds.minX * size + view.offsetX;
-  const y = bounds.minY * size + view.offsetY;
-  const w = (bounds.maxX - bounds.minX + 1) * size;
-  const h = (bounds.maxY - bounds.minY + 1) * size;
+  const x = cellEdge(bounds.minX, size, view.offsetX);
+  const y = cellEdge(bounds.minY, size, view.offsetY);
+  const w = cellEdge(bounds.maxX + 1, size, view.offsetX) - x;
+  const h = cellEdge(bounds.maxY + 1, size, view.offsetY) - y;
   out.x = x;
   out.y = y;
   out.w = w;

@@ -1,5 +1,5 @@
 import { groupImageChunks } from './RegionGroups.js';
-import { blockRect, newBlockRect, parseCoords } from './MapGeometry.js';
+import { blockRect, cellEdge, newBlockRect, parseCoords } from './MapGeometry.js';
 import { spanBlocks } from './TilePaint.js';
 import { overlayList } from './TileGrid.js';
 import { tileAtXY } from './TileIndex.js';
@@ -303,13 +303,18 @@ export class MapRenderer {
     const minY = Math.max(0, Math.floor(-view.offsetY / size));
     const maxX = Math.min(node.width - 1, Math.floor((view.canvasWidth - view.offsetX) / size));
     const maxY = Math.min(node.height - 1, Math.floor((view.canvasHeight - view.offsetY) / size));
+    // Cell rectangles come from the rounded edges of cellEdge, not from a
+    // fractional position and width. Neighboring cells then share each edge
+    // pixel exactly, with the grid line of _renderCellGrid on top of it.
     for (let y = minY; y <= maxY; y++) {
+      const sy = cellEdge(y, size, view.offsetY);
+      const h = cellEdge(y + 1, size, view.offsetY) - sy;
       for (let x = minX; x <= maxX; x++) {
         const tile = tileAtXY(node, x, y);
         if (!tile) continue;
-        const sx = x * size + view.offsetX;
-        const sy = y * size + view.offsetY;
-        this._renderTile(view, tile, sx, sy, size, groupCover);
+        const sx = cellEdge(x, size, view.offsetX);
+        const w = cellEdge(x + 1, size, view.offsetX) - sx;
+        this._renderTile(view, tile, sx, sy, w, h, groupCover);
       }
     }
   }
@@ -354,18 +359,23 @@ export class MapRenderer {
     const minY = Math.max(0, Math.floor(-view.offsetY / size));
     const maxX = Math.min(node.width, Math.ceil((view.canvasWidth - view.offsetX) / size));
     const maxY = Math.min(node.height, Math.ceil((view.canvasHeight - view.offsetY) / size));
-    const left = minX * size + view.offsetX;
-    const right = maxX * size + view.offsetX;
-    const top = minY * size + view.offsetY;
-    const bottom = maxY * size + view.offsetY;
+    const left = cellEdge(minX, size, view.offsetX);
+    const right = cellEdge(maxX, size, view.offsetX);
+    const top = cellEdge(minY, size, view.offsetY);
+    const bottom = cellEdge(maxY, size, view.offsetY);
 
     ctx.save();
     if (frame.revealedIds) {
+      // The clip rectangles come from the same rounded edges as the tiles,
+      // so the clip never shaves an antialiased sliver off a grid line.
       const clip = new Path2D();
       for (let y = minY; y < maxY; y++) {
+        const cy = cellEdge(y, size, view.offsetY);
+        const ch = cellEdge(y + 1, size, view.offsetY) - cy;
         for (let x = minX; x < maxX; x++) {
           if (!tileAtXY(node, x, y)?.revealed) continue;
-          clip.rect(x * size + view.offsetX, y * size + view.offsetY, size, size);
+          const cx = cellEdge(x, size, view.offsetX);
+          clip.rect(cx, cy, cellEdge(x + 1, size, view.offsetX) - cx, ch);
         }
       }
       ctx.clip(clip);
@@ -383,12 +393,12 @@ export class MapRenderer {
     // One path for every line, so the whole grid costs one stroke call.
     ctx.beginPath();
     for (let x = minX; x <= maxX; x++) {
-      const sx = Math.round(x * size + view.offsetX) + 0.5;
+      const sx = cellEdge(x, size, view.offsetX) + 0.5;
       ctx.moveTo(sx, top);
       ctx.lineTo(sx, bottom);
     }
     for (let y = minY; y <= maxY; y++) {
-      const sy = Math.round(y * size + view.offsetY) + 0.5;
+      const sy = cellEdge(y, size, view.offsetY) + 0.5;
       ctx.moveTo(left, sy);
       ctx.lineTo(right, sy);
     }
@@ -397,22 +407,25 @@ export class MapRenderer {
   }
 
   /**
-   * Draw one visible tile: the per-cell body of _renderTiles.
+   * Draw one visible tile: the per-cell body of _renderTiles. The cell
+   * rectangle arrives pre-rounded to whole pixels, so `w` and `h` can differ
+   * by a pixel from cell to cell at a fractional zoom.
    * @param {MapView} view
    * @param {import('../types/map.js').Tile} tile
    * @param {number} sx
    * @param {number} sy
-   * @param {number} size
+   * @param {number} w
+   * @param {number} h
    * @param {Set<string>} groupCover
    */
-  _renderTile(view, tile, sx, sy, size, groupCover) {
+  _renderTile(view, tile, sx, sy, w, h, groupCover) {
     const { ctx } = this;
     if (!tile.revealed && !view.revealAll) {
       // This fill is distinctly lighter than the map backdrop and the
       // empty-canvas background, so an unexplored but real tile reads as
       // fog, not void.
       ctx.fillStyle = INK.fog;
-      ctx.fillRect(sx, sy, size, size);
+      ctx.fillRect(sx, sy, w, h);
       return;
     }
 
@@ -420,12 +433,12 @@ export class MapRenderer {
     // as-yet-unpainted cell, has an empty base. Let the map backdrop show
     // through instead of drawing a placeholder under the path.
     if (tile.imageRef && !groupCover.has(tile.id)) {
-      const img = this._raster.source(tile.imageRef, size, size);
+      const img = this._raster.source(tile.imageRef, w, h);
       if (img) {
-        ctx.drawImage(img, sx, sy, size, size);
+        ctx.drawImage(img, sx, sy, w, h);
       } else {
         ctx.fillStyle = INK.missingArt;
-        ctx.fillRect(sx, sy, size, size);
+        ctx.fillRect(sx, sy, w, h);
       }
     }
 
@@ -433,8 +446,8 @@ export class MapRenderer {
     // sit on sand or snow instead of replacing the tile beneath it. A stack
     // draws bottom-up, for example a river channel over its shoreline.
     for (const ref of overlayList(tile)) {
-      const overlay = this._raster.source(ref, size, size);
-      if (overlay) ctx.drawImage(overlay, sx, sy, size, size);
+      const overlay = this._raster.source(ref, w, h);
+      if (overlay) ctx.drawImage(overlay, sx, sy, w, h);
     }
 
     // A drawn tile carrying a POI type gets a prominent outline. A POI
@@ -452,12 +465,13 @@ export class MapRenderer {
       // A span anchor's outline covers the whole block its art is
       // stretched across, clamped to the grid to match spanBlocks, so the
       // highlight wraps the scaled art instead of only its top-left cell.
-      let extent = size;
+      let extent = w;
       if (tile.span && tile.span > 1 && view.node) {
         const coords = parseCoords(tile.id);
         if (coords) {
-          extent =
-            size * Math.min(tile.span, view.node.width - coords.x, view.node.height - coords.y);
+          const span = Math.min(tile.span, view.node.width - coords.x, view.node.height - coords.y);
+          const size = this.tileSize * view.scale;
+          extent = cellEdge(coords.x + span, size, view.offsetX) - sx;
         }
       }
       this._decorations.renderPoiOutline(sx, sy, extent);
@@ -474,8 +488,15 @@ export class MapRenderer {
     const { ctx } = this;
     if (!view.node) return;
     const size = this.tileSize * view.scale;
+    const x = cellEdge(0, size, view.offsetX);
+    const y = cellEdge(0, size, view.offsetY);
     ctx.fillStyle = INK.mapBackdrop;
-    ctx.fillRect(view.offsetX, view.offsetY, view.node.width * size, view.node.height * size);
+    ctx.fillRect(
+      x,
+      y,
+      cellEdge(view.node.width, size, view.offsetX) - x,
+      cellEdge(view.node.height, size, view.offsetY) - y,
+    );
   }
 
   /** Stroke the node extent after tiles so the world edge is always visible.
@@ -484,10 +505,17 @@ export class MapRenderer {
     const { ctx } = this;
     if (!view.node) return;
     const size = this.tileSize * view.scale;
+    const x = cellEdge(0, size, view.offsetX);
+    const y = cellEdge(0, size, view.offsetY);
     ctx.save();
     ctx.strokeStyle = INK.mapBorder;
     ctx.lineWidth = 2;
-    ctx.strokeRect(view.offsetX, view.offsetY, view.node.width * size, view.node.height * size);
+    ctx.strokeRect(
+      x,
+      y,
+      cellEdge(view.node.width, size, view.offsetX) - x,
+      cellEdge(view.node.height, size, view.offsetY) - y,
+    );
     ctx.restore();
   }
 
@@ -519,7 +547,14 @@ export class MapRenderer {
         for (let i = 0; i < group.tileIds.length; i++) {
           if (!revealedIds.has(group.tileIds[i])) continue;
           const cell = group.cells[i];
-          clip.rect(cell.x * size + view.offsetX, cell.y * size + view.offsetY, size, size);
+          const cx = cellEdge(cell.x, size, view.offsetX);
+          const cy = cellEdge(cell.y, size, view.offsetY);
+          clip.rect(
+            cx,
+            cy,
+            cellEdge(cell.x + 1, size, view.offsetX) - cx,
+            cellEdge(cell.y + 1, size, view.offsetY) - cy,
+          );
         }
         ctx.clip(clip);
       }

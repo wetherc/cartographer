@@ -10,6 +10,7 @@ import {
   clientToBuffer,
   bufferScale,
   blockRect,
+  cellEdge,
   newBlockRect,
   fitToExtent,
   maskAt,
@@ -132,10 +133,43 @@ test('bufferScale is the ratio clientToBuffer reports', () => {
   assert.deepEqual(bufferScale({ width: 0, height: 0 }, 720, 540), { scaleX: 1, scaleY: 1 });
 });
 
+test('cellEdge rounds each grid line to a whole pixel', () => {
+  assert.equal(cellEdge(0, 48, 10), 10);
+  assert.equal(cellEdge(3, 48, 10), 154);
+  // Fractional zoom: 2 * 17.4 + 0.25 = 35.05 rounds down, 3 * 17.4 + 0.25 =
+  // 52.45 rounds down too, so neighbor cells can differ in width by a pixel.
+  assert.equal(cellEdge(2, 17.4, 0.25), 35);
+  assert.equal(cellEdge(3, 17.4, 0.25), 52);
+});
+
+test('adjacent cells built from cellEdge share their boundary exactly', () => {
+  const size = 17.4;
+  const offset = 3.7;
+  for (let x = 0; x < 10; x++) {
+    const left = cellEdge(x, size, offset);
+    const right = cellEdge(x + 1, size, offset);
+    assert.equal(Number.isInteger(left), true);
+    assert.equal(Number.isInteger(right), true);
+    // A cell ends where the next begins: widths are 17 or 18, never a gap.
+    const w = right - left;
+    assert.equal(w === 17 || w === 18, true);
+  }
+});
+
 test('blockRect spans the cell extent at the current pan and zoom', () => {
   const view = { offsetX: 10, offsetY: -20, canvasWidth: 800, canvasHeight: 600 };
   const rect = blockRect(newBlockRect(), { minX: 1, minY: 2, maxX: 2, maxY: 4 }, view, 48);
   assert.deepEqual(rect, { x: 58, y: 76, w: 96, h: 144, visible: true });
+});
+
+test('blockRect edges align with cellEdge at a fractional zoom', () => {
+  const view = { offsetX: 3.7, offsetY: -1.2, canvasWidth: 800, canvasHeight: 600 };
+  const size = 17.4;
+  const rect = blockRect(newBlockRect(), { minX: 1, minY: 2, maxX: 2, maxY: 4 }, view, size);
+  assert.equal(rect.x, cellEdge(1, size, view.offsetX));
+  assert.equal(rect.y, cellEdge(2, size, view.offsetY));
+  assert.equal(rect.x + rect.w, cellEdge(3, size, view.offsetX));
+  assert.equal(rect.y + rect.h, cellEdge(5, size, view.offsetY));
 });
 
 test('blockRect reports a block off any canvas edge as not visible', () => {
