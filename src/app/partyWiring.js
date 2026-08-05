@@ -9,6 +9,7 @@ import { castSpellOutOfCombat } from './spellCast.js';
 import { endSpellEffects, rosterIds } from './combatants.js';
 import { rollCheck } from './checkRolls.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
+import { setCombatantExhaustion } from './exhaustion.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { removeById } from '../entities/Roster.js';
 import { createCharacterScope } from './characterScope.js';
@@ -268,6 +269,14 @@ export function wireParty(app) {
       onStabilize: () => {
         const character = selectedCharacter();
         if (character) stabilizeCharacter(app, character.id);
+      },
+    },
+    // The exhaustion pips go through the app for the same reason: the sixth
+    // level kills the character and logs it, which the sheet cannot do.
+    {
+      onSet: (level) => {
+        const character = selectedCharacter();
+        if (character) setCombatantExhaustion(app, character.id, level);
       },
     },
   );

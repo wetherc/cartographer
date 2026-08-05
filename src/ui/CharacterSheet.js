@@ -18,6 +18,8 @@ import { CONCENTRATING } from '../entities/Conditions.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
 import { mountConditionsBar } from './ConditionsBar.js';
 import { deathSaveBlock } from './DeathSaveBlock.js';
+import { mountExhaustionBar } from './ExhaustionBar.js';
+import { exhaustionReadout } from '../view/ExhaustionView.js';
 import { buildProgressSection } from './CharacterProgress.js';
 import { buildSpellsSection } from './CharacterSpells.js';
 import { buildSavesBlock, buildSkillsBlock } from './CharacterChecks.js';
@@ -106,6 +108,10 @@ function customPools(character) {
  *   a death save throws the dice tray and lands in the log, which the sheet
  *   cannot reach. Without them, the block still shows its pips and offers no
  *   controls.
+ * @param {{ onSet: (level: number) => void } | null} [exhaustion]
+ *   The write behind the exhaustion pips. It goes through the host for the same
+ *   reason a death save does: the sixth level kills, and the write that kills
+ *   also logs. Without it, the pips are read-only.
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountCharacterSheet(
@@ -117,6 +123,7 @@ export function mountCharacterSheet(
   notify = () => {},
   onCheck = null,
   deathSaves = null,
+  exhaustion = null,
 ) {
   let current = initial;
 
@@ -287,6 +294,11 @@ export function mountCharacterSheet(
 
     const speedBadge = el('span', 'character-sheet__speed u-muted');
 
+    // A penalty that reaches every d20 roll belongs in the headline, not only
+    // beside the conditions. The badge is empty at level 0, which is where most
+    // characters sit, so the line reads as it did before exhaustion existed.
+    const tiredBadge = el('span', 'character-sheet__exhaustion');
+
     // Level, derived AC, and XP progress share one banner line, the first line
     // of the right-hand headline block.
     const banner = el(
@@ -298,6 +310,7 @@ export function mountCharacterSheet(
         'character-sheet__header-meta u-muted',
         acBadge,
         speedBadge,
+        tiredBadge,
         el(
           'span',
           'character-sheet__xp-progress u-muted',
@@ -317,6 +330,10 @@ export function mountCharacterSheet(
       // wearer costs 10 feet.
       speedBadge.textContent = `${walkSpeed(shown)} ft`;
       speedBadge.title = speedNote(shown);
+      const tired = exhaustionReadout(shown);
+      tiredBadge.textContent = tired.badge;
+      tiredBadge.title = tired.note;
+      tiredBadge.classList.toggle('character-sheet__exhaustion--fatal', tired.fatal);
     });
 
     /**
@@ -573,6 +590,16 @@ export function mountCharacterSheet(
       }
     }
     renderConcentration();
+    // Exhaustion sits under the chips, because it reads as one of them even
+    // though it is a level rather than an on-or-off state. The pips write
+    // through the host, so the sixth level can kill and log. The bar needs no
+    // writer of its own: the level is part of the sheet's shape, so a change to
+    // it rebuilds the card along with the save and skill bonuses it moves.
+    mountExhaustionBar(conditions, {
+      getEntity: () => live(),
+      onSet: (level) => exhaustion?.onSet(level),
+      canEdit: () => getPermissions().play && Boolean(exhaustion),
+    });
     // The death-save tracker sits under concentration and shows only while
     // the character is at 0 HP. The combat screen draws the same block from
     // the same builder, so the two surfaces cannot describe it differently.

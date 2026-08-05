@@ -153,6 +153,17 @@
   font-weight: 400;
 }
 
+/* Exhaustion in the headline. It takes 2 off every d20 roll per level, so it
+   reads louder than speed. It is empty at level 0, where it takes no space. */
+.character-sheet__exhaustion {
+  font-weight: 600;
+  color: var(--warning);
+}
+
+.character-sheet__exhaustion--fatal {
+  color: var(--danger);
+}
+
 /* The progression section: class line, pending level/improvement rows (text
    left, action buttons right), the features disclosure, and hit-dice rows. */
 .character-sheet__progress {

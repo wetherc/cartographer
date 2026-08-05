@@ -338,3 +338,30 @@
   color: var(--danger);
   font-weight: 600;
 }
+
+/* Exhaustion row. It shows on the character sheet and on both creature panels,
+   from one builder, so all three read the same. One pip per level, filled up to
+   the current one. A GM clicks a pip to set the level, so each pip is a button
+   with its own accessible name. A spectator gets plain glyphs instead. */
+.exhaustion-bar__pips {
+  font-size: var(--text-label);
+  line-height: 1.1;
+  gap: 0.1rem;
+  color: var(--warning);
+}
+
+.exhaustion-bar__pip:hover:not(:disabled) {
+  transform: scale(1.25);
+}
+
+/* The sixth level kills, so its pip reads apart from the five that only cost a
+   penalty. A GM must see where the row ends before clicking it. */
+.exhaustion-bar__pip--fatal {
+  color: var(--danger);
+}
+
+/* At the fatal level the whole row is the loudest thing on the card. */
+.exhaustion-bar--fatal .exhaustion-bar__summary {
+  color: var(--danger);
+  font-weight: 600;
+}

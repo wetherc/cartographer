@@ -42,6 +42,7 @@ import {
   logDefeatTransition,
   retryImposedSaves,
 } from './combatants.js';
+import { setCombatantExhaustion } from './exhaustion.js';
 import { skipsTurn } from '../combat/CombatView.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -160,6 +161,9 @@ export function wireEncounters(app) {
       app.actions.removeCombatant(id);
       commitCreatures(app, { panel: false });
     },
+    // Exhaustion goes through the app write, not through onUpdate, because the
+    // sixth level takes the creature to 0 HP and logs both facts.
+    onSetExhaustion: (encounter, level) => setCombatantExhaustion(app, encounter.id, level),
     // Authoring, including new foes and spawning from the bestiary, lives
     // in the Build rail. The Play panel edits an existing creature's HP and
     // placement, and saves one as a template mid-session.

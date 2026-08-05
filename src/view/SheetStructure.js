@@ -68,6 +68,10 @@ export function sheetDeps(character, perms, catalogStamp) {
     character.inventory,
     character.equipment,
     character.spellbook,
+    // Exhaustion is structural, because the saving-throw and skill blocks print
+    // bonuses that already carry its penalty. Those numbers are drawn once at
+    // build time, so a level change has to rebuild them.
+    character.exhaustion,
     poolShape(character),
     catalogStamp,
   ];

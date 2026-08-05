@@ -393,11 +393,17 @@ feet off the walking speed. The penalty reaches the saving throws and the skills
 on the sheet, the passive Perception score, an attack with a weapon or a spell,
 and a death save. The log names the level and the number it took off.
 
+A row of six pips sets the level. The row is on the character sheet under the
+chips. It is also on each creature row, in the Encounters and the Story panels.
+Click a pip to set the level to that pip. Click the pip of the current level to
+take one level off. The top line of the character sheet names the level as well,
+beside AC and speed.
+
 The sixth level kills. A character gets three failed death saves and goes
 unconscious, and the log says the character died of exhaustion. The HP number
-stays where it was, because exhaustion kills without damage. A creature goes to
-0 HP and drops out of the fight, the same as a killing blow. A revive undoes the
-fatal level as well: a heal that brings a character or a creature back takes the
+stays where it was, because exhaustion kills without damage. A creature goes to 0
+HP and drops out of the fight, the same as a killing blow. A revive undoes the
+fatal level as well. A heal that brings a character or a creature back takes the
 level from 6 down to 5, so nothing stands up dead.
 
 Two rolls do not get the penalty. Initiative throws a straight d20, so lower it

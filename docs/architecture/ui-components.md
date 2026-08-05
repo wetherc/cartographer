@@ -599,6 +599,29 @@ and on the sheet it is the play permission.
 The words and the pip counts come from `view/DeathSaveView.js`, which is pure
 and unit tested. This module is the DOM around them.
 
+## Exhaustion bar
+
+```js
+mountExhaustionBar(container, { getEntity, onSet, canEdit }) -> { update }
+```
+
+`src/ui/ExhaustionBar.js` draws the exhaustion row: a label and one pip for each
+level. The pips are filled up to the current level. The character sheet and both
+creature panels mount this row, so all three read the same.
+
+A click on a pip sets the level to that pip. A click on the pip of the current
+level takes one level off. Each pip is a button with its own accessible name, so
+the row works from the keyboard.
+
+`onSet` reports the new level, and the owner writes it. The write goes through
+`app/exhaustion.js` every time, because the sixth level kills the combatant and
+writes a log line. Without `canEdit`, the row shows plain glyphs and no controls.
+The row is hidden at level 0 in that state, because a spectator has nothing to
+read there.
+
+The words and the pips come from `view/ExhaustionView.js`, which is pure and
+unit tested. This module is the DOM around them.
+
 ## Dialogs
 
 `src/ui/Modal.js` wraps the native `<dialog>` element and is the most-imported

@@ -13,6 +13,7 @@ import { replaceById, removeById } from '../entities/Roster.js';
 import { wireEntityList } from './entityList.js';
 import { creatureForm } from './creatureForm.js';
 import { commitCreatures } from './combatants.js';
+import { setCombatantExhaustion } from './exhaustion.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -99,6 +100,9 @@ export function wireStory(app) {
       commitCreatures(app);
       app.views.combatScreen.update();
     },
+    // Exhaustion goes through the app write, not through onUpdate, because the
+    // sixth level takes the NPC to 0 HP and logs both facts.
+    onSetExhaustion: (npc, level) => setCombatantExhaustion(app, npc.id, level),
     // New NPCs from the Story tab default to where the party stands.
     onAdd: () =>
       creatureForm(app, null, { ...app.partyTracker.getPosition() }, { disposition: 'neutral' }),

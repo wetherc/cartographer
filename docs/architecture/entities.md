@@ -419,24 +419,26 @@ module, and `DeathSaves.js` is built on `Checks.js`. An import of either one
 from here closes a cycle. The rules that mix exhaustion with death therefore
 live with their callers.
 
-`app/exhaustion.js` holds the write that kills. `setCombatantExhaustion` sets
-the level of one combatant by id, logs what the new level costs, and applies the
-sixth level. The two kinds of combatant die differently. A character gets three
-failed death saves from `DeathSaves.killOutright`, which is what the whole app
-reads as dead, and the Unconscious chip goes on beside it. A creature goes to 0
-HP through `Creature.applyDamage`, which is the only way a creature leaves a
-fight, and `logDefeatTransition` names it. HP is not touched for a character,
-because exhaustion kills without damage and the number the GM tracks must stay
-true. A combatant that is already dead takes the level and nothing else, so a
-second write cannot log a second death.
+`app/exhaustion.js` holds the write that kills. `setCombatantExhaustion` sets the
+level of one combatant by id and writes a log line for what the level costs. It
+then applies the sixth level. The two kinds of combatant die differently.
 
-A revive holds the opposite rule. A character or a creature that comes back at
-the sixth level would be alive and dead at the same time, so one level comes
-off. `DeathSaves.clearDying` does this for a character, which covers a heal
-above 0 HP and a natural 20 on a death save. `Creature.heal` does it for a
-creature when the heal brings it off 0 HP. This half is not in
-`app/exhaustion.js`, because a revive happens in more places than that module
-can see.
+A character gets three failed death saves from `DeathSaves.killOutright`. Three
+failures is what the whole app reads as dead, and the Unconscious chip goes on
+beside them. HP is untouched, because exhaustion kills without damage. The number
+the GM tracks must stay true.
+
+A creature goes to 0 HP through `Creature.applyDamage`, which is the only way a
+creature leaves a fight, and `logDefeatTransition` names it. A combatant that is
+already dead takes the level and nothing else. A second write therefore cannot
+write a second death line.
+
+A revive holds the opposite rule. A combatant that comes back at the sixth level
+would be alive and dead at the same time, so one level comes off.
+`DeathSaves.clearDying` does this for a character. That covers a heal above 0 HP
+and a natural 20 on a death save. `Creature.heal` does it for a creature that the
+heal brings off 0 HP. This half is not in `app/exhaustion.js`, because a revive
+happens in more places than that module can see.
 
 Exhaustion was a hand-added condition chip before it had a level behind it.
 `exhaustionFields` is the load-path coercion, and both `withDefaults`

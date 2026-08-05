@@ -1,5 +1,6 @@
 import { addStatModifier, applyDamage, heal, isDefeated } from '../entities/Creature.js';
 import { mountConditionsBar } from './ConditionsBar.js';
+import { mountExhaustionBar } from './ExhaustionBar.js';
 import { mountStatBlockBar } from './StatBlockBar.js';
 import { el } from './dom.js';
 import { numberField } from './formFields.js';
@@ -43,6 +44,7 @@ import { clampInt } from '../util/num.js';
  *   onAddFromTemplate?: () => Promise<Encounter | null>,
  *   onSaveTemplate?: (encounter: Encounter) => void,
  *   confirmDelete?: (encounter: Encounter) => Promise<boolean>,
+ *   onSetExhaustion?: (encounter: Encounter, level: number) => void,
  *   onStartCombat?: () => void,
  *   canStartCombat?: () => boolean,
  *   getRole?: () => ViewRole,
@@ -190,6 +192,16 @@ export function mountEncounterPanel(container, callbacks) {
       getConditions: () => encounter.conditions ?? [],
       onChange: (next) => updateOne(encounter, (e) => ({ ...e, conditions: next })),
     });
+
+    // Exhaustion has its own callback rather than going through onUpdate,
+    // because the sixth level takes the creature to 0 HP and logs the defeat.
+    const onSetExhaustion = callbacks.onSetExhaustion;
+    if (onSetExhaustion) {
+      mountExhaustionBar(row, {
+        getEntity: () => encounter,
+        onSet: (level) => onSetExhaustion(encounter, level),
+      });
+    }
   }
 
   // A player sees a coarse status band and no controls. The GM sees exact

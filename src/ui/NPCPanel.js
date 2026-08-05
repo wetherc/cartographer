@@ -2,6 +2,7 @@ import { badge } from './buttons.js';
 import { el } from './dom.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountConditionsBar } from './ConditionsBar.js';
+import { mountExhaustionBar } from './ExhaustionBar.js';
 import { mountListPanel } from './listPanel.js';
 
 /** @typedef {import('../types/creature.js').Creature} NPC */
@@ -28,12 +29,15 @@ const DISPOSITION_VARIANTS = { friendly: 'success', neutral: 'neutral', hostile:
  * With `onUpdate`, a GM row also carries the condition chips, so an NPC drawn
  * into a fight can be marked poisoned or stunned from the same list that
  * shows it. Without the callback the row has no chips, which is what the
- * authoring rail wants.
+ * authoring rail wants. `onSetExhaustion` adds the exhaustion pips beside them,
+ * and it is a callback of its own because the sixth level kills the NPC, which
+ * is more than a write of one field.
  * @param {HTMLElement} container
  * @param {{
  *   getNPCs: () => NPC[],
  *   onDelete: (id: string) => void,
  *   onUpdate?: (npc: NPC) => void,
+ *   onSetExhaustion?: (npc: NPC, level: number) => void,
  *   onAdd?: () => Promise<unknown>,
  *   onEdit?: (npc: NPC) => Promise<unknown>,
  *   confirmDelete?: (npc: NPC) => Promise<boolean>,
@@ -79,12 +83,21 @@ export function mountNPCPanel(container, callbacks) {
       );
     },
     buildExtras: (npc, row, ctx) => {
+      if (!ctx.gm) return;
       const onUpdate = callbacks.onUpdate;
-      if (!ctx.gm || !onUpdate) return;
-      mountConditionsBar(row, {
-        getConditions: () => npc.conditions ?? [],
-        onChange: (next) => onUpdate({ ...npc, conditions: next }),
-      });
+      if (onUpdate) {
+        mountConditionsBar(row, {
+          getConditions: () => npc.conditions ?? [],
+          onChange: (next) => onUpdate({ ...npc, conditions: next }),
+        });
+      }
+      const onSetExhaustion = callbacks.onSetExhaustion;
+      if (onSetExhaustion) {
+        mountExhaustionBar(row, {
+          getEntity: () => npc,
+          onSet: (level) => onSetExhaustion(npc, level),
+        });
+      }
     },
     actions: (npc, ctx) => {
       if (!ctx.gm) return [];

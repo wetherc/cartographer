@@ -37,6 +37,12 @@ test('pool levels, bonus HP, base AC, name, and conditions leave the structure a
   assert.equal(same(hero, { ...hero, conditions: [{ name: 'Prone', rounds: null }] }), true);
 });
 
+test('an exhaustion level rebuilds, because the printed bonuses carry its penalty', () => {
+  assert.equal(same(hero, { ...hero, exhaustion: 2 }), false);
+  assert.equal(same({ ...hero, exhaustion: 2 }, { ...hero, exhaustion: 3 }), false);
+  assert.equal(same({ ...hero, exhaustion: 2 }, { ...hero, exhaustion: 2 }), true);
+});
+
 test('a different character is a different structure even at identical values', () => {
   assert.equal(same(hero, { ...hero, id: 'other' }), false);
 });
