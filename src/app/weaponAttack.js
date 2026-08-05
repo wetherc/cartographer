@@ -18,11 +18,12 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
 /** @typedef {import('./combatants.js').CombatTarget} CombatTarget */
 
 /**
- * The situational overrides a pre-roll dialog can add to one attack: bonus or
- * penalty dice and a flat bonus on the attack roll, and extra dice and a flat
- * rider on the damage. Every field defaults to nothing, so a plain Enter in
- * the dialog rolls the unmodified attack.
+ * The situational overrides a pre-roll dialog can add to one attack: the mode
+ * of the d20, bonus or penalty dice and a flat bonus on the attack roll, and
+ * extra dice and a flat rider on the damage. Every field defaults to nothing,
+ * so a plain Enter in the dialog rolls the unmodified attack.
  * @typedef {{
+ *   mode?: AttackMode,
  *   attackDice?: number,
  *   attackDie?: import('../types/dice.js').DieType,
  *   attackFlat?: number,
@@ -31,6 +32,23 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
  *   damageFlat?: number,
  * }} AttackTweaks
  */
+
+/**
+ * What the dialog's mode control can say. `auto` is the default and reads the
+ * mode off the condition chips, falling back to the dice tray's standing
+ * toggle. The other three are the GM's call for this one attack, and each of
+ * them beats both, including `normal`, which is how a GM cancels a standing
+ * toggle for one roll.
+ * @typedef {'auto' | import('../types/dice.js').RollMode} AttackMode
+ */
+
+/** The mode control's options, in the order they read best. */
+const MODE_OPTIONS = [
+  { value: 'auto', label: 'Auto (from conditions)' },
+  { value: 'normal', label: 'Normal' },
+  { value: 'advantage', label: 'Advantage' },
+  { value: 'disadvantage', label: 'Disadvantage' },
+];
 
 /** The dice the pre-roll dialog offers for a bonus or penalty die. */
 const BONUS_DICE = /** @type {import('../types/dice.js').DieType[]} */ ([
@@ -66,6 +84,7 @@ export function attackParticipants(app, combat, participant) {
  */
 export function readAttackTweaks(values) {
   return {
+    mode: /** @type {AttackMode} */ (values['mode'] || 'auto'),
     attackDice: Number(values['atk-count']) || 0,
     attackDie: /** @type {import('../types/dice.js').DieType} */ (values['atk-die']),
     attackFlat: Number(values['atk-flat']) || 0,
@@ -89,8 +108,9 @@ export function readAttackTweaks(values) {
  * and proficiency left out, and the result applies to the defender through the
  * shared write path.
  * A rider chip on the attacker, such as Bless, adds its own die to the roll.
- * The chips on both sides also set the roll's mode, and a hit on a helpless
- * defender in melee is a critical one whatever the d20 showed.
+ * The chips on both sides also set the roll's mode, unless the dialog picked
+ * one, and a hit on a helpless defender in melee is a critical one whatever
+ * the d20 showed.
  *
  * The attack roll goes through the dice tray, which owns its own randomness.
  * `rng` is the source for the damage roll and for the rider dice, injected
@@ -139,9 +159,12 @@ export function rollWeaponAttack(
     kind: 'attack',
     melee,
   });
-  // A null mode means no chip slanted the roll, and the key stays off the
-  // selection so the tray's standing toggle still applies.
-  const mode = rollMode(conditionQuery);
+  // A mode the GM picked in the dialog wins over the chips, and it is always
+  // passed on, so a picked `normal` also cancels the tray's standing toggle
+  // for this roll. Under `auto`, a null mode means no chip slanted the roll,
+  // and the key stays off the selection so the tray's toggle still applies.
+  const picked = tweaks.mode && tweaks.mode !== 'auto' ? tweaks.mode : null;
+  const mode = picked ?? rollMode(conditionQuery);
   const { result } = app.actions.rollDice(
     {
       counts: { d20: 1, ...tweak.counts },
@@ -167,7 +190,9 @@ export function rollWeaponAttack(
   const riderNote = rider.note ? `, ${rider.note}` : '';
   // Naming the chips keeps a cancelled pair readable: the log says why the
   // roll came out straight, not just that it did.
-  const reasons = modeReasons(conditionQuery);
+  // A GM-picked mode replaces the chip reasons, because the chips no longer
+  // decide the roll and naming them would say the opposite of what happened.
+  const reasons = picked ? `${picked} set by the GM` : modeReasons(conditionQuery);
   const conditionNote = reasons ? `, ${reasons}` : '';
   app.actions.logEvent(
     'combat',
@@ -210,9 +235,12 @@ export function rollWeaponAttack(
 
 /**
  * Rolls a weapon attack for the active combatant, in 5e style. A pre-roll
- * dialog picks the defender and takes situational overrides: bonus or
- * penalty dice on the attack roll (Bless +1d4, Bane -1d4), extra damage dice
- * (a smite), and flat bonuses on either roll. The function then loads 1d20,
+ * dialog picks the defender and how the d20 rolls, and takes situational
+ * overrides: bonus or penalty dice on the attack roll (Bless +1d4, Bane
+ * -1d4), extra damage dice (a smite), and flat bonuses on either roll. The
+ * mode defaults to reading the condition chips, and picking one of the three
+ * modes there overrides both the chips and the dice tray's standing toggle for
+ * this roll. The function then loads 1d20,
  * the attacker's ability modifier, proficiency bonus, any overrides, and the
  * defender's AC into the dice tray, and rolls. A natural 20 hits regardless
  * of AC and doubles the damage dice, for a critical hit. A natural 1 always
@@ -263,6 +291,17 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
         // that id, for example after a deselect or a defeat, the dialog
         // falls back to the first defender in the list.
         ...(defenderId && defenders.some((d) => d.id === defenderId) ? { value: defenderId } : {}),
+        full: true,
+      },
+      // The mode sits with the defender, not behind the advanced disclosure.
+      // Advantage is the most common call a GM makes at the table, and it used
+      // to mean leaving the dialog to flip the dice tray's toggle.
+      {
+        name: 'mode',
+        label: 'Roll',
+        type: 'select',
+        value: 'auto',
+        options: MODE_OPTIONS,
         full: true,
       },
       { name: 'atk-count', label: 'Attack: bonus dice', type: 'number', value: 0, advanced: true },

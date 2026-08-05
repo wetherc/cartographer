@@ -64,6 +64,7 @@ function stubApp({ characters = [], creatures = [], rng = () => 0.5 } = {}) {
 test('readAttackTweaks reads the dialog answers and treats a blank field as no override', () => {
   assert.deepEqual(
     readAttackTweaks({
+      mode: 'advantage',
       'atk-count': '1',
       'atk-die': 'd6',
       'atk-flat': '2',
@@ -72,6 +73,7 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
       'dmg-flat': '-1',
     }),
     {
+      mode: 'advantage',
       attackDice: 1,
       attackDie: 'd6',
       attackFlat: 2,
@@ -80,7 +82,9 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
       damageFlat: -1,
     },
   );
+  // An absent mode answer reads as `auto`, which leaves the chips in charge.
   assert.deepEqual(readAttackTweaks({}), {
+    mode: 'auto',
     attackDice: 0,
     attackDie: undefined,
     attackFlat: 0,
@@ -613,6 +617,81 @@ test('the attacker and defender chips cancel to a straight roll', () => {
   // came out straight.
   assert.equal(app.rolls[0].selection.mode, 'normal');
   assert.match(app.log[0], /Blinded disadvantage, Restrained advantage/);
+});
+
+test('a mode picked in the dialog reaches the roll and the log names the GM', () => {
+  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10, conditions: [] },
+    weapon: /** @type {any} */ (SWORD),
+    tweaks: { mode: 'advantage' },
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[0].selection.mode, 'advantage');
+  assert.match(app.log[0], /advantage set by the GM/);
+});
+
+test('a picked mode beats the chips, including a picked straight roll', () => {
+  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const poisoned = { ...hero, conditions: [{ name: 'Poisoned', rounds: null }] };
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  // The chip alone would roll this at disadvantage.
+  rollWeaponAttack(app, {
+    attacker: poisoned,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10, conditions: [] },
+    weapon: /** @type {any} */ (SWORD),
+    tweaks: { mode: 'advantage' },
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[0].selection.mode, 'advantage');
+  // A picked `normal` is passed on rather than left off, so it also cancels
+  // the dice tray's standing toggle for this roll.
+  rollWeaponAttack(app, {
+    attacker: poisoned,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10, conditions: [] },
+    weapon: /** @type {any} */ (SWORD),
+    tweaks: { mode: 'normal' },
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[1].selection.mode, 'normal');
+  assert.equal(/Poisoned/.test(app.log[2]), false, 'the chip no longer explains the roll');
+});
+
+test('an auto mode leaves the chips in charge', () => {
+  const hero = withHP(createCharacter('hero', 'Hero', { STR: 16 }), 12);
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: { ...hero, conditions: [{ name: 'Poisoned', rounds: null }] },
+    defender: { id: 'goblin', name: 'Goblin', ac: 10, conditions: [] },
+    weapon: /** @type {any} */ (SWORD),
+    tweaks: { mode: 'auto' },
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[0].selection.mode, 'disadvantage');
+  assert.match(app.log[0], /Poisoned disadvantage/);
 });
 
 test('a melee hit on an unconscious defender crits without a natural 20', () => {
