@@ -10,14 +10,18 @@ async function build() {
   await fs.rm(outdir, { recursive: true, force: true });
   await fs.mkdir(outdir, { recursive: true });
 
-  // Define esbuild options
+  // Define esbuild options. A production build puts a content hash in each
+  // bundle name, so a cached bundle from an older deploy can never be served
+  // against a newer index.html. Watch mode keeps stable names, because the
+  // dev server rewrites index.html only once.
   const options = {
     entryPoints: ['src/main.js', 'style.css'],
     bundle: true,
     minify: !watch,
     sourcemap: true,
     outdir: outdir,
-    entryNames: '[name].bundle',
+    entryNames: watch ? '[name].bundle' : '[name]-[hash].bundle',
+    metafile: !watch,
     loader: {
       '.png': 'file',
       '.jpg': 'file',
@@ -26,18 +30,20 @@ async function build() {
     logLevel: 'info',
   };
 
-  // Copy and transform index.html
-  let html = await fs.readFile('index.html', 'utf-8');
-  html = html
-    .replace(
-      '<link rel="stylesheet" href="style.css" />',
-      '<link rel="stylesheet" href="style.bundle.css" />'
-    )
-    .replace(
-      '<script type="module" src="src/main.js"></script>',
-      '<script defer src="main.bundle.js"></script>'
-    );
-  await fs.writeFile(path.join(outdir, 'index.html'), html);
+  // Rewrite the source references in index.html to the bundle names.
+  async function writeHtml(jsName, cssName) {
+    let html = await fs.readFile('index.html', 'utf-8');
+    html = html
+      .replace(
+        '<link rel="stylesheet" href="style.css" />',
+        `<link rel="stylesheet" href="${cssName}" />`
+      )
+      .replace(
+        '<script type="module" src="src/main.js"></script>',
+        `<script defer src="${jsName}"></script>`
+      );
+    await fs.writeFile(path.join(outdir, 'index.html'), html);
+  }
 
   // Copy assets
   await fs.cp('assets', path.join(outdir, 'assets'), { recursive: true });
@@ -52,6 +58,7 @@ async function build() {
   );
 
   if (watch) {
+    await writeHtml('main.bundle.js', 'style.bundle.css');
     const ctx = await esbuild.context(options);
     await ctx.watch();
     const { host, port } = await ctx.serve({
@@ -60,7 +67,18 @@ async function build() {
     });
     console.log(`[watch] Server listening on http://${host}:${port}`);
   } else {
-    await esbuild.build(options);
+    const result = await esbuild.build(options);
+    const outputs = Object.keys(result.metafile.outputs);
+    const jsName = outputs.find(
+      (p) => p.endsWith('.js') && path.basename(p).startsWith('main-')
+    );
+    const cssName = outputs.find(
+      (p) => p.endsWith('.css') && path.basename(p).startsWith('style-')
+    );
+    if (!jsName || !cssName) {
+      throw new Error('Bundle outputs not found in the esbuild metafile.');
+    }
+    await writeHtml(path.basename(jsName), path.basename(cssName));
     console.log('[build] Build complete.');
   }
 }
