@@ -7,7 +7,7 @@ creatures, resource pools, and characters. They all follow one update style.
 This page describes that style first, then the creature, then the character
 model, which is the largest of them.
 
-## The shared shape: immutable updates
+## The shared pattern: immutable updates
 
 `entities/Creature.js`, `entities/Resource.js`, and `entities/Character.js`
 (types in `src/types/creature.ts` and `src/types/entities.ts`) are all plain
@@ -92,15 +92,15 @@ No read path derives gear from the level again, so an absent field has one
 meaning everywhere.
 
 `isCreature(entity)` tells a creature from a character: a creature always
-carries a `disposition`, and a character never does. Every consumer that must
-tell the two apart reads this one test.
+carries a `disposition`, and a character never does. Every caller that must
+tell the two apart uses this one test.
 
 `effectiveStatBlock(creature)` is the one AC read: the closed stat block, plus
 the `acBonus` of the worn armor, plus every active timed stat modifier.
 `CreatureMap.js` holds the placement reads. `meetCreatures` marks every
 creature on the party's tile as met. `knownCreaturesAt` is the player view of
 the non-hostile roster. `discoveredHostiles` is the player view of the hostile
-roster, through the fog of war. `fromTemplate` reads older template shapes on
+roster, through the fog of war. `fromTemplate` reads older template formats on
 purpose, because a library file has no version field.
 
 Every creature follows the same combat rules. `maxHP` defaults to 4, the 5e
@@ -121,7 +121,7 @@ shows is what the creature gets, and an empty picker means unarmed.
 Beyond its stats and inventory, a `Character` carries a class list, a race, a
 background, proficiency lists, hit dice, and a level-up flow. Each of these is
 a pure module beside `Character.js`. Each follows the same
-take-a-value-return-a-value shape.
+take-a-value, return-a-value pattern.
 
 ```
   data catalogs (plain data, no logic)
@@ -150,7 +150,7 @@ take-a-value-return-a-value shape.
 
 The split matters when you look for something. The catalogs hold what a class
 or race *is*. The entity modules hold what happens when a character *has*
-one. The catalogs' shapes are declared in `types/class.ts` and `types/race.ts`.
+one. The catalog types are declared in `types/class.ts` and `types/race.ts`.
 
 ### Classes and multiclassing
 
@@ -466,8 +466,8 @@ adds `proficient`, so a readout can state why the number is what it is.
 
 The two entry points exist because a character does not always roll a save.
 `Casting.js`'s save effect resolves every target through `resolveSave`, and
-its targets can be creatures, which record no ability scores in a
-character's shape and carry no proficiency lists. The resolver therefore
+its targets can be creatures, which do not record ability scores the way a
+character does and carry no proficiency lists. The resolver therefore
 takes a bonus that the caller worked out, and only the character path goes
 through `saveBonus`.
 
@@ -765,7 +765,7 @@ the direction. `entities/Riders.js` owns the model:
   that every other spell field gets. A rider that touches no roll, or that
   adds neither dice nor a flat amount, reads as absent.
 - `chipRider(condition)` reads a stored chip's rider through that parse.
-  Chips live in the campaign save and nothing checks their shape on the way
+  Chips live in the campaign save and nothing validates their fields on the way
   in, so a hand-edited save can hold a rider with no roll list or with a die
   that does not exist. Every read of a stored rider goes through this
   function, and a rider the app cannot use reads as a chip that carries none.
@@ -835,7 +835,8 @@ the DOM-wiring layer over these modules. They follow the same mount-function
 pattern as `ui/DiceTray.js`. Each holds a local mutable copy of its entity,
 re-renders after every interaction, and reports the updated value through an
 `onChange` callback for a caller to persist. The sheet re-renders by writing
-values into the DOM that it already has, whenever the shape has not changed.
+values into the DOM that it already has, whenever the structure has not
+changed.
 This is described in
 [UI components](ui-components.md#the-character-sheets-structure-check).
 

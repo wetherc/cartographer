@@ -10,7 +10,7 @@ each one is, and which CSS class or custom property to use instead of a new
 one.
 
 Read this guide before you add anything to `src/ui/` or `styles/`. Almost
-every widget shape that you need already exists. The existing widgets became
+every widget pattern that you need already exists. The existing widgets became
 centralized because the hand-rolled copies had drifted on accessibility
 attributes.
 
@@ -66,7 +66,7 @@ Everything in `src/ui/` is a function that returns DOM, or a handle over
 DOM. These rules say what such a function looks like. They apply to a new
 builder and to any change to an existing one.
 
-### The name says the shape
+### The name says the contract
 
 | Form | Returns | Owns |
 | --- | --- | --- |
@@ -173,7 +173,7 @@ These are settled, and recorded here so they are not reopened:
   options bag costs exactly that.
 - **The four update strategies stay.** Wholesale rebuild, the list panel's
   guarded rebuild, the character sheet's build-once-and-repoint, and
-  in-place mutation each answer a different cost. Forcing one would make
+  in-place mutation each fit a different cost. Forcing one would make
   the sheet expensive or the small panels convoluted.
 - **The utility classes stay in the markup.** `u-row`, `u-col`, `u-g1`
   through `u-g4`, and `u-muted` are written at the call site, not folded
@@ -229,11 +229,11 @@ export function mountQuestPanel(container, callbacks) {
 }
 ```
 
-This is the shape by hand. Most list panels, including the real
-`mountQuestPanel`, get this shape from `mountListPanel` instead (below), and
+This is the pattern written by hand. Most list panels, including the real
+`mountQuestPanel`, get this pattern from `mountListPanel` instead (below), and
 never write this boilerplate.
 
-The `{ update }` shape is the `Updatable` interface (`src/types/app.ts`). It
+The `{ update }` handle is the `Updatable` interface (`src/types/app.ts`). It
 is the whole cross-module refresh protocol. A wiring module stores the
 handle on `app.views.questPanel`. Anything that changes a quest calls
 `app.views.questPanel.update()`, and does not need to know what the panel
@@ -295,7 +295,7 @@ writers when it can.
 
 `sheetDeps(character, perms)` in `src/view/SheetStructure.js` decides
 whether `render()` can skip the rebuild. It is a flat list of everything the
-shape of the DOM comes from, compared against the last list with
+structure of the DOM comes from, compared against the last list with
 `sameDeps`. When the lists match, the only differences are values that a
 writer can write (a pool level, bonus HP, base AC, the name, the
 conditions), so the DOM stays. Anything else (a class taken, an ability
@@ -320,9 +320,9 @@ never mutates data in place. See
 
 ### Handles that are not `{ update }`
 
-Not every mount returns `update`. The other shapes are:
+Not every mount returns `update`. The other handle kinds are:
 
-| Shape | Used by | Why |
+| Handle | Used by | Why |
 | --- | --- | --- |
 | `{ setCharacter }`, plus `getCharacter` on two of them | `CharacterSheet`, `InventoryPanel`, `SpellbookPanel` | these three are scoped to one selected character, which they hold and draw from. A sibling panel's edit is pushed in through `setCharacter` rather than read again through a getter |
 | a domain handle | `segSwitch` (`{ element, getValue, setValue, sync }`), `ThemeToggle`, `PalettePanel`, `TileInspector`, `Toast` (`{ show }`) | a control, not a list. There is nothing to redraw from state |
@@ -335,10 +335,10 @@ To add a composite form widget, use that last contract. It is what lets
 
 ## The list panel
 
-Most rails share the same shape: a list of entities, each row with an edit
+Most rails share the same layout: a list of entities, each row with an edit
 button and a delete button, an empty state for when there is nothing, and a
 "New ..." control at one end. `mountListPanel(container, options)`
-(`src/ui/listPanel.js`) builds this shape once. The quest, handout, NPC,
+(`src/ui/listPanel.js`) builds this layout once. The quest, handout, NPC,
 encounter, library, and Build-rail encounter panels are each a configuration
 of it. `mountListPanel` returns the usual `{ update }`. A panel with tabs
 mounts one list panel per tab panel: the encounter panel's Active and Nearby
@@ -1033,7 +1033,7 @@ keep only layout (margins, grid placement) in the component's own class.
 | `.modal` and its parts | the native `<dialog>`, built through `Modal.js` |
 | `.sr-only` | visually hidden, still announced |
 
-Three more shared shapes live one sheet up, next to the widget they were
+Three more shared widgets live one sheet up, next to the widget they were
 built for, all three in `widgets.css`: `.disclosure` / `__chevron` /
 `--open`, `.stat-bar` / `__track` / `__fill` (plus `--mana` and
 `--critical`, the `--compact` pill variant, and the `data-band` fill
@@ -1056,7 +1056,7 @@ captions, hints, derived readouts, and row metadata: `font-size:
 var(--text-label)` plus `color: var(--text-muted)`, the pair that about
 thirty rules each spelled out separately.
 
-The rest cover the two flex shapes that almost every container here uses.
+The rest cover the two flex layouts that almost every container here uses.
 `.u-row` is a horizontal bar with its items centered across it
 (`display: flex` plus `align-items: center`). `.u-col` is a vertical
 stack (`display: flex` plus `flex-direction: column`). `.u-wrap` adds
@@ -1232,7 +1232,7 @@ Repeated by hand:
   NPCs, build encounters, encounters, library), and the `<dialog>` lifecycle
   seven times, four of them outside `Modal.js`.
 
-If a widget fits one of these shapes, reuse the existing class or JS
+If a widget fits one of these patterns, reuse the existing class or JS
 builder rather than add the next copy. If a widget adds the shared
 version instead, `base.css` is where it belongs.
 

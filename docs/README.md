@@ -42,7 +42,7 @@ reference does not teach. An explanation gives no steps.
 
 | Document | What it explains |
 | --- | --- |
-| [Architecture](architecture.md) | The shape of the codebase, and the split between pure logic and DOM glue |
+| [Architecture](architecture.md) | How the codebase is organized, and the split between pure logic and DOM glue |
 | [The map](architecture/map.md) | Tiles, the node hierarchy, rendering, fog of war, and party movement |
 | [Entities](architecture/entities.md) | Encounters, resources, and the character model |
 | [Combat](architecture/combat.md) | The fight screen, its one writer, and its derived view |

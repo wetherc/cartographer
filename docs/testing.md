@@ -1,7 +1,7 @@
 # Testing a change
 
-*How-to guide. Each section is one task. For why the suite is shaped this
-way, and what it cannot reach, read
+*How-to guide. Each section is one task. To learn why the suite is built
+this way, and what it cannot reach, read
 [Testing strategy](testing-strategy.md).*
 
 ## Run the unit tests
@@ -154,7 +154,8 @@ python3 -m http.server 8934
 
 Then open `http://localhost:8934/tests/tile-preview.html`.
 
-Keep a preview page current when the modules it mounts change shape. A
+Keep a preview page current when the modules it mounts change their
+interface. A
 stale page can hide a real error the next time someone opens it.
 
 The gallery is the page to check after a change to a shared builder, since

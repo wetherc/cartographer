@@ -159,7 +159,7 @@ previous state a delta needs in memory, stamped with the raw string it was
 parsed from. As a result, the steady state costs one `getItem` call and one
 string compare, instead of a parse.
 
-Code that touches save and history paths must keep that shape. Never parse
+Code that touches save and history paths must keep this pattern. Never parse
 and restringify a whole campaign for each write. Respect the byte cap and the
 quota fallbacks already in place (drop the oldest steps first, then the log).
 
@@ -226,9 +226,9 @@ a no-op undo is a toast, no matter which undo stack it came from.
 For plain entity deletes, use `confirmDelete(name, detail?)` (`Modal.js`).
 This function owns the `Delete "X"?` wording and the danger-styled Delete
 button, so no call site restates the options object. Some deletes have a
-message that does not fit that shape: a node's "and everything inside it", or
-the library's revert-versus-delete pair. Non-delete destruction (Discard,
-Replace, Reset) also does not fit that shape. For these cases, still use
+message that this wording cannot give: a node's "and everything inside it",
+or the library's revert-versus-delete pair. Non-delete destruction (Discard,
+Replace, Reset) also does not fit this wording. For these cases, still use
 `confirmModal`, with `danger: true`, an imperative `confirmLabel`, and the
 affected item named in the message.
 
@@ -284,7 +284,7 @@ for damage, then reverted it: a subtract or add symbol reads instantly, and
 an icon does not. The sword stays reserved for attack actions (the combat
 screen's action bar and its foe markers), not for HP arithmetic.
 
-### Recurring widget shapes live in base.css, not per-feature sheets
+### Recurring widget styles live in base.css, not per-feature sheets
 
 `.seg-switch` is the segmented toggle (mode, theme, and role switches, the
 dice tray's d20 mode). `.row-select` is the selectable list row (world tree,

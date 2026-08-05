@@ -93,7 +93,7 @@ export const ROUTER_TREE = {
   start: {
     q: 'Does the change need the DOM, a canvas, or a browser API?',
     opts: [
-      { label: 'No', note: 'Rules, math, data shapes, save format.', next: 'pure' },
+      { label: 'No', note: 'Rules, math, data models, save format.', next: 'pure' },
       { label: 'Yes', note: 'Elements, events, drawing, storage APIs.', next: 'glue' },
     ],
   },
@@ -102,7 +102,7 @@ export const ROUTER_TREE = {
     opts: [
       { label: 'Tiles, nodes, fog', note: 'Geometry, hierarchy, reveal.', answer: 'map' },
       { label: 'Characters or foes', note: 'Stats, gear, spells, damage.', answer: 'entities' },
-      { label: 'The save format', note: 'New field, new shape, packing.', answer: 'storage' },
+      { label: 'The save format', note: 'New field, new format, packing.', answer: 'storage' },
       { label: 'Randomness', note: 'Dice, rolls, checks.', answer: 'dice' },
     ],
   },
@@ -142,7 +142,7 @@ export const ROUTER_ANSWERS = {
   storage: {
     where: 'src/storage/',
     test: 'A round trip through serialize and deserialize, plus a migration test if the meaning of a field changed.',
-    trap: 'A new field needs no migration, because withDefaults absorbs absence. Only a change of meaning goes in Migrations.js. Add the field to SYNCED_STATE_KEYS as well, which a test asserts against the Campaign shape.',
+    trap: 'A new field needs no migration, because withDefaults absorbs absence. Only a change of meaning goes in Migrations.js. Add the field to SYNCED_STATE_KEYS as well, which a test compares with the fields of Campaign.',
     refs: [
       ['src/storage/Migrations.js', 'migrateState'],
       ['src/app/rehydrate.js', 'SYNCED_STATE_KEYS'],

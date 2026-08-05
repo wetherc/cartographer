@@ -13,8 +13,8 @@
  *
  * The budgets are wide on purpose. They sit well above the medians of a
  * healthy run, so machine speed and background noise do not trip them.
- * A breach means the shape of the work changed, not that the machine was
- * busy. When a deliberate change moves a cost, re-measure and update
+ * A breach means a code path does more work than before, not that the
+ * machine was busy. When a deliberate change moves a cost, re-measure and update
  * `bench/budgets.json` in the same commit.
  *
  * Usage:

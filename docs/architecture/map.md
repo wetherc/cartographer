@@ -382,7 +382,7 @@ Zooming in uses a tile's `childNodeId` plus
 `EntryPoint.computeRegionEntryTile`. Leaving again uses
 `src/map/MapExits.js`, a pure module whose entry point is
 `findExits(node, parent)`. It returns a list of `MapExit` values
-(`src/types/map.ts`), in three shapes:
+(`src/types/map.ts`), in three kinds:
 
 - `edge`: a side of the map the party can walk off, one per side of the
   parent block that touches usable parent terrain. Outdoor children only.
@@ -424,7 +424,7 @@ party when it comes back, which way the badge's chevron points in
 
 A parent that links the same child from both a stairs-down tile and a
 stairs-up tile has authored two contradictory connections. The descent wins,
-because a level below is the much more common shape, and it is what such a
+because a level below is the much more common case, and it is what such a
 map resolved to before the model added the ascent.
 
 The model expresses one return staircase per level. Every tile in the child
@@ -501,8 +501,8 @@ map is not the same as traveling it.
 ### The Build warning
 
 `syncExits` also refreshes `authoringWarning(node, parent)`, which is what
-Build mode tells the GM about the node in view. It answers the same question
-from the other side, and it reports three problems, in the order they must
+Build mode tells the GM about the node in view. It looks at the same links
+from the parent's side, and it reports three problems, in the order they must
 be solved:
 
 1. No parent tile links here at all, so the node is unreachable, and players

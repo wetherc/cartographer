@@ -3,7 +3,7 @@
 *Explanation. Back to the [architecture overview](../architecture.md).*
 
 A campaign lives in the browser's localStorage. This storage limit is near 5 MB
-for each origin. This one limit shaped almost everything in `src/storage/`.
+for each origin. This one limit drove almost every decision in `src/storage/`.
 Saves are packed tightly. The undo history stores small deltas instead of full
 snapshots. Image payloads stay in their own section, so one large picture
 cannot take down the whole map.
@@ -38,9 +38,9 @@ does.
 ```
 
 Loading runs the same stages in reverse, with two extra steps at the front:
-schema migrations, then shape coercion.
+schema migrations, then field coercion.
 
-The top-level shape is `CampaignState` (`src/types/storage.ts`). It holds a
+The top-level type is `CampaignState` (`src/types/storage.ts`). It holds a
 flat `nodes` array (the flattened node map of the `TileGrid`), plus `party`,
 `characters`, `creatures`, and the other collections. `storage/SaveManager.js`
 owns `buildState`, `serialize`, `deserialize`, and `toTileGrid`, and all four
@@ -68,9 +68,9 @@ a successful save.
 ## Load-time validation
 
 `deserialize` sets any missing top-level field to an empty value instead of
-throwing an error, so an older or smaller save shape still loads. It is also
+throwing an error, so an older or smaller save still loads. It is also
 the only validation step a save passes through. It coerces every field whose
-*shape* the load path trusts. Collections become lists of records, and the
+*structure* the load path trusts. Collections become lists of records, and the
 party position and a running combat get their required members. The reason is
 that Import persists what it reads and then reloads. As a result, a malformed
 field that survives `deserialize` becomes the stored save of an app that no
@@ -86,7 +86,7 @@ back to the save before the broken one.
 
 ## Packing layer 1: tile defaults
 
-The on-disk shape differs from the in-memory shape. `serialize` packs every
+The on-disk format differs from the in-memory format. `serialize` packs every
 tile. It omits each field that equals its default value: `overlayRef: null`,
 `revealed: false`, `childNodeId: null`, `span: 1`, any default `metadata`
 member, and the empty `metadata` object itself.
@@ -205,8 +205,8 @@ This split lets structure and blobs fail independently. A full origin costs
 the GM a handout picture instead of the whole map. A history snapshot never
 carries a picture that it did not change.
 
-The write order (payloads first) limits the failure to the shape that
-survives. A campaign that references a payload missing from the sidecar
+The write order (payloads first) keeps the failure survivable. A campaign
+that references a payload missing from the sidecar
 renders the placeholder that the renderer already draws. The reverse order
 can instead persist structure that references nothing. The write order also
 settles the cross-tab case, because `isExternalSaveEvent` fires on the
@@ -262,7 +262,7 @@ as runs of "the next N cells use art number K". A painted field of 200 grass
 tiles becomes one palette entry and one run, instead of 200 repeated strings.
 
 `fog` is separate because `revealed` is the one field that play changes. A
-reveal is a disc shape, and run-lengths compress this shape almost perfectly.
+reveal is a disc, and run-lengths compress a disc almost perfectly.
 
 Measured on the example campaign, the save went from 129,111 characters to
 34,963, and the node list went from 115,430 to 21,282. A dense 40x40 region
@@ -316,7 +316,7 @@ version-n+1 one, and a missing version reads as 0 (every save written before
 this field existed).
 
 The migration chain runs on the raw parsed object *before* the coercion in
-`deserialize`. A step exists precisely to repair a shape that coercion
+`deserialize`. A step exists precisely to repair data that coercion
 flattens or drops. The chain also runs ahead of the asset restore, so a
 step sees hoisted refs and must resolve a payload through the table itself. A
 save stamped newer than the app runs no migration steps, and the app reads it
@@ -364,7 +364,7 @@ the example campaign, fifty party steps cost 27,304 bytes of log, where the
 previous ten-snapshot ring cost 699,980 bytes for ten steps. A save writes
 70,488 bytes, instead of 139,996.
 
-The log has one consumer besides undo: cross-tab adoption. A tab calls
+The log also serves cross-tab adoption. A tab calls
 `historyPosition()` to get a token for the delta that its live state
 reflects. The tab records this token each time its live state matches the
 persisted save. When another tab saves, the follower calls
@@ -385,8 +385,8 @@ means not writing the canonical save at all.)
 
 The log's own rules keep it from corrupting the campaign that it describes:
 
-1. **A delta is never migrated.** It was written against the `CampaignState`
-   shape of one schema version, so the index carries `version`. A log
+1. **A delta is never migrated.** It was written against one schema version
+   of `CampaignState`, so the index carries `version`. A log
    stamped with any other version is discarded whole. (This same prefix scan
    is also how the previous ring's keys were reclaimed.)
 2. **Every history write happens after the campaign write**, on both the

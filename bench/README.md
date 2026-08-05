@@ -1,6 +1,7 @@
 # Benchmarks
 
-Four harnesses answer four different questions.
+The project has four benchmark harnesses. Each one measures a different part
+of the app.
 
 - `pnpm bench` drives the real app in Chrome and reports what a tab costs: DOM
   nodes, listeners, heap, layout and script time, long tasks, and a sampled CPU
@@ -58,7 +59,8 @@ prompt to look at the change before you push it.
 
 The budgets live in `budgets.json`. They sit well above the medians of a
 healthy run, so machine speed and background noise do not trip them. A breach
-means the shape of the work changed. When a change moves a cost on purpose,
+means a code path does more work than before. When a change moves a cost on
+purpose,
 re-measure with `pnpm bench:commit` and raise the budget in the same commit.
 
 ## The scenarios

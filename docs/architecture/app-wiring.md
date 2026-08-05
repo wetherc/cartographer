@@ -206,8 +206,9 @@ What it adopts from the leader is narrower than it looks:
   state, so a display pinned to the Player view does not follow the GM tab
   into Build mode.
 
-If you add a campaign field, it must join `SYNCED_STATE_KEYS`. A test holds
-that list against the `Campaign` shape. If you forget, the test run fails.
+If you add a campaign field, it must join `SYNCED_STATE_KEYS`. A test
+compares that list with the fields of `Campaign`. If you forget, the test run
+fails.
 
 Each adopted field passes through `reconcile` from
 `src/storage/Reconcile.js` first. A parse builds a fresh object for every
@@ -332,8 +333,9 @@ in the Library rail) describes its fields once as a `ModalField[]`:
 `buildSpecForm` renders it as an inline rail form, so a field, a default, a
 clamp, and a cross-field rule are each written once. A dialog adds the
 placement fields from `locationFields.js` around the spec; a template form
-omits them, because a template holds no position. A change to one of these
-shapes lands in the shared module, never in one form.
+omits them, because a template holds no position. A change to a field, a
+default, a clamp, or a cross-field rule lands in the shared module, never in
+one form.
 
 ### combatWiring.js
 
@@ -383,8 +385,8 @@ GM, not to any one campaign. `library/Library.js` holds the built-in
 defaults, the pure merge logic, and a small module-level "active library"
 registry. The merge rule: a custom entry whose name (and for equipment,
 type) matches a default overrides it in place, and all others append. The
-preset consumers, such as the item form's pickers, the enemy gear selects,
-and "From bestiary", read that registry at call time. They mount far from
+code that uses the presets, such as the item form's pickers, the enemy gear
+selects, and "From bestiary", reads that registry at call time. They mount far from
 the wiring that loads customizations.
 
 Inside the wiring, every list's remove flow goes through one

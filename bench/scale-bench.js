@@ -1,10 +1,9 @@
 /**
  * Timings for the size-sensitive pure paths as the world grows.
  *
- * `pure-bench.js` answers "how fast is each path on the example campaign".
- * This file answers a different question: which paths grow with the world,
- * and where a large campaign first crosses the 50 ms line that a GM feels
- * as a stall. Each step adds generated 40x40 nodes and placed creatures to
+ * `pure-bench.js` measures how fast each path is on the example campaign.
+ * This file measures which paths grow with the world, and where a large
+ * campaign first crosses the 50 ms line that a GM feels as a stall. Each step adds generated 40x40 nodes and placed creatures to
  * the example campaign, then times the whole-state paths: the autosave unit,
  * the load path, the cross-tab reconcile, and the undo diff. Fog reveal and
  * the world tree run too, as the control group that should stay flat.
