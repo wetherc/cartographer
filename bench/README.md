@@ -1,14 +1,19 @@
 # Benchmarks
 
-Two harnesses answer two different questions.
+Three harnesses answer three different questions.
 
 - `pnpm bench` drives the real app in Chrome and reports what a tab costs: DOM
   nodes, listeners, heap, layout and script time, long tasks, and a sampled CPU
   profile per scenario.
 - `pnpm bench:pure` times the pure modules in Node, with no browser. Generation,
   serialization, fog reveal, and the world tree run here.
+- `pnpm bench:scale` times the whole-state paths as the world grows, from the
+  example campaign up to two hundred extra generated regions. Its table shows
+  which paths grow with the world and where each one crosses the 50 ms line
+  that a GM feels as a stall. Run it before and after a change to the save,
+  diff, or reconcile paths.
 
-Neither one adds a dependency. The browser harness talks the Chrome DevTools
+None of them adds a dependency. The browser harness talks the Chrome DevTools
 Protocol over the `WebSocket` that Node 22 ships, so there is no Playwright or
 Puppeteer install.
 
