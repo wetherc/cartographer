@@ -44,6 +44,7 @@ import { canAct } from '../entities/ConditionEffects.js';
  *   ac: number | null,
  *   conditions: import('../types/entities.js').Condition[],
  *   defeated: boolean,
+ *   counted: boolean,
  *   incapacitated: boolean,
  *   mayAct: boolean,
  *   deathSaves: import('../types/entities.js').DeathSaveState | null,
@@ -71,9 +72,10 @@ export function sideOf(found) {
  * Whether a combatant is out of the fight: a defeated creature, or a
  * character at 0 HP.
  *
- * A downed creature counts toward its side. `fightOutcome` calls a side down
- * only when every row on it is, so a fallen friendly creature alone does not
- * lose the fight.
+ * A friendly or neutral creature fights on the party's side but settles
+ * nothing: `fightOutcome` reads only the rows marked `counted`, so a fallen
+ * bystander does not lose the fight, and a standing one does not hold off
+ * the defeat of a fallen party.
  * @param {ResolvedCombatant} found
  * @returns {boolean}
  */
@@ -163,15 +165,16 @@ export function fightOutcome(view) {
 }
 
 /**
- * Rows that nothing resolves are left out. An unresolved row's side and
- * defeated flag are placeholders (see `buildCombatView`). Counting an
- * unresolved row as a standing party member holds the outcome open
- * after every real combatant on the side is down.
+ * Only the rows marked `counted` settle a side: the party's characters and
+ * the hostile creatures. A friendly or neutral creature in the order is a
+ * bystander and sways the outcome in neither direction. Rows that nothing
+ * resolves are also uncounted, since their side and defeated flag are
+ * placeholders (see `buildCombatView`).
  * @param {CombatView} view
  * @param {'party' | 'foe'} side
  */
 function sideIsDown(view, side) {
-  const rows = view.rows.filter((row) => row.side === side && row.name !== null);
+  const rows = view.rows.filter((row) => row.side === side && row.counted);
   return rows.length > 0 && rows.every((row) => row.defeated);
 }
 
@@ -197,6 +200,9 @@ export function buildCombatView(combat, resolve, viewer) {
       ac: found ? acOf(found) : null,
       conditions: found ? conditionsOf(found) : [],
       defeated: found ? isDowned(found) : false,
+      // The rows that settle the outcome: characters and hostile creatures.
+      // A friendly or neutral creature is a bystander in the fight.
+      counted: found ? found.kind === 'character' || sideOf(found) === 'foe' : false,
       // A chip such as Stunned takes the turn without taking the combatant
       // out of the fight, so the surfaces mark it apart from defeat.
       incapacitated: found ? !canAct(conditionsOf(found)) : false,

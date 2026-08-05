@@ -122,18 +122,20 @@ player's tab, this button reads "End my turn" instead of "Next turn".
 
 `fightOutcome(view)` is the other derivation in the module. It returns
 `victory` once every foe row is defeated. It returns `defeat` once every
-party row is defeated. It returns null while both sides still have someone
-standing. A side with nobody on it settles nothing. Because of this, an
-order that the GM built with no foes in it reads as undecided. A mutual wipe
-reads as a defeat: what happens to the party outweighs what happens to the
-monsters.
+counted party row is defeated. It returns null while both sides still have
+someone standing. A side with nobody on it settles nothing. Because of this,
+an order that the GM built with no foes in it reads as undecided. A mutual
+wipe reads as a defeat: what happens to the party outweighs what happens to
+the monsters.
 
-A creature row counts toward its side by disposition. A hostile creature is a
-foe, and a friendly or neutral one stands with the party. A whole side must go
-down before the fight settles, so one fallen friendly bystander settles
-nothing while a character still stands. The side does not shield a creature:
-a hostile action's target list carries every other creature in the fight,
-whatever its side, so the party can turn on a bystander mid-fight.
+A creature row takes its side from its disposition. A hostile creature is a
+foe, and a friendly or neutral one stands with the party. Only characters
+and hostile creatures carry the row's `counted` flag and settle the outcome.
+A friendly or neutral creature is a bystander: its fall settles nothing, and
+its standing does not hold off the defeat of a fallen party. The side does
+not shield a creature: a hostile action's target list carries every other
+creature in the fight, whatever its side, so the party can turn on a
+bystander mid-fight.
 
 ### Who can see what
 

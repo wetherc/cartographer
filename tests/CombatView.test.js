@@ -271,8 +271,12 @@ test('conditionsOf reads the chips off every kind and empties an older save', ()
 });
 
 test('fightOutcome settles only once a whole side is down', () => {
-  /** @param {{ side: 'party' | 'foe', defeated: boolean }[]} rows */
-  const view = (rows) => ({ round: 1, turnIndex: 0, rows });
+  /** @param {{ side: 'party' | 'foe', defeated: boolean, counted?: boolean }[]} rows */
+  const view = (rows) => ({
+    round: 1,
+    turnIndex: 0,
+    rows: rows.map((r) => ({ counted: true, ...r })),
+  });
 
   assert.equal(fightOutcome(view([])), null);
   assert.equal(
@@ -358,25 +362,61 @@ test('fightOutcome settles a fight whose foe side is only hostile NPCs', () => {
   );
 });
 
-test('fightOutcome leaves unresolved rows out of the reckoning', () => {
-  /** @param {{ side: 'party' | 'foe', defeated: boolean, name: string | null }[]} rows */
+test('fightOutcome leaves uncounted rows out of the reckoning', () => {
+  /** @param {{ side: 'party' | 'foe', defeated: boolean, counted: boolean }[]} rows */
   const view = (rows) => ({ round: 1, turnIndex: 0, rows });
   // An unresolved row projects side 'party' and defeated false as
   // placeholders; counting it as a standing party member would hold the
-  // outcome open after every real member is down.
+  // outcome open after every real member is down. A bystander row is
+  // uncounted the same way.
   assert.equal(
     fightOutcome(
       view([
-        { side: 'party', defeated: true, name: 'Hero' },
-        { side: 'party', defeated: false, name: null },
-        { side: 'foe', defeated: false, name: 'Goblin' },
+        { side: 'party', defeated: true, counted: true },
+        { side: 'party', defeated: false, counted: false },
+        { side: 'foe', defeated: false, counted: true },
       ]),
     ),
     'defeat',
+    'neither a ghost row nor a standing bystander holds off the defeat',
   );
   assert.equal(
-    fightOutcome(view([{ side: 'party', defeated: false, name: null }])),
+    fightOutcome(view([{ side: 'party', defeated: false, counted: false }])),
     null,
     'a side with only ghosts on it settles nothing',
+  );
+});
+
+test('a bystander in the order sways the outcome in neither direction', () => {
+  const { hero, brigand, sage } = fixtures();
+  const combat = {
+    round: 1,
+    index: 0,
+    order: [
+      { id: 'hero', initiative: 15, modifier: 2 },
+      { id: 'sage', initiative: 10, modifier: 0 },
+      { id: 'brigand', initiative: 8, modifier: 0 },
+    ],
+  };
+  /** @param {any} entities */
+  const outcome = (entities) =>
+    fightOutcome(buildCombatView(combat, resolver(entities), { gm: true }));
+  assert.equal(
+    outcome({
+      hero: { kind: 'character', entity: damageCharacter(hero, 99) },
+      sage: { kind: 'creature', entity: sage },
+      brigand: { kind: 'creature', entity: brigand },
+    }),
+    'defeat',
+    'a standing bystander does not hold off the defeat of a fallen party',
+  );
+  assert.equal(
+    outcome({
+      hero: { kind: 'character', entity: hero },
+      sage: { kind: 'creature', entity: sage },
+      brigand: { kind: 'creature', entity: applyDamage(brigand, 99) },
+    }),
+    'victory',
+    'a live bystander does not keep a won fight open',
   );
 });
