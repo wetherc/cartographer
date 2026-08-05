@@ -1,5 +1,6 @@
 import { abilityModifier } from './Modifiers.js';
 import { isProficientArmor } from './Proficiencies.js';
+import { unarmoredDefenses } from './Classes.js';
 import { abilityLabel, hasWeaponProperty, weaponKind } from './Weapons.js';
 import { indexById } from '../util/indexById.js';
 import { memoizeByIdentity } from '../util/memoize.js';
@@ -348,15 +349,19 @@ export function effectiveStats(character) {
  * weight class. Light armor adds the full DEX modifier. Medium armor caps
  * the DEX modifier at +2. Heavy armor ignores DEX. Unarmored AC is the base
  * AC, which is 10 by default or higher from an effect like Mage Armor, plus
- * the full DEX modifier. A shield adds its own bonus, which is +2 unless the
- * item says otherwise. Every other equipped item adds its own flat acBonus.
- * DEX here includes equipped stat buffs.
+ * the full DEX modifier. A Barbarian or a Monk with an empty chest slot also
+ * gets the unarmored defense formula of its class, and takes whichever result
+ * is higher. A shield adds its own bonus, which is +2 unless the item says
+ * otherwise. Every other equipped item adds its own flat acBonus. DEX here
+ * includes equipped stat buffs.
  * @param {Character} character
  * @returns {number}
  */
 export function armorClass(character) {
-  const dexMod = abilityModifier(effectiveStats(character).DEX ?? 10);
-  const body = getEquipped(character, 'chest');
+  const stats = effectiveStats(character);
+  const dexMod = abilityModifier(stats.DEX ?? 10);
+  const worn = equippedIndex(character);
+  const body = worn.get('chest');
   let ac;
   if (body && body.baseAC !== undefined) {
     const weight =
@@ -365,7 +370,23 @@ export function armorClass(character) {
     // hurt. Otherwise the modifier applies up to the weight's cap.
     ac = body.baseAC + (weight.dexCap === 0 ? 0 : Math.min(dexMod, weight.dexCap));
   } else {
-    ac = (character.baseAC ?? 10) + dexMod;
+    const base = character.baseAC ?? 10;
+    ac = base + dexMod;
+    // The formula runs only with the chest slot empty. A chest item with no
+    // base AC lands in this branch too, and something is worn in that case,
+    // so the class feature does not apply.
+    //
+    // A base AC below 10 is a GM-applied debuff. The formula would erase it,
+    // because it starts from a literal 10, so a debuffed character keeps the
+    // ordinary result instead.
+    if (!body && base >= 10) {
+      const off = worn.get('offHand');
+      const shielded = !!off && itemType(off) === 'shield';
+      for (const grant of unarmoredDefenses(character)) {
+        if (shielded && !grant.shield) continue;
+        ac = Math.max(ac, 10 + dexMod + abilityModifier(stats[grant.ability] ?? 10));
+      }
+    }
   }
   for (const item of equippedItems(character)) {
     if (item === body) continue;

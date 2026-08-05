@@ -14,7 +14,30 @@ import {
   preparedLimit,
   hasRitualCasting,
   hasPreparedCaster,
+  unarmoredDefenses,
 } from '../src/entities/Classes.js';
+
+test('unarmoredDefenses reports the grant of every class that has one', () => {
+  assert.deepEqual(unarmoredDefenses(character({ class: 'barbarian' })), [
+    { ability: 'CON', shield: true },
+  ]);
+  assert.deepEqual(unarmoredDefenses(character({ class: 'monk' })), [
+    { ability: 'WIS', shield: false },
+  ]);
+  assert.deepEqual(unarmoredDefenses(character({ class: 'fighter' })), []);
+  assert.deepEqual(unarmoredDefenses(character({ class: 'bogus' })), []);
+  assert.deepEqual(unarmoredDefenses(character({ class: undefined })), []);
+});
+
+test('unarmoredDefenses reads past the first class', () => {
+  const mixed = character({
+    classes: [
+      { classId: 'fighter', level: 2 },
+      { classId: 'monk', level: 1 },
+    ],
+  });
+  assert.deepEqual(unarmoredDefenses(mixed), [{ ability: 'WIS', shield: false }]);
+});
 
 test('casterSlots is empty for an unknown class', () => {
   assert.deepEqual(casterSlots('bogus', 5), []);

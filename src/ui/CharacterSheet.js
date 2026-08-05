@@ -280,8 +280,9 @@ export function mountCharacterSheet(
     const acBadge = el('span', 'character-sheet__ac');
     acBadge.title =
       'Armor class: equipped body armor sets base AC + DEX per its weight class ' +
-      '(light: full, medium: max +2, heavy: none); unarmored is base AC + DEX. ' +
-      'Shields add +2; other equipped items add their flat bonuses.';
+      '(light: full, medium: max +2, heavy: none); unarmored is base AC + DEX, ' +
+      'or the unarmored defense of a Barbarian or a Monk when that is higher. ' +
+      'A shield adds its own bonus; other equipped items add their flat bonuses.';
 
     // Level, derived AC, and XP progress share one banner line, the first line
     // of the right-hand headline block.

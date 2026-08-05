@@ -43,6 +43,16 @@ export interface MulticlassGrant {
   skillChoice?: SkillChoice;
 }
 
+/** A class's unarmored defense formula: 10 plus the DEX modifier plus the
+ * modifier of `ability`, used in place of the ordinary unarmored AC when the
+ * character wears no body armor. `shield` says whether the formula survives a
+ * worn shield. The Barbarian keeps it (CON, shield true); the Monk loses it
+ * (WIS, shield false), though the shield still adds its own bonus. */
+export interface UnarmoredDefense {
+  ability: Ability;
+  shield: boolean;
+}
+
 /** A playable class's mechanical spine: the fields that the spell system
  * reads to gate learning, derive slots, and compute the save DC and attack
  * bonus, plus the character-foundation fields (proficiencies, skill
@@ -86,6 +96,9 @@ export interface ClassDef {
   /** The reduced proficiencies gained when this class is taken as a class
    * beyond the first. */
   multiclassGrant: MulticlassGrant;
+  /** The class's unarmored defense formula. Absent for a class without one,
+   * which is every class but the Barbarian and the Monk. */
+  unarmoredDefense?: UnarmoredDefense;
   /** Feature names unlocked at each level. These are display names only,
    * not yet given a mechanical effect. */
   featuresByLevel: Record<number, string[]>;

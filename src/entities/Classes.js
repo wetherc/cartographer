@@ -89,6 +89,21 @@ export function cantripsKnownForClass(classId, characterLevel) {
 }
 
 /**
+ * The unarmored defense formulas the character's classes grant, in class-list
+ * order. Empty for a character with no granting class. A build that stacked
+ * two granting classes returns both, because this function reports what the
+ * classes say and leaves the choice between them to `Equipment.armorClass`.
+ * An unknown class id contributes nothing.
+ * @param {Character} character
+ * @returns {import('../types/class.js').UnarmoredDefense[]}
+ */
+export function unarmoredDefenses(character) {
+  return getClasses(character)
+    .map((ref) => getClass(ref.classId)?.unarmoredDefense)
+    .filter((def) => !!def);
+}
+
+/**
  * The character's caster classes: every class-list entry whose class casts
  * (full/half/third/pact). Empty for a martial or classless character.
  * @param {SpellCaster} character

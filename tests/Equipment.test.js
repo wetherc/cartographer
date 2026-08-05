@@ -153,6 +153,84 @@ test('a shield states its bonus in its effects, stored or defaulted', () => {
   assert.deepEqual(itemEffects(item('s', 'Tower', { type: 'shield', acBonus: 4 })), ['+4 AC']);
 });
 
+/**
+ * A character of one class, with the given ability scores.
+ * @param {string} classId
+ * @param {Record<string, number>} [stats]
+ * @returns {import('../src/types/entities.js').Character}
+ */
+function classed(classId, stats) {
+  const hero = createCharacter('c1', 'Hero', stats);
+  return { ...hero, classes: [{ classId, level: 3 }] };
+}
+
+test('unarmored defense uses the class ability and only beats the plain result', () => {
+  assert.equal(armorClass(classed('barbarian', { DEX: 14, CON: 16 })), 15, '10 + 2 DEX + 3 CON');
+  assert.equal(armorClass(classed('monk', { DEX: 14, WIS: 16 })), 15, '10 + 2 DEX + 3 WIS');
+  assert.equal(
+    armorClass(classed('barbarian', { DEX: 14, CON: 8 })),
+    12,
+    'a negative CON never drops the AC below the plain 10 + DEX',
+  );
+  assert.equal(
+    armorClass(classed('fighter', { DEX: 14, CON: 16 })),
+    12,
+    'a class without the feature stays on 10 + DEX',
+  );
+  assert.equal(
+    armorClass({ ...classed('barbarian', { DEX: 14, CON: 16 }), baseAC: 17 }),
+    19,
+    'a raised base AC wins when it is higher than the formula',
+  );
+  assert.equal(
+    armorClass({ ...classed('barbarian', { DEX: 14, CON: 16 }), baseAC: 6 }),
+    8,
+    'a GM debuff below 10 stands: the formula does not undo it',
+  );
+});
+
+test('unarmored defense stacks across two granting classes, taking the best', () => {
+  const hero = createCharacter('c1', 'Hero', { DEX: 12, CON: 14, WIS: 18 });
+  const both = {
+    ...hero,
+    classes: [
+      { classId: 'barbarian', level: 1 },
+      { classId: 'monk', level: 2 },
+    ],
+  };
+  assert.equal(armorClass(both), 15, '10 + 1 DEX + 4 WIS beats the +2 CON version');
+});
+
+test('unarmored defense turns off for worn body armor, and for a Monk with a shield', () => {
+  /**
+   * @param {string} classId
+   * @param {Record<string, unknown>} fields
+   * @param {import('../src/types/entities.js').EquipmentSlot} slot
+   */
+  const acWearing = (classId, fields, slot) => {
+    let hero = classed(classId, { DEX: 14, CON: 16, WIS: 16 });
+    hero = addItem(hero, item('worn', 'Worn', fields));
+    return armorClass(equip(hero, slot, 'worn'));
+  };
+  const armor = { type: 'armor', armorWeight: 'medium', baseAC: 14 };
+  assert.equal(acWearing('barbarian', armor, 'chest'), 16, 'body armor replaces the formula');
+  assert.equal(
+    acWearing('monk', { type: 'shield' }, 'offHand'),
+    14,
+    'a Monk loses the formula to a shield but keeps the +2: 10 + 2 DEX + 2',
+  );
+  assert.equal(
+    acWearing('barbarian', { type: 'shield' }, 'offHand'),
+    17,
+    'a Barbarian keeps both: 10 + 2 DEX + 3 CON + 2',
+  );
+  assert.equal(
+    acWearing('barbarian', { type: 'armor', armorWeight: 'light' }, 'chest'),
+    12,
+    'a chest item with no base AC is still something worn, so the formula is off',
+  );
+});
+
 test('other equipped items add flat AC bonuses on top', () => {
   let hero = createCharacter('c1', 'Hero', { DEX: 14 });
   hero = addItem(hero, item('helm', 'Helm', { type: 'helmet', acBonus: 1 }));

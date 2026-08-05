@@ -87,6 +87,7 @@ export const DEFAULT_CLASSES = [
       armor: ['shield'],
       weaponCategories: ['simple', 'martial'],
     }),
+    unarmoredDefense: { ability: 'CON', shield: true },
     featuresByLevel: {
       1: ['Rage', 'Unarmored Defense'],
       2: ['Reckless Attack', 'Danger Sense'],
@@ -274,6 +275,7 @@ export const DEFAULT_CLASSES = [
       weaponCategories: ['simple'],
       weaponNamed: ['shortsword'],
     }),
+    unarmoredDefense: { ability: 'WIS', shield: false },
     featuresByLevel: {
       1: ['Unarmored Defense', 'Martial Arts'],
       2: ['Ki', 'Unarmored Movement'],

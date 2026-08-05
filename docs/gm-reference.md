@@ -326,6 +326,12 @@ Armor class follows 5e as well.
 | Shield | Its own flat bonus, which is +2 unless you change it |
 | Other equipped items | Their own flat AC bonus |
 | No body armor | Base AC (normally 10) plus the full DEX modifier |
+| Unarmored Barbarian | 10 plus DEX plus CON, if that beats the line above |
+| Unarmored Monk | 10 plus DEX plus WIS, if that beats the line above |
+
+A Barbarian keeps its unarmored defense while carrying a shield. A Monk loses
+it, but the shield still adds its bonus. Either one loses the formula the
+moment it puts on body armor.
 
 Armor proficiency follows 5e as well. A character that wears armor its
 proficiency lists do not cover pays for it in four places. A shield counts

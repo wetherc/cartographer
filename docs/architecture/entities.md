@@ -323,6 +323,19 @@ GM picks that type, so a stored 0 cannot happen and absence always means the
 GM never touched the field. `SHIELD_PRESETS` puts one entry in the preset
 picker.
 
+A Barbarian or a Monk also gets an unarmored defense formula, which is
+10 plus the DEX modifier plus the modifier of one more ability. The ability
+and whether a shield cancels the formula are stored on the class definition as
+`unarmoredDefense`, and `Classes.unarmoredDefenses(character)` gathers the
+grants of the whole class list. `armorClass` takes whichever is higher, the
+plain unarmored AC or the formula, so a raised `baseAC` from Mage Armor still
+wins when it beats the class feature. Two gates keep the formula out of cases
+where it does not belong. The chest slot must be empty, because a chest item
+with no `baseAC` still means the character wears something. And `baseAC` must
+be at least 10, because a GM who lowers it as a curse would otherwise see the
+formula erase the debuff. A Monk who takes a shield loses the formula but
+still gains the AC the shield adds.
+
 ## Armor proficiency
 
 `Proficiencies.isProficientArmor(character, weight)` reads the armor list.
