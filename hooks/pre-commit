@@ -39,4 +39,13 @@ node --test \
 echo "pre-commit: typecheck"
 pnpm --package=typescript dlx tsc --noEmit
 
+# Benchmark check, informational only. It times the size-sensitive pure paths
+# at a large world size and flags any path over its budget. A breach prints a
+# loud warning but never blocks the commit. It runs only when the commit
+# touches src/, because nothing else can change these numbers.
+if git diff --cached --name-only --diff-filter=ACMR | grep -q '^src/'; then
+  echo "pre-commit: bench (informational, never blocks)"
+  node bench/commit-bench.js || echo "pre-commit: bench over budget; commit proceeds"
+fi
+
 echo "pre-commit: all checks passed"

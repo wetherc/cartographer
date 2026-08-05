@@ -1,6 +1,6 @@
 # Benchmarks
 
-Three harnesses answer three different questions.
+Four harnesses answer four different questions.
 
 - `pnpm bench` drives the real app in Chrome and reports what a tab costs: DOM
   nodes, listeners, heap, layout and script time, long tasks, and a sampled CPU
@@ -12,6 +12,9 @@ Three harnesses answer three different questions.
   which paths grow with the world and where each one crosses the 50 ms line
   that a GM feels as a stall. Run it before and after a change to the save,
   diff, or reconcile paths.
+- `pnpm bench:commit` is the fast check that the pre-commit hook runs. It times
+  the same whole-state paths at one large world size and compares each median
+  against a budget from `budgets.json`. It runs in under a second.
 
 None of them adds a dependency. The browser harness talks the Chrome DevTools
 Protocol over the `WebSocket` that Node 22 ships, so there is no Playwright or
@@ -45,6 +48,18 @@ Each run makes one directory under `bench/results/`:
   the Load button in that panel.
 
 Results are not committed.
+
+## The commit check
+
+The pre-commit hook runs `bench:commit` when a commit touches `src/`. The
+check is informational. The table prints on every run. A path over its budget
+prints a loud warning, and the commit still goes through. The warning is a
+prompt to look at the change before you push it.
+
+The budgets live in `budgets.json`. They sit well above the medians of a
+healthy run, so machine speed and background noise do not trip them. A breach
+means the shape of the work changed. When a change moves a cost on purpose,
+re-measure with `pnpm bench:commit` and raise the budget in the same commit.
 
 ## The scenarios
 

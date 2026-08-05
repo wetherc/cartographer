@@ -66,7 +66,7 @@ This project uses `pnpm` to manage development tools and to run a local developm
   Counts, import edges, mount order, registry entries, storage keys, code snippets, and save sizes are read out of the repository each time. The prose and the classifications live in `scripts/dev-guide/content.mjs`. Every file and symbol that the prose names is checked during the build, so a rename fails the build instead of leaving stale text behind. `pnpm run guide:check` reports whether the committed page matches the current tree.
 
 - **Automated Checks:**
-  The project provides a versioned pre-commit hook. The hook runs the linter, the test suite, and the type checker before each commit. It also regenerates the developer guide when a commit touches the source tree. The hook is optional, and it catches these errors before you push. Enable the hook once for each clone with this command:
+  The project provides a versioned pre-commit hook. The hook runs the linter, the test suite, and the type checker before each commit. It also regenerates the developer guide when a commit touches the source tree. A commit that touches `src/` also gets a fast benchmark check. That check warns about a path over its performance budget, and it never blocks the commit. The hook is optional, and it catches these errors before you push. Enable the hook once for each clone with this command:
   ```bash
   git config core.hooksPath hooks
   ```

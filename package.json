@@ -12,6 +12,7 @@
     "bench": "node bench/app-bench.js",
     "bench:pure": "node bench/pure-bench.js",
     "bench:scale": "node bench/scale-bench.js",
+    "bench:commit": "node bench/commit-bench.js",
     "build": "node scripts/build.cjs",
     "dev": "node scripts/build.cjs --watch",
     "deploy": "bash scripts/deploy.sh",

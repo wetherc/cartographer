@@ -1,0 +1,14 @@
+{
+  "extraNodes": 50,
+  "extraCreatures": 300,
+  "budgetsMs": {
+    "serialize": 40,
+    "deserialize": 25,
+    "toTileGrid": 40,
+    "reconcile": 80,
+    "diffWarm": 5,
+    "diffCold": 120,
+    "fogReveal": 5,
+    "worldTree": 5
+  }
+}

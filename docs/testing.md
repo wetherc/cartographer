@@ -93,6 +93,13 @@ git config core.hooksPath hooks
 guide when the source tree changed, and then runs the linter, the full
 suite, and the typecheck. It blocks the commit if any of the three fails.
 
+When a commit touches `src/`, the hook also runs `pnpm bench:commit`. That
+check times the size-sensitive save, diff, and reconcile paths at a large
+world size and compares each one against a budget. It never blocks a
+commit. A path over its budget prints a loud warning instead, so you see a
+performance regression at the commit that caused it. `bench/README.md`
+describes the budgets.
+
 ## Read the coverage report
 
 ```bash
