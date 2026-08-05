@@ -27,7 +27,9 @@ export const SAVE_KEY = 'campaign-builder:save';
  */
 export function exampleSaveOnEncounter(seed = 1) {
   const campaign = buildExampleCampaign(new TilePalette(), mulberry32(seed));
-  const placed = campaign.encounters.find((e) => e.location?.nodeId && e.location?.tileId);
+  const placed = campaign.creatures.find(
+    (c) => c.disposition === 'hostile' && c.location?.nodeId && c.location?.tileId,
+  );
   if (!placed) return null;
   const state = buildState({
     ...campaign,
