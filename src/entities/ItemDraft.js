@@ -44,7 +44,12 @@ export const EQUIPPABLE_TYPES = [
  * @property {unknown} acBonus
  * @property {string} buffStat empty for no buff
  * @property {unknown} buffAmount
- * @property {string} handling
+ * @property {string} kind
+ * @property {string} category empty for a natural weapon
+ * @property {string[]} properties
+ * @property {unknown} rangeNormal
+ * @property {unknown} rangeLong
+ * @property {DamagePart[]} versatileDamage
  * @property {DamagePart[]} damage
  * @property {string[]} statusEffects
  * @property {boolean} spellFocus
@@ -90,13 +95,37 @@ export function assembleItem(draft) {
     // holy symbol, so any item can be one.
     ...(draft.spellFocus ? { spellFocus: true } : {}),
     ...(buffStat && buffAmount !== 0 ? { statBonuses: { [buffStat]: buffAmount } } : {}),
-    ...(WEAPON_TYPES.includes(type)
-      ? {
-          handling: /** @type {import('../types/entities.js').WeaponHandling} */ (draft.handling),
-          damage: draft.damage,
-          ...(draft.statusEffects.length ? { statusEffects: draft.statusEffects } : {}),
-        }
-      : {}),
+    ...(WEAPON_TYPES.includes(type) ? weaponFields(draft) : {}),
+  };
+}
+
+/**
+ * The weapon fields of a draft, in the same present-only style as the rest
+ * of the item. The kind is always written. The range survives only on a
+ * ranged or thrown weapon, and the long range never reads shorter than the
+ * normal range. The versatile damage survives only with the versatile flag.
+ * @param {ItemDraft} draft
+ * @returns {Partial<InventoryItem>}
+ */
+function weaponFields(draft) {
+  const kind = draft.kind === 'ranged' ? 'ranged' : 'melee';
+  const category =
+    draft.category === 'simple' || draft.category === 'martial' ? draft.category : undefined;
+  const properties = /** @type {import('../types/entities.js').WeaponProperty[]} */ (
+    draft.properties
+  );
+  const ranged = kind === 'ranged' || properties.includes('thrown');
+  const normal = clampInt(draft.rangeNormal, 1, Infinity, 20);
+  const long = Math.max(normal, clampInt(draft.rangeLong, 1, Infinity, normal));
+  const versatile = properties.includes('versatile') ? draft.versatileDamage : [];
+  return {
+    kind,
+    ...(category ? { category } : {}),
+    ...(properties.length ? { properties } : {}),
+    ...(ranged ? { range: { normal, long } } : {}),
+    ...(versatile.length ? { versatileDamage: versatile } : {}),
+    damage: draft.damage,
+    ...(draft.statusEffects.length ? { statusEffects: draft.statusEffects } : {}),
   };
 }
 

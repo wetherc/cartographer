@@ -437,7 +437,11 @@ heading per item type.
 | Type | gear, weapon, armor, helmet, gloves, greaves, shield, bow, ring, consumable |
 | Description | Free text |
 | Damage roll | Structured dice terms: a base roll plus optional permanent riders |
-| Handling | melee (STR), finesse (DEX), ranged (DEX) |
+| Category | simple, martial, or none for a natural weapon such as a bite |
+| Kind | melee (STR) or ranged (DEX) |
+| Properties | The 5e property flags: finesse, versatile, two-handed, light, heavy, reach, thrown, ammunition, loading |
+| Range | Normal and long range in feet, for a ranged or thrown weapon |
+| Two-handed damage | The alternate dice of a versatile weapon |
 | Status effects | Tags that the weapon inflicts, for example burning or poisoned |
 | Weight class | For body armor: light, medium, or heavy |
 | Base AC | For body armor |

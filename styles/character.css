@@ -681,3 +681,12 @@
 .item-form__effect-input {
   width: 8rem;
 }
+
+/* Weapon property flags: one checkbox per 5e property, wrapped as a row
+   of compact labels. */
+.item-form__properties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  font-size: var(--text-label);
+}

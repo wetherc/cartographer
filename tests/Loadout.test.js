@@ -101,7 +101,7 @@ test('a foe loadout reads its authored armor and single weapon', () => {
     armor: { name: 'Hide Armor', acBonus: 2 },
     weapon: {
       name: 'Scimitar',
-      handling: /** @type {const} */ ('melee'),
+      kind: /** @type {const} */ ('melee'),
       damage: [{ count: 1, sides: 6, bonus: 0, damageType: /** @type {const} */ ('slashing') }],
     },
   };
@@ -121,7 +121,7 @@ test('an armed NPC reads its gear the way a foe does', () => {
     location: HERE,
     weapon: {
       name: 'Spear',
-      handling: /** @type {const} */ ('melee'),
+      kind: /** @type {const} */ ('melee'),
       damage: [{ count: 1, sides: 6, bonus: 0, damageType: /** @type {const} */ ('piercing') }],
     },
     armor: { name: 'Chain Shirt', acBonus: 3 },

@@ -531,7 +531,7 @@ test('enemyArmor reads a preset as a flat bonus over the unarmored 10', () => {
 test('formatDamage and itemSummary describe a weapon damage roll with riders', () => {
   const blade = item('ember', 'Ember Blade', {
     type: 'weapon',
-    handling: 'melee',
+    kind: 'melee',
     damage: [
       { count: 2, sides: 6, damageType: 'slashing' },
       { count: 1, sides: 4, damageType: 'fire' },
@@ -542,7 +542,7 @@ test('formatDamage and itemSummary describe a weapon damage roll with riders', (
   assert.equal(itemSummary(blade), '2d6 slashing + 1d4 fire (STR), inflicts burning');
   const bow = item('bow', 'Longbow', {
     type: 'bow',
-    handling: 'ranged',
+    kind: 'ranged',
     damage: [{ count: 1, sides: 8, damageType: 'piercing' }],
     statusEffects: [],
   });
@@ -643,7 +643,7 @@ test('equippedWeapons lists the wielded damage-carrying items in slot order', ()
     hero,
     item('sword', 'Sword', {
       type: 'weapon',
-      handling: 'melee',
+      kind: 'melee',
       damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
     }),
   );
@@ -651,7 +651,7 @@ test('equippedWeapons lists the wielded damage-carrying items in slot order', ()
     hero,
     item('bow', 'Bow', {
       type: 'bow',
-      handling: 'ranged',
+      kind: 'ranged',
       damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
     }),
   );

@@ -1,12 +1,7 @@
 import { ABILITY_SCORES } from '../entities/Character.js';
 import { setTip } from './Tooltip.js';
-import {
-  ITEM_TYPES,
-  ARMOR_WEIGHTS,
-  SHIELD_AC,
-  WEAPON_TYPES,
-  WEAPON_HANDLING,
-} from '../entities/Equipment.js';
+import { ITEM_TYPES, ARMOR_WEIGHTS, SHIELD_AC, WEAPON_TYPES } from '../entities/Equipment.js';
+import { WEAPON_KINDS, WEAPON_PROPERTIES } from '../entities/Weapons.js';
 import { activeEquipment } from '../library/Library.js';
 import { buildDamageEditor, buildEffectsEditor } from './ItemFormEditors.js';
 import { el } from './dom.js';
@@ -35,7 +30,7 @@ import {
  * The item create and edit form, shared by the add row and the per-item
  * editor. Every mechanical field is here: type-specific armor, shield,
  * AC, and buff controls, and for weapons and bows a 5e preset picker,
- * handling, which fixes the damage ability, a structured damage-dice
+ * the category, kind, and property flags, a structured damage-dice
  * editor, base roll plus permanent riders such as + 1d4 fire, and
  * inflicted status effects. The last two build as widgets in
  * ItemFormEditors.js. A submit calls `onSubmit` with the assembled
@@ -153,16 +148,63 @@ export function buildItemForm({
    * @returns {EquipmentTemplate[]} */
   const presetsFor = (type) => activeEquipment(/** @type {ItemType} */ (type));
 
-  const handlingSelect = select(
-    WEAPON_HANDLING.map((h) => ({ value: h.key, label: `${h.label} (${h.ability})` })),
-    item?.handling ?? 'melee',
+  // A weapon's 5e classification. The category decides proficiency: a
+  // character proficient with 'simple' or 'martial' weapons adds the
+  // proficiency bonus. No category means a natural weapon, for example a
+  // bite. The kind decides the attack ability: ranged uses DEX.
+  const categorySelect = select(
+    [
+      { value: 'simple', label: 'Simple' },
+      { value: 'martial', label: 'Martial' },
+      { value: '', label: 'None (natural weapon)' },
+    ],
+    item?.category ?? 'simple',
   );
-  const handlingField = labeled('Handling', handlingSelect);
+  const categoryField = labeled('Category', categorySelect);
+  const kindSelect = select(
+    WEAPON_KINDS.map((k) => ({ value: k.key, label: k.label })),
+    item?.kind ?? 'melee',
+  );
+  const kindField = labeled('Kind', kindSelect);
+
+  // One checkbox per 5e weapon property. The versatile box shows the
+  // two-handed damage editor, and the thrown box shows the range fields.
+  const propertyBoxes = WEAPON_PROPERTIES.map((p) => ({
+    key: p.key,
+    box: checkbox(p.label, item?.properties?.includes(p.key) ?? false),
+  }));
+  const propertiesWrap = el('div', 'item-form__properties');
+  for (const { box } of propertyBoxes) propertiesWrap.appendChild(box.label);
+  const propertiesField = labeled('Properties', propertiesWrap);
+  const checkedProperties = () => propertyBoxes.filter((p) => p.box.input.checked);
+  /** @param {string[]} keys */
+  const setProperties = (keys) => {
+    for (const p of propertyBoxes) p.box.input.checked = keys.includes(p.key);
+  };
+
+  // The normal and long range in feet, shown for a ranged or thrown weapon.
+  const rangeNormalInput = numberField(item?.range?.normal ?? 20, {
+    min: 1,
+    className: 'form__number',
+  });
+  const rangeLongInput = numberField(item?.range?.long ?? 60, {
+    min: 1,
+    className: 'form__number',
+  });
+  const rangeNormalField = labeled('Range (ft)', rangeNormalInput);
+  const rangeLongField = labeled('Long', rangeLongInput);
 
   const damage = buildDamageEditor(
     item?.damage ?? [{ count: 1, sides: 6, damageType: 'slashing' }],
   );
   const damageField = labeled('Damage', damage.element);
+
+  // The alternate damage dice of a versatile weapon, rolled when it is
+  // held in two hands.
+  const versatileDamage = buildDamageEditor(
+    item?.versatileDamage ?? [{ count: 1, sides: 8, damageType: 'slashing' }],
+  );
+  const versatileField = labeled('Two-handed damage', versatileDamage.element);
 
   // This shows status effects the weapon inflicts, as removable chips plus an add row.
   const effects = buildEffectsEditor(item?.statusEffects ?? []);
@@ -176,8 +218,14 @@ export function buildItemForm({
     // custom library entry can also bring an AC bonus, a stat buff, or
     // inflicted effects.
     if (preset.damage?.length) {
-      handlingSelect.value = preset.handling ?? 'melee';
+      categorySelect.value = preset.category ?? '';
+      kindSelect.value = preset.kind ?? 'melee';
+      setProperties(preset.properties ?? []);
+      rangeNormalInput.value = String(preset.range?.normal ?? 20);
+      rangeLongInput.value = String(preset.range?.long ?? 60);
+      if (preset.versatileDamage?.length) versatileDamage.set(preset.versatileDamage);
       damage.set(preset.damage);
+      syncWeaponFields();
     }
     if (preset.armorWeight !== undefined || preset.baseAC !== undefined) {
       weightSelect.value = preset.armorWeight ?? 'light';
@@ -204,13 +252,28 @@ export function buildItemForm({
   // when everything in it does, so the shared controls never reflow around
   // appearing fields.
   const armorRow = fieldRow(weightField, baseACField, shieldField);
-  const weaponRow = fieldRow(handlingField);
+  const weaponRow = fieldRow(categoryField, kindField, rangeNormalField, rangeLongField);
+  const propertiesRow = fieldRow(propertiesField);
   const damageRow = fieldRow(damageField);
+  const versatileRow = fieldRow(versatileField);
   const effectsRow = fieldRow(effectsField);
   // The flat AC bonus shares a row with the stat buff. Both are small
   // worn-item numbers, and each hides on its own when the type drops it.
   const acRow = fieldRow(acField, buffStatField, buffAmountField);
   const focusRow = fieldRow(focusField);
+
+  // The range fields show only for a ranged or thrown weapon, and the
+  // two-handed damage editor only with the versatile box. The whole-row
+  // hiding stays with syncTypeFields.
+  const syncWeaponFields = () => {
+    const keys = checkedProperties().map((p) => p.key);
+    const ranged = kindSelect.value === 'ranged' || keys.includes('thrown');
+    rangeNormalField.hidden = rangeLongField.hidden = !ranged;
+    versatileRow.hidden = versatileField.hidden =
+      !WEAPON_TYPES.includes(typeSelect.value) || !keys.includes('versatile');
+  };
+  kindSelect.addEventListener('change', syncWeaponFields);
+  for (const { box } of propertyBoxes) box.input.addEventListener('change', syncWeaponFields);
 
   const syncTypeFields = () => {
     const type = typeSelect.value;
@@ -220,10 +283,12 @@ export function buildItemForm({
     acField.hidden = !FLAT_AC_TYPES.includes(type);
     buffStatField.hidden = !EQUIPPABLE_TYPES.includes(type);
     buffAmountField.hidden = buffStatField.hidden || buffStatSelect.value === '';
-    handlingField.hidden = damageField.hidden = effectsField.hidden = !weaponish;
+    categoryField.hidden = kindField.hidden = damageField.hidden = effectsField.hidden = !weaponish;
+    propertiesField.hidden = !weaponish;
     armorRow.hidden = weightField.hidden && shieldField.hidden;
-    weaponRow.hidden = damageRow.hidden = effectsRow.hidden = !weaponish;
+    weaponRow.hidden = propertiesRow.hidden = damageRow.hidden = effectsRow.hidden = !weaponish;
     acRow.hidden = acField.hidden && buffStatField.hidden;
+    syncWeaponFields();
     const presets = presetsFor(type);
     presetField.hidden = presets.length === 0;
     if (presets.length > 0) {
@@ -253,7 +318,12 @@ export function buildItemForm({
       acBonus: acInput.value,
       buffStat: buffStatSelect.value,
       buffAmount: buffAmountInput.value,
-      handling: handlingSelect.value,
+      kind: kindSelect.value,
+      category: categorySelect.value,
+      properties: checkedProperties().map((p) => p.key),
+      rangeNormal: rangeNormalInput.value,
+      rangeLong: rangeLongInput.value,
+      versatileDamage: versatileDamage.get(),
       damage: damage.get(),
       statusEffects: effects.get(),
       spellFocus: focusBox.input.checked,
@@ -269,7 +339,9 @@ export function buildItemForm({
         : fieldRow(labeled('Type', typeSelect), labeled('Qty', quantityInput), presetField),
       armorRow,
       weaponRow,
+      propertiesRow,
       damageRow,
+      versatileRow,
       effectsRow,
       acRow,
       focusRow,

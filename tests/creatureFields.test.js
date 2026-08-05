@@ -85,7 +85,7 @@ test('the AC input pre-fills from a seed DEX until the GM types over it', () => 
 test('an edit shows the hit points and gear the creature already carries', () => {
   const seed = {
     maxHP: 22,
-    weapon: { name: 'Rusty Cleaver', handling: 'melee', damage: [] },
+    weapon: { name: 'Rusty Cleaver', kind: 'melee', damage: [] },
     armor: { name: 'Bone Plate', acBonus: 3 },
   };
   const fields = creatureFields(seed, gearOptions(seed));

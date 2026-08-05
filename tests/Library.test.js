@@ -364,7 +364,7 @@ test('the active registry merges customs into every getter', () => {
       {
         name: 'Longsword',
         type: 'weapon',
-        handling: 'melee',
+        kind: 'melee',
         damage: [{ count: 1, sides: 10, damageType: 'slashing' }],
       },
       // ...and adds a new armor.

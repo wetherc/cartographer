@@ -445,7 +445,7 @@ function swordBearer() {
     createCharacter('hero', 'Hero'),
     item('sword', 'Sword', {
       type: 'weapon',
-      handling: 'melee',
+      kind: 'melee',
       damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
     }),
   );
@@ -453,7 +453,7 @@ function swordBearer() {
 }
 
 test('weaponsOf lists what each kind of combatant can swing', () => {
-  const club = { name: 'Club', handling: 'melee', damage: [{ count: 1, sides: 4 }] };
+  const club = { name: 'Club', kind: 'melee', damage: [{ count: 1, sides: 4 }] };
   const armedFoe = createCreature('ogre', 'Ogre', {
     disposition: 'hostile',
     maxHP: 20,
@@ -485,7 +485,7 @@ test('weaponsOf lists what each kind of combatant can swing', () => {
 });
 
 test('weaponsOf lists the weapon an armed NPC was given', () => {
-  const club = { name: 'Club', handling: 'melee', damage: [{ count: 1, sides: 4 }] };
+  const club = { name: 'Club', kind: 'melee', damage: [{ count: 1, sides: 4 }] };
   const guard = createCreature('guard', 'Guard', {
     location: HERE,
     weapon: /** @type {any} */ (club),

@@ -6,10 +6,9 @@
  * vocabularies stay in separate constants on purpose.
  *
  * The functions here read both an InventoryItem and an EnemyWeapon, the same
- * way `weaponAbility` did before them. Until the item form writes the new
- * shape, a form-built weapon still carries the legacy `handling` field, so
- * each read falls back to it. `coerceWeapon` in EquipmentPresets.js is the
- * one long-term reader of `handling`.
+ * way `weaponAbility` did before them. They read only the current fields.
+ * `coerceWeapon` in EquipmentPresets.js rewrites a legacy weapon before it
+ * gets here.
  */
 
 /** @typedef {import('../types/entities.js').WeaponKind} WeaponKind */
@@ -45,29 +44,22 @@ export const WEAPON_PROPERTIES = [
 ];
 
 /**
- * A weapon's kind. An absent `kind` on a new-shape weapon reads as melee.
- * A legacy weapon that still carries `handling` maps 'ranged' to ranged and
- * everything else to melee.
+ * A weapon's kind. An absent `kind` reads as melee.
  * @param {InventoryItem | EnemyWeapon} weapon
  * @returns {WeaponKind}
  */
 export function weaponKind(weapon) {
-  if (weapon.kind === 'ranged' || weapon.kind === 'melee') return weapon.kind;
-  return /** @type {{ handling?: string }} */ (weapon).handling === 'ranged' ? 'ranged' : 'melee';
+  return weapon.kind === 'ranged' ? 'ranged' : 'melee';
 }
 
 /**
- * Whether the weapon carries the given property flag. A legacy weapon with
- * `handling: 'finesse'` reads as carrying the finesse property.
+ * Whether the weapon carries the given property flag.
  * @param {InventoryItem | EnemyWeapon} weapon
  * @param {WeaponProperty} property
  * @returns {boolean}
  */
 export function hasWeaponProperty(weapon, property) {
-  if (weapon.properties?.includes(property)) return true;
-  return (
-    property === 'finesse' && /** @type {{ handling?: string }} */ (weapon).handling === 'finesse'
-  );
+  return weapon.properties?.includes(property) === true;
 }
 
 /**

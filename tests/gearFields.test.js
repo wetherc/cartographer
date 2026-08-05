@@ -30,7 +30,7 @@ test('gearOptions keeps a hand-tuned non-library entry offered, labelled with it
   const current = {
     weapon: {
       name: 'Rusty Cleaver',
-      handling: 'melee',
+      kind: 'melee',
       damage: [{ count: 2, sides: 4, type: 'slashing' }],
     },
     armor: { name: 'Bone Plate', acBonus: 3 },
@@ -46,7 +46,7 @@ test('gearOptions keeps a hand-tuned non-library entry offered, labelled with it
 
 test('gearOptions omits the custom rows when the current gear is a library entry', () => {
   const options = gearOptions({
-    weapon: { name: 'Shortsword', handling: 'melee', damage: [] },
+    weapon: { name: 'Shortsword', kind: 'melee', damage: [] },
     armor: null,
   });
   const matches = options.weaponOptions.filter((o) => o.value === 'Shortsword');
@@ -71,7 +71,7 @@ test('readGear copies a library preset with its damage cloned', () => {
 
 test('readGear falls back to the current hand-tuned entry', () => {
   const current = {
-    weapon: { name: 'Rusty Cleaver', handling: 'melee', damage: [] },
+    weapon: { name: 'Rusty Cleaver', kind: 'melee', damage: [] },
     armor: { name: 'Bone Plate', acBonus: 3 },
   };
   const options = gearOptions(current);

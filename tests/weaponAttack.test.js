@@ -18,7 +18,7 @@ const SWORD = {
   id: 'sword',
   name: 'Sword',
   type: 'weapon',
-  handling: 'melee',
+  kind: 'melee',
   quantity: 1,
   notes: '',
   damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
@@ -347,7 +347,7 @@ test("a foe attacks with its own weapon and its stat block's ability", () => {
     level: 1,
     weapon: /** @type {any} */ ({
       name: 'Club',
-      handling: 'melee',
+      kind: 'melee',
       damage: [{ count: 1, sides: 4 }],
     }),
   });
@@ -435,7 +435,7 @@ test('weaponAttack ignores a participant nothing resolves', async () => {
 test('an armed NPC attacks with its own stats and proficiency', () => {
   const club = {
     name: 'Club',
-    handling: 'melee',
+    kind: 'melee',
     damage: [{ count: 1, sides: 4, damageType: 'bludgeoning' }],
   };
   const brigand = createCreature('brigand', 'Brigand', {
@@ -459,7 +459,7 @@ test('an armed NPC attacks with its own stats and proficiency', () => {
 });
 
 test('a caster NPC takes its proficiency from its caster level', () => {
-  const fist = { name: 'Fist', handling: 'melee', damage: [{ count: 1, sides: 4 }] };
+  const fist = { name: 'Fist', kind: 'melee', damage: [{ count: 1, sides: 4 }] };
   const cultist = createCreature('cultist', 'Cultist', {
     location: HERE,
     disposition: 'hostile',
@@ -586,7 +586,7 @@ test('a prone defender helps a melee swing and hinders a ranged one', () => {
   rollWeaponAttack(app, {
     attacker: hero,
     defender: /** @type {any} */ (prone),
-    weapon: /** @type {any} */ ({ ...SWORD, name: 'Bow', handling: 'ranged' }),
+    weapon: /** @type {any} */ ({ ...SWORD, name: 'Bow', kind: 'ranged' }),
     rng: scripted([4 / 8]),
   });
   assert.equal(app.rolls[1].selection.mode, 'disadvantage');
@@ -738,7 +738,7 @@ test('a ranged hit on an unconscious defender stays an ordinary hit', () => {
       ac: 10,
       conditions: [{ name: 'Unconscious' }],
     }),
-    weapon: /** @type {any} */ ({ ...SWORD, name: 'Bow', handling: 'ranged' }),
+    weapon: /** @type {any} */ ({ ...SWORD, name: 'Bow', kind: 'ranged' }),
     rng: () => 0.999,
   });
   assert.match(app.log[0], /— hit\.$/);

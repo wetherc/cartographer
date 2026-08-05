@@ -122,12 +122,6 @@ export type ItemType =
  * DEX entirely. */
 export type ArmorWeight = 'light' | 'medium' | 'heavy';
 
-/** How a weapon is wielded. This alone fixes the ability behind its damage.
- * A melee weapon uses STR. A finesse or ranged weapon uses DEX.
- * @deprecated The `kind` and `properties` fields replace this enum. It stays
- * only while the item form still writes it. */
-export type WeaponHandling = 'melee' | 'finesse' | 'ranged';
-
 /** Whether the weapon strikes in melee or at range. A ranged weapon uses DEX
  * for its rolls. Absent reads as melee. */
 export type WeaponKind = 'melee' | 'ranged';
@@ -180,11 +174,6 @@ export interface InventoryItem {
   description?: string;
   /** Absent on older saves. Treated as 'gear'. */
   type?: ItemType;
-  /** Weapons and bows: how the weapon is wielded, fixing whether STR or DEX
-   * modifies its damage. Absent reads as melee.
-   * @deprecated Replaced by `kind` and `properties`. Migration step 6 and
-   * the library coercer rewrite it; only pre-rewrite data carries it. */
-  handling?: WeaponHandling;
   /** Weapons and bows: melee or ranged. Absent reads as melee. */
   kind?: WeaponKind;
   /** Weapons and bows: simple or martial. Absent means a natural weapon,

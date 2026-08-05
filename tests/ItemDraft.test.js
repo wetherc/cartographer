@@ -22,7 +22,12 @@ function draft(extra = {}) {
     acBonus: 0,
     buffStat: '',
     buffAmount: 1,
-    handling: 'melee',
+    kind: 'melee',
+    category: 'simple',
+    properties: [],
+    rangeNormal: 20,
+    rangeLong: 60,
+    versatileDamage: [{ count: 1, sides: 8, damageType: 'slashing' }],
     damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
     statusEffects: [],
     spellFocus: false,
@@ -117,13 +122,46 @@ test('a stat buff needs an equippable type, a stat, and a non-zero amount', () =
   );
 });
 
-test('a weapon carries its handling and dice; a non-weapon carries neither', () => {
-  const sword = assembleItem(draft({ type: 'weapon', handling: 'finesse' }));
-  assert.equal(sword?.handling, 'finesse');
+test('a weapon carries its kind, category, and dice; a non-weapon carries none', () => {
+  const sword = assembleItem(draft({ type: 'weapon', category: 'martial' }));
+  assert.equal(sword?.kind, 'melee');
+  assert.equal(sword?.category, 'martial');
   assert.deepEqual(sword?.damage, [{ count: 1, sides: 6, damageType: 'slashing' }]);
   const rope = assembleItem(draft({ type: 'gear' }));
-  assert.equal('handling' in rope, false);
+  assert.equal('kind' in rope, false);
   assert.equal('damage' in rope, false);
+});
+
+test('an empty category is left out: the weapon is a natural weapon', () => {
+  const bite = assembleItem(draft({ type: 'weapon', category: '' }));
+  assert.equal('category' in bite, false);
+});
+
+test('properties survive only when some are checked', () => {
+  const rapier = assembleItem(draft({ type: 'weapon', properties: ['finesse'] }));
+  assert.deepEqual(rapier?.properties, ['finesse']);
+  assert.equal('properties' in assembleItem(draft({ type: 'weapon' })), false);
+});
+
+test('the range survives only on a ranged or thrown weapon', () => {
+  const bow = assembleItem(draft({ type: 'bow', kind: 'ranged', rangeNormal: 80, rangeLong: 320 }));
+  assert.deepEqual(bow?.range, { normal: 80, long: 320 });
+  const spear = assembleItem(draft({ type: 'weapon', properties: ['thrown'] }));
+  assert.deepEqual(spear?.range, { normal: 20, long: 60 });
+  assert.equal('range' in assembleItem(draft({ type: 'weapon' })), false);
+});
+
+test('an unreadable range falls back, and the long range never undercuts the normal', () => {
+  const odd = assembleItem(
+    draft({ type: 'bow', kind: 'ranged', rangeNormal: 'far', rangeLong: 5 }),
+  );
+  assert.deepEqual(odd?.range, { normal: 20, long: 20 });
+});
+
+test('versatile damage survives only with the versatile flag', () => {
+  const sword = assembleItem(draft({ type: 'weapon', properties: ['versatile'] }));
+  assert.deepEqual(sword?.versatileDamage, [{ count: 1, sides: 8, damageType: 'slashing' }]);
+  assert.equal('versatileDamage' in assembleItem(draft({ type: 'weapon' })), false);
 });
 
 test('inflicted effects ride along only when there are some, and only on a weapon', () => {

@@ -1,6 +1,5 @@
 import type {
   ItemType,
-  WeaponHandling,
   WeaponKind,
   WeaponCategory,
   WeaponProperty,
@@ -19,9 +18,6 @@ export interface EquipmentTemplate {
   name: string;
   type: ItemType;
   description?: string;
-  /** @deprecated Replaced by `kind` and `properties`. Read only by the
-   * library coercer, for files written before the weapon overhaul. */
-  handling?: WeaponHandling;
   kind?: WeaponKind;
   category?: WeaponCategory;
   properties?: WeaponProperty[];

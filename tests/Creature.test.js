@@ -89,7 +89,7 @@ test('createCreature without a level stores no level, no tier, and no gear', () 
 test('createCreature takes hit points and gear, deriving AC from DEX when none is typed', () => {
   const weapon = {
     name: 'Club',
-    handling: 'melee',
+    kind: 'melee',
     damage: [{ dice: 1, die: 'd4', type: 'bludgeoning' }],
   };
   const creature = createCreature('c1', 'Guard', { maxHP: 11, stats: { DEX: 14 }, weapon });

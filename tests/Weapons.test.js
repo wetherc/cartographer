@@ -18,22 +18,11 @@ test('weaponKind reads the kind field and defaults to melee', () => {
   assert.equal(weaponKind({ name: 'Bite', damage: [] }), 'melee', 'absent kind is melee');
 });
 
-test('weaponKind maps a legacy handling value', () => {
-  assert.equal(weaponKind({ name: 'Old Bow', handling: 'ranged', damage: [] }), 'ranged');
-  assert.equal(weaponKind({ name: 'Old Blade', handling: 'finesse', damage: [] }), 'melee');
-});
-
 test('hasWeaponProperty reads the properties list', () => {
   const glaive = { name: 'Glaive', kind: 'melee', properties: ['heavy', 'reach'], damage: [] };
   assert.equal(hasWeaponProperty(glaive, 'reach'), true);
   assert.equal(hasWeaponProperty(glaive, 'finesse'), false);
   assert.equal(hasWeaponProperty({ name: 'Bite', damage: [] }, 'reach'), false, 'absent is none');
-});
-
-test('hasWeaponProperty reads a legacy finesse handling as the finesse property', () => {
-  const legacy = { name: 'Old Rapier', handling: 'finesse', damage: [] };
-  assert.equal(hasWeaponProperty(legacy, 'finesse'), true);
-  assert.equal(hasWeaponProperty(legacy, 'light'), false, 'only finesse maps over');
 });
 
 test('attackAbility: a plain melee weapon uses STR whatever the stats', () => {

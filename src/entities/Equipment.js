@@ -64,7 +64,7 @@ export const ARMOR_WEIGHTS = [
 /** Shields always grant a flat +2 AC, per 5e rule. This value is not configurable. */
 export const SHIELD_AC = 2;
 
-/** The item types that carry weapon fields (handling, damage, status effects). */
+/** The item types that carry weapon fields (kind, properties, damage, status effects). */
 export const WEAPON_TYPES = ['weapon', 'bow'];
 
 /** Die sizes a damage term may roll, smallest to largest. */
@@ -130,19 +130,6 @@ export function normalizeDamagePart(part, allowed = DAMAGE_TYPES) {
 function damagePartRolls(part) {
   return part.count > 0 || (part.bonus ?? 0) !== 0;
 }
-
-/**
- * The legacy handling enum, kept only for the item form's select. The kind
- * and property fields in Weapons.js replace it, and the form moves to them
- * next.
- * @deprecated
- * @type {{ key: import('../types/entities.js').WeaponHandling, label: string, ability: 'STR' | 'DEX' }[]}
- */
-export const WEAPON_HANDLING = [
-  { key: 'melee', label: 'Melee', ability: 'STR' },
-  { key: 'finesse', label: 'Finesse', ability: 'DEX' },
-  { key: 'ranged', label: 'Ranged', ability: 'DEX' },
-];
 
 /**
  * A damage roll's dice terms as text, for example "2d6 slashing + 1d4 fire".
