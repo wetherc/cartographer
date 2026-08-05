@@ -78,8 +78,12 @@ export interface StatSource {
  * to drive the same attack math, without the full inventory model. */
 export interface EnemyWeapon {
   name: string;
-  handling: WeaponHandling;
+  kind: WeaponKind;
   damage: DamagePart[];
+  category?: WeaponCategory;
+  properties?: WeaponProperty[];
+  range?: WeaponRange;
+  versatileDamage?: DamagePart[];
 }
 
 /** An enemy's worn armor: a name, and the flat AC it adds on top of the stat
@@ -119,8 +123,40 @@ export type ItemType =
 export type ArmorWeight = 'light' | 'medium' | 'heavy';
 
 /** How a weapon is wielded. This alone fixes the ability behind its damage.
- * A melee weapon uses STR. A finesse or ranged weapon uses DEX. */
+ * A melee weapon uses STR. A finesse or ranged weapon uses DEX.
+ * @deprecated The `kind` and `properties` fields replace this enum. It stays
+ * only while the item form still writes it. */
 export type WeaponHandling = 'melee' | 'finesse' | 'ranged';
+
+/** Whether the weapon strikes in melee or at range. A ranged weapon uses DEX
+ * for its rolls. Absent reads as melee. */
+export type WeaponKind = 'melee' | 'ranged';
+
+/** 5e weapon category, declared in class.ts beside the proficiency lists
+ * that grant it. Proficiency with a category covers every weapon in it. A
+ * weapon with no category is a natural weapon, for example a bite. */
+export type { WeaponCategory };
+
+/** 5e weapon property flags. `finesse` uses the higher of STR and DEX.
+ * `versatile` swaps to the alternate damage dice when held two-handed.
+ * The other flags are stored and shown; later combat work reads them. */
+export type WeaponProperty =
+  | 'finesse'
+  | 'versatile'
+  | 'two-handed'
+  | 'light'
+  | 'heavy'
+  | 'reach'
+  | 'thrown'
+  | 'ammunition'
+  | 'loading';
+
+/** A weapon's normal and long range in feet. An attack past the normal range
+ * has disadvantage. */
+export interface WeaponRange {
+  normal: number;
+  long: number;
+}
 
 /** One dice term of a weapon's damage roll, for example 2d6 slashing. */
 export interface DamagePart {
@@ -145,8 +181,24 @@ export interface InventoryItem {
   /** Absent on older saves. Treated as 'gear'. */
   type?: ItemType;
   /** Weapons and bows: how the weapon is wielded, fixing whether STR or DEX
-   * modifies its damage. Absent reads as melee. */
+   * modifies its damage. Absent reads as melee.
+   * @deprecated Replaced by `kind` and `properties`. Migration step 6 and
+   * the library coercer rewrite it; only pre-rewrite data carries it. */
   handling?: WeaponHandling;
+  /** Weapons and bows: melee or ranged. Absent reads as melee. */
+  kind?: WeaponKind;
+  /** Weapons and bows: simple or martial. Absent means a natural weapon,
+   * outside both categories. */
+  category?: WeaponCategory;
+  /** Weapons and bows: the weapon's 5e property flags. Absent reads as none. */
+  properties?: WeaponProperty[];
+  /** Weapons and bows: normal and long range in feet, present on a ranged or
+   * thrown weapon. */
+  range?: WeaponRange;
+  /** Versatile weapons: the damage dice when held two-handed. A permanent
+   * rider term, for example a flaming blade's fire die, appears in both
+   * arrays. */
+  versatileDamage?: DamagePart[];
   /** Weapons and bows: the damage roll as dice terms. The base damage comes
    * first, then any permanent riders, for example a burning blade's +1d4
    * fire. */

@@ -23,6 +23,7 @@ import {
   ARMOR_PRESETS,
   GEAR_PRESETS,
   CONSUMABLE_PRESETS,
+  coerceWeapon,
 } from '../entities/EquipmentPresets.js';
 import { normalizeStatBlock } from '../entities/Modifiers.js';
 import { DEFAULT_CREATURE_HP, DISPOSITIONS, defaultEnemyGear } from '../entities/Creature.js';
@@ -54,7 +55,11 @@ export function defaultEquipmentTemplates() {
     ...WEAPON_PRESETS.map((p) => ({
       name: p.name,
       type: p.type,
-      handling: p.handling,
+      kind: p.kind,
+      category: p.category,
+      ...(p.properties ? { properties: [...p.properties] } : {}),
+      ...(p.range ? { range: { ...p.range } } : {}),
+      ...(p.versatileDamage ? { versatileDamage: p.versatileDamage.map((d) => ({ ...d })) } : {}),
       damage: p.damage.map((d) => ({ ...d })),
     })),
     ...ARMOR_PRESETS.map((p) => ({
@@ -95,7 +100,9 @@ export const DEFAULT_CREATURES = deepFreeze([
     tier: 'mob',
     weapon: {
       name: 'Scimitar',
-      handling: 'finesse',
+      kind: 'melee',
+      category: 'martial',
+      properties: ['finesse', 'light'],
       damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
     },
     armor: { name: 'Leather Armor', acBonus: 1 },
@@ -108,9 +115,11 @@ export const DEFAULT_CREATURES = deepFreeze([
     stats: { STR: 12, DEX: 15, CON: 12, INT: 3, WIS: 12, CHA: 6, AC: 13 },
     level: 1,
     tier: 'mob',
+    // A natural weapon: no category, because it is neither simple nor
+    // martial.
     weapon: {
       name: 'Bite',
-      handling: 'melee',
+      kind: 'melee',
       damage: [{ count: 2, sides: 4, damageType: 'piercing' }],
     },
     armor: null,
@@ -125,7 +134,9 @@ export const DEFAULT_CREATURES = deepFreeze([
     tier: 'mob',
     weapon: {
       name: 'Shortsword',
-      handling: 'finesse',
+      kind: 'melee',
+      category: 'martial',
+      properties: ['finesse', 'light'],
       damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
     },
     armor: { name: 'Leather Armor', acBonus: 1 },
@@ -140,7 +151,9 @@ export const DEFAULT_CREATURES = deepFreeze([
     tier: 'mob',
     weapon: {
       name: 'Shortsword',
-      handling: 'finesse',
+      kind: 'melee',
+      category: 'martial',
+      properties: ['finesse', 'light'],
       damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
     },
     armor: { name: 'Armor Scraps', acBonus: 1 },
@@ -155,7 +168,9 @@ export const DEFAULT_CREATURES = deepFreeze([
     tier: 'mob',
     weapon: {
       name: 'Greataxe',
-      handling: 'melee',
+      kind: 'melee',
+      category: 'martial',
+      properties: ['heavy', 'two-handed'],
       damage: [{ count: 1, sides: 12, damageType: 'slashing' }],
     },
     armor: { name: 'Hide', acBonus: 2 },
@@ -170,7 +185,9 @@ export const DEFAULT_CREATURES = deepFreeze([
     tier: 'legend',
     weapon: {
       name: 'Greatclub',
-      handling: 'melee',
+      kind: 'melee',
+      category: 'simple',
+      properties: ['two-handed'],
       damage: [{ count: 2, sides: 8, damageType: 'bludgeoning' }],
     },
     armor: { name: 'Hide', acBonus: 2 },
@@ -573,10 +590,18 @@ export function normalizeLibrary(parsed) {
    * @returns {string} */
   const rawNameKey = (e) => nameKey({ name: e.name });
 
+  // A weapon entry coerces to the property model on the way in. Library
+  // files carry no version, so a file written before the weapon overhaul
+  // can arrive at any time, with a legacy `handling` field.
   const equipment = dedupeByKey(
     arrayOf(source.equipment)
       .filter((e) => typeof e.name === 'string' && e.name.trim() && ITEM_TYPES.includes(e.type))
-      .map((e) => /** @type {EquipmentTemplate} */ ({ ...e, name: e.name.trim() })),
+      .map((e) => {
+        const named = /** @type {Record<string, any>} */ ({ ...e, name: e.name.trim() });
+        if (!WEAPON_TYPES.includes(e.type)) return /** @type {EquipmentTemplate} */ (named);
+        const { handling: _handling, ...rest } = named;
+        return /** @type {EquipmentTemplate} */ ({ ...rest, ...coerceWeapon(named) });
+      }),
     equipmentKey,
   );
 
@@ -608,10 +633,16 @@ export function normalizeLibrary(parsed) {
     // malformed value takes the level default on a leveled entry, and null
     // on an unleveled one. That is what absence meant in each older shape.
     /** @param {'weapon' | 'armor'} slot @returns {object | null} */
-    const gear = (slot) =>
-      e[slot] === null || (e[slot] && typeof e[slot] === 'object')
-        ? e[slot]
-        : (stamp?.[slot] ?? null);
+    const gear = (slot) => {
+      const value =
+        e[slot] === null || (e[slot] && typeof e[slot] === 'object')
+          ? e[slot]
+          : (stamp?.[slot] ?? null);
+      // A creature's weapon coerces the same way an equipment entry does.
+      if (slot !== 'weapon' || !value) return value;
+      const { handling: _handling, ...rest } = /** @type {Record<string, any>} */ (value);
+      return { ...rest, ...coerceWeapon(value) };
+    };
     const stats = e.stats ?? e.statBlock;
     return /** @type {CreatureTemplate} */ ({
       id,

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import { gearOptions, readGear } from '../src/app/gearFields.js';
 
-test('readGear defaults a preset missing handling and damage', () => {
+test('readGear defaults a preset missing kind and damage', () => {
   const options = {
     weaponChoices: [{ name: 'Stick' }],
     armorChoices: [],
@@ -12,7 +12,7 @@ test('readGear defaults a preset missing handling and damage', () => {
   };
   const { weapon } = readGear('Stick', '', /** @type {any} */ (options));
   assert.equal(weapon.name, 'Stick');
-  assert.equal(weapon.handling, 'melee', 'a preset with no handling defaults to melee');
+  assert.equal(weapon.kind, 'melee', 'a preset with no kind defaults to melee');
   assert.deepEqual(weapon.damage, [], 'a preset with no damage list reads empty');
 });
 

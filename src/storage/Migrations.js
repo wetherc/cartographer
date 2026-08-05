@@ -15,6 +15,7 @@
  */
 
 import { defaultEnemyGear } from '../entities/Creature.js';
+import { coerceWeapon } from '../entities/EquipmentPresets.js';
 import { slugId } from '../entities/Roster.js';
 
 /** @typedef {import('../types/storage.js').RawSave} RawSave */
@@ -24,7 +25,7 @@ import { slugId } from '../entities/Roster.js';
  * The schema version `buildState` stamps on every save it writes. Version 0
  * is every save written before this field existed.
  */
-export const CURRENT_VERSION = 6;
+export const CURRENT_VERSION = 7;
 
 /**
  * Step transforms keyed by the version being migrated from. `MIGRATIONS[n]`
@@ -149,6 +150,55 @@ export const MIGRATIONS = {
     // does, its entries are kept in front of the coerced ones.
     const { encounters: _encounters, npcs: _npcs, ...kept } = state;
     return { ...kept, creatures: [...records(state.creatures), ...foes, ...folk], bestiary };
+  },
+  // 6 -> 7: version 7 replaces a weapon's `handling` enum with the property
+  // model: `kind`, `category`, `properties`, `range`, and `versatileDamage`.
+  // This is the semantic change the module comment above names. The coercer
+  // matches each weapon against the built-in presets by name and adopts the
+  // preset's property fields, keeping the save's own damage dice, because a
+  // GM can edit them. An unmatched weapon maps from its `handling` and gets
+  // the 'simple' category. Every class is proficient with simple weapons, so
+  // the old always-proficient rolls stay unchanged. The step rewrites the
+  // weapons in character inventories, on creatures, and on bestiary
+  // templates. The library rewrites its own entries at load, because library
+  // files carry no version.
+  // The step rewrites only the values that are weapons. Everything
+  // malformed passes through untouched, so the validator after the chain
+  // still sees it and reports it.
+  6: (state) => {
+    const usable = (/** @type {unknown} */ value) =>
+      value !== null && typeof value === 'object' && !Array.isArray(value);
+    /** @type {(item: unknown) => unknown} */
+    const recastItem = (item) => {
+      if (!usable(item)) return item;
+      const record = /** @type {Record<string, any>} */ (item);
+      if (record.type !== 'weapon' && record.type !== 'bow') return item;
+      const { handling: _handling, ...rest } = record;
+      return { ...rest, ...coerceWeapon(record) };
+    };
+    /** @type {(e: unknown) => unknown} */
+    const recastCreature = (e) => {
+      if (!usable(e)) return e;
+      const record = /** @type {Record<string, any>} */ (e);
+      if (!usable(record.weapon)) return e;
+      const { handling: _handling, ...rest } = record.weapon;
+      return { ...record, weapon: { ...rest, ...coerceWeapon(record.weapon) } };
+    };
+    /** @type {(c: unknown) => unknown} */
+    const recastCharacter = (c) => {
+      if (!usable(c)) return c;
+      const record = /** @type {Record<string, any>} */ (c);
+      if (!Array.isArray(record.inventory)) return c;
+      return { ...record, inventory: record.inventory.map(recastItem) };
+    };
+    return {
+      ...state,
+      ...(Array.isArray(state.characters)
+        ? { characters: state.characters.map(recastCharacter) }
+        : {}),
+      ...(Array.isArray(state.creatures) ? { creatures: state.creatures.map(recastCreature) } : {}),
+      ...(Array.isArray(state.bestiary) ? { bestiary: state.bestiary.map(recastCreature) } : {}),
+    };
   },
 };
 

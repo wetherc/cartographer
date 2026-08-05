@@ -84,7 +84,10 @@ function exampleParty() {
       quantity: 1,
       notes: '',
       type: 'weapon',
-      handling: 'melee',
+      kind: 'melee',
+      category: 'martial',
+      properties: ['versatile'],
+      versatileDamage: [{ count: 1, sides: 10, damageType: 'slashing' }],
       damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
     },
     {
@@ -93,7 +96,9 @@ function exampleParty() {
       quantity: 1,
       notes: '',
       type: 'weapon',
-      handling: 'melee',
+      kind: 'melee',
+      category: 'martial',
+      properties: ['heavy', 'two-handed'],
       description: 'A greatsword with a smoldering edge.',
       damage: [
         { count: 2, sides: 6, damageType: 'slashing' },
@@ -168,7 +173,8 @@ function exampleParty() {
       quantity: 1,
       notes: '',
       type: 'weapon',
-      handling: 'melee',
+      kind: 'melee',
+      category: 'simple',
       damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }],
     },
     {

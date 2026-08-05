@@ -1,4 +1,13 @@
-import type { ItemType, WeaponHandling, DamagePart, ArmorWeight } from './entities.js';
+import type {
+  ItemType,
+  WeaponHandling,
+  WeaponKind,
+  WeaponCategory,
+  WeaponProperty,
+  WeaponRange,
+  DamagePart,
+  ArmorWeight,
+} from './entities.js';
 import type { CreatureTemplate } from './creature.js';
 import type { Spell } from './spell.js';
 
@@ -10,7 +19,14 @@ export interface EquipmentTemplate {
   name: string;
   type: ItemType;
   description?: string;
+  /** @deprecated Replaced by `kind` and `properties`. Read only by the
+   * library coercer, for files written before the weapon overhaul. */
   handling?: WeaponHandling;
+  kind?: WeaponKind;
+  category?: WeaponCategory;
+  properties?: WeaponProperty[];
+  range?: WeaponRange;
+  versatileDamage?: DamagePart[];
   damage?: DamagePart[];
   statusEffects?: string[];
   armorWeight?: ArmorWeight;

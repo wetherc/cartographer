@@ -182,3 +182,101 @@ test('step 5 defends itself against malformed collections', () => {
   assert.deepEqual(migrated.creatures, []);
   assert.deepEqual(migrated.bestiary, []);
 });
+
+test('step 6 adopts the preset shape for a named weapon and keeps edited dice', () => {
+  const migrated = MIGRATIONS[6]({
+    characters: [
+      {
+        id: 'c1',
+        name: 'Hero',
+        inventory: [
+          {
+            id: 'sword',
+            name: 'Longsword',
+            type: 'weapon',
+            handling: 'melee',
+            // The GM raised the die, so the save's own dice must survive.
+            damage: [{ count: 2, sides: 8, damageType: 'slashing' }],
+          },
+          { id: 'rope', name: 'Rope', type: 'gear' },
+        ],
+      },
+    ],
+  });
+  const [sword, rope] = migrated.characters[0].inventory;
+  assert.equal('handling' in sword, false, 'the legacy field is gone');
+  assert.equal(sword.kind, 'melee');
+  assert.equal(sword.category, 'martial');
+  assert.deepEqual(sword.properties, ['versatile']);
+  assert.deepEqual(sword.versatileDamage, [{ count: 1, sides: 10, damageType: 'slashing' }]);
+  assert.deepEqual(
+    sword.damage,
+    [{ count: 2, sides: 8, damageType: 'slashing' }],
+    'the edited dice stay',
+  );
+  assert.deepEqual(rope, { id: 'rope', name: 'Rope', type: 'gear' }, 'non-weapons pass through');
+});
+
+test('step 6 maps an unmatched weapon from its handling with the simple category', () => {
+  const migrated = MIGRATIONS[6]({
+    characters: [
+      {
+        id: 'c1',
+        name: 'Hero',
+        inventory: [
+          {
+            id: 'blade',
+            name: 'Void Blade',
+            type: 'weapon',
+            handling: 'finesse',
+            damage: [{ count: 1, sides: 8, damageType: 'necrotic' }],
+          },
+        ],
+      },
+    ],
+  });
+  const blade = migrated.characters[0].inventory[0];
+  assert.equal(blade.kind, 'melee');
+  assert.equal(blade.category, 'simple', 'simple keeps the old always-proficient rolls');
+  assert.deepEqual(blade.properties, ['finesse']);
+});
+
+test('step 6 rewrites creature and bestiary weapons and keeps null gear', () => {
+  const migrated = MIGRATIONS[6]({
+    creatures: [
+      {
+        id: 'bandit',
+        name: 'Bandit',
+        weapon: { name: 'Shortsword', handling: 'finesse', damage: [] },
+      },
+      { id: 'barkeep', name: 'Barkeep', weapon: null },
+    ],
+    bestiary: [
+      {
+        id: 'archer',
+        name: 'Archer',
+        weapon: { name: 'Old Sling', handling: 'ranged', damage: [] },
+      },
+    ],
+  });
+  const bandit = migrated.creatures[0];
+  assert.equal(bandit.weapon.kind, 'melee');
+  assert.equal(bandit.weapon.category, 'martial');
+  assert.deepEqual(bandit.weapon.properties, ['finesse', 'light']);
+  assert.equal('handling' in bandit.weapon, false);
+  assert.equal(migrated.creatures[1].weapon, null, 'unarmed stays unarmed');
+  const archer = migrated.bestiary[0];
+  assert.equal(archer.weapon.kind, 'ranged');
+  assert.deepEqual(archer.weapon.range, { normal: 80, long: 320 }, 'the fallback range');
+});
+
+test('step 6 leaves malformed values for the validator to report', () => {
+  const state = {
+    characters: [{ id: 'c1', name: 'Hero', inventory: 5 }, null],
+    creatures: 'none',
+  };
+  const migrated = MIGRATIONS[6](state);
+  assert.deepEqual(migrated.characters, state.characters, 'a bad inventory passes through');
+  assert.equal(migrated.creatures, 'none');
+  assert.equal('bestiary' in migrated, false, 'an absent list is not invented');
+});

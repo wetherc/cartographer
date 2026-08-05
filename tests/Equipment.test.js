@@ -17,10 +17,8 @@ import {
   armorClass,
   effectiveStats,
   pruneEquipment,
-  WEAPON_HANDLING,
   DIE_SIZES,
   DAMAGE_TYPES,
-  weaponAbility,
   formatDamage,
   filterItems,
   groupItemsByType,
@@ -39,6 +37,7 @@ import {
   CONSUMABLE_PRESETS,
   enemyArmor,
 } from '../src/entities/EquipmentPresets.js';
+import { WEAPON_KINDS, WEAPON_PROPERTIES } from '../src/entities/Weapons.js';
 import {
   createCharacter,
   withDefaults,
@@ -224,6 +223,47 @@ test('itemEffects keeps each effect as its own phrase for per-badge rendering', 
   assert.deepEqual(itemEffects(item('t', 'T', { type: 'gear' })), []);
 });
 
+test('itemEffects shows the property badges: versatile dice, flags, and range', () => {
+  assert.deepEqual(
+    itemEffects(
+      item('l', 'Longsword', {
+        type: 'weapon',
+        kind: 'melee',
+        category: 'martial',
+        properties: ['versatile'],
+        versatileDamage: [{ count: 1, sides: 10, damageType: 'slashing' }],
+        damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
+      }),
+    ),
+    ['1d8 slashing (STR)', 'versatile 1d10 slashing', 'versatile'],
+  );
+  assert.deepEqual(
+    itemEffects(
+      item('d', 'Dagger', {
+        type: 'weapon',
+        kind: 'melee',
+        category: 'simple',
+        properties: ['finesse', 'light', 'thrown'],
+        range: { normal: 20, long: 60 },
+        damage: [{ count: 1, sides: 4, damageType: 'piercing' }],
+      }),
+    ),
+    ['1d4 piercing (STR/DEX)', 'finesse, light, thrown', 'range 20/60'],
+  );
+  assert.deepEqual(
+    itemEffects(
+      item('b', 'Shortbow', {
+        type: 'bow',
+        kind: 'ranged',
+        category: 'simple',
+        range: { normal: 80, long: 320 },
+        damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
+      }),
+    ),
+    ['1d6 piercing (DEX)', 'range 80/320'],
+  );
+});
+
 test('itemType defaults an untyped (older-save) item to gear', () => {
   assert.equal(itemType(item('rope', 'Rope')), 'gear');
   assert.equal(itemType(item('sword', 'Sword', { type: 'weapon' })), 'weapon');
@@ -304,22 +344,26 @@ test('migrateEquipment backfills the second ring slot on an older save', () => {
   assert.equal(migrated.accessory2, null);
 });
 
-test('weaponAbility: melee reads STR; finesse and ranged read DEX; absent handling is melee', () => {
-  const weapon = (handling) =>
-    item('w', 'W', { type: 'weapon', ...(handling ? { handling } : {}) });
-  assert.equal(weaponAbility(weapon('melee')), 'STR');
-  assert.equal(weaponAbility(weapon('finesse')), 'DEX');
-  assert.equal(weaponAbility(weapon('ranged')), 'DEX');
-  assert.equal(weaponAbility(weapon(null)), 'STR', 'older saves default to melee');
-});
-
-test('weapon presets follow 5e: valid dice, handling, and damage types', () => {
+test('weapon presets follow 5e: valid dice, kind, category, and damage types', () => {
   assert.ok(WEAPON_PRESETS.length > 0);
+  const propertyKeys = WEAPON_PROPERTIES.map((p) => p.key);
   for (const preset of WEAPON_PRESETS) {
     assert.ok(
-      WEAPON_HANDLING.some((h) => h.key === preset.handling),
+      WEAPON_KINDS.some((k) => k.key === preset.kind),
       preset.name,
     );
+    assert.ok(['simple', 'martial'].includes(preset.category), preset.name);
+    for (const property of preset.properties ?? []) {
+      assert.ok(propertyKeys.includes(property), `${preset.name}: ${property}`);
+    }
+    if (preset.kind === 'ranged') {
+      assert.ok(preset.range && preset.range.long > preset.range.normal, preset.name);
+    }
+    if (preset.properties?.includes('versatile')) {
+      assert.ok(preset.versatileDamage?.length, preset.name);
+    } else {
+      assert.equal(preset.versatileDamage, undefined, preset.name);
+    }
     assert.ok(preset.damage.length > 0, preset.name);
     for (const part of preset.damage) {
       assert.ok(part.count >= 1, preset.name);
@@ -329,7 +373,8 @@ test('weapon presets follow 5e: valid dice, handling, and damage types', () => {
   }
   const greatsword = WEAPON_PRESETS.find((p) => p.name === 'Greatsword');
   assert.deepEqual(greatsword?.damage, [{ count: 2, sides: 6, damageType: 'slashing' }]);
-  assert.equal(greatsword?.handling, 'melee');
+  assert.equal(greatsword?.kind, 'melee');
+  assert.deepEqual(greatsword?.properties, ['heavy', 'two-handed']);
 });
 
 test('normalizeDamagePart repairs each field onto the supported values', () => {
@@ -626,12 +671,6 @@ test('equippedWeapons skips weapons without a damage roll and empty hands', () =
   assert.deepEqual(equippedWeapons(hero), []);
   hero = equip(hero, 'mainHand', 'sword');
   assert.deepEqual(equippedWeapons(hero), [], 'a damage-less weapon is not attackable');
-});
-
-test('weaponAbility falls back to STR when the handling value is unknown', () => {
-  // An out-of-vocabulary handling finds no entry, so the ability defaults.
-  const exotic = item('w', 'Odd', { type: 'weapon', handling: /** @type {any} */ ('thrown') });
-  assert.equal(weaponAbility(exotic), 'STR');
 });
 
 test('migrateItem keeps an explicit weight and defaults a missing bonus to zero', () => {

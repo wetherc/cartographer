@@ -1,6 +1,6 @@
 import { promptModal } from '../ui/Modal.js';
 import { rollDamage, attackTweak } from '../dice/DiceRoller.js';
-import { weaponAbility } from '../entities/Equipment.js';
+import { attackAbility, weaponKind } from '../entities/Weapons.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
 import { autoCrits, modeReasons, rollMode } from '../entities/ConditionEffects.js';
@@ -128,8 +128,11 @@ export function rollWeaponAttack(
   app,
   { attacker, defender, weapon, tweaks = {}, rng = Math.random },
 ) {
-  const ability = weaponAbility(weapon);
-  const abilityMod = abilityModOf(attackerStats(attacker), ability);
+  const stats = attackerStats(attacker);
+  // A finesse weapon reads the attacker here: it takes the higher of the
+  // attacker's STR and DEX.
+  const ability = attackAbility(weapon, stats);
+  const abilityMod = abilityModOf(stats, ability);
   // A character always carries a level, and a leveled creature does too. An
   // unleveled creature falls back to its caster level, and to 1 for a
   // non-caster. Every combatant is proficient with what it holds until the
@@ -150,9 +153,9 @@ export function rollWeaponAttack(
   // same in the log.
   const rider = rollRiders(attacker.conditions, 'attack', rng);
   // The chips on both sides decide the mode. Reach matters, because a prone
-  // defender is easier to hit in melee and harder to hit at range. `handling`
-  // is the only reach signal a weapon carries today.
-  const melee = weapon.handling !== 'ranged';
+  // defender is easier to hit in melee and harder to hit at range. The
+  // weapon's kind is the reach signal.
+  const melee = weaponKind(weapon) !== 'ranged';
   const conditionQuery = /** @type {const} */ ({
     roller: attacker.conditions,
     target: defender.conditions,

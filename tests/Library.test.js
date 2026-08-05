@@ -35,7 +35,10 @@ test('defaultEquipmentTemplates covers every built-in preset list', () => {
     assert.ok(types.has(type), `missing ${type} templates`);
   }
   const longsword = defaults.find((e) => e.name === 'Longsword');
-  assert.equal(longsword?.handling, 'melee');
+  assert.equal(longsword?.kind, 'melee');
+  assert.equal(longsword?.category, 'martial');
+  assert.deepEqual(longsword?.properties, ['versatile']);
+  assert.deepEqual(longsword?.versatileDamage, [{ count: 1, sides: 10, damageType: 'slashing' }]);
   assert.deepEqual(longsword?.damage, [{ count: 1, sides: 8, damageType: 'slashing' }]);
   const plate = defaults.find((e) => e.name === 'Plate');
   assert.equal(plate?.baseAC, 18);
@@ -205,10 +208,15 @@ test('normalizeLibrary reads a pre-merge file: bestiary is hostile, statBlock is
   assert.equal(smith.role, 'Blacksmith');
   assert.equal(smith.maxHP, 11);
   assert.equal(smith.stats.STR, 15);
-  assert.deepEqual(smith.weapon, {
-    name: 'Hammer',
-    damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }],
-  });
+  assert.deepEqual(
+    smith.weapon,
+    {
+      name: 'Hammer',
+      kind: 'melee',
+      damage: [{ count: 1, sides: 6, damageType: 'bludgeoning' }],
+    },
+    'a creature weapon coerces to the property model on the way in',
+  );
 });
 
 test('normalizeLibrary dedupes one name across the three creature source lists', () => {

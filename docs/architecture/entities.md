@@ -256,6 +256,42 @@ cannot heal.
 `Casting.js`'s projectile merge reuses it, so a hit that carries three darts
 reads like a single roll.
 
+## The weapon property model
+
+A weapon carries `kind`, `category`, `properties`, `range`, and
+`versatileDamage`. These fields replaced the old three-value `handling` enum.
+`entities/Weapons.js` owns the vocabularies and the reads:
+
+- `weaponKind(weapon)` answers `'melee'` or `'ranged'`. An absent `kind`
+  reads as melee.
+- `hasWeaponProperty(weapon, property)` reads the `properties` list. The nine
+  flags are the 5e set: finesse, versatile, two-handed, light, heavy, reach,
+  thrown, ammunition, and loading.
+- `attackAbility(weapon, stats)` picks the ability behind an attack. A ranged
+  weapon uses DEX. A finesse weapon uses the higher of the roller's STR and
+  DEX. Every other weapon uses STR.
+- `abilityLabel(weapon)` is the label for a weapon shown without a roller. A
+  finesse weapon reads `STR/DEX`, because the choice depends on who holds it.
+
+`category` is `'simple'` or `'martial'`, the 5e proficiency categories. A
+weapon with no category is a natural weapon, for example a bite. A versatile
+weapon stores its two-handed dice as a full `versatileDamage` array, so the
+damage pipeline handles it with no special case, and a permanent rider term
+appears in both arrays.
+
+The property strings `light` and `heavy` also exist as armor weight classes.
+The two vocabularies live in separate constants (`WEAPON_PROPERTIES` in
+`Weapons.js`, `ARMOR_WEIGHTS` in `Equipment.js`) and never mix.
+
+`EquipmentPresets.coerceWeapon` reads a weapon-shaped value from any era and
+answers the current fields. A name match against `WEAPON_PRESETS` adopts the
+preset's property fields and keeps the value's own damage dice, because a GM
+can edit them. An unmatched legacy value maps from its `handling` and gets
+the simple category, which keeps the old always-proficient rolls unchanged.
+Migration step 6 runs saved weapons through the coercer once. The library
+normalize gate runs its entries through it on every load, because library
+files carry no version.
+
 ## Spell timing
 
 A `Spell` (`types/spell.ts`) lives in the library rather than in a campaign
@@ -733,8 +769,8 @@ The reads over that table are pure and take chip lists only:
 Four sites read the table:
 
 - `app/weaponAttack.js` builds one query from both combatants and takes the
-  reach from `weapon.handling`, the only reach signal a weapon carries. It also
-  asks `autoCrits` for the defender, so a paralyzed target crits on any hit.
+  reach from the weapon's kind (`Weapons.weaponKind`). It also asks
+  `autoCrits` for the defender, so a paralyzed target crits on any hit.
 - `app/spellCast.js` folds the chips' mode with the GM's dialog choice through
   `combineModes`, so neither overrides the other. A save spell stamps
   `autoFailSave` on a target that fails outright, and an attack spell treats a

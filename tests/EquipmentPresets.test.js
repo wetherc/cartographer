@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { GEAR_PRESETS, enemyArmor, copyEnemyWeapon } from '../src/entities/EquipmentPresets.js';
+import {
+  GEAR_PRESETS,
+  enemyArmor,
+  copyEnemyWeapon,
+  coerceWeapon,
+} from '../src/entities/EquipmentPresets.js';
 
 test('GEAR_PRESETS ship the pouch and the three focus kinds, all flagged', () => {
   const flagged = GEAR_PRESETS.filter((p) => p.spellFocus === true).map((p) => p.name);
@@ -35,7 +40,8 @@ test('enemyArmor returns null for invalid or missing name', () => {
 test('copyEnemyWeapon creates a deep copy of a weapon', () => {
   const originalWeapon = {
     name: 'Test Sword',
-    handling: 'melee',
+    kind: 'melee',
+    category: 'simple',
     damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
   };
 
@@ -57,16 +63,74 @@ test('copyEnemyWeapon creates a deep copy of a weapon', () => {
 
 test('copyEnemyWeapon handles missing optional fields', () => {
   const weaponWithoutDamage = {
-    name: 'Club',
-    handling: 'melee',
+    name: 'Cudgel',
+    kind: 'melee',
   };
   const copied1 = copyEnemyWeapon(weaponWithoutDamage);
   assert.deepEqual(copied1.damage, [], 'Weapon without damage should have an empty damage array');
 
-  const weaponWithoutHandling = {
+  const weaponWithoutKind = {
     name: 'Improvised',
     damage: [{ count: 1, sides: 4, damageType: 'bludgeoning' }],
   };
-  const copied2 = copyEnemyWeapon(weaponWithoutHandling);
-  assert.equal(copied2.handling, 'melee', 'Weapon without handling should default to "melee"');
+  const copied2 = copyEnemyWeapon(weaponWithoutKind);
+  assert.equal(copied2.kind, 'melee', 'Weapon without a kind should default to melee');
+});
+
+test('copyEnemyWeapon rewrites a legacy handling weapon to the property model', () => {
+  const legacy = {
+    name: 'Warped Blade',
+    handling: 'finesse',
+    damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
+  };
+  const copied = copyEnemyWeapon(legacy);
+  assert.deepEqual(copied, {
+    name: 'Warped Blade',
+    kind: 'melee',
+    category: 'simple',
+    properties: ['finesse'],
+    damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
+  });
+  assert.ok(!('handling' in copied), 'the legacy field does not survive the copy');
+});
+
+test('coerceWeapon adopts the preset shape on a name match and keeps edited dice out of it', () => {
+  const coerced = coerceWeapon({
+    name: 'longsword',
+    handling: 'melee',
+    damage: [{ count: 2, sides: 8, damageType: 'slashing' }],
+  });
+  assert.deepEqual(coerced, {
+    kind: 'melee',
+    category: 'martial',
+    properties: ['versatile'],
+    versatileDamage: [{ count: 1, sides: 10, damageType: 'slashing' }],
+  });
+});
+
+test('coerceWeapon maps an unmatched legacy weapon from its handling', () => {
+  assert.deepEqual(coerceWeapon({ name: 'Odd Club', handling: 'melee' }), {
+    kind: 'melee',
+    category: 'simple',
+  });
+  assert.deepEqual(coerceWeapon({ name: 'Odd Sling', handling: 'ranged' }), {
+    kind: 'ranged',
+    category: 'simple',
+    range: { normal: 80, long: 320 },
+  });
+});
+
+test('coerceWeapon keeps a new-shape weapon and filters unknown properties', () => {
+  const coerced = coerceWeapon({
+    name: 'Chitin Claw',
+    kind: 'melee',
+    properties: ['reach', 'spiky'],
+    versatileDamage: [{ count: 1, sides: 8, damageType: 'slashing' }],
+  });
+  assert.deepEqual(coerced, {
+    kind: 'melee',
+    properties: ['reach'],
+    versatileDamage: [{ count: 1, sides: 8, damageType: 'slashing' }],
+  });
+  assert.ok(!('category' in coerced), 'a natural weapon keeps no category');
 });

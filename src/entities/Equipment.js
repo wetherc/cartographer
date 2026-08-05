@@ -1,4 +1,5 @@
 import { abilityModifier } from './Modifiers.js';
+import { abilityLabel, hasWeaponProperty, weaponKind } from './Weapons.js';
 import { indexById } from '../util/indexById.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { clampInt } from '../util/num.js';
@@ -131,8 +132,10 @@ function damagePartRolls(part) {
 }
 
 /**
- * How a weapon is wielded. This alone fixes the ability behind its damage
- * roll. Melee uses STR. Finesse and ranged use DEX.
+ * The legacy handling enum, kept only for the item form's select. The kind
+ * and property fields in Weapons.js replace it, and the form moves to them
+ * next.
+ * @deprecated
  * @type {{ key: import('../types/entities.js').WeaponHandling, label: string, ability: 'STR' | 'DEX' }[]}
  */
 export const WEAPON_HANDLING = [
@@ -140,19 +143,6 @@ export const WEAPON_HANDLING = [
   { key: 'finesse', label: 'Finesse', ability: 'DEX' },
   { key: 'ranged', label: 'Ranged', ability: 'DEX' },
 ];
-
-/**
- * The ability score that modifies a weapon's damage roll, based on its
- * handling. Melee, and absent handling, reads STR. Finesse and ranged read
- * DEX. This function also accepts an enemy's assigned weapon, which carries
- * the same handling field.
- * @param {InventoryItem | import('../types/entities.js').EnemyWeapon} item
- * @returns {'STR' | 'DEX'}
- */
-export function weaponAbility(item) {
-  const handling = WEAPON_HANDLING.find((h) => h.key === (item.handling ?? 'melee'));
-  return handling?.ability ?? 'STR';
-}
 
 /**
  * A damage roll's dice terms as text, for example "2d6 slashing + 1d4 fire".
@@ -426,7 +416,14 @@ export function itemEffects(item) {
   }
   if (WEAPON_TYPES.includes(type) && item.damage?.length) {
     const dice = formatDamage(item.damage);
-    if (dice) parts.push(`${dice} (${weaponAbility(item)})`);
+    if (dice) parts.push(`${dice} (${abilityLabel(item)})`);
+    if (hasWeaponProperty(item, 'versatile') && item.versatileDamage?.length) {
+      parts.push(`versatile ${formatDamage(item.versatileDamage)}`);
+    }
+    if (item.properties?.length) parts.push(item.properties.join(', '));
+    if (weaponKind(item) === 'ranged' || hasWeaponProperty(item, 'thrown')) {
+      if (item.range) parts.push(`range ${item.range.normal}/${item.range.long}`);
+    }
   }
   for (const [stat, delta] of Object.entries(item.statBonuses ?? {})) {
     if (delta !== 0) parts.push(`${delta > 0 ? '+' : ''}${delta} ${stat}`);
