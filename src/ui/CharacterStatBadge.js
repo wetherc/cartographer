@@ -1,5 +1,6 @@
 import { effectiveStat } from '../entities/Stats.js';
 import { setTip } from './Tooltip.js';
+import { abilityDescription, abilityName } from '../data/abilities.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { textButton } from './buttons.js';
 import { classNames, el, setAttrs } from './dom.js';
@@ -115,7 +116,9 @@ export function statBadge(character, key) {
   badge.type = 'button';
   const note = total !== base ? ` (base ${base})` : '';
   badge.setAttribute('aria-label', `${key} ${total}, modifier ${modText}${note}. Show breakdown.`);
-  setTip(badge, 'Show breakdown');
+  // The badge shows the key and two numbers, so the tooltip is where the
+  // ability's name and what it covers appear.
+  setTip(badge, `${abilityName(key)}. ${abilityDescription(key)}\nClick to show the breakdown.`);
   badge.addEventListener('click', () => openStatBreakdown(key, breakdown));
   return badge;
 }

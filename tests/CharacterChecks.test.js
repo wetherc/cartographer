@@ -98,3 +98,16 @@ test('training reads expertise over proficiency', () => {
   assert.equal(training(row(rows, 'perception')), 'proficient');
   assert.equal(training(row(rows, 'arcana')), 'untrained');
 });
+
+test('a row carries the reference line its tooltip shows', () => {
+  const saves = saveRows(hero());
+  // A save row leads with the ability's full name, because the row itself
+  // shows only the three-letter key.
+  assert.match(row(saves, 'DEX').description, /^Dexterity\. /);
+  const skills = skillRows(hero());
+  assert.equal(
+    skills.every((r) => r.description.length > 0),
+    true,
+  );
+  assert.match(row(skills, 'stealth').description, /hiding/);
+});

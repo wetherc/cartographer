@@ -13,7 +13,8 @@
 import { checkBonus, saveBonus, passivePerception } from '../entities/Checks.js';
 import { formatModifier, ABILITY_SCORES } from '../entities/Modifiers.js';
 import { isProficientSave, isProficientSkill, hasExpertise } from '../entities/Proficiencies.js';
-import { SKILL_ABILITIES, SKILL_IDS, skillName } from '../data/skills.js';
+import { SKILL_ABILITIES, SKILL_IDS, skillDescription, skillName } from '../data/skills.js';
+import { abilityDescription, abilityName } from '../data/abilities.js';
 import { bareButton, sectionLabel } from './buttons.js';
 import { el } from './dom.js';
 import { setTip } from './Tooltip.js';
@@ -24,7 +25,9 @@ import { setTip } from './Tooltip.js';
  * One row of a block. `kind` is what rolling the row resolves, which is what
  * the host needs to route the roll. `key` is the ability for a save and the
  * skill id for a skill. `ability` is the ability the roll adds, which for a
- * save is the key again.
+ * save is the key again. `description` is the reference line the row's tooltip
+ * adds under the numbers: what the ability covers for a save, and what the
+ * skill is rolled for for a skill.
  * @typedef {{
  *   kind: 'save' | 'check',
  *   key: string,
@@ -33,6 +36,7 @@ import { setTip } from './Tooltip.js';
  *   bonus: number,
  *   proficient: boolean,
  *   expert: boolean,
+ *   description: string,
  * }} CheckRow
  */
 
@@ -83,6 +87,8 @@ export function saveRows(character) {
     proficient: isProficientSave(character, ability),
     // Expertise doubles a skill proficiency. No save carries it.
     expert: false,
+    // A save row shows the bare key, so the tooltip leads with the word.
+    description: `${abilityName(ability)}. ${abilityDescription(ability)}`,
   }));
 }
 
@@ -101,6 +107,7 @@ export function skillRows(character) {
     bonus: checkBonus(character, id),
     proficient: isProficientSkill(character, id),
     expert: hasExpertise(character, id),
+    description: skillDescription(id),
   }));
 }
 
@@ -127,15 +134,18 @@ function buildRow(row, onCheck) {
     el('span', 'check-row__bonus', formatModifier(row.bonus)),
   ];
   const reading = `${row.name} ${formatModifier(row.bonus)}, ${TRAINING_TEXT[state]}`;
+  // The numbers first, then what the row is for. The tooltip keeps the break,
+  // so the reference line reads as its own sentence under the reading.
+  const detail = row.description ? `\n${row.description}` : '';
   if (!onCheck) {
     const line = el('div', 'check-row', ...parts, el('span', 'sr-only', TRAINING_TEXT[state]));
-    setTip(line, reading);
+    setTip(line, `${reading}${detail}`);
     return line;
   }
   return bareButton(parts, () => onCheck({ kind: row.kind, key: row.key }), {
     className: 'check-row check-row--roll',
     ariaLabel: `Roll ${reading}`,
-    title: `Roll ${reading}`,
+    title: `Roll ${reading}${detail}`,
   });
 }
 
