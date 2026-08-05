@@ -15,8 +15,11 @@ import { clampInt } from '../util/num.js';
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 
-/** Item types that may carry a flat AC bonus while equipped. */
-export const FLAT_AC_TYPES = ['weapon', 'helmet', 'gloves', 'greaves', 'bow', 'ring'];
+/** Item types that may carry a flat AC bonus while equipped. A shield is one
+ * of them: its bonus is an ordinary `acBonus`, defaulting to the 5e +2 when
+ * the item stores none. Body armor is not, because its AC comes from
+ * `baseAC` and its weight class instead. */
+export const FLAT_AC_TYPES = ['weapon', 'helmet', 'gloves', 'greaves', 'shield', 'bow', 'ring'];
 
 /** Item types that can be equipped somewhere, and so may buff a stat. */
 export const EQUIPPABLE_TYPES = [
@@ -136,9 +139,10 @@ function weaponFields(draft) {
 
 /**
  * One preset option's label. The parenthetical states whatever distinguishes
- * that kind of preset: its damage die for a weapon, or its AC and weight for
- * armor. Other types get nothing, because a list of rope variants reads
- * better without empty brackets.
+ * that kind of preset: its damage die for a weapon, its AC and weight for
+ * armor, or its flat bonus for a shield or another worn piece. Other types
+ * get nothing, because a list of rope variants reads better without empty
+ * brackets.
  * @param {EquipmentTemplate} preset
  * @returns {string}
  */
@@ -148,5 +152,6 @@ export function presetLabel(preset) {
   if (preset.baseAC !== undefined) {
     return `${preset.name} (AC ${preset.baseAC}, ${preset.armorWeight ?? 'light'})`;
   }
+  if (preset.acBonus !== undefined) return `${preset.name} (+${preset.acBonus} AC)`;
   return preset.name;
 }

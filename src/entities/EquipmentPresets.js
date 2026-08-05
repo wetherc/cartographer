@@ -202,6 +202,14 @@ export const ARMOR_PRESETS = [
 ];
 
 /**
+ * Shields: picking one fills a new shield item's AC bonus. The 5e list holds
+ * one entry, and a GM who wants a heavier shield edits the bonus after
+ * picking it or adds an entry in the Library.
+ * @type {{ name: string, acBonus: number }[]}
+ */
+export const SHIELD_PRESETS = [{ name: 'Shield', acBonus: 2 }];
+
+/**
  * Standard adventuring gear: picking one fills a new gear item's name and
  * description. Names follow the 5e equipment list. The four entries that set
  * `spellFocus` are the component pouch and the three focus kinds. Carrying

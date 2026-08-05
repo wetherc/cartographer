@@ -306,6 +306,23 @@ Migration step 6 runs saved weapons through the coercer once. The library
 normalize gate runs its entries through it on every load, because library
 files carry no version.
 
+## Armor class
+
+`Equipment.armorClass(character)` is the only place that derives the AC of a
+character. Equipped body armor replaces the unarmored baseline with its own
+`baseAC`, and its weight class fixes how much DEX it adds. Without body armor
+the AC is `character.baseAC`, which is 10 unless an effect such as Mage Armor
+raised it, plus the full DEX modifier. Every other equipped piece then adds
+its own `acBonus`.
+
+A shield is one of those pieces. It stores its bonus in `acBonus`, the same
+field a helmet or a ring uses, so a homebrew tower shield can add more than
+the 5e standard. `SHIELD_AC` is the value an absent field reads as, not a
+fixed rule. The item form gives a shield a minimum of 1 and fills 2 when the
+GM picks that type, so a stored 0 cannot happen and absence always means the
+GM never touched the field. `SHIELD_PRESETS` puts one entry in the preset
+picker.
+
 ## Armor proficiency
 
 `Proficiencies.isProficientArmor(character, weight)` reads the armor list.

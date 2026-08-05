@@ -31,7 +31,7 @@ import { DEFAULT_SPELLS } from '../src/data/spells.js';
 test('defaultEquipmentTemplates covers every built-in preset list', () => {
   const defaults = defaultEquipmentTemplates();
   const types = new Set(defaults.map((e) => e.type));
-  for (const type of ['weapon', 'bow', 'armor', 'gear', 'consumable']) {
+  for (const type of ['weapon', 'bow', 'armor', 'shield', 'gear', 'consumable']) {
     assert.ok(types.has(type), `missing ${type} templates`);
   }
   const longsword = defaults.find((e) => e.name === 'Longsword');
@@ -42,6 +42,10 @@ test('defaultEquipmentTemplates covers every built-in preset list', () => {
   assert.deepEqual(longsword?.damage, [{ count: 1, sides: 8, damageType: 'slashing' }]);
   const plate = defaults.find((e) => e.name === 'Plate');
   assert.equal(plate?.baseAC, 18);
+  // The item form's picker reads these templates, not the preset arrays, so a
+  // field that this mapping drops never reaches a GM.
+  const shield = defaults.find((e) => e.type === 'shield');
+  assert.equal(shield?.acBonus, 2);
 });
 
 test('equipmentKey matches on type and case-insensitive name; nameKey on name alone', () => {

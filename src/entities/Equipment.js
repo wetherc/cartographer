@@ -62,7 +62,10 @@ export const ARMOR_WEIGHTS = [
   { key: 'heavy', label: 'Heavy', dexCap: 0, defaultBaseAC: 16 },
 ];
 
-/** Shields always grant a flat +2 AC, per 5e rule. This value is not configurable. */
+/** The AC a shield adds when it carries no bonus of its own. A shield stores
+ * its bonus in `acBonus`, the same field every other worn piece uses, so a
+ * homebrew tower shield can add more than the 5e standard +2. An absent field
+ * reads as this value. */
 export const SHIELD_AC = 2;
 
 /** The item types that carry weapon fields (kind, properties, damage, status effects). */
@@ -288,8 +291,7 @@ export function getEquipped(character, slot) {
  * Normalize an inventory item from any era. Pre-weight-class body armor
  * carried a flat acBonus on top of 10 + DEX. This reads as light armor, with
  * full DEX scaling and the same total, and a base AC of 10 + the old bonus.
- * Shields drop any stored bonus, because shields are always +2 now. This
- * function is pure. Unchanged items return the same reference.
+ * This function is pure. Unchanged items return the same reference.
  * @param {InventoryItem} item
  * @returns {InventoryItem}
  */
@@ -297,10 +299,6 @@ export function migrateItem(item) {
   if (item.type === 'armor' && item.baseAC === undefined) {
     const { acBonus, ...rest } = item;
     return { ...rest, armorWeight: item.armorWeight ?? 'light', baseAC: 10 + (acBonus ?? 0) };
-  }
-  if (item.type === 'shield' && item.acBonus !== undefined) {
-    const { acBonus: _dropped, ...rest } = item;
-    return rest;
   }
   return item;
 }
@@ -350,8 +348,9 @@ export function effectiveStats(character) {
  * weight class. Light armor adds the full DEX modifier. Medium armor caps
  * the DEX modifier at +2. Heavy armor ignores DEX. Unarmored AC is the base
  * AC, which is 10 by default or higher from an effect like Mage Armor, plus
- * the full DEX modifier. Shields add a flat +2. Every other equipped item
- * adds its own flat acBonus. DEX here includes equipped stat buffs.
+ * the full DEX modifier. A shield adds its own bonus, which is +2 unless the
+ * item says otherwise. Every other equipped item adds its own flat acBonus.
+ * DEX here includes equipped stat buffs.
  * @param {Character} character
  * @returns {number}
  */
@@ -370,7 +369,7 @@ export function armorClass(character) {
   }
   for (const item of equippedItems(character)) {
     if (item === body) continue;
-    ac += itemType(item) === 'shield' ? SHIELD_AC : (item.acBonus ?? 0);
+    ac += itemType(item) === 'shield' ? (item.acBonus ?? SHIELD_AC) : (item.acBonus ?? 0);
   }
   return ac;
 }
@@ -428,7 +427,9 @@ export function itemEffects(item) {
           : ` + DEX (max ${weight.dexCap})`;
     parts.push(`${weight.key} armor, AC ${item.baseAC}${dex}`);
   } else if (type === 'shield') {
-    parts.push(`+${SHIELD_AC} AC`);
+    // A shield with no stored bonus adds the 5e standard, so the badge states
+    // that value rather than nothing.
+    parts.push(`+${item.acBonus ?? SHIELD_AC} AC`);
   } else if (item.acBonus) {
     parts.push(`+${item.acBonus} AC`);
   }

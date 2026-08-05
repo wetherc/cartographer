@@ -323,7 +323,7 @@ Armor class follows 5e as well.
 | Light armor | Adds the full DEX modifier |
 | Medium armor | Caps the DEX modifier at +2 |
 | Heavy armor | Ignores DEX |
-| Shield | A flat +2 |
+| Shield | Its own flat bonus, which is +2 unless you change it |
 | Other equipped items | Their own flat AC bonus |
 | No body armor | Base AC (normally 10) plus the full DEX modifier |
 
@@ -480,7 +480,7 @@ heading per item type.
 | Status effects | Tags that the weapon inflicts, for example burning or poisoned |
 | Weight class | For body armor: light, medium, or heavy |
 | Base AC | For body armor |
-| AC bonus | A flat bonus on any other equippable |
+| AC bonus | A flat bonus on any other equippable. A shield uses this field too, and it starts at +2 |
 | Ability buff | For example +2 STR, applied while equipped |
 
 Only the GM adds an item. A player uses, gives away, and discards what the

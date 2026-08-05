@@ -2,10 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   GEAR_PRESETS,
+  SHIELD_PRESETS,
   enemyArmor,
   copyEnemyWeapon,
   coerceWeapon,
 } from '../src/entities/EquipmentPresets.js';
+import { SHIELD_AC } from '../src/entities/Equipment.js';
 
 test('GEAR_PRESETS ship the pouch and the three focus kinds, all flagged', () => {
   const flagged = GEAR_PRESETS.filter((p) => p.spellFocus === true).map((p) => p.name);
@@ -20,6 +22,10 @@ test('GEAR_PRESETS ship the pouch and the three focus kinds, all flagged', () =>
     undefined,
     'ordinary gear carries no flag at all, so a saved item stays the shape it was',
   );
+});
+
+test('SHIELD_PRESETS ship the 5e shield at the default bonus', () => {
+  assert.deepEqual(SHIELD_PRESETS, [{ name: 'Shield', acBonus: SHIELD_AC }]);
 });
 
 test('enemyArmor returns correct armor object for valid name', () => {

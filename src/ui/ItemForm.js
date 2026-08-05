@@ -101,19 +101,38 @@ export function buildItemForm({
   const weightField = labeled('Weight', weightSelect);
   const baseACField = labeled('Base AC', baseACInput);
 
-  // A shield always adds +2 AC in 5e, so there is no input. The form only
-  // states the value.
-  const shieldNote = el('span', 'item-form__note', `+${SHIELD_AC} AC`);
-  const shieldField = labeled('Shield', shieldNote);
-
-  // A non-armor equippable, for example a helmet, ring, or bow, can carry
-  // a flat AC bonus while equipped.
+  // A non-armor equippable, for example a helmet, ring, bow, or shield, can
+  // carry a flat AC bonus while equipped. A shield uses the same field, so
+  // the 5e +2 is a default and not a fixed rule.
   const acInput = numberField(item?.acBonus ?? 0, {
     min: 0,
     className: 'form__number',
   });
   setTip(acInput, 'Flat AC bonus while equipped');
   const acField = labeled('AC bonus', acInput);
+
+  // A shield that stores no bonus reads as +2, so the field must never hold
+  // a zero for one. The minimum keeps the GM from typing one, and switching
+  // the type to shield fills the standard value.
+  //
+  // The fill is taken back off when the type moves away from shield, unless
+  // the GM edited it. Without that, choosing shield and then ring would leave
+  // the +2 behind and give the ring an AC bonus nobody asked for.
+  let filledForShield = false;
+  acInput.addEventListener('input', () => {
+    filledForShield = false;
+  });
+  const syncShieldAC = () => {
+    const shield = typeSelect.value === 'shield';
+    acInput.min = shield ? '1' : '0';
+    if (shield && !(Number(acInput.value) >= 1)) {
+      acInput.value = String(SHIELD_AC);
+      filledForShield = true;
+    } else if (!shield && filledForShield) {
+      acInput.value = '0';
+      filledForShield = false;
+    }
+  };
 
   // Any equippable can buff an ability score while worn, for example +2
   // STR. Only the first stored bonus is editable here. The dash means no buff.
@@ -251,7 +270,7 @@ export function buildItemForm({
   // that a type does not need hides alone inside its row, and a row hides
   // when everything in it does, so the shared controls never reflow around
   // appearing fields.
-  const armorRow = fieldRow(weightField, baseACField, shieldField);
+  const armorRow = fieldRow(weightField, baseACField);
   const weaponRow = fieldRow(categoryField, kindField, rangeNormalField, rangeLongField);
   const propertiesRow = fieldRow(propertiesField);
   const damageRow = fieldRow(damageField);
@@ -279,13 +298,13 @@ export function buildItemForm({
     const type = typeSelect.value;
     const weaponish = WEAPON_TYPES.includes(type);
     weightField.hidden = baseACField.hidden = type !== 'armor';
-    shieldField.hidden = type !== 'shield';
+    syncShieldAC();
     acField.hidden = !FLAT_AC_TYPES.includes(type);
     buffStatField.hidden = !EQUIPPABLE_TYPES.includes(type);
     buffAmountField.hidden = buffStatField.hidden || buffStatSelect.value === '';
     categoryField.hidden = kindField.hidden = damageField.hidden = effectsField.hidden = !weaponish;
     propertiesField.hidden = !weaponish;
-    armorRow.hidden = weightField.hidden && shieldField.hidden;
+    armorRow.hidden = weightField.hidden;
     weaponRow.hidden = propertiesRow.hidden = damageRow.hidden = effectsRow.hidden = !weaponish;
     acRow.hidden = acField.hidden && buffStatField.hidden;
     syncWeaponFields();

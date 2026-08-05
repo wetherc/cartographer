@@ -21,6 +21,7 @@ import {
 import {
   WEAPON_PRESETS,
   ARMOR_PRESETS,
+  SHIELD_PRESETS,
   GEAR_PRESETS,
   CONSUMABLE_PRESETS,
   coerceWeapon,
@@ -67,6 +68,11 @@ export function defaultEquipmentTemplates() {
       type: /** @type {import('../types/entities.js').ItemType} */ ('armor'),
       armorWeight: p.armorWeight,
       baseAC: p.baseAC,
+    })),
+    ...SHIELD_PRESETS.map((p) => ({
+      name: p.name,
+      type: /** @type {import('../types/entities.js').ItemType} */ ('shield'),
+      acBonus: p.acBonus,
     })),
     ...GEAR_PRESETS.map((p) => ({
       name: p.name,

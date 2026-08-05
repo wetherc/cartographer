@@ -135,12 +135,22 @@ test('body armor replaces the baseline; its weight class fixes the DEX scaling',
   );
 });
 
-test('shields always grant a flat +2, ignoring any stored bonus', () => {
-  let hero = createCharacter('c1', 'Hero'); // DEX 10, AC 10
-  hero = addItem(hero, item('shield', 'Shield', { type: 'shield', acBonus: 9 }));
-  hero = equip(hero, 'offHand', 'shield');
+test('a shield grants its own bonus, and the 5e +2 when it stores none', () => {
   assert.equal(SHIELD_AC, 2);
-  assert.equal(armorClass(hero), 12);
+  /** @param {Record<string, unknown>} fields */
+  const acWith = (fields) => {
+    let hero = createCharacter('c1', 'Hero'); // DEX 10, AC 10
+    hero = addItem(hero, item('shield', 'Shield', { type: 'shield', ...fields }));
+    return armorClass(equip(hero, 'offHand', 'shield'));
+  };
+  assert.equal(acWith({}), 12, 'no stored bonus reads as the standard +2');
+  assert.equal(acWith({ acBonus: 3 }), 13, 'a tower shield adds what it stores');
+  assert.equal(acWith({ acBonus: 9 }), 19, 'no ceiling: the item is what the GM built');
+});
+
+test('a shield states its bonus in its effects, stored or defaulted', () => {
+  assert.deepEqual(itemEffects(item('s', 'Shield', { type: 'shield' })), ['+2 AC']);
+  assert.deepEqual(itemEffects(item('s', 'Tower', { type: 'shield', acBonus: 4 })), ['+4 AC']);
 });
 
 test('other equipped items add flat AC bonuses on top', () => {
@@ -172,8 +182,8 @@ test('migrateItem turns bonus-era body armor into light armor with the same tota
     { armorWeight: migrated.armorWeight, baseAC: migrated.baseAC, acBonus: migrated.acBonus },
     { armorWeight: 'light', baseAC: 14, acBonus: undefined },
   );
-  const shield = migrateItem(item('s', 'S', { type: 'shield', acBonus: 3 }));
-  assert.equal(shield.acBonus, undefined, 'shields drop stored bonuses');
+  const shield = item('s', 'S', { type: 'shield', acBonus: 3 });
+  assert.equal(migrateItem(shield), shield, 'a shield keeps the bonus it stores');
   const modern = item('plate', 'Plate', { type: 'armor', armorWeight: 'heavy', baseAC: 18 });
   assert.equal(migrateItem(modern), modern, 'already-migrated items pass through by reference');
 });

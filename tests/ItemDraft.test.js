@@ -97,6 +97,13 @@ test('a zero or unreadable AC bonus is left out rather than stored as zero', () 
   assert.equal('acBonus' in assembleItem(draft({ type: 'ring', acBonus: -3 })), false);
 });
 
+test('a shield carries its AC bonus, and an absent one reads as the 5e +2', () => {
+  assert.equal(assembleItem(draft({ type: 'shield', acBonus: '3' }))?.acBonus, 3);
+  // The form's minimum stops a zero being typed, so an item without the field
+  // is one the GM never edited. Equipment.js reads that as SHIELD_AC.
+  assert.equal('acBonus' in assembleItem(draft({ type: 'shield', acBonus: 0 })), false);
+});
+
 test('a stat buff needs an equippable type, a stat, and a non-zero amount', () => {
   assert.deepEqual(
     assembleItem(draft({ type: 'ring', buffStat: 'STR', buffAmount: '2' }))?.statBonuses,
@@ -202,6 +209,10 @@ test('an armour preset is labelled by its AC and weight, defaulting to light', (
     'Chain Mail (AC 16, heavy)',
   );
   assert.equal(presetLabel({ name: 'Padded', baseAC: 11 }), 'Padded (AC 11, light)');
+});
+
+test('a shield preset is labelled by its flat bonus', () => {
+  assert.equal(presetLabel({ name: 'Shield', acBonus: 2 }), 'Shield (+2 AC)');
 });
 
 test('anything else is labelled by name alone', () => {
