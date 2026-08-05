@@ -69,7 +69,7 @@ test('readGear copies a library preset with its damage cloned', () => {
   assert.notEqual(weapon.damage[0], preset.damage[0], 'damage parts are copies, not shared');
 });
 
-test('readGear falls back to the current hand-tuned entry, then the caller fallback', () => {
+test('readGear falls back to the current hand-tuned entry', () => {
   const current = {
     weapon: { name: 'Rusty Cleaver', handling: 'melee', damage: [] },
     armor: { name: 'Bone Plate', acBonus: 3 },
@@ -79,15 +79,7 @@ test('readGear falls back to the current hand-tuned entry, then the caller fallb
   assert.equal(kept.weapon, current.weapon);
   assert.equal(kept.armor, current.armor);
 
-  const fallback = {
-    weapon: { name: 'Claws', handling: 'melee', damage: [] },
-    armor: { name: 'Hide', acBonus: 1 },
-  };
-  const fromFallback = readGear('Unknown Blade', 'Unknown Mail', gearOptions(null), fallback);
-  assert.equal(fromFallback.weapon, fallback.weapon);
-  assert.equal(fromFallback.armor, fallback.armor);
-
   const bare = readGear('Unknown Blade', 'Unknown Mail', gearOptions(null));
-  assert.equal(bare.weapon, null, 'no fallback reads as unarmed');
+  assert.equal(bare.weapon, null, 'no current entry reads as unarmed');
   assert.equal(bare.armor, null);
 });

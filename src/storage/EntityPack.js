@@ -8,12 +8,13 @@
  * No table here states what a default value is. The code asks the unpacker
  * instead. It removes a field only after `withDefaults` shows that it puts
  * back that exact value for that exact entity. This matters because several
- * defaults are derived, not constant. `Encounter.withDefaults` resolves
- * `weapon` and `armor` from the encounter's own level and tier. A table of
- * per-type defaults then removes a level-7 boss's weapon field, because it
- * matches what a level-1 mob gets by default. Loading then gives the boss
- * the wrong gear. Checking each removal against the real unpacker makes
- * packing and loading agree by construction, not by convention.
+ * defaults are derived, not constant. `Character.withDefaults` derives the
+ * hit dice pool and the spell slots from the character's own class list, so
+ * the value that absence restores differs per character. A table of
+ * per-type defaults holds one value per field, so it either never removes
+ * such a field or removes it against a value the load puts back wrong.
+ * Checking each removal against the real unpacker makes packing and loading
+ * agree by construction, not by convention.
  */
 
 /**

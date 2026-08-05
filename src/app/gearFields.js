@@ -59,26 +59,17 @@ export function gearOptions(current) {
  * Read the gear pickers back into stored weapon and armor values. Both forms
  * share one cascade: the empty value is the explicit "None" choice and stores
  * null. A library preset is copied, with its structured damage cloned.
- * Anything else falls back to the enemy's current hand-tuned entry, then to
- * the caller's fallback. The encounter dialog passes the tier's default gear
- * as the fallback. The template form passes nothing.
+ * Anything else falls back to the enemy's current hand-tuned entry.
  * @param {string} weaponValue
  * @param {string} armorValue
  * @param {GearOptions} options
- * @param {{ weapon?: EnemyWeapon | null, armor?: EnemyArmor | null }} [fallback]
  * @returns {{ weapon: EnemyWeapon | null, armor: EnemyArmor | null }}
  */
-export function readGear(weaponValue, armorValue, options, fallback = {}) {
+export function readGear(weaponValue, armorValue, options) {
   const preset = options.weaponChoices.find((p) => p.name === weaponValue);
   const weapon =
-    weaponValue === ''
-      ? null
-      : preset
-        ? copyEnemyWeapon(preset)
-        : (options.currentWeapon ?? fallback.weapon ?? null);
+    weaponValue === '' ? null : preset ? copyEnemyWeapon(preset) : (options.currentWeapon ?? null);
   const armor =
-    armorValue === ''
-      ? null
-      : (activeEnemyArmor(armorValue) ?? options.currentArmor ?? fallback.armor ?? null);
+    armorValue === '' ? null : (activeEnemyArmor(armorValue) ?? options.currentArmor ?? null);
   return { weapon, armor };
 }

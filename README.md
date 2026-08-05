@@ -16,12 +16,12 @@ With Campaign Builder, you can:
     - The way back out depends on the links that you already drew. You can walk off a sub-region on any side that touches the map above it. An interior area leaves through its outer door or through the staircase that connects it to the level above or below. Build mode warns you when a node has no way in or out.
     - You can reveal parts of the map as your party travels. Unexplored areas stay grayed out until your party moves closer.
     - You can track your party's location on the map at all times.
-  - Add major enemies as encounters, with life tracking
+  - Populate the world with creatures, from major enemies with life tracking to friendly and neutral NPCs, all in one list
   - Run fights on a full-width combat screen. The screen shows a turn ribbon above the initiative order. Combatant cards work as target pickers, and each card shows what the combatant wears, swings, and holds in spell slots. One-click attack and cast buttons appear for the combatant whose turn it is. The combat log and dice tray sit alongside the screen. A player on a bound tab runs the turn of their own character. After the last enemy is defeated, the fight stays open until the GM ends it.
   - Add resource tracking (items, D&D-style spell slots, and other resources that a character can use up)
   - Add character sheets with full character stats. A sheet shows class and subclass, race, background, and assembled proficiencies. A sheet shows hit dice and spellcasting. A sheet tracks level and progression, with class assignment at each level. A sheet supports multiclassing and choices for an ability score improvement or a feat.
   - Simulate dice rolls and their results for any combination of dice that an interaction needs
-  - Curate a library of equipment, enemies, and NPC templates that is independent of the campaign (the Library mode in the header). The library lists the built-in 5e defaults, and you can customize each one separately. Your overrides and additions export to a portable JSON file. The file saves over `library/campaign-library.json`, and it loads automatically into any new browser or clone.
+  - Curate a library of equipment, creature, and spell templates that is independent of the campaign (the Library mode in the header). The library lists the built-in 5e defaults, and you can customize each one separately. Your overrides and additions export to a portable JSON file. The file saves over `library/campaign-library.json`, and it loads automatically into any new browser or clone.
   - Switch the whole UI between light and dark with the theme switch in the header. You can also leave it on System to follow the preference of the operating system. The choice persists per browser.
 
 ![Build mode: world tree, editable map, and the paint palette](docs/images/build-mode.png)

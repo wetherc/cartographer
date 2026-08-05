@@ -127,12 +127,13 @@ path fills the hole with the same empty list, and a record whose fields are
 all defaults goes whole.
 
 A static table of defaults does not work, because for entities the default
-value can depend on the entity itself. `Encounter.withDefaults` resolves
-`weapon` and `armor` from the encounter's own level and tier. A table of
-per-type defaults omits a level-7 boss's weapon, because the weapon matches
-what a level-1 mob receives. Loading then gives the boss different gear.
-Validating each omission against the real unpacker is what stops packing and
-loading from disagreeing with each other.
+value can depend on the entity itself. `Character.withDefaults` derives the
+hit dice pool and the spell slots from the character's own class list, so the
+value that an omitted field restores to differs per character. A table of
+per-type defaults holds one value per field. It either never omits such a
+field, or omits it against a value that the load puts back wrong. Validating
+each omission against the real unpacker is what stops packing and loading
+from disagreeing with each other.
 
 `SaveManager`'s one `ENTITY_DEFAULTS` table names three pairs: `characters`,
 `creatures`, and `handouts`. Both directions read this table, so the

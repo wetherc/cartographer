@@ -360,8 +360,8 @@ creatures, spells) and the custom-library file controls: export,
 import, reset, and the startup auto-load. The creature list shows two
 subtabs. Foes holds the hostile templates, and People holds the rest. An
 edit that changes a template's disposition moves it to the other subtab.
-"Add to campaign" opens the matching campaign dialog: the foe dialog for a
-hostile template, and the NPC dialog for the rest.
+"Add to campaign" opens the campaign's creature dialog, seeded from the
+template.
 
 The custom library is deliberately not campaign state. It belongs to the
 GM, not to any one campaign. `library/Library.js` holds the built-in
