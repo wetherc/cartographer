@@ -258,6 +258,18 @@
    "Slots" label. */
 .slot-line {
   align-items: flex-start;
+
+  /* The line reserves its full height even when it has nothing to show, so
+     selecting a non-caster after a caster does not move the rows below the
+     header. The reserve is a level label over two pip rows, which is as tall
+     as the line gets: a pool holds at most four slots, and the pip grid is
+     two pips wide. */
+  min-height: calc(var(--text-label) * 1.5 + 0.1rem + var(--text-label) * 2.2);
+}
+
+/* The reserved line for a character with no slot pools at all. */
+.slot-line--empty {
+  visibility: hidden;
 }
 
 .slot-line__groups {

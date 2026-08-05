@@ -268,6 +268,13 @@ export function mountCharacterSheet(
         const nextPact = getPactPool(next);
         line.update([...getSlotPools(next), ...(nextPact ? [nextPact] : [])]);
       });
+    } else {
+      // A non-caster keeps the space the pips would take. Without this, the
+      // whole sheet below the header rises when the GM selects a non-caster
+      // after a caster.
+      const spacer = el('span', 'slot-line slot-line--empty');
+      spacer.setAttribute('aria-hidden', 'true');
+      headSide.appendChild(spacer);
     }
 
     const acBadge = el('span', 'character-sheet__ac');

@@ -13,7 +13,8 @@ const MODES = ['normal', 'advantage', 'disadvantage'];
  * Mount a dice tray widget. By default it collapses to a D20 icon behind an
  * accessible disclosure button. Expanding it reveals the full tray: a
  * plus/minus counter for each die type, a plus/minus modifier, a roll
- * button, and a result display. The tray shows only the latest result. The
+ * button, and a result display. The result display appears with the first
+ * roll and shows only the latest result. The
  * caller keeps past rolls: `onRoll` fires with each formatted result, and
  * the app records it in the travelogue.
  *
@@ -136,7 +137,10 @@ export function mountDiceTray(container, opts = {}) {
     className: 'dice-tray__roll',
   });
 
+  // The result box stays out of the layout until there is a result to show.
+  // An empty sunken box under the roll button reads as a broken readout.
   const resultEl = el('div', 'dice-tray__result');
+  resultEl.hidden = true;
 
   function performRoll() {
     const result = roll(selection);
@@ -146,6 +150,7 @@ export function mountDiceTray(container, opts = {}) {
       text += ` vs target ${target}: ${result.total >= target ? 'success' : 'failure'}`;
     }
     resultEl.textContent = text;
+    resultEl.hidden = false;
     return { result, text };
   }
 
