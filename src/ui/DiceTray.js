@@ -93,12 +93,17 @@ export function mountDiceTray(container, opts = {}) {
   // The advantage/disadvantage toggle rolls every d20 twice. It keeps the
   // higher die for advantage and the lower die for disadvantage. The choice
   // stays sticky until changed, so a GM can set it once and attack through it.
+  // Only this switch writes the sticky choice. A programmatic roll that names
+  // its own mode applies that mode to one roll and leaves the toggle alone.
+  /** @type {import('../types/dice.js').RollMode} */
+  let standingMode = 'normal';
   const modeName = el('span', 'dice-tray__label u-muted', 'd20 mode');
   const modeSwitch = segSwitch({
     ariaLabel: 'Roll d20s normally, with advantage, or with disadvantage',
     options: MODES.map((mode) => ({ value: mode, label: capitalize(mode) })),
     value: selection.mode ?? 'normal',
     onChange: (mode) => {
+      standingMode = mode;
       selection.mode = mode;
     },
   });
@@ -163,12 +168,17 @@ export function mountDiceTray(container, opts = {}) {
       for (const die of DIE_TYPES) selection.counts[die] = next.counts[die] ?? 0;
       selection.modifier = next.modifier ?? 0;
       // A caller that does not name a mode inherits the tray's toggle, so
-      // weapon attacks respect a standing advantage/disadvantage choice.
-      selection.mode = next.mode ?? selection.mode ?? 'normal';
+      // weapon attacks respect a standing advantage/disadvantage choice. A
+      // caller that names one uses it for this roll only: the toggle goes
+      // back to the GM's own choice afterward.
+      selection.mode = next.mode ?? standingMode;
       targetInput.value = target === null ? '' : String(target);
       for (const refresh of refreshers) refresh();
       disclosure.setExpanded(true);
-      return performRoll();
+      const outcome = performRoll();
+      selection.mode = standingMode;
+      modeSwitch.sync(standingMode);
+      return outcome;
     },
   };
 }

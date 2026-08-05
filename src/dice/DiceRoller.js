@@ -60,8 +60,15 @@ export function roll(selection, rng = Math.random) {
   const diceTotal = results.reduce((sum, result) => sum + result.subtotal, 0);
   const modifier = selection.modifier ?? 0;
 
+  // The result carries a copy of the selection, not the live object. The
+  // dice tray reuses its selection across rolls, and a result must keep the
+  // values it was rolled with.
   return {
-    selection,
+    selection: {
+      counts: { ...selection.counts },
+      modifier,
+      ...(selection.mode !== undefined ? { mode: selection.mode } : {}),
+    },
     results,
     modifier,
     total: diceTotal + modifier,

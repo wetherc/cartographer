@@ -102,6 +102,22 @@ test('roll defaults mode to normal and modifier to 0 for a bare selection', () =
   assert.equal(result.total, 4);
 });
 
+test('the result keeps its own selection copy after the input mutates', () => {
+  const selection = emptySelection();
+  selection.counts.d20 = 1;
+  selection.mode = 'disadvantage';
+  const result = roll(selection, () => 0.5);
+  selection.mode = 'normal';
+  selection.counts.d20 = 3;
+  assert.equal(result.selection.mode, 'disadvantage');
+  assert.equal(result.selection.counts.d20, 1);
+});
+
+test('the result selection has no mode key when the input names none', () => {
+  const result = roll({ counts: { d20: 1 } }, () => 0.5);
+  assert.equal('mode' in result.selection, false);
+});
+
 test('advantage drops the second die when the first is the higher roll', () => {
   const selection = emptySelection();
   selection.counts.d20 = 1;

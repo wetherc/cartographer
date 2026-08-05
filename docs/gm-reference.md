@@ -370,7 +370,8 @@ Advantage and disadvantage from any number of sources fold by the 5e rule: if
 both are present the roll goes straight, and otherwise the one kind present
 wins. Chips on both sides of an attack count, and the log names every chip that
 slanted the roll, including the ones that cancelled. A roll that no chip
-touches still honors the dice tray's own advantage toggle.
+touches still honors the dice tray's own advantage toggle. A slanted roll
+does not move the toggle: the toggle changes only when you click it.
 
 A combatant that loses its turn keeps its place in the initiative order. Next
 turn steps past it and says nothing. A save that fails outright never reaches
