@@ -357,12 +357,24 @@ path. Both controls grey out from `historyDepth` when that direction is
 empty.
 
 The storage layout uses one key for each record: an index at
-`campaign-builder:history` holding `{ version, deltas, cursor }`, and one
-`campaign-builder:history:d<seq>` for each delta. A step is therefore one
-small `setItem` call, instead of a rewrite of the whole log. Measured on the
-example campaign, fifty party steps cost 27,304 bytes of log, where the
+`campaign-builder:history` holding `{ version, log, deltas, cursor }`, and
+one `campaign-builder:history:d<seq>` for each delta. A step is therefore
+one small `setItem` call, instead of a rewrite of the whole log. Measured on
+the example campaign, fifty party steps cost 27,304 bytes of log, where the
 previous ten-snapshot ring cost 699,980 bytes for ten steps. A save writes
 70,488 bytes, instead of 139,996.
+
+The log has one consumer besides undo: cross-tab adoption. A tab calls
+`historyPosition()` to get a token for the delta that its live state
+reflects. The tab records this token each time its live state matches the
+persisted save. When another tab saves, the follower calls
+`planAdoption(held)`. The answer is the head delta's ops when the save is
+exactly one delta ahead of the held position. The answer is `current` when
+nothing moved. The answer is `full` in every other case, and the follower
+then takes the ordinary load path. The `log` field of the index is a random
+id. A fresh log draws a new id when its first delta lands. Sequence numbers
+restart at zero after `clearHistoryLog`. A position token pairs the id with
+the number, so a token from a cleared log matches nothing in the new log.
 
 There is deliberately no base snapshot. Undo and redo only ever apply a
 delta to the *current* state, so the canonical save already is the base.

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildBlankCampaign,
   buildExampleCampaign,
+  campaignFromLiveState,
   loadInitialCampaign,
   loadInitialCampaignSafe,
 } from '../src/campaign/Campaigns.js';
@@ -213,4 +214,31 @@ test('buildingTile finds the tile a town drew a building on, else its entry', ()
   assert.equal(buildingTile(gen, palette, 'blacksmith'), '1,2');
   // An image id the palette does not carry falls back the same way.
   assert.equal(buildingTile(gen, palette, 'no-such-building'), '1,2');
+});
+
+test('campaignFromLiveState wraps live objects without re-parsing or re-defaulting', () => {
+  const source = buildExampleCampaign(new TilePalette(), mulberry32(3));
+  const nodes = [...source.grid.nodes.values()];
+  const campaign = campaignFromLiveState({
+    nodes,
+    party: source.party,
+    characters: source.characters,
+    creatures: source.creatures,
+    travelog: source.travelog,
+    quests: source.quests,
+    clock: source.clock,
+    handouts: source.handouts,
+    bestiary: source.bestiary,
+    splitParty: source.splitParty,
+    combat: source.combat,
+  });
+  for (const node of nodes) {
+    assert.equal(campaign.grid.getNode(node.id), node, 'every node keeps its identity');
+  }
+  assert.equal(campaign.characters, source.characters);
+  assert.equal(campaign.clock, source.clock);
+  const bare = campaignFromLiveState({ nodes: [], party: null, clock: null, combat: null });
+  assert.deepEqual(bare.party, { nodeId: 'world', tileId: '0,0' });
+  assert.ok(bare.clock, 'a null clock gets a fresh one');
+  assert.equal(bare.combat, null);
 });

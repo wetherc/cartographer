@@ -65,7 +65,7 @@ import { clamp } from '../util/num.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/storage.js').DiffOp} DiffOp */
-/** @typedef {{ version: number, deltas: number[], cursor: number }} HistoryIndex */
+/** @typedef {{ version: number, log: string, deltas: number[], cursor: number }} HistoryIndex */
 /** @typedef {{ ok: boolean, evictedAll: boolean }} HistoryResult */
 
 /** The localStorage key that holds the history index. */
@@ -81,7 +81,21 @@ export const HISTORY_KEY = 'campaign-builder:history';
 export const HISTORY_BYTE_CAP = 512 * 1024;
 
 /** @type {HistoryIndex} */
-const EMPTY_INDEX = { version: CURRENT_VERSION, deltas: [], cursor: 0 };
+const EMPTY_INDEX = { version: CURRENT_VERSION, log: '', deltas: [], cursor: 0 };
+
+/**
+ * A random id for a fresh log. Sequence numbers restart at zero after
+ * `clearHistoryLog`, so a bare sequence number can name two different states
+ * across log generations. Every position this module hands out carries the
+ * log id beside the number, and a position from a cleared log then matches
+ * nothing in the log that replaced it. Collision odds are irrelevant here:
+ * a wrong match costs a follower one delta applied to the wrong base, and
+ * two ids colliding needs the same random draw in the same origin.
+ * @returns {string}
+ */
+function newLogId() {
+  return Math.random().toString(36).slice(2, 10);
+}
 
 /**
  * The last persisted campaign as a value. This module stamps it with the raw
@@ -156,7 +170,8 @@ function readIndex() {
     typeof stored === 'number' && Number.isFinite(stored)
       ? clamp(Math.trunc(stored), 0, deltas.length)
       : deltas.length;
-  return { version: CURRENT_VERSION, deltas, cursor };
+  const log = typeof record.log === 'string' ? record.log : '';
+  return { version: CURRENT_VERSION, log, deltas, cursor };
 }
 
 /**
@@ -280,10 +295,11 @@ function recordDelta(before, after) {
     }
   }
   const kept = trimToCap(deltas);
+  const log = index.log || newLogId();
   // The index write happens last. An index that names a key that was never
   // written describes a history step that cannot be applied. An unnamed key
   // is only unused data.
-  if (!writeIndex({ version: CURRENT_VERSION, deltas: kept, cursor: kept.length })) {
+  if (!writeIndex({ version: CURRENT_VERSION, log, deltas: kept, cursor: kept.length })) {
     clearHistoryLog();
     return { ok: false, evictedAll: true };
   }
@@ -341,8 +357,67 @@ function step(direction) {
   // state that was not stored.
   if (!save.ok) return { save, state: restored };
   cached = { raw: save.json, state: restored };
-  writeIndex({ version: CURRENT_VERSION, deltas: index.deltas, cursor: index.cursor + direction });
+  writeIndex({
+    version: CURRENT_VERSION,
+    log: index.log,
+    deltas: index.deltas,
+    cursor: index.cursor + direction,
+  });
   return { save, state: restored };
+}
+
+/**
+ * The position of the delta at `at` in this log, as an opaque token, or null
+ * when `at` sits before the first delta. The token pairs the log id with the
+ * sequence number, so a position outlives nothing: a cleared and restarted
+ * log reuses sequence numbers but never the id.
+ * @param {HistoryIndex} index
+ * @param {number} at a cursor value: how many deltas the position reflects
+ * @returns {string | null}
+ */
+function positionToken(index, at) {
+  return at > 0 ? `${index.log}:${index.deltas[at - 1]}` : null;
+}
+
+/**
+ * The position the persisted save currently reflects. A tab records this
+ * token whenever its live state matches the persisted save: at load, after
+ * its own save, and after adopting another tab's save. `planAdoption` later
+ * compares the recorded token against the log.
+ * @returns {string | null}
+ */
+export function historyPosition() {
+  const index = readIndex();
+  return positionToken(index, index.cursor);
+}
+
+/**
+ * How a tab holding the state recorded at `held` can adopt the save another
+ * tab just wrote.
+ *
+ * `delta` comes back only when the persisted save is exactly one recorded
+ * delta ahead of `held`: the cursor sits at the head, the delta before the
+ * head is the one the tab holds, and the head delta itself is readable. The
+ * ops then carry the held state to the persisted one. This also covers a
+ * redo, and a save made from an undone cursor, because both leave the held
+ * position one behind the head.
+ *
+ * `current` means the persisted save is the state the tab already holds.
+ *
+ * Everything else is `full`: a null or foreign position, a gap of more than
+ * one delta, a cursor away from the head (an undo), an empty or cleared log,
+ * or an unreadable delta record. The caller then re-reads the whole save.
+ * @param {string | null} held
+ * @returns {{ kind: 'current' | 'full' } | { kind: 'delta', ops: DiffOp[] }}
+ */
+export function planAdoption(held) {
+  const index = readIndex();
+  const len = index.deltas.length;
+  if (held === null || index.cursor !== len || len === 0) return { kind: 'full' };
+  if (held === positionToken(index, len)) return { kind: 'current' };
+  if (len < 2 || held !== positionToken(index, len - 1)) return { kind: 'full' };
+  const ops = readDelta(index.deltas[len - 1]);
+  return ops ? { kind: 'delta', ops } : { kind: 'full' };
 }
 
 /**

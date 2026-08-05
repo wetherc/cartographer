@@ -94,6 +94,18 @@ saves, a Play-mode tab with nothing unsaved adopts that campaign in place
 through `rehydrate.js`, and it does not reload the page. Build mode,
 Library mode, and any failure to adopt fall back to a reload.
 
+The adoption tries the recorded delta first. Every save writes its exact
+edit as a delta beside the campaign (see the history log in
+[Persistence](persistence.md)). This module remembers the history position
+of its live state. When an external save is exactly one delta ahead of that
+position, `HistoryLog.planAdoption` returns the ops. The tab then applies
+the ops to its own state with `applyOps`, and it does not read the whole
+save again. `applyOps` copies only along the op paths. Every node and
+entity outside the edit keeps its identity, so the adoption costs the size
+of the edit. Every other case takes the full load path through
+`Campaigns.loadInitialCampaign`. These cases are a position gap, an undo, a
+cleared log, and a failed apply.
+
 ### mapWiring.js (plus mapAuthoring.js and mapTravel.js)
 
 This module mounts the map and syncs its location: the canvas, the
@@ -186,7 +198,10 @@ What it adopts from the leader is narrower than it looks:
 - It takes an already-built `Campaign`, and it does not read storage. As a
   result, migrations, asset restore, tile decode, and entity defaults stay
   stated once, in `Campaigns.loadInitialCampaign`. This module shares them
-  with an ordinary page load.
+  with an ordinary page load. The delta adoption in `campaignActions.js`
+  also hands it a `Campaign`. `Campaigns.campaignFromLiveState` builds that
+  campaign from the state that `applyOps` produced. This module cannot tell
+  which path built the campaign.
 - `mode` and `role` are deliberately *not* adopted. Both are per-tab view
   state, so a display pinned to the Player view does not follow the GM tab
   into Build mode.

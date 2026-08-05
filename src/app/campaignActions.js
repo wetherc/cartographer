@@ -1,6 +1,7 @@
 import {
   buildBlankCampaign,
   buildExampleCampaign,
+  campaignFromLiveState,
   loadInitialCampaign,
 } from '../campaign/Campaigns.js';
 import { rehydrateCampaign } from './rehydrate.js';
@@ -21,7 +22,15 @@ import {
   historyLossMessage,
   saveOutcome,
 } from '../storage/SaveNotices.js';
-import { saveCampaign, undoCampaign, redoCampaign, historyDepth } from '../storage/HistoryLog.js';
+import {
+  saveCampaign,
+  undoCampaign,
+  redoCampaign,
+  historyDepth,
+  historyPosition,
+  planAdoption,
+} from '../storage/HistoryLog.js';
+import { applyOps } from '../storage/StateDiff.js';
 import { shouldAutosave, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
 import { followerMode } from '../view/CombatMode.js';
 
@@ -58,6 +67,15 @@ export function wireCampaignActions(app) {
    * @type {ReturnType<typeof setInterval> | null}
    */
   let autosaveTimer = null;
+  /**
+   * The history position of the state this tab holds, recorded whenever the
+   * live state matches the persisted save: at load, after this tab's own
+   * save, and after adopting another tab's save. An external save whose
+   * recorded delta is based exactly here is adopted by applying that delta
+   * instead of re-reading the whole save.
+   * @type {string | null}
+   */
+  let heldPosition = historyPosition();
 
   /**
    * Starts polling the autosave policy. The dirty flag controls this instead
@@ -205,6 +223,7 @@ export function wireCampaignActions(app) {
   function persistState(state) {
     const result = saveCampaign(state);
     if (!reportSave(result)) return false;
+    heldPosition = historyPosition();
     reportHistory(result.history);
     refreshHistoryButtons();
     return true;
@@ -361,9 +380,37 @@ export function wireCampaignActions(app) {
   // modals. This continues until this tab saves and its state becomes
   // canonical again.
   /**
-   * Takes another tab's save without reloading the page. This reads the save
-   * through the ordinary load path and writes it over the live campaign. A
-   * reload costs this tab its scroll position, its open panel, the map's
+   * Adopt an external save by applying its recorded delta to the live state
+   * instead of re-reading the whole save. Every save writes its exact edit
+   * as a delta beside the campaign, and `applyOps` copies only along the
+   * op paths, so every node and entity the edit did not touch keeps its
+   * identity by construction. The map caches stay warm, and the reconcile
+   * inside `rehydrateCampaign` returns each untouched object at the first
+   * comparison. This runs only when this tab's held state is exactly the
+   * delta's base. Everything else answers false, and the caller re-reads
+   * the whole save, which is the path that existed before this one.
+   * @returns {boolean}
+   */
+  function adoptByDelta() {
+    const plan = planAdoption(heldPosition);
+    if (plan.kind === 'current') return true;
+    if (plan.kind !== 'delta') return false;
+    try {
+      const next = applyOps(buildCurrentState(), plan.ops);
+      rehydrateCampaign(app, campaignFromLiveState(next));
+      return true;
+    } catch (error) {
+      console.warn('Could not apply the recorded delta; adopting the full save.', error);
+      return false;
+    }
+  }
+
+  /**
+   * Takes another tab's save without reloading the page. This adopts the
+   * save through `adoptByDelta` when the recorded delta chains from this
+   * tab's held state, and re-reads the whole save through the ordinary load
+   * path otherwise. Either way it writes the result over the live campaign.
+   * A reload costs this tab its scroll position, its open panel, the map's
    * pan and zoom, and anything staged in the dice tray, on every ten seconds
    * of GM editing.
    *
@@ -386,7 +433,8 @@ export function wireCampaignActions(app) {
     if (app.state.mode !== 'play' && app.state.mode !== 'combat') return false;
     const hadFight = app.state.combat !== null;
     try {
-      rehydrateCampaign(app, loadInitialCampaign());
+      if (!adoptByDelta()) rehydrateCampaign(app, loadInitialCampaign());
+      heldPosition = historyPosition();
     } catch (error) {
       console.error('Could not adopt the campaign another tab saved; reloading.', error);
       return false;

@@ -103,6 +103,34 @@ export function loadInitialCampaign() {
 }
 
 /**
+ * A runtime campaign over a state whose objects are already live. The
+ * cross-tab delta adoption builds such a state: it applies a saved delta to
+ * this tab's own state, so every entity the delta did not touch is the live
+ * object the views already hold. Unlike `loadInitialCampaign`, nothing here
+ * re-parses or re-defaults. The entities came from live state on both sides
+ * of the delta, so they already carry their defaults.
+ * @param {import('../types/storage.js').CampaignState} state
+ * @returns {Campaign}
+ */
+export function campaignFromLiveState(state) {
+  const grid = new TileGrid();
+  for (const node of state.nodes) grid.addNode(node);
+  return {
+    grid,
+    party: state.party ?? { nodeId: 'world', tileId: '0,0' },
+    characters: state.characters,
+    creatures: state.creatures,
+    travelog: state.travelog,
+    quests: state.quests,
+    clock: state.clock ?? createClock(),
+    handouts: state.handouts,
+    bestiary: state.bestiary,
+    splitParty: state.splitParty,
+    combat: state.combat ?? null,
+  };
+}
+
+/**
  * The boot entry point. It calls `loadInitialCampaign`, but a save that the
  * app cannot read at all produces a blank campaign instead of an exception.
  *

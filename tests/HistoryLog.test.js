@@ -5,10 +5,13 @@ import {
   HISTORY_KEY,
   clearHistoryLog,
   historyDepth,
+  historyPosition,
+  planAdoption,
   redoCampaign,
   saveCampaign,
   undoCampaign,
 } from '../src/storage/HistoryLog.js';
+import { applyOps } from '../src/storage/StateDiff.js';
 import { loadFromLocalStorage } from '../src/storage/SaveManager.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
 import { installLocalStorage } from './helpers/env.js';
@@ -393,4 +396,96 @@ test('clearHistoryLog removes the index and every record', () => {
   assert.equal(localStorage.getItem(HISTORY_KEY), null);
   assert.equal(storedDeltas(store), 0);
   assert.equal(store.has('campaign-builder:save'), true, 'the campaign is not history');
+});
+
+test('historyPosition is null with no log and moves with each save', () => {
+  assert.equal(historyPosition(), null);
+  saveCampaign(state());
+  assert.equal(historyPosition(), null, 'a first save records no delta');
+  saveCampaign(state([quest('q1', 'One')]));
+  const first = historyPosition();
+  assert.ok(first, 'a recorded delta gives the save a position');
+  saveCampaign(state([quest('q1', 'One'), quest('q2', 'Two')]));
+  assert.notEqual(historyPosition(), first);
+});
+
+test('planAdoption hands back the one delta that carries the held state to the head', () => {
+  saveCampaign(state());
+  const held = state([quest('q1', 'One')]);
+  saveCampaign(held);
+  const position = historyPosition();
+  const head = state([quest('q1', 'One'), quest('q2', 'Two')]);
+  saveCampaign(head);
+  const plan = planAdoption(position);
+  assert.equal(plan.kind, 'delta');
+  assert.deepEqual(applyOps(held, plan.ops), head);
+});
+
+test('planAdoption answers current when the held position is the head', () => {
+  saveCampaign(state());
+  saveCampaign(state([quest('q1', 'One')]));
+  assert.deepEqual(planAdoption(historyPosition()), { kind: 'current' });
+});
+
+test('planAdoption falls back on a null position, a gap, an undo, and an empty log', () => {
+  assert.deepEqual(planAdoption(null), { kind: 'full' }, 'no held position');
+  saveCampaign(state());
+  saveCampaign(state([quest('q1', 'One')]));
+  const held = historyPosition();
+  assert.deepEqual(planAdoption(held), { kind: 'current' });
+  saveCampaign(state([quest('q1', 'One'), quest('q2', 'Two')]));
+  saveCampaign(state([quest('q3', 'Three')]));
+  assert.deepEqual(planAdoption(held), { kind: 'full' }, 'two deltas behind the head');
+  undoCampaign();
+  assert.deepEqual(
+    planAdoption(historyPosition()),
+    { kind: 'full' },
+    'an undo leaves the cursor away from the head',
+  );
+  clearHistoryLog();
+  assert.deepEqual(planAdoption(held), { kind: 'full' }, 'a cleared log matches nothing');
+});
+
+test('planAdoption chains across a redo and across a save from an undone cursor', () => {
+  saveCampaign(state());
+  const base = state([quest('q1', 'One')]);
+  saveCampaign(base);
+  saveCampaign(state([quest('q1', 'One'), quest('q2', 'Two')]));
+  undoCampaign();
+  const held = historyPosition();
+  redoCampaign();
+  const redone = planAdoption(held);
+  assert.equal(redone.kind, 'delta', 'a redo is one delta ahead of the undone position');
+  assert.deepEqual(applyOps(base, redone.ops), state([quest('q1', 'One'), quest('q2', 'Two')]));
+  undoCampaign();
+  const heldAgain = historyPosition();
+  const branched = state([quest('q1', 'One'), quest('q9', 'Nine')]);
+  saveCampaign(branched);
+  const plan = planAdoption(heldAgain);
+  assert.equal(plan.kind, 'delta', 'a save from an undone cursor drops the tail and appends');
+  assert.deepEqual(applyOps(base, plan.ops), branched);
+});
+
+test('planAdoption never matches a position from a cleared and restarted log', () => {
+  saveCampaign(state());
+  saveCampaign(state([quest('q1', 'One')]));
+  saveCampaign(state([quest('q1', 'One'), quest('q2', 'Two')]));
+  const held = historyPosition();
+  // A new log reuses the same sequence numbers with different states behind
+  // them. The log id in the position is what keeps this from matching.
+  clearHistoryLog();
+  saveCampaign(state([quest('q7', 'Seven')]));
+  saveCampaign(state([quest('q7', 'Seven'), quest('q8', 'Eight')]));
+  saveCampaign(state([quest('q7', 'Seven'), quest('q8', 'Eight'), quest('q9', 'Nine')]));
+  assert.deepEqual(planAdoption(held), { kind: 'full' });
+});
+
+test('planAdoption falls back when the head delta record itself is missing', () => {
+  saveCampaign(state());
+  saveCampaign(state([quest('q1', 'One')]));
+  const held = historyPosition();
+  saveCampaign(state([quest('q1', 'One'), quest('q2', 'Two')]));
+  const index = JSON.parse(/** @type {string} */ (localStorage.getItem(HISTORY_KEY)));
+  localStorage.removeItem(`${HISTORY_KEY}:d${index.deltas[index.deltas.length - 1]}`);
+  assert.deepEqual(planAdoption(held), { kind: 'full' });
 });
