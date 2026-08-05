@@ -1,4 +1,5 @@
 import { effectiveStat } from '../entities/Stats.js';
+import { setTip } from './Tooltip.js';
 import { abilityModifier, formatModifier } from '../entities/Modifiers.js';
 import { textButton } from './buttons.js';
 import { classNames, el, setAttrs } from './dom.js';
@@ -114,7 +115,7 @@ export function statBadge(character, key) {
   badge.type = 'button';
   const note = total !== base ? ` (base ${base})` : '';
   badge.setAttribute('aria-label', `${key} ${total}, modifier ${modText}${note}. Show breakdown.`);
-  badge.title = 'Show breakdown';
+  setTip(badge, 'Show breakdown');
   badge.addEventListener('click', () => openStatBreakdown(key, breakdown));
   return badge;
 }

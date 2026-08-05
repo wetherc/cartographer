@@ -8,6 +8,7 @@
 import { textButton } from '../../../src/ui/buttons.js';
 import { openContextMenu } from '../../../src/ui/ContextMenu.js';
 import { alertModal, confirmDelete, confirmModal, promptModal } from '../../../src/ui/Modal.js';
+import { setTip } from '../../../src/ui/Tooltip.js';
 import { notify } from '../runtime.js';
 
 /** @type {import('../runtime.js').Section} */
@@ -103,6 +104,22 @@ export const overlaysSection = {
             { clientX: event.clientX, clientY: event.clientY },
           );
         }),
+    },
+    {
+      title: 'setTip',
+      notes:
+        'The app has one tooltip element and one set of delegated listeners, mounted in main.js. A widget opts in with setTip, which writes a data-tip attribute and clears any native title. Hover or Tab to either control below. The box is a popover, so it also draws over a modal dialog.',
+      classes: '.tooltip',
+      render: () => [
+        setTip(
+          textButton('Hover me', () => notify('Clicked')),
+          'What this button does',
+        ),
+        setTip(
+          textButton('Two lines', () => notify('Clicked')),
+          'The first line names the thing.\nThe second line explains it.',
+        ),
+      ],
     },
     {
       title: 'mountToasts',

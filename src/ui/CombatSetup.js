@@ -1,4 +1,5 @@
 import { formatModifier } from '../entities/Modifiers.js';
+import { setTip } from './Tooltip.js';
 import { textButton } from './buttons.js';
 import { el } from './dom.js';
 import { numberField } from './formFields.js';
@@ -57,7 +58,7 @@ export function combatSetupModal(roster, callbacks = {}) {
           'initiative-panel__modifier u-muted',
           formatModifier(participant.modifier ?? 0),
         );
-        modifier.title = 'DEX modifier, added to the initiative roll';
+        setTip(modifier, 'DEX modifier, added to the initiative roll');
 
         const input = numberField(participant.initiative, {
           className: 'initiative-panel__init',

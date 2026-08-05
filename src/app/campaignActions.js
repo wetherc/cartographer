@@ -5,6 +5,7 @@ import {
 } from '../campaign/Campaigns.js';
 import { rehydrateCampaign } from './rehydrate.js';
 import { mustGetElement } from '../ui/dom.js';
+import { setTip } from '../ui/Tooltip.js';
 import { confirmModal } from '../ui/Modal.js';
 import { queueToastAfterReload } from '../ui/Toast.js';
 import {
@@ -234,7 +235,7 @@ export function wireCampaignActions(app) {
    */
   function reportFootprint(footprint) {
     const saveBtn = document.getElementById('save-btn');
-    if (saveBtn) saveBtn.title = footprintTooltip(footprint);
+    if (saveBtn) setTip(saveBtn, footprintTooltip(footprint));
     const warning = footprintWarning(footprint, warnedFootprint);
     warnedFootprint = warning.warnedAt;
     if (warning.message) app.toasts.show(warning.message);

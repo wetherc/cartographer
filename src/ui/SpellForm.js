@@ -1,4 +1,5 @@
 import { CLASS_LIST } from '../entities/Classes.js';
+import { setTip } from './Tooltip.js';
 import { SPELL_SCHOOLS, SPELL_ABILITIES, SPELL_EFFECT_KINDS } from '../data/spells.js';
 import { classNames, el } from './dom.js';
 import { HEALING_TYPE } from '../entities/Equipment.js';
@@ -133,13 +134,13 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   });
   const durationAmountField = labeled('Rounds', durationAmountInput);
   const upTo = checkbox('Up to', duration.upTo ?? false);
-  upTo.label.title = 'The caster may end the spell before the time runs out';
+  setTip(upTo.label, 'The caster may end the spell before the time runs out');
   const durationTextInput = textField(duration.text ?? '', { placeholder: 'as written' });
   const durationTextField = labeled('Duration text', durationTextInput);
 
   const componentChecks = COMPONENTS.map(({ letter, title }) => {
     const check = checkbox(letter, spell?.components.includes(letter) ?? false);
-    check.label.title = title;
+    setTip(check.label, title);
     return check;
   });
   const componentsField = labeled('Components', wrapChecks(componentChecks.map((c) => c.label)));
@@ -158,7 +159,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   });
   const materialCostField = labeled('Cost (gp)', materialCostInput);
   const consumed = checkbox('Consumed on cast', spell?.materials?.consumed ?? false);
-  consumed.label.title = 'The cast destroys the material, so the caster must be holding it';
+  setTip(consumed.label, 'The cast destroys the material, so the caster must be holding it');
 
   // How many creatures one cast reaches. 0 marks an area spell, where the map,
   // not the spell, decides the count, so the caster picks any number.
@@ -167,7 +168,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     max: MAX_TARGET_COUNT,
     className: 'form__number',
   });
-  targetCountInput.title = '0 = an area: the caster picks any number of creatures';
+  setTip(targetCountInput, '0 = an area: the caster picks any number of creatures');
   const targetCountField = labeled('Targets', targetCountInput);
 
   const concentration = checkbox('Concentration', spell?.concentration ?? false);
@@ -223,7 +224,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const riderDiceInput = numberField(storedRider?.dice ?? 0, {
     className: 'form__number',
   });
-  riderDiceInput.title = 'Negative for a penalty die, as with Bane';
+  setTip(riderDiceInput, 'Negative for a penalty die, as with Bane');
   const riderDiceField = labeled('Rider dice', riderDiceInput);
   const riderDieSelect = select([...RIDER_DICE], storedRider?.die ?? DEFAULT_RIDER_DIE);
   const riderDieField = labeled('Die', riderDieSelect);
@@ -242,7 +243,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   // --- Projectiles: several separately-rolled attacks from one cast -------
   const shots = spell?.effect.kind === 'attack' ? (spell.effect.projectiles ?? null) : null;
   const fires = checkbox('Fires projectiles', !!shots);
-  fires.label.title = 'Each projectile rolls its own attack and picks its own target';
+  setTip(fires.label, 'Each projectile rolls its own attack and picks its own target');
   const shotCountInput = numberField(shots?.count ?? 1, {
     min: 1,
     max: MAX_TARGET_COUNT,
@@ -256,7 +257,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   });
   const shotPerStepField = labeled('Extra / level', shotPerStepInput);
   const autoHit = checkbox('Hits automatically', shots?.autoHit ?? false);
-  autoHit.label.title = 'No attack roll, as with Magic Missile';
+  setTip(autoHit.label, 'No attack roll, as with Magic Missile');
 
   // --- Scaling -------------------------------------------------------------
   const scales = checkbox('Scales per level', !!spell?.scaling);

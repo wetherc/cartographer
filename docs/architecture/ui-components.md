@@ -446,8 +446,8 @@ sectionLabel(text, opts?)                   -> HTMLElement
 ```
 
 `iconButton` builds `btn btn--icon`. It requires an `ariaLabel`, because an
-icon-only button has no other accessible name, and it defaults the hover
-`title` to that label. Pass `opts.title` only for a shorter tooltip than the
+icon-only button has no other accessible name, and it defaults the tooltip
+text to that label. Pass `opts.title` only for a shorter tooltip than the
 label.
 
 `textButton` builds `btn` with an optional leading `opts.icon`. Here the
@@ -848,6 +848,39 @@ completion happens after the current document is gone.
 
 Toasts render over map art, so they use the `--overlay-*` tokens rather than
 the page surface colors, for the reason given under the tokens below.
+
+## Tooltips
+
+```js
+mountTooltips(container)                    -> { hide }
+setTip(element, text)                       -> HTMLElement
+tipPlacement(anchorRect, tipSize, viewport, margin?)
+                                            -> { left, top, side }
+```
+
+`src/ui/Tooltip.js` is the app's hover and focus hint. `main.js` mounts one
+tooltip element on `document.body`, with listeners delegated to the document,
+so a widget gains a tooltip by marking an element with `setTip` and adds no
+listeners of its own. `setTip` writes a `data-tip` attribute and clears any
+native `title`, which keeps a control from carrying two hint boxes. The text
+may hold newlines, and the box keeps them.
+
+The button builders route their `opts.title` through `setTip`, so most of the
+app is covered without a per-call change.
+
+Both the pointer and the keyboard show the hint, and the shown element gets
+`aria-describedby`, so a control reached by Tab reads the same text a hovered
+control does. A press, a scroll, or Escape hides it.
+
+The element is a popover, which puts it in the browser's top layer. A hint on
+a control inside a modal dialog would otherwise draw behind the dialog, since
+a modal dialog is in that layer too. `tipPlacement` is the pure placement
+rule: above the anchor and centered on it, flipped below when there is no room
+above, clamped to the viewport either way.
+
+`src/ui/TileTooltip.js` is a separate widget. It follows the cursor over the
+map canvas and shows several lines of tile metadata, with no element to anchor
+to. It shares the look and nothing else.
 
 ## Context menus
 

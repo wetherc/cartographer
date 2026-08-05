@@ -11,6 +11,7 @@ import { MapNavigator } from './map/MapNavigator.js';
 import { PartyTracker } from './party/PartyTracker.js';
 import { loadInitialCampaignSafe } from './campaign/Campaigns.js';
 import { mountToasts, flushQueuedToast } from './ui/Toast.js';
+import { mountTooltips } from './ui/Tooltip.js';
 import { alertModal } from './ui/Modal.js';
 import { wireCampaignActions } from './app/campaignActions.js';
 import { wireMapView } from './app/mapWiring.js';
@@ -28,6 +29,9 @@ import { maybeShowOnboarding } from './app/onboarding.js';
 const palette = new TilePalette();
 const { campaign: initial, failed: loadFailed } = loadInitialCampaignSafe();
 const toasts = mountToasts(document.body);
+// One tooltip for the whole page. Its listeners are delegated, so a widget
+// built later gains a tooltip just by carrying the attribute `setTip` writes.
+mountTooltips(document.body);
 
 // The views/actions registries start empty. The wiring modules below fill
 // them in synchronously, before any user event can fire. The cast below

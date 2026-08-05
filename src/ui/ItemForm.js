@@ -1,4 +1,5 @@
 import { ABILITY_SCORES } from '../entities/Character.js';
+import { setTip } from './Tooltip.js';
 import {
   ITEM_TYPES,
   ARMOR_WEIGHTS,
@@ -116,7 +117,7 @@ export function buildItemForm({
     min: 0,
     className: 'form__number',
   });
-  acInput.title = 'Flat AC bonus while equipped';
+  setTip(acInput, 'Flat AC bonus while equipped');
   const acField = labeled('AC bonus', acInput);
 
   // Any equippable can buff an ability score while worn, for example +2

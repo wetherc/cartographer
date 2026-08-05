@@ -1,4 +1,5 @@
 import { CONDITIONS, addCondition, removeCondition } from '../entities/Conditions.js';
+import { setTip } from './Tooltip.js';
 import { chipRider, riderSummary } from '../entities/Riders.js';
 import { promptModal } from './Modal.js';
 import { chip, iconButton, removableChip, textButton } from './buttons.js';
@@ -42,7 +43,7 @@ export function mountConditionsBar(container, callbacks) {
           },
           { removeLabel: condition.name },
         );
-    if (title) element.title = title;
+    if (title) setTip(element, title);
     return element;
   }
 

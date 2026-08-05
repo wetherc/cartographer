@@ -1,5 +1,6 @@
 import { textButton } from './buttons.js';
 import { el } from './dom.js';
+import { setTip } from './Tooltip.js';
 import { allowsPaletteType } from '../map/NodeKinds.js';
 import { isOverlayType } from '../map/TilePalette.js';
 import { buildDisclosure } from './Disclosure.js';
@@ -175,8 +176,8 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
       });
       swatch.addEventListener('pointerleave', () => tooltip.hide());
     } else {
-      // No tooltip supplied. Fall back to the native one.
-      swatch.title = entry.label;
+      // No cursor-following tooltip supplied. Fall back to the anchored one.
+      setTip(swatch, entry.label);
     }
 
     swatch.addEventListener('dragstart', (event) => {

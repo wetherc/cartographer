@@ -1,4 +1,5 @@
 import { bareButton } from './buttons.js';
+import { setTip } from './Tooltip.js';
 import { classNames, el } from './dom.js';
 import { barReadout, pipReadout, slotColumnLabel, slotLineReadout } from '../view/StatBars.js';
 
@@ -79,10 +80,10 @@ export function buildStatBar(pool, opts) {
     text.textContent = readout.text;
     wrap.setAttribute('aria-label', readout.ariaLabel);
     // A compact pill can squeeze its numbers, so the hover text repeats them.
-    if (compact) wrap.title = readout.ariaLabel;
+    if (compact) setTip(wrap, readout.ariaLabel);
     if (bonus && !bonusEl) {
       bonusEl = el('span', 'stat-bar__bonus');
-      bonusEl.title = 'Bonus HP';
+      setTip(bonusEl, 'Bonus HP');
       wrap.appendChild(bonusEl);
     } else if (!bonus && bonusEl) {
       bonusEl.remove();
@@ -177,7 +178,7 @@ export function buildSlotLine(pools, onToggle, allowRestore = true) {
         const readout = pipReadout(pool, available, allowRestore);
         pip.toggleAttribute('disabled', readout.disabled);
         pip.setAttribute('aria-label', readout.ariaLabel);
-        pip.title = readout.title;
+        setTip(pip, readout.title);
       });
     });
     if (onToggle) return;

@@ -1,4 +1,5 @@
 import { icon } from './icons.js';
+import { setTip } from './Tooltip.js';
 import { bareButton, iconButton } from './buttons.js';
 import { el } from './dom.js';
 import { buildWorldTree } from '../map/WorldTree.js';
@@ -98,7 +99,7 @@ export function mountWorldTree(container, opts) {
       badge = el('span', 'world-tree__warning', icon('warning', { size: 14 }));
       badge.setAttribute('role', 'img');
       badge.setAttribute('aria-label', warning);
-      badge.title = warning;
+      setTip(badge, warning);
     }
 
     const row = el(

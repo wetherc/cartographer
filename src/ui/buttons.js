@@ -1,10 +1,11 @@
 import { classNames, el, setAttrs } from './dom.js';
 import { icon } from './icons.js';
+import { setTip } from './Tooltip.js';
 
 /**
  * This module builds the button idioms every panel uses: an icon-only
  * square button and a text button with an optional leading icon. The
- * helpers keep aria-label and title coverage uniform across the app. A
+ * helpers keep aria-label and tooltip coverage uniform across the app. A
  * destructive button passes variant: 'danger'. The app rule is that a
  * delete control is always danger-styled and always visible. emptyState is
  * a third primitive: the muted "nothing here" paragraph every list panel
@@ -19,7 +20,7 @@ import { icon } from './icons.js';
 
 /**
  * An icon-only `btn btn--icon` button. The aria-label is required, since an
- * icon-only button has no other accessible name. It becomes the hover title
+ * icon-only button has no other accessible name. It becomes the tooltip text
  * unless a shorter title is given.
  * @param {import('./icons.js').IconName} name
  * @param {string} ariaLabel
@@ -31,7 +32,8 @@ import { icon } from './icons.js';
 export function iconButton(name, ariaLabel, onClick, opts = {}) {
   const classes = ['btn', 'btn--icon', opts.variant ? `btn--${opts.variant}` : '', opts.className];
   const button = el('button', classNames(classes), icon(name));
-  setAttrs(button, { type: 'button', 'aria-label': ariaLabel, title: opts.title ?? ariaLabel });
+  setAttrs(button, { type: 'button', 'aria-label': ariaLabel });
+  setTip(button, opts.title ?? ariaLabel);
   button.addEventListener('click', onClick);
   return button;
 }
@@ -56,7 +58,7 @@ export function textButton(label, onClick, opts = {}) {
   button.type = opts.type ?? 'button';
   if (opts.value !== undefined) button.value = opts.value;
   if (opts.ariaLabel) button.setAttribute('aria-label', opts.ariaLabel);
-  if (opts.title) button.title = opts.title;
+  if (opts.title) setTip(button, opts.title);
   if (onClick) button.addEventListener('click', onClick);
   return button;
 }
@@ -81,7 +83,7 @@ export function bareButton(children, onClick, opts = {}) {
   const button = el('button', classNames(['btn-bare', opts.className]), ...children);
   button.type = 'button';
   if (opts.ariaLabel) button.setAttribute('aria-label', opts.ariaLabel);
-  if (opts.title) button.title = opts.title;
+  if (opts.title) setTip(button, opts.title);
   if (onClick) button.addEventListener('click', onClick);
   return button;
 }
@@ -116,7 +118,7 @@ export function sectionLabel(text, opts = {}) {
 /**
  * One choice in a `segSwitch`. A choice shows an icon, a label, or both. An
  * icon-only choice needs `ariaLabel` for its accessible name. This also
- * becomes the hover title unless `title` overrides it.
+ * becomes the tooltip text unless `title` overrides it.
  * @template {string} T
  * @typedef {{ value: T, label?: string, icon?: import('./icons.js').IconName,
  *   ariaLabel?: string, title?: string }} SegOption
@@ -153,7 +155,7 @@ export function segSwitch({ ariaLabel, options, value, onChange, className = '' 
     );
     button.type = 'button';
     if (option.ariaLabel) button.setAttribute('aria-label', option.ariaLabel);
-    if (option.title ?? option.ariaLabel) button.title = option.title ?? option.ariaLabel ?? '';
+    if (option.title ?? option.ariaLabel) setTip(button, option.title ?? option.ariaLabel ?? '');
     button.addEventListener('click', () => setValue(option.value));
     element.append(button);
     return { value: option.value, button };
@@ -203,7 +205,7 @@ export function chip(label, opts = {}) {
   const button = el('button', classes, el('span', '', label));
   button.type = 'button';
   if (opts.ariaLabel) button.setAttribute('aria-label', opts.ariaLabel);
-  if (opts.title) button.title = opts.title;
+  if (opts.title) setTip(button, opts.title);
   button.addEventListener('click', opts.onClick);
   return button;
 }

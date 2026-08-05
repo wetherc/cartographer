@@ -16,6 +16,7 @@ import { isProficientSave, isProficientSkill, hasExpertise } from '../entities/P
 import { SKILL_ABILITIES, SKILL_IDS, skillName } from '../data/skills.js';
 import { bareButton, sectionLabel } from './buttons.js';
 import { el } from './dom.js';
+import { setTip } from './Tooltip.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -128,7 +129,7 @@ function buildRow(row, onCheck) {
   const reading = `${row.name} ${formatModifier(row.bonus)}, ${TRAINING_TEXT[state]}`;
   if (!onCheck) {
     const line = el('div', 'check-row', ...parts, el('span', 'sr-only', TRAINING_TEXT[state]));
-    line.title = reading;
+    setTip(line, reading);
     return line;
   }
   return bareButton(parts, () => onCheck({ kind: row.kind, key: row.key }), {

@@ -1,4 +1,5 @@
 import { DIE_SIZES, DAMAGE_TYPES, normalizeDamagePart } from '../entities/Equipment.js';
+import { setTip } from './Tooltip.js';
 import { iconButton, removableChip, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { numberField, select, textField } from './formFields.js';
@@ -79,7 +80,7 @@ export function buildDamageEditor(initial, fixType = null) {
         className: 'item-form__dice-count',
         ariaLabel: 'Flat bonus',
       });
-      bonusInput.title = 'A flat amount added to this term, e.g. the +1 of 1d4+1';
+      setTip(bonusInput, 'A flat amount added to this term, e.g. the +1 of 1d4+1');
       bonusInput.addEventListener('change', () => {
         const bonus = clampInt(bonusInput.value, -Infinity, Infinity, 0);
         if (bonus === 0) delete part.bonus;

@@ -9,6 +9,7 @@
 
 import { mustGetElement } from '../../src/ui/dom.js';
 import { mountThemeToggle } from '../../src/ui/ThemeToggle.js';
+import { mountTooltips } from '../../src/ui/Tooltip.js';
 import { buildNav, buildSection, mountGalleryToasts } from './runtime.js';
 import { buttonsSection } from './sections/buttons.js';
 import { fieldsSection } from './sections/fields.js';
@@ -21,6 +22,9 @@ const SECTIONS = [buttonsSection, fieldsSection, structureSection, overlaysSecti
 
 mountThemeToggle(mustGetElement('gx-theme'));
 mountGalleryToasts();
+// The gallery shows the app's real tooltip, so every builder that carries a
+// title here behaves as it does in the app.
+mountTooltips(document.body);
 
 const nav = mustGetElement('gx-nav');
 const main = mustGetElement('gx-main');
