@@ -4,6 +4,7 @@ import { copySpellbook } from './Character.js';
 import { withCasterFields, ensureCasterFields, casterTemplateFields } from './Caster.js';
 import { isCasterClass } from './Classes.js';
 import { isSlotPool } from './SpellSlots.js';
+import { exhaustionFields } from './Exhaustion.js';
 import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -129,6 +130,7 @@ export function createCreature(id, name, options = {}) {
     stats: normalizeStatBlock(options.stats ?? {}),
     location: options.location ?? null,
     conditions: [],
+    exhaustion: 0,
     met: options.met ?? false,
     weapon: options.weapon !== undefined ? options.weapon : (stamp?.weapon ?? null),
     armor: options.armor !== undefined ? options.armor : (stamp?.armor ?? null),
@@ -148,7 +150,9 @@ export function createCreature(id, name, options = {}) {
  * re-closed over the fixed stat set, so it gains an AC and drops any stat
  * that is no longer part of the set. Gear backfills to null only. The
  * function never rebuilds a default loadout, because the create and edit
- * paths store gear explicitly.
+ * paths store gear explicitly. A creature that carries exhaustion as a
+ * condition chip, from before it had a level behind it, reads as level 1 and
+ * loses the chip.
  * @param {Creature} creature
  * @returns {Creature}
  */
@@ -162,7 +166,7 @@ export function withDefaults(creature) {
       currentHP: Math.min(maxHP, creature.currentHP ?? maxHP),
       stats: normalizeStatBlock(creature.stats ?? {}),
       location: creature.location ?? null,
-      conditions: creature.conditions ?? [],
+      ...exhaustionFields(creature.exhaustion, creature.conditions ?? []),
       met: creature.met ?? false,
       weapon: creature.weapon ?? null,
       armor: creature.armor ?? null,

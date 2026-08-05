@@ -24,7 +24,7 @@ test('conditionEffect matches the pick-list spelling and a hand-typed one', () =
 });
 
 test('conditions with no mechanical effect carry no row', () => {
-  for (const name of ['Charmed', 'Grappled', 'Deafened', 'Exhaustion', 'Concentrating']) {
+  for (const name of ['Charmed', 'Grappled', 'Deafened', 'Concentrating']) {
     assert.equal(conditionEffect(name), null, `${name} should have no row`);
   }
 });

@@ -382,11 +382,13 @@ rolled from the character sheet.
 | Stunned | Loses its turn. Attacks against it have advantage. Fails STR and DEX saves outright |
 | Unconscious | Loses its turn. Attacks against it have advantage, and a melee hit is a critical hit. Fails STR and DEX saves outright |
 
-Charmed, Deafened, Exhaustion, and Grappled carry no rule. They need a
-relationship between two combatants, an exhaustion track, or movement, none of
-which the app has. Adjudicate them by hand. A chip you type yourself matches a
-row when it spells one of the names above, ignoring case, and carries no rule
-otherwise.
+Charmed, Deafened, and Grappled carry no rule. They need a relationship between
+two combatants, or they need movement, and the app has neither. Adjudicate them
+by hand. A chip that you type yourself matches a row when it spells one of the
+names above, and case does not matter. Any other chip carries no rule.
+
+Exhaustion is not in the list. It is a level from 0 to 6 rather than a chip, and
+the app stores it as its own number.
 
 Advantage and disadvantage from any number of sources fold by the 5e rule: if
 both are present the roll goes straight, and otherwise the one kind present

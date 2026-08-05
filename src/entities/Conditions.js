@@ -18,9 +18,14 @@ export const CONCENTRATING = 'Concentrating';
 export const UNCONSCIOUS = 'Unconscious';
 
 /**
- * The standard 5e status conditions, plus concentration and exhaustion,
- * offered as suggestions in the UI. A condition is a free string, so the GM
- * can add one that is not listed here. This is only the pick-list.
+ * The standard 5e status conditions, plus concentration, offered as
+ * suggestions in the UI. A condition is a free string, so the GM can add one
+ * that is not listed here. This is only the pick-list.
+ *
+ * Exhaustion is not among them. It is a level from 0 to 6 rather than an
+ * on-or-off state, so it is a stored number that `entities/Exhaustion.js`
+ * owns and its own stepper sets. Offering it here as well would give the GM
+ * two ways to say the same thing, and only one of them would reach a roll.
  * @type {string[]}
  */
 export const CONDITIONS = [
@@ -28,7 +33,6 @@ export const CONDITIONS = [
   'Charmed',
   CONCENTRATING,
   'Deafened',
-  'Exhaustion',
   'Frightened',
   'Grappled',
   'Incapacitated',

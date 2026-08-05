@@ -364,11 +364,50 @@ the box.
 race through `Races.resolveRace`, so a catalog edit reaches every character of
 that race, and a hand-typed race walks `DEFAULT_SPEED`. `armorSpeedPenalty`
 costs 10 feet when the effective Strength, buffs included, falls short of what
-the armor asks. `walkSpeed` is the two together, floored at 0, and `speedNote`
-is the sentence the sheet badge shows. The module is separate from `Equipment`
-because more rules will cut a speed, and each one belongs in `walkSpeed`
-rather than in a second speed calculation. Nothing moves a token by feet yet,
-so the value is informational.
+the armor asks. `walkSpeed` subtracts both that penalty and the exhaustion
+penalty, and it floors the result at 0. `speedNote` is the sentence that the
+sheet badge shows, and it names each cause that applies. The module is
+separate from `Equipment` because more rules will cut a speed, and each one
+belongs in `walkSpeed` rather than in a second speed calculation. Nothing
+moves a token by feet yet, so the value is informational.
+
+## Exhaustion
+
+`entities/Exhaustion.js` owns exhaustion in its 2024 form. One rule scales
+with the level, and there is no table of six different penalties. Each level
+costs 2 on every d20 test and 5 feet of speed. The sixth level kills.
+
+The level is one number, `exhaustion`, on the character or the creature.
+Nothing else is stored. `exhaustionLevel` reads that number and clamps it to
+the range 0 through `MAX_EXHAUSTION`. A hand-edited save therefore cannot go
+past death or under zero. `d20Penalty` and `speedPenalty` derive from the
+level. `atDeathLevel` reports the fatal level, and `exhaustionNote` is the
+sentence for a badge or a log line.
+
+`setExhaustion`, `gainExhaustion`, and `easeExhaustion` are the writers. Each
+one clamps the result.
+
+The penalty reaches a roll through the bonus. It does not reach a roll through
+a condition chip with a rider on it. A rider appears only after dice are
+thrown, and the sheet prints its saving-throw and skill bonuses without dice.
+A chip would therefore leave the sheet at +5 where the roll gave -1.
+
+`Checks.saveBonus` and `Checks.checkBonus` hold the penalty instead, so the
+printed number and the rolled number agree. This also carries the penalty into
+a passive score with no extra code.
+
+The module imports `Conditions.js` and nothing else. `Checks.js` reads this
+module, and `DeathSaves.js` is built on `Checks.js`. An import of either one
+from here closes a cycle. Two rules therefore live with their callers. The
+first is the guard that stops a long rest from easing a dead character. The
+second is the revive that reduces the level of a level-6 character.
+
+Exhaustion was a hand-added condition chip before it had a level behind it.
+`exhaustionFields` is the load-path coercion, and both `withDefaults`
+functions call it. A chip with no stored level reads as level 1, which is the
+least a GM can mean by the chip. The chip then comes off. A stored level wins
+over a stray chip beside it, and the chip still comes off. The two values
+therefore can never disagree.
 
 ## Armor proficiency
 
@@ -837,12 +876,13 @@ no rule when it does not. A row holds up to seven fields:
 - `meleeAutoCrit` turns any melee hit on the holder into a critical one.
 - `noActions` costs the holder its turn.
 
-Eleven of the sixteen names in the pick-list carry a row. Charmed and grappled
+Eleven of the fifteen names in the pick-list carry a row. Charmed and grappled
 do not: charmed needs a charmer to point at, and no part of the app relates two
 combatants, while grappled sets speed to zero and nothing tracks movement.
-Deafened costs only hearing. Exhaustion scales by level and belongs with an
-exhaustion track rather than a flat row. Concentrating is a display chip over
-the concentration state described above.
+Deafened costs only hearing. Concentrating is a display chip over the
+concentration state described above. Exhaustion is not in the pick-list at
+all, because it is a level rather than an on-or-off state. `Exhaustion.js`
+holds it.
 
 The reads over that table are pure and take chip lists only:
 

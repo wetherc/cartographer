@@ -40,6 +40,10 @@ export interface Creature {
   location: EncounterLocation | null;
   /** Active status conditions (empty on older saves). */
   conditions: Condition[];
+  /** Exhaustion, 0 to 6. Each level costs 2 on every d20 test, and 6 is
+   * death. Absent on older saves, which load unexhausted. A creature has no
+   * rest, so only the GM moves this. */
+  exhaustion?: number;
   /** True after the party lands on the creature's tile. The first landing
    * writes one travelogue line. A placed non-hostile creature stays hidden
    * from the players until met. An unplaced creature is always known. */

@@ -48,8 +48,9 @@ const BODY_SAVES = ['STR', 'DEX'];
  * Charmed and grappled hold no row. Charmed needs a charmer to point at, and
  * the app models no relationship between two combatants. Grappled sets speed
  * to zero, and no part of the app tracks movement yet. Deafened costs only
- * hearing, which is narrative here. Exhaustion scales by level and belongs
- * with the exhaustion track, not with a flat row.
+ * hearing, which is narrative here. Exhaustion is not a chip at all:
+ * `entities/Exhaustion.js` holds it as a level, and its penalty reaches a roll
+ * through the bonus rather than through this table.
  * @type {Record<string, ConditionEffect>}
  */
 export const CONDITION_EFFECTS = {

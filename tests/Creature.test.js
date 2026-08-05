@@ -55,6 +55,7 @@ test('createCreature defaults to a neutral, unplaced, unmet, unarmed commoner', 
     stats: fullBlock(),
     location: null,
     conditions: [],
+    exhaustion: 0,
     met: false,
     weapon: null,
     armor: null,
@@ -133,9 +134,22 @@ test('withDefaults backfills a sparse creature without rebuilding gear', () => {
   assert.deepEqual(filled.stats, fullBlock());
   assert.equal(filled.location, null);
   assert.deepEqual(filled.conditions, []);
+  assert.equal(filled.exhaustion, 0);
   assert.equal(filled.met, false);
   assert.equal(filled.weapon, null, 'absent gear reads as none, not as the level default');
   assert.equal(filled.armor, null);
+});
+
+test('withDefaults folds a chip-era exhaustion condition on a creature', () => {
+  const chipped = /** @type {any} */ ({
+    id: 'c1',
+    name: 'Old',
+    conditions: [{ name: 'Exhaustion', rounds: null }],
+  });
+  const filled = withDefaults(chipped);
+  assert.equal(filled.exhaustion, 1);
+  assert.deepEqual(filled.conditions, []);
+  assert.equal(withDefaults({ ...chipped, exhaustion: 2 }).exhaustion, 2, 'a level wins the chip');
 });
 
 test('withDefaults keeps live state and clamps current HP to the maximum', () => {

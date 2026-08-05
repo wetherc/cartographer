@@ -390,6 +390,9 @@ export interface Character {
   inventory: InventoryItem[];
   /** Active status conditions (empty on older saves). */
   conditions: Condition[];
+  /** Exhaustion, 0 to 6. Each level costs 2 on every d20 test and 5 feet of
+   * speed, and 6 is death. Absent on older saves, which load unexhausted. */
+  exhaustion?: number;
   /** The spell this character holds open, or null when it holds none.
    * Absent on older saves, which load as holding nothing. */
   concentration?: ConcentrationState | null;

@@ -23,6 +23,7 @@ import {
 import { setStat } from '../src/entities/Progression.js';
 import { getSlotPools } from '../src/entities/SpellSlots.js';
 import { createResource } from '../src/entities/Resource.js';
+import { createCondition } from '../src/entities/Conditions.js';
 import { equip } from '../src/entities/Equipment.js';
 import { item } from './helpers/fixtures.js';
 
@@ -264,6 +265,27 @@ test('withDefaults backfills missing conditions and inventory arrays', () => {
   const filled = withDefaults(legacy);
   assert.deepEqual(filled.conditions, []);
   assert.deepEqual(filled.inventory, []);
+});
+
+test('withDefaults backfills exhaustion as 0 and keeps a stored level', () => {
+  const legacy = { ...createCharacter('c1', 'Hero') };
+  delete legacy.exhaustion;
+  assert.equal(withDefaults(legacy).exhaustion, 0);
+  assert.equal(withDefaults({ ...legacy, exhaustion: 3 }).exhaustion, 3);
+});
+
+test('withDefaults folds a chip-era exhaustion condition into level 1', () => {
+  const legacy = {
+    ...createCharacter('c1', 'Hero'),
+    conditions: [createCondition('Exhaustion'), createCondition('Poisoned', 2)],
+  };
+  const filled = withDefaults(legacy);
+  assert.equal(filled.exhaustion, 1);
+  assert.deepEqual(
+    filled.conditions.map((c) => c.name),
+    ['Poisoned'],
+    'the chip goes, so nothing says exhaustion twice',
+  );
 });
 
 test('restoreResource leaves non-matching pools untouched', () => {

@@ -11,6 +11,7 @@ import { isSlotPool, isPactPool } from './SpellSlots.js';
 import { isHitDicePool } from './HitDice.js';
 import { derive } from './Progression.js';
 import { clearDying } from './DeathSaves.js';
+import { exhaustionFields } from './Exhaustion.js';
 import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
@@ -330,7 +331,9 @@ export function unprepareSpell(character, spellId) {
  * oversell the character's level comes back trimmed to fit, instead of
  * hiding levels still to be assigned. A save whose ability-score-improvement
  * choices are still an array becomes the record keyed by slot, with each
- * choice keeping its position as its order.
+ * choice keeping its position as its order. A save that carries exhaustion as
+ * a condition chip, from before it had a level behind it, reads as level 1 and
+ * loses the chip.
  *
  * Shape is only half the job. The loaded pools are also reconciled against
  * the class list, level, and CON through `Progression.derive`. A save
@@ -362,7 +365,7 @@ export function withDefaults(character) {
     classes,
     stats: { ...defaultStats(), ...character.stats },
     resources: character.resources ?? [],
-    conditions: character.conditions ?? [],
+    ...exhaustionFields(character.exhaustion, character.conditions ?? []),
     concentration: character.concentration ?? null,
     deathSaves: character.deathSaves ?? null,
     equipment: migrateEquipment(character.equipment),

@@ -2,7 +2,7 @@
  * How fast a character walks. This is a small module of its own because more
  * than one rule cuts a speed, and each one belongs in `walkSpeed` rather than
  * in a second speed calculation somewhere else. Heavy armor the wearer is not
- * strong enough for is the first such rule.
+ * strong enough for is one such rule, and exhaustion is the other.
  *
  * Nothing moves a token by feet yet, so the value is informational. It is what
  * the sheet shows the GM.
@@ -10,6 +10,7 @@
 
 import { armorTraits, effectiveStats, equippedIndex } from './Equipment.js';
 import { resolveRace } from './Races.js';
+import { exhaustionLevel, speedPenalty } from './Exhaustion.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 
@@ -47,28 +48,34 @@ export function armorSpeedPenalty(character) {
 }
 
 /**
- * The character's walking speed in feet, with every penalty applied. Never
- * negative.
+ * The character's walking speed in feet, with every penalty applied. The two
+ * penalties add: armor too heavy to move in does not stop costing 10 feet
+ * because the wearer is also tired. Never negative, so a slow race at a high
+ * level of exhaustion stops rather than walking backwards.
  * @param {Character} character
  * @returns {number}
  */
 export function walkSpeed(character) {
-  return Math.max(0, baseSpeed(character) - armorSpeedPenalty(character));
+  return Math.max(0, baseSpeed(character) - armorSpeedPenalty(character) - speedPenalty(character));
 }
 
 /**
  * A sentence for the speed badge saying where the number came from, so a GM
- * who sees a slowed character knows which piece of armor to blame.
+ * who sees a slowed character knows what to blame: a piece of armor, a level of
+ * exhaustion, or both.
  * @param {Character} character
  * @returns {string}
  */
 export function speedNote(character) {
-  const penalty = armorSpeedPenalty(character);
-  if (!penalty) return `Walking speed: ${baseSpeed(character)} feet.`;
-  const body = equippedIndex(character).get('chest');
-  const required = armorTraits(body).strength;
-  return (
-    `Walking speed: ${baseSpeed(character)} feet, less ${penalty} for wearing ` +
-    `${body?.name ?? 'armor'} without STR ${required}.`
-  );
+  const armor = armorSpeedPenalty(character);
+  const tired = speedPenalty(character);
+  const causes = [];
+  if (armor) {
+    const body = equippedIndex(character).get('chest');
+    const required = armorTraits(body).strength;
+    causes.push(`${armor} for wearing ${body?.name ?? 'armor'} without STR ${required}`);
+  }
+  if (tired) causes.push(`${tired} for exhaustion ${exhaustionLevel(character)}`);
+  const base = `Walking speed: ${baseSpeed(character)} feet`;
+  return causes.length ? `${base}, less ${causes.join(', and less ')}.` : `${base}.`;
 }

@@ -78,3 +78,24 @@ test('speedNote names the armor and the score it wanted', () => {
   );
   assert.equal(speedNote({ ...hero, stats: { STR: 16 } }), 'Walking speed: 30 feet.');
 });
+
+test('exhaustion costs 5 feet a level, and stacks with the armor penalty', () => {
+  const hero = createCharacter('c1', 'Hero');
+  assert.equal(walkSpeed({ ...hero, exhaustion: 1 }), 25);
+  assert.equal(walkSpeed({ ...hero, exhaustion: 4 }), 10);
+  assert.equal(walkSpeed({ ...hero, exhaustion: 6 }), 0, 'floored at 0');
+  const heavy = wearing({ strength: 15 }, { STR: 8 });
+  assert.equal(walkSpeed({ ...heavy, exhaustion: 2 }), 10, '30 less 10 for armor, less 10 tired');
+});
+
+test('speedNote names both causes when both apply', () => {
+  const hero = createCharacter('c1', 'Hero');
+  assert.equal(
+    speedNote({ ...hero, exhaustion: 3 }),
+    'Walking speed: 30 feet, less 15 for exhaustion 3.',
+  );
+  assert.equal(
+    speedNote({ ...wearing({ strength: 15 }, { STR: 8 }), exhaustion: 1 }),
+    'Walking speed: 30 feet, less 10 for wearing Armor without STR 15, and less 5 for exhaustion 1.',
+  );
+});
