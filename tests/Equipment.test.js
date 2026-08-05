@@ -30,6 +30,8 @@ import {
   isSpellFocus,
   carriesSpellFocus,
   unproficientWear,
+  armorTraits,
+  stealthPenalty,
 } from '../src/entities/Equipment.js';
 import {
   WEAPON_PRESETS,
@@ -228,6 +230,60 @@ test('unarmored defense turns off for worn body armor, and for a Monk with a shi
     acWearing('barbarian', { type: 'armor', armorWeight: 'light' }, 'chest'),
     12,
     'a chest item with no base AC is still something worn, so the formula is off',
+  );
+});
+
+test('armorTraits reads both body-armor traits tolerantly', () => {
+  /** @param {Record<string, unknown>} fields */
+  const traits = (fields) => armorTraits(item('a', 'A', { type: 'armor', ...fields }));
+  assert.deepEqual(traits({}), { stealthDisadvantage: false, strength: 0 });
+  assert.deepEqual(traits({ stealthDisadvantage: true, strength: 13 }), {
+    stealthDisadvantage: true,
+    strength: 13,
+  });
+  assert.deepEqual(
+    traits({ stealthDisadvantage: 'yes', strength: -4 }),
+    { stealthDisadvantage: false, strength: 0 },
+    'a library file can store anything, and only the exact shape counts',
+  );
+  assert.equal(traits({ strength: 13.7 }).strength, 13, 'a fractional score rounds down');
+  assert.equal(traits({ strength: 'strong' }).strength, 0);
+  assert.deepEqual(
+    armorTraits(item('s', 'Shield', { type: 'shield', stealthDisadvantage: true })),
+    { stealthDisadvantage: false, strength: 0 },
+    'the traits belong to body armor alone',
+  );
+  assert.deepEqual(armorTraits(null), { stealthDisadvantage: false, strength: 0 });
+});
+
+test('stealthPenalty names the worn armor, and only while it is worn', () => {
+  let hero = createCharacter('c1', 'Hero');
+  hero = addItem(
+    hero,
+    item('p', 'Plate', { type: 'armor', baseAC: 18, stealthDisadvantage: true }),
+  );
+  hero = addItem(hero, item('l', 'Leather', { type: 'armor', baseAC: 11 }));
+  assert.equal(stealthPenalty(hero), null, 'carried armor is quiet');
+  assert.equal(stealthPenalty(equip(hero, 'chest', 'p')), 'Plate');
+  assert.equal(stealthPenalty(equip(hero, 'chest', 'l')), null);
+});
+
+test('an armor item states its traits in its effects', () => {
+  assert.deepEqual(
+    itemEffects(
+      item('p', 'Plate', {
+        type: 'armor',
+        armorWeight: 'heavy',
+        baseAC: 18,
+        stealthDisadvantage: true,
+        strength: 15,
+      }),
+    ),
+    ['heavy armor, AC 18', 'needs STR 15', 'stealth disadvantage'],
+  );
+  assert.deepEqual(
+    itemEffects(item('h', 'Hide', { type: 'armor', armorWeight: 'medium', baseAC: 12 })),
+    ['medium armor, AC 12 + DEX (max 2)'],
   );
 });
 
@@ -573,7 +629,35 @@ test('armor presets carry a valid weight class and a plausible base AC', () => {
     assert.ok(preset.baseAC >= 11 && preset.baseAC <= 18, preset.name);
   }
   const plate = ARMOR_PRESETS.find((p) => p.name === 'Plate');
-  assert.deepEqual(plate, { name: 'Plate', armorWeight: 'heavy', baseAC: 18 });
+  assert.deepEqual(plate, {
+    name: 'Plate',
+    armorWeight: 'heavy',
+    baseAC: 18,
+    stealthDisadvantage: true,
+    strength: 15,
+  });
+});
+
+test('the armor presets flag exactly the 5e noisy and strength-gated entries', () => {
+  const named = (/** @param {(p: (typeof ARMOR_PRESETS)[number]) => boolean} pick */ pick) =>
+    ARMOR_PRESETS.filter(pick).map((p) => p.name);
+  assert.deepEqual(
+    named((p) => p.stealthDisadvantage === true),
+    ['Padded', 'Scale Mail', 'Half Plate', 'Ring Mail', 'Chain Mail', 'Splint', 'Plate'],
+  );
+  assert.deepEqual(
+    ARMOR_PRESETS.filter((p) => p.strength).map((p) => [p.name, p.strength]),
+    [
+      ['Chain Mail', 13],
+      ['Splint', 15],
+      ['Plate', 15],
+    ],
+  );
+  assert.equal(
+    'stealthDisadvantage' in (ARMOR_PRESETS.find((p) => p.name === 'Hide') ?? {}),
+    false,
+    'quiet armor carries no field, so an item built from it stays the old shape',
+  );
 });
 
 test('gear and consumable presets are named and described', () => {

@@ -181,24 +181,34 @@ export const WEAPON_PRESETS = [
 ];
 
 /**
- * 5e-standard body armors: picking one fills a new armor item's weight class
- * and base AC, both still adjustable. This is also the source of the enemy
- * form's armor choices, via `enemyArmor`.
- * @type {{ name: string, armorWeight: ArmorWeight, baseAC: number }[]}
+ * 5e-standard body armors: picking one fills a new armor item's weight class,
+ * base AC, and the two traits below, all still adjustable. This is also the
+ * source of the enemy form's armor choices, via `enemyArmor`.
+ *
+ * `stealthDisadvantage` marks the armors the 5e table flags as noisy.
+ * `strength` is the Strength score the armor needs, and a wearer below it
+ * moves 10 feet slower. An armor with neither trait carries neither field.
+ * @type {{
+ *   name: string,
+ *   armorWeight: ArmorWeight,
+ *   baseAC: number,
+ *   stealthDisadvantage?: boolean,
+ *   strength?: number,
+ * }[]}
  */
 export const ARMOR_PRESETS = [
-  { name: 'Padded', armorWeight: 'light', baseAC: 11 },
+  { name: 'Padded', armorWeight: 'light', baseAC: 11, stealthDisadvantage: true },
   { name: 'Leather Armor', armorWeight: 'light', baseAC: 11 },
   { name: 'Studded Leather', armorWeight: 'light', baseAC: 12 },
   { name: 'Hide', armorWeight: 'medium', baseAC: 12 },
   { name: 'Chain Shirt', armorWeight: 'medium', baseAC: 13 },
-  { name: 'Scale Mail', armorWeight: 'medium', baseAC: 14 },
+  { name: 'Scale Mail', armorWeight: 'medium', baseAC: 14, stealthDisadvantage: true },
   { name: 'Breastplate', armorWeight: 'medium', baseAC: 14 },
-  { name: 'Half Plate', armorWeight: 'medium', baseAC: 15 },
-  { name: 'Ring Mail', armorWeight: 'heavy', baseAC: 14 },
-  { name: 'Chain Mail', armorWeight: 'heavy', baseAC: 16 },
-  { name: 'Splint', armorWeight: 'heavy', baseAC: 17 },
-  { name: 'Plate', armorWeight: 'heavy', baseAC: 18 },
+  { name: 'Half Plate', armorWeight: 'medium', baseAC: 15, stealthDisadvantage: true },
+  { name: 'Ring Mail', armorWeight: 'heavy', baseAC: 14, stealthDisadvantage: true },
+  { name: 'Chain Mail', armorWeight: 'heavy', baseAC: 16, stealthDisadvantage: true, strength: 13 },
+  { name: 'Splint', armorWeight: 'heavy', baseAC: 17, stealthDisadvantage: true, strength: 15 },
+  { name: 'Plate', armorWeight: 'heavy', baseAC: 18, stealthDisadvantage: true, strength: 15 },
 ];
 
 /**

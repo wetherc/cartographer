@@ -336,6 +336,27 @@ be at least 10, because a GM who lowers it as a curse would otherwise see the
 formula erase the debuff. A Monk who takes a shield loses the formula but
 still gains the AC the shield adds.
 
+Body armor carries two more traits, both optional and both absence-defaulted.
+`stealthDisadvantage` slants every Stealth check of the wearer, and `strength`
+is the Strength score the armor needs. `Equipment.armorTraits(item)` is the one
+place that reads either field, because a library file can store anything in
+them, and it treats only a literal `true` and a positive whole number as set.
+`Equipment.stealthPenalty(character)` names the worn armor when it is noisy,
+which `app/checkRolls.js` turns into a disadvantage slant and the skill block
+turns into a marker on the Stealth row. Nothing migrates: armor already in a
+save carries neither trait until the GM re-picks it from the presets or ticks
+the box.
+
+`entities/Movement.js` owns walking speed. `baseSpeed` reads the speed of the
+race through `Races.resolveRace`, so a catalog edit reaches every character of
+that race, and a hand-typed race walks `DEFAULT_SPEED`. `armorSpeedPenalty`
+costs 10 feet when the effective Strength, buffs included, falls short of what
+the armor asks. `walkSpeed` is the two together, floored at 0, and `speedNote`
+is the sentence the sheet badge shows. The module is separate from `Equipment`
+because more rules will cut a speed, and each one belongs in `walkSpeed`
+rather than in a second speed calculation. Nothing moves a token by feet yet,
+so the value is informational.
+
 ## Armor proficiency
 
 `Proficiencies.isProficientArmor(character, weight)` reads the armor list.

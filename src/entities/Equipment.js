@@ -426,6 +426,37 @@ export function unproficientWear(character) {
 }
 
 /**
+ * The two body-armor traits of an item, read tolerantly. A library file can
+ * put anything in either field, because `Library.normalizeLibrary` passes a
+ * non-weapon entry through untouched, so this is the one place that decides
+ * what the stored values mean. Anything but a literal `true` is quiet armor,
+ * and a Strength requirement that is not a positive whole number is no
+ * requirement. An item that is not body armor has neither trait.
+ * @param {InventoryItem | null | undefined} item
+ * @returns {{ stealthDisadvantage: boolean, strength: number }}
+ */
+export function armorTraits(item) {
+  if (!item || itemType(item) !== 'armor') return { stealthDisadvantage: false, strength: 0 };
+  const strength = Math.floor(Number(item.strength));
+  return {
+    stealthDisadvantage: item.stealthDisadvantage === true,
+    strength: strength > 0 ? strength : 0,
+  };
+}
+
+/**
+ * The name of the worn body armor when it slants Stealth, else null. Noisy
+ * armor gives the wearer disadvantage on every Stealth check, whether or not
+ * the character is trained for the armor.
+ * @param {Character} character
+ * @returns {string | null}
+ */
+export function stealthPenalty(character) {
+  const body = equippedIndex(character).get('chest');
+  return armorTraits(body).stealthDisadvantage ? (body?.name ?? 'armor') : null;
+}
+
+/**
  * An item's mechanical effects, as one short phrase each, for example
  * "light armor, AC 12 + DEX", "+2 AC", "+2 STR", or "inflicts burning". A
  * modifier-heavy item can show one badge per effect. This list is empty for
@@ -447,6 +478,9 @@ export function itemEffects(item) {
           ? ' + DEX'
           : ` + DEX (max ${weight.dexCap})`;
     parts.push(`${weight.key} armor, AC ${item.baseAC}${dex}`);
+    const traits = armorTraits(item);
+    if (traits.strength) parts.push(`needs STR ${traits.strength}`);
+    if (traits.stealthDisadvantage) parts.push('stealth disadvantage');
   } else if (type === 'shield') {
     // A shield with no stored bonus adds the 5e standard, so the badge states
     // that value rather than nothing.

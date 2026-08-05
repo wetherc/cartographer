@@ -143,6 +143,12 @@
   color: var(--text);
 }
 
+/* Speed sits beside AC and reads as the quieter of the two, because nothing
+   in the app moves a token by feet yet. */
+.character-sheet__speed {
+  font-weight: 400;
+}
+
 .character-sheet__xp-progress {
   font-weight: 400;
 }
@@ -431,6 +437,18 @@
 }
 
 .check-row__ability {
+  font-size: var(--text-label);
+  letter-spacing: 0.04em;
+}
+
+/* Marks a row that rolls at disadvantage before any condition chip, for
+   example Stealth in noisy armor. It is a word, not a color, so it survives
+   both themes and a screen reader. */
+.check-row__slant {
+  flex: 0 0 auto;
+  padding: 0 0.25rem;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
   font-size: var(--text-label);
   letter-spacing: 0.04em;
 }

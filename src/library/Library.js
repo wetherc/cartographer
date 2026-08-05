@@ -68,6 +68,8 @@ export function defaultEquipmentTemplates() {
       type: /** @type {import('../types/entities.js').ItemType} */ ('armor'),
       armorWeight: p.armorWeight,
       baseAC: p.baseAC,
+      ...(p.stealthDisadvantage ? { stealthDisadvantage: true } : {}),
+      ...(p.strength ? { strength: p.strength } : {}),
     })),
     ...SHIELD_PRESETS.map((p) => ({
       name: p.name,

@@ -11,6 +11,7 @@
  */
 
 import { checkBonus, saveBonus, passivePerception } from '../entities/Checks.js';
+import { stealthPenalty } from '../entities/Equipment.js';
 import { formatModifier, ABILITY_SCORES } from '../entities/Modifiers.js';
 import { isProficientSave, isProficientSkill, hasExpertise } from '../entities/Proficiencies.js';
 import { SKILL_ABILITIES, SKILL_IDS, skillDescription, skillName } from '../data/skills.js';
@@ -37,7 +38,13 @@ import { setTip } from './Tooltip.js';
  *   proficient: boolean,
  *   expert: boolean,
  *   description: string,
+ *   slant?: string,
  * }} CheckRow
+ *
+ * `slant` is why the row rolls at disadvantage before any condition chip, for
+ * example noisy armor on Stealth. It is absent on a straight row. The chips
+ * are left out of it, because they change between the sheet drawing and the
+ * roll, and `app/checkRolls.js` reads them at the moment of the throw.
  */
 
 /**
@@ -99,6 +106,7 @@ export function saveRows(character) {
  * @returns {CheckRow[]}
  */
 export function skillRows(character) {
+  const noisy = stealthPenalty(character);
   return SKILL_IDS.map((id) => ({
     kind: 'check',
     key: id,
@@ -108,6 +116,7 @@ export function skillRows(character) {
     proficient: isProficientSkill(character, id),
     expert: hasExpertise(character, id),
     description: skillDescription(id),
+    ...(id === 'stealth' && noisy ? { slant: `wearing ${noisy}` } : {}),
   }));
 }
 
@@ -131,9 +140,13 @@ function buildRow(row, onCheck) {
     dot,
     el('span', 'check-row__name', row.name),
     row.ability !== row.name && el('span', 'check-row__ability u-muted', row.ability),
+    // The marker is a word rather than an icon, so it reads the same to a
+    // screen reader as it does on the page.
+    row.slant && el('span', 'check-row__slant', 'dis'),
     el('span', 'check-row__bonus', formatModifier(row.bonus)),
   ];
-  const reading = `${row.name} ${formatModifier(row.bonus)}, ${TRAINING_TEXT[state]}`;
+  const slantText = row.slant ? `, disadvantage (${row.slant})` : '';
+  const reading = `${row.name} ${formatModifier(row.bonus)}, ${TRAINING_TEXT[state]}${slantText}`;
   // The numbers first, then what the row is for. The tooltip keeps the break,
   // so the reference line reads as its own sentence under the reading.
   const detail = row.description ? `\n${row.description}` : '';

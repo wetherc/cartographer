@@ -19,6 +19,8 @@ function draft(extra = {}) {
     notes: '',
     armorWeight: 'medium',
     baseAC: 14,
+    strength: 0,
+    stealthDisadvantage: false,
     acBonus: 0,
     buffStat: '',
     buffAmount: 1,
@@ -227,4 +229,24 @@ test('the two type lists name only real item types, and weapons are equippable',
   for (const type of WEAPON_TYPES) {
     assert.ok(EQUIPPABLE_TYPES.includes(type), `${type} can be equipped`);
   }
+});
+
+test('the two armor traits are written only when set, and only on body armor', () => {
+  const armor = (/** @type {Record<string, unknown>} */ extra) =>
+    assembleItem(draft({ type: 'armor', ...extra }));
+  assert.equal(armor({}) && 'strength' in armor({}), false, 'zero is no requirement');
+  assert.equal(
+    armor({}) && 'stealthDisadvantage' in armor({}),
+    false,
+    'quiet armor stays the shape it was before the field existed',
+  );
+  assert.equal(armor({ strength: '15' })?.strength, 15);
+  assert.equal(armor({ strength: -3 })?.strength, undefined, 'a negative score is no requirement');
+  assert.equal(armor({ stealthDisadvantage: true })?.stealthDisadvantage, true);
+  const helm = assembleItem(draft({ type: 'helmet', strength: 15, stealthDisadvantage: true }));
+  assert.deepEqual(
+    { strength: helm?.strength, stealth: helm?.stealthDisadvantage },
+    { strength: undefined, stealth: undefined },
+    'a helmet is not body armor, so neither trait survives',
+  );
 });

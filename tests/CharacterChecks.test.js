@@ -111,3 +111,22 @@ test('a row carries the reference line its tooltip shows', () => {
   );
   assert.match(row(skills, 'stealth').description, /hiding/);
 });
+
+test('the Stealth row is marked when the worn armor is noisy', () => {
+  const stealth = (/** @type {any} */ character) =>
+    skillRows(character).find((r) => r.key === 'stealth');
+  assert.equal('slant' in (stealth(hero()) ?? {}), false, 'no armor, no marker');
+  const noisy = /** @type {any} */ ({
+    ...hero(),
+    inventory: [
+      { id: 'p', name: 'Plate', type: 'armor', baseAC: 18, stealthDisadvantage: true, quantity: 1 },
+    ],
+    equipment: { chest: 'p' },
+  });
+  assert.equal(stealth(noisy)?.slant, 'wearing Plate');
+  assert.equal(
+    skillRows(noisy).filter((r) => r.slant).length,
+    1,
+    'the marker belongs to Stealth alone',
+  );
+});

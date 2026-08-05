@@ -11,7 +11,7 @@
 
 import { droppedNote } from '../combat/AttackResolve.js';
 import { checkAbility, checkBonus, saveBonus } from '../entities/Checks.js';
-import { unproficientWear } from '../entities/Equipment.js';
+import { stealthPenalty, unproficientWear } from '../entities/Equipment.js';
 import { modeReasons, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { hasExpertise, isProficientSave, isProficientSkill } from '../entities/Proficiencies.js';
@@ -128,9 +128,18 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   // the 5e armor proficiency rule. The slant folds in with the chips, so an
   // advantage chip cancels it the way two chips cancel each other.
   const badWear = ability === 'STR' || ability === 'DEX' ? unproficientWear(character) : [];
+  // Noisy armor slants Stealth on its own, whether or not the character is
+  // trained for it. Both slants can fire for the same piece, so the log states
+  // each reason separately below.
+  const noisy =
+    event.kind === 'check' && event.key === 'stealth' ? stealthPenalty(character) : null;
+  /** @type {(import('../entities/ConditionEffects.js').Slant | null)[]} */
+  const wearSlants = [];
+  if (badWear.length > 0) wearSlants.push('disadvantage');
+  if (noisy) wearSlants.push('disadvantage');
   // A null mode means nothing slanted the roll, and the key stays off the
   // selection so the tray's standing toggle still applies.
-  const mode = rollMode(conditionQuery, badWear.length > 0 ? ['disadvantage'] : []);
+  const mode = rollMode(conditionQuery, wearSlants);
   const { result } = app.actions.rollDice({
     counts: { d20: 1 },
     modifier: bonus + rider.modifier,
@@ -148,6 +157,7 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   if (badWear.length > 0) {
     parts.push(`not proficient with ${badWear.join(' and ')}, disadvantage`);
   }
+  if (noisy) parts.push(`wearing ${noisy}, disadvantage`);
   // An advantage or disadvantage roll names the discarded d20, matching the
   // tray's own readout. The tray injects its standing toggle when the caller
   // names no mode, so the note can appear without this module asking for it.

@@ -280,3 +280,70 @@ test('a trained wearer rolls straight and the tray keeps its toggle', () => {
   assert.equal('mode' in app.rolls[0].selection, false);
   assert.doesNotMatch(app.log[0], /not proficient/);
 });
+
+/** The hero in noisy armor, trained for it unless the caller says otherwise. */
+function noisyArmor(over = {}, armor = ['heavy']) {
+  return withProficiencies(
+    hero({
+      inventory: [
+        {
+          id: 'plate',
+          name: 'Plate',
+          type: 'armor',
+          armorWeight: 'heavy',
+          baseAC: 18,
+          stealthDisadvantage: true,
+          quantity: 1,
+        },
+      ],
+      equipment: { chest: 'plate' },
+      ...over,
+    }),
+    { armor },
+  );
+}
+
+test('noisy armor slants Stealth and the log names the piece', () => {
+  const app = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(app, noisyArmor(), { kind: 'check', key: 'stealth' }, { rng: () => 0 });
+  assert.equal(app.rolls[0].selection.mode, 'disadvantage');
+  assert.match(app.log[0], /wearing Plate, disadvantage/);
+});
+
+test('noisy armor leaves other DEX rolls and a save keyed stealth alone', () => {
+  const app = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(app, noisyArmor(), { kind: 'check', key: 'acrobatics' }, { rng: () => 0 });
+  assert.equal('mode' in app.rolls[0].selection, false);
+
+  const save = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(save, noisyArmor(), { kind: 'save', key: 'stealth' }, { rng: () => 0 });
+  assert.equal('mode' in save.rolls[0].selection, false, 'the key alone does not slant a save');
+});
+
+test('quiet armor and an empty chest slot leave Stealth straight', () => {
+  const app = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(app, hero(), { kind: 'check', key: 'stealth' }, { rng: () => 0 });
+  assert.equal('mode' in app.rolls[0].selection, false);
+  assert.doesNotMatch(app.log[0], /wearing/);
+});
+
+test('untrained noisy armor states both reasons and still rolls once at disadvantage', () => {
+  const app = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(app, noisyArmor({}, []), { kind: 'check', key: 'stealth' }, { rng: () => 0 });
+  assert.equal(app.rolls[0].selection.mode, 'disadvantage');
+  assert.match(app.log[0], /not proficient with heavy armor, disadvantage/);
+  assert.match(app.log[0], /wearing Plate, disadvantage/);
+});
+
+test('a chip and noisy armor slant the same roll once, and both are named', () => {
+  const app = stubApp({ rng: scripted([face(20, 10)]) });
+  rollCheck(
+    app,
+    noisyArmor({ conditions: [{ name: 'Poisoned' }] }),
+    { kind: 'check', key: 'stealth' },
+    { rng: () => 0 },
+  );
+  assert.equal(app.rolls[0].selection.mode, 'disadvantage', 'disadvantage does not stack');
+  assert.match(app.log[0], /Poisoned disadvantage/);
+  assert.match(app.log[0], /wearing Plate, disadvantage/);
+});

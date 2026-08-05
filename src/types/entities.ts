@@ -198,9 +198,15 @@ export interface InventoryItem {
   armorWeight?: ArmorWeight;
   /** Body armor only: the armor's base AC, replacing the unarmored 10. */
   baseAC?: number;
-  /** Flat armor-class bonus granted while equipped, for example a helmet or
-   * ring. Ignored on body armor, which uses baseAC, and on shields, which
-   * always add +2. */
+  /** Body armor only: the wearer rolls Stealth at disadvantage. Absent means
+   * the armor is quiet. */
+  stealthDisadvantage?: boolean;
+  /** Body armor only: the Strength score the armor needs. A wearer below it
+   * moves 10 feet slower. Absent means the armor has no requirement. */
+  strength?: number;
+  /** Flat armor-class bonus granted while equipped, for example a helmet, a
+   * ring, or a shield. Ignored on body armor, which uses baseAC. A shield
+   * with no value adds the 5e standard +2. */
   acBonus?: number;
   /** Ability-score buffs granted while equipped, for example { STR: 2 }. */
   statBonuses?: Record<string, number>;

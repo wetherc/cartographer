@@ -333,6 +333,15 @@ A Barbarian keeps its unarmored defense while carrying a shield. A Monk loses
 it, but the shield still adds its bonus. Either one loses the formula the
 moment it puts on body armor.
 
+Body armor carries two more 5e traits. Noisy armor gives the wearer
+disadvantage on every Stealth check, and the Stealth row on the sheet is
+marked "dis" when it applies. Armor that needs a Strength score the wearer
+does not have costs 10 feet of walking speed, and the speed badge beside AC
+says which piece is to blame. The Strength checked includes what equipped
+items add, so a ring of Strength can carry a character over the line. Both
+traits come with the armor presets. Armor already in a saved campaign carries
+neither until you pick its preset again or set the fields by hand.
+
 Armor proficiency follows 5e as well. A character that wears armor its
 proficiency lists do not cover pays for it in four places. A shield counts
 as its own entry in the armor list.
@@ -486,6 +495,8 @@ heading per item type.
 | Status effects | Tags that the weapon inflicts, for example burning or poisoned |
 | Weight class | For body armor: light, medium, or heavy |
 | Base AC | For body armor |
+| Min STR | For body armor: the Strength score it needs. 0 for none |
+| Stealth | For body armor: tick it to give the wearer disadvantage on Stealth |
 | AC bonus | A flat bonus on any other equippable. A shield uses this field too, and it starts at +2 |
 | Ability buff | For example +2 STR, applied while equipped |
 

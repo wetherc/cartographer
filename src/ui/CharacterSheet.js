@@ -10,6 +10,7 @@ import {
   XP_PER_LEVEL,
 } from '../entities/Character.js';
 import { armorClass } from '../entities/Equipment.js';
+import { speedNote, walkSpeed } from '../entities/Movement.js';
 import { getSlotPools, getPactPool, isSlotPool, isPactPool } from '../entities/SpellSlots.js';
 import { isHitDicePool } from '../entities/HitDice.js';
 import { sheetDeps, sameDeps } from '../view/SheetStructure.js';
@@ -284,6 +285,8 @@ export function mountCharacterSheet(
       'or the unarmored defense of a Barbarian or a Monk when that is higher. ' +
       'A shield adds its own bonus; other equipped items add their flat bonuses.';
 
+    const speedBadge = el('span', 'character-sheet__speed u-muted');
+
     // Level, derived AC, and XP progress share one banner line, the first line
     // of the right-hand headline block.
     const banner = el(
@@ -294,6 +297,7 @@ export function mountCharacterSheet(
         'span',
         'character-sheet__header-meta u-muted',
         acBadge,
+        speedBadge,
         el(
           'span',
           'character-sheet__xp-progress u-muted',
@@ -307,7 +311,12 @@ export function mountCharacterSheet(
     // An edit to base AC does not change the sheet's shape, so the derived
     // badge must follow it.
     writers.push(() => {
-      acBadge.textContent = `AC ${armorClass(live())}`;
+      const shown = live();
+      acBadge.textContent = `AC ${armorClass(shown)}`;
+      // Speed follows a STR edit as well, because armor too heavy for the
+      // wearer costs 10 feet.
+      speedBadge.textContent = `${walkSpeed(shown)} ft`;
+      speedBadge.title = speedNote(shown);
     });
 
     /**

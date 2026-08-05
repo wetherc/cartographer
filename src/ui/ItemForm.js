@@ -101,6 +101,14 @@ export function buildItemForm({
   const weightField = labeled('Weight', weightSelect);
   const baseACField = labeled('Base AC', baseACInput);
 
+  // The two body-armor traits. A Strength of 0 is no requirement, which is
+  // why the field starts empty-looking at 0 rather than at a score.
+  const strengthInput = numberField(item?.strength ?? 0, { min: 0, className: 'form__number' });
+  setTip(strengthInput, 'Strength score the armor needs; below it the wearer loses 10 feet');
+  const strengthField = labeled('Min STR', strengthInput);
+  const stealthBox = checkbox('Disadvantage on Stealth', item?.stealthDisadvantage ?? false);
+  const stealthField = labeled('Stealth', stealthBox.label);
+
   // A non-armor equippable, for example a helmet, ring, bow, or shield, can
   // carry a flat AC bonus while equipped. A shield uses the same field, so
   // the 5e +2 is a default and not a fixed rule.
@@ -249,6 +257,10 @@ export function buildItemForm({
     if (preset.armorWeight !== undefined || preset.baseAC !== undefined) {
       weightSelect.value = preset.armorWeight ?? 'light';
       baseACInput.value = String(preset.baseAC ?? 10);
+      // Both traits are written whether or not the preset sets them, so
+      // picking quiet armor after noisy armor clears the box.
+      strengthInput.value = String(preset.strength ?? 0);
+      stealthBox.input.checked = preset.stealthDisadvantage === true;
     }
     if (preset.description && !descriptionInput.value.trim()) {
       descriptionInput.value = preset.description;
@@ -270,7 +282,7 @@ export function buildItemForm({
   // that a type does not need hides alone inside its row, and a row hides
   // when everything in it does, so the shared controls never reflow around
   // appearing fields.
-  const armorRow = fieldRow(weightField, baseACField);
+  const armorRow = fieldRow(weightField, baseACField, strengthField, stealthField);
   const weaponRow = fieldRow(categoryField, kindField, rangeNormalField, rangeLongField);
   const propertiesRow = fieldRow(propertiesField);
   const damageRow = fieldRow(damageField);
@@ -298,6 +310,7 @@ export function buildItemForm({
     const type = typeSelect.value;
     const weaponish = WEAPON_TYPES.includes(type);
     weightField.hidden = baseACField.hidden = type !== 'armor';
+    strengthField.hidden = stealthField.hidden = weightField.hidden;
     syncShieldAC();
     acField.hidden = !FLAT_AC_TYPES.includes(type);
     buffStatField.hidden = !EQUIPPABLE_TYPES.includes(type);
@@ -334,6 +347,8 @@ export function buildItemForm({
       notes: item?.notes ?? '',
       armorWeight: weightSelect.value,
       baseAC: baseACInput.value,
+      strength: strengthInput.value,
+      stealthDisadvantage: stealthBox.input.checked,
       acBonus: acInput.value,
       buffStat: buffStatSelect.value,
       buffAmount: buffAmountInput.value,

@@ -45,6 +45,8 @@ export const EQUIPPABLE_TYPES = [
  * @property {string} notes carried from the original item during an edit
  * @property {string} armorWeight
  * @property {unknown} baseAC
+ * @property {unknown} strength 0 for no requirement
+ * @property {boolean} stealthDisadvantage
  * @property {unknown} acBonus
  * @property {string} buffStat empty for no buff
  * @property {unknown} buffAmount
@@ -78,6 +80,7 @@ export function assembleItem(draft) {
   const type = /** @type {ItemType} */ (draft.type);
   const description = draft.description.trim();
   const acBonus = FLAT_AC_TYPES.includes(type) ? Math.max(0, Number(draft.acBonus) || 0) : 0;
+  const strength = Math.max(0, Math.floor(Number(draft.strength)) || 0);
   const buffStat = EQUIPPABLE_TYPES.includes(type) ? draft.buffStat : '';
   const buffAmount = Number(draft.buffAmount) || 0;
   return {
@@ -92,6 +95,10 @@ export function assembleItem(draft) {
             draft.armorWeight
           ),
           baseAC: clampInt(draft.baseAC, 1, Infinity, 10),
+          // Neither trait is written when it is off, so quiet armor with no
+          // requirement stays the shape it was before these fields existed.
+          ...(strength > 0 ? { strength } : {}),
+          ...(draft.stealthDisadvantage ? { stealthDisadvantage: true } : {}),
         }
       : {}),
     ...(acBonus > 0 ? { acBonus } : {}),

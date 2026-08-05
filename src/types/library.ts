@@ -27,6 +27,8 @@ export interface EquipmentTemplate {
   statusEffects?: string[];
   armorWeight?: ArmorWeight;
   baseAC?: number;
+  stealthDisadvantage?: boolean;
+  strength?: number;
   acBonus?: number;
   statBonuses?: Record<string, number>;
   spellFocus?: boolean;

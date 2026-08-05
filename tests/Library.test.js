@@ -42,6 +42,10 @@ test('defaultEquipmentTemplates covers every built-in preset list', () => {
   assert.deepEqual(longsword?.damage, [{ count: 1, sides: 8, damageType: 'slashing' }]);
   const plate = defaults.find((e) => e.name === 'Plate');
   assert.equal(plate?.baseAC, 18);
+  assert.equal(plate?.strength, 15);
+  assert.equal(plate?.stealthDisadvantage, true);
+  const hide = defaults.find((e) => e.name === 'Hide');
+  assert.equal('stealthDisadvantage' in (hide ?? {}), false, 'quiet armor carries no field');
   // The item form's picker reads these templates, not the preset arrays, so a
   // field that this mapping drops never reaches a GM.
   const shield = defaults.find((e) => e.type === 'shield');
