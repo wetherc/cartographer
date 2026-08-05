@@ -14,7 +14,7 @@ import { addCondition } from '../entities/Conditions.js';
 import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
 import { saveBonus } from '../entities/Checks.js';
 import { checkOnDamage, drop as dropConcentration } from '../entities/Concentration.js';
-import { dropToDying, recordDamage } from '../entities/DeathSaves.js';
+import { dropToDying, isDead, recordDamage } from '../entities/DeathSaves.js';
 import { replaceById } from '../entities/Roster.js';
 import { castableLeveledIds } from '../entities/SpellView.js';
 import { resolveSpellIds } from '../library/Library.js';
@@ -518,9 +518,11 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
       ? restoreResource(found.entity, HP_RESOURCE_ID, amount)
       : damageCharacter(found.entity, amount);
     // Log the drop to 0 exactly once. Further damage on a downed character
-    // must not repeat it.
+    // must not repeat it. A character dead of exhaustion keeps its HP, so a
+    // hit can still push it to 0; that drop gets no line, because the log
+    // already said the character died.
     const downed = !isHeal && !wasDown && (getHP(next)?.current ?? 0) <= 0;
-    if (downed) app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
+    if (downed && !isDead(next)) app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
     next = foldDeathSaves(app, next, {
       isHeal,
       downed,

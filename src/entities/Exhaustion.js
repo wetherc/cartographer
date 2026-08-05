@@ -117,8 +117,9 @@ export function setExhaustion(entity, level) {
 }
 
 /**
- * Add levels, clamped at death. This is what a failed save against an effect
- * that exhausts its target calls.
+ * Add levels, clamped at death. No effect exhausts its target yet, so the
+ * GM's stepper is the only write today. An effect that does will call this
+ * rather than reading the level and setting it back.
  * @template {Exhaustible} T
  * @param {T} entity
  * @param {number} [count]
