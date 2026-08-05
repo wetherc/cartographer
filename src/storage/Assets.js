@@ -153,12 +153,16 @@ function mapStateRefs(state, convert) {
   if (Array.isArray(state.nodes)) {
     next.nodes = state.nodes.map((node) => {
       if (!node || typeof node !== 'object' || !Array.isArray(node.tiles)) return node;
-      return {
-        ...node,
-        tiles: node.tiles.map((/** @type {any} */ tile) =>
-          tile && typeof tile === 'object' ? mapTileRefs(tile, convert) : tile,
-        ),
-      };
+      // Return the same node object when no tile changed. The serialize path
+      // caches the tile encode on the node's identity, and a fresh copy of an
+      // unchanged node would defeat that cache on every save.
+      let changed = false;
+      const tiles = node.tiles.map((/** @type {any} */ tile) => {
+        const mapped = tile && typeof tile === 'object' ? mapTileRefs(tile, convert) : tile;
+        if (mapped !== tile) changed = true;
+        return mapped;
+      });
+      return changed ? { ...node, tiles } : node;
     });
   }
   if (Array.isArray(state.handouts)) {

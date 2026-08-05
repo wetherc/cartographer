@@ -17,6 +17,7 @@ import { withProficiencies } from '../src/entities/Proficiencies.js';
 import { createHandout, withDefaults as withHandoutDefaults } from '../src/handout/Handouts.js';
 import {
   buildState,
+  packState,
   serialize,
   deserialize,
   toTileGrid,
@@ -80,6 +81,47 @@ test('serialize/deserialize round-trips a full campaign state', () => {
   });
   assert.equal(restored.characters[0].race, 'Dwarf');
   assert.equal(getHP(restored.characters[0])?.max, 12);
+});
+
+test('packing returns the cached encode for an unchanged node', () => {
+  const grid = sampleGrid();
+  const state = buildState({ grid });
+  const first = packState(state);
+  const second = packState(buildState({ grid }));
+  const packedNode = (packed, id) => packed.nodes.find((n) => n.id === id);
+  assert.equal(
+    packedNode(second, 'world'),
+    packedNode(first, 'world'),
+    'the same node object encodes to the same object',
+  );
+
+  const edited = {
+    ...state,
+    nodes: state.nodes.map((n) => (n.id === 'world' ? setTile(n, createTile('1,1', 'w.svg')) : n)),
+  };
+  const third = packState(edited);
+  assert.notEqual(
+    packedNode(third, 'world'),
+    packedNode(first, 'world'),
+    'a changed node re-encodes',
+  );
+  assert.equal(
+    packedNode(third, 'region'),
+    packedNode(first, 'region'),
+    'the untouched node stays cached',
+  );
+});
+
+test('a node holding an inline payload re-encodes and rebuilds the asset table each time', () => {
+  const payload = `data:image/svg+xml;base64,${'B'.repeat(64)}`;
+  const grid = sampleGrid();
+  grid.addNode(setTile(grid.getNode('region'), createTile('0,0', payload)));
+  const state = buildState({ grid });
+  const first = packState(state);
+  const second = packState(state);
+  assert.deepEqual(second, first);
+  assert.ok(first.assets && Object.keys(first.assets).length, 'the table is present');
+  assert.equal(serialize(state), serialize(state), 're-serializing is deterministic');
 });
 
 test('the spellcasting-focus flag survives packing and reload', () => {

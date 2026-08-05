@@ -5,6 +5,7 @@ import { hoistAssets, restoreAssets } from './Assets.js';
 import { detachAssets, loadAssetTable, persistAssets } from './AssetStore.js';
 import { packEntities } from './EntityPack.js';
 import { encodeNodeTiles, decodeNodeTiles } from './TileCodec.js';
+import { memoizeByIdentity } from '../util/memoize.js';
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
 import { withDefaults as withCreatureDefaults } from '../entities/Creature.js';
 import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
@@ -125,6 +126,30 @@ const ENTITY_DEFAULTS = {
 };
 
 /**
+ * A node with its tiles packed, cached on the node's identity. Nodes are
+ * immutable values (every map writer returns a new node), so a node object
+ * that a previous save already packed packs to the same result. Autosave
+ * serializes the whole world on every save, and without this cache the tile
+ * pack and the codec below dominate that cost at large world sizes.
+ * @type {(node: Record<string, any>) => Record<string, any>}
+ */
+const packNodeTiles = memoizeByIdentity((node) => ({
+  ...node,
+  tiles: node.tiles.map(packTile),
+}));
+
+/**
+ * The tile codec, cached on the packed node's identity. `packNodeTiles`
+ * returns the cached object for an unchanged node, and `hoistAssets` passes
+ * a node through untouched when it holds no inline payload, so for the
+ * common payload-free node this cache turns the encode into a lookup. A node
+ * that carries inline image payloads gets a fresh object from the hoist on
+ * every save and re-encodes every time, which keeps the asset table honest.
+ * @type {(node: Record<string, any>) => Record<string, any>}
+ */
+const encodePackedNode = memoizeByIdentity(encodeNodeTiles);
+
+/**
  * The campaign in its on-disk shape: the state, with every node's tiles
  * packed, every entity's default-valued fields omitted, every inline image
  * payload hoisted into an `assets` table, and every node whose tiles fill a
@@ -136,14 +161,16 @@ const ENTITY_DEFAULTS = {
  * a field an encoded node no longer has. Running the codec afterward means
  * its palette holds already-hoisted `asset:` references, not the payloads
  * themselves.
+ * Exported so a test can observe that an unchanged node's encode is the
+ * cached object; `serialize` is the production entry point.
  * @param {CampaignState} state
  * @returns {Record<string, any>}
  */
-function packState(state) {
+export function packState(state) {
   /** @type {Record<string, any>} */
   const packed = {
     ...state,
-    nodes: state.nodes.map((node) => ({ ...node, tiles: node.tiles.map(packTile) })),
+    nodes: state.nodes.map(packNodeTiles),
   };
   for (const [key, withDefaults] of Object.entries(ENTITY_DEFAULTS)) {
     const list = packed[key];
@@ -151,7 +178,7 @@ function packState(state) {
   }
   const hoisted = hoistAssets(packed);
   const nodes = hoisted.nodes;
-  if (Array.isArray(nodes)) hoisted.nodes = nodes.map(encodeNodeTiles);
+  if (Array.isArray(nodes)) hoisted.nodes = nodes.map(encodePackedNode);
   return hoisted;
 }
 
