@@ -10,8 +10,8 @@ import { updateById } from './Roster.js';
 import { isSlotPool, isPactPool } from './SpellSlots.js';
 import { isHitDicePool } from './HitDice.js';
 import { derive } from './Progression.js';
-import { clearDying } from './DeathSaves.js';
-import { exhaustionFields } from './Exhaustion.js';
+import { clearDying, isDead } from './DeathSaves.js';
+import { easeExhaustion, exhaustionFields } from './Exhaustion.js';
 import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
@@ -548,12 +548,19 @@ export function restAll(character, fraction) {
 }
 
 /**
- * A long rest: fully restore HP, spell slots, and every resource pool.
+ * A long rest: fully restore HP, spell slots, and every resource pool. It also
+ * eases one level of exhaustion.
+ *
+ * A dead character keeps its level. The Time panel rests every character at
+ * once and does not ask who is still alive, so the guard belongs here rather
+ * than at the call site. `Exhaustion.easeExhaustion` cannot hold it, because it
+ * cannot read a death-save tracker without an import cycle.
  * @param {Character} character
  * @returns {Character}
  */
 export function longRest(character) {
-  return restAll(character, 1);
+  const rested = restAll(character, 1);
+  return isDead(rested) ? rested : easeExhaustion(rested);
 }
 
 /**

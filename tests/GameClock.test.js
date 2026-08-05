@@ -15,6 +15,7 @@ import {
   createCharacter,
   spendResource,
 } from '../src/entities/Character.js';
+import { isDead, killOutright } from '../src/entities/DeathSaves.js';
 
 test('createClock starts at dawn of day 1', () => {
   assert.deepEqual(createClock(), { day: 1, watch: 0 });
@@ -50,4 +51,19 @@ test('longRest fully restores every pool; shortRest restores half', () => {
   assert.equal(getHP(short).current, 14); // 4 + ceil(20*0.5)=10
   const long = longRest(hero);
   assert.equal(getHP(long).current, 20);
+});
+
+test('longRest eases one level of exhaustion, and a short rest eases none', () => {
+  const tired = { ...withHP(createCharacter('h', 'Hero'), 20), exhaustion: 3 };
+  assert.equal(longRest(tired).exhaustion, 2);
+  assert.equal(shortRest(tired).exhaustion, 3);
+  assert.equal(longRest({ ...tired, exhaustion: 0 }).exhaustion, 0);
+});
+
+test('longRest leaves a dead character at the level that killed it', () => {
+  const hero = { ...withHP(createCharacter('h', 'Hero'), 20), exhaustion: 6 };
+  const dead = killOutright(hero);
+  const rested = longRest(dead);
+  assert.equal(rested.exhaustion, 6, 'a rest cannot walk death back');
+  assert.equal(isDead(rested), true);
 });

@@ -397,7 +397,9 @@ A row of six pips sets the level. The row is on the character sheet under the
 chips. It is also on each creature row, in the Encounters and the Story panels.
 Click a pip to set the level to that pip. Click the pip of the current level to
 take one level off. The top line of the character sheet names the level as well,
-beside AC and speed.
+beside AC and speed. Long rest, in the Time panel, takes one level off each
+character. A creature does not rest, so a creature keeps its level until you set
+it.
 
 The sixth level kills. A character gets three failed death saves and goes
 unconscious, and the log says the character died of exhaustion. The HP number
@@ -544,7 +546,9 @@ unequips it.
 | Travelogue | An automatic log of region entry, teleports, defeats, rests, and discoveries, newest first |
 
 A short rest restores half of the character resources. A long rest restores
-all of them. Only a long rest refills spell slots.
+all of them. Only a long rest refills spell slots. A long rest also takes one
+level of exhaustion off each character. A character that is already dead keeps
+its level.
 
 An NPC sits on any map at specific coordinates, or stays unplaced, in which
 case it appears everywhere. The panel lists the NPCs at the current

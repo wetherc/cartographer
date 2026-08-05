@@ -440,6 +440,12 @@ and a natural 20 on a death save. `Creature.heal` does it for a creature that th
 heal brings off 0 HP. This half is not in `app/exhaustion.js`, because a revive
 happens in more places than that module can see.
 
+`Character.longRest` holds the third rule of this kind. A long rest calls
+`easeExhaustion` for one level, and a dead character keeps the level that killed
+it. The guard is in `longRest` and not at its call site, because the Time panel
+rests every character at once and does not ask who is alive. A short rest eases
+nothing.
+
 Exhaustion was a hand-added condition chip before it had a level behind it.
 `exhaustionFields` is the load-path coercion, and both `withDefaults`
 functions call it. A chip with no stored level reads as level 1, which is the
