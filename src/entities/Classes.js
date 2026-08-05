@@ -92,7 +92,7 @@ export function cantripsKnownForClass(classId, characterLevel) {
  * The unarmored defense formulas the character's classes grant, in class-list
  * order. Empty for a character with no granting class. A build that stacked
  * two granting classes returns both, because this function reports what the
- * classes say and leaves the choice between them to `Equipment.armorClass`.
+ * classes say and leaves the choice between them to `Armor.armorClass`.
  * An unknown class id contributes nothing.
  * @param {Character} character
  * @returns {import('../types/class.js').UnarmoredDefense[]}

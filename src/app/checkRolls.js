@@ -11,7 +11,7 @@
 
 import { droppedNote } from '../combat/AttackResolve.js';
 import { checkAbility, checkBonus, saveBonus } from '../entities/Checks.js';
-import { stealthPenalty, unproficientWear } from '../entities/Equipment.js';
+import { stealthPenalty, unproficientWear } from '../entities/Armor.js';
 import { modeReasons, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { hasExpertise, isProficientSave, isProficientSkill } from '../entities/Proficiencies.js';

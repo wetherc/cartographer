@@ -308,7 +308,14 @@ files carry no version.
 
 ## Armor class
 
-`Equipment.armorClass(character)` is the only place that derives the AC of a
+`entities/Armor.js` holds the rules for wearing armor: what the worn pieces
+do to AC, to Stealth, and to a character who is not trained for them. These
+rules read the character's classes and proficiency lists, which the item
+readers in `Equipment.js` never do, so they sit in their own module.
+`Equipment.js` keeps the slots, the equip rules, and the per-item field
+readers such as `armorTraits` and `itemACBonus`.
+
+`Armor.armorClass(character)` is the only place that derives the AC of a
 character. Equipped body armor replaces the unarmored baseline with its own
 `baseAC`, and its weight class fixes how much DEX it adds. Without body armor
 the AC is `character.baseAC`, which is 10 unless an effect such as Mage Armor
@@ -347,7 +354,7 @@ Body armor carries two more traits, both optional and both absence-defaulted.
 is the Strength score the armor needs. `Equipment.armorTraits(item)` is the one
 place that reads either field, because a library file can store anything in
 them, and it treats only a literal `true` and a positive whole number as set.
-`Equipment.stealthPenalty(character)` names the worn armor when it is noisy,
+`Armor.stealthPenalty(character)` names the worn armor when it is noisy,
 which `app/checkRolls.js` turns into a disadvantage slant and the skill block
 turns into a marker on the Stealth row. Nothing migrates: armor already in a
 save carries neither trait until the GM re-picks it from the presets or ticks
@@ -367,7 +374,7 @@ so the value is informational.
 
 `Proficiencies.isProficientArmor(character, weight)` reads the armor list.
 The list holds weight classes plus `'shield'`, so a shield goes through the
-same check as a breastplate. `Equipment.unproficientWear(character)` turns
+same check as a breastplate. `Armor.unproficientWear(character)` turns
 the check into phrases: it reads the memoized `equippedIndex`, checks the
 chest piece against its weight class and an off-hand shield against the
 shield grant, and answers a list such as `['heavy armor', 'a shield']`. Those

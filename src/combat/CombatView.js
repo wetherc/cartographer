@@ -9,7 +9,7 @@
  */
 
 import { effectiveStatBlock, isDefeated } from '../entities/Creature.js';
-import { armorClass } from '../entities/Equipment.js';
+import { armorClass } from '../entities/Armor.js';
 import { getHP } from '../entities/Character.js';
 import { canAct } from '../entities/ConditionEffects.js';
 

@@ -1,7 +1,7 @@
 import { promptModal } from '../ui/Modal.js';
 import { rollDamage, attackTweak } from '../dice/DiceRoller.js';
 import { attackAbility, hasWeaponProperty, weaponKind } from '../entities/Weapons.js';
-import { unproficientWear } from '../entities/Equipment.js';
+import { unproficientWear } from '../entities/Armor.js';
 import { isProficientWeapon } from '../entities/Proficiencies.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';

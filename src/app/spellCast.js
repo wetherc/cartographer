@@ -4,7 +4,7 @@ import { castSpell, materialCheck, maxTargets, scalingSteps } from '../entities/
 import { riderSummary } from '../entities/Riders.js';
 import { combineModes, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { removeItem, spellSource } from '../entities/Character.js';
-import { unproficientWear } from '../entities/Equipment.js';
+import { unproficientWear } from '../entities/Armor.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { spellSaveDC, spellAttackBonus, hasRitualCasting } from '../entities/Classes.js';
 import { formatModifier } from '../entities/Modifiers.js';

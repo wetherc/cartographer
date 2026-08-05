@@ -11,7 +11,7 @@
  */
 
 import { checkBonus, saveBonus, passivePerception } from '../entities/Checks.js';
-import { stealthPenalty } from '../entities/Equipment.js';
+import { stealthPenalty } from '../entities/Armor.js';
 import { formatModifier, ABILITY_SCORES } from '../entities/Modifiers.js';
 import { isProficientSave, isProficientSkill, hasExpertise } from '../entities/Proficiencies.js';
 import { SKILL_ABILITIES, SKILL_IDS, skillDescription, skillName } from '../data/skills.js';

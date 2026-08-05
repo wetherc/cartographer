@@ -1,7 +1,8 @@
 import { indexById } from '../util/indexById.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { applyDamage, effectiveStatBlock, heal, isDefeated } from '../entities/Creature.js';
-import { armorClass, equippedWeapons, unproficientWear } from '../entities/Equipment.js';
+import { armorClass, unproficientWear } from '../entities/Armor.js';
+import { equippedWeapons } from '../entities/Equipment.js';
 import {
   damageCharacter,
   restoreResource,

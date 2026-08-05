@@ -9,7 +9,7 @@ import {
   restoreResource,
   XP_PER_LEVEL,
 } from '../entities/Character.js';
-import { armorClass } from '../entities/Equipment.js';
+import { armorClass } from '../entities/Armor.js';
 import { speedNote, walkSpeed } from '../entities/Movement.js';
 import { getSlotPools, getPactPool, isSlotPool, isPactPool } from '../entities/SpellSlots.js';
 import { isHitDicePool } from '../entities/HitDice.js';

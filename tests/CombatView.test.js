@@ -13,7 +13,7 @@ import {
 } from '../src/combat/CombatView.js';
 import { createCharacter, withHP, damageCharacter } from '../src/entities/Character.js';
 import { createCreature, applyDamage, effectiveStatBlock } from '../src/entities/Creature.js';
-import { armorClass } from '../src/entities/Equipment.js';
+import { armorClass } from '../src/entities/Armor.js';
 
 const HERE = { nodeId: 'n1', tileId: '0,0' };
 
