@@ -190,8 +190,8 @@ export function rollWeaponAttack(
   // and the key stays off the selection so the tray's toggle still applies.
   // A shot past normal range adds one disadvantage slant, and so does armor
   // the attacker is not trained for, because every weapon attack rolls off
-  // STR or DEX. Both fold in with the chip slants, so one advantage chip
-  // cancels one of them to a straight roll.
+  // STR or DEX. Both fold in with the chip slants under the 5e rule: any
+  // advantage cancels any number of disadvantages to a straight roll.
   const picked = tweaks.mode && tweaks.mode !== 'auto' ? tweaks.mode : null;
   const longSlant = tweaks.longRange ? 'disadvantage' : null;
   const badWear = unproficientWear(attacker);

@@ -390,7 +390,7 @@ export function armorClass(character) {
   }
   for (const item of equippedItems(character)) {
     if (item === body) continue;
-    ac += itemType(item) === 'shield' ? (item.acBonus ?? SHIELD_AC) : (item.acBonus ?? 0);
+    ac += itemACBonus(item);
   }
   return ac;
 }
@@ -445,6 +445,22 @@ export function armorTraits(item) {
 }
 
 /**
+ * The flat AC an equipped item adds, read tolerantly for the same reason as
+ * `armorTraits`: a library file or a hand-edited save can store anything in
+ * `acBonus`. A value that is not a whole number reads as absent. A shield
+ * whose stored value is absent or not a positive whole number adds the 5e
+ * standard `SHIELD_AC`, because the item form never writes a zero for one.
+ * Any other item with no usable value adds nothing.
+ * @param {InventoryItem} item
+ * @returns {number}
+ */
+export function itemACBonus(item) {
+  const bonus = Math.trunc(Number(item.acBonus));
+  if (itemType(item) === 'shield') return bonus > 0 ? bonus : SHIELD_AC;
+  return Number.isFinite(bonus) ? bonus : 0;
+}
+
+/**
  * The name of the worn body armor when it slants Stealth, else null. Noisy
  * armor gives the wearer disadvantage on every Stealth check, whether or not
  * the character is trained for the armor.
@@ -484,9 +500,9 @@ export function itemEffects(item) {
   } else if (type === 'shield') {
     // A shield with no stored bonus adds the 5e standard, so the badge states
     // that value rather than nothing.
-    parts.push(`+${item.acBonus ?? SHIELD_AC} AC`);
-  } else if (item.acBonus) {
-    parts.push(`+${item.acBonus} AC`);
+    parts.push(`+${itemACBonus(item)} AC`);
+  } else if (itemACBonus(item)) {
+    parts.push(`+${itemACBonus(item)} AC`);
   }
   if (WEAPON_TYPES.includes(type) && item.damage?.length) {
     const dice = formatDamage(item.damage);

@@ -15,6 +15,7 @@ import {
   equip,
   getEquipped,
   armorClass,
+  itemACBonus,
   effectiveStats,
   pruneEquipment,
   DIE_SIZES,
@@ -148,6 +149,21 @@ test('a shield grants its own bonus, and the 5e +2 when it stores none', () => {
   assert.equal(acWith({}), 12, 'no stored bonus reads as the standard +2');
   assert.equal(acWith({ acBonus: 3 }), 13, 'a tower shield adds what it stores');
   assert.equal(acWith({ acBonus: 9 }), 19, 'no ceiling: the item is what the GM built');
+});
+
+test('a stored AC bonus is read tolerantly, because a file can hold anything', () => {
+  const shield = (/** @type {unknown} */ acBonus) =>
+    itemACBonus(item('s', 'S', { type: 'shield', acBonus }));
+  assert.equal(shield('3'), 3, 'a numeric string still counts');
+  assert.equal(shield('big'), SHIELD_AC, 'garbage on a shield reads as the standard');
+  assert.equal(shield(0), SHIELD_AC, 'the form never writes a zero, so zero means untouched');
+  assert.equal(shield(-1), SHIELD_AC, 'a negative shield bonus reads as the standard');
+  assert.equal(shield(2.9), 2, 'a fraction truncates');
+  const ring = (/** @type {unknown} */ acBonus) =>
+    itemACBonus(item('r', 'R', { type: 'ring', acBonus }));
+  assert.equal(ring('big'), 0, 'garbage on any other item adds nothing');
+  assert.equal(ring(undefined), 0, 'an absent field adds nothing');
+  assert.equal(ring(-2), -2, 'a cursed piece keeps its penalty');
 });
 
 test('a shield states its bonus in its effects, stored or defaulted', () => {

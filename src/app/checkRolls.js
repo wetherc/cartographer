@@ -125,8 +125,9 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
     ability,
   });
   // Armor the character is not trained for slants every STR and DEX roll, per
-  // the 5e armor proficiency rule. The slant folds in with the chips, so an
-  // advantage chip cancels it the way two chips cancel each other.
+  // the 5e armor proficiency rule. The slant folds in with the chips, and an
+  // advantage chip cancels it, because any advantage cancels any number of
+  // disadvantages to a straight roll.
   const badWear = ability === 'STR' || ability === 'DEX' ? unproficientWear(character) : [];
   // Noisy armor slants Stealth on its own, whether or not the character is
   // trained for it. Both slants can fire for the same piece, so the log states

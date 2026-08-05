@@ -125,8 +125,11 @@ export function buildItemForm({
   //
   // The fill is taken back off when the type moves away from shield, unless
   // the GM edited it. Without that, choosing shield and then ring would leave
-  // the +2 behind and give the ring an AC bonus nobody asked for.
-  let filledForShield = false;
+  // the +2 behind and give the ring an AC bonus nobody asked for. An existing
+  // shield stored at the standard value counts as filled too. The store
+  // cannot tell a creation-time fill from a typed +2, and either way a GM
+  // retyping the item did not ask the new type to keep a shield's bonus.
+  let filledForShield = item?.type === 'shield' && (item.acBonus ?? SHIELD_AC) === SHIELD_AC;
   acInput.addEventListener('input', () => {
     filledForShield = false;
   });

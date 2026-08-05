@@ -317,6 +317,11 @@ export function wireEncounters(app) {
     const startedAt = Date.now();
     const participants = await combatSetupModal(combatRoster(), {
       describe,
+      // Initiative is a DEX check in 5e, but the fill rolls a straight d20.
+      // No slant reaches it yet: neither condition chips nor the
+      // untrained-armor rule, which slant attacks, checks, and saves. The
+      // GM edits the value by hand until initiative shares the slanted roll
+      // path.
       rollInitiative: (participant) =>
         Math.floor(Math.random() * 20) + 1 + (participant.modifier ?? 0),
       // The travelogue gets one line for each press of Roll initiative, and

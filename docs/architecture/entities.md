@@ -323,6 +323,12 @@ GM picks that type, so a stored 0 cannot happen and absence always means the
 GM never touched the field. `SHIELD_PRESETS` puts one entry in the preset
 picker.
 
+The form is not the only writer, though. A library file or a hand-edited save
+can store anything in `acBonus`, so `Equipment.itemACBonus` reads the field
+tolerantly, the same way `armorTraits` reads the armor traits. A value that
+is not a whole number reads as absent: a shield then adds `SHIELD_AC`, and
+any other piece adds nothing.
+
 A Barbarian or a Monk also gets an unarmored defense formula, which is
 10 plus the DEX modifier plus the modifier of one more ability. The ability
 and whether a shield cancels the formula are stored on the class definition as
