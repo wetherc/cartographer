@@ -595,10 +595,13 @@ export function mountCharacterSheet(
     // through the host, so the sixth level can kill and log. The bar needs no
     // writer of its own: the level is part of the sheet's shape, so a change to
     // it rebuilds the card along with the save and skill bonuses it moves.
+    // The pips take the GM-only `restore` permission, not `play`: exhaustion
+    // is a GM ruling, and the sixth pip kills, so a bound player only reads
+    // the row. The two creature panels gate their bars the same way.
     mountExhaustionBar(conditions, {
       getEntity: () => live(),
       onSet: (level) => exhaustion?.onSet(level),
-      canEdit: () => getPermissions().play && Boolean(exhaustion),
+      canEdit: () => getPermissions().restore && Boolean(exhaustion),
     });
     // The death-save tracker sits under concentration and shows only while
     // the character is at 0 HP. The combat screen draws the same block from

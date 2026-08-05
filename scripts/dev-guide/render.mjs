@@ -369,7 +369,7 @@ export function renderGuide(data) {
           needed.
         </p>
         <p>
-          Two rules keep it safe. A history write always follows the campaign write. A delta is
+          A history write always follows the campaign write. A delta is
           never migrated, so an index written by an older version is discarded whole.
         </p>
       </div>
@@ -383,9 +383,6 @@ export function renderGuide(data) {
 
     <section id="where">
       <div class="sec-head"><span class="sec-num">06</span><h2>Where does my change go?</h2></div>
-      <div class="prose">
-        <p>Answer two or three questions. The result names the directory, the test you owe, and the trap that catches people there.</p>
-      </div>
       <div class="plate">
         <div class="plate-label" id="routerCrumbs">Start</div>
         <div class="router" id="router"></div>
@@ -393,12 +390,12 @@ export function renderGuide(data) {
     </section>
 
     <section id="work">
-      <div class="sec-head"><span class="sec-num">07</span><h2>Working on it</h2></div>
+      <div class="sec-head"><span class="sec-num">07</span><h2>Working on the codebase</h2></div>
       <div class="prose">
         <p>
-          Tests run against the source files, not the build. Use one file while iterating and the
-          whole suite before a commit. The pre-commit hook runs the formatter, the linter, the
-          suite, and the typecheck, and it blocks on any failure.
+          Tests run against the source files, not the build. Run only the relevant test file(s) while
+          iterating and the whole suite before a commit. The pre-commit hook runs the formatter, the
+          linter, the test suite, and the typecheck; it blocks a commit on any failure.
         </p>
       </div>
       <div class="plate">
@@ -436,11 +433,11 @@ export function renderGuide(data) {
         <div class="checks" id="checkList"></div>
         <div class="progress" id="checkProgress"></div>
       </div>
-      <p class="caption">Deeper detail lives in <code>docs/architecture/conventions.md</code>. <code>docs/architecture.md</code> is authoritative for design questions.</p>
+      <p class="caption">More detail lives in <code>docs/architecture/conventions.md</code>. <code>docs/architecture.md</code> is authoritative for design questions.</p>
     </section>
 
     <footer>
-      <div class="stamp">Generated from the source tree by scripts/build-dev-guide.mjs at ${esc(generatedAt)}. Run pnpm run guide to rebuild.</div>
+      <div class="stamp">This document was auto-generated from the source tree by scripts/build-dev-guide.mjs at ${esc(generatedAt)}. Run <code>pnpm run guide</code> to rebuild.</div>
     </footer>
   </main>
 </div>

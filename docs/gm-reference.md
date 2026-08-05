@@ -395,6 +395,8 @@ and a death save. The log names the level and the number it took off.
 
 A row of six pips sets the level. The row is on the character sheet under the
 chips. It is also on each creature row, in the Encounters and the Story panels.
+Only you can click the pips. A player on a bound tab sees the row, and cannot
+change it, because the sixth pip kills.
 Click a pip to set the level to that pip. Click the pip of the current level to
 take one level off. The top line of the character sheet names the level as well,
 beside AC and speed. Long rest, in the Time panel, takes one level off each

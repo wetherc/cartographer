@@ -617,7 +617,9 @@ the row works from the keyboard.
 `app/exhaustion.js` every time, because the sixth level kills the combatant and
 writes a log line. Without `canEdit`, the row shows plain glyphs and no controls.
 The row is hidden at level 0 in that state, because a spectator has nothing to
-read there.
+read there. The character sheet passes the GM-only `restore` permission as
+`canEdit`, so a bound player reads the row and cannot click it. The two creature
+panels mount the row on GM rows only.
 
 The words and the pips come from `view/ExhaustionView.js`, which is pure and
 unit tested. This module is the DOM around them.
