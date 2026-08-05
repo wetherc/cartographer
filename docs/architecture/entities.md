@@ -313,13 +313,17 @@ The list holds weight classes plus `'shield'`, so a shield goes through the
 same check as a breastplate. `Equipment.unproficientWear(character)` turns
 the check into phrases: it reads the memoized `equippedIndex`, checks the
 chest piece against its weight class and an off-hand shield against the
-shield grant, and answers a list such as `['heavy armor', 'a shield']`. A
+shield grant, and answers a list such as `['heavy armor', 'a shield']`. Those
+two slots cover every case, because `armorClass` reads body armor from the
+chest slot and `EQUIPMENT_SLOTS` admits a shield to the off hand alone. A
 character without proficiency lists predates them and answers an empty list,
 the same rule the weapon gate applies.
 
-Three call sites act on the list. `app/checkRolls.js` folds a disadvantage
+Four call sites act on the list. `app/checkRolls.js` folds a disadvantage
 slant into a STR or DEX save or check, through the `extra` parameter of
-`rollMode`, so a chip that grants advantage cancels it. `app/spellCast.js`
+`rollMode`, so a chip that grants advantage cancels it. `app/weaponAttack.js`
+folds the same slant into every weapon attack, because an attack rolls off STR
+or DEX whatever the weapon is. `app/spellCast.js`
 refuses a cast before the resolver runs, so a refused cast spends no slot,
 and the dialog offers an "Ignore armor" opt-out beside the component one.
 The same module marks a character target of a STR or DEX save spell with

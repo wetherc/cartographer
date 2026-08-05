@@ -796,6 +796,11 @@ test('unproficientWear names the worn pieces the character is not trained for', 
   assert.deepEqual(unproficientWear(fully), []);
 });
 
+test('the off hand is the only slot a shield can reach', () => {
+  const slots = EQUIPMENT_SLOTS.filter((s) => s.accepts.includes('shield')).map((s) => s.key);
+  assert.deepEqual(slots, ['offHand'], 'unproficientWear reads that one slot for a shield');
+});
+
 test('unproficientWear reads bare armor as light and skips untracked gear', () => {
   let hero = createCharacter('c1', 'Hero');
   hero = addItem(hero, item('robe', 'Robe', { type: 'armor', baseAC: 11 }));

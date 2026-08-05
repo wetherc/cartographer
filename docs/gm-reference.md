@@ -276,6 +276,11 @@ Attack rolls follow 5e without change.
 - A ranged or thrown weapon offers a Range field in the attack dialog. A shot
   at long range takes disadvantage, which folds in with the condition chips.
   A mode you pick in the Roll field still beats it.
+- A thrown melee weapon, such as a dagger, lists Melee first and the two throw
+  distances after it. The throws count as ranged attacks, so a prone defender
+  is harder to hit with them and easier to hit with the melee swing.
+- Armor the character is not trained for gives disadvantage on every attack
+  roll, the same as on its STR and DEX checks and saves.
 - A natural 20 hits whatever the AC is, and every damage die rolls twice.
 - A natural 1 always misses.
 - On a hit, the damage dice roll with the ability modifier folded into the
@@ -323,12 +328,14 @@ Armor class follows 5e as well.
 | No body armor | Base AC (normally 10) plus the full DEX modifier |
 
 Armor proficiency follows 5e as well. A character that wears armor its
-proficiency lists do not cover pays for it in three places. A shield counts
+proficiency lists do not cover pays for it in four places. A shield counts
 as its own entry in the armor list.
 
 - Every STR and DEX save or check from the sheet rolls at disadvantage. The
   slant folds in with the condition chips, so an advantage chip cancels it.
   The log says "not proficient" and names the worn piece.
+- Every weapon attack rolls at disadvantage, because an attack rolls off STR
+  or DEX whatever the weapon is. The slant folds in the same way.
 - The character cannot cast a spell. The refusal names the armor and spends
   nothing. The cast dialog offers an "Ignore armor" box, which casts anyway,
   for a table that waives the rule.

@@ -1,6 +1,7 @@
 import { promptModal } from '../ui/Modal.js';
 import { rollDamage, attackTweak } from '../dice/DiceRoller.js';
 import { attackAbility, hasWeaponProperty, weaponKind } from '../entities/Weapons.js';
+import { unproficientWear } from '../entities/Equipment.js';
 import { isProficientWeapon } from '../entities/Proficiencies.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
@@ -24,12 +25,15 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
  * extra dice and a flat rider on the damage. `twoHanded` swings a versatile
  * weapon with both hands, so the damage uses the two-handed dice. `longRange`
  * fires past the weapon's normal range, which slants the roll toward
- * disadvantage. Every field defaults to nothing, so a plain Enter in the
- * dialog rolls the unmodified attack.
+ * disadvantage. `thrown` throws a melee weapon instead of striking with it,
+ * which makes the swing a ranged attack for every rule that asks. Every field
+ * defaults to nothing, so a plain Enter in the dialog rolls the unmodified
+ * attack.
  * @typedef {{
  *   mode?: AttackMode,
  *   twoHanded?: boolean,
  *   longRange?: boolean,
+ *   thrown?: boolean,
  *   attackDice?: number,
  *   attackDie?: import('../types/dice.js').DieType,
  *   attackFlat?: number,
@@ -92,7 +96,11 @@ export function readAttackTweaks(values) {
   return {
     mode: /** @type {AttackMode} */ (values['mode'] || 'auto'),
     twoHanded: values['two-handed'] === '1',
-    longRange: values['range'] === 'long',
+    // The range control of a ranged weapon says 'normal' or 'long'. On a
+    // thrown melee weapon it says 'melee', 'thrown', or 'thrown-long', so a
+    // dagger can stab at the same dice it throws with.
+    longRange: values['range'] === 'long' || values['range'] === 'thrown-long',
+    thrown: values['range'] === 'thrown' || values['range'] === 'thrown-long',
     attackDice: Number(values['atk-count']) || 0,
     attackDie: /** @type {import('../types/dice.js').DieType} */ (values['atk-die']),
     attackFlat: Number(values['atk-flat']) || 0,
@@ -167,8 +175,9 @@ export function rollWeaponAttack(
   const rider = rollRiders(attacker.conditions, 'attack', rng);
   // The chips on both sides decide the mode. Reach matters, because a prone
   // defender is easier to hit in melee and harder to hit at range. The
-  // weapon's kind is the reach signal.
-  const melee = weaponKind(weapon) !== 'ranged';
+  // weapon's kind is the reach signal, and a thrown melee weapon counts as
+  // ranged for the throw the GM picked in the dialog.
+  const melee = weaponKind(weapon) !== 'ranged' && !tweaks.thrown;
   const conditionQuery = /** @type {const} */ ({
     roller: attacker.conditions,
     target: defender.conditions,
@@ -179,11 +188,15 @@ export function rollWeaponAttack(
   // passed on, so a picked `normal` also cancels the tray's standing toggle
   // for this roll. Under `auto`, a null mode means no chip slanted the roll,
   // and the key stays off the selection so the tray's toggle still applies.
-  // A shot past normal range adds one disadvantage slant. It folds in with
-  // the chip slants, so one advantage chip cancels it to a straight roll.
+  // A shot past normal range adds one disadvantage slant, and so does armor
+  // the attacker is not trained for, because every weapon attack rolls off
+  // STR or DEX. Both fold in with the chip slants, so one advantage chip
+  // cancels one of them to a straight roll.
   const picked = tweaks.mode && tweaks.mode !== 'auto' ? tweaks.mode : null;
   const longSlant = tweaks.longRange ? 'disadvantage' : null;
-  const mode = picked ?? rollMode(conditionQuery, [longSlant]);
+  const badWear = unproficientWear(attacker);
+  const wearSlant = badWear.length > 0 ? 'disadvantage' : null;
+  const mode = picked ?? rollMode(conditionQuery, [longSlant, wearSlant]);
   const { result } = app.actions.rollDice(
     {
       counts: { d20: 1, ...tweak.counts },
@@ -214,6 +227,7 @@ export function rollWeaponAttack(
   const slantReasons = [
     modeReasons(conditionQuery),
     longSlant && !picked ? 'long range disadvantage' : '',
+    wearSlant && !picked ? `not proficient with ${badWear.join(' and ')}, disadvantage` : '',
   ]
     .filter(Boolean)
     .join(', ');
@@ -312,12 +326,28 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
     hasWeaponProperty(weapon, 'versatile') &&
     'versatileDamage' in weapon &&
     weapon.versatileDamage?.length;
+  // A thrown melee weapon can also be struck with, so its control names the
+  // melee swing as its own default choice. A ranged weapon can only shoot,
+  // so its control offers the two distances alone.
+  const thrownMelee = weaponKind(weapon) !== 'ranged' && hasWeaponProperty(weapon, 'thrown');
   const range =
-    weaponKind(weapon) === 'ranged' || hasWeaponProperty(weapon, 'thrown')
+    weaponKind(weapon) === 'ranged' || thrownMelee
       ? 'range' in weapon
         ? weapon.range
         : undefined
       : undefined;
+  const rangeOptions = range
+    ? thrownMelee
+      ? [
+          { value: 'melee', label: 'Melee' },
+          { value: 'thrown', label: `Thrown (${range.normal} ft)` },
+          { value: 'thrown-long', label: `Thrown long (${range.long} ft, disadvantage)` },
+        ]
+      : [
+          { value: 'normal', label: `Normal (${range.normal} ft)` },
+          { value: 'long', label: `Long (${range.long} ft, disadvantage)` },
+        ]
+    : [];
   const values = await promptModal(
     `Attack with ${weapon.name}`,
     [
@@ -363,11 +393,8 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
               name: 'range',
               label: 'Range',
               type: /** @type {const} */ ('select'),
-              value: 'normal',
-              options: [
-                { value: 'normal', label: `Normal (${range.normal} ft)` },
-                { value: 'long', label: `Long (${range.long} ft, disadvantage)` },
-              ],
+              value: rangeOptions[0].value,
+              options: rangeOptions,
               full: true,
             },
           ]

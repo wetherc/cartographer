@@ -382,6 +382,10 @@ export function armorClass(character) {
  * the character wears nothing beyond its training. A character without
  * proficiency lists predates them, so it reads as proficient with everything,
  * the same as the weapon gate.
+ *
+ * Two slots are enough to cover every piece. `armorClass` reads body armor
+ * from the chest slot, and `EQUIPMENT_SLOTS` lets a shield into the off hand
+ * alone, so no other slot can hold something this gate would name.
  * @param {Character} character
  * @returns {string[]}
  */

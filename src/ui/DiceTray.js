@@ -175,10 +175,14 @@ export function mountDiceTray(container, opts = {}) {
       targetInput.value = target === null ? '' : String(target);
       for (const refresh of refreshers) refresh();
       disclosure.setExpanded(true);
-      const outcome = performRoll();
-      selection.mode = standingMode;
-      modeSwitch.sync(standingMode);
-      return outcome;
+      // The restore runs even when the roll throws, so a failed programmatic
+      // roll cannot leave the toggle showing a mode the GM never picked.
+      try {
+        return performRoll();
+      } finally {
+        selection.mode = standingMode;
+        modeSwitch.sync(standingMode);
+      }
     },
   };
 }

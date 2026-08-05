@@ -7,7 +7,9 @@ import {
   weaponAttack,
 } from '../src/app/weaponAttack.js';
 import { roll } from '../src/dice/DiceRoller.js';
-import { createCharacter, withHP, getHP } from '../src/entities/Character.js';
+import { addItem, createCharacter, withHP, getHP } from '../src/entities/Character.js';
+import { equip } from '../src/entities/Equipment.js';
+import { withProficiencies } from '../src/entities/Proficiencies.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { stubApp as baseStubApp } from './helpers/app.js';
 
@@ -96,6 +98,7 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
       mode: 'advantage',
       twoHanded: true,
       longRange: true,
+      thrown: false,
       attackDice: 1,
       attackDie: 'd6',
       attackFlat: 2,
@@ -111,6 +114,7 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
     mode: 'auto',
     twoHanded: false,
     longRange: false,
+    thrown: false,
     attackDice: 0,
     attackDie: undefined,
     attackFlat: 0,
@@ -121,6 +125,18 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
   const nonsense = readAttackTweaks({ 'atk-count': 'two', 'dmg-flat': '' });
   assert.equal(nonsense.attackDice, 0);
   assert.equal(nonsense.damageFlat, 0);
+});
+
+test('the range answer of a thrown melee weapon says whether it was thrown', () => {
+  const melee = readAttackTweaks({ range: 'melee' });
+  assert.equal(melee.thrown, false, 'a stab stays a melee attack');
+  assert.equal(melee.longRange, false);
+  const thrown = readAttackTweaks({ range: 'thrown' });
+  assert.equal(thrown.thrown, true);
+  assert.equal(thrown.longRange, false);
+  const far = readAttackTweaks({ range: 'thrown-long' });
+  assert.equal(far.thrown, true);
+  assert.equal(far.longRange, true, 'a long throw slants the roll too');
 });
 
 test('attackParticipants names the attacker and who is left to attack', () => {
@@ -918,4 +934,150 @@ test('a GM-picked mode beats the long-range slant', () => {
   assert.equal(app.rolls[0].selection.mode, 'advantage');
   assert.match(app.log[0], /advantage set by the GM/);
   assert.equal(/long range/.test(app.log[0]), false, 'the pick replaces the slant reasons');
+});
+
+test('untrained armor slants the attack roll and the log names the armor', () => {
+  let hero = makeHero({ STR: 16 });
+  hero = /** @type {any} */ (
+    addItem(hero, {
+      id: 'plate',
+      name: 'Plate',
+      type: 'armor',
+      armorWeight: 'heavy',
+      baseAC: 18,
+      quantity: 1,
+      notes: '',
+    })
+  );
+  hero = /** @type {any} */ (equip(hero, 'chest', 'plate'));
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10, conditions: [] },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[0].selection.mode, 'disadvantage');
+  assert.match(app.log[0], /not proficient with heavy armor, disadvantage/);
+});
+
+test('an advantage chip cancels the untrained-armor slant', () => {
+  let hero = makeHero({ STR: 16 });
+  hero = /** @type {any} */ (
+    addItem(hero, {
+      id: 'plate',
+      name: 'Plate',
+      type: 'armor',
+      armorWeight: 'heavy',
+      baseAC: 18,
+      quantity: 1,
+      notes: '',
+    })
+  );
+  hero = /** @type {any} */ (equip(hero, 'chest', 'plate'));
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: /** @type {any} */ ({
+      id: 'goblin',
+      name: 'Goblin',
+      ac: 10,
+      conditions: [{ name: 'Restrained' }],
+    }),
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[0].selection.mode, 'normal');
+});
+
+test('a trained wearer and a creature never carry the armor slant', () => {
+  let hero = makeHero({ STR: 16 });
+  hero = /** @type {any} */ (
+    addItem(hero, {
+      id: 'plate',
+      name: 'Plate',
+      type: 'armor',
+      armorWeight: 'heavy',
+      baseAC: 18,
+      quantity: 1,
+      notes: '',
+    })
+  );
+  hero = /** @type {any} */ (equip(hero, 'chest', 'plate'));
+  hero = /** @type {any} */ (withProficiencies(hero, { armor: ['heavy'] }));
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10, conditions: [] },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[0].selection.mode, undefined, 'nothing slants the roll');
+  rollWeaponAttack(app, {
+    attacker: goblin,
+    defender: { id: 'hero', name: 'Hero', ac: 12, conditions: [] },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[1].selection.mode, undefined, 'a creature wears no tracked armor');
+});
+
+test('a thrown melee weapon rolls as a ranged attack for the throw', () => {
+  const hero = makeHero({ STR: 16 });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const dagger = {
+    ...SWORD,
+    name: 'Dagger',
+    properties: ['thrown'],
+    range: { normal: 20, long: 60 },
+  };
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  /** @type {any} */
+  const prone = { id: 'goblin', name: 'Goblin', ac: 10, conditions: [{ name: 'Prone' }] };
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: prone,
+    weapon: /** @type {any} */ (dagger),
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(app.rolls[0].selection.mode, 'advantage', 'a stab is still melee');
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: prone,
+    weapon: /** @type {any} */ (dagger),
+    tweaks: { thrown: true },
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(
+    app.rolls[1].selection.mode,
+    'disadvantage',
+    'a throw is a ranged attack, so a prone target is harder to hit',
+  );
 });
