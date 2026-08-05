@@ -99,7 +99,8 @@ const header =
   'deser ms'.padStart(10) +
   'grid ms'.padStart(9) +
   'recon ms'.padStart(10) +
-  'diff ms'.padStart(9) +
+  'diffW ms'.padStart(10) +
+  'diffC ms'.padStart(10) +
   'fog ms'.padStart(8) +
   'tree ms'.padStart(9);
 process.stdout.write(`${header}\n`);
@@ -112,13 +113,17 @@ for (const step of steps) {
 
   // The undo diff runs against a one-node change: a fog reveal on the world
   // node. The interesting number is how the cost of that small change grows
-  // with everything that did not change.
+  // with everything that did not change. The warm case is every save after
+  // the first in a session: the unchanged entities share identity, because
+  // the history keeps the live state as its snapshot. The cold case is the
+  // first save after a reload, where nothing shares identity.
   const worldNode = campaign.grid.getNode('world');
   const revealed = revealAround(worldNode, '16,16', 3);
   const after = {
     ...state,
     nodes: state.nodes.map((n) => (n.id === 'world' ? encodeNodeTiles(revealed) : n)),
   };
+  const coldBefore = JSON.parse(JSON.stringify(state));
 
   const row = {
     ser: medianMs(() => serialize(buildState(campaign)), 7),
@@ -128,7 +133,8 @@ for (const step of steps) {
       () => reconcile(liveNodes, [...toTileGrid(deserialize(json)).nodes.values()]),
       5,
     ),
-    diff: medianMs(() => diffState(state, after), 7),
+    diffWarm: medianMs(() => diffState(state, after), 7),
+    diffCold: medianMs(() => diffState(coldBefore, after), 7),
     fog: medianMs(() => revealAround(worldNode, '16,16', 3), 50),
     tree: medianMs(() => buildWorldTree(liveNodes), 50),
   };
@@ -141,7 +147,8 @@ for (const step of steps) {
     row.deser.toFixed(1).padStart(10) +
     row.grid.toFixed(1).padStart(9) +
     row.recon.toFixed(1).padStart(10) +
-    row.diff.toFixed(1).padStart(9) +
+    row.diffWarm.toFixed(1).padStart(10) +
+    row.diffCold.toFixed(1).padStart(10) +
     row.fog.toFixed(2).padStart(8) +
     row.tree.toFixed(2).padStart(9);
   process.stdout.write(`${cells}\n`);

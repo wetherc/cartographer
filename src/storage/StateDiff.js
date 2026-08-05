@@ -165,6 +165,13 @@ export function diffState(before, after) {
  * @param {DiffOp[]} ops
  */
 function diffValue(before, after, path, pattern, ops) {
+  // Identical references cannot differ, because no code mutates a handed-out
+  // value in place. `HistoryLog.saveCampaign` keeps the live state object as
+  // the persisted snapshot, so on every save after the first the two states
+  // share every entity the edit did not touch, and this check makes the diff
+  // cost the size of the edit instead of the size of the world. A cold diff
+  // after a reload shares nothing and still walks everything.
+  if (before === after) return;
   const idField = ID_KEYED[pattern];
   if (idField && Array.isArray(before) && Array.isArray(after)) {
     diffKeyed(before, after, path, pattern, idField, ops);

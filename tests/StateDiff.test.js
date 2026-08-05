@@ -36,6 +36,23 @@ test('an unchanged state produces no ops', () => {
   assert.deepEqual(diffState(state, clone(state)), []);
 });
 
+test('a warm diff and a cold diff of the same edit emit the same ops', () => {
+  // Warm: `after` shares identity with `before` for everything the edit did
+  // not touch, the shape `HistoryLog.saveCampaign` produces by caching the
+  // live state. Cold: a reload, where the two states share nothing. The
+  // identity short-circuit must change the cost, never the ops.
+  const before = exampleState();
+  const after = {
+    ...before,
+    nodes: before.nodes.map((n) => (n.id === 'world' ? { ...n, name: 'Renamed' } : n)),
+  };
+  const world = before.nodes.find((n) => n.id === 'world');
+  const warm = diffState(before, after);
+  const cold = diffState(clone(before), clone(after));
+  assert.deepEqual(warm, cold);
+  assert.deepEqual(warm, [{ p: ['nodes', 'world', 'name'], f: world.name, t: 'Renamed' }]);
+});
+
 test('a scalar field change is one op carrying both values', () => {
   const before = { version: 5, splitParty: false };
   const after = { version: 5, splitParty: true };
