@@ -54,23 +54,30 @@ export function resolveAttack({ natural, total, ac, autoCrit = false }) {
  * Flat bonuses are not dice, so a critical hit does not double them. They
  * reach the roll through `damageModifier` instead.
  *
+ * `sneakDice` is the Sneak Attack count, which is always d6 and doubles on a
+ * critical hit like any other damage die.
+ *
  * The added dice take the weapon's own damage type, so they group with it in
  * the readout. They fall back to `bonus` for a weapon that lists no damage at
  * all.
  * @param {DamagePart[]} weaponDamage
- * @param {{ crit: boolean, bonusDice?: number, bonusDie?: DieType }} opts
+ * @param {{ crit: boolean, bonusDice?: number, bonusDie?: DieType, sneakDice?: number }} opts
  * @returns {DamagePart[]}
  */
-export function damageParts(weaponDamage, { crit, bonusDice = 0, bonusDie = 'd4' }) {
+export function damageParts(weaponDamage, { crit, bonusDice = 0, bonusDie = 'd4', sneakDice = 0 }) {
   const parts = weaponDamage.map((part) => (crit ? { ...part, count: part.count * 2 } : part));
-  const extra = Math.max(0, Math.trunc(bonusDice) || 0);
-  if (extra > 0) {
+  /** @param {number} count @param {DieType} die */
+  const add = (count, die) => {
+    const dice = Math.max(0, Math.trunc(count) || 0);
+    if (dice === 0) return;
     parts.push({
-      count: crit ? extra * 2 : extra,
-      sides: DIE_SIDES[bonusDie],
+      count: crit ? dice * 2 : dice,
+      sides: DIE_SIDES[die],
       damageType: parts[0]?.damageType ?? 'bonus',
     });
-  }
+  };
+  add(bonusDice, bonusDie);
+  add(sneakDice, 'd6');
   return parts;
 }
 

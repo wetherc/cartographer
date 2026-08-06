@@ -16,7 +16,7 @@ import type { LogEntry, LogEntryKind } from './log.js';
 import type { Quest } from './quest.js';
 import type { GameClock } from './time.js';
 import type { Handout } from './handout.js';
-import type { ActionCost, CombatState, Participant } from './combat.js';
+import type { ActionCost, CombatState, Participant, TurnFlag } from './combat.js';
 import type { ViewRole } from './view.js';
 import type { PartyPosition } from './map.js';
 import type { DiceResult, DiceSelection } from './dice.js';
@@ -113,12 +113,13 @@ export interface AppActions {
   endCombat(): void;
   // encounterWiring: spend part of one combatant's turn, which is how an
   // attack or a cast pays for itself. 'attack' is the weapon swing, which
-  // spends the Attack action and banks the extra swings of Extra Attack. The
-  // return value is false when the budget no longer holds the cost, and the
-  // caller then offers the GM the way past it.
+  // spends the Attack action and banks the extra swings of Extra Attack.
+  // 'sneak' is the once-per-turn Sneak Attack flag, which costs no part of the
+  // turn. The return value is false when the budget no longer holds the cost,
+  // and the caller then offers the GM the way past it.
   spendBudget(
     id: string,
-    cost: ActionCost | 'attack',
+    cost: ActionCost | TurnFlag | 'attack',
     options?: { attacksPerAction?: number },
   ): boolean;
   // encounterWiring: drop the running fight when nothing is staged on the

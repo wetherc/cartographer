@@ -132,7 +132,8 @@ so `Movement.walkSpeed` stays informational.
 
 `app.actions.spendBudget(id, cost, options)` is the only write path.
 encounterWiring registers it, so `state.combat` keeps one writer. The cost is
-'action', 'bonus', 'reaction', or 'attack' for a weapon swing. The return value
+'action', 'bonus', 'reaction', 'attack' for a weapon swing, or 'sneak' for the
+once-per-turn Sneak Attack flag, which costs no part of the turn. The return value
 is false when the budget no longer holds the cost. With no fight running the
 action reports success and writes nothing, which is what a cast from the
 character sheet needs.
@@ -211,6 +212,38 @@ cast routes to the same `castSpellAction` the action bar uses. That path already
 spends what the casting time names, and `castPlan` finds the caster's own
 participant by id rather than by whose turn it is, so a reaction spell needed no
 new spending path.
+
+### Cover and Sneak Attack
+
+Both of these are GM calls in the pre-roll dialog. The app tracks no distance
+between tokens and no line of sight, so no rule here can read a wall, a barrel,
+or where the rogue stands. The GM sees the table and answers the dialog.
+
+`src/combat/Cover.js` holds the 5e table: half cover adds 2 to the AC of the
+target, and three-quarters cover adds 5. `coverBonus` reads an answer it does
+not know as no cover. `coverNote` gives the text the log prints. Total cover has
+no entry, because a target in total cover cannot be attacked at all.
+
+The cover control is a select beside the roll mode, so it is one click away for
+every swing. `rollWeaponAttack` adds the bonus to the AC of the defender once,
+and that raised AC then goes to the dice tray, to `resolveAttack`, to the log,
+and to the miss toast. The log prints the raised AC and the plain one together,
+such as `vs AC 12 (10 half cover +2)`.
+
+Sneak Attack is a checkbox. It appears when `Features.sneakAttackDice` gives the
+attacker dice and the turn still holds the `sneak` flag. The label states the
+count, so the GM sees what the box is worth. The count comes from the level in
+the class that granted the feature, not from the level of the character.
+
+The dice land through the `sneakDice` option of `damageParts`. They are always
+d6, they take the damage type of the weapon, and a critical hit doubles them
+like every other damage die. The flag is spent at the damage step and not
+beside the swing, because Sneak Attack applies only on a hit. A miss leaves the
+flag for the next attack of the turn.
+
+Whether the rogue earned the dice is not modeled. The 5e condition is advantage
+on the attack or an ally next to the target, and the second half needs the map
+distance that nothing here has. The box states the GM's answer to that question.
 
 ## The view is derived, not stored
 

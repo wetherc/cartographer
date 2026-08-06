@@ -316,6 +316,30 @@ spell opens the usual cast dialog and spends the reaction instead of the action.
 The reaction comes back at the start of the turn of its owner, not at the top of
 the round.
 
+### Cover and Sneak Attack
+
+Both of these are your call in the attack dialog. The app tracks no distance
+between tokens and no line of sight, so it cannot see a wall, a barrel, or where
+the rogue stands.
+
+The "Target cover" select sits beside the roll mode. Half cover adds 2 to the AC
+of the target for that swing, and three-quarters cover adds 5. The log prints
+both numbers, such as `vs AC 12 (10 half cover +2)`, so the reason for the change
+is on the record. Total cover is not offered: a target in total cover cannot be
+attacked, so no roll happens.
+
+A "Sneak Attack" box appears when the attacker has the feature and has not used
+it this turn. The label states the dice, such as `Sneak Attack (+2d6)`. The count
+comes from the level in the class that granted the feature. The dice are d6, they
+take the damage type of the weapon, and a critical hit doubles them. The damage
+line of the log names them.
+
+The 5e condition for the dice is advantage on the attack, or an ally next to the
+target. The app checks neither, so the box is where you state that the condition
+was met. The once-per-turn limit is tracked: the box is gone for the rest of the
+turn after the dice land. A miss leaves the box, because Sneak Attack applies
+only on a hit.
+
 ### The rules the app applies
 
 Attack rolls follow 5e without change.

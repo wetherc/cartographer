@@ -4,8 +4,9 @@ import { attackAbility, hasWeaponProperty, weaponKind } from '../entities/Weapon
 import { unproficientWear } from '../entities/Armor.js';
 import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
 import { isProficientWeapon } from '../entities/Proficiencies.js';
-import { attacksPerAction } from '../entities/Features.js';
+import { attacksPerAction, sneakAttackDice } from '../entities/Features.js';
 import { attacksAvailable, canSpend } from '../combat/ActionBudget.js';
+import { COVER_LEVELS, coverBonus, coverNote } from '../combat/Cover.js';
 import { offhandDamageModifier } from '../combat/TwoWeapon.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
@@ -36,6 +37,9 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
  * second swing of two-weapon fighting: it costs the bonus action rather than
  * the Attack action, and its damage carries no ability bonus. `reaction` is an
  * opportunity attack, which costs the reaction and rolls like a normal swing.
+ * `cover` raises the defender's AC for this swing, and `sneak` adds the
+ * attacker's Sneak Attack dice to the damage. Both are the GM's call, because
+ * nothing here reads a barrel on the map or where the rogue is standing.
  * Every field defaults to nothing, so a plain Enter in the dialog rolls the
  * unmodified attack.
  * @typedef {{
@@ -46,6 +50,8 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
  *   freeAction?: boolean,
  *   offhand?: boolean,
  *   reaction?: boolean,
+ *   cover?: import('../combat/Cover.js').CoverLevel,
+ *   sneak?: boolean,
  *   attackDice?: number,
  *   attackDie?: import('../types/dice.js').DieType,
  *   attackFlat?: number,
@@ -173,6 +179,8 @@ export function readAttackTweaks(values) {
     longRange: values['range'] === 'long' || values['range'] === 'thrown-long',
     thrown: values['range'] === 'thrown' || values['range'] === 'thrown-long',
     freeAction: values['free-action'] === '1',
+    cover: /** @type {import('../combat/Cover.js').CoverLevel} */ (values['cover'] || 'none'),
+    sneak: values['sneak'] === '1',
     attackDice: Number(values['atk-count']) || 0,
     attackDie: /** @type {import('../types/dice.js').DieType} */ (values['atk-die']),
     attackFlat: Number(values['atk-flat']) || 0,
@@ -199,6 +207,11 @@ export function readAttackTweaks(values) {
  * The chips on both sides also set the roll's mode, unless the dialog picked
  * one, and a hit on a helpless defender in melee is a critical one whatever
  * the d20 showed.
+ *
+ * Cover from the dialog raises the AC this swing rolls against, and the log
+ * prints both the raised AC and the plain one. A ticked Sneak Attack box adds
+ * the attacker's d6 on a hit and marks the flag as used for the turn, so the
+ * second swing cannot add it again.
  *
  * The attack roll goes through the dice tray, which owns its own randomness.
  * `rng` is the source for the damage roll and for the rider dice, injected
@@ -294,20 +307,25 @@ export function rollWeaponAttack(
   const badWear = unproficientWear(attacker);
   const wearSlant = badWear.length > 0 ? 'disadvantage' : null;
   const mode = picked ?? rollMode(conditionQuery, [longSlant, wearSlant]);
+  // Cover is the GM's call in the dialog, and it raises the AC of this one
+  // swing. Nothing on the map says who stands behind what, so no rule here
+  // could work it out.
+  const cover = coverBonus(tweaks.cover);
+  const ac = defender.ac + cover;
   const { result } = app.actions.rollDice(
     {
       counts: { d20: 1, ...tweak.counts },
       modifier: attackBonus + tweak.modifier + rider.modifier,
       ...(mode ? { mode } : {}),
     },
-    defender.ac,
+    ac,
   );
   const d20 = result.results.find((r) => r.die === 'd20');
   const natural = d20?.rolls[0] ?? 0;
   const { crit, hit, outcome } = resolveAttack({
     natural,
     total: result.total,
-    ac: defender.ac,
+    ac,
     // A helpless defender turns any melee hit into a critical one, without a
     // natural 20.
     autoCrit: autoCrits(defender.conditions, { melee }),
@@ -336,14 +354,15 @@ export function rollWeaponAttack(
   // swing, so the note sits on the attack line: it says where the missing damage
   // bonus went, or which part of the turn the swing came out of.
   const handNote = swing.note;
+  // The AC in the log is the one the roll answered to, and the cover note says
+  // where the difference came from.
+  const coverAC = cover ? ` (${defender.ac} ${coverNote(tweaks.cover)})` : '';
   app.actions.logEvent(
     'combat',
-    `${attacker.name} attacks ${defender.name} with ${weapon.name}${handNote} (${ability} ${formatModifier(abilityMod)}, ${proficiencyNote}${tiredNote}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
+    `${attacker.name} attacks ${defender.name} with ${weapon.name}${handNote} (${ability} ${formatModifier(abilityMod)}, ${proficiencyNote}${tiredNote}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${ac}${coverAC}${modeNote} — ${outcome}.`,
   );
   if (!hit) {
-    app.toasts.show(
-      `${result.total} vs AC ${defender.ac}: ${attacker.name} misses ${defender.name}.`,
-    );
+    app.toasts.show(`${result.total} vs AC ${ac}: ${attacker.name} misses ${defender.name}.`);
     return;
   }
   // A crit rolls every damage die twice, including the dialog's added dice.
@@ -352,10 +371,16 @@ export function rollWeaponAttack(
   // two-handed dice instead of the one-handed ones.
   const twoHanded =
     tweaks.twoHanded && 'versatileDamage' in weapon && weapon.versatileDamage?.length;
+  // Sneak Attack adds its dice only on a hit, so the flag is spent here rather
+  // than beside the swing. An attacker without the feature has no dice to add,
+  // whatever the dialog said.
+  const sneakDice = tweaks.sneak ? sneakAttackDice(attacker) : 0;
+  if (sneakDice > 0 && app.actions.spendBudget) app.actions.spendBudget(attacker.id, 'sneak');
   const parts = damageParts((twoHanded ? weapon.versatileDamage : weapon.damage) ?? [], {
     crit,
     bonusDice: tweaks.damageDice ?? 0,
     bonusDie: tweaks.damageDie ?? 'd4',
+    sneakDice,
   });
   // The second hand of two-weapon fighting adds no ability bonus to damage. A
   // negative modifier still applies, so the swing of a weak character is still
@@ -367,11 +392,15 @@ export function rollWeaponAttack(
       ? `, inflicting ${weapon.statusEffects.join(', ')}`
       : '';
   const blow = crit ? 'critically hits' : 'hits';
+  // The dice are already inside the detail, so the note only names how many of
+  // them came from Sneak Attack. A crit doubled that count too.
+  const sneakNote =
+    sneakDice > 0 ? `, with sneak attack ${crit ? sneakDice * 2 : sneakDice}d6` : '';
   // The travelogue keeps the raw damage dice as detail. The toast below
   // keeps only the short per-type totals as text.
   app.actions.logEvent(
     'combat',
-    `${weapon.name} ${blow} ${defender.name} for ${damage.detail || '0 damage'}${inflicts}.`,
+    `${weapon.name} ${blow} ${defender.name} for ${damage.detail || '0 damage'}${sneakNote}${inflicts}.`,
   );
   // Applies the damage on the spot through the shared write path. Every
   // combatant tracks HP, and the function logs a defeat or a drop to 0
@@ -389,7 +418,10 @@ export function rollWeaponAttack(
  * -1d4), extra damage dice (a smite), and flat bonuses on either roll. The
  * mode defaults to reading the condition chips, and picking one of the three
  * modes there overrides both the chips and the dice tray's standing toggle for
- * this roll. The function then loads 1d20,
+ * this roll. A cover control raises the defender's AC for this swing, and an
+ * attacker with Sneak Attack that has not used it this turn gets a box that
+ * adds its dice. Both are GM calls: the app tracks no line of sight and no
+ * position. The function then loads 1d20,
  * the attacker's ability modifier, proficiency bonus, any overrides, and the
  * defender's AC into the dice tray, and rolls. A natural 20 hits regardless
  * of AC and doubles the damage dice, for a critical hit. A natural 1 always
@@ -465,6 +497,7 @@ export async function weaponAttack(
         ]
     : [];
   const swing = SWINGS[swingKind({ offhand, reaction })];
+  const sneakDice = sneakAttackDice(attacker);
   const values = await promptModal(
     `${swing.title} ${weapon.name}`,
     [
@@ -493,6 +526,31 @@ export async function weaponAttack(
         options: MODE_OPTIONS,
         full: true,
       },
+      // Cover is a plain GM call, so it sits in the open part beside the mode.
+      // The app knows nothing about walls or barrels, and it never will until
+      // tokens have a distance between them.
+      {
+        name: 'cover',
+        label: 'Target cover',
+        type: 'select',
+        value: 'none',
+        options: COVER_LEVELS.map((level) => ({ value: level.value, label: level.label })),
+        full: true,
+      },
+      // The Sneak Attack box appears for an attacker that has the feature and
+      // has not used it this turn. Whether the rogue earned it, from advantage
+      // or from an ally beside the target, is the GM's call at the table.
+      ...(sneakDice > 0 && canSpend(participant, 'sneak')
+        ? [
+            {
+              name: 'sneak',
+              label: `Sneak Attack (+${sneakDice}d6)`,
+              type: /** @type {const} */ ('checkbox'),
+              value: false,
+              full: true,
+            },
+          ]
+        : []),
       ...(versatile
         ? [
             {

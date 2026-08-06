@@ -89,6 +89,8 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
       mode: 'advantage',
       'two-handed': '1',
       range: 'long',
+      cover: 'half',
+      sneak: '1',
       'atk-count': '1',
       'atk-die': 'd6',
       'atk-flat': '2',
@@ -102,6 +104,8 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
       longRange: true,
       thrown: false,
       freeAction: false,
+      cover: 'half',
+      sneak: true,
       attackDice: 1,
       attackDie: 'd6',
       attackFlat: 2,
@@ -112,13 +116,15 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
   );
   // An absent mode answer reads as `auto`, which leaves the chips in charge.
   // An absent grip or range answer reads as the one-handed, normal-range
-  // attack.
+  // attack. An absent cover answer reads as no cover, which is the plain AC.
   assert.deepEqual(readAttackTweaks({}), {
     mode: 'auto',
     twoHanded: false,
     longRange: false,
     thrown: false,
     freeAction: false,
+    cover: 'none',
+    sneak: false,
     attackDice: 0,
     attackDie: undefined,
     attackFlat: 0,
@@ -1286,6 +1292,87 @@ test('an opportunity attack with the reaction gone rolls nothing and says so', (
   assert.deepEqual(app.rolls, [], 'no dice are thrown');
   assert.deepEqual(app.log, []);
   assert.equal(app.toastMessages[0], 'Hero already used their reaction.');
+});
+
+test('cover raises the AC the swing answers to, and the log prints both', () => {
+  const { app, hero, spends } = budgetApp();
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    tweaks: { cover: 'half' },
+    rng: scripted([4 / 8]),
+  });
+  assert.equal(spends.length, 1);
+  assert.equal(app.rolls[0].target, 12, 'the tray compares against the raised AC');
+  assert.match(app.log[0], /vs AC 12 \(10 half cover \+2\)/);
+});
+
+test('cover can turn a hit into a miss', () => {
+  const hero = makeHero({ STR: 16 });
+  // STR +3 and proficiency +2 on a 9 makes 14, which beats AC 10 and loses to
+  // the 15 that three-quarters cover makes of it.
+  const app = stubApp({ characters: [hero], rng: scripted([d20(9)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    tweaks: { cover: 'three-quarters' },
+  });
+  assert.match(app.log[0], /vs AC 15 \(10 three-quarters cover \+5\) — miss\./);
+  assert.equal(app.log.length, 1, 'no damage was rolled');
+  assert.equal(app.toastMessages[0], '14 vs AC 15: Hero misses Goblin.');
+});
+
+test('a sneak attack adds its d6, names them in the log, and spends the flag', () => {
+  const { app, hero, spends } = budgetApp();
+  const rogue = { ...hero, classes: [{ classId: 'rogue', level: 3 }], level: 3 };
+  rollWeaponAttack(app, {
+    attacker: rogue,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    tweaks: { sneak: true },
+    // A d8 landing on 5, then two d6 landing on 4 each.
+    rng: scripted([4 / 8]),
+  });
+  assert.deepEqual(spends, [
+    { id: 'hero', cost: 'attack', attacksPerAction: 1 },
+    { id: 'hero', cost: 'sneak' },
+  ]);
+  const damage = app.log.find((entry) => entry.includes('hits Goblin'));
+  // 5 on the sword, 4 and 4 on the two sneak dice, and STR +3.
+  assert.match(damage, /16 slashing/);
+  assert.match(damage, /with sneak attack 2d6/);
+});
+
+test('a critical sneak attack doubles the dice it names', () => {
+  const hero = makeHero({ STR: 16 });
+  const rogue = { ...hero, classes: [{ classId: 'rogue', level: 3 }], level: 3 };
+  const app = stubApp({ characters: [rogue], rng: scripted([d20(20)]) });
+  rollWeaponAttack(app, {
+    attacker: rogue,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    tweaks: { sneak: true },
+    rng: scripted([4 / 8]),
+  });
+  const damage = app.log.find((entry) => entry.includes('critically hits Goblin'));
+  assert.match(damage, /with sneak attack 4d6/);
+});
+
+test('the sneak box does nothing for an attacker without the feature', () => {
+  const { app, hero, spends } = budgetApp();
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    tweaks: { sneak: true },
+    rng: scripted([4 / 8]),
+  });
+  assert.deepEqual(spends, [{ id: 'hero', cost: 'attack', attacksPerAction: 1 }]);
+  const damage = app.log.find((entry) => entry.includes('hits Goblin'));
+  assert.equal(/sneak attack/.test(damage), false);
+  assert.match(damage, /8 slashing/, 'the sword and STR +3, and no extra dice');
 });
 
 test('swingKind names one swing per set of answers, and main is the default', () => {

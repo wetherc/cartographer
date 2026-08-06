@@ -22,6 +22,12 @@ export interface Participant {
 export type ActionCost = 'action' | 'bonus' | 'reaction';
 
 /**
+ * A once-per-turn allowance that costs no action. Sneak Attack damage is the
+ * only one: it rides an attack that already paid for itself.
+ */
+export type TurnFlag = 'sneak';
+
+/**
  * What one combatant already spent this turn. The three costs are booleans,
  * because a turn holds one of each. Movement has no entry, because nothing in
  * the app moves a token by feet yet.

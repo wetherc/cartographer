@@ -102,6 +102,31 @@ test('a zero, negative, or fractional bonus-dice count adds no term', () => {
   assert.deepEqual(damageParts(weapon, { crit: false, bonusDice: 0.5 }), weapon);
 });
 
+test('sneak attack dice are d6 of the weapon type and double on a crit', () => {
+  const weapon = [part(1, 8, 'slashing')];
+  assert.deepEqual(damageParts(weapon, { crit: false, sneakDice: 3 }), [
+    part(1, 8, 'slashing'),
+    part(3, 6, 'slashing'),
+  ]);
+  assert.deepEqual(damageParts(weapon, { crit: true, sneakDice: 3 }), [
+    part(2, 8, 'slashing'),
+    part(6, 6, 'slashing'),
+  ]);
+  assert.deepEqual(damageParts(weapon, { crit: false, sneakDice: 0 }), weapon);
+});
+
+test('sneak attack dice sit after the dialog dice, not instead of them', () => {
+  assert.deepEqual(
+    damageParts([part(1, 8, 'slashing')], {
+      crit: false,
+      bonusDice: 2,
+      bonusDie: 'd8',
+      sneakDice: 1,
+    }),
+    [part(1, 8, 'slashing'), part(2, 8, 'slashing'), part(1, 6, 'slashing')],
+  );
+});
+
 test('the default bonus die is a d4, matching the dialog', () => {
   assert.deepEqual(damageParts([], { crit: false, bonusDice: 1 }), [part(1, 4, 'bonus')]);
 });

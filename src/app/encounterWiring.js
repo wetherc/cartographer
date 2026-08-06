@@ -114,14 +114,17 @@ export function wireEncounters(app) {
    * action budget, so the attack and cast paths do not touch `state.combat`
    * themselves. The 'attack' cost is the weapon swing: the first swing of a
    * turn spends the Attack action and banks the extra swings that Extra
-   * Attack grants, and each later swing draws on that bank.
+   * Attack grants, and each later swing draws on that bank. The 'sneak' cost
+   * is the once-per-turn Sneak Attack flag, which costs no part of the turn but
+   * is spent and refreshed like one.
    *
    * The return value says whether the spend went through. False means the
    * budget no longer holds the cost, and the caller offers the GM the way
    * past it. With no fight running there is nothing to track, so the spend
    * counts as done: a cast from the character sheet is not part of a turn.
    * @param {string} id
-   * @param {import('../types/combat.js').ActionCost | 'attack'} cost
+   * @param {import('../types/combat.js').ActionCost
+   *   | import('../types/combat.js').TurnFlag | 'attack'} cost
    * @param {{ attacksPerAction?: number }} [options] how many swings one
    *   Attack action buys for this combatant, for the 'attack' cost.
    * @returns {boolean}

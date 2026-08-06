@@ -79,6 +79,12 @@ test('spend marks one cost and leaves the others alone', () => {
   assert.deepEqual(spent.used, { ...freshBudget(), bonus: true });
 });
 
+test('the sneak flag is spent and asked about like an action', () => {
+  assert.equal(canSpend(at(), 'sneak'), true);
+  assert.deepEqual(spend(at(), 'sneak').used, { ...freshBudget(), sneak: true });
+  assert.equal(canSpend(at({ sneak: true }), 'sneak'), false);
+});
+
 test('spend returns the same participant when the cost is already gone', () => {
   const already = at({ reaction: true });
   assert.equal(spend(already, 'reaction'), already);

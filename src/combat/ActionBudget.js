@@ -16,6 +16,7 @@
 
 /** @typedef {import('../types/combat.js').ActionBudget} ActionBudget */
 /** @typedef {import('../types/combat.js').ActionCost} ActionCost */
+/** @typedef {import('../types/combat.js').TurnFlag} TurnFlag */
 /** @typedef {import('../types/combat.js').Participant} Participant */
 
 /** The costs a combatant can spend, in the order the action bar shows them. */
@@ -62,9 +63,11 @@ export function budgetOf(value) {
  * rules have more exceptions than this model carries.
  *
  * A banked Extra Attack swing is not an action and does not answer here. Ask
- * `attacksAvailable` for a weapon swing.
+ * `attacksAvailable` for a weapon swing. The once-per-turn Sneak Attack flag
+ * does answer here, because it is spent and refreshed the same way an action
+ * is.
  * @param {Participant} participant
- * @param {ActionCost} cost
+ * @param {ActionCost | TurnFlag} cost
  * @returns {boolean}
  */
 export function canSpend(participant, cost) {
@@ -75,7 +78,7 @@ export function canSpend(participant, cost) {
  * Mark one cost as spent. Spending a cost that is already spent returns the
  * participant unchanged, so a GM override cannot go into debt.
  * @param {Participant} participant
- * @param {ActionCost} cost
+ * @param {ActionCost | TurnFlag} cost
  * @returns {Participant}
  */
 export function spend(participant, cost) {
