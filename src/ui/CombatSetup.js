@@ -11,10 +11,11 @@ import { openDialog } from './Modal.js';
 /**
  * Show the combat setup dialog. It lists one row per potential combatant with
  * an editable initiative value. An optional Roll initiative button fills
- * every row from `rollInitiative` (a d20 roll plus DEX modifier in the app,
- * or an injected roll in tests). A Start combat button submits the form.
- * Rolled values stay editable, so the GM can override a result by hand
- * before starting.
+ * every row from `rollInitiative` (a Dexterity check in the app, or an
+ * injected roll in tests). Each roll also returns a note saying what slanted
+ * it, which the dialog passes on to `onRolled` for the log. A Start combat
+ * button submits the form. Rolled values stay editable, so the GM can override
+ * a result by hand before starting.
  *
  * This is the GM's entry into combat. The initiative panel itself only shows
  * a running fight, so the caller must gate who can open this dialog. On
@@ -27,8 +28,8 @@ import { openDialog } from './Modal.js';
  * @param {Participant[]} roster
  * @param {{
  *   describe?: (participant: Participant) => ParticipantView | null,
- *   rollInitiative?: (participant: Participant) => number,
- *   onRolled?: (results: { name: string, value: number }[]) => void,
+ *   rollInitiative?: (participant: Participant) => { value: number, note: string },
+ *   onRolled?: (results: { name: string, value: number, note: string }[]) => void,
  * }} [callbacks]
  * @returns {Promise<Participant[] | null>}
  */
@@ -85,14 +86,14 @@ export function combatSetupModal(roster, callbacks = {}) {
         const rollAll = textButton(
           'Roll initiative',
           () => {
-            /** @type {{ name: string, value: number }[]} */
+            /** @type {{ name: string, value: number, note: string }[]} */
             const results = [];
             for (const participant of roster) {
               const input = inputs.get(participant.id);
               if (!input) continue;
-              const value = rollInitiative(participant);
+              const { value, note } = rollInitiative(participant);
               input.value = String(value);
-              results.push({ name: describe(participant).name, value });
+              results.push({ name: describe(participant).name, value, note });
             }
             if (results.length > 0) callbacks.onRolled?.(results);
           },

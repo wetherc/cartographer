@@ -43,6 +43,8 @@ src/combat/Loadout.js ........ pure: what a combatant is wearing, swinging,
                                given viewer can see
 src/combat/Arrival.js ........ pure: the text of the walked-into-something
                                alert, for the hostile creatures on a tile
+src/combat/InitiativeRoll.js . pure: one initiative roll as a DEX check, with
+                               the slant, the exhaustion penalty, and a note
 src/ui/CombatScreen.js ....... the screen: active column, board, log column,
                                turn ribbon, outcome banner, live region,
                                keyboard handling
@@ -380,6 +382,22 @@ and a step onto its tile logs a meeting instead. `arrivalAlert` in
 The Start combat button sits in the Active tab of the Encounters panel. The
 Active tab lists the same live creatures the gate counts, so the panel
 switches itself to that tab whenever the button can show.
+
+### Rolling initiative
+
+Initiative is a Dexterity check, so `src/combat/InitiativeRoll.js` rolls it as
+one. `initiativeSlant` asks `ConditionEffects.rollMode` for the mode a check
+takes from the chips of the roller, folds in the disadvantage of armor the
+roller is not trained for, and reads the exhaustion penalty. `rollInitiative`
+throws the d20s itself, keeps the higher or the lower one, and adds the DEX
+modifier that the roster already stamped on the participant.
+
+The setup dialog fills a whole column at once, which is why this roll does not
+go through the dice tray: the tray shows one roll and this press makes six. The
+roll returns a note instead, which names the dropped die and every reason, and
+the travelogue line carries it. `encounterWiring.js` resolves the participant id
+to its entity with `findCombatant`, and an id that nothing holds any more rolls
+plain rather than failing.
 
 ## Ending a fight
 

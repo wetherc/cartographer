@@ -393,8 +393,16 @@ the combat screen and on its sheet, and the Unconscious chip.
 An encounter and an NPC have no death saves. Both are defeated at 0 HP.
 
 Initiative uses the DEX modifier, which is `floor((DEX - 10) / 2)`. The
-default initiative value is 10 plus the modifier. Roll initiative rolls d20
-plus the modifier for everyone at once.
+default initiative value is 10 plus the modifier. Roll initiative fills every
+row at once.
+
+Initiative is a Dexterity check, and it rolls as one. A condition chip that
+slants ability checks slants it, so a poisoned or frightened combatant rolls two
+d20s and keeps the lower one. Armor that the character is not trained for does
+the same. Exhaustion takes 2 off the total for each level. The log line says
+what happened to each roll: `Initiative rolled: Ser Aldric 17, Mirelle 6 (at
+disadvantage (dropped 15), Poisoned disadvantage).` Every value stays editable
+before you press Start combat, so you can still override any of it.
 
 Armor class follows 5e as well.
 
@@ -491,9 +499,8 @@ HP and drops out of the fight, the same as a killing blow. A revive undoes the
 fatal level as well. A heal that brings a character or a creature back takes the
 level from 6 down to 5, so nothing stands up dead.
 
-Two rolls do not get the penalty. Initiative throws a straight d20, so lower it
-by hand in the setup dialog. A creature's saving throw against a spell is a
-number you type into the cast dialog, so subtract the penalty as you type it.
+One roll does not get the penalty. A creature's saving throw against a spell is
+a number you type into the cast dialog, so subtract the penalty as you type it.
 A spell save DC is not a d20 test, and exhaustion does not lower it.
 
 Advantage and disadvantage from any number of sources fold by the 5e rule: if

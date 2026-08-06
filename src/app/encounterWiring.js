@@ -29,6 +29,7 @@ import {
   dropParticipant,
 } from '../combat/Initiative.js';
 import { attacksAvailable, canSpend, spend, spendAttack } from '../combat/ActionBudget.js';
+import { rollInitiative } from '../combat/InitiativeRoll.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 import { arrivalAlert } from '../combat/Arrival.js';
 import { tickConditions } from '../entities/Conditions.js';
@@ -372,8 +373,8 @@ export function wireEncounters(app) {
   const describe = (participant) => describeCombatant(app, participant.id);
 
   // This is the GM's entry into combat. It opens a setup dialog over the
-  // map with the roster, a Roll initiative fill (d20 plus DEX modifier,
-  // editable by hand after), and a Start control. Start changes the
+  // map with the roster, a Roll initiative fill (a DEX check, editable by
+  // hand after), and a Start control. Start changes the
   // initiative panel from hidden to the running order.
   async function startCombatSetup() {
     // This timestamp is taken when the setup opens, not when Start runs.
@@ -382,20 +383,22 @@ export function wireEncounters(app) {
     const startedAt = Date.now();
     const participants = await combatSetupModal(combatRoster(), {
       describe,
-      // Initiative is a DEX check in 5e, but the fill rolls a straight d20.
-      // No slant reaches it yet: neither condition chips nor the
-      // untrained-armor rule, which slant attacks, checks, and saves. The
-      // GM edits the value by hand until initiative shares the slanted roll
-      // path.
+      // Initiative is a DEX check, and it rolls as one: the chips of the
+      // roller and armor the roller is not trained for slant the d20, and
+      // exhaustion takes its penalty off the total. The value stays editable,
+      // so the GM still overrides anything the rules got wrong.
       rollInitiative: (participant) =>
-        Math.floor(Math.random() * 20) + 1 + (participant.modifier ?? 0),
+        rollInitiative(participant, findCombatant(app, participant.id)?.entity),
       // The travelogue gets one line for each press of Roll initiative, and
-      // records every result. A hand-edited override before Start does not
-      // log again.
+      // records every result. A roll that something slanted states why, in
+      // parentheses after its value. A hand-edited override before Start does
+      // not log again.
       onRolled: (results) =>
         app.actions.logEvent(
           'roll',
-          `Initiative rolled: ${results.map((r) => `${r.name} ${r.value}`).join(', ')}.`,
+          `Initiative rolled: ${results
+            .map((r) => `${r.name} ${r.value}${r.note ? ` (${r.note})` : ''}`)
+            .join(', ')}.`,
         ),
     });
     if (!participants) return;
