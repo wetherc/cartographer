@@ -1681,6 +1681,19 @@ test('a cast in a fight spends the action its casting time names', () => {
   assert.deepEqual(spends, [{ id: 'mage', cost: 'action' }]);
 });
 
+test('a cast whose cost went away while the dialog stood open is refused', () => {
+  // The plan judged the budget at dialog-open. If something else takes the
+  // action before the roll, the spend's own refusal stops the cast.
+  const caster = mage();
+  const { app } = inFight(caster);
+  const plan = planFor(app, caster, firebolt);
+  assert.equal(plan.actionBlocked, false);
+  app.actions.spendBudget = () => false;
+  resolveCast(app, plan, atGoblin(), { writeBack: () => {}, concentrates: true });
+  assert.equal(app.toasted[0], 'Mage already used their action this turn.');
+  assert.deepEqual(app.log, [], 'the refused cast rolled nothing');
+});
+
 test('a cast out of combat spends nothing', () => {
   const caster = mage();
   const app = stubApp({ characters: [caster], creatures: [] });

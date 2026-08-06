@@ -30,7 +30,14 @@ export const COST_LABELS = { action: 'Action', bonus: 'Bonus action', reaction: 
  * @returns {ActionBudget}
  */
 export function freshBudget() {
-  return { action: false, bonus: false, reaction: false, attacksLeft: 0, sneak: false };
+  return {
+    action: false,
+    bonus: false,
+    reaction: false,
+    attacksLeft: 0,
+    attacked: false,
+    sneak: false,
+  };
 }
 
 /**
@@ -52,6 +59,7 @@ export function budgetOf(value) {
     bonus: used.bonus === true,
     reaction: used.reaction === true,
     attacksLeft: Math.max(0, Math.floor(count)),
+    attacked: used.attacked === true,
     sneak: used.sneak === true,
   };
 }
@@ -90,8 +98,12 @@ export function spend(participant, cost) {
 /**
  * Spend one weapon swing. The first swing of a turn costs the action and banks
  * the rest of the attacks the combatant's Extra Attack grants. Each later
- * swing draws on that bank and costs nothing. A swing taken after the bank is
- * empty spends a second Attack action, which only a GM override reaches.
+ * swing draws on that bank and costs nothing. A swing past an empty bank
+ * spends another Attack action; the app's write path refuses before that, so
+ * only a direct caller of this function reaches it.
+ *
+ * Every swing marks `attacked`, which is what tells the Attack action apart
+ * from an action spent on a cast. Two-weapon fighting reads that mark.
  * @param {Participant} participant
  * @param {number} [attacksPerAction] how many swings one Attack action buys
  * @returns {Participant}
@@ -99,10 +111,13 @@ export function spend(participant, cost) {
 export function spendAttack(participant, attacksPerAction = 1) {
   const used = budgetOf(participant.used);
   if (used.attacksLeft > 0) {
-    return { ...participant, used: { ...used, attacksLeft: used.attacksLeft - 1 } };
+    return { ...participant, used: { ...used, attacksLeft: used.attacksLeft - 1, attacked: true } };
   }
   const banked = Math.max(0, Math.floor(attacksPerAction) - 1);
-  return { ...participant, used: { ...used, action: true, attacksLeft: banked } };
+  return {
+    ...participant,
+    used: { ...used, action: true, attacksLeft: banked, attacked: true },
+  };
 }
 
 /**
@@ -125,7 +140,14 @@ export function attacksAvailable(participant, attacksPerAction = 1) {
  */
 export function isFresh(participant) {
   const used = budgetOf(participant.used);
-  return !used.action && !used.bonus && !used.reaction && used.attacksLeft === 0 && !used.sneak;
+  return (
+    !used.action &&
+    !used.bonus &&
+    !used.reaction &&
+    used.attacksLeft === 0 &&
+    !used.attacked &&
+    !used.sneak
+  );
 }
 
 /**
@@ -139,4 +161,20 @@ export function isFresh(participant) {
 export function refresh(participant) {
   if (isFresh(participant)) return participant;
   return { ...participant, used: freshBudget() };
+}
+
+/**
+ * Give a participant its Sneak Attack back. The 5e limit is once per turn, and
+ * a turn is anyone's turn: a rogue that spent the dice on its own swing can
+ * spend them again on an opportunity attack during somebody else's turn. Every
+ * turn boundary therefore resets the flag for the whole order, not just for
+ * the combatant whose turn begins. Identity survives an unspent flag, so the
+ * reset costs nothing on the rows it does not touch.
+ * @param {Participant} participant
+ * @returns {Participant}
+ */
+export function resetSneak(participant) {
+  const used = budgetOf(participant.used);
+  if (!used.sneak) return participant;
+  return { ...participant, used: { ...used, sneak: false } };
 }

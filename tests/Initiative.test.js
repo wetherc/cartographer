@@ -157,6 +157,20 @@ test('advanceTurn leaves a skipped combatant with its spent budget', () => {
   assert.equal(result.state.order[1].used?.bonus, true, 'b never got a turn to refresh');
 });
 
+test('advanceTurn gives everyone their Sneak Attack back, not just the lander', () => {
+  // Once per turn means anyone's turn, so a rogue that spent the dice on its
+  // own swing gets them back for an opportunity attack on the next turn.
+  const state = startCombat([createParticipant('a', 20), createParticipant('b', 15)]);
+  const spent = {
+    ...state,
+    order: [spend(spend(state.order[0], 'action'), 'sneak'), state.order[1]],
+  };
+  const result = advanceTurn(spent);
+  assert.equal(currentParticipant(result.state)?.id, 'b');
+  assert.equal(result.state.order[0].used?.sneak, false, 'the flag re-arms on the new turn');
+  assert.equal(result.state.order[0].used?.action, true, 'the rest of the spent turn stays spent');
+});
+
 test('advanceTurn keeps the order identity when the turn spent nothing', () => {
   const state = startCombat([createParticipant('a', 20), createParticipant('b', 15)]);
   const result = advanceTurn(state);

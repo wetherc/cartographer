@@ -9,6 +9,7 @@ import {
   freshBudget,
   isFresh,
   refresh,
+  resetSneak,
   spend,
   spendAttack,
 } from '../src/combat/ActionBudget.js';
@@ -36,6 +37,7 @@ test('freshBudget spends nothing', () => {
     bonus: false,
     reaction: false,
     attacksLeft: 0,
+    attacked: false,
     sneak: false,
   });
 });
@@ -47,13 +49,17 @@ test('budgetOf reads a missing budget as a fresh turn', () => {
 });
 
 test('budgetOf keeps only the true booleans and a whole attack count', () => {
-  assert.deepEqual(budgetOf({ action: true, bonus: 'yes', attacksLeft: 2.7, sneak: 1 }), {
-    action: true,
-    bonus: false,
-    reaction: false,
-    attacksLeft: 2,
-    sneak: false,
-  });
+  assert.deepEqual(
+    budgetOf({ action: true, bonus: 'yes', attacksLeft: 2.7, attacked: 'sure', sneak: 1 }),
+    {
+      action: true,
+      bonus: false,
+      reaction: false,
+      attacksLeft: 2,
+      attacked: false,
+      sneak: false,
+    },
+  );
 });
 
 test('budgetOf floors a negative or unreadable attack count to zero', () => {
@@ -90,20 +96,41 @@ test('spend returns the same participant when the cost is already gone', () => {
   assert.equal(spend(already, 'reaction'), already);
 });
 
-test('spendAttack takes the action and banks the extra swings', () => {
-  assert.deepEqual(spendAttack(at(), 2).used, { ...freshBudget(), action: true, attacksLeft: 1 });
-  assert.deepEqual(spendAttack(at(), 1).used, { ...freshBudget(), action: true, attacksLeft: 0 });
+test('spendAttack takes the action, marks the attack, and banks the extra swings', () => {
+  assert.deepEqual(spendAttack(at(), 2).used, {
+    ...freshBudget(),
+    action: true,
+    attacksLeft: 1,
+    attacked: true,
+  });
+  assert.deepEqual(spendAttack(at(), 1).used, {
+    ...freshBudget(),
+    action: true,
+    attacksLeft: 0,
+    attacked: true,
+  });
 });
 
 test('spendAttack draws on the bank without spending a second action', () => {
-  const banked = at({ action: true, attacksLeft: 2 });
-  assert.deepEqual(spendAttack(banked, 3).used, { ...freshBudget(), action: true, attacksLeft: 1 });
+  const banked = at({ action: true, attacksLeft: 2, attacked: true });
+  assert.deepEqual(spendAttack(banked, 3).used, {
+    ...freshBudget(),
+    action: true,
+    attacksLeft: 1,
+    attacked: true,
+  });
 });
 
 test('spendAttack past an empty bank spends another Attack action', () => {
-  // Only a GM override reaches this, and it must not go into debt.
-  const spent = spendAttack(at({ action: true }), 2);
-  assert.deepEqual(spent.used, { ...freshBudget(), action: true, attacksLeft: 1 });
+  // The app's write path refuses first, so only a direct caller reaches this,
+  // and it must not go into debt.
+  const spent = spendAttack(at({ action: true, attacked: true }), 2);
+  assert.deepEqual(spent.used, {
+    ...freshBudget(),
+    action: true,
+    attacksLeft: 1,
+    attacked: true,
+  });
 });
 
 test('spendAttack treats a fractional or zero attack rate as one swing', () => {
@@ -129,8 +156,27 @@ test('isFresh is true only when nothing at all is spent', () => {
 });
 
 test('refresh gives a whole turn back, reaction included', () => {
-  const used = at({ action: true, bonus: true, reaction: true, attacksLeft: 1, sneak: true });
+  const used = at({
+    action: true,
+    bonus: true,
+    reaction: true,
+    attacksLeft: 1,
+    attacked: true,
+    sneak: true,
+  });
   assert.deepEqual(refresh(used).used, freshBudget());
+});
+
+test('resetSneak gives only the sneak flag back', () => {
+  const spent = at({ action: true, attacked: true, sneak: true });
+  assert.deepEqual(resetSneak(spent).used, { ...freshBudget(), action: true, attacked: true });
+});
+
+test('resetSneak returns the same participant when the flag is unspent', () => {
+  const clean = at({ action: true });
+  assert.equal(resetSneak(clean), clean);
+  const legacy = at(undefined);
+  assert.equal(resetSneak(legacy), legacy);
 });
 
 test('refresh returns the same participant when the turn is already fresh', () => {

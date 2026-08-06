@@ -681,8 +681,16 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
     );
     return;
   }
+  // The plan judged the budget when the dialog opened, and the fight can move
+  // while it stands there. The spend re-checks, so a cost that something else
+  // took in the meantime refuses here the way the attack path refuses.
   if (!plan.actionBlocked && plan.actionCost && app.actions.spendBudget) {
-    app.actions.spendBudget(entity.id, plan.actionCost);
+    if (!app.actions.spendBudget(entity.id, plan.actionCost)) {
+      app.toasts.show(
+        `${entity.name} already used their ${COST_LABELS[plan.actionCost].toLowerCase()} this turn.`,
+      );
+      return;
+    }
   }
   // A target that carries its own bonus rolls that bonus. A foe with no save
   // the app can read falls back to the one number the GM typed for all such targets.

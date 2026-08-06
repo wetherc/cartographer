@@ -41,6 +41,12 @@ export interface ActionBudget {
    * banks one here, so the second swing of the turn costs nothing.
    */
   attacksLeft: number;
+  /**
+   * Whether the turn's action went to a weapon swing. The `action` flag alone
+   * cannot say, because a cast spends it too, and two-weapon fighting needs
+   * the Attack action specifically.
+   */
+  attacked: boolean;
   /** Whether Sneak Attack damage was already added once this turn. */
   sneak: boolean;
 }

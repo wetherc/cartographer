@@ -51,10 +51,10 @@ test('offhandWeapons offers the light melee weapons once there are two of them',
   assert.deepEqual(offhandWeapons([]), []);
 });
 
-test('canOffhand waits for the Attack action to be spent and the bonus action to be free', () => {
+test('canOffhand waits for the Attack action to be taken and the bonus action to be free', () => {
   const weapons = [DAGGER, SHORTSWORD];
   assert.equal(
-    canOffhand(participant({ action: true, bonus: false }), weapons),
+    canOffhand(participant({ action: true, attacked: true, bonus: false }), weapons),
     true,
     'the first swing has been taken and the bonus action is there to pay',
   );
@@ -64,12 +64,17 @@ test('canOffhand waits for the Attack action to be spent and the bonus action to
     'the off-hand swing is the second attack, not the first',
   );
   assert.equal(
-    canOffhand(participant({ action: true, bonus: true }), weapons),
+    canOffhand(participant({ action: true, attacked: false, bonus: false }), weapons),
+    false,
+    'an action spent on a cast is not the Attack action',
+  );
+  assert.equal(
+    canOffhand(participant({ action: true, attacked: true, bonus: true }), weapons),
     false,
     'something else already took the bonus action',
   );
   assert.equal(
-    canOffhand(participant({ action: true, bonus: false }), [DAGGER]),
+    canOffhand(participant({ action: true, attacked: true, bonus: false }), [DAGGER]),
     false,
     'one weapon offers no second hand',
   );

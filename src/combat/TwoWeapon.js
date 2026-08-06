@@ -46,16 +46,17 @@ export function offhandWeapons(weapons) {
 
 /**
  * Whether the off-hand swing is available this turn: the combatant holds two
- * light melee weapons, already spent the Attack action, and still holds the
- * bonus action. The spent action is what makes this the second attack of the
- * rule rather than the first.
+ * light melee weapons, already took the Attack action, and still holds the
+ * bonus action. The `attacked` mark is the test, not the `action` flag alone:
+ * an action spent on a cast is not the Attack action, and the rule wants the
+ * attack.
  * @param {Participant} participant
  * @param {Weapon[]} weapons
  * @returns {boolean}
  */
 export function canOffhand(participant, weapons) {
   if (offhandWeapons(weapons).length === 0) return false;
-  return budgetOf(participant.used).action && canSpend(participant, 'bonus');
+  return budgetOf(participant.used).attacked && canSpend(participant, 'bonus');
 }
 
 /**

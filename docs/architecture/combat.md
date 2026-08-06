@@ -113,15 +113,22 @@ that absence as a whole turn.
 `attacksLeft` is the one counter in the budget. Extra Attack buys two swings
 for one action, so the first swing spends the action and banks the rest.
 `spendAttack` draws on the bank before it spends another action, and
-`attacksAvailable` reports how many swings are left.
+`attacksAvailable` reports how many swings are left. Each swing also marks
+`attacked`, because the `action` flag alone cannot say what the action went
+to: a cast spends it too, and two-weapon fighting needs the Attack action
+specifically.
 
 `advanceTurn` gives a whole budget back to the combatant the pointer lands on.
 The reaction resets there and not at the top of the round. This matches the
 rule that a combatant gets its reaction back at the start of its own turn. A
 combatant the pointer skips keeps its spent budget, because that combatant
-never takes a turn. `refresh` returns the same participant when nothing is
-spent. That keeps the identity of the order array, and with it the save diff
-and the combatant index caches.
+never takes a turn. The Sneak Attack flag is the exception: `resetSneak` gives
+it back to the whole order at every turn boundary, because the 5e limit is
+once per turn and a turn is anyone's turn. A rogue that spent the dice on its
+own swing can spend them again on an opportunity attack. `refresh` and
+`resetSneak` return the same participant when nothing changes. That keeps the
+identity of the order array, and with it the save diff and the combatant index
+caches.
 
 `canSpend` is a gate on the buttons and not a refusal. The rules hold more
 exceptions than this model carries. Every path that spends a cost also gives
@@ -166,9 +173,11 @@ them from the same row it draws everything else from.
 `src/combat/TwoWeapon.js` is the pure half. `isLightMelee` reads the kind and
 the `light` property of one weapon. `offhandWeapons` gives the light melee
 weapons of a list, and gives none unless the list holds two of them.
-`canOffhand` adds the two budget conditions: the Attack action is already spent,
-and the bonus action is still free. The spent action is what makes the off-hand
-swing the second attack of the rule.
+`canOffhand` adds the two budget conditions: the Attack action is already
+taken, and the bonus action is still free. The test reads the `attacked` mark
+rather than the `action` flag, so an action spent on a cast does not unlock
+the second hand. The taken attack is what makes the off-hand swing the second
+attack of the rule.
 
 Which hand holds which weapon is not modeled. Both light melee weapons are
 offered, and the GM picks the one the second hand swings.
@@ -241,7 +250,9 @@ The dice land through the `sneakDice` option of `damageParts`. They are always
 d6, they take the damage type of the weapon, and a critical hit doubles them
 like every other damage die. The flag is spent at the damage step and not
 beside the swing, because Sneak Attack applies only on a hit. A miss leaves the
-flag for the next attack of the turn.
+flag for the next attack of the turn. The flag comes back at every turn
+boundary, as the budget section above says, so an opportunity attack can carry
+the dice on somebody else's turn.
 
 Whether the rogue earned the dice is not modeled. The 5e condition is advantage
 on the attack or an ally next to the target, and the second half needs the map

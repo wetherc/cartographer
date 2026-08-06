@@ -6,7 +6,7 @@
  * elsewhere in this codebase.
  */
 
-import { freshBudget, refresh } from './ActionBudget.js';
+import { freshBudget, refresh, resetSneak } from './ActionBudget.js';
 
 /** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
@@ -147,16 +147,22 @@ export function advanceTurn(state, isDefeated = () => false) {
 }
 
 /**
- * The order with the participant at `index` given a fresh budget. The array
- * identity survives when that participant already had one, which keeps the
- * save diff and the combatant index caches warm on a turn nobody spent.
+ * The order with the participant at `index` given a fresh budget, and the
+ * Sneak Attack flag reset on everyone else. Sneak Attack is once per turn, and
+ * a turn is anyone's turn, so a new turn re-arms it for the whole order: a
+ * rogue that spent it can spend it again on an opportunity attack. The array
+ * identity survives when nothing changes, which keeps the save diff and the
+ * combatant index caches warm on a turn nobody spent.
  * @param {Participant[]} order
  * @param {number} index
  * @returns {Participant[]}
  */
 function refreshTurn(order, index) {
-  const landed = order[index];
-  const reset = refresh(landed);
-  if (reset === landed) return order;
-  return order.map((participant, at) => (at === index ? reset : participant));
+  let changed = false;
+  const next = order.map((participant, at) => {
+    const reset = at === index ? refresh(participant) : resetSneak(participant);
+    if (reset !== participant) changed = true;
+    return reset;
+  });
+  return changed ? next : order;
 }
