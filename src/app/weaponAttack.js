@@ -4,6 +4,8 @@ import { attackAbility, hasWeaponProperty, weaponKind } from '../entities/Weapon
 import { unproficientWear } from '../entities/Armor.js';
 import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
 import { isProficientWeapon } from '../entities/Proficiencies.js';
+import { attacksPerAction } from '../entities/Features.js';
+import { attacksAvailable } from '../combat/ActionBudget.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
 import { autoCrits, modeReasons, rollMode } from '../entities/ConditionEffects.js';
@@ -27,7 +29,9 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
  * weapon with both hands, so the damage uses the two-handed dice. `longRange`
  * fires past the weapon's normal range, which slants the roll toward
  * disadvantage. `thrown` throws a melee weapon instead of striking with it,
- * which makes the swing a ranged attack for every rule that asks. Every field
+ * which makes the swing a ranged attack for every rule that asks.
+ * `freeAction` swings without spending the turn's Attack action, which is how
+ * the GM takes a swing the action economy has no room for. Every field
  * defaults to nothing, so a plain Enter in the dialog rolls the unmodified
  * attack.
  * @typedef {{
@@ -35,6 +39,7 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
  *   twoHanded?: boolean,
  *   longRange?: boolean,
  *   thrown?: boolean,
+ *   freeAction?: boolean,
  *   attackDice?: number,
  *   attackDie?: import('../types/dice.js').DieType,
  *   attackFlat?: number,
@@ -102,6 +107,7 @@ export function readAttackTweaks(values) {
     // dagger can stab at the same dice it throws with.
     longRange: values['range'] === 'long' || values['range'] === 'thrown-long',
     thrown: values['range'] === 'thrown' || values['range'] === 'thrown-long',
+    freeAction: values['free-action'] === '1',
     attackDice: Number(values['atk-count']) || 0,
     attackDie: /** @type {import('../types/dice.js').DieType} */ (values['atk-die']),
     attackFlat: Number(values['atk-flat']) || 0,
@@ -145,6 +151,20 @@ export function rollWeaponAttack(
   app,
   { attacker, defender, weapon, tweaks = {}, rng = Math.random },
 ) {
+  // The swing pays first, so a turn with nothing left rolls no dice. The first
+  // swing spends the Attack action and banks whatever Extra Attack adds, and
+  // each later swing draws on that bank. `freeAction` comes from the dialog's
+  // opt-out and skips the whole question. Outside a running fight there is no
+  // turn to spend, and the action reports success.
+  if (!tweaks.freeAction && app.actions.spendBudget) {
+    const spent = app.actions.spendBudget(attacker.id, 'attack', {
+      attacksPerAction: attacksPerAction(attacker),
+    });
+    if (!spent) {
+      app.toasts.show(`${attacker.name} has no attack left this turn.`);
+      return;
+    }
+  }
   const stats = attackerStats(attacker);
   // A finesse weapon reads the attacker here: it takes the higher of the
   // attacker's STR and DEX.
@@ -387,6 +407,20 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
             {
               name: 'two-handed',
               label: 'Wield two-handed',
+              type: /** @type {const} */ ('checkbox'),
+              value: false,
+              full: true,
+            },
+          ]
+        : []),
+      // This box appears only on a turn with no swing left, because that is
+      // the only time the answer matters. Ticking it swings anyway, for a rule
+      // the action economy here does not carry.
+      ...(attacksAvailable(participant, attacksPerAction(attacker)) <= 0
+        ? [
+            {
+              name: 'free-action',
+              label: 'Ignore action cost (no attack left this turn)',
               type: /** @type {const} */ ('checkbox'),
               value: false,
               full: true,

@@ -12,7 +12,13 @@ import { hostileCreaturesOnTile } from '../entities/CreatureMap.js';
 import { castableSlotLevels } from '../entities/SpellSlots.js';
 import { toCaster, withCasterState } from '../entities/Caster.js';
 import { replaceById } from '../entities/Roster.js';
-import { durationInRounds } from '../entities/SpellTiming.js';
+import {
+  castingCost,
+  durationInRounds,
+  formatCastingTime,
+  parseCastingTime,
+} from '../entities/SpellTiming.js';
+import { COST_LABELS, canSpend } from '../combat/ActionBudget.js';
 import { begin as beginConcentration } from '../entities/Concentration.js';
 import { activeCreatureByName } from '../library/Library.js';
 import { spawnSummons } from './summons.js';
@@ -202,16 +208,18 @@ export function castCap(spell, slotLevel, casterLevel) {
  * @param {number[]} slotLevels the available slot levels at or above the spell's level
  * @param {number} saveDC
  * @param {number} cap the number of targets this cast can reach. The value is Infinity for an area spell.
- * @param {{ material?: boolean, ritual?: boolean, armor?: boolean }} [opts] `material`: true when the
+ * @param {{ material?: boolean, ritual?: boolean, armor?: boolean, actionLabel?: string }} [opts] `material`: true when the
  *   cast requires the caster to hold a material component. This adds the opt-out
  *   checkbox for a table that treats components as flavor. `ritual`: true when this caster can
  *   cast this spell as a ritual. This adds the box that trades the slot for extra time.
  *   `armor`: true when the caster wears armor it is not trained for. This adds
  *   the opt-out checkbox that lets the GM waive the armor rule.
+ *   `actionLabel`: the wording of the action-cost opt-out, for a cast the
+ *   caster's turn cannot pay for. An empty string leaves the box out.
  * @returns {import('../types/modal.js').ModalField[] | null}
  */
 export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
-  const { material = false, ritual = false, armor = false } = opts;
+  const { material = false, ritual = false, armor = false, actionLabel = '' } = opts;
   const kind = spell.effect.kind;
   /** @type {import('../types/modal.js').ModalField[]} */
   const fields = [];
@@ -329,6 +337,17 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
       full: true,
     });
   }
+  // A turn that has already spent what this cast costs, or a casting time
+  // longer than a turn, blocks the cast. Ticking this box casts anyway, which
+  // is the GM's call for a rule the action economy here does not carry.
+  if (actionLabel) {
+    fields.push({
+      name: 'ignore-action',
+      label: actionLabel,
+      type: 'checkbox',
+      full: true,
+    });
+  }
   return fields;
 }
 
@@ -394,6 +413,11 @@ export async function castSpellOutOfCombat(app, caster, spell) {
  * A refusal comes back as `{ ok: false, message }` and the caller shows the
  * message. There are two refusals: nothing to target, and no slot high enough
  * for a leveled spell.
+ *
+ * `actionCost` is what the cast takes off the caster's turn. It is null when
+ * nothing does: no fight is running, or the casting time is longer than a turn.
+ * `actionBlocked` is true when the turn cannot pay for the cast, which the
+ * dialog's opt-out is the way past.
  * @typedef {{ ok: false, message: string }} CastRefused
  * @typedef {{
  *   ok: true,
@@ -407,6 +431,9 @@ export async function castSpellOutOfCombat(app, caster, spell) {
  *   dc: number,
  *   material: ReturnType<typeof materialCheck>,
  *   armor: string[],
+ *   actionCost?: import('../types/combat.js').ActionCost | null,
+ *   actionBlocked?: boolean,
+ *   castingTime?: import('../types/spell.js').CastingTime,
  *   fields: import('../types/modal.js').ModalField[],
  * }} CastPlan
  */
@@ -502,10 +529,30 @@ export function castPlan(app, entity, spell, offered) {
   // trained for. Only a Character wears tracked gear, so a creature never
   // hits this. The dialog offers a GM opt-out beside the component one.
   const armor = unproficientWear(entity);
+  // A cast spends part of the caster's turn while a fight runs. The participant
+  // holds the budget, so a caster outside the running order, casting from the
+  // sheet, spends nothing. An entry with no casting time reads as an action,
+  // which is what almost every spell costs.
+  const participant = app.state.combat?.order.find((p) => p.id === entity.id) ?? null;
+  const castingTime = spell.castingTime
+    ? parseCastingTime(spell.castingTime)
+    : /** @type {import('../types/spell.js').CastingTime} */ ({ kind: 'action' });
+  const cost = castingCost(castingTime);
+  // What this cast takes off the turn. There is nothing to take outside a
+  // fight, and nothing a turn can pay toward a ten-minute casting time.
+  const actionCost = participant ? cost : null;
+  // Two things block a cast: a turn that already spent this part of itself, and
+  // a casting time no turn can hold. Both offer the same opt-out.
+  const actionBlocked = Boolean(participant && (cost === null || !canSpend(participant, cost)));
   const fields = castFields(spell, targets, slotLevels, dc, cap, {
     material: material.required,
     ritual: ritualOffered,
     armor: armor.length > 0,
+    actionLabel: !actionBlocked
+      ? ''
+      : actionCost === null
+        ? `Ignore casting time (${formatCastingTime(castingTime)})`
+        : `Ignore action cost (${COST_LABELS[actionCost].toLowerCase()} already used)`,
   });
   if (!fields) {
     return { ok: false, message: `No level ${spell.level}+ slot left for ${spell.name}.` };
@@ -522,6 +569,9 @@ export function castPlan(app, entity, spell, offered) {
     dc,
     material,
     armor,
+    actionCost,
+    actionBlocked,
+    castingTime,
     fields,
   };
 }
@@ -619,6 +669,20 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
       `${entity.name} cannot cast in ${armor.join(' and ')} without armor proficiency.`,
     );
     return;
+  }
+  // The turn pays for the cast last of the three refusals, so a cast stopped
+  // for a component or for armor still costs nothing. A blocked cast needs the
+  // opt-out, and a cast the turn can pay for spends it here, before any roll.
+  if (plan.actionBlocked && values['ignore-action'] !== '1') {
+    app.toasts.show(
+      plan.actionCost
+        ? `${entity.name} already used their ${COST_LABELS[plan.actionCost].toLowerCase()} this turn.`
+        : `${spell.name} takes ${formatCastingTime(plan.castingTime ?? { kind: 'special', text: '' })}, longer than one turn.`,
+    );
+    return;
+  }
+  if (!plan.actionBlocked && plan.actionCost && app.actions.spendBudget) {
+    app.actions.spendBudget(entity.id, plan.actionCost);
   }
   // A target that carries its own bonus rolls that bonus. A foe with no save
   // the app can read falls back to the one number the GM typed for all such targets.

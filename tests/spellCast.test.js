@@ -1628,3 +1628,136 @@ test('a summons marks the campaign dirty even when the cast spends nothing', () 
   assert.equal(app.state.creatures.length, 1);
   assert.ok(app.dirty > 0, 'the new creature has to reach the save');
 });
+
+// -- the action a cast costs ---------------------------------------------
+
+/**
+ * A stub app with the caster in a running order, and a budget action that
+ * records what a cast spends.
+ * @param {any} caster
+ * @param {any} [used] what the caster's turn has already spent
+ */
+function inFight(caster, used) {
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [goblin] });
+  app.state.combat = {
+    round: 1,
+    index: 0,
+    order: [
+      { id: caster.id, initiative: 15, modifier: 0, ...(used ? { used } : {}) },
+      { id: 'goblin', initiative: 9, modifier: 0 },
+    ],
+    startedAt: 0,
+  };
+  /** @type {any[]} */
+  const spends = [];
+  app.actions.spendBudget = (/** @type {any} */ id, /** @type {any} */ cost) => {
+    spends.push({ id, cost });
+    return true;
+  };
+  return { app, spends };
+}
+
+/** The one-target dialog answers for a cast at the goblin. */
+const atGoblin = (over = {}) => submit({ target: 'goblin', ...over });
+
+test('a cast in a fight spends the action its casting time names', () => {
+  const caster = mage();
+  const { app, spends } = inFight(caster);
+  const plan = planFor(app, caster, firebolt);
+  assert.equal(plan.actionCost, 'action');
+  assert.equal(plan.actionBlocked, false);
+  assert.ok(
+    !plan.fields.some((/** @type {any} */ f) => f.name === 'ignore-action'),
+    'an affordable cast needs no opt-out',
+  );
+  resolveCast(app, plan, atGoblin(), { writeBack: () => {}, concentrates: true });
+  assert.deepEqual(spends, [{ id: 'mage', cost: 'action' }]);
+});
+
+test('a cast out of combat spends nothing', () => {
+  const caster = mage();
+  const app = stubApp({ characters: [caster], creatures: [] });
+  /** @type {any[]} */
+  const spends = [];
+  app.actions.spendBudget = (/** @type {any} */ id) => spends.push(id);
+  const plan = planFor(app, caster, cureWounds);
+  assert.equal(plan.actionBlocked, false);
+  resolveCast(app, plan, submit({ target: 'mage' }), {
+    writeBack: () => {},
+    concentrates: true,
+  });
+  assert.deepEqual(spends, [], 'no turn is running to pay for it');
+});
+
+test('a turn that already acted blocks a cast and offers the opt-out', () => {
+  const caster = mage();
+  const { app, spends } = inFight(caster, { action: true });
+  const plan = planFor(app, caster, firebolt);
+  assert.equal(plan.actionBlocked, true);
+  const optOut = plan.fields.find((/** @type {any} */ f) => f.name === 'ignore-action');
+  assert.equal(optOut.label, 'Ignore action cost (action already used)');
+  resolveCast(app, plan, atGoblin(), { writeBack: () => {}, concentrates: true });
+  assert.equal(app.toasted[0], 'Mage already used their action this turn.');
+  assert.deepEqual(app.log, [], 'the refused cast rolled nothing');
+  assert.deepEqual(spends, [], 'and spent nothing');
+});
+
+test('the opt-out casts anyway and still spends nothing', () => {
+  const caster = mage();
+  const { app, spends } = inFight(caster, { action: true });
+  const plan = planFor(app, caster, firebolt);
+  resolveCast(app, plan, atGoblin({ 'ignore-action': '1' }), {
+    writeBack: () => {},
+    concentrates: true,
+  });
+  assert.ok(app.log.some((/** @type {string} */ line) => line.startsWith('Mage casts Fire Bolt')));
+  assert.deepEqual(spends, [], 'the budget has nothing left to take');
+});
+
+test('a casting time longer than a turn blocks a cast in a fight', () => {
+  const caster = mage();
+  const slow = spell({
+    id: 'long-ritual',
+    name: 'Slow Working',
+    level: 1,
+    castingTime: { kind: 'minutes', amount: 10 },
+    effect: { kind: 'heal', healing: [{ count: 1, sides: 8, damageType: 'healing' }] },
+  });
+  const { app } = inFight(caster, undefined);
+  const plan = planFor(app, caster, slow);
+  assert.equal(plan.actionCost, null);
+  assert.equal(plan.actionBlocked, true);
+  const optOut = plan.fields.find((/** @type {any} */ f) => f.name === 'ignore-action');
+  assert.equal(optOut.label, 'Ignore casting time (10 minutes)');
+  resolveCast(app, plan, submit({ target: 'mage' }), {
+    writeBack: () => {},
+    concentrates: true,
+  });
+  assert.equal(app.toasted[0], 'Slow Working takes 10 minutes, longer than one turn.');
+});
+
+test('a bonus-action cast spends the bonus action', () => {
+  const caster = mage();
+  const quick = spell({
+    id: 'quick-word',
+    name: 'Quick Word',
+    level: 1,
+    castingTime: { kind: 'bonus' },
+    effect: { kind: 'heal', healing: [{ count: 1, sides: 8, damageType: 'healing' }] },
+  });
+  const { app, spends } = inFight(caster, { action: true });
+  const plan = planFor(app, caster, quick);
+  assert.equal(plan.actionBlocked, false, 'the spent action does not block a bonus action');
+  resolveCast(app, plan, submit({ target: 'mage' }), {
+    writeBack: () => {},
+    concentrates: true,
+  });
+  assert.deepEqual(spends, [{ id: 'mage', cost: 'bonus' }]);
+});

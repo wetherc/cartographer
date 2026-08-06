@@ -445,10 +445,16 @@ export function mountCombatScreen(container, callbacks) {
     // for them. Inspecting a foe never offers its weapons to a player.
     const bar =
       current && row.mayAct
-        ? combatActionBar(callbacks.getActions(), {
-            onWeaponAttack: callbacks.onWeaponAttack,
-            onCastSpell: callbacks.onCastSpell,
-          })
+        ? combatActionBar(
+            callbacks.getActions(),
+            {
+              onWeaponAttack: callbacks.onWeaponAttack,
+              onCastSpell: callbacks.onCastSpell,
+            },
+            // The pips belong to the turn the bar acts on, so they come from
+            // the same row.
+            { used: row.used, attacksLeft: row.attacksLeft },
+          )
         : null;
 
     // This shows the loadout in full, minus whatever the bar already offers

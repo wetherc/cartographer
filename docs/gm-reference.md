@@ -259,6 +259,28 @@ in the sidebar shows the round and holds Open combat. Only the GM can click
 End combat. A fight also ends when the party walks off the tile, or when
 the last creature staged there is deleted.
 
+### What a turn can spend
+
+The Actions heading on the combat screen carries three pips: Action, Bonus
+action, and Reaction. A pip is struck through once the turn spent it. A
+combatant with Extra Attack also shows how many swings are left.
+
+- A weapon swing spends the Attack action. Extra Attack banks its extra swings,
+  so a Fighter of 5th level swings twice for one action.
+- A cast spends what the casting time of the spell names: an action, a bonus
+  action, or a reaction.
+- The whole turn comes back when the turn of that combatant begins again. The
+  reaction comes back there too, not at the top of the round.
+- A combatant the turn order steps past, because it is down or cannot act,
+  keeps whatever it spent.
+
+The pips report and never block a button. A swing or a cast the turn cannot pay
+for is refused in its dialog instead, and the dialog offers an "Ignore action
+cost" box that goes ahead anyway. Use it for a rule the app does not carry.
+
+A casting time longer than a turn, such as a ten-minute ritual, is refused in a
+fight for the same reason and offers the same box.
+
 ### The rules the app applies
 
 Attack rolls follow 5e without change.

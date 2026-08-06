@@ -173,6 +173,20 @@ export function formatCastingTime(value) {
 }
 
 /**
+ * Which part of a turn a cast spends, or null when the casting time is longer
+ * than a turn. A ten-minute ritual and a `special` casting time both read
+ * null: neither fits in the action economy, and the GM rules on them.
+ * @param {CastingTime} value
+ * @returns {import('../types/combat.js').ActionCost | null}
+ */
+export function castingCost(value) {
+  if (value.kind === 'action' || value.kind === 'bonus' || value.kind === 'reaction') {
+    return value.kind;
+  }
+  return null;
+}
+
+/**
  * The printed phrasing of a duration. Pass the spell's `concentration` flag
  * to get the SRD's `Concentration, up to 1 minute` phrasing back. Without
  * that flag, a duration that can end early reads `Up to 1 minute`.

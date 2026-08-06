@@ -28,6 +28,7 @@ import {
   currentParticipant,
   dropParticipant,
 } from '../combat/Initiative.js';
+import { attacksAvailable, canSpend, spend, spendAttack } from '../combat/ActionBudget.js';
 import { abilityModifier } from '../entities/Modifiers.js';
 import { arrivalAlert } from '../combat/Arrival.js';
 import { tickConditions } from '../entities/Conditions.js';
@@ -106,6 +107,44 @@ export function wireEncounters(app) {
     if (next === combat) return;
     setCombat(next);
     app.views.initiativePanel.update();
+  };
+
+  /**
+   * Spend part of one combatant's turn. This is the only write path for the
+   * action budget, so the attack and cast paths do not touch `state.combat`
+   * themselves. The 'attack' cost is the weapon swing: the first swing of a
+   * turn spends the Attack action and banks the extra swings that Extra
+   * Attack grants, and each later swing draws on that bank.
+   *
+   * The return value says whether the spend went through. False means the
+   * budget no longer holds the cost, and the caller offers the GM the way
+   * past it. With no fight running there is nothing to track, so the spend
+   * counts as done: a cast from the character sheet is not part of a turn.
+   * @param {string} id
+   * @param {import('../types/combat.js').ActionCost | 'attack'} cost
+   * @param {{ attacksPerAction?: number }} [options] how many swings one
+   *   Attack action buys for this combatant, for the 'attack' cost.
+   * @returns {boolean}
+   */
+  app.actions.spendBudget = (id, cost, { attacksPerAction = 1 } = {}) => {
+    const combat = current();
+    if (!combat) return true;
+    const index = combat.order.findIndex((p) => p.id === id);
+    if (index < 0) return true;
+    const participant = combat.order[index];
+    if (cost === 'attack') {
+      if (attacksAvailable(participant, attacksPerAction) <= 0) return false;
+    } else if (!canSpend(participant, cost)) {
+      return false;
+    }
+    const order = [...combat.order];
+    order[index] =
+      cost === 'attack' ? spendAttack(participant, attacksPerAction) : spend(participant, cost);
+    setCombat({ ...combat, order });
+    // The pips on the action bar are part of the combat screen, and the
+    // sidebar card shows none of this, so only the screen redraws.
+    app.views.combatScreen.update();
+    return true;
   };
 
   /**

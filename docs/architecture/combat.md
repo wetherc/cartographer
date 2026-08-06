@@ -128,13 +128,44 @@ the GM a way past the gate.
 Movement has no entry in the budget. Nothing in the app moves a token by feet,
 so `Movement.walkSpeed` stays informational.
 
+### What spends it
+
+`app.actions.spendBudget(id, cost, options)` is the only write path.
+encounterWiring registers it, so `state.combat` keeps one writer. The cost is
+'action', 'bonus', 'reaction', or 'attack' for a weapon swing. The return value
+is false when the budget no longer holds the cost. With no fight running the
+action reports success and writes nothing, which is what a cast from the
+character sheet needs.
+
+A weapon swing spends 'attack'. `rollWeaponAttack` asks first and rolls no dice
+on a refusal. How many swings one Attack action buys comes from
+`Features.attacksPerAction`, which reads the class feature list of the attacker.
+
+A cast spends what its casting time names. `SpellTiming.castingCost` turns the
+structured casting time into a cost, and reads a ten-minute or a `special`
+casting time as null: no part of a turn pays for it. `castPlan` puts the cost
+and a blocked flag on the plan, and `resolveCast` spends the cost before the
+first roll. Two things block a cast: a turn that already spent that part of
+itself, and a casting time longer than a turn.
+
+Both dialogs offer the way past. The attack dialog shows an "Ignore action cost"
+box on a turn with no swing left. The cast dialog shows one for a blocked cast,
+worded for whichever of the two reasons applies. A cast that goes through on the
+opt-out spends nothing, because there is nothing left to take.
+
+The action bar draws the pips: one per cost, struck through once spent, plus the
+swing count when more than one swing is left. The pips report and never gate.
+`CombatantRow` carries the `used` budget and `attacksLeft`, so the screen reads
+them from the same row it draws everything else from.
+
 ## The view is derived, not stored
 
 `buildCombatView(combat, resolve, viewer)` in `src/combat/CombatView.js` is a
 pure projection. It returns the round, the turn index, and one row per
 participant. Each row carries a name, side, initiative, HP, AC, conditions, a
 defeated flag, an incapacitated flag for a combatant whose chips cost it the
-turn, and whether this viewer can act for it. The wiring layer
+turn, whether this viewer can act for it, and what the turn has spent. The
+wiring layer
 injects the resolver (`findCombatant` from `combatants.js`), because only the
 wiring layer sees every collection where an id can live. The order itself
 stores nothing on a row. Because of this, a rename, a disposition flip, or

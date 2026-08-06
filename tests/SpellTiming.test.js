@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  castingCost,
   durationInRounds,
   formatCastingTime,
   formatDuration,
@@ -172,4 +173,17 @@ test('a structured special keeps its text and coerces a non-string away', () => 
 test('a casting time with no amount prints as one unit', () => {
   assert.equal(formatCastingTime({ kind: 'minutes' }), '1 minute');
   assert.equal(formatCastingTime({ kind: 'hours' }), '1 hour');
+});
+
+test('castingCost names the part of a turn a cast spends', () => {
+  assert.equal(castingCost({ kind: 'action' }), 'action');
+  assert.equal(castingCost({ kind: 'bonus' }), 'bonus');
+  assert.equal(castingCost({ kind: 'reaction' }), 'reaction');
+  assert.equal(castingCost(parseCastingTime('1 reaction, when you are hit')), 'reaction');
+});
+
+test('castingCost reads a casting time longer than a turn as no cost', () => {
+  assert.equal(castingCost({ kind: 'minutes', amount: 10 }), null);
+  assert.equal(castingCost({ kind: 'hours', amount: 1 }), null);
+  assert.equal(castingCost({ kind: 'special', text: 'a full night of chanting' }), null);
 });

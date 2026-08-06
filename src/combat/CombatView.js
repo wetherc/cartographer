@@ -12,6 +12,8 @@ import { effectiveStatBlock, isDefeated } from '../entities/Creature.js';
 import { armorClass } from '../entities/Armor.js';
 import { getHP } from '../entities/Character.js';
 import { canAct } from '../entities/ConditionEffects.js';
+import { attacksPerAction } from '../entities/Features.js';
+import { attacksAvailable, budgetOf } from './ActionBudget.js';
 
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -48,6 +50,8 @@ import { canAct } from '../entities/ConditionEffects.js';
  *   incapacitated: boolean,
  *   mayAct: boolean,
  *   deathSaves: import('../types/entities.js').DeathSaveState | null,
+ *   used: import('../types/combat.js').ActionBudget,
+ *   attacksLeft: number,
  * }} CombatantRow
  */
 
@@ -210,6 +214,13 @@ export function buildCombatView(combat, resolve, viewer) {
       // Only a character carries the tracker. Everything else reads null, so
       // the surfaces need no kind check of their own.
       deathSaves: found?.kind === 'character' ? (found.entity.deathSaves ?? null) : null,
+      // What this turn has already spent. A save written before the budget
+      // existed carries none, and reads as a whole turn.
+      used: budgetOf(participant.used),
+      // How many weapon swings are left, counting the one an unspent Attack
+      // action buys. Extra Attack raises it. A row that nothing resolves has
+      // no feature list to read, so it offers no swing.
+      attacksLeft: found ? attacksAvailable(participant, attacksPerAction(found.entity)) : 0,
     };
   });
   return { round: combat.round, turnIndex: combat.index, rows };

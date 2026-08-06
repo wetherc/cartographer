@@ -99,6 +99,7 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
       twoHanded: true,
       longRange: true,
       thrown: false,
+      freeAction: false,
       attackDice: 1,
       attackDie: 'd6',
       attackFlat: 2,
@@ -115,6 +116,7 @@ test('readAttackTweaks reads the dialog answers and treats a blank field as no o
     twoHanded: false,
     longRange: false,
     thrown: false,
+    freeAction: false,
     attackDice: 0,
     attackDie: undefined,
     attackFlat: 0,
@@ -1122,4 +1124,72 @@ test('a tired creature swings at the same penalty, and its damage is untouched',
   assert.equal(app.rolls[0].selection.modifier, -1);
   assert.match(app.log[0], /exhaustion 3 -6\): 19 to hit/);
   assert.match(app.log[1], /\+3\]\.$/, 'the damage keeps the whole ability modifier');
+});
+
+/**
+ * A stub app whose budget action records every spend and answers whatever the
+ * test scripts. The real action lives in encounterWiring and writes
+ * `state.combat`; the attack only needs its yes or no.
+ * @param {{ allow?: boolean }} [opts]
+ */
+function budgetApp({ allow = true } = {}) {
+  const hero = makeHero({ STR: 16 });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  /** @type {any[]} */
+  const spends = [];
+  app.actions.spendBudget = (
+    /** @type {any} */ id,
+    /** @type {any} */ cost,
+    /** @type {any} */ o,
+  ) => {
+    spends.push({ id, cost, ...o });
+    return allow;
+  };
+  return { app, hero, spends };
+}
+
+test('a swing spends the attack and banks the extra swings of Extra Attack', () => {
+  const { app, hero, spends } = budgetApp();
+  const fighter = { ...hero, classes: [{ classId: 'fighter', level: 5 }], level: 5 };
+  rollWeaponAttack(app, {
+    attacker: fighter,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  assert.deepEqual(spends, [{ id: 'hero', cost: 'attack', attacksPerAction: 2 }]);
+  assert.equal(app.rolls.length, 1, 'the swing went through');
+});
+
+test('a swing a turn cannot pay for rolls nothing and says so', () => {
+  const { app, hero, spends } = budgetApp({ allow: false });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+  });
+  assert.equal(spends.length, 1);
+  assert.deepEqual(app.rolls, [], 'no dice are thrown');
+  assert.deepEqual(app.log, [], 'and nothing is logged');
+  assert.equal(app.toastMessages[0], 'Hero has no attack left this turn.');
+});
+
+test('the free-action override swings without asking the budget', () => {
+  const { app, hero, spends } = budgetApp({ allow: false });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    tweaks: { freeAction: true },
+    rng: scripted([4 / 8]),
+  });
+  assert.deepEqual(spends, []);
+  assert.equal(app.rolls.length, 1);
 });

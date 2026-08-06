@@ -356,6 +356,26 @@ body.mode-combat .app-buildrail {
   gap: var(--space-2);
 }
 
+/* What the turn has left. A spent pip loses its border and gains a line
+   through it, so the row reads without relying on color. */
+.combat-action-bar__budget {
+  padding-left: var(--space-2);
+  font-size: var(--text-label);
+}
+
+.combat-action-bar__pip {
+  padding: 0 var(--space-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+}
+
+.combat-action-bar__pip--spent {
+  border-color: transparent;
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
 .combat-action-bar__groups {
   display: flex;
   flex-direction: column;

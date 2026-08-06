@@ -149,6 +149,53 @@ test('buildCombatView keeps a row for an id nothing resolves', () => {
   assert.equal(row.deathSaves, null);
 });
 
+test('buildCombatView carries the action budget and the swings left', () => {
+  const { hero, goblin } = fixtures();
+  const fighter = { ...hero, classes: [{ classId: 'fighter', level: 5 }], level: 5 };
+  const combat = {
+    round: 1,
+    index: 0,
+    order: [
+      { id: 'hero', initiative: 12, modifier: 2, used: { bonus: true, attacksLeft: 1 } },
+      { id: 'goblin', initiative: 9, modifier: 0 },
+    ],
+  };
+  const view = buildCombatView(
+    combat,
+    resolver(
+      /** @type {any} */ ({
+        hero: { kind: 'character', entity: fighter },
+        goblin: { kind: 'creature', entity: goblin },
+      }),
+    ),
+    { gm: true },
+  );
+  const [character, foe] = view.rows;
+  assert.equal(character.used.bonus, true);
+  assert.equal(character.used.action, false);
+  assert.equal(character.attacksLeft, 1, 'one banked swing of the Extra Attack is left');
+  assert.equal(foe.used.action, false, 'a participant with no budget reads as a whole turn');
+  assert.equal(foe.attacksLeft, 1, 'a foe without Extra Attack swings once');
+});
+
+test('buildCombatView offers no swing for an id nothing resolves', () => {
+  const combat = { round: 1, index: 0, order: [{ id: 'gone', initiative: 5, modifier: 0 }] };
+  const view = buildCombatView(combat, resolver({}), { gm: true });
+  assert.equal(view.rows[0].attacksLeft, 0);
+});
+
+test('buildCombatView reads the extra swings of an Extra Attack fighter', () => {
+  const { hero } = fixtures();
+  const fighter = { ...hero, classes: [{ classId: 'fighter', level: 11 }], level: 11 };
+  const combat = { round: 1, index: 0, order: [{ id: 'hero', initiative: 12, modifier: 2 }] };
+  const view = buildCombatView(
+    combat,
+    resolver(/** @type {any} */ ({ hero: { kind: 'character', entity: fighter } })),
+    { gm: true },
+  );
+  assert.equal(view.rows[0].attacksLeft, 3, 'an unspent Attack action buys all three');
+});
+
 test('buildCombatView carries a death-save tracker, and only from a character', () => {
   const { hero, goblin } = fixtures();
   const dying = {

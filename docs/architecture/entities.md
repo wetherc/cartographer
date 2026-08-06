@@ -510,7 +510,7 @@ Both are structured values, not text. A `castingTime` is a kind (`action`,
 and a trigger clause for a reaction. A `duration` is a kind
 (`instantaneous`, `rounds`, `minutes`, `hours`, `days`, `until-dispelled`) with
 an amount and an `upTo` flag for a duration that the caster can end early.
-`entities/SpellTiming.js` holds four functions over them:
+`entities/SpellTiming.js` holds five functions over them:
 
 - `parseCastingTime` and `parseDuration` accept either the structured object
   or the printed string that an older library or a hand-written JSON file
@@ -523,6 +523,9 @@ an amount and an `upTo` flag for a duration that the caster can end early.
   phrasing that the detail modal shows. Pass `concentration` to
   `formatDuration` to get the SRD's own `Concentration, up to 1 minute`
   wording back.
+- `castingCost` names the part of a turn that a cast spends, which the action
+  budget of the combat screen then takes. A casting time of minutes or hours,
+  and a `special` one, return null: no part of a turn pays for them.
 - `durationInRounds` converts a duration into a round count. This is what
   puts a timer on a condition that a spell imposes. Days and open-ended
   durations return null, so the GM must clear the chip by hand.
