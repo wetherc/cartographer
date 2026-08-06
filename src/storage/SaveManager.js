@@ -9,6 +9,7 @@ import { memoizeByIdentity } from '../util/memoize.js';
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
 import { withDefaults as withCreatureDefaults } from '../entities/Creature.js';
 import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
+import { budgetOf } from '../combat/ActionBudget.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
@@ -260,11 +261,11 @@ function combatState(value) {
     // fallback of 0 keeps that fight's log column showing every combat
     // entry, as it did before the log existed.
     startedAt: number(combat.startedAt, 0),
-    // The code reads a participant down to the three fields the order owns.
-    // A save written before the name and side became derived also carries
-    // them here. Removing them is the whole migration, because both values
-    // are now resolved from the entity that holds the id. An entry with no
-    // id names nobody, so the code removes it.
+    // The code reads a participant down to the fields the order owns. A save
+    // written before the name and side became derived also carries them here.
+    // Removing them is the whole migration, because both values are now
+    // resolved from the entity that holds the id. An entry with no id names
+    // nobody, so the code removes it.
     order: records(combat.order).flatMap((entry) =>
       typeof entry.id === 'string' && entry.id !== ''
         ? [
@@ -272,6 +273,9 @@ function combatState(value) {
               id: entry.id,
               initiative: number(entry.initiative, 10),
               modifier: number(entry.modifier, 0),
+              // A save from before the action budget carries nothing here, and
+              // `budgetOf` reads that as a turn with everything unspent.
+              used: budgetOf(entry.used),
             },
           ]
         : [],

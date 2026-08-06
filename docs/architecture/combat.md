@@ -33,6 +33,8 @@ and [entities](entities.md) document that resolution.
 ## The pieces
 
 ```
+src/combat/ActionBudget.js ... pure: what one combatant already spent on the
+                               current turn, and what a turn start gives back
 src/combat/CombatView.js ..... pure: projects a CombatState into rows a
                                surface can draw (side, HP, AC, defeated,
                                who can act), plus the fight's outcome
@@ -96,6 +98,35 @@ an id that stops resolving falls back to whoever's turn it is. The app
 releases the target on the refresh that shows it defeated, out of the order,
 or the fight over. Otherwise a defeated foe's card keeps its pressed
 ring, even after the attack dialog stops honoring the pick.
+
+## The action budget
+
+A turn in 5e holds one action, one bonus action, and one reaction.
+`src/combat/ActionBudget.js` is the pure model of what a combatant already
+spent. The budget lives on the participant, in a `used` field, so it saves and
+resumes with the fight. It records what is gone, not what is left. As a result,
+a participant from an older save carries no `used` field, and `budgetOf` reads
+that absence as a whole turn.
+
+`attacksLeft` is the one counter in the budget. Extra Attack buys two swings
+for one action, so the first swing spends the action and banks the rest.
+`spendAttack` draws on the bank before it spends another action, and
+`attacksAvailable` reports how many swings are left.
+
+`advanceTurn` gives a whole budget back to the combatant the pointer lands on.
+The reaction resets there and not at the top of the round. This matches the
+rule that a combatant gets its reaction back at the start of its own turn. A
+combatant the pointer skips keeps its spent budget, because that combatant
+never takes a turn. `refresh` returns the same participant when nothing is
+spent. That keeps the identity of the order array, and with it the save diff
+and the combatant index caches.
+
+`canSpend` is a gate on the buttons and not a refusal. The rules hold more
+exceptions than this model carries. Every path that spends a cost also gives
+the GM a way past the gate.
+
+Movement has no entry in the budget. Nothing in the app moves a token by feet,
+so `Movement.walkSpeed` stays informational.
 
 ## The view is derived, not stored
 

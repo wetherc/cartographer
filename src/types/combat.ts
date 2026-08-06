@@ -10,6 +10,33 @@ export interface Participant {
   initiative: number;
   /** DEX-derived bonus added to this combatant's initiative roll. */
   modifier: number;
+  /**
+   * What this combatant already spent on the current turn. Absent on a
+   * participant from a save written before the budget existed, which reads as
+   * a fresh turn.
+   */
+  used?: ActionBudget;
+}
+
+/** One kind of turn expenditure. Movement is absent: see `ActionBudget`. */
+export type ActionCost = 'action' | 'bonus' | 'reaction';
+
+/**
+ * What one combatant already spent this turn. The three costs are booleans,
+ * because a turn holds one of each. Movement has no entry, because nothing in
+ * the app moves a token by feet yet.
+ */
+export interface ActionBudget {
+  action: boolean;
+  bonus: boolean;
+  reaction: boolean;
+  /**
+   * Weapon swings still owed by an Attack action already spent. Extra Attack
+   * banks one here, so the second swing of the turn costs nothing.
+   */
+  attacksLeft: number;
+  /** Whether Sneak Attack damage was already added once this turn. */
+  sneak: boolean;
 }
 
 /** How a participant is presented, derived from the entity holding its id. */

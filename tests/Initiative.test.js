@@ -9,6 +9,7 @@ import {
   dropParticipant,
   addParticipant,
 } from '../src/combat/Initiative.js';
+import { freshBudget, spend } from '../src/combat/ActionBudget.js';
 
 /**
  * A stand-in for the app's name resolution: participants carry only ids, so
@@ -127,6 +128,46 @@ test('advanceTurn on an empty order is a no-op', () => {
   assert.equal(result.wrapped, false);
   assert.deepEqual(result.state, state);
   assert.equal(currentParticipant(state), null);
+});
+
+test('createParticipant starts with a whole action budget', () => {
+  assert.deepEqual(createParticipant('a').used, freshBudget());
+});
+
+test('advanceTurn gives the combatant it lands on a fresh budget', () => {
+  const state = startCombat([createParticipant('a', 20), createParticipant('b', 15)]);
+  const spent = { ...state, order: [state.order[0], spend(state.order[1], 'reaction')] };
+  const result = advanceTurn(spent);
+  assert.equal(currentParticipant(result.state)?.id, 'b');
+  assert.deepEqual(result.state.order[1].used, freshBudget(), 'b opens its turn unspent');
+});
+
+test('advanceTurn leaves a skipped combatant with its spent budget', () => {
+  const state = startCombat([
+    createParticipant('a', 20),
+    createParticipant('b', 15),
+    createParticipant('c', 10),
+  ]);
+  const spent = {
+    ...state,
+    order: [state.order[0], spend(state.order[1], 'bonus'), state.order[2]],
+  };
+  const result = advanceTurn(spent, (p) => p.id === 'b');
+  assert.equal(currentParticipant(result.state)?.id, 'c');
+  assert.equal(result.state.order[1].used?.bonus, true, 'b never got a turn to refresh');
+});
+
+test('advanceTurn keeps the order identity when the turn spent nothing', () => {
+  const state = startCombat([createParticipant('a', 20), createParticipant('b', 15)]);
+  const result = advanceTurn(state);
+  assert.equal(result.state.order, state.order, 'no rewrite, so the caches stay warm');
+});
+
+test('advanceTurn refreshes a participant whose budget the save left out', () => {
+  const state = startCombat([createParticipant('a', 20), createParticipant('b', 15)]);
+  const legacy = { ...state, order: [state.order[0], { id: 'b', initiative: 15, modifier: 0 }] };
+  const result = advanceTurn(legacy);
+  assert.equal(result.state.order, legacy.order, 'an absent budget already reads as fresh');
 });
 
 test('dropParticipant keeps the turn on the same combatant', () => {

@@ -6,6 +6,8 @@
  * elsewhere in this codebase.
  */
 
+import { freshBudget, refresh } from './ActionBudget.js';
+
 /** @typedef {import('../types/combat.js').Participant} Participant */
 /** @typedef {import('../types/combat.js').CombatState} CombatState */
 
@@ -16,7 +18,7 @@
  * @returns {Participant}
  */
 export function createParticipant(id, initiative = 10, modifier = 0) {
-  return { id, initiative, modifier };
+  return { id, initiative, modifier, used: freshBudget() };
 }
 
 /**
@@ -118,6 +120,11 @@ export function currentParticipant(state) {
  * pointer advances one full cycle and stops where it started, so the round
  * still turns over and timed effects keep ticking while the GM decides what
  * to do with the wipe.
+ *
+ * The participant the pointer lands on gets a whole action budget back,
+ * because their turn is what begins. A participant the pointer steps past
+ * keeps a spent budget: they cannot act, and their own next turn start clears
+ * it if something revives them.
  * @param {CombatState} state
  * @param {(participant: Participant) => boolean} [isDefeated]
  * @returns {{ state: CombatState, wrapped: boolean }}
@@ -136,5 +143,20 @@ export function advanceTurn(state, isDefeated = () => false) {
     }
     if (!isDefeated(state.order[index])) break;
   }
-  return { state: { ...state, index, round }, wrapped };
+  return { state: { ...state, index, round, order: refreshTurn(state.order, index) }, wrapped };
+}
+
+/**
+ * The order with the participant at `index` given a fresh budget. The array
+ * identity survives when that participant already had one, which keeps the
+ * save diff and the combatant index caches warm on a turn nobody spent.
+ * @param {Participant[]} order
+ * @param {number} index
+ * @returns {Participant[]}
+ */
+function refreshTurn(order, index) {
+  const landed = order[index];
+  const reset = refresh(landed);
+  if (reset === landed) return order;
+  return order.map((participant, at) => (at === index ? reset : participant));
 }

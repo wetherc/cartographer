@@ -27,6 +27,7 @@ import {
   QUOTA_WARN_BYTES,
 } from '../src/storage/SaveManager.js';
 import { CURRENT_VERSION } from '../src/storage/Migrations.js';
+import { freshBudget } from '../src/combat/ActionBudget.js';
 import { installLocalStorage, installWindow } from './helpers/env.js';
 import { fillTiles } from './helpers/grid.js';
 
@@ -574,14 +575,19 @@ test('serialize/deserialize round-trips a running combat', () => {
     round: 2,
     index: 1,
     order: [
-      { id: 'c1', initiative: 17, modifier: 2 },
-      { id: 'e1', initiative: 9, modifier: -1 },
+      {
+        id: 'c1',
+        initiative: 17,
+        modifier: 2,
+        used: { ...freshBudget(), action: true, bonus: true },
+      },
+      { id: 'e1', initiative: 9, modifier: -1, used: freshBudget() },
     ],
     startedAt: 1700000000000,
   };
   const state = buildState({ grid, combat });
   const restored = deserialize(serialize(state));
-  assert.deepEqual(restored.combat, combat);
+  assert.deepEqual(restored.combat, combat, 'a fight resumes with what each turn already spent');
 });
 
 test('deserialize strips the name and side an older save froze into the order', () => {
@@ -597,7 +603,10 @@ test('deserialize strips the name and side an older save froze into the order', 
   };
   const state = buildState({ grid, combat });
   const restored = deserialize(serialize(state));
-  assert.deepEqual(restored.combat?.order, [{ id: 'c1', initiative: 17, modifier: 2 }]);
+  // A save this old carries no action budget either, which reads as a fresh turn.
+  assert.deepEqual(restored.combat?.order, [
+    { id: 'c1', initiative: 17, modifier: 2, used: freshBudget() },
+  ]);
 });
 
 test('deserialize defaults a missing combat to null', () => {
