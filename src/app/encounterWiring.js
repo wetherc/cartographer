@@ -21,6 +21,7 @@ import {
 } from '../entities/CreatureMap.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import {
+  addParticipant,
   createParticipant,
   startCombat,
   advanceTurn,
@@ -84,6 +85,24 @@ export function wireEncounters(app) {
     const combat = current();
     if (!combat) return;
     const next = dropParticipant(combat, id);
+    if (next === combat) return;
+    setCombat(next);
+    app.views.initiativePanel.update();
+  };
+
+  /**
+   * Put a new combatant into the running order. A creature that a spell
+   * summons mid-fight joins this way. With no fight running there is no order
+   * to join, and the creature simply stands on the tile until a fight starts,
+   * which stages it like any other creature there.
+   * @param {import('../types/combat.js').Participant} participant
+   */
+  app.actions.addCombatant = (participant) => {
+    const combat = current();
+    if (!combat) return;
+    const nameOf = (/** @type {import('../types/combat.js').Participant} */ p) =>
+      describeCombatant(app, p.id)?.name ?? '';
+    const next = addParticipant(combat, participant, nameOf);
     if (next === combat) return;
     setCombat(next);
     app.views.initiativePanel.update();

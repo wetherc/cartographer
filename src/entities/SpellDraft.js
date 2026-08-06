@@ -1,4 +1,9 @@
-import { normalizeMaterials, normalizeProjectiles, normalizeTargetCount } from './Casting.js';
+import {
+  MAX_TARGET_COUNT,
+  normalizeMaterials,
+  normalizeProjectiles,
+  normalizeTargetCount,
+} from './Casting.js';
 import { normalizeRider } from './Riders.js';
 import { parseCastingTime, parseDuration } from './SpellTiming.js';
 import { clampInt } from '../util/num.js';
@@ -34,6 +39,8 @@ import { clampInt } from '../util/num.js';
  * @property {{ count: unknown, perStep: unknown, autoHit: boolean }} [projectiles]
  * @property {{ rolls: string[], dice: unknown, die: string, flat: unknown }} [rider]
  *   what the imposed chip adds to the target's later rolls
+ * @property {{ creature: string, count: unknown, countPerStep: unknown }} [summons]
+ *   which library creature template the summons kind spawns, and how many
  */
 
 /**
@@ -92,6 +99,18 @@ export function assembleEffect(draft) {
     };
   }
   if (draft.kind === 'heal') return { kind: 'heal', healing: draft.damage };
+  // A summons with no template names nothing to spawn, so it casts nothing and
+  // reads as a utility spell. This is the same rule the library import applies.
+  if (draft.kind === 'summons' && (draft.summons?.creature ?? '').trim()) {
+    const summons = /** @type {NonNullable<EffectDraft['summons']>} */ (draft.summons);
+    const perStep = clampInt(summons.countPerStep, 0);
+    return {
+      kind: 'summons',
+      creature: summons.creature.trim(),
+      count: clampInt(summons.count, 1, MAX_TARGET_COUNT, 1),
+      ...(perStep > 0 ? { countPerStep: Math.min(perStep, MAX_TARGET_COUNT) } : {}),
+    };
+  }
   if (draft.kind === 'buff') {
     const condition = (draft.condition ?? '').trim();
     const rider = normalizeRider(draft.rider);

@@ -75,6 +75,30 @@ export function dropParticipant(state, id) {
 }
 
 /**
+ * Add a combatant to a running order. A creature that a spell summons mid-fight
+ * joins this way. The newcomer takes its place by initiative, and the turn
+ * pointer stays on whoever holds the turn, whether the newcomer sorts above or
+ * below them. A newcomer that sorts above the current combatant therefore acts
+ * for the first time on the next round, which is what waiting for its place in
+ * the order means. The function returns the state unchanged (identity
+ * preserved) when the id is already in the order. Pure function.
+ * @param {CombatState} state
+ * @param {Participant} participant
+ * @param {(participant: Participant) => string} [nameOf] for the tiebreak
+ * @returns {CombatState}
+ */
+export function addParticipant(state, participant, nameOf) {
+  if (state.order.some((p) => p.id === participant.id)) return state;
+  const holder = state.order[state.index]?.id;
+  const order = sortInitiative([...state.order, participant], nameOf);
+  const index = Math.max(
+    0,
+    order.findIndex((p) => p.id === holder),
+  );
+  return { ...state, index, order };
+}
+
+/**
  * @param {CombatState} state
  * @returns {Participant | null} whose turn it currently is
  */

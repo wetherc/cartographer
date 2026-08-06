@@ -15,6 +15,7 @@ import {
   buildInlineForm,
 } from './formFields.js';
 import { MAX_TARGET_COUNT } from '../entities/Casting.js';
+import { activeCreatures } from '../library/Library.js';
 import { assembleSpell, effectDamageOf } from '../entities/SpellDraft.js';
 import { CONDITIONS } from '../entities/Conditions.js';
 import { RIDER_ROLLS, DEFAULT_RIDER_DIE } from '../entities/Riders.js';
@@ -259,6 +260,36 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const autoHit = checkbox('Hits automatically', shots?.autoHit ?? false);
   setTip(autoHit.label, 'No attack roll, as with Magic Missile');
 
+  // --- Summons: which creature template a cast spawns, and how many --------
+  // The picker lists the merged library templates by name, because the name is
+  // the merge key. An entry that names a template the library no longer
+  // carries keeps that name as its own option, so editing the spell does not
+  // silently repoint it.
+  const summonEffect = spell?.effect.kind === 'summons' ? spell.effect : null;
+  const storedCreature = summonEffect?.creature ?? '';
+  const templateNames = activeCreatures().map((t) => t.name);
+  const creatureSelect = select(
+    [
+      { value: '', label: 'None' },
+      ...(storedCreature && !templateNames.includes(storedCreature) ? [storedCreature] : []),
+      ...templateNames,
+    ],
+    storedCreature,
+  );
+  const creatureField = labeled('Creature', creatureSelect);
+  const summonCountInput = numberField(summonEffect?.count ?? 1, {
+    min: 1,
+    max: MAX_TARGET_COUNT,
+    className: 'form__number',
+  });
+  const summonCountField = labeled('How many', summonCountInput);
+  const summonPerStepInput = numberField(summonEffect?.countPerStep ?? 0, {
+    min: 0,
+    max: MAX_TARGET_COUNT,
+    className: 'form__number',
+  });
+  const summonPerStepField = labeled('Extra / level', summonPerStepInput);
+
   // --- Scaling -------------------------------------------------------------
   const scales = checkbox('Scales per level', !!spell?.scaling);
   const scalingDamage = buildDamageEditor(
@@ -290,6 +321,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const effectRow = fieldRow(labeled('Effect', kindSelect), abilityField);
   const projectilesRow = fieldRow(fires.label);
   const projectileFieldsRow = fieldRow(shotCountField, shotPerStepField, autoHit.label);
+  const summonsRow = fieldRow(creatureField, summonCountField, summonPerStepField);
   // The save's two toggles share a row. The condition picker gets its own row.
   const saveTogglesRow = fieldRow(halfOnSave.label, dealsDamage.label);
   const conditionRow = fieldRow(conditionField);
@@ -321,6 +353,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     projectilesRow.hidden = kind !== 'attack';
     const firesShots = kind === 'attack' && fires.input.checked;
     projectileFieldsRow.hidden = !firesShots;
+    // Only a summons names a creature template.
+    summonsRow.hidden = kind !== 'summons';
     // Attack always shows damage. Save shows damage when "Deals damage" is on.
     // Heal shows healing. Utility shows neither. Projectiles change what the
     // dice mean, so the caption states which meaning applies.
@@ -452,6 +486,11 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
           perStep: shotPerStepInput.value,
           autoHit: autoHit.input.checked,
         },
+        summons: {
+          creature: creatureSelect.value,
+          count: summonCountInput.value,
+          countPerStep: summonPerStepInput.value,
+        },
       },
       scaling: scales.input.checked
         ? { damagePerLevel: scalingDamage.get(), targetsPerLevel: targetsInput.value }
@@ -475,6 +514,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       effectRow,
       projectilesRow,
       projectileFieldsRow,
+      summonsRow,
       saveTogglesRow,
       conditionRow,
       riderRow,

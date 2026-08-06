@@ -210,6 +210,18 @@ export function projectileCount(effect, steps) {
 }
 
 /**
+ * How many creatures one cast summons: the effect's base `count`, plus
+ * `countPerStep` more for each scaling increment. A summons always brings at
+ * least one creature, because a cast that spawns nothing is not a cast.
+ * @param {import('../types/spell.js').SpellSummonsEffect} effect
+ * @param {number} steps how many scaling increments the cast applies
+ * @returns {number}
+ */
+export function summonCount(effect, steps) {
+  return Math.max(1, effect.count + (effect.countPerStep ?? 0) * Math.max(0, steps));
+}
+
+/**
  * How many creatures one cast can resolve against: the spell's own
  * `targetCount`, with an absent value counted as 1, plus one more for each
  * scaling increment when the spell scales targets. A `targetCount` of 0
@@ -341,6 +353,8 @@ function slotPoolToSpend(caster, slotLevel) {
  * - `heal`: the healing rolled once, applied identically to each target.
  * - `buff`: no rolls, and one entry per target naming the `condition` chip it
  *   takes and the `rider` that chip carries.
+ * - `summons`: no rolls and no targets, and one entry naming the `creature`
+ *   template to spawn and how many (`count`).
  * - `utility`: no rolls, and an empty `outcomes`.
  *
  * @template {SpellCaster} T
@@ -642,6 +656,13 @@ function resolveEffect(spell, ctx) {
   if (effect.kind === 'buff') {
     const condition = buffCondition(spell);
     return targets.map((target) => ({ target, condition, rider: effect.rider ?? null }));
+  }
+
+  // A summons rolls nothing and names no target. It reports which template to
+  // spawn and how many. The caller reads the template out of the library and
+  // places the creatures, because this function has neither.
+  if (effect.kind === 'summons') {
+    return [{ creature: effect.creature, count: summonCount(effect, steps) }];
   }
 
   return [];

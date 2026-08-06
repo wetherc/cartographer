@@ -7,6 +7,7 @@ import {
   currentParticipant,
   advanceTurn,
   dropParticipant,
+  addParticipant,
 } from '../src/combat/Initiative.js';
 
 /**
@@ -164,4 +165,52 @@ test('dropParticipant empties an order down to nothing and ignores an absent id'
   assert.equal(empty.index, 0);
   assert.equal(currentParticipant(empty), null);
   assert.equal(dropParticipant(state, 'nobody'), state, 'an absent id returns the same state');
+});
+
+test('addParticipant sorts the newcomer in and keeps the turn where it is', () => {
+  const state = {
+    ...startCombat([createParticipant('a', 20), createParticipant('c', 10)]),
+    index: 1,
+  };
+  // The newcomer sorts above the combatant holding the turn, so it acts for
+  // the first time next round.
+  const above = addParticipant(state, createParticipant('b', 15));
+  assert.deepEqual(
+    above.order.map((p) => p.id),
+    ['a', 'b', 'c'],
+  );
+  assert.equal(currentParticipant(above)?.id, 'c');
+  // A newcomer sorting below leaves the pointer alone too.
+  const below = addParticipant({ ...state, index: 0 }, createParticipant('d', 5));
+  assert.deepEqual(
+    below.order.map((p) => p.id),
+    ['a', 'c', 'd'],
+  );
+  assert.equal(currentParticipant(below)?.id, 'a');
+});
+
+test('addParticipant breaks an initiative tie by name, like the setup sort', () => {
+  const state = startCombat([createParticipant('a', 12)], nameOf({ a: 'Zed', b: 'Ana' }));
+  const next = addParticipant(state, createParticipant('b', 12), nameOf({ a: 'Zed', b: 'Ana' }));
+  assert.deepEqual(
+    next.order.map((p) => p.id),
+    ['b', 'a'],
+  );
+  assert.equal(currentParticipant(next)?.id, 'a', 'the turn stays on the combatant that held it');
+});
+
+test('addParticipant refuses a duplicate id and joins an empty order', () => {
+  const state = startCombat([createParticipant('a', 20)]);
+  assert.equal(
+    addParticipant(state, createParticipant('a', 5)),
+    state,
+    'an id already in the order returns the same state',
+  );
+  const empty = { round: 1, index: 0, order: [], startedAt: 0 };
+  const joined = addParticipant(empty, createParticipant('a', 7));
+  assert.deepEqual(
+    joined.order.map((p) => p.id),
+    ['a'],
+  );
+  assert.equal(joined.index, 0);
 });

@@ -79,13 +79,36 @@ export interface SpellBuffEffect {
   rider?: RollRider;
 }
 
+/** A spell that puts creatures on the map. The effect names one library
+ * creature template, and the cast spawns that many copies of it on the tile
+ * of the party. The side they fight on comes from the disposition of the
+ * template. A concentration spell owns its summons, so they leave when the
+ * caster stops holding the spell. */
+export interface SpellSummonsEffect {
+  kind: 'summons';
+  /** The name of the library creature template to spawn. The library merges
+   * creature entries by name, so a name keeps its meaning after a GM
+   * customizes the template. */
+  creature: string;
+  /** How many to spawn at the base level of the spell. */
+  count: number;
+  /** How many more per scaling increment, the same increment that
+   * `SpellProjectiles.perStep` counts. */
+  countPerStep?: number;
+}
+
 /** A spell with no roll to resolve. Its rules live in the description text. */
 export interface SpellUtilityEffect {
   kind: 'utility';
 }
 
 export type SpellEffect =
-  SpellAttackEffect | SpellSaveEffect | SpellHealEffect | SpellBuffEffect | SpellUtilityEffect;
+  | SpellAttackEffect
+  | SpellSaveEffect
+  | SpellHealEffect
+  | SpellBuffEffect
+  | SpellSummonsEffect
+  | SpellUtilityEffect;
 
 /** How a spell grows when cast with a higher-level slot (leveled spells), or
  * as the caster levels up (cantrips scale at levels 5, 11, and 17). */

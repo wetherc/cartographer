@@ -641,6 +641,94 @@ test('endSpellEffects does nothing when no chip carries that cast', () => {
   assert.deepEqual(app.state.characters[0].conditions, hero.conditions);
 });
 
+/** A creature spawned by the standard test cast. */
+function summoned(id, over = {}) {
+  return {
+    ...createCreature(id, 'Wolf', { disposition: 'hostile', maxHP: 11, location: HERE }),
+    summonedBy: { spellId: 'conjure-animals', spellName: 'Conjure Animals', casterId: 'druid' },
+    ...over,
+  };
+}
+
+test('endSpellEffects despawns the summons of a cast that imposed no chip', () => {
+  const { goblin } = fixtures();
+  const app = stubApp({ creatures: [goblin, summoned('wolf-1'), summoned('wolf-2')] });
+  endSpellEffects(app, 'druid', 'conjure-animals');
+  assert.deepEqual(
+    app.state.creatures.map((c) => c.id),
+    ['goblin'],
+  );
+  assert.deepEqual(app.log, [
+    'Wolf vanishes as Conjure Animals ends.',
+    'Wolf vanishes as Conjure Animals ends.',
+  ]);
+  assert.equal(app.dirty, 1);
+  assert.equal(app.calls.filter((c) => c === 'removeCombatant').length, 2);
+  assert.ok(app.calls.includes('syncCreatureMarkers'));
+});
+
+test('endSpellEffects leaves the summons of another caster or another spell', () => {
+  const app = stubApp({
+    creatures: [
+      summoned('wolf'),
+      summoned('bear', {
+        summonedBy: {
+          spellId: 'conjure-animals',
+          spellName: 'Conjure Animals',
+          casterId: 'ranger',
+        },
+      }),
+      summoned('spirit', {
+        summonedBy: {
+          spellId: 'spirit-guardians',
+          spellName: 'Spirit Guardians',
+          casterId: 'druid',
+        },
+      }),
+    ],
+  });
+  endSpellEffects(app, 'druid', 'conjure-animals');
+  assert.deepEqual(
+    app.state.creatures.map((c) => c.id),
+    ['bear', 'spirit'],
+  );
+});
+
+test('endSpellEffects despawns a defeated summon too', () => {
+  const app = stubApp({ creatures: [summoned('wolf', { currentHP: 0 })] });
+  endSpellEffects(app, 'druid', 'conjure-animals');
+  assert.deepEqual(app.state.creatures, []);
+  assert.deepEqual(app.log, ['Wolf vanishes as Conjure Animals ends.']);
+});
+
+test('endSpellEffects frees a chip and despawns a summon in one pass', () => {
+  const source = heldBy({
+    spellId: 'conjure-animals',
+    spellName: 'Conjure Animals',
+    casterId: 'druid',
+  });
+  const hero = { ...fixtures().hero, conditions: addCondition([], 'Blessed', 10, { source }) };
+  // The chipped creature is also the summon, which is the case the despawn
+  // must read the swept list for: the creature would otherwise be written back
+  // after it has already left.
+  const chipped = {
+    ...summoned('wolf'),
+    conditions: addCondition([], 'Blessed', 10, { source }),
+  };
+  const app = stubApp({ characters: [hero], creatures: [chipped, fixtures().goblin] });
+  endSpellEffects(app, 'druid', 'conjure-animals');
+  assert.deepEqual(app.state.characters[0].conditions, []);
+  assert.deepEqual(
+    app.state.creatures.map((c) => c.id),
+    ['goblin'],
+  );
+  assert.deepEqual(app.log, [
+    'Hero is no longer Blessed.',
+    'Wolf is no longer Blessed.',
+    'Wolf vanishes as Conjure Animals ends.',
+  ]);
+});
+
 test('retryImposedSaves shakes a chip loose on a success and logs the roll', () => {
   // DC 1 is under the floor of a d20 plus any bonus, so the retry always
   // succeeds and the outcome does not depend on the roll.

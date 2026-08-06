@@ -1,7 +1,8 @@
 /**
  * The curated built-in spell corpus. This is a common cross-section of the
  * SRD, with every cantrip and leveled band represented, spanning all six
- * caster lists and all five effect kinds (attack, save, heal, buff, utility). The
+ * caster lists and all six effect kinds (attack, save, heal, buff, summons,
+ * utility). The
  * schema is identical to a GM-authored or imported spell, so the gap
  * between this set and the full SRD closes by hand-authoring or JSON
  * import with no code change. SRD spells not yet included are tracked in
@@ -29,7 +30,7 @@ export const SPELL_SCHOOLS = [
 export const SPELL_ABILITIES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
 
 /** The effect kinds a spell resolves as. @type {import('../types/spell.js').SpellEffect['kind'][]} */
-export const SPELL_EFFECT_KINDS = ['attack', 'save', 'heal', 'buff', 'utility'];
+export const SPELL_EFFECT_KINDS = ['attack', 'save', 'heal', 'buff', 'summons', 'utility'];
 
 /** @type {Spell[]} */
 export const DEFAULT_SPELLS = deepFreeze([
@@ -503,6 +504,25 @@ export const DEFAULT_SPELLS = deepFreeze([
     ritual: false,
     description: 'Interrupt a creature casting a spell of 3rd level or lower.',
     effect: { kind: 'utility' },
+  },
+  {
+    id: 'conjure-animals',
+    name: 'Conjure Animals',
+    level: 3,
+    school: 'conjuration',
+    classes: ['druid', 'ranger'],
+    castingTime: { kind: 'action' },
+    range: '60 feet',
+    components: ['V', 'S'],
+    duration: { kind: 'hours', amount: 1, upTo: true },
+    concentration: true,
+    ritual: false,
+    description:
+      'Summon four wolves that fight beside the caster while the caster holds the spell. ' +
+      'The printed spell offers a choice of beasts and doubles the count at higher ' +
+      'levels. This version always summons wolves, and each slot level above 3rd adds ' +
+      'two more.',
+    effect: { kind: 'summons', creature: 'Wolf', count: 4, countPerStep: 2 },
   },
   // ---- 4th level ----
   {

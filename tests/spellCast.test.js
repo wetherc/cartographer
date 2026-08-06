@@ -1442,3 +1442,189 @@ test('untrained armor does not slant a mental save', () => {
   assert.equal(plan.ok, true);
   assert.equal(/** @type {any} */ (plan).targets[0].armorPenalty, undefined, 'WIS is untouched');
 });
+
+// -- summoning ------------------------------------------------------------
+
+const conjureAnimals = spell({
+  id: 'conjure-animals',
+  name: 'Conjure Animals',
+  level: 1,
+  concentration: true,
+  duration: { kind: 'hours', amount: 1, upTo: true },
+  effect: { kind: 'summons', creature: 'Wolf', count: 2, countPerStep: 1 },
+});
+
+/** A caster that knows the summoning spell above.
+ * @param {Partial<import('../src/types/entities.js').Character>} [over] */
+function druid(over = {}) {
+  return mage({
+    id: 'druid',
+    name: 'Druid',
+    spellbook: {
+      cantrips: [],
+      known: ['conjure-animals'],
+      prepared: ['conjure-animals'],
+    },
+    ...over,
+  });
+}
+
+test('a summons offers no target and is not refused for having none', () => {
+  const caster = druid();
+  const app = stubApp({ characters: [caster] });
+  // Nothing stands on the party's tile, which refuses every other kind.
+  const offered = rosterTargets(app, conjureAnimals);
+  assert.deepEqual(offered, []);
+  const plan = castPlan(app, caster, conjureAnimals, offered);
+  assert.equal(plan.ok, true);
+  assert.deepEqual(
+    /** @type {any} */ (plan).fields.map((f) => f.name),
+    ['slot'],
+  );
+});
+
+test('a summons refuses before the dialog when the library has no such template', () => {
+  const caster = druid();
+  const app = stubApp({ characters: [caster] });
+  const unknown = spell({
+    ...conjureAnimals,
+    effect: { kind: 'summons', creature: 'Owlbear', count: 1 },
+  });
+  const plan = castPlan(app, caster, unknown, []);
+  assert.equal(plan.ok, false);
+  assert.match(
+    /** @type {any} */ (plan).message,
+    /No creature template named "Owlbear" in the library\./,
+  );
+});
+
+test('a summons puts stamped creatures on the party tile and spends the slot', () => {
+  const caster = druid();
+  const app = stubApp({ characters: [caster] });
+  const plan = planFor(app, caster, conjureAnimals);
+  resolveCast(app, plan, submit(), {
+    writeBack: (/** @type {any} */ next) => {
+      app.state.characters = [next];
+    },
+    concentrates: true,
+  });
+  assert.equal(
+    app.state.characters[0].resources.find((/** @type {any} */ r) => r.id === 'slots-1').current,
+    3,
+    'the summons spends its slot like any other cast',
+  );
+  assert.equal(app.state.creatures.length, 2);
+  for (const wolf of app.state.creatures) {
+    assert.equal(wolf.name, 'Wolf');
+    assert.equal(wolf.disposition, 'hostile', 'the side comes from the template');
+    assert.deepEqual(wolf.location, HERE);
+    assert.equal(wolf.currentHP, wolf.maxHP, 'a summon arrives at full health');
+    assert.deepEqual(wolf.summonedBy, {
+      spellId: 'conjure-animals',
+      spellName: 'Conjure Animals',
+      casterId: 'druid',
+    });
+  }
+  assert.notEqual(
+    app.state.creatures[0].id,
+    app.state.creatures[1].id,
+    'each creature of one cast gets its own id',
+  );
+  assert.ok(app.log.includes('Conjure Animals summons 2 x Wolf.'));
+});
+
+test('a summons upcast at a higher slot brings more creatures', () => {
+  const caster = druid({
+    resources: [
+      createResource('slots-1', 'Level 1 slots', 'mana', 4),
+      createResource('slots-3', 'Level 3 slots', 'mana', 2),
+    ],
+  });
+  const app = stubApp({ characters: [caster] });
+  const plan = planFor(app, caster, conjureAnimals);
+  resolveCast(app, plan, submit({ slot: '3' }), { writeBack: () => {}, concentrates: true });
+  assert.equal(app.state.creatures.length, 4, 'one more creature per slot level above the first');
+});
+
+test('a summons nothing concentrates on says so in the log', () => {
+  const caster = druid();
+  const app = stubApp({ characters: [caster] });
+  const plan = planFor(app, caster, conjureAnimals);
+  // A creature caster holds no concentration, so nothing will sweep its summons.
+  resolveCast(app, plan, submit(), { writeBack: () => {}, concentrates: false });
+  assert.ok(app.log.includes('Conjure Animals summons 2 x Wolf (untracked).'));
+});
+
+test('a summons cast mid-fight joins the running order', () => {
+  const caster = druid();
+  const app = stubApp({ characters: [caster] });
+  app.state.combat = {
+    round: 1,
+    index: 0,
+    order: [{ id: 'druid', initiative: 12, modifier: 1 }],
+    startedAt: 0,
+  };
+  /** @type {any[]} */
+  const joined = [];
+  app.actions.addCombatant = (/** @type {any} */ participant) => joined.push(participant);
+  const plan = planFor(app, caster, conjureAnimals);
+  resolveCast(app, plan, submit(), { writeBack: () => {}, concentrates: true });
+  assert.equal(joined.length, 2, 'each summon rolls its own place in the order');
+  assert.deepEqual(
+    joined.map((p) => p.id),
+    app.state.creatures.map((/** @type {any} */ c) => c.id),
+  );
+  for (const p of joined) {
+    assert.ok(p.initiative >= 1 + p.modifier && p.initiative <= 20 + p.modifier);
+  }
+});
+
+test('a summons out of combat joins no order', () => {
+  const caster = druid();
+  const app = stubApp({ characters: [caster] });
+  const plan = planFor(app, caster, conjureAnimals);
+  resolveCast(app, plan, submit(), { writeBack: () => {}, concentrates: true });
+  assert.equal(app.calls.includes('addCombatant'), false);
+  assert.equal(app.state.creatures.length, 2, 'the wolves still stand on the tile');
+});
+
+test('changing the slot of a spell with no ritual reads no ritual box', () => {
+  // The real dialog throws when asked for a field it never built, so this stub
+  // does too. A leveled spell with no ritual has a slot picker and no box.
+  const strict = {
+    ...formStub({ slot: '2' }),
+    get: (/** @type {string} */ name) => {
+      if (name !== 'slot') throw new TypeError(`no field named ${name}`);
+      return '2';
+    },
+  };
+  const caster = mage({
+    resources: [createResource('slots-1', 'Level 1 slots', 'mana', 4)],
+    spellbook: { cantrips: [], known: ['conjure-animals'], prepared: ['conjure-animals'] },
+  });
+  const app = stubApp({ characters: [{ ...caster, id: 'druid', name: 'Druid' }] });
+  const plan = planFor(app, { ...caster, id: 'druid', name: 'Druid' }, conjureAnimals);
+  assert.equal(
+    plan.fields.some((/** @type {any} */ f) => f.name === 'ritual'),
+    false,
+  );
+  castChangeHandler(plan)('slot', /** @type {any} */ (strict));
+});
+
+test('a summons marks the campaign dirty even when the cast spends nothing', () => {
+  const cantrip = spell({
+    ...conjureAnimals,
+    id: 'conjure-animals',
+    level: 0,
+    concentration: false,
+    effect: { kind: 'summons', creature: 'Wolf', count: 1 },
+  });
+  const caster = druid({
+    spellbook: { cantrips: ['conjure-animals'], known: [], prepared: [] },
+  });
+  const app = stubApp({ characters: [caster] });
+  const plan = planFor(app, caster, cantrip);
+  resolveCast(app, plan, submit({ slot: '0' }), { writeBack: () => {}, concentrates: false });
+  assert.equal(app.state.creatures.length, 1);
+  assert.ok(app.dirty > 0, 'the new creature has to reach the save');
+});

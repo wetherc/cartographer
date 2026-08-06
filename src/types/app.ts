@@ -16,7 +16,7 @@ import type { LogEntry, LogEntryKind } from './log.js';
 import type { Quest } from './quest.js';
 import type { GameClock } from './time.js';
 import type { Handout } from './handout.js';
-import type { CombatState } from './combat.js';
+import type { CombatState, Participant } from './combat.js';
 import type { ViewRole } from './view.js';
 import type { PartyPosition } from './map.js';
 import type { DiceResult, DiceSelection } from './dice.js';
@@ -102,6 +102,10 @@ export interface AppActions {
   // `state.combat` directly, because encounterWiring holds the live copy of
   // the combat.
   removeCombatant(id: string): void;
+  // encounterWiring: put a new combatant into the running order, which is how
+  // a creature that a spell summons mid-fight joins it. It does nothing when
+  // no fight is running.
+  addCombatant(participant: Participant): void;
   // encounterWiring: advance the running fight's turn, with the round-wrap
   // ticks, or end the fight. The combat screen and the sidebar panel share
   // these actions.

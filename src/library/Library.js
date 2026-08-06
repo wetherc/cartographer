@@ -6,6 +6,7 @@ import {
 } from '../entities/Equipment.js';
 import { clampInt } from '../util/num.js';
 import {
+  MAX_TARGET_COUNT,
   normalizeMaterials,
   normalizeProjectiles,
   normalizeTargetCount,
@@ -398,8 +399,8 @@ function normalizeDamageParts(value, allowed = undefined) {
 
 /**
  * Normalize one parsed spell into a valid Spell. This function defaults
- * descriptive fields and repairs the effect into one of the four
- * discriminated shapes. An unrecognized effect kind falls back to a
+ * descriptive fields and repairs the effect into one of the discriminated
+ * shapes. An unrecognized effect kind falls back to a
  * text-only utility effect. This way a malformed import still round-trips as
  * a spell that casts nothing, instead of being dropped. This function is
  * pure.
@@ -409,6 +410,10 @@ function normalizeDamageParts(value, allowed = undefined) {
  */
 function normalizeSpell(raw, id) {
   const kind = SPELL_EFFECT_KINDS.includes(raw.effect?.kind) ? raw.effect.kind : 'utility';
+  // The creature name is the whole point of a summons, so an entry that names
+  // none casts nothing and falls through to the utility arm below.
+  const summons =
+    kind === 'summons' && typeof raw.effect.creature === 'string' ? raw.effect.creature.trim() : '';
   /** @type {import('../types/spell.js').SpellEffect} */
   let effect;
   if (kind === 'attack') {
@@ -453,6 +458,17 @@ function normalizeSpell(raw, id) {
         ? { condition: raw.effect.condition.trim() }
         : {}),
       ...(rider ? { rider } : {}),
+    };
+  } else if (summons) {
+    // A count holds to the same cap as a target count, because both put that
+    // many creatures into one fight.
+    effect = {
+      kind: 'summons',
+      creature: summons,
+      count: clampInt(raw.effect.count, 1, MAX_TARGET_COUNT, 1),
+      ...(clampInt(raw.effect.countPerStep, 0) > 0
+        ? { countPerStep: clampInt(raw.effect.countPerStep, 0, MAX_TARGET_COUNT) }
+        : {}),
     };
   } else {
     effect = { kind: 'utility' };
@@ -797,6 +813,17 @@ export function activeCreatureEntries() {
  * @returns {CreatureTemplate[]} */
 export function activeCreatures() {
   return (cache.creatureList ??= activeCreatureEntries().map((e) => e.entry));
+}
+
+/** A merged creature template by name, or null for a name no entry carries.
+ * The name is the merge key, so a summoning spell that names a template still
+ * finds it after a GM customizes that template. The comparison ignores case
+ * and surrounding spaces, the same way the merge does.
+ * @param {string} name
+ * @returns {CreatureTemplate | null} */
+export function activeCreatureByName(name) {
+  const key = nameKey({ name });
+  return activeCreatures().find((t) => nameKey(t) === key) ?? null;
 }
 
 /** The merged spell list: curated built-ins plus the active customizations,

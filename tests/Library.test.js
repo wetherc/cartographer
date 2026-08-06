@@ -868,3 +868,55 @@ test('normalizeLibrary trims a buff’s chip name and drops an empty one', () =>
   assert.equal(lib.spells[0].effect.condition, 'Bless');
   assert.equal(lib.spells[1].effect.condition, undefined);
 });
+
+test('normalizeLibrary keeps a summons, and clamps its counts', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      {
+        name: 'Conjure',
+        effect: { kind: 'summons', creature: '  Wolf  ', count: 4, countPerStep: 2 },
+      },
+      // A count below one would summon nothing, and an absent one reads as one.
+      { name: 'Single', effect: { kind: 'summons', creature: 'Wolf', count: 0 } },
+      { name: 'Unnumbered', effect: { kind: 'summons', creature: 'Wolf' } },
+      // A per-step count of zero is not scaling, so the field stays absent.
+      { name: 'Flat', effect: { kind: 'summons', creature: 'Wolf', count: 2, countPerStep: 0 } },
+    ],
+  });
+  assert.deepEqual(lib.spells[0].effect, {
+    kind: 'summons',
+    creature: 'Wolf',
+    count: 4,
+    countPerStep: 2,
+  });
+  assert.equal(lib.spells[1].effect.count, 1);
+  assert.equal(lib.spells[2].effect.count, 1);
+  assert.deepEqual(lib.spells[3].effect, { kind: 'summons', creature: 'Wolf', count: 2 });
+});
+
+test('normalizeLibrary degrades a summons that names no creature', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      { name: 'Nameless', effect: { kind: 'summons', count: 4 } },
+      { name: 'Blank', effect: { kind: 'summons', creature: '   ', count: 4 } },
+    ],
+  });
+  // The creature is the whole effect, so an entry without one casts nothing.
+  assert.deepEqual(lib.spells[0].effect, { kind: 'utility' });
+  assert.deepEqual(lib.spells[1].effect, { kind: 'utility' });
+});
+
+test('normalizeLibrary drops a summon stamp from a creature template', () => {
+  const lib = normalizeLibrary({
+    creatures: [
+      {
+        name: 'Wolf',
+        disposition: 'hostile',
+        maxHP: 11,
+        summonedBy: { spellId: 'conjure', spellName: 'Conjure', casterId: 'druid' },
+      },
+    ],
+  });
+  // The stamp belongs to one spawned creature. A blueprint has no cast behind it.
+  assert.equal(/** @type {any} */ (lib.creatures[0]).summonedBy, undefined);
+});

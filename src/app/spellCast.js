@@ -14,6 +14,8 @@ import { toCaster, withCasterState } from '../entities/Caster.js';
 import { replaceById } from '../entities/Roster.js';
 import { durationInRounds } from '../entities/SpellTiming.js';
 import { begin as beginConcentration } from '../entities/Concentration.js';
+import { activeCreatureByName } from '../library/Library.js';
+import { spawnSummons } from './summons.js';
 import {
   findCombatant,
   combatantsAsTargets,
@@ -47,7 +49,7 @@ import { splitTrimmedList } from '../util/text.js';
  */
 export function combatTargets(app, combat, caster, spell) {
   const kind = spell.effect.kind;
-  if (kind === 'utility') return [];
+  if (targetFree(kind)) return [];
   return combatantsAsTargets(app, combat, caster, { allies: helps(kind) });
 }
 
@@ -59,6 +61,18 @@ export function combatTargets(app, combat, caster, spell) {
  */
 function helps(kind) {
   return kind === 'heal' || kind === 'buff';
+}
+
+/**
+ * Whether an effect kind picks no creature. A utility spell resolves in the
+ * description text. A summons puts new creatures on the map instead of
+ * reaching existing ones. Neither gets a target picker, and neither is refused
+ * for having nobody to aim at.
+ * @param {import('../types/spell.js').SpellEffect['kind']} kind
+ * @returns {boolean}
+ */
+function targetFree(kind) {
+  return kind === 'utility' || kind === 'summons';
 }
 
 /**
@@ -80,7 +94,7 @@ function helps(kind) {
 export function rosterTargets(app, spell) {
   const { state } = app;
   const kind = spell.effect.kind;
-  if (kind === 'utility') return [];
+  if (targetFree(kind)) return [];
   if (helps(kind)) {
     return state.characters.map((c) => asTarget(c, 'character'));
   }
@@ -224,7 +238,7 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
       });
     }
   }
-  if (kind !== 'utility') {
+  if (!targetFree(kind)) {
     const noun = helps(kind) ? 'Recipient' : 'Target';
     const options = targets.map((t) => ({ value: t.id, label: targetLabel(spell, t) }));
     const projectiles = spell.effect.kind === 'attack' ? spell.effect.projectiles : undefined;
@@ -415,8 +429,17 @@ export function castPlan(app, entity, spell, offered) {
   // returns. The helpers read this view, and the code writes back only to
   // the real entity.
   const caster = toCaster(entity);
-  if (spell.effect.kind !== 'utility' && offered.length === 0) {
+  if (!targetFree(spell.effect.kind) && offered.length === 0) {
     return { ok: false, message: 'No target available.' };
+  }
+  // A summons is only as good as the template it names. The check runs here so
+  // a spell whose template was renamed or removed refuses before the dialog
+  // opens, which is before a slot is spent.
+  if (spell.effect.kind === 'summons' && !activeCreatureByName(spell.effect.creature)) {
+    return {
+      ok: false,
+      message: `No creature template named "${spell.effect.creature}" in the library.`,
+    };
   }
   // Each target of a save spell gets its own bonus where the app can read
   // one. The dialog shows what a target will add, and the resolver rolls it.
@@ -519,9 +542,13 @@ export function castPlan(app, entity, spell, offered) {
 export function castChangeHandler(plan) {
   const { spell, caster, slotLevels, fields } = plan;
   const allocates = fields.some((f) => f.name === 'allocation');
+  // A spell with no ritual has no box to read. Reading one that the dialog
+  // never built throws, which would break the slot picker of every leveled
+  // spell that cannot be cast as a ritual.
+  const offersRitual = fields.some((f) => f.name === 'ritual');
   return (name, form) => {
     if (name !== 'slot' && name !== 'ritual') return;
-    const asRitual = form.get('ritual') === '1';
+    const asRitual = offersRitual && form.get('ritual') === '1';
     if (name === 'ritual' && slotLevels.length > 0) form.setHidden('slot', asRitual);
     if (!allocates) return;
     const total = castCap(
@@ -565,7 +592,7 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
   const mode = /** @type {import('../types/dice.js').RollMode} */ (values.mode ?? 'normal');
   const saveDC = Number(values.dc) || dc;
   const chosen = chosenTargets(targets, values);
-  if (spell.effect.kind !== 'utility' && chosen.length === 0) {
+  if (!targetFree(spell.effect.kind) && chosen.length === 0) {
     app.toasts.show(`Pick at least one target for ${spell.name}.`);
     return;
   }
@@ -724,7 +751,7 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
     endSpellEffects(app, entity.id, displaced.spellId);
   }
 
-  applyOutcomes(app, spell, result, entity.id);
+  applyOutcomes(app, spell, result, entity.id, { tracked: holds });
 }
 
 /**
@@ -848,8 +875,11 @@ function riderNote(riders) {
  * @param {string} casterId the function stamps this id onto a condition this
  *   cast imposes, so the app can find the effect again when the caster stops
  *   holding the spell
+ * @param {{ tracked?: boolean }} [options] `tracked` is true when the caster
+ *   took up concentration on this cast. A summons that nothing concentrates on
+ *   stays on the map until the GM removes it, and the log says so.
  */
-export function applyOutcomes(app, spell, result, casterId) {
+export function applyOutcomes(app, spell, result, casterId, { tracked = false } = {}) {
   const kind = spell.effect.kind;
   const summary = targetSummary(result.targets);
   if (kind === 'attack') {
@@ -973,6 +1003,26 @@ export function applyOutcomes(app, spell, result, casterId) {
       );
     }
     app.toasts.show(`${spell.name} on ${summary}.`);
+    return;
+  }
+  if (kind === 'summons') {
+    // The one outcome names the template and the count. The creatures land on
+    // the tile of the party, which is the only place a cast can reach without
+    // map distance.
+    for (const o of /** @type {any[]} */ (result.outcomes)) {
+      const spawn = spawnSummons(app, spell, casterId, o);
+      if ('error' in spawn) {
+        app.toasts.show(spawn.error);
+        return;
+      }
+      // An untracked summon has nothing holding it, so nothing will take it
+      // away again. A spell with no concentration, and a creature caster, both
+      // land here.
+      const held = tracked ? '' : ' (untracked)';
+      const tally = `${spawn.spawned.length} x ${spawn.template}`;
+      app.actions.logEvent('combat', `${spell.name} summons ${tally}${held}.`);
+      app.toasts.show(`${spell.name} summons ${tally}.`);
+    }
     return;
   }
   app.toasts.show(`${spell.name} cast.`);

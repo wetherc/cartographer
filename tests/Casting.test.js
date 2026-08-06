@@ -13,6 +13,7 @@ import {
   normalizeProjectiles,
   normalizeTargetCount,
   projectileCount,
+  summonCount,
 } from '../src/entities/Casting.js';
 import { createResource } from '../src/entities/Resource.js';
 
@@ -1097,4 +1098,62 @@ test('a spell rider stays off a target that made its save', () => {
   assert.equal(o.saved, true);
   assert.equal(o.condition, null);
   assert.equal(o.conditionRider, null, 'no chip landed, so nothing rides one');
+});
+
+/** @type {any} */
+const conjureWolves = {
+  id: 'conjure',
+  name: 'Conjure Wolves',
+  level: 3,
+  school: 'conjuration',
+  classes: ['wizard'],
+  castingTime: { kind: 'action' },
+  range: '60 ft',
+  components: ['V', 'S'],
+  duration: { kind: 'hours', amount: 1, upTo: true },
+  concentration: true,
+  ritual: false,
+  description: '',
+  effect: { kind: 'summons', creature: 'Wolf', count: 4, countPerStep: 2 },
+};
+
+/** @param {string[]} pools which slot pools the caster holds charges in */
+function summonCaster(pools = ['slots-3']) {
+  return caster({
+    resources: pools.map((id) => createResource(id, `${id} slots`, 'mana', 4)),
+    spellbook: { cantrips: [], known: [], prepared: ['conjure'] },
+  });
+}
+
+test('summonCount grows by the per-step count, and never falls below one', () => {
+  const effect = /** @type {any} */ (conjureWolves.effect);
+  assert.equal(summonCount(effect, 0), 4);
+  assert.equal(summonCount(effect, 2), 8);
+  // A negative step count cannot shrink the spell.
+  assert.equal(summonCount(effect, -3), 4);
+  // An effect with no per-step count stays flat at every level.
+  assert.equal(summonCount({ kind: 'summons', creature: 'Wolf', count: 2 }, 4), 2);
+  // A count of 0 would summon nothing, so the floor holds it at one.
+  assert.equal(summonCount({ kind: 'summons', creature: 'Wolf', count: 0 }, 0), 1);
+});
+
+test('a summons rolls nothing and names the template and the count', () => {
+  const result = castSpell(summonCaster(), conjureWolves, {
+    slotLevel: 3,
+    rng: () => assert.fail('a summons rolls no dice'),
+  });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.effect, 'summons');
+  assert.equal(result.spent, true, 'a summons still costs its slot');
+  assert.deepEqual(result.targets, [], 'a summons reaches no existing creature');
+  assert.deepEqual(result.outcomes, [{ creature: 'Wolf', count: 4 }]);
+});
+
+test('a summons upcast at a higher slot brings more creatures', () => {
+  const result = castSpell(summonCaster(['slots-3', 'slots-5']), conjureWolves, { slotLevel: 5 });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.slotLevel, 5);
+  assert.deepEqual(result.outcomes, [{ creature: 'Wolf', count: 8 }]);
 });

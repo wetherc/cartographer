@@ -880,7 +880,8 @@ target keep their own chips.
 `app/combatants.js` drives them, because only the wiring can see every
 collection that a target lives in. `endSpellEffects(app, casterId, spellId)`
 sweeps the characters and the creatures, then logs each one
-that walked free. It runs whenever a caster stops holding a spell: the sheet's
+that walked free. It also despawns the creatures that the cast summoned, which
+the section below covers. It runs whenever a caster stops holding a spell: the sheet's
 Drop control and its hand-removed `Concentrating` chip (through
 `onConcentrationEnd`, wired in `app/partyWiring.js`), a failed CON save or a
 drop to 0 HP in `applyToTarget`, a displacing cast in `app/spellCast.js`, and
@@ -901,6 +902,54 @@ with it.
 The retry, the effect table below, and the rider are the three rules that read
 a chip. A spell whose only target shook the effect off also leaves the caster
 concentrating, because nothing tracks how many targets a cast has left.
+
+## Summoned creatures
+
+A spell can put new creatures on the map. Its `summons` effect names one
+library creature template and a count. `entities/Summons.js` owns the rules
+over a `summonedBy` field on the creature. The field holds the spell's id and
+name, and the caster's id. It is the same record that a spell-imposed chip
+carries in `Condition.source`, so one sweep ends both halves of a spell. A
+creature that the GM placed carries no such field.
+
+- `summonCount(effect, steps)`, in `Casting.js`, is the base `count` plus
+  `countPerStep` for each scaling increment.
+- `stampSummon(creature, source)` writes the record onto a fresh creature.
+- `isSummonedBy(creature, casterId, spellId)` matches one cast. Both halves
+  must agree, for the same reason `removeImposed` needs both.
+- `despawnSummons(list, casterId, spellId)` removes every creature of one
+  cast, reports them, and hands the original list back when none matched.
+
+The template reference is a name, not an id. The library merges creature
+entries by name, so a name still finds the template after a GM customizes it.
+`Library.activeCreatureByName` is the lookup. `castPlan` refuses a cast whose
+name matches no template. That refusal lands before the dialog opens, which is
+before a slot is spent.
+
+`app/summons.js` holds the spawn. `spawnSummons` reads the template, builds one
+creature per count through `Creature.fromTemplate`, and puts them all on the
+tile of the party. That tile is the only place a cast can reach, because the
+app cannot measure distance between two tokens. Each creature takes its own id.
+The side it fights on is the disposition of the template, so a hostile template
+fights the party. A GM who wants a summon that stands with the party writes a
+friendly template.
+
+`endSpellEffects` despawns them, in the same pass that sweeps the condition
+chips. The despawn runs before the guard that returns early on an empty sweep,
+because a summoning spell usually imposes no chip at all. A defeated summon
+leaves with the living ones. The log names each creature that vanishes.
+
+A cast that nothing concentrates on still spawns its creatures, and the log
+marks that cast untracked. Only characters concentrate, so the summons of a
+creature caster are always untracked. The GM removes those by hand.
+
+A summons cast during a fight joins the running order.
+`Initiative.addParticipant` sorts the newcomer in and keeps the turn on whoever
+holds it. The initiative is a straight d20 plus the DEX modifier, the same roll
+the setup dialog fills. A newcomer that sorts above the current combatant
+therefore acts for the first time on the next round. Despawning the last
+creature staged on the tile of the party ends the fight, through
+`syncCombatLocation`.
 
 ## What a condition does
 

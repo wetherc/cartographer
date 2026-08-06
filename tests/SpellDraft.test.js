@@ -27,6 +27,7 @@ function effectDraft(extra = {}) {
     fires: false,
     projectiles: { count: 1, perStep: 0, autoHit: false },
     rider: { rolls: [], dice: 0, die: 'd4', flat: 0 },
+    summons: { creature: '', count: 1, countPerStep: 0 },
     ...extra,
   };
 }
@@ -247,4 +248,33 @@ test('switching away from a chip kind drops the rider with the rest', () => {
   assert.deepEqual(assembleEffect(effectDraft({ kind: 'utility', condition: 'Bane', rider })), {
     kind: 'utility',
   });
+});
+
+test('a summons effect keeps its template, its count, and its per-level count', () => {
+  const flat = assembleEffect(
+    effectDraft({ kind: 'summons', summons: { creature: '  Wolf  ', count: 4, countPerStep: 0 } }),
+  );
+  assert.deepEqual(flat, { kind: 'summons', creature: 'Wolf', count: 4 });
+  const scaled = assembleEffect(
+    effectDraft({ kind: 'summons', summons: { creature: 'Wolf', count: 4, countPerStep: 2 } }),
+  );
+  assert.deepEqual(scaled, { kind: 'summons', creature: 'Wolf', count: 4, countPerStep: 2 });
+});
+
+test('a summons that names no template casts nothing', () => {
+  // The picker opens on None, so an unfinished summons must not save as one.
+  assert.deepEqual(assembleEffect(effectDraft({ kind: 'summons' })), { kind: 'utility' });
+  assert.deepEqual(
+    assembleEffect(
+      effectDraft({ kind: 'summons', summons: { creature: '   ', count: 2, countPerStep: 0 } }),
+    ),
+    { kind: 'utility' },
+  );
+});
+
+test('a summons count of zero reads as one creature', () => {
+  const effect = assembleEffect(
+    effectDraft({ kind: 'summons', summons: { creature: 'Wolf', count: 0, countPerStep: 0 } }),
+  );
+  assert.equal(effect.count, 1);
 });

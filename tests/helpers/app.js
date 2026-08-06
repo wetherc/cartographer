@@ -38,6 +38,7 @@ const ACTION_NAMES = [
   'maybeTriggerEncounter',
   'openEncounterContextMenu',
   'removeCombatant',
+  'addCombatant',
   'advanceCombatTurn',
   'endCombat',
   'syncCombatLocation',

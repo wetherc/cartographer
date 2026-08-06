@@ -246,3 +246,20 @@ test('an id the dialog does not offer leaves each picker on its default', () => 
   prefillTarget(grid, 'nobody');
   assert.equal(grid.find((f) => f.name === 'allocation').value, 'a:3');
 });
+
+/** A summoning spell, standing in for Conjure Animals. @type {any} */
+const conjureAnimals = {
+  id: 'conjure-animals',
+  name: 'Conjure Animals',
+  level: 3,
+  effect: { kind: 'summons', creature: 'Wolf', count: 4, countPerStep: 2 },
+};
+
+test('a summons offers the slot picker and no target field', () => {
+  const fields = castFields(conjureAnimals, targets, [3, 4], 13, 1);
+  assert.deepEqual(
+    fields.map((f) => f.name),
+    ['slot'],
+    'a summons picks no creature, so it gets no picker, mode, or DC',
+  );
+});

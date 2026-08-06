@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
 import { CLASS_LIST } from '../src/entities/Classes.js';
+import { activeCreatureByName } from '../src/library/Library.js';
 
 const SCHOOLS = new Set([
   'abjuration',
@@ -13,7 +14,7 @@ const SCHOOLS = new Set([
   'necromancy',
   'transmutation',
 ]);
-const KINDS = new Set(['attack', 'save', 'heal', 'buff', 'utility']);
+const KINDS = new Set(['attack', 'save', 'heal', 'buff', 'summons', 'utility']);
 const ABILITIES = new Set(['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA']);
 const CASTER_IDS = new Set(CLASS_LIST.filter((c) => c.spellListId).map((c) => c.spellListId));
 
@@ -36,6 +37,14 @@ test('every spell is well-formed against the schema', () => {
     assert.ok(KINDS.has(spell.effect.kind), `${spell.id}: effect kind`);
     if (spell.effect.kind === 'save')
       assert.ok(ABILITIES.has(spell.effect.saveAbility), `${spell.id}: save ability`);
+    if (spell.effect.kind === 'summons') {
+      // The name must match a library creature template, or the cast refuses.
+      assert.ok(
+        activeCreatureByName(spell.effect.creature),
+        `${spell.id}: summons a template the library carries`,
+      );
+      assert.ok(spell.effect.count >= 1, `${spell.id}: summons at least one`);
+    }
   }
 });
 

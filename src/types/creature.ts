@@ -12,6 +12,15 @@ import type {
 /** The attitude a creature holds toward the party. */
 export type Disposition = 'friendly' | 'neutral' | 'hostile';
 
+/** Which cast put a summoned creature on the map. It is the same stamp that a
+ * spell-imposed condition chip carries, so the one sweep that ends a spell
+ * finds both. It is present only on a creature that a cast spawned. */
+export interface SummonSource {
+  spellId: string;
+  spellName: string;
+  casterId: string;
+}
+
 /**
  * One creature in the campaign: a foe, a townsperson, or anything between.
  * The disposition decides which side it fights on. Hostile creatures fight
@@ -76,6 +85,9 @@ export interface Creature {
   /** Spell-slot pools (`slots-1` through `slots-9`). Present only on
    * casters. */
   resources?: ResourcePool[];
+  /** Which cast spawned this creature. Absent on every creature that the GM
+   * placed. */
+  summonedBy?: SummonSource;
 }
 
 /**

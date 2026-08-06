@@ -12,6 +12,7 @@ import {
 } from '../entities/Character.js';
 import { addCondition } from '../entities/Conditions.js';
 import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
+import { despawnSummons } from '../entities/Summons.js';
 import { saveBonus } from '../entities/Checks.js';
 import { checkOnDamage, drop as dropConcentration } from '../entities/Concentration.js';
 import { dropToDying, isDead, recordDamage } from '../entities/DeathSaves.js';
@@ -376,16 +377,17 @@ function storeConditions(found, conditions) {
 }
 
 /**
- * Take one cast's conditions off every target that holds them. A dropped
- * spell, a spell lost to damage, a spell displaced by another, or a spell
- * whose duration ran out must all do this to the creatures it affected.
- * Every chip stamped with that caster and that spell comes off, and the log
- * names each one. A target walking free is a change the table cannot see
- * from the caster's side alone.
+ * End everything one cast is holding: the conditions on every target, and the
+ * creatures it summoned. A dropped spell, a spell lost to damage, a spell
+ * displaced by another, or a spell whose duration ran out must all do this.
+ * Every chip and every creature stamped with that caster and that spell goes,
+ * and the log names each one. A target walking free, or a summon vanishing, is
+ * a change the table cannot see from the caster's side alone.
  *
  * This is a wiring function, not a pure one, because only this layer can see
- * every collection a target can live in. Both collections are swept, since a
- * spell can land on a character or on any creature in the fight.
+ * every collection a target can live in. Both collections are swept for chips,
+ * since a spell can land on a character or on any creature in the fight. Only
+ * creatures despawn, because nothing summons a party character.
  * @param {AppContext} app
  * @param {string} casterId
  * @param {string} spellId
@@ -419,17 +421,43 @@ export function endSpellEffects(app, casterId, spellId) {
   };
   const characters = swept(state.characters);
   const creatures = swept(state.creatures);
-  if (freed.length === 0) return;
+  // The despawn reads the swept list, so a summon holding a chip from this
+  // same spell leaves once instead of being written twice. It runs before the
+  // guard below, because a summoning spell that imposed no chip is the normal
+  // case and would otherwise never clear its creatures.
+  const { creatures: standing, despawned } = despawnSummons(
+    creatures ?? state.creatures,
+    casterId,
+    spellId,
+  );
+  if (freed.length === 0 && despawned.length === 0) return;
   // Every write lands before anything is logged or refreshed. A panel that
   // re-renders off one of them reads the other as swept too.
   if (characters) state.characters = characters;
-  if (creatures) state.creatures = creatures;
+  if (creatures || despawned.length > 0) state.creatures = /** @type {Creature[]} */ (standing);
+  // The order is written before the panels refresh, so the initiative ribbon
+  // never renders a row for a creature that is already gone.
+  for (const creature of despawned) app.actions.removeCombatant(creature.id);
   if (characters) app.actions.refreshSelectedCharacter();
-  if (creatures) commitCreatures(app, { dirty: false });
+  if (creatures || despawned.length > 0) commitCreatures(app, { dirty: false });
   app.actions.markDirty();
   for (const { name, condition } of freed) {
     app.actions.logEvent('combat', `${name} is no longer ${condition}.`);
   }
+  for (const creature of despawned) {
+    app.actions.logEvent('combat', `${creature.name} vanishes as ${spellNameOf(creature)} ends.`);
+  }
+}
+
+/**
+ * The spell name to print for a vanishing summon. The stamp carries it, and a
+ * creature reaching the despawn without one cannot happen, so the fallback is
+ * only there to keep the log line readable.
+ * @param {Creature} creature
+ * @returns {string}
+ */
+function spellNameOf(creature) {
+  return creature.summonedBy?.spellName ?? 'the spell';
 }
 
 /**

@@ -90,8 +90,15 @@ that the app cannot honor.
   either. A spell can fire several projectiles, each rolled separately, and
   the caster splits them between creatures. This is how Scorching Ray,
   Eldritch Blast, and Magic Missile work today.
-- **Summoning and companions** (Find Familiar, Conjure Animals, Animate
-  Dead). The app has no mechanism to spawn controlled combatants.
+- **Choosing a summon, and controlling it** (Find Familiar, Animate Dead).
+  Summoning itself works today. A `summons` effect names one library creature
+  template and a count, and the cast puts those creatures on the tile of the
+  party. They leave when the caster stops holding the spell. This is how
+  Conjure Animals ships, with wolves in place of the printed choice of beasts.
+  Three parts are still missing. A cast cannot offer the caster a menu of
+  templates. A summon takes its own turn as a combatant, and no player runs
+  it as a companion. A summon that no concentration holds, such as an animated
+  skeleton or a familiar, stays until the GM removes it by hand.
 - **Exploration and social utility spells** (Detect Magic, Identify, Charm
   Person, Suggestion, Divination, teleportation). These spells have rules
   that exist only as prose. They work today as `utility` entries. The
