@@ -62,9 +62,14 @@ import { entryItem } from './TravelogPanel.js';
  *   onInspect: (id: string) => void,
  *   getSelectedTargetId: () => string | null,
  *   onSelectTarget: (id: string) => void,
- *   getActions: () => { weapons: (InventoryItem | EnemyWeapon)[], spells: Spell[] },
+ *   getActions: () => {
+ *     weapons: (InventoryItem | EnemyWeapon)[],
+ *     spells: Spell[],
+ *     offhand?: (InventoryItem | EnemyWeapon)[],
+ *   },
  *   getLoadout: (id: string) => Loadout,
  *   onWeaponAttack: (weapon: InventoryItem | EnemyWeapon) => void,
+ *   onOffhandAttack: (weapon: InventoryItem | EnemyWeapon) => void,
  *   onCastSpell: (spell: Spell) => void,
  *   onApplyHP: (id: string, amount: number, isHeal: boolean) => void,
  *   getConcentration: (id: string) => { spellName: string } | null,
@@ -450,6 +455,7 @@ export function mountCombatScreen(container, callbacks) {
             {
               onWeaponAttack: callbacks.onWeaponAttack,
               onCastSpell: callbacks.onCastSpell,
+              onOffhandAttack: callbacks.onOffhandAttack,
             },
             // The pips belong to the turn the bar acts on, so they come from
             // the same row.

@@ -158,6 +158,25 @@ swing count when more than one swing is left. The pips report and never gate.
 `CombatantRow` carries the `used` budget and `attacksLeft`, so the screen reads
 them from the same row it draws everything else from.
 
+### Two-weapon fighting
+
+`src/combat/TwoWeapon.js` is the pure half. `isLightMelee` reads the kind and
+the `light` property of one weapon. `offhandWeapons` gives the light melee
+weapons of a list, and gives none unless the list holds two of them.
+`canOffhand` adds the two budget conditions: the Attack action is already spent,
+and the bonus action is still free. The spent action is what makes the off-hand
+swing the second attack of the rule.
+
+Which hand holds which weapon is not modeled. Both light melee weapons are
+offered, and the GM picks the one the second hand swings.
+
+combatWiring calls `canOffhand` and puts the list in the `offhand` field of the
+action bar's actions, so the Off-hand group appears only on a turn that can take
+the swing. The button routes to `weaponAttack` with `offhand: true`, which
+spends the bonus action instead of an attack and takes `offhandDamageModifier`
+for its damage. That function drops a positive ability modifier and keeps a
+negative one: the rule takes the bonus away, and a penalty is not a bonus.
+
 ## The view is derived, not stored
 
 `buildCombatView(combat, resolve, viewer)` in `src/combat/CombatView.js` is a

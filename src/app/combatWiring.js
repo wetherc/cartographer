@@ -2,6 +2,7 @@ import { mustGetElement } from '../ui/dom.js';
 import { mountCombatScreen } from '../ui/CombatScreen.js';
 import { buildCombatView, isDowned } from '../combat/CombatView.js';
 import { buildLoadout, loadoutAccess } from '../combat/Loadout.js';
+import { canOffhand, offhandWeapons } from '../combat/TwoWeapon.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
 import { isGM } from '../view/ViewRole.js';
 import {
@@ -87,8 +88,16 @@ export function wireCombatScreen(app) {
     // offer them, based on whether the viewer can act.
     getActions: () => {
       const active = state.combat ? state.combat.order[state.combat.index] : null;
-      if (!active) return { weapons: [], spells: [] };
-      return { weapons: weaponsOf(app, active.id), spells: spellsOf(app, active.id) };
+      if (!active) return { weapons: [], spells: [], offhand: [] };
+      const weapons = weaponsOf(app, active.id);
+      return {
+        weapons,
+        spells: spellsOf(app, active.id),
+        // The off-hand group appears only on a turn that can take the swing:
+        // two light melee weapons in hand, the Attack action already spent, and
+        // the bonus action still free.
+        offhand: canOffhand(active, weapons) ? offhandWeapons(weapons) : [],
+      };
     },
     // This is what one combatant brings, trimmed to what this tab is
     // allowed to know. The GM sees every sheet. A player sees their own
@@ -113,6 +122,14 @@ export function wireCombatScreen(app) {
       if (!combat) return;
       weaponAttack(app, combat, combat.order[combat.index], weapon, {
         defenderId: selectedTargetId,
+      });
+    },
+    onOffhandAttack: (weapon) => {
+      const combat = state.combat;
+      if (!combat) return;
+      weaponAttack(app, combat, combat.order[combat.index], weapon, {
+        defenderId: selectedTargetId,
+        offhand: true,
       });
     },
     onCastSpell: (spell) => {

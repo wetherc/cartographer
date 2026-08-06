@@ -281,6 +281,19 @@ cost" box that goes ahead anyway. Use it for a rule the app does not carry.
 A casting time longer than a turn, such as a ten-minute ritual, is refused in a
 fight for the same reason and offers the same box.
 
+### Fighting with two weapons
+
+A character with two light melee weapons equipped, a dagger and a shortsword for
+example, gets an "Off-hand (bonus action)" group in the action bar. The group
+appears after the character takes its Attack action, and only while the bonus
+action is unspent. Both weapons are offered, and you pick the one the second
+hand swings.
+
+The off-hand swing rolls to hit like any other attack. Its damage carries no
+ability bonus, which is the 5e rule. A negative ability modifier still applies,
+so a weak character swings weakly with either hand. The combat log marks the
+swing "off-hand".
+
 ### The rules the app applies
 
 Attack rolls follow 5e without change.

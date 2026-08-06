@@ -1193,3 +1193,64 @@ test('the free-action override swings without asking the budget', () => {
   assert.deepEqual(spends, []);
   assert.equal(app.rolls.length, 1);
 });
+
+/** A dagger: the light melee weapon the off-hand swing needs. */
+const DAGGER = {
+  id: 'dagger',
+  name: 'Dagger',
+  type: 'weapon',
+  kind: 'melee',
+  category: 'simple',
+  properties: ['finesse', 'light'],
+  quantity: 1,
+  notes: '',
+  damage: [{ count: 1, sides: 4, damageType: 'piercing' }],
+};
+
+test('an off-hand swing spends the bonus action and drops the ability bonus from damage', () => {
+  const { app, hero, spends } = budgetApp();
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (DAGGER),
+    tweaks: { offhand: true },
+    // A d4 landing on 3.
+    rng: scripted([2 / 4]),
+  });
+  assert.deepEqual(spends, [{ id: 'hero', cost: 'bonus' }]);
+  const damage = app.log.find((entry) => entry.includes('hits Goblin'));
+  assert.match(damage, /3 piercing/, 'the STR +3 of the hero stays off the damage');
+  const attack = app.log.find((entry) => entry.includes('attacks Goblin'));
+  assert.match(attack, /Dagger, off-hand \(STR \+3/, 'the roll to hit keeps the modifier');
+});
+
+test('an off-hand swing keeps a negative ability modifier on its damage', () => {
+  const { app, spends } = budgetApp();
+  const weakling = { ...makeHero({ STR: 6, DEX: 6 }), id: 'hero' };
+  rollWeaponAttack(app, {
+    attacker: weakling,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (DAGGER),
+    tweaks: { offhand: true },
+    rng: scripted([2 / 4]),
+  });
+  assert.equal(spends.length, 1);
+  const damage = app.log.find((entry) => entry.includes('hits Goblin'));
+  // The dagger has finesse, so both scores are 6 and the higher of them is
+  // still -2.
+  assert.match(damage, /1 piercing/, 'the 3 rolled loses 2 for the modifier');
+});
+
+test('an off-hand swing with the bonus action gone rolls nothing and says so', () => {
+  const { app, hero, spends } = budgetApp({ allow: false });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (DAGGER),
+    tweaks: { offhand: true },
+  });
+  assert.deepEqual(spends, [{ id: 'hero', cost: 'bonus' }]);
+  assert.deepEqual(app.rolls, [], 'no dice are thrown');
+  assert.deepEqual(app.log, []);
+  assert.equal(app.toastMessages[0], 'Hero already used their bonus action this turn.');
+});

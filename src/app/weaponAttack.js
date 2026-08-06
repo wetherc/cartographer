@@ -5,7 +5,8 @@ import { unproficientWear } from '../entities/Armor.js';
 import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
 import { isProficientWeapon } from '../entities/Proficiencies.js';
 import { attacksPerAction } from '../entities/Features.js';
-import { attacksAvailable } from '../combat/ActionBudget.js';
+import { attacksAvailable, canSpend } from '../combat/ActionBudget.js';
+import { offhandDamageModifier } from '../combat/TwoWeapon.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
 import { autoCrits, modeReasons, rollMode } from '../entities/ConditionEffects.js';
@@ -31,7 +32,9 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
  * disadvantage. `thrown` throws a melee weapon instead of striking with it,
  * which makes the swing a ranged attack for every rule that asks.
  * `freeAction` swings without spending the turn's Attack action, which is how
- * the GM takes a swing the action economy has no room for. Every field
+ * the GM takes a swing the action economy has no room for. `offhand` is the
+ * second swing of two-weapon fighting: it costs the bonus action rather than
+ * the Attack action, and its damage carries no ability bonus. Every field
  * defaults to nothing, so a plain Enter in the dialog rolls the unmodified
  * attack.
  * @typedef {{
@@ -40,6 +43,7 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
  *   longRange?: boolean,
  *   thrown?: boolean,
  *   freeAction?: boolean,
+ *   offhand?: boolean,
  *   attackDice?: number,
  *   attackDie?: import('../types/dice.js').DieType,
  *   attackFlat?: number,
@@ -153,15 +157,22 @@ export function rollWeaponAttack(
 ) {
   // The swing pays first, so a turn with nothing left rolls no dice. The first
   // swing spends the Attack action and banks whatever Extra Attack adds, and
-  // each later swing draws on that bank. `freeAction` comes from the dialog's
-  // opt-out and skips the whole question. Outside a running fight there is no
-  // turn to spend, and the action reports success.
+  // each later swing draws on that bank. An off-hand swing spends the bonus
+  // action instead, and never touches the attack bank. `freeAction` comes from
+  // the dialog's opt-out and skips the whole question. Outside a running fight
+  // there is no turn to spend, and the action reports success.
   if (!tweaks.freeAction && app.actions.spendBudget) {
-    const spent = app.actions.spendBudget(attacker.id, 'attack', {
-      attacksPerAction: attacksPerAction(attacker),
-    });
+    const spent = tweaks.offhand
+      ? app.actions.spendBudget(attacker.id, 'bonus')
+      : app.actions.spendBudget(attacker.id, 'attack', {
+          attacksPerAction: attacksPerAction(attacker),
+        });
     if (!spent) {
-      app.toasts.show(`${attacker.name} has no attack left this turn.`);
+      app.toasts.show(
+        tweaks.offhand
+          ? `${attacker.name} already used their bonus action this turn.`
+          : `${attacker.name} has no attack left this turn.`,
+      );
       return;
     }
   }
@@ -260,9 +271,12 @@ export function rollWeaponAttack(
   const conditionNote = reasons ? `, ${reasons}` : '';
   const proficiencyNote = proficient ? `proficiency +${proficiency}` : 'not proficient';
   const tiredNote = tired ? `, exhaustion ${exhaustionLevel(attacker)} ${tired}` : '';
+  // The off-hand swing rolls to hit like any other, so the note sits on the
+  // attack line to say where the missing damage bonus went.
+  const handNote = tweaks.offhand ? ', off-hand' : '';
   app.actions.logEvent(
     'combat',
-    `${attacker.name} attacks ${defender.name} with ${weapon.name} (${ability} ${formatModifier(abilityMod)}, ${proficiencyNote}${tiredNote}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
+    `${attacker.name} attacks ${defender.name} with ${weapon.name}${handNote} (${ability} ${formatModifier(abilityMod)}, ${proficiencyNote}${tiredNote}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
   );
   if (!hit) {
     app.toasts.show(
@@ -281,7 +295,11 @@ export function rollWeaponAttack(
     bonusDice: tweaks.damageDice ?? 0,
     bonusDie: tweaks.damageDie ?? 'd4',
   });
-  const damage = rollDamage(parts, damageModifier(abilityMod, tweaks.damageFlat ?? 0), rng);
+  // The second hand of two-weapon fighting adds no ability bonus to damage. A
+  // negative modifier still applies, so the swing of a weak character is still
+  // weak.
+  const damageMod = tweaks.offhand ? offhandDamageModifier(abilityMod) : abilityMod;
+  const damage = rollDamage(parts, damageModifier(damageMod, tweaks.damageFlat ?? 0), rng);
   const inflicts =
     'statusEffects' in weapon && weapon.statusEffects?.length
       ? `, inflicting ${weapon.statusEffects.join(', ')}`
@@ -324,11 +342,19 @@ export function rollWeaponAttack(
  * @param {import('../types/combat.js').CombatState} combat
  * @param {import('../types/combat.js').Participant} participant
  * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} weapon
- * @param {{ defenderId?: string | null }} [options] If a defender is already
- *   picked on the combat board, it pre-fills the dialog's target. The common
- *   flow is to click the card, click the weapon, then press Enter.
+ * @param {{ defenderId?: string | null, offhand?: boolean }} [options] If a
+ *   defender is already picked on the combat board, it pre-fills the dialog's
+ *   target. The common flow is to click the card, click the weapon, then press
+ *   Enter. `offhand` makes this the second swing of two-weapon fighting, which
+ *   costs the bonus action and drops the ability bonus from its damage.
  */
-export async function weaponAttack(app, combat, participant, weapon, { defenderId = null } = {}) {
+export async function weaponAttack(
+  app,
+  combat,
+  participant,
+  weapon,
+  { defenderId = null, offhand = false } = {},
+) {
   const sides = attackParticipants(app, combat, participant);
   if (!sides) return;
   const { attacker, defenders } = sides;
@@ -375,7 +401,7 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
         ]
     : [];
   const values = await promptModal(
-    `Attack with ${weapon.name}`,
+    offhand ? `Off-hand attack with ${weapon.name}` : `Attack with ${weapon.name}`,
     [
       {
         name: 'target',
@@ -413,14 +439,21 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
             },
           ]
         : []),
-      // This box appears only on a turn with no swing left, because that is
-      // the only time the answer matters. Ticking it swings anyway, for a rule
-      // the action economy here does not carry.
-      ...(attacksAvailable(participant, attacksPerAction(attacker)) <= 0
+      // This box appears only on a turn that cannot pay for the swing, because
+      // that is the only time the answer matters. Ticking it swings anyway, for
+      // a rule the action economy here does not carry. An off-hand swing pays
+      // with the bonus action, so it asks about that instead.
+      ...((
+        offhand
+          ? !canSpend(participant, 'bonus')
+          : attacksAvailable(participant, attacksPerAction(attacker)) <= 0
+      )
         ? [
             {
               name: 'free-action',
-              label: 'Ignore action cost (no attack left this turn)',
+              label: offhand
+                ? 'Ignore action cost (bonus action already used)'
+                : 'Ignore action cost (no attack left this turn)',
               type: /** @type {const} */ ('checkbox'),
               value: false,
               full: true,
@@ -473,5 +506,10 @@ export async function weaponAttack(app, combat, participant, weapon, { defenderI
   // A defender the dialog no longer offers, for example one defeated while
   // the dialog stood open, falls back to the first one left standing.
   const defender = defenders.find((d) => d.id === values.target) ?? defenders[0];
-  rollWeaponAttack(app, { attacker, defender, weapon, tweaks: readAttackTweaks(values) });
+  rollWeaponAttack(app, {
+    attacker,
+    defender,
+    weapon,
+    tweaks: { ...readAttackTweaks(values), offhand },
+  });
 }

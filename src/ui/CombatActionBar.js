@@ -24,10 +24,19 @@ import { ACTION_COSTS, COST_LABELS } from '../combat/ActionBudget.js';
  * action, bonus action, and reaction, and how many weapon swings are left. The
  * pips report, they do not gate. Every button stays live, because the dialog
  * behind it is where a spend is refused and where the GM waives the refusal.
- * @param {{ weapons: (InventoryItem | EnemyWeapon)[], spells: Spell[] }} actions
+ *
+ * `offhand` is the second swing of two-weapon fighting, in its own group. The
+ * host decides when the swing is available, so the group is absent unless the
+ * turn can take it.
+ * @param {{
+ *   weapons: (InventoryItem | EnemyWeapon)[],
+ *   spells: Spell[],
+ *   offhand?: (InventoryItem | EnemyWeapon)[],
+ * }} actions
  * @param {{
  *   onWeaponAttack: (weapon: InventoryItem | EnemyWeapon) => void,
  *   onCastSpell: (spell: Spell) => void,
+ *   onOffhandAttack?: (weapon: InventoryItem | EnemyWeapon) => void,
  * }} callbacks
  * @param {{ used: ActionBudget, attacksLeft: number } | null} [budget]
  * @returns {HTMLElement | null}
@@ -53,6 +62,24 @@ export function combatActionBar(actions, callbacks, budget = null) {
             className: 'combat-action-bar__attack',
             ariaLabel: `Attack with ${weapon.name}`,
             title: `Roll an attack with ${weapon.name} (${formatDamage(weapon.damage ?? [])})`,
+          }),
+        ),
+      ),
+    );
+  }
+
+  const offhand = actions.offhand ?? [];
+  if (offhand.length > 0 && callbacks.onOffhandAttack) {
+    const onOffhand = callbacks.onOffhandAttack;
+    groups.appendChild(
+      group(
+        'Off-hand (bonus action)',
+        offhand.map((weapon) =>
+          textButton(weapon.name, () => onOffhand(weapon), {
+            icon: 'sword',
+            className: 'combat-action-bar__attack',
+            ariaLabel: `Attack with ${weapon.name} in the off hand`,
+            title: `Roll an off-hand attack with ${weapon.name}, which adds no ability bonus to damage`,
           }),
         ),
       ),
