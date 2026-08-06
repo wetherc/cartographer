@@ -3,6 +3,7 @@ import { mountCombatScreen } from '../ui/CombatScreen.js';
 import { buildCombatView, isDowned } from '../combat/CombatView.js';
 import { buildLoadout, loadoutAccess } from '../combat/Loadout.js';
 import { canOffhand, offhandWeapons } from '../combat/TwoWeapon.js';
+import { opportunityWeapons, reactionSpells } from '../combat/Reactions.js';
 import { drop as dropConcentration } from '../entities/Concentration.js';
 import { isGM } from '../view/ViewRole.js';
 import {
@@ -117,6 +118,13 @@ export function wireCombatScreen(app) {
       );
       return buildLoadout(found, access === 'full' ? spellsOf(app, id) : [], access);
     },
+    // What one combatant can spend a reaction on: a melee swing at whoever is
+    // acting, and any spell that casts as a reaction. The screen asks only for a
+    // card it already decided can react, so this reads the lists whole.
+    getReaction: (id) => ({
+      weapons: opportunityWeapons(weaponsOf(app, id)),
+      spells: reactionSpells(spellsOf(app, id)),
+    }),
     onWeaponAttack: (weapon) => {
       const combat = state.combat;
       if (!combat) return;
@@ -131,6 +139,27 @@ export function wireCombatScreen(app) {
         defenderId: selectedTargetId,
         offhand: true,
       });
+    },
+    // A reaction comes from a combatant that is not taking the turn, so both of
+    // these look the participant up by id. The swing defaults to the combatant
+    // whose turn it is, because that is who the reaction interrupts. A card the
+    // GM picked on the board wins over that default.
+    onOpportunityAttack: (id, weapon) => {
+      const combat = state.combat;
+      const participant = combat?.order.find((p) => p.id === id);
+      if (!combat || !participant) return;
+      weaponAttack(app, combat, participant, weapon, {
+        defenderId: selectedTargetId ?? combat.order[combat.index]?.id ?? null,
+        reaction: true,
+      });
+    },
+    // The cast dialog reads the caster's own participant for the budget, so a
+    // reaction spell spends the reaction without this path saying so.
+    onReactionCast: (id, spell) => {
+      const combat = state.combat;
+      const participant = combat?.order.find((p) => p.id === id);
+      if (!combat || !participant) return;
+      castSpellAction(app, combat, participant, spell, { targetId: selectedTargetId });
     },
     onCastSpell: (spell) => {
       const combat = state.combat;

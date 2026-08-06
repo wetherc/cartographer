@@ -1761,3 +1761,48 @@ test('a bonus-action cast spends the bonus action', () => {
   });
   assert.deepEqual(spends, [{ id: 'mage', cost: 'bonus' }]);
 });
+
+test('a reaction cast spends the reaction on somebody else another turn', () => {
+  const caster = mage();
+  const shield = spell({
+    id: 'shielding',
+    name: 'Shielding',
+    level: 1,
+    castingTime: { kind: 'reaction', trigger: 'which you take when an attack hits you' },
+    effect: { kind: 'heal', healing: [{ count: 1, sides: 8, damageType: 'healing' }] },
+  });
+  const { app, spends } = inFight(caster, { action: true, bonus: true });
+  // The goblin is taking the turn. A reaction comes between the turns of its
+  // owner, so the caster pays with a part of a turn that is not running.
+  app.state.combat = { ...app.state.combat, index: 1 };
+  const plan = planFor(app, caster, shield);
+  assert.equal(plan.actionCost, 'reaction');
+  assert.equal(plan.actionBlocked, false, 'the spent action and bonus action leave it free');
+  resolveCast(app, plan, submit({ target: 'mage' }), {
+    writeBack: () => {},
+    concentrates: true,
+  });
+  assert.deepEqual(spends, [{ id: 'mage', cost: 'reaction' }]);
+});
+
+test('a reaction cast with the reaction gone is blocked and offers the opt-out', () => {
+  const caster = mage();
+  const shield = spell({
+    id: 'shielding',
+    name: 'Shielding',
+    level: 1,
+    castingTime: { kind: 'reaction' },
+    effect: { kind: 'heal', healing: [{ count: 1, sides: 8, damageType: 'healing' }] },
+  });
+  const { app, spends } = inFight(caster, { reaction: true });
+  const plan = planFor(app, caster, shield);
+  assert.equal(plan.actionBlocked, true);
+  const optOut = plan.fields.find((/** @type {any} */ f) => f.name === 'ignore-action');
+  assert.equal(optOut.label, 'Ignore action cost (reaction already used)');
+  resolveCast(app, plan, submit({ target: 'mage' }), {
+    writeBack: () => {},
+    concentrates: true,
+  });
+  assert.equal(app.toasted[0], 'Mage already used their reaction this turn.');
+  assert.deepEqual(spends, []);
+});

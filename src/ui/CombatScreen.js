@@ -45,6 +45,12 @@ import { entryItem } from './TravelogPanel.js';
  * outcome, and the End combat control takes emphasis, because closing the
  * fight is the GM's decision.
  *
+ * A card that is not the active turn's carries the reaction controls
+ * (`getReaction`), for a combatant the viewer can act for whose reaction is
+ * still free. An opportunity attack or a reaction spell reports through
+ * `onOpportunityAttack` and `onReactionCast`, with the id, because the combatant
+ * that reacts is not the one taking the turn.
+ *
  * `diceDock` is an empty slot under the active column. The host parks the
  * app's dice-tray card there while the mode is active. The right column
  * shows the fight's log (`getLogEntries`, already filtered by the host), with
@@ -68,8 +74,14 @@ import { entryItem } from './TravelogPanel.js';
  *     offhand?: (InventoryItem | EnemyWeapon)[],
  *   },
  *   getLoadout: (id: string) => Loadout,
+ *   getReaction: (id: string) => {
+ *     weapons: (InventoryItem | EnemyWeapon)[],
+ *     spells: Spell[],
+ *   },
  *   onWeaponAttack: (weapon: InventoryItem | EnemyWeapon) => void,
  *   onOffhandAttack: (weapon: InventoryItem | EnemyWeapon) => void,
+ *   onOpportunityAttack: (id: string, weapon: InventoryItem | EnemyWeapon) => void,
+ *   onReactionCast: (id: string, spell: Spell) => void,
  *   onCastSpell: (spell: Spell) => void,
  *   onApplyHP: (id: string, amount: number, isHeal: boolean) => void,
  *   getConcentration: (id: string) => { spellName: string } | null,
@@ -171,7 +183,13 @@ export function mountCombatScreen(container, callbacks) {
     const party = view.rows.filter((row) => row.side === 'party');
     const foes = view.rows.filter((row) => row.side === 'foe');
     const selectedId = callbacks.getSelectedTargetId();
-    board.append(group('Party', party, selectedId), group('Foes', foes, selectedId));
+    // The turn's own card offers no reaction controls, so the board needs to
+    // know whose turn it is.
+    const activeId = view.rows[view.turnIndex]?.id ?? null;
+    board.append(
+      group('Party', party, selectedId, activeId),
+      group('Foes', foes, selectedId, activeId),
+    );
     roveGroup(board, '.combatant-card--selectable', selectedId);
     renderLog();
     announceTurn(view);
@@ -531,11 +549,36 @@ export function mountCombatScreen(container, callbacks) {
   }
 
   /**
+   * The reaction controls for one card, or null for a card that gets none. A
+   * reaction is taken between the turns of its owner, so the active card gets
+   * none: the action bar in the left column is where that turn's controls live.
+   * The rest of the test is the viewer's right to act for the combatant, a
+   * combatant still able to act, an unspent reaction, and something to do with
+   * it.
+   * @param {CombatantRow} row
+   * @param {string | null} activeId
+   * @returns {import('./CombatantCard.js').ReactionControl | null}
+   */
+  function reactionFor(row, activeId) {
+    if (row.id === activeId || !row.mayAct) return null;
+    if (row.defeated || row.incapacitated || row.used.reaction) return null;
+    const { weapons, spells } = callbacks.getReaction(row.id);
+    if (weapons.length === 0 && spells.length === 0) return null;
+    return {
+      weapons,
+      spells,
+      onAttack: (weapon) => callbacks.onOpportunityAttack(row.id, weapon),
+      onCast: (spell) => callbacks.onReactionCast(row.id, spell),
+    };
+  }
+
+  /**
    * @param {string} label
    * @param {CombatantRow[]} rows
    * @param {string | null} selectedId
+   * @param {string | null} activeId
    */
-  function group(label, rows, selectedId) {
+  function group(label, rows, selectedId, activeId) {
     return el(
       'section',
       'combat-board__group',
@@ -549,6 +592,7 @@ export function mountCombatScreen(container, callbacks) {
               combatantCard(row, {
                 selected: row.id === selectedId,
                 loadout: loadoutOf(row.id),
+                reaction: reactionFor(row, activeId),
                 onSelect: (id) => {
                   callbacks.onSelectTarget(id);
                   render();

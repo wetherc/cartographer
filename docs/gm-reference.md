@@ -294,6 +294,28 @@ ability bonus, which is the 5e rule. A negative ability modifier still applies,
 so a weak character swings weakly with either hand. The combat log marks the
 swing "off-hand".
 
+### Reactions and opportunity attacks
+
+A reaction is taken between the turns of its owner, so its controls are on the
+board card, not in the action bar. A card carries a "Reaction" row when all of
+this is true: the card is not the current turn, you can act for that combatant,
+the combatant can still act, and its reaction is unspent. The row holds one
+button per melee weapon for an opportunity attack, and one button per spell that
+casts as a reaction, such as Shield.
+
+The app does not watch for a trigger. It tracks no distance between tokens, so it
+cannot see a creature leave the reach of another. You call the trigger at the
+table and press the button.
+
+An opportunity attack rolls like a normal swing and keeps its ability bonus on
+damage. It spends the reaction, and the log marks it "opportunity attack". Its
+defender starts as the combatant taking the turn, because that is who the
+reaction interrupts. A card you picked on the board overrides that. A reaction
+spell opens the usual cast dialog and spends the reaction instead of the action.
+
+The reaction comes back at the start of the turn of its owner, not at the top of
+the round.
+
 ### The rules the app applies
 
 Attack rolls follow 5e without change.

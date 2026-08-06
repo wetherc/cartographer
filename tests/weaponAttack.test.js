@@ -2,8 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   attackParticipants,
+  canSwing,
   readAttackTweaks,
   rollWeaponAttack,
+  swingKind,
   weaponAttack,
 } from '../src/app/weaponAttack.js';
 import { roll } from '../src/dice/DiceRoller.js';
@@ -1253,4 +1255,60 @@ test('an off-hand swing with the bonus action gone rolls nothing and says so', (
   assert.deepEqual(app.rolls, [], 'no dice are thrown');
   assert.deepEqual(app.log, []);
   assert.equal(app.toastMessages[0], 'Hero already used their bonus action this turn.');
+});
+
+test('an opportunity attack spends the reaction and swings at full damage', () => {
+  const { app, hero, spends } = budgetApp();
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (DAGGER),
+    tweaks: { reaction: true },
+    // A d4 landing on 3.
+    rng: scripted([2 / 4]),
+  });
+  assert.deepEqual(spends, [{ id: 'hero', cost: 'reaction' }]);
+  const damage = app.log.find((entry) => entry.includes('hits Goblin'));
+  assert.match(damage, /6 piercing/, 'the swing is a normal one, so STR +3 counts');
+  const attack = app.log.find((entry) => entry.includes('attacks Goblin'));
+  assert.match(attack, /Dagger, opportunity attack \(STR \+3/);
+});
+
+test('an opportunity attack with the reaction gone rolls nothing and says so', () => {
+  const { app, hero, spends } = budgetApp({ allow: false });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (DAGGER),
+    tweaks: { reaction: true },
+  });
+  assert.deepEqual(spends, [{ id: 'hero', cost: 'reaction' }]);
+  assert.deepEqual(app.rolls, [], 'no dice are thrown');
+  assert.deepEqual(app.log, []);
+  assert.equal(app.toastMessages[0], 'Hero already used their reaction.');
+});
+
+test('swingKind names one swing per set of answers, and main is the default', () => {
+  assert.equal(swingKind({}), 'main');
+  assert.equal(swingKind({ offhand: true }), 'offhand');
+  assert.equal(swingKind({ reaction: true }), 'reaction');
+  assert.equal(
+    swingKind({ offhand: true, reaction: true }),
+    'reaction',
+    'the reaction is the outer question: it decides whether the swing happens at all',
+  );
+});
+
+test('canSwing asks the attack bank for a main swing and the pips for the other two', () => {
+  const spent = /** @type {any} */ ({ id: 'hero', used: { action: true } });
+  const fresh = /** @type {any} */ ({ id: 'hero', used: {} });
+  assert.equal(canSwing(fresh, 'main', 1), true);
+  assert.equal(canSwing(spent, 'main', 1), false, 'the action is gone and nothing is banked');
+  const banked = /** @type {any} */ ({ id: 'hero', used: { action: true, attacksLeft: 1 } });
+  assert.equal(canSwing(banked, 'main', 1), true, 'Extra Attack banked the second swing');
+  assert.equal(canSwing(spent, 'offhand', 1), true, 'the bonus action is untouched');
+  assert.equal(canSwing(spent, 'reaction', 1), true);
+  const drained = /** @type {any} */ ({ id: 'hero', used: { bonus: true, reaction: true } });
+  assert.equal(canSwing(drained, 'offhand', 1), false);
+  assert.equal(canSwing(drained, 'reaction', 1), false);
 });

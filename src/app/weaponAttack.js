@@ -34,9 +34,10 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
  * `freeAction` swings without spending the turn's Attack action, which is how
  * the GM takes a swing the action economy has no room for. `offhand` is the
  * second swing of two-weapon fighting: it costs the bonus action rather than
- * the Attack action, and its damage carries no ability bonus. Every field
- * defaults to nothing, so a plain Enter in the dialog rolls the unmodified
- * attack.
+ * the Attack action, and its damage carries no ability bonus. `reaction` is an
+ * opportunity attack, which costs the reaction and rolls like a normal swing.
+ * Every field defaults to nothing, so a plain Enter in the dialog rolls the
+ * unmodified attack.
  * @typedef {{
  *   mode?: AttackMode,
  *   twoHanded?: boolean,
@@ -44,6 +45,7 @@ import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.
  *   thrown?: boolean,
  *   freeAction?: boolean,
  *   offhand?: boolean,
+ *   reaction?: boolean,
  *   attackDice?: number,
  *   attackDie?: import('../types/dice.js').DieType,
  *   attackFlat?: number,
@@ -78,6 +80,65 @@ const BONUS_DICE = /** @type {import('../types/dice.js').DieType[]} */ ([
   'd10',
   'd12',
 ]);
+
+/**
+ * The three swings a combatant can take, and what each one costs. `main` draws
+ * on the Attack action and the swings Extra Attack banks behind it. `offhand`
+ * is the second swing of two-weapon fighting. `reaction` is an opportunity
+ * attack. Each row carries what the budget spends, what the dialog is titled,
+ * what its opt-out box says, what the log adds to the attack line, and what the
+ * toast says when the turn cannot pay.
+ * @typedef {'main' | 'offhand' | 'reaction'} SwingKind
+ */
+const SWINGS = {
+  main: {
+    cost: /** @type {const} */ ('attack'),
+    title: 'Attack with',
+    optOut: 'no attack left this turn',
+    note: '',
+    blocked: 'has no attack left this turn',
+  },
+  offhand: {
+    cost: /** @type {const} */ ('bonus'),
+    title: 'Off-hand attack with',
+    optOut: 'bonus action already used',
+    note: ', off-hand',
+    blocked: 'already used their bonus action this turn',
+  },
+  reaction: {
+    cost: /** @type {const} */ ('reaction'),
+    title: 'Opportunity attack with',
+    optOut: 'reaction already used',
+    note: ', opportunity attack',
+    blocked: 'already used their reaction',
+  },
+};
+
+/**
+ * Which of the three swings the dialog's answers describe. A swing is a
+ * main-hand one unless it says otherwise, and no swing is two of these at once.
+ * @param {AttackTweaks} tweaks
+ * @returns {SwingKind}
+ */
+export function swingKind(tweaks) {
+  if (tweaks.reaction) return 'reaction';
+  if (tweaks.offhand) return 'offhand';
+  return 'main';
+}
+
+/**
+ * Whether the participant's turn can pay for the given swing. A main-hand swing
+ * asks the attack bank, because Extra Attack buys more than one swing per
+ * action. The other two ask for their own part of the turn.
+ * @param {import('../types/combat.js').Participant} participant
+ * @param {SwingKind} kind
+ * @param {number} perAction how many swings one Attack action buys
+ * @returns {boolean}
+ */
+export function canSwing(participant, kind, perAction) {
+  if (kind === 'main') return attacksAvailable(participant, perAction) > 0;
+  return canSpend(participant, SWINGS[kind].cost);
+}
 
 /**
  * Who can attack and who is left to attack. The attacker is a party character
@@ -155,24 +216,24 @@ export function rollWeaponAttack(
   app,
   { attacker, defender, weapon, tweaks = {}, rng = Math.random },
 ) {
-  // The swing pays first, so a turn with nothing left rolls no dice. The first
+  // The swing pays first, so a turn with nothing left rolls no dice. A main-hand
   // swing spends the Attack action and banks whatever Extra Attack adds, and
   // each later swing draws on that bank. An off-hand swing spends the bonus
-  // action instead, and never touches the attack bank. `freeAction` comes from
-  // the dialog's opt-out and skips the whole question. Outside a running fight
-  // there is no turn to spend, and the action reports success.
+  // action, and an opportunity attack spends the reaction; neither touches the
+  // attack bank. `freeAction` comes from the dialog's opt-out and skips the
+  // whole question. Outside a running fight there is no turn to spend, and the
+  // action reports success.
+  const swing = SWINGS[swingKind(tweaks)];
   if (!tweaks.freeAction && app.actions.spendBudget) {
-    const spent = tweaks.offhand
-      ? app.actions.spendBudget(attacker.id, 'bonus')
-      : app.actions.spendBudget(attacker.id, 'attack', {
-          attacksPerAction: attacksPerAction(attacker),
-        });
+    // Only the Attack action banks swings behind it, so only that cost carries
+    // the count.
+    const spent = app.actions.spendBudget(
+      attacker.id,
+      swing.cost,
+      swing.cost === 'attack' ? { attacksPerAction: attacksPerAction(attacker) } : {},
+    );
     if (!spent) {
-      app.toasts.show(
-        tweaks.offhand
-          ? `${attacker.name} already used their bonus action this turn.`
-          : `${attacker.name} has no attack left this turn.`,
-      );
+      app.toasts.show(`${attacker.name} ${swing.blocked}.`);
       return;
     }
   }
@@ -271,9 +332,10 @@ export function rollWeaponAttack(
   const conditionNote = reasons ? `, ${reasons}` : '';
   const proficiencyNote = proficient ? `proficiency +${proficiency}` : 'not proficient';
   const tiredNote = tired ? `, exhaustion ${exhaustionLevel(attacker)} ${tired}` : '';
-  // The off-hand swing rolls to hit like any other, so the note sits on the
-  // attack line to say where the missing damage bonus went.
-  const handNote = tweaks.offhand ? ', off-hand' : '';
+  // An off-hand swing and an opportunity attack both roll to hit like any other
+  // swing, so the note sits on the attack line: it says where the missing damage
+  // bonus went, or which part of the turn the swing came out of.
+  const handNote = swing.note;
   app.actions.logEvent(
     'combat',
     `${attacker.name} attacks ${defender.name} with ${weapon.name}${handNote} (${ability} ${formatModifier(abilityMod)}, ${proficiencyNote}${tiredNote}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${defender.ac}${modeNote} — ${outcome}.`,
@@ -342,18 +404,20 @@ export function rollWeaponAttack(
  * @param {import('../types/combat.js').CombatState} combat
  * @param {import('../types/combat.js').Participant} participant
  * @param {import('../types/entities.js').InventoryItem | import('../types/entities.js').EnemyWeapon} weapon
- * @param {{ defenderId?: string | null, offhand?: boolean }} [options] If a
- *   defender is already picked on the combat board, it pre-fills the dialog's
- *   target. The common flow is to click the card, click the weapon, then press
- *   Enter. `offhand` makes this the second swing of two-weapon fighting, which
- *   costs the bonus action and drops the ability bonus from its damage.
+ * @param {{ defenderId?: string | null, offhand?: boolean, reaction?: boolean }}
+ *   [options] If a defender is already picked on the combat board, it pre-fills
+ *   the dialog's target. The common flow is to click the card, click the weapon,
+ *   then press Enter. `offhand` makes this the second swing of two-weapon
+ *   fighting, which costs the bonus action and drops the ability bonus from its
+ *   damage. `reaction` makes it an opportunity attack, which costs the reaction
+ *   and can come on another combatant's turn.
  */
 export async function weaponAttack(
   app,
   combat,
   participant,
   weapon,
-  { defenderId = null, offhand = false } = {},
+  { defenderId = null, offhand = false, reaction = false } = {},
 ) {
   const sides = attackParticipants(app, combat, participant);
   if (!sides) return;
@@ -400,8 +464,9 @@ export async function weaponAttack(
           { value: 'long', label: `Long (${range.long} ft, disadvantage)` },
         ]
     : [];
+  const swing = SWINGS[swingKind({ offhand, reaction })];
   const values = await promptModal(
-    offhand ? `Off-hand attack with ${weapon.name}` : `Attack with ${weapon.name}`,
+    `${swing.title} ${weapon.name}`,
     [
       {
         name: 'target',
@@ -441,19 +506,13 @@ export async function weaponAttack(
         : []),
       // This box appears only on a turn that cannot pay for the swing, because
       // that is the only time the answer matters. Ticking it swings anyway, for
-      // a rule the action economy here does not carry. An off-hand swing pays
-      // with the bonus action, so it asks about that instead.
-      ...((
-        offhand
-          ? !canSpend(participant, 'bonus')
-          : attacksAvailable(participant, attacksPerAction(attacker)) <= 0
-      )
+      // a rule the action economy here does not carry. Each of the three swings
+      // names the part of the turn it could not pay with.
+      ...(!canSwing(participant, swingKind({ offhand, reaction }), attacksPerAction(attacker))
         ? [
             {
               name: 'free-action',
-              label: offhand
-                ? 'Ignore action cost (bonus action already used)'
-                : 'Ignore action cost (no attack left this turn)',
+              label: `Ignore action cost (${swing.optOut})`,
               type: /** @type {const} */ ('checkbox'),
               value: false,
               full: true,
@@ -510,6 +569,6 @@ export async function weaponAttack(
     attacker,
     defender,
     weapon,
-    tweaks: { ...readAttackTweaks(values), offhand },
+    tweaks: { ...readAttackTweaks(values), offhand, reaction },
   });
 }

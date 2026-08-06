@@ -177,6 +177,41 @@ spends the bonus action instead of an attack and takes `offhandDamageModifier`
 for its damage. That function drops a positive ability modifier and keeps a
 negative one: the rule takes the bonus away, and a penalty is not a bonus.
 
+`weaponAttack` holds one table of the three swings a combatant can take: the
+main-hand one, the off-hand one, and the opportunity attack. Each row states
+what the swing spends, what the dialog is titled, what its opt-out box says,
+what the log adds to the attack line, and what the toast says when the turn
+cannot pay. `swingKind` picks the row from the dialog's answers, and `canSwing`
+asks the budget whether that row is payable. Both are pure and tested.
+
+### Reactions
+
+`src/combat/Reactions.js` says what a reaction is worth offering. `canReact`
+reads the reaction pip. `opportunityWeapons` keeps the melee weapons of a list,
+because a bow reaches nobody who walks past. `reactionSpells` keeps the spells
+whose casting time reads as a reaction, through `SpellTiming.castingCost`.
+
+Nothing detects a trigger. A 5e reaction fires off a fact this app does not
+track, such as a creature leaving the reach of another. The GM sees the trigger
+at the table and presses the control.
+
+The controls sit under the board card of the combatant that reacts, which is not
+the combatant taking the turn. A board card is one button, and a button holds no
+button, so `combatantCard` returns the card and the controls wrapped in one
+`.combatant-slot` element. The card draws the row it is given.
+`CombatScreen.reactionFor` decides who gets one: not the active turn, a viewer
+who can act for the combatant, a combatant still able to act, an unspent
+reaction, and something to spend it on.
+
+The swing routes to `weaponAttack` with `reaction: true`, which spends the
+reaction and otherwise rolls a normal swing, ability bonus and all. Its default
+defender is the combatant taking the turn, because that is who the reaction
+interrupts, and a card the GM picked on the board wins over that default. The
+cast routes to the same `castSpellAction` the action bar uses. That path already
+spends what the casting time names, and `castPlan` finds the caster's own
+participant by id rather than by whose turn it is, so a reaction spell needed no
+new spending path.
+
 ## The view is derived, not stored
 
 `buildCombatView(combat, resolve, viewer)` in `src/combat/CombatView.js` is a

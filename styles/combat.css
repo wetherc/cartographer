@@ -171,6 +171,14 @@ body.mode-combat .app-buildrail {
   margin: 0;
 }
 
+/* One combatant plus the controls that cannot live inside its card, because the
+   card is itself a button. The slot keeps them together as one board item. */
+.combatant-slot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
 /* One combatant. The side reads from the group heading and the foe mark; the
    left edge only reinforces it. */
 .combatant-card {
@@ -267,6 +275,22 @@ body.mode-combat .app-buildrail {
 .combatant-card__death-chip--stable {
   border-color: var(--success);
   color: var(--success);
+}
+
+/* The reaction controls sit under the card, indented and inside a dashed edge,
+   so they read as an aside to the card rather than as part of the turn's own
+   action bar. */
+.combatant-card__reaction {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-left: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  border-left: 1px dashed var(--border-strong);
+}
+
+.combatant-card__reaction-label {
+  color: var(--text-muted);
 }
 
 /* A combatant's armor, weapons, spells, and slots: labelled lines on a board

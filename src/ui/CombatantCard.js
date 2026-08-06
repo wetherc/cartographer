@@ -1,6 +1,6 @@
 import { el } from './dom.js';
 import { icon } from './icons.js';
-import { bareButton, chip } from './buttons.js';
+import { bareButton, chip, sectionLabel, textButton } from './buttons.js';
 import { hpBand } from '../view/ViewRole.js';
 import { loadoutBlock } from './LoadoutBlock.js';
 import { buildStatBar } from './CharacterBars.js';
@@ -8,6 +8,21 @@ import { deathSaveStatus } from '../view/DeathSaveView.js';
 
 /** @typedef {import('../combat/CombatView.js').CombatantRow} CombatantRow */
 /** @typedef {import('../combat/Loadout.js').Loadout} Loadout */
+/** @typedef {import('../types/entities.js').InventoryItem} InventoryItem */
+/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
+/** @typedef {import('../types/spell.js').Spell} Spell */
+
+/**
+ * The reaction a combatant can take on somebody else's turn: an opportunity
+ * attack with one of its melee weapons, or a spell that casts as a reaction.
+ * The host decides when to offer this and what belongs in the two lists.
+ * @typedef {{
+ *   weapons: (InventoryItem | EnemyWeapon)[],
+ *   spells: Spell[],
+ *   onAttack: (weapon: InventoryItem | EnemyWeapon) => void,
+ *   onCast: (spell: Spell) => void,
+ * }} ReactionControl
+ */
 
 /**
  * The word each death-save position wears as a chip.
@@ -36,11 +51,17 @@ const DEATH_SAVE_CHIPS = { dying: 'Dying', stable: 'Stable', dead: 'Dead' };
  * character, matching the sheet they can already read. Everywhere else, HP
  * shows as a coarse band. AC is public information: every viewer sees the
  * exact value.
+ *
+ * `reaction` adds the reaction controls under the card. The card is one button
+ * when it picks targets, so the controls cannot go inside it: a button holds no
+ * button. They go in a row beside it, and the pair returns wrapped in one slot
+ * element, which the board lays out as it laid out the card alone.
  * @param {CombatantRow} row
  * @param {{
  *   selected?: boolean,
  *   onSelect?: (id: string) => void,
  *   loadout?: Loadout | null,
+ *   reaction?: ReactionControl | null,
  * }} [selection]
  * @returns {HTMLElement}
  */
@@ -117,7 +138,48 @@ export function combatantCard(row, selection = {}) {
     );
   }
 
-  return card;
+  const reaction = selection.reaction ? reactionRow(row, selection.reaction) : null;
+  if (!reaction) return card;
+  return el('div', 'combatant-slot', card, reaction);
+}
+
+/**
+ * The reaction controls: one button per melee weapon for an opportunity attack,
+ * and one per reaction spell. Returns null when the combatant holds neither,
+ * so an unarmed non-caster grows no empty row.
+ *
+ * Nothing here says the reaction is triggered. The GM saw the trigger at the
+ * table. The row only offers the swing and the cast, and each one spends the
+ * reaction when it rolls.
+ * @param {CombatantRow} row
+ * @param {ReactionControl} reaction
+ * @returns {HTMLElement | null}
+ */
+function reactionRow(row, reaction) {
+  const name = row.name ?? 'Unknown combatant';
+  const buttons = [
+    ...reaction.weapons.map((weapon) =>
+      textButton(weapon.name, () => reaction.onAttack(weapon), {
+        icon: 'sword',
+        ariaLabel: `Opportunity attack by ${name} with ${weapon.name}`,
+        title: `Roll an opportunity attack with ${weapon.name}, which spends the reaction of ${name}`,
+      }),
+    ),
+    ...reaction.spells.map((spell) =>
+      textButton(spell.name, () => reaction.onCast(spell), {
+        icon: 'sparkles',
+        ariaLabel: `Cast ${spell.name} as a reaction by ${name}`,
+        title: `Cast ${spell.name}, which spends the reaction of ${name}`,
+      }),
+    ),
+  ];
+  if (buttons.length === 0) return null;
+  return el(
+    'div',
+    'combatant-card__reaction',
+    sectionLabel('Reaction', { className: 'combatant-card__reaction-label' }),
+    el('div', 'combatant-card__reaction-buttons u-row u-wrap u-g1', ...buttons),
+  );
 }
 
 /** The foe marker beside the name. It is decorative. The group heading names the side. */
