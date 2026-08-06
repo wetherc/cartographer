@@ -140,8 +140,9 @@ take-a-value, return-a-value pattern.
     Backgrounds.js       resolve a stored id to its definition
     Proficiencies.js     assemble + edit the six proficiency lists
     HitDice.js           max HP derivation, hit dice as resource pools
-    LevelUp.js           pending levels, ASI/feat choices
+    LevelUp.js           pending levels, ASI/feat choices, unlocked features
     LevelAssign.js       commit a pending level to a class
+    Features.js          class features as numbers the combat paths use
           |
           v
     Character.js         the character value itself; withDefaults is the
@@ -211,6 +212,24 @@ requirement quoted is the new class's own, unless the block is a held class
 whose prerequisite has since been lost. 5e gates leaving a class the same way
 as entering one. `prereqText` writes that phrasing ("STR 13 or DEX 13"), and
 `className` resolves a class id for display.
+
+### Class features
+
+A class feature is a name in `featuresByLevel` (`data/classes.js`) and nothing
+more. It carries no structured effect. `LevelUp.unlockedFeatures` collects the
+names that the class levels of a character reach, and the sheet prints that
+list.
+
+`entities/Features.js` reads two of those names as numbers. `attacksPerAction`
+gives 2 to a character with 'Extra Attack', and 3 or 4 for the numbered
+follow-ups of the Fighter. It takes the best count across the class list,
+because Extra Attack does not stack in 5e. `sneakAttackDice` gives the count of
+d6 that Sneak Attack adds, from the level in the class that granted it.
+`hasFeature` and `featureSource` are the exact-name lookups below both.
+
+A match on the name is the only way to read a feature. A homebrew class that
+uses the same names gets the same mechanics. This is deliberate, and it is
+cheaper than a structured effect field on each feature.
 
 ### Loading old saves
 
