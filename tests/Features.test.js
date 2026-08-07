@@ -25,6 +25,12 @@ test('hasFeature matches an unlocked feature by exact name', () => {
   assert.equal(hasFeature(createCharacter('c1', 'Nim'), 'Extra Attack'), false, 'classless');
 });
 
+test('hasFeature matches a structured feature entry by its name', () => {
+  assert.equal(hasFeature(one('rogue', 1), 'Expertise'), true);
+  assert.equal(hasFeature(one('bard', 3), 'Expertise'), true);
+  assert.equal(hasFeature(one('bard', 2), 'Expertise'), false, 'not until 3rd level');
+});
+
 test('featureSource names the class that granted the feature', () => {
   assert.equal(featureSource(one('barbarian', 5), 'Extra Attack'), 'barbarian');
   assert.equal(featureSource(one('barbarian', 5), 'Sneak Attack'), null);

@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   CLASS_LIST,
+  featureEntry,
   getClass,
   isCasterClass,
   slotsForClass,
@@ -241,4 +242,23 @@ test('preparedLimit counts prepared-rule classes only', () => {
 
 test('preparedLimit is 0 for a prepared caster with no score in its spell ability', () => {
   assert.equal(preparedLimit(character({ class: 'wizard', level: 5, stats: {} })), 0);
+});
+
+test('featureEntry normalizes a plain name to an empty effect list', () => {
+  assert.deepEqual(featureEntry('Sneak Attack'), { name: 'Sneak Attack', effects: [] });
+});
+
+test('featureEntry copies a structured entry without touching the catalog object', () => {
+  const raw = {
+    name: 'Expertise',
+    effects: [{ kind: 'proficiency', expertise: { choose: 2, from: [] } }],
+  };
+  const entry = featureEntry(raw);
+  assert.deepEqual(entry, raw);
+  assert.notEqual(entry, raw, 'a fresh object');
+  assert.notEqual(entry.effects, raw.effects, 'a fresh effects array');
+});
+
+test('featureEntry reads a missing effects list as empty', () => {
+  assert.deepEqual(featureEntry({ name: 'Bard College' }), { name: 'Bard College', effects: [] });
 });

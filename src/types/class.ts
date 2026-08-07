@@ -1,4 +1,5 @@
 import type { Ability } from './spell.js';
+import type { FeatEffect } from './feat.js';
 
 /** A class's spellcasting progression. Full casters gain 9th-level slots
  * (Wizard, Cleric, Bard, Druid, Sorcerer). Half casters top out at 5th level
@@ -99,9 +100,17 @@ export interface ClassDef {
   /** The class's unarmored defense formula. Absent for a class without one,
    * which is every class but the Barbarian and the Monk. */
   unarmoredDefense?: UnarmoredDefense;
-  /** Feature names unlocked at each level. These are display names only,
-   * not yet given a mechanical effect. */
-  featuresByLevel: Record<number, string[]>;
+  /** Features unlocked at each level. A plain string is a display name with
+   * no modeled effect. A ClassFeatureDef carries structured effects that the
+   * grant flow applies when the character reaches the level. */
+  featuresByLevel: Record<number, (string | ClassFeatureDef)[]>;
+}
+
+/** A class feature with structured effects, in the same effect vocabulary
+ * feats use. Effects the engine cannot model stay a plain name string. */
+export interface ClassFeatureDef {
+  name: string;
+  effects?: FeatEffect[];
 }
 
 /** One of a character's class memberships: which class, at what level, in

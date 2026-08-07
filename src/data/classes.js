@@ -20,6 +20,14 @@ function curve(breakpoints) {
 /** The standard ability-score-improvement levels most classes share. */
 const ASI = [4, 8, 12, 16, 19];
 
+/** The Expertise feature the Bard and the Rogue grant twice each: double
+ * proficiency on two skills the character is already proficient in. The
+ * empty `from` means any proficient skill; the grant flow narrows the pool. */
+const EXPERTISE = {
+  name: 'Expertise',
+  effects: [{ kind: /** @type {const} */ ('proficiency'), expertise: { choose: 2, from: [] } }],
+};
+
 /** @param {Partial<import('../types/class.js').MulticlassGrant>} [grant]
  * @returns {import('../types/class.js').MulticlassGrant} */
 function multiclassGrant(grant = {}) {
@@ -126,10 +134,10 @@ export const DEFAULT_CLASSES = [
     featuresByLevel: {
       1: ['Bardic Inspiration'],
       2: ['Jack of All Trades', 'Song of Rest'],
-      3: ['Expertise', 'Bard College'],
+      3: [EXPERTISE, 'Bard College'],
       5: ['Font of Inspiration'],
       6: ['Countercharm'],
-      10: ['Magical Secrets'],
+      10: [EXPERTISE, 'Magical Secrets'],
       20: ['Superior Inspiration'],
     },
   },
@@ -378,10 +386,11 @@ export const DEFAULT_CLASSES = [
       skillChoice: { choose: 1, from: ROGUE_SKILLS },
     }),
     featuresByLevel: {
-      1: ['Expertise', 'Sneak Attack', "Thieves' Cant"],
+      1: [EXPERTISE, 'Sneak Attack', "Thieves' Cant"],
       2: ['Cunning Action'],
       3: ['Roguish Archetype'],
       5: ['Uncanny Dodge'],
+      6: [EXPERTISE],
       7: ['Evasion'],
       11: ['Reliable Talent'],
       14: ['Blindsense'],

@@ -294,6 +294,21 @@ test('unlockedFeatures covers every class in the list', () => {
   );
 });
 
+test('unlockedFeatures carries the effects of a structured feature', () => {
+  const features = unlockedFeatures(classed([{ classId: 'rogue', level: 6 }]));
+  const expertise = features.filter((f) => f.name === 'Expertise');
+  assert.equal(expertise.length, 2, 'Rogue 1 and Rogue 6');
+  assert.deepEqual(
+    expertise.map((f) => f.level),
+    [1, 6],
+  );
+  for (const f of expertise) {
+    assert.deepEqual(f.effects, [{ kind: 'proficiency', expertise: { choose: 2, from: [] } }]);
+  }
+  const sneak = features.find((f) => f.name === 'Sneak Attack');
+  assert.ok(sneak && !('effects' in sneak), 'a plain name carries no effects field');
+});
+
 test('featuresGained lists only what the earlier snapshot lacked', () => {
   assert.deepEqual(featuresGained(fighter(5), fighter(3)), [
     { classId: 'fighter', level: 5, name: 'Extra Attack' },

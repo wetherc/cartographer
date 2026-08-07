@@ -36,6 +36,18 @@ export function getClass(classId) {
 }
 
 /**
+ * A featuresByLevel entry normalized to `{ name, effects }`. A plain string
+ * is a display-only feature and comes back with no effects. The result is a
+ * fresh object; the catalog entry is never touched.
+ * @param {string | import('../types/class.js').ClassFeatureDef} entry
+ * @returns {{ name: string, effects: import('../types/feat.js').FeatEffect[] }}
+ */
+export function featureEntry(entry) {
+  if (typeof entry === 'string') return { name: entry, effects: [] };
+  return { name: entry.name, effects: Array.isArray(entry.effects) ? [...entry.effects] : [] };
+}
+
+/**
  * Whether a class casts spells at all (full/half/third/pact, not none).
  * @param {string | undefined | null} classId
  * @returns {boolean}
