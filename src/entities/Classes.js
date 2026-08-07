@@ -167,8 +167,10 @@ export function spellAbilityModifier(character, classId) {
 /**
  * A caster's spell save DC: 8 plus proficiency bonus plus spell-ability
  * modifier. Proficiency reads the total character level (the 5e multiclass
- * rule). The ability comes from `classId`, defaulting to the first caster
- * class. Returns null for a non-caster.
+ * rule), unless the caster carries an explicit `proficiency` (a rated
+ * creature's view does, from the challenge-rating ladder). The ability
+ * comes from `classId`, defaulting to the first caster class. Returns null
+ * for a non-caster.
  * @param {SpellCaster} character
  * @param {string} [classId]
  * @returns {number | null}
@@ -176,7 +178,7 @@ export function spellAbilityModifier(character, classId) {
 export function spellSaveDC(character, classId) {
   const mod = spellAbilityModifier(character, classId);
   if (mod === null) return null;
-  return 8 + proficiencyBonus(character.level) + mod;
+  return 8 + casterProficiency(character) + mod;
 }
 
 /**
@@ -195,7 +197,17 @@ export function spellSaveDC(character, classId) {
 export function spellAttackBonus(character, classId) {
   const mod = spellAbilityModifier(character, classId);
   if (mod === null) return null;
-  return proficiencyBonus(character.level) + mod + d20Penalty(character);
+  return casterProficiency(character) + mod + d20Penalty(character);
+}
+
+/**
+ * The proficiency bonus a caster's spells use: the explicit `proficiency`
+ * of the view where one is stamped, else the level ladder.
+ * @param {SpellCaster} character
+ * @returns {number}
+ */
+function casterProficiency(character) {
+  return character.proficiency ?? proficiencyBonus(character.level);
 }
 
 /**

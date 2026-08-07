@@ -269,6 +269,11 @@ export interface SpellCaster {
   /** Exhaustion, 0 to 6. The spell attack bonus reads it. Both a Character
    * and a Creature carry it. */
   exhaustion?: number;
+  /** The proficiency bonus the caster's spells use, for an entity that
+   * climbs a different ladder than character level. `toCaster` stamps it
+   * for a creature with a challenge rating, from the rating ladder. Absent
+   * means `proficiencyBonus(level)`. A Character never carries it. */
+  proficiency?: number;
 }
 
 /** Weapon proficiencies, split by namespace the way MulticlassGrant already

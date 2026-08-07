@@ -314,3 +314,21 @@ test('toCaster carries the exhaustion level, so a tired caster attacks worse', (
   assert.equal(spellAttackBonus(toCaster(creature)), 2 + 3 - 4);
   assert.equal(toCaster({ id: 'x', name: 'Blank' }).exhaustion, undefined);
 });
+
+test('a rated creature casts with the rating-ladder proficiency', () => {
+  const mage = {
+    id: 'm1',
+    name: 'Mage',
+    class: 'wizard',
+    casterLevel: 9,
+    cr: 6,
+    stats: { INT: 17 },
+  };
+  // CR 6 gives prof +3 where caster level 9 would give +4.
+  assert.equal(toCaster(mage).proficiency, 3);
+  assert.equal(spellSaveDC(toCaster(mage)), 14);
+  assert.equal(spellAttackBonus(toCaster(mage)), 6);
+  const unrated = toCaster({ ...mage, cr: undefined });
+  assert.equal(unrated.proficiency, undefined);
+  assert.equal(spellSaveDC(unrated), 15, 'an unrated caster keeps the level ladder');
+});

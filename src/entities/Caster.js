@@ -1,4 +1,5 @@
 import { isCasterClass, casterSlots } from './Classes.js';
+import { crProficiencyBonus } from './Modifiers.js';
 import { emptySpellbook } from './Character.js';
 import { spliceReservedPools } from './Resource.js';
 import { isSlotPool, isCasterPool } from './SpellSlots.js';
@@ -38,6 +39,7 @@ import { isSlotPool, isCasterPool } from './SpellSlots.js';
  *   resources?: ResourcePool[],
  *   spellbook?: Spellbook,
  *   exhaustion?: number,
+ *   cr?: number,
  * }} CasterEntity
  */
 
@@ -53,6 +55,7 @@ import { isSlotPool, isCasterPool } from './SpellSlots.js';
  *   resources: ResourcePool[],
  *   spellbook?: Spellbook,
  *   exhaustion?: number,
+ *   proficiency?: number,
  * }} CasterView
  */
 
@@ -99,6 +102,12 @@ export function toCaster(entity) {
     // to carry the level. Dropping it here would leave a tired caster casting
     // at full bonus.
     exhaustion: entity.exhaustion,
+    // A rated creature's spell DC and attack read the rating ladder, the
+    // same source `creatureProficiencyBonus` gives its saves and skills.
+    // An unrated caster falls through to the level ladder in `Classes`,
+    // read at the caster level above. That can differ from the save bonus
+    // of an unrated creature whose `level` and `casterLevel` differ.
+    ...(entity.cr !== undefined ? { proficiency: crProficiencyBonus(entity.cr) } : {}),
   };
 }
 
