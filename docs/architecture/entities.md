@@ -1185,8 +1185,8 @@ The reads over that table are pure and take chip lists only:
   explain a cancelled pair rather than printing a straight roll with no reason.
 - `canAct(conditions)` is false when any chip holds `noActions`.
 - `autoCrits(conditions, { melee })` is true when a melee hit on the holder
-  crits. The printed rule is a hit from within 5 feet, and a melee weapon is as
-  close as the app can measure until map distance exists.
+  crits. The printed rule is a hit from within 5 feet. The app measures no
+  distance by design, and a melee weapon is as close as it gets.
 - `saveOutcome(conditions, ability)` reports `{ autoFail, failedBy, mode }` for
   one save. The caller checks `autoFail` first, because that save never reaches
   the dice.

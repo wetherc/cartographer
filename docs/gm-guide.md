@@ -265,6 +265,32 @@ To step away without ending the fight, click **Back to map**. The
 2. Click a stat chip and set the value and the number of rounds.
 3. The chip reads "STR 14->16 (3r)" and ticks down as rounds pass.
 
+### Rule distance yourself
+
+The app does not measure distance between tokens, by design. Movement,
+range, reach, and the shape of an area spell are your calls at the table.
+Each call has a control that carries it into the rolls.
+
+- **Movement.** The speed badge on the sheet shows the walking speed of a
+  character. Narrate who stands where. Move the party token when the group
+  changes tiles. The app spends no speed.
+- **Long range.** If a shot is past the normal range of the weapon, set
+  the Range field in the attack dialog to the long distance. The roll
+  takes disadvantage.
+- **Cover.** If something stands between the attacker and the target, set
+  the "Target cover" select beside the roll mode. Half cover adds 2 to the
+  AC of the target, and three-quarters cover adds 5. If the target has
+  total cover, do not roll.
+- **Reach and opportunity attacks.** Decide who is in reach and say so.
+  When a creature leaves the reach of an enemy, use the "Reaction" row on
+  the board card of that enemy to make the opportunity attack.
+- **Area spells.** The cast dialog lists the reachable combatants, up to
+  the target count of the spell. Decide who stands in the area, then pick
+  those combatants.
+- **Anything else.** Open the **Situational modifiers** disclosure in the
+  roll dialog. A bonus die, a penalty die, or a flat rider covers a ruling
+  that no control above names.
+
 ## Track characters
 
 ### Create a character
