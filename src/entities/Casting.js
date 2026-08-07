@@ -37,7 +37,7 @@ import { clamp } from '../util/num.js';
  *   attackMode?: RollMode,
  *   autoFailSave?: string,
  *   projectiles?: number,
- *   conditions?: import('../types/entities.js').Condition[],
+ *   conditions?: import('./Riders.js').RiderSource[],
  * }} CastTarget
  */
 
@@ -368,7 +368,7 @@ function slotPoolToSpend(caster, slotLevel) {
  *   casterLevel?: number,
  *   attackMode?: RollMode,
  *   ritual?: boolean,
- *   casterConditions?: import('../types/entities.js').Condition[],
+ *   casterConditions?: import('./Riders.js').RiderSource[],
  *   rng?: RandomFn,
  * }} [options] `casterConditions` are the chips the caster holds. A rider on
  *   one of them joins every spell attack roll the cast makes. The caster view
@@ -477,7 +477,7 @@ export function castSpell(caster, spell, options = {}) {
  *   attackBonus: number,
  *   mode: RollMode,
  *   autoHit: boolean | undefined,
- *   casterConditions: import('../types/entities.js').Condition[],
+ *   casterConditions: import('./Riders.js').RiderSource[],
  *   rng: RandomFn,
  * }} shot `parts` is what one projectile deals
  * @returns {ProjectileShot}
@@ -547,7 +547,7 @@ function mergeDamage(rolls) {
  *   spellAttackBonus: number,
  *   saveDC: number,
  *   attackMode: RollMode,
- *   casterConditions: import('../types/entities.js').Condition[],
+ *   casterConditions: import('./Riders.js').RiderSource[],
  *   rng: RandomFn,
  * }} ctx
  * @returns {object[]}

@@ -1208,11 +1208,19 @@ the direction. `entities/Riders.js` owns the model:
   in, so a hand-edited save can hold a rider with no roll list or with a die
   that does not exist. Every read of a stored rider goes through this
   function, and a rider the app cannot use reads as a chip that carries none.
-- `activeRiders(conditions, kind)` picks the chips that touch one roll kind
+- `activeRiders(sources, kind)` picks the sources that touch one roll kind
   and pairs each with its cleaned rider.
-- `rollRiders(conditions, kind, rng)` rolls them and returns
-  `{ modifier, note }`. The note names each chip and the faces it rolled, so a
-  log line can explain the number.
+- `rollRiders(sources, kind, rng)` rolls them and returns
+  `{ modifier, note }`. The note names each source and the faces it rolled,
+  so a log line can explain the number.
+
+A source is anything with a name and a rider. A condition chip is one, and so
+is a taken feat's stamp. `FeatChoices.featRiders` reads a character's stamped
+feat riders as sources, and `FeatChoices.riderSources` joins them with the
+condition list. The roll sites below call `riderSources` instead of reading
+`conditions` directly, so a feat bonus and a chip bonus travel the same path
+and print in the same note. A feat rider lasts as long as the feat: it is a
+standing bonus with no duration and no chip on the conditions bar.
 - `riderText` and `riderSummary` render a rider for a chip tooltip or a spell
   readout.
 

@@ -2,6 +2,7 @@ import { promptModal } from '../ui/Modal.js';
 import { parseAssignments } from '../ui/ModalFields.js';
 import { castSpell, materialCheck, maxTargets, scalingSteps } from '../entities/Casting.js';
 import { riderSummary } from '../entities/Riders.js';
+import { riderSources } from '../entities/FeatChoices.js';
 import { combineModes, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { removeItem, spellSource } from '../entities/Character.js';
 import { unproficientWear } from '../entities/Armor.js';
@@ -728,7 +729,10 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
     saveDC,
     attackMode: spell.effect.kind === 'attack' ? mode : 'normal',
     ritual: asRitual,
-    casterConditions,
+    // The caster's feat riders join its chips for the projectile rolls. The
+    // mode fold above keeps the plain chip list, because a feat source names
+    // no condition a slant could read.
+    casterConditions: riderSources(entity),
     rng,
   });
   if (!result.ok) {

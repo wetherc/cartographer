@@ -1,11 +1,14 @@
 /**
  * Riders: what a condition chip adds to the rolls its holder makes later.
  * Bless puts a chip on an ally that adds 1d4 to its attack rolls and saving
- * throws. Bane puts the same chip shape on a foe with the sign flipped.
+ * throws. Bane puts the same chip shape on a foe with the sign flipped. A
+ * taken feat carries the same shape on its stamp, so the roll sites read
+ * both through one list: anything with a name and a rider is a source.
  *
  * Every function is pure, and the dice come from the injected random number
  * generator. Nothing here reads or writes a character. The roll sites call
- * `rollRiders` with the roller's own condition list.
+ * `rollRiders` with the roller's own sources: its condition list, plus the
+ * feat sources that `FeatChoices.featRiders` collects.
  */
 
 import { DIE_SIDES } from '../dice/DiceRoller.js';
@@ -16,6 +19,10 @@ import { clamp } from '../util/num.js';
 /** @typedef {import('../types/entities.js').RiderRoll} RiderRoll */
 /** @typedef {import('../types/dice.js').DieType} DieType */
 /** @typedef {import('../types/dice.js').RandomFn} RandomFn */
+
+/** Anything a rider can ride on: a condition chip, or a feat stamp read as
+ * `{ name, rider }`. The name is what the log line prints.
+ * @typedef {{ name: string, rider?: RollRider }} RiderSource */
 
 /**
  * The rolls a rider can touch, in the order the authoring form lists them.
@@ -71,7 +78,7 @@ export function normalizeRider(value) {
  * with no `rolls` list or with a die that does not exist. Every read of a
  * stored rider goes through here, so a broken one reads as absent instead of
  * throwing inside an attack roll.
- * @param {Condition | undefined | null} condition
+ * @param {RiderSource | undefined | null} condition
  * @returns {RollRider | null}
  */
 export function chipRider(condition) {
@@ -79,18 +86,18 @@ export function chipRider(condition) {
 }
 
 /**
- * The chips on a creature that touch one kind of roll, each with its cleaned
- * rider. A chip with no rider, such as a hand-added Poisoned, is not one of
- * them.
- * @param {Condition[] | undefined} conditions
+ * The sources on a creature that touch one kind of roll, each with its
+ * cleaned rider. A source with no rider, such as a hand-added Poisoned chip,
+ * is not one of them.
+ * @param {RiderSource[] | undefined} sources
  * @param {RiderRoll} kind
- * @returns {{ condition: Condition, rider: RollRider }[]}
+ * @returns {{ condition: RiderSource, rider: RollRider }[]}
  */
-export function activeRiders(conditions, kind) {
-  if (!Array.isArray(conditions)) return [];
-  /** @type {{ condition: Condition, rider: RollRider }[]} */
+export function activeRiders(sources, kind) {
+  if (!Array.isArray(sources)) return [];
+  /** @type {{ condition: RiderSource, rider: RollRider }[]} */
   const found = [];
-  for (const condition of conditions) {
+  for (const condition of sources) {
     const rider = chipRider(condition);
     if (rider?.rolls.includes(kind)) found.push({ condition, rider });
   }
@@ -141,17 +148,17 @@ export function riderSummary(rider) {
  * selection, so a bonus and a penalty resolve the same way and a save site
  * with no dice tray works identically to an attack site with one.
  *
- * The note names each chip and the faces it rolled, so a log line can explain
- * the number. A creature with no rider chip costs one pass over its chips and
- * returns a zero modifier with an empty note, which every call site treats as
- * nothing to say.
- * @param {Condition[] | undefined} conditions
+ * The note names each source and the faces it rolled, so a log line can
+ * explain the number. A creature with no rider source costs one pass over its
+ * list and returns a zero modifier with an empty note, which every call site
+ * treats as nothing to say.
+ * @param {RiderSource[] | undefined} sources
  * @param {RiderRoll} kind
  * @param {RandomFn} [rng]
  * @returns {{ modifier: number, note: string }}
  */
-export function rollRiders(conditions, kind, rng = Math.random) {
-  const chips = activeRiders(conditions, kind);
+export function rollRiders(sources, kind, rng = Math.random) {
+  const chips = activeRiders(sources, kind);
   if (chips.length === 0) return { modifier: 0, note: '' };
   let modifier = 0;
   const notes = [];

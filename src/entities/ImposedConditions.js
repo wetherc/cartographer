@@ -69,15 +69,24 @@ function recordedBonus(source) {
  * `bonusOf` decides what the roller adds. It defaults to the bonus the cast
  * recorded, which is all a caller holding nothing but the chips has. A caller
  * holding the combatant passes a function that derives the live bonus instead,
- * so a save granted or a stat raised since the cast counts.
+ * so a save granted or a stat raised since the cast counts. `riders` are
+ * extra rider sources beyond the chips, the feat riders of a character, and
+ * they join the retry roll without joining the returned condition list.
  * @param {Condition[]} list
- * @param {{ bonusOf?: (source: ConditionSource) => number, rng?: RandomFn }} [opts]
+ * @param {{
+ *   bonusOf?: (source: ConditionSource) => number,
+ *   rng?: RandomFn,
+ *   riders?: import('./Riders.js').RiderSource[],
+ * }} [opts]
  * @returns {{
  *   conditions: Condition[],
  *   results: { condition: Condition, save: import('./Checks.js').SaveResult, ended: boolean }[],
  * }}
  */
-export function repeatSaves(list, { bonusOf = recordedBonus, rng = Math.random } = {}) {
+export function repeatSaves(
+  list,
+  { bonusOf = recordedBonus, rng = Math.random, riders = [] } = {},
+) {
   /** @type {{ condition: Condition, save: import('./Checks.js').SaveResult, ended: boolean }[]} */
   const results = [];
   const conditions = list.filter((condition) => {
@@ -91,7 +100,10 @@ export function repeatSaves(list, { bonusOf = recordedBonus, rng = Math.random }
     // printed rules do not order the retries against each other, and reading
     // the shrinking list instead would make the outcome depend on the order
     // the chips happen to sit in. One list for the whole sweep is the choice.
-    const save = resolveSave(bonusOf(source), source.saveDC ?? 10, { rng, conditions: list });
+    const save = resolveSave(bonusOf(source), source.saveDC ?? 10, {
+      rng,
+      conditions: [...list, ...riders],
+    });
     results.push({ condition, save, ended: save.success });
     return !save.success;
   });

@@ -7,11 +7,13 @@ import { ABILITY_MAX, listASIChoices } from './LevelUp.js';
 /** @typedef {import('../types/feat.js').ProficiencyChoice} ProficiencyChoice */
 
 /**
- * The choice arithmetic behind the take-feat dialog. The dialog itself is
- * DOM wiring in CharacterProgress.js; everything it needs to compute lives
- * here, pure and testable: which catalog feats are still on offer, which
- * options each pick draws from, and the stamp that the picks assemble into
- * for `LevelUp.takeFeat`.
+ * The choice arithmetic behind the take-feat dialog, and the read side the
+ * roll paths use. The dialog itself is DOM wiring in CharacterProgress.js;
+ * everything it needs to compute lives here, pure and testable: which
+ * catalog feats are still on offer, which options each pick draws from, and
+ * the stamp that the picks assemble into for `LevelUp.takeFeat`. The roll
+ * sites read the stamped riders back out through `featRiders` and
+ * `riderSources`.
  */
 
 /**
@@ -67,6 +69,32 @@ export function abilityPool(character, effect) {
 export function choicePool(choice, vocabulary, held) {
   const from = choice.from.length > 0 ? choice.from : vocabulary;
   return from.filter((id) => !held.includes(id));
+}
+
+/**
+ * The standing roll riders the character's taken feats carry, each as a
+ * `{ name, rider }` source the rider roller reads exactly like a condition
+ * chip. A creature never takes feats and holds no choices, so this reads as
+ * empty for one.
+ * @param {Character} character
+ * @returns {import('../entities/Riders.js').RiderSource[]}
+ */
+export function featRiders(character) {
+  return listASIChoices(character).flatMap((choice) =>
+    choice.type === 'feat' && choice.rider ? [{ name: choice.feat, rider: choice.rider }] : [],
+  );
+}
+
+/**
+ * Everything that rides the character's rolls: its condition chips plus its
+ * feat riders, in one list for `rollRiders`. The roll sites call this
+ * instead of reading `conditions` directly, so a feat bonus and a chip bonus
+ * cannot diverge. Safe on a creature, which contributes its chips alone.
+ * @param {Character | import('../types/creature.js').Creature} entity
+ * @returns {import('../entities/Riders.js').RiderSource[]}
+ */
+export function riderSources(entity) {
+  return [...(entity.conditions ?? []), ...featRiders(/** @type {Character} */ (entity))];
 }
 
 /**

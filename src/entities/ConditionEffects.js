@@ -10,6 +10,7 @@
  */
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
+/** @typedef {import('./Riders.js').RiderSource} RiderSource */
 /** @typedef {import('../types/dice.js').RollMode} RollMode */
 /** @typedef {'advantage' | 'disadvantage'} Slant */
 
@@ -93,12 +94,12 @@ export function conditionEffect(name) {
 /**
  * Every chip in a list that carries rules, paired with them. A chip the table
  * does not know drops out, so a caller can iterate without checking.
- * @param {Condition[] | undefined | null} conditions
- * @returns {{ condition: Condition, effect: ConditionEffect }[]}
+ * @param {RiderSource[] | undefined | null} conditions
+ * @returns {{ condition: RiderSource, effect: ConditionEffect }[]}
  */
 export function effectsOf(conditions) {
   if (!Array.isArray(conditions)) return [];
-  /** @type {{ condition: Condition, effect: ConditionEffect }[]} */
+  /** @type {{ condition: RiderSource, effect: ConditionEffect }[]} */
   const found = [];
   for (const condition of conditions) {
     const effect = conditionEffect(condition?.name);
@@ -162,17 +163,17 @@ function againstSlant(effect, melee) {
 /**
  * The slants one roll collects from the chips on both sides.
  * @param {{
- *   roller?: Condition[] | null,
- *   target?: Condition[] | null,
+ *   roller?: RiderSource[] | null,
+ *   target?: RiderSource[] | null,
  *   kind: 'attack' | 'check' | 'save',
  *   melee?: boolean,
  *   ability?: string,
  * }} query
- * @returns {{ condition: Condition, slant: Slant, from: 'roller' | 'target' }[]}
+ * @returns {{ condition: RiderSource, slant: Slant, from: 'roller' | 'target' }[]}
  */
 function slantsFor({ roller, target, kind, melee = true, ability }) {
   const key = abilityKey(ability);
-  /** @type {{ condition: Condition, slant: Slant, from: 'roller' | 'target' }[]} */
+  /** @type {{ condition: RiderSource, slant: Slant, from: 'roller' | 'target' }[]} */
   const found = [];
   for (const { condition, effect } of effectsOf(roller)) {
     /** @type {Slant | undefined} */
@@ -206,8 +207,8 @@ function slantsFor({ roller, target, kind, melee = true, ability }) {
  * range of a ranged attack. They fold in before the count, so one advantage
  * chip and one extra disadvantage still cancel to a normal roll.
  * @param {{
- *   roller?: Condition[] | null,
- *   target?: Condition[] | null,
+ *   roller?: RiderSource[] | null,
+ *   target?: RiderSource[] | null,
  *   kind: 'attack' | 'check' | 'save',
  *   melee?: boolean,
  *   ability?: string,
@@ -236,7 +237,7 @@ export function modeReasons(query) {
  * Whether a creature holding these chips can take a turn. A stunned or
  * unconscious combatant keeps its place in the initiative order and loses the
  * turn itself.
- * @param {Condition[] | undefined | null} conditions
+ * @param {RiderSource[] | undefined | null} conditions
  * @returns {boolean}
  */
 export function canAct(conditions) {
@@ -248,7 +249,7 @@ export function canAct(conditions) {
  * one. Only a melee hit crits: the printed rule is a hit from within 5 feet,
  * and a melee weapon is as close as the app can measure before map distance
  * exists.
- * @param {Condition[] | undefined | null} conditions
+ * @param {RiderSource[] | undefined | null} conditions
  * @param {{ melee?: boolean }} [options]
  * @returns {boolean}
  */
@@ -263,7 +264,7 @@ export function autoCrits(conditions, { melee = true } = {}) {
  * The caller checks `autoFail` first, because a failed save never reaches the
  * dice. `extra` takes slants from outside the chips, such as armor the roller
  * is not trained for, and they fold in the same way `rollMode` folds them.
- * @param {Condition[] | undefined | null} conditions
+ * @param {RiderSource[] | undefined | null} conditions
  * @param {string} ability
  * @param {(Slant | null)[]} [extra]
  * @returns {{ autoFail: boolean, failedBy: string | null, mode: RollMode | null }}

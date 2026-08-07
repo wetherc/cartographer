@@ -11,6 +11,7 @@ import { effectiveStats } from './Equipment.js';
 import { d20Penalty } from './Exhaustion.js';
 import { isProficientSave, isProficientSkill, hasExpertise } from './Proficiencies.js';
 import { rollRiders } from './Riders.js';
+import { riderSources } from './FeatChoices.js';
 import { SKILL_ABILITIES, SKILL_IDS } from '../data/skills.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -72,7 +73,7 @@ export function saveBonus(character, ability) {
  * @param {number} bonus
  * @param {number | null} dc
  * @param {import('../types/entities.js').RiderRoll} kind
- * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: Condition[] }} opts
+ * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[] }} opts
  * @returns {CheckResult}
  */
 function resolveD20(bonus, dc, kind, { mode = 'normal', rng = Math.random, conditions = [] }) {
@@ -100,7 +101,7 @@ function resolveD20(bonus, dc, kind, { mode = 'normal', rng = Math.random, condi
  * the app through this one function.
  * @param {number} bonus
  * @param {number} dc
- * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: Condition[] }} [opts]
+ * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[] }} [opts]
  * @returns {SaveResult}
  */
 export function resolveSave(bonus, dc, opts = {}) {
@@ -119,13 +120,13 @@ export function resolveSave(bonus, dc, opts = {}) {
  * @param {Character} character
  * @param {string} ability
  * @param {number} dc
- * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: Condition[] }} [opts]
+ * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[] }} [opts]
  * @returns {SaveResult & { proficient: boolean }}
  */
 export function savingThrow(character, ability, dc, opts = {}) {
   return {
     ...resolveSave(saveBonus(character, ability), dc, {
-      conditions: character.conditions ?? [],
+      conditions: riderSources(character),
       ...opts,
     }),
     proficient: isProficientSave(character, ability),
@@ -199,7 +200,7 @@ export function checkBonus(character, key) {
  * check rolls here and joins the bonus, which is how Guidance reaches a check.
  * @param {number} bonus
  * @param {number | null} dc
- * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: Condition[] }} [opts]
+ * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[] }} [opts]
  * @returns {CheckResult}
  */
 export function resolveCheck(bonus, dc, opts = {}) {
@@ -217,13 +218,13 @@ export function resolveCheck(bonus, dc, opts = {}) {
  * @param {Character} character
  * @param {string} key a skill id or one of the six ability keys
  * @param {number | null} [dc]
- * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: Condition[] }} [opts]
+ * @param {{ mode?: RollMode, rng?: RandomFn, conditions?: import('./Riders.js').RiderSource[] }} [opts]
  * @returns {CheckResult & { ability: string | null, proficient: boolean, expert: boolean }}
  */
 export function abilityCheck(character, key, dc = null, opts = {}) {
   return {
     ...resolveCheck(checkBonus(character, key), dc, {
-      conditions: character.conditions ?? [],
+      conditions: riderSources(character),
       ...opts,
     }),
     ability: checkAbility(key),

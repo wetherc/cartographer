@@ -17,6 +17,7 @@ import { modeReasons, rollMode, saveOutcome } from '../entities/ConditionEffects
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { hasExpertise, isProficientSave, isProficientSkill } from '../entities/Proficiencies.js';
 import { rollRiders } from '../entities/Riders.js';
+import { riderSources } from '../entities/FeatChoices.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
 import { article } from '../util/text.js';
 
@@ -122,7 +123,7 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
   const ability = event.kind === 'save' ? event.key : (checkAbility(event.key) ?? event.key);
   // Rider dice roll outside the tray, the way an attack's do, so a bonus and a
   // penalty read the same in the log.
-  const rider = rollRiders(character.conditions, event.kind, rng);
+  const rider = rollRiders(riderSources(character), event.kind, rng);
   // The chips also slant the roll. A sheet roll has no other side, so only the
   // character's own chips count, and the save's ability decides whether a chip
   // such as Restrained applies.

@@ -22,6 +22,7 @@ import {
 } from '../entities/DeathSaves.js';
 import { exhaustionLevel } from '../entities/Exhaustion.js';
 import { rollRiders } from '../entities/Riders.js';
+import { riderSources } from '../entities/FeatChoices.js';
 import { findCombatant } from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -79,7 +80,7 @@ export function rollDeathSaveFor(app, characterId, { rng = Math.random } = {}) {
   if (!state) return;
   // Rider dice roll outside the tray, the way an attack's and a sheet check's
   // do, so a bonus and a penalty read the same in the log.
-  const rider = rollRiders(character.conditions, 'save', rng);
+  const rider = rollRiders(riderSources(character), 'save', rng);
   // Exhaustion is the only standing part of the modifier. It is not a rider, so
   // it joins the tray's number here and the log names it below.
   const tired = deathSaveBonus(character);

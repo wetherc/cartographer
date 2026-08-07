@@ -5,8 +5,11 @@ import {
   abilityPool,
   choicePool,
   buildStamp,
+  featRiders,
+  riderSources,
 } from '../src/entities/FeatChoices.js';
 import { takeFeat } from '../src/entities/LevelUp.js';
+import { savingThrow, abilityCheck } from '../src/entities/Checks.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { DEFAULT_FEATS } from '../src/data/feats.js';
 
@@ -107,4 +110,37 @@ test('buildStamp with no picks and no modeled effects is a bare stamp', () => {
     featId: 'lucky',
     granted: { skills: [], saves: [], expertise: [], armor: [], tools: [], languages: [] },
   });
+});
+
+test('featRiders reads the stamped riders and riderSources joins the chips', () => {
+  const taken = takeFeat(fighter(), {
+    name: 'Iron Will',
+    rider: { rolls: ['save'], flat: 1 },
+  });
+  assert.deepEqual(featRiders(taken), [{ name: 'Iron Will', rider: { rolls: ['save'], flat: 1 } }]);
+  const chipped = { ...taken, conditions: [{ name: 'Blessed', rounds: null }] };
+  assert.deepEqual(
+    riderSources(chipped).map((s) => s.name),
+    ['Blessed', 'Iron Will'],
+  );
+  assert.deepEqual(featRiders(fighter()), []);
+  const creature = { id: 'w1', name: 'Wolf', conditions: [{ name: 'Bane', rounds: 2 }] };
+  assert.deepEqual(
+    riderSources(/** @type {any} */ (creature)).map((s) => s.name),
+    ['Bane'],
+    'a creature contributes its chips alone',
+  );
+});
+
+test('a stamped feat rider joins a saving throw and names itself in the note', () => {
+  const taken = takeFeat(fighter(), {
+    name: 'Iron Will',
+    rider: { rolls: ['save'], flat: 2 },
+  });
+  const rigged = () => 0.5; // d20 face 11
+  const result = savingThrow(taken, 'WIS', 12, { rng: rigged });
+  assert.equal(result.total, 13, 'd20 11 plus the +2 feat rider');
+  assert.match(result.rider?.note ?? '', /Iron Will \+2/);
+  const check = abilityCheck(taken, 'WIS', null, { rng: rigged });
+  assert.equal(check.rider, null, 'a save-only rider stays off a check');
 });

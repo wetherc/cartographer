@@ -190,3 +190,15 @@ test('a rider on the creature rides the repeated save it rolls', () => {
   assert.equal(results[0].ended, false, '14 misses DC 15, so the penalty held the chip on');
   assert.equal(conditions, list);
 });
+
+test('repeatSaves rolls extra rider sources without storing them as chips', () => {
+  const held = addCondition([], 'Paralyzed', null, {
+    source: source({ saveDC: 12, saveBonus: 0 }),
+  });
+  // d20 face 10 fails a DC 12 alone; a +2 feat rider turns it.
+  const riders = [{ name: 'Iron Will', rider: { rolls: ['save'], flat: 2 } }];
+  const { conditions, results } = repeatSaves(held, { rng: seq([face(20, 10)]), riders });
+  assert.equal(results[0].ended, true);
+  assert.match(results[0].save.rider?.note ?? '', /Iron Will \+2/);
+  assert.deepEqual(conditions, [], 'the shaken chip leaves and no rider source enters');
+});

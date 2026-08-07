@@ -10,6 +10,7 @@ import { COVER_LEVELS, coverBonus, coverNote } from '../combat/Cover.js';
 import { offhandDamageModifier } from '../combat/TwoWeapon.js';
 import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
+import { riderSources } from '../entities/FeatChoices.js';
 import { autoCrits, modeReasons, rollMode } from '../entities/ConditionEffects.js';
 import {
   abilityModOf,
@@ -282,7 +283,7 @@ export function rollWeaponAttack(
   // typing it into the dialog. Its dice roll outside the tray, the same way
   // the dialog's penalty dice already do, so a bonus and a penalty read the
   // same in the log.
-  const rider = rollRiders(attacker.conditions, 'attack', rng);
+  const rider = rollRiders(riderSources(attacker), 'attack', rng);
   // The chips on both sides decide the mode. Reach matters, because a prone
   // defender is easier to hit in melee and harder to hit at range. The
   // weapon's kind is the reach signal, and a thrown melee weapon counts as

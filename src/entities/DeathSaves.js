@@ -16,6 +16,7 @@
 
 import { UNCONSCIOUS, addCondition, removeCondition } from './Conditions.js';
 import { resolveSave } from './Checks.js';
+import { riderSources } from './FeatChoices.js';
 import { atDeathLevel, d20Penalty, easeExhaustion } from './Exhaustion.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -222,7 +223,7 @@ export function rollDeathSave(character, opts = {}) {
   const state = character.deathSaves;
   if (!state || !isDying(character)) return { character, save: null, outcome: null };
   const save = resolveSave(deathSaveBonus(character), DEATH_SAVE_DC, {
-    conditions: character.conditions ?? [],
+    conditions: riderSources(character),
     ...opts,
   });
   const judged = judgeDeathSave(state, save);
