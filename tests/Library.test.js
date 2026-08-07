@@ -29,6 +29,10 @@ import {
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
 import { crXP } from '../src/data/challenge.js';
 import { normalizeCreatureProficiencies } from '../src/entities/Proficiencies.js';
+import { getClass, spellSaveDC } from '../src/entities/Classes.js';
+import { fromTemplate } from '../src/entities/Creature.js';
+import { isCaster, toCaster } from '../src/entities/Caster.js';
+import { getSlotPools, slotLevelOf } from '../src/entities/SpellSlots.js';
 
 test('defaultEquipmentTemplates covers every built-in preset list', () => {
   const defaults = defaultEquipmentTemplates();
@@ -227,6 +231,37 @@ test('every built-in proficiency list names a real ability and a real skill', ()
       `${entry.name} names something the app cannot roll`,
     );
   }
+});
+
+test('every built-in caster names a real class and spells the catalog holds', () => {
+  const spellIds = new Set(DEFAULT_SPELLS.map((s) => s.id));
+  for (const entry of DEFAULT_CREATURES) {
+    if (!entry.class) continue;
+    assert.ok(getClass(entry.class), `${entry.name} names an unknown class`);
+    assert.ok(entry.casterLevel !== undefined, `${entry.name} has no caster level`);
+    assert.ok(entry.spellbook, `${entry.name} casts from no book`);
+    for (const list of ['cantrips', 'known', 'prepared']) {
+      for (const id of entry.spellbook[list] ?? []) {
+        assert.ok(spellIds.has(id), `${entry.name} carries unknown spell ${id}`);
+      }
+    }
+  }
+});
+
+test('a spawned Mage carries wizard-9 slot pools and a castable book', () => {
+  const template = DEFAULT_CREATURES.find((c) => c.id === 'mage');
+  assert.ok(template);
+  const mage = fromTemplate(template, 'm1');
+  const pools = getSlotPools(mage).map((p) => [slotLevelOf(p), p.max]);
+  assert.deepEqual(pools, [
+    [1, 4],
+    [2, 3],
+    [3, 3],
+    [4, 3],
+    [5, 1],
+  ]);
+  assert.equal(isCaster(mage), true);
+  assert.equal(spellSaveDC(toCaster(mage)), 14, 'the rating ladder gives prof +3');
 });
 
 test('normalizeLibrary reads a pre-merge file: bestiary is hostile, statBlock is stats', () => {

@@ -204,6 +204,38 @@ A derived bonus can sit below the one an SRD stat block prints. A printed bonus
 can include a trait this app does not model, such as the goblin's Nimble
 Escape.
 
+### A creature that casts
+
+A creature casts through the same class machinery as a character. It carries
+one scalar `class` with an optional `subclass`, a `casterLevel`, a `spellbook`,
+and slot pools in its `resources`. `entities/Caster.js` is the bridge.
+`toCaster` presents any combatant in the field shape that the pure spell
+helpers read, and it reads the scalar pair as a one-entry class list at the
+caster level. `withCasterFields` stamps the fields on a create or an edit, and
+it rebuilds the slot pools from the class and the level.
+
+A rated creature takes the proficiency bonus for its spells from the rating
+ladder. `toCaster` stamps a `proficiency` field on the view from
+`crProficiencyBonus`, and `Classes.spellSaveDC` and `spellAttackBonus` prefer
+that field over the level ladder. This is the same source that
+`creatureProficiencyBonus` gives the saves and the skills above. A character
+never carries the field, so a character's spell numbers do not change. An
+unrated creature keeps the level ladder, read at its caster level.
+
+`Caster.casterSummary` is one line with the class and its level, the spell
+save DC, the spell attack bonus, and each slot pool as current over max. Both
+creature panels print it under the proficiency line. The combat card shows
+the same two numbers through the `spellStats` field of the loadout
+(`combat/Loadout.js`). The field stays null for a viewer with public access,
+the same rule that hides spells and slots.
+
+The built-in creatures include three caster foes: the Acolyte, the Cult
+Fanatic, and the Mage. The templates live in `src/data/creatures.js` with the
+rest of the built-in creatures. A template stores no slot pools, because the
+pools rebuild from the class and the caster level on spawn. A spellbook id
+that the default spell list lacks is swapped for a near spell, and a comment
+on the entry records the swap.
+
 ## The character foundation
 
 Beyond its stats and inventory, a `Character` carries a class list, a race, a
