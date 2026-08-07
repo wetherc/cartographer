@@ -2,6 +2,7 @@ import { addStatModifier, applyDamage, heal, isDefeated } from '../entities/Crea
 import { mountConditionsBar } from './ConditionsBar.js';
 import { mountExhaustionBar } from './ExhaustionBar.js';
 import { mountStatBlockBar } from './StatBlockBar.js';
+import { proficiencySummary } from '../entities/CreatureChecks.js';
 import { el } from './dom.js';
 import { numberField } from './formFields.js';
 import { mountListPanel } from './listPanel.js';
@@ -185,6 +186,12 @@ export function mountEncounterPanel(container, callbacks) {
       onAddModifier: (stat, delta, rounds) =>
         updateOne(encounter, (e) => addStatModifier(e, stat, delta, rounds)),
     });
+
+    // What the creature is trained in, so the GM can call for a save or a check
+    // without opening the Build rail. The bonus already carries a timed stat
+    // adjustment and any exhaustion.
+    const trained = proficiencySummary(encounter);
+    if (trained) row.appendChild(el('div', 'u-muted', trained));
 
     // A GM tracks an encounter's status conditions, for example poisoned
     // or prone, on its row. An edit writes the whole list back through onUpdate.

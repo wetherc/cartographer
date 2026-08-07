@@ -2,6 +2,7 @@ import { mountStatBlockBar } from './StatBlockBar.js';
 import { bareButton } from './buttons.js';
 import { el } from './dom.js';
 import { crLabel } from '../data/challenge.js';
+import { proficiencySummary } from '../entities/CreatureChecks.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { mountListPanel } from './listPanel.js';
 
@@ -79,6 +80,11 @@ export function mountBuildEncounterPanel(container, callbacks) {
         parts.push(`${encounter.weapon.name} ${formatDamage(encounter.weapon.damage)}`);
       if (encounter.armor) parts.push(`${encounter.armor.name} +${encounter.armor.acBonus} AC`);
       if (parts.length) row.appendChild(el('div', 'u-muted', parts.join(' | ')));
+
+      // What the creature is trained in, with the bonus it rolls in each. The
+      // bonus is derived, so it follows an edit of the rating or the stats.
+      const trained = proficiencySummary(encounter);
+      if (trained) row.appendChild(el('div', 'u-muted', trained));
 
       // Base stats are set here. Each stat, the six abilities and AC, is a
       // chip that sets its value. An edit writes back through onUpdate.

@@ -142,6 +142,44 @@ simply has no field.
 Each built-in hostile creature carries the rating of its SRD counterpart. The
 built-in townsfolk stay unrated, because nothing fights them.
 
+### A creature's saves and skills
+
+A creature carries an optional `proficiencies` field with two lists: the saving
+throws it is trained in and the skills it is trained in. This is the slim half
+of a character's record. A creature records no armor, weapon, tool, or language
+training, because nothing gates a creature on those, and it has no expertise.
+An absent field means trained in nothing.
+
+`Proficiencies.normalizeCreatureProficiencies` cleans the set, and
+`creatureProficiencyFields` is what the write paths spread. A creature trained
+in nothing stores no field at all, so clearing both pickers removes the record.
+An entry that names no ability and no skill is dropped, so nothing can put a
+bonus on something the app cannot roll. The same two functions gate
+`Library.normalizeLibrary`, so a hand-edited library file goes through one
+cleaner.
+
+`src/entities/CreatureChecks.js` derives the numbers. `creatureSaveBonus` and
+`creatureCheckBonus` are the creature counterparts of `Checks.saveBonus` and
+`Checks.checkBonus`. Each is the ability modifier from `effectiveStatBlock`,
+plus `creatureProficiencyBonus` where the creature is trained, less the
+exhaustion penalty. `creatureProficiencyBonus` reads the ladder at the challenge
+rating, and falls back to the level, then to 1, for an unrated creature.
+`proficiencySummary` is the one line both creature panels print.
+
+The two modules are split rather than one function that branches, because a
+creature keeps its scores in a different field and climbs the ladder by rating
+rather than by level. Merging them would also make `Checks.js` import
+`Creature.js`, which imports `Character.js`, which reaches `Checks.js` again.
+
+Nothing stores a bonus. `combatants.targetSaveBonus` derives one for either kind
+of combatant, so the cast dialog no longer asks the GM to type a foe's save. The
+number the panel prints and the number the save rolls come from the same
+function, and an edit to a rating or a stat cannot leave a stale bonus behind.
+
+A derived bonus can sit below the one an SRD stat block prints. A printed bonus
+can include a trait this app does not model, such as the goblin's Nimble
+Escape.
+
 ## The character foundation
 
 Beyond its stats and inventory, a `Character` carries a class list, a race, a

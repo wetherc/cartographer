@@ -352,24 +352,26 @@ test('castPlan lets a utility spell through with no target at all', () => {
   );
 });
 
-test('castPlan fills in each target’s own save bonus and the class save DC', () => {
+test('castPlan derives a creature target’s save bonus and the class save DC', () => {
   const caster = mage();
   const goblin = createCreature('goblin', 'Goblin', {
     disposition: 'hostile',
     maxHP: 10,
-    stats: { AC: 13 },
+    stats: { AC: 13, WIS: 14 },
     location: HERE,
     level: 1,
+    cr: 5,
+    proficiencies: { saves: ['WIS'], skills: [] },
   });
   const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, holdPerson);
   assert.equal(plan.saveAbility, 'WIS');
   assert.equal(plan.dc, 14, '8 + proficiency 3 + INT 3');
-  // A foe with no stat the app can read keeps no bonus, so the dialog asks.
-  assert.equal(plan.targets[0].saveBonus, undefined);
+  assert.equal(plan.targets[0].saveBonus, 5, 'WIS 14 plus the CR 5 proficiency');
+  // Every target now carries a bonus, so the dialog asks for none.
   assert.equal(
     plan.fields.some((f) => f.name === 'save-bonus'),
-    true,
+    false,
   );
 });
 
@@ -567,12 +569,12 @@ test('a failed save takes full damage and lands a tracked condition', () => {
   });
   const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, holdPerson);
-  resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '2' }), {
+  resolveCast(app, plan, submit({ target: 'goblin', dc: '14' }), {
     writeBack: () => {},
     concentrates: false,
     rng: seq([d20(3)]),
   });
-  assert.match(app.log[1], /Goblin fails DC 14 \(WIS \+2: 5\) — takes 0 damage, Paralyzed\.$/);
+  assert.match(app.log[1], /Goblin fails DC 14 \(WIS \+0: 3\) — takes 0 damage, Paralyzed\.$/);
   const chip = app.state.creatures[0].conditions[0];
   assert.equal(chip.name, 'Paralyzed');
   assert.equal(chip.source.spellId, 'hold-person');
@@ -591,11 +593,11 @@ test('a made save logs the roll and no condition', () => {
   });
   const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, burningHands);
-  resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '20' }), {
+  resolveCast(app, plan, submit({ target: 'goblin', dc: '14' }), {
     writeBack: () => {},
     concentrates: false,
     // A save spell rolls its damage first, then each target's save against it.
-    rng: seq([face(6, 6), face(6, 6), face(6, 6), d20(10)]),
+    rng: seq([face(6, 6), face(6, 6), face(6, 6), d20(20)]),
   });
   assert.match(app.log[1], /Goblin saves DC 14 .* takes 9 damage\.$/, 'half of 18 on a save');
   assert.equal(app.state.creatures[0].currentHP, 1);
@@ -669,11 +671,10 @@ test('a paralyzed target fails a body save with no roll', () => {
   );
   const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, burningHands);
-  resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '20' }), {
+  resolveCast(app, plan, submit({ target: 'goblin', dc: '14' }), {
     writeBack: () => {},
     concentrates: false,
-    // Only the damage dice are drawn. A bonus that would clear the DC twice
-    // over never reaches a d20.
+    // Only the damage dice are drawn. A paralyzed target never reaches a d20.
     rng: seq([face(6, 6), face(6, 6), face(6, 6)]),
   });
   assert.match(app.log[1], /Goblin fails DC 14 \(Paralyzed\) — takes 18 damage\.$/);
@@ -694,14 +695,14 @@ test('a restrained target rolls its Dexterity save at disadvantage', () => {
   );
   const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, burningHands);
-  resolveCast(app, plan, submit({ target: 'goblin', dc: '25', 'save-bonus': '20' }), {
+  resolveCast(app, plan, submit({ target: 'goblin', dc: '5' }), {
     writeBack: () => {},
     concentrates: false,
     // The kept 2 leaves the save short of the DC that the dropped 18 would
     // have cleared.
     rng: seq([face(6, 6), face(6, 6), face(6, 6), d20(18), d20(2)]),
   });
-  assert.match(app.log[1], /Goblin fails DC 25 \(DEX \+20: 22\) — takes 18 damage\.$/);
+  assert.match(app.log[1], /Goblin fails DC 5 \(DEX \+0: 2\) — takes 18 damage\.$/);
 });
 
 test('a utility cast logs the spell and says only that it was cast', () => {
@@ -887,7 +888,7 @@ test('a concentration cast holds the spell and drops what it held before', () =>
   const plan = planFor(app, caster, holdPerson);
   /** @type {any[]} */
   const written = [];
-  resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '0' }), {
+  resolveCast(app, plan, submit({ target: 'goblin', dc: '14' }), {
     writeBack: (next) => written.push(next),
     concentrates: true,
     rng: seq([d20(1)]),
@@ -900,7 +901,7 @@ test('a concentration cast holds the spell and drops what it held before', () =>
   const held = written[0];
   const second = stubApp({ characters: [held], creatures: [app.state.creatures[0]] });
   const plan2 = planFor(second, held, holdPerson);
-  resolveCast(second, plan2, submit({ target: 'goblin', dc: '14', 'save-bonus': '0' }), {
+  resolveCast(second, plan2, submit({ target: 'goblin', dc: '14' }), {
     writeBack: () => {},
     concentrates: true,
     rng: seq([d20(1)]),
@@ -929,7 +930,7 @@ test('a cast above its target cap reports the targets it dropped', () => {
   });
   const app = stubApp({ characters: [caster], creatures: [goblin, wolf] });
   const plan = planFor(app, caster, holdPerson);
-  resolveCast(app, plan, submit({ targets: 'goblin, wolf', dc: '14', 'save-bonus': '0' }), {
+  resolveCast(app, plan, submit({ targets: 'goblin, wolf', dc: '14' }), {
     writeBack: () => {},
     concentrates: false,
     rng: seq([d20(1)]),
@@ -1151,12 +1152,11 @@ test('dropping the concentration on a buff sweeps its chips off every recipient'
     level: 1,
   });
   app.state.creatures = [goblin];
-  resolveCast(
-    app,
-    planFor(app, holder, holdPerson),
-    submit({ target: 'goblin', dc: '14', 'save-bonus': '20' }),
-    { writeBack: write, concentrates: true, rng: seq([d20(20)]) },
-  );
+  resolveCast(app, planFor(app, holder, holdPerson), submit({ target: 'goblin', dc: '14' }), {
+    writeBack: write,
+    concentrates: true,
+    rng: seq([d20(20)]),
+  });
   for (const c of app.state.characters) {
     assert.equal(
       c.conditions.some((x) => x.name === 'Bless'),
@@ -1306,13 +1306,13 @@ test('a rider the target holds rides its save against the next spell', () => {
   };
   const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, burningHands);
-  resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '10' }), {
+  resolveCast(app, plan, submit({ target: 'goblin', dc: '14' }), {
     writeBack: () => {},
     concentrates: false,
     // Three d6 of damage, then the Bane d4, then the target's d20.
     rng: seq([face(6, 1), face(6, 1), face(6, 1), face(4, 4), d20(5)]),
   });
-  assert.match(app.log[1], /Goblin fails DC 14 \(DEX \+10, Bane -1d4 \[4\]: 11\)/);
+  assert.match(app.log[1], /Goblin fails DC 14 \(DEX \+0, Bane -1d4 \[4\]: 1\)/);
 });
 
 test('a failed save against a rider spell lands the rider on the chip', () => {
@@ -1326,7 +1326,7 @@ test('a failed save against a rider spell lands the rider on the chip', () => {
   });
   const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, bane);
-  resolveCast(app, plan, submit({ target: 'goblin', dc: '14', 'save-bonus': '0' }), {
+  resolveCast(app, plan, submit({ target: 'goblin', dc: '14' }), {
     writeBack: () => {},
     concentrates: false,
     rng: seq([d20(3)]),

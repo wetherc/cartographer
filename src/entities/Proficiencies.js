@@ -2,6 +2,8 @@ import { getClass } from './Classes.js';
 import { primaryClass } from './Multiclass.js';
 import { resolveRace } from './Races.js';
 import { resolveBackground } from './Backgrounds.js';
+import { ABILITY_SCORES } from './Modifiers.js';
+import { SKILL_IDS } from '../data/skills.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').Proficiencies} Proficiencies */
@@ -81,6 +83,41 @@ export function normalizeProficiencies(proficiencies) {
     tools: merged(proficiencies?.tools ?? []),
     languages: merged(proficiencies?.languages ?? []),
   };
+}
+
+/**
+ * Clean the slim proficiency set a creature carries: the saving throws it is
+ * trained in and the skills it is trained in. A creature records none of the
+ * other training a character does, and it has no expertise, so this set is two
+ * lists and not the seven of `normalizeProficiencies`. Each list is
+ * deduplicated, and an entry that names no ability or no skill is dropped, so
+ * a hand-edited save or a library file cannot put a bonus on something the
+ * rest of the app cannot roll. This function is pure.
+ * @param {unknown} value
+ * @returns {import('../types/creature.js').CreatureProficiencies}
+ */
+export function normalizeCreatureProficiencies(value) {
+  const source = /** @type {{ saves?: unknown, skills?: unknown }} */ (
+    value && typeof value === 'object' ? value : {}
+  );
+  const list = (/** @type {unknown} */ raw) => (Array.isArray(raw) ? merged(raw) : []);
+  return {
+    saves: list(source.saves).filter((ability) => ABILITY_SCORES.includes(ability)),
+    skills: list(source.skills).filter((id) => SKILL_IDS.includes(id)),
+  };
+}
+
+/**
+ * The proficiency field to spread into a creature or a template, or nothing at
+ * all. A creature trained in nothing carries no field, so the common case
+ * stores nothing and an absent field keeps meaning "trained in nothing".
+ * @param {unknown} value
+ * @returns {{ proficiencies?: import('../types/creature.js').CreatureProficiencies }}
+ */
+export function creatureProficiencyFields(value) {
+  const proficiencies = normalizeCreatureProficiencies(value);
+  const empty = proficiencies.saves.length === 0 && proficiencies.skills.length === 0;
+  return empty ? {} : { proficiencies };
 }
 
 /**

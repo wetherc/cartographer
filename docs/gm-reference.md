@@ -222,12 +222,22 @@ detection range as the markers, so a tile out of range says nothing.
 | Max HP | The full health pool |
 | Level | Drives the default stat block |
 | Tier | mob for rank and file, legend for an above-normal enemy |
+| Challenge rating | The 5e rating, or Unrated. It sets the proficiency bonus the enemy rolls with |
+| Save proficiencies | The saving throws the enemy is trained in |
+| Skill proficiencies | The skills the enemy is trained in |
 | Weapon, Armor | Gear from the library. None leaves the enemy unarmed or unarmored |
 | Map, Tile | Where the encounter stands |
 
 The six ability scores plus AC are the only stats an enemy carries. A
 legend always out-stats a level-matched mob. A defeated encounter is styled
 as defeated, not deleted.
+
+Both panels print what the enemy is trained in, with the bonus it rolls in each,
+for example "Saves DEX +4 | Skills Stealth +6". The app works each bonus out
+from the ability score, the challenge rating, and any exhaustion, so there is no
+number to type. An unrated enemy takes its proficiency bonus from its level
+instead, and from +2 when it has no level. A save that a spell calls for uses
+the same bonus, which is why the cast dialog asks only for the DC.
 
 In Play mode, a click on a stat chip applies a timed adjustment, for
 example +2 STR for 3 rounds, shown as "STR 14->16 (3r)". The adjustment

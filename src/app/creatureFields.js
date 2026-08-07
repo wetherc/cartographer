@@ -9,14 +9,18 @@
  */
 
 import { coerceCR, crOptions } from '../data/challenge.js';
+import { SKILL_IDS, skillName } from '../data/skills.js';
 import { DEFAULT_CREATURE_HP, defaultEnemyGear, dispositionOptions } from '../entities/Creature.js';
 import {
+  ABILITY_SCORES,
   defaultEnemyStats,
   ENEMY_TIERS,
   normalizeStatBlock,
   STAT_KEYS,
 } from '../entities/Modifiers.js';
+import { creatureProficiencyFields } from '../entities/Proficiencies.js';
 import { clampInt } from '../util/num.js';
+import { splitList } from '../util/text.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
 import { readGear } from './gearFields.js';
 import { readStats, statFields } from './statFields.js';
@@ -40,6 +44,7 @@ import { readStats, statFields } from './statFields.js';
  *   level?: number,
  *   tier?: EnemyTier,
  *   cr?: number,
+ *   proficiencies?: import('../types/creature.js').CreatureProficiencies,
  *   stats?: Record<string, number>,
  *   weapon?: import('../types/entities.js').EnemyWeapon | null,
  *   armor?: import('../types/entities.js').EnemyArmor | null,
@@ -56,8 +61,8 @@ function tierOptions() {
 
 /**
  * The creature blueprint fields: identity, disposition, notes, the optional
- * level and tier, vitals, gear, the stat block, and the optional caster
- * section. A caster class turns the creature into a combatant that can cast
+ * level, tier, and challenge rating, the save and skill proficiencies, vitals,
+ * gear, the stat block, and the optional caster section. A caster class turns the creature into a combatant that can cast
  * during initiative, and "None" leaves it a plain fighter.
  *
  * A blank level marks a creature outside the leveling ladder, which is what
@@ -132,6 +137,23 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
       options: crOptions(),
     },
     {
+      name: 'saves',
+      label: 'Save proficiencies',
+      type: 'multiselect',
+      newRow: true,
+      full: true,
+      value: (seed?.proficiencies?.saves ?? []).join(','),
+      options: ABILITY_SCORES.map((ability) => ({ value: ability, label: ability })),
+    },
+    {
+      name: 'skills',
+      label: 'Skill proficiencies',
+      type: 'multiselect',
+      full: true,
+      value: (seed?.proficiencies?.skills ?? []).join(','),
+      options: SKILL_IDS.map((id) => ({ value: id, label: skillName(id) })),
+    },
+    {
       name: 'weapon',
       label: 'Weapon',
       type: 'select',
@@ -201,8 +223,9 @@ export function creatureFieldsChange({ restampStats }) {
  * value is the explicit "None" choice and stores null, with no fallback: the
  * field's own default already offered the level's loadout, so what the picker
  * shows is what the creature gets. A blank level stores no level and no tier.
- * A blank challenge rating stores none, which the app reads as unrated. The
- * result carries `stats` only when the form showed the block.
+ * A blank challenge rating stores none, which the app reads as unrated. Two
+ * empty proficiency pickers store no proficiency record. The result carries
+ * `stats` only when the form showed the block.
  * @param {Record<string, string>} values
  * @param {GearOptions} gear the same options the fields were built from
  * @param {{ stats?: boolean }} [options]
@@ -215,6 +238,7 @@ export function creatureFieldsChange({ restampStats }) {
  *   level?: number,
  *   tier?: EnemyTier,
  *   cr?: number,
+ *   proficiencies?: import('../types/creature.js').CreatureProficiencies,
  *   stats?: Record<string, number>,
  *   weapon: import('../types/entities.js').EnemyWeapon | null,
  *   armor: import('../types/entities.js').EnemyArmor | null,
@@ -228,6 +252,10 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
   const cr = coerceCR(values.cr);
   return {
     ...(cr === undefined ? {} : { cr }),
+    ...creatureProficiencyFields({
+      saves: splitList(values.saves),
+      skills: splitList(values.skills),
+    }),
     name: values.name.trim(),
     disposition: /** @type {Disposition} */ (values.disposition),
     role: values.role.trim(),

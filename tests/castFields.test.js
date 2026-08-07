@@ -192,11 +192,9 @@ test('a save spell names each target’s own bonus where the app knows it', () =
     fields.find((f) => f.name === 'target').options.map((o) => o.label),
     ['Goblin', 'Rook (WIS +6)'],
   );
-  const entered = fields.find((f) => f.name === 'save-bonus');
-  assert.equal(entered.label, 'Save bonus (targets without one)');
 });
 
-test('the hand-entered save bonus is left out when every target carries one', () => {
+test('the dialog asks for no save bonus, because every bonus is derived', () => {
   const known = [
     { ...target('a', 'Rook', 15), saveBonus: 6 },
     { ...target('b', 'Vex', 14), saveBonus: -1 },
@@ -205,18 +203,13 @@ test('the hand-entered save bonus is left out when every target carries one', ()
   assert.equal(
     fields.some((f) => f.name === 'save-bonus'),
     false,
-    'there is nothing left for the number to govern',
+    'the app reads a save off both kinds of combatant',
   );
   assert.deepEqual(
     fields.find((f) => f.name === 'targets').options.map((o) => o.label),
     ['Rook (WIS +6)', 'Vex (WIS -1)'],
   );
   assert.equal(fields.find((f) => f.name === 'dc').value, 13, 'the DC stays editable');
-});
-
-test('a save spell against foes alone keeps the one hand-entered bonus', () => {
-  const fields = castFields(holdPerson, targets, [2], 13, 1);
-  assert.equal(fields.find((f) => f.name === 'save-bonus').label, 'Target save bonus');
 });
 
 test('a board-picked target pre-fills whichever picker the dialog built', () => {

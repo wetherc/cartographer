@@ -14,6 +14,7 @@ import { addCondition } from '../entities/Conditions.js';
 import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
 import { despawnSummons } from '../entities/Summons.js';
 import { saveBonus } from '../entities/Checks.js';
+import { creatureSaveBonus } from '../entities/CreatureChecks.js';
 import { checkOnDamage, drop as dropConcentration } from '../entities/Concentration.js';
 import { dropToDying, isDead, recordDamage } from '../entities/DeathSaves.js';
 import { replaceById } from '../entities/Roster.js';
@@ -46,8 +47,8 @@ import { spellbookIds } from './casterFields.js';
  * (id), and roll against it (ac). Every target carries `conditions`, the
  * chips it holds, because a rider on one of them rides a save it takes and
  * because a chip such as Prone slants the attack roll made against it. A save
- * spell's targets also carry `saveBonus` when the target is a party character
- * with a known save. See `targetSaveBonus`. `armorPenalty` marks a character
+ * spell's targets carry `saveBonus`, which the app derives for a character and
+ * for a creature alike. See `targetSaveBonus`. `armorPenalty` marks a character
  * that rolls a STR or DEX save at disadvantage because it wears armor it is
  * not trained for. See `targetArmorPenalty`.
  * @typedef {{
@@ -195,11 +196,11 @@ export function asTarget(entity, kind) {
 }
 
 /**
- * targetSaveBonus gives the save bonus a target rolls with, when the app can
- * work it out. For a party character, this is the ability modifier plus
- * proficiency, from its own stats and proficiency lists. The function
- * returns undefined for a creature. A creature records no saving throws, so
- * the GM must enter that number by hand.
+ * targetSaveBonus gives the save bonus a target rolls with: the ability
+ * modifier plus proficiency where the target is trained in that save. Both
+ * kinds of combatant derive one, from the module that owns their shape. The
+ * function returns undefined only for an id nothing holds any more, which is a
+ * target deleted while the cast dialog sat open.
  * @param {AppContext} app
  * @param {string} id
  * @param {string} ability
@@ -207,7 +208,10 @@ export function asTarget(entity, kind) {
  */
 export function targetSaveBonus(app, id, ability) {
   const found = findCombatant(app, id);
-  return found?.kind === 'character' ? saveBonus(found.entity, ability) : undefined;
+  if (!found) return undefined;
+  return found.kind === 'character'
+    ? saveBonus(found.entity, ability)
+    : creatureSaveBonus(found.entity, ability);
 }
 
 /**
@@ -463,9 +467,9 @@ function spellNameOf(creature) {
 /**
  * Roll the repeated saves a combatant is owed as its turn ends, for
  * conditions whose spell allows one, and remove whatever it shakes loose. A
- * party character rolls its own live save bonus. A creature rolls the
- * number the GM entered when the spell was cast, the only bonus the app has
- * for it.
+ * combatant of either kind rolls its live bonus, so a save granted or a stat
+ * raised since the cast counts. The bonus the cast recorded is the fallback for
+ * a chip whose source names no ability.
  * Each roll is logged with its DC, so a table can see why an effect held.
  * @param {AppContext} app
  * @param {string} combatantId the participant whose turn just ended
@@ -473,11 +477,10 @@ function spellNameOf(creature) {
 export function retryImposedSaves(app, combatantId) {
   const found = findCombatant(app, combatantId);
   if (!found) return;
-  const character = found.kind === 'character' ? found.entity : null;
   const { conditions, results } = repeatSaves(found.entity.conditions, {
     bonusOf: (source) =>
-      character && source.saveAbility
-        ? saveBonus(character, source.saveAbility)
+      source.saveAbility
+        ? (targetSaveBonus(app, combatantId, source.saveAbility) ?? source.saveBonus ?? 0)
         : (source.saveBonus ?? 0),
   });
   if (results.length === 0) return;

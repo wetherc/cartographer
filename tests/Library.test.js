@@ -28,6 +28,7 @@ import {
 } from '../src/library/Library.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
 import { crXP } from '../src/data/challenge.js';
+import { normalizeCreatureProficiencies } from '../src/entities/Proficiencies.js';
 
 test('defaultEquipmentTemplates covers every built-in preset list', () => {
   const defaults = defaultEquipmentTemplates();
@@ -200,6 +201,31 @@ test('the built-in foes all carry a rating and the townsfolk carry none', () => 
     const rated = entry.cr !== undefined;
     assert.equal(rated, entry.disposition === 'hostile', `${entry.name} is rated wrongly`);
     if (rated) assert.ok(crXP(entry.cr) > 0, `${entry.name} has an unknown rating`);
+  }
+});
+
+test('normalizeLibrary keeps a creature proficiency list and drops unknown entries', () => {
+  const lib = normalizeLibrary({
+    creatures: [
+      { name: 'Wyvern', proficiencies: { saves: ['DEX', 'luck'], skills: ['perception'] } },
+      { name: 'Thing', proficiencies: 'all' },
+      { name: 'Commoner' },
+    ],
+  });
+  const byName = Object.fromEntries(lib.creatures.map((c) => [c.name, c]));
+  assert.deepEqual(byName.Wyvern.proficiencies, { saves: ['DEX'], skills: ['perception'] });
+  assert.equal('proficiencies' in byName.Thing, false);
+  assert.equal('proficiencies' in byName.Commoner, false);
+});
+
+test('every built-in proficiency list names a real ability and a real skill', () => {
+  for (const entry of DEFAULT_CREATURES) {
+    if (!entry.proficiencies) continue;
+    assert.deepEqual(
+      normalizeCreatureProficiencies(entry.proficiencies),
+      entry.proficiencies,
+      `${entry.name} names something the app cannot roll`,
+    );
   }
 });
 

@@ -136,6 +136,20 @@ test('a challenge rating survives packing and reload, and absence stays absence'
   assert.equal('cr' in restored.creatures[1], false, 'an unrated foe gains no rating');
 });
 
+test('a creature proficiency list survives packing and reload', () => {
+  const state = buildState({
+    grid: sampleGrid(),
+    party: { nodeId: 'world', tileId: '0,0' },
+    creatures: [
+      foe('e1', 'Goblin', 7, { proficiencies: { saves: ['DEX'], skills: ['stealth'] } }),
+      foe('e2', 'Thug', 11),
+    ],
+  });
+  const restored = deserialize(serialize(state));
+  assert.deepEqual(restored.creatures[0].proficiencies, { saves: ['DEX'], skills: ['stealth'] });
+  assert.equal('proficiencies' in restored.creatures[1], false, 'absence stays absence');
+});
+
 test('the spellcasting-focus flag survives packing and reload', () => {
   const hero = createCharacter('c1', 'Hero');
   hero.inventory = [

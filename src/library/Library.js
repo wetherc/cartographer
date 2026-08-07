@@ -31,6 +31,7 @@ import { coerceCR } from '../data/challenge.js';
 import { normalizeStatBlock } from '../entities/Modifiers.js';
 import { DEFAULT_CREATURE_HP, DISPOSITIONS, defaultEnemyGear } from '../entities/Creature.js';
 import { isCasterClass } from '../entities/Classes.js';
+import { creatureProficiencyFields } from '../entities/Proficiencies.js';
 import { slugId } from '../entities/Roster.js';
 import { indexById } from '../util/indexById.js';
 import { deepFreeze } from '../util/deepFreeze.js';
@@ -99,7 +100,10 @@ export function defaultEquipmentTemplates() {
  * armor's bonus, the same rule that effectiveStatBlock uses. Each hostile
  * entry carries the challenge rating of its SRD counterpart. The townsfolk
  * stay unrated, because nothing fights them and the difficulty hint counts
- * hostile creatures only.
+ * hostile creatures only. A hostile entry whose SRD counterpart lists trained
+ * skills carries those, and the bonus in each is derived rather than stored.
+ * The derived number can sit below the printed one, because a stat block prints
+ * the effect of traits this app does not model.
  * @type {CreatureTemplate[]}
  */
 export const DEFAULT_CREATURES = deepFreeze([
@@ -112,6 +116,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     level: 1,
     tier: 'mob',
     cr: 0.25,
+    proficiencies: { saves: [], skills: ['stealth'] },
     weapon: {
       name: 'Scimitar',
       kind: 'melee',
@@ -130,6 +135,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     level: 1,
     tier: 'mob',
     cr: 0.25,
+    proficiencies: { saves: [], skills: ['perception', 'stealth'] },
     // A natural weapon: no category, because it is neither simple nor
     // martial.
     weapon: {
@@ -184,6 +190,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     level: 2,
     tier: 'mob',
     cr: 0.5,
+    proficiencies: { saves: [], skills: ['intimidation'] },
     weapon: {
       name: 'Greataxe',
       kind: 'melee',
@@ -263,6 +270,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     notes: 'Serves a hidden master and carries a sign of the order.',
     maxHP: 4,
     cr: 0.125,
+    proficiencies: { saves: [], skills: ['deception', 'religion'] },
     stats: { STR: 11, DEX: 12, CON: 10, INT: 10, WIS: 8, CHA: 11, AC: 11 },
     weapon: null,
     armor: null,
@@ -692,6 +700,9 @@ export function normalizeLibrary(parsed) {
       armor: gear('armor'),
       ...(hasLevel ? { level: clampInt(level, 1), tier } : {}),
       ...(cr === undefined ? {} : { cr }),
+      // An entry trained in nothing carries no list, and an entry that names an
+      // unknown ability or skill loses that one entry.
+      ...creatureProficiencyFields(e.proficiencies),
       ...(typeof e.role === 'string' && e.role ? { role: e.role } : {}),
       ...(typeof e.notes === 'string' && e.notes ? { notes: e.notes } : {}),
       ...casterTemplateFrom(e),

@@ -43,6 +43,8 @@ function baseValues() {
     level: '',
     tier: 'mob',
     cr: '',
+    saves: '',
+    skills: '',
     weapon: '',
     armor: '',
     casterClass: '',
@@ -182,4 +184,31 @@ test('readCreatureFields reads a picked rating and omits a blank one', () => {
   assert.equal('cr' in readCreatureFields(baseValues(), gearOptions(null)), false);
   const junk = readCreatureFields({ ...baseValues(), cr: '1.5' }, gearOptions(null));
   assert.equal('cr' in junk, false, 'a value that names no step reads as unrated');
+});
+
+test('the proficiency pickers offer every ability and skill, pre-checked from the seed', () => {
+  const fields = creatureFields(
+    { proficiencies: { saves: ['DEX'], skills: ['stealth'] } },
+    gearOptions(null),
+  );
+  const saves = field(fields, 'saves');
+  const skills = field(fields, 'skills');
+  assert.equal(saves.options?.length, 6, 'the six abilities');
+  assert.equal(skills.options?.length, 18, 'the eighteen skills');
+  assert.equal(saves.value, 'DEX');
+  assert.equal(skills.value, 'stealth');
+  assert.ok(
+    skills.options?.some((o) => o.value === 'sleight-of-hand' && o.label === 'Sleight of Hand'),
+    'a skill is offered by its display name',
+  );
+});
+
+test('readCreatureFields reads both proficiency pickers and omits an empty pair', () => {
+  const gear = gearOptions(null);
+  const trained = readCreatureFields(
+    { ...baseValues(), saves: 'DEX,WIS', skills: 'stealth' },
+    gear,
+  );
+  assert.deepEqual(trained.proficiencies, { saves: ['DEX', 'WIS'], skills: ['stealth'] });
+  assert.equal('proficiencies' in readCreatureFields(baseValues(), gear), false);
 });

@@ -22,6 +22,20 @@ export interface SummonSource {
 }
 
 /**
+ * What a creature is trained in: the saving throws and the skills it adds its
+ * proficiency bonus to. This is the slim half of a character's proficiency
+ * record. A creature records no armor, weapon, tool, or language training,
+ * because nothing gates a creature on those, and it has no expertise. Absent
+ * on a creature means trained in nothing.
+ */
+export interface CreatureProficiencies {
+  /** Ability keys, for example "DEX". */
+  saves: string[];
+  /** Skill ids from `data/skills.js`, for example "stealth". */
+  skills: string[];
+}
+
+/**
  * One creature in the campaign: a foe, a townsperson, or anything between.
  * The disposition decides which side it fights on. Hostile creatures fight
  * the party. All other creatures stand with the party. Every creature is a
@@ -72,6 +86,9 @@ export interface Creature {
    * with. Absent means unrated: the creature falls back to its level for
    * proficiency and counts for no XP in the difficulty hint. */
   cr?: number;
+  /** The saving throws and skills the creature is trained in. Its bonus in each
+   * is derived, never stored: see `entities/CreatureChecks.js`. */
+  proficiencies?: CreatureProficiencies;
   /** Free-text role or faction, for example "Innkeeper". */
   role?: string;
   notes?: string;
@@ -113,6 +130,7 @@ export interface CreatureTemplate {
   level?: number;
   tier?: EnemyTier;
   cr?: number;
+  proficiencies?: CreatureProficiencies;
   role?: string;
   notes?: string;
   class?: string;

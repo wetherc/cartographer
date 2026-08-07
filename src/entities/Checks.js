@@ -45,11 +45,9 @@ import { SKILL_ABILITIES, SKILL_IDS } from '../data/skills.js';
  * as 10, the same default the rest of the stat code uses. Exhaustion takes 2
  * off for each of its levels, because a saving throw is a d20 test.
  *
- * This function works for characters only. A creature keeps its ability
- * scores in a different field and carries no proficiency lists. A
- * creature's save bonus is still whatever the GM types into the cast dialog.
- * An exhausted creature therefore saves at its full bonus, and the GM must
- * subtract the penalty by hand.
+ * This function works for characters only. A creature keeps its ability scores
+ * in a different field and climbs the proficiency ladder by challenge rating,
+ * so `CreatureChecks.creatureSaveBonus` is its counterpart.
  * @param {Character} character
  * @param {string} ability one of the six ability keys
  * @returns {number}
@@ -94,8 +92,8 @@ function resolveD20(bonus, dc, kind, { mode = 'normal', rng = Math.random, condi
  * Resolve a save from a bonus already worked out.
  *
  * This function is split from `savingThrow` because the spell resolver has a
- * bonus but no character. The target can be a foe whose save the GM entered
- * by hand. Both paths must resolve a save the same way.
+ * bonus but no character. The target can be a creature, whose bonus comes from
+ * `CreatureChecks`. Both paths must resolve a save the same way.
  *
  * `conditions` are the chips the roller holds. Any of them that rides on a
  * save rolls here and joins the bonus, so Bless and Bane reach every save in
@@ -173,7 +171,8 @@ export function checkAbility(key) {
  * score, because {@link passiveScore} reads this value.
  *
  * This function works for characters only, for the same reason
- * {@link saveBonus} does. A foe carries no proficiency lists.
+ * {@link saveBonus} does. `CreatureChecks.creatureCheckBonus` is the
+ * counterpart for a creature.
  * @param {Character} character
  * @param {string} key a skill id or one of the six ability keys
  * @returns {number}

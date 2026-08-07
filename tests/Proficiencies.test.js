@@ -13,6 +13,8 @@ import {
   hasExpertise,
   normalizeProficiencies,
   normalizeWeaponProficiencies,
+  normalizeCreatureProficiencies,
+  creatureProficiencyFields,
 } from '../src/entities/Proficiencies.js';
 import { createCharacter, withDefaults } from '../src/entities/Character.js';
 import { withRace, withCustomRace } from '../src/entities/Races.js';
@@ -251,4 +253,35 @@ test('isProficientArmor reads the armor list, and a shield is its own entry', ()
   const shielded = withProficiencies(createCharacter('c2', 'Tor'), { armor: ['shield'] });
   assert.equal(isProficientArmor(shielded, 'shield'), true);
   assert.equal(isProficientArmor(shielded, 'light'), false);
+});
+
+test('a creature set keeps the abilities and skills it names, deduplicated', () => {
+  const set = normalizeCreatureProficiencies({
+    saves: ['DEX', 'WIS', 'DEX'],
+    skills: ['stealth', 'stealth'],
+  });
+  assert.deepEqual(set, { saves: ['DEX', 'WIS'], skills: ['stealth'] });
+});
+
+test('a creature set drops an entry that names no ability and no skill', () => {
+  const set = normalizeCreatureProficiencies({
+    saves: ['DEX', 'AC', 'luck'],
+    skills: ['stealth', 'lockpicking'],
+  });
+  assert.deepEqual(set, { saves: ['DEX'], skills: ['stealth'] });
+});
+
+test('a creature set reads any non-set value as trained in nothing', () => {
+  const empty = { saves: [], skills: [] };
+  for (const value of [undefined, null, 'DEX', 42, {}, { saves: 'DEX', skills: 3 }]) {
+    assert.deepEqual(normalizeCreatureProficiencies(value), empty);
+  }
+});
+
+test('the creature proficiency field is absent for a creature trained in nothing', () => {
+  assert.deepEqual(creatureProficiencyFields(undefined), {});
+  assert.deepEqual(creatureProficiencyFields({ saves: ['luck'], skills: [] }), {});
+  assert.deepEqual(creatureProficiencyFields({ saves: [], skills: ['stealth'] }), {
+    proficiencies: { saves: [], skills: ['stealth'] },
+  });
 });

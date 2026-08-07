@@ -50,8 +50,8 @@ export function removeImposed(list, casterId, spellId) {
 }
 
 /**
- * The bonus a repeated save rolls with by default. This is the bonus that
- * the cast recorded, which for a foe is the number the GM typed at cast time.
+ * The bonus a repeated save rolls with by default: the one the cast recorded.
+ * A caller that still holds the combatant passes a live bonus instead.
  * @param {ConditionSource} source
  * @returns {number}
  */
@@ -66,11 +66,10 @@ function recordedBonus(source) {
  * chip. A failure leaves it for the next turn. Conditions with no source, or
  * whose source does not allow a retry, stay unaffected.
  *
- * `bonusOf` decides what the creature adds. It defaults to the bonus the
- * cast recorded, which is all there is for a foe whose saves the app cannot
- * read. A caller holding a party character must pass a function that
- * derives the character's live bonus instead, so a save granted or a stat
- * raised since the cast counts.
+ * `bonusOf` decides what the roller adds. It defaults to the bonus the cast
+ * recorded, which is all a caller holding nothing but the chips has. A caller
+ * holding the combatant passes a function that derives the live bonus instead,
+ * so a save granted or a stat raised since the cast counts.
  * @param {Condition[]} list
  * @param {{ bonusOf?: (source: ConditionSource) => number, rng?: RandomFn }} [opts]
  * @returns {{

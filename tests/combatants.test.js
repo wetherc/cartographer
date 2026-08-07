@@ -430,24 +430,26 @@ test('commitCreatures refreshes both sidebar panels and marks dirty by default',
   assert.equal(app.dirty, 1);
 });
 
-test('targetSaveBonus reads a character save and reports nothing for anyone else', () => {
+test('targetSaveBonus derives a save for either kind and reports nothing for an unknown id', () => {
   const { hero, goblin, sage } = fixtures();
-  const app = stubApp({ characters: [hero], creatures: [goblin, sage] });
+  const trained = { ...goblin, cr: 5, proficiencies: { saves: ['STR'], skills: [] } };
+  const app = stubApp({ characters: [hero], creatures: [trained, sage] });
   assert.equal(targetSaveBonus(app, 'hero', 'STR'), saveBonus(hero, 'STR'));
-  assert.equal(targetSaveBonus(app, 'goblin', 'STR'), undefined, 'a foe records no saves');
-  assert.equal(targetSaveBonus(app, 'sage', 'STR'), undefined);
+  assert.equal(targetSaveBonus(app, 'goblin', 'STR'), 3, 'STR 10 plus the CR 5 proficiency');
+  assert.equal(targetSaveBonus(app, 'sage', 'STR'), 0, 'an untrained creature adds its modifier');
   assert.equal(targetSaveBonus(app, 'nobody', 'STR'), undefined);
 });
 
-test('a target save bonus carries exhaustion for a character and not for a creature', () => {
+test('a target save bonus carries exhaustion for both kinds', () => {
   const { hero, goblin } = fixtures();
   const app = stubApp({
     characters: [{ ...hero, exhaustion: 2 }],
     creatures: [{ ...goblin, exhaustion: 2 }],
   });
   assert.equal(targetSaveBonus(app, 'hero', 'STR'), saveBonus(hero, 'STR') - 4);
-  // A creature's save is still GM-typed, so its exhaustion cannot reach it.
-  assert.equal(targetSaveBonus(app, 'goblin', 'STR'), undefined);
+  // A creature's save is derived now, so the penalty reaches it without the GM
+  // subtracting it by hand.
+  assert.equal(targetSaveBonus(app, 'goblin', 'STR'), -4);
 });
 
 /** A character holding an equipped, damage-carrying sword. */

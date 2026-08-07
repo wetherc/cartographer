@@ -292,18 +292,6 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
   }
   if (kind === 'save') {
     fields.push({ name: 'dc', label: 'Save DC', type: 'number', value: saveDC, min: 1 });
-    // The hand-entered bonus covers only targets whose own save the app
-    // cannot read. The dialog does not ask for this bonus when every target has one.
-    if (targets.some((t) => t.saveBonus === undefined)) {
-      fields.push({
-        name: 'save-bonus',
-        label: targets.every((t) => t.saveBonus === undefined)
-          ? 'Target save bonus'
-          : 'Save bonus (targets without one)',
-        type: 'number',
-        value: 0,
-      });
-    }
     fields.push({
       name: 'mode',
       label: 'Save roll',
@@ -692,9 +680,6 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
       return;
     }
   }
-  // A target that carries its own bonus rolls that bonus. A foe with no save
-  // the app can read falls back to the one number the GM typed for all such targets.
-  const entered = Number(values['save-bonus']) || 0;
   // The caster view carries no conditions, so the chips come off the real
   // combatant. A Bless on the caster rides its spell attack rolls, and a
   // Blinded on it slants them.
@@ -714,7 +699,9 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
       );
       return {
         ...t,
-        saveBonus: t.saveBonus ?? entered,
+        // Every live target carries a derived bonus. A target the roster lost
+        // while the dialog sat open carries none and saves on the flat die.
+        saveBonus: t.saveBonus ?? 0,
         saveMode: combineModes([mode, outcome.mode]) ?? 'normal',
         ...(outcome.failedBy ? { autoFailSave: outcome.failedBy } : {}),
       };

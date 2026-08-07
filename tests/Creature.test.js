@@ -460,6 +460,52 @@ test('a rating that names no step is dropped on every write path', () => {
   assert.equal(kept.cr, 0.5, 'a written fraction reads as its number');
 });
 
+test('proficiency lists survive create, edit, and the template round trip', () => {
+  const set = { saves: ['DEX'], skills: ['stealth'] };
+  const foe = createCreature('c1', 'Goblin', { disposition: 'hostile', proficiencies: set });
+  assert.deepEqual(foe.proficiencies, set);
+  const template = toTemplate('t1', foe);
+  assert.deepEqual(template.proficiencies, set);
+  const spawned = fromTemplate(template, 'c2');
+  assert.deepEqual(spawned.proficiencies, set);
+  assert.notEqual(spawned.proficiencies.skills, template.proficiencies.skills, 'lists are copied');
+  const retrained = editCreature(foe, {
+    name: 'Goblin',
+    disposition: 'hostile',
+    maxHP: 7,
+    location: null,
+    proficiencies: { saves: ['WIS'], skills: [] },
+  });
+  assert.deepEqual(retrained.proficiencies, { saves: ['WIS'], skills: [] });
+});
+
+test('a creature trained in nothing carries no proficiency field', () => {
+  const plain = createCreature('c1', 'Innkeeper', { maxHP: 4 });
+  assert.equal('proficiencies' in plain, false);
+  assert.equal('proficiencies' in toTemplate('t1', plain), false);
+  const trained = createCreature('c2', 'Orc', { proficiencies: { saves: ['STR'], skills: [] } });
+  const cleared = editCreature(trained, {
+    name: 'Orc',
+    disposition: 'hostile',
+    maxHP: 15,
+    location: null,
+  });
+  assert.equal('proficiencies' in cleared, false, 'two empty pickers remove the record');
+});
+
+test('a stored proficiency list is cleaned when a creature loads', () => {
+  const loaded = withDefaults(
+    /** @type {any} */ ({
+      id: 'c1',
+      name: 'Thing',
+      proficiencies: { saves: ['DEX', 'AC'], skills: ['stealth', 'lockpicking'] },
+    }),
+  );
+  assert.deepEqual(loaded.proficiencies, { saves: ['DEX'], skills: ['stealth'] });
+  const junk = withDefaults(/** @type {any} */ ({ id: 'c2', name: 'Thing', proficiencies: 'all' }));
+  assert.equal('proficiencies' in junk, false);
+});
+
 test('defaultEnemyGear picks the loadout by tier and level band and returns copies', () => {
   assert.equal(defaultEnemyGear(1, 'mob').weapon.name, 'Shortsword');
   assert.equal(defaultEnemyGear(5, 'mob').weapon.name, 'Longsword');
