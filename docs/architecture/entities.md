@@ -147,10 +147,13 @@ built-in townsfolk stay unrated, because nothing fights them.
 `src/entities/EncounterDifficulty.js` rates a fight by the 5e
 experience-point budget. `XP_THRESHOLDS` holds the four thresholds for each
 level from 1 to 20, and `partyThresholds` sums the row of every character.
+`rateEncounter` counts the living characters only: a dead character buys no
+budget and does not count toward the party size, while a dying one still does.
 `adjustedXP` adds up what the foes are worth through `crXP` and multiplies by
 the count, from 1 for a lone foe to 4 for fifteen or more. The party size moves
 one step along that multiplier ladder rather than scaling the value: a party of
-one or two steps up, a party of six or more steps down.
+one or two steps up, a party of six or more steps down. The ladder's end rungs,
+0.5 and 5, are reachable through that shift alone.
 
 `rateEncounter` compares the two and names the band. A threshold counts as met,
 so a total exactly on the medium line is medium. Below the easy threshold the

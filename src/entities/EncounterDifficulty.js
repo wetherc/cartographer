@@ -12,6 +12,7 @@
  */
 
 import { crXP } from '../data/challenge.js';
+import { isDead } from './DeathSaves.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -51,9 +52,11 @@ export const DIFFICULTY_LABELS = ['Trivial', 'Easy', 'Medium', 'Hard', 'Deadly']
 
 /** The multiplier ladder for the number of foes. A party-size adjustment moves
  * one step along it rather than scaling the value, which is how the rules
- * phrase it.
+ * phrase it. The end rungs exist for that shift alone: a foe count reaches
+ * only 1 through 4, a large party steps a lone foe down to 0.5, and a small
+ * party steps fifteen or more foes up to 5.
  * @type {number[]} */
-const MULTIPLIERS = [1, 1.5, 2, 2.5, 3, 4];
+const MULTIPLIERS = [0.5, 1, 1.5, 2, 2.5, 3, 4, 5];
 
 /**
  * Which rung of the multiplier ladder a number of foes sits on: one foe, two,
@@ -62,12 +65,12 @@ const MULTIPLIERS = [1, 1.5, 2, 2.5, 3, 4];
  * @returns {number}
  */
 function multiplierStep(count) {
-  if (count <= 1) return 0;
-  if (count === 2) return 1;
-  if (count <= 6) return 2;
-  if (count <= 10) return 3;
-  if (count <= 14) return 4;
-  return 5;
+  if (count <= 1) return 1;
+  if (count === 2) return 2;
+  if (count <= 6) return 3;
+  if (count <= 10) return 4;
+  if (count <= 14) return 5;
+  return 6;
 }
 
 /**
@@ -95,7 +98,9 @@ export function partyThresholds(characters) {
  * three to five moves nothing.
  *
  * An unrated creature is worth nothing but still counts toward the number of
- * foes, because it still takes a turn and still soaks an attack.
+ * foes, because it still takes a turn and still soaks an attack. That cuts both
+ * ways: the missing worth understates the total, and the multiplier its count
+ * raises applies to the rated foes' sum, which can overstate it.
  * @param {Creature[]} creatures the hostile creatures in the fight
  * @param {number} partySize how many characters face them
  * @returns {number}
@@ -116,17 +121,23 @@ export function adjustedXP(creatures, partySize) {
  * thresholds, and the band it lands in. The comparison takes a threshold as
  * met, so a total exactly on the medium threshold is medium.
  *
+ * A dead character is no part of the party here. It buys no budget and it does
+ * not count toward the party size, because the budget belongs to the characters
+ * who fight. A dying character still counts, because a fight can bring one
+ * back. `party` reports how many characters counted.
+ *
  * `unrated` counts the hostile creatures with no challenge rating. Each is
  * worth no experience points, so the rating understates the fight by however
  * many there are, and a caller that shows the band says so.
  * @param {Character[]} characters the party
  * @param {Creature[]} creatures every creature in the fight, of any disposition
- * @returns {{ label: string, adjustedXP: number, thresholds: number[], hostiles: number, unrated: number }}
+ * @returns {{ label: string, adjustedXP: number, thresholds: number[], hostiles: number, unrated: number, party: number }}
  */
 export function rateEncounter(characters, creatures) {
   const hostiles = creatures.filter((c) => c.disposition === 'hostile');
-  const thresholds = partyThresholds(characters);
-  const total = adjustedXP(hostiles, characters.length);
+  const living = characters.filter((character) => !isDead(character));
+  const thresholds = partyThresholds(living);
+  const total = adjustedXP(hostiles, living.length);
   // The band is the highest threshold the total reaches. Below the easy
   // threshold, and for a party with no thresholds at all, it is trivial.
   let band = 0;
@@ -139,6 +150,7 @@ export function rateEncounter(characters, creatures) {
     thresholds,
     hostiles: hostiles.length,
     unrated: hostiles.filter((c) => c.cr === undefined).length,
+    party: living.length,
   };
 }
 
@@ -146,15 +158,16 @@ export function rateEncounter(characters, creatures) {
  * The hint as one line, for example
  * "Medium: 500 XP against party 150/300/450/800", where the four numbers are
  * the easy, medium, hard, and deadly thresholds. A fight with no hostile
- * creature gives an empty string, because there is nothing to rate. An unrated
- * foe is named, so a GM knows the number is short.
+ * creature gives an empty string, because there is nothing to rate. So does a
+ * party with no living character, because there is no budget to rate against.
+ * An unrated foe is named, so a GM knows the number is short.
  * @param {Character[]} characters
  * @param {Creature[]} creatures
  * @returns {string}
  */
 export function difficultyLine(characters, creatures) {
   const rating = rateEncounter(characters, creatures);
-  if (rating.hostiles === 0) return '';
+  if (rating.hostiles === 0 || rating.party === 0) return '';
   const [easy, medium, hard, deadly] = rating.thresholds;
   const budget = `party ${easy}/${medium}/${hard}/${deadly}`;
   const short =

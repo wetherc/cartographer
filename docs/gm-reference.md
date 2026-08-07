@@ -221,13 +221,16 @@ party's tile, for example "Hard: 1200 XP against party 300/600/900/1600". The
 first number is what the hostile creatures are worth together, counting a crowd
 for more than the sum of its parts and adjusting for a party smaller than three
 or larger than five. The four numbers after it are the party's easy, medium,
-hard, and deadly budgets, summed over the levels of the characters. The band
-names the highest budget the fight reaches.
+hard, and deadly budgets, summed over the levels of the living characters. A
+dead character buys no budget and does not count toward the party size. The
+band names the highest budget the fight reaches. The line hides when no living
+character remains, because there is no budget to rate against.
 
 The line is a hint. It blocks nothing, and it awards no experience points. A foe
 with no challenge rating is worth nothing in this sum, so the line says how many
-such foes it counted and the real fight is harder than the number. Players never
-see the line.
+such foes it counted. The real fight is then harder than the total, though the
+crowd multiplier such foes raise can also push the rated foes' worth the other
+way. Players never see the line.
 
 ### Encounter fields
 

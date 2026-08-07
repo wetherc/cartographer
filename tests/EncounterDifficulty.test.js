@@ -70,9 +70,10 @@ test('the count multiplier follows the rules at each rung', () => {
 
 test('a small party steps the multiplier up and a large one steps it down', () => {
   assert.equal(adjustedXP(crowd(1, 1), 2), 300, 'a pair of heroes faces one foe at 1.5 times');
-  assert.equal(adjustedXP(crowd(1, 1), 6), 200, 'a party of six cannot step below the first rung');
+  assert.equal(adjustedXP(crowd(1, 1), 6), 100, 'a party of six halves a lone foe');
   assert.equal(adjustedXP(crowd(3, 1), 6), 900, 'six heroes drop three foes to 1.5 times');
-  assert.equal(adjustedXP(crowd(15, 1), 2), 12000, 'the top rung has nothing above it');
+  assert.equal(adjustedXP(crowd(15, 1), 2), 15000, 'a pair against fifteen foes counts five times');
+  assert.equal(adjustedXP(crowd(15, 1), 6), 9000, 'six heroes drop the horde to three times');
 });
 
 test('an unrated foe adds no XP but still counts toward the multiplier', () => {
@@ -123,6 +124,21 @@ test('a party of nobody rates a fight as trivial rather than dividing by zero', 
   const rating = rateEncounter([], crowd(3, 5));
   assert.equal(rating.label, 'Trivial', 'no thresholds means no band to reach');
   assert.equal(rating.adjustedXP, 10800, 'the foes are still worth what they are worth');
+  assert.equal(rating.party, 0);
+  assert.equal(difficultyLine([], crowd(3, 5)), '', 'no living character means no budget line');
+});
+
+test('a dead character buys no budget and does not count toward the party size', () => {
+  const dead = { ...hero('d', 3), deathSaves: { failures: 3, successes: 0, stable: false } };
+  const dying = { ...hero('e', 3), deathSaves: { failures: 1, successes: 0, stable: false } };
+  const rating = rateEncounter([hero('a', 3), hero('b', 3), dead], crowd(1, 1));
+  assert.deepEqual(rating.thresholds, [150, 300, 450, 800], 'two living rows, not three');
+  assert.equal(rating.party, 2);
+  assert.equal(rating.adjustedXP, 300, 'two living heroes step a lone foe up to 1.5 times');
+  assert.equal(difficultyLine([dead], crowd(1, 1)), '', 'a wholly dead party rates nothing');
+  const withDying = rateEncounter([hero('a', 3), hero('b', 3), dying], crowd(1, 1));
+  assert.equal(withDying.party, 3, 'a dying character still counts');
+  assert.equal(withDying.adjustedXP, 200);
 });
 
 test('the line names the band, the total, and the four thresholds', () => {
