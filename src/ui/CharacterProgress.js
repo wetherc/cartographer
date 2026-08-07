@@ -18,10 +18,19 @@ import {
   undoLastChoice,
   withExpertise,
   withProficiencies,
+  applyFeatureGrant,
+  undoFeatureGrant,
 } from '../entities/Progression.js';
+import {
+  featureKey,
+  getFeatureChoices,
+  pendingFeatureGrants,
+  buildFeatureStamp,
+} from '../entities/FeatureGrants.js';
 import { getHitDicePools, hitDieOfPool, spendHitDie } from '../entities/HitDice.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
-import { availableFeats, abilityPool, choicePool, buildStamp } from '../entities/FeatChoices.js';
+import { availableFeats, buildStamp } from '../entities/FeatChoices.js';
+import { gatherEffectPicks } from './EffectPicks.js';
 import { activeFeats } from '../library/Library.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
 import { splitList } from '../util/text.js';
@@ -32,11 +41,12 @@ import { splitList } from '../util/text.js';
  * This is the progression section of the character sheet. It shows the
  * class list, the pending-level assignment flow (a multiclass character's
  * XP levels wait here until spent), pending ability-score improvements
- * (apply an increase, take a feat, undo the last choice), the GM's expertise
- * grant, the unlocked class features, and the hit-dice pools with their
- * short-rest spend. All rule logic lives in the entity modules LevelAssign,
- * LevelUp, HitDice, and Proficiencies. This file is DOM wiring over them,
- * verified visually.
+ * (apply an increase, take a feat, undo the last choice), pending class
+ * feature grants with their prompted picks, the GM's expertise grant, the
+ * unlocked class features, and the hit-dice pools with their short-rest
+ * spend. All rule logic lives in the entity modules LevelAssign, LevelUp,
+ * FeatureGrants, HitDice, and Proficiencies. This file is DOM wiring over
+ * them, verified visually.
  */
 
 /**
@@ -72,6 +82,42 @@ async function pickMulticlassSkill(character, classId) {
   const picked = values ? splitList(values.skills).slice(0, choice.choose) : [];
   if (picked.length === 0) return character;
   return withProficiencies(character, { ...p, skills: [...p.skills, ...picked] });
+}
+
+/**
+ * Prompt for a pending feature grant's picks and apply the grant. A cancel
+ * in any dialog returns the character unchanged, so the grant stays
+ * pending and the sheet's pending row offers it again.
+ * @param {Character} character
+ * @param {import('../entities/FeatureGrants.js').PendingFeature} grant
+ * @returns {Promise<Character>}
+ */
+async function claimFeatureGrant(character, grant) {
+  const title = `${grant.name} (${className(grant.classId)} ${grant.classLevel})`;
+  const picks = await gatherEffectPicks(title, grant.effects, character);
+  if (!picks) return character;
+  return applyFeatureGrant(character, buildFeatureStamp(grant, picks));
+}
+
+/**
+ * The picks a claimed feature grant recorded, as one display line. Only
+ * what the grant actually added shows, so a pick the character already
+ * had from the GM or a feat does not repeat here.
+ * @param {import('../types/entities.js').FeatureChoice | undefined} choice
+ * @returns {string}
+ */
+function grantPicksText(choice) {
+  if (!choice?.granted) return '';
+  const g = choice.granted;
+  const parts = [
+    ...(g.skills ?? []).map(skillName),
+    ...(g.saves ?? []),
+    ...(g.expertise ?? []).map(skillName),
+    ...(g.armor ?? []),
+    ...(g.tools ?? []),
+    ...(g.languages ?? []),
+  ];
+  return [...new Set(parts)].join(', ');
 }
 
 /**
@@ -144,6 +190,15 @@ export function buildProgressSection(getCharacter, opts) {
     if (next === from) return;
     if (isNew) next = await pickMulticlassSkill(next, values.class);
     const gained = featuresGained(next, from);
+    for (const feature of gained) {
+      if (!feature.effects) continue;
+      next = await claimFeatureGrant(next, {
+        classId: feature.classId,
+        classLevel: feature.level,
+        name: feature.name,
+        effects: feature.effects,
+      });
+    }
     const gainedText = gained.length > 0 ? ` New: ${gained.map((f) => f.name).join(', ')}.` : '';
     opts.notify(
       `${from.name} takes ${className(values.class)} ` +
@@ -194,117 +249,13 @@ export function buildProgressSection(getCharacter, opts) {
   }
 
   /**
-   * Gather the picks a catalog feat needs, dialog by dialog, and take it.
-   * A pick whose pool holds no more options than the count grants outright,
-   * with no dialog. The expertise prompt runs after the skill picks, because
-   * its options depend on them. A cancel anywhere abandons the take.
+   * Gather the picks a catalog feat needs through the shared pick engine,
+   * and take it. A cancel anywhere abandons the take.
    * @param {import('../types/feat.js').Feat} feat
    */
   async function takeCatalogFeat(feat) {
-    const taker = getCharacter();
-    const p = getProficiencies(taker);
-    /** @type {{ abilities: string[], skills: string[], saves: string[], expertise: string[] }} */
-    const picks = { abilities: [], skills: [], saves: [], expertise: [] };
-    /** @type {import('../types/modal.js').ModalField[]} */
-    const fields = [];
-    /** @type {((values: Record<string, string>) => void)[]} */
-    const readers = [];
-    /** @param {string} name @param {string} label @param {string[]} pool
-     * @param {number} choose @param {string[]} into
-     * @param {(id: string) => string} nameOf */
-    const addPick = (name, label, pool, choose, into, nameOf) => {
-      if (pool.length === 0) return;
-      if (pool.length <= choose) {
-        into.push(...pool);
-        return;
-      }
-      fields.push({
-        name,
-        label,
-        type: 'multiselect',
-        options: pool.map((id) => ({ value: id, label: nameOf(id) })),
-        max: choose,
-        value: '',
-      });
-      readers.push((values) => into.push(...splitList(values[name]).slice(0, choose)));
-    };
-
-    feat.effects.forEach((effect, i) => {
-      if (effect.kind === 'asi') {
-        const pool = abilityPool(taker, effect);
-        if (pool.length === 1) picks.abilities.push(pool[0]);
-        else if (pool.length > 1) {
-          fields.push({
-            name: `ability${i}`,
-            label: '+1 to',
-            type: 'select',
-            options: pool.map((key) => ({ value: key, label: key })),
-            value: pool[0],
-          });
-          readers.push((values) => picks.abilities.push(values[`ability${i}`]));
-        }
-        // Every allowed score at the cap: the point has nowhere to land, and
-        // the rest of the feat still applies.
-      } else if (effect.kind === 'proficiency') {
-        if (effect.skills) {
-          addPick(
-            `skills${i}`,
-            `Skills (choose ${effect.skills.choose})`,
-            choicePool(effect.skills, SKILL_IDS, p.skills),
-            effect.skills.choose,
-            picks.skills,
-            skillName,
-          );
-        }
-        if (effect.saves) {
-          addPick(
-            `saves${i}`,
-            `Saving throws (choose ${effect.saves.choose})`,
-            choicePool(effect.saves, ABILITY_SCORES, p.saves),
-            effect.saves.choose,
-            picks.saves,
-            (key) => key,
-          );
-        }
-      }
-    });
-
-    if (fields.length > 0) {
-      const values = await promptModal(feat.name, fields, { submitLabel: 'Choose' });
-      if (!values) return;
-      for (const read of readers) read(values);
-    }
-
-    // Expertise second: its pool is the proficient skills, including the ones
-    // just picked, minus what already has expertise.
-    for (const [i, effect] of feat.effects.entries()) {
-      if (effect.kind !== 'proficiency' || !effect.expertise) continue;
-      const held = [...p.skills, ...picks.skills];
-      const pool = choicePool(effect.expertise, SKILL_IDS, p.expertise).filter((id) =>
-        held.includes(id),
-      );
-      if (pool.length === 0) continue;
-      if (pool.length <= effect.expertise.choose) {
-        picks.expertise.push(...pool);
-        continue;
-      }
-      const values = await promptModal(
-        `${feat.name}: expertise`,
-        [
-          {
-            name: `expertise${i}`,
-            label: `Expertise (choose ${effect.expertise.choose})`,
-            type: 'multiselect',
-            options: pool.map((id) => ({ value: id, label: skillName(id) })),
-            max: effect.expertise.choose,
-            value: '',
-          },
-        ],
-        { submitLabel: 'Choose' },
-      );
-      if (!values) return;
-      picks.expertise.push(...splitList(values[`expertise${i}`]).slice(0, effect.expertise.choose));
-    }
+    const picks = await gatherEffectPicks(feat.name, feat.effects, getCharacter());
+    if (!picks) return;
 
     const from = getCharacter();
     // Two +1 effects can land on the same score, and a score one point under
@@ -377,6 +328,32 @@ export function buildProgressSection(getCharacter, opts) {
     }
   }
 
+  async function runFeatureGrants() {
+    let c = getCharacter();
+    for (const grant of pendingFeatureGrants(c)) {
+      c = await claimFeatureGrant(c, grant);
+    }
+    if (c !== getCharacter()) opts.onCommit(c);
+  }
+
+  const grants = pendingFeatureGrants(character);
+  if (grants.length > 0) {
+    const row = addRow();
+    const [first] = grants;
+    const where = `${first.name}, ${className(first.classId)} ${first.classLevel}`;
+    addText(
+      row,
+      `${grants.length} feature choice${grants.length === 1 ? '' : 's'} pending (${where})`,
+    );
+    if (opts.editBase) {
+      row.appendChild(
+        textButton('Choose', runFeatureGrants, {
+          ariaLabel: 'Choose the pending class feature grants',
+        }),
+      );
+    }
+  }
+
   const choices = listASIChoices(character);
   if (choices.length > 0) {
     const row = addRow();
@@ -401,9 +378,10 @@ export function buildProgressSection(getCharacter, opts) {
     }
   }
 
-  // Expertise doubles a skill proficiency. No class feature grants it yet, so
-  // it is a GM grant with no maximum. Only proficient skills are offered,
-  // which is the one rule the normalizer enforces anyway.
+  // Expertise doubles a skill proficiency. The Bard and Rogue features grant
+  // it through the pending-grant flow above. This row is the GM's hand grant
+  // for subclasses and homebrew, with no maximum. Only proficient skills are
+  // offered, which is the one rule the normalizer enforces anyway.
   async function runExpertise() {
     const p = getProficiencies(getCharacter());
     const values = await promptModal(
@@ -439,8 +417,18 @@ export function buildProgressSection(getCharacter, opts) {
     );
   }
 
+  async function rechooseFeature(/** @type {string} */ key) {
+    const from = getCharacter();
+    const undone = undoFeatureGrant(from, key);
+    if (undone === from) return;
+    const grant = pendingFeatureGrants(undone).find((g) => featureKey(g) === key);
+    const next = grant ? await claimFeatureGrant(undone, grant) : undone;
+    opts.onCommit(next);
+  }
+
   const features = unlockedFeatures(character);
   if (features.length > 0) {
+    const claimed = getFeatureChoices(character);
     section.appendChild(
       el(
         'details',
@@ -449,9 +437,30 @@ export function buildProgressSection(getCharacter, opts) {
         el(
           'ul',
           'u-col u-g1',
-          ...features.map((feature) =>
-            el('li', '', `${feature.name} — ${className(feature.classId)} ${feature.level}`),
-          ),
+          ...features.map((feature) => {
+            const li = el(
+              'li',
+              '',
+              `${feature.name} — ${className(feature.classId)} ${feature.level}`,
+            );
+            const key = featureKey({
+              classId: feature.classId,
+              classLevel: feature.level,
+              name: feature.name,
+            });
+            const choice = claimed[key];
+            const picked = grantPicksText(choice);
+            if (picked) li.append(`: ${picked}`);
+            if (choice && opts.editBase) {
+              li.append(' ');
+              li.appendChild(
+                textButton('Change', () => rechooseFeature(key), {
+                  ariaLabel: `Choose the ${feature.name} grants again`,
+                }),
+              );
+            }
+            return li;
+          }),
         ),
       ),
     );
