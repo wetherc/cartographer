@@ -405,7 +405,7 @@ cannot diff against a save that another tab replaced.
 
 ## The custom library's own store
 
-The GM's custom library (equipment, creature, and spell overrides)
+The GM's custom library (equipment, creature, spell, and feat overrides)
 persists separately in `storage/LibraryStore.js`, under its own localStorage
 key (`campaign-builder:library`). As a result, New, Import, and Load example
 never touch it.

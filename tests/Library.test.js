@@ -25,8 +25,12 @@ import {
   activeSpellEntries,
   activeSpellIndex,
   resolveSpellIds,
+  activeFeats,
+  activeFeatEntries,
+  activeFeatByName,
 } from '../src/library/Library.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
+import { DEFAULT_FEATS } from '../src/data/feats.js';
 import { crXP } from '../src/data/challenge.js';
 import { normalizeCreatureProficiencies } from '../src/entities/Proficiencies.js';
 import { getClass, spellSaveDC } from '../src/entities/Classes.js';
@@ -454,6 +458,7 @@ test('normalizeLibrary keeps explicit null gear and resolves absent gear by leve
 
 test('the active registry merges customs into every getter', () => {
   setActiveLibrary({
+    ...emptyLibrary(),
     equipment: [
       // Overrides the built-in weapon of the same name...
       {
@@ -873,7 +878,12 @@ test('with no customizations the active getters return the pure defaults', () =>
 });
 
 test('the built-in catalogs are frozen, so a consumer cannot edit shared data', () => {
-  for (const catalog of [defaultEquipmentTemplates(), DEFAULT_CREATURES, DEFAULT_SPELLS]) {
+  for (const catalog of [
+    defaultEquipmentTemplates(),
+    DEFAULT_CREATURES,
+    DEFAULT_SPELLS,
+    DEFAULT_FEATS,
+  ]) {
     assert.ok(Object.isFrozen(catalog), 'the list itself');
     assert.ok(Object.isFrozen(catalog[0]), 'and its entries');
   }
@@ -1005,4 +1015,91 @@ test('normalizeLibrary drops a summon stamp from a creature template', () => {
   });
   // The stamp belongs to one spawned creature. A blueprint has no cast behind it.
   assert.equal(/** @type {any} */ (lib.creatures[0]).summonedBy, undefined);
+});
+
+test('normalizeLibrary repairs feat effects one by one and keeps the feat', () => {
+  const lib = normalizeLibrary({
+    feats: [
+      {
+        name: '  Homebrew  ',
+        prerequisite: ' Strength 13 ',
+        repeatable: 1,
+        effects: [
+          { kind: 'asi', abilities: ['STR', 'STR', 'nope', 7] },
+          { kind: 'asi', abilities: 'garbage' },
+          { kind: 'proficiency', skills: { choose: 99 }, armor: ['heavy', 'pauldron'] },
+          { kind: 'proficiency', skills: ['stealth', 'stealth', 'flying'] },
+          { kind: 'proficiency', saves: { choose: 0 }, tools: [3, '  '] },
+          { kind: 'rider', rider: { rolls: ['attack'], flat: 2 } },
+          { kind: 'rider', rider: { rolls: [] } },
+          { kind: 'mystery' },
+          'nope',
+        ],
+      },
+      { name: 'Plain' },
+      { effects: [] },
+    ],
+  });
+  assert.equal(lib.feats.length, 2, 'a nameless entry drops');
+  const feat = lib.feats[0];
+  assert.equal(feat.id, 'homebrew');
+  assert.equal(feat.name, 'Homebrew');
+  assert.equal(feat.prerequisite, 'Strength 13');
+  assert.equal(feat.repeatable, true);
+  assert.deepEqual(feat.effects, [
+    { kind: 'asi', abilities: ['STR'] },
+    { kind: 'asi', abilities: [] },
+    { kind: 'proficiency', skills: { choose: 18, from: [] }, armor: ['heavy'] },
+    { kind: 'proficiency', skills: { choose: 1, from: ['stealth'] } },
+    { kind: 'rider', rider: { rolls: ['attack'], flat: 2 } },
+  ]);
+  const plain = lib.feats[1];
+  assert.equal(plain.description, '');
+  assert.equal('prerequisite' in plain, false);
+  assert.equal('repeatable' in plain, false);
+  assert.deepEqual(plain.effects, []);
+});
+
+test('normalizeLibrary dedupes feats by name and keeps a supplied id', () => {
+  const lib = normalizeLibrary({
+    feats: [
+      { name: 'Edge', id: 'kept-id' },
+      { name: ' EDGE ', description: 'last wins' },
+    ],
+  });
+  assert.equal(lib.feats.length, 1);
+  assert.equal(lib.feats[0].description, 'last wins');
+  assert.equal(lib.feats[0].id, 'edge', 'the surviving entry slugs its own id');
+});
+
+test('every built-in feat effect survives its own normalizer unchanged', () => {
+  const lib = normalizeLibrary({ feats: DEFAULT_FEATS });
+  assert.deepEqual(lib.feats, DEFAULT_FEATS);
+});
+
+test('the feat registry merges customs and memoizes until the library changes', () => {
+  try {
+    setActiveLibrary(emptyLibrary());
+    assert.equal(activeFeats().length, DEFAULT_FEATS.length);
+    assert.equal(activeFeatEntries(), activeFeatEntries(), 'the merge runs once');
+    const before = activeFeats();
+    setActiveLibrary({
+      ...emptyLibrary(),
+      feats: [
+        { id: 'skilled', name: 'Skilled', description: 'override', effects: [] },
+        { id: 'iron-will', name: 'Iron Will', description: '', effects: [] },
+      ],
+    });
+    assert.notEqual(activeFeats(), before, 'a new library drops the cache');
+    const skilled = activeFeatEntries().find((e) => e.entry.name === 'Skilled');
+    assert.equal(skilled?.source, 'override');
+    assert.equal(skilled?.entry.description, 'override');
+    const added = activeFeatEntries().find((e) => e.entry.name === 'Iron Will');
+    assert.equal(added?.source, 'custom');
+    assert.equal(activeFeatEntries().length, DEFAULT_FEATS.length + 1);
+    assert.equal(activeFeatByName(' skilled ')?.description, 'override');
+    assert.equal(activeFeatByName('Nonesuch'), null);
+  } finally {
+    setActiveLibrary(emptyLibrary());
+  }
 });

@@ -69,6 +69,7 @@ test('fetchLibraryFile returns the normalized library on a good response', async
     equipment: [{ name: 'Rope', type: 'gear' }],
     creatures: [],
     spells: [],
+    feats: [],
   });
 });
 

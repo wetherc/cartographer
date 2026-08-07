@@ -28,7 +28,9 @@ import {
   coerceWeapon,
 } from '../entities/EquipmentPresets.js';
 import { coerceCR } from '../data/challenge.js';
-import { normalizeStatBlock } from '../entities/Modifiers.js';
+import { ABILITY_SCORES, normalizeStatBlock } from '../entities/Modifiers.js';
+import { SKILL_IDS } from '../data/skills.js';
+import { DEFAULT_FEATS, FEAT_EFFECT_KINDS } from '../data/feats.js';
 import { DEFAULT_CREATURE_HP, DISPOSITIONS, defaultEnemyGear } from '../entities/Creature.js';
 import { isCasterClass } from '../entities/Classes.js';
 import { creatureProficiencyFields } from '../entities/Proficiencies.js';
@@ -42,6 +44,7 @@ import { DEFAULT_CREATURES } from '../data/creatures.js';
 /** @typedef {import('../types/library.js').LibrarySource} LibrarySource */
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
 /** @typedef {import('../types/spell.js').Spell} Spell */
+/** @typedef {import('../types/feat.js').Feat} Feat */
 /** @typedef {import('../types/entities.js').DamagePart} DamagePart */
 
 /** @type {EquipmentTemplate[] | null} */
@@ -94,14 +97,14 @@ export function defaultEquipmentTemplates() {
   ]));
 }
 
-// The built-in creature templates live with the other authored corpora in
-// src/data/. The re-export keeps this module the one import site for the
-// built-in defaults of every library kind.
-export { DEFAULT_CREATURES };
+// The built-in creature and feat templates live with the other authored
+// corpora in src/data/. The re-exports keep this module the one import site
+// for the built-in defaults of every library kind.
+export { DEFAULT_CREATURES, DEFAULT_FEATS };
 
 /** @returns {CustomLibrary} A library with no customizations. */
 export function emptyLibrary() {
-  return { equipment: [], creatures: [], spells: [] };
+  return { equipment: [], creatures: [], spells: [], feats: [] };
 }
 
 /** True when a custom library has no entries in any list.
@@ -109,7 +112,10 @@ export function emptyLibrary() {
  * @returns {boolean} */
 export function isLibraryEmpty(library) {
   return (
-    library.equipment.length === 0 && library.creatures.length === 0 && library.spells.length === 0
+    library.equipment.length === 0 &&
+    library.creatures.length === 0 &&
+    library.spells.length === 0 &&
+    library.feats.length === 0
   );
 }
 
@@ -373,6 +379,117 @@ function normalizeSpell(raw, id) {
 }
 
 /**
+ * Coerce a written pick-n choice into a clean one, or return null when the
+ * value grants nothing. The value is either a `{ choose, from }` object or a
+ * plain list, which reads as a fixed grant of everything it names. Options
+ * outside the field's vocabulary drop, and an empty `from` on the object
+ * shape means the whole vocabulary. This function is pure.
+ * @param {unknown} value
+ * @param {string[]} vocabulary Every option the field can grant.
+ * @returns {import('../types/feat.js').ProficiencyChoice | null}
+ */
+function normalizeChoice(value, vocabulary) {
+  const keep = (/** @type {unknown[]} */ list) =>
+    /** @type {string[]} */ ([
+      ...new Set(list.filter((v) => typeof v === 'string' && vocabulary.includes(v))),
+    ]);
+  if (Array.isArray(value)) {
+    const from = keep(value);
+    return from.length > 0 ? { choose: from.length, from } : null;
+  }
+  if (!value || typeof value !== 'object') return null;
+  const raw = /** @type {Record<string, unknown>} */ (value);
+  const from = keep(Array.isArray(raw.from) ? raw.from : []);
+  const cap = from.length > 0 ? from.length : vocabulary.length;
+  const choose = clampInt(raw.choose, 0, cap, 0);
+  return choose > 0 ? { choose, from } : null;
+}
+
+/** A trimmed, deduplicated string list, for the free-text proficiency grants.
+ * @param {unknown} value
+ * @returns {string[]} */
+function stringList(value) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((v) => typeof v === 'string' && v.trim()).map((v) => v.trim()))];
+}
+
+/** The armor proficiency vocabulary: the three weight classes plus the
+ * shield, which is its own entry in the armor list.
+ * @type {import('../types/class.js').ArmorProficiency[]} */
+const ARMOR_PROFICIENCIES = ['light', 'medium', 'heavy', 'shield'];
+
+/**
+ * Normalize one parsed feat into a valid Feat. Descriptive fields default,
+ * and each effect repairs into one of the discriminated shapes. An effect of
+ * an unknown kind, or one that grants nothing after repair, drops from the
+ * list rather than dropping the feat: a feat with no effects is still valid,
+ * because its description carries the parts the engine cannot model. This
+ * function is pure.
+ * @param {Record<string, any>} raw
+ * @param {string} id
+ * @returns {Feat}
+ */
+function normalizeFeat(raw, id) {
+  /** @type {import('../types/feat.js').FeatEffect[]} */
+  const effects = (Array.isArray(raw.effects) ? raw.effects : [])
+    .filter((e) => e && typeof e === 'object' && FEAT_EFFECT_KINDS.includes(e.kind))
+    .flatMap(
+      /** @returns {import('../types/feat.js').FeatEffect[]} */
+      (/** @type {Record<string, any>} */ e) => {
+        if (e.kind === 'asi') {
+          // An empty list means any of the six abilities, so a garbled list
+          // repairs to the widest choice instead of dropping the increase.
+          const written = Array.isArray(e.abilities) ? e.abilities : [];
+          const abilities = /** @type {import('../types/spell.js').Ability[]} */ (
+            ABILITY_SCORES.filter((a) => written.includes(a))
+          );
+          return [{ kind: /** @type {'asi'} */ ('asi'), abilities }];
+        }
+        if (e.kind === 'rider') {
+          const rider = normalizeRider(e.rider);
+          return rider ? [{ kind: /** @type {'rider'} */ ('rider'), rider }] : [];
+        }
+        const skills = normalizeChoice(e.skills, SKILL_IDS);
+        const saves = normalizeChoice(e.saves, ABILITY_SCORES);
+        const expertise = normalizeChoice(e.expertise, SKILL_IDS);
+        const armor = /** @type {import('../types/class.js').ArmorProficiency[]} */ (
+          stringList(e.armor).filter((a) => ARMOR_PROFICIENCIES.includes(/** @type {never} */ (a)))
+        );
+        const tools = stringList(e.tools);
+        const languages = stringList(e.languages);
+        if (
+          !skills &&
+          !saves &&
+          !expertise &&
+          armor.length + tools.length + languages.length === 0
+        ) {
+          return [];
+        }
+        return [
+          {
+            kind: /** @type {'proficiency'} */ ('proficiency'),
+            ...(skills ? { skills } : {}),
+            ...(saves ? { saves } : {}),
+            ...(expertise ? { expertise } : {}),
+            ...(armor.length > 0 ? { armor } : {}),
+            ...(tools.length > 0 ? { tools } : {}),
+            ...(languages.length > 0 ? { languages } : {}),
+          },
+        ];
+      },
+    );
+  const prerequisite = typeof raw.prerequisite === 'string' ? raw.prerequisite.trim() : '';
+  return {
+    id,
+    name: raw.name.trim(),
+    description: typeof raw.description === 'string' ? raw.description : '',
+    ...(prerequisite ? { prerequisite } : {}),
+    ...(raw.repeatable ? { repeatable: true } : {}),
+    effects,
+  };
+}
+
+/**
  * Repair a parsed spellbook into `{ cantrips, known, prepared }` of string
  * ids. This function drops anything that is not a string. A missing or
  * invalid spellbook reads as empty.
@@ -436,7 +553,8 @@ function dedupeByKey(entries, keyOf) {
  * carries `bestiary` and `npcs` lists instead. Those entries read into the
  * same pool: a bestiary entry defaults to hostile, and a `statBlock` field
  * reads as `stats`. Spells get an id, defaulted descriptive fields, and a
- * repaired effect (see normalizeSpell).
+ * repaired effect (see normalizeSpell). Feats get the same treatment through
+ * normalizeFeat, with effects the parser cannot repair dropped one by one.
  * Each list is also deduped by its merge key, so no reader downstream sees
  * two entries competing for one key.
  * @param {unknown} parsed
@@ -542,7 +660,18 @@ export function normalizeLibrary(parsed) {
     return normalizeSpell(e, id);
   });
 
-  return { equipment, creatures, spells };
+  /** @type {string[]} */
+  const featIds = [];
+  const feats = dedupeByKey(
+    arrayOf(source.feats).filter((e) => typeof e.name === 'string' && e.name.trim()),
+    rawNameKey,
+  ).map((e) => {
+    const id = typeof e.id === 'string' && e.id ? e.id : slugId(e.name.trim(), featIds);
+    featIds.push(id);
+    return normalizeFeat(e, id);
+  });
+
+  return { equipment, creatures, spells, feats };
 }
 
 /* --------------------------------------------------------------------------
@@ -575,6 +704,8 @@ let active = emptyLibrary();
  *   spells?: { entry: Spell, source: LibrarySource }[],
  *   spellList?: Spell[],
  *   spellIndex?: Map<string, Spell>,
+ *   feats?: { entry: Feat, source: LibrarySource }[],
+ *   featList?: Feat[],
  * }}
  */
 let cache = {};
@@ -693,6 +824,30 @@ export function activeSpells() {
  * @returns {Map<string, Spell>} */
 export function activeSpellIndex() {
   return (cache.spellIndex ??= indexById(activeSpells()));
+}
+
+/** The merged feat list: the built-in catalog plus the active
+ * customizations, tagged by source.
+ * @returns {{ entry: Feat, source: LibrarySource }[]} */
+export function activeFeatEntries() {
+  return (cache.feats ??= mergedEntries(DEFAULT_FEATS, active.feats, nameKey));
+}
+
+/** The merged feats, for the take-feat picker.
+ * @returns {Feat[]} */
+export function activeFeats() {
+  return (cache.featList ??= activeFeatEntries().map((e) => e.entry));
+}
+
+/** A merged feat by name, or null for a name no entry carries. The name is
+ * the merge key, so a character's stamped feat name still finds its entry
+ * after a GM customizes it. The comparison ignores case and surrounding
+ * spaces, the same way the merge does.
+ * @param {string} name
+ * @returns {Feat | null} */
+export function activeFeatByName(name) {
+  const key = nameKey({ name });
+  return activeFeats().find((f) => nameKey(f) === key) ?? null;
 }
 
 /**
