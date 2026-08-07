@@ -63,15 +63,25 @@
    NPCs
    ========================================================================== */
 
+/* The row stacks: the head first, then the condition chips and the exhaustion
+   pips that the GM view adds below it. Each bar gets the full width of the
+   rail, so the pips stay on screen and the notes keep their column. */
 .npc-panel__row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-1) 0;
+}
+
+.npc-panel__head {
   display: flex;
   align-items: flex-start;
   gap: var(--space-2);
-  padding: var(--space-1) 0;
 }
 
 .npc-panel__body {
   flex: 1;
+  min-width: 0;
   gap: 0.1rem;
 }
 

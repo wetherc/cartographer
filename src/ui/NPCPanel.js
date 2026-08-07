@@ -56,6 +56,10 @@ export function mountNPCPanel(container, callbacks) {
     classes: {
       body: 'npc-panel__body u-col',
       actions: 'npc-panel__controls',
+      // The head holds the text and the row buttons side by side. The
+      // condition chips and the exhaustion pips go below it, at full width,
+      // instead of competing with the text for the same line.
+      head: 'npc-panel__head',
       add: 'npc-panel__add',
     },
     buildBody: (npc) => {
