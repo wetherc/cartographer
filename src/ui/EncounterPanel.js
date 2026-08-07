@@ -84,6 +84,10 @@ export function mountEncounterPanel(container, callbacks) {
   /** @param {Encounter} encounter @param {(encounter: Encounter) => Encounter} fn */
   function updateOne(encounter, fn) {
     callbacks.onUpdate(fn(encounter));
+    // A row write can defeat or revive a foe, which moves the rating. The
+    // list panel repaints only its own rows after an action, so the
+    // difficulty line re-derives here.
+    renderDifficulty();
   }
 
   /**
@@ -166,6 +170,7 @@ export function mountEncounterPanel(container, callbacks) {
           const ok = callbacks.confirmDelete ? await callbacks.confirmDelete(encounter) : true;
           if (!ok) return false;
           callbacks.onDelete(encounter.id);
+          renderDifficulty();
         },
       },
     ];
@@ -216,7 +221,11 @@ export function mountEncounterPanel(container, callbacks) {
     if (onSetExhaustion) {
       mountExhaustionBar(row, {
         getEntity: () => encounter,
-        onSet: (level) => onSetExhaustion(encounter, level),
+        onSet: (level) => {
+          onSetExhaustion(encounter, level);
+          // The sixth level defeats the creature, which moves the rating.
+          renderDifficulty();
+        },
       });
     }
   }
