@@ -311,9 +311,21 @@ Each call has a control that carries it into the rolls.
    restore it.
 3. To heal on a short rest, spend a hit die from the Progression block.
 
+### Change a character's maximum HP, bonus HP, or base AC
+
+1. Click the pencil button on the character's row in the **Party** roster.
+2. Set the maximum HP. Current HP comes down with it if the new maximum is
+   lower.
+3. Set the bonus HP. These are temporary points on top of the pool, and
+   damage takes them first.
+4. Set the unarmored base AC. It applies only while the character wears no
+   body armor.
+
 ### Level a character
 
 1. Click **Award XP** in the Party roster to grant XP to everyone at once.
+   To reward one character alone, click the sparkle button on their roster
+   row.
 2. Open the Progression block. Each earned level waits as a pending level.
 3. Assign the level to the current class, or to a new class to multiclass.
 4. If the level is an ASI level, apply +2 across one or two abilities, or

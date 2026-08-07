@@ -1,9 +1,5 @@
 import {
-  addXP,
   getHP,
-  setMaxHP,
-  setBonusHP,
-  setBaseAC,
   damageCharacter,
   spendResource,
   restoreResource,
@@ -27,7 +23,6 @@ import { buildStatBar, buildSlotLine } from './CharacterBars.js';
 import { statBadge } from './CharacterStatBadge.js';
 import { iconButton, sectionLabel, textButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
-import { numberField } from './formFields.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -49,21 +44,25 @@ function customPools(character) {
 
 /**
  * Mount a character card. A glanceable head, with name, race, HP
- * healthbar, and spell slots, sits over the full sheet, which shows XP
- * control, ability scores, and resource pools, HP included, with spend and
+ * healthbar, and spell slots, sits over the full sheet, which shows the
+ * ability scores and the resource pools, HP included, with spend and
  * restore steppers. The card does not collapse. The head and body always
  * read top to bottom. The sections of the body sit in two columns, side by
  * side on a card wide enough for both, and stack in source order on a
  * narrow one. The castable-spells section spans the full width beneath them.
  *
+ * The numbers a GM sets rather than a character earns are not here. Maximum
+ * HP, bonus HP, unarmored base AC, and an XP grant belong to the party
+ * roster's per-character controls, so the sheet reports them and the roster
+ * writes them.
+ *
  * The sheet shows an empty state when no character is selected (`null`).
- * `getPermissions` scopes what the viewer can touch. Without `editBase`,
- * the stats and XP render read-only, and the bonus-HP and base-AC fields
- * do not show. Without `play`, the pool steppers and condition controls
- * also disappear, for a spectator's view of the sheet. The HP damage and
- * heal steppers also require `hp`. Putting a spent spell slot or pool
- * point back requires `restore`. All three are GM-only, since damage,
- * healing, and recovery are adjudicated, not self-served.
+ * `getPermissions` scopes what the viewer can touch. Without `play`, the
+ * pool steppers and condition controls disappear, for a spectator's view of
+ * the sheet. The HP damage and heal steppers also require `hp`. Putting a
+ * spent spell slot or pool point back requires `restore`. All three are
+ * GM-only, since damage, healing, and recovery are adjudicated, not
+ * self-served. `editBase` still reaches the progression section.
  *
  * The sheet builds once and then re-points. A change that leaves its shape
  * unchanged, for example any pool level, bonus HP, base AC, the name, or
@@ -335,105 +334,6 @@ export function mountCharacterSheet(
       tiredBadge.title = tired.note;
       tiredBadge.classList.toggle('character-sheet__exhaustion--fatal', tired.fatal);
     });
-
-    /**
-     * A labeled numeric row sharing the stat rows' key/input geometry.
-     * @param {string} key
-     * @param {number} value
-     * @param {string} ariaLabel
-     * @param {(value: number) => void} onCommit fires on change with the parsed value
-     * @returns {{ row: HTMLElement, input: HTMLInputElement }}
-     */
-    function buildFieldRow(key, value, ariaLabel, onCommit) {
-      const input = numberField(value, {
-        min: 0,
-        className: 'character-sheet__stat-input',
-        ariaLabel,
-      });
-      input.addEventListener('change', () => onCommit(Number(input.value)));
-      const row = el(
-        'div',
-        'character-sheet__field-row u-row u-g1 u-muted',
-        el('span', 'character-sheet__stat-key', key),
-        input,
-      );
-      return { row, input };
-    }
-
-    /**
-     * Follow a field's value when it changes elsewhere. Do not overwrite a
-     * number the viewer is part-way through typing.
-     * @param {HTMLInputElement} input
-     * @param {() => number} read
-     */
-    function followField(input, read) {
-      writers.push(() => {
-        if (document.activeElement === input) return;
-        input.value = String(read());
-      });
-    }
-
-    // The XP award is an action, an input plus a button. It stays on its
-    // own full-width row above the aligned field grid.
-    if (perms.editBase) {
-      const { row: xpRow, input: xpInput } = buildFieldRow('XP', 0, 'XP to add', () => {});
-      xpRow.classList.add('character-sheet__xp-row');
-      const xpButton = textButton(
-        'XP',
-        () => {
-          const amount = Number(xpInput.value);
-          if (amount > 0) commit(addXP(live(), amount));
-        },
-        { icon: 'add' },
-      );
-      xpRow.appendChild(xpButton);
-      main.appendChild(xpRow);
-    }
-
-    // The editable HP and AC fields sit in a grid that mirrors the
-    // ability-score grid below. Their keys and inputs line up in the same columns.
-    const fields = el('div', 'character-sheet__fields');
-
-    // This is the GM's per-character override for max HP. Current HP
-    // clamps down if the new maximum is below it.
-    if (perms.editBase && hp) {
-      const { row } = buildFieldRow('MAX HP', hp.max, `Maximum HP for ${character.name}`, (value) =>
-        commit(setMaxHP(live(), value)),
-      );
-      fields.appendChild(row);
-    }
-
-    // Bonus HP from items or boons is tracked on top of the intrinsic
-    // pool, and damage drains it first. Awarding bonus HP is a GM ruling
-    // like any other healing, so the field does not show on a player's sheet.
-    if (perms.editBase && hp) {
-      const { row, input } = buildFieldRow(
-        'BONUS HP',
-        character.bonusHP ?? 0,
-        `Bonus HP for ${character.name}`,
-        (value) => commit(setBonusHP(live(), value)),
-      );
-      fields.appendChild(row);
-      // Damage drains bonus HP, so this field can change without being edited.
-      followField(input, () => live().bonusHP ?? 0);
-    }
-
-    // Unarmored base AC is normally 10. Effects such as Mage Armor raise
-    // it. It applies only in play while no body armor is equipped. The GM
-    // sets it, since a player cannot raise their own defense. The derived
-    // AC badge above still shows the result to everyone.
-    if (perms.editBase) {
-      const { row, input } = buildFieldRow(
-        'BASE AC',
-        character.baseAC ?? 10,
-        `Unarmored base AC for ${character.name}`,
-        (value) => commit(setBaseAC(live(), value)),
-      );
-      fields.appendChild(row);
-      followField(input, () => live().baseAC ?? 10);
-    }
-
-    if (fields.children.length > 0) main.appendChild(fields);
 
     const statsList = el('div', 'character-sheet__stats');
     // Each ability shows as one d20-style badge with the effective score,

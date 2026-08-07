@@ -594,12 +594,17 @@ pending feature choice with a Choose button. The Set expertise button is a
 hand grant with no maximum, for a subclass or homebrew feature that the
 class catalog does not model.
 
+The four fields below are not on the sheet. Each row of the Party roster
+carries two GM buttons: the pencil opens the HP and AC dialog, and the
+sparkle grants XP to that character alone. The sheet reports the results in
+its HP bar and its banner.
+
 | Field | Who can set it | Meaning |
 | --- | --- | --- |
 | Max HP | GM | Overrides the derived maximum and clamps current HP |
 | Bonus HP | GM | Temporary points on top of intrinsic HP. Damage drains it first, and healing never refills it |
 | Base AC | GM | The unarmored baseline, normally 10 |
-| XP | GM | Award XP grants the same amount to every character at once |
+| XP | GM | The roster row grants it to one character. Award XP below the roster grants the same amount to every character at once |
 
 ### Creation and progression
 

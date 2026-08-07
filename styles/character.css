@@ -209,16 +209,6 @@
   margin-right: auto;
 }
 
-/* Labeled numeric rows (XP award, max HP, bonus HP, base AC). Each carries a
-   fixed-width key so its input starts at the same offset as every other row's
-   — and, because the field grid and the stats grid share this key width, at
-   the same offset as the ability-score inputs too. */
-.character-sheet__field-row {
-  margin: 0;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 /* The sheet's measures sit on the root rather than on `.character-sheet`,
    because the card holding the sheet caps itself against them
    (`styles/layout.css`) and a variable declared on the sheet is invisible to the
@@ -241,49 +231,10 @@
   );
 }
 
-/* One shared key column width (`--sheet-key-w`, sized for the longest key,
-   "BONUS HP") used by both the field rows and the ability-score rows, so every
-   numeric input on the sheet aligns to a single column. */
 .character-sheet {
-  --sheet-key-w: 5rem;
   /* Named so the body's two-column query sizes against the card it is in
      rather than the viewport. */
   container: character-sheet / inline-size;
-}
-
-.character-sheet__field-row .character-sheet__stat-key {
-  white-space: nowrap;
-}
-
-/* The XP award is a standalone action row above the field grid; it needs the
-   inter-row spacing the grid gap otherwise supplies. */
-.character-sheet__xp-row {
-  margin-bottom: var(--space-3);
-}
-
-/* The editable HP/AC field grid: two-plus columns when wide enough for each box
-   to keep its own breathing room, collapsing to one when it isn't. */
-.character-sheet__fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(10.5rem, 1fr));
-  gap: var(--space-2) var(--space-3);
-  margin-bottom: var(--space-3);
-}
-
-/* Fixed key column so the field inputs align down a single column. */
-.character-sheet__stat-key {
-  flex: 0 0 var(--sheet-key-w);
-}
-
-/* One fixed size shared by every numeric input on the sheet (XP award, HP/AC
-   fields), so they all align and match exactly. */
-.character-sheet__stat-input {
-  width: 3.5rem;
-  flex-shrink: 0;
-  padding-left: 0.25rem;
-  padding-right: 0.25rem;
-  text-align: center;
-  font-family: var(--font-mono);
 }
 
 /* The six ability scores as d20-style badges: they flow across as many columns
