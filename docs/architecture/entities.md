@@ -339,6 +339,16 @@ grant made by hand between take and undo comes off anyway, the same hazard a
 stat edit poses to an ASI undo. A choice written before these fields carries
 none of them and undoes as a bare name.
 
+`entities/FeatChoices.js` holds the arithmetic behind the take-feat dialog:
+`availableFeats` filters the catalog to what the character has not taken
+(a repeatable feat stays on offer), `abilityPool` and `choicePool` compute
+each pick's options minus what the character already holds, and `buildStamp`
+folds the picks and the feat's fixed grants into the stamp `takeFeat`
+applies. The dialog in `ui/CharacterProgress.js` is DOM wiring over these. A
+pick whose pool holds no more options than the count grants outright with no
+prompt, and the expertise prompt runs after the skill picks because its
+options depend on them.
+
 `LevelAssign.js` also builds the picks that the assign dialog offers.
 `assignOptions(character)` lists every held class one level up and every new
 class that the prerequisites allow. It then appends the classes that the

@@ -20,6 +20,8 @@ import {
 } from '../entities/Progression.js';
 import { getHitDicePools, hitDieOfPool, spendHitDie } from '../entities/HitDice.js';
 import { ABILITY_SCORES } from '../entities/Modifiers.js';
+import { availableFeats, abilityPool, choicePool, buildStamp } from '../entities/FeatChoices.js';
+import { activeFeats } from '../library/Library.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
 import { splitList } from '../util/text.js';
 
@@ -190,15 +192,164 @@ export function buildProgressSection(getCharacter, opts) {
     opts.onCommit(next);
   }
 
+  /**
+   * Gather the picks a catalog feat needs, dialog by dialog, and take it.
+   * A pick whose pool holds no more options than the count grants outright,
+   * with no dialog. The expertise prompt runs after the skill picks, because
+   * its options depend on them. A cancel anywhere abandons the take.
+   * @param {import('../types/feat.js').Feat} feat
+   */
+  async function takeCatalogFeat(feat) {
+    const taker = getCharacter();
+    const p = getProficiencies(taker);
+    /** @type {{ abilities: string[], skills: string[], saves: string[], expertise: string[] }} */
+    const picks = { abilities: [], skills: [], saves: [], expertise: [] };
+    /** @type {import('../types/modal.js').ModalField[]} */
+    const fields = [];
+    /** @type {((values: Record<string, string>) => void)[]} */
+    const readers = [];
+    /** @param {string} name @param {string} label @param {string[]} pool
+     * @param {number} choose @param {string[]} into
+     * @param {(id: string) => string} nameOf */
+    const addPick = (name, label, pool, choose, into, nameOf) => {
+      if (pool.length === 0) return;
+      if (pool.length <= choose) {
+        into.push(...pool);
+        return;
+      }
+      fields.push({
+        name,
+        label,
+        type: 'multiselect',
+        options: pool.map((id) => ({ value: id, label: nameOf(id) })),
+        max: choose,
+        value: '',
+      });
+      readers.push((values) => into.push(...splitList(values[name]).slice(0, choose)));
+    };
+
+    feat.effects.forEach((effect, i) => {
+      if (effect.kind === 'asi') {
+        const pool = abilityPool(taker, effect);
+        if (pool.length === 1) picks.abilities.push(pool[0]);
+        else if (pool.length > 1) {
+          fields.push({
+            name: `ability${i}`,
+            label: '+1 to',
+            type: 'select',
+            options: pool.map((key) => ({ value: key, label: key })),
+            value: pool[0],
+          });
+          readers.push((values) => picks.abilities.push(values[`ability${i}`]));
+        }
+        // Every allowed score at the cap: the point has nowhere to land, and
+        // the rest of the feat still applies.
+      } else if (effect.kind === 'proficiency') {
+        if (effect.skills) {
+          addPick(
+            `skills${i}`,
+            `Skills (choose ${effect.skills.choose})`,
+            choicePool(effect.skills, SKILL_IDS, p.skills),
+            effect.skills.choose,
+            picks.skills,
+            skillName,
+          );
+        }
+        if (effect.saves) {
+          addPick(
+            `saves${i}`,
+            `Saving throws (choose ${effect.saves.choose})`,
+            choicePool(effect.saves, ABILITY_SCORES, p.saves),
+            effect.saves.choose,
+            picks.saves,
+            (key) => key,
+          );
+        }
+      }
+    });
+
+    if (fields.length > 0) {
+      const values = await promptModal(feat.name, fields, { submitLabel: 'Choose' });
+      if (!values) return;
+      for (const read of readers) read(values);
+    }
+
+    // Expertise second: its pool is the proficient skills, including the ones
+    // just picked, minus what already has expertise.
+    for (const [i, effect] of feat.effects.entries()) {
+      if (effect.kind !== 'proficiency' || !effect.expertise) continue;
+      const held = [...p.skills, ...picks.skills];
+      const pool = choicePool(effect.expertise, SKILL_IDS, p.expertise).filter((id) =>
+        held.includes(id),
+      );
+      if (pool.length === 0) continue;
+      if (pool.length <= effect.expertise.choose) {
+        picks.expertise.push(...pool);
+        continue;
+      }
+      const values = await promptModal(
+        `${feat.name}: expertise`,
+        [
+          {
+            name: `expertise${i}`,
+            label: `Expertise (choose ${effect.expertise.choose})`,
+            type: 'multiselect',
+            options: pool.map((id) => ({ value: id, label: skillName(id) })),
+            max: effect.expertise.choose,
+            value: '',
+          },
+        ],
+        { submitLabel: 'Choose' },
+      );
+      if (!values) return;
+      picks.expertise.push(...splitList(values[`expertise${i}`]).slice(0, effect.expertise.choose));
+    }
+
+    const from = getCharacter();
+    const next = takeFeat(from, buildStamp(feat, picks));
+    if (next === from) {
+      opts.notify('That feat could not be taken.');
+      return;
+    }
+    opts.notify(`${from.name} takes ${feat.name}.`);
+    opts.onCommit(next);
+  }
+
   async function runFeat() {
+    const catalog = availableFeats(getCharacter(), activeFeats());
     const values = await promptModal(
+      'Take a feat',
+      [
+        {
+          name: 'feat',
+          label: 'Feat',
+          type: 'select',
+          options: [
+            ...catalog.map((feat) => ({
+              value: feat.id,
+              label: feat.prerequisite ? `${feat.name} (${feat.prerequisite})` : feat.name,
+            })),
+            { value: '', label: 'Custom (name only)' },
+          ],
+          value: catalog[0]?.id ?? '',
+        },
+      ],
+      { submitLabel: 'Next' },
+    );
+    if (!values) return;
+    const feat = catalog.find((f) => f.id === values.feat);
+    if (feat) {
+      await takeCatalogFeat(feat);
+      return;
+    }
+    const named = await promptModal(
       'Take a feat',
       [{ name: 'feat', label: 'Feat name', type: 'text', value: '' }],
       { submitLabel: 'Take feat' },
     );
-    if (!values) return;
+    if (!named) return;
     const from = getCharacter();
-    const next = takeFeat(from, values.feat);
+    const next = takeFeat(from, named.feat);
     if (next !== from) opts.onCommit(next);
   }
 
@@ -219,11 +370,11 @@ export function buildProgressSection(getCharacter, opts) {
     const line = choices
       .map((choice) => {
         const at = `${className(choice.classId)} ${choice.classLevel}`;
-        if (choice.type === 'feat') return `${at}: ${choice.feat}`;
-        const parts = Object.entries(choice.increases)
+        const parts = Object.entries(choice.increases ?? {})
           .filter(([, v]) => v !== 0)
           .map(([key, v]) => `+${v} ${key}`)
           .join(', ');
+        if (choice.type === 'feat') return `${at}: ${choice.feat}${parts ? ` (${parts})` : ''}`;
         return `${at}: ${parts}`;
       })
       .join(' · ');
