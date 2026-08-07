@@ -214,6 +214,21 @@ Hovering a tile in Play mode, with the pointer or with the keyboard cursor,
 names the point of interest and the NPCs on it. This follows the same
 detection range as the markers, so a tile out of range says nothing.
 
+### The difficulty hint
+
+Above the Active encounter rows, the GM sees one line rating the fight on the
+party's tile, for example "Hard: 1200 XP against party 300/600/900/1600". The
+first number is what the hostile creatures are worth together, counting a crowd
+for more than the sum of its parts and adjusting for a party smaller than three
+or larger than five. The four numbers after it are the party's easy, medium,
+hard, and deadly budgets, summed over the levels of the characters. The band
+names the highest budget the fight reaches.
+
+The line is a hint. It blocks nothing, and it awards no experience points. A foe
+with no challenge rating is worth nothing in this sum, so the line says how many
+such foes it counted and the real fight is harder than the number. Players never
+see the line.
+
 ### Encounter fields
 
 | Field | Meaning |

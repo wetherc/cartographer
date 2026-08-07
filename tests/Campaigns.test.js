@@ -13,6 +13,8 @@ import { buildingTile } from '../src/campaign/ExampleWorld.js';
 import { createCharacter, getHP, getClasses } from '../src/entities/Character.js';
 import { isHitDicePool } from '../src/entities/HitDice.js';
 import { mulberry32 } from '../src/util/Rng.js';
+import { coerceCR, crXP } from '../src/data/challenge.js';
+import { difficultyLine } from '../src/entities/EncounterDifficulty.js';
 import { installLocalStorage } from './helpers/env.js';
 
 beforeEach(installLocalStorage);
@@ -159,6 +161,29 @@ test('example campaign ships a full arc: quests, NPCs, bosses, field enemies', (
     );
     assert.ok(character.resources.some(isHitDicePool), `${character.name} needs a hit-dice pool`);
   }
+});
+
+test('every example enemy and template is rated, so the difficulty hint has numbers', () => {
+  const campaign = buildExampleCampaign(new TilePalette(), mulberry32(1));
+  const hostiles = campaign.creatures.filter((c) => c.disposition === 'hostile');
+  assert.ok(hostiles.length > 0);
+  for (const entry of [...hostiles, ...campaign.bestiary]) {
+    assert.ok(crXP(entry.cr) > 0, `${entry.name} needs a rating worth XP`);
+  }
+  // A rating stamped by hand must be one of the defined steps, or the write
+  // paths would drop it and the hint would silently read short.
+  for (const entry of [...hostiles, ...campaign.bestiary]) {
+    assert.equal(coerceCR(entry.cr), entry.cr, `${entry.name} names no defined rating`);
+  }
+  const party = campaign.characters;
+  assert.match(
+    difficultyLine(
+      party,
+      hostiles.filter((c) => c.id === 'ostrand'),
+    ),
+    /^Deadly: /,
+    'the major boss alone is deadly for the level-3 example party',
+  );
 });
 
 test('example campaign placements land on real tiles across seeds', () => {

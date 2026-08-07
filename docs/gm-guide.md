@@ -204,9 +204,13 @@ Players never see these controls.
 2. Click **New encounter**. It defaults onto the selected tile.
 3. Set the name, max HP, level, and tier. The tier and level stamp a
    default stat block and default gear.
-4. Change the weapon and the armor if you want. Pick **None** for a beast
+4. Set the challenge rating, and tick the saving throws and skills the foe is
+   trained in. The rating feeds the difficulty hint, and it sets the bonus the
+   foe adds to each save and check. Leave the rating at **Unrated** for a foe
+   you do not want counted.
+5. Change the weapon and the armor if you want. Pick **None** for a beast
    that carries no weapon or wears no armor.
-5. To place the encounter elsewhere, set the map and the tile in the same
+6. To place the encounter elsewhere, set the map and the tile in the same
    dialog.
 
 To edit a staged encounter later, click the pencil on its row. Its current
@@ -231,6 +235,8 @@ change it.
 2. Open the **Active encounter** tab and click **Start combat**. The tab
    lists every live creature on the tile, and the button shows whenever
    the tab has a row. A party set on fighting a bystander can do so.
+   Above the rows, one line rates the fight for you: what the hostile
+   creatures are worth against your party's budget. Players never see it.
 3. In the setup dialog, click **Roll initiative**, or type values by hand.
    Hostile creatures on the tile join the foes. Friendly and neutral
    creatures join the party. The party can still attack a creature on its

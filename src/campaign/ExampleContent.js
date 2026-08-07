@@ -15,12 +15,14 @@ import { buildingTile } from './ExampleWorld.js';
 /**
  * A placed enemy. It combines default ability scores for the level and tier
  * with the stat block extras (AC, Speed, and more) a GM needs at the table.
+ * Every enemy carries a challenge rating, which is what the difficulty hint
+ * adds up.
  * @param {string} id @param {string} name @param {number} hp
- * @param {number} level @param {EnemyTier} tier
+ * @param {number} level @param {EnemyTier} tier @param {number} cr
  * @param {string} nodeId @param {string} tileId
  * @param {Record<string, number>} extras
  */
-const enemy = (id, name, hp, level, tier, nodeId, tileId, extras) =>
+const enemy = (id, name, hp, level, tier, cr, nodeId, tileId, extras) =>
   createCreature(id, name, {
     disposition: 'hostile',
     maxHP: hp,
@@ -28,7 +30,26 @@ const enemy = (id, name, hp, level, tier, nodeId, tileId, extras) =>
     location: { nodeId, tileId },
     level,
     tier,
+    cr,
   });
+
+/** A placed enemy of the rank and file, the common case. Same fields as
+ * `enemy`, with the mob tier implied.
+ * @param {string} id @param {string} name @param {number} hp
+ * @param {number} level @param {number} cr
+ * @param {string} nodeId @param {string} tileId
+ * @param {Record<string, number>} extras */
+const mob = (id, name, hp, level, cr, nodeId, tileId, extras) =>
+  enemy(id, name, hp, level, 'mob', cr, nodeId, tileId, extras);
+
+/** A placed enemy above the rank and file: a named boss or a lieutenant. Same
+ * fields as `mob`, with the legend tier implied.
+ * @param {string} id @param {string} name @param {number} hp
+ * @param {number} level @param {number} cr
+ * @param {string} nodeId @param {string} tileId
+ * @param {Record<string, number>} extras */
+const legend = (id, name, hp, level, cr, nodeId, tileId, extras) =>
+  enemy(id, name, hp, level, 'legend', cr, nodeId, tileId, extras);
 
 /**
  * A townsperson or story figure, placed or roaming.
@@ -41,20 +62,23 @@ const person = (id, name, options) => createCreature(id, name, options);
  * A reusable bestiary blueprint for the campaign's common enemies. The gear
  * is the level and tier default, stored explicitly, because the merged
  * template shape carries no absent-means-default rule.
+ * Every template is a mob, and it carries its challenge rating, so a creature
+ * spawned from one counts in the difficulty hint.
  * @param {string} id @param {string} name @param {number} hp
- * @param {number} level @param {EnemyTier} tier
+ * @param {number} level @param {number} cr
  * @param {Record<string, number>} extras
  * @returns {import('../types/creature.js').CreatureTemplate}
  */
-const template = (id, name, hp, level, tier, extras) => ({
+const template = (id, name, hp, level, cr, extras) => ({
   id,
   name,
   disposition: 'hostile',
   maxHP: hp,
-  stats: { ...defaultEnemyStats(level, tier), ...extras },
+  stats: { ...defaultEnemyStats(level, 'mob'), ...extras },
   level,
-  tier,
-  ...defaultEnemyGear(level, tier),
+  tier: /** @type {EnemyTier} */ ('mob'),
+  cr,
+  ...defaultEnemyGear(level, 'mob'),
 });
 
 /**
@@ -238,78 +262,78 @@ export function buildExampleContent(palette, world) {
     characters: exampleParty(),
     creatures: [
       // Field enemies on the overworld, one type for each biome.
-      enemy('goblin-scout', 'Goblin Scout', 7, 1, 'mob', 'world', '18,15', { AC: 13, Speed: 30 }),
-      enemy('gray-wolf-1', 'Gray Wolf', 11, 1, 'mob', 'world', '24,16', { AC: 13, Speed: 40 }),
-      enemy('gray-wolf-2', 'Gray Wolf', 11, 1, 'mob', 'world', '25,17', { AC: 13, Speed: 40 }),
-      enemy('bandit-1', 'Roadside Bandit', 11, 1, 'mob', 'world', '11,18', { AC: 12, Speed: 30 }),
-      enemy('bandit-2', 'Roadside Bandit', 11, 1, 'mob', 'world', '13,20', { AC: 12, Speed: 30 }),
-      enemy('bog-zombie-1', 'Bog Zombie', 22, 2, 'mob', 'world', '16,28', { AC: 8, Speed: 20 }),
-      enemy('bog-zombie-2', 'Bog Zombie', 22, 2, 'mob', 'world', '19,29', { AC: 8, Speed: 20 }),
-      enemy('hill-harpy', 'Harpy', 24, 2, 'mob', 'world', '23,12', { AC: 11, Speed: 20 }),
-      enemy('giant-scorpion', 'Giant Scorpion', 26, 3, 'mob', 'world', '27,29', {
+      mob('goblin-scout', 'Goblin Scout', 7, 1, 0.25, 'world', '18,15', { AC: 13, Speed: 30 }),
+      mob('gray-wolf-1', 'Gray Wolf', 11, 1, 0.25, 'world', '24,16', { AC: 13, Speed: 40 }),
+      mob('gray-wolf-2', 'Gray Wolf', 11, 1, 0.25, 'world', '25,17', { AC: 13, Speed: 40 }),
+      mob('bandit-1', 'Roadside Bandit', 11, 1, 0.125, 'world', '11,18', { AC: 12, Speed: 30 }),
+      mob('bandit-2', 'Roadside Bandit', 11, 1, 0.125, 'world', '13,20', { AC: 12, Speed: 30 }),
+      mob('bog-zombie-1', 'Bog Zombie', 22, 2, 0.25, 'world', '16,28', { AC: 8, Speed: 20 }),
+      mob('bog-zombie-2', 'Bog Zombie', 22, 2, 0.25, 'world', '19,29', { AC: 8, Speed: 20 }),
+      mob('hill-harpy', 'Harpy', 24, 2, 1, 'world', '23,12', { AC: 11, Speed: 20 }),
+      mob('giant-scorpion', 'Giant Scorpion', 26, 3, 3, 'world', '27,29', {
         AC: 15,
         Speed: 40,
       }),
-      enemy('winter-wolf', 'Winter Wolf', 34, 3, 'mob', 'world', '26,3', { AC: 13, Speed: 50 }),
+      mob('winter-wolf', 'Winter Wolf', 34, 3, 3, 'world', '26,3', { AC: 13, Speed: 50 }),
       // The bay: drowned dead walk the shallows below Saltmere, and
       // something knocks in the abandoned silver mine.
-      enemy('drowned-watchman-1', 'Drowned Watchman', 22, 2, 'mob', 'world', '6,10', {
+      mob('drowned-watchman-1', 'Drowned Watchman', 22, 2, 0.5, 'world', '6,10', {
         AC: 11,
         Speed: 20,
         Swim: 30,
       }),
-      enemy('drowned-watchman-2', 'Drowned Watchman', 22, 2, 'mob', 'world', '7,14', {
+      mob('drowned-watchman-2', 'Drowned Watchman', 22, 2, 0.5, 'world', '7,14', {
         AC: 11,
         Speed: 20,
         Swim: 30,
       }),
-      enemy('hollowvein-knocker', 'The Knocker in the Vein', 30, 3, 'mob', 'world', '21,11', {
+      mob('hollowvein-knocker', 'The Knocker in the Vein', 30, 3, 2, 'world', '21,11', {
         AC: 14,
         Speed: 30,
       }),
       // Minor bosses: the mire hag in the southern marsh, the goblin chieftain
       // at his camp, and the wyvern over the hermitage.
-      enemy('grelka', 'Grelka the Mire Hag', 45, 4, 'legend', 'world', '20,29', {
+      legend('grelka', 'Grelka the Mire Hag', 45, 4, 3, 'world', '20,29', {
         AC: 15,
         Speed: 30,
       }),
-      enemy('goblin-raider-1', 'Goblin Raider', 7, 1, 'mob', 'northmarch', raiderTiles[0], {
+      mob('goblin-raider-1', 'Goblin Raider', 7, 1, 0.25, 'northmarch', raiderTiles[0], {
         AC: 13,
         Speed: 30,
       }),
-      enemy('goblin-raider-2', 'Goblin Raider', 7, 1, 'mob', 'northmarch', raiderTiles[1], {
+      mob('goblin-raider-2', 'Goblin Raider', 7, 1, 0.25, 'northmarch', raiderTiles[1], {
         AC: 13,
         Speed: 30,
       }),
-      enemy('snagtooth', 'Chieftain Snagtooth', 36, 3, 'legend', 'northmarch', campTile, {
+      legend('snagtooth', 'Chieftain Snagtooth', 36, 3, 1, 'northmarch', campTile, {
         AC: 16,
         Speed: 30,
       }),
-      enemy('skalvyr', 'Skalvyr the Wyvern', 68, 5, 'legend', 'graypeak', eyrieTile, {
+      legend('skalvyr', 'Skalvyr the Wyvern', 68, 5, 6, 'graypeak', eyrieTile, {
         AC: 16,
         Speed: 20,
         Fly: 80,
       }),
       // The barrow: pickets, the seneschal, and the major boss at the tomb.
-      enemy('barrow-skeleton-1', 'Barrow Skeleton', 13, 1, 'mob', 'barrow', boneTiles[0], {
+      mob('barrow-skeleton-1', 'Barrow Skeleton', 13, 1, 0.25, 'barrow', boneTiles[0], {
         AC: 13,
         Speed: 30,
       }),
-      enemy('barrow-skeleton-2', 'Barrow Skeleton', 13, 1, 'mob', 'barrow', boneTiles[1], {
+      mob('barrow-skeleton-2', 'Barrow Skeleton', 13, 1, 0.25, 'barrow', boneTiles[1], {
         AC: 13,
         Speed: 30,
       }),
-      enemy('grave-wight', 'Grave Wight', 45, 4, 'legend', 'barrow', wightTile, {
+      legend('grave-wight', 'Grave Wight', 45, 4, 3, 'barrow', wightTile, {
         AC: 14,
         Speed: 30,
       }),
       // Thornhold: the shade of the warden who sealed the barrow, risen in
       // the keep's own hall now that the ward is failing.
-      enemy('crypt-shade', 'The Crypt Shade', 40, 4, 'legend', 'thornhold', shadeTile, {
+      legend('crypt-shade', 'The Crypt Shade', 40, 4, 3, 'thornhold', shadeTile, {
         AC: 14,
         Speed: 30,
       }),
-      enemy('ostrand', 'King Ostrand the Risen', 110, 8, 'legend', 'barrow', tombTile, {
+      legend('ostrand', 'King Ostrand the Risen', 110, 8, 8, 'barrow', tombTile, {
         AC: 18,
         Speed: 30,
       }),
@@ -396,6 +420,9 @@ export function buildExampleContent(palette, world) {
         notes:
           "Proud and in denial: the raids are peasant panic and his house's ward cannot fail. Softens only when shown Snagtooth's orders under the pale seal; opens the crypt ledger once the shade in his hall is put down.",
         stats: { STR: 14, INT: 12, WIS: 13, CHA: 15 },
+        // A hostile story figure rather than a fight, but the difficulty hint
+        // counts every hostile creature, so he carries the rating of a noble.
+        cr: 0.125,
         location: { nodeId: 'thornhold', tileId: lordTile },
       }),
       person('farmer-hedda', 'Hedda', {
@@ -555,15 +582,15 @@ export function buildExampleContent(palette, world) {
       },
     ],
     bestiary: [
-      template('goblin', 'Goblin', 7, 1, 'mob', { AC: 13, Speed: 30 }),
-      template('gray-wolf', 'Gray Wolf', 11, 1, 'mob', { AC: 13, Speed: 40 }),
-      template('bandit', 'Bandit', 11, 1, 'mob', { AC: 12, Speed: 30 }),
-      template('bog-zombie', 'Bog Zombie', 22, 2, 'mob', { AC: 8, Speed: 20 }),
-      template('harpy', 'Harpy', 24, 2, 'mob', { AC: 11, Speed: 20 }),
-      template('giant-scorpion', 'Giant Scorpion', 26, 3, 'mob', { AC: 15, Speed: 40 }),
-      template('winter-wolf', 'Winter Wolf', 34, 3, 'mob', { AC: 13, Speed: 50 }),
-      template('barrow-skeleton', 'Barrow Skeleton', 13, 1, 'mob', { AC: 13, Speed: 30 }),
-      template('drowned-watchman', 'Drowned Watchman', 22, 2, 'mob', {
+      template('goblin', 'Goblin', 7, 1, 0.25, { AC: 13, Speed: 30 }),
+      template('gray-wolf', 'Gray Wolf', 11, 1, 0.25, { AC: 13, Speed: 40 }),
+      template('bandit', 'Bandit', 11, 1, 0.125, { AC: 12, Speed: 30 }),
+      template('bog-zombie', 'Bog Zombie', 22, 2, 0.25, { AC: 8, Speed: 20 }),
+      template('harpy', 'Harpy', 24, 2, 1, { AC: 11, Speed: 20 }),
+      template('giant-scorpion', 'Giant Scorpion', 26, 3, 3, { AC: 15, Speed: 40 }),
+      template('winter-wolf', 'Winter Wolf', 34, 3, 3, { AC: 13, Speed: 50 }),
+      template('barrow-skeleton', 'Barrow Skeleton', 13, 1, 0.25, { AC: 13, Speed: 30 }),
+      template('drowned-watchman', 'Drowned Watchman', 22, 2, 0.5, {
         AC: 11,
         Speed: 20,
         Swim: 30,

@@ -142,6 +142,27 @@ simply has no field.
 Each built-in hostile creature carries the rating of its SRD counterpart. The
 built-in townsfolk stay unrated, because nothing fights them.
 
+### The difficulty hint
+
+`src/entities/EncounterDifficulty.js` rates a fight by the 5e
+experience-point budget. `XP_THRESHOLDS` holds the four thresholds for each
+level from 1 to 20, and `partyThresholds` sums the row of every character.
+`adjustedXP` adds up what the foes are worth through `crXP` and multiplies by
+the count, from 1 for a lone foe to 4 for fifteen or more. The party size moves
+one step along that multiplier ladder rather than scaling the value: a party of
+one or two steps up, a party of six or more steps down.
+
+`rateEncounter` compares the two and names the band. A threshold counts as met,
+so a total exactly on the medium line is medium. Below the easy threshold the
+band is `Trivial`, which the rules leave unnamed. An unrated foe is worth no
+experience points but still counts toward the multiplier, because it still takes
+a turn, and `rateEncounter` reports how many such foes there are so the hint can
+say the number is short.
+
+`difficultyLine` is the one line the Encounters panel prints for the GM, over
+the same live creature list the Active tab shows. The hint acts on nothing. It
+awards no experience points, and it never blocks a fight.
+
 ### A creature's saves and skills
 
 A creature carries an optional `proficiencies` field with two lists: the saving

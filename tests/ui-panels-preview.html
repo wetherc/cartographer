@@ -24,6 +24,7 @@
     import { mountCharacterSheet } from '../src/ui/CharacterSheet.js';
     import { mountInventoryPanel } from '../src/ui/InventoryPanel.js';
     import { mountEncounterPanel } from '../src/ui/EncounterPanel.js';
+    import { difficultyLine } from '../src/entities/EncounterDifficulty.js';
 
     let hero = createCharacter('c1', 'Hero', { STR: 14, DEX: 12, CON: 13 });
     hero = addResource(hero, createResource('mana', 'Mana', 'mana', 10));
@@ -49,6 +50,7 @@
     const encounterPanel = mountEncounterPanel(document.getElementById('encounter-container'), {
       getActiveEncounters: () => encounters.slice(0, 1),
       getNearbyEncounters: () => encounters,
+      getDifficulty: () => difficultyLine([hero], encounters.slice(0, 1)),
       onUpdate: (next) => {
         encounters = encounters.map((e) => (e.id === next.id ? next : e));
         encounterPanel.update();

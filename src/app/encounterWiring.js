@@ -19,6 +19,7 @@ import {
   hostileCreaturesOnTile,
   liveCreaturesOnTile,
 } from '../entities/CreatureMap.js';
+import { difficultyLine } from '../entities/EncounterDifficulty.js';
 import { mountBuildEncounterPanel } from '../ui/BuildEncounterPanel.js';
 import {
   addParticipant,
@@ -198,6 +199,13 @@ export function wireEncounters(app) {
     // on a tile the fog has revealed, or an unplaced one the party walked
     // into.
     getActiveEncounters: () => liveCreaturesOnTile(state.creatures, app.partyTracker.getPosition()),
+    // The hint rates the same list the Active tab shows, so what the GM reads
+    // is the fight the Start combat button would begin.
+    getDifficulty: () =>
+      difficultyLine(
+        state.characters,
+        liveCreaturesOnTile(state.creatures, app.partyTracker.getPosition()),
+      ),
     getNearbyEncounters: () => {
       const position = app.partyTracker.getPosition();
       const hereIds = new Set(liveCreaturesOnTile(state.creatures, position).map((c) => c.id));

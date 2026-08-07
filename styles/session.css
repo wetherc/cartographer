@@ -7,6 +7,12 @@
   margin-bottom: var(--space-2);
 }
 
+/* The one-line difficulty hint above the Active rows. */
+.encounter-panel__difficulty {
+  font-size: var(--text-label);
+  padding-bottom: var(--space-1);
+}
+
 .encounter-panel__row {
   padding: var(--space-1) 0;
 }

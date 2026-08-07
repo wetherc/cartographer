@@ -48,8 +48,11 @@ import { clampInt } from '../util/num.js';
  *   onSetExhaustion?: (encounter: Encounter, level: number) => void,
  *   onStartCombat?: () => void,
  *   canStartCombat?: () => boolean,
+ *   getDifficulty?: () => string,
  *   getRole?: () => ViewRole,
  * }} callbacks
+ * `getDifficulty` gives one line rating the fight on the party's tile, shown
+ * above the Active rows for the GM alone. An empty string shows nothing.
  * If `onStartCombat` is set, the Active tab's action row gains a Start
  * combat button whenever `canStartCombat` allows it, when no fight is
  * already running. This is the entry into the initiative flow, which
@@ -180,18 +183,19 @@ export function mountEncounterPanel(container, callbacks) {
     // edited or removed here, since that is the Build rail's job. A click
     // on a chip applies a timed plus or minus adjustment that counts down
     // with the combat rounds.
+    // What the creature is trained in, so the GM can call for a save or a check
+    // without opening the Build rail. The bonus already carries a timed stat
+    // adjustment and any exhaustion. It sits above the chips, as it does on the
+    // Build rail row.
+    const trained = proficiencySummary(encounter);
+    if (trained) row.appendChild(el('div', 'u-muted', trained));
+
     mountStatBlockBar(row, {
       mode: 'temp',
       getEntity: () => encounter,
       onAddModifier: (stat, delta, rounds) =>
         updateOne(encounter, (e) => addStatModifier(e, stat, delta, rounds)),
     });
-
-    // What the creature is trained in, so the GM can call for a save or a check
-    // without opening the Build rail. The bonus already carries a timed stat
-    // adjustment and any exhaustion.
-    const trained = proficiencySummary(encounter);
-    if (trained) row.appendChild(el('div', 'u-muted', trained));
 
     // A GM tracks an encounter's status conditions, for example poisoned
     // or prone, on its row. An edit writes the whole list back through onUpdate.
@@ -269,6 +273,18 @@ export function mountEncounterPanel(container, callbacks) {
     ];
   }
 
+  // The difficulty hint sits above the Active rows, because it describes the
+  // whole group rather than any one row. It is GM-only: it names how hard the
+  // fight ahead is, which the players are meant to find out by fighting it.
+  const difficulty = el('div', 'encounter-panel__difficulty u-muted');
+  activePanel.appendChild(difficulty);
+
+  function renderDifficulty() {
+    const line = gate() ? (callbacks.getDifficulty?.() ?? '') : '';
+    difficulty.textContent = line;
+    difficulty.hidden = line === '';
+  }
+
   const activeList = mountListPanel(activePanel, {
     ...rowOptions,
     getRows: () => callbacks.getActiveEncounters(),
@@ -300,6 +316,7 @@ export function mountEncounterPanel(container, callbacks) {
     const hasActive = callbacks.getActiveEncounters().length > 0;
     if (hasActive !== hadActive) tabs.select(hasActive ? 'active' : 'nearby');
     hadActive = hasActive;
+    renderDifficulty();
     activeList.update();
     nearbyList.update();
   }
