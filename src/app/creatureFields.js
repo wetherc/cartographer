@@ -8,6 +8,7 @@
  * own it there.
  */
 
+import { coerceCR, crOptions } from '../data/challenge.js';
 import { DEFAULT_CREATURE_HP, defaultEnemyGear, dispositionOptions } from '../entities/Creature.js';
 import {
   defaultEnemyStats,
@@ -38,6 +39,7 @@ import { readStats, statFields } from './statFields.js';
  *   maxHP?: number,
  *   level?: number,
  *   tier?: EnemyTier,
+ *   cr?: number,
  *   stats?: Record<string, number>,
  *   weapon?: import('../types/entities.js').EnemyWeapon | null,
  *   armor?: import('../types/entities.js').EnemyArmor | null,
@@ -123,6 +125,13 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
       options: tierOptions(),
     },
     {
+      name: 'cr',
+      label: 'Challenge rating',
+      type: 'select',
+      value: seed?.cr != null ? String(seed.cr) : '',
+      options: crOptions(),
+    },
+    {
       name: 'weapon',
       label: 'Weapon',
       type: 'select',
@@ -192,7 +201,8 @@ export function creatureFieldsChange({ restampStats }) {
  * value is the explicit "None" choice and stores null, with no fallback: the
  * field's own default already offered the level's loadout, so what the picker
  * shows is what the creature gets. A blank level stores no level and no tier.
- * The result carries `stats` only when the form showed the block.
+ * A blank challenge rating stores none, which the app reads as unrated. The
+ * result carries `stats` only when the form showed the block.
  * @param {Record<string, string>} values
  * @param {GearOptions} gear the same options the fields were built from
  * @param {{ stats?: boolean }} [options]
@@ -204,6 +214,7 @@ export function creatureFieldsChange({ restampStats }) {
  *   maxHP: number,
  *   level?: number,
  *   tier?: EnemyTier,
+ *   cr?: number,
  *   stats?: Record<string, number>,
  *   weapon: import('../types/entities.js').EnemyWeapon | null,
  *   armor: import('../types/entities.js').EnemyArmor | null,
@@ -214,7 +225,9 @@ export function creatureFieldsChange({ restampStats }) {
  */
 export function readCreatureFields(values, gear, { stats = true } = {}) {
   const rawLevel = String(values.level ?? '').trim();
+  const cr = coerceCR(values.cr);
   return {
+    ...(cr === undefined ? {} : { cr }),
     name: values.name.trim(),
     disposition: /** @type {Disposition} */ (values.disposition),
     role: values.role.trim(),

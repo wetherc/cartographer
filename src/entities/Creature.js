@@ -1,3 +1,4 @@
+import { coerceCR } from '../data/challenge.js';
 import { normalizeStatBlock } from './Modifiers.js';
 import { WEAPON_PRESETS, enemyArmor, copyEnemyWeapon } from './EquipmentPresets.js';
 import { copySpellbook } from './Character.js';
@@ -93,6 +94,19 @@ export function defaultEnemyGear(level, tier) {
 }
 
 /**
+ * The challenge-rating field to spread into a creature or a template, or
+ * nothing at all. Every write path runs through here, so a rating that is not
+ * one of the defined steps never reaches a stored creature, whatever a
+ * hand-edited save or an older shape carried. Absence is the "unrated" value.
+ * @param {unknown} value
+ * @returns {{ cr?: number }}
+ */
+function crFields(value) {
+  const cr = coerceCR(value);
+  return cr === undefined ? {} : { cr };
+}
+
+/**
  * Clamp a typed maximum to a live creature: at least 1, whole, with the
  * commoner default for a blank or nonsense value.
  * @param {number | undefined} maxHP
@@ -113,7 +127,7 @@ function clampMaxHP(maxHP) {
  * always explicit, so no read path derives gear again.
  * @param {string} id
  * @param {string} name
- * @param {{ disposition?: Disposition, maxHP?: number, stats?: Record<string, number>, location?: EncounterLocation | null, met?: boolean, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, level?: number, tier?: EnemyTier, role?: string, notes?: string, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} [options]
+ * @param {{ disposition?: Disposition, maxHP?: number, stats?: Record<string, number>, location?: EncounterLocation | null, met?: boolean, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, level?: number, tier?: EnemyTier, cr?: number, role?: string, notes?: string, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} [options]
  * @returns {Creature}
  */
 export function createCreature(id, name, options = {}) {
@@ -135,6 +149,7 @@ export function createCreature(id, name, options = {}) {
     weapon: options.weapon !== undefined ? options.weapon : (stamp?.weapon ?? null),
     armor: options.armor !== undefined ? options.armor : (stamp?.armor ?? null),
     ...(hasLevel ? { level: options.level, tier } : {}),
+    ...crFields(options.cr),
     ...(options.role !== undefined ? { role: options.role } : {}),
     ...(options.notes !== undefined ? { notes: options.notes } : {}),
     ...(options.subclass !== undefined ? { subclass: options.subclass } : {}),
@@ -152,15 +167,18 @@ export function createCreature(id, name, options = {}) {
  * function never rebuilds a default loadout, because the create and edit
  * paths store gear explicitly. A creature that carries exhaustion as a
  * condition chip, from before it had a level behind it, reads as level 1 and
- * loses the chip.
+ * loses the chip. A challenge rating that is not one of the defined steps is
+ * dropped, and the creature reads as unrated.
  * @param {Creature} creature
  * @returns {Creature}
  */
 export function withDefaults(creature) {
   const maxHP = clampMaxHP(creature.maxHP);
+  const { cr: _cr, ...withoutCR } = creature;
   return ensureCasterFields(
     {
-      ...creature,
+      ...withoutCR,
+      ...crFields(creature.cr),
       disposition: creature.disposition ?? 'neutral',
       maxHP,
       currentHP: Math.min(maxHP, creature.currentHP ?? maxHP),
@@ -230,8 +248,11 @@ export function tickStatModifiers(mods) {
  * pools (at full). Dropping the caster class (or setting a non-caster)
  * strips the spell fields. An unchanged class and level keep the current
  * slots, spent and all.
+ *
+ * A blank challenge rating removes the rating, the same way a blank level
+ * removes the level.
  * @param {Creature} creature
- * @param {{ name: string, disposition: Disposition, maxHP: number, location: EncounterLocation | null, stats?: Record<string, number>, level?: number, tier?: EnemyTier, role?: string, notes?: string, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} edits
+ * @param {{ name: string, disposition: Disposition, maxHP: number, location: EncounterLocation | null, stats?: Record<string, number>, level?: number, tier?: EnemyTier, cr?: number, role?: string, notes?: string, weapon?: EnemyWeapon | null, armor?: EnemyArmor | null, class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} edits
  * @returns {Creature}
  */
 export function editCreature(creature, edits) {
@@ -239,7 +260,7 @@ export function editCreature(creature, edits) {
   const moved =
     (creature.location?.nodeId ?? null) !== (edits.location?.nodeId ?? null) ||
     (creature.location?.tileId ?? null) !== (edits.location?.tileId ?? null);
-  const { level: _level, tier: _tier, ...unleveled } = creature;
+  const { level: _level, tier: _tier, cr: _cr, ...unleveled } = creature;
   const base = {
     ...unleveled,
     name: edits.name,
@@ -252,6 +273,7 @@ export function editCreature(creature, edits) {
     met: moved ? false : creature.met,
     ...(edits.stats !== undefined ? { stats: normalizeStatBlock(edits.stats) } : {}),
     ...(edits.level != null ? { level: edits.level, tier: edits.tier ?? 'mob' } : {}),
+    ...crFields(edits.cr),
     ...(edits.role !== undefined ? { role: edits.role } : {}),
     ...(edits.notes !== undefined ? { notes: edits.notes } : {}),
   };
@@ -313,6 +335,7 @@ export function toTemplate(id, creature) {
     weapon: creature.weapon ?? null,
     armor: creature.armor ?? null,
     ...(creature.level != null ? { level: creature.level, tier: creature.tier ?? 'mob' } : {}),
+    ...crFields(creature.cr),
     ...(creature.role !== undefined ? { role: creature.role } : {}),
     ...(creature.notes !== undefined ? { notes: creature.notes } : {}),
     ...casterTemplateFields(creature),
@@ -345,6 +368,7 @@ export function fromTemplate(template, id, location = null) {
     stats: { ...(template.stats ?? template.statBlock ?? {}) },
     location,
     ...(Number.isFinite(level) ? { level, tier: template.tier ?? 'mob' } : {}),
+    cr: template.cr,
     ...(template.weapon !== undefined
       ? { weapon: template.weapon ? copyEnemyWeapon(template.weapon) : template.weapon }
       : {}),

@@ -42,6 +42,7 @@ function baseValues() {
     maxHP: '4',
     level: '',
     tier: 'mob',
+    cr: '',
     weapon: '',
     armor: '',
     casterClass: '',
@@ -165,4 +166,20 @@ test('no re-stamp happens while the level is blank, or when re-stamping is off',
   const form = fakeForm({ level: '6', tier: 'mob', 'stat-STR': '10' });
   off('level', form);
   assert.equal(form.get('stat-STR'), '10', 'an edit never re-stamps a stored block');
+});
+
+test('the rating picker offers Unrated first and pre-fills the seed rating', () => {
+  const blank = field(creatureFields(null, gearOptions(null)), 'cr');
+  assert.equal(blank.value, '');
+  assert.equal(blank.options?.[0].value, '', 'Unrated leads the list');
+  const seeded = field(creatureFields({ cr: 0.25 }, gearOptions(null)), 'cr');
+  assert.equal(seeded.value, '0.25');
+});
+
+test('readCreatureFields reads a picked rating and omits a blank one', () => {
+  const rated = readCreatureFields({ ...baseValues(), cr: '0.5' }, gearOptions(null));
+  assert.equal(rated.cr, 0.5);
+  assert.equal('cr' in readCreatureFields(baseValues(), gearOptions(null)), false);
+  const junk = readCreatureFields({ ...baseValues(), cr: '1.5' }, gearOptions(null));
+  assert.equal('cr' in junk, false, 'a value that names no step reads as unrated');
 });

@@ -67,6 +67,11 @@ export interface Creature {
   level?: number;
   /** Authoring tier. It has meaning only next to `level`. */
   tier?: EnemyTier;
+  /** Challenge rating, one of the steps in `data/challenge.js`. It sets the XP
+   * the creature is worth and the proficiency bonus it rolls saves and checks
+   * with. Absent means unrated: the creature falls back to its level for
+   * proficiency and counts for no XP in the difficulty hint. */
+  cr?: number;
   /** Free-text role or faction, for example "Innkeeper". */
   role?: string;
   notes?: string;
@@ -107,6 +112,7 @@ export interface CreatureTemplate {
   armor: EnemyArmor | null;
   level?: number;
   tier?: EnemyTier;
+  cr?: number;
   role?: string;
   notes?: string;
   class?: string;

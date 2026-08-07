@@ -422,6 +422,44 @@ test('fromTemplate reads the older template shapes', () => {
   assert.equal(person.weapon, null);
 });
 
+test('a challenge rating survives create, edit, and the template round trip', () => {
+  const foe = createCreature('c1', 'Goblin', { disposition: 'hostile', maxHP: 7, cr: 0.25 });
+  assert.equal(foe.cr, 0.25);
+  const template = toTemplate('t1', foe);
+  assert.equal(template.cr, 0.25);
+  assert.equal(fromTemplate(template, 'c2').cr, 0.25);
+  const raised = editCreature(foe, {
+    name: 'Goblin Boss',
+    disposition: 'hostile',
+    maxHP: 21,
+    location: null,
+    cr: 1,
+  });
+  assert.equal(raised.cr, 1);
+});
+
+test('a blank challenge rating leaves a creature unrated', () => {
+  const plain = createCreature('c1', 'Innkeeper', { maxHP: 4 });
+  assert.equal('cr' in plain, false, 'an unrated creature carries no field at all');
+  assert.equal('cr' in toTemplate('t1', plain), false);
+  const rated = createCreature('c2', 'Orc', { maxHP: 15, cr: 0.5 });
+  const cleared = editCreature(rated, {
+    name: 'Orc',
+    disposition: 'hostile',
+    maxHP: 15,
+    location: null,
+  });
+  assert.equal('cr' in cleared, false, 'a blank rating removes the rating');
+});
+
+test('a rating that names no step is dropped on every write path', () => {
+  assert.equal('cr' in createCreature('c1', 'Thing', { cr: /** @type {any} */ (1.5) }), false);
+  const loaded = withDefaults(/** @type {any} */ ({ id: 'c2', name: 'Thing', cr: 'deadly' }));
+  assert.equal('cr' in loaded, false);
+  const kept = withDefaults(/** @type {any} */ ({ id: 'c3', name: 'Orc', cr: '1/2' }));
+  assert.equal(kept.cr, 0.5, 'a written fraction reads as its number');
+});
+
 test('defaultEnemyGear picks the loadout by tier and level band and returns copies', () => {
   assert.equal(defaultEnemyGear(1, 'mob').weapon.name, 'Shortsword');
   assert.equal(defaultEnemyGear(5, 'mob').weapon.name, 'Longsword');

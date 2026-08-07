@@ -1,6 +1,7 @@
 import { mountStatBlockBar } from './StatBlockBar.js';
 import { bareButton } from './buttons.js';
 import { el } from './dom.js';
+import { crLabel } from '../data/challenge.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { mountListPanel } from './listPanel.js';
 
@@ -70,15 +71,14 @@ export function mountBuildEncounterPanel(container, callbacks) {
       },
     ],
     buildExtras: (encounter, row, ctx) => {
-      // This shows the enemy's gear at a glance. The edit button opens the
-      // same form for both pieces.
-      if (encounter.weapon || encounter.armor) {
-        const parts = [];
-        if (encounter.weapon)
-          parts.push(`${encounter.weapon.name} ${formatDamage(encounter.weapon.damage)}`);
-        if (encounter.armor) parts.push(`${encounter.armor.name} +${encounter.armor.acBonus} AC`);
-        row.appendChild(el('div', 'u-muted', parts.join(' | ')));
-      }
+      // This shows the enemy's challenge rating and gear at a glance. The edit
+      // button opens the same form for the rating and both pieces of gear.
+      const parts = [];
+      if (encounter.cr !== undefined) parts.push(`CR ${crLabel(encounter.cr)}`);
+      if (encounter.weapon)
+        parts.push(`${encounter.weapon.name} ${formatDamage(encounter.weapon.damage)}`);
+      if (encounter.armor) parts.push(`${encounter.armor.name} +${encounter.armor.acBonus} AC`);
+      if (parts.length) row.appendChild(el('div', 'u-muted', parts.join(' | ')));
 
       // Base stats are set here. Each stat, the six abilities and AC, is a
       // chip that sets its value. An edit writes back through onUpdate.

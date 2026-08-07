@@ -27,6 +27,7 @@ import {
   CONSUMABLE_PRESETS,
   coerceWeapon,
 } from '../entities/EquipmentPresets.js';
+import { coerceCR } from '../data/challenge.js';
 import { normalizeStatBlock } from '../entities/Modifiers.js';
 import { DEFAULT_CREATURE_HP, DISPOSITIONS, defaultEnemyGear } from '../entities/Creature.js';
 import { isCasterClass } from '../entities/Classes.js';
@@ -95,7 +96,10 @@ export function defaultEquipmentTemplates() {
  * The application's built-in creatures. The hostile entries are a small set
  * of 5e stock enemies, and the rest are stock townsfolk that a GM can place
  * without typing stats. The effective AC is the stat block's AC plus the
- * armor's bonus, the same rule that effectiveStatBlock uses.
+ * armor's bonus, the same rule that effectiveStatBlock uses. Each hostile
+ * entry carries the challenge rating of its SRD counterpart. The townsfolk
+ * stay unrated, because nothing fights them and the difficulty hint counts
+ * hostile creatures only.
  * @type {CreatureTemplate[]}
  */
 export const DEFAULT_CREATURES = deepFreeze([
@@ -107,6 +111,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     stats: { STR: 8, DEX: 14, CON: 10, INT: 10, WIS: 8, CHA: 8, AC: 14 },
     level: 1,
     tier: 'mob',
+    cr: 0.25,
     weapon: {
       name: 'Scimitar',
       kind: 'melee',
@@ -124,6 +129,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     stats: { STR: 12, DEX: 15, CON: 12, INT: 3, WIS: 12, CHA: 6, AC: 13 },
     level: 1,
     tier: 'mob',
+    cr: 0.25,
     // A natural weapon: no category, because it is neither simple nor
     // martial.
     weapon: {
@@ -141,6 +147,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     stats: { STR: 11, DEX: 12, CON: 12, INT: 10, WIS: 10, CHA: 10, AC: 11 },
     level: 1,
     tier: 'mob',
+    cr: 0.125,
     weapon: {
       name: 'Shortsword',
       kind: 'melee',
@@ -158,6 +165,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     stats: { STR: 10, DEX: 14, CON: 15, INT: 6, WIS: 8, CHA: 5, AC: 12 },
     level: 1,
     tier: 'mob',
+    cr: 0.25,
     weapon: {
       name: 'Shortsword',
       kind: 'melee',
@@ -175,6 +183,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     stats: { STR: 16, DEX: 12, CON: 16, INT: 7, WIS: 11, CHA: 10, AC: 11 },
     level: 2,
     tier: 'mob',
+    cr: 0.5,
     weapon: {
       name: 'Greataxe',
       kind: 'melee',
@@ -192,6 +201,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     stats: { STR: 19, DEX: 8, CON: 16, INT: 5, WIS: 7, CHA: 7, AC: 9 },
     level: 4,
     tier: 'legend',
+    cr: 2,
     weapon: {
       name: 'Greatclub',
       kind: 'melee',
@@ -252,6 +262,7 @@ export const DEFAULT_CREATURES = deepFreeze([
     role: 'Cultist',
     notes: 'Serves a hidden master and carries a sign of the order.',
     maxHP: 4,
+    cr: 0.125,
     stats: { STR: 11, DEX: 12, CON: 10, INT: 10, WIS: 8, CHA: 11, AC: 11 },
     weapon: null,
     armor: null,
@@ -668,6 +679,9 @@ export function normalizeLibrary(parsed) {
       return { ...rest, ...coerceWeapon(value) };
     };
     const stats = e.stats ?? e.statBlock;
+    // A rating is written either as a number or as a fraction such as "1/4".
+    // A value that names no defined step is dropped, and the entry is unrated.
+    const cr = coerceCR(e.cr);
     return /** @type {CreatureTemplate} */ ({
       id,
       name,
@@ -677,6 +691,7 @@ export function normalizeLibrary(parsed) {
       weapon: gear('weapon'),
       armor: gear('armor'),
       ...(hasLevel ? { level: clampInt(level, 1), tier } : {}),
+      ...(cr === undefined ? {} : { cr }),
       ...(typeof e.role === 'string' && e.role ? { role: e.role } : {}),
       ...(typeof e.notes === 'string' && e.notes ? { notes: e.notes } : {}),
       ...casterTemplateFrom(e),

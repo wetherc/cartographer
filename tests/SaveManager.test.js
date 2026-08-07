@@ -125,6 +125,17 @@ test('a node holding an inline payload re-encodes and rebuilds the asset table e
   assert.equal(serialize(state), serialize(state), 're-serializing is deterministic');
 });
 
+test('a challenge rating survives packing and reload, and absence stays absence', () => {
+  const state = buildState({
+    grid: sampleGrid(),
+    party: { nodeId: 'world', tileId: '0,0' },
+    creatures: [foe('e1', 'Goblin', 7, { cr: 0.25 }), foe('e2', 'Thug', 11)],
+  });
+  const restored = deserialize(serialize(state));
+  assert.equal(restored.creatures[0].cr, 0.25, 'the packer must not drop the rating');
+  assert.equal('cr' in restored.creatures[1], false, 'an unrated foe gains no rating');
+});
+
 test('the spellcasting-focus flag survives packing and reload', () => {
   const hero = createCharacter('c1', 'Hero');
   hero.inventory = [

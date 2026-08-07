@@ -116,6 +116,32 @@ None. A typed level pre-fills the pickers and the `STAT_KEYS` inputs with
 the level's defaults. The read-back has no gear fallback, so what the picker
 shows is what the creature gets, and an empty picker means unarmed.
 
+### The challenge rating
+
+`src/data/challenge.js` holds the rating tables. A rating is a plain number,
+so the four ratings below 1 are stored as `0`, `0.125`, `0.25`, and `0.5`.
+`crLabel` prints the fractions the conventional way, and `crOptions` builds
+the picker. `crXP` is the SRD experience-point table, which the difficulty
+hint adds up. A rating of 0 is worth 10 XP, which is one of the two values
+the rules give it.
+
+`Modifiers.crProficiencyBonus` is the proficiency bonus of a rating. It calls
+`proficiencyBonus` at the rating, because the rating ladder and the character
+level ladder take the same steps. There is one implementation of that ladder.
+
+The `cr` field on a creature is optional, and an absent field means unrated.
+An unrated creature falls back to its level for proficiency, and it counts
+for no XP. `coerceCR` is the one gate. It accepts a number or a written
+rating such as `"1/4"`, and it drops anything that names no defined step
+rather than snapping the value to a nearby one. `Creature.js` runs every
+write path (`createCreature`, `editCreature`, `withDefaults`, `toTemplate`,
+and `fromTemplate`) through it, and `Library.normalizeLibrary` runs library
+entries through it. A save needs no migration step, because an old creature
+simply has no field.
+
+Each built-in hostile creature carries the rating of its SRD counterpart. The
+built-in townsfolk stay unrated, because nothing fights them.
+
 ## The character foundation
 
 Beyond its stats and inventory, a `Character` carries a class list, a race, a

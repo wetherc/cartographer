@@ -27,6 +27,7 @@ import {
   resolveSpellIds,
 } from '../src/library/Library.js';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
+import { crXP } from '../src/data/challenge.js';
 
 test('defaultEquipmentTemplates covers every built-in preset list', () => {
   const defaults = defaultEquipmentTemplates();
@@ -176,6 +177,30 @@ test('normalizeLibrary keeps a supplied id, valid tier, and an armor object', ()
   assert.equal(wyvern.id, 'wyvern-alpha', 'a present string id is kept, not sluggified');
   assert.equal(wyvern.tier, 'legend', 'a valid tier survives');
   assert.deepEqual(wyvern.armor, { name: 'Scales', acBonus: 3 }, 'an armor object is kept');
+});
+
+test('normalizeLibrary reads a written challenge rating and drops a bad one', () => {
+  const lib = normalizeLibrary({
+    creatures: [
+      { name: 'Wyvern', cr: 6 },
+      { name: 'Kobold', cr: '1/8' },
+      { name: 'Thing', cr: 'deadly' },
+      { name: 'Commoner' },
+    ],
+  });
+  const byName = Object.fromEntries(lib.creatures.map((c) => [c.name, c]));
+  assert.equal(byName.Wyvern.cr, 6);
+  assert.equal(byName.Kobold.cr, 0.125, 'a fraction reads as its number');
+  assert.equal('cr' in byName.Thing, false);
+  assert.equal('cr' in byName.Commoner, false);
+});
+
+test('the built-in foes all carry a rating and the townsfolk carry none', () => {
+  for (const entry of DEFAULT_CREATURES) {
+    const rated = entry.cr !== undefined;
+    assert.equal(rated, entry.disposition === 'hostile', `${entry.name} is rated wrongly`);
+    if (rated) assert.ok(crXP(entry.cr) > 0, `${entry.name} has an unknown rating`);
+  }
 });
 
 test('normalizeLibrary reads a pre-merge file: bestiary is hostile, statBlock is stats', () => {

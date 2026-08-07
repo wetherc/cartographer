@@ -63,6 +63,19 @@ export function proficiencyBonus(level) {
 }
 
 /**
+ * The proficiency bonus a creature of a challenge rating rolls with. The
+ * rating ladder and the character level ladder take the same steps: +2 up to
+ * 4, then one more step every four ratings. Every rating below 1 rolls with
+ * +2, the same as a first-level character. This function is therefore the
+ * level rule read at the rating, and not a second copy of it.
+ * @param {number} cr a challenge rating (see `data/challenge.js`)
+ * @returns {number}
+ */
+export function crProficiencyBonus(cr) {
+  return proficiencyBonus(Math.max(1, cr));
+}
+
+/**
  * Format a modifier with its sign, as character sheets conventionally do.
  * @param {number} modifier
  * @returns {string}
