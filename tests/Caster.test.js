@@ -8,6 +8,7 @@ import {
   ensureCasterFields,
   withCasterState,
   casterTemplateFields,
+  casterSummary,
 } from '../src/entities/Caster.js';
 import {
   createCreature,
@@ -313,6 +314,36 @@ test('toCaster carries the exhaustion level, so a tired caster attacks worse', (
   assert.equal(toCaster(creature).exhaustion, 2);
   assert.equal(spellAttackBonus(toCaster(creature)), 2 + 3 - 4);
   assert.equal(toCaster({ id: 'x', name: 'Blank' }).exhaustion, undefined);
+});
+
+test('casterSummary states class, spell numbers, and remaining slots', () => {
+  const fanatic = createCreature('f1', 'Cult Fanatic', {
+    disposition: 'hostile',
+    maxHP: 33,
+    class: 'cleric',
+    casterLevel: 4,
+    cr: 2,
+    stats: { WIS: 13 },
+  });
+  assert.equal(
+    casterSummary(fanatic),
+    'Cleric 4 | Spell DC 11, spell attack +3 | Slots L1 4/4, L2 3/3',
+  );
+  const spent = {
+    ...fanatic,
+    resources: fanatic.resources.map((pool) =>
+      pool.id === 'slots-2' ? { ...pool, current: 1 } : pool,
+    ),
+  };
+  assert.match(casterSummary(spent), /L2 1\/3/, 'a spent slot shows current over max');
+  const brute = createCreature('b1', 'Brute', { disposition: 'hostile', maxHP: 20 });
+  assert.equal(casterSummary(brute), '');
+  const mute = { ...fanatic, stats: {} };
+  assert.equal(
+    casterSummary(mute),
+    'Cleric 4 | Slots L1 4/4, L2 3/3',
+    'a caster without its ability score omits the DC clause',
+  );
 });
 
 test('a rated creature casts with the rating-ladder proficiency', () => {

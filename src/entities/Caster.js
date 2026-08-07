@@ -1,8 +1,8 @@
-import { isCasterClass, casterSlots } from './Classes.js';
-import { crProficiencyBonus } from './Modifiers.js';
+import { isCasterClass, casterSlots, getClass, spellSaveDC, spellAttackBonus } from './Classes.js';
+import { crProficiencyBonus, formatModifier } from './Modifiers.js';
 import { emptySpellbook } from './Character.js';
 import { spliceReservedPools } from './Resource.js';
-import { isSlotPool, isCasterPool } from './SpellSlots.js';
+import { isSlotPool, isCasterPool, getSlotPools, getPactPool, slotLevelOf } from './SpellSlots.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -122,6 +122,39 @@ export function toCaster(entity) {
 export function isCaster(entity) {
   const view = toCaster(entity);
   return view.classes.some((ref) => isCasterClass(ref.classId)) && !!view.spellbook;
+}
+
+/**
+ * One line naming what an entity casts as, for example
+ * "Cleric 4 | Spell DC 11, spell attack +3 | Slots L1 4/4, L2 3/3". A
+ * non-caster gives an empty string. Both creature panels print this, so the
+ * numbers they show and the numbers the cast paths use come from one place.
+ * Slots show current over max, because spent slots persist between fights.
+ * The attack bonus already carries exhaustion, like the save line above it;
+ * the DC does not, because a DC is not a roll the caster makes. A caster
+ * that lacks its spell ability score prints class and slots without the DC
+ * clause.
+ * @param {Character | Creature} entity
+ * @returns {string}
+ */
+export function casterSummary(entity) {
+  if (!isCaster(entity)) return '';
+  const view = toCaster(entity);
+  const ref = view.classes.find((c) => isCasterClass(c.classId));
+  if (!ref) return '';
+  const parts = [`${getClass(ref.classId)?.name ?? ref.classId} ${ref.level}`];
+  const dc = spellSaveDC(view, ref.classId);
+  const attack = spellAttackBonus(view, ref.classId);
+  if (dc !== null && attack !== null) {
+    parts.push(`Spell DC ${dc}, spell attack ${formatModifier(attack)}`);
+  }
+  const slots = getSlotPools(view).map(
+    (pool) => `L${slotLevelOf(pool)} ${pool.current}/${pool.max}`,
+  );
+  const pact = getPactPool(view);
+  if (pact) slots.push(`pact ${pact.current}/${pact.max} (L${slotLevelOf(pact)})`);
+  if (slots.length > 0) parts.push(`Slots ${slots.join(', ')}`);
+  return parts.join(' | ');
 }
 
 /**

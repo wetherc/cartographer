@@ -1,6 +1,7 @@
 import { el } from './dom.js';
 import { chip } from './buttons.js';
 import { factLine } from './FactLine.js';
+import { formatModifier } from '../entities/Modifiers.js';
 
 /** @typedef {import('../combat/Loadout.js').Loadout} Loadout */
 
@@ -36,6 +37,13 @@ export function loadoutBlock(loadout, { detailed = false } = {}) {
 
   const spells = spellSummary(loadout.spells);
   if (spells) lines.push(line('Spells', spells));
+
+  // The caster's spell save DC and attack bonus, so a player reads the
+  // numbers a cast will use without opening the cast dialog.
+  if (loadout.spellStats) {
+    const stats = loadout.spellStats;
+    lines.push(line('Casting', `DC ${stats.dc}, attack ${formatModifier(stats.attack)}`));
+  }
 
   if (loadout.slots.length > 0) {
     lines.push(

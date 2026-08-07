@@ -89,6 +89,25 @@ test('slots report what is left, leveled first and pact magic after', () => {
   ]);
 });
 
+test('spellStats state the caster DC and attack, and stay null otherwise', () => {
+  const witch = createCreature('w1', 'Witch', {
+    disposition: 'hostile',
+    maxHP: 20,
+    location: HERE,
+    class: 'wizard',
+    casterLevel: 9,
+    cr: 6,
+    stats: { INT: 17 },
+  });
+  const loadout = buildLoadout({ kind: 'creature', entity: witch });
+  assert.deepEqual(loadout.spellStats, { dc: 14, attack: 6 }, 'the rating ladder gives prof +3');
+  assert.equal(isEmptyLoadout(loadout), false);
+  const brute = createCreature('b1', 'Brute', { disposition: 'hostile', maxHP: 20 });
+  assert.equal(buildLoadout({ kind: 'creature', entity: brute }).spellStats, null);
+  const seen = buildLoadout({ kind: 'creature', entity: witch }, [], 'public');
+  assert.equal(seen.spellStats, null, 'public access keeps the caster numbers private');
+});
+
 test('a foe loadout reads its authored armor and single weapon', () => {
   const goblin = {
     ...createCreature('goblin', 'Goblin', {

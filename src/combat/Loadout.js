@@ -20,6 +20,8 @@
 
 import { equippedWeapons, formatDamage, getEquipped } from '../entities/Equipment.js';
 import { getPactPool, getSlotPools, slotLevelOf } from '../entities/SpellSlots.js';
+import { isCaster, toCaster } from '../entities/Caster.js';
+import { spellSaveDC, spellAttackBonus } from '../entities/Classes.js';
 import { sideOf } from './CombatView.js';
 
 /** @typedef {import('./CombatView.js').ResolvedCombatant} ResolvedCombatant */
@@ -36,6 +38,7 @@ import { sideOf } from './CombatView.js';
  *   armor: string[],
  *   weapons: { name: string, damage: string }[],
  *   spells: { cantrips: number, leveled: number },
+ *   spellStats: { dc: number, attack: number } | null,
  *   slots: SlotLine[],
  * }} Loadout
  */
@@ -47,7 +50,13 @@ import { sideOf } from './CombatView.js';
  */
 
 /** A combatant carrying nothing worth showing. */
-const EMPTY = { armor: [], weapons: [], spells: { cantrips: 0, leveled: 0 }, slots: [] };
+const EMPTY = {
+  armor: [],
+  weapons: [],
+  spells: { cantrips: 0, leveled: 0 },
+  spellStats: null,
+  slots: [],
+};
 
 /**
  * What a viewer can see of a combatant's loadout. The GM sees all of it. A
@@ -76,8 +85,15 @@ export function loadoutAccess(found, viewer, id) {
 export function buildLoadout(found, spells = [], access = 'full') {
   if (!found || access === 'none') return EMPTY;
   const shared = { armor: armorOf(found), weapons: weaponLines(found) };
-  if (access === 'public') return { ...shared, spells: { cantrips: 0, leveled: 0 }, slots: [] };
-  return { ...shared, spells: countSpells(spells), slots: slotsOf(found) };
+  if (access === 'public') {
+    return { ...shared, spells: { cantrips: 0, leveled: 0 }, spellStats: null, slots: [] };
+  }
+  return {
+    ...shared,
+    spells: countSpells(spells),
+    spellStats: spellStatsOf(found),
+    slots: slotsOf(found),
+  };
 }
 
 /**
@@ -91,6 +107,7 @@ export function isEmptyLoadout(loadout) {
     loadout.armor.length === 0 &&
     loadout.weapons.length === 0 &&
     loadout.slots.length === 0 &&
+    loadout.spellStats === null &&
     loadout.spells.cantrips === 0 &&
     loadout.spells.leveled === 0
   );
@@ -143,6 +160,24 @@ function countSpells(spells) {
   let cantrips = 0;
   for (const spell of spells) if (spell.level === 0) cantrips += 1;
   return { cantrips, leveled: spells.length - cantrips };
+}
+
+/**
+ * The combatant's spell save DC and spell attack bonus, or null for a
+ * non-caster or a caster missing its spell ability score. Derived through
+ * the caster view, the same read the cast dialog makes, so a card and a
+ * cast never disagree. A rated creature's numbers come off the rating
+ * ladder.
+ * @param {ResolvedCombatant} found
+ * @returns {{ dc: number, attack: number } | null}
+ */
+function spellStatsOf(found) {
+  if (!isCaster(found.entity)) return null;
+  const caster = toCaster(found.entity);
+  const dc = spellSaveDC(caster);
+  const attack = spellAttackBonus(caster);
+  if (dc === null || attack === null) return null;
+  return { dc, attack };
 }
 
 /**
