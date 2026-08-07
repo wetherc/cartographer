@@ -604,7 +604,7 @@ its HP bar and its banner.
 | Max HP | GM | Overrides the derived maximum and clamps current HP |
 | Bonus HP | GM | Temporary points on top of intrinsic HP. Damage drains it first, and healing never refills it |
 | Base AC | GM | The unarmored baseline, normally 10 |
-| XP | GM | The roster row grants it to one character. Award XP below the roster grants the same amount to every character at once |
+| XP | GM | The roster row grants it to one character. Award Party XP below the roster grants the same amount to every character at once |
 
 ### Creation and progression
 

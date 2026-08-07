@@ -40,7 +40,8 @@ function hpMeter(character) {
  * the creation and deletion logic, for example modals, id generation, and
  * list updates, so the roster stays as thin as the other panels.
  * @param {HTMLElement} container
- * If onAwardXP is set, a non-empty roster also offers an Award XP action.
+ * If onAwardXP is set, a non-empty roster also offers an Award Party XP
+ * action.
  * This grants the same amount to every party member at once, with the
  * caller prompting for the amount, so leveling after an encounter does not
  * mean a visit to each sheet. If canManage returns false, the roster is
@@ -51,7 +52,7 @@ function hpMeter(character) {
  * the numbers the GM sets rather than the character earns: maximum HP, bonus
  * HP, and unarmored base AC. If onGrantXP is set, each managed row offers an
  * XP action that grants a one-off amount to that character alone, which is
- * the per-character counterpart of the party-wide Award XP below the list.
+ * the per-character counterpart of Award Party XP below the list.
  * Both open a dialog through the caller. They live here, not on the character
  * sheet, so the GM can adjust anyone without selecting them first.
  * @param {{
@@ -175,7 +176,7 @@ export function mountCharacterRoster(container, options) {
           }),
           options.onAwardXP &&
             characters.length > 0 &&
-            textButton('Award XP', () => options.onAwardXP?.(), {
+            textButton('Award Party XP', () => options.onAwardXP?.(), {
               icon: 'sparkles',
               className: 'character-roster__award',
             }),

@@ -323,7 +323,8 @@ Each call has a control that carries it into the rolls.
 
 ### Level a character
 
-1. Click **Award XP** in the Party roster to grant XP to everyone at once.
+1. Click **Award Party XP** in the Party roster to grant XP to everyone at
+   once.
    To reward one character alone, click the sparkle button on their roster
    row.
 2. Open the Progression block. Each earned level waits as a pending level.
