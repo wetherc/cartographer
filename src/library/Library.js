@@ -33,7 +33,7 @@ import { SKILL_IDS } from '../data/skills.js';
 import { DEFAULT_FEATS, FEAT_EFFECT_KINDS } from '../data/feats.js';
 import { DEFAULT_CREATURE_HP, DISPOSITIONS, defaultEnemyGear } from '../entities/Creature.js';
 import { isCasterClass } from '../entities/Classes.js';
-import { creatureProficiencyFields } from '../entities/Proficiencies.js';
+import { creatureProficiencyFields, ARMOR_PROFICIENCIES } from '../entities/Proficiencies.js';
 import { slugId } from '../entities/Roster.js';
 import { indexById } from '../util/indexById.js';
 import { deepFreeze } from '../util/deepFreeze.js';
@@ -412,11 +412,6 @@ function stringList(value) {
   if (!Array.isArray(value)) return [];
   return [...new Set(value.filter((v) => typeof v === 'string' && v.trim()).map((v) => v.trim()))];
 }
-
-/** The armor proficiency vocabulary: the three weight classes plus the
- * shield, which is its own entry in the armor list.
- * @type {import('../types/class.js').ArmorProficiency[]} */
-const ARMOR_PROFICIENCIES = ['light', 'medium', 'heavy', 'shield'];
 
 /**
  * Normalize one parsed feat into a valid Feat. Descriptive fields default,

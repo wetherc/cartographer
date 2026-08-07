@@ -90,9 +90,10 @@ export const withExpertise = deriving(setExpertise);
  * @type {(character: Character, increases: Record<string, number>) => Character} */
 export const applyASI = deriving(recordASI);
 
-/** Spend the first pending ASI slot on a feat, then re-derive.
- * See LevelUp.takeFeat.
- * @type {(character: Character, feat: string) => Character} */
+/** Spend the first pending ASI slot on a feat, then re-derive. A half-feat's
+ * CON increase grants retroactive HP the same way an ASI does. See
+ * LevelUp.takeFeat.
+ * @type {(character: Character, feat: string | import('../types/feat.js').FeatStamp) => Character} */
 export const takeFeat = deriving(recordFeat);
 
 /** Undo the most recent ASI choice, then re-derive (an undone CON increase

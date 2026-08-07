@@ -321,7 +321,21 @@ export type AsiChoice =
       type: 'asi';
       increases: Record<string, number>;
     }
-  | { classId: string; classLevel: number; order: number; type: 'feat'; feat: string };
+  | {
+      classId: string;
+      classLevel: number;
+      order: number;
+      type: 'feat';
+      feat: string;
+      /** The catalog entry taken, absent for a hand-typed feat name. */
+      featId?: string;
+      /** The ability increases the feat applied, subtracted back on undo. */
+      increases?: Record<string, number>;
+      /** The proficiency entries the feat added, removed again on undo. */
+      granted?: import('./feat.js').FeatGrants;
+      /** The standing roll rider the feat carries. */
+      rider?: RollRider;
+    };
 
 /** Recorded ASI choices, keyed by the slot they claim (see LevelUp.slotKey).
  * A slot holds at most one choice. The key makes this structural, instead

@@ -345,3 +345,129 @@ test('a class id outside the catalog unlocks no features', () => {
     { classId: 'fighter', level: 1, name: 'Second Wind' },
   ]);
 });
+
+test('takeFeat applies a stamp: increase, delta-only grants, and the rider', () => {
+  const base = {
+    ...fighter(4),
+    proficiencies: {
+      saves: ['STR'],
+      skills: ['athletics'],
+      expertise: [],
+      weapons: { categories: ['martial'], named: [] },
+      armor: ['light'],
+      tools: [],
+      languages: [],
+    },
+  };
+  const c = takeFeat(base, {
+    name: 'Skill Expert',
+    featId: 'skill-expert',
+    increases: { DEX: 1 },
+    granted: {
+      skills: ['stealth', 'athletics'],
+      saves: ['DEX'],
+      expertise: ['stealth'],
+      armor: ['light', 'medium'],
+      tools: ["thieves' tools"],
+    },
+    rider: { rolls: ['save'], flat: 1 },
+  });
+  assert.equal(c.stats.DEX, 11, 'the half-feat point lands on the stats');
+  assert.deepEqual(c.proficiencies?.skills, ['athletics', 'stealth']);
+  assert.deepEqual(c.proficiencies?.saves, ['STR', 'DEX']);
+  assert.deepEqual(c.proficiencies?.expertise, ['stealth']);
+  assert.deepEqual(c.proficiencies?.armor, ['light', 'medium']);
+  const [choice] = listASIChoices(c);
+  assert.equal(choice.type, 'feat');
+  assert.deepEqual(choice, {
+    classId: 'fighter',
+    classLevel: 4,
+    order: 0,
+    type: 'feat',
+    feat: 'Skill Expert',
+    featId: 'skill-expert',
+    increases: { DEX: 1 },
+    granted: {
+      skills: ['stealth'],
+      saves: ['DEX'],
+      expertise: ['stealth'],
+      armor: ['medium'],
+      tools: ["thieves' tools"],
+    },
+    rider: { rolls: ['save'], flat: 1 },
+  });
+});
+
+test('takeFeat drops an expertise grant on a skill the character lacks', () => {
+  const c = takeFeat(fighter(4), {
+    name: 'Odd Import',
+    granted: { expertise: ['stealth'] },
+  });
+  assert.deepEqual(c.proficiencies?.expertise ?? [], []);
+  const [choice] = listASIChoices(c);
+  assert.equal(choice.type === 'feat' && choice.granted, undefined, 'nothing landed, so no stamp');
+});
+
+test('takeFeat refuses an increase past the ability cap or a malformed one', () => {
+  const capped = { ...fighter(4), stats: { STR: 20 } };
+  assert.equal(
+    takeFeat(capped, { name: 'Heavy', increases: { STR: 1 } }),
+    capped,
+    'a wasted point is refused rather than clamped',
+  );
+  const c = fighter(4);
+  assert.equal(takeFeat(c, { name: 'Odd', increases: { STR: 1.5 } }), c);
+  assert.equal(takeFeat(c, { name: 'Odd', increases: { LCK: 1 } }), c);
+});
+
+test('takeFeat filters grants to each vocabulary and ignores an empty stamp field', () => {
+  const c = takeFeat(fighter(4), {
+    name: 'Odd Import',
+    granted: { skills: ['flying', 'stealth'], saves: ['LCK'], armor: ['pauldron'] },
+    rider: { rolls: [] },
+  });
+  const [choice] = listASIChoices(c);
+  assert.equal(choice.type, 'feat');
+  assert.deepEqual(choice.type === 'feat' ? choice.granted : null, { skills: ['stealth'] });
+  assert.equal(choice.type === 'feat' ? choice.rider : null, undefined, 'an empty rider drops');
+});
+
+test('undoLastChoice takes a stamped feat back off the character', () => {
+  const base = {
+    ...fighter(4),
+    proficiencies: {
+      saves: [],
+      skills: ['athletics'],
+      expertise: ['athletics'],
+      weapons: { categories: [], named: [] },
+      armor: [],
+      tools: [],
+      languages: [],
+    },
+  };
+  const taken = takeFeat(base, {
+    name: 'Skill Expert',
+    increases: { CON: 1 },
+    granted: { skills: ['stealth'], expertise: ['stealth'], saves: ['DEX'] },
+  });
+  const undone = undoLastChoice(taken);
+  assert.equal(undone.stats.CON, 10);
+  assert.deepEqual(undone.proficiencies?.skills, ['athletics']);
+  assert.deepEqual(undone.proficiencies?.expertise, ['athletics']);
+  assert.deepEqual(undone.proficiencies?.saves, []);
+  assert.deepEqual(getASIChoices(undone), {});
+});
+
+test('undo prunes an expertise another writer stacked on a feat-granted skill', () => {
+  const taken = takeFeat(fighter(4), { name: 'Skilled', granted: { skills: ['stealth'] } });
+  const stacked = {
+    ...taken,
+    proficiencies: {
+      .../** @type {NonNullable<typeof taken.proficiencies>} */ (taken.proficiencies),
+      expertise: ['stealth'],
+    },
+  };
+  const undone = undoLastChoice(stacked);
+  assert.deepEqual(undone.proficiencies?.skills, []);
+  assert.deepEqual(undone.proficiencies?.expertise, [], 'expertise cannot outlive its skill');
+});

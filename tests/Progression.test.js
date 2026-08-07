@@ -8,6 +8,7 @@ import {
   withProficiencies,
   withExpertise,
   applyASI,
+  takeFeat,
   undoLastChoice,
   setStat,
 } from '../src/entities/Progression.js';
@@ -162,4 +163,32 @@ test('withExpertise re-derives and keeps expertise inside the proficient skills'
     getHitDicePools(fighter).map((pool) => pool.max),
   );
   assert.deepEqual(getProficiencies(withExpertise(expert, [])).expertise, [], 'a clear works');
+});
+
+test('takeFeat with a CON half-feat grants retroactive HP and undo takes it back', () => {
+  const fighter = classed([{ classId: 'fighter', level: 4 }], { CON: 15 }, 4);
+  assert.equal(getHP(fighter).max, 12 + 3 * 8);
+
+  const tough = takeFeat(fighter, {
+    name: 'Durable',
+    featId: 'durable',
+    increases: { CON: 1 },
+  });
+  assert.equal(tough.stats.CON, 16);
+  assert.equal(getHP(tough).max, 13 + 3 * 9, '+1 CON modifier at every one of four levels');
+
+  const undone = undoLastChoice(tough);
+  assert.equal(undone.stats.CON, 15);
+  assert.equal(getHP(undone).max, 12 + 3 * 8);
+});
+
+test('takeFeat re-derives through the wrapper and keeps a refused stamp identical', () => {
+  const fighter = classed([{ classId: 'fighter', level: 4 }]);
+  assert.equal(
+    takeFeat(fighter, { name: 'Odd', increases: { CON: 99 } }),
+    fighter,
+    'an illegal increase is a no-op with identity preserved',
+  );
+  const granted = takeFeat(fighter, { name: 'Skilled', granted: { skills: ['stealth'] } });
+  assert.deepEqual(getProficiencies(granted).skills, ['stealth']);
 });

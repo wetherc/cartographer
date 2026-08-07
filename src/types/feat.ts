@@ -38,6 +38,37 @@ export type FeatEffect =
    * a condition chip carries. */
   | { kind: 'rider'; rider: RollRider };
 
+/**
+ * The proficiency entries a taken feat added, one list per kind, recorded on
+ * the character's feat choice. Each list holds only what the character did
+ * not already have, so undoing the feat removes exactly these.
+ */
+export interface FeatGrants {
+  skills?: string[];
+  saves?: string[];
+  expertise?: string[];
+  armor?: ArmorProficiency[];
+  tools?: string[];
+  languages?: string[];
+}
+
+/**
+ * A feat resolved into concrete outcomes, ready to apply: the catalog entry
+ * plus the taker's picks. `LevelUp.takeFeat` applies the increases and the
+ * grants and records what actually changed, so the choice survives any later
+ * edit to the library entry.
+ */
+export interface FeatStamp {
+  name: string;
+  featId?: string;
+  /** The picked ability increases, usually one key at +1. */
+  increases?: Record<string, number>;
+  /** The picked proficiency grants, before the already-known ones drop out. */
+  granted?: FeatGrants;
+  /** The standing roll rider the feat carries, copied as picked. */
+  rider?: RollRider;
+}
+
 /** A feat template in the library. The take-feat flow resolves its choices
  * and stamps the outcome onto the character, so a later edit to the library
  * entry does not reach a character that already took it. */

@@ -324,6 +324,21 @@ choice is stored against the class and class level that earned it (`slotKey`
 builds that key), so a slot can hold at most one choice. Each choice also
 carries the order in which the player made it, for `undoLastChoice` to read.
 
+A feat choice stores a stamp of what it did, not a reference to the catalog.
+`takeFeat` takes either a plain name or a `FeatStamp` (`types/feat.ts`): the
+resolved picks of a library feat. It applies the ability increases to the
+stats, merges the proficiency grants through `normalizeProficiencies`, and
+records only what actually changed on the choice (`increases`, `granted`,
+`rider`). This mirrors how a race applies its increases: `undoLastChoice` and
+the sheet read the stamp, so a later edit to the library entry does not reach
+a character that already took the feat. Undo subtracts the increases and
+strips exactly the granted entries, and an expertise that rode a removed skill
+prunes with it. A grant the character already had is never stamped, so undo
+cannot take away what the feat did not add. The one blind spot: a matching
+grant made by hand between take and undo comes off anyway, the same hazard a
+stat edit poses to an ASI undo. A choice written before these fields carries
+none of them and undoes as a bare name.
+
 `LevelAssign.js` also builds the picks that the assign dialog offers.
 `assignOptions(character)` lists every held class one level up and every new
 class that the prerequisites allow. It then appends the classes that the

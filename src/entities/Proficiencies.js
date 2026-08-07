@@ -17,6 +17,11 @@ import { SKILL_IDS } from '../data/skills.js';
  * @type {WeaponCategory[]} */
 export const WEAPON_CATEGORIES = ['simple', 'martial'];
 
+/** Every entry the armor proficiency list can hold: the three weight classes
+ * plus the shield, which is its own entry.
+ * @type {import('../types/class.js').ArmorProficiency[]} */
+export const ARMOR_PROFICIENCIES = ['light', 'medium', 'heavy', 'shield'];
+
 /** @returns {Proficiencies} every proficiency list empty */
 export function emptyProficiencies() {
   return {
