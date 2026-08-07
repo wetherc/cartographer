@@ -3,7 +3,12 @@ import { confirmModal, confirmDelete } from '../ui/Modal.js';
 import { mountTravelogPanel } from '../ui/TravelogPanel.js';
 import { appendEntry, createEntry } from '../log/Travelogue.js';
 import { mountNPCPanel } from '../ui/NPCPanel.js';
-import { creaturesAt, knownCreaturesAt, formatLocation } from '../entities/CreatureMap.js';
+import {
+  creaturesAt,
+  creaturesNear,
+  knownCreaturesAt,
+  formatLocation,
+} from '../entities/CreatureMap.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountQuestPanel } from '../ui/QuestPanel.js';
 import { createQuest, toggleQuestStatus } from '../quest/Quests.js';
@@ -72,6 +77,12 @@ export function wireStory(app) {
   const folkAt = (/** @type {{ nodeId: string } | null} */ position) =>
     creaturesAt(state.creatures, position).filter((c) => c.disposition !== 'hostile');
 
+  /** The same list, cut to the tiles around the party. */
+  const folkNear = (/** @type {{ nodeId: string, tileId: string } | null} */ position) =>
+    creaturesNear(state.creatures, position, app.partyTracker.revealRadius * 4).filter(
+      (c) => c.disposition !== 'hostile',
+    );
+
   /** The confirm-and-delete flow shared by both NPC lists. */
   const deleteNPC = (/** @type {string} */ id) => {
     state.creatures = removeById(state.creatures, id);
@@ -83,10 +94,13 @@ export function wireStory(app) {
 
   app.views.npcPanel = mountNPCPanel(mustGetElement('npc-container'), {
     // A player learns of a placed NPC only after the party lands on its tile.
-    // The GM sees the whole node's roster, with unmet NPCs flagged.
+    // The GM sees who stands close enough to matter, with unmet NPCs flagged.
+    // The radius is the one the Encounters panel uses for nearby foes, so both
+    // sidebar lists cover the same ground. The whole node's roster stays on
+    // the Build rail.
     getNPCs: () =>
       isGM(state.role)
-        ? folkAt(app.partyTracker.getPosition())
+        ? folkNear(app.partyTracker.getPosition())
         : knownCreaturesAt(state.creatures, app.partyTracker.getPosition()),
     getLocationLabel: (npc) => {
       const label = formatLocation(npc.location, (id) => app.grid.getNode(id)?.name);
