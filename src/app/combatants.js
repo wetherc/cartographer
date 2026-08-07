@@ -209,6 +209,17 @@ export function asTarget(entity, kind) {
 export function targetSaveBonus(app, id, ability) {
   const found = findCombatant(app, id);
   if (!found) return undefined;
+  return combatantSaveBonus(found, ability);
+}
+
+/**
+ * The save bonus an already-resolved combatant rolls with, dispatched to the
+ * module that owns its shape.
+ * @param {Combatant} found
+ * @param {string} ability
+ * @returns {number}
+ */
+function combatantSaveBonus(found, ability) {
   return found.kind === 'character'
     ? saveBonus(found.entity, ability)
     : creatureSaveBonus(found.entity, ability);
@@ -479,9 +490,7 @@ export function retryImposedSaves(app, combatantId) {
   if (!found) return;
   const { conditions, results } = repeatSaves(found.entity.conditions, {
     bonusOf: (source) =>
-      source.saveAbility
-        ? (targetSaveBonus(app, combatantId, source.saveAbility) ?? source.saveBonus ?? 0)
-        : (source.saveBonus ?? 0),
+      source.saveAbility ? combatantSaveBonus(found, source.saveAbility) : (source.saveBonus ?? 0),
   });
   if (results.length === 0) return;
   if (conditions !== found.entity.conditions) {
