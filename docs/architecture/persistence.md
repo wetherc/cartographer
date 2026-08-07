@@ -32,9 +32,11 @@ does.
       |                                        |
       |  localStorage path                     |  export path
       v                                        v
-  detachAssets: payloads to their          downloadState: one
-  own key, campaign string to its          self-contained JSON file
-  own key, one history delta appended
+  detachAssets: payloads to their          downloadCampaignFile: one
+  own key, campaign string to its          self-contained JSON file,
+  own key, one history delta appended      with the custom library
+                                           attached as a `library` field
+                                           (storage/CampaignFile.js)
 ```
 
 Loading runs the same stages in reverse, with two extra steps at the front:
@@ -65,6 +67,16 @@ wrappers are the only code that touches the real browser APIs: `localStorage`,
 throwing an error. A quota failure must reach the GM and must not appear as
 a successful save.
 
+The export and import buttons go through `storage/CampaignFile.js` instead
+of `downloadState` and `readStateFromFile`. `serializeCampaignFile` writes
+the packed state with the GM's custom library attached as a `library`
+field, and omits the field when the customs are empty, so such a file
+equals the plain serialized save. `readCampaignFromFile` splits the two
+apart again. The library joins the byte stream in this one module and
+nowhere else: `buildState`, the localStorage save, the history log, and
+the tab-sync deltas never carry it, so bundling adds nothing to the
+storage costs those paths account for.
+
 ## Load-time validation
 
 `deserialize` sets any missing top-level field to an empty value instead of
@@ -78,6 +90,14 @@ longer starts.
 
 `withNodeDefaults` (`map/TileGrid.js`) does the same job for nodes and their
 tiles. It drops any tile it cannot read.
+
+A bundled `library` field has its own gate. `deserialize` rebuilds the
+state field by field, so the field can never enter `CampaignState` or reach
+localStorage through the import's persist. `extractBundledLibrary` in
+`CampaignFile.js` lifts it through `normalizeLibrary`, the same tolerant
+parse a standalone library file passes, and reads anything absent,
+malformed, or empty as null. A broken library therefore cannot fail the
+campaign import around it.
 
 As a backstop, `main.js` starts through `Campaigns.loadInitialCampaignSafe`. A
 save that still cannot be read produces a blank campaign plus a notice. This
@@ -330,6 +350,11 @@ nothing.
 Any future change to the *meaning* of a stored field belongs in that table. Adding a field alone does not belong there,
 because the `withDefaults` functions already absorb its absence.
 
+One field is off limits: a step must never name `library`. The field a
+campaign export bundles belongs to `normalizeLibrary` and passes through
+the table untouched. A test runs a version-1 save with a library through
+the whole chain and asserts the field survives unchanged.
+
 ## Undo and redo: a log of deltas
 
 Undo and redo work from a log of invertible deltas against the persisted
@@ -421,6 +446,48 @@ tolerant, and it drops invalid entries instead of throwing an error. The
 library file carries no version field. A file written before the creature
 merge holds `bestiary` and `npcs` lists, and `normalizeLibrary` reads both
 into the one `creatures` list on the way in.
+
+A campaign export also carries the customs, as a `library` field beside the
+save (see the pipeline above). On import, `libraryImportAction` in
+`CampaignFile.js` decides what happens to the browser's customs:
+
+| File `library` field | Browser customs | Behavior |
+| --- | --- | --- |
+| absent, empty, or malformed | anything | untouched, no prompt |
+| present | empty | adopted silently |
+| present | non-empty | the GM confirms; Replace adopts, decline keeps the browser library. The campaign imports either way |
+
+An adopted library writes to the library key before the import's reload, so
+the library wiring picks it up through its normal mount-time read. A quota
+failure on that write falls back to importing the campaign alone, with a
+toast. The standalone library export stays: it is still the way to move a
+library without a campaign, and the file that seeds a fresh clone.
+
+### Changing the spell or feat schema
+
+Library data is versionless everywhere it is stored: the browser's library
+key, the exported `campaign-library.json`, and the `library` field bundled
+into a campaign export. All three pass through `normalizeLibrary` on read,
+and none pass through `Migrations.js`. A schema change is therefore a
+coercion change, never a migration step:
+
+1. Update the type in `src/types/spell.ts` (or `feat.ts`). A new field is
+   optional or has a stated default.
+2. Teach `normalizeSpell` (or `normalizeFeat`) in `library/Library.js` to
+   accept the new shape, coerce the old shape into it, and keep any
+   original free text it cannot interpret. It must never throw, and it must
+   never drop an entry over the changed field.
+3. Update the editor form (`ui/SpellForm.js` / `ui/FeatForm.js`) to read
+   and write the new field. The form assembles its draft through the same
+   normalizer, so a typed entry and an imported one cannot disagree.
+4. If characters carry copies of the shape, give `Character.withDefaults`
+   the same default. That side rides the campaign save and is covered by
+   `deserialize`, not by the library gate.
+5. Add `Library.test.js` cases: the new shape passes through unchanged, the
+   old shape coerces, and garbage in the field coerces to the default.
+6. Do not add a `Migrations.js` step, and do not bump `CURRENT_VERSION`
+   for a library-only change. A migration step must never name
+   `state.library`.
 
 ## File IO
 

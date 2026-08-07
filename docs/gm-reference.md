@@ -76,9 +76,9 @@ run at the same time.
 | --- | --- |
 | New | Resets to the blank campaign after a confirmation |
 | Load example | Replaces the campaign with the demo campaign after a confirmation |
-| Import | Loads a campaign from a `.json` file |
+| Import | Loads a campaign from a `.json` file. If the file carries library customizations, a prompt offers to replace yours; declining keeps them, and the campaign imports either way |
 | Save | Writes the campaign to the local storage of the browser |
-| Export | Downloads the whole campaign as a `.json` file |
+| Export | Downloads the whole campaign as a `.json` file, with your library customizations bundled in |
 | Undo, Redo | Steps back to the state before the last Save, New, Load example, or Import, and forward again |
 
 The app does not save on its own except through autosave, which runs after
@@ -706,8 +706,10 @@ An edit to a built-in default stores an override. The row gains a
 badge and a delete button. A custom entry overrides a default when the
 names match. For equipment, the name and the type must both match.
 
-Customizations live outside the campaign. New, Import, and Load example
-replace the campaign and never touch the library.
+Customizations live outside the campaign. New and Load example replace the
+campaign and never touch the library. A campaign export bundles the
+customizations, and a campaign import offers to restore them (see the
+header controls table).
 
 | Library file control | What it does |
 | --- | --- |

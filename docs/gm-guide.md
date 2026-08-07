@@ -27,13 +27,17 @@ control in a task does not show, set the mode that the task names.
 
 1. Click **Import** in the header.
 2. Pick a `.json` file that you exported earlier.
+3. If the file carries library customizations and you already have your
+   own, a prompt asks before it replaces them. Decline to keep yours; the
+   campaign imports either way.
 
 ## Save and back up
 
 1. Click **Save**, or press Ctrl/Cmd+S. The button reads "Save •" while
    changes are unsaved.
 2. Before a large edit, click **Export**. This downloads the whole campaign
-   as a `.json` file.
+   as a `.json` file. Your library customizations ride along in the same
+   file, so one export moves both.
 3. Keep the exported file. It is the only copy outside this browser.
 
 To step back, click **Undo**. Undo returns to the state before your last
@@ -405,6 +409,10 @@ apply.
    confirm.
 4. To drop every customization, click **Reset**. Export a copy first if you
    want to keep one.
+
+A campaign export carries your library too, so importing a campaign file
+in the other browser moves both at once. Use the Library file card when
+you want the library without a campaign.
 
 ## Export the map as an image
 
