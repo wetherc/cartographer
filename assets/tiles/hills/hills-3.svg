@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <g id="hl">
+      <ellipse cx="0" cy="1" rx="14.5" ry="3" fill="#4f7d3f" opacity="0.5"/>
+      <path d="M-14 0 A14 13 0 0 1 14 0 Z" fill="#7cb264"/>
+      <path d="M2 -12.9 A14 13 0 0 1 14 0 L2 0 Z" fill="#598c48"/>
+      <path d="M-12 -6.7 A14 13 0 0 1 0 -13" stroke="#95c77c" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      <path d="M-8 -3.5 Q-4.5 -6.5 0 -6" stroke="#95c77c" stroke-width="1" fill="none" stroke-linecap="round"/>
+    </g>
+    <g id="t" fill="none" stroke-linecap="round" stroke="#4b8a3c" stroke-width="1.1">
+      <path d="M0 0 Q-1.2 -2.2 -2.2 -4"/>
+      <path d="M0 0 Q0 -2.6 -0.3 -4.6"/>
+      <path d="M0 0 Q1.2 -2.2 2.2 -4"/>
+    </g>
+    <g id="bd">
+      <ellipse cx="0" cy="2.2" rx="6" ry="1.6" fill="#4f7d3f" opacity="0.6"/>
+      <path d="M-5 2 L-4 -2.5 L-0.5 -4 L3.5 -2.5 L5 2 Z" fill="#8b9086"/>
+      <path d="M-0.5 -4 L3.5 -2.5 L5 2 L0 2 Z" fill="#6e7368"/>
+      <ellipse cx="6.5" cy="1.4" rx="1.6" ry="1.1" fill="#7c8177"/>
+    </g>
+  </defs>
+  <rect width="64" height="64" fill="#66a152"/>
+  <g fill="#5d974a">
+    <ellipse cx="14" cy="30" rx="9" ry="6"/>
+    <ellipse cx="52" cy="34" rx="8" ry="5"/>
+  </g>
+  <!-- Edge band: byte-identical across hills variants, stamped in wrapped
+       pairs (a stamp crossing x=0 repeats at +64, likewise y, corners at
+       all four) so mottle and low hills continue across tile seams. -->
+  <g>
+    <ellipse cx="0" cy="0" rx="10" ry="6" fill="#5d974a"/>
+    <ellipse cx="64" cy="0" rx="10" ry="6" fill="#5d974a"/>
+    <ellipse cx="0" cy="64" rx="10" ry="6" fill="#5d974a"/>
+    <ellipse cx="64" cy="64" rx="10" ry="6" fill="#5d974a"/>
+    <ellipse cx="-1" cy="26" rx="8" ry="5" fill="#5d974a"/>
+    <ellipse cx="63" cy="26" rx="8" ry="5" fill="#5d974a"/>
+    <ellipse cx="30" cy="-1" rx="9" ry="5" fill="#5d974a"/>
+    <ellipse cx="30" cy="63" rx="9" ry="5" fill="#5d974a"/>
+    <use href="#hl" transform="translate(1 44) scale(0.6)"/>
+    <use href="#hl" transform="translate(65 44) scale(0.6)"/>
+    <use href="#hl" transform="translate(46 1) scale(0.65)"/>
+    <use href="#hl" transform="translate(46 65) scale(0.65)"/>
+    <use href="#t" transform="translate(20 1) scale(0.9)"/>
+    <use href="#t" transform="translate(20 65) scale(0.9)"/>
+    <use href="#t" transform="translate(-1 12)"/>
+    <use href="#t" transform="translate(63 12)"/>
+  </g>
+  <!-- Standing elements, farthest first. -->
+  <use href="#bd" transform="translate(52 14) scale(0.8)"/>
+  <use href="#t" transform="translate(12 20)"/>
+  <use href="#hl" transform="translate(32 24) scale(0.8)"/>
+  <use href="#t" transform="translate(40 34) scale(0.9)"/>
+  <use href="#hl" transform="translate(48 48) scale(0.8)"/>
+  <use href="#hl" transform="translate(20 52) scale(0.9)"/>
+  <use href="#t" transform="translate(30 60) scale(0.85)"/>
+</svg>

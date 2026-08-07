@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#5a9b4a"/>
+  <ellipse cx="13" cy="10" rx="8" ry="4.5" fill="#63a651"/>
+  <ellipse cx="53" cy="56" rx="7" ry="4" fill="#529044"/>
+  <ellipse cx="32" cy="45" rx="23" ry="10" fill="#c2a36c"/>
+  <ellipse cx="32" cy="45" rx="18" ry="7.5" fill="#cdb078"/>
+  <!-- side wings -->
+  <g>
+    <rect x="9" y="33" width="15" height="14" fill="#d9cdb4" stroke="#a89a7c" stroke-width="0.7"/>
+    <polygon points="8,33.5 16.5,27.5 25,33.5" fill="#4a5d74"/>
+    <polygon points="16.5,27.5 25,33.5 16.5,33.5" fill="#37485c"/>
+    <rect x="40" y="33" width="15" height="14" fill="#d9cdb4" stroke="#a89a7c" stroke-width="0.7"/>
+    <polygon points="39,33.5 47.5,27.5 56,33.5" fill="#4a5d74"/>
+    <polygon points="47.5,27.5 56,33.5 47.5,33.5" fill="#37485c"/>
+  </g>
+  <!-- central hall with bell tower -->
+  <rect x="23" y="26" width="18" height="21" fill="#e3d8c0" stroke="#a89a7c" stroke-width="0.8"/>
+  <polygon points="21.5,26.5 32,19 42.5,26.5" fill="#4a5d74"/>
+  <polygon points="32,19 42.5,26.5 32,26.5" fill="#37485c"/>
+  <g>
+    <rect x="29.4" y="12.5" width="5.2" height="8" fill="#d9cdb4" stroke="#a89a7c" stroke-width="0.6"/>
+    <polygon points="28.4,12.8 32,9 35.6,12.8" fill="#37485c"/>
+    <path d="M30.6 14.2 h2.8 v2.8 h-2.8 Z" fill="#3a3630"/>
+    <path d="M32 14.6 q-0.9 0 -0.9 1 l0 0.9 h1.8 l0 -0.9 q0 -1 -0.9 -1" fill="#c9a020"/>
+  </g>
+  <!-- windows -->
+  <g fill="#b9d4d8" stroke="#8a7f64" stroke-width="0.6">
+    <path d="M26 30 l0 4 l3 0 l0 -4 q-1.5 -1.2 -3 0 Z"/>
+    <path d="M35 30 l0 4 l3 0 l0 -4 q-1.5 -1.2 -3 0 Z"/>
+    <rect x="11.5" y="36" width="4" height="4.5"/>
+    <rect x="18" y="36" width="4" height="4.5"/>
+    <rect x="42" y="36" width="4" height="4.5"/>
+    <rect x="48.5" y="36" width="4" height="4.5"/>
+  </g>
+  <path d="M13.5 36 V40.5 M20 36 V40.5 M44 36 V40.5 M50.5 36 V40.5 M27.5 30 V34 M36.5 30 V34" stroke="#8a7f64" stroke-width="0.5"/>
+  <!-- entrance: steps, arched door, crest -->
+  <rect x="26.5" y="45" width="11" height="2" fill="#cfc3a8" stroke="#a89a7c" stroke-width="0.5"/>
+  <path d="M29 45 L29 39.5 Q32 36.8 35 39.5 L35 45 Z" fill="#4a3a2c"/>
+  <path d="M32 37.6 V45" stroke="#5f4c3a" stroke-width="0.6"/>
+  <path d="M30 27.6 h4 l-0.5 3.4 q-1.5 1.2 -3 0 Z" fill="#8c3b4a" stroke="#c9a020" stroke-width="0.5"/>
+  <path d="M25 51.5 Q32 50 39 51.5" stroke="#b09a63" stroke-width="1" fill="none" stroke-linecap="round"/>
+</svg>

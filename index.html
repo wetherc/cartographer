@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="description"
+    content="Build and run a tabletop campaign world: a tiled map with fog of war, party tracking, character sheets, encounters, and dice."
+  />
+  <!-- Values mirror the --bg token in styles/base.css for each scheme. -->
+  <meta name="color-scheme" content="light dark" />
+  <meta name="theme-color" content="#f4f1ea" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#191712" media="(prefers-color-scheme: dark)" />
+  <!--
+    Everything the app loads is local, so the policy names no external hosts.
+    Images allow data: and blob: because GM-supplied art is stored as a data URL
+    and read back through an object URL. Scripts allow inline because the two
+    before-paint blocks below have to run before the module graph loads.
+  -->
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; img-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+  />
+  <title>Campaign Builder</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237b4a2f' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2l8.5 5v10L12 22l-8.5-5V7z'/%3E%3Cpath d='M12 8L6 17h12z'/%3E%3Cpath d='M12 2v6'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="style-ZIHCQIVX.bundle.css" />
+  <script>
+    // Pin the saved theme before first paint so a reload never flashes the
+    // wrong scheme. Key and values mirror src/view/Theme.js.
+    try {
+      var theme = localStorage.getItem('campaign-builder:theme');
+      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+    } catch (error) {
+      /* storage unavailable: fall back to the OS preference */
+    }
+  </script>
+</head>
+<body class="mode-play role-gm">
+  <script>
+    // Pin the viewer role before first paint, the same way the theme is pinned
+    // above. Mode and role each decide whether whole regions of the layout are
+    // displayed -- a mode hides an 18rem rail, a player role hides the header
+    // actions -- so letting src/app/sessionControls.js apply them after the
+    // modules load lays the page out once and then jumps it. Play mode is
+    // always the starting mode, so the class attribute states it outright; only
+    // the role has to be read. Defaults mirror src/main.js and the keys mirror
+    // src/view/PlayerLock.js.
+    try {
+      var params = new URLSearchParams(location.search).get('role');
+      var locked =
+        (params !== null && params.toLowerCase() === 'player') ||
+        sessionStorage.getItem('campaign-builder:player-lock') !== null;
+      var role = locked ? 'player' : sessionStorage.getItem('campaign-builder:role') || 'gm';
+      document.body.classList.toggle('role-gm', role === 'gm');
+      document.body.classList.toggle('role-player', role === 'player');
+      if (locked) document.body.classList.add('role-locked');
+    } catch (error) {
+      /* storage unavailable: the GM default in the class attribute stands */
+    }
+  </script>
+
+  <header class="app-header u-row u-wrap u-g4">
+    <h1>Campaign Builder</h1>
+    <div id="mode-switch-container"></div>
+    <div class="app-header__actions">
+      <button id="new-btn" class="btn" type="button">New</button>
+      <button id="example-btn" class="btn" type="button">Load example</button>
+      <button id="save-btn" class="btn btn--primary" type="button">Save</button>
+      <button id="undo-btn" class="btn" type="button">Undo</button>
+      <button id="redo-btn" class="btn" type="button">Redo</button>
+      <button id="export-btn" class="btn" type="button">Export</button>
+      <button id="import-btn" class="btn" type="button">Import</button>
+      <input id="import-input" type="file" accept="application/json" hidden />
+    </div>
+    <!-- The two view switches are grouped so a wrapping header carries them
+         onto the next row together, still against the right edge. -->
+    <div class="app-header__view">
+      <div id="theme-toggle-container"></div>
+      <div id="role-switch-container"></div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <aside id="world-tree-container" class="app-buildrail card" aria-label="World tree">
+      <h2 class="card__title">World</h2>
+    </aside>
+
+    <div class="app-center u-col u-g4">
+      <section class="app-map">
+        <div id="breadcrumb-container"></div>
+        <div id="map-viewport" class="map-viewport">
+          <canvas id="map-canvas" width="720" height="540"></canvas>
+        </div>
+      </section>
+
+      <!-- The party's character boxes and the dice tray sit below the map so
+           they don't compete with the map for the sidebar's narrow width. -->
+      <div id="below-map" class="app-belowmap">
+        <div class="belowmap-side u-col u-g4">
+          <section id="party-container" class="card" aria-label="Party roster">
+            <h2 class="card__title">Party</h2>
+          </section>
+          <section id="dice-tray-container" class="card" aria-label="Dice tray">
+            <h2 class="card__title">Dice Tray</h2>
+          </section>
+        </div>
+        <section class="card belowmap-sheet" aria-label="Character detail">
+          <div id="sheet-tabs" class="tabs" role="tablist" aria-label="Character detail">
+            <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-sheet" aria-controls="panel-sheet" aria-selected="true">Character</button>
+            <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-equipment" aria-controls="panel-equipment" aria-selected="false" tabindex="-1">Equipment</button>
+            <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-inventory" aria-controls="panel-inventory" aria-selected="false" tabindex="-1">Inventory</button>
+            <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-spellbook" aria-controls="panel-spellbook" aria-selected="false" tabindex="-1">Spellbook</button>
+          </div>
+          <div id="panel-sheet" class="tabs__panel" role="tabpanel" aria-labelledby="tab-sheet">
+            <div id="character-sheet-container"></div>
+          </div>
+          <div id="panel-equipment" class="tabs__panel tabs__panel--narrow" role="tabpanel" aria-labelledby="tab-equipment" hidden>
+            <div id="equipment-container"></div>
+          </div>
+          <div id="panel-inventory" class="tabs__panel" role="tabpanel" aria-labelledby="tab-inventory" hidden>
+            <div id="inventory-container"></div>
+          </div>
+          <div id="panel-spellbook" class="tabs__panel tabs__panel--narrow" role="tabpanel" aria-labelledby="tab-spellbook" hidden>
+            <div id="spellbook-container"></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <aside class="app-sidebar u-col u-g2">
+      <button id="sidebar-toggle" class="sidebar-toggle btn" type="button" aria-expanded="true" aria-controls="sidebar-panels">Hide panels</button>
+      <div id="sidebar-panels" class="sidebar-panels u-col u-g2">
+        <div id="sidebar-tabs" class="tabs" role="tablist" aria-label="Session panels">
+          <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-session" aria-controls="panel-session" aria-selected="true">Session</button>
+          <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-story" aria-controls="panel-story" aria-selected="false" tabindex="-1">Story</button>
+          <button class="btn-bare tabs__tab" type="button" role="tab" id="tab-log" aria-controls="panel-log" aria-selected="false" tabindex="-1">Log</button>
+        </div>
+
+        <div class="tabs__panel" role="tabpanel" id="panel-session" aria-labelledby="tab-session">
+          <section id="region-tree-container" class="card" aria-label="Discovered regions">
+            <h2 class="card__title">World</h2>
+          </section>
+          <section id="time-container" class="card" aria-label="In-game time">
+            <h2 class="card__title">Time</h2>
+          </section>
+          <section id="encounter-container" class="card" aria-label="Encounters">
+            <h2 class="card__title">Encounters</h2>
+          </section>
+          <section id="initiative-container" class="card" aria-label="Initiative">
+            <h2 class="card__title">Initiative</h2>
+          </section>
+        </div>
+
+        <div class="tabs__panel" role="tabpanel" id="panel-story" aria-labelledby="tab-story" hidden>
+          <section id="quest-container" class="card" aria-label="Quest log">
+            <h2 class="card__title">Quests</h2>
+          </section>
+          <section id="npc-container" class="card" aria-label="NPCs">
+            <h2 class="card__title">NPCs</h2>
+          </section>
+          <section id="handout-container" class="card" aria-label="Handouts">
+            <h2 class="card__title">Handouts</h2>
+          </section>
+        </div>
+
+        <div class="tabs__panel" role="tabpanel" id="panel-log" aria-labelledby="tab-log" hidden>
+          <section id="travelog-container" class="card" aria-label="Travelogue">
+            <h2 class="card__title">Travelogue</h2>
+          </section>
+        </div>
+      </div>
+    </aside>
+
+    <aside id="build-tools" class="app-buildrail app-buildrail--stack" aria-label="Build tools">
+      <p id="build-warning" class="build-warning" role="status"></p>
+      <div id="build-tabs" class="tabs" role="tablist" aria-label="Build panels">
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="build-tab-paint" aria-controls="build-panel-paint" aria-selected="true">Paint</button>
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="build-tab-tile" aria-controls="build-panel-tile" aria-selected="false" tabindex="-1">Tile</button>
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="build-tab-encounters" aria-controls="build-panel-encounters" aria-selected="false" tabindex="-1">Encounters</button>
+      </div>
+
+      <div class="tabs__panel" role="tabpanel" id="build-panel-paint" aria-labelledby="build-tab-paint">
+        <section id="generate-container" class="card" aria-label="Generate map">
+          <h2 class="card__title">Generate</h2>
+          <p class="generate__hint u-muted">Fill this node with an auto-generated layout.</p>
+          <button id="generate-btn" class="btn" type="button">Generate map...</button>
+        </section>
+        <section id="map-tools-container" class="card" aria-label="Map tools">
+          <h2 class="card__title">Tools</h2>
+          <div class="u-col u-g2">
+            <button id="stroke-undo-btn" class="btn" type="button">Undo stroke</button>
+            <button id="export-png-btn" class="btn" type="button">Export PNG</button>
+          </div>
+        </section>
+        <section id="palette-container" class="card" aria-label="Tile palette">
+          <h2 class="card__title">Palette</h2>
+        </section>
+      </div>
+
+      <div class="tabs__panel" role="tabpanel" id="build-panel-tile" aria-labelledby="build-tab-tile" hidden>
+        <section id="inspector-container" class="card" aria-label="Tile inspector">
+          <h2 class="card__title">Tile</h2>
+        </section>
+      </div>
+
+      <div class="tabs__panel" role="tabpanel" id="build-panel-encounters" aria-labelledby="build-tab-encounters" hidden>
+        <div id="build-encounter-tabs" class="tabs" role="tablist" aria-label="Mob and NPC authoring">
+          <button class="btn-bare tabs__tab" type="button" role="tab" id="build-tab-mobs" aria-controls="build-subpanel-mobs" aria-selected="true">Mobs</button>
+          <button class="btn-bare tabs__tab" type="button" role="tab" id="build-tab-npcs" aria-controls="build-subpanel-npcs" aria-selected="false" tabindex="-1">NPCs</button>
+        </div>
+        <div class="tabs__panel" role="tabpanel" id="build-subpanel-mobs" aria-labelledby="build-tab-mobs">
+          <section id="build-encounters-container" class="card" aria-label="Encounter authoring">
+            <h2 class="card__title">Mobs</h2>
+          </section>
+        </div>
+        <div class="tabs__panel" role="tabpanel" id="build-subpanel-npcs" aria-labelledby="build-tab-npcs" hidden>
+          <section id="build-npcs-container" class="card" aria-label="NPC authoring">
+            <h2 class="card__title">NPCs</h2>
+          </section>
+        </div>
+      </div>
+    </aside>
+
+    <aside id="library-tools" class="app-buildrail app-buildrail--stack" aria-label="Library">
+      <div id="library-tabs" class="tabs" role="tablist" aria-label="Library panels">
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="library-tab-equipment" aria-controls="library-panel-equipment" aria-selected="true">Equipment</button>
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="library-tab-creatures" aria-controls="library-panel-creatures" aria-selected="false" tabindex="-1">Creatures</button>
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="library-tab-spells" aria-controls="library-panel-spells" aria-selected="false" tabindex="-1">Spells</button>
+        <button class="btn-bare tabs__tab" type="button" role="tab" id="library-tab-feats" aria-controls="library-panel-feats" aria-selected="false" tabindex="-1">Feats</button>
+      </div>
+
+      <div class="tabs__panel" role="tabpanel" id="library-panel-equipment" aria-labelledby="library-tab-equipment">
+        <section id="library-equipment-container" class="card" aria-label="Equipment library">
+          <h2 class="card__title">Equipment</h2>
+        </section>
+      </div>
+
+      <div class="tabs__panel" role="tabpanel" id="library-panel-creatures" aria-labelledby="library-tab-creatures" hidden>
+        <section id="library-creatures-container" class="card" aria-label="Creature library">
+          <h2 class="card__title">Creatures</h2>
+        </section>
+      </div>
+
+      <div class="tabs__panel" role="tabpanel" id="library-panel-spells" aria-labelledby="library-tab-spells" hidden>
+        <section id="library-spells-container" class="card" aria-label="Spell library">
+          <h2 class="card__title">Spells</h2>
+        </section>
+      </div>
+
+      <div class="tabs__panel" role="tabpanel" id="library-panel-feats" aria-labelledby="library-tab-feats" hidden>
+        <section id="library-feats-container" class="card" aria-label="Feat library">
+          <h2 class="card__title">Feats</h2>
+        </section>
+      </div>
+
+      <section id="library-io" class="card" aria-label="Library file">
+        <h2 class="card__title">Library file</h2>
+        <p class="library-io__hint">Customizations save in this browser. Export them as a JSON file — kept as <code>library/campaign-library.json</code> it stays out of version control and auto-loads in a fresh browser — and import one to hot-load it here.</p>
+        <div class="library-io__actions">
+          <button id="library-export-btn" class="btn" type="button">Export</button>
+          <button id="library-import-btn" class="btn" type="button">Import</button>
+          <button id="library-reset-btn" class="btn" type="button">Reset</button>
+          <input id="library-import-input" type="file" accept="application/json" hidden />
+        </div>
+      </section>
+    </aside>
+
+    <!-- The combat screen: a full-width fight view that replaces the map
+         columns while a fight runs. Combat mode has no button on the header
+         switch; the app enters it when combat starts and leaves when it ends.
+         src/app/combatWiring.js fills the section in. -->
+    <section id="combat-screen" class="combat-screen" aria-label="Combat"></section>
+  </main>
+
+  <script defer src="main-LYFFW725.bundle.js"></script>
+</body>
+</html>

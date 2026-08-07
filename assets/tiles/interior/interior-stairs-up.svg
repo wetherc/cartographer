@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" fill="#a89f8d"/>
+  <g stroke="#8f8776" stroke-width="1.5" fill="none">
+    <path d="M0 0 H64 M0 16 H64 M0 32 H64 M0 48 H64 M0 64 H64"/>
+    <path d="M0 0 V64 M16 0 V64 M32 0 V64 M48 0 V64 M64 0 V64"/>
+  </g>
+  <rect x="14" y="9" width="36" height="46" fill="#948c7b"/>
+  <g>
+    <rect x="15" y="49" width="34" height="5" fill="#98907e"/>
+    <rect x="15" y="44" width="34" height="5" fill="#a29a88"/>
+    <rect x="15" y="39" width="34" height="5" fill="#aca492"/>
+    <rect x="15" y="34" width="34" height="5" fill="#b5ad9b"/>
+    <rect x="15" y="29" width="34" height="5" fill="#bfb7a5"/>
+    <rect x="15" y="24" width="34" height="5" fill="#c9c1ae"/>
+    <rect x="15" y="19" width="34" height="5" fill="#d2cab7"/>
+    <rect x="15" y="14" width="34" height="4" fill="#dcd4c1"/>
+  </g>
+  <g stroke="#6f6857" stroke-width="0.9" fill="none">
+    <path d="M15 49 H49 M15 44 H49 M15 39 H49 M15 34 H49 M15 29 H49 M15 24 H49 M15 19 H49 M15 14 H49"/>
+  </g>
+  <rect x="14" y="9" width="36" height="46" fill="none" stroke="#4c4841" stroke-width="1.5"/>
+  <path d="M32 33 L32 21 M28 25 L32 21 L36 25" stroke="#55514a" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.65"/>
+</svg>
