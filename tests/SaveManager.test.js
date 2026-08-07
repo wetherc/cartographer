@@ -522,6 +522,20 @@ test('deserialize reads a save newer than the app best-effort', () => {
   assert.equal(restored.nodes.length, 1);
 });
 
+test('deserialize drops a bundled library field from the state', () => {
+  // A campaign export can carry the custom library beside the save. The
+  // state is rebuilt field by field, so the library never reaches
+  // localStorage through persistState; CampaignFile.js lifts it separately.
+  const restored = deserialize(
+    JSON.stringify({
+      version: CURRENT_VERSION,
+      nodes: [{ id: 'world', tiles: [] }],
+      library: { spells: [{ name: 'Zap' }] },
+    }),
+  );
+  assert.equal('library' in restored, false);
+});
+
 test('deserialize defaults missing fields instead of throwing', () => {
   const restored = deserialize(JSON.stringify({}));
   assert.deepEqual(restored, {

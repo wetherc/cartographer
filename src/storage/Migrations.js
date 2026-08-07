@@ -161,7 +161,9 @@ export const MIGRATIONS = {
   // the old always-proficient rolls stay unchanged. The step rewrites the
   // weapons in character inventories, on creatures, and on bestiary
   // templates. The library rewrites its own entries at load, because library
-  // files carry no version.
+  // files carry no version. That rule also means a step must never name
+  // `library`: the field a campaign export bundles belongs to
+  // `normalizeLibrary`, and it passes through this table untouched.
   // The step rewrites only the values that are weapons. Everything
   // malformed passes through untouched, so the validator after the chain
   // still sees it and reports it.

@@ -280,3 +280,16 @@ test('step 6 leaves malformed values for the validator to report', () => {
   assert.equal(migrated.creatures, 'none');
   assert.equal('bestiary' in migrated, false, 'an absent list is not invented');
 });
+
+test('a bundled library rides through the whole migration chain untouched', () => {
+  // A campaign export can carry the custom library beside the save. The
+  // field belongs to normalizeLibrary, so no step may rewrite or drop it.
+  const library = {
+    equipment: [{ name: 'Rope', type: 'gear' }],
+    spells: [{ id: 'zap', name: 'Zap', effects: [{ kind: 'mystery' }] }],
+  };
+  const migrated = /** @type {any} */ (
+    migrateState({ version: 1, nodes: [], library: structuredClone(library) }, 1)
+  );
+  assert.deepEqual(migrated.library, library);
+});
