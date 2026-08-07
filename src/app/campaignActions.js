@@ -9,12 +9,13 @@ import { mustGetElement } from '../ui/dom.js';
 import { setTip } from '../ui/Tooltip.js';
 import { confirmModal } from '../ui/Modal.js';
 import { queueToastAfterReload } from '../ui/Toast.js';
+import { buildState, onExternalSave } from '../storage/SaveManager.js';
 import {
-  buildState,
-  downloadState,
-  readStateFromFile,
-  onExternalSave,
-} from '../storage/SaveManager.js';
+  downloadCampaignFile,
+  readCampaignFromFile,
+  libraryImportAction,
+} from '../storage/CampaignFile.js';
+import { loadCustomLibrary, saveCustomLibrary } from '../storage/LibraryStore.js';
 import {
   footprintTooltip,
   footprintWarning,
@@ -473,7 +474,9 @@ export function wireCampaignActions(app) {
   });
 
   mustGetElement('export-btn').addEventListener('click', () => {
-    downloadState(buildCurrentState());
+    // The customs read fresh from their key at click time; the library
+    // wiring saves them there on every edit.
+    downloadCampaignFile(buildCurrentState(), loadCustomLibrary());
     app.toasts.show('Campaign exported.');
   });
 
@@ -489,19 +492,38 @@ export function wireCampaignActions(app) {
     if (!file) return;
     /** @type {import('../types/storage.js').CampaignState} */
     let state;
+    /** @type {import('../types/library.js').CustomLibrary | null} */
+    let library;
     try {
-      state = await readStateFromFile(file);
+      ({ state, library } = await readCampaignFromFile(file));
     } catch {
       // No data was written yet, so a plain toast states the fact.
       app.toasts.show('That file is not a readable campaign JSON.');
       return;
     }
+    // A file with a bundled library adopts it into the browser's customs,
+    // asking first when that would overwrite existing ones. A decline keeps
+    // the browser library and still imports the campaign, the same outcome
+    // as a file that carries no library.
+    const action = libraryImportAction(library, loadCustomLibrary());
+    let adopt = action === 'adopt';
+    if (action === 'confirm') {
+      adopt = await confirmModal(
+        'This campaign file includes library customizations. Replace yours ' +
+          'with them? Built-in defaults are unaffected.',
+        { variant: 'danger', confirmLabel: 'Replace' },
+      );
+    }
+    if (adopt && library && !saveCustomLibrary(library)) {
+      app.toasts.show('Storage is full. The campaign imports without its library.');
+      adopt = false;
+    }
     // This is the simplest correct way to apply an imported campaign. It
     // persists the campaign, then reloads so every module re-initializes from
-    // the same loadFromLocalStorage path that a normal page load takes. This
-    // avoids re-wiring every closure above.
+    // the same loadFromLocalStorage path that a normal page load takes,
+    // including the library wiring's fresh read of the customs written above.
     if (!persistState(state)) return;
-    queueToastAfterReload('Campaign imported.');
+    queueToastAfterReload(adopt ? 'Campaign and library imported.' : 'Campaign imported.');
     setDirty(false);
     location.reload();
   });
