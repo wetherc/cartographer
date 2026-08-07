@@ -5,6 +5,7 @@ import { mountLibraryPanel } from '../ui/LibraryPanel.js';
 import { buildItemForm } from '../ui/ItemForm.js';
 import { buildSpellForm } from '../ui/SpellForm.js';
 import { buildCreatureTemplateForm } from '../ui/CreatureTemplateForm.js';
+import { buildFeatForm } from '../ui/FeatForm.js';
 import {
   emptyLibrary,
   isLibraryEmpty,
@@ -14,10 +15,12 @@ import {
   activeEquipmentEntries,
   activeCreatureEntries,
   activeSpellEntries,
+  activeFeatEntries,
   upsertEntry,
   removeEntry,
   storedEntryId,
   DEFAULT_CREATURES,
+  DEFAULT_FEATS,
 } from '../library/Library.js';
 import {
   loadCustomLibrary,
@@ -30,6 +33,7 @@ import {
 } from '../storage/LibraryStore.js';
 import { DEFAULT_SPELLS } from '../data/spells.js';
 import { itemSummary, formatDamage } from '../entities/Equipment.js';
+import { riderText } from '../entities/Riders.js';
 import { creatureForm } from './creatureForm.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -37,6 +41,7 @@ import { creatureForm } from './creatureForm.js';
 /** @typedef {import('../types/library.js').EquipmentTemplate} EquipmentTemplate */
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
 /** @typedef {import('../types/spell.js').Spell} Spell */
+/** @typedef {import('../types/feat.js').Feat} Feat */
 
 /** Build the one-line summary for a spell in the library row.
  * It shows the level, the school, the effect kind, and a concentration marker
@@ -48,6 +53,33 @@ function spellSummary(spell) {
   return [`${level} ${spell.school}`, spell.effect.kind, spell.concentration ? 'concentration' : '']
     .filter(Boolean)
     .join(' | ');
+}
+
+/** Build the one-line summary for a feat in the library row: one phrase per
+ * effect, or "text only" for a feat the engine cannot apply, plus a
+ * prerequisite marker.
+ * @param {Feat} feat
+ * @returns {string} */
+function featSummary(feat) {
+  const parts = feat.effects.map((effect) => {
+    if (effect.kind === 'asi') {
+      return `+1 ${effect.abilities.length > 0 ? effect.abilities.join('/') : 'any'}`;
+    }
+    if (effect.kind === 'rider') return `${riderText(effect.rider)} rider`;
+    return [
+      effect.skills ? `${effect.skills.choose} skill${effect.skills.choose > 1 ? 's' : ''}` : '',
+      effect.saves ? `${effect.saves.choose} save${effect.saves.choose > 1 ? 's' : ''}` : '',
+      effect.expertise ? 'expertise' : '',
+      effect.armor ? `armor: ${effect.armor.join(', ')}` : '',
+      effect.tools ? 'tools' : '',
+      effect.languages ? 'languages' : '',
+    ]
+      .filter(Boolean)
+      .join(', ');
+  });
+  if (parts.length === 0) parts.push('text only');
+  if (feat.prerequisite) parts.push('prerequisite');
+  return parts.join(' | ');
 }
 
 /** The section headings for the equipment list, in display order. */
@@ -101,7 +133,7 @@ function creatureSummary(entry) {
 
 /**
  * Build the rail for the Library mode. It shows the merged built-in and
- * custom lists for equipment, creatures, and spells, plus
+ * custom lists for equipment, creatures, spells, and feats, plus
  * export, import, and reset controls for the custom library.
  * The custom library is not campaign state, by design. It persists in its
  * own key in localStorage, survives New, Import, and Load Example, and it
@@ -120,12 +152,12 @@ export function wireLibrary(app) {
   const hadStored = stored !== null;
 
   /**
-   * Refresh all three lists after a library change, and refresh the character
+   * Refresh all four lists after a library change, and refresh the character
    * panels too. The spellbook shows the catalog spells, so an edited or
    * removed entry must reach it as well.
    * Every caller is a user action or the promise callback for the file seed.
    * Both run after all wiring completes, so the party action is registered
-   * and the three panel constants below are already assigned.
+   * and the four panel constants below are already assigned.
    * Do not call this function during wiring. The panels are mounted after
    * this function is defined, so an early call throws an error instead of
    * skipping a refresh.
@@ -134,6 +166,7 @@ export function wireLibrary(app) {
     equipmentPanel.update();
     creaturePanel.update();
     spellPanel.update();
+    featPanel.update();
     app.actions.refreshSelectedCharacter();
   };
 
@@ -189,7 +222,7 @@ export function wireLibrary(app) {
    * merged list. An overridden default hides its own id, but that id returns
    * when the override is renamed or removed. A new id that reuses it makes
    * one of the two entries unreachable through the last-wins id index.
-   * @param {'creatures' | 'spells'} list which custom-library list to write
+   * @param {'creatures' | 'spells' | 'feats'} list which custom-library list to write
    * @param {() => { entry: { id: string, name: string }, source: import('../types/library.js').LibrarySource }[]} activeEntries
    * @param {{ id: string }[]} defaults the list's built-in entries
    * @returns {(key: string | null, fields: { name: string }) => void}
@@ -374,6 +407,39 @@ export function wireLibrary(app) {
     ),
   });
 
+  // --- Feats -----------------------------------------------------------------
+
+  const storeFeat = makeKeyedStore('feats', activeFeatEntries, DEFAULT_FEATS);
+
+  const featPanel = mountLibraryPanel(mustGetElement('library-feats-container'), {
+    addLabel: 'New feat',
+    getEntries: () =>
+      activeFeatEntries()
+        .slice()
+        .sort((a, b) => a.entry.name.localeCompare(b.entry.name))
+        .map(({ entry, source }) => ({
+          key: nameKey(entry),
+          name: entry.name,
+          summary: featSummary(entry),
+          source,
+        })),
+    buildEditor: (key, close) => {
+      const found = key ? activeFeatEntries().find(({ entry }) => nameKey(entry) === key) : null;
+      return buildFeatForm({
+        feat: found?.entry ?? null,
+        submitLabel: found ? 'Save' : 'Add',
+        onCancel: close,
+        onSubmit: (fields) => {
+          storeFeat(key, fields);
+          close();
+        },
+      });
+    },
+    onRemove: makeRemoveHandler('feat', (key) =>
+      setCustom({ ...custom, feats: removeEntry(custom.feats, key, nameKey) }),
+    ),
+  });
+
   // --- Library file controls -------------------------------------------------
 
   mustGetElement('library-export-btn').addEventListener('click', () => {
@@ -404,7 +470,7 @@ export function wireLibrary(app) {
     }
     setCustom(imported);
     app.toasts.show(
-      `Library loaded: ${imported.equipment.length} equipment, ${imported.creatures.length} creature, ${imported.spells.length} spell entries.`,
+      `Library loaded: ${imported.equipment.length} equipment, ${imported.creatures.length} creature, ${imported.spells.length} spell, ${imported.feats.length} feat entries.`,
     );
   });
 

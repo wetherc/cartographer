@@ -423,13 +423,14 @@ const ARMOR_PROFICIENCIES = ['light', 'medium', 'heavy', 'shield'];
  * and each effect repairs into one of the discriminated shapes. An effect of
  * an unknown kind, or one that grants nothing after repair, drops from the
  * list rather than dropping the feat: a feat with no effects is still valid,
- * because its description carries the parts the engine cannot model. This
- * function is pure.
+ * because its description carries the parts the engine cannot model. The
+ * feat form assembles its draft through this same function, so a typed feat
+ * and an imported one can never disagree. This function is pure.
  * @param {Record<string, any>} raw
  * @param {string} id
  * @returns {Feat}
  */
-function normalizeFeat(raw, id) {
+export function normalizeFeat(raw, id) {
   /** @type {import('../types/feat.js').FeatEffect[]} */
   const effects = (Array.isArray(raw.effects) ? raw.effects : [])
     .filter((e) => e && typeof e === 'object' && FEAT_EFFECT_KINDS.includes(e.kind))

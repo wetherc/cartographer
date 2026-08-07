@@ -85,3 +85,20 @@ body.mode-library .app-buildrail:not(#library-tools) {
   gap: var(--space-1);
   flex-wrap: wrap;
 }
+
+/* The feat authoring form. It reuses the shared form primitives; these rules
+   cover only its own controls. */
+
+.feat-form__description {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+}
+
+/* The skill grids are long (18 options); lay them out as a multi-column grid
+   so each reads as a block rather than one cramped line. */
+.feat-form__checks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: var(--space-1) var(--space-2);
+}
