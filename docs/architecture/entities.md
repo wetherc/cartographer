@@ -262,6 +262,7 @@ take-a-value, return-a-value pattern.
     HitDice.js           max HP derivation, hit dice as resource pools
     LevelUp.js           pending levels, ASI/feat choices, unlocked features
     LevelAssign.js       commit a pending level to a class
+    FeatureGrants.js     apply and undo the grants of a structured feature
     Features.js          class features as numbers the combat paths use
           |
           v
@@ -344,10 +345,12 @@ none of them and undoes as a bare name.
 (a repeatable feat stays on offer), `abilityPool` and `choicePool` compute
 each pick's options minus what the character already holds, and `buildStamp`
 folds the picks and the feat's fixed grants into the stamp `takeFeat`
-applies. The dialog in `ui/CharacterProgress.js` is DOM wiring over these. A
-pick whose pool holds no more options than the count grants outright with no
-prompt, and the expertise prompt runs after the skill picks because its
-options depend on them.
+applies. The dialogs live in `ui/EffectPicks.js`, and the class-feature
+grant flow runs its choices through the same engine, so a feat and a
+feature with the same effects prompt the same way. A pick whose pool holds
+no more options than the count grants outright with no prompt, and the
+expertise prompt runs after the skill picks because its options depend on
+them. `ui/CharacterProgress.js` wires both flows to the sheet.
 
 `LevelAssign.js` also builds the picks that the assign dialog offers.
 `assignOptions(character)` lists every held class one level up and every new
@@ -360,21 +363,38 @@ as entering one. `prereqText` writes that phrasing ("STR 13 or DEX 13"), and
 
 ### Class features
 
-A class feature is a name in `featuresByLevel` (`data/classes.js`) and nothing
-more. It carries no structured effect. `LevelUp.unlockedFeatures` collects the
-names that the class levels of a character reach, and the sheet prints that
-list.
+A class feature in `featuresByLevel` (`data/classes.js`) is a plain name or
+a `{ name, effects }` object (`ClassFeatureDef` in `types/class.ts`). The
+effects use the feat effect vocabulary from `types/feat.ts`. A plain name is
+display only. `LevelUp.unlockedFeatures` collects the entries that the class
+levels of a character reach, and the sheet prints that list.
 
-`entities/Features.js` reads two of those names as numbers. `attacksPerAction`
-gives 2 to a character with 'Extra Attack', and 3 or 4 for the numbered
-follow-ups of the Fighter. It takes the best count across the class list,
-because Extra Attack does not stack in 5e. `sneakAttackDice` gives the count of
-d6 that Sneak Attack adds, from the level in the class that granted it.
-`hasFeature` and `featureSource` are the exact-name lookups below both.
+`entities/FeatureGrants.js` owns the grant lifecycle of a structured
+feature. An unlocked feature with effects and no record in
+`character.featureChoices` is *pending*. Nothing stores that state, so a
+character created at level 1, an imported save, and a hand-edited class list
+all surface their unclaimed grants the same way. `applyFeatureGrant` merges
+the picks through `normalizeProficiencies` and records only what the merge
+added, the same exact-diff stamp a feat choice records. `undoFeatureGrant`
+cuts exactly the stamped entries, and the feature turns pending again. A
+grant the character already had from the GM or a feat is never stamped, so
+undo cannot take it away. `featureRiders` feeds a feature's standing roll
+riders into `FeatChoices.riderSources`, which every roll site already calls.
+The Rogue grants Expertise this way at levels 1 and 6, and the Bard at
+levels 3 and 10.
 
-A match on the name is the only way to read a feature. A homebrew class that
-uses the same names gets the same mechanics. This is deliberate, and it is
-cheaper than a structured effect field on each feature.
+`entities/Features.js` reads the level-scaling names as numbers.
+`attacksPerAction` gives 2 to a character with 'Extra Attack', and 3 or 4
+for the numbered follow-ups of the Fighter. It takes the best count across
+the class list, because Extra Attack does not stack in 5e. `sneakAttackDice`
+gives the count of d6 that Sneak Attack adds, from the level in the class
+that granted it. `hasFeature` and `featureSource` are the exact-name lookups
+below both.
+
+The split is deliberate. A structured effect models a one-time grant. A
+value that scales with the class level stays a name match, because it is
+derived on read instead of granted once. A homebrew class that uses the same
+names gets the same mechanics.
 
 ### Loading old saves
 
@@ -892,10 +912,12 @@ rolls the rider dice, and hands one flat modifier to the dice tray, so the tray
 throws the only d20 and the log line breaks the number back down. A sheet roll
 carries no DC.
 
-Expertise is a GM grant. The Progression section of the sheet lists it and
-offers a multiselect over the character's proficient skills, which commits
-through `Progression.withExpertise`. No class feature grants it yet. A
-creature carries no proficiency lists, so its bonus is still whatever the GM
+Expertise reaches a character in two ways. The Expertise features of the
+Rogue and the Bard grant it through the pending-grant flow (see Class
+features above). The Set expertise button on the Progression section is the
+GM's hand grant for subclasses and homebrew: a multiselect over the
+character's proficient skills, committed through `Progression.withExpertise`.
+A creature carries no expertise, so its bonus is still whatever the GM
 types.
 
 ## Concentration

@@ -586,9 +586,13 @@ and, while the character is at 0 HP, the death-save tracker with its Roll and
 Stabilize controls. The tracker shows the same pips and the same words as the
 combat screen.
 
-Expertise is a GM grant. The Set expertise button in the Progression block
-lists the skills the character is proficient in. The proficiency bonus doubles
-for the ones you pick. No class feature grants expertise yet.
+Expertise doubles the proficiency bonus for a skill. The Expertise features
+of the Rogue and the Bard grant it. When such a feature unlocks, a prompt
+offers the proficient skills, and the picks show in the class-features list
+with a Change button. An unclaimed grant waits in the Progression block as a
+pending feature choice with a Choose button. The Set expertise button is a
+hand grant with no maximum, for a subclass or homebrew feature that the
+class catalog does not model.
 
 | Field | Who can set it | Meaning |
 | --- | --- | --- |
@@ -617,6 +621,11 @@ adds a hit die, and advances spell slots. A newly unlocked spell level
 arrives full, and an already spent slot stays spent. An ASI level leaves a
 pending choice: +2 across one or two abilities, capped at 20, or a feat by
 name. Both choices are undoable from the same block.
+
+A class feature that carries choices, such as the Rogue's Expertise, prompts
+when its level is assigned. A choice with only one possible pick applies
+with no prompt. A cancel keeps the grant pending, and the Choose button in
+the Progression block offers it again.
 
 The hit-dice pool is spendable. A short rest spends a die to heal the roll
 plus the CON modifier. A long rest restores half the pool.
