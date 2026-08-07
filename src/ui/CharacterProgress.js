@@ -5,6 +5,7 @@ import { getClass } from '../entities/Classes.js';
 import { getClasses, pendingLevels, classLevelOf } from '../entities/Multiclass.js';
 import { assignLevel, assignOptions, className } from '../entities/LevelAssign.js';
 import {
+  ABILITY_MAX,
   pendingASISlots,
   listASIChoices,
   unlockedFeatures,
@@ -306,6 +307,18 @@ export function buildProgressSection(getCharacter, opts) {
     }
 
     const from = getCharacter();
+    // Two +1 effects can land on the same score, and a score one point under
+    // the cap holds only one of them. The take would refuse as a whole, so
+    // this names the score before the generic refusal below can hide it.
+    /** @type {Record<string, number>} */
+    const stacked = {};
+    for (const key of picks.abilities) stacked[key] = (stacked[key] ?? 0) + 1;
+    for (const [key, value] of Object.entries(stacked)) {
+      if ((from.stats?.[key] ?? 10) + value > ABILITY_MAX) {
+        opts.notify(`${feat.name} would raise ${key} above ${ABILITY_MAX}.`);
+        return;
+      }
+    }
     const next = takeFeat(from, buildStamp(feat, picks));
     if (next === from) {
       opts.notify('That feat could not be taken.');

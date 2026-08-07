@@ -1220,7 +1220,13 @@ feat riders as sources, and `FeatChoices.riderSources` joins them with the
 condition list. The roll sites below call `riderSources` instead of reading
 `conditions` directly, so a feat bonus and a chip bonus travel the same path
 and print in the same note. A feat rider lasts as long as the feat: it is a
-standing bonus with no duration and no chip on the conditions bar.
+standing bonus with no duration and no chip on the conditions bar. The
+condition-effect table in `ConditionEffects.js` matches chips by name, so a
+feat source never enters a list that table scans, and a feat that shares a
+condition's name cannot slant a roll. A cast's target therefore carries its
+chips in `conditions` and its feat riders in a separate `riders` field. Both
+join its saving throw, and only the chips decide advantage or an automatic
+failure.
 - `riderText` and `riderSummary` render a rider for a chip tooltip or a spell
   readout.
 

@@ -12,7 +12,7 @@ import {
 } from '../entities/Character.js';
 import { addCondition } from '../entities/Conditions.js';
 import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
-import { featRiders, riderSources } from '../entities/FeatChoices.js';
+import { featRiders } from '../entities/FeatChoices.js';
 import { despawnSummons } from '../entities/Summons.js';
 import { saveBonus } from '../entities/Checks.js';
 import { creatureSaveBonus } from '../entities/CreatureChecks.js';
@@ -45,10 +45,12 @@ import { spellbookIds } from './casterFields.js';
 /**
  * CombatTarget is the shape combat dialogs and the spell resolver use. It
  * gives enough data to pick a target from a list (name), address the result
- * (id), and roll against it (ac). Every target carries `conditions`, its
- * rider sources: the chips it holds, because a rider on one of them rides a
- * save it takes and because a chip such as Prone slants the attack roll made
- * against it, plus the feat riders of a character target. A save
+ * (id), and roll against it (ac). Every target carries `conditions`, the
+ * chips it holds, because a rider on one of them rides a save it takes and
+ * because a chip such as Prone slants the attack roll made against it. Only
+ * chips go in `conditions`: the effect table reads the list by name, and a
+ * feat that happened to share a condition's name must not slant a roll. A
+ * character target's feat riders travel separately in `riders`. A save
  * spell's targets carry `saveBonus`, which the app derives for a character and
  * for a creature alike. See `targetSaveBonus`. `armorPenalty` marks a character
  * that rolls a STR or DEX save at disadvantage because it wears armor it is
@@ -59,7 +61,8 @@ import { spellbookIds } from './casterFields.js';
  *   ac: number,
  *   saveBonus?: number,
  *   armorPenalty?: boolean,
- *   conditions: import('../entities/Riders.js').RiderSource[],
+ *   conditions: import('../types/entities.js').Condition[],
+ *   riders?: import('../entities/Riders.js').RiderSource[],
  * }} CombatTarget
  */
 
@@ -228,17 +231,33 @@ function combatantSaveBonus(found, ability) {
 }
 
 /**
- * targetConditions gives the rider sources a combatant is holding, so a
- * rider on one of them can ride the roll a cast makes it take: its condition
- * chips, plus the feat riders of a character. An unknown id has none, so it
- * reads as an empty list.
+ * targetConditions gives the condition chips a combatant is holding, so a
+ * rider on one of them can ride the roll a cast makes it take, and so a chip
+ * such as Restrained can slant that roll. Chips only: a feat rider must stay
+ * out of the lists the condition-effect table scans by name, and
+ * `targetFeatRiders` carries it instead. An unknown id has none, so it reads
+ * as an empty list.
+ * @param {AppContext} app
+ * @param {string} id
+ * @returns {import('../types/entities.js').Condition[]}
+ */
+export function targetConditions(app, id) {
+  const found = findCombatant(app, id);
+  return found ? (found.entity.conditions ?? []) : [];
+}
+
+/**
+ * targetFeatRiders gives the standing feat riders a combatant carries, for
+ * the save a cast makes it roll. Only a character can take feats, so a
+ * creature or an unknown id reads as an empty list.
  * @param {AppContext} app
  * @param {string} id
  * @returns {import('../entities/Riders.js').RiderSource[]}
  */
-export function targetConditions(app, id) {
+export function targetFeatRiders(app, id) {
   const found = findCombatant(app, id);
-  return found ? riderSources(found.entity) : [];
+  if (!found || found.kind !== 'character') return [];
+  return featRiders(found.entity);
 }
 
 /**

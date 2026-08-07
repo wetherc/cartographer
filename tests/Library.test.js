@@ -1060,6 +1060,13 @@ test('normalizeLibrary repairs feat effects one by one and keeps the feat', () =
   assert.deepEqual(plain.effects, []);
 });
 
+test('a lowercased asi ability list narrows the choice instead of widening it', () => {
+  const lib = normalizeLibrary({
+    feats: [{ name: 'Casing', effects: [{ kind: 'asi', abilities: ['str', 'Dex'] }] }],
+  });
+  assert.deepEqual(lib.feats[0].effects, [{ kind: 'asi', abilities: ['STR', 'DEX'] }]);
+});
+
 test('normalizeLibrary dedupes feats by name and keeps a supplied id', () => {
   const lib = normalizeLibrary({
     feats: [

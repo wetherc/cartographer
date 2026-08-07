@@ -435,7 +435,11 @@ export function normalizeFeat(raw, id) {
         if (e.kind === 'asi') {
           // An empty list means any of the six abilities, so a garbled list
           // repairs to the widest choice instead of dropping the increase.
-          const written = Array.isArray(e.abilities) ? e.abilities : [];
+          // Keys match without case, so a hand-typed `str` narrows the list
+          // the way the author meant instead of silently widening it.
+          const written = (Array.isArray(e.abilities) ? e.abilities : []).map((a) =>
+            typeof a === 'string' ? a.toUpperCase() : a,
+          );
           const abilities = /** @type {import('../types/spell.js').Ability[]} */ (
             ABILITY_SCORES.filter((a) => written.includes(a))
           );

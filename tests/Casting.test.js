@@ -1100,6 +1100,28 @@ test('a spell rider stays off a target that made its save', () => {
   assert.equal(o.conditionRider, null, 'no chip landed, so nothing rides one');
 });
 
+test("a target's feat riders ride its save without becoming chips", () => {
+  const result = castSpell(caster(), /** @type {any} */ (burningHands), {
+    slotLevel: 1,
+    targets: [
+      {
+        id: 'x',
+        name: 'Bron',
+        saveBonus: 0,
+        riders: [{ name: 'Iron Will', rider: { rolls: ['save'], flat: 2 } }],
+      },
+    ],
+    saveDC: 14,
+    rng: seq([face(6, 1), face(6, 1), face(6, 1), face(20, 12)]),
+  });
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  const o = /** @type {any} */ (result.outcomes[0]);
+  assert.equal(o.save.total, 14, '12 on the die plus the +2 feat rider');
+  assert.equal(o.saved, true);
+  assert.deepEqual(o.rider, { modifier: 2, note: 'Iron Will +2' });
+});
+
 /** @type {any} */
 const conjureWolves = {
   id: 'conjure',

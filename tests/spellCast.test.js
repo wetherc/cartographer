@@ -394,6 +394,43 @@ test('castPlan reads a party target’s save bonus off the character', () => {
   assert.equal(plan.targets[0].saveBonus, 3, 'WIS 16 with no proficiency');
 });
 
+test("castPlan keeps a feat rider out of a target's chips", () => {
+  const caster = mage();
+  // The feat deliberately shares a condition's name. The effect table matches
+  // chips by name, so the stamp must ride the save through `riders` without
+  // ever slanting it the way the Restrained chip would.
+  const monk = mage({
+    id: 'monk',
+    name: 'Monk',
+    conditions: [{ name: 'Bane', rounds: 2 }],
+    asiChoices: {
+      slot: {
+        classId: 'wizard',
+        classLevel: 4,
+        order: 0,
+        type: 'feat',
+        feat: 'Restrained',
+        rider: { rolls: ['save'], flat: 2 },
+      },
+    },
+  });
+  const app = stubApp({ characters: [caster, monk] });
+  const healSave = spell({
+    ...holdPerson,
+    id: 'mass-hold',
+    name: 'Mass Hold',
+    effect: { kind: 'save', saveAbility: 'WIS', damage: [], halfOnSave: false },
+  });
+  const plan = castPlan(app, caster, healSave, [
+    /** @type {any} */ ({ id: 'monk', name: 'Monk', ac: 10 }),
+  ]);
+  assert.equal(plan.ok, true);
+  assert.deepEqual(plan.targets[0].conditions, [{ name: 'Bane', rounds: 2 }]);
+  assert.deepEqual(plan.targets[0].riders, [
+    { name: 'Restrained', rider: { rolls: ['save'], flat: 2 } },
+  ]);
+});
+
 test('castPlan adds the component opt-out only when a cast will consume one', () => {
   const holder = mage({ inventory: [item('diamond', 'Diamond', { quantity: 1 })] });
   const app = stubApp({ characters: [holder] });

@@ -22,7 +22,8 @@ import { clamp } from '../util/num.js';
  * only id and name. `projectiles` states how many rays of a multi-projectile
  * spell this target catches, which the caster allocates. `conditions` are the
  * chips the target already holds, so a rider on one of them can ride its
- * saving throw.
+ * saving throw. `riders` are extra rider sources beyond the chips, the feat
+ * riders of a character target, and they join the same save.
  *
  * `attackMode` overrides the cast's own mode for this target alone, because a
  * chip such as Prone slants only the attack rolls aimed at its holder.
@@ -38,6 +39,7 @@ import { clamp } from '../util/num.js';
  *   autoFailSave?: string,
  *   projectiles?: number,
  *   conditions?: import('./Riders.js').RiderSource[],
+ *   riders?: import('./Riders.js').RiderSource[],
  * }} CastTarget
  */
 
@@ -625,7 +627,7 @@ function resolveEffect(spell, ctx) {
         ? { roll: null, success: false, rider: null }
         : resolveSave(target.saveBonus ?? 0, saveDC, {
             mode: target.saveMode ?? 'normal',
-            conditions: target.conditions ?? [],
+            conditions: [...(target.conditions ?? []), ...(target.riders ?? [])],
             rng,
           });
       const { roll: save, success: saved, rider } = rolled;

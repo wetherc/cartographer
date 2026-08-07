@@ -31,6 +31,7 @@ import {
   applyConditionToTarget,
   targetSaveBonus,
   targetConditions,
+  targetFeatRiders,
   targetArmorPenalty,
   endSpellEffects,
 } from './combatants.js';
@@ -474,12 +475,16 @@ export function castPlan(app, entity, spell, offered) {
     ? offered.map((t) => {
         const bonus = targetSaveBonus(app, t.id, saveAbility);
         const conditions = targetConditions(app, t.id);
+        const riders = targetFeatRiders(app, t.id);
         const penalized = physical && targetArmorPenalty(app, t.id);
-        if (bonus === undefined && conditions.length === 0 && !penalized) return t;
+        if (bonus === undefined && conditions.length === 0 && riders.length === 0 && !penalized) {
+          return t;
+        }
         return {
           ...t,
           ...(bonus === undefined ? {} : { saveBonus: bonus }),
           ...(conditions.length > 0 ? { conditions } : {}),
+          ...(riders.length > 0 ? { riders } : {}),
           ...(penalized ? { armorPenalty: true } : {}),
         };
       })
@@ -730,8 +735,9 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
     attackMode: spell.effect.kind === 'attack' ? mode : 'normal',
     ritual: asRitual,
     // The caster's feat riders join its chips for the projectile rolls. The
-    // mode fold above keeps the plain chip list, because a feat source names
-    // no condition a slant could read.
+    // mode folds above keep the plain chip lists on both sides, because the
+    // condition-effect table matches entries by name, and a feat that shares
+    // a condition's name must not slant a roll.
     casterConditions: riderSources(entity),
     rng,
   });

@@ -13,6 +13,7 @@ import {
   retryImposedSaves,
   spellsOf,
   targetConditions,
+  targetFeatRiders,
   targetSaveBonus,
   weaponsOf,
 } from '../src/app/combatants.js';
@@ -157,6 +158,30 @@ test('targetConditions reads the chips off an NPC on the tile', () => {
   const app = stubApp({ creatures: [sage] });
   assert.deepEqual(targetConditions(app, 'sage'), [{ name: 'Poisoned', rounds: 2 }]);
   assert.deepEqual(targetConditions(app, 'nobody'), []);
+});
+
+test('targetFeatRiders reads a character stamp and never a creature', () => {
+  const stamp = {
+    classId: 'fighter',
+    classLevel: 4,
+    order: 0,
+    type: 'feat',
+    feat: 'Iron Will',
+    rider: { rolls: ['save'], flat: 1 },
+  };
+  const hero = { ...fixtures().hero, asiChoices: { slot: stamp } };
+  const sage = { ...fixtures().sage, conditions: [{ name: 'Poisoned', rounds: 2 }] };
+  const app = stubApp({ characters: [hero], creatures: [sage] });
+  assert.deepEqual(targetFeatRiders(app, 'hero'), [
+    { name: 'Iron Will', rider: { rolls: ['save'], flat: 1 } },
+  ]);
+  assert.deepEqual(targetFeatRiders(app, 'sage'), []);
+  assert.deepEqual(targetFeatRiders(app, 'nobody'), []);
+  assert.deepEqual(
+    targetConditions(app, 'hero'),
+    [],
+    'the stamp stays out of the chip list the effect table scans',
+  );
 });
 
 test('combatantsAsTargets skips a participant absent from every roster', () => {
