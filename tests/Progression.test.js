@@ -10,6 +10,8 @@ import {
   applyASI,
   takeFeat,
   undoLastChoice,
+  applyFeatureGrant,
+  undoFeatureGrant,
   setStat,
 } from '../src/entities/Progression.js';
 import {
@@ -191,4 +193,23 @@ test('takeFeat re-derives through the wrapper and keeps a refused stamp identica
   );
   const granted = takeFeat(fighter, { name: 'Skilled', granted: { skills: ['stealth'] } });
   assert.deepEqual(getProficiencies(granted).skills, ['stealth']);
+});
+
+test('the feature-grant writers re-derive and keep a refused grant identical', () => {
+  const rogue = withProficiencies(classed([{ classId: 'rogue', level: 1 }]), {
+    skills: ['stealth', 'perception'],
+  });
+  const stamp = {
+    classId: 'rogue',
+    classLevel: 1,
+    name: 'Expertise',
+    granted: { expertise: ['stealth'] },
+  };
+  const claimed = applyFeatureGrant(rogue, stamp);
+  assert.deepEqual(getProficiencies(claimed).expertise, ['stealth']);
+  assert.equal(applyFeatureGrant(claimed, stamp), claimed, 'a second claim keeps identity');
+
+  const undone = undoFeatureGrant(claimed, 'rogue 1 Expertise');
+  assert.deepEqual(getProficiencies(undone).expertise, []);
+  assert.equal(undoFeatureGrant(rogue, 'nonesuch'), rogue, 'an unknown key keeps identity');
 });

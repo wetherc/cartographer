@@ -4,9 +4,12 @@
  * prints the list. This module is what turns two of those names into numbers
  * that the combat paths can use.
  *
- * A feature is a name in `featuresByLevel` (`data/classes.js`) and carries no
- * structured effect. Matching on the name is therefore the only way to read
- * one. Each function here states the names it looks for. A homebrew or
+ * A feature in `featuresByLevel` (`data/classes.js`) is a plain name or a
+ * name with structured effects. One-time grants (proficiencies, expertise,
+ * roll riders) go through the structured path in `FeatureGrants.js`. The
+ * readers here cover the other kind: values that scale with the class level
+ * and so are derived on read, not granted once. Matching on the name is how
+ * they read one. Each function states the names it looks for. A homebrew or
  * imported class that uses the same names gets the same mechanics.
  *
  * Every function is pure and takes the character as its only input.

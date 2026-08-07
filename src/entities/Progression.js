@@ -11,6 +11,10 @@ import {
   takeFeat as recordFeat,
   undoLastChoice as dropLastChoice,
 } from './LevelUp.js';
+import {
+  applyFeatureGrant as recordFeatureGrant,
+  undoFeatureGrant as dropFeatureGrant,
+} from './FeatureGrants.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/class.js').ClassRef} ClassRef */
@@ -100,6 +104,16 @@ export const takeFeat = deriving(recordFeat);
  * takes its HP back). See LevelUp.undoLastChoice.
  * @type {(character: Character) => Character} */
 export const undoLastChoice = deriving(dropLastChoice);
+
+/** Claim a pending class-feature grant, then re-derive. See
+ * FeatureGrants.applyFeatureGrant.
+ * @type {(character: Character, stamp: import('./FeatureGrants.js').FeatureStamp) => Character} */
+export const applyFeatureGrant = deriving(recordFeatureGrant);
+
+/** Undo a claimed class-feature grant by its key, then re-derive. See
+ * FeatureGrants.undoFeatureGrant.
+ * @type {(character: Character, key: string) => Character} */
+export const undoFeatureGrant = deriving(dropFeatureGrant);
 
 /**
  * Set one ability score, then re-derive. This function lives here instead of

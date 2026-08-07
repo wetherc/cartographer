@@ -344,6 +344,26 @@ export type AsiChoice =
  * most recent choice. */
 export type AsiChoices = Record<string, AsiChoice>;
 
+/** One applied class-feature grant: what a structured feature added when the
+ * character claimed it. `classId`, `classLevel`, and `name` identify the
+ * catalog feature (see FeatureGrants.featureKey). `granted` holds only what
+ * the merge actually added, so undo removes exactly that. */
+export interface FeatureChoice {
+  classId: string;
+  classLevel: number;
+  name: string;
+  order: number;
+  /** The proficiency entries the feature added, removed again on undo. */
+  granted?: import('./feat.js').FeatGrants;
+  /** The standing roll rider the feature carries. */
+  rider?: RollRider;
+}
+
+/** Applied class-feature grants, keyed by the feature they claim (see
+ * FeatureGrants.featureKey). A feature holds at most one grant. An unlocked
+ * feature with effects and no entry here is a pending grant. */
+export type FeatureChoices = Record<string, FeatureChoice>;
+
 /** The choice shapes that older saves carried, both of them arrays: the
  * pre-multiclass shape, keyed by bare character level, and the per-class
  * shape, which predates the keyed record and so has no `order`. Loading
@@ -405,6 +425,9 @@ export interface Character {
   /** Ability-score-improvement choices already made, one per claimed class ASI
    * level (see LevelUp.js). Absent on older saves, which load as none made. */
   asiChoices?: AsiChoices;
+  /** Class-feature grants already applied (see FeatureGrants.js). Absent on
+   * older saves, which load as none applied. */
+  featureChoices?: FeatureChoices;
   level: number;
   xp: number;
   stats: Record<string, number>;

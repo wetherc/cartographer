@@ -1,5 +1,6 @@
 import { ABILITY_SCORES } from './Modifiers.js';
 import { ABILITY_MAX, listASIChoices } from './LevelUp.js';
+import { featureRiders } from './FeatureGrants.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/feat.js').Feat} Feat */
@@ -86,15 +87,17 @@ export function featRiders(character) {
 }
 
 /**
- * Everything that rides the character's rolls: its condition chips plus its
- * feat riders, in one list for `rollRiders`. The roll sites call this
- * instead of reading `conditions` directly, so a feat bonus and a chip bonus
- * cannot diverge. Safe on a creature, which contributes its chips alone.
+ * Everything that rides the character's rolls: its condition chips, its
+ * feat riders, and its class-feature riders, in one list for `rollRiders`.
+ * The roll sites call this instead of reading `conditions` directly, so a
+ * feat bonus and a chip bonus cannot diverge. Safe on a creature, which
+ * contributes its chips alone.
  * @param {Character | import('../types/creature.js').Creature} entity
  * @returns {import('../entities/Riders.js').RiderSource[]}
  */
 export function riderSources(entity) {
-  return [...(entity.conditions ?? []), ...featRiders(/** @type {Character} */ (entity))];
+  const character = /** @type {Character} */ (entity);
+  return [...(entity.conditions ?? []), ...featRiders(character), ...featureRiders(character)];
 }
 
 /**
