@@ -35,8 +35,8 @@
     <rect x="29" y="23" width="6" height="6" fill="#a3865c" stroke="#7a6543" stroke-width="0.7"/>
     <path d="M29 26 L35 26 M32 23 L32 29" stroke="#7a6543" stroke-width="0.7"/>
     <rect x="36" y="25" width="4.5" height="4.5" fill="#93714a" stroke="#6f583a" stroke-width="0.7"/>
-    <ellipse cx="44" cy="28" rx="2.2" ry="2.8" fill="#8a6f4a"/>
-    <path d="M42 26.5 Q44 27.3 46.2 26.5 M42 29.5 Q44 30.3 46.2 29.5" stroke="#5c4930" stroke-width="0.6" fill="none"/>
+    <ellipse cx="27" cy="27" rx="2.2" ry="2.8" fill="#8a6f4a"/>
+    <path d="M25 25.5 Q27 26.3 29.2 25.5 M25 28.5 Q27 29.3 29.2 28.5" stroke="#5c4930" stroke-width="0.6" fill="none"/>
     <circle cx="51" cy="28" r="1.8" fill="none" stroke="#b09a72" stroke-width="1.1"/>
     <circle cx="51" cy="28" r="0.6" fill="none" stroke="#b09a72" stroke-width="0.8"/>
   </g>

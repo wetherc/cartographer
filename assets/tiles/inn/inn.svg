@@ -30,6 +30,7 @@
   <circle cx="33.4" cy="44.4" r="0.6" fill="#c9a020"/>
   <rect x="20" y="40" width="5" height="4.5" fill="#e8c05a" stroke="#8a6f4a" stroke-width="0.7"/>
   <rect x="37.5" y="40" width="5" height="4.5" fill="#e8c05a" stroke="#8a6f4a" stroke-width="0.7"/>
+  <path d="M22.5 40 V44.5 M40 40 V44.5 M20 42.2 H25 M37.5 42.2 H42.5" stroke="#8a6f4a" stroke-width="0.55"/>
   <!-- hanging sign: crescent moon (rest for the night) -->
   <g>
     <rect x="10.2" y="27" width="1.6" height="21" fill="#6b5236"/>

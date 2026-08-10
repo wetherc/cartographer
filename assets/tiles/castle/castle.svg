@@ -6,20 +6,21 @@
   <ellipse cx="32" cy="44" rx="17" ry="8" fill="#cdb078"/>
   <!-- keep behind curtain wall -->
   <g>
+    <path d="M32 10 L32 16.5" stroke="#5a4530" stroke-width="1"/>
+    <path d="M32 10 L38 11.5 L32 13 Z" fill="#b03a2e"/>
     <rect x="26" y="16" width="12" height="18" fill="#b0aa9e" stroke="#6f6a60" stroke-width="0.8"/>
     <path d="M25 16 h3 v-3 h2 v3 h4 v-3 h2 v3 h3 v3 h-14 Z" fill="#9a948a" stroke="#6f6a60" stroke-width="0.6"/>
     <rect x="30.6" y="22" width="2.8" height="4.5" rx="1.4" fill="#3a3630"/>
-    <path d="M32 10 L32 15" stroke="#5a4530" stroke-width="1"/>
-    <path d="M32 10 L38 11.5 L32 13 Z" fill="#b03a2e"/>
   </g>
   <!-- curtain wall -->
-  <rect x="15" y="32" width="34" height="15" fill="#9a948a" stroke="#6f6a60" stroke-width="0.8"/>
-  <g fill="#9a948a" stroke="#6f6a60" stroke-width="0.8">
-    <path d="M17 32 v-2.5 h3 v2.5 M23 32 v-2.5 h3 v2.5 M38 32 v-2.5 h3 v2.5 M44 32 v-2.5 h3 v2.5"/>
-  </g>
+  <rect x="15" y="32" width="34" height="15" fill="#9a948a"/>
   <g stroke="#807a6e" stroke-width="0.7" fill="none">
     <path d="M15 37 H24 M40 37 H49 M15 42 H24 M40 42 H49"/>
     <path d="M19 32 V37 M21 37 V42 M43 32 V37 M45 37 V42"/>
+  </g>
+  <rect x="15" y="32" width="34" height="15" fill="none" stroke="#6f6a60" stroke-width="0.8"/>
+  <g fill="#9a948a" stroke="#6f6a60" stroke-width="0.8">
+    <path d="M17 32 v-2.5 h3 v2.5 M23 32 v-2.5 h3 v2.5 M38 32 v-2.5 h3 v2.5 M44 32 v-2.5 h3 v2.5"/>
   </g>
   <!-- corner towers -->
   <g>
@@ -34,7 +35,7 @@
   <g>
     <path d="M27 47 L27 39 Q32 34 37 39 L37 47 Z" fill="#6f6a60"/>
     <path d="M28.2 47 L28.2 39.6 Q32 35.8 35.8 39.6 L35.8 47 Z" fill="#2c2820"/>
-    <path d="M30 37.6 V47 M32 36.8 V47 M34 37.6 V47 M28.4 41 H35.6 M28.4 44 H35.6" stroke="#55514a" stroke-width="0.7"/>
+    <path d="M30 38.2 V47 M32 37.7 V47 M34 38.2 V47 M28.4 41 H35.6 M28.4 44 H35.6" stroke="#55514a" stroke-width="0.7"/>
   </g>
   <path d="M29 51 Q32 50 35 51 M27 54 Q32 52.8 37 54" stroke="#b09a63" stroke-width="1" fill="none" stroke-linecap="round"/>
 </svg>

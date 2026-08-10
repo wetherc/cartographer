@@ -12,8 +12,8 @@
     <path d="M26 28 L26.5 15 L29.5 14.5 L30 28 Z" fill="#9aa1ab"/>
     <path d="M26.5 15 L29.5 14.5 L29 28 L27.8 28 Z" fill="#b3b9c2"/>
     <path d="M27 19 L28.8 20.5 L27.6 22.5" stroke="#7f8791" stroke-width="0.5" fill="none"/>
-    <path d="M34 28 L34.2 15.5 L37.2 15 L38 28 Z" fill="#9aa1ab"/>
-    <path d="M34.2 15.5 L37.2 15 L36.8 28 L35.4 28 Z" fill="#b3b9c2"/>
+    <path d="M34 28 L34.2 15 L37.2 14.6 L38 28 Z" fill="#9aa1ab"/>
+    <path d="M34.2 15 L37.2 14.6 L36.8 28 L35.4 28 Z" fill="#b3b9c2"/>
     <path d="M35 17.5 L36 17.4 M35.1 19 L36.2 18.9 M35.3 20.8 L35 22.5" stroke="#5f6a72" stroke-width="0.55" fill="none"/>
     <path d="M24.5 15.5 L39.5 15 L39.5 12 L24.5 12.5 Z" fill="#8a9199"/>
     <path d="M24.5 12.5 L39.5 12 L39.5 13 L24.5 13.5 Z" fill="#a8aeb7"/>

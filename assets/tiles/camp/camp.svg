@@ -3,21 +3,8 @@
   <ellipse cx="52" cy="12" rx="9" ry="5" fill="#63a651"/>
   <ellipse cx="10" cy="30" rx="7" ry="4" fill="#529044"/>
   <ellipse cx="32" cy="42" rx="20" ry="11" fill="#63a651"/>
-  <!-- Main ridge tent in 3/4 view: canvas side panel with seams, front
-       gable, open door flap, guy line staked out front. -->
-  <g>
-    <ellipse cx="24" cy="39" rx="12" ry="2.6" fill="#42522f" opacity="0.5"/>
-    <polygon points="20,26 34,28 40,40 26,38" fill="#9a7c47"/>
-    <path d="M25 28.7 L31 40.4 M29.5 27.3 L35.5 39" stroke="#84683a" stroke-width="0.6" fill="none"/>
-    <polygon points="12,38 20,26 26,38" fill="#b8975a"/>
-    <path d="M12 38 L20 26 L21.4 28 L14.8 38 Z" fill="#c7a768"/>
-    <polygon points="17.5,38 20,29.5 23.5,38" fill="#4a3a26"/>
-    <path d="M20 29.5 L21.8 38 L23.5 38 Z" fill="#5c4930"/>
-    <path d="M20 26 L20 23.6 M34 28 L34 25.8" stroke="#6f583a" stroke-width="1" stroke-linecap="round"/>
-    <path d="M20 24.5 L14 33.5" stroke="#8a7048" stroke-width="0.6" fill="none"/>
-    <path d="M13.6 33 L14.4 35" stroke="#6f583a" stroke-width="1" stroke-linecap="round"/>
-  </g>
-  <!-- Second, smaller ridge tent pitched behind, facing the other way. -->
+  <!-- Second, smaller ridge tent pitched behind, facing the other way.
+       Drawn first so the main tent overlaps it. -->
   <g>
     <ellipse cx="47" cy="31" rx="9" ry="2" fill="#42522f" opacity="0.5"/>
     <polygon points="40,22 50,20.5 55,31 45,32.5" fill="#76814f"/>
@@ -26,6 +13,20 @@
     <path d="M35 31 L40 22 L41 24 L36.8 31.5 Z" fill="#9da878"/>
     <polygon points="38.5,31.8 40,25.5 42.5,32" fill="#3d3423"/>
     <path d="M40 22 L40 20.2" stroke="#5a6236" stroke-width="0.9" stroke-linecap="round"/>
+  </g>
+  <!-- Main ridge tent in 3/4 view: canvas side panel with seams, front
+       gable, open door flap, guy line staked into the grass out front. -->
+  <g>
+    <ellipse cx="25" cy="39.5" rx="13" ry="2.6" fill="#42522f" opacity="0.5"/>
+    <polygon points="20,26 33,24 39.5,37.7 26.5,39.7" fill="#9a7c47"/>
+    <path d="M24.7 25.7 L30.9 38.6 M28.6 25.1 L34.8 38" stroke="#84683a" stroke-width="0.6" fill="none"/>
+    <polygon points="13.5,37.7 20,26 26.5,39.7" fill="#b8975a"/>
+    <path d="M13.5 37.7 L20 26 L21.5 27.7 L15.8 38.05 Z" fill="#c7a768"/>
+    <polygon points="17.5,38.3 20,30 23.5,39.2" fill="#4a3a26"/>
+    <path d="M20 30 L21.9 39 L23.5 39.2 Z" fill="#5c4930"/>
+    <path d="M20 26 L20 23.6 M33 24 L33 21.8" stroke="#6f583a" stroke-width="1" stroke-linecap="round"/>
+    <path d="M20 23.8 Q15.2 31.2 11.8 39.4" stroke="#c9b083" stroke-width="0.45" fill="none"/>
+    <path d="M11.3 38.9 L12.3 40.7" stroke="#6f583a" stroke-width="1.2" stroke-linecap="round"/>
   </g>
   <!-- Campfire: stone ring, crossed logs, flame with glow, smoke wisp,
        and a cooking tripod holding a kettle over it. -->
@@ -49,10 +50,12 @@
   </g>
   <!-- Sitting log, chopping stump with a buried axe, bedroll, and packs. -->
   <g>
-    <rect x="27" y="52" width="13" height="3.2" rx="1.6" fill="#7a5a38"/>
-    <path d="M28 53 L39 53 M28.5 54.3 L38.5 54.3" stroke="#5f4529" stroke-width="0.5"/>
-    <ellipse cx="27" cy="53.6" rx="1.6" ry="1.6" fill="#a3865c"/>
-    <circle cx="27" cy="53.6" r="0.7" fill="#8a6f4a"/>
+    <rect x="27" y="52" width="13" height="3.2" rx="1.6" fill="#6f5233"/>
+    <path d="M29 52.8 Q33.5 52.5 38.5 52.8 M29 54.4 Q33.5 54.7 38.5 54.4" stroke="#573f26" stroke-width="0.5" fill="none"/>
+    <circle cx="36" cy="53.6" r="0.5" fill="#573f26"/>
+    <ellipse cx="27.2" cy="53.6" rx="1.5" ry="1.7" fill="#c9a86f"/>
+    <ellipse cx="27.2" cy="53.6" rx="0.85" ry="1" fill="none" stroke="#a3865c" stroke-width="0.45"/>
+    <circle cx="27.2" cy="53.6" r="0.3" fill="#8a6f4a"/>
   </g>
   <g>
     <ellipse cx="50" cy="45" rx="3" ry="1.2" fill="#42522f" opacity="0.5"/>
@@ -67,8 +70,12 @@
     <path d="M46 49.5 L46 52.5 M49 49.5 L49 52.5 M52 49.5 L52 52.5" stroke="#6f382c" stroke-width="0.8"/>
   </g>
   <g>
-    <ellipse cx="16" cy="44" rx="2.4" ry="2.8" fill="#8a6f4a"/>
-    <path d="M14 42.5 Q16 43.3 18.2 42.5 M14 45.5 Q16 46.3 18.2 45.5" stroke="#5c4930" stroke-width="0.6" fill="none"/>
+    <ellipse cx="16" cy="47.4" rx="2.9" ry="1" fill="#42522f" opacity="0.5"/>
+    <path d="M13.8 41.6 Q13 44.4 13.8 47.1 Q16 48.3 18.2 47.1 Q19 44.4 18.2 41.6 Z" fill="#8a6f4a"/>
+    <ellipse cx="16" cy="41.6" rx="2.2" ry="0.85" fill="#a3865c"/>
+    <ellipse cx="16" cy="41.6" rx="1.4" ry="0.5" fill="#8a6f4a"/>
+    <path d="M13.4 43.3 Q16 44.2 18.6 43.3 M13.4 45.5 Q16 46.4 18.6 45.5" stroke="#4a453d" stroke-width="0.7" fill="none"/>
+    <path d="M14.9 42.3 Q14.5 44.5 14.9 47.4 M17.1 42.3 Q17.5 44.5 17.1 47.4" stroke="#6f583a" stroke-width="0.4" fill="none"/>
     <rect x="19" y="43.5" width="4" height="3.6" rx="0.8" fill="#a3865c" stroke="#7a6543" stroke-width="0.5"/>
   </g>
   <path d="M14 52 Q15 49.5 16 52 M18 53 Q19 50.5 20 53 M54 56 Q55 53.5 56 56" stroke="#4c8a40" stroke-width="1" fill="none" stroke-linecap="round"/>
