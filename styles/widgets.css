@@ -233,6 +233,7 @@
   align-items: center;
   justify-content: center;
   font-size: var(--text-label);
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: var(--text);
 }
@@ -246,6 +247,25 @@
 
 .stat-bar[data-band='low'] .stat-bar__fill {
   background: var(--danger);
+}
+
+/* The compact bar's numbers lie over the fill, and full text on a solid band
+   color is unreadable in one theme or the other. The compact fill is
+   therefore a tint of the band color over the sunken track, the same
+   treatment as a badge, so the text always sits on a quiet ground while the
+   band hue still reads. The full-size bars above keep their solid fills;
+   nothing overlays them. These sit after the banded rules so the compact
+   tint wins each band at equal specificity. */
+.stat-bar--compact .stat-bar__fill {
+  background: color-mix(in srgb, var(--success) 38%, var(--surface-sunken));
+}
+
+.stat-bar--compact[data-band='mid'] .stat-bar__fill {
+  background: color-mix(in srgb, var(--warning) 38%, var(--surface-sunken));
+}
+
+.stat-bar--compact[data-band='low'] .stat-bar__fill {
+  background: color-mix(in srgb, var(--danger) 38%, var(--surface-sunken));
 }
 
 /* Temporary points riding on top of the pool (bonus HP). */
