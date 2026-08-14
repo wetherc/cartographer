@@ -40,9 +40,9 @@
 }
 
 .character-sheet__summary .character-sheet__name {
-  font-family: var(--font-display);
+  font-family: var(--font-title);
   font-weight: 400;
-  font-size: 1.3rem;
+  font-size: 1.2rem;
 }
 
 .character-sheet__summary .character-sheet__race {
@@ -257,6 +257,7 @@
 .stat-badge {
   align-items: center;
   padding: var(--space-2) var(--space-1);
+  font: inherit;
   background: transparent;
   border: none;
   cursor: pointer;
