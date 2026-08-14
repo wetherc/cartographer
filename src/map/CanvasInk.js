@@ -33,7 +33,7 @@ export const INK = {
   bandBorder: 'rgba(230, 215, 180, 0.85)',
 
   /** The map's own extent: its backdrop, its border, and an unrevealed tile. */
-  mapBackdrop: '#241f16',
+  mapBackdrop: '#171209',
   mapBorder: 'rgba(230, 215, 180, 0.55)',
   fog: '#48412f',
   /** Stands in for tile art that has not decoded yet, so no tile is a hole. */
@@ -43,12 +43,12 @@ export const INK = {
   cursor: '#5ec8ff',
 
   /** Encounter diamonds and NPC circles, each a fill over its own rim. */
-  encounterFill: '#a5352b',
+  encounterFill: '#9d2f21',
   encounterRim: '#2a0f0c',
   npcFill: '#3563a5',
   npcRim: '#101f36',
   /** The parchment disc that marks a tile as a way out. */
-  badgeFill: '#e6d7b4',
+  badgeFill: '#ede2c8',
   badgeRim: '#2a2114',
 
   /** A region group's overlay: a white tint, its border, and its name plate. */
