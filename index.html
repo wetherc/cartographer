@@ -62,14 +62,23 @@
   <header class="app-header u-row u-wrap u-g4">
     <h1>Campaign Builder</h1>
     <div id="mode-switch-container"></div>
+    <!-- The actions cluster by job: campaign lifecycle, history, and file
+         transfer. A wrapping header carries each cluster to the next row
+         whole. -->
     <div class="app-header__actions">
-      <button id="new-btn" class="btn" type="button">New</button>
-      <button id="example-btn" class="btn" type="button">Load example</button>
-      <button id="save-btn" class="btn btn--primary" type="button">Save</button>
-      <button id="undo-btn" class="btn" type="button">Undo</button>
-      <button id="redo-btn" class="btn" type="button">Redo</button>
-      <button id="export-btn" class="btn" type="button">Export</button>
-      <button id="import-btn" class="btn" type="button">Import</button>
+      <div class="btn-cluster" role="group" aria-label="Campaign">
+        <button id="new-btn" class="btn" type="button">New</button>
+        <button id="example-btn" class="btn" type="button">Load example</button>
+        <button id="save-btn" class="btn btn--primary" type="button">Save</button>
+      </div>
+      <div class="btn-cluster" role="group" aria-label="History">
+        <button id="undo-btn" class="btn" type="button">Undo</button>
+        <button id="redo-btn" class="btn" type="button">Redo</button>
+      </div>
+      <div class="btn-cluster" role="group" aria-label="Transfer">
+        <button id="export-btn" class="btn" type="button">Export</button>
+        <button id="import-btn" class="btn" type="button">Import</button>
+      </div>
       <input id="import-input" type="file" accept="application/json" hidden />
     </div>
     <!-- The two view switches are grouped so a wrapping header carries them

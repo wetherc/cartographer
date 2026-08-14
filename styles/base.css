@@ -374,6 +374,39 @@ body {
   cursor: pointer;
 }
 
+/* A cluster of related .btn actions joined into one strip, the same silhouette
+   as a .seg-switch but with no active state: the buttons keep their own
+   borders and variants, the shared edges collapse to a single line, and only
+   the outer corners round. A hovered or focused button lifts above its
+   neighbors so its border and focus ring draw whole. */
+.btn-cluster {
+  display: inline-flex;
+}
+
+.btn-cluster .btn {
+  border-radius: 0;
+}
+
+.btn-cluster .btn + .btn {
+  margin-left: -1px;
+}
+
+.btn-cluster .btn:first-child {
+  border-top-left-radius: var(--radius-sm);
+  border-bottom-left-radius: var(--radius-sm);
+}
+
+.btn-cluster .btn:last-child {
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-right-radius: var(--radius-sm);
+}
+
+.btn-cluster .btn:hover,
+.btn-cluster .btn:focus-visible {
+  position: relative;
+  z-index: 1;
+}
+
 /* Segmented control (Play/Build, theme, GM/Player, dice-tray d20 mode): a
    bordered strip of joined .btn segments with the active one accent-filled. */
 .seg-switch {
