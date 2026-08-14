@@ -40,7 +40,9 @@
 }
 
 .character-sheet__summary .character-sheet__name {
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.3rem;
 }
 
 .character-sheet__summary .character-sheet__race {

@@ -52,7 +52,10 @@
 }
 
 .app-header h1 {
-  font-size: var(--text-display);
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.75rem;
+  letter-spacing: 0.02em;
   margin: 0;
 }
 

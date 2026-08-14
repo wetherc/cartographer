@@ -44,8 +44,9 @@
    ========================================================================== */
 
 .time-panel__readout {
-  font-size: var(--text-body);
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.25rem;
   margin-bottom: var(--space-2);
 }
 

@@ -208,6 +208,15 @@ body.mode-build .map-controls__fog {
   padding: var(--space-5);
 }
 
+/* The onboarding card floats over the map scrim, not the page, so the
+   cartouche's page-colored patch would show as a mismatched block. Its title
+   sits back in the flow on the card surface instead. */
+.onboarding__card .card__title {
+  position: static;
+  padding: 0;
+  background: none;
+}
+
 .onboarding__blurb {
   margin: 0 0 var(--space-2);
 }

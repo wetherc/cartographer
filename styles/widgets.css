@@ -18,8 +18,12 @@
   background: var(--surface-sunken);
 }
 
+/* The current location is a place name, so it wears the display face; the
+   crumbs before it stay in the body face as plain links. */
 .breadcrumb__crumb[aria-current] {
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1rem;
   color: var(--text);
   cursor: default;
 }
