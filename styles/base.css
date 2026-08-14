@@ -132,13 +132,15 @@
   --text-label: 0.8125rem;
   --line-body: 1.5;
 
-  /* Radius. Corners stay near square, like the plates of an engraved atlas;
-     soft rounding reads as borrowed app chrome. --radius-pill is a value large
+  /* Radius. Tighter than the old 0.375 to 0.75rem scale so the chrome keeps
+     the engraved-plate posture, but soft enough on controls that a button
+     still reads as pressable rather than blocky. The plate frame itself keeps
+     its own near-square corner in .card. --radius-pill is a value large
      enough that the corners always resolve to a half-round cap, whatever the
      element's height. */
-  --radius-sm: 2px;
-  --radius: 3px;
-  --radius-lg: 5px;
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 8px;
   --radius-pill: 999px;
 
   /* Motion. Three speeds cover every transition here: --press for the button
@@ -623,7 +625,9 @@ select.field option::checkmark {
   position: relative;
   background: var(--surface);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
+  /* Near square on purpose: the plate frame is the engraved gesture, and the
+     softer control radii sit inside it. */
+  border-radius: 3px;
   padding: var(--space-4);
   box-shadow: var(--shadow-1);
 }
