@@ -26,6 +26,7 @@ async function build() {
       '.png': 'file',
       '.jpg': 'file',
       '.svg': 'file',
+      '.woff2': 'file',
     },
     logLevel: 'info',
   };
