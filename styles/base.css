@@ -7,6 +7,58 @@
    properties so components never hand-pick raw values.
    ========================================================================== */
 
+/* The two bundled faces (fonts/README.md). IM Fell English is the display
+   face, reserved for the wordmark, panel titles, and the names of people and
+   places. Alegreya Sans carries all other text. font-display: swap keeps the
+   first paint from blocking on a font file. */
+@font-face {
+  font-family: 'IM Fell English';
+  src: url('../fonts/fell-regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IM Fell English';
+  src: url('../fonts/fell-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('../fonts/alegreya-400.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('../fonts/alegreya-500.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('../fonts/alegreya-700.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alegreya Sans';
+  src: url('../fonts/alegreya-italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
 /* Visually hidden but exposed to assistive tech (live regions, labels). */
 .sr-only {
   position: absolute;
@@ -69,8 +121,10 @@
   --space-5: 1.5rem;
   --space-6: 2rem;
 
-  /* Type */
-  --font-sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* Type. --font-display appears only at --text-body size and above, never
+     for body copy or data, so its period letterforms stay legible. */
+  --font-display: 'IM Fell English', 'Iowan Old Style', Palatino, serif;
+  --font-sans: 'Alegreya Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
   --text-display: 1.5rem;
   --text-heading: 1.125rem;
