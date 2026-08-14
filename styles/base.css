@@ -23,35 +23,43 @@
 :root {
   color-scheme: light dark;
 
-  /* Color — light-dark(light value, dark value) */
-  --bg: light-dark(#f4f1ea, #191712);
-  --surface: light-dark(#fbf9f4, #221f19);
-  --surface-raised: light-dark(#ffffff, #2b271f);
-  --surface-sunken: light-dark(#ebe6db, #14120e);
-  --border: light-dark(#d8d0be, #3a352b);
-  --border-strong: light-dark(#b9ae95, #544c3d);
-  --text: light-dark(#2b2620, #ece5d6);
-  --text-muted: light-dark(#6b6355, #a89e8a);
-  --accent: light-dark(#7b4a2f, #c98a5a);
-  --accent-hover: light-dark(#653c26, #d99a6a);
-  --accent-contrast: light-dark(#fbf9f4, #191712);
-  --danger: light-dark(#a5352b, #d4655a);
-  --danger-contrast: light-dark(#fbf9f4, #191712);
-  --success: light-dark(#3f7a3f, #6faa6f);
-  --success-contrast: light-dark(#fbf9f4, #191712);
-  --warning: light-dark(#b8862b, #d8a94e);
-  --warning-contrast: light-dark(#fbf9f4, #191712);
-  --mana: light-dark(#3a5fa8, #6f8fd0);
-  --mana-contrast: light-dark(#fbf9f4, #191712);
-  --focus-ring: light-dark(#b8783f, #d99a6a);
-  --shadow-tint: light-dark(rgb(30 25 15), rgb(0 0 0));
+  /* Color — light-dark(light value, dark value). The palette is drawn from the
+     materials of a cartographer's worktable: laid paper and iron-gall ink in
+     the light theme, a lampblack desk after dark. The accent is rubric red,
+     the ink medieval scribes reserved for headings. Danger is a deeper blood
+     red kept apart from it: rubric appears as bare text and fills, danger
+     always bordered or filled, so the two never read as one. Every text pair
+     holds 4.5:1 or better on the surfaces it appears on, and --border-strong
+     holds 3:1 against --surface for control boundaries; --border is a hairline
+     for decorative rules only. */
+  --bg: light-dark(#f3ecdd, #171209);
+  --surface: light-dark(#faf5e9, #201a10);
+  --surface-raised: light-dark(#fffdf5, #2a2215);
+  --surface-sunken: light-dark(#e9e0cc, #120d06);
+  --border: light-dark(#d6cab0, #3d3421);
+  --border-strong: light-dark(#94815c, #786646);
+  --text: light-dark(#2e2418, #ede2c8);
+  --text-muted: light-dark(#6f6350, #a3947a);
+  --accent: light-dark(#9d2f21, #dd8166);
+  --accent-hover: light-dark(#7f251a, #e79b83);
+  --accent-contrast: light-dark(#faf5e9, #171209);
+  --danger: light-dark(#8a1f14, #e58579);
+  --danger-contrast: light-dark(#faf5e9, #171209);
+  --success: light-dark(#33604a, #7fae8f);
+  --success-contrast: light-dark(#faf5e9, #171209);
+  --warning: light-dark(#8f6410, #d8a94e);
+  --warning-contrast: light-dark(#faf5e9, #171209);
+  --mana: light-dark(#33517e, #8aa7d6);
+  --mana-contrast: light-dark(#faf5e9, #171209);
+  --focus-ring: light-dark(#9d2f21, #dd8166);
+  --shadow-tint: light-dark(rgb(46 32 12), rgb(0 0 0));
 
   /* Over-map chrome (map controls, toasts, tooltips, the onboarding scrim) is
      deliberately pinned dark in both themes — it floats over map art, not the
      page surface, so it stays constant rather than following light-dark(). */
-  --overlay-bg: #0f0d0a;
-  --overlay-text: #e6d7b4;
-  --overlay-npc: #9fc3f0; /* NPC tint readable on --overlay-bg; --mana's light value is not */
+  --overlay-bg: #171209;
+  --overlay-text: #ede2c8;
+  --overlay-npc: #8aa7d6; /* NPC tint readable on --overlay-bg; --mana's light value is not */
 
   /* Spacing scale */
   --space-1: 0.25rem;
@@ -96,12 +104,12 @@
    way color-scheme is: OS preference by default, pinned by data-theme. The SVG
    stroke is the muted text color of each theme. */
 :root {
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%236b6355' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%236f6350' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23a89e8a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23a3947a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   }
 }
 
@@ -109,12 +117,12 @@
    Set before first paint by the inline script in index.html's <head>. */
 :root[data-theme='light'] {
   color-scheme: light;
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%236b6355' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%236f6350' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23a89e8a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%23a3947a' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 /* ==========================================================================
