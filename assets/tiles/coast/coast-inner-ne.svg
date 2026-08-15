@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Inner coast corner (water in the north-east quadrant): coast-inner-nw
+       mirrored across the vertical axis. -->
+  <g transform="translate(64 0) scale(-1 1)">
+    <path d="M0 0 L36 0 Q38.5 8 36 16 C33 25.6 25.6 33 16 36 Q8 38.5 0 36 Z" fill="#33719f"/>
+    <ellipse cx="12" cy="11" rx="8" ry="5" fill="#2d6591"/>
+    <g fill="#8ac2e6"><circle cx="24" cy="8" r="0.9"/><circle cx="8" cy="22" r="0.8"/></g>
+    <path d="M6 16 L11 16 M18 18 L23 18" stroke="#8ac2e6" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.7"/>
+    <path d="M0 28 Q8 24.5 16 28 C20 29.75 29.75 20 28 16 Q24.5 8 28 0 L36 0 Q38.5 8 36 16 C33 25.6 25.6 33 16 36 Q8 38.5 0 36 Z" fill="#c2a36c"/>
+    <path d="M0 28 Q8 24.5 16 28 C20 29.75 29.75 20 28 16 Q24.5 8 28 0" stroke="#8ac2e6" stroke-width="1.4" fill="none" opacity="0.9"/>
+    <g fill="#b08f57"><circle cx="8" cy="32.5" r="0.7"/><circle cx="24" cy="26" r="0.6"/><circle cx="32.5" cy="8" r="0.7"/></g>
+    <g fill="#cdb078"><circle cx="16" cy="32" r="0.6"/><circle cx="30" cy="18" r="0.6"/></g>
+  </g>
+</svg>
