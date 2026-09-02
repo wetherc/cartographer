@@ -7,6 +7,11 @@
  *   pnpm bench -- --only=paint-stroke,zoom-pan
  *   pnpm bench -- --port=8934        an already-running dev server
  *
+ * Every scenario after `load-example` reads the example campaign. When
+ * `--only` names one of them without `load-example`, the runner adds
+ * `load-example` in front, because those scenarios would otherwise drive an
+ * empty campaign and report nothing.
+ *
  * Each run writes one directory under `bench/results/`: a `metrics.json` with
  * every reading, a `summary.md` to read, and one `.cpuprofile` per scenario.
  * A `.cpuprofile` opens in the DevTools Performance panel as a flame chart.
@@ -104,8 +109,11 @@ async function main() {
   const scenarioBudgetMs = Number(arg('budget', '60000'));
   const headless = !process.argv.includes('--headful');
   const wanted = only ? new Set(only.split(',')) : null;
-  const scenarios = wanted ? SCENARIOS.filter((s) => wanted.has(s.name)) : SCENARIOS;
+  const scenarios = selectScenarios(wanted);
   if (!scenarios.length) throw new Error('no scenario matched --only');
+  if (wanted && !wanted.has('load-example') && scenarios.some((s) => s.name === 'load-example')) {
+    process.stdout.write('load-example added: a selected scenario reads the example campaign\n');
+  }
 
   const server = await ensureServer(port);
   const chrome = await launchChrome({ headless });
@@ -189,6 +197,19 @@ async function main() {
   await writeFile(join(outDir, 'metrics.json'), `${JSON.stringify({ meta, results }, null, 2)}\n`);
   await writeFile(join(outDir, 'summary.md'), summarize(meta, results));
   process.stdout.write(`\nresults: bench/results/${stamp}/summary.md\n`);
+}
+
+/**
+ * The scenarios to run, in catalog order. A null selection runs every
+ * scenario. A selection that names a scenario listed after `load-example`
+ * gains `load-example`, because that scenario reads the example campaign.
+ */
+function selectScenarios(wanted) {
+  if (!wanted) return SCENARIOS;
+  const loadAt = SCENARIOS.findIndex((s) => s.name === 'load-example');
+  const dependent = SCENARIOS.some((s, i) => i > loadAt && wanted.has(s.name));
+  const names = dependent ? new Set([...wanted, 'load-example']) : wanted;
+  return SCENARIOS.filter((s) => names.has(s.name));
 }
 
 /** Frame intervals as a p50 and p95, which show a stall the mean hides. */

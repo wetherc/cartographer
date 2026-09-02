@@ -691,7 +691,8 @@ its level.
 An NPC sits on any map at a column and row, or stays unplaced, in which
 case it appears everywhere. Columns and rows count from 1, the same as the
 numbers along the map edges. The panel lists the NPCs at the current
-location of the party.
+location of the party. The notes of an NPC are GM-only. The Player view
+lists the NPC with its role and disposition and without its notes.
 
 The Dice Tray collapses to a d20 icon. The full tray sets a count per die
 type (d4 to d100) and a flat modifier with plus and minus steppers. The

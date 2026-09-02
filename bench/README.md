@@ -78,7 +78,10 @@ re-measure with `pnpm bench:commit` and raise the budget in the same commit.
 | `combat-turns` | Start a fight, advance twenty turns, end it |
 
 Order matters. `load-example` reloads onto the example campaign, and the
-scenarios after it read that campaign. Every scenario drives the UI the way a
+scenarios after it read that campaign. When `--only` names one of those
+scenarios without `load-example`, the runner adds `load-example` in front
+and says so. Without it, the selected scenarios would drive an empty campaign
+and report nothing. Every scenario drives the UI the way a
 GM does, through a click, a drag, a wheel gesture, or a `storage` event. None of
 them reach into app state, so the numbers cover the same code a real action
 runs.

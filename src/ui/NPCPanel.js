@@ -62,7 +62,7 @@ export function mountNPCPanel(container, callbacks) {
       head: 'npc-panel__head',
       add: 'npc-panel__add',
     },
-    buildBody: (npc) => {
+    buildBody: (npc, ctx) => {
       const getLocationLabel = callbacks.getLocationLabel;
       const head = el(
         'div',
@@ -74,15 +74,16 @@ export function mountNPCPanel(container, callbacks) {
         }),
       );
 
-      // Role, location, and notes are each optional. The cast is needed
-      // because `filter(Boolean)` does not narrow the array's union type for
-      // the typechecker.
+      // Role, location, and notes are each optional. Notes are GM-only, like
+      // the notes of a foe, so a player tab lists the NPC without them. The
+      // cast is needed because `filter(Boolean)` does not narrow the array's
+      // union type for the typechecker.
       return /** @type {Node[]} */ (
         [
           head,
           npc.role && el('span', 'npc-panel__role', npc.role),
           getLocationLabel && el('span', 'npc-panel__location u-muted', getLocationLabel(npc)),
-          npc.notes && el('span', 'npc-panel__notes', npc.notes),
+          ctx.gm && npc.notes && el('span', 'npc-panel__notes', npc.notes),
         ].filter(Boolean)
       );
     },
