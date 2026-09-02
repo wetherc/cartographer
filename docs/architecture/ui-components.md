@@ -638,21 +638,34 @@ confirmDelete(name, detail?)         -> Promise<boolean>
 
 All four share one lifecycle, and so does every other dialog in the app: capture
 `document.activeElement` as the opener, build and append the dialog,
-`showModal()`, and on `close` remove the dialog and refocus the opener before
+`showModal()`, and on `close` remove the dialog and put focus back before
 resolving. Escape closes, because that is what `<dialog>` does natively. Nothing
 here re-implements an overlay, a scrim, or a focus trap.
+
+Every dialog has a name. The title gets a unique id, and the dialog points at
+it with `aria-labelledby`, so a screen reader announces the title and not just
+"dialog". `confirmModal` and `alertModal` default their titles to "Confirm" and
+"Notice", and point `aria-describedby` at the message. A danger confirm opens
+with focus on Cancel, so a stray Enter cannot delete or replace anything.
+
+Focus goes back to the opener when the dialog closes. A dialog often removes
+or rebuilds the control that opened it. In that case focus goes to the
+caller's `returnFocus` element, and when that is missing too, to the `<main>`
+landmark. The choice is `pickReturnFocus` in `src/ui/dialogFocus.js`, a pure
+function with its own tests.
 
 This lifecycle is `openDialog`, also exported from `Modal.js`. Start here
 to build a dialog that is not a form, a message, or a question:
 
 ```js
-openDialog({ className, title, form, build, result }) -> Promise<T>
+openDialog({ className, title, form, returnFocus, build, result }) -> Promise<T>
 ```
 
 The caller supplies `build(close)`, which returns
-`{ body, actions, initialFocus }`: the content between the title and the
-button row, the buttons themselves (wired to the `close(value)` that they
-were handed), and what takes focus on open. `result` maps the dialog's
+`{ body, actions, initialFocus, description }`: the content between the title
+and the button row, the buttons themselves (wired to the `close(value)` that
+they were handed), what takes focus on open, and the element that describes
+the dialog, if any. `result` maps the dialog's
 return value to whatever the function promises. It runs while the dialog
 is still mounted, so it can read its own inputs, and it can return a
 promise when the value is not settled yet (this is how the file field's

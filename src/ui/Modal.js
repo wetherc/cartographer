@@ -16,6 +16,7 @@ import { classNames, el } from './dom.js';
 import { checkboxInput, numberField, select, textareaField, textField } from './formFields.js';
 import { readImageFile } from './imageField.js';
 import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from './ModalFields.js';
+import { dialogPartId, pickReturnFocus } from './dialogFocus.js';
 
 /** @typedef {import('../types/modal.js').ModalField} ModalField */
 /** @typedef {import('../types/modal.js').ModalFormHandle} ModalFormHandle */
@@ -24,12 +25,14 @@ import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from
 
 /**
  * What a dialog builder returns: the content between the title and the
- * button row, the buttons, and the element that takes focus when the
- * dialog opens.
+ * button row, the buttons, the element that takes focus when the dialog
+ * opens, and the element that describes the dialog to a screen reader (the
+ * message of a confirm or alert).
  * @typedef {{
  *   body?: Node[],
  *   actions?: HTMLElement[],
  *   initialFocus?: HTMLElement | null,
+ *   description?: HTMLElement | null,
  * }} DialogParts
  */
 
@@ -41,6 +44,16 @@ import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from
  * removes the element, restores focus, and resolves the promise. No dialog in
  * the app must re-implement this lifecycle. Escape-to-dismiss comes free with
  * `<dialog>`.
+ *
+ * The title names the dialog: it gets an id and the dialog points at it with
+ * `aria-labelledby`, so a screen reader announces "Delete Goblin?" and not
+ * just "dialog". A `description` part is wired the same way through
+ * `aria-describedby`.
+ *
+ * On close, focus goes back to the opener. When the opener is no longer in
+ * the document (the dialog removed or rebuilt it), focus goes to the
+ * caller's `returnFocus` element, and failing that to the `<main>` landmark.
+ * See `pickReturnFocus` in `dialogFocus.js`.
  *
  * `build` receives a `close(value)` function that it wires into its own
  * buttons, and returns the parts to assemble. `result` turns the dialog's
@@ -60,6 +73,7 @@ import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from
  *   className?: string,
  *   title?: string,
  *   form?: boolean,
+ *   returnFocus?: HTMLElement | null,
  *   build: (close: (value?: string) => void) => DialogParts,
  *   result?: (returnValue: string) => T | Promise<T>,
  * }} spec
@@ -79,9 +93,18 @@ export function openDialog(spec) {
       host = form;
     }
 
-    if (spec.title) host.appendChild(el('h2', 'modal__title', spec.title));
+    if (spec.title) {
+      const title = el('h2', 'modal__title', spec.title);
+      title.id = dialogPartId('title');
+      dialog.setAttribute('aria-labelledby', title.id);
+      host.appendChild(title);
+    }
 
     const parts = spec.build((value) => dialog.close(value));
+    if (parts.description) {
+      parts.description.id = dialogPartId('message');
+      dialog.setAttribute('aria-describedby', parts.description.id);
+    }
     host.append(...(parts.body ?? []));
     if (parts.actions?.length) host.appendChild(el('div', 'modal__actions', ...parts.actions));
     document.body.appendChild(dialog);
@@ -90,7 +113,8 @@ export function openDialog(spec) {
       /** @param {any} value */
       const finish = (value) => {
         dialog.remove();
-        opener?.focus?.();
+        const target = pickReturnFocus([opener, spec.returnFocus, document.querySelector('main')]);
+        /** @type {HTMLElement | null} */ (target)?.focus();
         resolve(value);
       };
       const result = spec.result ? spec.result(dialog.returnValue) : undefined;
@@ -396,21 +420,23 @@ export function promptModal(title, fields, options = {}) {
 }
 
 /**
- * Show a single-button acknowledgement modal, an alert, with an optional
- * heading, a message, and one dismiss button. Resolves when dismissed. Use
- * this where there is nothing to confirm or cancel, for example to announce
- * an encounter the party walks into.
+ * Show a single-button acknowledgement modal, an alert, with a heading, a
+ * message, and one dismiss button. Resolves when dismissed. Use this where
+ * there is nothing to confirm or cancel, for example to announce an encounter
+ * the party walks into. The heading defaults to "Notice", so the dialog always
+ * has a name. `returnFocus` takes focus on close when the opener is gone.
  * @param {string} message
- * @param {{ label?: string, title?: string }} [options]
+ * @param {{ label?: string, title?: string, returnFocus?: HTMLElement | null }} [options]
  * @returns {Promise<void>}
  */
 export function alertModal(message, options = {}) {
   return openDialog({
-    title: options.title,
+    title: options.title ?? 'Notice',
+    returnFocus: options.returnFocus,
     build: (close) => {
       const text = el('p', 'modal__message', message);
       const ok = textButton(options.label ?? 'OK', () => close('ok'), { variant: 'primary' });
-      return { body: [text], actions: [ok], initialFocus: ok };
+      return { body: [text], actions: [ok], initialFocus: ok, description: text };
     },
   });
 }
@@ -419,19 +445,34 @@ export function alertModal(message, options = {}) {
  * Show a confirm modal. Resolves true if confirmed, false otherwise. `variant`
  * styles the confirm button, and names the same variants a button does, so a
  * destructive confirm reads as `variant: 'danger'` here and everywhere else.
+ * A danger confirm opens with focus on Cancel, so a stray Enter does not
+ * delete or replace anything. The heading defaults to "Confirm".
  * @param {string} message
- * @param {{ confirmLabel?: string, variant?: 'primary' | 'danger' }} [options]
+ * @param {{
+ *   confirmLabel?: string,
+ *   variant?: 'primary' | 'danger',
+ *   title?: string,
+ *   returnFocus?: HTMLElement | null,
+ * }} [options]
  * @returns {Promise<boolean>}
  */
 export function confirmModal(message, options = {}) {
+  const variant = options.variant ?? 'primary';
   return openDialog({
+    title: options.title ?? 'Confirm',
+    returnFocus: options.returnFocus,
     build: (close) => {
       const text = el('p', 'modal__message', message);
       const cancel = textButton('Cancel', () => close('cancel'));
       const confirm = textButton(options.confirmLabel ?? 'Confirm', () => close('confirm'), {
-        variant: options.variant ?? 'primary',
+        variant,
       });
-      return { body: [text], actions: [cancel, confirm], initialFocus: confirm };
+      return {
+        body: [text],
+        actions: [cancel, confirm],
+        initialFocus: variant === 'danger' ? cancel : confirm,
+        description: text,
+      };
     },
     result: (returnValue) => returnValue === 'confirm',
   });

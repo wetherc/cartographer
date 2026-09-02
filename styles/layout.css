@@ -10,6 +10,13 @@
   flex-wrap: wrap;
 }
 
+/* The landmark takes focus only when a dialog closes and the control that
+   opened it is gone (see dialogFocus.js). It is a parking spot for the next
+   Tab press, not a control, so it draws no ring. */
+.app-main:focus-visible {
+  outline: none;
+}
+
 /* The map and the below-map card strip share one fluid center column. */
 .app-center {
   flex: 1;
