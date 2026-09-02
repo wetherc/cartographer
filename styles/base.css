@@ -98,18 +98,22 @@
      the light theme, a lampblack desk after dark. The accent is rubric red,
      the ink medieval scribes reserved for headings. Danger is a deeper blood
      red kept apart from it: rubric appears as bare text and fills, danger
-     always bordered or filled, so the two never read as one. Every text pair
-     holds 4.5:1 or better on the surfaces it appears on, and --border-strong
-     holds 3:1 against --surface for control boundaries; --border is a hairline
-     for decorative rules only. */
+     always bordered or filled, so the two never read as one. Every text token
+     holds 4.5:1 or better on all four surfaces, and --border-strong holds
+     3:1 on all four for control boundaries; --border is a hairline for
+     decorative rules only. tests/Contrast.test.js checks both limits. The
+     tightest pairs, light then dark: --text-muted on --surface-sunken 4.83
+     and on --surface-raised 5.29; --warning on --surface-sunken 4.84 and on
+     --surface-raised 7.25; --border-strong on --surface-sunken 3.17 and on
+     --surface-raised 3.10. */
   --bg: light-dark(#f3ecdd, #171209);
   --surface: light-dark(#faf5e9, #201a10);
   --surface-raised: light-dark(#fffdf5, #2a2215);
   --surface-sunken: light-dark(#e9e0cc, #120d06);
   --border: light-dark(#d6cab0, #3d3421);
-  --border-strong: light-dark(#94815c, #786646);
+  --border-strong: light-dark(#8d7a55, #7f6c4b);
   --text: light-dark(#2e2418, #ede2c8);
-  --text-muted: light-dark(#6f6350, #a3947a);
+  --text-muted: light-dark(#6a5e4b, #a3947a);
   --accent: light-dark(#9d2f21, #dd8166);
   --accent-hover: light-dark(#7f251a, #e79b83);
   --accent-contrast: light-dark(#faf5e9, #171209);
@@ -117,7 +121,7 @@
   --danger-contrast: light-dark(#faf5e9, #171209);
   --success: light-dark(#33604a, #7fae8f);
   --success-contrast: light-dark(#faf5e9, #171209);
-  --warning: light-dark(#8f6410, #d8a94e);
+  --warning: light-dark(#7f580e, #d8a94e);
   --warning-contrast: light-dark(#faf5e9, #171209);
   --mana: light-dark(#33517e, #8aa7d6);
   --mana-contrast: light-dark(#faf5e9, #171209);
@@ -183,7 +187,7 @@
    way color-scheme is: OS preference by default, pinned by data-theme. The SVG
    stroke is the muted text color of each theme. */
 :root {
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%236f6350' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%236a5e4b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 @media (prefers-color-scheme: dark) {
@@ -196,7 +200,7 @@
    Set before first paint by the inline script in index.html's <head>. */
 :root[data-theme='light'] {
   color-scheme: light;
-  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%236f6350' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' fill='none' stroke='%236a5e4b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 :root[data-theme='dark'] {
