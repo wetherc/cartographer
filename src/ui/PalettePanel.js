@@ -4,6 +4,7 @@ import { setTip } from './Tooltip.js';
 import { allowsPaletteType } from '../map/NodeKinds.js';
 import { isOverlayType } from '../map/TilePalette.js';
 import { buildDisclosure } from './Disclosure.js';
+import { columnsFromTops, rovingTarget } from './rovingIndex.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 /** @typedef {import('../map/TilePalette.js').PaletteEntry} PaletteEntry */
@@ -23,6 +24,13 @@ import { buildDisclosure } from './Disclosure.js';
  * stretched across a 2x2 or 3x3 block. This is a visual footprint only, for
  * landmarks such as an academy or a keep, and involves no region link. Roads
  * and erasing ignore the scale row.
+ *
+ * Every tool and swatch exposes its pick through `aria-pressed`, so a screen
+ * reader hears which brush is active. Each swatch section is one Tab stop:
+ * the arrow keys, Home, and End move focus inside the section grid, and only
+ * the focused (or active) swatch of a section sits in the document tab order.
+ * Without that, a keyboard user tabs through every one of the swatches to
+ * pass the palette.
  * @param {HTMLElement} container
  * @param {TilePalette} palette
  * @param {(brush: Brush) => void} onBrushChange
@@ -49,6 +57,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
    */
   function bindSelect(node, value) {
     selectables.push(node);
+    node.setAttribute('aria-pressed', 'false');
     node.addEventListener('click', () => select(value, node));
   }
 
@@ -58,8 +67,55 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
    */
   function select(value, node) {
     brush = value;
-    for (const s of selectables) s.classList.toggle('palette__item--active', s === node);
+    for (const s of selectables) {
+      const active = s === node;
+      s.classList.toggle('palette__item--active', active);
+      s.setAttribute('aria-pressed', String(active));
+    }
+    syncTabStops();
     onBrushChange(brush);
+  }
+
+  /**
+   * Keep one Tab stop per swatch section: the active swatch when the section
+   * holds it, otherwise the section's first visible swatch. This runs after
+   * a pick and after a kind filter, since both can move or hide the stop.
+   */
+  function syncTabStops() {
+    for (const { swatches } of sections.values()) {
+      const visible = swatches.filter((swatch) => !swatch.hidden);
+      const stop = visible.find((swatch) => swatch.classList.contains('palette__item--active'));
+      setTabStop(visible, stop ?? visible[0] ?? null);
+    }
+  }
+
+  /**
+   * @param {HTMLElement[]} items
+   * @param {HTMLElement | null} stop
+   */
+  function setTabStop(items, stop) {
+    for (const item of items) item.tabIndex = item === stop ? 0 : -1;
+  }
+
+  /**
+   * Move focus inside one section grid with the arrow keys, Home, and End.
+   * The row length is read from the rendered layout, so a narrower rail with
+   * fewer columns still moves Up and Down by one visual row. The focused
+   * swatch becomes the section's Tab stop, so Shift+Tab and Tab come back to
+   * it. Enter and Space still pick the swatch through the button's own click.
+   * @param {HTMLElement[]} swatches
+   * @param {KeyboardEvent} event
+   */
+  function onGridKeyDown(swatches, event) {
+    const visible = swatches.filter((swatch) => !swatch.hidden);
+    const index = visible.indexOf(/** @type {HTMLElement} */ (event.target));
+    if (index < 0) return;
+    const columns = columnsFromTops(visible.map((swatch) => swatch.offsetTop));
+    const next = rovingTarget(index, event.key, visible.length, columns);
+    if (next === null) return;
+    event.preventDefault();
+    setTabStop(visible, visible[next]);
+    visible[next].focus();
   }
 
   // Tools row: Inspect (the default) and Erase.
@@ -78,12 +134,14 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
       className: 'palette__item',
     });
     selectables.push(node);
+    node.setAttribute('aria-pressed', 'false');
     return node;
   }
 
   // Inspect is the starting brush. It carries the active styling from mount.
   const inspectBtn = toolButton('Inspect', 'edit', null);
   inspectBtn.classList.add('palette__item--active');
+  inspectBtn.setAttribute('aria-pressed', 'true');
   inspectBtnRef.el = inspectBtn;
 
   const regionBtn = toolButton('Region', 'map', 'region');
@@ -157,7 +215,9 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
     const wrap = el('div', 'palette__section', head, grid);
 
     sectionsEl.appendChild(wrap);
-    sections.set(label, { wrap, grid, swatches: [] });
+    const section = { wrap, grid, swatches: /** @type {HTMLElement[]} */ ([]) };
+    grid.addEventListener('keydown', (event) => onGridKeyDown(section.swatches, event));
+    sections.set(label, section);
   }
 
   for (const entry of palette.listAll()) {
@@ -194,6 +254,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
     section.grid.appendChild(swatch);
   }
   root.appendChild(sectionsEl);
+  syncTabStops();
 
   /**
    * Filter the swatch grid to the terrain a node kind can use. An interior
@@ -212,6 +273,7 @@ export function mountPalettePanel(container, palette, onBrushChange, tooltip) {
     for (const { wrap, swatches } of sections.values()) {
       wrap.hidden = swatches.every((swatch) => swatch.hidden);
     }
+    syncTabStops();
     if (
       brush &&
       brush !== 'erase' &&
