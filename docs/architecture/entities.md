@@ -130,8 +130,11 @@ the rules give it.
 level ladder take the same steps. There is one implementation of that ladder.
 
 The `cr` field on a creature is optional, and an absent field means unrated.
-An unrated creature falls back to its level for proficiency, and it counts
-for no XP. `coerceCR` is the one gate. It accepts a number or a written
+An unrated creature falls back to its level for proficiency, then to its
+caster level, and it counts for no XP. `CreatureChecks.creatureProficiencyBonus`
+is the one reader of that ladder. Saves, skills, spells, and weapon attacks
+(`AttackResolve.attackerProficiency`) all call it, so a creature swings and
+saves with the same bonus. `coerceCR` is the one gate. It accepts a number or a written
 rating such as `"1/4"`, and it drops anything that names no defined step
 rather than snapping the value to a nearby one. `Creature.js` runs every
 write path (`createCreature`, `editCreature`, `withDefaults`, `toTemplate`,

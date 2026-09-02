@@ -318,7 +318,9 @@ test('healing HP above 0 ends a death-save tracker and takes the chip with it', 
   );
 });
 
-test('healing a dead character ends the tracker, since nothing else undoes death', () => {
+// The app has no revival spell, so any heal above 0 HP brings a dead character
+// back, and the GM decides when that is allowed.
+test('healing a dead character ends the tracker and brings the character back', () => {
   const dead = /** @type {any} */ ({
     ...withHP(createCharacter('c1', 'Hero'), 10),
     deathSaves: { successes: 0, failures: 3, stable: false },

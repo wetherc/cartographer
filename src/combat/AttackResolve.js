@@ -1,7 +1,8 @@
 import { effectiveStatBlock, isCreature } from '../entities/Creature.js';
 import { effectiveStats } from '../entities/Equipment.js';
+import { creatureProficiencyBonus } from '../entities/CreatureChecks.js';
 import { DIE_SIDES } from '../dice/DiceRoller.js';
-import { abilityModifier } from '../entities/Modifiers.js';
+import { abilityModifier, proficiencyBonus } from '../entities/Modifiers.js';
 
 /**
  * The 5e rules a weapon attack resolves by. This module stays apart from the
@@ -26,6 +27,22 @@ export function attackerStats(attacker) {
   return isCreature(attacker)
     ? effectiveStatBlock(/** @type {import('../types/creature.js').Creature} */ (attacker))
     : effectiveStats(/** @type {import('../types/entities.js').Character} */ (attacker));
+}
+
+/**
+ * The proficiency bonus an attacker adds to a weapon attack it is proficient
+ * with. A character reads the level ladder at its character level. A creature
+ * reads the same ladder its saves, skills, and spells use: the challenge
+ * rating when it has one, else its authoring level, else its caster level,
+ * else level 1. A CR 5 creature authored at level 1 therefore swings at +3,
+ * the same bonus it gets on a trained save.
+ * @param {import('../types/creature.js').Creature | import('../types/entities.js').Character} attacker
+ * @returns {number}
+ */
+export function attackerProficiency(attacker) {
+  return isCreature(attacker)
+    ? creatureProficiencyBonus(/** @type {import('../types/creature.js').Creature} */ (attacker))
+    : proficiencyBonus(/** @type {import('../types/entities.js').Character} */ (attacker).level);
 }
 
 /**

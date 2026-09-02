@@ -36,6 +36,10 @@ test('a rated creature reads the proficiency ladder at its rating', () => {
 test('an unrated creature falls back to its level, and to 1 with no level', () => {
   assert.equal(creatureProficiencyBonus(foe({ level: 9 })), 4);
   assert.equal(creatureProficiencyBonus(foe()), 2, 'no rating and no level reads as level 1');
+  // A caster with no authoring level reads its caster level, the ladder its
+  // spells already use. An authoring level still wins when both are set.
+  assert.equal(creatureProficiencyBonus(foe({ class: 'cleric', casterLevel: 9 })), 4);
+  assert.equal(creatureProficiencyBonus(foe({ level: 1, class: 'cleric', casterLevel: 9 })), 2);
 });
 
 test('a rating wins over a level, because the rules rate a creature and not its level', () => {

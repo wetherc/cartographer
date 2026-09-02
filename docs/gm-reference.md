@@ -416,9 +416,10 @@ the combat screen and on its sheet, and the Unconscious chip.
 - Any damage while at 0 HP is an automatic failure, with no roll. A critical
   hit counts as two. Damage on a stable character starts the saves again.
 - The hit that drops the character to 0 HP costs no failure. Any healing above
-  0 HP clears the tracker, a dead one included. That is how you decide the
-  death did not stand. Healing from the combat screen, from the sheet's HP
-  stepper, from a spell, and from a rest all count.
+  0 HP clears the tracker, a dead one included. The app has no revival spell,
+  so in this app any heal above 0 HP brings a dead character back, and you
+  decide when that is allowed. Healing from the combat screen, from the
+  sheet's HP stepper, from a spell, and from a rest all count.
 - The roll is a button, not automatic. Nobody rolls for the player at the turn
   advance.
 

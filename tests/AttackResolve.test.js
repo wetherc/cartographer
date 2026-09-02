@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   abilityModOf,
+  attackerProficiency,
   attackerStats,
   damageModifier,
   damageParts,
@@ -175,6 +176,28 @@ test("a character's stats come from equipped gear, a creature's from its stat bl
     stats: { STR: 19 },
   });
   assert.equal(attackerStats(foe).STR, 19);
+});
+
+test('a rated creature swings with the challenge-rating proficiency, not its level', () => {
+  const rated = createCreature('e1', 'Knight', { level: 1, cr: 5, stats: { STR: 16 } });
+  assert.equal(attackerProficiency(rated), 3, 'CR 5 is +3, level 1 would be +2');
+  const weak = createCreature('e2', 'Rat', { level: 9, cr: 0.125 });
+  assert.equal(attackerProficiency(weak), 2, 'CR 1/8 is +2, level 9 would be +4');
+});
+
+test('an unrated creature swings with its authoring level, and level 1 without one', () => {
+  assert.equal(attackerProficiency(createCreature('e1', 'Guard', { level: 5 })), 3);
+  assert.equal(attackerProficiency(createCreature('e2', 'Guard', {})), 2);
+  // An unrated caster with no authoring level reads its caster level.
+  const cultist = createCreature('e3', 'Cultist', { class: 'cleric', casterLevel: 9 });
+  assert.equal(attackerProficiency(cultist), 4);
+});
+
+test('a character swings with the level ladder', () => {
+  const hero = createCharacter('h1', 'Mirelle', { STR: 14 });
+  assert.equal(attackerProficiency(hero), 2);
+  assert.equal(attackerProficiency({ ...hero, level: 9 }), 4);
+  assert.equal(attackerProficiency({ ...hero, level: 17 }), 6);
 });
 
 test("attackerStats folds a creature's worn armor into its AC", () => {

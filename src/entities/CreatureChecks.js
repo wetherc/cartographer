@@ -22,14 +22,16 @@ import { SKILL_IDS, skillName } from '../data/skills.js';
 /**
  * The proficiency bonus a creature rolls with. A rated creature reads the
  * ladder at its challenge rating, which is the 5e rule. An unrated one falls
- * back to its authoring level, and to 1 when it has no level either, so every
- * creature has a bonus and no caller has to guard for absence.
+ * back to its authoring level, then to its caster level, and to 1 when it has
+ * neither, so every creature has a bonus and no caller has to guard for
+ * absence. Weapon attacks, saves, skills, and spells all read this one
+ * ladder, so a creature swings and saves with the same bonus.
  * @param {Creature} creature
  * @returns {number}
  */
 export function creatureProficiencyBonus(creature) {
   return creature.cr === undefined
-    ? proficiencyBonus(creature.level ?? 1)
+    ? proficiencyBonus(creature.level ?? creature.casterLevel ?? 1)
     : crProficiencyBonus(creature.cr);
 }
 

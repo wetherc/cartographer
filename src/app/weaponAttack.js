@@ -8,12 +8,13 @@ import { attacksPerAction, sneakAttackDice } from '../entities/Features.js';
 import { attacksAvailable, canSpend } from '../combat/ActionBudget.js';
 import { COVER_LEVELS, coverBonus, coverNote } from '../combat/Cover.js';
 import { offhandDamageModifier } from '../combat/TwoWeapon.js';
-import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
+import { formatModifier } from '../entities/Modifiers.js';
 import { rollRiders } from '../entities/Riders.js';
 import { riderSources } from '../entities/FeatChoices.js';
 import { autoCrits, modeReasons, rollMode } from '../entities/ConditionEffects.js';
 import {
   abilityModOf,
+  attackerProficiency,
   attackerStats,
   damageModifier,
   damageParts,
@@ -256,10 +257,9 @@ export function rollWeaponAttack(
   // attacker's STR and DEX.
   const ability = attackAbility(weapon, stats);
   const abilityMod = abilityModOf(stats, ability);
-  // A character always carries a level, and a leveled creature does too. An
-  // unleveled creature falls back to its caster level, and to 1 for a
-  // non-caster.
-  const proficiency = proficiencyBonus(attacker.level ?? attacker.casterLevel ?? 1);
+  // A character reads the level ladder. A rated creature reads the challenge
+  // rating ladder, the same one its saves and spells use.
+  const proficiency = attackerProficiency(attacker);
   // Only a character carries proficiency lists, so only a character can lack
   // proficiency with a weapon. A creature's attack bonus bakes proficiency in,
   // the way a 5e stat block does.
