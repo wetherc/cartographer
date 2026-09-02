@@ -331,7 +331,10 @@ export type AsiChoice =
       featId?: string;
       /** The ability increases the feat applied, subtracted back on undo. */
       increases?: Record<string, number>;
-      /** The proficiency entries the feat added, removed again on undo. */
+      /** Every proficiency the feat asked for, after vocabulary filtering. */
+      requested?: import('./feat.js').FeatGrants;
+      /** The proficiency entries the feat added, because the character lacked
+       * them before. Undo rebuilds the lists from every record that stays. */
       granted?: import('./feat.js').FeatGrants;
       /** The standing roll rider the feat carries. */
       rider?: RollRider;
@@ -346,14 +349,17 @@ export type AsiChoices = Record<string, AsiChoice>;
 
 /** One applied class-feature grant: what a structured feature added when the
  * character claimed it. `classId`, `classLevel`, and `name` identify the
- * catalog feature (see FeatureGrants.featureKey). `granted` holds only what
- * the merge actually added, so undo removes exactly that. */
+ * catalog feature (see FeatureGrants.featureKey). `requested` holds every
+ * pick, and `granted` only what the merge actually added. */
 export interface FeatureChoice {
   classId: string;
   classLevel: number;
   name: string;
   order: number;
-  /** The proficiency entries the feature added, removed again on undo. */
+  /** Every proficiency the feature asked for, after vocabulary filtering. */
+  requested?: import('./feat.js').FeatGrants;
+  /** The proficiency entries the feature added, because the character lacked
+   * them before. Undo rebuilds the lists from every record that stays. */
   granted?: import('./feat.js').FeatGrants;
   /** The standing roll rider the feature carries. */
   rider?: RollRider;

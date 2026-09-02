@@ -1,5 +1,12 @@
-import { unlockedFeatures, requestedGrants, grantDiff } from './LevelUp.js';
-import { getProficiencies, normalizeProficiencies } from './Proficiencies.js';
+import { unlockedFeatures } from './LevelUp.js';
+import {
+  requestedGrants,
+  compactGrants,
+  grantDiff,
+  mergeGrants,
+  rebuildGrants,
+} from './GrantLedger.js';
+import { getProficiencies } from './Proficiencies.js';
 import { normalizeRider } from './Riders.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -13,12 +20,12 @@ import { normalizeRider } from './Riders.js';
  * The grant lifecycle of a structured class feature. A feature in the class
  * catalog can carry effects in the feat vocabulary (see ClassFeatureDef).
  * Reaching the level that unlocks one earns a pending grant. Applying it
- * merges the grants into the proficiencies and records exactly what the
- * merge added, so undoing it removes exactly that and nothing the character
- * had from another source. Pending is derived, not stored: an unlocked
- * feature with effects and no record in `featureChoices` is pending, so a
- * character created at level 1, an imported save, or a hand-edited class
- * list all surface their unclaimed grants the same way.
+ * merges the grants into the proficiencies and records what it asked for and
+ * what the merge added. Undo rebuilds the lists from those records, so a
+ * grant that another source also asks for stays. Pending is derived, not
+ * stored: an unlocked feature with effects and no record in `featureChoices`
+ * is pending, so a character created at level 1, an imported save, or a
+ * hand-edited class list all surface their unclaimed grants the same way.
  */
 
 /**
@@ -97,11 +104,12 @@ function nextOrder(choices) {
 
 /**
  * Claim a pending feature grant. The function merges the stamp's grants into
- * the proficiencies and records what the merge actually added, plus the
- * rider as written. An expertise grant survives only on a skill the
- * character is proficient in after the skill grants land, exactly as a feat
- * grant does. A stamp whose feature is not pending, unknown, or already
- * claimed leaves the character unchanged. This function is pure.
+ * the proficiencies and records what the grant asked for and what the merge
+ * actually added, plus the rider as written. An expertise grant survives
+ * only on a skill the character is proficient in after the skill grants
+ * land, exactly as a feat grant does. A stamp whose feature is not pending,
+ * unknown, or already claimed leaves the character unchanged. This function
+ * is pure.
  * @param {Character} character
  * @param {FeatureStamp} stamp
  * @returns {Character}
@@ -113,15 +121,8 @@ export function applyFeatureGrant(character, stamp) {
 
   const before = getProficiencies(character);
   const wanted = requestedGrants(stamp.granted);
-  const merged = normalizeProficiencies({
-    ...before,
-    skills: [...before.skills, ...wanted.skills],
-    saves: [...before.saves, ...wanted.saves],
-    expertise: [...before.expertise, ...wanted.expertise],
-    armor: [...before.armor, ...wanted.armor],
-    tools: [...before.tools, ...wanted.tools],
-    languages: [...before.languages, ...wanted.languages],
-  });
+  const merged = mergeGrants(before, [wanted]);
+  const requested = compactGrants(wanted);
   const granted = grantDiff(merged, before);
   const rider = normalizeRider(stamp.rider);
 
@@ -132,6 +133,7 @@ export function applyFeatureGrant(character, stamp) {
     classLevel: stamp.classLevel,
     name: stamp.name,
     order: nextOrder(choices),
+    ...(requested ? { requested } : {}),
     ...(granted ? { granted } : {}),
     ...(rider ? { rider } : {}),
   };
@@ -143,9 +145,10 @@ export function applyFeatureGrant(character, stamp) {
 }
 
 /**
- * Undo a claimed feature grant by its key. The function cuts exactly the
- * stamped lists from the proficiencies and re-normalizes, so an expertise
- * that rode a removed skill prunes with it, then drops the record. The
+ * Undo a claimed feature grant by its key. The proficiencies are rebuilt
+ * without the record (see `GrantLedger.rebuildGrants`), so a grant
+ * that a feat or another feature also asks for stays, and an expertise that
+ * rode a removed skill prunes with it. The record is then dropped and the
  * feature turns pending again. An unknown key leaves the character
  * unchanged. This function is pure.
  * @param {Character} character
@@ -156,33 +159,10 @@ export function undoFeatureGrant(character, key) {
   const choices = getFeatureChoices(character);
   const choice = choices[key];
   if (!choice) return character;
+  if (choice.granted) return rebuildGrants(character, choice);
   const rest = { ...choices };
   delete rest[key];
-  /** @type {Character} */
-  let next = { ...character, featureChoices: rest };
-  if (choice.granted) {
-    const granted = choice.granted;
-    const before = getProficiencies(character);
-    /** @param {'skills' | 'saves' | 'expertise' | 'armor' | 'tools' | 'languages'} listKey */
-    const cut = (listKey) => {
-      /** @type {string[]} */
-      const removed = granted[listKey] ?? [];
-      return before[listKey].filter((entry) => !removed.includes(entry));
-    };
-    next = {
-      ...next,
-      proficiencies: normalizeProficiencies({
-        ...before,
-        skills: cut('skills'),
-        saves: cut('saves'),
-        expertise: cut('expertise'),
-        armor: cut('armor'),
-        tools: cut('tools'),
-        languages: cut('languages'),
-      }),
-    };
-  }
-  return next;
+  return { ...character, featureChoices: rest };
 }
 
 /**

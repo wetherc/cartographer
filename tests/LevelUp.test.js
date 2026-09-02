@@ -402,6 +402,13 @@ test('takeFeat applies a stamp: increase, delta-only grants, and the rider', () 
     feat: 'Skill Expert',
     featId: 'skill-expert',
     increases: { DEX: 1 },
+    requested: {
+      skills: ['stealth', 'athletics'],
+      saves: ['DEX'],
+      expertise: ['stealth'],
+      armor: ['light', 'medium'],
+      tools: ["thieves' tools"],
+    },
     granted: {
       skills: ['stealth'],
       saves: ['DEX'],

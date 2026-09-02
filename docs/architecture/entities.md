@@ -267,6 +267,7 @@ take-a-value, return-a-value pattern.
     LevelUp.js           pending levels, ASI/feat choices, unlocked features
     LevelAssign.js       commit a pending level to a class
     FeatureGrants.js     apply and undo the grants of a structured feature
+    GrantLedger.js       the grant records of feats and features; rebuild on undo
     Features.js          class features as numbers the combat paths use
           |
           v
@@ -333,16 +334,21 @@ A feat choice stores a stamp of what it did, not a reference to the catalog.
 `takeFeat` takes either a plain name or a `FeatStamp` (`types/feat.ts`): the
 resolved picks of a library feat. It applies the ability increases to the
 stats, merges the proficiency grants through `normalizeProficiencies`, and
-records only what actually changed on the choice (`increases`, `granted`,
-`rider`). This mirrors how a race applies its increases: `undoLastChoice` and
-the sheet read the stamp, so a later edit to the library entry does not reach
-a character that already took the feat. Undo subtracts the increases and
-strips exactly the granted entries, and an expertise that rode a removed skill
-prunes with it. A grant the character already had is never stamped, so undo
-cannot take away what the feat did not add. The one blind spot: a matching
-grant made by hand between take and undo comes off anyway, the same hazard a
-stat edit poses to an ASI undo. A choice written before these fields carries
-none of them and undoes as a bare name.
+records on the choice the increases, the rider, every proficiency the feat
+asked for (`requested`), and the entries the merge added (`granted`). This
+mirrors how a race applies its increases: `undoLastChoice` and the sheet read
+the stamp, so a later edit to the library entry does not reach a character
+that already took the feat. Undo subtracts the increases and hands the
+proficiencies to `GrantLedger.rebuildGrants`. That function takes the current
+lists, removes every entry any feat or feature record added, and merges the
+requests of the records that stay back on top. A proficiency that two records
+both ask for therefore survives the undo of either one. Each record that stays
+is stamped again with what it added in that replay, so the next undo reads an
+accurate diff. An expertise that rode a removed skill prunes with it. The one
+blind spot: a matching grant made by hand between take and undo comes off
+anyway, the same hazard a stat edit poses to an ASI undo. A choice written
+before these fields carries none of them and undoes as a bare name. A choice
+with `granted` but no `requested` reads its `granted` list as its request.
 
 `entities/FeatChoices.js` holds the arithmetic behind the take-feat dialog:
 `availableFeats` filters the catalog to what the character has not taken
@@ -378,11 +384,12 @@ feature. An unlocked feature with effects and no record in
 `character.featureChoices` is *pending*. Nothing stores that state, so a
 character created at level 1, an imported save, and a hand-edited class list
 all surface their unclaimed grants the same way. `applyFeatureGrant` merges
-the picks through `normalizeProficiencies` and records only what the merge
-added, the same exact-diff stamp a feat choice records. `undoFeatureGrant`
-cuts exactly the stamped entries, and the feature turns pending again. A
-grant the character already had from the GM or a feat is never stamped, so
-undo cannot take it away. `featureRiders` feeds a feature's standing roll
+the picks through `normalizeProficiencies` and records what the feature asked
+for and what the merge added, the same stamp a feat choice records.
+`undoFeatureGrant` rebuilds the lists through `GrantLedger.rebuildGrants`,
+so a pick that a feat or another feature also holds stays, and the feature
+turns pending again. A grant the character already had from the GM is never
+stamped as added, so undo cannot take it away. `featureRiders` feeds a feature's standing roll
 riders into `FeatChoices.riderSources`, which every roll site already calls.
 The Rogue grants Expertise this way at levels 1 and 6, and the Bard at
 levels 3 and 10.

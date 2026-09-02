@@ -39,9 +39,10 @@ export type FeatEffect =
   | { kind: 'rider'; rider: RollRider };
 
 /**
- * The proficiency entries a taken feat added, one list per kind, recorded on
- * the character's feat choice. Each list holds only what the character did
- * not already have, so undoing the feat removes exactly these.
+ * Proficiency lists, one per kind, as a feat or class-feature record stores
+ * them. A record keeps the lists it asked for as `requested` and the lists
+ * the merge added as `granted`. Undo rebuilds the proficiencies from every
+ * record that stays, so a grant two records share survives either undo.
  */
 export interface FeatGrants {
   skills?: string[];
