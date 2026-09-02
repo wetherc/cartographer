@@ -155,12 +155,25 @@ export function rateEncounter(characters, creatures) {
 }
 
 /**
+ * The party's four thresholds as a labeled phrase, for example
+ * "party thresholds easy 150, medium 300, hard 450, deadly 800". Each number
+ * carries its band name, so a GM does not have to know the order of the
+ * table to read the line.
+ * @param {number[]} thresholds easy, medium, hard, and deadly
+ * @returns {string}
+ */
+export function thresholdsPhrase(thresholds) {
+  const [easy, medium, hard, deadly] = thresholds;
+  return `party thresholds easy ${easy}, medium ${medium}, hard ${hard}, deadly ${deadly}`;
+}
+
+/**
  * The hint as one line, for example
- * "Medium: 500 XP against party 150/300/450/800", where the four numbers are
- * the easy, medium, hard, and deadly thresholds. A fight with no hostile
- * creature gives an empty string, because there is nothing to rate. So does a
- * party with no living character, because there is no budget to rate against.
- * An unrated foe is named, so a GM knows the number is short.
+ * "Medium: 500 XP against party thresholds easy 150, medium 300, hard 450,
+ * deadly 800". A fight with no hostile creature gives an empty string,
+ * because there is nothing to rate. So does a party with no living character,
+ * because there is no budget to rate against. An unrated foe is named, so a
+ * GM knows the number is short.
  * @param {Character[]} characters
  * @param {Creature[]} creatures
  * @returns {string}
@@ -168,8 +181,7 @@ export function rateEncounter(characters, creatures) {
 export function difficultyLine(characters, creatures) {
   const rating = rateEncounter(characters, creatures);
   if (rating.hostiles === 0 || rating.party === 0) return '';
-  const [easy, medium, hard, deadly] = rating.thresholds;
-  const budget = `party ${easy}/${medium}/${hard}/${deadly}`;
+  const budget = thresholdsPhrase(rating.thresholds);
   const short =
     rating.unrated > 0
       ? `, ${rating.unrated} unrated ${rating.unrated === 1 ? 'foe counts' : 'foes count'} for no XP`

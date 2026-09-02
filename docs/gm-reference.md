@@ -217,11 +217,12 @@ detection range as the markers, so a tile out of range says nothing.
 ### The difficulty hint
 
 Above the Active encounter rows, the GM sees one line rating the fight on the
-party's tile, for example "Hard: 1200 XP against party 300/600/900/1600". The
-first number is what the hostile creatures are worth together, counting a crowd
-for more than the sum of its parts and adjusting for a party smaller than three
-or larger than five. The four numbers after it are the party's easy, medium,
-hard, and deadly budgets, summed over the levels of the living characters. A
+party's tile, for example "Hard: 1200 XP against party thresholds easy 300,
+medium 600, hard 900, deadly 1600". The first number is what the hostile
+creatures are worth together, counting a crowd for more than the sum of its
+parts and adjusting for a party smaller than three or larger than five. The four
+labeled numbers after it are the party's budgets for each band, summed over the
+levels of the living characters. A
 dead character buys no budget and does not count toward the party size. The
 band names the highest budget the fight reaches. The line hides when no living
 character remains, because there is no budget to rate against.

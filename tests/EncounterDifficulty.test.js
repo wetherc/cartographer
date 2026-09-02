@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   adjustedXP,
   difficultyLine,
+  thresholdsPhrase,
   partyThresholds,
   rateEncounter,
   XP_THRESHOLDS,
@@ -143,7 +144,10 @@ test('a dead character buys no budget and does not count toward the party size',
 
 test('the line names the band, the total, and the four thresholds', () => {
   const party = [hero('a', 3), hero('b', 3), hero('c', 3), hero('d', 3)];
-  assert.equal(difficultyLine(party, crowd(1, 2)), 'Easy: 450 XP against party 300/600/900/1600');
+  assert.equal(
+    difficultyLine(party, crowd(1, 2)),
+    'Easy: 450 XP against party thresholds easy 300, medium 600, hard 900, deadly 1600',
+  );
 });
 
 test('the line says how many foes count for nothing, in the right number', () => {
@@ -152,4 +156,11 @@ test('the line says how many foes count for nothing, in the right number', () =>
   assert.match(one, /1 unrated foe counts for no XP$/);
   const two = difficultyLine(party, [foe('a', 1), foe('b'), foe('c')]);
   assert.match(two, /2 unrated foes count for no XP$/);
+});
+
+test('the thresholds phrase labels each number with its band', () => {
+  assert.equal(
+    thresholdsPhrase([150, 300, 450, 800]),
+    'party thresholds easy 150, medium 300, hard 450, deadly 800',
+  );
 });
