@@ -1,7 +1,8 @@
 import { createMapNode, resizeNode, tilesOutsideBounds } from '../map/TileGrid.js';
 import { collectSubtreeIds } from '../map/WorldTree.js';
 import { NODE_KINDS, ENVIRONS, coerceNodeKind } from '../map/NodeKinds.js';
-import { freshNodeId, tileWithinBounds } from '../map/NodeEdits.js';
+import { freshNodeId } from '../map/NodeEdits.js';
+import { deleteLanding, locationsAfterDelete, locationsAfterShrink } from '../map/NodeCleanup.js';
 import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { capitalize } from '../util/text.js';
 import { clampInt } from '../util/num.js';
@@ -59,7 +60,7 @@ function nodeKindFields(kind, environ) {
  * @returns {{ addChildNode: (parentId: string) => Promise<string | null>, deleteNode: (nodeId: string) => Promise<void>, editNode: (nodeId: string) => Promise<void> }}
  */
 export function createNodeActions(app, env) {
-  const { grid, navigator, partyTracker } = app;
+  const { grid, navigator, partyTracker, state } = app;
 
   /** @param {string} id */
   const nodeExists = (id) => Boolean(grid.getNode(id));
@@ -97,9 +98,46 @@ export function createNodeActions(app, env) {
   }
 
   /**
+   * The locations a node edit can move, read from the live state.
+   * @returns {import('../map/NodeCleanup.js').WorldLocations}
+   */
+  function currentLocations() {
+    return {
+      party: partyTracker.getPosition(),
+      characters: state.characters,
+      creatures: state.creatures,
+      handouts: state.handouts,
+    };
+  }
+
+  /**
+   * Write moved locations back, and refresh every view that shows one. The
+   * party moves through the tracker so fog reveals at the landing tile.
+   * @param {import('../map/NodeCleanup.js').WorldLocations} before
+   * @param {import('../map/NodeCleanup.js').WorldLocations} after
+   */
+  function applyLocations(before, after) {
+    if (after.party !== before.party) partyTracker.moveTo(after.party.nodeId, after.party.tileId);
+    state.characters = after.characters;
+    state.creatures = after.creatures;
+    state.handouts = after.handouts;
+    if (after.party !== before.party || after.creatures !== before.creatures) {
+      app.actions.syncCombatLocation();
+    }
+    app.views.encounterPanel.update();
+    app.views.initiativePanel.update();
+    app.views.npcPanel.update();
+    app.views.handoutPanel.update();
+  }
+
+  /**
    * Ask for confirmation, then delete a node and its subtree. If the
    * removed set includes the current node, move the view to a valid node.
-   * This function refuses to delete the last node.
+   * This function refuses to delete the last node. It also refuses when the
+   * party stands inside the subtree and no parent node survives to land in.
+   * Otherwise the party comes out beside the block the node occupied in its
+   * parent, split characters inside the subtree rejoin the party, creatures
+   * inside it become unplaced, and handouts bound to it become campaign-wide.
    * @param {string} nodeId
    */
   async function deleteNode(nodeId) {
@@ -110,14 +148,33 @@ export function createNodeActions(app, env) {
       await alertModal('Cannot delete the last node in the campaign.');
       return;
     }
+    const landing = deleteLanding([...grid.nodes.values()], nodeId, doomed);
+    // The party can move while the dialog is open (a save adopted from
+    // another tab), so the check runs before the prompt and again after it.
+    const stranded = () => doomed.has(partyTracker.getPosition().nodeId) && !landing;
+    if (stranded()) {
+      app.toasts.show(`Cannot delete "${node.name}" while the party is inside it.`);
+      return;
+    }
     const ok = await confirmModal(`Delete "${node.name}" and everything inside it?`, {
       variant: 'danger',
       confirmLabel: 'Delete',
     });
     if (!ok) return;
+    if (stranded()) {
+      app.toasts.show(`Cannot delete "${node.name}" while the party is inside it.`);
+      return;
+    }
 
+    const before = currentLocations();
+    const after = locationsAfterDelete(before, doomed, landing ?? before.party);
+    applyLocations(before, after);
     const removed = grid.removeNode(nodeId);
     app.actions.markDirty();
+    if (after.party !== before.party) {
+      const parent = grid.getNode(after.party.nodeId);
+      app.actions.logEvent('travel', `The party moves to ${parent?.name ?? after.party.nodeId}.`);
+    }
     if (removed.has(navigator.currentNodeId)) {
       const fallback =
         node.parentId && grid.getNode(node.parentId) ? node.parentId : [...grid.nodes.keys()][0];
@@ -131,8 +188,8 @@ export function createNodeActions(app, env) {
   /**
    * Edit a node's name and grid dimensions after creation. Growing the node
    * keeps every tile. Shrinking it asks for confirmation before removing
-   * tiles outside the new bounds, and pulls the party back inside the
-   * bounds if it stood on a removed tile.
+   * tiles outside the new bounds, and pulls the party, split characters, and
+   * placed creatures back inside the bounds if they stood on a removed tile.
    * @param {string} nodeId
    */
   async function editNode(nodeId) {
@@ -168,11 +225,8 @@ export function createNodeActions(app, env) {
     });
     app.actions.markDirty();
 
-    const position = partyTracker.getPosition();
-    if (position.nodeId === nodeId) {
-      const pulled = tileWithinBounds(position.tileId, width, height);
-      if (pulled) partyTracker.moveTo(nodeId, pulled);
-    }
+    const before = currentLocations();
+    applyLocations(before, locationsAfterShrink(before, nodeId, width, height));
     // Editing the node in view changes its extent or kind, so that view
     // must re-frame and re-filter the palette, and the selected tile can be
     // gone. Editing any other node still redraws the canvas, because the

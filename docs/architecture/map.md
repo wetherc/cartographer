@@ -374,7 +374,10 @@ Turning the switch off while characters are scattered first regroups the
 party: the GM picks a member, and the party position moves to that member's
 `characterPosition` (a `PartyTracker.moveTo` plus `recallAll`). A cancelled
 pick leaves the switch on, so the app never ends up with the switch off and
-the party still split.
+the party still split. A character placed on a node that no longer exists
+(deleted, or gone from a save that another tab adopted) is left out of the
+pick through `regroupCandidates`, and counts as standing with the party.
+When nobody is left to pick, the party regroups at its own marker.
 
 ## Getting back out
 

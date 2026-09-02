@@ -6,6 +6,7 @@ import {
   recallAll,
   isSplit,
   characterPosition,
+  regroupCandidates,
 } from '../src/party/CharacterTokens.js';
 import { createCharacter, withDefaults } from '../src/entities/Character.js';
 
@@ -68,4 +69,33 @@ test('characterPosition resolves a regroup target: own location, else the party 
 test('withDefaults backfills a pre-token save to "with the party"', () => {
   const { location: _location, ...legacy } = createCharacter('old', 'Old Timer');
   assert.equal(withDefaults(/** @type {any} */ (legacy)).location, null);
+});
+
+test('characterPosition falls back to the party tile when the character stands on a missing node', () => {
+  const scattered = moveCharacter(party, 'hero', { nodeId: 'gone', tileId: '0,1' });
+  const hero = /** @type {any} */ (scattered.find((c) => c.id === 'hero'));
+  const exists = (nodeId) => nodeId === 'world';
+  assert.deepEqual(characterPosition(hero, position, exists), position);
+  assert.deepEqual(
+    characterPosition(hero, position, () => true),
+    { nodeId: 'gone', tileId: '0,1' },
+  );
+});
+
+test('regroupCandidates leaves out characters placed on a node that no longer exists', () => {
+  let scattered = moveCharacter(party, 'hero', { nodeId: 'gone', tileId: '0,1' });
+  scattered = moveCharacter(scattered, 'sage', { nodeId: 'world', tileId: '1,1' });
+  const exists = (nodeId) => nodeId === 'world';
+  assert.deepEqual(
+    regroupCandidates(scattered, exists).map((c) => c.id),
+    ['sage'],
+  );
+  assert.deepEqual(
+    regroupCandidates(party, exists).map((c) => c.id),
+    ['hero', 'sage'],
+  );
+  assert.deepEqual(
+    regroupCandidates(scattered, () => false).map((c) => c.id),
+    [],
+  );
 });

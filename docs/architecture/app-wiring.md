@@ -151,6 +151,17 @@ says where the party goes when the node it stands in shrinks.
 its parent. `coerceNodeKind`, in `NodeKinds.js`, makes sure that a dialog or
 a hand-edited save cannot write a kind that the renderer does not know.
 
+`src/map/NodeCleanup.js` decides where every other location goes when a
+node is deleted or shrinks. A delete can remove the node the party stands
+in, and a party position on a missing node breaks the next load. So
+`deleteLanding` names the tile in the surviving parent, beside the block the
+node occupied, and `deleteNode` refuses when no parent survives.
+`locationsAfterDelete` then recalls split characters inside the subtree,
+unplaces creatures there, and unbinds handouts from it. `locationsAfterShrink`
+pulls the party, split characters, and placed creatures inside the new
+bounds through `tileWithinBounds`. `nodeActions.js` reads the live state
+into these functions and writes the answers back.
+
 ### partyWiring.js
 
 This module owns the roster, character sheet, inventory, spellbook, and Time

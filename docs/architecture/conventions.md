@@ -323,7 +323,7 @@ Here is the split, area by area:
 | `combat/AttackResolve.js` | `app/weaponAttack.js`'s dialog and dice tray |
 | `entities/ItemDraft.js`, `entities/SpellDraft.js` | `ui/ItemForm.js`, `ui/SpellForm.js` |
 | `view/StatBars.js`, `view/Shortcuts.js` | `ui/CharacterBars.js`, `app/shortcuts.js` |
-| `map/NodeEdits.js`, `storage/SaveNotices.js` | `app/nodeActions.js`, `app/campaignActions.js` |
+| `map/NodeEdits.js`, `map/NodeCleanup.js`, `storage/SaveNotices.js` | `app/nodeActions.js`, `app/campaignActions.js` |
 
 The bottom four rows all make the same move. Make this move deliberately when
 you touch a wiring module. The decision a piece of glue makes usually does

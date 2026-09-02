@@ -66,13 +66,29 @@ export function isSplit(characters) {
 /**
  * Where a character actually stands: their own location when placed, or the
  * shared party position otherwise. This is the regroup target when the GM
- * gathers the party at one member.
+ * gathers the party at one member. A location on a node that no longer
+ * exists (deleted here, or gone from a save another tab adopted) counts as
+ * with the party, so the caller never moves the party onto a missing node.
  * @param {Character} character
  * @param {PartyPosition} partyPosition
+ * @param {(nodeId: string) => boolean} [nodeExists] defaults to trusting every node
  * @returns {PartyPosition}
  */
-export function characterPosition(character, partyPosition) {
-  return character.location ?? partyPosition;
+export function characterPosition(character, partyPosition, nodeExists = () => true) {
+  const location = character.location ?? null;
+  return location && nodeExists(location.nodeId) ? location : partyPosition;
+}
+
+/**
+ * The characters the GM can regroup at: everyone with the party, plus
+ * everyone placed on a node that still exists. A character on a missing node
+ * has no tile to gather at, so the picker leaves them out.
+ * @param {Character[]} characters
+ * @param {(nodeId: string) => boolean} nodeExists
+ * @returns {Character[]}
+ */
+export function regroupCandidates(characters, nodeExists) {
+  return characters.filter((c) => !c.location || nodeExists(c.location.nodeId));
 }
 
 /**

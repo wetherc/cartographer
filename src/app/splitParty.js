@@ -8,7 +8,12 @@
 
 import { el } from '../ui/dom.js';
 import { promptModal } from '../ui/Modal.js';
-import { isSplit, characterPosition, recallAll } from '../party/CharacterTokens.js';
+import {
+  isSplit,
+  characterPosition,
+  recallAll,
+  regroupCandidates,
+} from '../party/CharacterTokens.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -49,36 +54,46 @@ export function wireSplitParty(app, { container, refreshRoster }) {
    * split. The GM picks the character, and everyone teleports to where that
    * character stands. A member still with the party stands at the current
    * party tile. This resolves to false when the GM cancels, and the switch
-   * stays on.
+   * stays on. A character placed on a node that no longer exists is left out
+   * of the picker, and counts as standing with the party. When nobody is
+   * left to pick, the party regroups at its own marker without a prompt.
    * @returns {Promise<boolean>}
    */
   async function regroupParty() {
     if (!isSplit(state.characters)) return true;
-    const values = await promptModal(
-      'Regroup the party',
-      [
-        {
-          name: 'at',
-          label: 'Teleport everyone to',
-          type: 'select',
-          options: state.characters.map((c) => {
-            const at = characterPosition(c, app.partyTracker.getPosition());
-            const node = app.grid.getNode(at.nodeId);
-            return {
-              value: c.id,
-              label: c.location
-                ? `${c.name} — ${node?.name ?? at.nodeId} (tile ${at.tileId})`
-                : `${c.name} — with the party`,
-            };
-          }),
-        },
-      ],
-      { submitLabel: 'Regroup' },
-    );
-    if (!values) return false;
-    const chosen = state.characters.find((c) => c.id === values.at);
-    if (!chosen) return false;
-    const target = characterPosition(chosen, app.partyTracker.getPosition());
+    /** @param {string} nodeId */
+    const nodeExists = (nodeId) => Boolean(app.grid.getNode(nodeId));
+    const party = app.partyTracker.getPosition();
+    const candidates = regroupCandidates(state.characters, nodeExists);
+    /** @type {import('../types/entities.js').Character | null} */
+    let chosen = null;
+    if (candidates.length) {
+      const values = await promptModal(
+        'Regroup the party',
+        [
+          {
+            name: 'at',
+            label: 'Teleport everyone to',
+            type: 'select',
+            options: candidates.map((c) => {
+              const at = characterPosition(c, party);
+              const node = app.grid.getNode(at.nodeId);
+              return {
+                value: c.id,
+                label: c.location
+                  ? `${c.name} — ${node?.name ?? at.nodeId} (tile ${at.tileId})`
+                  : `${c.name} — with the party`,
+              };
+            }),
+          },
+        ],
+        { submitLabel: 'Regroup' },
+      );
+      if (!values) return false;
+      chosen = candidates.find((c) => c.id === values.at) ?? null;
+      if (!chosen) return false;
+    }
+    const target = chosen ? characterPosition(chosen, party, nodeExists) : party;
     app.partyTracker.moveTo(target.nodeId, target.tileId);
     state.characters = recallAll(state.characters);
     app.views.mapCanvas.refreshNode(app.navigator.getCurrentNode());
@@ -92,7 +107,7 @@ export function wireSplitParty(app, { container, refreshRoster }) {
     const node = app.grid.getNode(target.nodeId);
     app.actions.logEvent(
       'travel',
-      `The party regroups at ${chosen.name}'s position in ${node?.name ?? target.nodeId} (tile ${target.tileId}).`,
+      `The party regroups ${chosen ? `at ${chosen.name}'s position ` : ''}in ${node?.name ?? target.nodeId} (tile ${target.tileId}).`,
     );
     app.actions.maybeTriggerEncounter();
     return true;
