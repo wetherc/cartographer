@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { MAX_EDGE, QUALITY_STEPS, encodeAttempts, fitDimensions } from '../src/ui/imageField.js';
+import {
+  MAX_EDGE,
+  QUALITY_STEPS,
+  encodeAttempts,
+  encodeSizes,
+  fitDimensions,
+  pickFit,
+} from '../src/ui/imageField.js';
 
 test('an image already inside the cap keeps its dimensions', () => {
   assert.deepEqual(fitDimensions(800, 600, 1280), { width: 800, height: 600 });
@@ -71,4 +78,28 @@ test('a small source is not upscaled by the reduced-edge attempts either', () =>
     assert.ok(attempt.width <= 320, 'width grew');
     assert.ok(attempt.height <= 200, 'height grew');
   }
+});
+
+test('the sizes are the full edge then half of it, each fitted to the source', () => {
+  assert.deepEqual(encodeSizes(4000, 3000), [
+    fitDimensions(4000, 3000, MAX_EDGE),
+    fitDimensions(4000, 3000, MAX_EDGE / 2),
+  ]);
+  // A one-pixel edge cannot halve below one.
+  assert.deepEqual(encodeSizes(10, 10, 1), [
+    { width: 1, height: 1 },
+    { width: 1, height: 1 },
+  ]);
+});
+
+test('pickFit returns the shortest candidate that fits under the limit', () => {
+  assert.equal(pickFit(['aaaa', 'bb'], 10), 'bb');
+  assert.equal(pickFit(['aaaa', 'bb'], 3), 'bb');
+  assert.equal(pickFit(['aaaa', 'bb'], 1), null);
+});
+
+test('pickFit skips a format that was not tried and handles no candidates', () => {
+  assert.equal(pickFit([null, 'ccc'], 3), 'ccc');
+  assert.equal(pickFit([null, null], 3), null);
+  assert.equal(pickFit([], 3), null);
 });

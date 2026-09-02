@@ -131,6 +131,27 @@ export class TileRaster {
   }
 
   /**
+   * Copy decoded images in from another cache, so a short-lived raster (the
+   * generator preview) draws art the live map already loaded instead of
+   * fetching and decoding every ref again. Only a complete image is copied.
+   * One still loading has an `onload` that belongs to its own raster, and
+   * would never call this raster's `onLoad`. Entries are copied, not shared,
+   * so this raster never writes into the cache it was seeded from.
+   * @param {Map<string, HTMLImageElement>} [images]
+   * @returns {number} how many images were copied
+   */
+  seedImages(images) {
+    let copied = 0;
+    if (!images) return copied;
+    for (const [ref, img] of images) {
+      if (!img.complete || !img.naturalWidth || this.images.has(ref)) continue;
+      this.images.set(ref, img);
+      copied += 1;
+    }
+    return copied;
+  }
+
+  /**
    * Something to draw a ref with at a destination size, or null while the art
    * has not decoded. A caller that must not leave a hole draws its own
    * placeholder on null.

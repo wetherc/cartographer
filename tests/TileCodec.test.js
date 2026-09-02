@@ -319,3 +319,40 @@ test('random nodes round trip', () => {
     roundTrip(makeNode({ width, height, tiles }));
   }
 });
+
+test('a tile that carries only codec-owned fields leaves no per-tile record', () => {
+  const encoded = roundTrip(
+    makeNode({
+      width: 2,
+      height: 1,
+      tiles: [
+        tile('0,0', 'grass', { overlayRef: 'road', revealed: true }),
+        tile('1,0', 'grass', { overlayRef: 'road', metadata: { poiType: 'town' } }),
+      ],
+    }),
+  );
+  assert.deepEqual(encoded.tiles, [{ id: '1,0', metadata: { poiType: 'town' } }]);
+});
+
+test('an id that is not a canonical in-bounds pair keeps the node in per-tile form', () => {
+  for (const id of ['01,2', '1,2,3', '1,', ',2', 'a,b', '1, 2', '1,-2', '', '1', '1,02']) {
+    const node = makeNode({ width: 3, height: 3, tiles: [tile(id, 'grass')] });
+    assert.equal(encodeNodeTiles(node), node, `id ${JSON.stringify(id)} was encoded`);
+  }
+  // A digit string too long to hold exactly still fails the bounds check.
+  const huge = makeNode({ tiles: [tile('99999999999999999999,0', 'grass')] });
+  assert.equal(encodeNodeTiles(huge), huge);
+});
+
+test('a bare ref that reads like the JSON of a pair gets its own palette slot', () => {
+  const lookalike = '["grass","road"]';
+  const encoded = roundTrip(
+    makeNode({
+      width: 2,
+      height: 1,
+      tiles: [tile('0,0', lookalike), tile('1,0', 'grass', { overlayRef: 'road' })],
+    }),
+  );
+  assert.deepEqual(encoded.refs, [lookalike, ['grass', 'road']]);
+  assert.deepEqual(encoded.cells, [0, 1]);
+});

@@ -60,6 +60,21 @@ export function fitDimensions(width, height, maxEdge) {
 }
 
 /**
+ * The sizes to draw a source at, in order: the full permitted edge, then
+ * half of it. Each size is drawn to a canvas once, and every quality step
+ * encodes from that one drawing. This function is pure.
+ * @param {number} width
+ * @param {number} height
+ * @param {number} [maxEdge]
+ * @returns {{ width: number, height: number }[]}
+ */
+export function encodeSizes(width, height, maxEdge = MAX_EDGE) {
+  return [maxEdge, Math.max(1, Math.floor(maxEdge / 2))].map((edge) =>
+    fitDimensions(width, height, edge),
+  );
+}
+
+/**
  * The (edge, quality) pairs to try, in order, for a source of the given
  * size: every quality step at the full permitted edge, then the same
  * steps at half that edge. The list is finite and monotonically smaller,
@@ -73,11 +88,29 @@ export function fitDimensions(width, height, maxEdge) {
 export function encodeAttempts(width, height, maxEdge = MAX_EDGE) {
   /** @type {{ width: number, height: number, quality: number }[]} */
   const attempts = [];
-  for (const edge of [maxEdge, Math.max(1, Math.floor(maxEdge / 2))]) {
-    const size = fitDimensions(width, height, edge);
+  for (const size of encodeSizes(width, height, maxEdge)) {
     for (const quality of QUALITY_STEPS) attempts.push({ ...size, quality });
   }
   return attempts;
+}
+
+/**
+ * The encoding to store out of one attempt's candidates: the shortest
+ * candidate, when it fits under `limit`, or null when none does. A null
+ * candidate stands for a format that was not tried, such as PNG for a
+ * photo. This function is pure.
+ * @param {(string | null)[]} candidates
+ * @param {number} limit
+ * @returns {string | null}
+ */
+export function pickFit(candidates, limit) {
+  /** @type {string | null} */
+  let shortest = null;
+  for (const candidate of candidates) {
+    if (candidate === null) continue;
+    if (shortest === null || candidate.length < shortest.length) shortest = candidate;
+  }
+  return shortest !== null && shortest.length <= limit ? shortest : null;
 }
 
 /**
@@ -121,30 +154,51 @@ async function decodeImage(file) {
 }
 
 /**
- * The shortest encoding of `source` at the given size, as a `data:` URL.
- * JPEG is always a candidate. PNG is a candidate only for a PNG source,
- * where flat art routinely encodes smaller losslessly than any JPEG of
- * it. A photo's PNG never wins, so the extra candidate costs only one
- * encode. The canvas fills white first, because the JPEG candidate
- * flattens alpha, and unfilled alpha flattens to black.
+ * Draw `source` onto a fresh canvas at the given size. The canvas fills
+ * white first, because the JPEG encode flattens alpha, and unfilled alpha
+ * flattens to black.
  * @param {CanvasImageSource} source
- * @param {{ width: number, height: number, quality: number }} attempt
- * @param {boolean} keepLossless
- * @returns {string}
+ * @param {{ width: number, height: number }} size
+ * @returns {HTMLCanvasElement}
  */
-function encodeAt(source, attempt, keepLossless) {
+function drawAt(source, size) {
   const canvas = document.createElement('canvas');
-  canvas.width = attempt.width;
-  canvas.height = attempt.height;
+  canvas.width = size.width;
+  canvas.height = size.height;
   const context = canvas.getContext('2d');
   if (!context) throw new Error('no 2d context');
   context.fillStyle = '#ffffff';
-  context.fillRect(0, 0, attempt.width, attempt.height);
-  context.drawImage(source, 0, 0, attempt.width, attempt.height);
-  const jpeg = canvas.toDataURL('image/jpeg', attempt.quality);
-  if (!keepLossless) return jpeg;
-  const png = canvas.toDataURL('image/png');
-  return png.length <= jpeg.length ? png : jpeg;
+  context.fillRect(0, 0, size.width, size.height);
+  context.drawImage(source, 0, 0, size.width, size.height);
+  return canvas;
+}
+
+/**
+ * The shortest encoding of `source` that fits under the character cap, or
+ * null when no size and quality does. JPEG is always a candidate. PNG is a
+ * candidate only for a PNG source, where flat art routinely encodes
+ * smaller losslessly than any JPEG of it. A photo's PNG never wins, so the
+ * extra candidate costs only one encode.
+ *
+ * Each size is drawn once and its PNG is encoded once. The quality steps
+ * change only the JPEG, so re-encoding the PNG per step would repeat the
+ * slowest encode for the same bytes.
+ * @param {CanvasImageSource} source
+ * @param {{ width: number, height: number }} decoded
+ * @param {boolean} keepLossless
+ * @returns {string | null}
+ */
+function encodeUnderCap(source, decoded, keepLossless) {
+  for (const size of encodeSizes(decoded.width, decoded.height)) {
+    const canvas = drawAt(source, size);
+    const png = keepLossless ? canvas.toDataURL('image/png') : null;
+    for (const quality of QUALITY_STEPS) {
+      const jpeg = canvas.toDataURL('image/jpeg', quality);
+      const fit = pickFit([png, jpeg], MAX_ENCODED_CHARS);
+      if (fit) return fit;
+    }
+  }
+  return null;
 }
 
 /**
@@ -167,13 +221,8 @@ export async function readImageFile(file) {
     throw new Error('That file could not be read as an image.');
   }
   try {
-    const keepLossless = file.type === 'image/png';
-    let shortest = '';
-    for (const attempt of encodeAttempts(decoded.width, decoded.height)) {
-      const encoded = encodeAt(decoded.source, attempt, keepLossless);
-      if (encoded.length <= MAX_ENCODED_CHARS) return encoded;
-      if (!shortest || encoded.length < shortest.length) shortest = encoded;
-    }
+    const encoded = encodeUnderCap(decoded.source, decoded, file.type === 'image/png');
+    if (encoded) return encoded;
     // Every attempt exceeded the ceiling. Reporting this now is better
     // than storing an image that fails the save later, where the GM
     // cannot tell which edit caused it.

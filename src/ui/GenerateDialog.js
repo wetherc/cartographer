@@ -19,9 +19,15 @@ import { openDialog } from './Modal.js';
  * so a GM can reproduce a liked layout later. The dialog resolves with
  * the accepted choice, or null on cancel. Nothing stamps into the node
  * until the caller applies the result.
+ *
+ * `imageCache` is the live map's decoded art. The preview copies it in,
+ * so opening the dialog fetches and decodes nothing the map has already
+ * drawn. Without it the first preview of a large wilderness redraws once
+ * per distinct ref as each SVG arrives.
  * @param {{
  *   archetypes: { value: string, label: string }[],
  *   makeCandidate: (choice: GenerateChoice) => { width: number, height: number, tiles: import('../types/map.js').Tile[] },
+ *   imageCache?: Map<string, HTMLImageElement>,
  * }} options
  * @returns {Promise<GenerateChoice | null>}
  */
@@ -91,11 +97,24 @@ export function generateDialog(options) {
       body.push(canvas);
 
       const ctx = /** @type {CanvasRenderingContext2D} */ (canvas.getContext('2d'));
+
+      // Image loads arrive one per ref, and each one used to redraw the
+      // whole preview at once. One animation frame collects every load
+      // that lands before it, so a burst of arrivals costs one draw.
+      let frame = 0;
+      const scheduleRender = () => {
+        if (frame || closed) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          renderPreview();
+        });
+      };
       // tileSize depends on the candidate's grid size, so it is set per
       // render, and the renderer rebuilds per draw. The image and raster
       // caches live as long as the dialog, so a rerender neither reloads art
       // nor rasterizes it again.
-      const raster = new TileRaster({ onLoad: () => renderPreview() });
+      const raster = new TileRaster({ onLoad: scheduleRender });
+      raster.seedImages(options.imageCache);
 
       readChoice = () => ({
         archetype: archetypeSelect.value,
@@ -104,22 +123,38 @@ export function generateDialog(options) {
         seed: clampInt(seedInput.value),
       });
 
+      // The preview node for the current choice. The renderer keys its
+      // per-node caches on the node object, so an image load that redraws
+      // an unchanged choice must hand the renderer the same node again, not
+      // a fresh copy of it.
+      /** @type {{ key: string, node: import('../types/map.js').MapNode } | null} */
+      let preview = null;
+      const previewNode = () => {
+        const choice = readChoice();
+        const key = JSON.stringify(choice);
+        if (preview?.key !== key) {
+          const candidate = options.makeCandidate(choice);
+          preview = {
+            key,
+            node: /** @type {any} */ ({ ...candidate, id: 'preview', name: 'preview' }),
+          };
+        }
+        return preview.node;
+      };
+
       function renderPreview() {
         if (closed) return;
-        const candidate = options.makeCandidate(readChoice());
-        const tileSize = Math.max(
-          1,
-          Math.floor(canvas.width / Math.max(candidate.width, candidate.height)),
-        );
+        const node = previewNode();
+        const tileSize = Math.max(1, Math.floor(canvas.width / Math.max(node.width, node.height)));
         const renderer = new MapRenderer(ctx, { tileSize, raster });
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         renderer.render({
           canvasWidth: canvas.width,
           canvasHeight: canvas.height,
-          node: /** @type {any} */ ({ ...candidate, id: 'preview', name: 'preview' }),
+          node,
           regionGroups: [],
-          offsetX: Math.floor((canvas.width - candidate.width * tileSize) / 2),
-          offsetY: Math.floor((canvas.height - candidate.height * tileSize) / 2),
+          offsetX: Math.floor((canvas.width - node.width * tileSize) / 2),
+          offsetY: Math.floor((canvas.height - node.height * tileSize) / 2),
           scale: 1,
           revealAll: true,
           markerRange: 0,

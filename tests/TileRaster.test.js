@@ -209,3 +209,21 @@ test('clearRasters keeps the decoded images, which cost a network round trip', (
   assert.equal(raster.rasters.size, 0);
   assert.equal(raster.image('a.svg'), img);
 });
+
+test('seedImages copies only complete images, and never overwrites its own', () => {
+  const { raster, images } = harness();
+  raster.image('own.svg');
+  const own = images[0];
+  const seed = new Map([
+    ['ready.svg', { ...fakeImage(), src: '/ready.svg' }],
+    ['loading.svg', { ...fakeImage(), complete: false }],
+    ['broken.svg', { ...fakeImage(), naturalWidth: 0 }],
+    ['own.svg', { ...fakeImage(), src: '/other.svg' }],
+  ]);
+  assert.equal(raster.seedImages(/** @type {any} */ (seed)), 1);
+  assert.equal(raster.images.get('ready.svg'), seed.get('ready.svg'));
+  assert.equal(raster.images.has('loading.svg'), false);
+  assert.equal(raster.images.has('broken.svg'), false);
+  assert.equal(raster.images.get('own.svg'), own);
+  assert.equal(raster.seedImages(undefined), 0);
+});

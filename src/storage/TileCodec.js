@@ -61,6 +61,30 @@ const RUN_MIN = 3;
 const EMPTY = -1;
 
 /**
+ * The value of `text[start, end)` read as a canonical decimal integer, or -1
+ * when it is not one. Canonical means digits only, at least one digit, and
+ * no leading zero except for "0" itself. The function reads character codes
+ * directly. A regular expression plus a `Number` and `String` round trip
+ * costs more than the rest of the encode for a large node, and this runs
+ * once per tile on every save that touches the node.
+ * @param {string} text
+ * @param {number} start
+ * @param {number} end
+ * @returns {number}
+ */
+function canonicalInt(text, start, end) {
+  if (end <= start) return -1;
+  if (end - start > 1 && text.charCodeAt(start) === 48) return -1;
+  let value = 0;
+  for (let i = start; i < end; i += 1) {
+    const digit = text.charCodeAt(i) - 48;
+    if (digit < 0 || digit > 9) return -1;
+    value = value * 10 + digit;
+  }
+  return value;
+}
+
+/**
  * The grid position of a canonical `x,y` tile id within a node, or -1 when
  * the codec cannot encode the id by position. Canonical is stricter than
  * parseable. For example, `"01,2"` parses as (1, 2) but is a different
@@ -71,12 +95,11 @@ const EMPTY = -1;
  * @returns {number}
  */
 function positionOf(id, width, height) {
-  const match = /^(\d+),(\d+)$/.exec(id);
-  if (!match) return -1;
-  const x = Number(match[1]);
-  const y = Number(match[2]);
-  if (String(x) !== match[1] || String(y) !== match[2]) return -1;
-  if (x >= width || y >= height) return -1;
+  const comma = id.indexOf(',');
+  if (comma < 0) return -1;
+  const x = canonicalInt(id, 0, comma);
+  const y = canonicalInt(id, comma + 1, id.length);
+  if (x < 0 || y < 0 || x >= width || y >= height) return -1;
   return y * width + x;
 }
 
@@ -130,8 +153,14 @@ function layOut(node, width, height) {
 function encodeCells(slots) {
   /** @type {(string | [string, string | string[]])[]} */
   const refs = [];
+  // Two lookups, one per entry form. A bare entry is keyed by its own
+  // `imageRef` string, so the common case builds no key at all. A pair is
+  // keyed by its JSON text. Keeping the two apart means an `imageRef` that
+  // happens to look like JSON can never share a palette slot with a pair.
   /** @type {Map<string, number>} */
-  const indexByKey = new Map();
+  const bareIndex = new Map();
+  /** @type {Map<string, number>} */
+  const pairIndex = new Map();
   /** @type {(number | [number, number])[]} */
   const cells = [];
   let runIndex = EMPTY;
@@ -144,12 +173,13 @@ function encodeCells(slots) {
     let index = EMPTY;
     if (tile) {
       const entry = artEntry(tile);
-      const key = JSON.stringify(entry);
-      const seen = indexByKey.get(key);
+      const byKey = typeof entry === 'string' ? bareIndex : pairIndex;
+      const key = typeof entry === 'string' ? entry : JSON.stringify(entry);
+      const seen = byKey.get(key);
       if (seen === undefined) {
         index = refs.length;
         refs.push(entry);
-        indexByKey.set(key, index);
+        byKey.set(key, index);
       } else {
         index = seen;
       }
@@ -212,6 +242,13 @@ function encodeLeftovers(slots) {
   const leftovers = [];
   for (const tile of slots) {
     if (!tile) continue;
+    // Most tiles carry nothing but the fields the codec owns. Count those
+    // fields first, and copy the tile only when it holds something else.
+    // `layOut` has already checked that `id` and `imageRef` are present.
+    let owned = 2;
+    if ('overlayRef' in tile) owned += 1;
+    if ('revealed' in tile) owned += 1;
+    if (Object.keys(tile).length === owned) continue;
     /** @type {Record<string, any>} */
     const rest = { ...tile };
     delete rest.id;

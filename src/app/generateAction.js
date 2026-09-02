@@ -91,7 +91,11 @@ export function wireGenerateAction(app, env) {
     /** @param {GenerateChoice} choice */
     const makeCandidate = (choice) => buildCandidate(choice).gen;
 
-    const values = await generateDialog({ archetypes, makeCandidate });
+    const values = await generateDialog({
+      archetypes,
+      makeCandidate,
+      imageCache: env.mapCanvas.renderer.imageCache,
+    });
     if (!values) return;
     const removed = linkedDescendants([...grid.nodes.values()], node);
     if (

@@ -954,20 +954,24 @@ ingestion is bounded:
 ```js
 readImageFile(file)                       -> Promise<string>  // a data: URL
 fitDimensions(width, height, maxEdge)     -> { width, height } // pure
+encodeSizes(width, height, maxEdge?)      -> { width, height }[] // pure
 encodeAttempts(width, height, maxEdge?)   -> { width, height, quality }[] // pure
+pickFit(candidates, limit)                -> string | null // pure
 ```
 
 `readImageFile` rejects a source over `MAX_SOURCE_BYTES` (12 MB),
 downscales the image to `MAX_EDGE` (1280 px longest edge), and then walks
-`encodeAttempts` (three JPEG quality steps at full edge, then the same
-three steps at half edge) until the encoded string is under
-`MAX_ENCODED_CHARS` (250,000). It returns the first attempt that fits. For
-a PNG source it also tries PNG and keeps whichever result is shorter. Its
+`encodeSizes` (the full edge, then half of it). At each size it draws the
+image once. For a PNG source it encodes one PNG from that drawing. Then it
+encodes a JPEG per quality step and hands the PNG and the JPEG to
+`pickFit`, which returns the shorter one when it is under
+`MAX_ENCODED_CHARS` (250,000). The first result that fits is stored. Its
 error messages are GM-facing sentences, not error codes, because they
 show directly in the dialog.
 
-The arithmetic (`fitDimensions`, `encodeAttempts`) is pure and tested with
-unit tests. The canvas encode path is checked in a browser.
+The arithmetic (`fitDimensions`, `encodeSizes`, `encodeAttempts`,
+`pickFit`) is pure and tested with unit tests. The canvas encode path is
+checked in a browser.
 
 Both size caps exist to survive the browser storage budget, not because
 they are the right quality ceiling for a projected handout. The caps are
