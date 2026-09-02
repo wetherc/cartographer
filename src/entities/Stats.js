@@ -28,9 +28,10 @@ const TIMED_LABEL = 'Adjustment';
  *
  * `rounds` is how long the shortest-lived view of this value holds: the
  * largest countdown among the timed sources, or 0 when none apply. A
- * creature's worn armor is not a source here. Its flat AC bonus belongs to
- * the combat stat block (see `Creature.effectiveStatBlock`), which layers it
- * over the authored base AC these chips edit.
+ * creature's worn armor is an AC source with no countdown, so the total here
+ * is the AC that `Creature.effectiveStatBlock` gives to combat math, and a
+ * chip in Play shows the same number as the combat card. The base stays the
+ * authored AC, which is what the Build chips edit.
  * @param {Character | Creature} entity
  * @param {string} stat
  * @returns {{ base: number, total: number, rounds: number, sources: StatSource[] }}
@@ -47,6 +48,9 @@ export function effectiveStat(entity, stat) {
       const delta = item.statBonuses?.[stat];
       if (delta) sources.push({ source: item.name, delta });
     }
+  } else {
+    const armor = /** @type {Creature} */ (entity).armor;
+    if (stat === 'AC' && armor?.acBonus) sources.push({ source: armor.name, delta: armor.acBonus });
   }
   for (const mod of ('statMods' in entity ? entity.statMods : null) ?? []) {
     if (mod.stat === stat && mod.delta) {

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { effectiveStat } from '../src/entities/Stats.js';
 import { addItem, createCharacter } from '../src/entities/Character.js';
 import { equip } from '../src/entities/Equipment.js';
-import { addStatModifier, createCreature } from '../src/entities/Creature.js';
+import { addStatModifier, createCreature, effectiveStatBlock } from '../src/entities/Creature.js';
 import { item } from './helpers/fixtures.js';
 
 /** A character wearing a ring that shifts STR by `delta`. */
@@ -88,10 +88,42 @@ test('both source kinds fold into one total, equipment first', () => {
   });
 });
 
-test("an encounter's worn armor is not a stat source, so the chips show the authored AC", () => {
-  // effectiveStatBlock adds the armor bonus for combat math. This fold reports
-  // what a GM authored, which is what the stat chips edit.
+test("an encounter's worn armor is an AC source with no countdown", () => {
+  // The Play chips and the combat card both read the armored value. The base
+  // stays the authored AC, which is what the Build chips edit.
   const goblin = createCreature('e1', 'Goblin', { maxHP: 10, stats: { AC: 12 }, level: 1 });
   assert.equal(goblin.armor?.acBonus, 1);
-  assert.deepEqual(effectiveStat(goblin, 'AC'), { base: 12, total: 12, rounds: 0, sources: [] });
+  assert.deepEqual(effectiveStat(goblin, 'AC'), {
+    base: 12,
+    total: 13,
+    rounds: 0,
+    sources: [{ source: goblin.armor?.name, delta: 1 }],
+  });
+  assert.equal(effectiveStat(goblin, 'AC').total, effectiveStatBlock(goblin).AC);
+});
+
+test('armor reaches only AC, and an unarmored creature has no armor source', () => {
+  const armored = createCreature('e1', 'Goblin', { maxHP: 10, stats: { DEX: 14 }, level: 1 });
+  assert.deepEqual(effectiveStat(armored, 'DEX').sources, []);
+  const bare = createCreature('e2', 'Wolf', { maxHP: 10, stats: { AC: 12 }, armor: null });
+  assert.deepEqual(effectiveStat(bare, 'AC'), { base: 12, total: 12, rounds: 0, sources: [] });
+  const noBonus = createCreature('e3', 'Rat', {
+    maxHP: 10,
+    stats: { AC: 12 },
+    armor: { name: 'Rags', acBonus: 0 },
+  });
+  assert.deepEqual(effectiveStat(noBonus, 'AC').sources, []);
+});
+
+test('a timed AC adjustment stacks on the armor, and both agree with the combat block', () => {
+  const goblin = addStatModifier(
+    createCreature('e1', 'Goblin', { maxHP: 10, stats: { AC: 12 }, level: 1 }),
+    'AC',
+    2,
+    3,
+  );
+  const read = effectiveStat(goblin, 'AC');
+  assert.equal(read.total, 15);
+  assert.equal(read.rounds, 3, 'the countdown comes from the timed source alone');
+  assert.equal(read.total, effectiveStatBlock(goblin).AC);
 });

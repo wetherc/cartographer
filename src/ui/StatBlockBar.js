@@ -69,7 +69,10 @@ export function mountStatBlockBar(container, callbacks) {
       // over them.
       const { base, total, rounds } = effectiveStat(entity, name);
       const effective = callbacks.mode === 'temp' ? total : base;
-      const modified = effective !== base;
+      // Only a timed adjustment marks the chip and shows its countdown. Worn
+      // armor also lifts a creature's AC, but it has no countdown, so the chip
+      // shows the lifted value plain, the same number as the combat card.
+      const modified = effective !== base && rounds > 0;
 
       const className = classNames([
         'statblock-bar__chip',
