@@ -55,10 +55,14 @@ export function buildItemForm({
   onCancel = null,
   template = false,
 }) {
-  const nameInput = textField(item?.name ?? '', { placeholder: 'Item name' });
+  const nameInput = textField(item?.name ?? '', {
+    placeholder: 'Item name',
+    ariaLabel: 'Item name',
+  });
 
   const descriptionInput = textField(item?.description ?? '', {
     placeholder: 'Description (optional)',
+    ariaLabel: 'Description',
     className: 'form__wide',
   });
 

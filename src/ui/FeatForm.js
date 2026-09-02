@@ -70,7 +70,10 @@ function choiceControls(noun, options, stored) {
  * @returns {HTMLElement}
  */
 export function buildFeatForm({ feat = null, submitLabel, onSubmit, onCancel = null }) {
-  const nameInput = textField(feat?.name ?? '', { placeholder: 'Feat name' });
+  const nameInput = textField(feat?.name ?? '', {
+    placeholder: 'Feat name',
+    ariaLabel: 'Feat name',
+  });
   const prerequisiteInput = textField(feat?.prerequisite ?? '', {
     placeholder: 'Strength 13 or higher',
   });

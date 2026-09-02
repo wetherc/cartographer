@@ -13,7 +13,14 @@
 
 import { textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
-import { checkboxInput, numberField, select, textareaField, textField } from './formFields.js';
+import {
+  captioned,
+  checkboxInput,
+  numberField,
+  select,
+  textareaField,
+  textField,
+} from './formFields.js';
 import { readImageFile } from './imageField.js';
 import { buildAllocation, buildMultiselect, buildPillGrid, buildTagsField } from './ModalFields.js';
 import { dialogPartId, pickReturnFocus } from './dialogFocus.js';
@@ -45,15 +52,11 @@ import { dialogPartId, pickReturnFocus } from './dialogFocus.js';
  * the app must re-implement this lifecycle. Escape-to-dismiss comes free with
  * `<dialog>`.
  *
- * The title names the dialog: it gets an id and the dialog points at it with
- * `aria-labelledby`, so a screen reader announces "Delete Goblin?" and not
- * just "dialog". A `description` part is wired the same way through
- * `aria-describedby`.
- *
- * On close, focus goes back to the opener. When the opener is no longer in
- * the document (the dialog removed or rebuilt it), focus goes to the
- * caller's `returnFocus` element, and failing that to the `<main>` landmark.
- * See `pickReturnFocus` in `dialogFocus.js`.
+ * The title gets an id and the dialog points at it with `aria-labelledby`,
+ * so a screen reader announces the title and not just "dialog". A
+ * `description` part is wired the same way through `aria-describedby`. On
+ * close, focus returns to the opener. When the opener has left the document,
+ * focus goes to `returnFocus`, then to `<main>` (see `dialogFocus.js`).
  *
  * `build` receives a `close(value)` function that it wires into its own
  * buttons, and returns the parts to assemble. `result` turns the dialog's
@@ -213,18 +216,10 @@ export function promptModal(title, fields, options = {}) {
       let advancedBox = null;
       for (const field of fields) {
         const labelText = document.createTextNode(field.label);
-        const label = el(
-          'label',
-          classNames([
-            'modal__field u-col u-g1 u-muted',
-            field.full && 'modal__field--full',
-            field.newRow && 'modal__field--break',
-            field.hidden && 'modal__field--hidden',
-          ]),
-          labelText,
-        );
+        const caption = el('span', '', labelText);
         labelTexts[field.name] = labelText;
-        wrappers[field.name] = label;
+        /** The checkbox field lays its caption and box out on one line. */
+        let checkRow = false;
 
         /** @type {HTMLInputElement | HTMLSelectElement} */
         let input;
@@ -238,7 +233,7 @@ export function promptModal(title, fields, options = {}) {
           // The box sits after its caption, not under it, so the label reads
           // as one line. The wrapper class carries that layout.
           const box = checkboxInput(!!field.value);
-          label.classList.add('modal__field--check');
+          checkRow = true;
           input = box;
           getters[field.name] = () => (box.checked ? '1' : '');
           setters[field.name] = (value) => {
@@ -341,8 +336,19 @@ export function promptModal(title, fields, options = {}) {
           getters[field.name] = () => plain.value;
         }
         if (field.disabled) input.disabled = true;
-        label.appendChild(input);
+        const label = captioned(
+          caption,
+          input,
+          classNames([
+            'modal__field u-col u-g1 u-muted',
+            checkRow && 'modal__field--check',
+            field.full && 'modal__field--full',
+            field.newRow && 'modal__field--break',
+            field.hidden && 'modal__field--hidden',
+          ]),
+        );
         if (extras[field.name]) label.appendChild(extras[field.name]);
+        wrappers[field.name] = label;
         if (field.advanced) {
           if (!advancedBox) {
             advancedBox = el('div', 'modal__advanced-fields');

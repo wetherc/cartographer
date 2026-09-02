@@ -15,7 +15,7 @@
 
 import { clamp } from '../util/num.js';
 import { textButton } from './buttons.js';
-import { classNames, el } from './dom.js';
+import { classNames, el, uniqueId } from './dom.js';
 
 /**
  * The options every builder here accepts on top of its own. `className`
@@ -40,15 +40,56 @@ function withOpts(control, { className, ariaLabel }) {
 }
 
 /**
+ * The tags a `<label>` can name. A `<label>` names exactly one of these: its
+ * first labelable descendant. Wrapping anything else in a label gives the
+ * wrong name to the wrong control, or no name at all.
+ */
+const LABELABLE = new Set(['BUTTON', 'INPUT', 'METER', 'OUTPUT', 'PROGRESS', 'SELECT', 'TEXTAREA']);
+
+/**
+ * Which wrapper a captioned control needs. A single labelable control takes a
+ * `<label>`, so a click on the caption focuses it and the caption is its
+ * name. Anything else (a checkbox grid, a dice editor, a pill grid) takes a
+ * `<div role="group">` named by the caption through `aria-labelledby`. A
+ * `<label>` around such a group would name only the first box inside it, and
+ * would name it with the whole group's text.
+ * @param {string} tagName the control's `tagName`, in any case
+ * @returns {'label' | 'group'}
+ */
+export function captionWrapperKind(tagName) {
+  return LABELABLE.has(tagName.toUpperCase()) ? 'label' : 'group';
+}
+
+/**
+ * A caption stacked over a control, in the wrapper `captionWrapperKind`
+ * picks. `caption` is an element so a caller can keep a handle on its text
+ * node and restate it later. `Modal.js` and `labeled` both build on this.
+ * @param {HTMLElement} caption
+ * @param {HTMLElement} control
+ * @param {string} className
+ * @returns {HTMLElement}
+ */
+export function captioned(caption, control, className) {
+  if (captionWrapperKind(control.tagName) === 'label') {
+    return el('label', className, caption, control);
+  }
+  caption.id = uniqueId('caption');
+  const group = el('div', className, caption, control);
+  group.setAttribute('role', 'group');
+  group.setAttribute('aria-labelledby', caption.id);
+  return group;
+}
+
+/**
  * A captioned wrapper so each control names itself.
  * @param {string} caption
  * @param {HTMLElement} control
  * @param {FieldOpts} [opts]
- * @returns {HTMLLabelElement}
+ * @returns {HTMLElement}
  */
 export function labeled(caption, control, opts = {}) {
-  const label = el('label', 'form__label u-col u-g1 u-muted', el('span', '', caption), control);
-  return withOpts(label, opts);
+  const wrapper = captioned(el('span', '', caption), control, 'form__label u-col u-g1 u-muted');
+  return withOpts(wrapper, opts);
 }
 
 /**

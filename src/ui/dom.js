@@ -90,3 +90,17 @@ export function mustGetElement(id) {
   if (!element) throw new Error(`Required element #${id} is missing from index.html`);
   return element;
 }
+
+let idCounter = 0;
+
+/**
+ * A document-unique id with the given prefix. `aria-labelledby` and
+ * `aria-describedby` need an id on the element they point at, and a widget
+ * that is built many times per page cannot hard-code one.
+ * @param {string} prefix
+ * @returns {string}
+ */
+export function uniqueId(prefix) {
+  idCounter += 1;
+  return `${prefix}-${idCounter}`;
+}

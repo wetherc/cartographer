@@ -4,7 +4,7 @@
  * closes. Both live here so a unit test can check them with plain objects.
  */
 
-let counter = 0;
+import { uniqueId } from './dom.js';
 
 /**
  * A document-unique id for one dialog part. Each dialog gets its own heading
@@ -14,8 +14,7 @@ let counter = 0;
  * @returns {string}
  */
 export function dialogPartId(part) {
-  counter += 1;
-  return `dialog-${part}-${counter}`;
+  return uniqueId(`dialog-${part}`);
 }
 
 /**
