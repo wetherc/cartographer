@@ -70,3 +70,10 @@ test('removeById drops the matching entry and tolerates a missing id', () => {
   assert.deepEqual(removeById(list, 'a'), [{ id: 'b', v: 2 }]);
   assert.deepEqual(removeById(list, 'zzz'), list);
 });
+
+test('slugId reads a Set of taken ids as it is and leaves it unchanged', () => {
+  const taken = new Set(['goblin', 'goblin-2']);
+  assert.equal(slugId('Goblin', taken), 'goblin-3');
+  assert.deepEqual([...taken], ['goblin', 'goblin-2'], 'the caller owns the set');
+  assert.equal(slugId('Ogre', taken), 'ogre');
+});

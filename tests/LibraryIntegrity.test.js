@@ -191,13 +191,13 @@ test('a rejected weapon field cannot survive beside the coerced one', () => {
     ],
   });
   const blade = lib.equipment[0];
-  assert.equal('properties' in blade, false);
-  assert.equal('range' in blade, false);
+  assert.deepEqual(blade.properties, []);
+  assert.equal(blade.range, null);
   assert.equal(blade.kind, 'melee');
   assert.equal(hasWeaponProperty(blade, 'finesse'), false, 'the attack path does not throw');
   const held = lib.creatures[0].weapon;
   assert.ok(held);
-  assert.equal('properties' in held, false);
-  assert.equal('versatileDamage' in held, false);
+  assert.deepEqual(held.properties, []);
+  assert.deepEqual(held.versatileDamage, []);
   assert.equal(hasWeaponProperty(held, 'finesse'), false);
 });

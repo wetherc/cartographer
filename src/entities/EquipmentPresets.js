@@ -335,13 +335,19 @@ function cloneDamage(parts) {
  * library JSON carries no version, so a file from before the overhaul can
  * arrive at any time. Migration step 6 also runs saves through here once.
  * The function is pure and defends against untrusted input.
+ *
+ * All five property fields are always present in the result, with null for
+ * a category or range the weapon does not have. Every caller spreads the
+ * result over the rest of the raw record, so a field left out here would
+ * let a rejected value, such as a `properties` record that `includes`
+ * cannot read, survive into the save.
  * @param {Record<string, any>} raw
  * @returns {{
  *   kind: import('../types/entities.js').WeaponKind,
- *   category?: import('../types/entities.js').WeaponCategory,
- *   properties?: import('../types/entities.js').WeaponProperty[],
- *   range?: import('../types/entities.js').WeaponRange,
- *   versatileDamage?: import('../types/entities.js').DamagePart[],
+ *   category: import('../types/entities.js').WeaponCategory | null,
+ *   properties: import('../types/entities.js').WeaponProperty[],
+ *   range: import('../types/entities.js').WeaponRange | null,
+ *   versatileDamage: import('../types/entities.js').DamagePart[],
  * }}
  */
 export function coerceWeapon(raw) {
@@ -352,10 +358,10 @@ export function coerceWeapon(raw) {
     if (preset) {
       return {
         kind: preset.kind,
-        category: preset.category,
-        ...(preset.properties ? { properties: [...preset.properties] } : {}),
-        ...(preset.range ? { range: { ...preset.range } } : {}),
-        ...(preset.versatileDamage ? { versatileDamage: cloneDamage(preset.versatileDamage) } : {}),
+        category: preset.category ?? null,
+        properties: [...(preset.properties ?? [])],
+        range: preset.range ? { ...preset.range } : null,
+        versatileDamage: cloneDamage(preset.versatileDamage),
       };
     }
   }
@@ -387,10 +393,10 @@ export function coerceWeapon(raw) {
         : undefined;
   return {
     kind,
-    ...(category ? { category } : {}),
-    ...(properties.length ? { properties: [...properties] } : {}),
-    ...(range ? { range } : {}),
-    ...(versatile.length ? { versatileDamage: versatile } : {}),
+    category: category ?? null,
+    properties: [...properties],
+    range,
+    versatileDamage: versatile,
   };
 }
 

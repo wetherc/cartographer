@@ -6,6 +6,7 @@ import { imageSrcForRef } from '../src/map/MapRenderer.js';
 import { exceedsExportCap } from '../src/map/MapExport.js';
 import { isoTimestamp } from '../src/log/Travelogue.js';
 import { addXP, MAX_LEVEL, XP_PER_LEVEL } from '../src/entities/Character.js';
+import { hasWeaponProperty } from '../src/entities/Weapons.js';
 
 /**
  * Each test here feeds one malformed campaign file through `deserialize`,
@@ -188,4 +189,64 @@ test('a character with a level or XP outside the range loads clamped and levels 
   assert.equal(awarded.xp, 50);
   const stringLevel = addXP(hero({ level: '7' }), 700);
   assert.equal(stringLevel.level, 8, 'a level stored as text still adds as a number');
+});
+
+test('a weapon with a properties record loads with a list the attack path can read', () => {
+  const state = deserialize(
+    JSON.stringify({
+      version: 6,
+      creatures: [
+        {
+          id: 'g',
+          name: 'Goblin',
+          disposition: 'hostile',
+          maxHP: 7,
+          currentHP: 7,
+          stats: {},
+          weapon: {
+            name: 'Scimitar',
+            kind: 'melee',
+            category: 'martial',
+            properties: { a: 1 },
+            damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
+          },
+          armor: null,
+        },
+      ],
+      characters: [
+        {
+          id: 'c',
+          name: 'Hero',
+          inventory: [
+            { id: 'i', name: 'Club', type: 'weapon', kind: 'melee', properties: 'heavy' },
+          ],
+        },
+      ],
+    }),
+  );
+  const weapon = state.creatures[0].weapon;
+  assert.ok(weapon);
+  assert.deepEqual(weapon.properties, []);
+  assert.equal(hasWeaponProperty(weapon, 'finesse'), false);
+  const club = state.characters[0].inventory[0];
+  assert.deepEqual(club.properties, []);
+  assert.equal(hasWeaponProperty(club, 'heavy'), false);
+});
+
+test('a pre-merge save with many colliding ids gives each creature its own id', () => {
+  const encounters = Array.from({ length: 300 }, (_, i) => ({
+    id: 'goblin',
+    name: 'Goblin',
+    statBlock: {},
+    maxHP: 7,
+    currentHP: 7,
+    level: 1,
+    order: i,
+  }));
+  const state = deserialize(JSON.stringify({ version: 5, encounters }));
+  const ids = state.creatures.map((c) => c.id);
+  assert.equal(new Set(ids).size, 300, 'every creature keeps a distinct id');
+  assert.equal(ids[0], 'goblin', 'the first holder keeps its id');
+  assert.equal(ids[1], 'goblin-2');
+  assert.equal(ids[299], 'goblin-300');
 });

@@ -13,12 +13,14 @@ import { slugify } from '../util/text.js';
  * adds the two parts a roster needs on top of it: a name with no usable
  * characters falls back to "entry", and an id that collides with an existing
  * one takes a suffix (`-2`, `-3`, and so on) until it matches none of them.
+ * A caller that assigns many ids in a row passes one Set and adds each id
+ * to it, so the taken set is built once, not once per call.
  * @param {string} name
  * @param {Iterable<string>} existingIds
  * @returns {string}
  */
 export function slugId(name, existingIds) {
-  const taken = new Set(existingIds);
+  const taken = existingIds instanceof Set ? existingIds : new Set(existingIds);
   const base = slugify(name) || 'entry';
   if (!taken.has(base)) return base;
   let n = 2;

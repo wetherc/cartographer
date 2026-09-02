@@ -106,15 +106,19 @@ export const MIGRATIONS = {
         armor: e.armor === undefined ? stamp?.armor : e.armor,
       };
     };
-    const takenIds = records(state.characters).map((c) => (typeof c.id === 'string' ? c.id : ''));
+    // One Set holds every taken id, and `slugId` reads it as is. A list
+    // scanned per entry made this step quadratic on a large save.
+    const takenIds = new Set(
+      records(state.characters).map((c) => (typeof c.id === 'string' ? c.id : '')),
+    );
     /** The entry's id, reslugged when a character or an earlier creature
-     * already holds it. Every kept id joins the taken list. */
+     * already holds it. Every kept id joins the taken set. */
     const claimId = (/** @type {Record<string, any>} */ entry, /** @type {string} */ fallback) => {
       let id = typeof entry.id === 'string' ? entry.id : '';
-      if (takenIds.includes(id)) {
+      if (takenIds.has(id)) {
         id = slugId(typeof entry.name === 'string' ? entry.name : fallback, takenIds);
       }
-      takenIds.push(id);
+      takenIds.add(id);
       return id;
     };
     const foes = records(state.encounters).map((e) => {

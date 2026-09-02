@@ -80,9 +80,11 @@ export interface EnemyWeapon {
   name: string;
   kind: WeaponKind;
   damage: DamagePart[];
-  category?: WeaponCategory;
+  /** Absent or null means a natural weapon, outside both categories. */
+  category?: WeaponCategory | null;
   properties?: WeaponProperty[];
-  range?: WeaponRange;
+  /** Absent or null on a weapon with no range. */
+  range?: WeaponRange | null;
   versatileDamage?: DamagePart[];
 }
 
@@ -176,14 +178,14 @@ export interface InventoryItem {
   type?: ItemType;
   /** Weapons and bows: melee or ranged. Absent reads as melee. */
   kind?: WeaponKind;
-  /** Weapons and bows: simple or martial. Absent means a natural weapon,
-   * outside both categories. */
-  category?: WeaponCategory;
+  /** Weapons and bows: simple or martial. Absent or null means a natural
+   * weapon, outside both categories. */
+  category?: WeaponCategory | null;
   /** Weapons and bows: the weapon's 5e property flags. Absent reads as none. */
   properties?: WeaponProperty[];
   /** Weapons and bows: normal and long range in feet, present on a ranged or
-   * thrown weapon. */
-  range?: WeaponRange;
+   * thrown weapon. Absent or null on a weapon with no range. */
+  range?: WeaponRange | null;
   /** Versatile weapons: the damage dice when held two-handed. A permanent
    * rider term, for example a flaming blade's fire die, appears in both
    * arrays. */

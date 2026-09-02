@@ -8,6 +8,7 @@ import {
   coerceWeapon,
 } from '../src/entities/EquipmentPresets.js';
 import { SHIELD_AC } from '../src/entities/Equipment.js';
+import { hasWeaponProperty } from '../src/entities/Weapons.js';
 
 test('GEAR_PRESETS ship the pouch and the three focus kinds, all flagged', () => {
   const flagged = GEAR_PRESETS.filter((p) => p.spellFocus === true).map((p) => p.name);
@@ -48,6 +49,9 @@ test('copyEnemyWeapon creates a deep copy of a weapon', () => {
     name: 'Test Sword',
     kind: 'melee',
     category: 'simple',
+    properties: [],
+    range: null,
+    versatileDamage: [],
     damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
   };
 
@@ -95,6 +99,8 @@ test('copyEnemyWeapon rewrites a legacy handling weapon to the property model', 
     kind: 'melee',
     category: 'simple',
     properties: ['finesse'],
+    range: null,
+    versatileDamage: [],
     damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
   });
   assert.ok(!('handling' in copied), 'the legacy field does not survive the copy');
@@ -110,6 +116,7 @@ test('coerceWeapon adopts the preset shape on a name match and keeps edited dice
     kind: 'melee',
     category: 'martial',
     properties: ['versatile'],
+    range: null,
     versatileDamage: [{ count: 1, sides: 10, damageType: 'slashing' }],
   });
 });
@@ -122,14 +129,21 @@ test('a customized copy of a preset keeps its own properties across a coerce', (
     properties: ['finesse'],
     damage: [{ count: 1, sides: 8, damageType: 'slashing' }],
   };
+  const expected = {
+    kind: 'melee',
+    category: 'martial',
+    properties: ['finesse'],
+    range: null,
+    versatileDamage: [],
+  };
   assert.deepEqual(
     coerceWeapon(edited),
-    { kind: 'melee', category: 'martial', properties: ['finesse'] },
+    expected,
     'the preset does not overwrite an edit that shares its name',
   );
   assert.deepEqual(
     coerceWeapon(coerceWeapon(edited)),
-    { kind: 'melee', category: 'martial', properties: ['finesse'] },
+    expected,
     'a second pass is a no-op, so repeated loads do not drift',
   );
 });
@@ -137,12 +151,12 @@ test('a customized copy of a preset keeps its own properties across a coerce', (
 test('coerceWeapon reads a legacy weapon with no handling as a simple one', () => {
   assert.deepEqual(
     coerceWeapon({ name: 'Old Club', damage: [{ count: 1, sides: 4, damageType: 'bludgeoning' }] }),
-    { kind: 'melee', category: 'simple' },
+    { kind: 'melee', category: 'simple', properties: [], range: null, versatileDamage: [] },
     'the field was optional, so its absence still means a legacy weapon',
   );
   assert.deepEqual(
     coerceWeapon({ name: 'Bite', kind: 'melee' }),
-    { kind: 'melee' },
+    { kind: 'melee', category: null, properties: [], range: null, versatileDamage: [] },
     'a new-shape weapon with no category stays a natural weapon',
   );
 });
@@ -163,11 +177,16 @@ test('coerceWeapon maps an unmatched legacy weapon from its handling', () => {
   assert.deepEqual(coerceWeapon({ name: 'Odd Club', handling: 'melee' }), {
     kind: 'melee',
     category: 'simple',
+    properties: [],
+    range: null,
+    versatileDamage: [],
   });
   assert.deepEqual(coerceWeapon({ name: 'Odd Sling', handling: 'ranged' }), {
     kind: 'ranged',
     category: 'simple',
+    properties: [],
     range: { normal: 80, long: 320 },
+    versatileDamage: [],
   });
 });
 
@@ -180,8 +199,30 @@ test('coerceWeapon keeps a new-shape weapon and filters unknown properties', () 
   });
   assert.deepEqual(coerced, {
     kind: 'melee',
+    category: null,
     properties: ['reach'],
+    range: null,
     versatileDamage: [{ count: 1, sides: 8, damageType: 'slashing' }],
   });
-  assert.ok(!('category' in coerced), 'a natural weapon keeps no category');
+});
+
+test('coerceWeapon emits every field, so a spread of the raw record cannot keep a bad one', () => {
+  const raw = {
+    name: 'Odd Blade',
+    kind: 'melee',
+    category: 'legendary',
+    properties: { a: 1 },
+    range: 'far',
+    versatileDamage: 'lots',
+  };
+  const merged = { ...raw, ...coerceWeapon(raw) };
+  assert.deepEqual(merged, {
+    name: 'Odd Blade',
+    kind: 'melee',
+    category: null,
+    properties: [],
+    range: null,
+    versatileDamage: [],
+  });
+  assert.equal(hasWeaponProperty(merged, 'finesse'), false, 'the property check reads a list');
 });

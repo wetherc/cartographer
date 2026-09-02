@@ -264,7 +264,7 @@ export function rollWeaponAttack(
   // proficiency with a weapon. A creature's attack bonus bakes proficiency in,
   // the way a 5e stat block does.
   const proficient = attacker.proficiencies
-    ? isProficientWeapon(attacker, weapon.name, 'category' in weapon ? weapon.category : undefined)
+    ? isProficientWeapon(attacker, weapon.name, weapon.category ?? undefined)
     : true;
   // An attack roll is a d20 test, so exhaustion takes 2 off it for each level.
   // Both kinds of attacker carry the level, so a tired foe swings worse too.
