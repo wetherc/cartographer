@@ -911,6 +911,10 @@ Both the pointer and the keyboard show the hint, and the shown element gets
 control does. A hover waits one second, so a pointer crossing a rail of icon
 buttons flashes nothing. Keyboard focus shows the hint at once, since a Tab
 press is already a deliberate stop. A press, a scroll, or Escape hides it.
+The focus that a click gives its own control shows no hint, so a pressed
+button does not bring the box straight back. A control that is removed from
+the page while it holds focus fires no `focusout`, so a mutation observer
+hides the hint when its anchor leaves the document.
 
 The element is a popover, which puts it in the browser's top layer. A hint on
 a control inside a modal dialog would otherwise draw behind the dialog, since
@@ -1158,7 +1162,12 @@ centralized:
 
 - **All layout media queries live in `responsive.css`**, and there is
   exactly one breakpoint: `@media (max-width: 68rem)`. Below it the main
-  columns stack, and the map viewport shortens. The only other `@media`
+  columns stack with the map first (`.app-center` takes `order: -1`, since
+  the Build rail comes before it in the markup), and the map viewport
+  shortens. The fit-to-view zoom never draws a tile smaller than
+  `READABLE_TILE_PX` (`src/map/MapGeometry.js`), so a narrow viewport
+  shows a readable part of a large map rather than all of it at a quarter
+  size. The only other `@media`
   rule in the project is the `prefers-color-scheme` chevron block.
 - **A component that reflows on its own width uses a container query,
   not a breakpoint.** There is one: `.character-sheet` declares

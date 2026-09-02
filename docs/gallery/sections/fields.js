@@ -30,7 +30,7 @@ export const fieldsSection = {
         "The search type gets the browser's clear affordance, which is what the Library rail's filter uses.",
       classes: '.field',
       render: () => [
-        textField('Goblin', { placeholder: 'Name' }),
+        textField('Goblin', { placeholder: 'Name', ariaLabel: 'Name' }),
         textField('', { type: 'search', placeholder: 'Filter by name...', ariaLabel: 'Filter' }),
       ],
     },
@@ -99,7 +99,7 @@ export const fieldsSection = {
       stack: true,
       render: () =>
         buildInlineForm({
-          nameInput: textField('Iron shortsword', { placeholder: 'Name' }),
+          nameInput: textField('Iron shortsword', { placeholder: 'Name', ariaLabel: 'Name' }),
           rows: [
             fieldRow(
               labeled('Damage', textField('1d6')),

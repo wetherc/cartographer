@@ -14,6 +14,8 @@ import {
   newBlockRect,
   fitToExtent,
   maskAt,
+  READABLE_TILE_PX,
+  readableScale,
   NEIGHBORS4,
   NEIGHBORS8,
 } from '../src/map/MapGeometry.js';
@@ -218,4 +220,40 @@ test('fitToExtent clamps the scale to the allowed zoom range', () => {
 test('fitToExtent falls back to identity on a degenerate extent or buffer', () => {
   assert.deepEqual(fitToExtent(0, 100, 500, 500), { scale: 1, offsetX: 0, offsetY: 0 });
   assert.deepEqual(fitToExtent(100, 100, 0, 500), { scale: 1, offsetX: 0, offsetY: 0 });
+});
+
+test('readableScale is the zoom at which a tile draws READABLE_TILE_PX wide', () => {
+  assert.equal(readableScale(64), READABLE_TILE_PX / 64);
+  assert.equal(readableScale(32), 1);
+  assert.equal(readableScale(0), 0);
+});
+
+test('fitToExtent keeps the whole-map fit when it is already readable', () => {
+  const plain = fitToExtent(384, 288, 1024, 576, { padding: 24 });
+  const floored = fitToExtent(384, 288, 1024, 576, { padding: 24, readableScale: 0.5 });
+  assert.deepEqual(floored, plain);
+});
+
+test('fitToExtent holds the readable floor and anchors the overflowing axis at the padding', () => {
+  // A 1408x1408 extent (22 tiles of 64) in a 600x600 buffer with 64px
+  // padding fits whole at 472/1408, under the 0.5 floor. The floor wins,
+  // the map overflows both axes, and the view starts at the padding.
+  const fitted = fitToExtent(1408, 1408, 600, 600, { padding: 64, readableScale: 0.5 });
+  assert.equal(fitted.scale, 0.5);
+  assert.deepEqual({ x: fitted.offsetX, y: fitted.offsetY }, { x: 64, y: 64 });
+  // A wide map in a tall buffer overflows only the width. The height still centers.
+  const wide = fitToExtent(1408, 320, 600, 900, { padding: 64, readableScale: 0.5 });
+  assert.equal(wide.scale, 0.5);
+  assert.equal(wide.offsetX, 64);
+  assert.equal(wide.offsetY, (900 - 320 * 0.5) / 2);
+});
+
+test('the readable floor still respects the zoom range', () => {
+  const capped = fitToExtent(4800, 4800, 480, 480, {
+    padding: 0,
+    minScale: 0.25,
+    maxScale: 4,
+    readableScale: 8,
+  });
+  assert.equal(capped.scale, 4);
 });

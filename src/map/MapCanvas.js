@@ -2,7 +2,7 @@ import { findRegionGroups } from './RegionGroups.js';
 import { MapRenderer } from './MapRenderer.js';
 import { MapCanvasPointer } from './MapCanvasPointer.js';
 import { MapCanvasKeyboard } from './MapCanvasKeyboard.js';
-import { parseCoords, clampZoom, fitToExtent } from './MapGeometry.js';
+import { parseCoords, clampZoom, fitToExtent, readableScale } from './MapGeometry.js';
 import { markerAnchors, withinMarkerRange } from './MapMarkers.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -157,7 +157,12 @@ export class MapCanvas {
       node.height * this.tileSize,
       canvas.width,
       canvas.height,
-      { minScale: this.minZoom, maxScale: this.maxZoom, padding: 64 },
+      {
+        minScale: this.minZoom,
+        maxScale: this.maxZoom,
+        padding: 64,
+        readableScale: readableScale(this.tileSize),
+      },
     );
     this.scale = fitted.scale;
     this.offsetX = fitted.offsetX;

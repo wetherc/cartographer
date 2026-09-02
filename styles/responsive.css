@@ -1,6 +1,6 @@
 /* ==========================================================================
    Responsive: below tablet width the fixed-width rails would crush the map,
-   so every column goes full-width and stacks — map first, then panels.
+   so every column goes full-width and stacks: map first, then panels.
    Last in the file so it wins the cascade over the base column widths.
    ========================================================================== */
 @media (max-width: 68rem) {
@@ -8,8 +8,12 @@
     flex-direction: column;
   }
 
+  /* The center column sits between the two rails in the markup, so the Build
+     rail would stack above the map. The order puts the map first in every
+     mode; the rails follow in their markup order. */
   .app-center {
     width: 100%;
+    order: -1;
   }
 
   .app-sidebar,

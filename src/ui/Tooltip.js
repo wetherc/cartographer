@@ -92,7 +92,11 @@ export function setTip(element, text) {
  * Tab reads the same hint a hovered control does. A hovered control waits out
  * {@link HOVER_DELAY} first, and the keyboard does not wait. A press, a
  * scroll, or Escape hides it: a tooltip that outlived the click that opened a
- * dialog used to hang over the dialog.
+ * dialog used to hang over the dialog. A click also focuses the control, and
+ * that focus must not bring the hint straight back, so the pressed element is
+ * remembered until the pointer moves on. A control that leaves the page while
+ * it holds focus fires no `focusout`, so a mutation observer watches for the
+ * anchor being removed and hides the hint then.
  * @param {HTMLElement} container
  * @returns {{ hide: () => void }}
  */
@@ -113,6 +117,19 @@ export function mountTooltips(container) {
   let anchor = null;
   /** The pending hover timer, or 0 when none is waiting. @type {number} */
   let timer = 0;
+  /**
+   * The element under the last pointer press. The focus that press gives it
+   * shows no hint. Cleared once the pointer rests on something else.
+   * @type {HTMLElement | null}
+   */
+  let pressed = null;
+  /** Hides the hint when its anchor leaves the document. */
+  const detachWatch =
+    typeof MutationObserver === 'function'
+      ? new MutationObserver(() => {
+          if (anchor && !anchor.isConnected) hide();
+        })
+      : null;
 
   /** Drop a hover that has not come due yet. */
   function cancelPending() {
@@ -129,6 +146,7 @@ export function mountTooltips(container) {
       anchor.removeAttribute('aria-describedby');
     }
     anchor = null;
+    detachWatch?.disconnect();
     if (canPopover) tip.hidePopover();
     else tip.hidden = true;
   }
@@ -153,6 +171,7 @@ export function mountTooltips(container) {
     tip.style.left = `${place.left}px`;
     tip.style.top = `${place.top}px`;
     element.setAttribute('aria-describedby', tip.id);
+    detachWatch?.observe(container, { childList: true, subtree: true });
   }
 
   /**
@@ -181,17 +200,22 @@ export function mountTooltips(container) {
 
   document.addEventListener('pointerover', (event) => {
     const target = tipTarget(event);
+    if (target !== pressed) pressed = null;
     if (target) showAfterDelay(target);
     else hide();
   });
   // The keyboard shows the hint at once. A Tab press is already a deliberate
-  // stop on the control, so there is nothing to wait out.
+  // stop on the control, so there is nothing to wait out. The focus a click
+  // gives its own control is not a keyboard stop, so it shows nothing.
   document.addEventListener('focusin', (event) => {
     const target = tipTarget(event);
-    if (target) show(target);
+    if (target && target !== pressed) show(target);
     else hide();
   });
-  document.addEventListener('pointerdown', hide);
+  document.addEventListener('pointerdown', (event) => {
+    pressed = tipTarget(event);
+    hide();
+  });
   document.addEventListener('focusout', hide);
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') hide();

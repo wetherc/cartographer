@@ -267,11 +267,17 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
    * One spell row: a name button that opens the detail, with known or
    * prepared badges. The badges and the click both read the live character,
    * because the row stays on screen across the changes made through it.
+   *
+   * The badge is the visible state label, and it is hidden from the
+   * accessible name so the button stays "Cure Wounds" as its standing
+   * changes. The standing itself is reported through `aria-pressed`: prepared
+   * under a prepared-rule class, known otherwise.
    * @param {Spell} spell
    * @returns {HTMLElement}
    */
   function buildRow(spell) {
     const badges = el('span', 'spellbook__row-badges');
+    badges.setAttribute('aria-hidden', 'true');
     const row = bareButton(
       [el('span', 'spellbook__row-name', spell.name), badges],
       () => {
@@ -285,6 +291,8 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
       if (!live) return;
       const status = spellStatus(live, spell);
       row.classList.toggle('spellbook__row--known', status.known);
+      const pressed = status.preparable ? status.prepared : status.known;
+      row.setAttribute('aria-pressed', String(pressed));
       badges.innerHTML = '';
       if (status.prepared) badges.appendChild(statusBadge('Prepared', 'prepared'));
       else if (status.known) badges.appendChild(statusBadge('Known', 'known'));

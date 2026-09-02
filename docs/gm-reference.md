@@ -736,13 +736,16 @@ Press `?` anywhere for the shortcut reference.
 
 | Key | Action |
 | --- | --- |
+| ? | Show the shortcut reference |
 | Ctrl/Cmd+S | Save |
 | Ctrl/Cmd+Z | Undo, or undo the last stroke in Build mode |
 | Ctrl/Cmd+Shift+Z | Redo |
 | B, P | Switch to Build or Play mode |
+| Escape | Close a dialog, or put down the fog brush |
 | Arrows on the map | Move the map cursor |
 | Enter, Space on the map | Act on the cursor cell |
 | +, - on the map | Zoom |
+| Arrow off an edge, twice | Leave the area through that side. The first press lights the exit, the second travels |
 
 The map is a focusable widget with a visible focus ring. A screen-reader
 live region names the current node, its size, the party position, and the

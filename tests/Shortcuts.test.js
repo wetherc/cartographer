@@ -57,12 +57,15 @@ test('an unbound key asks for nothing', () => {
 
 test('the help dialog documents every shortcut', () => {
   assert.deepEqual(SHORTCUT_HELP, [
-    'Ctrl/Cmd+S — save the campaign',
-    'Ctrl/Cmd+Z — undo (Build: last edit; Play: previous save)',
-    'Ctrl/Cmd+Shift+Z — redo the last undone save',
-    'B / P — switch to Build / Play mode',
+    '?: show this list',
+    'Ctrl/Cmd+S: save the campaign',
+    'Ctrl/Cmd+Z: undo (Build: last edit; Play: previous save)',
+    'Ctrl/Cmd+Shift+Z: redo the last undone save',
+    'B / P: switch to Build / Play mode',
+    'Escape: close a dialog, or put down the fog brush',
     'On the map (click it first):',
-    'Arrows — move the cursor · Enter/Space — act',
-    '+ / - — zoom',
+    'Arrows: move the cursor. Enter / Space: act on the cursor cell',
+    '+ / -: zoom',
+    'Arrow off an edge twice: leave through that side (the first press lights the exit)',
   ]);
 });

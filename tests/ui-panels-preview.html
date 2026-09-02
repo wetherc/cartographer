@@ -3,7 +3,20 @@
 <head>
   <meta charset="utf-8" />
   <title>UI panels preview</title>
+  <!-- The same inline icon index.html uses, so the page logs no favicon 404. -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239d2f21' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2l8.5 5v10L12 22l-8.5-5V7z'/%3E%3Cpath d='M12 8L6 17h12z'/%3E%3Cpath d='M12 2v6'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="../style.css" />
+  <script>
+    // Re-apply the saved theme before the first paint, the same as the app
+    // does, so the panels preview in the theme the GM last picked. The key
+    // and values mirror src/view/Theme.js.
+    try {
+      const saved = localStorage.getItem('campaign-builder:theme');
+      if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+    } catch {
+      // A blocked localStorage leaves the OS preference in charge.
+    }
+  </script>
   <style>
     /* Each panel gets a rail's worth of width. Without one, the sheet's own
        layout collapses and the columns draw over each other. */

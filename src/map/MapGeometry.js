@@ -231,15 +231,52 @@ export function blockRect(out, bounds, view, size) {
 }
 
 /**
+ * The smallest tile a fitted view draws, in screen pixels. Below this the
+ * tile art and the party marker stop reading, so a fit that would need a
+ * smaller tile shows part of the map at this size instead of all of it
+ * unreadably small.
+ */
+export const READABLE_TILE_PX = 32;
+
+/**
+ * The zoom scale at which a tile draws `READABLE_TILE_PX` wide. This is the
+ * floor a fit-to-view will not go under.
+ * @param {number} tileSize world pixels per tile at scale 1
+ * @returns {number}
+ */
+export function readableScale(tileSize) {
+  return tileSize > 0 ? READABLE_TILE_PX / tileSize : 0;
+}
+
+/**
+ * The pan offset along one axis: centered when the scaled extent fits the
+ * buffer, otherwise anchored at the padding so the view starts at the top
+ * or left edge of the map rather than somewhere inside it.
+ * @param {number} extent the scaled extent along this axis
+ * @param {number} buffer the canvas size along this axis
+ * @param {number} padding
+ * @returns {number}
+ */
+function fitOffset(extent, buffer, padding) {
+  return extent + padding * 2 > buffer ? padding : (buffer - extent) / 2;
+}
+
+/**
  * Compute the zoom scale and pan offsets that frame an extent of
  * `extentW` by `extentH`, in world pixels at scale 1, centered inside a
  * `bufferW` by `bufferH` canvas with some padding. A node then loads
  * filling the view instead of adrift in the backdrop at an arbitrary zoom.
+ *
+ * `readableScale` is a floor under the fitted zoom. When the whole extent
+ * would need a smaller scale than that, the view uses the floor and shows
+ * as much of the map as fits, anchored at the padding on the axis that
+ * overflows. A narrow phone layout then shows a readable corner of a large
+ * region instead of the whole region at a quarter size.
  * @param {number} extentW
  * @param {number} extentH
  * @param {number} bufferW
  * @param {number} bufferH
- * @param {{ padding?: number, minScale?: number, maxScale?: number }} [options]
+ * @param {{ padding?: number, minScale?: number, maxScale?: number, readableScale?: number }} [options]
  * @returns {{ scale: number, offsetX: number, offsetY: number }}
  */
 export function fitToExtent(extentW, extentH, bufferW, bufferH, options = {}) {
@@ -249,14 +286,15 @@ export function fitToExtent(extentW, extentH, bufferW, bufferH, options = {}) {
   }
   const availW = Math.max(1, bufferW - padding * 2);
   const availH = Math.max(1, bufferH - padding * 2);
+  const whole = Math.min(availW / extentW, availH / extentH);
   const scale = clampZoom(
-    Math.min(availW / extentW, availH / extentH),
+    Math.max(whole, options.readableScale ?? 0),
     options.minScale ?? 0.25,
     options.maxScale ?? 4,
   );
   return {
     scale,
-    offsetX: (bufferW - extentW * scale) / 2,
-    offsetY: (bufferH - extentH * scale) / 2,
+    offsetX: fitOffset(extentW * scale, bufferW, padding),
+    offsetY: fitOffset(extentH * scale, bufferH, padding),
   };
 }
