@@ -1,4 +1,5 @@
 import { el } from './dom.js';
+import { isSafeImageRef } from '../storage/ImageRefs.js';
 import { isGM } from '../view/ViewRole.js';
 import { mountListPanel } from './listPanel.js';
 
@@ -13,7 +14,10 @@ import { mountListPanel } from './listPanel.js';
  * @param {Handout} handout
  */
 function appendRevealedContent(row, handout) {
-  if (handout.image) {
+  // The load path already blanks a ref that is not an inline image or a
+  // shipped file. The check repeats here so a handout built in memory,
+  // before any save, holds to the same rule.
+  if (handout.image && isSafeImageRef(handout.image)) {
     const img = el('img', 'handout-panel__image');
     img.src = handout.image;
     img.alt = handout.title;

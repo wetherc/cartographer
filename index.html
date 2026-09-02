@@ -14,50 +14,23 @@
   <!--
     Everything the app loads is local, so the policy names no external hosts.
     Images allow data: and blob: because GM-supplied art is stored as a data URL
-    and read back through an object URL. Scripts allow inline because the two
-    before-paint blocks below have to run before the module graph loads.
+    and read back through an object URL. Scripts come only from this origin:
+    the before-paint work lives in src/boot.js, so nothing runs inline.
   -->
   <meta
     http-equiv="Content-Security-Policy"
-    content="default-src 'self'; img-src 'self' data: blob:; script-src 'self' 'unsafe-inline'; style-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    content="default-src 'self'; img-src 'self' data: blob:; script-src 'self'; style-src 'self'; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'"
   />
   <title>Campaign Builder</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239d2f21' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2l8.5 5v10L12 22l-8.5-5V7z'/%3E%3Cpath d='M12 8L6 17h12z'/%3E%3Cpath d='M12 2v6'/%3E%3C/svg%3E" />
   <link rel="stylesheet" href="style.css" />
-  <script>
-    // Pin the saved theme before first paint so a reload never flashes the
-    // wrong scheme. Key and values mirror src/view/Theme.js.
-    try {
-      var theme = localStorage.getItem('campaign-builder:theme');
-      if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
-    } catch (error) {
-      /* storage unavailable: fall back to the OS preference */
-    }
-  </script>
 </head>
 <body class="mode-play role-gm">
-  <script>
-    // Pin the viewer role before first paint, the same way the theme is pinned
-    // above. Mode and role each decide whether whole regions of the layout are
-    // displayed -- a mode hides an 18rem rail, a player role hides the header
-    // actions -- so letting src/app/sessionControls.js apply them after the
-    // modules load lays the page out once and then jumps it. Play mode is
-    // always the starting mode, so the class attribute states it outright; only
-    // the role has to be read. Defaults mirror src/main.js and the keys mirror
-    // src/view/PlayerLock.js.
-    try {
-      var params = new URLSearchParams(location.search).get('role');
-      var locked =
-        (params !== null && params.toLowerCase() === 'player') ||
-        sessionStorage.getItem('campaign-builder:player-lock') !== null;
-      var role = locked ? 'player' : sessionStorage.getItem('campaign-builder:role') || 'gm';
-      document.body.classList.toggle('role-gm', role === 'gm');
-      document.body.classList.toggle('role-player', role === 'player');
-      if (locked) document.body.classList.add('role-locked');
-    } catch (error) {
-      /* storage unavailable: the GM default in the class attribute stands */
-    }
-  </script>
+  <!-- A blocking script, on purpose. It pins the saved theme and the viewer
+       role before the first paint, so the page never lays out once and then
+       jumps. It runs at the top of body because the role lands on the body
+       element. The module graph below is deferred, so this always runs first. -->
+  <script src="src/boot.js"></script>
 
   <header class="app-header u-row u-wrap u-g4">
     <h1>Campaign Builder</h1>

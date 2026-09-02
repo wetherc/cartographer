@@ -227,3 +227,9 @@ test('seedImages copies only complete images, and never overwrites its own', () 
   assert.equal(raster.images.get('own.svg'), own);
   assert.equal(raster.seedImages(undefined), 0);
 });
+
+test('imageSrcForRef gives no src for a ref the app refuses to load', () => {
+  assert.equal(imageSrcForRef('//evil.example/pixel.png'), '');
+  assert.equal(imageSrcForRef('data:text/html,x'), '');
+  assert.equal(imageSrcForRef(''), '');
+});

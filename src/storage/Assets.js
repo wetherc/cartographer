@@ -15,6 +15,8 @@
  * payload with no reference left is never written back.
  */
 
+import { safeImageRef } from './ImageRefs.js';
+
 /** @typedef {import('../types/storage.js').RawSave} RawSave */
 
 /**
@@ -150,6 +152,7 @@ function refsEqual(next, previous) {
  */
 function mapStateRefs(state, convert) {
   const next = { ...state };
+  let anyChange = false;
   if (Array.isArray(state.nodes)) {
     next.nodes = state.nodes.map((node) => {
       if (!node || typeof node !== 'object' || !Array.isArray(node.tiles)) return node;
@@ -162,6 +165,7 @@ function mapStateRefs(state, convert) {
         if (mapped !== tile) changed = true;
         return mapped;
       });
+      if (changed) anyChange = true;
       return changed ? { ...node, tiles } : node;
     });
   }
@@ -170,10 +174,13 @@ function mapStateRefs(state, convert) {
       if (!handout || typeof handout !== 'object' || typeof handout.image !== 'string')
         return handout;
       const image = convert(handout.image);
+      if (image !== handout.image) anyChange = true;
       return image === handout.image ? handout : { ...handout, image };
     });
   }
-  return next;
+  // The same state object when no ref changed, so a load with nothing to
+  // restore or blank allocates no copy of the node list.
+  return anyChange ? next : state;
 }
 
 /**
@@ -209,22 +216,24 @@ export function hoistAssets(state, hash = assetKey) {
  * unresolvable match as unrecoverable destroys a legitimate ref. Left
  * alone, the worst case is the gray placeholder the renderer already draws
  * for a ref that will not load.
+ *
+ * This is also where every ref of a loaded save passes through
+ * `ImageRefs.js`. A ref that is not an inline image, an `asset:` key, or a
+ * relative path on this origin is blanked here, before anything can hand it to an
+ * image element. A save with no table still takes this walk.
  * @param {RawSave} state
  * @returns {RawSave}
  */
 export function restoreAssets(state) {
-  const table = state.assets;
-  if (!table || typeof table !== 'object' || Array.isArray(table)) {
-    if (!('assets' in state)) return state;
-    const next = { ...state };
-    delete next.assets;
-    return next;
-  }
-  const next = mapStateRefs(state, (ref) => {
-    if (!ref.startsWith(ASSET_PREFIX)) return ref;
+  const raw = state.assets;
+  const table = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : null;
+  const mapped = mapStateRefs(state, (ref) => {
+    if (!table || !ref.startsWith(ASSET_PREFIX)) return safeImageRef(ref);
     const payload = table[ref.slice(ASSET_PREFIX.length)];
-    return typeof payload === 'string' ? payload : ref;
+    return safeImageRef(typeof payload === 'string' ? payload : ref);
   });
+  if (!('assets' in mapped)) return mapped;
+  const next = { ...mapped };
   delete next.assets;
   return next;
 }

@@ -1039,8 +1039,9 @@ There is one set of tokens, not two. Each color is a single
   choice always wins.
 - `src/ui/ThemeToggle.js` writes `data-theme` on `<html>` (and deletes it
   for System), and persists the choice under `campaign-builder:theme`.
-- An inline script in `index.html`'s `<head>` re-applies the saved value
-  before first paint, so a dark-theme reload does not flash light.
+- `src/boot.js`, a plain script that `index.html` loads at the top of
+  `<body>`, re-applies the saved value before first paint, so a dark-theme
+  reload does not flash light.
 
 The one non-color themed value is `--select-chevron`, an inline SVG data
 URI. `light-dark()` resolves `<color>` only, so it cannot hold a `url()`.
@@ -1200,9 +1201,11 @@ new panel must follow the habits that keep the page still:
 - **Decide the body classes up front.** Because a mode or role class
   hides whole rails, waiting for `wireSessionControls` to apply them
   lays the page out with every rail showing, then yanks two of them
-  away. An inline script at the top of `<body>` stamps the starting mode
-  and role instead, alongside the `<head>` script that pins the theme.
-  Its defaults deliberately restate the defaults in `src/main.js`, so
+  away. `src/boot.js`, a plain blocking script at the top of `<body>`,
+  stamps the starting mode and role instead, right after it pins the
+  theme. It is a separate file rather than an inline block so the page's
+  Content Security Policy can allow scripts from this origin only. Its
+  defaults deliberately restate the defaults in `src/main.js`, so
   changing one default means changing both.
 - **Reserve space that a container will fill.** An empty container that
   later grows pushes everything under it down. For this reason,

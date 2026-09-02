@@ -18,6 +18,8 @@
  * memory ceiling are testable without a DOM.
  */
 
+import { isSafeImageRef } from '../storage/ImageRefs.js';
+
 /**
  * Largest raster edge. A destination bigger than this draws straight from the
  * SVG: a frame holds only a few such blocks, so their rasterization cost does
@@ -59,12 +61,15 @@ export function rasterSize(edge) {
  * is a `data:` URL and is used as-is, because prefixing it produces an
  * unloadable path. Every place that turns a ref into an image goes through
  * here. The PNG export used to keep its own copy of this logic and lacked the
- * `data:` case, so custom art exported as placeholders. This is a pure
- * function.
+ * `data:` case, so custom art exported as placeholders. A ref that
+ * `ImageRefs.js` rejects gives an empty `src`, which no image loads, so the
+ * renderer draws its placeholder fill instead of fetching from wherever the
+ * ref pointed. This is a pure function.
  * @param {string} imageRef
  * @returns {string}
  */
 export function imageSrcForRef(imageRef) {
+  if (!isSafeImageRef(imageRef)) return '';
   return imageRef.startsWith('data:') ? imageRef : `/${imageRef}`;
 }
 

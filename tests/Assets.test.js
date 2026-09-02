@@ -179,3 +179,37 @@ test('hoisting tolerates malformed nodes, tiles, and handouts', () => {
   assert.deepEqual(hoisted.assets, { [assetKey(PAYLOAD)]: PAYLOAD });
   assert.deepEqual(restoreAssets(hoisted), before);
 });
+
+test('restoring blanks a ref that would load from outside the app', () => {
+  const before = {
+    ...state(
+      [
+        tile({ imageRef: '//evil.example/pixel.png', overlayRef: ['asset:k', 'javascript:x'] }),
+        tile({ id: '1,0' }),
+      ],
+      [{ id: 'h1', title: 'Map', image: 'https://evil.example/track.png' }],
+    ),
+    assets: { k: PAYLOAD },
+  };
+  const restored = restoreAssets(before);
+  assert.deepEqual(restored.nodes[0].tiles[0], tile({ imageRef: '', overlayRef: [PAYLOAD, ''] }));
+  assert.equal(
+    restored.nodes[0].tiles[1],
+    before.nodes[0].tiles[1],
+    'a clean tile is the same object',
+  );
+  assert.equal(restored.handouts[0].image, '');
+});
+
+test('restoring blanks an unsafe ref even when the save has no table', () => {
+  const before = state([tile({ imageRef: '//evil.example/pixel.png' })]);
+  assert.equal(restoreAssets(before).nodes[0].tiles[0].imageRef, '');
+});
+
+test('a table payload that is not an image is blanked rather than inlined', () => {
+  const before = {
+    ...state([tile({ imageRef: 'asset:k' })]),
+    assets: { k: 'data:text/html,<script>1</script>' },
+  };
+  assert.equal(restoreAssets(before).nodes[0].tiles[0].imageRef, '');
+});

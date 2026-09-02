@@ -195,6 +195,13 @@ a hash of the payload's content. `restoreAssets` inlines the payloads again
 inside `deserialize`. The 18.5 MB example becomes 58 KB, because the payload
 is now stored once and referenced 900 times.
 
+`restoreAssets` also runs every ref through `storage/ImageRefs.js`. The
+app loads an inline image payload, an `asset:` key, or a relative path on
+this origin with no `..` segment. Any other ref, such as a protocol-relative
+URL to another host, is blanked at load, and the renderer draws its placeholder for that
+tile. `TileRaster.imageSrcForRef` and the handout panel repeat the check
+before they hand a ref to an image element.
+
 The fields that contain payloads (a tile's `imageRef` and `overlayRef`,
 single or stacked, and a handout's `image`) are listed in one traversal
 there. As a result, adding a third site takes a single line.

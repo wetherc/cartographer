@@ -15,7 +15,7 @@ async function build() {
   // against a newer index.html. Watch mode keeps stable names, because the
   // dev server rewrites index.html only once.
   const options = {
-    entryPoints: ['src/main.js', 'style.css'],
+    entryPoints: ['src/main.js', 'src/boot.js', 'style.css'],
     bundle: true,
     minify: !watch,
     sourcemap: true,
@@ -31,14 +31,17 @@ async function build() {
     logLevel: 'info',
   };
 
-  // Rewrite the source references in index.html to the bundle names.
-  async function writeHtml(jsName, cssName) {
+  // Rewrite the source references in index.html to the bundle names. The
+  // boot script keeps its blocking, non-deferred tag: it has to run before
+  // the first paint, ahead of the deferred main bundle.
+  async function writeHtml(jsName, bootName, cssName) {
     let html = await fs.readFile('index.html', 'utf-8');
     html = html
       .replace(
         '<link rel="stylesheet" href="style.css" />',
         `<link rel="stylesheet" href="${cssName}" />`
       )
+      .replace('<script src="src/boot.js"></script>', `<script src="${bootName}"></script>`)
       .replace(
         '<script type="module" src="src/main.js"></script>',
         `<script defer src="${jsName}"></script>`
@@ -59,7 +62,7 @@ async function build() {
   );
 
   if (watch) {
-    await writeHtml('main.bundle.js', 'style.bundle.css');
+    await writeHtml('main.bundle.js', 'boot.bundle.js', 'style.bundle.css');
     const ctx = await esbuild.context(options);
     await ctx.watch();
     const { host, port } = await ctx.serve({
@@ -73,13 +76,16 @@ async function build() {
     const jsName = outputs.find(
       (p) => p.endsWith('.js') && path.basename(p).startsWith('main-')
     );
+    const bootName = outputs.find(
+      (p) => p.endsWith('.js') && path.basename(p).startsWith('boot-')
+    );
     const cssName = outputs.find(
       (p) => p.endsWith('.css') && path.basename(p).startsWith('style-')
     );
-    if (!jsName || !cssName) {
+    if (!jsName || !bootName || !cssName) {
       throw new Error('Bundle outputs not found in the esbuild metafile.');
     }
-    await writeHtml(path.basename(jsName), path.basename(cssName));
+    await writeHtml(path.basename(jsName), path.basename(bootName), path.basename(cssName));
     console.log('[build] Build complete.');
   }
 }

@@ -18,14 +18,15 @@ import { dirname, join } from 'node:path';
  *
  * `src/main.js` is left out on purpose. It builds and mounts the app as a side
  * effect of loading, so it needs a document. Its own coverage is the browser
- * check in `docs/testing.md`.
+ * check in `docs/testing.md`. `src/boot.js` is left out for the same reason:
+ * it is the before-paint script, and it writes to the document as it loads.
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = join(HERE, '..', 'src');
 
-/** The composition root, which runs the app when it loads. */
-const SKIP = new Set([join(SRC, 'main.js')]);
+/** The composition root and the before-paint script, which both act on the document as they load. */
+const SKIP = new Set([join(SRC, 'main.js'), join(SRC, 'boot.js')]);
 
 /**
  * Every `.js` file under a directory, deepest paths included, sorted so a
