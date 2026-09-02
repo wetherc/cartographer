@@ -66,10 +66,34 @@ function dimension(value) {
 }
 
 /**
+ * A tile's overlay field as the renderer can draw it: one ref string, a
+ * stack of ref strings, or null. An imported file can carry any value here.
+ * The renderer hands every overlay to `imageSrcForRef`, which reads it as a
+ * string, so a number or a record in the stack throws on every draw once the
+ * save persists. A stack keeps only its string members, and an empty stack
+ * reads as no overlay.
+ * @param {unknown} value
+ * @returns {string | string[] | null}
+ */
+function overlayRefOf(value) {
+  if (typeof value === 'string') return value;
+  if (!Array.isArray(value)) return null;
+  const refs = value.filter((ref) => typeof ref === 'string');
+  return refs.length ? refs : null;
+}
+
+/**
  * Backfill one loaded tile: the `discovered` flag that saves made before
  * discoverable POIs existed lack, and every other field of the closed
  * `Tile` shape, because a hand-edited or truncated save can omit any of
  * them. A tile with no metadata at all reads as a plain undiscoverable tile.
+ *
+ * Every field is also checked for type, not only for presence. The map code
+ * reads these fields without a guard: `childNodeId` as a node id,
+ * `poiType` as a string it capitalizes, and `span` as a cell count it loops
+ * over. A value of the wrong type is replaced by the default, and a `span`
+ * that is not a whole number above 1 is dropped, because a span of 1 and no
+ * span mean the same one-cell image.
  *
  * This is also the unpack half of the save's tile packing. `SaveManager`'s
  * `packTile` omits exactly the fields defaulted here, so the two functions
@@ -78,21 +102,24 @@ function dimension(value) {
  * @returns {Tile}
  */
 export function withTileDefaults(tile) {
-  const raw = /** @type {any} */ (tile).metadata;
+  const { span, ...rest } = /** @type {Record<string, any>} */ (tile);
+  const raw = rest.metadata;
   const metadata = raw !== null && typeof raw === 'object' ? raw : {};
-  return {
-    ...tile,
+  const cells = typeof span === 'number' && Number.isFinite(span) ? Math.floor(span) : 0;
+  return /** @type {Tile} */ ({
+    ...rest,
     imageRef: typeof tile.imageRef === 'string' ? tile.imageRef : '',
-    overlayRef: tile.overlayRef ?? null,
+    overlayRef: overlayRefOf(tile.overlayRef),
     revealed: tile.revealed === true,
-    childNodeId: tile.childNodeId ?? null,
+    childNodeId: typeof tile.childNodeId === 'string' ? tile.childNodeId : null,
+    ...(cells > 1 ? { span: cells } : {}),
     metadata: {
-      poiType: metadata.poiType ?? null,
-      discoverable: metadata.discoverable ?? false,
-      discovered: metadata.discovered ?? false,
-      notes: metadata.notes ?? '',
+      poiType: typeof metadata.poiType === 'string' ? metadata.poiType : null,
+      discoverable: metadata.discoverable === true,
+      discovered: metadata.discovered === true,
+      notes: typeof metadata.notes === 'string' ? metadata.notes : '',
     },
-  };
+  });
 }
 
 /**

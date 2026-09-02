@@ -54,9 +54,11 @@ const cache = new WeakMap();
 /**
  * Cell count limit for the flat coordinate map. Above this limit the code
  * skips the map, so a node with an extreme extent cannot allocate a very
- * large buffer. A real node stays far below this limit.
+ * large buffer. A real node stays far below this limit. The tile codec and
+ * the PNG export share this bound, so one number says how large a node can
+ * be before the app refuses to lay it out.
  */
-const MAX_GRID_CELLS = 1_000_000;
+export const MAX_GRID_CELLS = 1_000_000;
 
 /**
  * @param {MapNode} node

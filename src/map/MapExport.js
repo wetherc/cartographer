@@ -1,5 +1,6 @@
 import { MapRenderer, imageSrcForRef } from './MapRenderer.js';
 import { overlayList } from './TileGrid.js';
+import { MAX_GRID_CELLS } from './TileIndex.js';
 import { downloadBlob } from '../storage/fileIO.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -44,6 +45,20 @@ export function exportFilename(name) {
 }
 
 /**
+ * True when the node holds more cells than the export can draw. The canvas
+ * grows with the cell count, and a node with a huge extent from an edited
+ * save asks for a bitmap the browser cannot allocate, which stops the tab.
+ * The limit is the one the tile index and the tile codec already apply, so
+ * a node too large to lay out is also too large to export. This is a pure
+ * function.
+ * @param {MapNode} node
+ * @returns {boolean}
+ */
+export function exceedsExportCap(node) {
+  return node.width * node.height > MAX_GRID_CELLS;
+}
+
+/**
  * The refs an export still must decode, given the images a live renderer
  * already holds. An entry that is present but not `complete` is still
  * loading, so the export loads its own copy instead of drawing a blank tile.
@@ -64,7 +79,8 @@ export function refsToDecode(refs, cache) {
  * placeholders. An image that fails to load falls back to the renderer's
  * placeholder fill. Pass the live canvas's `imageCache` to reuse the art it
  * already decoded. For a built-in-tile map that is every image, so the
- * export decodes nothing.
+ * export decodes nothing. A node past `exceedsExportCap` resolves to null
+ * before any canvas is made, so the caller can tell the GM why no file came.
  * @param {MapNode} node
  * @param {{
  *   tileSize?: number,
@@ -72,9 +88,10 @@ export function refsToDecode(refs, cache) {
  *   getNodeName?: (nodeId: string) => string | undefined,
  *   imageCache?: Map<string, HTMLImageElement>,
  * }} [options]
- * @returns {Promise<HTMLCanvasElement>}
+ * @returns {Promise<HTMLCanvasElement | null>}
  */
 export async function renderNodeToCanvas(node, options = {}) {
+  if (exceedsExportCap(node)) return null;
   const tileSize = options.tileSize ?? 64;
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, node.width * tileSize);

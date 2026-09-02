@@ -223,6 +223,22 @@ function variedNode() {
   return node;
 }
 
+/**
+ * A tile as the load path hands it back. An explicit span of 1 comes back
+ * absent, and an empty overlay stack comes back as null. Both pairs mean the
+ * same thing per the Tile type, and these are the only two asymmetries of
+ * the round trip.
+ * @param {Record<string, any>} tile
+ */
+function loadedForm(tile) {
+  const { span, ...rest } = tile;
+  return {
+    ...rest,
+    ...(span > 1 ? { span } : {}),
+    overlayRef: Array.isArray(tile.overlayRef) && !tile.overlayRef.length ? null : tile.overlayRef,
+  };
+}
+
 test('packing omits default tile fields and the load path restores them', () => {
   const grid = new TileGrid();
   grid.addNode(variedNode());
@@ -239,13 +255,7 @@ test('packing omits default tile fields and the load path restores them', () => 
   assert.equal(json.includes('"span":1'), false, 'an absent span and a span of 1 are the same');
 
   const restored = deserialize(json).nodes[0];
-  const original = state.nodes[0];
-  // Every tile round-trips exactly, bar the explicit span of 1 collapsing to
-  // absent — the same value per the Tile type, and the one asymmetry.
-  const expected = original.tiles.map((tile) =>
-    tile.span === 1 ? Object.fromEntries(Object.entries(tile).filter(([k]) => k !== 'span')) : tile,
-  );
-  assert.deepEqual(restored.tiles, expected);
+  assert.deepEqual(restored.tiles, state.nodes[0].tiles.map(loadedForm));
 });
 
 test('packing keeps a tile field it does not know about', () => {
@@ -283,9 +293,10 @@ test('a save written before tiles were packed still loads whole', () => {
   const grid = new TileGrid();
   grid.addNode(variedNode());
   const state = buildState({ grid });
-  // Version 1 wrote every tile field explicitly; the backfill must leave it be.
+  // Version 1 wrote every tile field explicitly. The backfill only checks
+  // each field, so the tiles come back in their loaded form.
   const restored = deserialize(JSON.stringify({ ...state, version: 1 })).nodes[0];
-  assert.deepEqual(restored.tiles, state.nodes[0].tiles);
+  assert.deepEqual(restored.tiles, state.nodes[0].tiles.map(loadedForm));
 });
 
 /** One of every packed entity collection, in a state ready to serialize. */
@@ -410,11 +421,7 @@ test('serializing encodes a grid node positionally and loading reads it back', (
   assert.equal(json.split('grass.svg').length - 1, 3);
 
   const restored = deserialize(json).nodes[0];
-  // Every tile comes back as it went in, bar the explicit span of 1 collapsing to
-  // absent — the same asymmetry the tile packing already has, and the same value.
-  const expected = state.nodes[0].tiles.map((tile) =>
-    tile.span === 1 ? Object.fromEntries(Object.entries(tile).filter(([k]) => k !== 'span')) : tile,
-  );
+  const expected = state.nodes[0].tiles.map(loadedForm);
   const byId = (tiles) => [...tiles].sort((a, b) => a.id.localeCompare(b.id));
   assert.deepEqual(byId(restored.tiles), byId(expected));
   for (const field of ['refs', 'cells', 'fog']) {

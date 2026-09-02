@@ -522,6 +522,10 @@ export function wireMapView(app) {
       getNodeName: (id) => grid.getNode(id)?.name,
       imageCache: mapCanvas.renderer.imageCache,
     });
+    if (!canvas) {
+      toasts.show(`"${node.name}" is too large to export as PNG.`);
+      return;
+    }
     downloadCanvasPNG(canvas, exportFilename(node.name));
     toasts.show(`Exported "${node.name}" as PNG.`);
   });

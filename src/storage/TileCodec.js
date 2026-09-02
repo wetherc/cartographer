@@ -1,4 +1,5 @@
 import { tileIdAt } from '../map/MapGeometry.js';
+import { MAX_GRID_CELLS } from '../map/TileIndex.js';
 
 /**
  * Positional encoding for the tiles of a node. This is the on-disk form. It
@@ -60,14 +61,6 @@ const RUN_MIN = 3;
 const EMPTY = -1;
 
 /**
- * The maximum number of positions a node can hold before the codec refuses to
- * encode it. A node this large cannot be authored or generated. The cap
- * exists only so that a malformed `width` or `height` value cannot make the
- * encoder allocate too much memory.
- */
-const MAX_POSITIONS = 1_000_000;
-
-/**
  * The grid position of a canonical `x,y` tile id within a node, or -1 when
  * the codec cannot encode the id by position. Canonical is stricter than
  * parseable. For example, `"01,2"` parses as (1, 2) but is a different
@@ -114,7 +107,7 @@ function artEntry(tile) {
  */
 function layOut(node, width, height) {
   const size = width * height;
-  if (size > MAX_POSITIONS) return null;
+  if (size > MAX_GRID_CELLS) return null;
   /** @type {(Record<string, any> | null)[]} */
   const slots = new Array(size).fill(null);
   for (const tile of node.tiles) {
@@ -351,7 +344,7 @@ export function decodeNodeTiles(node) {
   const width = Number.isInteger(node.width) && node.width >= 1 ? node.width : 0;
   const height = Number.isInteger(node.height) && node.height >= 1 ? node.height : 0;
   const size = width * height;
-  if (!size || size > MAX_POSITIONS) {
+  if (!size || size > MAX_GRID_CELLS) {
     // The codec cannot place a tile without usable dimensions. Keep the
     // leftovers, which carry their own ids, instead of dropping the node's
     // tiles outright.
