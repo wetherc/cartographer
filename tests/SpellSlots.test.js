@@ -116,6 +116,50 @@ test('syncSlotsToLevel grows maxima by the gained capacity, keeping spent slots 
 test('syncSlotsToLevel leaves a non-caster untouched', () => {
   const fighter = { ...withHP(createCharacter('c1', 'Fighter'), 10), level: 5 };
   assert.equal(syncSlotsToLevel(fighter), fighter);
+  // A martial class list stays untouched even when a stray pool sits on it.
+  const stray = addResource(
+    classed([{ classId: 'fighter', level: 5 }]),
+    createResource('slots-1', 'Level 1 slots', 'mana', 2),
+  );
+  assert.equal(syncSlotsToLevel(stray), stray);
+});
+
+test('syncSlotsToLevel gives a half caster its first pools at class level 2', () => {
+  const pal1 = classed([{ classId: 'paladin', level: 1 }]);
+  assert.deepEqual(getSlotPools(syncSlotsToLevel(pal1)), [], 'no slots at paladin 1');
+  const pal2 = syncSlotsToLevel({ ...pal1, classes: [{ classId: 'paladin', level: 2 }], level: 2 });
+  assert.deepEqual(
+    getSlotPools(pal2).map((p) => ({ max: p.max, current: p.current })),
+    [{ max: 2, current: 2 }],
+  );
+});
+
+test('syncSlotsToLevel gives a martial character pools when it takes a caster level', () => {
+  const fighter = classed([{ classId: 'fighter', level: 1 }]);
+  assert.equal(syncSlotsToLevel(fighter), fighter);
+  const gish = syncSlotsToLevel({
+    ...fighter,
+    classes: [
+      { classId: 'fighter', level: 1 },
+      { classId: 'wizard', level: 1 },
+    ],
+    level: 2,
+  });
+  assert.deepEqual(
+    getSlotPools(gish).map((p) => p.max),
+    [2],
+  );
+  // A warlock level the same way builds the pact pool from nothing.
+  const lock = syncSlotsToLevel({
+    ...fighter,
+    classes: [
+      { classId: 'fighter', level: 1 },
+      { classId: 'warlock', level: 1 },
+    ],
+    level: 2,
+  });
+  assert.equal(getPactPool(lock)?.id, 'pact-1');
+  assert.deepEqual(getSlotPools(lock), []);
 });
 
 test('addXP levels a caster into new slot pools', () => {
@@ -177,6 +221,18 @@ test('characterSlots excludes pact casters; a classless character keeps the lega
   assert.deepEqual(characterSlots(duo), slotsForCaster('full', 3));
   const legacy = { ...createCharacter('c1', 'Old'), classes: undefined, level: 3 };
   assert.deepEqual(characterSlots(legacy), slotsForLevel(3));
+  const empty = { ...createCharacter('c1', 'Old'), classes: [], level: 3 };
+  assert.deepEqual(characterSlots(empty), slotsForLevel(3), 'an empty list is classless too');
+});
+
+test('characterSlots grants a martial class list nothing, whatever the level', () => {
+  assert.deepEqual(characterSlots(classed([{ classId: 'fighter', level: 5 }])), []);
+  const martial = classed([
+    { classId: 'fighter', level: 3 },
+    { classId: 'rogue', level: 2 },
+  ]);
+  assert.deepEqual(characterSlots(martial), []);
+  assert.deepEqual(getSlotPools(withSpellSlots(martial)), []);
 });
 
 test('characterPactSlots reads the summed pact levels; null without a pact class', () => {
@@ -310,7 +366,8 @@ test('a class id outside the catalog grants no slots of its own', () => {
   ]);
   assert.deepEqual(characterSlots(mixed), [4, 2]);
   assert.equal(characterPactSlots(mixed), null);
-  // With no catalog class at all, the legacy full-caster table applies.
+  // A class the catalog does not know is not a caster, so it grants no slots.
   const homebrew = classed([{ classId: 'warlord', level: 5 }]);
-  assert.deepEqual(characterSlots(homebrew), slotsForLevel(5));
+  assert.deepEqual(characterSlots(homebrew), []);
+  assert.equal(syncSlotsToLevel(homebrew), homebrew);
 });

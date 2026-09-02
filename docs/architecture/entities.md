@@ -832,7 +832,9 @@ Each caster class manages its leveled spells in one of two ways, and
 `data/classes.js` records which as `knownRule`. A *prepared* caster (cleric,
 druid, paladin, wizard) keeps a wider book and readies a daily subset. Only
 the spellbook's `prepared` list is castable, and `Classes.preparedLimit` caps
-it at the spell-ability modifier plus class level, per prepared-rule class. A
+it at the spell-ability modifier plus caster level, per prepared-rule class.
+The caster level is the class level for a cleric, druid, or wizard, and half
+the class level, rounded down, for a paladin. The cap is at least 1. A
 *known* caster (bard, ranger, sorcerer, warlock) casts everything it knows.
 The `known` list is castable directly, and there is no prepare step at all.
 Cantrips sit outside this distinction in their own list.

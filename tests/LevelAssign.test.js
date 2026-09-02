@@ -19,6 +19,7 @@ import {
 } from '../src/entities/Character.js';
 import { getProficiencies } from '../src/entities/Proficiencies.js';
 import { withHitDice, getHitDicePools } from '../src/entities/HitDice.js';
+import { getSlotPools } from '../src/entities/SpellSlots.js';
 import { pendingLevels } from '../src/entities/Multiclass.js';
 
 /**
@@ -146,6 +147,28 @@ test('a level transfer between equal hit dice leaves HP alone', () => {
     { classId: 'fighter', level: 2 },
     { classId: 'paladin', level: 1 },
   ]);
+  assert.deepEqual(getSlotPools(next), [], 'a paladin has no slots at class level 1');
+  // The next pending level into paladin reaches class level 2 and the first pools.
+  const pal2 = assignLevel({ ...next, level: 4 }, 'paladin');
+  assert.deepEqual(
+    getSlotPools(pal2).map((p) => ({ max: p.max, current: p.current })),
+    [{ max: 2, current: 2 }],
+  );
+});
+
+test('a martial character who takes a caster level gains the slots of that class', () => {
+  const c = withHP(classed([{ classId: 'fighter', level: 1 }], { INT: 16 }, 2), 12);
+  assert.deepEqual(getSlotPools(c), []);
+  const gish = assignLevel(c, 'wizard');
+  assert.deepEqual(getClasses(gish), [
+    { classId: 'fighter', level: 1 },
+    { classId: 'wizard', level: 1 },
+  ]);
+  assert.deepEqual(
+    getSlotPools(gish).map((p) => p.max),
+    [2],
+    'the wizard table at class level 1',
+  );
 });
 
 test('a hand-set HP maximum survives a class assignment', () => {

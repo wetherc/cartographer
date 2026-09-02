@@ -240,6 +240,41 @@ test('preparedLimit counts prepared-rule classes only', () => {
   assert.equal(preparedLimit(mixed), 5);
 });
 
+test('preparedLimit reads a half caster at half its class level', () => {
+  // Paladin 2 with CHA 16: +3 plus floor(2 / 2) = 4.
+  assert.equal(
+    preparedLimit(
+      character({ level: 2, stats: { CHA: 16 }, classes: [{ classId: 'paladin', level: 2 }] }),
+    ),
+    4,
+  );
+  // Paladin 10 with CHA 16: +3 plus floor(10 / 2) = 8.
+  assert.equal(
+    preparedLimit(
+      character({ level: 10, stats: { CHA: 16 }, classes: [{ classId: 'paladin', level: 10 }] }),
+    ),
+    8,
+  );
+  // Paladin 1 with CHA 10: +0 plus floor(1 / 2) = 0, raised to the minimum of 1.
+  assert.equal(
+    preparedLimit(
+      character({ level: 1, stats: { CHA: 10 }, classes: [{ classId: 'paladin', level: 1 }] }),
+    ),
+    1,
+  );
+  // Beside a cleric, each class reads its own caster level: WIS +3 plus 3,
+  // then CHA +3 plus floor(4 / 2).
+  const gish = character({
+    level: 7,
+    stats: { WIS: 16, CHA: 16 },
+    classes: [
+      { classId: 'cleric', level: 3 },
+      { classId: 'paladin', level: 4 },
+    ],
+  });
+  assert.equal(preparedLimit(gish), 11);
+});
+
 test('preparedLimit is 0 for a prepared caster with no score in its spell ability', () => {
   assert.equal(preparedLimit(character({ class: 'wizard', level: 5, stats: {} })), 0);
 });

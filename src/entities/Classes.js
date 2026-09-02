@@ -1,6 +1,6 @@
 import { abilityModifier, proficiencyBonus } from './Modifiers.js';
 import { d20Penalty } from './Exhaustion.js';
-import { slotsForCaster, slotPoolsForCaster } from './SpellSlots.js';
+import { slotsForCaster, slotPoolsForCaster, casterLevelContribution } from './SpellSlots.js';
 import { getClasses } from './Multiclass.js';
 import { DEFAULT_CLASSES } from '../data/classes.js';
 import { memoizeByIdentity } from '../util/memoize.js';
@@ -246,8 +246,11 @@ function countCantripsKnown(character) {
 
 /**
  * How many leveled spells a character can have prepared: per prepared-rule
- * caster class, its spell-ability modifier plus its class level, at least 1
- * (the 5e prepared-caster rule), summed across those classes. Returns 0 for
+ * caster class, its spell-ability modifier plus its caster level, at least 1
+ * (the 5e prepared-caster rule), summed across those classes. The caster
+ * level is the whole class level for a full caster (Cleric, Druid, Wizard)
+ * and half the class level, rounded down, for a half caster (Paladin), the
+ * same weighting the multiclass slot table uses. Returns 0 for
  * a non-caster, or for a caster whose classes all cast from their known
  * list, since those classes grant no prepared slots. This value is
  * memoized on the character.
@@ -260,8 +263,10 @@ export const preparedLimit = memoizeByIdentity(countPreparedAllowed);
  */
 function countPreparedAllowed(character) {
   return casterClassRefs(character).reduce((sum, ref) => {
-    if (getClass(ref.classId)?.knownRule !== 'prepared') return sum;
+    const def = getClass(ref.classId);
+    if (def?.knownRule !== 'prepared') return sum;
     const mod = spellAbilityModifier(character, ref.classId);
-    return mod === null ? sum : sum + Math.max(1, mod + ref.level);
+    if (mod === null) return sum;
+    return sum + Math.max(1, mod + casterLevelContribution(def.casterType, ref.level));
   }, 0);
 }

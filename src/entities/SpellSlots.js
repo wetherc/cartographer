@@ -289,16 +289,17 @@ function casterEntries(character) {
  * multiclass rules. A single slot-granting caster class reads its own table
  * at its class level. Two or more classes read the multiclass, full-caster,
  * table at the summed per-class contributions. A pact caster contributes
- * nothing here, because its slots come from `characterPactSlots`. A
- * classless character keeps the old full-caster-at-character-level
- * behavior, so a hand-built caster without a class still works.
+ * nothing here, because its slots come from `characterPactSlots`. A class
+ * list with no slot caster (a martial character, a lone warlock, or a class
+ * outside the catalog) grants no slots. Only a character with no classes at
+ * all keeps the old full-caster-at-character-level behavior, so a
+ * hand-built caster without a class still works.
  * @param {SpellCaster} character
  * @returns {number[]} index 0 = spell level 1
  */
 export function characterSlots(character) {
-  const casters = casterEntries(character);
-  if (casters.length === 0) return slotsForLevel(character.level);
-  const slotClasses = casters.filter((c) => c.casterType !== 'pact');
+  if (getClasses(character).length === 0) return slotsForLevel(character.level);
+  const slotClasses = casterEntries(character).filter((c) => c.casterType !== 'pact');
   if (slotClasses.length === 0) return [];
   if (slotClasses.length === 1) {
     return slotsForCaster(slotClasses[0].casterType, slotClasses[0].level);
@@ -384,16 +385,23 @@ export function isCasterPool(pool) {
  * change, keeping what is already spent. Each pool's current value grows by exactly
  * the capacity gained, and a newly unlocked spell level arrives at full. The
  * pact pool syncs the same way, and its slot level follows the pact class
- * levels up, with the spent count carried across the id change. A
- * non-caster, with no slot or pact pools, returns unchanged, so leveling a
- * martial character never invents slots.
+ * levels up, with the spent count carried across the id change.
+ *
+ * A character with a caster class syncs even when it holds no pools yet. A
+ * half caster gets its first slots at class level 2, and a martial character
+ * can take a caster level later, so the pool count cannot decide who is a
+ * caster. A class list with no caster class returns unchanged, so leveling a
+ * martial character never invents slots. A classless character is a caster
+ * only when it already holds pools (the hand-built legacy path).
  * @param {Character} character
  * @returns {Character}
  */
 export function syncSlotsToLevel(character) {
   const existing = getSlotPools(character);
   const priorPact = getPactPool(character);
-  if (existing.length === 0 && !priorPact) return character;
+  const hasPools = existing.length > 0 || priorPact !== null;
+  const classless = getClasses(character).length === 0;
+  if (classless ? !hasPools : casterEntries(character).length === 0) return character;
   const table = characterSlots(character);
   /** @type {Map<number, ResourcePool>} */
   const byLevel = new Map(existing.map((p) => [slotLevelOf(p), p]));
