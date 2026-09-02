@@ -2,6 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createCharacter,
+  MAX_LEVEL,
+  XP_PER_LEVEL,
   withDefaults,
   withHP,
   getHP,
@@ -386,4 +388,33 @@ test('withDefaults backfills baseAC as 10 and migrates bonus-era armor items', (
     { armorWeight: filled.inventory[0].armorWeight, baseAC: filled.inventory[0].baseAC },
     { armorWeight: 'light', baseAC: 14 },
   );
+});
+
+test('addXP matches the threshold walk for every start level and bank, and stops at MAX_LEVEL', () => {
+  /** The rule as a walk: spend one threshold and climb while the bank covers it. */
+  const walk = (level, xp) => {
+    while (level < MAX_LEVEL && xp >= level * XP_PER_LEVEL) {
+      xp -= level * XP_PER_LEVEL;
+      level += 1;
+    }
+    return { level, xp };
+  };
+  for (let level = 1; level <= MAX_LEVEL; level += 1) {
+    for (const amount of [0, 1, 99, 100, 101, 150, 300, 320, 1000, 2099, 2100, 5000]) {
+      const hero = addXP({ ...createCharacter('c1', 'Hero'), level }, amount);
+      const expected = walk(level, amount);
+      assert.equal(hero.level, expected.level, `level ${level} plus ${amount} XP`);
+      assert.equal(
+        hero.xp,
+        Math.min(expected.xp, hero.level === MAX_LEVEL ? XP_PER_LEVEL * MAX_LEVEL : Infinity),
+        `bank after level ${level} plus ${amount} XP`,
+      );
+    }
+  }
+  const capped = addXP({ ...createCharacter('c1', 'Hero'), level: MAX_LEVEL, xp: 0 }, 9000);
+  assert.equal(capped.level, MAX_LEVEL, 'no level past the top');
+  assert.equal(capped.xp, XP_PER_LEVEL * MAX_LEVEL, 'the bank stops at the last threshold');
+  const negative = addXP(createCharacter('c1', 'Hero'), -50);
+  assert.equal(negative.level, 1, 'a negative bank buys no level');
+  assert.equal(negative.xp, -50);
 });

@@ -54,3 +54,17 @@ export function entriesAfter(log, lastId) {
   }
   return null;
 }
+
+/**
+ * An entry's timestamp as the ISO string a `<time>` element's `dateTime`
+ * takes, or null when the value is not a date. `toISOString` throws on an
+ * invalid date, and the panels format every entry during composition, so
+ * one unreadable timestamp in a loaded save used to stop the app from
+ * starting.
+ * @param {number} at Epoch milliseconds.
+ * @returns {string | null}
+ */
+export function isoTimestamp(at) {
+  const date = new Date(at);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}

@@ -82,11 +82,15 @@ storage costs those paths account for.
 `deserialize` sets any missing top-level field to an empty value instead of
 throwing an error, so an older or smaller save still loads. It is also
 the only validation step a save passes through. It coerces every field whose
-*structure* the load path trusts. Collections become lists of records, and the
-party position and a running combat get their required members. The reason is
-that Import persists what it reads and then reloads. As a result, a malformed
-field that survives `deserialize` becomes the stored save of an app that no
-longer starts.
+*structure* the load path trusts. Collections become lists of records. The
+party position, a running combat, the travelogue, the quest log, and the
+bestiary get their required members with the right types. Those coercers
+live in `storage/RecordCoercion.js`, one function per collection. The reason
+is that Import persists what it reads and then reloads. As a result, a
+malformed field that survives `deserialize` becomes the stored save of an app
+that no longer starts. A travelogue entry whose timestamp is not a number is
+one example: the panel formats every entry during startup, and an unreadable
+date throws there.
 
 `withNodeDefaults` (`map/TileGrid.js`) does the same job for nodes and their
 tiles. It drops any tile it cannot read.

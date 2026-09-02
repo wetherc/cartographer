@@ -4,6 +4,8 @@ import { deserialize } from '../src/storage/SaveManager.js';
 import { overlayList } from '../src/map/TileGrid.js';
 import { imageSrcForRef } from '../src/map/MapRenderer.js';
 import { exceedsExportCap } from '../src/map/MapExport.js';
+import { isoTimestamp } from '../src/log/Travelogue.js';
+import { addXP, MAX_LEVEL, XP_PER_LEVEL } from '../src/entities/Character.js';
 
 /**
  * Each test here feeds one malformed campaign file through `deserialize`,
@@ -96,4 +98,94 @@ test('an oversized node is refused by the PNG export instead of drawn', () => {
   }).nodes;
   assert.equal(exceedsExportCap(small), false, 'one million cells is the last allowed size');
   assert.equal(exceedsExportCap(huge), true);
+});
+
+test('a travelog entry with an unreadable timestamp loads with a date the panels can format', () => {
+  const [entry] = loadFile({
+    travelog: [{ id: 'e1', at: 'bad', kind: 'travel', message: 'Moved north.' }],
+  }).travelog;
+  assert.equal(entry.at, 0);
+  assert.equal(isoTimestamp(entry.at), '1970-01-01T00:00:00.000Z');
+  assert.equal(isoTimestamp(Number('bad')), null, 'the raw value gave no date at all');
+});
+
+test('travelog entries coerce every field and drop an entry with no id', () => {
+  const state = loadFile({
+    travelog: [
+      { id: 'e1', at: 5, kind: 'weird', message: 42 },
+      { id: '', at: 5, kind: 'travel', message: 'nameless' },
+      { at: 5, kind: 'travel', message: 'nameless' },
+      'text',
+      { id: 'e2', at: 9, kind: 'roll', message: 'Rolled a 20.' },
+    ],
+  });
+  assert.deepEqual(state.travelog, [
+    { id: 'e1', at: 5, kind: 'note', message: '' },
+    { id: 'e2', at: 9, kind: 'roll', message: 'Rolled a 20.' },
+  ]);
+});
+
+test('quests coerce their text fields and status, and keep unknown fields', () => {
+  const state = loadFile({
+    quests: [
+      { id: 'q1', title: 7, notes: null, status: 'done', extra: true },
+      { id: 'q2', title: 'Find the key', notes: 'Under the mat.', status: 'completed' },
+      { title: 'no id' },
+    ],
+  });
+  assert.deepEqual(state.quests, [
+    { id: 'q1', title: '', notes: '', status: 'active', extra: true },
+    { id: 'q2', title: 'Find the key', notes: 'Under the mat.', status: 'completed' },
+  ]);
+});
+
+test('bestiary templates coerce the fields the spawn dialog reads', () => {
+  const state = loadFile({
+    bestiary: [
+      { id: 't1', name: 3, maxHP: 'lots', stats: 'none', weapon: 'club', armor: 4, level: 2 },
+      {
+        id: 't2',
+        name: 'Goblin',
+        maxHP: 7,
+        stats: { AC: 13 },
+        weapon: null,
+        armor: { name: 'Hide' },
+      },
+      { name: 'no id' },
+    ],
+  });
+  assert.deepEqual(state.bestiary, [
+    { id: 't1', name: 'Creature', maxHP: 1, stats: {}, level: 2 },
+    {
+      id: 't2',
+      name: 'Goblin',
+      maxHP: 7,
+      stats: { AC: 13 },
+      weapon: null,
+      armor: { name: 'Hide' },
+    },
+  ]);
+  assert.equal('weapon' in state.bestiary[0], false, 'a gear slot of the wrong type is dropped');
+});
+
+test('a character with a level or XP outside the range loads clamped and levels in one step', () => {
+  const hero = (/** @type {Record<string, any>} */ fields) =>
+    loadFile({ characters: [{ id: 'c', name: 'Hero', ...fields }] }).characters[0];
+  assert.equal(hero({ level: -3e7, xp: 0 }).level, 1);
+  assert.equal(hero({ level: -1e15 }).level, 1);
+  assert.equal(hero({ level: '7', xp: '50' }).level, 7, 'a numeric string reads as its number');
+  assert.equal(hero({ level: '7', xp: '50' }).xp, 50);
+  assert.equal(hero({ level: 99 }).level, MAX_LEVEL);
+  assert.equal(hero({ xp: -20 }).xp, 0);
+  assert.equal(hero({ xp: 1e9 }).xp, XP_PER_LEVEL * MAX_LEVEL);
+  assert.equal(hero({ level: null, xp: 'abc' }).level, 1);
+  assert.equal(hero({ level: null, xp: 'abc' }).xp, 0);
+
+  const started = Date.now();
+  const awarded = addXP(hero({ level: -1e15, xp: 0 }), 150);
+  assert.ok(Date.now() - started < 1000, 'the award returns at once');
+  assert.equal(awarded.level, 2);
+  assert.equal(awarded.xp, 50);
+  const stringLevel = addXP(hero({ level: '7' }), 700);
+  assert.equal(stringLevel.level, 8, 'a level stored as text still adds as a number');
 });

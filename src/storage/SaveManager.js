@@ -9,10 +9,17 @@ import { memoizeByIdentity } from '../util/memoize.js';
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
 import { withDefaults as withCreatureDefaults } from '../entities/Creature.js';
 import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
-import { budgetOf } from '../combat/ActionBudget.js';
+import {
+  combatState,
+  creatureTemplates,
+  logEntries,
+  partyPosition,
+  quests as questRecords,
+  record,
+  records,
+} from './RecordCoercion.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
-/** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
 
 const DEFAULT_STORAGE_KEY = 'campaign-builder:save';
 
@@ -192,38 +199,12 @@ export function serialize(state) {
 }
 
 /**
- * The value, only when it is a plain record, else null. Every
- * non-collection field of a save is a plain record, and the load path
- * reads their members directly.
- * @param {unknown} value
- * @returns {any}
- */
-function record(value) {
-  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : null;
-}
-
-/**
- * A save collection as a list of records. Anything that is not an array
- * reads as empty, and the function removes entries that are not records.
- * Every collection in a save is a list of entities whose `withDefaults` the
- * load path maps over, so a scalar or null element is unreadable, not
- * merely odd. If left in place, it throws an error during startup, with
- * the malformed save already stored.
- * @param {unknown} value
- * @returns {any[]}
- */
-function records(value) {
-  if (!Array.isArray(value)) return [];
-  return value.filter((entry) => record(entry) !== null);
-}
-
-/**
- * A save collection read back as fully-defaulted entities: the coercion
- * above, then the paired `withDefaults`. This is the unpack half of
- * `packState`'s omission, so it must run here on load, not only in the
- * startup path. A stored character can legitimately carry no `spellbook`
- * key now, and `undoHistory` and `readStateFromFile` pass their result to
- * callers that apply no defaulting of their own.
+ * A save collection read back as fully-defaulted entities: the record
+ * coercion from `RecordCoercion.js`, then the paired `withDefaults`. This is
+ * the unpack half of `packState`'s omission, so it must run here on load,
+ * not only in the startup path. A stored character can legitimately carry
+ * no `spellbook` key now, and `undoHistory` and `readStateFromFile` pass
+ * their result to callers that apply no defaulting of their own.
  * @param {string} key a key of ENTITY_DEFAULTS
  * @param {unknown} value
  * @returns {any[]}
@@ -231,68 +212,6 @@ function records(value) {
 function entities(key, value) {
   const withDefaults = ENTITY_DEFAULTS[key];
   return records(value).map((entry) => withDefaults(entry));
-}
-
-/**
- * A finite number, else the fallback value. This guards the counters that a
- * malformed save can carry as a string or null.
- * @param {unknown} value
- * @param {number} fallback
- * @returns {number}
- */
-function number(value, fallback) {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
-/**
- * A running combat, or null when the stored value cannot be one. The
- * initiative panel walks `order` and indexes into it, so a combat missing
- * that array is worse than no combat at all.
- * @param {unknown} value
- * @returns {import('../types/combat.js').CombatState | null}
- */
-function combatState(value) {
-  const combat = record(value);
-  if (!combat) return null;
-  return {
-    round: number(combat.round, 1),
-    index: number(combat.index, 0),
-    // A save from before the fight-scoped log carries no start time. The
-    // fallback of 0 keeps that fight's log column showing every combat
-    // entry, as it did before the log existed.
-    startedAt: number(combat.startedAt, 0),
-    // The code reads a participant down to the fields the order owns. A save
-    // written before the name and side became derived also carries them here.
-    // Removing them is the whole migration, because both values are now
-    // resolved from the entity that holds the id. An entry with no id names
-    // nobody, so the code removes it.
-    order: records(combat.order).flatMap((entry) =>
-      typeof entry.id === 'string' && entry.id !== ''
-        ? [
-            {
-              id: entry.id,
-              initiative: number(entry.initiative, 10),
-              modifier: number(entry.modifier, 0),
-              // A save from before the action budget carries nothing here, and
-              // `budgetOf` reads that as a turn with everything unspent.
-              used: budgetOf(entry.used),
-            },
-          ]
-        : [],
-    ),
-  };
-}
-
-/**
- * The party's position, or null when the stored value cannot be one. The
- * function reads both fields as tile and node ids without a type check.
- * @param {unknown} value
- * @returns {PartyPosition | null}
- */
-function partyPosition(value) {
-  const party = record(value);
-  if (!party || typeof party.nodeId !== 'string' || typeof party.tileId !== 'string') return null;
-  return { nodeId: party.nodeId, tileId: party.tileId };
 }
 
 /**
@@ -358,11 +277,11 @@ export function deserialize(json, assets) {
     party: partyPosition(parsed.party),
     characters: entities('characters', parsed.characters),
     creatures: entities('creatures', parsed.creatures),
-    travelog: records(parsed.travelog),
-    quests: records(parsed.quests),
+    travelog: logEntries(parsed.travelog),
+    quests: questRecords(parsed.quests),
     clock: record(parsed.clock),
     handouts: entities('handouts', parsed.handouts),
-    bestiary: records(parsed.bestiary),
+    bestiary: creatureTemplates(parsed.bestiary),
     splitParty: parsed.splitParty === true,
     combat: combatState(parsed.combat),
   };

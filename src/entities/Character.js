@@ -16,9 +16,9 @@ import { cantripLimit, preparedLimit } from './Classes.js';
 import { emptyEquipment, migrateEquipment, migrateItem, pruneEquipment } from './Equipment.js';
 import { ABILITY_SCORES } from './Modifiers.js';
 import { emptyProficiencies, normalizeProficiencies } from './Proficiencies.js';
-import { getClasses, sanitizeClasses, totalLevel } from './Multiclass.js';
+import { getClasses, sanitizeClasses } from './Multiclass.js';
 import { migrateASIChoices } from './LevelUp.js';
-import { clamp } from '../util/num.js';
+import { clamp, clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -28,6 +28,9 @@ import { clamp } from '../util/num.js';
 
 /** XP required to go from level N to N+1 is N * XP_PER_LEVEL. */
 export const XP_PER_LEVEL = 100;
+
+/** The highest level a character reaches. XP past the last threshold stays banked. */
+export const MAX_LEVEL = 20;
 
 /** The six ability scores every character carries, in conventional order.
  * Defined beside STAT_KEYS in Modifiers.js, so the enemy stat set derives
@@ -352,15 +355,19 @@ export function withDefaults(character) {
   } = /** @type {Character & { class?: string, subclass?: string, expertise?: string[] }} */ (
     character
   );
+  // The level and XP are clamped here, not only in the derived reads. A save
+  // can carry a level as a string or far outside the range, and `addXP`
+  // computes from the stored values.
+  const level = clampInt(character.level, 1, MAX_LEVEL, 1);
   const classes = sanitizeClasses(
     character.classes ??
-      (legacyClass
-        ? [{ classId: legacyClass, level: totalLevel(character), subclass: legacySubclass }]
-        : []),
-    totalLevel(character),
+      (legacyClass ? [{ classId: legacyClass, level, subclass: legacySubclass }] : []),
+    level,
   );
   return derive({
     ...rest,
+    level,
+    xp: clampInt(character.xp, 0, XP_PER_LEVEL * MAX_LEVEL, 0),
     race: character.race ?? '',
     classes,
     stats: { ...defaultStats(), ...character.stats },
@@ -429,6 +436,35 @@ function defaultGrowth(max) {
 }
 
 /**
+ * The XP a climb from level `from` to level `to` costs: the sum of
+ * n * XP_PER_LEVEL for every level n from `from` up to `to - 1`.
+ * @param {number} from
+ * @param {number} to
+ * @returns {number}
+ */
+function xpBetween(from, to) {
+  const steps = to - from;
+  return XP_PER_LEVEL * (steps * from + (steps * (steps - 1)) / 2);
+}
+
+/**
+ * How many levels `xp` points buy from `level`, capped at MAX_LEVEL. This is
+ * the closed form of "spend one threshold and climb while the bank covers
+ * it". The largest whole k with xpBetween(level, level + k) <= xp is the
+ * positive root of k^2 + (2 * level - 1) * k - 2 * xp / XP_PER_LEVEL. A loop
+ * over the thresholds does the same work, but its length grows with the
+ * stored values, and a level far below 1 from a bad save never finished.
+ * @param {number} level
+ * @param {number} xp
+ * @returns {number}
+ */
+function levelsGained(level, xp) {
+  const b = 2 * level - 1;
+  const k = Math.floor((-b + Math.sqrt(b * b + (8 * xp) / XP_PER_LEVEL)) / 2);
+  return Math.max(0, Math.min(MAX_LEVEL - level, k || 0));
+}
+
+/**
  * Add XP, auto-leveling up (possibly multiple times) as the character
  * crosses thresholds. For a classed character, every gained level stays
  * pending until the player assigns it to a class (see Multiclass.js's
@@ -450,14 +486,14 @@ function defaultGrowth(max) {
  * @returns {Character}
  */
 export function addXP(character, amount, opts = {}) {
-  let { level, xp } = character;
-  const startLevel = level;
-  xp += amount;
-  while (xp >= level * XP_PER_LEVEL) {
-    xp -= level * XP_PER_LEVEL;
-    level += 1;
-  }
-  const gained = level - startLevel;
+  const startLevel = character.level;
+  const banked = character.xp + amount;
+  const gained = levelsGained(startLevel, banked);
+  const level = startLevel + gained;
+  // At the top level the bank stops at the last threshold, so the live value
+  // equals what a reload of the same character gives.
+  const spent = banked - xpBetween(startLevel, level);
+  const xp = level === MAX_LEVEL ? Math.min(spent, XP_PER_LEVEL * MAX_LEVEL) : spent;
   if (gained === 0) return { ...character, level, xp };
 
   const classed = getClasses(character).length > 0;

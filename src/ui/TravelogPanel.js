@@ -1,6 +1,6 @@
 import { textButton, emptyState } from './buttons.js';
 import { el } from './dom.js';
-import { entriesAfter, TRAVELOG_LIMIT } from '../log/Travelogue.js';
+import { entriesAfter, isoTimestamp, TRAVELOG_LIMIT } from '../log/Travelogue.js';
 
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
 
@@ -15,7 +15,10 @@ function formatTime(at) {
  * @param {LogEntry} entry */
 export function entryItem(entry) {
   const time = el('time', 'travelog__time', formatTime(entry.at));
-  time.dateTime = new Date(entry.at).toISOString();
+  // A timestamp that is not a date gets no machine-readable attribute. The
+  // visible text still shows what the browser makes of it.
+  const iso = isoTimestamp(entry.at);
+  if (iso !== null) time.dateTime = iso;
 
   return el(
     'li',

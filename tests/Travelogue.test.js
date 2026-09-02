@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createEntry, appendEntry, entriesAfter, TRAVELOG_LIMIT } from '../src/log/Travelogue.js';
+import {
+  createEntry,
+  appendEntry,
+  entriesAfter,
+  isoTimestamp,
+  TRAVELOG_LIMIT,
+} from '../src/log/Travelogue.js';
 
 test('createEntry builds an entry with the given fields', () => {
   const entry = createEntry('e1', 'travel', 'Entered the Keep.', 1000);
@@ -73,4 +79,10 @@ test('entriesAfter returns null when the id is gone, signalling a rebuild', () =
   const log = [createEntry('e9', 'note', 'x', 9)];
   assert.equal(entriesAfter(log, 'e1'), null);
   assert.equal(entriesAfter([], 'e1'), null);
+});
+
+test('isoTimestamp formats a real date and gives null for one it cannot read', () => {
+  assert.equal(isoTimestamp(0), '1970-01-01T00:00:00.000Z');
+  assert.equal(isoTimestamp(Number.NaN), null);
+  assert.equal(isoTimestamp(8.64e15 + 1), null, 'past the largest date a Date can hold');
 });
