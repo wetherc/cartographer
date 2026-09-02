@@ -10,8 +10,7 @@ import {
   setBonusHP,
   setBaseAC,
 } from '../entities/Character.js';
-import { highestSlotLevel } from '../entities/SpellSlots.js';
-import { casterClassRefs } from '../entities/Classes.js';
+import { learnableSpells as spellsLearnableBy } from '../entities/SpellLearning.js';
 import { characterFields, characterFormChange, buildCharacter } from './characterCreate.js';
 import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
@@ -290,19 +289,12 @@ export function wireParty(app) {
 
   // Resolve a spellbook's stored ids through the memoized active-library index.
   const resolveSpells = resolveSpellIds;
-  // Every spell that the character's classes can learn: cantrips and leveled
-  // spells up to the highest available slot level. This makes sure that the
-  // Spellbook never offers a spell the character can never cast.
+  // Every spell that the character's classes can learn: cantrips, and leveled
+  // spells up to the level each class reaches on its own. This makes sure
+  // that the Spellbook never offers a spell the character has no class to
+  // learn it with. The rule lives in `SpellLearning.js`.
   /** @param {Character} character @returns {import('../types/spell.js').Spell[]} */
-  const learnableSpells = (character) => {
-    const maxSlot = highestSlotLevel(character);
-    const casterIds = casterClassRefs(character).map((ref) => ref.classId);
-    return activeSpells().filter(
-      (spell) =>
-        casterIds.some((id) => spell.classes.includes(id)) &&
-        (spell.level === 0 || spell.level <= maxSlot),
-    );
-  };
+  const learnableSpells = (character) => spellsLearnableBy(character, activeSpells());
 
   // The three character tabs join the scope instead of naming each other
   // directly. Each tab's edits go back through its own commit handle. The

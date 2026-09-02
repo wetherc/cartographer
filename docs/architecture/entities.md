@@ -255,6 +255,7 @@ take-a-value, return-a-value pattern.
   entity modules (pure logic over character values)
     Classes.js           caster surface: spellSaveDC, spellAttackBonus,
                          cantrip/prepared limits
+    SpellLearning.js     which spells each caster class can learn at its level
     Multiclass.js        the class-list accessor (see below)
     Races.js             resolveRace: catalog first, stored snapshot fallback
     Backgrounds.js       resolve a stored id to its definition
@@ -857,6 +858,15 @@ spell follows its own class's rule.
 Creature casters are not affected. Their authoring dialogs stamp every
 picked leveled spell into both `known` and `prepared` (`spellbookFromIds`),
 so whichever list their class reads, the whole picked set stays castable.
+
+`SpellLearning.js` decides which spells the Spellbook tab offers. Each caster
+class learns as a single-class caster of its own class level, which is the
+5e multiclass rule. `classSpellLevelCap` reads the top row of the class's
+own slot table, or the pact slot level for a warlock. `canLearnSpell` then
+requires a class that lists the spell and reaches its level. A cleric 3 /
+wizard 3 has third-level slots on the combined table, but neither class
+reaches Fireball. The module never reads the character's slot pools, because
+the combined slot level is the wrong cap for learning.
 
 Known casters have no spells-known cap, because the app does not model a
 per-level spells-known curve. Prepared casters swap their list freely,
