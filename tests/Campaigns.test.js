@@ -4,6 +4,7 @@ import {
   buildBlankCampaign,
   buildExampleCampaign,
   campaignFromLiveState,
+  isBlankCampaign,
   loadInitialCampaign,
   loadInitialCampaignSafe,
 } from '../src/campaign/Campaigns.js';
@@ -266,4 +267,29 @@ test('campaignFromLiveState wraps live objects without re-parsing or re-defaulti
   assert.deepEqual(bare.party, { nodeId: 'world', tileId: '0,0' });
   assert.ok(bare.clock, 'a null clock gets a fresh one');
   assert.equal(bare.combat, null);
+});
+
+test('a campaign with one empty node and no characters is blank', () => {
+  const grid = { nodes: new Map([['world', {}]]) };
+  assert.equal(isBlankCampaign(grid, { tiles: [] }, []), true);
+});
+
+test('a painted tile, a second node, or a character makes the campaign not blank', () => {
+  const oneNode = { nodes: new Map([['world', {}]]) };
+  const twoNodes = {
+    nodes: new Map([
+      ['world', {}],
+      ['town', {}],
+    ]),
+  };
+  assert.equal(isBlankCampaign(oneNode, { tiles: [{}] }, []), false);
+  assert.equal(isBlankCampaign(twoNodes, { tiles: [] }, []), false);
+  assert.equal(isBlankCampaign(oneNode, { tiles: [] }, [{}]), false);
+});
+
+test('the blank campaign builder produces a blank campaign', () => {
+  const campaign = buildBlankCampaign();
+  const node = campaign.grid.getNode(campaign.party.nodeId);
+  assert.ok(node);
+  assert.equal(isBlankCampaign(campaign.grid, node, campaign.characters), true);
 });

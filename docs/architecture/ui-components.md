@@ -1267,8 +1267,9 @@ Class contracts with no builder, so the class is typed at the call site:
 Repeated by hand:
 
 - **The list-CRUD panel skeleton is written six times** (quests, handouts,
-  NPCs, build encounters, encounters, library), and the `<dialog>` lifecycle
-  seven times, four of them outside `Modal.js`.
+  NPCs, build encounters, encounters, library). The `<dialog>` lifecycle is
+  not repeated: every dialog, inside `Modal.js` and outside it, goes through
+  `openDialog`.
 
 If a widget fits one of these patterns, reuse the existing class or JS
 builder rather than add the next copy. If a widget adds the shared

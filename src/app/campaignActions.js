@@ -1,6 +1,7 @@
 import {
   buildBlankCampaign,
   buildExampleCampaign,
+  isBlankCampaign,
   campaignFromLiveState,
   loadInitialCampaign,
 } from '../campaign/Campaigns.js';
@@ -300,10 +301,15 @@ export function wireCampaignActions(app) {
   });
 
   mustGetElement('example-btn').addEventListener('click', async () => {
-    const ok = await confirmModal(
-      'Load the example campaign? The current campaign is replaced, including anything saved.',
-      { variant: 'danger', confirmLabel: 'Load example' },
-    );
+    // A blank campaign has nothing to lose, so the replace warning would
+    // only stand between a first-run GM and the example.
+    const blank = isBlankCampaign(app.grid, app.navigator.getCurrentNode(), app.state.characters);
+    const ok =
+      blank ||
+      (await confirmModal(
+        'Load the example campaign? The current campaign is replaced, including anything saved.',
+        { variant: 'danger', confirmLabel: 'Load example' },
+      ));
     if (ok) replaceCampaign(buildExampleCampaign(app.palette), 'Loaded the example campaign.');
   });
 

@@ -25,6 +25,19 @@ import { buildExampleContent } from './ExampleContent.js';
  */
 
 /**
+ * Whether the live campaign holds nothing the GM could lose: one world node
+ * with no tiles, and no characters. The onboarding overlay shows only for
+ * such a campaign, and "Load example" skips its replace warning for it.
+ * @param {{ nodes: Map<string, unknown> }} grid
+ * @param {{ tiles: readonly unknown[] }} currentNode
+ * @param {readonly unknown[]} characters
+ * @returns {boolean}
+ */
+export function isBlankCampaign(grid, currentNode, characters) {
+  return grid.nodes.size === 1 && currentNode.tiles.length === 0 && characters.length === 0;
+}
+
+/**
  * A blank campaign has one empty world node, no characters in the party, and
  * no enemies. The first run of the app and the "New" button produce this
  * campaign. Demo content appears only when the GM asks for it.

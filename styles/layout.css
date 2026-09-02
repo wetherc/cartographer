@@ -224,6 +224,19 @@ body.mode-build .map-controls__fog {
   background: none;
 }
 
+/* The heading takes focus when the card mounts, so a keyboard user starts
+   inside it. It is not a control, so it draws no ring. */
+.onboarding__card .card__title:focus-visible {
+  outline: none;
+}
+
+/* Each way forward explains itself in small text under its button, rather
+   than in a tooltip that only a pointer that waits would see. */
+.onboarding__hint {
+  margin: 0;
+  font-size: var(--text-label);
+}
+
 .onboarding__blurb {
   margin: 0 0 var(--space-2);
 }
