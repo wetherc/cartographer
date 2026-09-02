@@ -33,7 +33,9 @@
  * walker functions.
  *
  * Every other array is a leaf, compared and replaced whole. This is
- * deliberate. `proficiencies.skills`, an overlay stack, and `combat.order`
+ * deliberate. Lookups go through `idFieldFor`, which reads own keys only, so
+ * a state key such as `constructor` cannot pick up an Object.prototype
+ * member and take the keyed branch. `proficiencies.skills`, an overlay stack, and `combat.order`
  * are all small. Several are ordered sequences, not keyed sets, and there
  * pairing by id is wrong, not just wasteful.
  * @type {Record<string, string>}
@@ -50,6 +52,15 @@ export const ID_KEYED = {
   travelog: 'id',
   bestiary: 'id',
 };
+
+/**
+ * The id field of an id-keyed collection pattern, or undefined for a leaf.
+ * @param {string} pattern
+ * @returns {string | undefined}
+ */
+function idFieldFor(pattern) {
+  return Object.prototype.hasOwnProperty.call(ID_KEYED, pattern) ? ID_KEYED[pattern] : undefined;
+}
 
 /**
  * @param {unknown} value
@@ -172,7 +183,7 @@ function diffValue(before, after, path, pattern, ops) {
   // cost the size of the edit instead of the size of the world. A cold diff
   // after a reload shares nothing and still walks everything.
   if (before === after) return;
-  const idField = ID_KEYED[pattern];
+  const idField = idFieldFor(pattern);
   if (idField && Array.isArray(before) && Array.isArray(after)) {
     diffKeyed(before, after, path, pattern, idField, ops);
     return;
@@ -334,7 +345,7 @@ function applyOp(node, op) {
 function descend(node, op, index, pattern) {
   if (!isRecord(node) && !Array.isArray(node)) return node;
   const segment = op.p[index];
-  const idField = Array.isArray(node) ? ID_KEYED[pattern] : undefined;
+  const idField = Array.isArray(node) ? idFieldFor(pattern) : undefined;
   const copy = Array.isArray(node) ? node.slice() : { ...node };
   if (index === op.p.length - 1) {
     write(copy, segment, idField, childPattern(pattern, segment, Boolean(idField)), op);
@@ -415,7 +426,7 @@ function writeKeyed(list, idField, id, op) {
  * @param {DiffOp} op
  */
 function writeOrder(container, segment, pattern, op) {
-  const idField = ID_KEYED[pattern];
+  const idField = idFieldFor(pattern);
   const list = Array.isArray(container)
     ? undefined
     : /** @type {Record<string, unknown>} */ (container)[String(segment)];

@@ -204,6 +204,8 @@ export const DEFAULT_CREATURES = deepFreeze([
     proficiencies: { saves: ['INT', 'WIS'], skills: ['arcana', 'history'] },
     class: 'wizard',
     casterLevel: 9,
+    // This spell list is a house choice for the app, not the SRD Mage list.
+    // It keeps to spells the corpus models with a full effect.
     spellbook: {
       cantrips: ['fire-bolt', 'light', 'shocking-grasp'],
       known: [
@@ -288,10 +290,11 @@ export const DEFAULT_CREATURES = deepFreeze([
     disposition: 'hostile',
     role: 'Cultist',
     notes: 'Serves a hidden master and carries a sign of the order.',
-    maxHP: 4,
+    // HP and AC follow the SRD Cultist, so 25 XP buys a foe of the rated worth.
+    maxHP: 9,
     cr: 0.125,
     proficiencies: { saves: [], skills: ['deception', 'religion'] },
-    stats: { STR: 11, DEX: 12, CON: 10, INT: 10, WIS: 8, CHA: 11, AC: 11 },
+    stats: { STR: 11, DEX: 12, CON: 10, INT: 10, WIS: 8, CHA: 11, AC: 12 },
     weapon: null,
     armor: null,
   },

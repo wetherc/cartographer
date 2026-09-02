@@ -122,3 +122,25 @@ test('ritual casting is carried by exactly the four SRD ritual classes', () => {
     if (c.casterType === 'none') assert.ok(!c.ritual, `${c.id} ritual`);
   }
 });
+
+test('the class catalog is frozen to its leaves', () => {
+  assert.ok(Object.isFrozen(DEFAULT_CLASSES));
+  for (const c of DEFAULT_CLASSES) {
+    assert.ok(Object.isFrozen(c), `${c.id} frozen`);
+    assert.ok(Object.isFrozen(c.asiLevels), `${c.id} asiLevels frozen`);
+    assert.ok(Object.isFrozen(c.featuresByLevel), `${c.id} features frozen`);
+    for (const list of Object.values(c.featuresByLevel)) {
+      assert.ok(Object.isFrozen(list));
+      for (const entry of list) assert.ok(Object.isFrozen(entry));
+    }
+  }
+  const rogue = DEFAULT_CLASSES.find((c) => c.id === 'rogue');
+  const expertise = rogue?.featuresByLevel[1].find((e) => typeof e === 'object');
+  assert.ok(expertise && typeof expertise === 'object');
+  assert.throws(() => {
+    /** @type {any} */ (expertise).effects.push({ kind: 'proficiency' });
+  }, TypeError);
+  assert.throws(() => {
+    /** @type {any} */ (rogue).asiLevels.push(20);
+  }, TypeError);
+});

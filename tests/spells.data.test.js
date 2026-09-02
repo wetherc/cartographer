@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { DEFAULT_SPELLS } from '../src/data/spells.js';
+import { DEFAULT_CREATURES } from '../src/data/creatures.js';
+import { maxTargets } from '../src/entities/Casting.js';
 import { CLASS_LIST } from '../src/entities/Classes.js';
 import { activeCreatureByName } from '../src/library/Library.js';
 
@@ -48,10 +50,32 @@ test('every spell is well-formed against the schema', () => {
   }
 });
 
+test('Hold Person and Chain Lightning add one target per slot level', () => {
+  const byId = new Map(DEFAULT_SPELLS.map((s) => [s.id, s]));
+  const hold = byId.get('hold-person');
+  const chain = byId.get('chain-lightning');
+  assert.ok(hold && chain);
+  assert.equal(hold.targetCount ?? 1, 1);
+  assert.deepEqual(hold.scaling, { targetsPerLevel: 1 });
+  assert.equal(chain.targetCount, 4, 'one primary target plus three arcs');
+  assert.deepEqual(chain.scaling, { targetsPerLevel: 1 });
+  assert.equal(maxTargets(hold, 0), 1);
+  assert.equal(maxTargets(hold, 3), 4);
+  assert.equal(maxTargets(chain, 1), 5);
+});
+
 test('the corpus spans all effect kinds and cantrips through 9th level', () => {
   const kinds = new Set(DEFAULT_SPELLS.map((s) => s.effect.kind));
   for (const kind of KINDS) assert.ok(kinds.has(kind), `corpus includes a ${kind} spell`);
   const levels = new Set(DEFAULT_SPELLS.map((s) => s.level));
   assert.ok(levels.has(0), 'has cantrips');
   assert.ok(levels.has(9), 'has a 9th-level spell');
+});
+
+test('the Cult Initiate carries the SRD Cultist HP and AC at CR 1/8', () => {
+  const cultist = DEFAULT_CREATURES.find((c) => c.id === 'cult-initiate');
+  assert.ok(cultist);
+  assert.equal(cultist.cr, 0.125);
+  assert.equal(cultist.maxHP, 9);
+  assert.equal(cultist.stats.AC, 12);
 });

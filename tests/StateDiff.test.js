@@ -403,3 +403,16 @@ test('randomly mutated campaigns round-trip', () => {
     assertRoundTrip(before, after);
   }
 });
+
+test('a state key that names an Object.prototype member is a leaf, not a keyed collection', () => {
+  const before = { constructor: [{ id: 'a' }], toString: [{ id: 'x' }] };
+  const after = { constructor: [{ id: 'a' }, { id: 'b' }], toString: [{ id: 'x' }] };
+  const ops = assertRoundTrip(before, after);
+  assert.deepEqual(ops, [{ p: ['constructor'], f: [{ id: 'a' }], t: [{ id: 'a' }, { id: 'b' }] }]);
+  // An order op on such a key has no id field to pair by, so it is ignored.
+  const order = { k: 'order', p: ['constructor'], t: ['b', 'a'] };
+  assert.deepEqual(applyOps(after, [order]), after);
+  // A write addressed inside the array treats it as positional and is ignored.
+  const inside = { p: ['constructor', 'a', 'id'], f: 'a', t: 'z' };
+  assert.deepEqual(applyOps(after, [inside]), after);
+});

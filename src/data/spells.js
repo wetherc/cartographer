@@ -526,6 +526,8 @@ export const DEFAULT_SPELLS = deepFreeze([
     description:
       'A humanoid must succeed on a WIS save or be paralyzed, retrying the save ' +
       'at the end of each of its turns.',
+    // One humanoid at 2nd level. Each higher slot adds one more target.
+    scaling: { targetsPerLevel: 1 },
     effect: {
       kind: 'save',
       saveAbility: 'WIS',
@@ -969,7 +971,10 @@ export const DEFAULT_SPELLS = deepFreeze([
     ritual: false,
     description:
       'A bolt arcs to up to four targets, each taking 10d8 lightning; a DEX save halves it.',
+    // One primary target and three the bolt arcs to, so four at 6th level.
+    // Each higher slot adds one more arc.
     targetCount: 4,
+    scaling: { targetsPerLevel: 1 },
     effect: {
       kind: 'save',
       saveAbility: 'DEX',
