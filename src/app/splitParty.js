@@ -14,6 +14,7 @@ import {
   recallAll,
   regroupCandidates,
 } from '../party/CharacterTokens.js';
+import { describeTile } from '../map/TileCoords.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -81,7 +82,7 @@ export function wireSplitParty(app, { container, refreshRoster }) {
               return {
                 value: c.id,
                 label: c.location
-                  ? `${c.name} — ${node?.name ?? at.nodeId} (tile ${at.tileId})`
+                  ? `${c.name} — ${node?.name ?? at.nodeId} (${describeTile(at.tileId)})`
                   : `${c.name} — with the party`,
               };
             }),
@@ -107,7 +108,7 @@ export function wireSplitParty(app, { container, refreshRoster }) {
     const node = app.grid.getNode(target.nodeId);
     app.actions.logEvent(
       'travel',
-      `The party regroups ${chosen ? `at ${chosen.name}'s position ` : ''}in ${node?.name ?? target.nodeId} (tile ${target.tileId}).`,
+      `The party regroups ${chosen ? `at ${chosen.name}'s position ` : ''}in ${node?.name ?? target.nodeId} (${describeTile(target.tileId)}).`,
     );
     app.actions.maybeTriggerEncounter();
     return true;

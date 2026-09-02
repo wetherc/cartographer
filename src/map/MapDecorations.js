@@ -2,6 +2,7 @@ import { parseCoords, tileRect } from './MapGeometry.js';
 import { EXIT_SIDES, edgeExitBand, exitBandGeometry, exitLabel } from './MapExits.js';
 import { INK } from './CanvasInk.js';
 import { drawPlatedLabel, labelSize } from './CanvasText.js';
+import { toDisplay } from './TileCoords.js';
 
 /** @typedef {import('./MapRenderer.js').MapRenderer} MapRenderer */
 /** @typedef {import('./MapRenderer.js').MapView} MapView */
@@ -29,8 +30,10 @@ export class MapDecorations {
   }
 
   /**
-   * Draw column (x) numbers above the top row, and row (y) numbers left of the
-   * first column, so a GM can read a tile's coordinate from the grid. Labels
+   * Draw column numbers above the top row, and row numbers left of the first
+   * column, so a GM can read a tile's coordinate from the grid. The numbers
+   * count from 1, the same as every coordinate the app prints or asks for.
+   * The stored tile ids count from 0; `TileCoords.js` converts. Labels
    * hang off the grid edge and pan with it. Once the edge scrolls out of the
    * viewport, from a zoom or pan, the labels pin to the viewport edge at
    * partial opacity, over a translucent backing, so coordinates stay readable
@@ -51,12 +54,12 @@ export class MapDecorations {
     for (let x = 0; x < view.node.width; x++) {
       const cx = view.offsetX + (x + 0.5) * size;
       if (cx < 0 || cx > view.canvasWidth) continue;
-      this._drawCoordLabel(String(x), cx, colY, fontSize, colPinned);
+      this._drawCoordLabel(String(toDisplay(x)), cx, colY, fontSize, colPinned);
     }
     for (let y = 0; y < view.node.height; y++) {
       const cy = view.offsetY + (y + 0.5) * size;
       if (cy < 0 || cy > view.canvasHeight) continue;
-      this._drawCoordLabel(String(y), rowX, cy, fontSize, rowPinned);
+      this._drawCoordLabel(String(toDisplay(y)), rowX, cy, fontSize, rowPinned);
     }
   }
 

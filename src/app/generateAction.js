@@ -4,6 +4,7 @@ import { generateNodeTiles, generateDungeonLevels, ARCHETYPES } from '../map/Map
 import { ensureChildLink } from '../map/TilePaint.js';
 import { resolveEntryTile } from '../map/EntryPoint.js';
 import { entranceArtFor, freshNodeId, relandedTile } from '../map/NodeEdits.js';
+import { describeTile } from '../map/TileCoords.js';
 import { mulberry32 } from '../util/Rng.js';
 import { mustGetElement } from '../ui/dom.js';
 import { confirmModal, alertModal } from '../ui/Modal.js';
@@ -122,7 +123,7 @@ export function wireGenerateAction(app, env) {
       if (linked.tileId) {
         grid.updateNode(linked.node);
         alertModal(
-          `Linked "${node.name}" from ${parent.name} at tile (${linked.tileId}), so it can be reached during play. Repaint or relink that tile to move the entrance.`,
+          `Linked "${node.name}" from ${parent.name} at ${describeTile(linked.tileId)}, so it can be reached during play. Repaint or relink that tile to move the entrance.`,
           { title: 'Entrance placed', label: 'OK' },
         );
       }

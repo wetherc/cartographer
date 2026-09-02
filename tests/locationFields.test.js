@@ -26,31 +26,42 @@ test('the unplaced label can be reworded for a character', () => {
   assert.equal(picker.options?.[0].label, 'With the party');
 });
 
-test('an existing location pre-selects its map and coordinates', () => {
+test('an existing location pre-selects its map and shows its column and row from 1', () => {
   const [picker, x, y] = locationFields(app, { nodeId: 'vale', tileId: '2,3' });
   assert.equal(picker.value, 'vale');
-  assert.equal(x.value, 2);
-  assert.equal(y.value, 3);
+  assert.equal(x.label, 'Column');
+  assert.equal(y.label, 'Row');
+  assert.equal(x.value, 3, 'stored column 2 is the third column a GM sees');
+  assert.equal(y.value, 4);
 });
 
-test('no location, or one whose tile id cannot be read, opens at the origin', () => {
+test('no location, or one whose tile id cannot be read, opens at the top-left tile', () => {
   for (const location of [null, { nodeId: 'vale', tileId: 'nonsense' }]) {
     const [, x, y] = locationFields(app, location);
-    assert.equal(x.value, 0);
-    assert.equal(y.value, 0);
+    assert.equal(x.value, 1);
+    assert.equal(y.value, 1);
   }
 });
 
-test('the coordinate fields refuse negative numbers', () => {
+test('the coordinate fields refuse numbers below 1', () => {
   const [, x, y] = locationFields(app, null);
-  assert.equal(x.min, 0);
-  assert.equal(y.min, 0);
+  assert.equal(x.min, 1);
+  assert.equal(y.min, 1);
 });
 
-test('reading back a picked map and coordinates gives a location', () => {
-  assert.deepEqual(readLocation(app, { nodeId: 'vale', tileX: '2', tileY: '3' }), {
+test('reading back a picked map and 1-based coordinates gives a 0-based tile id', () => {
+  assert.deepEqual(readLocation(app, { nodeId: 'vale', tileX: '3', tileY: '4' }), {
     nodeId: 'vale',
     tileId: '2,3',
+  });
+});
+
+test('a position copied from the map description lands on the same tile', () => {
+  // The screen reader says "column 1, row 1" for the top-left tile, and the
+  // dialog reads those numbers straight back to the stored id "0,0".
+  assert.deepEqual(readLocation(app, { nodeId: 'vale', tileX: '1', tileY: '1' }), {
+    nodeId: 'vale',
+    tileId: '0,0',
   });
 });
 
@@ -59,13 +70,13 @@ test('coordinates outside the chosen map are clamped to its bounds', () => {
     nodeId: 'vale',
     tileId: '3,5',
   });
-  assert.deepEqual(readLocation(app, { nodeId: 'vale', tileX: '-4', tileY: '-1' }), {
+  assert.deepEqual(readLocation(app, { nodeId: 'vale', tileX: '-4', tileY: '0' }), {
     nodeId: 'vale',
     tileId: '0,0',
   });
 });
 
-test('unreadable coordinates land on the origin rather than on NaN', () => {
+test('unreadable coordinates land on the top-left tile rather than on NaN', () => {
   assert.deepEqual(readLocation(app, { nodeId: 'vale', tileX: '', tileY: 'x' }), {
     nodeId: 'vale',
     tileId: '0,0',

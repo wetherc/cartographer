@@ -156,7 +156,7 @@ test('meetCreatures returns the same roster when nothing changes', () => {
 
 test('formatLocation names the node and the tile, or the fixed everywhere label', () => {
   const getNodeName = (id) => (id === 'n1' ? 'The Vale' : undefined);
-  assert.equal(formatLocation(at('n1', '2,3'), getNodeName), 'The Vale (2,3)');
-  assert.equal(formatLocation(at('nX', '0,0'), getNodeName), 'nX (0,0)');
+  assert.equal(formatLocation(at('n1', '2,3'), getNodeName), 'The Vale, column 3, row 4');
+  assert.equal(formatLocation(at('nX', '0,0'), getNodeName), 'nX, column 1, row 1');
   assert.equal(formatLocation(null, getNodeName), 'Everywhere');
 });

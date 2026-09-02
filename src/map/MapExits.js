@@ -3,6 +3,7 @@ import { findRegionGroups } from './RegionGroups.js';
 import { getTile } from './TileGrid.js';
 import { kindOf } from './TilePalette.js';
 import { clamp } from '../util/num.js';
+import { describeTile } from './TileCoords.js';
 import { labelSize } from './CanvasText.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -476,7 +477,7 @@ function viaText(via) {
 export function exitDescription(exit) {
   if (exit.kind === 'edge') return `${exitLabel(exit)}, off the ${exit.side} edge of the map`;
   if (exit.kind === 'tile') {
-    return `${exitLabel(exit)}, through the ${viaText(exit.via)} at ${exit.tileId}`;
+    return `${exitLabel(exit)}, through the ${viaText(exit.via)} at ${describeTile(exit.tileId)}`;
   }
   return exitLabel(exit);
 }

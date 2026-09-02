@@ -553,14 +553,17 @@ test('labels name the region and, for assistive tech, the way out', () => {
     targetNodeId: 'region',
     targetName: 'Saltmere Coast',
   };
-  assert.equal(exitDescription(door), 'Return to Saltmere Coast, through the door at 0,1');
+  assert.equal(
+    exitDescription(door),
+    'Return to Saltmere Coast, through the door at column 1, row 2',
+  );
   assert.equal(
     exitDescription({ ...door, via: 'stairs-up' }),
-    'Return to Saltmere Coast, through the stairs up at 0,1',
+    'Return to Saltmere Coast, through the stairs up at column 1, row 2',
   );
   assert.equal(
     exitDescription({ ...door, via: 'stairs-down' }),
-    'Return to Saltmere Coast, through the stairs down at 0,1',
+    'Return to Saltmere Coast, through the stairs down at column 1, row 2',
   );
   assert.equal(
     exitDescription({ kind: 'fallback', targetNodeId: 'region', targetName: 'Saltmere Coast' }),

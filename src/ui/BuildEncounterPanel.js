@@ -6,6 +6,7 @@ import { proficiencySummary } from '../entities/CreatureChecks.js';
 import { casterSummary } from '../entities/Caster.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { mountListPanel } from './listPanel.js';
+import { describeTile } from '../map/TileCoords.js';
 
 /** @typedef {import('../types/creature.js').Creature} Encounter */
 
@@ -40,8 +41,8 @@ export function mountBuildEncounterPanel(container, callbacks) {
     emptyMessage: 'No encounters on this map.',
     classes: { row: 'build-encounters__row u-col u-g1', head: 'u-row u-g2' },
     buildBody: (encounter) => {
-      const where = encounter.location ? `@ (${encounter.location.tileId})` : 'unplaced';
-      const text = `${encounter.name} (${encounter.currentHP}/${encounter.maxHP}) ${where}`;
+      const where = encounter.location ? describeTile(encounter.location.tileId) : 'unplaced';
+      const text = `${encounter.name}, HP ${encounter.currentHP}/${encounter.maxHP}, ${where}`;
 
       // A placed encounter's name is a button that brings its tile into view.
       // An unplaced encounter has no tile to focus, so its name stays plain text.

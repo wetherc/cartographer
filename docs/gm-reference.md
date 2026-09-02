@@ -687,8 +687,9 @@ all of them. Only a long rest refills spell slots. A long rest also takes one
 level of exhaustion off each character. A character that is already dead keeps
 its level.
 
-An NPC sits on any map at specific coordinates, or stays unplaced, in which
-case it appears everywhere. The panel lists the NPCs at the current
+An NPC sits on any map at a column and row, or stays unplaced, in which
+case it appears everywhere. Columns and rows count from 1, the same as the
+numbers along the map edges. The panel lists the NPCs at the current
 location of the party.
 
 The Dice Tray collapses to a d20 icon. The full tray sets a count per die

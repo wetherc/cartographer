@@ -10,6 +10,7 @@ import { mountListPanel } from './listPanel.js';
 import { buildTabs } from './Tabs.js';
 import { isGM, hpBand } from '../view/ViewRole.js';
 import { clampInt } from '../util/num.js';
+import { describeTile } from '../map/TileCoords.js';
 
 /** @typedef {import('../types/creature.js').Creature} Encounter */
 /** @typedef {import('../types/view.js').ViewRole} ViewRole */
@@ -98,14 +99,15 @@ export function mountEncounterPanel(container, callbacks) {
    * @returns {Node[]}
    */
   function buildBody(encounter, ctx) {
-    // A bound encounter shows its tile coordinates. This lets the GM tell
-    // two same-named foes apart and see where in the region it is staged.
-    const coords = encounter.location ? ` @ (${encounter.location.tileId})` : '';
+    // A bound encounter shows its column and row, counted from 1 as on the
+    // map edge. This lets the GM tell two same-named foes apart and see
+    // where in the region it is staged.
+    const where = encounter.location ? `, ${describeTile(encounter.location.tileId)}` : '';
     const label = el(
       'span',
       'encounter-panel__label',
       ctx.gm
-        ? `${encounter.name} (${encounter.currentHP}/${encounter.maxHP})${coords}`
+        ? `${encounter.name}, HP ${encounter.currentHP}/${encounter.maxHP}${where}`
         : `${encounter.name} — ${hpBand(encounter.currentHP, encounter.maxHP)}`,
     );
 

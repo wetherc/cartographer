@@ -34,6 +34,7 @@ import { partyPermissions } from '../view/CharacterBinding.js';
 import { createCharacterClaim } from '../view/CharacterClaim.js';
 import { characterPosition, moveCharacter } from '../party/CharacterTokens.js';
 import { locationFields, readLocation } from './locationFields.js';
+import { describeTile } from '../map/TileCoords.js';
 import { wireSplitParty } from './splitParty.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -165,7 +166,7 @@ export function wireParty(app) {
         const node = app.grid.getNode(location.nodeId);
         app.actions.logEvent(
           'travel',
-          `${character.name} moves to ${node?.name ?? location.nodeId} (tile ${location.tileId}).`,
+          `${character.name} moves to ${node?.name ?? location.nodeId} (${describeTile(location.tileId)}).`,
         );
         app.actions.maybeTriggerEncounter(location, character.name);
       } else {

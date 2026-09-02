@@ -358,7 +358,9 @@ character carries.
 
 1. Open the **Story** tab and add an NPC.
 2. Set the disposition, the notes, and the placement.
-3. To place the NPC, pick a map and tile coordinates. Leave it unplaced to
+3. To place the NPC, pick a map, then the column and row. Both count from
+   1, the same as the numbers along the top and left edges of the map and
+   the position that the map description reads out. Leave it unplaced to
    make it appear everywhere.
 4. An NPC is a combatant, so it has hit points, a stat block, and gear. A new
    one is a commoner: 4 HP, no weapon, and no armor. Arm the ones that fight,

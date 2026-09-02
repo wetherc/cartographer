@@ -1,4 +1,5 @@
 import { parseCoords } from './MapGeometry.js';
+import { toDisplay } from './TileCoords.js';
 import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -65,13 +66,13 @@ export function describeNode(node, party, options = {}) {
 
   if (party && party.nodeId === node.id) {
     const coords = parseCoords(party.tileId);
-    if (coords) parts.push(`Party at column ${coords.x + 1}, row ${coords.y + 1}.`);
+    if (coords) parts.push(`Party at column ${toDisplay(coords.x)}, row ${toDisplay(coords.y)}.`);
   }
 
   if (pois.length) {
     const listed = pois.map((poi) => {
       const notes = poi.notes ? `: ${poi.notes}` : '';
-      return `${readablePoi(poi.poiType)} at column ${poi.x + 1}, row ${poi.y + 1}${notes}`;
+      return `${readablePoi(poi.poiType)} at column ${toDisplay(poi.x)}, row ${toDisplay(poi.y)}${notes}`;
     });
     parts.push(`Points of interest: ${listed.join('; ')}.`);
   }

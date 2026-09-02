@@ -1,4 +1,5 @@
 import { withinRadius } from '../map/FogOfWar.js';
+import { describeTile } from '../map/TileCoords.js';
 import { isDefeated } from './Creature.js';
 
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -161,13 +162,13 @@ export function meetCreatures(creatures, position) {
 
 /**
  * Human-readable placement for a creature row: the node's name plus the
- * tile coordinates, or a fixed label for an unplaced (appears-everywhere)
- * creature.
+ * column and row, counted from 1 as on the map edge, or a fixed label for an
+ * unplaced (appears-everywhere) creature.
  * @param {EncounterLocation | null} location
  * @param {(nodeId: string) => string | undefined} getNodeName
  * @returns {string}
  */
 export function formatLocation(location, getNodeName) {
   if (!location) return 'Everywhere';
-  return `${getNodeName(location.nodeId) ?? location.nodeId} (${location.tileId})`;
+  return `${getNodeName(location.nodeId) ?? location.nodeId}, ${describeTile(location.tileId)}`;
 }
