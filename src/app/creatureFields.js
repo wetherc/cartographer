@@ -209,20 +209,32 @@ export function creatureFieldsChange({ restampStats }) {
       return;
     }
     if (statsTouched || (name !== 'level' && name !== 'tier')) return;
-    if (String(form.get('level')).trim() === '') return;
-    const stats = defaultEnemyStats(
-      clampInt(form.get('level'), 1),
-      /** @type {EnemyTier} */ (form.get('tier')),
-    );
+    const level = readLevel(form.get('level'));
+    if (level === undefined) return;
+    const stats = defaultEnemyStats(level, /** @type {EnemyTier} */ (form.get('tier')));
     for (const key of STAT_KEYS) form.set(`stat-${key}`, stats[key]);
   };
+}
+
+/**
+ * The level a typed level field means, or undefined for no level. The
+ * creature model has no level 0: a creature is either on the leveling ladder
+ * at level 1 or above, or it carries no level at all. A blank box, a 0, a
+ * negative number, and text that is not a number all read as no level.
+ * @param {unknown} raw the field's string value
+ * @returns {number | undefined}
+ */
+function readLevel(raw) {
+  const level = clampInt(String(raw ?? '').trim(), 0);
+  return level >= 1 ? level : undefined;
 }
 
 /**
  * Read the blueprint fields back out of a submitted form. The empty gear
  * value is the explicit "None" choice and stores null, with no fallback: the
  * field's own default already offered the level's loadout, so what the picker
- * shows is what the creature gets. A blank level stores no level and no tier.
+ * shows is what the creature gets. A blank level, or a level of 0 or below,
+ * stores no level and no tier (see readLevel).
  * A blank challenge rating stores none, which the app reads as unrated. Two
  * empty proficiency pickers store no proficiency record. The result carries
  * `stats` only when the form showed the block.
@@ -248,7 +260,7 @@ export function creatureFieldsChange({ restampStats }) {
  * }}
  */
 export function readCreatureFields(values, gear, { stats = true } = {}) {
-  const rawLevel = String(values.level ?? '').trim();
+  const level = readLevel(values.level);
   const cr = coerceCR(values.cr);
   return {
     ...(cr === undefined ? {} : { cr }),
@@ -261,9 +273,7 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
     role: values.role.trim(),
     notes: values.notes.trim(),
     maxHP: clampInt(values.maxHP, 1, Infinity, DEFAULT_CREATURE_HP),
-    ...(rawLevel === ''
-      ? {}
-      : { level: clampInt(rawLevel, 1), tier: /** @type {EnemyTier} */ (values.tier) }),
+    ...(level === undefined ? {} : { level, tier: /** @type {EnemyTier} */ (values.tier) }),
     ...(stats ? { stats: readStats(STAT_KEYS, values) } : {}),
     ...readGear(values.weapon, values.armor, gear),
     ...readCasterOptions(values),

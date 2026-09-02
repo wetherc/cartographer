@@ -34,7 +34,7 @@ import { DEFAULT_FEATS, FEAT_EFFECT_KINDS } from '../data/feats.js';
 import { DEFAULT_CREATURE_HP, DISPOSITIONS, defaultEnemyGear } from '../entities/Creature.js';
 import { isCasterClass } from '../entities/Classes.js';
 import { creatureProficiencyFields, ARMOR_PROFICIENCIES } from '../entities/Proficiencies.js';
-import { slugId } from '../entities/Roster.js';
+import { idClaimer, renameConflict, storedEntryId } from './LibraryIdentity.js';
 import { indexById } from '../util/indexById.js';
 import { deepFreeze } from '../util/deepFreeze.js';
 import { DEFAULT_CREATURES } from '../data/creatures.js';
@@ -195,37 +195,29 @@ export function removeEntry(customs, key, keyOf) {
   return customs.filter((c) => keyOf(c) !== key);
 }
 
+// The id rules for the name-keyed lists live in LibraryIdentity.js. The
+// re-export keeps this module the one import site for the library wiring.
+export { storedEntryId, renameConflict };
+
 /**
- * The id that a stored name-keyed entry (a bestiary template or a spell)
- * must carry. Ids are internal: only the name key merges. Campaign state
- * stores these ids directly, because characters, bestiary templates, and NPC
- * templates all hold spell ids. A custom entry keeps its id across a rename.
- * Otherwise every reference to it is dropped as unknown. A renamed
- * default or override instead takes a fresh id. Its old id still belongs to
- * the built-in entry, which resurfaces once the override no longer matches
- * it. This function is pure.
- * A name that matches another merged entry takes that entry's id, because
- * the stored result overrides it. An override and the default it hides must
- * share one id. Otherwise the id index, which keeps the last entry, leaves
- * one of them unreachable. Only a name that matches nothing gets a fresh
- * slug. This slug must avoid every id in the list, including the ids of
- * defaults that an override currently hides, since those ids resurface as
- * soon as the override is renamed. This function is pure.
- * @param {{
- *   found?: { entry: { id: string }, source: LibrarySource } | null,
- *   target?: { entry: { id: string } } | null,
- *   renamed: boolean,
- *   newKey: string,
- *   takenIds: () => string[],
- * }} args `found` is the merged entry under edit (null for a new entry).
- *   `target` is the merged entry that the submitted name matches (null when
- *   the name is new). `renamed` is true when the name key changed.
- * @returns {string}
+ * A raw weapon record with its weapon fields replaced by the coerced ones.
+ * The five weapon fields and the legacy `handling` field come off the record
+ * first, so a rejected value (for example `properties` written as an object)
+ * cannot survive beside the clean field. This function is pure.
+ * @param {Record<string, any>} raw
+ * @returns {Record<string, any>}
  */
-export function storedEntryId({ found, target, renamed, newKey, takenIds }) {
-  if (found && (!renamed || found.source === 'custom')) return found.entry.id;
-  if (target) return target.entry.id;
-  return slugId(newKey, takenIds());
+function withCoercedWeapon(raw) {
+  const {
+    handling: _handling,
+    kind: _kind,
+    category: _category,
+    properties: _properties,
+    range: _range,
+    versatileDamage: _versatile,
+    ...rest
+  } = raw;
+  return { ...rest, ...coerceWeapon(raw) };
 }
 
 /**
@@ -517,7 +509,11 @@ function casterTemplateFrom(e) {
   return {
     class: e.class,
     ...(typeof e.subclass === 'string' ? { subclass: e.subclass } : {}),
-    ...(Number.isFinite(Number(e.casterLevel)) ? { casterLevel: clampInt(e.casterLevel, 1) } : {}),
+    // Only a written number counts. A null or absent level is left for the
+    // creature's own level, or the level 1 default, to fill.
+    ...(typeof e.casterLevel === 'number' && Number.isFinite(e.casterLevel)
+      ? { casterLevel: clampInt(e.casterLevel, 1) }
+      : {}),
     spellbook: normalizeSpellbook(e.spellbook),
   };
 }
@@ -582,8 +578,7 @@ export function normalizeLibrary(parsed) {
       .map((e) => {
         const named = /** @type {Record<string, any>} */ ({ ...e, name: e.name.trim() });
         if (!WEAPON_TYPES.includes(e.type)) return /** @type {EquipmentTemplate} */ (named);
-        const { handling: _handling, ...rest } = named;
-        return /** @type {EquipmentTemplate} */ ({ ...rest, ...coerceWeapon(named) });
+        return /** @type {EquipmentTemplate} */ (withCoercedWeapon(named));
       }),
     equipmentKey,
   );
@@ -592,9 +587,12 @@ export function normalizeLibrary(parsed) {
   // dropped duplicate never claims a slug that the surviving entry can use.
   // The pool merges the current list with the two pre-merge lists, and the
   // dedupe runs across all three, so an old file that named one creature in
-  // both lists keeps one entry.
+  // both lists keeps one entry. Each list claims its ids through idClaimer,
+  // so a hand-edited id that names a different built-in entry, or that an
+  // earlier entry in the list already holds, is replaced by a fresh slug.
   /** @type {string[]} */
   const creatureIds = [];
+  const claimCreatureId = idClaimer(DEFAULT_CREATURES, nameKey);
   const creatures = dedupeByKey(
     [
       ...arrayOf(source.creatures),
@@ -606,10 +604,12 @@ export function normalizeLibrary(parsed) {
     rawNameKey,
   ).map((e) => {
     const name = e.name.trim();
-    const id = typeof e.id === 'string' && e.id ? e.id : slugId(name, creatureIds);
+    const id = claimCreatureId(e.id, name, creatureIds);
     creatureIds.push(id);
-    const level = Number(e.level);
-    const hasLevel = Number.isFinite(level);
+    // Only a written number is a level. `Number(null)` is 0, so a looser test
+    // would stamp a null level as a level 1 mob with level 1 gear.
+    const level = /** @type {number} */ (e.level);
+    const hasLevel = typeof level === 'number' && Number.isFinite(level);
     const tier = e.tier === 'legend' ? 'legend' : 'mob';
     const stamp = hasLevel ? defaultEnemyGear(clampInt(level, 1), tier) : null;
     // A null value survives, for a deliberately unarmed entry. An absent or
@@ -623,8 +623,7 @@ export function normalizeLibrary(parsed) {
           : (stamp?.[slot] ?? null);
       // A creature's weapon coerces the same way an equipment entry does.
       if (slot !== 'weapon' || !value) return value;
-      const { handling: _handling, ...rest } = /** @type {Record<string, any>} */ (value);
-      return { ...rest, ...coerceWeapon(value) };
+      return withCoercedWeapon(/** @type {Record<string, any>} */ (value));
     };
     const stats = e.stats ?? e.statBlock;
     // A rating is written either as a number or as a fraction such as "1/4".
@@ -651,22 +650,24 @@ export function normalizeLibrary(parsed) {
 
   /** @type {string[]} */
   const spellIds = [];
+  const claimSpellId = idClaimer(DEFAULT_SPELLS, nameKey);
   const spells = dedupeByKey(
     arrayOf(source.spells).filter((e) => typeof e.name === 'string' && e.name.trim()),
     rawNameKey,
   ).map((e) => {
-    const id = typeof e.id === 'string' && e.id ? e.id : slugId(e.name.trim(), spellIds);
+    const id = claimSpellId(e.id, e.name.trim(), spellIds);
     spellIds.push(id);
     return normalizeSpell(e, id);
   });
 
   /** @type {string[]} */
   const featIds = [];
+  const claimFeatId = idClaimer(DEFAULT_FEATS, nameKey);
   const feats = dedupeByKey(
     arrayOf(source.feats).filter((e) => typeof e.name === 'string' && e.name.trim()),
     rawNameKey,
   ).map((e) => {
-    const id = typeof e.id === 'string' && e.id ? e.id : slugId(e.name.trim(), featIds);
+    const id = claimFeatId(e.id, e.name.trim(), featIds);
     featIds.push(id);
     return normalizeFeat(e, id);
   });

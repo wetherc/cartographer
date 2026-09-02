@@ -19,6 +19,7 @@ import {
   upsertEntry,
   removeEntry,
   storedEntryId,
+  renameConflict,
   DEFAULT_CREATURES,
   DEFAULT_FEATS,
 } from '../library/Library.js';
@@ -32,9 +33,9 @@ import {
   LIBRARY_FILE,
 } from '../storage/LibraryStore.js';
 import { DEFAULT_SPELLS } from '../data/spells.js';
-import { itemSummary, formatDamage } from '../entities/Equipment.js';
-import { riderText } from '../entities/Riders.js';
+import { itemSummary } from '../entities/Equipment.js';
 import { creatureForm } from './creatureForm.js';
+import { creatureSummary, featSummary, spellSummary } from './librarySummaries.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
@@ -42,45 +43,6 @@ import { creatureForm } from './creatureForm.js';
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/feat.js').Feat} Feat */
-
-/** Build the one-line summary for a spell in the library row.
- * It shows the level, the school, the effect kind, and a concentration marker
- * if the spell needs concentration.
- * @param {Spell} spell
- * @returns {string} */
-function spellSummary(spell) {
-  const level = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
-  return [`${level} ${spell.school}`, spell.effect.kind, spell.concentration ? 'concentration' : '']
-    .filter(Boolean)
-    .join(' | ');
-}
-
-/** Build the one-line summary for a feat in the library row: one phrase per
- * effect, or "text only" for a feat the engine cannot apply, plus a
- * prerequisite marker.
- * @param {Feat} feat
- * @returns {string} */
-function featSummary(feat) {
-  const parts = feat.effects.map((effect) => {
-    if (effect.kind === 'asi') {
-      return `+1 ${effect.abilities.length > 0 ? effect.abilities.join('/') : 'any'}`;
-    }
-    if (effect.kind === 'rider') return `${riderText(effect.rider)} rider`;
-    return [
-      effect.skills ? `${effect.skills.choose} skill${effect.skills.choose > 1 ? 's' : ''}` : '',
-      effect.saves ? `${effect.saves.choose} save${effect.saves.choose > 1 ? 's' : ''}` : '',
-      effect.expertise ? 'expertise' : '',
-      effect.armor ? `armor: ${effect.armor.join(', ')}` : '',
-      effect.tools ? 'tools' : '',
-      effect.languages ? 'languages' : '',
-    ]
-      .filter(Boolean)
-      .join(', ');
-  });
-  if (parts.length === 0) parts.push('text only');
-  if (feat.prerequisite) parts.push('prerequisite');
-  return parts.join(' | ');
-}
 
 /** The section headings for the equipment list, in display order. */
 const TYPE_GROUPS = /** @type {Record<string, string>} */ ({
@@ -112,24 +74,6 @@ const CREATURE_SUBTABS = [
   { id: 'foes', label: 'Foes' },
   { id: 'people', label: 'People' },
 ];
-
-/** The one-line summary for a creature row. A foe leads with its combat
- * numbers, and everyone else with who they are.
- * @param {CreatureTemplate} entry
- * @returns {string} */
-function creatureSummary(entry) {
-  if (entry.disposition === 'hostile') {
-    return [
-      entry.level != null
-        ? `${entry.maxHP} HP, level ${entry.level} ${entry.tier}`
-        : `${entry.maxHP} HP`,
-      entry.weapon ? `${entry.weapon.name} ${formatDamage(entry.weapon.damage)}` : '',
-    ]
-      .filter(Boolean)
-      .join(' | ');
-  }
-  return [entry.role, entry.disposition].filter(Boolean).join(' | ');
-}
 
 /**
  * Build the rail for the Library mode. It shows the merged built-in and
@@ -183,6 +127,17 @@ export function wireLibrary(app) {
   };
 
   /**
+   * Apply one edit onto the latest stored library, then store and show the
+   * result. Two tabs can edit the library at once. Each edit starts from what
+   * storage holds now, not from this tab's copy, so a write from one tab does
+   * not erase an edit the other tab stored in between. When nothing is stored
+   * (a reset in another tab, or a fresh browser), the edit applies onto an
+   * empty library.
+   * @param {(base: CustomLibrary) => CustomLibrary} edit
+   */
+  const updateCustom = (edit) => setCustom(edit(loadCustomLibrary() ?? emptyLibrary()));
+
+  /**
    * The shared onRemove handler for every library list. Removing an override
    * reverts the entry to its built-in default. Removing a custom entry
    * deletes it.
@@ -222,23 +177,37 @@ export function wireLibrary(app) {
    * merged list. An overridden default hides its own id, but that id returns
    * when the override is renamed or removed. A new id that reuses it makes
    * one of the two entries unreachable through the last-wins id index.
+   * A rename onto a name that another entry already holds is refused with a
+   * toast, and the form stays open. The store would otherwise replace that
+   * entry by name and drop its id from the index, so every spellbook holding
+   * the id would lose the spell with no message.
    * @param {'creatures' | 'spells' | 'feats'} list which custom-library list to write
+   * @param {string} noun the entry kind, for the refusal toast
    * @param {() => { entry: { id: string, name: string }, source: import('../types/library.js').LibrarySource }[]} activeEntries
    * @param {{ id: string }[]} defaults the list's built-in entries
-   * @returns {(key: string | null, fields: { name: string }) => void}
+   * @returns {(key: string | null, fields: { name: string }) => boolean} true when stored
    */
-  const makeKeyedStore = (list, activeEntries, defaults) => (key, fields) => {
-    const takenIds = () =>
-      [...defaults, .../** @type {{ id: string }[]} */ (custom[list])].map((entry) => entry.id);
+  const makeKeyedStore = (list, noun, activeEntries, defaults) => (key, fields) => {
     const newKey = nameKey(fields);
+    const renamed = key !== newKey;
     const merged = activeEntries();
     const found = key ? merged.find(({ entry }) => nameKey(entry) === key) : null;
     const target = merged.find(({ entry }) => nameKey(entry) === newKey);
-    const id = storedEntryId({ found, target, renamed: key !== newKey, newKey, takenIds });
-    const entry = /** @type {any} */ ({ ...fields, id });
-    let next = /** @type {any[]} */ (custom[list]);
-    if (key && key !== nameKey(entry)) next = removeEntry(next, key, nameKey);
-    setCustom({ ...custom, [list]: upsertEntry(next, entry, nameKey) });
+    if (renameConflict({ found, target, renamed })) {
+      app.toasts.show(
+        `Another ${noun} is already named "${fields.name.trim()}". Choose a different name.`,
+      );
+      return false;
+    }
+    updateCustom((base) => {
+      const held = /** @type {{ id: string, name: string }[]} */ (base[list]);
+      const takenIds = () => [...defaults, ...held].map((entry) => entry.id);
+      const id = storedEntryId({ found, target, renamed, newKey, takenIds });
+      const entry = /** @type {any} */ ({ ...fields, id });
+      const next = key && renamed ? removeEntry(held, key, nameKey) : held;
+      return { ...base, [list]: upsertEntry(next, entry, nameKey) };
+    });
+    return true;
   };
 
   setActiveLibrary(custom);
@@ -246,10 +215,13 @@ export function wireLibrary(app) {
   // Seed an empty browser from the library file. A fresh clone or a cleared
   // browser then picks up the GM customizations without a manual import.
   // A browser that already holds a library keeps it. The file loads only
-  // when the GM selects Import.
+  // when the GM selects Import. The fetch is asynchronous, so the GM, or
+  // another tab, can store an edit before it resolves. That edit wins: the
+  // seed is skipped once anything is stored or held in this tab.
   if (!hadStored) {
     fetchLibraryFile().then((library) => {
       if (!library || isLibraryEmpty(library)) return;
+      if (!isLibraryEmpty(custom) || loadCustomLibrary() !== null) return;
       setCustom(library);
       app.toasts.show(`Loaded the custom library from ${LIBRARY_FILE}.`);
     });
@@ -309,23 +281,33 @@ export function wireLibrary(app) {
         onSubmit: (fields) => {
           const { quantity: _quantity, notes: _notes, ...rest } = fields;
           const entry = /** @type {EquipmentTemplate} */ (rest);
-          let next = custom.equipment;
           // A rename or a type change removes the old custom entry instead
           // of leaving both. Renaming a default only adds the renamed copy.
-          if (key && key !== equipmentKey(entry)) next = removeEntry(next, key, equipmentKey);
-          setCustom({ ...custom, equipment: upsertEntry(next, entry, equipmentKey) });
+          updateCustom((base) => {
+            const moved = key && key !== equipmentKey(entry);
+            const next = moved ? removeEntry(base.equipment, key, equipmentKey) : base.equipment;
+            return { ...base, equipment: upsertEntry(next, entry, equipmentKey) };
+          });
           close();
         },
       });
     },
     onRemove: makeRemoveHandler('entry', (key) =>
-      setCustom({ ...custom, equipment: removeEntry(custom.equipment, key, equipmentKey) }),
+      updateCustom((base) => ({
+        ...base,
+        equipment: removeEntry(base.equipment, key, equipmentKey),
+      })),
     ),
   });
 
   // --- Creatures -------------------------------------------------------------
 
-  const storeCreature = makeKeyedStore('creatures', activeCreatureEntries, DEFAULT_CREATURES);
+  const storeCreature = makeKeyedStore(
+    'creatures',
+    'creature',
+    activeCreatureEntries,
+    DEFAULT_CREATURES,
+  );
 
   const creaturePanel = mountLibraryPanel(mustGetElement('library-creatures-container'), {
     addLabel: 'New creature',
@@ -353,13 +335,12 @@ export function wireLibrary(app) {
         submitLabel: found ? 'Save' : 'Add',
         onCancel: close,
         onSubmit: (fields) => {
-          storeCreature(key, fields);
-          close();
+          if (storeCreature(key, fields)) close();
         },
       });
     },
     onRemove: makeRemoveHandler('creature', (key) =>
-      setCustom({ ...custom, creatures: removeEntry(custom.creatures, key, nameKey) }),
+      updateCustom((base) => ({ ...base, creatures: removeEntry(base.creatures, key, nameKey) })),
     ),
     // Spawn a campaign creature from a template. The matching campaign
     // dialog opens pre-filled from the template, with placement set to the
@@ -375,7 +356,7 @@ export function wireLibrary(app) {
 
   // --- Spells ----------------------------------------------------------------
 
-  const storeSpell = makeKeyedStore('spells', activeSpellEntries, DEFAULT_SPELLS);
+  const storeSpell = makeKeyedStore('spells', 'spell', activeSpellEntries, DEFAULT_SPELLS);
 
   const spellPanel = mountLibraryPanel(mustGetElement('library-spells-container'), {
     addLabel: 'New spell',
@@ -397,19 +378,18 @@ export function wireLibrary(app) {
         submitLabel: found ? 'Save' : 'Add',
         onCancel: close,
         onSubmit: (fields) => {
-          storeSpell(key, fields);
-          close();
+          if (storeSpell(key, fields)) close();
         },
       });
     },
     onRemove: makeRemoveHandler('spell', (key) =>
-      setCustom({ ...custom, spells: removeEntry(custom.spells, key, nameKey) }),
+      updateCustom((base) => ({ ...base, spells: removeEntry(base.spells, key, nameKey) })),
     ),
   });
 
   // --- Feats -----------------------------------------------------------------
 
-  const storeFeat = makeKeyedStore('feats', activeFeatEntries, DEFAULT_FEATS);
+  const storeFeat = makeKeyedStore('feats', 'feat', activeFeatEntries, DEFAULT_FEATS);
 
   const featPanel = mountLibraryPanel(mustGetElement('library-feats-container'), {
     addLabel: 'New feat',
@@ -430,13 +410,12 @@ export function wireLibrary(app) {
         submitLabel: found ? 'Save' : 'Add',
         onCancel: close,
         onSubmit: (fields) => {
-          storeFeat(key, fields);
-          close();
+          if (storeFeat(key, fields)) close();
         },
       });
     },
     onRemove: makeRemoveHandler('feat', (key) =>
-      setCustom({ ...custom, feats: removeEntry(custom.feats, key, nameKey) }),
+      updateCustom((base) => ({ ...base, feats: removeEntry(base.feats, key, nameKey) })),
     ),
   });
 

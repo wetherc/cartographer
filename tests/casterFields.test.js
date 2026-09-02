@@ -10,6 +10,7 @@ import {
   readCasterOptions,
   refilterSpellsOnChange,
   casterFields,
+  NO_CASTER_TEXT,
 } from '../src/app/casterFields.js';
 
 test('casterFields seeds class, level, and pre-checked spells from a caster', () => {
@@ -53,7 +54,7 @@ test('casterClassOptions offers None plus caster classes only', () => {
 });
 
 test('spellPickerOptions labels cantrips and orders by level', () => {
-  const options = spellPickerOptions();
+  const options = spellPickerOptions('wizard', 20);
   const fireBolt = options.find((o) => o.value === 'fire-bolt');
   assert.ok(fireBolt.label.startsWith('Cantrip'), 'a level-0 spell reads as a cantrip');
   const magicMissile = options.find((o) => o.value === 'magic-missile');
@@ -97,15 +98,35 @@ test('spellPickerOptions filters to the class list and castable levels', () => {
   assert.ok(!wizardL5.includes('cone-of-cold'), '5th-level still out of reach at L5');
 });
 
-test('spellPickerOptions offers the whole library when no caster class is set', () => {
-  const all = spellPickerOptions('');
+test('spellPickerOptions offers nothing until a caster class is set', () => {
+  assert.deepEqual(spellPickerOptions(''), []);
+  assert.deepEqual(spellPickerOptions('fighter'), [], 'a non-caster class offers nothing');
   const wizardOnly = spellPickerOptions('cleric', 5).map((o) => o.value);
-  assert.ok(
-    all.some((o) => o.value === 'fire-bolt'),
-    'a wizard-only spell is present',
-  );
-  assert.ok(!wizardOnly.includes('fire-bolt'), 'but filtered out for a cleric');
+  assert.ok(!wizardOnly.includes('fire-bolt'), 'a wizard-only spell is filtered out for a cleric');
   assert.ok(wizardOnly.includes('sacred-flame'), 'a cleric cantrip is offered to a cleric');
+});
+
+test('the spell field says why it is empty while no caster class is chosen', () => {
+  const [, , spells] = casterFields(null);
+  assert.deepEqual(spells.options, []);
+  assert.equal(spells.emptyText, NO_CASTER_TEXT);
+  const [, , seeded] = casterFields({ class: 'cleric', casterLevel: 5 });
+  assert.ok(seeded.options.length > 0, 'a seeded caster class fills the list');
+});
+
+test('refilterSpellsOnChange empties the picker when the class goes back to None', () => {
+  const calls = [];
+  const form = {
+    values: { casterClass: '', casterLevel: '5' },
+    get(name) {
+      return this.values[name];
+    },
+    setOptions(name, options) {
+      calls.push({ name, options });
+    },
+  };
+  assert.equal(refilterSpellsOnChange('casterClass', form), true);
+  assert.deepEqual(calls, [{ name: 'spells', options: [] }]);
 });
 
 test('spellbookFromIds partitions cantrips from leveled spells and drops unknowns', () => {

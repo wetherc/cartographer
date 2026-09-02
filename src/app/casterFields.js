@@ -53,20 +53,22 @@ export function maxSpellLevelForClass(classId, casterLevel) {
  * spell id, so the multiselect's comma-joined result is a set of spell ids. A
  * caster class filters the list to that class's spell list and to the spell
  * levels it can slot at `casterLevel`. With no caster class (None or
- * non-caster), this function offers the whole library, because the field is
- * discarded downstream anyway.
+ * non-caster), this function offers nothing. The field is discarded
+ * downstream for a non-caster, so a full list of checkboxes would only
+ * invite picks that never store. The multiselect shows `NO_CASTER_TEXT` in
+ * place of the empty list.
  * @param {string} [classId]
  * @param {number} [casterLevel]
  * @returns {{ value: string, label: string }[]}
  */
 export function spellPickerOptions(classId = '', casterLevel = 1) {
-  const filtered = isCasterClass(classId);
-  const max = filtered ? maxSpellLevelForClass(classId, casterLevel) : 0;
+  if (!isCasterClass(classId)) return [];
+  const max = maxSpellLevelForClass(classId, casterLevel);
   return (
     activeSpells()
       // `filter` already returns a fresh array. Sorting it in place cannot
       // reach the shared library list that this reads from.
-      .filter((s) => !filtered || (s.classes.includes(classId) && s.level <= max))
+      .filter((s) => s.classes.includes(classId) && s.level <= max)
       .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name))
       .map((s) => ({
         value: s.id,
@@ -86,12 +88,16 @@ export function spellbookIds(spellbook) {
   return [...new Set([...spellbook.cantrips, ...spellbook.known, ...spellbook.prepared])];
 }
 
+/** The text the spell picker shows while no caster class is chosen. */
+export const NO_CASTER_TEXT = 'Pick a caster class to choose spells.';
+
 /**
  * Returns the three caster fields (class, caster level, and a spell
  * multiselect) of the creature authoring spec. A seed from an
  * existing caster's class, level, and spellbook pre-selects these fields for
- * editing. The spell list offers the whole library, because a foe can know
- * any spell, and it is pre-checked from the seed's spellbook.
+ * editing. The spell list offers what the seed's class can slot, and it is
+ * pre-checked from the seed's spellbook. With no caster class the list is
+ * empty and shows why, until a class is picked.
  * @param {{ class?: string, casterLevel?: number, level?: number, spellbook?: Spellbook } | null} seed
  * @returns {ModalField[]}
  */
@@ -120,6 +126,7 @@ export function casterFields(seed) {
       type: 'multiselect',
       value: spellbookIds(seed?.spellbook).join(','),
       full: true,
+      emptyText: NO_CASTER_TEXT,
       // Seed the list filtered to the seed's class and level. The dialog's
       // onChange refilters it live as the caster class or level changes.
       options: spellPickerOptions(seed?.class ?? '', seed?.casterLevel ?? seed?.level ?? 1),

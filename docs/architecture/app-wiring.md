@@ -398,8 +398,8 @@ The helper owns the rest:
 
 ### libraryWiring.js
 
-This module owns the Library mode's three template lists (equipment,
-creatures, spells) and the custom-library file controls: export,
+This module owns the Library mode's four template lists (equipment,
+creatures, spells, feats) and the custom-library file controls: export,
 import, reset, and the startup auto-load. The creature list shows two
 subtabs. Foes holds the hostile templates, and People holds the rest. An
 edit that changes a template's disposition moves it to the other subtab.
@@ -417,10 +417,17 @@ the wiring that loads customizations.
 
 Inside the wiring, every list's remove flow goes through one
 `makeRemoveHandler(noun, apply)`, so the revert-override-vs-delete-custom
-confirm wording lives there alone. The name-keyed lists (creatures, spells)
-store edits through one `makeKeyedStore`, which owns id derivation and makes
-a rename retire the old key. A fourth library kind, such as a feat catalog,
-must reuse both, rather than paste another copy.
+confirm wording lives there alone. The name-keyed lists (creatures, spells,
+feats) store edits through one `makeKeyedStore`, which owns id derivation
+and makes a rename retire the old key. It refuses a rename onto a name that
+another entry already holds, with a toast, because a custom entry keeps its
+id and the store would drop the other entry's id from the index. The id
+rules (`storedEntryId`, `renameConflict`, and the `idClaimer` that
+`normalizeLibrary` uses on the way in) live in `library/LibraryIdentity.js`.
+Every edit and removal writes through `updateCustom(edit)`. It reads the
+stored library first and applies the edit onto that, so two tabs editing the
+library do not erase each other's work. The row summaries live in
+`app/librarySummaries.js`.
 
 ### sessionControls.js
 

@@ -126,12 +126,20 @@ test('a blank level stores no level and no tier', () => {
   assert.equal('tier' in read, false);
 });
 
-test('a typed level stores the level and the tier, clamped to at least 1', () => {
+test('a typed level stores the level and the tier', () => {
   const gear = gearOptions(null);
   const read = readCreatureFields({ ...baseValues(), level: '6', tier: 'legend' }, gear);
   assert.equal(read.level, 6);
   assert.equal(read.tier, 'legend');
-  assert.equal(readCreatureFields({ ...baseValues(), level: '-2' }, gear).level, 1);
+});
+
+test('a level of 0 or below, or one that is not a number, stores no level', () => {
+  const gear = gearOptions(null);
+  for (const level of ['0', '-2', 'boss']) {
+    const read = readCreatureFields({ ...baseValues(), level }, gear);
+    assert.equal('level' in read, false, `level ${level} reads as no level`);
+    assert.equal('tier' in read, false, `level ${level} stores no tier`);
+  }
 });
 
 test('a blank or nonsense maximum reads as the commoner default', () => {
@@ -164,6 +172,9 @@ test('no re-stamp happens while the level is blank, or when re-stamping is off',
   const blank = fakeForm({ level: '', tier: 'mob', 'stat-STR': '10' });
   onChange('level', blank);
   assert.equal(blank.get('stat-STR'), '10', 'an unleveled creature keeps its typed stats');
+  const zero = fakeForm({ level: '0', tier: 'mob', 'stat-STR': '10' });
+  onChange('level', zero);
+  assert.equal(zero.get('stat-STR'), '10', 'a level of 0 is no level too');
   const off = creatureFieldsChange({ restampStats: false });
   const form = fakeForm({ level: '6', tier: 'mob', 'stat-STR': '10' });
   off('level', form);
