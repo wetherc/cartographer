@@ -143,9 +143,11 @@ export function resolveEntryTile(node, preferredId) {
  * @param {import('../types/map.js').MapNode} child node being entered
  * @param {string} childNodeId
  * @param {import('../types/map.js').PartyPosition} party
+ * @param {string | null} [throughTileId] parent tile the party zooms through,
+ *   which picks the block when two blocks link the same child
  * @returns {string} child tile id ("x,y")
  */
-export function computeRegionEntryTile(parent, child, childNodeId, party) {
+export function computeRegionEntryTile(parent, child, childNodeId, party, throughTileId = null) {
   // Taking a staircase lands the party on the matching staircase of the child
   // level, not on a border tile. Stacked levels sit above and below each
   // other, so an entry from the side is incorrect. The stairs are the only
@@ -161,7 +163,7 @@ export function computeRegionEntryTile(parent, child, childNodeId, party) {
   if (landing) return landing.id;
 
   const partyCoords = party.nodeId === parent.id ? parseCoords(party.tileId) : null;
-  const group = blockFor(parent, childNodeId);
+  const group = blockFor(parent, childNodeId, throughTileId);
   const block = group
     ? { minX: group.minX, minY: group.minY, maxX: group.maxX, maxY: group.maxY }
     : null;
@@ -191,15 +193,18 @@ export function computeRegionEntryTile(parent, child, childNodeId, party) {
  * @param {import('../types/map.js').MapNode} child node being left
  * @param {import('../types/map.js').MapExit} exit the way out being used
  * @param {import('../types/map.js').PartyPosition} position who is leaving, and from where
+ * @param {string | null} [throughTileId] parent tile the party entered
+ *   through, if known. When two blocks link the same child, the party
+ *   returns beside the block it came in by.
  * @returns {string} parent tile id ("x,y")
  */
-export function computeParentReturnTile(parent, child, exit, position) {
+export function computeParentReturnTile(parent, child, exit, position, throughTileId = null) {
   const centre = tileIdAt(Math.floor(parent.width / 2), Math.floor(parent.height / 2));
   if (exit.kind === 'tile' && (exit.via === 'stairs-up' || exit.via === 'stairs-down')) {
     const stairway = stairwayTo(parent, child.id);
     if (stairway) return stairway.tile.id;
   }
-  const group = blockFor(parent, child.id);
+  const group = blockFor(parent, child.id, throughTileId);
   if (!group) return resolveReturnTile(parent, centre, child.id);
   const anchor = blockAnchor(parent, group);
   if (exit.kind === 'fallback') return anchor;
@@ -217,7 +222,13 @@ export function computeParentReturnTile(parent, child, exit, position) {
     y = projectBack(along.y, child.height, group.minY, group.maxY);
     x = side === 'west' ? group.minX - 1 : group.maxX + 1;
   }
-  return resolveReturnTile(parent, tileIdAt(x, y), child.id);
+  // A block flush against the parent's north or west edge projects to a
+  // coordinate of -1. That id parses as nothing, and the snap below would
+  // then fall back to the first painted tile, at the origin. Clamping into
+  // the grid keeps the landing beside the block. The snap still moves it off
+  // the block onto the nearest painted cell.
+  const inside = tileIdAt(clamp(x, 0, parent.width - 1), clamp(y, 0, parent.height - 1));
+  return resolveReturnTile(parent, inside, child.id);
 }
 
 /**

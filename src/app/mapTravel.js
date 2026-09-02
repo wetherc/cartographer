@@ -29,6 +29,17 @@ import { capitalize } from '../util/text.js';
 export function createMapTravel(app, env) {
   const { grid, navigator, partyTracker, state } = app;
 
+  /**
+   * The parent tile the view last zoomed through, per child node. A parent
+   * can link one child from two blocks that do not touch. The return
+   * geometry needs the block the party came in by, and the tiles alone do
+   * not say which one that was. This memory lasts for the session only. A
+   * child entered another way (a teleport, a reload) has no entry here, and
+   * the return then uses the first block.
+   * @type {Map<string, string>}
+   */
+  const enteredThrough = new Map();
+
   /** Landing where a placed creature stands is the introduction. Mark the
    * creature met, and log the meeting once per creature: "encounters" for a
    * hostile one, "meets" for the rest. A met non-hostile creature starts to
@@ -149,7 +160,8 @@ export function createMapTravel(app, env) {
       env.goToNode(parent.id);
       return;
     }
-    const landing = computeParentReturnTile(parent, child, exit, from);
+    const through = enteredThrough.get(child.id) ?? null;
+    const landing = computeParentReturnTile(parent, child, exit, from, through);
     if (subject) {
       state.characters = moveCharacter(state.characters, subject.id, {
         nodeId: parent.id,
@@ -260,6 +272,7 @@ export function createMapTravel(app, env) {
       const parent = navigator.getCurrentNode();
       if (navigator.zoomIn(tile.id)) {
         const child = navigator.getCurrentNode();
+        enteredThrough.set(child.id, tile.id);
         if (gm || subject) {
           // Check this before the move reveals entry fog. An all-fogged
           // child has never been visited, so stepping in now is its
@@ -273,7 +286,7 @@ export function createMapTravel(app, env) {
           if (subject) {
             const at = characterPosition(subject, partyTracker.getPosition());
             if (at.nodeId !== child.id) {
-              const entry = computeRegionEntryTile(parent, child, tile.childNodeId, at);
+              const entry = computeRegionEntryTile(parent, child, tile.childNodeId, at, tile.id);
               state.characters = moveCharacter(state.characters, subject.id, {
                 nodeId: child.id,
                 tileId: entry,
@@ -285,7 +298,13 @@ export function createMapTravel(app, env) {
           } else if (partyTracker.getPosition().nodeId !== child.id) {
             partyTracker.moveTo(
               child.id,
-              computeRegionEntryTile(parent, child, tile.childNodeId, partyTracker.getPosition()),
+              computeRegionEntryTile(
+                parent,
+                child,
+                tile.childNodeId,
+                partyTracker.getPosition(),
+                tile.id,
+              ),
             );
             state.characters = recallAll(state.characters);
           }

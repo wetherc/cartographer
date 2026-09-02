@@ -198,13 +198,20 @@ export function stairwayTo(parent, childNodeId) {
 
 /**
  * The block a child node occupies in its parent, or null when no parent tile
- * links to it.
+ * links to it. A parent can link one child from two blocks that do not
+ * touch, for example a cave with two mouths. In that case the block that
+ * holds `throughTileId`, the parent tile the party zoomed through, is the
+ * one the party is in. The function returns the first block when no tile is
+ * given, or when the tile belongs to no block of this child.
  * @param {MapNode} parent
  * @param {string} childNodeId
+ * @param {string | null} [throughTileId] parent tile the party entered through
  * @returns {RegionGroup | null}
  */
-export function blockFor(parent, childNodeId) {
-  return findRegionGroups(parent).find((g) => g.childNodeId === childNodeId) ?? null;
+export function blockFor(parent, childNodeId, throughTileId = null) {
+  const blocks = findRegionGroups(parent).filter((g) => g.childNodeId === childNodeId);
+  const through = throughTileId ? blocks.find((g) => g.tileIds.includes(throughTileId)) : null;
+  return through ?? blocks[0] ?? null;
 }
 
 /**

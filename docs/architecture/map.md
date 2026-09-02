@@ -396,7 +396,13 @@ Zooming in uses a tile's `childNodeId` plus
   it walked into.
 
 The block a child occupies in its parent comes from `blockFor`, a lookup
-over `RegionGroups.findRegionGroups`. For an `edge` exit, a side counts when
+over `RegionGroups.findRegionGroups`. A parent can link one child from two
+blocks that do not touch, such as a cave with two mouths. `blockFor` takes
+an optional zoom-through tile for that case and returns the block that holds
+it. Without the tile it returns the first block. `mapTravel.js` remembers
+the tile each child was last zoomed through, for the session only, and
+passes it to the entry and return geometry. The exit list itself still reads
+the first block. For an `edge` exit, a side counts when
 any cell of that block has an orthogonal neighbor in the parent that carries
 an `imageRef` and is not part of the block itself. Diagonal contact past a
 corner does not count, because it leaves the party nothing to step onto.
@@ -445,7 +451,10 @@ of the exit list.
 of the child maps back onto the block's extent, and then one cell further
 out, onto the parent terrain the side touches. Through a door, the model
 uses the same projection from the door's own coordinate. Along a stairway,
-it uses the parent's tile at the other end of the stairway.
+it uses the parent's tile at the other end of the stairway. A block that
+sits on the parent's own north or west edge projects to a coordinate of -1.
+The function clamps the coordinate into the grid before the snap, so the
+party lands beside the block instead of at the origin.
 
 The first two cases snap through `resolveReturnTile`, the parent-side
 counterpart of `resolveEntryTile`: the nearest painted, non-wall tile that
