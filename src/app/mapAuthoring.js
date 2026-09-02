@@ -12,7 +12,7 @@ import {
 import { isOverlayType } from '../map/TilePalette.js';
 import { setTileRevealed } from '../map/FogOfWar.js';
 import { recallAll } from '../party/CharacterTokens.js';
-import { pushEdit, popEdit } from '../map/EditHistory.js';
+import { nodeSnapshot, pushEdit, popEdit } from '../map/EditHistory.js';
 import { mountTileInspector } from '../ui/TileInspector.js';
 import { promptModal, alertModal } from '../ui/Modal.js';
 import { resyncMapViews } from './mapResync.js';
@@ -40,28 +40,54 @@ export function createMapAuthoring(app, env) {
    * link, drop-paint, or generate action. This lets the user undo one bad
    * edit without a reload. The ring lasts only for this session. The
    * persisted Undo button still handles undo at the save level.
-   * @type {import('../types/map.js').MapNode[][]}
+   * @type {import('../map/EditHistory.js').EditSnapshot[]}
    */
   let editHistory = [];
 
   /** Save the given nodes' state before the edit, onto the stroke-undo ring.
    * @param {...import('../types/map.js').MapNode} nodes */
   function snapshotEdit(...nodes) {
-    editHistory = pushEdit(editHistory, nodes);
+    recordEdit(nodeSnapshot(nodes));
   }
 
-  /** Restore the most recent stroke-undo snapshot, skipping nodes deleted since. */
+  /** Save a full edit record onto the stroke-undo ring. A generate action
+   * builds one that also names the nodes it created and removed and where
+   * the party stood.
+   * @param {import('../map/EditHistory.js').EditSnapshot} snapshot */
+  function recordEdit(snapshot) {
+    editHistory = pushEdit(editHistory, snapshot);
+  }
+
+  /**
+   * Restore the most recent stroke-undo snapshot. Nodes the edit created go
+   * first, so a link they hold cannot outlive them. Nodes the edit removed
+   * come back next, then the rewritten nodes as they stood. A rewritten
+   * node deleted since the snapshot stays deleted. The party moves back
+   * when the edit moved it and its node still exists. A view left inside a
+   * removed node moves to the first restored node.
+   */
   function undoStroke() {
     const popped = popEdit(editHistory);
     editHistory = popped.history;
-    if (!popped.nodes) {
+    const snapshot = popped.snapshot;
+    if (!snapshot) {
       toasts.show('Nothing to undo.');
       return;
     }
-    for (const node of popped.nodes) {
+    for (const id of snapshot.created) {
+      if (grid.getNode(id)) grid.removeNode(id);
+    }
+    for (const node of snapshot.removed) grid.addNode(node);
+    for (const node of snapshot.nodes) {
       if (grid.getNode(node.id)) grid.updateNode(node);
     }
-    resyncMapViews(app, env, { reframe: true });
+    const party = snapshot.party;
+    if (party && grid.getNode(party.nodeId)) partyTracker.moveTo(party.nodeId, party.tileId);
+    if (grid.getNode(navigator.currentNodeId)) {
+      resyncMapViews(app, env, { reframe: true });
+    } else {
+      env.goToNode(snapshot.nodes[0].id);
+    }
     app.actions.markDirty();
     toasts.show('Undid the last edit.');
   }
@@ -314,6 +340,7 @@ export function createMapAuthoring(app, env) {
 
   return {
     snapshotEdit,
+    recordEdit,
     undoStroke,
     applyToTile,
     linkSelectedTile,

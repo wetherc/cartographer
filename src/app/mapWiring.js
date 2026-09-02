@@ -58,6 +58,7 @@ import { isGM } from '../view/ViewRole.js';
  *   syncPaletteKind: () => void,
  *   refreshMapDescription: () => void,
  *   snapshotEdit: (...nodes: MapNode[]) => void,
+ *   recordEdit: (snapshot: import('../map/EditHistory.js').EditSnapshot) => void,
  * }} MapEnv
  */
 
@@ -109,6 +110,7 @@ export function wireMapView(app) {
   const nodeActions = createNodeActions(app, env);
   env.nodeActions = nodeActions;
   env.snapshotEdit = authoring.snapshotEdit;
+  env.recordEdit = authoring.recordEdit;
   app.actions.undoStroke = authoring.undoStroke;
   app.actions.meetCreatures = travel.meetCreaturesHere;
 

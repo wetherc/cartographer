@@ -139,9 +139,23 @@ The gesture layers live beside it, in their own files:
 
 ### generateAction.js and nodeActions.js
 
-`generateAction.js` runs the Generate dialog flow and its non-destructive
-apply. `nodeActions.js` handles node create, edit, and delete. Both take
+`generateAction.js` runs the Generate dialog flow and its apply.
+`nodeActions.js` handles node create, edit, and delete. Both take
 `(app, env)` like the gesture layers, and both end in `resyncMapViews`.
+
+A generated layout replaces every tile of the node, so the sub-maps the old
+tiles led to are removed with them. A multi-level dungeon leaves its old
+deeper levels this way, and the new level 1 gets new ones. The pure
+decisions live in `src/map/RegenerateNode.js`. `linkedDescendants` names
+the nodes to remove: every node an old tile links to, with its subtree. A
+child that no tile links to is left alone, because it was already
+unreachable. `regenerateLanding` says where the party goes, including a
+party that stood in a removed level. `regenerateSnapshot` builds the undo
+record. The stroke-undo ring in `EditHistory.js` holds an `EditSnapshot`
+per edit: the rewritten nodes, the ids of created nodes, the removed nodes,
+and the party position. `undoStroke` in `mapAuthoring.js` applies all four.
+The rng that drew the layout also picks the entrance art on the parent, so
+one seed gives one result.
 
 The three decisions they share are pure functions in `src/map/NodeEdits.js`.
 `freshNodeId` picks an id that the grid does not use. `tileWithinBounds`

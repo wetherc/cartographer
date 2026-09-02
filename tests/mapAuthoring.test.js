@@ -5,6 +5,7 @@ import { TileGrid, createMapNode, createTile, getTile } from '../src/map/TileGri
 import { MapNavigator } from '../src/map/MapNavigator.js';
 import { fillTiles } from './helpers/grid.js';
 import { stubApp } from './helpers/app.js';
+import { regenerateSnapshot } from '../src/map/RegenerateNode.js';
 
 const INTERIOR = 'assets/tiles/interior/interior';
 
@@ -83,6 +84,7 @@ function authoring({ mode = 'build', scale = 1, palette = { get: () => undefined
     env,
     grid,
     navigator,
+    partyTracker,
     calls,
     toastMessages,
     inspected,
@@ -370,4 +372,77 @@ test('dragover only offers a drop target while authoring', () => {
   const ignored = dropEvent('floor-2', 0, 0);
   playCanvas.fire('dragover', ignored);
   assert.equal(ignored.prevented, false);
+});
+
+/**
+ * The state after a regeneration of the keep: the cellar its tiles led to is
+ * gone, a deeper level is new, the keep's tiles changed, and the party was
+ * re-landed in the new level. The snapshot was taken before any of it.
+ */
+function regenerated() {
+  const fixture = authoring();
+  const { gestures, grid, navigator, partyTracker, calls } = fixture;
+  fixture.env.goToNode = (/** @type {string} */ id) => {
+    navigator.goTo(id);
+    calls.push('goToNode');
+  };
+  const cellar = createMapNode('cellar', 'Cellar', 'keep', 2, 2, { kind: 'interior' });
+  grid.addNode(cellar);
+  const keepBefore = fillTiles(grid.getNode('keep'), (id) =>
+    createTile(id, `${INTERIOR}-floor-1.svg`, { childNodeId: id === '3,3' ? 'cellar' : null }),
+  );
+  grid.updateNode(keepBefore);
+  gestures.recordEdit(
+    regenerateSnapshot({
+      node: keepBefore,
+      parent: null,
+      created: ['deep'],
+      removed: [cellar],
+      party: { nodeId: 'keep', tileId: '0,0' },
+    }),
+  );
+  grid.removeNode('cellar');
+  grid.addNode(createMapNode('deep', 'Keep (level 2)', 'keep', 2, 2, { kind: 'interior' }));
+  grid.updateNode(
+    fillTiles(grid.getNode('keep'), (id) =>
+      createTile(id, `${INTERIOR}-wall-h.svg`, { childNodeId: id === '0,0' ? 'deep' : null }),
+    ),
+  );
+  partyTracker.moveTo('deep', '1,1');
+  calls.length = 0;
+  return { ...fixture, keepBefore, cellar };
+}
+
+test('undoStroke removes what a regeneration created, restores what it removed, and moves the party back', () => {
+  const { gestures, grid, partyTracker, keepBefore, cellar, toastMessages } = regenerated();
+  gestures.undoStroke();
+  assert.equal(grid.getNode('deep'), undefined, 'the new level is gone');
+  assert.equal(grid.getNode('cellar'), cellar, 'the removed cellar is back');
+  assert.equal(grid.getNode('keep'), keepBefore, 'the keep stands as it did');
+  assert.deepEqual(partyTracker.getPosition(), { nodeId: 'keep', tileId: '0,0' });
+  assert.deepEqual(toastMessages, ['Undid the last edit.']);
+});
+
+test('undoStroke moves a view left inside a removed level to the restored node', () => {
+  const { gestures, navigator, calls } = regenerated();
+  navigator.goTo('deep');
+  gestures.undoStroke();
+  assert.equal(navigator.currentNodeId, 'keep');
+  assert.ok(calls.includes('goToNode'));
+  assert.ok(!calls.includes('setNode'), 'goToNode owns the redraw, not a resync');
+});
+
+test('undoStroke leaves the party alone when its recorded node no longer exists', () => {
+  const { gestures, partyTracker } = authoring();
+  gestures.recordEdit(
+    regenerateSnapshot({
+      node: createMapNode('keep', 'Keep', 'world', 4, 4),
+      parent: null,
+      created: [],
+      removed: [],
+      party: { nodeId: 'nowhere', tileId: '0,0' },
+    }),
+  );
+  gestures.undoStroke();
+  assert.deepEqual(partyTracker.getPosition(), { nodeId: 'keep', tileId: '0,0' });
 });

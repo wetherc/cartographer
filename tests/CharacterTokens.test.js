@@ -4,6 +4,7 @@ import {
   characterTokens,
   moveCharacter,
   recallAll,
+  recallFrom,
   isSplit,
   characterPosition,
   regroupCandidates,
@@ -98,4 +99,20 @@ test('regroupCandidates leaves out characters placed on a node that no longer ex
     regroupCandidates(scattered, () => false).map((c) => c.id),
     [],
   );
+});
+
+test('recallFrom brings back only the characters standing in the given nodes', () => {
+  const scattered = moveCharacter(
+    moveCharacter(party, 'hero', { nodeId: 'cave', tileId: '0,1' }),
+    'sage',
+    { nodeId: 'tower', tileId: '3,3' },
+  );
+  const recalled = recallFrom(scattered, new Set(['cave', 'gone']));
+  assert.equal(recalled.find((c) => c.id === 'hero')?.location, null);
+  assert.deepEqual(recalled.find((c) => c.id === 'sage')?.location, {
+    nodeId: 'tower',
+    tileId: '3,3',
+  });
+  // A character with the party has no location to clear, and keeps its identity.
+  assert.equal(recallFrom(party, new Set(['cave']))[0], party[0]);
 });

@@ -3,8 +3,10 @@ import { withNodeTiles } from '../map/TileIndex.js';
 import { generateNodeTiles, generateDungeonLevels, ARCHETYPES } from '../map/MapGenerator.js';
 import { ensureChildLink } from '../map/TilePaint.js';
 import { resolveEntryTile } from '../map/EntryPoint.js';
-import { entranceArtFor, freshNodeId, relandedTile } from '../map/NodeEdits.js';
+import { entranceArtFor, freshNodeId } from '../map/NodeEdits.js';
+import { linkedDescendants, regenerateLanding, regenerateSnapshot } from '../map/RegenerateNode.js';
 import { describeTile } from '../map/TileCoords.js';
+import { recallFrom } from '../party/CharacterTokens.js';
 import { mulberry32 } from '../util/Rng.js';
 import { mustGetElement } from '../ui/dom.js';
 import { confirmModal, alertModal } from '../ui/Modal.js';
@@ -13,19 +15,37 @@ import { resyncMapViews } from './mapResync.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./mapWiring.js').MapEnv} MapEnv */
+/** @typedef {import('../ui/GenerateDialog.js').GenerateChoice} GenerateChoice */
+/** @typedef {{ width: number, height: number, tiles: import('../types/map.js').Tile[], entry: string }} Layout */
+
+/**
+ * The question the GM answers before a non-empty node is replaced. It names
+ * the sub-maps that go with the old tiles, when there are any.
+ * @param {import('../types/map.js').MapNode} node
+ * @param {import('../types/map.js').MapNode[]} removed
+ * @returns {string}
+ */
+function replaceQuestion(node, removed) {
+  const base = `Replace every tile in "${node.name}" with a generated map?`;
+  if (removed.length === 0) return base;
+  const count = removed.length === 1 ? 'the 1 sub-map' : `the ${removed.length} sub-maps`;
+  return `${base} This also removes ${count} its tiles lead to.`;
+}
 
 /**
  * This is Build-mode procedural generation. It fills the current node with
  * an archetype layout (wilderness or town for regions, dungeon or castle for
  * interiors) at a size preset, as an alternative to painting a large map
  * tile by tile. Archetypes are filtered to the node's kind, and overwriting
- * a non-empty node asks for confirmation.
+ * a non-empty node asks for confirmation. The sub-maps the old tiles led to
+ * are removed with the tiles, because nothing reaches them once the tiles
+ * are gone. The stroke-undo ring records the whole change.
  * @param {AppContext} app
  * @param {MapEnv} env the map wiring's shared context, for the stroke-undo
  *   snapshot and the post-generate resync
  */
 export function wireGenerateAction(app, env) {
-  const { palette, grid, navigator, partyTracker } = app;
+  const { palette, grid, navigator, partyTracker, state } = app;
 
   mustGetElement('generate-btn').addEventListener('click', async () => {
     const node = navigator.getCurrentNode();
@@ -37,48 +57,46 @@ export function wireGenerateAction(app, env) {
      * layout stamped on accept are the same map. The seed shown to the GM
      * reproduces it later. This function builds multi-level dungeons whole,
      * so the preview's level 1 carries the exact stairs the accepted map will.
-     * @type {{ key: string, gen: { width: number, height: number, tiles: import('../types/map.js').Tile[], entry: string }, levels: ReturnType<typeof generateDungeonLevels> | null } | null}
+     * The rng is kept so the entrance art drawn after the layout follows the
+     * seed too.
+     * @type {{ key: string, gen: Layout, levels: ReturnType<typeof generateDungeonLevels> | null, rng: () => number } | null}
      */
     let candidate = null;
     const freshId = () => freshNodeId((id) => Boolean(grid.getNode(id)));
-    /** @param {import('../ui/GenerateDialog.js').GenerateChoice} choice */
+    /** @param {GenerateChoice} choice */
     const buildCandidate = (choice) => {
-      const key = JSON.stringify(choice);
-      if (candidate?.key !== key) {
+      if (candidate?.key !== JSON.stringify(choice)) {
         const rng = mulberry32(choice.seed);
-        if (choice.archetype === 'dungeon') {
-          // A dungeon can be a chain of levels. Each level's stairs-down
-          // links to a freshly created child node that holds the level
-          // below, so stairs always connect to a real generated level.
-          const levels = generateDungeonLevels(
-            palette,
-            { size: choice.size, levels: choice.levels },
-            rng,
-            freshId,
-          );
-          candidate = { key, gen: levels[0], levels };
-        } else {
-          candidate = {
-            key,
-            gen: generateNodeTiles(
-              palette,
-              { kind: node.kind, archetype: choice.archetype, size: choice.size },
-              rng,
-            ),
-            levels: null,
-          };
-        }
+        candidate = { key: JSON.stringify(choice), ...buildLayout(choice, rng), rng };
       }
       return candidate;
     };
-    /** @param {import('../ui/GenerateDialog.js').GenerateChoice} choice */
+    /**
+     * @param {GenerateChoice} choice
+     * @param {() => number} rng
+     * @returns {{ gen: Layout, levels: ReturnType<typeof generateDungeonLevels> | null }}
+     */
+    const buildLayout = (choice, rng) => {
+      if (choice.archetype === 'dungeon') {
+        // A dungeon can be a chain of levels. Each level's stairs-down
+        // links to a freshly created child node that holds the level
+        // below, so stairs always connect to a real generated level.
+        const options = { size: choice.size, levels: choice.levels };
+        const levels = generateDungeonLevels(palette, options, rng, freshId);
+        return { gen: levels[0], levels };
+      }
+      const options = { kind: node.kind, archetype: choice.archetype, size: choice.size };
+      return { gen: generateNodeTiles(palette, options, rng), levels: null };
+    };
+    /** @param {GenerateChoice} choice */
     const makeCandidate = (choice) => buildCandidate(choice).gen;
 
     const values = await generateDialog({ archetypes, makeCandidate });
     if (!values) return;
+    const removed = linkedDescendants([...grid.nodes.values()], node);
     if (
       node.tiles.length > 0 &&
-      !(await confirmModal(`Replace every tile in "${node.name}" with a generated map?`, {
+      !(await confirmModal(replaceQuestion(node, removed), {
         variant: 'danger',
         confirmLabel: 'Replace',
       }))
@@ -87,23 +105,36 @@ export function wireGenerateAction(app, env) {
     }
     const built = buildCandidate(values);
     const gen = built.gen;
-    // The regenerated layout replaces the node, and can restamp its parent's
-    // entrance link below. Snapshot both so the stroke-undo ring can revert it.
-    const parentBefore = grid.getParent(node);
-    env.snapshotEdit(node, ...(parentBefore ? [parentBefore] : []));
-    if (built.levels) {
-      built.levels.slice(1).forEach((level, i) => {
-        const child = createMapNode(
-          /** @type {string} */ (level.id),
-          `${node.name} (level ${i + 2})`,
-          node.id,
-          level.width,
-          level.height,
-          { kind: 'interior', environ: node.environ },
-        );
-        grid.addNode(withNodeTiles(child, level.tiles));
-      });
+    const deeper = built.levels ? built.levels.slice(1) : [];
+    // The regenerated layout replaces the node, removes the sub-maps its old
+    // tiles led to, adds the deeper levels, and can restamp its parent's
+    // entrance link below. Record all of it so the stroke-undo ring can
+    // revert it.
+    env.recordEdit(
+      regenerateSnapshot({
+        node,
+        parent: grid.getParent(node),
+        created: deeper.map((level) => /** @type {string} */ (level.id)),
+        removed,
+        party: partyTracker.getPosition(),
+      }),
+    );
+    const removedIds = new Set(removed.map((n) => n.id));
+    for (const doomed of removed) {
+      if (grid.getNode(doomed.id)) grid.removeNode(doomed.id);
     }
+    state.characters = recallFrom(state.characters, removedIds);
+    deeper.forEach((level, i) => {
+      const child = createMapNode(
+        /** @type {string} */ (level.id),
+        `${node.name} (level ${i + 2})`,
+        node.id,
+        level.width,
+        level.height,
+        { kind: 'interior', environ: node.environ },
+      );
+      grid.addNode(withNodeTiles(child, level.tiles));
+    });
     grid.updateNode(withNodeTiles({ ...node, width: gen.width, height: gen.height }, gen.tiles));
     // A generated map must be reachable from the overworld, not just
     // internally connected. If no parent tile links to this node yet, stamp
@@ -117,7 +148,7 @@ export function wireGenerateAction(app, env) {
         // Wilderness gets no marker. The link rides the existing terrain tile
         // (or a fresh grass tile) and shows as a region outline once discovered.
         markerRef: artFor ? (palette.get(artFor.marker)?.imageRef ?? null) : null,
-        createRef: palette.pickVariant('grass', Math.random).imageRef,
+        createRef: palette.pickVariant('grass', built.rng).imageRef,
         poiType: artFor ? artFor.poi : null,
       });
       if (linked.tileId) {
@@ -128,20 +159,21 @@ export function wireGenerateAction(app, env) {
         );
       }
     }
-    // If the regenerated layout has shrunk past the party, or replaced the
-    // party's tile with void or wall, re-land the party on the layout's
-    // guaranteed entry tile.
-    const pos = partyTracker.getPosition();
-    if (pos.nodeId === node.id) {
-      const moveTo = relandedTile({
-        tileId: pos.tileId,
-        width: gen.width,
-        height: gen.height,
-        entry: gen.entry,
-        landing: resolveEntryTile(navigator.getCurrentNode(), pos.tileId),
-      });
-      if (moveTo) partyTracker.moveTo(node.id, moveTo);
-    }
+    // If the regenerated layout has shrunk past the party, replaced the
+    // party's tile with void or wall, or removed the level the party stood
+    // in, re-land the party on the layout.
+    const position = partyTracker.getPosition();
+    const fresh = grid.getNode(node.id) ?? node;
+    const moveTo = regenerateLanding({
+      position,
+      nodeId: node.id,
+      removedIds,
+      width: gen.width,
+      height: gen.height,
+      entry: gen.entry,
+      landing: resolveEntryTile(fresh, position.tileId),
+    });
+    if (moveTo) partyTracker.moveTo(moveTo.nodeId, moveTo.tileId);
     resyncMapViews(app, env, { reframe: true });
     app.actions.markDirty();
     app.toasts.show(`Generated ${values.archetype} map in "${node.name}" (seed ${values.seed}).`);

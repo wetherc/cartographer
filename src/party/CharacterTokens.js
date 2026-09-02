@@ -101,3 +101,17 @@ export function regroupCandidates(characters, nodeExists) {
 export function recallAll(characters) {
   return characters.map((c) => (c.location ? { ...c, location: null } : c));
 }
+
+/**
+ * Recall the characters that stand in any of the given nodes. A node edit
+ * that removes nodes calls this, so no character keeps a location on a map
+ * that no longer exists. Characters elsewhere keep their own location.
+ * @param {Character[]} characters
+ * @param {Set<string>} nodeIds
+ * @returns {Character[]}
+ */
+export function recallFrom(characters, nodeIds) {
+  return characters.map((c) =>
+    c.location && nodeIds.has(c.location.nodeId) ? { ...c, location: null } : c,
+  );
+}
