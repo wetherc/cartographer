@@ -1,7 +1,7 @@
 import { promptModal, confirmDelete, alertModal } from '../ui/Modal.js';
 import { createCreature, editCreature, fromTemplate } from '../entities/Creature.js';
 import { activeCreatures } from '../library/Library.js';
-import { slugId, replaceById, removeById } from '../entities/Roster.js';
+import { slugId, applyFresh, removeById } from '../entities/Roster.js';
 import { locationFields, readLocation } from './locationFields.js';
 import { creatureFields, creatureFieldsChange, readCreatureFields } from './creatureFields.js';
 import { gearOptions } from './gearFields.js';
@@ -78,9 +78,19 @@ export async function creatureForm(app, existing, defaultLocation, seed = null) 
   if (existing) {
     // editCreature keeps the live state: a cut to the maximum takes the
     // current hit points down with it, conditions survive, and the caster
-    // reconciliation rebuilds or strips slots as the class fields say.
-    stored = editCreature(existing, { ...fields, location });
-    state.creatures = replaceById(state.creatures, stored);
+    // reconciliation rebuilds or strips slots as the class fields say. The
+    // live state comes from the creature as it is now, read again by id.
+    // The `existing` copy is from before the dialog opened, and a heal or a
+    // cross-tab save may have changed the creature since then.
+    const fresh = applyFresh(state.creatures, existing.id, (current) =>
+      editCreature(current, { ...fields, location }),
+    );
+    if (!fresh.entity) {
+      app.toasts.show(`${existing.name} was removed while the dialog was open.`);
+      return null;
+    }
+    stored = fresh.entity;
+    state.creatures = fresh.list;
   } else {
     const { name, ...options } = fields;
     stored = createCreature(slugId(name, rosterIds(state)), name, { ...options, location });

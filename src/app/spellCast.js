@@ -611,7 +611,9 @@ export function castChangeHandler(plan) {
  * and is tested without a browser.
  *
  * The pure `castSpell` resolver rolls the effect, and this function applies
- * the result and logs it. When a slot is spent, `withCasterState` splices the
+ * the result and logs it. The caster is read again by id first, because the
+ * plan holds the copy from before the dialog opened, and the entity can
+ * change while the dialog is open. When a slot is spent, `withCasterState` splices the
  * change back onto the real entity, and the caller's `writeBack` function
  * stores it in the right collection. Damage or healing lands on each target
  * the same way a weapon hit does: every combatant tracks HP. A ritual spends
@@ -630,7 +632,18 @@ export function castChangeHandler(plan) {
  *   take theirs.
  */
 export function resolveCast(app, plan, values, { writeBack, concentrates, rng = Math.random }) {
-  const { entity, spell, caster, targets, saveAbility, sourceClass, dc, material, armor } = plan;
+  const { entity, spell, targets, saveAbility, sourceClass, dc, material, armor } = plan;
+  // The plan holds the caster as it was when the dialog opened. The dialog
+  // can sit open while a heal lands or another tab adopts a save. The cast
+  // reads the caster again by id, so the write-back below never replaces
+  // that newer entity with the stale copy plus a spent slot. A caster that
+  // left the campaign in the meantime casts nothing and spends nothing.
+  const live = findCombatant(app, entity.id)?.entity;
+  if (!live) {
+    app.toasts.show(`${entity.name} is no longer in the campaign.`);
+    return;
+  }
+  const caster = live === entity ? plan.caster : toCaster(live);
   const asRitual = values.ritual === '1';
   const slotLevel = spell.level > 0 ? effectiveSlot(spell, values.slot, asRitual) : spell.level;
   const mode = /** @type {import('../types/dice.js').RollMode} */ (values.mode ?? 'normal');
@@ -689,7 +702,7 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
   // The caster view carries no conditions, so the chips come off the real
   // combatant. A Bless on the caster rides its spell attack rolls, and a
   // Blinded on it slants them.
-  const casterConditions = entity.conditions ?? [];
+  const casterConditions = live.conditions ?? [];
   // The GM's dialog choice and the chips on the table are two sources of the
   // same slant, so they fold together under the cancel rule. Neither one
   // overrides the other.
@@ -738,7 +751,7 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
     // mode folds above keep the plain chip lists on both sides, because the
     // condition-effect table matches entries by name, and a feat that shares
     // a condition's name must not slant a roll.
-    casterConditions: riderSources(entity),
+    casterConditions: riderSources(live),
     rng,
   });
   if (!result.ok) {
@@ -772,7 +785,7 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
   /** @type {import('../types/entities.js').ConcentrationState | null} */
   let displaced = null;
   if (result.spent || consumed || holds) {
-    let next = result.spent ? withCasterState(entity, result.caster) : entity;
+    let next = result.spent ? withCasterState(live, result.caster) : live;
     // Only a Character reaches here with an inventory. `materialCheck`
     // already requires one.
     if (consumed) {

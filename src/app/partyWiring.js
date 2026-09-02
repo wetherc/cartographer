@@ -19,7 +19,7 @@ import { rollCheck } from './checkRolls.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
 import { setCombatantExhaustion } from './exhaustion.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
-import { removeById } from '../entities/Roster.js';
+import { applyFresh, removeById } from '../entities/Roster.js';
 import { createCharacterScope } from './characterScope.js';
 import { clampInt } from '../util/num.js';
 import { mountCharacterRoster } from '../ui/CharacterRoster.js';
@@ -210,17 +210,27 @@ export function wireParty(app) {
         submitLabel: 'Save',
       });
       if (!values) return;
-      let next = character;
-      if (hp) {
-        // Cutting the maximum takes current HP down with it, and bonus HP is
-        // a separate pool that damage drains before the intrinsic one.
-        next = setMaxHP(next, clampInt(values.maxHP, hp.max));
-        next = setBonusHP(next, clampInt(values.bonusHP, 0));
+      // The edit applies to the character as it is now, not to the copy the
+      // dialog opened with. A heal or a cross-tab save while the dialog was
+      // open must survive the write-back.
+      const fresh = applyFresh(state.characters, id, (current) => {
+        let next = current;
+        const liveHP = getHP(current);
+        if (hp && liveHP) {
+          // Cutting the maximum takes current HP down with it, and bonus HP
+          // is a separate pool that damage drains before the intrinsic one.
+          next = setMaxHP(next, clampInt(values.maxHP, liveHP.max));
+          next = setBonusHP(next, clampInt(values.bonusHP, 0));
+        }
+        // Base AC applies only while no body armor is worn. The sheet's AC
+        // badge shows the derived result either way.
+        return setBaseAC(next, clampInt(values.baseAC, 10));
+      });
+      if (!fresh.entity) {
+        app.toasts.show(`${character.name} was removed while the dialog was open.`);
+        return;
       }
-      // Base AC applies only while no body armor is worn. The sheet's AC
-      // badge shows the derived result either way.
-      next = setBaseAC(next, clampInt(values.baseAC, 10));
-      scope.commit(next);
+      scope.commit(fresh.entity);
       scope.reselect();
     },
     // A one-off boon for one character, beside the party-wide award below.
@@ -236,7 +246,14 @@ export function wireParty(app) {
       );
       const amount = clampInt(values?.amount, 0);
       if (!values || amount <= 0) return;
-      scope.commit(addXP(character, amount));
+      // The XP lands on the character as it is now. The pre-await copy may
+      // miss a heal or a level that arrived while the dialog was open.
+      const fresh = applyFresh(state.characters, id, (current) => addXP(current, amount));
+      if (!fresh.entity) {
+        app.toasts.show(`${character.name} was removed while the dialog was open.`);
+        return;
+      }
+      scope.commit(fresh.entity);
       scope.reselect();
       app.actions.logEvent('note', `${character.name} is awarded ${amount} XP.`);
       app.toasts.show(`Awarded ${amount} XP to ${character.name}.`);

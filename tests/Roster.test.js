@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { slugId, replaceById, updateById, removeById } from '../src/entities/Roster.js';
+import { slugId, replaceById, updateById, applyFresh, removeById } from '../src/entities/Roster.js';
 
 test('slugId kebab-cases the name', () => {
   assert.equal(slugId('Brother Aldous', []), 'brother-aldous');
@@ -76,4 +76,44 @@ test('slugId reads a Set of taken ids as it is and leaves it unchanged', () => {
   assert.equal(slugId('Goblin', taken), 'goblin-3');
   assert.deepEqual([...taken], ['goblin', 'goblin-2'], 'the caller owns the set');
   assert.equal(slugId('Ogre', taken), 'ogre');
+});
+
+test('applyFresh edits the entry as it is in the list now, not a captured copy', () => {
+  const stale = { id: 'a', hp: 5 };
+  const list = [
+    { id: 'a', hp: 9 },
+    { id: 'b', hp: 2 },
+  ];
+  /** @type {any[]} */
+  const seen = [];
+  const { list: next, entity } = applyFresh(list, stale.id, (current) => {
+    seen.push(current);
+    return { ...current, name: 'edited' };
+  });
+  assert.deepEqual(seen, [{ id: 'a', hp: 9 }], 'the edit sees the current entry');
+  assert.deepEqual(entity, { id: 'a', hp: 9, name: 'edited' });
+  assert.deepEqual(next, [
+    { id: 'a', hp: 9, name: 'edited' },
+    { id: 'b', hp: 2 },
+  ]);
+  assert.deepEqual(
+    list,
+    [
+      { id: 'a', hp: 9 },
+      { id: 'b', hp: 2 },
+    ],
+    'the input is untouched',
+  );
+});
+
+test('applyFresh returns the same list and a null entity when the id is gone', () => {
+  const list = [{ id: 'b', hp: 2 }];
+  let calls = 0;
+  const { list: next, entity } = applyFresh(list, 'a', (current) => {
+    calls += 1;
+    return current;
+  });
+  assert.equal(calls, 0, 'nothing is edited');
+  assert.equal(entity, null);
+  assert.equal(next, list, 'the very same array comes back');
 });

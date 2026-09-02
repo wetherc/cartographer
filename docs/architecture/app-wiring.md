@@ -69,6 +69,15 @@ stays private inside the module that owns it:
 - a running combat
 - the dirty flag
 
+Every edit dialog follows one rule about that state. A handler reads an
+entity, opens a dialog, and awaits the answer. The entity can change while
+the dialog is open: a heal lands, a condition is added, or another tab
+adopts a save. So the handler must read the entity again by id after the
+await, and apply the edit to that current entity. It must never write the
+pre-await copy back. `applyFresh` in `src/entities/Roster.js` does this for
+a list, and returns a null entity when the id is gone, so the handler can
+toast and stop instead of writing.
+
 ## The wiring modules
 
 Each is a `wireX(app)` factory. This list orders them by what a new

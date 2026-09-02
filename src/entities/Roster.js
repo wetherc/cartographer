@@ -57,6 +57,28 @@ export function updateById(list, id, update) {
 }
 
 /**
+ * Edit the entry with the given id as it is in the list right now. Every edit
+ * dialog captures an entry before it awaits the modal. The entry can change
+ * while the dialog is open: another tab adopts a save, or a heal lands. The
+ * dialog must not write its pre-await copy back over that change. This
+ * function reads the entry again by id and hands the current one to `edit`.
+ * Returns the new list and the edited entry. If no entry has the id (it was
+ * deleted while the dialog was open), it returns the same list and a null
+ * entry, so the caller can tell the GM instead of writing.
+ * @template {{ id: string }} T
+ * @param {T[]} list
+ * @param {string} id
+ * @param {(current: T) => T} edit
+ * @returns {{ list: T[], entity: T | null }}
+ */
+export function applyFresh(list, id, edit) {
+  const current = list.find((entry) => entry.id === id);
+  if (!current) return { list, entity: null };
+  const entity = edit(current);
+  return { list: replaceById(list, entity), entity };
+}
+
+/**
  * Remove the entry with the given id, if present.
  * @template {{ id: string }} T
  * @param {T[]} list

@@ -166,3 +166,28 @@ test('a list keyed on another title field slugs and confirms against it', async 
   assert.equal(await handlers.onDelete('great-weapon-master'), true);
   assert.deepEqual(app.state.quests, []);
 });
+
+test('editing writes onto the entry as it is after the dialog, not the copy it opened with', async () => {
+  const app = fakeApp([{ id: 'a', title: 'A', notes: 'old', status: 'open' }]);
+  const opened = app.state.quests[0];
+  const { handlers } = wire(app, { values: { title: 'Renamed', notes: 'new' } });
+  // Another tab completes the quest while the dialog is open.
+  app.state.quests = [{ ...opened, status: 'done' }];
+  assert.equal(await handlers.onEdit(/** @type {any} */ (opened)), true);
+  assert.deepEqual(app.state.quests, [{ id: 'a', title: 'Renamed', notes: 'new', status: 'done' }]);
+  assert.equal(app.dirty, 1);
+});
+
+test('editing an entry deleted while the dialog was open toasts and writes nothing', async () => {
+  const app = fakeApp([{ id: 'a', title: 'A' }]);
+  /** @type {string[]} */
+  const toasted = [];
+  app.toasts = { show: (/** @type {string} */ message) => toasted.push(message) };
+  const opened = app.state.quests[0];
+  const { handlers } = wire(app);
+  app.state.quests = [];
+  assert.equal(await handlers.onEdit(/** @type {any} */ (opened)), false);
+  assert.deepEqual(app.state.quests, []);
+  assert.equal(app.dirty, 0);
+  assert.deepEqual(toasted, ['That quest was deleted while the dialog was open.']);
+});

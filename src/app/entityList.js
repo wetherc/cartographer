@@ -12,7 +12,7 @@
  */
 
 import { promptModal, confirmDelete } from '../ui/Modal.js';
-import { slugId, replaceById, removeById } from '../entities/Roster.js';
+import { slugId, applyFresh, removeById } from '../entities/Roster.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/app.js').EntityListKey} EntityListKey */
@@ -89,7 +89,14 @@ export function wireEntityList(app, spec) {
       const values = await prompt(`Edit ${noun}`, fields(entity), editOptions);
       const title = readTitle(values);
       if (!values || !title) return false;
-      write(replaceById(read(), patch(entity, title, values)));
+      // The entry is read again by id. The copy the dialog opened with can be
+      // stale by now: another tab may have changed or deleted it.
+      const fresh = applyFresh(read(), entity.id, (current) => patch(current, title, values));
+      if (!fresh.entity) {
+        app.toasts.show(`That ${noun} was deleted while the dialog was open.`);
+        return false;
+      }
+      write(fresh.list);
       return true;
     },
     onDelete: async (id) => {
