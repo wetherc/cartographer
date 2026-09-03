@@ -177,9 +177,11 @@ export function renderGuide(data) {
       <div class="eyebrow">Campaign Builder / v${esc(pkg.version)}</div>
       <h1>A developer guide to a codebase with no framework in it.</h1>
       <p class="lede">
-        Plain HTML, CSS, and ES modules. No runtime dependency, and no compile step for
-        development. Every rule below exists so the code stays readable at this size.
-        The panels on this page are live: click them.
+        Campaign Builder is plain HTML, CSS, and ES modules, with no runtime dependencies and
+        no build step for development. The conventions below keep a codebase of this size
+        readable without a framework to enforce them. The counts, the mount order, and the code
+        samples are read from the source tree at build time, so they match the commit you have
+        checked out, and most of the panels respond to a click.
       </p>
       <div class="facts">
         <div><span class="fact-n">${num(totals.lines)}</span><span class="fact-l">lines of source</span></div>
@@ -193,14 +195,15 @@ export function renderGuide(data) {
       <div class="sec-head"><span class="sec-num">01</span><h2>Pure logic and DOM glue</h2></div>
       <div class="prose">
         <p>
-          Every module is either pure logic or DOM glue. <strong>Pure logic</strong> takes its inputs as
-          arguments, including the random number generator and the current time, and returns
-          new values. It never touches the DOM. <strong>DOM glue</strong> connects that logic
-          to elements and events.
+          Every module is either <strong>pure logic</strong>, which takes its inputs as
+          arguments, including the random number generator and the current time, returns new
+          values, and never touches the DOM, or <strong>DOM glue</strong>, which connects that
+          logic to elements and events.
         </p>
         <p>
-          DOM Glue calls down into pure logic. Pure logic never calls up. That single direction is
-          why most of the tree can be tested with <code>node --test</code> and nothing else.
+          Glue calls pure logic, and pure logic never calls glue. Because every import points
+          the same way, most of the tree runs under <code>node --test</code> without a browser
+          or a mock.
         </p>
       </div>
 
@@ -220,15 +223,15 @@ export function renderGuide(data) {
       <div class="prose">
         <p>
           <code>src/main.js</code> builds one <code>AppContext</code> and hands it to each
-          wiring module in turn. The context carries the engine objects, the campaign state a
+          wiring module in turn. The context bundles the engine objects, the campaign state a
           save serializes, and two registries that start empty: <code>views</code> for mounted
           panels and <code>actions</code> for cross-module operations.
         </p>
         <p>
           The wiring modules fill those registries with ${num(registered)} entries between them.
-          Handlers read the registries at call time, never during wiring. That late read is what
-          lets an early module call a late one, and it is why <code>partyWiring.js</code> can
-          trigger an encounter without importing <code>encounterWiring.js</code>.
+          A handler reads a registry when it runs rather than when it is wired, which lets an
+          early module call a late one: <code>partyWiring.js</code> triggers an encounter
+          without ever importing <code>encounterWiring.js</code>.
         </p>
       </div>
 
@@ -260,15 +263,16 @@ export function renderGuide(data) {
       <div class="sec-head"><span class="sec-num">03</span><h2>The panel contract</h2></div>
       <div class="prose">
         <p>
-          A panel is a function <code>mount&lt;Name&gt;(container, callbacks)</code>. It creates
-          its own root, draws once, and returns <code>{ update }</code>. A wiring module stores
-          that handle on <code>app.views</code>. Callers only ever call <code>.update()</code>.
+          A panel is a function <code>mount&lt;Name&gt;(container, callbacks)</code> that
+          creates its own root, draws once, and returns <code>{ update }</code>. A wiring module
+          stores that handle on <code>app.views</code>, and from then on callers only ever call
+          <code>.update()</code>.
         </p>
         <p>
-          A panel holds no campaign data. Everything it draws comes from a <code>get*</code>
-          callback that runs at render time, so <code>update()</code> always re-reads current
-          state. Every mutation leaves through a callback. Panels never write state and never
-          open dialogs.
+          A panel keeps no campaign data of its own. Everything it draws comes from a
+          <code>get*</code> callback that runs at render time, so <code>update()</code> always
+          reads current state, and every change it wants to make goes back out through a
+          callback. A panel never writes state and never opens a dialog itself.
         </p>
       </div>
 
@@ -278,8 +282,8 @@ export function renderGuide(data) {
       <div class="prose">
         <p>
           A repaint is skipped when the rows are the same objects in the same order. That check
-          is sound only because the entity layer never mutates in place. Every writer returns a
-          new object, so a changed row is always a different object.
+          is correct only because the entity layer never mutates in place: every writer returns
+          a new object, so a changed row is always a different object.
         </p>
       </div>
 
@@ -289,9 +293,9 @@ export function renderGuide(data) {
       <h3>The same rule elsewhere</h3>
       <div class="prose">
         <ul>
-          <li><strong>Tile lookups.</strong> <code>src/map/TileIndex.js</code> gives O(1) <code>tileAt(node, id)</code>. Safe because a tile write replaces the node.</li>
+          <li><strong>Tile lookups.</strong> <code>src/map/TileIndex.js</code> gives O(1) <code>tileAt(node, id)</code>, which is safe because a tile write replaces the node.</li>
           <li><strong>Derived map data.</strong> <code>findRegionGroups</code> and <code>spanBlocks</code> cache in a WeakMap keyed on the node. A mutated node would serve a stale answer forever.</li>
-          <li><strong>Frozen catalogs.</strong> The built-in tables run through <code>deepFreeze</code>. A path that copies one into campaign state has to say so, such as <code>Encounter.fromTemplate</code>.</li>
+          <li><strong>Frozen catalogs.</strong> The built-in tables run through <code>deepFreeze</code>, so any code that copies one into campaign state has to do so explicitly, as <code>Creature.fromTemplate</code> does.</li>
         </ul>
       </div>
 
@@ -302,15 +306,15 @@ export function renderGuide(data) {
       <div class="sec-head"><span class="sec-num">04</span><h2>The map is one node type</h2></div>
       <div class="prose">
         <p>
-          There is no world type, region type, or dungeon type. Every map is a
-          <code>MapNode</code>. A node points up through <code>parentId</code>. A tile points
-          down through <code>childNodeId</code>. Several tiles can share one
+          There is no world type, region type, or dungeon type, because every map is a
+          <code>MapNode</code>. A node points up through <code>parentId</code> and a tile
+          points down through <code>childNodeId</code>, and several tiles can share one
           <code>childNodeId</code> when a landmark covers more than one cell.
         </p>
         <p>
-          The tile id <em>is</em> the position. There are no x and y fields on a tile. Fog is one
-          boolean per tile, and moving the party is the only thing that clears it. The example
-          campaign holds ${num(measured.nodes)} nodes and ${num(measured.tiles)} tiles.
+          The tile id <em>is</em> the position, so a tile has no x and y fields. Fog is one
+          boolean per tile, and only a party move clears it. The example
+          campaign has ${num(measured.nodes)} nodes and ${num(measured.tiles)} tiles.
         </p>
       </div>
 
@@ -336,10 +340,10 @@ export function renderGuide(data) {
       <div class="sec-head"><span class="sec-num">05</span><h2>A campaign is one string</h2></div>
       <div class="prose">
         <p>
-          Saving flattens live state into a <code>CampaignState</code>, then runs it through four
-          packing layers before <code>JSON.stringify</code>. Loading reverses the chain, with
-          migrations first. Browser storage caps near 5 MB, so each layer earns its place. On the
-          example campaign the chain removes ${shrink}% of the string.
+          Saving flattens live state into a <code>CampaignState</code>, runs it through four
+          packing layers, and only then calls <code>JSON.stringify</code>. Loading reverses the
+          chain, with migrations first. The layers exist because localStorage refuses writes
+          near 5 MB, and on the example campaign they remove ${shrink}% of the string.
         </p>
       </div>
 
@@ -351,26 +355,26 @@ export function renderGuide(data) {
       <p class="caption">
         Measured at build time by running the real packing functions over
         <code>buildExampleCampaign</code> with seed ${measured.seed}. Layers 1 and 2 are measured
-        with the generic <code>packEntity</code> against the same defaults the loader restores;
-        <code>serialize</code> uses the specialized tile packer and lands at
+        with the generic <code>packEntity</code> against the same defaults the loader restores.
+        <code>serialize</code> uses the specialized tile packer and comes out at
         ${num(measured.serialized)} characters. On the densest node
         (${esc(densest.name)}, ${densest.width}x${densest.height},
         ${num(densest.tiles)} tiles) the codec alone saves ${num(densest.saved)} characters.
       </p>
 
-      ${block(snippets.packTile, 'Fields are deleted from a copy, so a field this function has never heard of still survives the round trip.')}
+      ${block(snippets.packTile, 'Fields are deleted from a copy, so a field added after this function was written still survives the round trip.')}
 
       <h3>Undo without snapshots</h3>
       <div class="prose">
         <p>
-          History stores one invertible delta per step, not a copy of the campaign.
-          <code>diffState</code> records the old and the new value of each change, and
-          <code>invertOps</code> swaps them. The canonical save is the base, so no snapshot is
-          needed.
+          History stores one invertible delta per step rather than a copy of the campaign.
+          <code>diffState</code> records the old and the new value of each change,
+          <code>invertOps</code> swaps them, and the deltas apply on top of the saved campaign,
+          so no snapshot is ever needed.
         </p>
         <p>
-          A history write always follows the campaign write. A delta is
-          never migrated, so an index written by an older version is discarded whole.
+          A history write always follows the campaign write, and deltas are never migrated, so
+          an index written by an older version is discarded whole.
         </p>
       </div>
 
@@ -393,9 +397,9 @@ export function renderGuide(data) {
       <div class="sec-head"><span class="sec-num">07</span><h2>Working on the codebase</h2></div>
       <div class="prose">
         <p>
-          Tests run against the source files, not the build. Run only the relevant test file(s) while
-          iterating and the whole suite before a commit. The pre-commit hook runs the formatter, the
-          linter, the test suite, and the typecheck; it blocks a commit on any failure.
+          Tests run against the source files, not the build. Run one test file while you
+          iterate and the whole suite before you commit. The pre-commit hook runs the formatter,
+          the linter, the suite, and the typecheck, and it blocks the commit on any failure.
         </p>
       </div>
       <div class="plate">
@@ -407,18 +411,19 @@ export function renderGuide(data) {
       <h3>Checking the DOM and the canvas</h3>
       <div class="prose">
         <p>
-          Code that touches the DOM or the canvas is checked in a real browser, not in a mock.
-          Serve the project, open the change, and read the console for 404s on asset paths.
-          Playwright can drive and screenshot that check when you want it automated.
-          Manual preview pages live in <code>tests/</code> and stay out of the automated
-          run because they do not end in <code>.test.js</code>:
+          Code that touches the DOM or the canvas is checked in a real browser rather than a
+          mock: serve the project, open the change, and read the console for 404s on asset
+          paths. Playwright can drive and screenshot that check when you want it automated.
+          The preview pages in <code>tests/</code> do not end in <code>.test.js</code>, so the
+          automated run skips them:
           ${tests.previews.map((p) => `<code>${esc(p)}</code>`).join(', ')}.
           Each one mounts the real modules the way <code>main.js</code> does.
         </p>
         <p>
           Coverage counts every module, because <code>tests/moduleLoad.test.js</code> imports all
           of <code>src/</code> except <code>main.js</code>. A low row under <code>src/ui/</code>
-          or <code>src/app/</code> is expected. A low row anywhere else means the module needs tests.
+          or <code>src/app/</code> is expected, since those directories are glue, but a low row
+          anywhere else means the module needs tests.
         </p>
       </div>
     </section>
@@ -426,18 +431,18 @@ export function renderGuide(data) {
     <section id="review">
       <div class="sec-head"><span class="sec-num">08</span><h2>Pre-flight</h2></div>
       <div class="prose">
-        <p>Run down this list before you make a commit or open a pull request.</p>
+        <p>Read this list before you commit or open a pull request.</p>
       </div>
       <div class="plate">
         <div class="plate-label">Conventions checklist</div>
         <div class="checks" id="checkList"></div>
         <div class="progress" id="checkProgress"></div>
       </div>
-      <p class="caption">More detail lives in <code>docs/architecture/conventions.md</code>. <code>docs/architecture.md</code> is authoritative for design questions.</p>
+      <p class="caption"><code>docs/architecture/conventions.md</code> explains each rule. <code>docs/architecture.md</code> is authoritative for design questions.</p>
     </section>
 
     <footer>
-      <div class="stamp">This document was auto-generated from the source tree by scripts/build-dev-guide.mjs at ${esc(generatedAt)}. Run <code>pnpm run guide</code> to rebuild.</div>
+      <div class="stamp">Generated from the source tree by scripts/build-dev-guide.mjs, ${esc(generatedAt)}. Run <code>pnpm run guide</code> to rebuild.</div>
     </footer>
   </main>
 </div>

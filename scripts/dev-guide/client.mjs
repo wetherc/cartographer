@@ -91,7 +91,7 @@ export const CLIENT = String.raw`
     verdict.innerHTML = '';
     if (!dir) {
       verdict.appendChild(el('div', 'verdict-title', 'Nothing selected'));
-      verdict.appendChild(el('p', null, 'Pick a directory. The highlighted neighbors are the ones it imports today. The faded ones are the ones it does not.'));
+      verdict.appendChild(el('p', null, 'Pick a directory, and the ones it imports light up while the rest fade.'));
       return;
     }
     verdict.appendChild(el('div', 'verdict-title', dir.id === 'main' ? 'src/main.js' : 'src/' + dir.name));

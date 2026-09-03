@@ -18,7 +18,7 @@ export const DIRECTORY_META = {
   },
   app: {
     kind: 'wiring',
-    role: 'One wireX(app) module per feature area. Mounts panels, registers views and actions, and holds the per-feature UI state a save does not carry.',
+    role: 'One wireX(app) module per feature area. Mounts panels, registers views and actions, and keeps the per-feature UI state that is not saved.',
   },
   ui: {
     kind: 'glue',
@@ -26,7 +26,7 @@ export const DIRECTORY_META = {
   },
   map: {
     kind: 'mixed',
-    role: 'Tile grid, node hierarchy, fog, and region grouping, plus the canvas renderer. The renderer is the glue half. Everything else is pure.',
+    role: 'Tile grid, node hierarchy, fog, and region grouping, plus the canvas renderer. The renderer is the glue half, and everything else is pure.',
   },
   entities: {
     kind: 'pure',
@@ -39,7 +39,7 @@ export const DIRECTORY_META = {
   combat: { kind: 'pure', role: 'Initiative order, attack resolution, and loadout reads.' },
   dice: {
     kind: 'pure',
-    role: 'roll(selection, rng). The generator is an argument, which makes the layer testable.',
+    role: 'roll(selection, rng). The generator is an argument, so a test can pass a stub.',
   },
   party: { kind: 'pure', role: 'Party position and split-party tokens. Moving the party reveals fog.' },
   quest: { kind: 'pure', role: 'Quest records and their status transitions.' },
@@ -59,7 +59,7 @@ export const DIRECTORY_META = {
   },
   types: {
     kind: 'types',
-    role: 'Declaration files only, with no runtime code. The .js files point here through JSDoc, which is why no import edge leads to this directory.',
+    role: 'Declaration files only, with no runtime code. The .js files point here through JSDoc, so no import edge leads to this directory.',
   },
   platform: { kind: 'pure', role: 'Storage and file adapters behind one interface.' },
 };
@@ -79,13 +79,13 @@ export const KIND_GROUPS = [
 export const STAGE_NOTES = {
   raw: 'Every tile and every entity written in full, the way they sit in memory.',
   tiles:
-    'packTile deletes default-valued fields from a copy, so a field it has never heard of still survives the round trip. withTileDefaults puts the defaults back on load.',
+    'packTile deletes default-valued fields from a copy, so a field added later still survives the round trip, and withTileDefaults puts the defaults back on load.',
   entities:
     'packEntity drops a field only when the real unpacker restores the same value. A fixed table of defaults would mis-restore an encounter whose weapon comes from its level and tier.',
   assets:
-    'Inline data: URLs move into an assets table keyed by content hash, and the tile keeps an asset: reference. The example campaign ships no uploaded art, so this layer changes nothing here. It pays off when a GM uploads art for a handout, and it will matter more once custom tile art ships.',
+    'Inline data: URLs move into an assets table keyed by content hash, and the tile keeps an asset: reference. The example campaign ships no uploaded art, so this layer changes nothing here. It saves space once a GM uploads art for a handout, and more once custom tile art ships.',
   codec:
-    'Each node becomes an art palette plus a row-major run-length list of indices, plus a run-length fog track. It is opt-in per node and bails by returning the same object, so a node with ids it cannot parse is left alone.',
+    'Each node becomes an art palette, a row-major run-length list of indices, and a run-length fog track. The codec is opt-in per node, and when it meets an id it cannot parse it returns the same object and leaves the node alone.',
 };
 
 /** The decision tree behind "where does my change go?". */
@@ -133,7 +133,7 @@ export const ROUTER_ANSWERS = {
   entities: {
     where: 'src/entities/, with any catalog data in src/data/',
     test: 'tests/<Module>.test.js. Inject the generator so the result is deterministic.',
-    trap: 'Never mutate in place. A writer returns a new object, which keeps the panel repaint guard sound. Catalogs in src/data/ are deep-frozen, so copy before you write one into campaign state.',
+    trap: 'Never mutate in place. A writer returns a new object, and the panel repaint guard depends on that. Catalogs in src/data/ are deep-frozen, so copy one before you write it into campaign state.',
     refs: [
       ['src/util/deepFreeze.js', 'deepFreeze'],
       ['src/entities/Creature.js', 'fromTemplate'],
@@ -151,7 +151,7 @@ export const ROUTER_ANSWERS = {
   dice: {
     where: 'src/dice/, or src/combat/ if it resolves an attack',
     test: 'Pass a stub generator and assert the exact output, the way tests/DiceRoller.test.js does.',
-    trap: 'The generator and the clock are arguments, never module state. That is the whole reason this layer is testable.',
+    trap: 'The generator and the clock are arguments, never module state, because every test in this layer asserts an exact result and module state would make that impossible.',
     refs: [
       ['src/dice/DiceRoller.js', 'roll'],
       ['src/combat/AttackResolve.js', 'resolveAttack'],
@@ -159,8 +159,8 @@ export const ROUTER_ANSWERS = {
   },
   ui: {
     where: 'src/ui/',
-    test: 'None automatically. Extract the rules into a pure module and test that. Check the widget itself in a browser.',
-    trap: 'Reach for mountListPanel, buttons.js, and the tokens in styles/base.css before writing new markup. Never write an inline token fallback such as var(--border, #ccc): a missing token has to render as nothing so the mistake shows.',
+    test: 'Nothing automated. Extract the rules into a pure module and test that, then check the widget itself in a browser.',
+    trap: 'Use mountListPanel, buttons.js, and the tokens in styles/base.css before you write new markup. Never write an inline token fallback such as var(--border, #ccc), because a missing token should render as nothing so that the mistake is visible.',
     refs: [
       ['src/ui/listPanel.js', 'mountListPanel'],
       ['src/ui/buttons.js', 'iconButton'],
@@ -173,7 +173,7 @@ export const ROUTER_ANSWERS = {
     refs: [['src/app/mapTravel.js', 'createMapTravel']],
   },
   canvas: {
-    where: 'src/map/MapRenderer.js and friends, with pure helpers alongside',
+    where: 'src/map/MapRenderer.js and the render modules beside it, with pure helpers alongside',
     test: 'Visual. Use tests/map-canvas-preview.html and read the console.',
     trap: 'render() only schedules a frame. Add derived data to the shared frame object rather than re-scanning node.tiles, and iterate the visible cell range only.',
     refs: [
@@ -183,7 +183,7 @@ export const ROUTER_ANSWERS = {
   },
 };
 
-/** The pre-flight list, with the file that carries each rule. */
+/** The pre-flight list, with the file that defines each rule. */
 export const CHECKLIST = [
   [
     'Every new writer returns a new object',
@@ -217,7 +217,7 @@ export const CHECKLIST = [
   ],
   [
     'Buttons and empty states come from ui/buttons.js',
-    'iconButton, textButton, emptyState, segSwitch. An icon-only button always carries an aria-label.',
+    'iconButton, textButton, emptyState, segSwitch. An icon-only button needs an aria-label.',
     [['src/ui/buttons.js', 'emptyState']],
   ],
   ['Dismiss on the left, primary on the right', 'Every modal, inline form, and action bar.', []],
@@ -243,7 +243,7 @@ export const COMMANDS = [
   { script: 'dev', note: 'Live-reloading dev server. Rebuilds on every source change.' },
   {
     command: 'node --test tests/Character.test.js',
-    note: 'One file while you iterate. Much faster than the suite.',
+    note: 'One file while you iterate.',
   },
   { script: 'test', note: 'The whole suite. Run it before every commit.' },
   { script: 'coverage', note: 'Line, branch, and function coverage across all of src/.' },
