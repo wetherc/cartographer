@@ -207,19 +207,37 @@ function readDelta(seq) {
 }
 
 /**
- * The persisted campaign as a value, or null when nothing is stored or the
- * stored value cannot be read. This function reuses the cache only when the
- * stored string still matches the string the cache was built from.
+ * The persisted campaign as a value, or null when nothing is stored. This
+ * function reuses the cache only when the stored string still matches the
+ * string the cache was built from. Otherwise it parses the save and caches
+ * the result. An unreadable save throws, as `deserialize` does.
+ *
+ * The startup path loads through this function instead of
+ * `loadFromLocalStorage`, so the cache is warm from the first save on. The
+ * first save of a session otherwise parsed the stored string a second time
+ * and diffed two states that shared no object, which at a large world cost
+ * more than a hundred milliseconds. Because `toTileGrid` keeps the parsed
+ * node objects, the live nodes are the cached ones, and the first diff runs
+ * by identity like every later one.
  * @returns {CampaignState | null}
  */
-function lastPersisted() {
+export function loadPersistedCampaign() {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw === null) return null;
   if (cached && cached.raw === raw) return cached.state;
+  const state = deserialize(raw, loadAssetTable());
+  cached = { raw, state };
+  return state;
+}
+
+/**
+ * `loadPersistedCampaign`, with an unreadable save read as nothing stored.
+ * A history step must not throw over a save it cannot read.
+ * @returns {CampaignState | null}
+ */
+function lastPersisted() {
   try {
-    const state = deserialize(raw, loadAssetTable());
-    cached = { raw, state };
-    return state;
+    return loadPersistedCampaign();
   } catch {
     return null;
   }

@@ -1,5 +1,6 @@
 import { createMapNode, TileGrid } from '../map/TileGrid.js';
-import { loadFromLocalStorage, toTileGrid } from '../storage/SaveManager.js';
+import { toTileGrid } from '../storage/SaveManager.js';
+import { loadPersistedCampaign } from '../storage/HistoryLog.js';
 import { createClock } from '../time/GameClock.js';
 import { buildExampleWorld } from './ExampleWorld.js';
 import { buildExampleContent } from './ExampleContent.js';
@@ -91,10 +92,14 @@ export function buildExampleCampaign(palette, rng = Math.random) {
  * the app boots with a blank campaign. The demo world loads only through the
  * "Load example" button, never by default. An empty character roster is
  * valid authored state, so the app never adds a default character.
+ *
+ * The save is read through the history log, which keeps the parsed state
+ * as the base for the first delta of the session. The grid then holds those
+ * same node objects, so that first diff runs by identity.
  * @returns {Campaign}
  */
 export function loadInitialCampaign() {
-  const saved = loadFromLocalStorage();
+  const saved = loadPersistedCampaign();
   if (!saved) return buildBlankCampaign();
   // SaveManager's deserialize sets a default for every missing top-level field
   // and runs withDefaults for each entity. saved is a complete CampaignState

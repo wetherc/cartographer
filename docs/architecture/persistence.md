@@ -452,6 +452,15 @@ value, stamped with the raw string it was parsed from, so the steady state
 costs only a string compare. A tab that declined the cross-tab reload prompt
 cannot diff against a save that another tab replaced.
 
+The cache is warm from the start of a session. `Campaigns.loadInitialCampaign`
+reads the save through `HistoryLog.loadPersistedCampaign`, which parses the
+stored string once and keeps the result as the base for the first delta.
+`toTileGrid` adds those parsed nodes to the grid as they are, so the live
+nodes and the cached nodes are the same objects, and the first save of the
+session diffs by identity like every later one. Before this, the first save
+parsed the save a second time and ran a cold diff over two unrelated object
+trees, which cost more than a hundred milliseconds at two hundred nodes.
+
 ## The custom library's own store
 
 The GM's custom library (equipment, creature, spell, and feat overrides)
