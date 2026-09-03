@@ -4,9 +4,9 @@ import {
   castCap,
   castFields,
   effectiveSlot,
-  prefillTarget,
   startingSlotLevel,
-} from '../src/app/spellCast.js';
+} from '../src/app/spellCastFields.js';
+import { prefillTarget } from '../src/app/spellTargets.js';
 
 /**
  * The cast dialog's field list is pure — plain field records, no DOM — so what

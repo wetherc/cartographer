@@ -665,9 +665,9 @@ Four call sites act on the list. `app/checkRolls.js` folds a disadvantage
 slant into a STR or DEX save or check, through the `extra` parameter of
 `rollMode`, so a chip that grants advantage cancels it. `app/weaponAttack.js`
 folds the same slant into every weapon attack, because an attack rolls off STR
-or DEX whatever the weapon is. `app/spellCast.js`
-refuses a cast before the resolver runs, so a refused cast spends no slot,
-and the dialog offers an "Ignore armor" opt-out beside the component one.
+or DEX whatever the weapon is. `app/spellCast.js` refuses a cast before the
+resolver runs, so a refused cast spends no slot, and the dialog offers an
+"Ignore armor" opt-out beside the component one.
 The same module marks a character target of a STR or DEX save spell with
 `armorPenalty`, and the resolver folds that slant into the target's save
 through the `extra` parameter of `saveOutcome`. The AC of the armor is not
@@ -972,9 +972,10 @@ to the chip, the number the GM reads afterward is the state's own.
 `Conditions.js` exports the chip's name as `CONCENTRATING`, so the two
 modules agree on the spelling.
 
-`app/spellCast.js` begins concentration when a cast of a concentration spell
-succeeds. It writes this onto the same entity that the spent slot and the
-consumed component are written to, so one store call carries all three.
+`app/spellCastResolve.js` begins concentration when a cast of a
+concentration spell succeeds. It writes this onto the same entity that the
+spent slot and the consumed component are written to, so one store call
+carries all three.
 `app/combatants.js`'s `applyToTarget` calls for the save on damage. This
 covers weapon hits and spell damage alike, because both arrive through this
 function. A character knocked to 0 HP loses the spell outright without
@@ -1095,11 +1096,12 @@ that walked free. It also despawns the creatures that the cast summoned, which
 the section below covers. It runs whenever a caster stops holding a spell: the sheet's
 Drop control and its hand-removed `Concentrating` chip (through
 `onConcentrationEnd`, wired in `app/partyWiring.js`), a failed CON save or a
-drop to 0 HP in `applyToTarget`, a displacing cast in `app/spellCast.js`, and
-a duration that runs out at the round wrap. `retryImposedSaves(app, combatantId)`
-rolls the repeated saves, called from the turn advance (`advanceCombatTurn`)
-for whoever's turn is ending. A party character rolls its live bonus there
-rather than the stamped one, so a save granted since the cast counts.
+drop to 0 HP in `applyToTarget`, a displacing cast in
+`app/spellCastResolve.js`, and a duration that runs out at the round wrap.
+`retryImposedSaves(app, combatantId)` rolls the repeated saves, called from
+the turn advance (`advanceCombatTurn`) for whoever's turn is ending. A party
+character rolls its live bonus there rather than the stamped one, so a save
+granted since the cast counts.
 
 The sweep always runs after the write that it follows, never before. Both
 touch `state.characters` and `state.creatures`. If the app stores a
@@ -1218,8 +1220,8 @@ Four sites read the table:
 - `app/weaponAttack.js` builds one query from both combatants and takes the
   reach from the weapon's kind (`Weapons.weaponKind`). It also asks
   `autoCrits` for the defender, so a paralyzed target crits on any hit.
-- `app/spellCast.js` folds the chips' mode with the GM's dialog choice through
-  `combineModes`, so neither overrides the other. A save spell stamps
+- `app/spellCastResolve.js` folds the chips' mode with the GM's dialog choice
+  through `combineModes`, so neither overrides the other. A save spell stamps
   `autoFailSave` on a target that fails outright, and an attack spell treats a
   touch range as melee reach. The caster view carries no chips, so the real
   combatant's list arrives as `casterConditions`.

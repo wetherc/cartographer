@@ -364,7 +364,7 @@ picker. Clicking a card holds it (`aria-pressed`). Clicking it again releases
 it. The held id pre-fills the attack dialog's defender field and the cast
 dialog's target field, whichever picker the spell built: single select,
 multiselect, or the projectile allocation grid (`prefillTarget` in
-`spellCast.js`). The attack dialog's six situational fields sit behind a
+`spellTargets.js`). The attack dialog's six situational fields sit behind a
 collapsed disclosure (`promptModal`'s `advanced` field flag). Because of
 this, the common flow is: click the card, click the weapon, press Enter.
 

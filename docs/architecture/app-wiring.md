@@ -264,7 +264,7 @@ caches (`revealedIdsOf` in `map/MapRenderer.js`, `findRegionGroups` in
 node identity. A node the save did not change comes back as the object those
 caches already know, so an adoption that moved nothing leaves them warm.
 
-### encounterWiring.js (plus creatureForm.js, weaponAttack.js, spellCast.js, combatants.js)
+### encounterWiring.js (plus creatureForm.js, weaponAttack.js, the four cast modules, combatants.js)
 
 This module owns the Encounters panel, the sidebar's Initiative card, the
 Build-rail encounter authoring list, and the walked-into-an-encounter alert.
@@ -284,14 +284,18 @@ max, stat block, conditions), and it resets the `met` flag when the creature
 moves. The bestiary spawn dialog is `creatureForm.js`'s `addFromLibrary`.
 
 `weaponAttack.js` resolves the 5e attacks that the combat screen's action
-bar triggers. `spellCast.js` resolves spells the same way. `weaponAttack.js`
-itself is the dialog, the dice tray, and the log lines. The rules that it
-applies are pure functions in `src/combat/AttackResolve.js`, which holds the
-unit tests. `resolveAttack` decides hit, crit, and the wording that both the
-log and the toast quote. `damageParts` assembles the dice that a hit rolls,
-and it doubles every count on a crit, including the dialog's added dice.
-`attackerStats` picks between a creature's stat block and a character's
-gear-buffed scores.
+bar triggers. Casting a spell is the same job, split across four modules:
+`spellCast.js` holds the two entry points and builds the cast plan,
+`spellTargets.js` says who a spell can reach, `spellCastFields.js` builds
+the dialog fields, and `spellCastResolve.js` rolls the cast and writes the
+outcome. `CastPlan` in `src/types/cast.ts` is what they pass around.
+`weaponAttack.js` itself is the dialog, the dice tray, and the log lines.
+The rules it applies are pure functions in `src/combat/AttackResolve.js`,
+which holds the unit tests. `resolveAttack` decides hit, crit, and the
+wording that both the log and the toast quote. `damageParts` assembles the
+dice that a hit rolls, and it doubles every count on a crit, including the
+dialog's added dice. `attackerStats` picks between a creature's stat block
+and a character's gear-buffed scores.
 
 The spell decides how many creatures a cast can name. `Casting.maxTargets`
 reads its `targetCount` value, where an absent value means one target, plus

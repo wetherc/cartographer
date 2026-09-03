@@ -1,17 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { castPlan, castSpellAction, castSpellOutOfCombat } from '../src/app/spellCast.js';
 import {
-  applyOutcomes,
-  castChangeHandler,
-  castPlan,
-  castSpellAction,
-  castSpellOutOfCombat,
   chosenTargets,
   combatTargets,
-  resolveCast,
   rosterTargets,
   targetSummary,
-} from '../src/app/spellCast.js';
+} from '../src/app/spellTargets.js';
+import { castChangeHandler } from '../src/app/spellCastFields.js';
+import { applyOutcomes, resolveCast } from '../src/app/spellCastResolve.js';
 import { createResource } from '../src/entities/Resource.js';
 import { createCreature } from '../src/entities/Creature.js';
 import { damageCharacter, getHP, withHP } from '../src/entities/Character.js';
