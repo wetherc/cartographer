@@ -130,19 +130,30 @@ export function partyPosition(value) {
 }
 
 /**
- * The parent tile each child node was entered through, as a plain map of
- * node id to tile id. A value that is not a string names no tile, so the
- * function drops that entry. See `map/EntryMemory.js`.
+ * The parent tile each traveler entered each child node through: a map of
+ * traveler key to a map of node id to tile id. A traveler whose value is not
+ * a record, a tile id that is not a string, and a traveler left with no
+ * entries are all dropped. See `map/EntryMemory.js`.
+ *
+ * A `__proto__` key is skipped. Assigning that key sets a prototype instead
+ * of storing a value, and a save can carry it as an own key.
  * @param {unknown} value
- * @returns {Record<string, string>}
+ * @returns {Record<string, Record<string, string>>}
  */
 export function entryTiles(value) {
   const stored = record(value);
   if (!stored) return {};
-  /** @type {Record<string, string>} */
+  /** @type {Record<string, Record<string, string>>} */
   const memory = {};
-  for (const [nodeId, tileId] of Object.entries(stored)) {
-    if (typeof tileId === 'string') memory[nodeId] = tileId;
+  for (const [traveler, entries] of Object.entries(stored)) {
+    const held = record(entries);
+    if (!held || traveler === '__proto__') continue;
+    /** @type {Record<string, string>} */
+    const kept = {};
+    for (const [nodeId, tileId] of Object.entries(held)) {
+      if (typeof tileId === 'string' && nodeId !== '__proto__') kept[nodeId] = tileId;
+    }
+    if (Object.keys(kept).length) memory[traveler] = kept;
   }
   return memory;
 }

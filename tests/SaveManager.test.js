@@ -604,8 +604,9 @@ test('deserialize reads a save that is not an object at all as an empty campaign
 });
 
 test('the entry memory survives a round trip', () => {
-  const state = buildState({ grid: sampleGrid(), entryTiles: { cave: '4,7' } });
-  assert.deepEqual(deserialize(serialize(state)).entryTiles, { cave: '4,7' });
+  const memory = { party: { cave: '4,7' }, 'c:hero': { cave: '9,2' } };
+  const state = buildState({ grid: sampleGrid(), entryTiles: memory });
+  assert.deepEqual(deserialize(serialize(state)).entryTiles, memory);
 });
 
 test('a save with no entry memory reads as an empty one', () => {
@@ -614,14 +615,35 @@ test('a save with no entry memory reads as an empty one', () => {
 
 test('deserialize drops an entry whose tile is not a string', () => {
   const restored = deserialize(
-    JSON.stringify({ entryTiles: { cave: '4,7', crypt: 3, shop: null } }),
+    JSON.stringify({ entryTiles: { party: { cave: '4,7', crypt: 3, shop: null } } }),
   );
-  assert.deepEqual(restored.entryTiles, { cave: '4,7' });
+  assert.deepEqual(restored.entryTiles, { party: { cave: '4,7' } });
+});
+
+test('deserialize drops a traveler that holds no readable entry', () => {
+  const restored = deserialize(
+    JSON.stringify({
+      entryTiles: { party: { cave: '4,7' }, 'c:hero': 'cave', 'c:mira': {}, 'c:ivo': { cave: 3 } },
+    }),
+  );
+  assert.deepEqual(restored.entryTiles, { party: { cave: '4,7' } });
 });
 
 test('deserialize reads an entry memory that is not an object as an empty one', () => {
   assert.deepEqual(deserialize(JSON.stringify({ entryTiles: 'cave' })).entryTiles, {});
   assert.deepEqual(deserialize(JSON.stringify({ entryTiles: ['4,7'] })).entryTiles, {});
+  // The earlier flat shape, one tile per node with no traveler.
+  assert.deepEqual(deserialize(JSON.stringify({ entryTiles: { cave: '4,7' } })).entryTiles, {});
+});
+
+test('deserialize stores a prototype key as data or not at all', () => {
+  const restored = deserialize(
+    JSON.stringify({
+      entryTiles: { __proto__: { cave: '4,7' }, party: { __proto__: '4,7', cave: '1,1' } },
+    }),
+  );
+  assert.deepEqual(restored.entryTiles, { party: { cave: '1,1' } });
+  assert.equal(Object.getPrototypeOf(restored.entryTiles), Object.prototype);
 });
 
 test('deserialize coerces splitParty to a boolean', () => {

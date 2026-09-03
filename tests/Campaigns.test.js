@@ -96,10 +96,10 @@ test('loadInitialCampaign keeps the entry memory and drops what names a missing 
         { id: 'cave', name: 'Cave', parentId: 'world', width: 2, height: 2, tiles: [] },
       ],
       party: { nodeId: 'world', tileId: '0,0' },
-      entryTiles: { cave: '1,1', gone: '0,0' },
+      entryTiles: { party: { cave: '1,1', gone: '0,0' }, 'c:hero': { gone: '0,0' } },
     }),
   );
-  assert.deepEqual(loadInitialCampaign().entryTiles, { cave: '1,1' });
+  assert.deepEqual(loadInitialCampaign().entryTiles, { party: { cave: '1,1' } });
 });
 
 test('loadInitialCampaignSafe falls back to a blank campaign when a save is unreadable', () => {

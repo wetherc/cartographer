@@ -485,7 +485,7 @@ function secondMouth(w) {
 test('walking into a region records the tile it was entered through', () => {
   const { clickTile, state } = world();
   clickTile('2,4');
-  assert.deepEqual(state.entryTiles, { child: '2,4' });
+  assert.deepEqual(state.entryTiles, { party: { child: '2,4' } });
 });
 
 test('a tab that moves nobody records no entry', () => {
@@ -501,7 +501,7 @@ test('the ways out are the sides of the block the party came in by', () => {
   const viaCorner = world();
   secondMouth(viaCorner);
   viaCorner.clickTile('5,0');
-  assert.deepEqual(viaCorner.state.entryTiles, { child: '5,0' });
+  assert.deepEqual(viaCorner.state.entryTiles, { party: { child: '5,0' } });
   assert.deepEqual(
     viaCorner.travel.currentExits().map((/** @type {any} */ e) => e.side),
     ['south', 'west'],
@@ -521,7 +521,7 @@ test('a stored entry survives a reload and still picks the block', () => {
   // memory comes from the save.
   const w = world();
   secondMouth(w);
-  w.state.entryTiles = { child: '2,4' };
+  w.state.entryTiles = { party: { child: '2,4' } };
   w.partyTracker.moveTo('child', '1,3');
   w.navigator.zoomIn('2,4');
   w.travel.exitToParent({
@@ -547,6 +547,47 @@ test('a stored entry survives a reload and still picks the block', () => {
     targetName: 'World',
   });
   assert.deepEqual(forgotten.partyTracker.getPosition(), { nodeId: 'world', tileId: '5,1' });
+});
+
+test('the party and a split character each keep their own way in', () => {
+  // Both stand in the same child, having come in by mouths that do not
+  // touch. One entry per node cannot answer for both: the second one in
+  // would overwrite what the first one needs.
+  const hero = createCharacter('hero', 'Hero');
+  const w = world({ characters: [hero], splitParty: true, selected: 'hero' });
+  secondMouth(w);
+  // The character walks in by the corner mouth.
+  w.clickTile('5,0');
+  assert.deepEqual(w.state.entryTiles, { 'c:hero': { child: '5,0' } });
+  assert.deepEqual(
+    w.travel.currentExits().map((/** @type {any} */ e) => e.side),
+    ['south', 'west'],
+    'the character reads the corner block',
+  );
+
+  // The party walks in by the middle mouth, which recalls the character. The
+  // memory of a character who now stands with the party is dropped, because
+  // the party's own entry is the one they both read.
+  w.state.splitParty = false;
+  w.navigator.goTo('world');
+  w.clickTile('2,4');
+  assert.deepEqual(w.state.entryTiles, { party: { child: '2,4' } });
+
+  // Split again and walk the character back out by the corner they used.
+  w.state.splitParty = true;
+  w.state.entryTiles = { party: { child: '2,4' }, 'c:hero': { child: '5,0' } };
+  w.state.characters = [{ ...hero, location: { nodeId: 'child', tileId: '1,3' } }];
+  w.travel.exitToParent({
+    kind: 'edge',
+    side: 'south',
+    targetNodeId: 'world',
+    targetName: 'World',
+  });
+  assert.deepEqual(
+    w.state.characters[0].location,
+    { nodeId: 'world', tileId: '5,1' },
+    'the character lands beside the corner mouth, not beside the party mouth',
+  );
 });
 
 test('the hover tooltip stays hidden outside play mode and over nothing worth showing', () => {

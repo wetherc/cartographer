@@ -404,10 +404,18 @@ tile: it reports the sides of the block that holds the tile, and the sides
 of every block when no tile is given.
 
 That tile comes from the entry memory in `src/map/EntryMemory.js`. The
-memory holds one parent tile for each child node, and it is part of the
-save, under `entryTiles`. `mapTravel.js` writes an entry when a tab that
-moves somebody zooms in, and drops the entry when the party teleports in,
-because a teleport arrives through no block. Deleting or regenerating a node
+memory holds one parent tile for each traveler and child node pair, and it
+is part of the save, under `entryTiles`. A traveler is the party, or one
+character who holds their own location while the party is split. Two
+travelers can stand in one child having come in by different blocks, so one
+tile per node is not enough. `travelerFor` names the key: the party for the
+party marker, and for a character who stands at it, and `c:<id>` for a
+character with a location of their own.
+
+`mapTravel.js` writes an entry when a tab that moves somebody zooms in, and
+drops the entry when the party teleports in, because a teleport arrives
+through no block. A whole-party move recalls every character, so it also
+drops the character side of the memory. Deleting or regenerating a node
 drops the entries of the nodes that go with it.
 
 For an `edge` exit, a side counts when any cell of that block has an

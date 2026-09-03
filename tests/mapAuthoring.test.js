@@ -402,7 +402,7 @@ function regenerated() {
   });
   const recalled = placementsIn(fixture.app.state.characters, new Set(['cellar']));
   // The party had walked into the cellar through the keep's tile 3,3.
-  fixture.app.state.entryTiles = { cellar: '3,3' };
+  fixture.app.state.entryTiles = { party: { cellar: '3,3' } };
   gestures.recordEdit(
     regenerateSnapshot({
       node: keepBefore,
@@ -448,12 +448,12 @@ test('undoStroke puts a character the regeneration recalled back on their own ti
 test('undoStroke brings back the entry memory of a restored level', () => {
   const { gestures, app } = regenerated();
   gestures.undoStroke();
-  assert.deepEqual(app.state.entryTiles, { cellar: '3,3' });
+  assert.deepEqual(app.state.entryTiles, { party: { cellar: '3,3' } });
 });
 
 test('undoStroke leaves the entry memory alone for an edit that never touched it', () => {
   const { gestures, app, grid } = authoring();
-  app.state.entryTiles = { cellar: '3,3' };
+  app.state.entryTiles = { party: { cellar: '3,3' } };
   const memory = app.state.entryTiles;
   gestures.snapshotEdit(grid.getNode('keep'));
   gestures.undoStroke();

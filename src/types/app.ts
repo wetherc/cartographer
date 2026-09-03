@@ -31,10 +31,11 @@ export type AppMode = 'play' | 'build' | 'library' | 'combat';
 
 /** The campaign data that a save serializes, plus the two view switches. */
 export interface AppState {
-  /** The parent tile each child node was entered through, keyed by child
-   * node id. `map/EntryMemory.js` reads and writes it, and the ways out of a
-   * node and the return landing both depend on it. */
-  entryTiles: Record<string, string>;
+  /** The parent tile each traveler entered each child node through, keyed by
+   * traveler and then by child node id. `map/EntryMemory.js` reads and writes
+   * it, and the ways out of a node and the return landing both depend on
+   * it. */
+  entryTiles: Record<string, Record<string, string>>;
   characters: Character[];
   /** Every creature in the campaign: foes and townsfolk in one list. */
   creatures: Creature[];

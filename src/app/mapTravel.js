@@ -6,7 +6,13 @@ import {
   resolveEntryTile,
 } from '../map/EntryPoint.js';
 import { exitForTile, findExits } from '../map/MapExits.js';
-import { entryFor, forgetEntries, rememberEntry } from '../map/EntryMemory.js';
+import {
+  entryFor,
+  forgetCharacterEntries,
+  forgetEntries,
+  rememberEntry,
+  travelerFor,
+} from '../map/EntryMemory.js';
 import { revealAround } from '../map/FogOfWar.js';
 import { characterPosition, moveCharacter, recallAll } from '../party/CharacterTokens.js';
 import { confirmModal } from '../ui/Modal.js';
@@ -97,8 +103,9 @@ export function createMapTravel(app, env) {
     partyTracker.moveTo(nodeId, target);
     state.characters = recallAll(state.characters); // the whole party teleports
     // A teleport arrives through no block of the parent, so any memory of an
-    // earlier walk in no longer describes where the party stands.
-    state.entryTiles = forgetEntries(state.entryTiles, [nodeId]);
+    // earlier walk in no longer describes where the party stands. Nobody
+    // holds their own location after the recall either.
+    state.entryTiles = forgetCharacterEntries(forgetEntries(state.entryTiles, [nodeId]));
     env.goToNode(nodeId);
     app.actions.logEvent(
       'travel',
@@ -112,15 +119,16 @@ export function createMapTravel(app, env) {
    * The ways out of the node in view, for the canvas arrows, the exit
    * buttons, and the click path. The list is empty in Build mode. Authoring
    * a map is not traveling it, and the arrows are one more thing drawn
-   * over the tiles the GM paints. The list is told which parent tile the
-   * party came in through, so a child that two blocks of the parent link to
-   * reports the sides of the block the party is in.
+   * over the tiles the GM paints. The list is told which parent tile this
+   * tab's traveler came in through, so a child that two blocks of the parent
+   * link to reports the sides of the block that traveler is in.
    * @returns {import('../types/map.js').MapExit[]}
    */
   function currentExits() {
     if (state.mode !== 'play') return [];
     const node = navigator.getCurrentNode();
-    return findExits(node, grid.getParent(node), entryFor(state.entryTiles, node.id));
+    const through = entryFor(state.entryTiles, travelerFor(clickSubject()), node.id);
+    return findExits(node, grid.getParent(node), through);
   }
 
   /**
@@ -155,7 +163,7 @@ export function createMapTravel(app, env) {
       env.goToNode(parent.id);
       return;
     }
-    const through = entryFor(state.entryTiles, child.id);
+    const through = entryFor(state.entryTiles, travelerFor(subject), child.id);
     const landing = computeParentReturnTile(parent, child, exit, from, through);
     if (subject) {
       state.characters = moveCharacter(state.characters, subject.id, {
@@ -170,6 +178,7 @@ export function createMapTravel(app, env) {
     } else {
       partyTracker.moveTo(parent.id, landing); // reveals fog around the landing itself
       state.characters = recallAll(state.characters);
+      state.entryTiles = forgetCharacterEntries(state.entryTiles);
     }
     env.goToNode(parent.id);
     app.actions.logEvent(
@@ -268,11 +277,6 @@ export function createMapTravel(app, env) {
       if (navigator.zoomIn(tile.id)) {
         const child = navigator.getCurrentNode();
         if (gm || subject) {
-          // Remember which parent tile this entry was through, so the ways
-          // out and the return landing read the block the traveler came in
-          // by. Only a tab that moves somebody writes this. A spectator tab
-          // moves nobody, and its neighbours adopt whatever it saves.
-          state.entryTiles = rememberEntry(state.entryTiles, child.id, tile.id);
           // Check this before the move reveals entry fog. An all-fogged
           // child has never been visited, so stepping in now is its
           // discovery.
@@ -306,7 +310,19 @@ export function createMapTravel(app, env) {
               ),
             );
             state.characters = recallAll(state.characters);
+            state.entryTiles = forgetCharacterEntries(state.entryTiles);
           }
+          // Remember which parent tile this entry was through, so the ways
+          // out and the return landing read the block this traveler came in
+          // by. The subject is read back off the roster, because the move
+          // above replaced them, and the key states whether they hold their
+          // own location or stand with the party. Only a tab that moves
+          // somebody writes an entry. A spectator tab moves nobody, and its
+          // neighbours adopt whatever it saves.
+          const traveler = travelerFor(
+            subject ? (state.characters.find((c) => c.id === subject.id) ?? subject) : null,
+          );
+          state.entryTiles = rememberEntry(state.entryTiles, traveler, child.id, tile.id);
           app.actions.logEvent(
             'travel',
             subject

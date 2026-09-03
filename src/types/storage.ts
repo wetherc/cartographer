@@ -50,12 +50,12 @@ export interface CampaignState {
   nodes: MapNode[];
   party: PartyPosition | null;
   /**
-   * The parent tile each child node was entered through, keyed by child node
-   * id. This tells a child that two disjoint parent blocks link to which
-   * block the party came in by. Empty on older saves. See
-   * `map/EntryMemory.js`.
+   * The parent tile each traveler entered each child node through, keyed by
+   * traveler and then by child node id. This tells a child that two disjoint
+   * parent blocks link to which block each traveler came in by. Empty on
+   * older saves. See `map/EntryMemory.js`.
    */
-  entryTiles: Record<string, string>;
+  entryTiles: Record<string, Record<string, string>>;
   characters: Character[];
   /** Every creature in the campaign: foes and townsfolk in one list. */
   creatures: Creature[];
