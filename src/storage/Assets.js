@@ -143,18 +143,32 @@ function refsEqual(next, previous) {
 }
 
 /**
+ * Nodes that a previous `hoistAssets` pass walked and left unchanged. A node
+ * is an immutable value, so a node that held no inline payload once holds
+ * none forever, and a later save can skip its tiles without looking at
+ * them. The save path packs a node once per node identity, so the same
+ * packed node object arrives here on every save until the node changes.
+ * Only the hoist keeps this set. The restore runs once per load, and its
+ * nodes are fresh objects each time.
+ * @type {WeakSet<object>}
+ */
+const payloadFree = new WeakSet();
+
+/**
  * Walk every image-bearing field of a save and map each ref through
  * `convert`. The sites are listed once here. A future payload field needs
  * only one added line, not a second traversal.
  * @param {RawSave} state
  * @param {(ref: string) => string} convert
+ * @param {WeakSet<object>} [unchanged] nodes a previous pass left as they were
  * @returns {RawSave}
  */
-function mapStateRefs(state, convert) {
+function mapStateRefs(state, convert, unchanged) {
   const next = { ...state };
   let anyChange = false;
   if (Array.isArray(state.nodes)) {
     next.nodes = state.nodes.map((node) => {
+      if (unchanged?.has(node)) return node;
       if (!node || typeof node !== 'object' || !Array.isArray(node.tiles)) return node;
       // Return the same node object when no tile changed. The serialize path
       // caches the tile encode on the node's identity, and a fresh copy of an
@@ -166,6 +180,7 @@ function mapStateRefs(state, convert) {
         return mapped;
       });
       if (changed) anyChange = true;
+      if (!changed) unchanged?.add(node);
       return changed ? { ...node, tiles } : node;
     });
   }
@@ -195,7 +210,11 @@ function mapStateRefs(state, convert) {
  */
 export function hoistAssets(state, hash = assetKey) {
   const hoister = createHoister(hash);
-  const next = mapStateRefs(state, (ref) => (isPayload(ref) ? hoister.refFor(ref) : ref));
+  const next = mapStateRefs(
+    state,
+    (ref) => (isPayload(ref) ? hoister.refFor(ref) : ref),
+    payloadFree,
+  );
   if (!Object.keys(hoister.assets).length) {
     // Never carry a stale table forward. The table is derived from the refs
     // present, so the code rebuilds it and drops any entry with no reference.

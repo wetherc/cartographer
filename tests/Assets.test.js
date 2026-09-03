@@ -213,3 +213,31 @@ test('a table payload that is not an image is blanked rather than inlined', () =
   };
   assert.equal(restoreAssets(before).nodes[0].tiles[0].imageRef, '');
 });
+
+test('hoistAssets skips the tiles of a node it already found payload-free', () => {
+  let reads = 0;
+  const tiles = [tile({}), tile({ id: '1,0' })];
+  const node = {
+    id: 'world',
+    get tiles() {
+      reads += 1;
+      return tiles;
+    },
+  };
+  const first = hoistAssets({ nodes: [node], handouts: [] });
+  assert.equal(first.nodes[0], node, 'a payload-free node keeps its identity');
+  const readsAfterFirst = reads;
+  assert.ok(readsAfterFirst > 0, 'the first pass walks the tiles');
+  const second = hoistAssets({ nodes: [node], handouts: [] });
+  assert.equal(second.nodes[0], node);
+  assert.equal(reads, readsAfterFirst, 'the second pass does not read the tiles again');
+});
+
+test('hoistAssets keeps walking a node that carries a payload', () => {
+  const node = { id: 'world', tiles: [tile({ imageRef: PAYLOAD })] };
+  const first = hoistAssets({ nodes: [node], handouts: [] });
+  const second = hoistAssets({ nodes: [node], handouts: [] });
+  assert.notEqual(first.nodes[0], node);
+  assert.equal(first.nodes[0].tiles[0].imageRef.startsWith('asset:'), true);
+  assert.deepEqual(second.nodes[0], first.nodes[0], 'each pass hoists it afresh');
+});

@@ -46,8 +46,11 @@ The top-level type is `CampaignState` (`src/types/storage.ts`). It holds a
 flat `nodes` array (the flattened node map of the `TileGrid`), plus `party`,
 `characters`, `creatures`, and the other collections. `storage/SaveManager.js`
 owns `buildState`, `serialize`, `deserialize`, and `toTileGrid`, and all four
-are pure. `toTileGrid` rebuilds a working hierarchy by re-adding each node,
-because a `MapNode` already carries its own `parentId`.
+are pure. `toTileGrid` rebuilds a working hierarchy by adding each node of
+the state as it is, because a `MapNode` already carries its own `parentId`.
+It runs no defaulting of its own. `deserialize` has already defaulted every
+node, and a second pass would re-map and re-freeze every tile of the world
+on each load. The grid therefore holds the parsed node objects themselves.
 
 `buildState` takes one source object (`CampaignSource`: a `TileGrid` plus any
 campaign field the caller holds) instead of a positional list. Every field
@@ -176,6 +179,12 @@ oversight. Recursion into a nested record needs to know whether the record
 fills member-wise (`stats`) or as a whole (`equipment`). The `withDefaults`
 contract does not state this.
 
+Each collection packs through one `createEntityPacker`, which caches the
+packed form on the entity's identity. Entities are immutable values, so an
+entity that no edit touched since the last save packs to the cached object.
+Without the cache, the trial loop ran for every creature on every autosave,
+and it dominated the save cost of a campaign with hundreds of creatures.
+
 Measured on the example campaign, this layer moved the save from 133,948
 characters to 129,715, with the encounter collection alone dropping 49%. The
 win scales with the size of the roster, not the size of the map. It is small
@@ -211,6 +220,10 @@ The design of the table closes a failure mode at each step:
 - The table is rebuilt from the refs that are present on every serialize. As
   a result, it prunes itself, and an image-free campaign gets no `assets`
   field at all.
+- A node that one hoist found free of payloads is remembered in a `WeakSet`.
+  Nodes are immutable, and the save path packs a node once per identity, so
+  a later save skips the tiles of an unchanged node instead of walking them
+  again.
 - Keys resolve a collision by comparing the stored payload and probing a
   suffix. A hash collision costs a longer key, and never the wrong image.
 - A reference that the table cannot resolve stays as written, instead of

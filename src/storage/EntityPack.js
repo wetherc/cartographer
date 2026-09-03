@@ -17,6 +17,8 @@
  * agree by construction, not by convention.
  */
 
+import { memoizeByIdentity } from '../util/memoize.js';
+
 /**
  * True when two JSON-shaped values are structurally identical. The function
  * ignores key order, so it does not just compare `JSON.stringify` output. A
@@ -127,17 +129,33 @@ export function packEntity(entity, withDefaults) {
 }
 
 /**
- * `packEntity` applied over a collection. Entries that are not records pass
- * through unchanged. `deserialize` removes those on the way in, so a save
- * must not contain one, and this packing step must not start deleting data.
+ * A packer for one collection, cached on each entity's identity. Entities
+ * are immutable values (every writer returns a new object), so an entity
+ * object that a previous save already packed packs to the same result. A
+ * save packs every entity of every collection, and `packEntity` runs
+ * `withDefaults` once per field path of each one. Without this cache that
+ * trial loop dominates the save cost of a campaign with hundreds of
+ * creatures, on every autosave and every combat flush.
+ *
+ * Entries that are not records pass through unchanged. `deserialize`
+ * removes those on the way in, so a save must not contain one, and this
+ * packing step must not start deleting data.
+ * @param {(entity: any) => any} withDefaults
+ * @returns {(list: any[]) => any[]}
+ */
+export function createEntityPacker(withDefaults) {
+  const pack = memoizeByIdentity((entity) => packEntity(entity, withDefaults));
+  return (list) => list.map((entity) => (isRecord(entity) ? pack(entity) : entity));
+}
+
+/**
+ * `packEntity` applied over a collection, with no cache. This is the
+ * one-off form; the save path holds one `createEntityPacker` per
+ * collection so repeat saves reuse their results.
  * @param {any[]} list
  * @param {(entity: any) => any} withDefaults
  * @returns {any[]}
  */
 export function packEntities(list, withDefaults) {
-  return list.map((entity) =>
-    entity !== null && typeof entity === 'object' && !Array.isArray(entity)
-      ? packEntity(entity, withDefaults)
-      : entity,
-  );
+  return createEntityPacker(withDefaults)(list);
 }

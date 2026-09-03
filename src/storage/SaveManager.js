@@ -3,7 +3,7 @@ import { downloadJSON, readFileText } from './fileIO.js';
 import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
 import { hoistAssets, restoreAssets } from './Assets.js';
 import { detachAssets, loadAssetTable, persistAssets } from './AssetStore.js';
-import { packEntities } from './EntityPack.js';
+import { createEntityPacker } from './EntityPack.js';
 import { encodeNodeTiles, decodeNodeTiles } from './TileCodec.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
@@ -134,6 +134,19 @@ const ENTITY_DEFAULTS = {
 };
 
 /**
+ * One cached packer per collection in `ENTITY_DEFAULTS`. Each caches on the
+ * entity's identity, so an entity that no edit touched since the last save
+ * packs to the cached object instead of re-running its trial loop.
+ * @type {Record<string, (list: any[]) => any[]>}
+ */
+const ENTITY_PACKERS = Object.fromEntries(
+  Object.entries(ENTITY_DEFAULTS).map(([key, withDefaults]) => [
+    key,
+    createEntityPacker(withDefaults),
+  ]),
+);
+
+/**
  * A node with its tiles packed, cached on the node's identity. Nodes are
  * immutable values (every map writer returns a new node), so a node object
  * that a previous save already packed packs to the same result. Autosave
@@ -180,9 +193,9 @@ export function packState(state) {
     ...state,
     nodes: state.nodes.map(packNodeTiles),
   };
-  for (const [key, withDefaults] of Object.entries(ENTITY_DEFAULTS)) {
+  for (const [key, pack] of Object.entries(ENTITY_PACKERS)) {
     const list = packed[key];
-    if (Array.isArray(list)) packed[key] = packEntities(list, withDefaults);
+    if (Array.isArray(list)) packed[key] = pack(list);
   }
   const hoisted = hoistAssets(packed);
   const nodes = hoisted.nodes;
@@ -288,14 +301,19 @@ export function deserialize(json, assets) {
 }
 
 /**
- * Rebuild a TileGrid from a CampaignState's flat node list.
+ * Rebuild a TileGrid from a CampaignState's flat node list. The grid holds
+ * the state's own node objects. `deserialize` has already run
+ * `withNodeDefaults` on every node, and that function re-maps and
+ * re-freezes every tile, so running it here again costs a full pass over
+ * the world on every load for no change. Keeping the parsed objects also
+ * lets the first save after a load diff against them by identity, because
+ * the history cache holds the same parsed state.
  * @param {CampaignState} state
  * @returns {TileGrid}
  */
 export function toTileGrid(state) {
   const grid = new TileGrid();
-  // Fill in kind and environ, so nodes from saves before interiors existed load cleanly.
-  for (const node of state.nodes) grid.addNode(withNodeDefaults(node));
+  for (const node of state.nodes) grid.addNode(node);
   return grid;
 }
 

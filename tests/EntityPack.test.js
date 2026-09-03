@@ -1,7 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { packEntities, packEntity, sameValue } from '../src/storage/EntityPack.js';
+import {
+  createEntityPacker,
+  packEntities,
+  packEntity,
+  sameValue,
+} from '../src/storage/EntityPack.js';
 
 /** A stand-in entity unpacker with a constant default per field. */
 function withConstantDefaults(entity) {
@@ -121,4 +126,17 @@ test('a field the unpacker cannot restore is never dropped, however empty', () =
 test('packing a collection leaves non-record entries alone', () => {
   const packed = packEntities([{ id: 'a', tags: [] }, null, 7, ['x']], withConstantDefaults);
   assert.deepEqual(packed, [{ id: 'a' }, null, 7, ['x']]);
+});
+
+test('a collection packer returns the cached object for an entity it already packed', () => {
+  const pack = createEntityPacker(withConstantDefaults);
+  const entity = { id: 'a', name: '', tags: [], count: 3 };
+  const [first] = pack([entity]);
+  const [second] = pack([entity]);
+  assert.equal(second, first, 'the same entity object packs to the same output object');
+  assert.deepEqual(first, { id: 'a', count: 3 });
+  const [copy] = pack([{ ...entity }]);
+  assert.notEqual(copy, first, 'an equal but distinct entity is packed on its own');
+  assert.deepEqual(copy, first);
+  assert.deepEqual(pack([entity, null, 7]), [first, null, 7], 'non-records pass through');
 });

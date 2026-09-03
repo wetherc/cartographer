@@ -704,13 +704,18 @@ test('toTileGrid preserves node kind/environ and backfills older nodes as region
   assert.equal(hall.kind, 'interior');
   assert.equal(hall.environ, 'castle');
 
-  // A node from a save predating the fields loads as a plain region.
-  const legacy = toTileGrid({
-    nodes: [{ id: 'old', name: 'Old', parentId: null, width: 1, height: 1, tiles: [] }],
-    party: null,
-    characters: [],
-    creatures: [],
-  });
+  // A node from a save predating the fields loads as a plain region. The
+  // backfill happens in deserialize; toTileGrid holds the parsed nodes as is.
+  const legacy = toTileGrid(
+    deserialize(
+      JSON.stringify({
+        nodes: [{ id: 'old', name: 'Old', parentId: null, width: 1, height: 1, tiles: [] }],
+        party: null,
+        characters: [],
+        creatures: [],
+      }),
+    ),
+  );
   assert.equal(legacy.getNode('old').kind, 'region');
   assert.equal(legacy.getNode('old').environ, null);
 });
