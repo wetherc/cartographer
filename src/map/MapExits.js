@@ -49,47 +49,73 @@ const EXIT_LABEL_SCALE = { factor: 0.28, min: 12, max: 26 };
  * sits in unpainted terrain. The fallback exit lets the party always leave a
  * space they entered.
  *
+ * `throughTileId` is the parent tile the party zoomed through, when the
+ * caller knows it. It matters only for a child that two blocks of the parent
+ * link to, such as a cave with two mouths: the exits are then the sides of
+ * the block the party came in by. Without it, the exits are the sides of
+ * every block, so no way out is hidden from a party that arrived by teleport
+ * or is looking at the node after a reload.
+ *
  * @param {MapNode | null} node node the party is in
  * @param {MapNode | null} parent its parent, or null at the root
+ * @param {string | null} [throughTileId] parent tile the party entered through
  * @returns {MapExit[]}
  */
-export function findExits(node, parent) {
+export function findExits(node, parent, throughTileId = null) {
   if (!node || !parent) return [];
   const target = { targetNodeId: parent.id, targetName: parent.name };
   const exits =
     node.kind === 'interior'
       ? interiorExits(node, parent, target)
-      : edgeExits(node, parent, target);
+      : edgeExits(node, parent, target, throughTileId);
   if (exits.length) return exits;
   return [{ kind: 'fallback', ...target }];
 }
 
 /**
- * The sides of the parent's region block that touch usable parent terrain. A
- * side counts when at least one cell of the block has an orthogonal neighbor
+ * The sides of the parent's region blocks that touch usable parent terrain. A
+ * side counts when at least one cell of a block has an orthogonal neighbor
  * in the parent with an image, and that neighbor is not part of the block.
- * This function checks the block cell by cell. A block in blank terrain, or
- * flush against the parent's own edge, reports that side as no way out.
- * Diagonal contact past a corner does not count, because the party has
- * nothing to step onto there.
+ * This function checks each block cell by cell. A block in blank terrain, or
+ * flush against the parent's own edge, contributes no side. Diagonal contact
+ * past a corner does not count, because the party has nothing to step onto
+ * there.
+ *
+ * The party's own block answers alone when `throughTileId` names it.
+ * Otherwise every block linked to the child answers, and the sides are the
+ * union. A side one block reports and another does not is still a way out:
+ * the return landing puts the party beside the block it came in by, and
+ * falls back to the first block when that is unknown.
  * @param {MapNode} node
  * @param {MapNode} parent
  * @param {{ targetNodeId: string, targetName: string }} target
+ * @param {string | null} throughTileId
  * @returns {MapExit[]}
  */
-function edgeExits(node, parent, target) {
-  const group = blockFor(parent, node.id);
-  if (!group) return [];
-  /** @type {MapExit[]} */
-  const exits = [];
-  for (const { side, dx, dy } of EXIT_SIDES) {
-    const abuts = group.cells.some((cell) => {
-      const tile = getTile(parent, tileIdAt(cell.x + dx, cell.y + dy));
-      return !!tile && !!tile.imageRef && tile.childNodeId !== node.id;
-    });
-    if (abuts) exits.push({ kind: 'edge', side, ...target });
+function edgeExits(node, parent, target, throughTileId) {
+  const blocks = blocksFor(parent, node.id);
+  if (blocks.length === 0) return [];
+  const through = throughTileId ? blocks.find((g) => g.tileIds.includes(throughTileId)) : null;
+  const scope = through ? [through] : blocks;
+  /** @type {Set<ExitSide>} */
+  const sides = new Set();
+  for (const group of scope) {
+    for (const { side, dx, dy } of EXIT_SIDES) {
+      if (sides.has(side)) continue;
+      const abuts = group.cells.some((cell) => {
+        const tile = getTile(parent, tileIdAt(cell.x + dx, cell.y + dy));
+        return !!tile && !!tile.imageRef && tile.childNodeId !== node.id;
+      });
+      if (abuts) sides.add(side);
+    }
   }
-  return exits;
+  // EXIT_SIDES order, not the order the sides were found, so the renderer and
+  // the accessible button list agree however the blocks are laid out.
+  return EXIT_SIDES.filter(({ side }) => sides.has(side)).map(({ side }) => ({
+    kind: /** @type {const} */ ('edge'),
+    side,
+    ...target,
+  }));
 }
 
 /**
@@ -197,19 +223,31 @@ export function stairwayTo(parent, childNodeId) {
 }
 
 /**
- * The block a child node occupies in its parent, or null when no parent tile
- * links to it. A parent can link one child from two blocks that do not
- * touch, for example a cave with two mouths. In that case the block that
- * holds `throughTileId`, the parent tile the party zoomed through, is the
- * one the party is in. The function returns the first block when no tile is
- * given, or when the tile belongs to no block of this child.
+ * Every block a child node occupies in its parent, in the order
+ * `findRegionGroups` reports them. A parent can link one child from two
+ * blocks that do not touch, for example a cave with two mouths, and both are
+ * real ways in.
+ * @param {MapNode} parent
+ * @param {string} childNodeId
+ * @returns {RegionGroup[]}
+ */
+export function blocksFor(parent, childNodeId) {
+  return findRegionGroups(parent).filter((g) => g.childNodeId === childNodeId);
+}
+
+/**
+ * The one block of a child that the party is in, or null when no parent tile
+ * links to the child. For a child linked from two blocks that do not touch,
+ * the block that holds `throughTileId`, the parent tile the party zoomed
+ * through, is the one the party is in. The function returns the first block
+ * when no tile is given, or when the tile belongs to no block of this child.
  * @param {MapNode} parent
  * @param {string} childNodeId
  * @param {string | null} [throughTileId] parent tile the party entered through
  * @returns {RegionGroup | null}
  */
 export function blockFor(parent, childNodeId, throughTileId = null) {
-  const blocks = findRegionGroups(parent).filter((g) => g.childNodeId === childNodeId);
+  const blocks = blocksFor(parent, childNodeId);
   const through = throughTileId ? blocks.find((g) => g.tileIds.includes(throughTileId)) : null;
   return through ?? blocks[0] ?? null;
 }

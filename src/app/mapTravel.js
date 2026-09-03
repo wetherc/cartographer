@@ -119,13 +119,15 @@ export function createMapTravel(app, env) {
    * The ways out of the node in view, for the canvas arrows, the exit
    * buttons, and the click path. The list is empty in Build mode. Authoring
    * a map is not traveling it, and the arrows are one more thing drawn
-   * over the tiles the GM paints.
+   * over the tiles the GM paints. The list is told which parent tile the
+   * party came in through, so a child that two blocks of the parent link to
+   * reports the sides of the block the party is in.
    * @returns {import('../types/map.js').MapExit[]}
    */
   function currentExits() {
     if (state.mode !== 'play') return [];
     const node = navigator.getCurrentNode();
-    return findExits(node, grid.getParent(node));
+    return findExits(node, grid.getParent(node), enteredThrough.get(node.id) ?? null);
   }
 
   /**
