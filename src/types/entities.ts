@@ -7,6 +7,14 @@ export interface EncounterLocation {
   tileId: string;
 }
 
+/** Where one character stood, kept so an undo can put them back. `location`
+ * null means the character travelled with the party. A map edit that recalls
+ * placed characters records these before it moves them. */
+export interface CharacterPlacement {
+  characterId: string;
+  location: EncounterLocation | null;
+}
+
 /** Where a condition came from, for a condition that a spell imposed. This
  * field is present only on a chip that a cast wrote. A chip that the GM
  * added by hand carries no source, and the GM can clear it freely. The save

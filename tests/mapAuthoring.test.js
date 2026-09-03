@@ -6,6 +6,8 @@ import { MapNavigator } from '../src/map/MapNavigator.js';
 import { fillTiles } from './helpers/grid.js';
 import { stubApp } from './helpers/app.js';
 import { regenerateSnapshot } from '../src/map/RegenerateNode.js';
+import { moveCharacter, placementsIn, recallFrom } from '../src/party/CharacterTokens.js';
+import { createCharacter } from '../src/entities/Character.js';
 
 const INTERIOR = 'assets/tiles/interior/interior';
 
@@ -392,6 +394,13 @@ function regenerated() {
     createTile(id, `${INTERIOR}-floor-1.svg`, { childNodeId: id === '3,3' ? 'cellar' : null }),
   );
   grid.updateNode(keepBefore);
+  // A character stood in the cellar. The regeneration recalls them to the
+  // party marker, the same as generateAction does.
+  fixture.app.state.characters = moveCharacter([createCharacter('hero', 'Aldric')], 'hero', {
+    nodeId: 'cellar',
+    tileId: '1,0',
+  });
+  const recalled = placementsIn(fixture.app.state.characters, new Set(['cellar']));
   gestures.recordEdit(
     regenerateSnapshot({
       node: keepBefore,
@@ -399,8 +408,10 @@ function regenerated() {
       created: ['deep'],
       removed: [cellar],
       party: { nodeId: 'keep', tileId: '0,0' },
+      recalled,
     }),
   );
+  fixture.app.state.characters = recallFrom(fixture.app.state.characters, new Set(['cellar']));
   grid.removeNode('cellar');
   grid.addNode(createMapNode('deep', 'Keep (level 2)', 'keep', 2, 2, { kind: 'interior' }));
   grid.updateNode(
@@ -423,6 +434,13 @@ test('undoStroke removes what a regeneration created, restores what it removed, 
   assert.deepEqual(toastMessages, ['Undid the last edit.']);
 });
 
+test('undoStroke puts a character the regeneration recalled back on their own tile', () => {
+  const { gestures, app } = regenerated();
+  assert.equal(app.state.characters[0].location, null, 'the recall moved them to the party');
+  gestures.undoStroke();
+  assert.deepEqual(app.state.characters[0].location, { nodeId: 'cellar', tileId: '1,0' });
+});
+
 test('undoStroke moves a view left inside a removed level to the restored node', () => {
   const { gestures, navigator, calls } = regenerated();
   navigator.goTo('deep');
@@ -441,6 +459,7 @@ test('undoStroke leaves the party alone when its recorded node no longer exists'
       created: [],
       removed: [],
       party: { nodeId: 'nowhere', tileId: '0,0' },
+      recalled: [],
     }),
   );
   gestures.undoStroke();

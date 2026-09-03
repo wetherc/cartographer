@@ -1,5 +1,6 @@
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
+/** @typedef {import('../types/entities.js').CharacterPlacement} CharacterPlacement */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
 
 /**
@@ -114,4 +115,39 @@ export function recallFrom(characters, nodeIds) {
   return characters.map((c) =>
     c.location && nodeIds.has(c.location.nodeId) ? { ...c, location: null } : c,
   );
+}
+
+/**
+ * Where the characters standing in any of the given nodes are, so a caller
+ * that is about to recall them can put them back later. Characters with the
+ * party, and characters standing elsewhere, are not in the result.
+ * @param {Character[]} characters
+ * @param {Set<string>} nodeIds
+ * @returns {CharacterPlacement[]}
+ */
+export function placementsIn(characters, nodeIds) {
+  /** @type {CharacterPlacement[]} */
+  const placements = [];
+  for (const c of characters) {
+    const location = c.location ?? null;
+    if (location && nodeIds.has(location.nodeId)) {
+      placements.push({ characterId: c.id, location });
+    }
+  }
+  return placements;
+}
+
+/**
+ * Put the recorded characters back where they stood. This is the undo of
+ * `recallFrom`. Only the `location` field changes, so any other edit made to
+ * a character since the recall stays. A placement for a character who is no
+ * longer on the roster is skipped.
+ * @param {Character[]} characters
+ * @param {CharacterPlacement[]} placements
+ * @returns {Character[]}
+ */
+export function restorePlacements(characters, placements) {
+  if (placements.length === 0) return characters;
+  const byId = new Map(placements.map((p) => [p.characterId, p.location]));
+  return characters.map((c) => (byId.has(c.id) ? { ...c, location: byId.get(c.id) ?? null } : c));
 }

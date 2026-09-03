@@ -4,6 +4,7 @@ import { relandedTile } from './NodeEdits.js';
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
 /** @typedef {import('./EditHistory.js').EditSnapshot} EditSnapshot */
+/** @typedef {import('../types/entities.js').CharacterPlacement} CharacterPlacement */
 
 /**
  * What a regeneration does beyond the node's own tiles. A generated layout
@@ -62,16 +63,20 @@ export function regenerateLanding({ position, nodeId, removedIds, width, height,
 /**
  * The undo record for a regeneration. It holds the node and its parent as
  * they were, the ids of the deeper levels the generator created, the nodes
- * the regeneration removed, and where the party stood.
+ * the regeneration removed, where the party stood, and the locations of the
+ * characters in the removed nodes. The regeneration recalls those
+ * characters to the party marker, so undo needs their locations to put them
+ * back.
  * @param {{
  *   node: MapNode,
  *   parent: MapNode | null,
  *   created: string[],
  *   removed: MapNode[],
  *   party: PartyPosition,
+ *   recalled: CharacterPlacement[],
  * }} opts
  * @returns {EditSnapshot}
  */
-export function regenerateSnapshot({ node, parent, created, removed, party }) {
-  return { nodes: parent ? [node, parent] : [node], created, removed, party };
+export function regenerateSnapshot({ node, parent, created, removed, party, recalled }) {
+  return { nodes: parent ? [node, parent] : [node], created, removed, party, recalled };
 }

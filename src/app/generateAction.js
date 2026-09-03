@@ -6,7 +6,7 @@ import { resolveEntryTile } from '../map/EntryPoint.js';
 import { entranceArtFor, freshNodeId } from '../map/NodeEdits.js';
 import { linkedDescendants, regenerateLanding, regenerateSnapshot } from '../map/RegenerateNode.js';
 import { describeTile } from '../map/TileCoords.js';
-import { recallFrom } from '../party/CharacterTokens.js';
+import { placementsIn, recallFrom } from '../party/CharacterTokens.js';
 import { mulberry32 } from '../util/Rng.js';
 import { mustGetElement } from '../ui/dom.js';
 import { confirmModal, alertModal } from '../ui/Modal.js';
@@ -110,10 +110,11 @@ export function wireGenerateAction(app, env) {
     const built = buildCandidate(values);
     const gen = built.gen;
     const deeper = built.levels ? built.levels.slice(1) : [];
+    const removedIds = new Set(removed.map((n) => n.id));
     // The regenerated layout replaces the node, removes the sub-maps its old
     // tiles led to, adds the deeper levels, and can restamp its parent's
-    // entrance link below. Record all of it so the stroke-undo ring can
-    // revert it.
+    // entrance link below. It also recalls every character standing in a
+    // removed node. Record all of it so the stroke-undo ring can revert it.
     env.recordEdit(
       regenerateSnapshot({
         node,
@@ -121,9 +122,9 @@ export function wireGenerateAction(app, env) {
         created: deeper.map((level) => /** @type {string} */ (level.id)),
         removed,
         party: partyTracker.getPosition(),
+        recalled: placementsIn(state.characters, removedIds),
       }),
     );
-    const removedIds = new Set(removed.map((n) => n.id));
     for (const doomed of removed) {
       if (grid.getNode(doomed.id)) grid.removeNode(doomed.id);
     }

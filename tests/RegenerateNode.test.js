@@ -122,18 +122,21 @@ test('regenerateSnapshot records the node, its parent, and everything else undo 
   const town = nodes[0];
   const removed = linkedDescendants(nodes, level1);
   const party = { nodeId: 'l2', tileId: '1,1' };
+  const recalled = [{ characterId: 'c1', location: { nodeId: 'l2', tileId: '2,2' } }];
   const snapshot = regenerateSnapshot({
     node: level1,
     parent: town,
     created: ['fresh-2'],
     removed,
     party,
+    recalled,
   });
   assert.deepEqual(snapshot, {
     nodes: [level1, town],
     created: ['fresh-2'],
     removed,
     party,
+    recalled,
   });
 });
 
@@ -146,6 +149,7 @@ test('regenerateSnapshot on a root node records the node alone', () => {
     created: [],
     removed: [],
     party,
+    recalled: [],
   });
   assert.deepEqual(snapshot.nodes, [root]);
 });

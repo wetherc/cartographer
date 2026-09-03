@@ -8,6 +8,8 @@ import {
   isSplit,
   characterPosition,
   regroupCandidates,
+  placementsIn,
+  restorePlacements,
 } from '../src/party/CharacterTokens.js';
 import { createCharacter, withDefaults } from '../src/entities/Character.js';
 
@@ -115,4 +117,48 @@ test('recallFrom brings back only the characters standing in the given nodes', (
   });
   // A character with the party has no location to clear, and keeps its identity.
   assert.equal(recallFrom(party, new Set(['cave']))[0], party[0]);
+});
+
+test('placementsIn records the characters standing in the given nodes', () => {
+  const scattered = moveCharacter(
+    moveCharacter(party, 'hero', { nodeId: 'cave', tileId: '0,1' }),
+    'sage',
+    { nodeId: 'tower', tileId: '3,3' },
+  );
+  assert.deepEqual(placementsIn(scattered, new Set(['cave', 'gone'])), [
+    { characterId: 'hero', location: { nodeId: 'cave', tileId: '0,1' } },
+  ]);
+  // Nobody stands apart from the party, so there is nothing to record.
+  assert.deepEqual(placementsIn(party, new Set(['cave'])), []);
+});
+
+test('restorePlacements is the undo of recallFrom', () => {
+  const scattered = moveCharacter(party, 'hero', { nodeId: 'cave', tileId: '0,1' });
+  const nodes = new Set(['cave']);
+  const placements = placementsIn(scattered, nodes);
+  const restored = restorePlacements(recallFrom(scattered, nodes), placements);
+  assert.deepEqual(restored.find((c) => c.id === 'hero')?.location, {
+    nodeId: 'cave',
+    tileId: '0,1',
+  });
+  assert.equal(restorePlacements(scattered, [])[0], scattered[0], 'no placements changes nothing');
+});
+
+test('restorePlacements keeps every other edit made since the recall', () => {
+  const scattered = moveCharacter(party, 'hero', { nodeId: 'cave', tileId: '0,1' });
+  const placements = placementsIn(scattered, new Set(['cave']));
+  const healed = recallFrom(scattered, new Set(['cave'])).map((c) =>
+    c.id === 'hero' ? { ...c, name: 'Hero the Bold' } : c,
+  );
+  const restored = restorePlacements(healed, placements);
+  assert.equal(restored.find((c) => c.id === 'hero')?.name, 'Hero the Bold');
+  assert.deepEqual(restored.find((c) => c.id === 'hero')?.location, {
+    nodeId: 'cave',
+    tileId: '0,1',
+  });
+});
+
+test('restorePlacements skips a character who left the roster', () => {
+  const placements = [{ characterId: 'gone', location: { nodeId: 'cave', tileId: '0,1' } }];
+  assert.deepEqual(restorePlacements(party, placements), party);
 });
