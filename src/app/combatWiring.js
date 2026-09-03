@@ -170,8 +170,9 @@ export function wireCombatScreen(app) {
     },
     // This is the one write path every hit uses. It stores the result,
     // logs the transitions, and refreshes this screen along with the other
-    // panels.
-    onApplyHP: (id, amount, isHeal) => applyToTarget(app, id, amount, isHeal),
+    // panels. The amount field has no roll behind it, so the write path logs
+    // the amount and the resulting HP for it.
+    onApplyHP: (id, amount, isHeal) => applyToTarget(app, id, amount, isHeal, { manual: true }),
     getConcentration: (id) => {
       const found = findCombatant(app, id);
       return found?.kind === 'character' ? (found.entity.concentration ?? null) : null;

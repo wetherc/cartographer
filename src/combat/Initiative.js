@@ -61,9 +61,11 @@ export function startCombat(participants, nameOf, startedAt = 0) {
  * gone can neither act nor be targeted. The turn pointer follows the
  * combatant it was on: removing someone earlier in the order shifts the
  * pointer back, and removing the last participant during their own turn
- * wraps the pointer to the top instead of past the end. The function returns
- * the state unchanged (identity preserved) when the id is not in the order.
- * Pure function.
+ * wraps the pointer to the top instead of past the end. When the dropped
+ * combatant held the turn, the combatant the pointer lands on gets a fresh
+ * budget, the same way `advanceTurn` gives one: their turn is what begins
+ * now. The function returns the state unchanged (identity preserved) when
+ * the id is not in the order. Pure function.
  * @param {CombatState} state
  * @param {string} id
  * @returns {CombatState}
@@ -73,7 +75,9 @@ export function dropParticipant(state, id) {
   if (removed.length === state.order.length) return state;
   const before = state.order.slice(0, state.index).filter((p) => p.id === id).length;
   const index = removed.length === 0 ? 0 : Math.min(state.index - before, removed.length - 1);
-  return { ...state, index, order: removed };
+  const heldTurn = state.order[state.index]?.id === id;
+  const order = heldTurn && removed.length > 0 ? refreshTurn(removed, index) : removed;
+  return { ...state, index, order };
 }
 
 /**

@@ -22,6 +22,7 @@ import { replaceById } from '../entities/Roster.js';
 import { castableLeveledIds } from '../entities/SpellView.js';
 import { resolveSpellIds } from '../library/Library.js';
 import { sideOf, isDowned } from '../combat/CombatView.js';
+import { damageLine, healLine } from '../combat/HPLines.js';
 import { spellbookIds } from './casterFields.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -548,20 +549,33 @@ export function retryImposedSaves(app, combatantId) {
  *
  * `opts.crit` says the damage came from a critical hit, which counts as two
  * failed death saves instead of one. A caller that cannot crit leaves it off.
+ *
+ * `opts.manual` says the GM typed the amount into the combat screen. That
+ * path has no roll to log, so this function writes the line itself: the
+ * name, the amount, and the HP that results. An attack or a cast writes its
+ * own line with the roll in it, and leaves this option off.
  * @param {AppContext} app
  * @param {string} targetId
  * @param {number} amount
  * @param {boolean} isHeal
- * @param {{ crit?: boolean }} [opts]
+ * @param {{ crit?: boolean, manual?: boolean }} [opts]
  */
 export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
   if (amount <= 0) return;
   const found = findCombatant(app, targetId);
   if (!found) return;
+  /** @param {Character | Creature} next */
+  const logManual = (next) => {
+    if (!opts.manual) return;
+    const hp = hpAfter(found.kind, next);
+    const line = isHeal ? healLine(next.name, amount, hp) : damageLine(next.name, amount, hp);
+    app.actions.logEvent('combat', line);
+  };
   if (found.kind === 'creature') {
     // A creature follows one rule: 0 HP takes it out of the fight, with no
     // death saves and no dying tracker.
     const next = isHeal ? heal(found.entity, amount) : applyDamage(found.entity, amount);
+    logManual(next);
     if (!isHeal) logDefeatTransition(app, found.entity, next);
     // store re-syncs the map markers itself. A defeated hostile must drop
     // off the danger layer, and a healed one must return to it. Doing this
@@ -585,6 +599,9 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
     // hit can still push it to 0; that drop gets no line, because the log
     // already said the character died.
     const downed = !isHeal && !wasDown && (getHP(next)?.current ?? 0) <= 0;
+    // The amount line comes first, so the drop and the death-save lines that
+    // follow read as its consequences.
+    logManual(next);
     if (downed && !isDead(next)) app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
     next = foldDeathSaves(app, next, {
       isHeal,
@@ -602,6 +619,22 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
     // the pre-sweep copy back.
     if (broke?.ended) endSpellEffects(app, next.id, broke.ended);
   }
+}
+
+/**
+ * The HP readout for the manual log line, from the entity as written. A
+ * character without an HP pool reads as null, and the line drops the readout.
+ * @param {Combatant['kind']} kind
+ * @param {Character | Creature} entity
+ * @returns {{ current: number, max: number } | null}
+ */
+function hpAfter(kind, entity) {
+  if (kind === 'creature') {
+    const creature = /** @type {Creature} */ (entity);
+    return { current: creature.currentHP, max: creature.maxHP };
+  }
+  const hp = getHP(/** @type {Character} */ (entity));
+  return hp ? { current: hp.current, max: hp.max } : null;
 }
 
 /**

@@ -269,3 +269,33 @@ test('addParticipant refuses a duplicate id and joins an empty order', () => {
   );
   assert.equal(joined.index, 0);
 });
+
+test('dropParticipant refreshes the budget of the combatant that inherits the turn', () => {
+  const b = spend(spend(createParticipant('b', 15), 'reaction'), 'bonusAction');
+  const state = {
+    ...startCombat([createParticipant('a', 20), b, createParticipant('c', 10)]),
+    index: 0,
+  };
+  const next = dropParticipant(state, 'a');
+  assert.equal(currentParticipant(next)?.id, 'b');
+  assert.deepEqual(next.order[0].used, freshBudget(), 'the inherited turn starts whole');
+});
+
+test('dropParticipant leaves budgets alone when the dropped combatant did not hold the turn', () => {
+  const c = spend(createParticipant('c', 10), 'reaction');
+  const state = {
+    ...startCombat([createParticipant('a', 20), createParticipant('b', 15), c]),
+    index: 0,
+  };
+  const next = dropParticipant(state, 'b');
+  assert.equal(currentParticipant(next)?.id, 'a');
+  assert.equal(next.order[1].used.reaction, true, 'a later combatant keeps its spent reaction');
+});
+
+test('dropParticipant refreshes the top of the order when the last combatant leaves on its turn', () => {
+  const a = spend(createParticipant('a', 20), 'action');
+  const state = { ...startCombat([a, createParticipant('b', 10)]), index: 1 };
+  const next = dropParticipant(state, 'b');
+  assert.equal(currentParticipant(next)?.id, 'a');
+  assert.equal(next.order[0].used.action, false);
+});
