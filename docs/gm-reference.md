@@ -24,17 +24,20 @@ panels step aside, and the fight takes the full width.
 
 ## Roles
 
-The role switch sits beside the mode switch.
+The role switch sits beside the mode switch. The header labels it Viewer,
+with GM and Player as its options.
 
 | Role | Sees | Can change |
 | --- | --- | --- |
-| GM | Exact enemy HP, secret tile notes, the whole map | Everything |
-| Player | Enemy health as a band (Unharmed, Bloodied, Down), no secret notes, the fog-revealed map only | Nothing, unless the tab is bound to a character |
+| GM | Exact enemy HP, tile notes, the whole map | Everything |
+| Player | Enemy health as a band (Unharmed, Bloodied, Down), no tile notes, the fog-revealed map only | Nothing, unless the tab is bound to a character |
 
 The role is per browser tab. Only one tab at a time holds the GM view.
 While a GM tab is open, every other tab of the same origin opens as a
-Player tab and stays that way. The claim expires a few seconds after the GM
-tab closes or crashes.
+Player tab and stays that way. The claim expires about 15 seconds after the
+GM tab closes or crashes. The claim stops two tabs from editing the
+campaign at the same time by accident. It is not a security control. See
+[What the Player view hides, and what it does not protect](#what-the-player-view-hides-and-what-it-does-not-protect).
 
 Every save in the GM tab, including an autosave, reaches the other tabs. A
 Play-mode tab takes the change without a reload, so it keeps its scroll
@@ -44,9 +47,9 @@ position, its open panel, and its map zoom and pan.
 
 | Option | Effect |
 | --- | --- |
-| `?role=player` on the URL | The tab opens as a Player tab and can never show the GM view |
+| `?role=player` on the URL | The tab opens as a Player tab and hides the role switch. It shows the GM view again only after the parameter is removed from the URL |
 | The padlock beside the role switch | Same lock, set from inside the tab. To undo it, close the tab or drop the URL parameter |
-| `?character=<id>` on the URL | The tab binds to one character |
+| `?character=<id>` on the URL | The tab binds to one character. The id is the name of the character in lower case, with hyphens in place of spaces. The header shows this hint under the Viewer switch |
 | The "Playing as" dropdown in the Party panel | Same binding, set from inside the tab |
 
 A bound tab can spend spell slots and other resources, add and clear
@@ -62,6 +65,33 @@ A binding is exclusive, under the same claim-and-expire rule as the GM
 view. The GM tab ignores bindings and can edit everyone. A roll from a
 bound tab is logged under the character's name. A roll from a spectator tab
 stays anonymous.
+
+### What the Player view hides, and what it does not protect
+
+The Player view is a display setting on the same browser data. It hides
+these things from the screen:
+
+- the exact HP of a foe (the view shows a health band instead)
+- the notes on a tile
+- handouts that you have not revealed
+- the fogged part of the map
+- the Campaign, History, and Transfer buttons and the mode switch
+
+It does not protect any of them. Every tab of the same browser reads the
+same saved campaign from the storage of that browser. A person at that
+browser can open the developer tools and read the whole save, including
+every item in the list above. A partly revealed map is drawn in full and
+then covered by fog, so the hidden art is also in the browser. The same
+person can remove `?role=player` from the URL to leave the Player view.
+The GM claim is a plain record in the same storage, and any tab of the
+same origin can overwrite it. The claim stops two tabs from editing the
+campaign at the same time by accident. It does not stop a determined
+player.
+
+Put a Player tab only on hardware that you control. A second screen on the
+GM laptop, or a laptop that you own and place on the table, are both
+fine. If the campaign holds text that a player must not read, do not give
+that player the address on their own device.
 
 ## Theme
 
@@ -144,7 +174,7 @@ resolution, with fog ignored.
 | --- | --- |
 | POI type | The point-of-interest marker on the tile |
 | Discoverable | The POI stays hidden until the party steps onto its tile |
-| Notes | GM-only text. The GM sees it on hover in Play mode |
+| Notes | Text for the GM. The GM sees it on hover in Play mode. The Player view does not show it, but the text is in the saved campaign |
 | Zooms into | The child node that this tile leads to |
 | Set party start here | Places the spawn tile of the party |
 

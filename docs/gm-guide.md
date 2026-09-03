@@ -5,7 +5,8 @@
 [first session tutorial](tutorial-gm-first-session.md) first.*
 
 Every task below assumes the app is open in a browser. Two switches in the
-header decide what you can see: the mode switch and the role switch. If a
+header decide what you can see: the mode switch and the role switch (the
+header labels it Viewer, with GM and Player as its options). If a
 control in a task does not show, set the mode that the task names.
 
 ## Start a campaign
@@ -52,10 +53,26 @@ position, the app discards what was left to redo.
 4. To lock the tab without the URL parameter, click the padlock beside the
    role switch and confirm.
 
-A locked tab hides the role switch and can never show the GM view. To
-unlock it, close the tab or remove the URL parameter.
+A locked tab hides the role switch. It does not show the GM view again
+until you close the tab or remove the URL parameter.
+
+The Player view is a display setting. Every tab of the same browser reads
+the same saved campaign. A person at that browser can open the developer
+tools and read the whole save: the fog, the tile notes, the hidden
+handouts, and the exact HP of each foe. The same person can also remove
+`?role=player` from the URL. Put a player-facing tab only on hardware that
+you control, such as a second screen or a laptop that you own. Read
+[What the Player view hides, and what it does not protect](gm-reference.md#what-the-player-view-hides-and-what-it-does-not-protect)
+in the reference for the full list.
 
 ### Let one player run their own character
+
+A tab opened with `?role=player&character=<id>` on the URL binds that tab
+to one character. The id is the name of the character in lower case, with
+hyphens in place of spaces. For example, a character named Mirelle has the
+id `mirelle`. If two characters have the same name, the second one gets a
+`-2` suffix. The exported campaign file lists the id of each character.
+The app shows the same URL hint under the Viewer switch in the header.
 
 1. Open a tab with `?role=player&character=<id>` on the URL. You can also
    pick the character from the "Playing as" dropdown in the Party panel.
@@ -64,7 +81,9 @@ unlock it, close the tab or remove the URL parameter.
 3. Recover their resources yourself. A player can spend a slot but cannot
    restore one.
 
-Only one tab at a time can play a given character.
+Only one tab at a time can play a given character. This limit stops two
+tabs from editing one character by accident. It does not stop a player who
+opens the developer tools of the browser.
 
 ## Build a world
 
@@ -119,8 +138,9 @@ that tile to move the entrance.
 2. Set the **POI type** in the tile inspector.
 3. For a secret, turn on **discoverable**. The POI stays hidden until the
    party steps onto its tile.
-4. Write GM-only text in **Notes**. Players never see it. In Play mode you
-   see it on hover.
+4. Write your own text in **Notes**. The Player view does not show it. In
+   Play mode you see it on hover. The text is part of the saved campaign,
+   so a player with the developer tools of the browser can read it.
 
 ### Set where the party starts
 
@@ -183,12 +203,12 @@ Click **Hide panels** to give the map the full width.
 
 ### Reveal or hide fog by hand
 
-1. Click the reveal-brush eye button on the map, then click or drag across
-   tiles.
-2. To re-fog tiles, use the hide brush the same way.
-3. To open a whole map, use the reveal-area action.
+1. Click **Reveal fog (brush)** in the map controls, then click or drag
+   across tiles.
+2. To re-fog tiles, click **Hide fog (brush)** and use it the same way.
+3. To open a whole map, click **Reveal whole area**.
 
-Players never see these controls.
+The Player view does not show these controls.
 
 ### Leave a sub-region
 
