@@ -85,8 +85,8 @@ docs/             you are here
 The project uses plain JavaScript, but the project is fully typechecked. Types
 live in `.ts` files that contain only declarations. The `.js` files reference
 these types through JSDoc comments. `tsconfig.json` sets `allowJs` and
-`checkJs`. As a result, `pnpm --package=typescript dlx tsc --noEmit` checks the
-whole project and emits nothing.
+`checkJs`. As a result, `pnpm run typecheck` checks the whole project and
+emits nothing.
 
 `style.css` is an import manifest. It `@import`s the feature sheets under
 `styles/`, with base tokens and primitives first and the responsive overrides
