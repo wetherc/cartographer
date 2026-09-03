@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { describeNode } from '../src/map/MapDescription.js';
+import { describeCursor, describeNode } from '../src/map/MapDescription.js';
 import { createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
 
 function node() {
@@ -72,4 +72,27 @@ test('describeNode in Build mode counts placed tiles and includes unrevealed POI
   const text = describeNode(n, null, { revealAll: true });
   assert.match(text, /4 of 12 tiles placed\./);
   assert.match(text, /Dungeon at column 4, row 3/);
+});
+
+test('describeCursor names the cell and what stands there', () => {
+  const labelFor = (ref) => (ref === 'tavern.svg' ? 'Tavern' : undefined);
+  assert.equal(
+    describeCursor(node(), '2,1', { revealAll: true, labelFor }),
+    'Cursor at column 3, row 2: Tavern, Tavern, explored.',
+  );
+  assert.equal(
+    describeCursor(node(), '1,0', { revealAll: true, labelFor }),
+    'Cursor at column 2, row 1: grass.svg, unexplored.',
+    'an art reference with no label reads as the reference itself',
+  );
+});
+
+test('describeCursor reports an empty cell and hides an unexplored one in Play mode', () => {
+  assert.equal(describeCursor(node(), '3,2'), 'Cursor at column 4, row 3: empty.');
+  assert.equal(describeCursor(node(), '1,0'), 'Cursor at column 2, row 1: unexplored.');
+  assert.equal(
+    describeCursor(node(), '0,0', { labelFor: () => 'Grass' }),
+    'Cursor at column 1, row 1: Grass.',
+    'Play mode names no fog state for an explored cell, the only state it shows',
+  );
 });

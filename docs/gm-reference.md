@@ -746,10 +746,13 @@ Press `?` anywhere for the shortcut reference.
 | Enter, Space on the map | Act on the cursor cell |
 | +, - on the map | Zoom |
 | Arrow off an edge, twice | Leave the area through that side. The first press lights the exit, the second travels |
+| Shift+F10, Menu key on the map | Open the tile menu for the cursor cell (Build mode) |
 
 The map is a focusable widget with a visible focus ring. A screen-reader
 live region names the current node, its size, the party position, and the
-revealed points of interest, and updates as these change.
+revealed points of interest, and updates as these change. A second region
+names the cursor cell after each arrow key: its column and row, its art, its
+point of interest, and whether it is explored.
 
 The ways out of a sub-region are real buttons. Tab past the map, and they
 appear over it, each naming its way out, for example "Return to Darkwood,

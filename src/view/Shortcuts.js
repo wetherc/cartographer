@@ -25,6 +25,7 @@ export const SHORTCUT_HELP = [
   'Arrows: move the cursor. Enter / Space: act on the cursor cell',
   '+ / -: zoom',
   'Arrow off an edge twice: leave through that side (the first press lights the exit)',
+  'Shift+F10 or Menu key: open the tile menu (Build)',
 ];
 
 /**

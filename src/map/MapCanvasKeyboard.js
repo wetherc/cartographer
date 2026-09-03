@@ -1,7 +1,18 @@
 import { getTile } from './TileGrid.js';
-import { cursorSide, isCursorKey, nextCursor } from './MapCursor.js';
+import { cellClientCenter, cursorSide, isCursorKey, nextCursor } from './MapCursor.js';
 import { exitForSide } from './MapExits.js';
 import { parseCoords, tileIdAt, tileRect } from './MapGeometry.js';
+
+/**
+ * Whether a key press asks for the context menu, the way a right click does.
+ * Shift+F10 is the convention on every desktop, and the dedicated Menu key
+ * reports itself as ContextMenu.
+ * @param {{ key: string, shiftKey?: boolean }} event
+ * @returns {boolean}
+ */
+export function isContextMenuKey(event) {
+  return event.key === 'ContextMenu' || (event.key === 'F10' && event.shiftKey === true);
+}
 
 /** @typedef {import('./MapCanvas.js').MapCanvas} MapCanvas */
 
@@ -9,7 +20,8 @@ import { parseCoords, tileIdAt, tileRect } from './MapGeometry.js';
  * This class gives keyboard operation for MapCanvas, so the map works
  * without a mouse. Arrow keys move a cursor cell and scroll it into view.
  * Enter or Space acts on the cursor cell through the same paths as a click.
- * Plus and minus zoom the view. Focus toggles the cursor outline. This
+ * Shift+F10 or the Menu key opens the cell's context menu at the cell's
+ * screen centre. Plus and minus zoom the view. Focus toggles the cursor outline. This
  * class is separate from MapCanvas so the MapCanvas class stays the owner
  * of view state and drawing. This controller reads and changes the host's
  * cursor and pan fields, and it fires the host's callbacks.
@@ -96,6 +108,7 @@ export class MapCanvasKeyboard {
       this._ensureCellVisible(next.x, next.y);
       host.render();
       this._announceCursor();
+      host.onCursorMove?.(host.cursorCellId);
       return;
     }
     // Any other key cancels an armed exit. Only the same arrow key confirms it.
@@ -103,6 +116,11 @@ export class MapCanvasKeyboard {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       this._activateCursor();
+      return;
+    }
+    if (isContextMenuKey(event)) {
+      event.preventDefault();
+      this.openCursorContextMenu();
       return;
     }
     if (event.key === '+' || event.key === '=') {
@@ -130,29 +148,50 @@ export class MapCanvasKeyboard {
     }
   }
 
+  /**
+   * The cursor cell with its tile and its screen centre, or null when there
+   * is no node, no cursor, or a cursor id outside the grid format.
+   * @returns {{ coords: { x: number, y: number }, tile: import('../types/map.js').Tile | null, clientX: number, clientY: number } | null}
+   */
+  _cursorTarget() {
+    const host = this.host;
+    if (!host.cursorCellId || !host.node) return null;
+    const coords = parseCoords(host.cursorCellId);
+    if (!coords) return null;
+    const tile = getTile(host.node, host.cursorCellId) ?? null;
+    const { clientX, clientY } = cellClientCenter(
+      coords,
+      host,
+      host.canvas.getBoundingClientRect(),
+      host.canvas.width,
+      host.canvas.height,
+    );
+    return { coords, tile, clientX, clientY };
+  }
+
   /** Fire onCellHover for the cursor cell. Keyboard users then get the same
    * tooltip as a mouse hover, positioned at the cell's screen centre. */
   _announceCursor() {
-    const host = this.host;
-    if (!host.onCellHover || !host.cursorCellId || !host.node) return;
-    const coords = parseCoords(host.cursorCellId);
-    if (!coords) return;
-    const tile = getTile(host.node, host.cursorCellId) ?? null;
-    const rect = host.canvas.getBoundingClientRect();
-    const { sx, sy, size } = tileRect(
-      coords.x,
-      coords.y,
-      host.tileSize,
-      host.offsetX,
-      host.offsetY,
-      host.scale,
-    );
-    const scaleX = rect.width === 0 ? 1 : rect.width / host.canvas.width;
-    const scaleY = rect.height === 0 ? 1 : rect.height / host.canvas.height;
-    host.onCellHover(
-      tile,
-      rect.left + (sx + size / 2) * scaleX,
-      rect.top + (sy + size / 2) * scaleY,
+    if (!this.host.onCellHover) return;
+    const target = this._cursorTarget();
+    if (!target) return;
+    this.host.onCellHover(target.tile, target.clientX, target.clientY);
+  }
+
+  /** Open the cell context menu for the cursor cell, at the cell's screen
+   * centre, the way a right click opens it under the pointer. The pointer
+   * controller also calls this for a contextmenu event that came from the
+   * keyboard rather than from a button. */
+  openCursorContextMenu() {
+    if (!this.host.onCellContextMenu) return;
+    const target = this._cursorTarget();
+    if (!target) return;
+    this.host.onCellContextMenu(
+      target.coords.x,
+      target.coords.y,
+      target.tile,
+      target.clientX,
+      target.clientY,
     );
   }
 

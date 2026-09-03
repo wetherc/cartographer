@@ -64,3 +64,29 @@ export function nextCursor(cursor, key, width, height) {
     y: clamp(start.y + delta.y, 0, height - 1),
   };
 }
+
+/**
+ * The client (CSS pixel) point at the centre of a grid cell. The keyboard
+ * cursor has no pointer position, so anything that opens at "the cursor",
+ * the tile tooltip or the tile context menu, opens here instead. The cell
+ * rectangle is in buffer pixels, and the canvas may draw smaller or larger
+ * than its buffer, so the point scales by the element's on-screen size. A
+ * zero-size rectangle (a canvas not laid out yet) keeps the buffer point.
+ * @param {Coords} cell
+ * @param {{ tileSize: number, offsetX: number, offsetY: number, scale: number }} view
+ * @param {{ left: number, top: number, width: number, height: number }} rect the canvas element's client rectangle
+ * @param {number} bufferWidth the canvas buffer width in pixels
+ * @param {number} bufferHeight the canvas buffer height in pixels
+ * @returns {{ clientX: number, clientY: number }}
+ */
+export function cellClientCenter(cell, view, rect, bufferWidth, bufferHeight) {
+  const size = view.tileSize * view.scale;
+  const sx = cell.x * size + view.offsetX;
+  const sy = cell.y * size + view.offsetY;
+  const scaleX = rect.width === 0 ? 1 : rect.width / bufferWidth;
+  const scaleY = rect.height === 0 ? 1 : rect.height / bufferHeight;
+  return {
+    clientX: rect.left + (sx + size / 2) * scaleX,
+    clientY: rect.top + (sy + size / 2) * scaleY,
+  };
+}

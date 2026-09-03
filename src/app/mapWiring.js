@@ -1,5 +1,5 @@
 import { getTile } from '../map/TileGrid.js';
-import { describeNode } from '../map/MapDescription.js';
+import { describeCursor, describeNode } from '../map/MapDescription.js';
 import { tileIdAt } from '../map/MapGeometry.js';
 import { MapCanvas } from '../map/MapCanvas.js';
 import { revealAll, discoveredNodes } from '../map/FogOfWar.js';
@@ -393,6 +393,15 @@ export function wireMapView(app) {
         ? `Press the same arrow again to return to ${exit.targetName}.`
         : '';
     },
+    // Each arrow key that lands the cursor names the cell it landed on, so a
+    // screen reader user knows what Enter acts on. The map description is
+    // about the node and the party, and a cursor move changes neither.
+    onCursorMove: (tileId) => {
+      cursorStatus.textContent = describeCursor(navigator.getCurrentNode(), tileId, {
+        revealAll: state.mode === 'build',
+        labelFor: (imageRef) => palette.listAll().find((e) => e.imageRef === imageRef)?.label,
+      });
+    },
   });
   app.views.mapCanvas = mapCanvas;
   env.mapCanvas = mapCanvas;
@@ -425,7 +434,22 @@ export function wireMapView(app) {
     // on or off. Reveal-all lights the whole current node.
     fog: {
       getTool: () => env.fogTool,
-      onToolChange: setFogTool,
+      // The pressed state of the brush button flips, but a screen reader only
+      // hears a state change on the button itself. The pickup is said out
+      // loud, the same way the Escape drop is, so the user knows the left
+      // button and Enter now paint fog instead of moving the party.
+      onToolChange: (tool) => {
+        setFogTool(tool);
+        if (env.fogTool === 'reveal') {
+          toasts.show(
+            'Reveal fog brush picked up. A click or Enter on a tile reveals it. Escape puts the brush down.',
+          );
+        } else if (env.fogTool === 'hide') {
+          toasts.show(
+            'Hide fog brush picked up. A click or Enter on a tile hides it. Escape puts the brush down.',
+          );
+        }
+      },
       onRevealAll: () => {
         const node = revealAll(navigator.getCurrentNode());
         grid.updateNode(node);
@@ -467,6 +491,14 @@ export function wireMapView(app) {
   exitPrompt.setAttribute('role', 'status');
   exitPrompt.setAttribute('aria-live', 'polite');
   mustGetElement('map-viewport').appendChild(exitPrompt);
+
+  // The cursor narration has its own region for the same reason. It changes
+  // on every arrow key, and it must not re-announce the map description or
+  // overwrite an exit prompt that is still being read.
+  const cursorStatus = el('div', 'sr-only');
+  cursorStatus.setAttribute('role', 'status');
+  cursorStatus.setAttribute('aria-live', 'polite');
+  mustGetElement('map-viewport').appendChild(cursorStatus);
 
   // The map-facing effects of a mode switch. sessionControls calls this
   // after it flips the body classes.

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MapCanvasKeyboard } from '../src/map/MapCanvasKeyboard.js';
+import { MapCanvasKeyboard, isContextMenuKey } from '../src/map/MapCanvasKeyboard.js';
 
 /**
  * The controller is exercised against a stub host: it only reads and writes
@@ -322,4 +322,74 @@ test('the hover report stops when the cursor id is outside the grid format', () 
   });
   keyboard._announceCursor();
   assert.deepEqual(hovers, []);
+});
+
+test('a cursor move reports the landed cell id to onCursorMove', () => {
+  const moves = [];
+  const { keyboard } = makeHost({ onCursorMove: (id) => moves.push(id) });
+  keyboard._onKeyDown(key('ArrowUp'));
+  keyboard._onKeyDown(key('ArrowLeft'));
+  assert.deepEqual(moves, ['2,0', '1,0']);
+});
+
+test('an arrow held at a border with an exit arms it and does not report a move', () => {
+  const moves = [];
+  const { keyboard } = makeHost({ onCursorMove: (id) => moves.push(id) });
+  keyboard._onKeyDown(key('ArrowRight'));
+  assert.deepEqual(moves, []);
+});
+
+test('isContextMenuKey accepts Shift+F10 and the Menu key only', () => {
+  assert.equal(isContextMenuKey({ key: 'F10', shiftKey: true }), true);
+  assert.equal(isContextMenuKey({ key: 'ContextMenu' }), true);
+  assert.equal(isContextMenuKey({ key: 'F10', shiftKey: false }), false);
+  assert.equal(isContextMenuKey({ key: 'F10' }), false);
+  assert.equal(isContextMenuKey({ key: 'Enter', shiftKey: true }), false);
+});
+
+test('Shift+F10 opens the cell menu at the cursor cell screen centre', () => {
+  const menus = [];
+  const prevented = [];
+  const { host, keyboard } = makeHost({ onCellContextMenu: (...args) => menus.push(args) });
+  keyboard._onKeyDown(key('F10', { shiftKey: true, preventDefault: () => prevented.push('F10') }));
+  // Cell (2,1) at 48px tiles with no pan: centre (120, 72).
+  assert.deepEqual(menus, [[2, 1, null, 120, 72]]);
+  assert.deepEqual(prevented, ['F10']);
+  assert.equal(host.armedExitSide, null);
+});
+
+test('the Menu key withdraws an armed exit before it opens the menu', () => {
+  const menus = [];
+  const { host, keyboard } = makeHost({ onCellContextMenu: (...args) => menus.push(args) });
+  keyboard._onKeyDown(key('ArrowRight'));
+  assert.equal(host.armedExitSide, 'east');
+  keyboard._onKeyDown(key('ContextMenu'));
+  assert.equal(host.armedExitSide, null);
+  assert.equal(menus.length, 1);
+});
+
+test('the menu passes the tile under the cursor when one exists', () => {
+  const menus = [];
+  const tile = { id: '2,1', imageRef: 'grass.svg' };
+  const { keyboard } = makeHost({
+    node: { id: 'child', width: 3, height: 3, tiles: [tile] },
+    onCellContextMenu: (...args) => menus.push(args),
+  });
+  keyboard.openCursorContextMenu();
+  assert.equal(menus[0][2], tile);
+});
+
+test('the menu needs a handler, a cursor cell, a node, and a grid id', () => {
+  const menus = [];
+  const { host, keyboard } = makeHost({ onCellContextMenu: (...args) => menus.push(args) });
+  host.cursorCellId = null;
+  keyboard.openCursorContextMenu();
+  host.cursorCellId = 'entry';
+  keyboard.openCursorContextMenu();
+  host.cursorCellId = '1,1';
+  host.node = null;
+  keyboard.openCursorContextMenu();
+  assert.deepEqual(menus, []);
+  const { keyboard: silent } = makeHost();
+  silent.openCursorContextMenu(); // no handler on the host: nothing to call
 });

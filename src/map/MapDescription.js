@@ -1,5 +1,6 @@
 import { parseCoords } from './MapGeometry.js';
-import { toDisplay } from './TileCoords.js';
+import { describeTile, toDisplay } from './TileCoords.js';
+import { getTile } from './TileGrid.js';
 import { capitalize } from '../util/text.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -78,4 +79,31 @@ export function describeNode(node, party, options = {}) {
   }
 
   return parts.join(' ');
+}
+
+/**
+ * Build the one-line narration of the keyboard cursor for a live region. An
+ * arrow key that moves the cursor is otherwise silent: the map description
+ * above reports the node and the party, not the cell that Enter acts on. The
+ * line names the cell in the 1-based column and row a GM reads elsewhere,
+ * then what stands there. In Play mode (revealAll false) an unexplored cell
+ * reports only that it is unexplored, so the cursor cannot read through the
+ * fog. In Build mode (revealAll true) every cell reports its art, its point
+ * of interest, and its fog state. `labelFor` turns a tile's image reference
+ * into the palette label, since this module does not hold the palette.
+ * @param {MapNode} node
+ * @param {string} tileId
+ * @param {{ revealAll?: boolean, labelFor?: (imageRef: string) => string | undefined }} [options]
+ * @returns {string}
+ */
+export function describeCursor(node, tileId, options = {}) {
+  const revealAll = options.revealAll ?? false;
+  const where = `Cursor at ${describeTile(tileId)}`;
+  const tile = getTile(node, tileId);
+  if (!tile) return `${where}: empty.`;
+  if (!revealAll && !tile.revealed) return `${where}: unexplored.`;
+  const parts = [options.labelFor?.(tile.imageRef) ?? tile.imageRef];
+  if (tile.metadata.poiType) parts.push(readablePoi(tile.metadata.poiType));
+  if (revealAll) parts.push(tile.revealed ? 'explored' : 'unexplored');
+  return `${where}: ${parts.join(', ')}.`;
 }

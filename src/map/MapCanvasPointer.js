@@ -80,10 +80,16 @@ export class MapCanvasPointer {
     this._lastStrokeCellId = null;
   }
 
-  /** Right-drag now pans in both modes. The context menu must never open.
+  /** The browser's own menu must never open: right-drag pans in both modes,
+   * and a right press that did not drag opens the cell menu from pointerup
+   * instead. A contextmenu event that no right button raised comes from the
+   * keyboard (Shift+F10 or the Menu key in a browser that turns those into
+   * this event), so it opens the cell menu at the keyboard cursor.
    * @param {MouseEvent} event */
   _onContextMenu(event) {
     event.preventDefault();
+    if (event.button === 2 || this._panning) return;
+    this.host._keyboard?.openCursorContextMenu();
   }
 
   /** @param {PointerEvent} event */
