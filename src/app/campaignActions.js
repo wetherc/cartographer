@@ -7,10 +7,11 @@ import {
 } from '../campaign/Campaigns.js';
 import { rehydrateCampaign } from './rehydrate.js';
 import { mustGetElement } from '../ui/dom.js';
+import { onIdle } from '../util/idle.js';
 import { setTip } from '../ui/Tooltip.js';
 import { confirmModal } from '../ui/Modal.js';
 import { queueToastAfterReload } from '../ui/Toast.js';
-import { buildState, onExternalSave } from '../storage/SaveManager.js';
+import { buildState, onExternalSave, packState } from '../storage/SaveManager.js';
 import {
   downloadCampaignFile,
   readCampaignFromFile,
@@ -291,6 +292,21 @@ export function wireCampaignActions(app) {
     setDirty(false); // This reload is intentional and must not trip the beforeunload guard.
     location.reload();
   }
+
+  // The pack caches key on the identity of a node and an entity, and a load
+  // hands every one of them a fresh object. The first save of a session
+  // therefore packs and encodes the whole world, which is about 120 ms at
+  // 200 nodes, and the GM pays it on their first edit. Doing that pack now,
+  // while nothing else is happening, fills the caches so the real save is a
+  // lookup. The result is thrown away: only the caches matter. This is work
+  // the app can skip, so a failure here must not reach the session.
+  onIdle(() => {
+    try {
+      packState(buildCurrentState());
+    } catch {
+      // The next real save reports its own failure, with a toast the GM sees.
+    }
+  });
 
   mustGetElement('new-btn').addEventListener('click', async () => {
     const ok = await confirmModal(

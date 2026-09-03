@@ -51,3 +51,14 @@ test('an unchanged entity packs to the cached object across saves', () => {
   assert.notEqual(third.creatures[1], first.creatures[1], 'the edited creature packs anew');
   assert.equal(third.creatures[1].name, 'Dire Wolf');
 });
+
+test('a warming pack makes the first real save a cache lookup', () => {
+  // This is what the idle warm after a load does: pack once, throw the
+  // result away, and let the caches answer the save that follows.
+  const state = deserialize(serialize(sampleState()));
+  packState(state);
+  const first = packState(state);
+  const second = packState(state);
+  assert.equal(second.nodes[0], first.nodes[0], 'the node encode is the cached object');
+  assert.equal(second.characters[0], first.characters[0]);
+});
