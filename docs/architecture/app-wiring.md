@@ -159,14 +159,14 @@ decisions live in `src/map/RegenerateNode.js`. `linkedDescendants` names
 the nodes to remove: every node an old tile links to, with its subtree. A
 child that no tile links to is left alone, because it was already
 unreachable. `regenerateLanding` says where the party goes, including a
-party that stood in a removed level. `regenerateCharacterMoves` says the
-same for each split character who stood in the node, because the new layout
-can turn the tile they hold into wall or void. `regenerateSnapshot` builds
-the undo record. The stroke-undo ring in `EditHistory.js` holds an
-`EditSnapshot` per edit: the rewritten nodes, the ids of created nodes, the
-removed nodes, the party position, the locations of the characters the edit
-moved, and the entry memory. `undoStroke` in `mapAuthoring.js` applies them
-all.
+party that stood in a removed level. `regenerateTokenMoves` says the same
+for each token that stood in the node, a split character or a placed
+creature, because the new layout can turn the tile it holds into wall or
+void. `regenerateSnapshot` builds the undo record. The stroke-undo ring in
+`EditHistory.js` holds an `EditSnapshot` per edit: the rewritten nodes, the
+ids of created nodes, the removed nodes, the party position, the locations
+of the characters and creatures the edit moved, and the entry memory.
+`undoStroke` in `mapAuthoring.js` applies them all.
 The rng that drew the layout also picks the entrance art on the parent, so
 one seed gives one result.
 

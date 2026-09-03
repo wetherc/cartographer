@@ -15,6 +15,14 @@ export interface CharacterPlacement {
   location: EncounterLocation | null;
 }
 
+/** Where one creature stood, kept so an undo can put it back. `location`
+ * null means the creature is unplaced, so it shows everywhere. A map edit
+ * that moves placed creatures records these before it moves them. */
+export interface CreaturePlacement {
+  creatureId: string;
+  location: EncounterLocation | null;
+}
+
 /** Where a condition came from, for a condition that a spell imposed. This
  * field is present only on a chip that a cast wrote. A chip that the GM
  * added by hand carries no source, and the GM can clear it freely. The save

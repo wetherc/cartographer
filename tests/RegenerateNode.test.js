@@ -2,9 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   linkedDescendants,
-  regenerateCharacterMoves,
   regenerateLanding,
   regenerateSnapshot,
+  regenerateTokenMoves,
 } from '../src/map/RegenerateNode.js';
 import { createMapNode, createTile } from '../src/map/TileGrid.js';
 import { withNodeTiles } from '../src/map/TileIndex.js';
@@ -124,7 +124,8 @@ test('regenerateSnapshot records the node, its parent, and everything else undo 
   const removed = linkedDescendants(nodes, level1);
   const party = { nodeId: 'l2', tileId: '1,1' };
   const recalled = [{ characterId: 'c1', location: { nodeId: 'l2', tileId: '2,2' } }];
-  const entryTiles = { l1: '3,3' };
+  const creatures = [{ creatureId: 'goblin', location: { nodeId: 'l1', tileId: '3,3' } }];
+  const entryTiles = { party: { l1: '3,3' } };
   const snapshot = regenerateSnapshot({
     node: level1,
     parent: town,
@@ -132,6 +133,7 @@ test('regenerateSnapshot records the node, its parent, and everything else undo 
     removed,
     party,
     recalled,
+    creatures,
     entryTiles,
   });
   assert.deepEqual(snapshot, {
@@ -140,6 +142,7 @@ test('regenerateSnapshot records the node, its parent, and everything else undo 
     removed,
     party,
     recalled,
+    creatures,
     entryTiles,
   });
 });
@@ -154,15 +157,16 @@ test('regenerateSnapshot on a root node records the node alone', () => {
     removed: [],
     party,
     recalled: [],
+    creatures: [],
     entryTiles: {},
   });
   assert.deepEqual(snapshot.nodes, [root]);
 });
 
 /**
- * Four characters: one in the node on a good tile, one in the node on what
+ * Five tokens: one in the node on a good tile, one in the node on what
  * became a wall, one in the node outside the new extent, one in another
- * node, and one with the party.
+ * node, and one with no location of its own.
  */
 function splitRoster() {
   return [
@@ -170,16 +174,16 @@ function splitRoster() {
     { id: 'walled', location: { nodeId: 'l1', tileId: '3,3' } },
     { id: 'outside', location: { nodeId: 'l1', tileId: '9,9' } },
     { id: 'elsewhere', location: { nodeId: 'town', tileId: '1,1' } },
-    { id: 'with-party', location: null },
+    { id: 'unplaced', location: null },
   ];
 }
 
 /** The node's entry rules: '3,3' became a wall, so it resolves to '4,3'. */
 const landingFor = (/** @type {string} */ tileId) => (tileId === '3,3' ? '4,3' : tileId);
 
-test('regenerateCharacterMoves re-lands only the characters the layout displaced', () => {
-  const moves = regenerateCharacterMoves({
-    characters: splitRoster(),
+test('regenerateTokenMoves re-lands only the tokens the layout displaced', () => {
+  const moves = regenerateTokenMoves({
+    tokens: splitRoster(),
     nodeId: 'l1',
     width: 8,
     height: 8,
@@ -187,26 +191,26 @@ test('regenerateCharacterMoves re-lands only the characters the layout displaced
     landingFor,
   });
   assert.deepEqual(moves, [
-    { characterId: 'walled', tileId: '4,3' },
-    { characterId: 'outside', tileId: '0,3' },
+    { id: 'walled', tileId: '4,3' },
+    { id: 'outside', tileId: '0,3' },
   ]);
 });
 
-test('regenerateCharacterMoves reads an unparseable tile as outside the extent', () => {
-  const moves = regenerateCharacterMoves({
-    characters: [{ id: 'lost', location: { nodeId: 'l1', tileId: 'nowhere' } }],
+test('regenerateTokenMoves reads an unparseable tile as outside the extent', () => {
+  const moves = regenerateTokenMoves({
+    tokens: [{ id: 'lost', location: { nodeId: 'l1', tileId: 'nowhere' } }],
     nodeId: 'l1',
     width: 8,
     height: 8,
     entry: '0,3',
     landingFor,
   });
-  assert.deepEqual(moves, [{ characterId: 'lost', tileId: '0,3' }]);
+  assert.deepEqual(moves, [{ id: 'lost', tileId: '0,3' }]);
 });
 
-test('regenerateCharacterMoves on a party with nobody split returns nothing', () => {
-  const moves = regenerateCharacterMoves({
-    characters: [{ id: 'a' }, { id: 'b', location: null }],
+test('regenerateTokenMoves on tokens that hold no location returns nothing', () => {
+  const moves = regenerateTokenMoves({
+    tokens: [{ id: 'a' }, { id: 'b', location: null }],
     nodeId: 'l1',
     width: 8,
     height: 8,

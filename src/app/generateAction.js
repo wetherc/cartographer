@@ -6,10 +6,11 @@ import { resolveEntryTile } from '../map/EntryPoint.js';
 import { entranceArtFor, freshNodeId } from '../map/NodeEdits.js';
 import {
   linkedDescendants,
-  regenerateCharacterMoves,
   regenerateLanding,
   regenerateSnapshot,
+  regenerateTokenMoves,
 } from '../map/RegenerateNode.js';
+import { creaturePlacementsIn, moveCreature } from '../entities/CreatureMap.js';
 import { forgetEntries } from '../map/EntryMemory.js';
 import { revealAround } from '../map/FogOfWar.js';
 import { describeTile } from '../map/TileCoords.js';
@@ -123,8 +124,8 @@ export function wireGenerateAction(app, env) {
     // The regenerated layout replaces the node, removes the sub-maps its old
     // tiles led to, adds the deeper levels, and can restamp its parent's
     // entrance link below. It also recalls every character standing in a
-    // removed node and re-lands every character standing in the node itself.
-    // Record all of it so the stroke-undo ring can revert it.
+    // removed node and re-lands every character and creature standing in the
+    // node itself. Record all of it so the stroke-undo ring can revert it.
     env.recordEdit(
       regenerateSnapshot({
         node,
@@ -133,6 +134,7 @@ export function wireGenerateAction(app, env) {
         removed,
         party: partyTracker.getPosition(),
         recalled: placementsIn(state.characters, new Set([...removedIds, node.id])),
+        creatures: creaturePlacementsIn(state.creatures, new Set([node.id])),
         entryTiles: state.entryTiles,
       }),
     );
@@ -180,11 +182,19 @@ export function wireGenerateAction(app, env) {
     }
     // If the regenerated layout has shrunk past the party, replaced the
     // party's tile with void or wall, or removed the level the party stood
-    // in, re-land the party on the layout. Every split character standing in
-    // the node needs the same treatment on their own tile. Both landings
-    // read the same node, before either move reveals fog on it.
+    // in, re-land the party on the layout. Every split character and every
+    // placed creature standing in the node needs the same treatment on their
+    // own tile. Every landing reads the same node, before any move reveals
+    // fog on it.
     const position = partyTracker.getPosition();
     const fresh = grid.getNode(node.id) ?? node;
+    const layout = {
+      nodeId: node.id,
+      width: gen.width,
+      height: gen.height,
+      entry: gen.entry,
+      landingFor: (/** @type {string} */ tileId) => resolveEntryTile(fresh, tileId),
+    };
     const moveTo = regenerateLanding({
       position,
       nodeId: node.id,
@@ -194,30 +204,34 @@ export function wireGenerateAction(app, env) {
       entry: gen.entry,
       landing: resolveEntryTile(fresh, position.tileId),
     });
-    const moves = regenerateCharacterMoves({
-      characters: state.characters,
-      nodeId: node.id,
-      width: gen.width,
-      height: gen.height,
-      entry: gen.entry,
-      landingFor: (tileId) => resolveEntryTile(fresh, tileId),
-    });
+    const moves = regenerateTokenMoves({ ...layout, tokens: state.characters });
+    const foeMoves = regenerateTokenMoves({ ...layout, tokens: state.creatures });
     if (moveTo) partyTracker.moveTo(moveTo.nodeId, moveTo.tileId);
+    for (const move of moves) {
+      state.characters = moveCharacter(state.characters, move.id, {
+        nodeId: node.id,
+        tileId: move.tileId,
+      });
+    }
+    for (const move of foeMoves) {
+      state.creatures = moveCreature(state.creatures, move.id, {
+        nodeId: node.id,
+        tileId: move.tileId,
+      });
+    }
     if (moves.length) {
-      for (const move of moves) {
-        state.characters = moveCharacter(state.characters, move.characterId, {
-          nodeId: node.id,
-          tileId: move.tileId,
-        });
-      }
       // A character's step reveals fog around it, the same as a walk does.
-      // Without this, a moved token stands in a blank fog field.
+      // Without this, a moved token stands in a blank fog field. A creature
+      // reveals nothing: fog follows the party and the characters.
       let revealed = grid.getNode(node.id) ?? fresh;
       for (const move of moves) {
         revealed = revealAround(revealed, move.tileId, partyTracker.revealRadius);
       }
       grid.updateNode(revealed);
     }
+    // The moves above change which creatures stand on the party's tile,
+    // which is what a running fight is scoped to.
+    if (moveTo || foeMoves.length) app.actions.syncCombatLocation();
     resyncMapViews(app, env, { reframe: true });
     app.actions.markDirty();
     app.toasts.show(`Generated ${values.archetype} map in "${node.name}" (seed ${values.seed}).`);

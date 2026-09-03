@@ -4,6 +4,7 @@ import { isDefeated } from './Creature.js';
 
 /** @typedef {import('../types/creature.js').Creature} Creature */
 /** @typedef {import('../types/entities.js').EncounterLocation} EncounterLocation */
+/** @typedef {import('../types/entities.js').CreaturePlacement} CreaturePlacement */
 
 /**
  * The creatures relevant to the party's position: those placed in the node
@@ -158,6 +159,52 @@ export function meetCreatures(creatures, position) {
     return introduced;
   });
   return met.length > 0 ? { creatures: next, met } : { creatures, met };
+}
+
+/**
+ * Move one creature to a location, or make it unplaced with null. An unknown
+ * id leaves the list unchanged. This is the creature counterpart of
+ * `party/CharacterTokens.moveCharacter`.
+ * @param {Creature[]} creatures
+ * @param {string} id
+ * @param {EncounterLocation | null} location
+ * @returns {Creature[]}
+ */
+export function moveCreature(creatures, id, location) {
+  return creatures.map((c) => (c.id === id ? { ...c, location } : c));
+}
+
+/**
+ * Where the creatures standing in any of the given nodes are, so a caller
+ * that is about to move them can put them back later. An unplaced creature,
+ * and a creature standing elsewhere, are not in the result.
+ * @param {Creature[]} creatures
+ * @param {Set<string>} nodeIds
+ * @returns {CreaturePlacement[]}
+ */
+export function creaturePlacementsIn(creatures, nodeIds) {
+  /** @type {CreaturePlacement[]} */
+  const placements = [];
+  for (const c of creatures) {
+    if (c.location && nodeIds.has(c.location.nodeId)) {
+      placements.push({ creatureId: c.id, location: c.location });
+    }
+  }
+  return placements;
+}
+
+/**
+ * Put the recorded creatures back where they stood. Only the `location`
+ * field changes, so any other edit made to a creature since stays. A
+ * placement for a creature that is no longer in the campaign is skipped.
+ * @param {Creature[]} creatures
+ * @param {CreaturePlacement[]} placements
+ * @returns {Creature[]}
+ */
+export function restoreCreaturePlacements(creatures, placements) {
+  if (placements.length === 0) return creatures;
+  const byId = new Map(placements.map((p) => [p.creatureId, p.location]));
+  return creatures.map((c) => (byId.has(c.id) ? { ...c, location: byId.get(c.id) ?? null } : c));
 }
 
 /**

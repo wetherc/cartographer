@@ -12,6 +12,7 @@ import {
 import { isOverlayType } from '../map/TilePalette.js';
 import { setTileRevealed } from '../map/FogOfWar.js';
 import { recallAll, restorePlacements } from '../party/CharacterTokens.js';
+import { restoreCreaturePlacements } from '../entities/CreatureMap.js';
 import { nodeSnapshot, pushEdit, popEdit } from '../map/EditHistory.js';
 import { mountTileInspector } from '../ui/TileInspector.js';
 import { promptModal, alertModal } from '../ui/Modal.js';
@@ -62,9 +63,9 @@ export function createMapAuthoring(app, env) {
    * Restore the most recent stroke-undo snapshot. Nodes the edit created go
    * first, so a link they hold cannot outlive them. Nodes the edit removed
    * come back next, then the rewritten nodes as they stood. A rewritten
-   * node deleted since the snapshot stays deleted. Any character the edit
-   * moved or recalled to the party marker goes back to their own tile, and
-   * the entry memory goes back to what the edit found. The party moves back
+   * node deleted since the snapshot stays deleted. Any character or creature
+   * the edit moved or recalled to the party marker goes back to their own
+   * tile, and the entry memory goes back to what the edit found. The party moves back
    * when the edit moved it and its node still exists. A view left inside a
    * removed node moves to the first restored node.
    */
@@ -84,6 +85,7 @@ export function createMapAuthoring(app, env) {
       if (grid.getNode(node.id)) grid.updateNode(node);
     }
     state.characters = restorePlacements(state.characters, snapshot.recalled);
+    state.creatures = restoreCreaturePlacements(state.creatures, snapshot.creatures);
     if (snapshot.entryTiles) state.entryTiles = snapshot.entryTiles;
     const party = snapshot.party;
     if (party && grid.getNode(party.nodeId)) partyTracker.moveTo(party.nodeId, party.tileId);

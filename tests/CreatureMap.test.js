@@ -12,6 +12,9 @@ import {
   meetCreatures,
   isOnTile,
   formatLocation,
+  moveCreature,
+  creaturePlacementsIn,
+  restoreCreaturePlacements,
 } from '../src/entities/CreatureMap.js';
 
 const at = (nodeId, tileId) => ({ nodeId, tileId });
@@ -159,4 +162,47 @@ test('formatLocation names the node and the tile, or the fixed everywhere label'
   assert.equal(formatLocation(at('n1', '2,3'), getNodeName), 'The Vale, column 3, row 4');
   assert.equal(formatLocation(at('nX', '0,0'), getNodeName), 'nX, column 1, row 1');
   assert.equal(formatLocation(null, getNodeName), 'Everywhere');
+});
+
+test('moveCreature places one creature and leaves the rest alone', () => {
+  const roster = [placed('goblin', 'n1', '0,0'), placed('wolf', 'n1', '1,1')];
+  const moved = moveCreature(roster, 'goblin', at('n1', '4,3'));
+  assert.deepEqual(moved[0].location, at('n1', '4,3'));
+  assert.equal(moved[1], roster[1], 'the other creature keeps its identity');
+});
+
+test('moveCreature unplaces a creature with null, and ignores an unknown id', () => {
+  const roster = [placed('goblin', 'n1', '0,0')];
+  assert.equal(moveCreature(roster, 'goblin', null)[0].location, null);
+  assert.deepEqual(moveCreature(roster, 'nobody', null), roster);
+});
+
+test('creaturePlacementsIn records the creatures standing in the given nodes', () => {
+  const roster = [
+    placed('goblin', 'n1', '0,0'),
+    placed('wolf', 'n2', '1,1'),
+    createCreature('everywhere', 'everywhere'),
+  ];
+  assert.deepEqual(creaturePlacementsIn(roster, new Set(['n1'])), [
+    { creatureId: 'goblin', location: at('n1', '0,0') },
+  ]);
+  assert.deepEqual(creaturePlacementsIn(roster, new Set(['n3'])), []);
+});
+
+test('restoreCreaturePlacements puts the recorded creatures back', () => {
+  const roster = [placed('goblin', 'n1', '4,3'), placed('wolf', 'n1', '1,1')];
+  const restored = restoreCreaturePlacements(roster, [
+    { creatureId: 'goblin', location: at('n1', '0,0') },
+  ]);
+  assert.deepEqual(restored[0].location, at('n1', '0,0'));
+  assert.equal(restored[1], roster[1]);
+});
+
+test('restoreCreaturePlacements skips a creature that is gone, and no placements at all', () => {
+  const roster = [placed('goblin', 'n1', '4,3')];
+  assert.equal(restoreCreaturePlacements(roster, []), roster, 'nothing to do keeps the array');
+  assert.deepEqual(
+    restoreCreaturePlacements(roster, [{ creatureId: 'deleted', location: null }]),
+    roster,
+  );
 });

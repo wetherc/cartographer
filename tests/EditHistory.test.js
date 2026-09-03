@@ -46,6 +46,7 @@ test('a node snapshot records the nodes alone and nothing created, removed, or m
   assert.deepEqual(snapshot?.removed, []);
   assert.equal(snapshot?.party, null);
   assert.deepEqual(snapshot?.recalled, []);
+  assert.deepEqual(snapshot?.creatures, []);
   assert.equal(snapshot?.entryTiles, null, 'a stroke leaves the entry memory alone');
 });
 

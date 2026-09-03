@@ -1,6 +1,7 @@
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
 /** @typedef {import('../types/entities.js').CharacterPlacement} CharacterPlacement */
+/** @typedef {import('../types/entities.js').CreaturePlacement} CreaturePlacement */
 /** @typedef {import('./EntryMemory.js').EntryMemory} EntryMemory */
 
 /**
@@ -18,8 +19,9 @@
 /**
  * What one edit changed, as it stood before the edit. Undo writes `nodes`
  * back, removes the nodes in `created`, adds the nodes in `removed` back,
- * moves the party to `party`, puts the characters in `recalled`
- * back where they stood, and restores `entryTiles`.
+ * moves the party to `party`, puts the characters in `recalled` and the
+ * creatures in `creatures` back where they stood, and restores
+ * `entryTiles`.
  * @typedef {Object} EditSnapshot
  * @property {MapNode[]} nodes nodes the edit rewrote, as they were
  * @property {string[]} created ids of nodes the edit added
@@ -28,6 +30,8 @@
  *   the edit left the party alone
  * @property {CharacterPlacement[]} recalled characters the edit moved or
  *   pulled back to the party marker, with the location each one had
+ * @property {CreaturePlacement[]} creatures creatures the edit moved, with
+ *   the location each one had
  * @property {EntryMemory | null} entryTiles the entry memory as it stood, or
  *   null when the edit left it alone. An edit that removes nodes drops their
  *   entries, and undo brings those nodes back.
@@ -43,7 +47,15 @@ export const DEFAULT_EDIT_LIMIT = 30;
  * @returns {EditSnapshot}
  */
 export function nodeSnapshot(nodes) {
-  return { nodes, created: [], removed: [], party: null, recalled: [], entryTiles: null };
+  return {
+    nodes,
+    created: [],
+    removed: [],
+    party: null,
+    recalled: [],
+    creatures: [],
+    entryTiles: null,
+  };
 }
 
 /**

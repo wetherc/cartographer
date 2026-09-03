@@ -7,7 +7,12 @@ import { fillTiles } from './helpers/grid.js';
 import { stubApp } from './helpers/app.js';
 import { regenerateSnapshot } from '../src/map/RegenerateNode.js';
 import { moveCharacter, placementsIn, recallFrom } from '../src/party/CharacterTokens.js';
+import { creaturePlacementsIn, moveCreature } from '../src/entities/CreatureMap.js';
 import { createCharacter } from '../src/entities/Character.js';
+import { createCreature } from '../src/entities/Creature.js';
+
+/** @param {string} nodeId @param {string} tileId */
+const at = (nodeId, tileId) => ({ nodeId, tileId });
 
 const INTERIOR = 'assets/tiles/interior/interior';
 
@@ -401,6 +406,12 @@ function regenerated() {
     tileId: '1,0',
   });
   const recalled = placementsIn(fixture.app.state.characters, new Set(['cellar']));
+  // A goblin stood in the keep. The regeneration re-lands it on the new
+  // layout, the same as generateAction does.
+  fixture.app.state.creatures = [
+    createCreature('goblin', 'Goblin', { location: at('keep', '3,3') }),
+  ];
+  const creatures = creaturePlacementsIn(fixture.app.state.creatures, new Set(['keep']));
   // The party had walked into the cellar through the keep's tile 3,3.
   fixture.app.state.entryTiles = { party: { cellar: '3,3' } };
   gestures.recordEdit(
@@ -411,10 +422,16 @@ function regenerated() {
       removed: [cellar],
       party: { nodeId: 'keep', tileId: '0,0' },
       recalled,
+      creatures,
       entryTiles: fixture.app.state.entryTiles,
     }),
   );
   fixture.app.state.characters = recallFrom(fixture.app.state.characters, new Set(['cellar']));
+  fixture.app.state.creatures = moveCreature(
+    fixture.app.state.creatures,
+    'goblin',
+    at('keep', '1,1'),
+  );
   fixture.app.state.entryTiles = {}; // the cellar is gone, so its entry is too
   grid.removeNode('cellar');
   grid.addNode(createMapNode('deep', 'Keep (level 2)', 'keep', 2, 2, { kind: 'interior' }));
@@ -443,6 +460,13 @@ test('undoStroke puts a character the regeneration recalled back on their own ti
   assert.equal(app.state.characters[0].location, null, 'the recall moved them to the party');
   gestures.undoStroke();
   assert.deepEqual(app.state.characters[0].location, { nodeId: 'cellar', tileId: '1,0' });
+});
+
+test('undoStroke puts a creature the regeneration re-landed back on its own tile', () => {
+  const { gestures, app } = regenerated();
+  assert.deepEqual(app.state.creatures[0].location, at('keep', '1,1'), 'the reland moved it');
+  gestures.undoStroke();
+  assert.deepEqual(app.state.creatures[0].location, at('keep', '3,3'));
 });
 
 test('undoStroke brings back the entry memory of a restored level', () => {
@@ -479,6 +503,7 @@ test('undoStroke leaves the party alone when its recorded node no longer exists'
       removed: [],
       party: { nodeId: 'nowhere', tileId: '0,0' },
       recalled: [],
+      creatures: [],
       entryTiles: {},
     }),
   );
