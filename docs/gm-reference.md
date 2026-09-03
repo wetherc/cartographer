@@ -165,8 +165,10 @@ leaves the road on top.
 The Tools card holds Undo stroke and Export PNG. Undo stroke reverts the
 last edit, where a whole drag, a region link, or a generation each count as
 one edit. This history is separate from the header Undo and Redo, and it
-ends at a page reload. Export PNG downloads the current map at full
-resolution, with fog ignored.
+ends at a page reload. Export PNG downloads the current map at 64 pixels
+per tile, with fog ignored. A map too large for that size comes out at a
+smaller size, and the app names the size it used. A map that no size fits
+is refused.
 
 ### Tile inspector fields
 

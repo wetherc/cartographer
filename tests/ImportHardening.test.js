@@ -91,13 +91,15 @@ test('metadata fields of the wrong type load as their defaults', () => {
 });
 
 test('an oversized node is refused by the PNG export instead of drawn', () => {
-  const [small, huge] = loadFile({
+  // 512x512 tiles at the smallest readable size fill the canvas budget of the
+  // browser exactly. One row more fits no size at all.
+  const [largest, huge] = loadFile({
     nodes: [
-      { id: 'a', name: 'A', parentId: null, width: 1000, height: 1000, tiles: [] },
-      { id: 'b', name: 'B', parentId: null, width: 1001, height: 1000, tiles: [] },
+      { id: 'a', name: 'A', parentId: null, width: 512, height: 512, tiles: [] },
+      { id: 'b', name: 'B', parentId: null, width: 513, height: 512, tiles: [] },
     ],
   }).nodes;
-  assert.equal(exceedsExportCap(small), false, 'one million cells is the last allowed size');
+  assert.equal(exceedsExportCap(largest), false);
   assert.equal(exceedsExportCap(huge), true);
 });
 

@@ -4,7 +4,13 @@ import { tileIdAt } from '../map/MapGeometry.js';
 import { MapCanvas } from '../map/MapCanvas.js';
 import { revealAll, discoveredNodes } from '../map/FogOfWar.js';
 import { characterTokens } from '../party/CharacterTokens.js';
-import { renderNodeToCanvas, downloadCanvasPNG, exportFilename } from '../map/MapExport.js';
+import {
+  renderNodeToCanvas,
+  downloadCanvasPNG,
+  exportFilename,
+  exportTileSize,
+  EXPORT_TILE_SIZE,
+} from '../map/MapExport.js';
 import { findRegionGroups } from '../map/RegionGroups.js';
 import { authoringWarning } from '../map/MapExits.js';
 import { createNodeActions } from './nodeActions.js';
@@ -553,8 +559,12 @@ export function wireMapView(app) {
   mustGetElement('stroke-undo-btn').addEventListener('click', authoring.undoStroke);
   mustGetElement('export-png-btn').addEventListener('click', async () => {
     const node = navigator.getCurrentNode();
+    // Browsers cap the area and the sides of a canvas. The render scales the
+    // tiles down to fit, and refuses a node that cannot fit at any readable
+    // size. The toast below names the size it settled on.
+    const tileSize = exportTileSize(node);
     const canvas = await renderNodeToCanvas(node, {
-      tileSize: 64,
+      tileSize: EXPORT_TILE_SIZE,
       regionGroups: findRegionGroups(node),
       getNodeName: (id) => grid.getNode(id)?.name,
       imageCache: mapCanvas.renderer.imageCache,
@@ -564,7 +574,11 @@ export function wireMapView(app) {
       return;
     }
     downloadCanvasPNG(canvas, exportFilename(node.name));
-    toasts.show(`Exported "${node.name}" as PNG.`);
+    toasts.show(
+      tileSize < EXPORT_TILE_SIZE
+        ? `Exported "${node.name}" as PNG at ${tileSize} pixels per tile. A larger image is past the limit of the browser.`
+        : `Exported "${node.name}" as PNG.`,
+    );
   });
 
   mapCanvas.setNode(navigator.getCurrentNode());

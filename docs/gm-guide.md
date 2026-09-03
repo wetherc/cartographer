@@ -454,7 +454,8 @@ you want the library without a campaign.
 1. Switch to **Build** mode and open the map you want.
 2. Click **Export PNG** in the Tools card.
 
-The download is full resolution and ignores fog. Use it for printing or in
-a virtual tabletop.
+The download ignores fog. Use it for printing or in a virtual tabletop. A
+large map comes out at a smaller tile size, because a browser can only make
+an image so big.
 
 ![Play mode in the dark theme](images/play-mode-dark.png)

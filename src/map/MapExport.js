@@ -1,6 +1,5 @@
 import { MapRenderer, imageSrcForRef } from './MapRenderer.js';
 import { overlayList } from './TileGrid.js';
-import { MAX_GRID_CELLS } from './TileIndex.js';
 import { downloadBlob } from '../storage/fileIO.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
@@ -45,17 +44,65 @@ export function exportFilename(name) {
 }
 
 /**
- * True when the node holds more cells than the export can draw. The canvas
- * grows with the cell count, and a node with a huge extent from an edited
- * save asks for a bitmap the browser cannot allocate, which stops the tab.
- * The limit is the one the tile index and the tile codec already apply, so
- * a node too large to lay out is also too large to export. This is a pure
- * function.
+ * The pixels per tile a handout export uses when the node fits. This is the
+ * size of the source tile art, so a node under the limits below exports at
+ * full resolution.
+ */
+export const EXPORT_TILE_SIZE = 64;
+
+/**
+ * The most pixels an export canvas may hold. Browsers cap the total area of
+ * a canvas, and a canvas past the cap either throws or comes back blank. The
+ * lowest cap in a browser this app runs in is Safari's 2^24 pixels, so that
+ * is the budget here. Chrome and Firefox allow more, and a node that fits
+ * this budget exports the same way in all of them.
+ */
+export const MAX_EXPORT_PIXELS = 16_777_216;
+
+/**
+ * The longest side an export canvas may have. A long thin node can fit the
+ * area budget and still ask for a side no browser allocates. Safari stops at
+ * 16,384 pixels, which is the lowest of the three.
+ */
+export const MAX_EXPORT_SIDE = 16_384;
+
+/**
+ * The smallest pixels per tile worth writing to a file. Below this the tile
+ * art is a smear of color, so a node that needs less than this to fit the
+ * budget is refused instead of exported unreadable.
+ */
+export const MIN_EXPORT_TILE_SIZE = 8;
+
+/**
+ * The pixels per tile an export of this node can use, or 0 when even
+ * `MIN_EXPORT_TILE_SIZE` asks for a canvas past the limits above. The answer
+ * is never larger than `requested`: a node that fits keeps full resolution,
+ * and a node too wide for the budget scales down instead of failing in the
+ * browser. This is a pure function.
+ * @param {MapNode} node
+ * @param {number} [requested] pixels per tile the caller wants
+ * @returns {number}
+ */
+export function exportTileSize(node, requested = EXPORT_TILE_SIZE) {
+  const width = node.width;
+  const height = node.height;
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return 0;
+  const cells = Math.max(1, width) * Math.max(1, height);
+  const byArea = Math.floor(Math.sqrt(MAX_EXPORT_PIXELS / cells));
+  const bySide = Math.floor(MAX_EXPORT_SIDE / Math.max(1, width, height));
+  const limit = Math.min(byArea, bySide);
+  if (limit < MIN_EXPORT_TILE_SIZE) return 0;
+  return Math.max(1, Math.min(requested, limit));
+}
+
+/**
+ * True when no export of this node fits the browser's canvas limits. The
+ * caller tells the GM instead of drawing. This is a pure function.
  * @param {MapNode} node
  * @returns {boolean}
  */
 export function exceedsExportCap(node) {
-  return node.width * node.height > MAX_GRID_CELLS;
+  return exportTileSize(node) === 0;
 }
 
 /**
@@ -79,8 +126,10 @@ export function refsToDecode(refs, cache) {
  * placeholders. An image that fails to load falls back to the renderer's
  * placeholder fill. Pass the live canvas's `imageCache` to reuse the art it
  * already decoded. For a built-in-tile map that is every image, so the
- * export decodes nothing. A node past `exceedsExportCap` resolves to null
- * before any canvas is made, so the caller can tell the GM why no file came.
+ * export decodes nothing. `tileSize` is the size the caller wants, and
+ * `exportTileSize` reduces it to whatever fits the browser. A node that fits
+ * nothing at all resolves to null before any canvas is made, so the caller
+ * can tell the GM why no file came.
  * @param {MapNode} node
  * @param {{
  *   tileSize?: number,
@@ -91,8 +140,8 @@ export function refsToDecode(refs, cache) {
  * @returns {Promise<HTMLCanvasElement | null>}
  */
 export async function renderNodeToCanvas(node, options = {}) {
-  if (exceedsExportCap(node)) return null;
-  const tileSize = options.tileSize ?? 64;
+  const tileSize = exportTileSize(node, options.tileSize ?? EXPORT_TILE_SIZE);
+  if (!tileSize) return null;
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, node.width * tileSize);
   canvas.height = Math.max(1, node.height * tileSize);
