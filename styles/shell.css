@@ -121,6 +121,12 @@ body.role-gm .party-binding {
   display: none;
 }
 
+/* The hint that says how a player tab binds is for the GM. A player tab is
+   already bound, so it hides there. */
+body.role-player .party-binding-hint {
+  display: none;
+}
+
 /* Whether the party may split up is the GM's call; players never see the switch. */
 body.role-player .party-split {
   display: none;

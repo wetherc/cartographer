@@ -199,7 +199,7 @@ export interface AppContext {
   grid: TileGrid;
   navigator: MapNavigator;
   partyTracker: PartyTracker;
-  toasts: { show(message: string): void };
+  toasts: { show(message: string, options?: { level?: 'status' | 'error' }): void };
   state: AppState;
   views: AppViews;
   actions: AppActions;

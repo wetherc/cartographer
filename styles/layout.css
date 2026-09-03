@@ -271,6 +271,26 @@ body.mode-build .map-controls__fog {
   animation: toast-in var(--transition-base) ease-out;
 }
 
+/* An error toast reports a failure (a file that did not read, a full
+   storage, a lost lock). It sits in the alert region below the status
+   region, keeps the dark overlay ground, and marks itself with the danger
+   colour on its edge so it reads apart from a confirmation. The Dismiss
+   button gives a keyboard user a way to close it before it times out. */
+.toast--error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  border-left: 3px solid var(--danger);
+  cursor: default;
+}
+
+.toast__dismiss {
+  color: var(--overlay-text);
+  text-decoration: underline;
+  font-size: var(--text-label);
+  cursor: pointer;
+}
+
 .toast--leaving {
   opacity: 0;
   transition: opacity var(--transition-base);

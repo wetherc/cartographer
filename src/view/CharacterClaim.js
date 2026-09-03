@@ -39,7 +39,7 @@ import { select, setOptions } from '../ui/formFields.js';
  *   getCharacters: () => Character[],
  *   bind: (id: string) => void,
  *   spectate: () => void,
- *   toast: (message: string) => void,
+ *   toast: (message: string, options?: { level?: 'status' | 'error' }) => void,
  * }} deps
  * @returns {{
  *   getBoundId: () => string | null,
@@ -62,7 +62,7 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
       const lost = name(boundId ?? '');
       boundId = null;
       sessionStorage.removeItem(BOUND_CHARACTER_SESSION_KEY);
-      toast(`Another tab took over ${lost}; this tab is now a spectator.`);
+      toast(`Another tab took over ${lost}; this tab is now a spectator.`, { level: 'error' });
       spectate();
     },
   });
@@ -80,7 +80,9 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
     } else if (!lock.claim(characterLockKey(id))) {
       // The claim released the previous character's lock before it failed.
       // This tab now holds nothing, and falls back to spectator.
-      toast(`Another tab is already playing ${name(id)}; this tab stays a spectator.`);
+      toast(`Another tab is already playing ${name(id)}; this tab stays a spectator.`, {
+        level: 'error',
+      });
       id = null;
     }
     boundId = id;
@@ -107,6 +109,18 @@ export function createCharacterClaim({ container, getCharacters, bind, spectate,
       'party-binding u-row u-g2',
       el('span', 'party-binding__label u-muted', 'Playing as'),
       picker,
+    ),
+  );
+
+  // The GM is the one who sets a player tab up, so the hint shows in the GM
+  // view, where the picker itself is hidden. It says how a tab binds and what
+  // the Player view is, because nothing else in the app does.
+  container.appendChild(
+    el(
+      'p',
+      'party-binding-hint u-muted',
+      'Open a second tab with ?role=player&character=<id> on the URL to bind that tab to one character. ' +
+        'The Player view is a display setting over the same browser data, not a lock.',
     ),
   );
 

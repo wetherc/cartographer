@@ -65,7 +65,7 @@ export function wireParty(app) {
     getCharacters: () => state.characters,
     bind: (id) => selectCharacter(id),
     spectate: () => scope.reselect(),
-    toast: (message) => app.toasts.show(message),
+    toast: (message, options) => app.toasts.show(message, options),
   });
   app.actions.getBoundCharacterId = claim.getBoundId;
 

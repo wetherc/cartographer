@@ -209,7 +209,7 @@ export function wireCampaignActions(app) {
    */
   function reportSave(result) {
     const { landed, message } = saveOutcome(result);
-    if (message) app.toasts.show(message);
+    if (message) app.toasts.show(message, { level: landed ? 'status' : 'error' });
     if (!landed) return false;
     reportFootprint(result.footprint);
     return true;
@@ -504,7 +504,7 @@ export function wireCampaignActions(app) {
       ({ state, library } = await readCampaignFromFile(file));
     } catch {
       // No data was written yet, so a plain toast states the fact.
-      app.toasts.show('That file is not a readable campaign JSON.');
+      app.toasts.show('That file is not a readable campaign JSON.', { level: 'error' });
       return;
     }
     // A file with a bundled library adopts it into the browser's customs,
@@ -521,7 +521,9 @@ export function wireCampaignActions(app) {
       );
     }
     if (adopt && library && !saveCustomLibrary(library)) {
-      app.toasts.show('Storage is full. The campaign imports without its library.');
+      app.toasts.show('Storage is full. The campaign imports without its library.', {
+        level: 'error',
+      });
       adopt = false;
     }
     // This is the simplest correct way to apply an imported campaign. It

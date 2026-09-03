@@ -153,7 +153,9 @@ export function createNodeActions(app, env) {
     // another tab), so the check runs before the prompt and again after it.
     const stranded = () => doomed.has(partyTracker.getPosition().nodeId) && !landing;
     if (stranded()) {
-      app.toasts.show(`Cannot delete "${node.name}" while the party is inside it.`);
+      app.toasts.show(`Cannot delete "${node.name}" while the party is inside it.`, {
+        level: 'error',
+      });
       return;
     }
     const ok = await confirmModal(`Delete "${node.name}" and everything inside it?`, {
@@ -162,7 +164,9 @@ export function createNodeActions(app, env) {
     });
     if (!ok) return;
     if (stranded()) {
-      app.toasts.show(`Cannot delete "${node.name}" while the party is inside it.`);
+      app.toasts.show(`Cannot delete "${node.name}" while the party is inside it.`, {
+        level: 'error',
+      });
       return;
     }
 

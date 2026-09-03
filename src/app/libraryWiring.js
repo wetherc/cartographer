@@ -121,6 +121,7 @@ export function wireLibrary(app) {
     if (!saveCustomLibrary(next)) {
       app.toasts.show(
         'The library change could not be stored: browser storage is full. Export the library to keep it.',
+        { level: 'error' },
       );
     }
     refresh();
@@ -196,6 +197,7 @@ export function wireLibrary(app) {
     if (renameConflict({ found, target, renamed })) {
       app.toasts.show(
         `Another ${noun} is already named "${fields.name.trim()}". Choose a different name.`,
+        { level: 'error' },
       );
       return false;
     }
@@ -437,7 +439,7 @@ export function wireLibrary(app) {
     try {
       imported = await readLibraryFromFile(file);
     } catch {
-      app.toasts.show('That file is not a readable library JSON.');
+      app.toasts.show('That file is not a readable library JSON.', { level: 'error' });
       return;
     }
     if (!isLibraryEmpty(custom)) {

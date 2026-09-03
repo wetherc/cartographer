@@ -145,6 +145,8 @@ export function mountDiceTray(container, opts = {}) {
   // The result box stays out of the layout until there is a result to show.
   // An empty sunken box under the roll button reads as a broken readout.
   const resultEl = el('div', 'dice-tray__result');
+  // A screen reader hears each new result without taking focus off the tray.
+  resultEl.setAttribute('role', 'status');
   resultEl.hidden = true;
 
   function performRoll() {

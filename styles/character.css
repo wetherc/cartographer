@@ -673,3 +673,10 @@
   gap: 0.25rem 0.75rem;
   font-size: var(--text-label);
 }
+
+/* The player-tab hint under the "Playing as" picker. It is for the GM who
+   sets a player tab up, so the Player view hides it (see shell.css). */
+.party-binding-hint {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-label);
+}

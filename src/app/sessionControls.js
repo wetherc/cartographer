@@ -117,7 +117,9 @@ export function wireSessionControls(app) {
   // GM: this tab yields rather than run two GM views.
   const gmLock = createHeartbeatLock({
     onYield: () => {
-      app.toasts.show('Another tab took over the GM view; this one switched to the Player view.');
+      app.toasts.show('Another tab took over the GM view; this one switched to the Player view.', {
+        level: 'error',
+      });
       roleSwitch.setValue('player');
     },
   });
@@ -144,7 +146,9 @@ export function wireSessionControls(app) {
         queueMicrotask(() => roleSwitch.setValue('player'));
       }
       if (role === 'gm' && !gmLock.claim(GM_LOCK_KEY)) {
-        app.toasts.show('Another tab is running the GM view; this one stays on the Player view.');
+        app.toasts.show('Another tab is running the GM view; this one stays on the Player view.', {
+          level: 'error',
+        });
         role = 'player';
         // During the initial mount the switch is still being constructed.
         // Sync its buttons to the forced role once it exists. setValue

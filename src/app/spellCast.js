@@ -761,6 +761,7 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
       result.reason === 'no-slot'
         ? `No level ${spell.level}+ slot left for ${spell.name}.`
         : `Can't cast ${spell.name}.`,
+      { level: 'error' },
     );
     return;
   }
@@ -857,7 +858,7 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
 async function runCast(app, entity, spell, offered, writeBack, concentrates, preferredTargetId) {
   const plan = castPlan(app, entity, spell, offered);
   if (!plan.ok) {
-    app.toasts.show(plan.message);
+    app.toasts.show(plan.message, { level: 'error' });
     return;
   }
   if (preferredTargetId) prefillTarget(plan.fields, preferredTargetId);
@@ -1094,7 +1095,7 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
     for (const o of /** @type {any[]} */ (result.outcomes)) {
       const spawn = spawnSummons(app, spell, casterId, o);
       if ('error' in spawn) {
-        app.toasts.show(spawn.error);
+        app.toasts.show(spawn.error, { level: 'error' });
         return;
       }
       // An untracked summon has nothing holding it, so nothing will take it
