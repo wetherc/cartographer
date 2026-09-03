@@ -1,5 +1,6 @@
 import { normalizeLibrary } from '../library/Library.js';
 import { downloadJSON, readFileText } from './fileIO.js';
+import { removeStored, writeStored } from './Footprint.js';
 
 /** @typedef {import('../types/library.js').CustomLibrary} CustomLibrary */
 
@@ -41,7 +42,7 @@ export function loadCustomLibrary(key = LIBRARY_KEY) {
  */
 export function saveCustomLibrary(library, key = LIBRARY_KEY) {
   try {
-    localStorage.setItem(key, JSON.stringify(library));
+    writeStored(key, JSON.stringify(library));
     return true;
   } catch {
     return false;
@@ -54,7 +55,7 @@ export function saveCustomLibrary(library, key = LIBRARY_KEY) {
  * @param {string} [key]
  */
 export function clearCustomLibrary(key = LIBRARY_KEY) {
-  localStorage.removeItem(key);
+  removeStored(key);
 }
 
 /**

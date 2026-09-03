@@ -62,6 +62,7 @@ import { CURRENT_VERSION } from './Migrations.js';
 import { STORAGE_KEY, deserialize, trySaveToLocalStorage } from './SaveManager.js';
 import { loadAssetTable } from './AssetStore.js';
 import { clamp } from '../util/num.js';
+import { removeStored, storedLength, writeStored } from './Footprint.js';
 
 /** @typedef {import('../types/storage.js').CampaignState} CampaignState */
 /** @typedef {import('../types/storage.js').DiffOp} DiffOp */
@@ -135,7 +136,7 @@ export function clearHistoryLog() {
     const key = localStorage.key(i);
     if (key === HISTORY_KEY || key?.startsWith(`${HISTORY_KEY}:`)) doomed.push(key);
   }
-  for (const key of doomed) localStorage.removeItem(key);
+  for (const key of doomed) removeStored(key);
 }
 
 /**
@@ -180,7 +181,7 @@ function readIndex() {
  */
 function writeIndex(index) {
   try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(index));
+    writeStored(HISTORY_KEY, JSON.stringify(index));
     return true;
   } catch {
     return false;
@@ -252,14 +253,15 @@ function lastPersisted() {
  * @returns {number[]}
  */
 function trimToCap(deltas) {
-  const sizes = deltas.map((seq) => (localStorage.getItem(deltaKey(seq))?.length ?? 0) * 2);
+  // The ledger already holds each delta's length, so no delta is read again.
+  const sizes = deltas.map((seq) => storedLength(deltaKey(seq)) * 2);
   let total = sizes.reduce((sum, size) => sum + size, 0);
   let drop = 0;
   while (total > HISTORY_BYTE_CAP && drop < deltas.length - 1) {
     total -= sizes[drop];
     drop += 1;
   }
-  for (const seq of deltas.slice(0, drop)) localStorage.removeItem(deltaKey(seq));
+  for (const seq of deltas.slice(0, drop)) removeStored(deltaKey(seq));
   return deltas.slice(drop);
 }
 
@@ -298,7 +300,7 @@ function recordDelta(before, after) {
   let evictedAll = false;
   for (;;) {
     try {
-      localStorage.setItem(deltaKey(seq), json);
+      writeStored(deltaKey(seq), json);
       break;
     } catch {
       // A full origin degrades depth first: give up the oldest step and
@@ -308,7 +310,7 @@ function recordDelta(before, after) {
         return { ok: false, evictedAll: true };
       }
       const oldest = /** @type {number} */ (deltas.shift());
-      localStorage.removeItem(deltaKey(oldest));
+      removeStored(deltaKey(oldest));
       evictedAll = true;
     }
   }
@@ -321,7 +323,7 @@ function recordDelta(before, after) {
     clearHistoryLog();
     return { ok: false, evictedAll: true };
   }
-  for (const dropped of tail) localStorage.removeItem(deltaKey(dropped));
+  for (const dropped of tail) removeStored(deltaKey(dropped));
   return { ok: true, evictedAll };
 }
 

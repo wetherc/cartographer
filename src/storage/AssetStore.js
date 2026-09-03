@@ -17,6 +17,7 @@
  */
 
 import { referencedAssetKeys } from './Assets.js';
+import { removeStored, writeStored } from './Footprint.js';
 
 /** @typedef {import('../types/storage.js').RawSave} RawSave */
 
@@ -113,6 +114,67 @@ function otherStoredStrings(skip) {
 }
 
 /**
+ * What the last write left in the table, and what it was written for. The
+ * next save compares against this record before it parses or scans
+ * anything. `raw` is the string written, so a table another tab replaced
+ * fails the compare and forces a fresh scan. `refs` is the sorted set of
+ * keys the save referenced, and `keys` the names of every stored key at
+ * the time of the scan.
+ * @type {{ raw: string, table: Record<string, string>, refs: string, keys: Set<string> } | null}
+ */
+let lastWrite = null;
+
+/**
+ * @param {Iterable<string>} values
+ * @returns {string}
+ */
+function sortedJoin(values) {
+  return [...values].sort().join('\n');
+}
+
+/** Every key name on the origin. Names are cheap to read; values are not. */
+function storedKeyNames() {
+  /** @type {Set<string>} */
+  const names = new Set();
+  for (let i = 0; i < localStorage.length; i += 1) {
+    const name = localStorage.key(i);
+    if (name !== null) names.add(name);
+  }
+  return names;
+}
+
+/**
+ * True when the retention scan cannot change the stored table. The scan
+ * looks for references, and a reference can only go away when the save
+ * stops naming a key or a stored string disappears. A key that appears
+ * (each save adds one history delta) cannot remove a reference, so it does
+ * not trigger a scan. The payload check covers a hash collision across
+ * saves: a save whose key names a different payload than the one stored
+ * under it must rewrite the table.
+ * @param {string} stored the table string on the origin
+ * @param {Record<string, string>} assets
+ * @param {string} refs
+ * @param {Set<string>} keys
+ * @returns {boolean}
+ */
+function nothingToDo(stored, assets, refs, keys) {
+  if (!lastWrite || lastWrite.raw !== stored || lastWrite.refs !== refs) return false;
+  for (const name of lastWrite.keys) if (!keys.has(name)) return false;
+  return Object.entries(assets).every(([key, payload]) => lastWrite?.table[key] === payload);
+}
+
+/**
+ * True when two tables hold the same keys with the same payloads.
+ * @param {Record<string, string>} a
+ * @param {Record<string, string>} b
+ * @returns {boolean}
+ */
+function sameTable(a, b) {
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((key) => a[key] === b[key]);
+}
+
+/**
  * Merge a save's payloads into the stored table, remove any payload nothing
  * references, and write the table back. The function reports whether the
  * write succeeded instead of throwing an error, because the caller writes
@@ -124,6 +186,14 @@ function otherStoredStrings(skip) {
  * removes a payload only when the last state that references it has fallen
  * out of the ring. It skips the scan entirely when there is nothing to
  * keep, which is true for every campaign that has never held an image.
+ *
+ * The scan parses the table and reads every other stored string. With one
+ * picture in the campaign that ran on every autosave, and it rewrote the
+ * table even when nothing had changed. The function now scans only when
+ * the save's references changed, a stored key disappeared, the table on the
+ * origin is not the one this tab wrote, or a payload differs under a known
+ * key. After a scan, it writes only when the kept table differs from the
+ * stored one.
  * @param {Record<string, string>} assets this save's payloads
  * @param {string} json this save, whose references are not stored yet
  * @param {string[]} [superseded] keys `json` is about to overwrite, so the value
@@ -134,17 +204,28 @@ function otherStoredStrings(skip) {
 export function persistAssets(assets, json, superseded = [], key = ASSETS_KEY) {
   const stored = localStorage.getItem(key);
   if (!stored && !Object.keys(assets).length) return true;
+  const refs = sortedJoin(referencedAssetKeys(json));
+  const keys = storedKeyNames();
+  if (stored && nothingToDo(stored, assets, refs, keys)) return true;
   const merged = { ...loadAssetTable(key), ...assets };
   const skip = new Set([key, ...superseded]);
   const kept = pruneAssets(merged, [json, ...otherStoredStrings(skip)]);
   if (!Object.keys(kept).length) {
-    localStorage.removeItem(key);
+    removeStored(key);
+    lastWrite = null;
+    return true;
+  }
+  if (stored && lastWrite && lastWrite.raw === stored && sameTable(kept, lastWrite.table)) {
+    lastWrite = { ...lastWrite, refs, keys };
     return true;
   }
   try {
-    localStorage.setItem(key, JSON.stringify(kept));
+    const raw = JSON.stringify(kept);
+    writeStored(key, raw);
+    lastWrite = { raw, table: kept, refs, keys };
     return true;
   } catch {
+    lastWrite = null;
     return false;
   }
 }

@@ -13,6 +13,7 @@ import {
   buildState,
   deserialize,
   loadFromLocalStorage,
+  packState,
   serialize,
   trySaveToLocalStorage,
 } from '../src/storage/SaveManager.js';
@@ -172,4 +173,97 @@ test('a corrupt sidecar reads as no images rather than throwing', () => {
 test('persistAssets leaves an untouched origin alone when there is nothing to store', () => {
   assert.equal(persistAssets({}, '{}'), true);
   assert.equal(localStorage.getItem(ASSETS_KEY), null);
+});
+
+/**
+ * Persist the images of `state` as a save would, counting sidecar writes and
+ * the reads of every other stored string. The footprint ledger is not in
+ * play here, so a read means the retention scan ran.
+ */
+function sidecarTraffic(state) {
+  const { state: detached, assets } = detachAssets(packState(state));
+  const json = JSON.stringify(detached);
+  const fn = () => persistAssets(assets, json, ['campaign-builder:save']);
+  const setItem = localStorage.setItem;
+  const getItem = localStorage.getItem;
+  let writes = 0;
+  let reads = 0;
+  localStorage.setItem = (key, value) => {
+    if (key === ASSETS_KEY) writes += 1;
+    setItem(key, value);
+  };
+  localStorage.getItem = (key) => {
+    if (key !== ASSETS_KEY && key !== 'campaign-builder:save') reads += 1;
+    return getItem(key);
+  };
+  try {
+    fn();
+  } finally {
+    localStorage.setItem = setItem;
+    localStorage.getItem = getItem;
+  }
+  return { writes, reads };
+}
+
+test('a repeat save with the same images neither scans nor rewrites the sidecar', () => {
+  const state = stateWithHandoutImage();
+  trySaveToLocalStorage(state);
+  localStorage.setItem('campaign-builder:library', '{"spells":[]}');
+  const stored = localStorage.getItem(ASSETS_KEY);
+  const traffic = sidecarTraffic(state);
+  assert.equal(traffic.writes, 0, 'the table is not written again');
+  assert.equal(traffic.reads, 0, 'no other stored string is scanned');
+  assert.equal(localStorage.getItem(ASSETS_KEY), stored);
+});
+
+test('a new history record does not trigger a scan, a dropped one does', () => {
+  const state = stateWithHandoutImage();
+  localStorage.setItem('campaign-builder:history:d6', '[]');
+  trySaveToLocalStorage(state);
+  // A record that appears after the scan could only add a reference, and a
+  // reference already kept needs no rescan.
+  localStorage.setItem('campaign-builder:history:d7', '[]');
+  assert.equal(sidecarTraffic(state).reads, 0);
+  // A record the scan saw is gone, so a reference it held may be gone too.
+  localStorage.removeItem('campaign-builder:history:d6');
+  const traffic = sidecarTraffic(state);
+  assert.ok(traffic.reads > 0, 'a missing key means a reference may be gone');
+  assert.equal(traffic.writes, 0, 'the kept table equals the stored one, so no write');
+});
+
+test('a table another tab replaced is scanned and rewritten', () => {
+  const state = stateWithHandoutImage();
+  trySaveToLocalStorage(state);
+  localStorage.setItem(ASSETS_KEY, JSON.stringify({ stale: 'data:image/png;base64,ZZZZ' }));
+  const traffic = sidecarTraffic(state);
+  assert.equal(traffic.writes, 1);
+  assert.deepEqual(Object.values(loadAssetTable()), [PAYLOAD]);
+});
+
+test('a save whose key names a different payload rewrites the table', () => {
+  const other = 'data:image/png;base64,BBBB';
+  const collide = () => 'same';
+  const first = hoistAssets({ handouts: [{ id: 'h1', image: PAYLOAD }] }, collide);
+  const second = hoistAssets({ handouts: [{ id: 'h1', image: other }] }, collide);
+  const json = (s) => JSON.stringify(detachAssets(s).state);
+  persistAssets(detachAssets(first).assets, json(first));
+  assert.deepEqual(loadAssetTable(), { same: PAYLOAD });
+  persistAssets(detachAssets(second).assets, json(second));
+  assert.deepEqual(loadAssetTable(), { same: other });
+  const stored = localStorage.getItem(ASSETS_KEY);
+  persistAssets(detachAssets(second).assets, json(second));
+  assert.equal(localStorage.getItem(ASSETS_KEY), stored, 'the same payload again is a no-op');
+});
+
+test('a failed sidecar write is retried on the next save', () => {
+  const state = stateWithHandoutImage();
+  const setItem = localStorage.setItem;
+  localStorage.setItem = (key, value) => {
+    if (key === ASSETS_KEY) throw new Error('QuotaExceededError');
+    setItem(key, value);
+  };
+  assert.equal(trySaveToLocalStorage(state).assetsOk, false);
+  localStorage.setItem = setItem;
+  assert.equal(trySaveToLocalStorage(state).assetsOk, true);
+  assert.deepEqual(Object.values(loadAssetTable()), [PAYLOAD]);
 });

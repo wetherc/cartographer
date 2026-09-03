@@ -18,6 +18,8 @@
  * one tab.
  */
 
+import { removeStored, writeStored } from './Footprint.js';
+
 /** @typedef {{ id: string, at: number }} GMLockRecord */
 
 export const GM_LOCK_KEY = 'campaign-builder:gm-lock';
@@ -90,7 +92,7 @@ export function loadLock(key = GM_LOCK_KEY) {
  * @param {string} [key]
  */
 export function saveLock(record, key = GM_LOCK_KEY) {
-  localStorage.setItem(key, JSON.stringify(record));
+  writeStored(key, JSON.stringify(record));
 }
 
 /**
@@ -100,7 +102,7 @@ export function saveLock(record, key = GM_LOCK_KEY) {
  * @param {string} [key]
  */
 export function releaseLock(id, key = GM_LOCK_KEY) {
-  if (loadLock(key)?.id === id) localStorage.removeItem(key);
+  if (loadLock(key)?.id === id) removeStored(key);
 }
 
 /**

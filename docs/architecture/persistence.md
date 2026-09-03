@@ -70,6 +70,17 @@ wrappers are the only code that touches the real browser APIs: `localStorage`,
 throwing an error. A quota failure must reach the GM and must not appear as
 a successful save.
 
+The save wrapper also reports the footprint of the whole origin, because
+the save, the history deltas, the image sidecar, and the library share one
+quota. `storage/Footprint.js` keeps a ledger from key to stored length, so
+this check does not read every stored value after each save. Every writer
+under `src/storage/` records its writes through `writeStored` and
+`removeStored`, and `HistoryLog.trimToCap` reads delta sizes from the same
+ledger. Writes from other tabs arrive as `storage` events, and
+`onExternalSave` passes each one to the ledger. The ledger re-reads the
+origin when the key count differs from its own size, which covers the few
+small flags written outside the storage modules.
+
 The export and import buttons go through `storage/CampaignFile.js` instead
 of `downloadState` and `readStateFromFile`. `serializeCampaignFile` writes
 the packed state with the GM's custom library attached as a `library`
@@ -277,6 +288,18 @@ The reason is the tile codec, described below. After encoding, a tile's
 reference lives inside an encoded node's palette. A state walk cannot see it
 without decoding first. The scan is skipped completely when there is nothing
 to keep, which is true of every campaign that has never held an image.
+
+The scan is also skipped when it cannot change anything. `persistAssets`
+remembers the table string it last wrote, the keys that save referenced,
+and the names of every stored key at that time. A reference can only go
+away when the save stops naming a key or a stored string disappears, so the
+next save scans only when its references differ, a stored key is gone (the
+history log dropped a record), the table on the origin is not the one this
+tab wrote, or a payload differs under a known key. A key that appears, as
+every save adds one history delta, does not trigger a scan. After a scan,
+the table is written only when the kept table differs from the stored one.
+With one picture in the campaign, every autosave used to parse the table,
+read every other stored string, and write the table back unchanged.
 
 ## Packing layer 4: the tile codec
 

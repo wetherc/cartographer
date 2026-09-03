@@ -6,6 +6,7 @@ import { detachAssets, loadAssetTable, persistAssets } from './AssetStore.js';
 import { createEntityPacker } from './EntityPack.js';
 import { encodeNodeTiles, decodeNodeTiles } from './TileCodec.js';
 import { memoizeByIdentity } from '../util/memoize.js';
+import { recordExternalWrite, storageFootprint, writeStored } from './Footprint.js';
 import { withDefaults as withCharacterDefaults } from '../entities/Character.js';
 import { withDefaults as withCreatureDefaults } from '../entities/Creature.js';
 import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
@@ -346,36 +347,19 @@ export function isNearQuota(bytes, limit = QUOTA_WARN_BYTES) {
   return bytes >= limit;
 }
 
-/**
- * The byte cost of a set of stored key and value pairs, keys included.
- * localStorage charges for both, in UTF-16 code units. The function is
- * pure, so a unit test can check the quota arithmetic without a storage
- * stub.
- * @param {Iterable<[string, string]>} pairs
- * @returns {number}
- */
-export function footprintBytes(pairs) {
-  let total = 0;
-  for (const [key, value] of pairs) total += (key.length + value.length) * 2;
-  return total;
-}
+export { footprintBytes } from './Footprint.js';
 
 /**
  * What this origin currently spends of its localStorage quota: every key,
  * not just the campaign save. The save, the undo ring, the custom library,
  * and the lock and preference flags all share this quota, so one save's
- * size does not show how close a write is to failing.
+ * size does not show how close a write is to failing. The number comes
+ * from the ledger in `Footprint.js`, so it does not read every stored
+ * value again after each save.
  * @returns {number}
  */
 export function localStorageFootprint() {
-  /** @type {[string, string][]} */
-  const pairs = [];
-  for (let i = 0; i < localStorage.length; i += 1) {
-    const key = localStorage.key(i);
-    if (key === null) continue;
-    pairs.push([key, localStorage.getItem(key) ?? '']);
-  }
-  return footprintBytes(pairs);
+  return storageFootprint();
 }
 
 /**
@@ -414,7 +398,7 @@ export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY) {
   const bytes = saveByteSize(json);
   const assetsOk = persistAssets(assets, json, [key]);
   try {
-    localStorage.setItem(key, json);
+    writeStored(key, json);
   } catch {
     return {
       ok: false,
@@ -472,6 +456,9 @@ export function isExternalSaveEvent(event, key = DEFAULT_STORAGE_KEY) {
  */
 export function onExternalSave(callback, key = DEFAULT_STORAGE_KEY) {
   const handler = (/** @type {StorageEvent} */ event) => {
+    // Every write another tab makes passes through here, not only a save, so
+    // the footprint ledger follows the other tab's history and sidecar keys.
+    recordExternalWrite(event);
     if (isExternalSaveEvent(event, key)) callback();
   };
   window.addEventListener('storage', handler);
