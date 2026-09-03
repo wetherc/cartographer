@@ -10,7 +10,9 @@ import {
   regenerateSnapshot,
   regenerateTokenMoves,
 } from '../map/RegenerateNode.js';
-import { creaturePlacementsIn, moveCreature } from '../entities/CreatureMap.js';
+import { creaturePlacementsIn, moveCreature, unplaceFrom } from '../entities/CreatureMap.js';
+import { bindingsIn, unbindFrom } from '../handout/Handouts.js';
+import { refreshLocationPanels } from './locationPanels.js';
 import { forgetEntries } from '../map/EntryMemory.js';
 import { revealAround } from '../map/FogOfWar.js';
 import { describeTile } from '../map/TileCoords.js';
@@ -123,9 +125,9 @@ export function wireGenerateAction(app, env) {
     const removedIds = new Set(removed.map((n) => n.id));
     // The regenerated layout replaces the node, removes the sub-maps its old
     // tiles led to, adds the deeper levels, and can restamp its parent's
-    // entrance link below. It also recalls every character standing in a
-    // removed node and re-lands every character and creature standing in the
-    // node itself. Record all of it so the stroke-undo ring can revert it.
+    // entrance link below. It also empties every location the removed nodes
+    // held, and re-lands every character and creature standing in the node
+    // itself. Record all of it so the stroke-undo ring can revert it.
     env.recordEdit(
       regenerateSnapshot({
         node,
@@ -134,14 +136,21 @@ export function wireGenerateAction(app, env) {
         removed,
         party: partyTracker.getPosition(),
         recalled: placementsIn(state.characters, new Set([...removedIds, node.id])),
-        creatures: creaturePlacementsIn(state.creatures, new Set([node.id])),
+        creatures: creaturePlacementsIn(state.creatures, new Set([...removedIds, node.id])),
+        handouts: bindingsIn(state.handouts, removedIds),
         entryTiles: state.entryTiles,
       }),
     );
     for (const doomed of removed) {
       if (grid.getNode(doomed.id)) grid.removeNode(doomed.id);
     }
+    // Every location the removed nodes held now names a node that is gone,
+    // which hides whatever holds it from every panel. A character rejoins
+    // the party, a creature becomes unplaced, and a handout becomes
+    // campaign-wide, the same answers the delete path gives.
     state.characters = recallFrom(state.characters, removedIds);
+    state.creatures = unplaceFrom(state.creatures, removedIds);
+    state.handouts = unbindFrom(state.handouts, removedIds);
     // Nothing leads to the removed sub-maps any more, so how they were
     // entered no longer describes anything.
     state.entryTiles = forgetEntries(state.entryTiles, removedIds);
@@ -229,10 +238,11 @@ export function wireGenerateAction(app, env) {
       }
       grid.updateNode(revealed);
     }
-    // The moves above change which creatures stand on the party's tile,
-    // which is what a running fight is scoped to.
-    if (moveTo || foeMoves.length) app.actions.syncCombatLocation();
+    // The removal and the moves above change which creatures stand on the
+    // party's tile, which is what a running fight is scoped to.
+    app.actions.syncCombatLocation();
     resyncMapViews(app, env, { reframe: true });
+    refreshLocationPanels(app);
     app.actions.markDirty();
     app.toasts.show(`Generated ${values.archetype} map in "${node.name}" (seed ${values.seed}).`);
   });

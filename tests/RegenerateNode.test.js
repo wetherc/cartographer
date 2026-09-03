@@ -125,6 +125,7 @@ test('regenerateSnapshot records the node, its parent, and everything else undo 
   const party = { nodeId: 'l2', tileId: '1,1' };
   const recalled = [{ characterId: 'c1', location: { nodeId: 'l2', tileId: '2,2' } }];
   const creatures = [{ creatureId: 'goblin', location: { nodeId: 'l1', tileId: '3,3' } }];
+  const handouts = [{ handoutId: 'crypt-note', nodeId: 'l2' }];
   const entryTiles = { party: { l1: '3,3' } };
   const snapshot = regenerateSnapshot({
     node: level1,
@@ -134,6 +135,7 @@ test('regenerateSnapshot records the node, its parent, and everything else undo 
     party,
     recalled,
     creatures,
+    handouts,
     entryTiles,
   });
   assert.deepEqual(snapshot, {
@@ -143,6 +145,7 @@ test('regenerateSnapshot records the node, its parent, and everything else undo 
     party,
     recalled,
     creatures,
+    handouts,
     entryTiles,
   });
 });
@@ -158,6 +161,7 @@ test('regenerateSnapshot on a root node records the node alone', () => {
     party,
     recalled: [],
     creatures: [],
+    handouts: [],
     entryTiles: {},
   });
   assert.deepEqual(snapshot.nodes, [root]);

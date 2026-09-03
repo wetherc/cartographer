@@ -8,6 +8,7 @@ import { stubApp } from './helpers/app.js';
 import { regenerateSnapshot } from '../src/map/RegenerateNode.js';
 import { moveCharacter, placementsIn, recallFrom } from '../src/party/CharacterTokens.js';
 import { creaturePlacementsIn, moveCreature } from '../src/entities/CreatureMap.js';
+import { bindingsIn, createHandout, unbindFrom } from '../src/handout/Handouts.js';
 import { createCharacter } from '../src/entities/Character.js';
 import { createCreature } from '../src/entities/Creature.js';
 
@@ -411,7 +412,11 @@ function regenerated() {
   fixture.app.state.creatures = [
     createCreature('goblin', 'Goblin', { location: at('keep', '3,3') }),
   ];
-  const creatures = creaturePlacementsIn(fixture.app.state.creatures, new Set(['keep']));
+  const creatures = creaturePlacementsIn(fixture.app.state.creatures, new Set(['keep', 'cellar']));
+  // A handout was bound to the cellar. The regeneration removes the cellar,
+  // so the handout becomes campaign-wide.
+  fixture.app.state.handouts = [createHandout('cellar-note', 'Cellar note', '', 'cellar')];
+  const handouts = bindingsIn(fixture.app.state.handouts, new Set(['cellar']));
   // The party had walked into the cellar through the keep's tile 3,3.
   fixture.app.state.entryTiles = { party: { cellar: '3,3' } };
   gestures.recordEdit(
@@ -423,6 +428,7 @@ function regenerated() {
       party: { nodeId: 'keep', tileId: '0,0' },
       recalled,
       creatures,
+      handouts,
       entryTiles: fixture.app.state.entryTiles,
     }),
   );
@@ -432,6 +438,7 @@ function regenerated() {
     'goblin',
     at('keep', '1,1'),
   );
+  fixture.app.state.handouts = unbindFrom(fixture.app.state.handouts, new Set(['cellar']));
   fixture.app.state.entryTiles = {}; // the cellar is gone, so its entry is too
   grid.removeNode('cellar');
   grid.addNode(createMapNode('deep', 'Keep (level 2)', 'keep', 2, 2, { kind: 'interior' }));
@@ -469,6 +476,22 @@ test('undoStroke puts a creature the regeneration re-landed back on its own tile
   assert.deepEqual(app.state.creatures[0].location, at('keep', '3,3'));
 });
 
+test('undoStroke binds a handout the regeneration set loose back to its node', () => {
+  const { gestures, app } = regenerated();
+  assert.equal(app.state.handouts[0].nodeId, null, 'the removal made it campaign-wide');
+  gestures.undoStroke();
+  assert.equal(app.state.handouts[0].nodeId, 'cellar');
+});
+
+test('undoStroke refreshes the panels that filter by location', () => {
+  const { gestures, app } = regenerated();
+  app.refreshes.length = 0;
+  gestures.undoStroke();
+  for (const view of ['encounterPanel', 'initiativePanel', 'npcPanel', 'handoutPanel']) {
+    assert.ok(app.refreshes.includes(view), `${view}: ${app.refreshes.join(',')}`);
+  }
+});
+
 test('undoStroke brings back the entry memory of a restored level', () => {
   const { gestures, app } = regenerated();
   gestures.undoStroke();
@@ -504,6 +527,7 @@ test('undoStroke leaves the party alone when its recorded node no longer exists'
       party: { nodeId: 'nowhere', tileId: '0,0' },
       recalled: [],
       creatures: [],
+      handouts: [],
       entryTiles: {},
     }),
   );

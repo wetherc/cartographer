@@ -6,6 +6,7 @@ import { relandedTile } from './NodeEdits.js';
 /** @typedef {import('./EditHistory.js').EditSnapshot} EditSnapshot */
 /** @typedef {import('../types/entities.js').CharacterPlacement} CharacterPlacement */
 /** @typedef {import('../types/entities.js').CreaturePlacement} CreaturePlacement */
+/** @typedef {import('../types/handout.js').HandoutBinding} HandoutBinding */
 /** @typedef {import('./EntryMemory.js').EntryMemory} EntryMemory */
 
 /**
@@ -107,12 +108,12 @@ export function regenerateTokenMoves({ tokens, nodeId, width, height, entry, lan
 /**
  * The undo record for a regeneration. It holds the node and its parent as
  * they were, the ids of the deeper levels the generator created, the nodes
- * the regeneration removed, where the party stood, the entry memory, and the
- * locations of the characters and creatures the regeneration moved. Those
- * characters are the ones in the removed nodes, which the regeneration
- * recalls to the party marker, and the ones in the node itself, which it
- * re-lands on the new layout. The creatures are the ones in the node itself.
- * Undo needs their locations to put them back.
+ * the regeneration removed, where the party stood, the entry memory, and
+ * what the regeneration did to every other location. A character or a
+ * creature in a removed node comes back to the party marker or to no place
+ * at all, one in the node itself re-lands on the new layout, and a handout
+ * bound to a removed node becomes campaign-wide. Undo needs each of those
+ * as it stood.
  * @param {{
  *   node: MapNode,
  *   parent: MapNode | null,
@@ -121,6 +122,7 @@ export function regenerateTokenMoves({ tokens, nodeId, width, height, entry, lan
  *   party: PartyPosition,
  *   recalled: CharacterPlacement[],
  *   creatures: CreaturePlacement[],
+ *   handouts: HandoutBinding[],
  *   entryTiles: EntryMemory,
  * }} opts
  * @returns {EditSnapshot}
@@ -133,6 +135,7 @@ export function regenerateSnapshot({
   party,
   recalled,
   creatures,
+  handouts,
   entryTiles,
 }) {
   return {
@@ -142,6 +145,7 @@ export function regenerateSnapshot({
     party,
     recalled,
     creatures,
+    handouts,
     entryTiles,
   };
 }

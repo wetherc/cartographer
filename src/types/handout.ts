@@ -1,3 +1,11 @@
+/** Which node one handout was bound to, kept so an undo can bind it back.
+ * `nodeId` null means the handout was campaign-wide. A map edit that unbinds
+ * handouts records these before it changes them. */
+export interface HandoutBinding {
+  handoutId: string;
+  nodeId: string | null;
+}
+
 /** A lore snippet or read-aloud box that a GM attaches to a node and reveals to players. */
 export interface Handout {
   id: string;

@@ -135,6 +135,12 @@ GM keeps their pan and zoom. A caller uses this for a change elsewhere that
 the node in view still needs to draw. The helper lives in its own module
 because `mapWiring.js` imports `nodeActions.js`, one of the callers.
 
+`locationPanels.js` is the other shared epilogue. `refreshLocationPanels(app)`
+updates the four panels that filter their rows by a map location: encounters,
+initiative, NPCs, and handouts. The map resync does not cover them, because
+it reads the grid and these read the campaign lists. A caller uses this when
+it moves a creature, unplaces one, or changes what a handout is bound to.
+
 The gesture layers live beside it, in their own files:
 
 - `mapAuthoring.js` handles Build mode: paint, erase, and region strokes,
@@ -162,11 +168,20 @@ unreachable. `regenerateLanding` says where the party goes, including a
 party that stood in a removed level. `regenerateTokenMoves` says the same
 for each token that stood in the node, a split character or a placed
 creature, because the new layout can turn the tile it holds into wall or
-void. `regenerateSnapshot` builds the undo record. The stroke-undo ring in
+void. Every other location the removed levels held is emptied, the same
+answers the delete path gives: a character rejoins the party
+(`CharacterTokens.recallFrom`), a creature becomes unplaced
+(`CreatureMap.unplaceFrom`), and a handout becomes campaign-wide
+(`Handouts.unbindFrom`). A location left on a node that is gone hides
+whatever holds it from every panel.
+
+`regenerateSnapshot` builds the undo record. The stroke-undo ring in
 `EditHistory.js` holds an `EditSnapshot` per edit: the rewritten nodes, the
 ids of created nodes, the removed nodes, the party position, the locations
-of the characters and creatures the edit moved, and the entry memory.
-`undoStroke` in `mapAuthoring.js` applies them all.
+of the characters and creatures the edit moved, the nodes the handouts it
+set loose were bound to, and the entry memory. `undoStroke` in
+`mapAuthoring.js` applies them all, then refreshes the panels that filter by
+location through `app/locationPanels.js`.
 The rng that drew the layout also picks the entrance art on the parent, so
 one seed gives one result.
 

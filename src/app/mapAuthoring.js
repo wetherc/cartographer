@@ -13,6 +13,8 @@ import { isOverlayType } from '../map/TilePalette.js';
 import { setTileRevealed } from '../map/FogOfWar.js';
 import { recallAll, restorePlacements } from '../party/CharacterTokens.js';
 import { restoreCreaturePlacements } from '../entities/CreatureMap.js';
+import { restoreBindings } from '../handout/Handouts.js';
+import { refreshLocationPanels } from './locationPanels.js';
 import { nodeSnapshot, pushEdit, popEdit } from '../map/EditHistory.js';
 import { mountTileInspector } from '../ui/TileInspector.js';
 import { promptModal, alertModal } from '../ui/Modal.js';
@@ -64,10 +66,12 @@ export function createMapAuthoring(app, env) {
    * first, so a link they hold cannot outlive them. Nodes the edit removed
    * come back next, then the rewritten nodes as they stood. A rewritten
    * node deleted since the snapshot stays deleted. Any character or creature
-   * the edit moved or recalled to the party marker goes back to their own
-   * tile, and the entry memory goes back to what the edit found. The party moves back
-   * when the edit moved it and its node still exists. A view left inside a
-   * removed node moves to the first restored node.
+   * the edit moved goes back to their own tile, any handout it made
+   * campaign-wide binds to its node again, and the entry memory goes back to
+   * what the edit found. The party moves back when the edit moved it and its
+   * node still exists. A view left inside a removed node moves to the first
+   * restored node. The panels that filter by location then re-read the state,
+   * because a restored location changes which of them show what.
    */
   function undoStroke() {
     const popped = popEdit(editHistory);
@@ -86,6 +90,7 @@ export function createMapAuthoring(app, env) {
     }
     state.characters = restorePlacements(state.characters, snapshot.recalled);
     state.creatures = restoreCreaturePlacements(state.creatures, snapshot.creatures);
+    state.handouts = restoreBindings(state.handouts, snapshot.handouts);
     if (snapshot.entryTiles) state.entryTiles = snapshot.entryTiles;
     const party = snapshot.party;
     if (party && grid.getNode(party.nodeId)) partyTracker.moveTo(party.nodeId, party.tileId);
@@ -94,6 +99,7 @@ export function createMapAuthoring(app, env) {
     } else {
       env.goToNode(snapshot.nodes[0].id);
     }
+    refreshLocationPanels(app);
     app.actions.markDirty();
     toasts.show('Undid the last edit.');
   }

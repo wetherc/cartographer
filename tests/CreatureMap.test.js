@@ -15,6 +15,7 @@ import {
   moveCreature,
   creaturePlacementsIn,
   restoreCreaturePlacements,
+  unplaceFrom,
 } from '../src/entities/CreatureMap.js';
 
 const at = (nodeId, tileId) => ({ nodeId, tileId });
@@ -205,4 +206,17 @@ test('restoreCreaturePlacements skips a creature that is gone, and no placements
     restoreCreaturePlacements(roster, [{ creatureId: 'deleted', location: null }]),
     roster,
   );
+});
+
+test('unplaceFrom unplaces the creatures standing in the given nodes', () => {
+  const roster = [placed('goblin', 'n1', '0,0'), placed('wolf', 'n2', '1,1')];
+  const cleaned = unplaceFrom(roster, new Set(['n1']));
+  assert.equal(cleaned[0].location, null, 'it shows everywhere now');
+  assert.equal(cleaned[1], roster[1], 'a creature elsewhere keeps its identity');
+});
+
+test('unplaceFrom returns the same roster when no creature stands there', () => {
+  const roster = [placed('goblin', 'n1', '0,0'), createCreature('everywhere', 'everywhere')];
+  assert.equal(unplaceFrom(roster, new Set(['n3'])), roster);
+  assert.equal(unplaceFrom(roster, new Set()), roster);
 });

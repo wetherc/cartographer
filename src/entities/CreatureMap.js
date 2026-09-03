@@ -175,6 +175,27 @@ export function moveCreature(creatures, id, location) {
 }
 
 /**
+ * Unplace the creatures standing in any of the given nodes, so they show
+ * everywhere instead. A node edit that removes nodes calls this, so no
+ * creature keeps a location on a map that no longer exists, which would hide
+ * it from every panel. Creatures elsewhere keep their location, and the array
+ * keeps its identity when nothing changes. This is the creature counterpart
+ * of `party/CharacterTokens.recallFrom`.
+ * @param {Creature[]} creatures
+ * @param {Set<string>} nodeIds
+ * @returns {Creature[]}
+ */
+export function unplaceFrom(creatures, nodeIds) {
+  let changed = false;
+  const next = creatures.map((c) => {
+    if (!c.location || !nodeIds.has(c.location.nodeId)) return c;
+    changed = true;
+    return { ...c, location: null };
+  });
+  return changed ? next : creatures;
+}
+
+/**
  * Where the creatures standing in any of the given nodes are, so a caller
  * that is about to move them can put them back later. An unplaced creature,
  * and a creature standing elsewhere, are not in the result.
