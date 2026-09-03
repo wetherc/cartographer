@@ -45,3 +45,12 @@ test('each dialog part id is unique and names its part', () => {
   assert.match(message, /^dialog-message-\d+$/);
   assert.notEqual(second, message);
 });
+
+test('a return target the caller named wins over the opener', () => {
+  // openDialog puts spec.returnFocus first. A control that owns the whole
+  // interaction takes focus back even when something else had it at open
+  // time, which is what Safari leaves behind on a button click.
+  const stated = { isConnected: true };
+  const opener = { isConnected: true };
+  assert.equal(pickReturnFocus([stated, opener, connected]), stated);
+});

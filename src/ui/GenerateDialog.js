@@ -24,10 +24,16 @@ import { openDialog } from './Modal.js';
  * so opening the dialog fetches and decodes nothing the map has already
  * drawn. Without it the first preview of a large wilderness redraws once
  * per distinct ref as each SVG arrives.
+ *
+ * `returnFocus` is the element that takes focus back when the dialog closes.
+ * The Generate button passes itself: Safari does not focus a button on
+ * click, so without this the dismissal lands wherever focus was before the
+ * click, which is the map canvas during painting.
  * @param {{
  *   archetypes: { value: string, label: string }[],
  *   makeCandidate: (choice: GenerateChoice) => { width: number, height: number, tiles: import('../types/map.js').Tile[] },
  *   imageCache?: Map<string, HTMLImageElement>,
+ *   returnFocus?: HTMLElement | null,
  * }} options
  * @returns {Promise<GenerateChoice | null>}
  */
@@ -40,6 +46,7 @@ export function generateDialog(options) {
 
   return openDialog({
     className: 'modal--generate',
+    returnFocus: options.returnFocus,
     title: 'Generate map',
     form: true,
     build: (close) => {

@@ -47,7 +47,8 @@ function replaceQuestion(node, removed) {
 export function wireGenerateAction(app, env) {
   const { palette, grid, navigator, partyTracker, state } = app;
 
-  mustGetElement('generate-btn').addEventListener('click', async () => {
+  const generateBtn = mustGetElement('generate-btn');
+  generateBtn.addEventListener('click', async () => {
     const node = navigator.getCurrentNode();
     const archetypes = ARCHETYPES[node.kind];
 
@@ -95,6 +96,7 @@ export function wireGenerateAction(app, env) {
       archetypes,
       makeCandidate,
       imageCache: env.mapCanvas.renderer.imageCache,
+      returnFocus: generateBtn,
     });
     if (!values) return;
     const removed = linkedDescendants([...grid.nodes.values()], node);

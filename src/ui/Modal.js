@@ -55,8 +55,11 @@ import { dialogPartId, pickReturnFocus } from './dialogFocus.js';
  * The title gets an id and the dialog points at it with `aria-labelledby`,
  * so a screen reader announces the title and not just "dialog". A
  * `description` part is wired the same way through `aria-describedby`. On
- * close, focus returns to the opener. When the opener has left the document,
- * focus goes to `returnFocus`, then to `<main>` (see `dialogFocus.js`).
+ * close, focus goes to `returnFocus` when the caller named one. A caller
+ * names it when the element that owns the interaction is not always the
+ * element that had focus, for example a button that the browser does not
+ * focus on click. Otherwise focus returns to the opener, and to `<main>` when
+ * neither is in the document any longer (see `dialogFocus.js`).
  *
  * `build` receives a `close(value)` function that it wires into its own
  * buttons, and returns the parts to assemble. `result` turns the dialog's
@@ -116,7 +119,7 @@ export function openDialog(spec) {
       /** @param {any} value */
       const finish = (value) => {
         dialog.remove();
-        const target = pickReturnFocus([opener, spec.returnFocus, document.querySelector('main')]);
+        const target = pickReturnFocus([spec.returnFocus, opener, document.querySelector('main')]);
         /** @type {HTMLElement | null} */ (target)?.focus();
         resolve(value);
       };
