@@ -441,12 +441,16 @@ body.mode-combat .app-buildrail {
   background: var(--surface);
 }
 
-.combat-ribbon:empty {
+.combat-ribbon[hidden] {
   display: none;
 }
 
+/* The round counter is the screen heading, an h2 that takes focus after a
+   rebuild when nothing better is left. It keeps the size of the ribbon text. */
 .combat-ribbon__round {
   flex: 0 0 auto;
+  margin: 0;
+  font-size: inherit;
   font-weight: 700;
 }
 

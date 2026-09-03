@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { initialsOf } from '../src/ui/CombatScreen.js';
+import { initialsOf } from '../src/ui/CombatRibbon.js';
 
 test('initialsOf takes at most two initials', () => {
   assert.equal(initialsOf('Ser Aldric'), 'SA');

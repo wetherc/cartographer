@@ -16,8 +16,19 @@ import {
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
 import { weaponAttack } from './weaponAttack.js';
 import { castSpellAction } from './spellCast.js';
+import { createRefreshScheduler } from '../combat/RefreshScheduler.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
+
+/**
+ * Move keyboard focus to the map canvas. Leaving the combat screen, by Back
+ * to map or by End combat, hides or removes the control that was pressed.
+ * Without this, focus falls to the page body. The map is what the GM looks
+ * at next, and the canvas is its keyboard surface.
+ */
+export function focusMapCanvas() {
+  document.getElementById('map-canvas')?.focus();
+}
 
 /**
  * This is the combat screen: the full-width board shown in combat mode. It
@@ -73,8 +84,13 @@ export function wireCombatScreen(app) {
     onNext: () => app.actions.advanceCombatTurn(),
     onEnd: () => app.actions.endCombat(),
     // Leaving is a view change only. The fight keeps running, and the Play
-    // sidebar's status card offers the way back in.
-    onLeave: () => app.actions.setMode('play'),
+    // sidebar's status card offers the way back in. The mode switch hides
+    // the screen and with it the button that was pressed, so focus moves to
+    // the map.
+    onLeave: () => {
+      app.actions.setMode('play');
+      focusMapCanvas();
+    },
     getInspectedId: () => inspectedId,
     onInspect: (id) => {
       inspectedId = id;
@@ -222,20 +238,31 @@ export function wireCombatScreen(app) {
     }
   }
 
-  // Every refresh path lands here, including the mode switch itself:
-  // sessionControls updates this view on every mode change. This keeps the
-  // dock in step without a second observer. While the tab is on another
-  // mode with the fight still running, for example a player looking at the
-  // map mid-fight, the rebuild is skipped, because nothing is visible, and
-  // the mode switch back is itself a refresh that redraws everything. The
+  // The rebuild itself is deferred and coalesced. One weapon attack reaches
+  // this view four or five times: the budget spend, the attack line, the
+  // damage line, the target write, and the defeat line. Each of these used to
+  // rebuild the whole screen. The scheduler runs one rebuild per burst, in a
+  // microtask, before the browser paints. While the tab is on another mode
+  // with the fight still running, for example a player looking at the map
+  // mid-fight, the rebuild is skipped, because nothing is visible, and the
+  // mode switch back is itself a refresh that redraws everything. The
   // fight-over case still falls through, so the screen empties instead of
   // holding the ended fight's DOM.
+  const refresh = createRefreshScheduler(() => {
+    releaseStaleTarget();
+    if (state.mode !== 'combat' && state.combat) return;
+    screen.update();
+  });
+
+  // Every refresh path lands here, including the mode switch itself:
+  // sessionControls updates this view on every mode change. This keeps the
+  // dock in step without a second observer. The dock moves at once, because
+  // the mode's CSS has already changed and the tray must not flash in the
+  // wrong column.
   app.views.combatScreen = {
     update: () => {
       syncDiceDock();
-      releaseStaleTarget();
-      if (state.mode !== 'combat' && state.combat) return;
-      screen.update();
+      refresh.request();
     },
   };
 }

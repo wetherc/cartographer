@@ -47,6 +47,7 @@ import {
   retryImposedSaves,
 } from './combatants.js';
 import { setCombatantExhaustion } from './exhaustion.js';
+import { focusMapCanvas } from './combatWiring.js';
 import { skipsTurn } from '../combat/CombatView.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -481,10 +482,14 @@ export function wireEncounters(app) {
   };
 
   app.actions.endCombat = () => {
+    const onScreen = state.mode === 'combat';
     setCombat(null);
     app.views.initiativePanel.update(); // hides the panel again
     app.views.encounterPanel.update(); // shows the Start combat button again
     exitCombatMode();
+    // The End combat button leaves with the screen. Focus moves to the map,
+    // which is what the GM looks at next, instead of falling to the body.
+    if (onScreen) focusMapCanvas();
   };
 
   const initiativeContainer = mustGetElement('initiative-container');

@@ -45,9 +45,23 @@ src/combat/Arrival.js ........ pure: the text of the walked-into-something
                                alert, for the hostile creatures on a tile
 src/combat/InitiativeRoll.js . pure: one initiative roll as a DEX check, with
                                the slant, the exhaustion penalty, and a note
-src/ui/CombatScreen.js ....... the screen: active column, board, log column,
-                               turn ribbon, outcome banner, live region,
-                               keyboard handling
+src/combat/RefreshScheduler.js  pure: one deferred refresh for a burst of
+                               writes, with an injectable scheduler
+src/combat/FocusRestore.js ... pure: names a control so a rebuild can hand
+                               focus back to its twin, with fallbacks
+src/combat/HPLines.js ........ pure: the log lines for a damage or heal the
+                               GM applies from the amount field
+src/ui/CombatScreen.js ....... the screen: composes the columns, the board,
+                               the outcome banner, the live region, and the
+                               focus handoff after a rebuild
+src/ui/CombatRibbon.js ....... the turn ribbon: the round heading, one chip
+                               per participant, the turn controls, and the
+                               roving tab stop helpers
+src/ui/CombatActiveColumn.js . the left column: the inspected combatant's
+                               facts, HP controls, chips, concentration,
+                               death saves, loadout, and action bar
+src/ui/CombatLog.js .......... the log column: a role="log" list that only
+                               adds the rows logged since its last update
 src/ui/CombatantCard.js ...... one board card; doubles as a target-picker
                                button when given an onSelect
 src/ui/LoadoutBlock.js ....... a loadout as labelled lines, shared by the
@@ -454,6 +468,26 @@ visible frame is always freshly drawn. A fight that has ended still falls
 through to the rebuild. This rebuild empties the screen instead of leaving
 the last fight's DOM behind.
 
+The rebuild is deferred and coalesced. `update` asks
+`src/combat/RefreshScheduler.js` for a refresh. The first request in a
+synchronous burst schedules one run in a microtask. Every request after it,
+until that run, does nothing. One weapon attack reaches the view four or five
+times: the budget spend, the attack line, the damage line, the target write,
+and the defeat line. Before the scheduler, each of these rebuilt the whole
+screen. Now they cost one rebuild, and the browser paints no frame between
+them. The scheduler takes its `schedule` function as an argument, so a test
+drives the flush by hand. The dice tray dock still moves at once, inside
+`update`, because the mode's CSS has already changed by then.
+
+The log column does not rebuild at all. `CombatLog.js` keeps the id of the
+newest row it drew. On each update it asks `entriesAfter` for the entries
+logged since then, and prepends only those. It rebuilds from scratch only
+when that id has left the log, which means the log was cleared or a new
+fight began. `TravelogPanel.js` renders the same way. This matters for more
+than cost: the list is a `role="log"` live region, and a screen reader
+speaks only the rows that are added. A list rebuilt whole would either
+re-read every row or read nothing.
+
 - **The initiative-panel wrapper.** `encounterWiring.js` wraps
   `views.initiativePanel.update()` and refreshes the combat screen inside
   that wrapper. Because of this, every call site that the sidebar card
@@ -487,12 +521,32 @@ refreshes the screen.
 A visually hidden `aria-live="polite"` region announces each turn, for
 example "Round 2: Mirelle's turn." This region is keyed on round and
 combatant id, so HP edits and other refreshes announce nothing extra. The
-ribbon and the board are each one tab stop. A roving tabindex anchors on the
-current turn's chip and on the selected card. Arrow keys move focus with
-wraparound. A rebuild notes which chip or card held focus, by
-`data-combatant-id`, and restores focus to the new element. The keydown
-listeners attach once, at mount, to the persistent containers. They query
-the buttons on each keypress, because every render replaces the buttons.
+combat log list is a `role="log"` region. Each attack result, damage line,
+and defeat is spoken as its row lands, because the list only ever gains
+rows (see above). The ribbon and the board are each one tab stop. A roving
+tabindex anchors on the current turn's chip and on the selected card. Arrow
+keys move focus with wraparound. The keydown listeners attach once, at
+mount, to the persistent containers. They query the buttons on each
+keypress, because every render replaces the buttons.
+
+A rebuild replaces every control, so focus would fall to the page body
+after each one. `src/combat/FocusRestore.js` decides where it goes instead.
+Before the rebuild, the screen names the focused control: a chip or a card
+by its combatant id, any other control by its accessible label or its text.
+After the rebuild, the control with the same name takes focus back, so a
+Damage button stays under the finger across the HP edit it made. When that
+control is gone or disabled, focus goes to the current turn's chip, then to
+the round heading, which is a persistent `h2` with `tabindex="-1"`. Focus
+that sat on an element still in the document, such as the docked dice tray,
+is left alone. The first frame of a fight moves focus onto the screen the
+same way, because the Start control that opened it has already been
+rebuilt. Leaving the screen, by Back to map or End combat, moves focus to
+the map canvas.
+
+The attack and cast dialogs need no help from this. They open before any
+write, so the button that opened one is still in the document when it
+closes and takes focus back. The deferred rebuild then runs and moves that
+focus to the rebuilt button by name.
 
 ## The sidebar card
 
