@@ -188,8 +188,11 @@ export function wireMapView(app) {
   /** Mark the tiles of the current node that hold a placed creature: the
    * danger marker for a live, undefeated hostile, and the distinct blue
    * marker for everyone else. The map shows both once the party comes
-   * within detection range. One pass covers both layers, and it refreshes
-   * both Build-rail authoring lists, which show the same node scope. */
+   * within detection range. One pass covers both layers. It also refreshes
+   * both Build-rail authoring lists, which show the same node scope, but only
+   * while Build mode shows them. Play mode fights change creatures many
+   * times a round, and a hidden list rebuild on each change is wasted work.
+   * Entering Build mode runs the sync again so the lists catch up. */
   function syncCreatureMarkers() {
     const nodeId = navigator.getCurrentNode().id;
     const placed = state.creatures.filter((c) => c.location && c.location.nodeId === nodeId);
@@ -200,6 +203,7 @@ export function wireMapView(app) {
       placed.filter((c) => c.disposition === 'hostile' && !isDefeated(c)).map(tileOf),
     );
     mapCanvas.setNPCTiles(placed.filter((c) => c.disposition !== 'hostile').map(tileOf));
+    if (state.mode !== 'build') return;
     app.views.buildFoes.update();
     app.views.buildNPCs.update();
   }
@@ -515,6 +519,7 @@ export function wireMapView(app) {
     // it makes entering Build mode write it again, where the GM can read it.
     lastBuildWarning = '';
     syncExits(); // Build mode offers no ways out. Play mode draws them again.
+    if (mode === 'build') syncCreatureMarkers();
     worldTree.update();
     regionTree.update();
     refreshMapDescription();
