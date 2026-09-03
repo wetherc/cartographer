@@ -470,6 +470,85 @@ test('exitToParent leaves the party where it stands and only pans the view', () 
   assert.deepEqual(log, []);
 });
 
+/**
+ * Link the child from a second block at the parent's north-east corner. That
+ * corner block touches painted terrain on its south and west only, while the
+ * block at 2,4 touches terrain on all four sides, so the two blocks report
+ * different ways out and different return landings.
+ * @param {any} w
+ */
+function secondMouth(w) {
+  const parent = w.grid.getNode('world');
+  w.grid.updateNode(setTile(parent, createTile('5,0', 'town.svg', { childNodeId: 'child' })));
+}
+
+test('walking into a region records the tile it was entered through', () => {
+  const { clickTile, state } = world();
+  clickTile('2,4');
+  assert.deepEqual(state.entryTiles, { child: '2,4' });
+});
+
+test('a tab that moves nobody records no entry', () => {
+  // A spectator tab only pans the camera. Its neighbours adopt whatever it
+  // saves, so it must not write where the party came in.
+  const { clickTile, state, navigator } = world({ role: 'player' });
+  clickTile('2,4');
+  assert.equal(navigator.getCurrentNode().id, 'child');
+  assert.deepEqual(state.entryTiles, {});
+});
+
+test('the ways out are the sides of the block the party came in by', () => {
+  const viaCorner = world();
+  secondMouth(viaCorner);
+  viaCorner.clickTile('5,0');
+  assert.deepEqual(viaCorner.state.entryTiles, { child: '5,0' });
+  assert.deepEqual(
+    viaCorner.travel.currentExits().map((/** @type {any} */ e) => e.side),
+    ['south', 'west'],
+  );
+
+  const viaMiddle = world();
+  secondMouth(viaMiddle);
+  viaMiddle.clickTile('2,4');
+  assert.deepEqual(
+    viaMiddle.travel.currentExits().map((/** @type {any} */ e) => e.side),
+    ['north', 'east', 'south', 'west'],
+  );
+});
+
+test('a stored entry survives a reload and still picks the block', () => {
+  // This is the reload case: nothing in this session zoomed in, and the
+  // memory comes from the save.
+  const w = world();
+  secondMouth(w);
+  w.state.entryTiles = { child: '2,4' };
+  w.partyTracker.moveTo('child', '1,3');
+  w.navigator.zoomIn('2,4');
+  w.travel.exitToParent({
+    kind: 'edge',
+    side: 'south',
+    targetNodeId: 'world',
+    targetName: 'World',
+  });
+  // Beside the block the party came in by.
+  assert.deepEqual(w.partyTracker.getPosition(), { nodeId: 'world', tileId: '2,5' });
+
+  // With no memory of the way in, the same walk out lands beside whichever
+  // block the parent's tiles list first, which here is the corner one. This
+  // is what a reload used to do.
+  const forgotten = world();
+  secondMouth(forgotten);
+  forgotten.partyTracker.moveTo('child', '1,3');
+  forgotten.navigator.zoomIn('2,4');
+  forgotten.travel.exitToParent({
+    kind: 'edge',
+    side: 'south',
+    targetNodeId: 'world',
+    targetName: 'World',
+  });
+  assert.deepEqual(forgotten.partyTracker.getPosition(), { nodeId: 'world', tileId: '5,1' });
+});
+
 test('the hover tooltip stays hidden outside play mode and over nothing worth showing', () => {
   const building = world({ mode: 'build' });
   building.travel.onCellHover(tileOf(building.navigator, '1,1'), 5, 5);

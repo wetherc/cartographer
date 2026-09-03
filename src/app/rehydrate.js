@@ -39,6 +39,7 @@ import { reconcile } from '../storage/Reconcile.js';
  * @type {string[]}
  */
 export const SYNCED_STATE_KEYS = [
+  'entryTiles',
   'characters',
   'creatures',
   'travelog',

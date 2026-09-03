@@ -4,9 +4,16 @@ import { generateNodeTiles, generateDungeonLevels, ARCHETYPES } from '../map/Map
 import { ensureChildLink } from '../map/TilePaint.js';
 import { resolveEntryTile } from '../map/EntryPoint.js';
 import { entranceArtFor, freshNodeId } from '../map/NodeEdits.js';
-import { linkedDescendants, regenerateLanding, regenerateSnapshot } from '../map/RegenerateNode.js';
+import {
+  linkedDescendants,
+  regenerateCharacterMoves,
+  regenerateLanding,
+  regenerateSnapshot,
+} from '../map/RegenerateNode.js';
+import { forgetEntries } from '../map/EntryMemory.js';
+import { revealAround } from '../map/FogOfWar.js';
 import { describeTile } from '../map/TileCoords.js';
-import { placementsIn, recallFrom } from '../party/CharacterTokens.js';
+import { moveCharacter, placementsIn, recallFrom } from '../party/CharacterTokens.js';
 import { mulberry32 } from '../util/Rng.js';
 import { mustGetElement } from '../ui/dom.js';
 import { confirmModal, alertModal } from '../ui/Modal.js';
@@ -116,7 +123,8 @@ export function wireGenerateAction(app, env) {
     // The regenerated layout replaces the node, removes the sub-maps its old
     // tiles led to, adds the deeper levels, and can restamp its parent's
     // entrance link below. It also recalls every character standing in a
-    // removed node. Record all of it so the stroke-undo ring can revert it.
+    // removed node and re-lands every character standing in the node itself.
+    // Record all of it so the stroke-undo ring can revert it.
     env.recordEdit(
       regenerateSnapshot({
         node,
@@ -124,13 +132,17 @@ export function wireGenerateAction(app, env) {
         created: deeper.map((level) => /** @type {string} */ (level.id)),
         removed,
         party: partyTracker.getPosition(),
-        recalled: placementsIn(state.characters, removedIds),
+        recalled: placementsIn(state.characters, new Set([...removedIds, node.id])),
+        entryTiles: state.entryTiles,
       }),
     );
     for (const doomed of removed) {
       if (grid.getNode(doomed.id)) grid.removeNode(doomed.id);
     }
     state.characters = recallFrom(state.characters, removedIds);
+    // Nothing leads to the removed sub-maps any more, so how they were
+    // entered no longer describes anything.
+    state.entryTiles = forgetEntries(state.entryTiles, removedIds);
     deeper.forEach((level, i) => {
       const child = createMapNode(
         /** @type {string} */ (level.id),
@@ -168,7 +180,9 @@ export function wireGenerateAction(app, env) {
     }
     // If the regenerated layout has shrunk past the party, replaced the
     // party's tile with void or wall, or removed the level the party stood
-    // in, re-land the party on the layout.
+    // in, re-land the party on the layout. Every split character standing in
+    // the node needs the same treatment on their own tile. Both landings
+    // read the same node, before either move reveals fog on it.
     const position = partyTracker.getPosition();
     const fresh = grid.getNode(node.id) ?? node;
     const moveTo = regenerateLanding({
@@ -180,7 +194,30 @@ export function wireGenerateAction(app, env) {
       entry: gen.entry,
       landing: resolveEntryTile(fresh, position.tileId),
     });
+    const moves = regenerateCharacterMoves({
+      characters: state.characters,
+      nodeId: node.id,
+      width: gen.width,
+      height: gen.height,
+      entry: gen.entry,
+      landingFor: (tileId) => resolveEntryTile(fresh, tileId),
+    });
     if (moveTo) partyTracker.moveTo(moveTo.nodeId, moveTo.tileId);
+    if (moves.length) {
+      for (const move of moves) {
+        state.characters = moveCharacter(state.characters, move.characterId, {
+          nodeId: node.id,
+          tileId: move.tileId,
+        });
+      }
+      // A character's step reveals fog around it, the same as a walk does.
+      // Without this, a moved token stands in a blank fog field.
+      let revealed = grid.getNode(node.id) ?? fresh;
+      for (const move of moves) {
+        revealed = revealAround(revealed, move.tileId, partyTracker.revealRadius);
+      }
+      grid.updateNode(revealed);
+    }
     resyncMapViews(app, env, { reframe: true });
     app.actions.markDirty();
     app.toasts.show(`Generated ${values.archetype} map in "${node.name}" (seed ${values.seed}).`);

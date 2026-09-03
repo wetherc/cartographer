@@ -401,6 +401,8 @@ function regenerated() {
     tileId: '1,0',
   });
   const recalled = placementsIn(fixture.app.state.characters, new Set(['cellar']));
+  // The party had walked into the cellar through the keep's tile 3,3.
+  fixture.app.state.entryTiles = { cellar: '3,3' };
   gestures.recordEdit(
     regenerateSnapshot({
       node: keepBefore,
@@ -409,9 +411,11 @@ function regenerated() {
       removed: [cellar],
       party: { nodeId: 'keep', tileId: '0,0' },
       recalled,
+      entryTiles: fixture.app.state.entryTiles,
     }),
   );
   fixture.app.state.characters = recallFrom(fixture.app.state.characters, new Set(['cellar']));
+  fixture.app.state.entryTiles = {}; // the cellar is gone, so its entry is too
   grid.removeNode('cellar');
   grid.addNode(createMapNode('deep', 'Keep (level 2)', 'keep', 2, 2, { kind: 'interior' }));
   grid.updateNode(
@@ -441,6 +445,21 @@ test('undoStroke puts a character the regeneration recalled back on their own ti
   assert.deepEqual(app.state.characters[0].location, { nodeId: 'cellar', tileId: '1,0' });
 });
 
+test('undoStroke brings back the entry memory of a restored level', () => {
+  const { gestures, app } = regenerated();
+  gestures.undoStroke();
+  assert.deepEqual(app.state.entryTiles, { cellar: '3,3' });
+});
+
+test('undoStroke leaves the entry memory alone for an edit that never touched it', () => {
+  const { gestures, app, grid } = authoring();
+  app.state.entryTiles = { cellar: '3,3' };
+  const memory = app.state.entryTiles;
+  gestures.snapshotEdit(grid.getNode('keep'));
+  gestures.undoStroke();
+  assert.equal(app.state.entryTiles, memory);
+});
+
 test('undoStroke moves a view left inside a removed level to the restored node', () => {
   const { gestures, navigator, calls } = regenerated();
   navigator.goTo('deep');
@@ -460,6 +479,7 @@ test('undoStroke leaves the party alone when its recorded node no longer exists'
       removed: [],
       party: { nodeId: 'nowhere', tileId: '0,0' },
       recalled: [],
+      entryTiles: {},
     }),
   );
   gestures.undoStroke();

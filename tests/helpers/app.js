@@ -80,6 +80,7 @@ const VIEW_NAMES = [
  */
 function blankState() {
   return {
+    entryTiles: {},
     characters: [],
     creatures: [],
     travelog: [],

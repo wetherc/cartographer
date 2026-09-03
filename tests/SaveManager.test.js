@@ -499,6 +499,7 @@ test('buildState fills every omitted field with its empty value', () => {
       nodes: [],
       version: 0,
       party: null,
+      entryTiles: {},
       characters: [],
       creatures: [],
       travelog: [],
@@ -549,6 +550,7 @@ test('deserialize defaults missing fields instead of throwing', () => {
     version: CURRENT_VERSION,
     nodes: [],
     party: null,
+    entryTiles: {},
     characters: [],
     creatures: [],
     travelog: [],
@@ -599,6 +601,27 @@ test('deserialize reads a save that is not an object at all as an empty campaign
   assert.deepEqual(deserialize('null'), deserialize('{}'));
   assert.deepEqual(deserialize('[]'), deserialize('{}'));
   assert.deepEqual(deserialize('42'), deserialize('{}'));
+});
+
+test('the entry memory survives a round trip', () => {
+  const state = buildState({ grid: sampleGrid(), entryTiles: { cave: '4,7' } });
+  assert.deepEqual(deserialize(serialize(state)).entryTiles, { cave: '4,7' });
+});
+
+test('a save with no entry memory reads as an empty one', () => {
+  assert.deepEqual(deserialize(JSON.stringify({ nodes: [] })).entryTiles, {});
+});
+
+test('deserialize drops an entry whose tile is not a string', () => {
+  const restored = deserialize(
+    JSON.stringify({ entryTiles: { cave: '4,7', crypt: 3, shop: null } }),
+  );
+  assert.deepEqual(restored.entryTiles, { cave: '4,7' });
+});
+
+test('deserialize reads an entry memory that is not an object as an empty one', () => {
+  assert.deepEqual(deserialize(JSON.stringify({ entryTiles: 'cave' })).entryTiles, {});
+  assert.deepEqual(deserialize(JSON.stringify({ entryTiles: ['4,7'] })).entryTiles, {});
 });
 
 test('deserialize coerces splitParty to a boolean', () => {

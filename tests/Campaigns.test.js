@@ -47,6 +47,7 @@ test('loadInitialCampaign restores a save and default-fills fields older saves l
   assert.deepEqual(campaign.creatures, []);
   assert.deepEqual(campaign.handouts, []);
   assert.deepEqual(campaign.bestiary, []);
+  assert.deepEqual(campaign.entryTiles, {});
   assert.equal(campaign.splitParty, false);
   // No demo character is injected into an authored-empty roster.
   localStorage.setItem(
@@ -84,6 +85,21 @@ test('loadInitialCampaign passes through every present field of a full save', ()
   assert.equal(campaign.handouts[0].title, 'Map');
   assert.equal(campaign.bestiary[0].id, 'b1');
   assert.equal(campaign.splitParty, true);
+});
+
+test('loadInitialCampaign keeps the entry memory and drops what names a missing node', () => {
+  localStorage.setItem(
+    'campaign-builder:save',
+    JSON.stringify({
+      nodes: [
+        { id: 'world', name: 'World', parentId: null, width: 2, height: 2, tiles: [] },
+        { id: 'cave', name: 'Cave', parentId: 'world', width: 2, height: 2, tiles: [] },
+      ],
+      party: { nodeId: 'world', tileId: '0,0' },
+      entryTiles: { cave: '1,1', gone: '0,0' },
+    }),
+  );
+  assert.deepEqual(loadInitialCampaign().entryTiles, { cave: '1,1' });
 });
 
 test('loadInitialCampaignSafe falls back to a blank campaign when a save is unreadable', () => {

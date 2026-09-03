@@ -47,6 +47,7 @@ const app = /** @type {import('./types/app.js').AppContext} */ (
     partyTracker: new PartyTracker(initial.grid, initial.party),
     toasts,
     state: {
+      entryTiles: initial.entryTiles,
       characters: initial.characters,
       creatures: initial.creatures,
       travelog: initial.travelog,

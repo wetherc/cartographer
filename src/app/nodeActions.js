@@ -3,6 +3,7 @@ import { collectSubtreeIds } from '../map/WorldTree.js';
 import { NODE_KINDS, ENVIRONS, coerceNodeKind } from '../map/NodeKinds.js';
 import { freshNodeId } from '../map/NodeEdits.js';
 import { deleteLanding, locationsAfterDelete, locationsAfterShrink } from '../map/NodeCleanup.js';
+import { forgetEntries } from '../map/EntryMemory.js';
 import { promptModal, confirmModal, alertModal } from '../ui/Modal.js';
 import { capitalize } from '../util/text.js';
 import { clampInt } from '../util/num.js';
@@ -173,6 +174,9 @@ export function createNodeActions(app, env) {
     const before = currentLocations();
     const after = locationsAfterDelete(before, doomed, landing ?? before.party);
     applyLocations(before, after);
+    // The deleted nodes can never be entered again, so the memory of how
+    // they were entered goes with them.
+    state.entryTiles = forgetEntries(state.entryTiles, doomed);
     const removed = grid.removeNode(nodeId);
     app.actions.markDirty();
     if (after.party !== before.party) {

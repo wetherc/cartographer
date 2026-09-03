@@ -6,6 +6,7 @@ import {
   resolveEntryTile,
 } from '../map/EntryPoint.js';
 import { exitForTile, findExits } from '../map/MapExits.js';
+import { entryFor, forgetEntries, rememberEntry } from '../map/EntryMemory.js';
 import { revealAround } from '../map/FogOfWar.js';
 import { characterPosition, moveCharacter, recallAll } from '../party/CharacterTokens.js';
 import { confirmModal } from '../ui/Modal.js';
@@ -28,17 +29,6 @@ import { capitalize } from '../util/text.js';
  */
 export function createMapTravel(app, env) {
   const { grid, navigator, partyTracker, state } = app;
-
-  /**
-   * The parent tile the view last zoomed through, per child node. A parent
-   * can link one child from two blocks that do not touch. The return
-   * geometry needs the block the party came in by, and the tiles alone do
-   * not say which one that was. This memory lasts for the session only. A
-   * child entered another way (a teleport, a reload) has no entry here, and
-   * the return then uses the first block.
-   * @type {Map<string, string>}
-   */
-  const enteredThrough = new Map();
 
   /** Landing where a placed creature stands is the introduction. Mark the
    * creature met, and log the meeting once per creature: "encounters" for a
@@ -106,6 +96,9 @@ export function createMapTravel(app, env) {
     const firstVisit = !node.tiles.some((t) => t.revealed);
     partyTracker.moveTo(nodeId, target);
     state.characters = recallAll(state.characters); // the whole party teleports
+    // A teleport arrives through no block of the parent, so any memory of an
+    // earlier walk in no longer describes where the party stands.
+    state.entryTiles = forgetEntries(state.entryTiles, [nodeId]);
     env.goToNode(nodeId);
     app.actions.logEvent(
       'travel',
@@ -127,7 +120,7 @@ export function createMapTravel(app, env) {
   function currentExits() {
     if (state.mode !== 'play') return [];
     const node = navigator.getCurrentNode();
-    return findExits(node, grid.getParent(node), enteredThrough.get(node.id) ?? null);
+    return findExits(node, grid.getParent(node), entryFor(state.entryTiles, node.id));
   }
 
   /**
@@ -162,7 +155,7 @@ export function createMapTravel(app, env) {
       env.goToNode(parent.id);
       return;
     }
-    const through = enteredThrough.get(child.id) ?? null;
+    const through = entryFor(state.entryTiles, child.id);
     const landing = computeParentReturnTile(parent, child, exit, from, through);
     if (subject) {
       state.characters = moveCharacter(state.characters, subject.id, {
@@ -274,8 +267,12 @@ export function createMapTravel(app, env) {
       const parent = navigator.getCurrentNode();
       if (navigator.zoomIn(tile.id)) {
         const child = navigator.getCurrentNode();
-        enteredThrough.set(child.id, tile.id);
         if (gm || subject) {
+          // Remember which parent tile this entry was through, so the ways
+          // out and the return landing read the block the traveler came in
+          // by. Only a tab that moves somebody writes this. A spectator tab
+          // moves nobody, and its neighbours adopt whatever it saves.
+          state.entryTiles = rememberEntry(state.entryTiles, child.id, tile.id);
           // Check this before the move reveals entry fog. An all-fogged
           // child has never been visited, so stepping in now is its
           // discovery.

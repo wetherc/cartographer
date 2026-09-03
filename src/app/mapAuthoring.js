@@ -63,7 +63,8 @@ export function createMapAuthoring(app, env) {
    * first, so a link they hold cannot outlive them. Nodes the edit removed
    * come back next, then the rewritten nodes as they stood. A rewritten
    * node deleted since the snapshot stays deleted. Any character the edit
-   * recalled to the party marker goes back to their own tile. The party moves back
+   * moved or recalled to the party marker goes back to their own tile, and
+   * the entry memory goes back to what the edit found. The party moves back
    * when the edit moved it and its node still exists. A view left inside a
    * removed node moves to the first restored node.
    */
@@ -83,6 +84,7 @@ export function createMapAuthoring(app, env) {
       if (grid.getNode(node.id)) grid.updateNode(node);
     }
     state.characters = restorePlacements(state.characters, snapshot.recalled);
+    if (snapshot.entryTiles) state.entryTiles = snapshot.entryTiles;
     const party = snapshot.party;
     if (party && grid.getNode(party.nodeId)) partyTracker.moveTo(party.nodeId, party.tileId);
     if (grid.getNode(navigator.currentNodeId)) {

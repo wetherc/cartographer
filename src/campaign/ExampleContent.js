@@ -259,6 +259,8 @@ export function buildExampleContent(palette, world) {
   } = spots;
   return {
     party: { nodeId: 'world', tileId: '16,16' },
+    // Nobody has traveled yet, so no child has been entered through a tile.
+    entryTiles: {},
     characters: exampleParty(),
     creatures: [
       // Field enemies on the overworld, one type for each biome.

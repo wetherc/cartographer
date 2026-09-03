@@ -129,6 +129,24 @@ export function partyPosition(value) {
   return { nodeId: party.nodeId, tileId: party.tileId };
 }
 
+/**
+ * The parent tile each child node was entered through, as a plain map of
+ * node id to tile id. A value that is not a string names no tile, so the
+ * function drops that entry. See `map/EntryMemory.js`.
+ * @param {unknown} value
+ * @returns {Record<string, string>}
+ */
+export function entryTiles(value) {
+  const stored = record(value);
+  if (!stored) return {};
+  /** @type {Record<string, string>} */
+  const memory = {};
+  for (const [nodeId, tileId] of Object.entries(stored)) {
+    if (typeof tileId === 'string') memory[nodeId] = tileId;
+  }
+  return memory;
+}
+
 /** The entry kinds the travelogue styles. Any other value reads as a note. */
 const LOG_KINDS = new Set(['travel', 'combat', 'note', 'rest', 'roll']);
 

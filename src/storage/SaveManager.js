@@ -13,6 +13,7 @@ import { withDefaults as withHandoutDefaults } from '../handout/Handouts.js';
 import {
   combatState,
   creatureTemplates,
+  entryTiles as entryTileMemory,
   logEntries,
   partyPosition,
   quests as questRecords,
@@ -45,6 +46,7 @@ export function buildState(campaign) {
   const {
     grid,
     party = null,
+    entryTiles = {},
     characters = [],
     creatures = [],
     travelog = [],
@@ -58,6 +60,7 @@ export function buildState(campaign) {
   return {
     nodes: [...grid.nodes.values()],
     party,
+    entryTiles,
     characters,
     creatures,
     travelog,
@@ -289,6 +292,7 @@ export function deserialize(json, assets) {
       .filter((node) => typeof node.id === 'string')
       .map(withNodeDefaults),
     party: partyPosition(parsed.party),
+    entryTiles: entryTileMemory(parsed.entryTiles),
     characters: entities('characters', parsed.characters),
     creatures: entities('creatures', parsed.creatures),
     travelog: logEntries(parsed.travelog),

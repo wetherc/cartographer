@@ -399,13 +399,21 @@ The block a child occupies in its parent comes from `blockFor`, a lookup
 over `RegionGroups.findRegionGroups`. A parent can link one child from two
 blocks that do not touch, such as a cave with two mouths. `blockFor` takes
 an optional zoom-through tile for that case and returns the block that holds
-it. Without the tile it returns the first block. `mapTravel.js` remembers
-the tile each child was last zoomed through, for the session only, and
-passes it to the entry and return geometry. The exit list itself still reads
-the first block. For an `edge` exit, a side counts when
-any cell of that block has an orthogonal neighbor in the parent that carries
-an `imageRef` and is not part of the block itself. Diagonal contact past a
-corner does not count, because it leaves the party nothing to step onto.
+it. Without the tile it returns the first block. `findExits` takes the same
+tile: it reports the sides of the block that holds the tile, and the sides
+of every block when no tile is given.
+
+That tile comes from the entry memory in `src/map/EntryMemory.js`. The
+memory holds one parent tile for each child node, and it is part of the
+save, under `entryTiles`. `mapTravel.js` writes an entry when a tab that
+moves somebody zooms in, and drops the entry when the party teleports in,
+because a teleport arrives through no block. Deleting or regenerating a node
+drops the entries of the nodes that go with it.
+
+For an `edge` exit, a side counts when any cell of that block has an
+orthogonal neighbor in the parent that carries an `imageRef` and is not part
+of the block itself. Diagonal contact past a corner does not count, because
+it leaves the party nothing to step onto.
 
 An interior's doors qualify when they open outward: on the grid border, or
 beside a cell the map leaves empty, which is the void a generated dungeon

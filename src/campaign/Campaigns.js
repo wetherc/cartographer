@@ -1,4 +1,5 @@
 import { createMapNode, TileGrid } from '../map/TileGrid.js';
+import { pruneEntries } from '../map/EntryMemory.js';
 import { toTileGrid } from '../storage/SaveManager.js';
 import { loadPersistedCampaign } from '../storage/HistoryLog.js';
 import { createClock } from '../time/GameClock.js';
@@ -13,6 +14,7 @@ import { buildExampleContent } from './ExampleContent.js';
  * @typedef {{
  *   grid: TileGrid,
  *   party: import('../types/map.js').PartyPosition,
+ *   entryTiles: import('../map/EntryMemory.js').EntryMemory,
  *   characters: import('../types/entities.js').Character[],
  *   creatures: import('../types/creature.js').Creature[],
  *   travelog: import('../types/log.js').LogEntry[],
@@ -50,6 +52,7 @@ export function buildBlankCampaign() {
   return {
     grid,
     party: { nodeId: 'world', tileId: '0,0' },
+    entryTiles: {},
     characters: [],
     creatures: [],
     travelog: [],
@@ -105,9 +108,13 @@ export function loadInitialCampaign() {
   // and runs withDefaults for each entity. saved is a complete CampaignState
   // here. Only party and clock still need a runtime default, because
   // deserialize fills them with null.
+  const grid = toTileGrid(saved);
   return {
-    grid: toTileGrid(saved),
+    grid,
     party: saved.party ?? { nodeId: 'world', tileId: '0,0' },
+    // An entry for a node that another tab deleted names nothing. Dropping
+    // it here keeps it out of the next save.
+    entryTiles: pruneEntries(saved.entryTiles, (nodeId) => grid.getNode(nodeId) !== undefined),
     characters: saved.characters,
     creatures: saved.creatures,
     travelog: saved.travelog,
@@ -136,6 +143,9 @@ export function campaignFromLiveState(state) {
   return {
     grid,
     party: state.party ?? { nodeId: 'world', tileId: '0,0' },
+    // No prune here. A delta applied to live state is already consistent,
+    // and a prune would walk the world on every adoption.
+    entryTiles: state.entryTiles,
     characters: state.characters,
     creatures: state.creatures,
     travelog: state.travelog,
