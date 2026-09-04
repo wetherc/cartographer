@@ -4,10 +4,10 @@
 [GM reference](gm-reference.md). If you are new, do the
 [first session tutorial](tutorial-gm-first-session.md) first.*
 
-Every task below assumes the app is open in a browser. Two switches in the
-header decide what you can see: the mode switch and the role switch (the
-header labels it Viewer, with GM and Player as its options). If a
-control in a task does not show, set the mode that the task names.
+Every task below assumes the app is open in a browser. The mode switch and
+the role switch in the header decide what you can see (the header labels
+the role switch Viewer, with GM and Player as its options). If a control in
+a task does not show, set the mode that the task names.
 
 ## Start a campaign
 
@@ -28,7 +28,7 @@ control in a task does not show, set the mode that the task names.
 
 1. Click **Import** in the header.
 2. Pick a `.json` file that you exported earlier.
-3. If the file carries library customizations and you already have your
+3. If the file includes library customizations and you already have your
    own, a prompt asks before it replaces them. Decline to keep yours; the
    campaign imports either way.
 
@@ -53,11 +53,11 @@ position, the app discards what was left to redo.
 4. To lock the tab without the URL parameter, click the padlock beside the
    role switch and confirm.
 
-A locked tab hides the role switch. It does not show the GM view again
+A locked tab hides the role switch and does not show the GM view again
 until you close the tab or remove the URL parameter.
 
-The Player view is a display setting. Every tab of the same browser reads
-the same saved campaign. A person at that browser can open the developer
+The Player view is a display setting, and every tab of the same browser
+reads the same saved campaign. A person at that browser can open the developer
 tools and read the whole save: the fog, the tile notes, the hidden
 handouts, and the exact HP of each foe. The same person can also remove
 `?role=player` from the URL. Put a player-facing tab only on hardware that
@@ -81,9 +81,9 @@ The app shows the same URL hint under the Viewer switch in the header.
 3. Recover their resources yourself. A player can spend a slot but cannot
    restore one.
 
-Only one tab at a time can play a given character. This limit stops two
-tabs from editing one character by accident. It does not stop a player who
-opens the developer tools of the browser.
+Only one tab at a time can play a given character, which stops two tabs
+from editing one character by accident but does not stop a player who opens
+the developer tools of the browser.
 
 ## Build a world
 
@@ -126,7 +126,7 @@ paints.
 4. Write down the seed if you want this layout again.
 5. For a dungeon with more than one level, set **Levels**. Each level
    becomes a child node, joined by its stairs.
-6. Accept. If the node already holds tiles, the app confirms first.
+6. Accept. If the node already has tiles, the app confirms first.
 
 If nothing on the parent map links to this node, the app places an entrance
 tile near the center of the parent and tells you where. Repaint or relink
@@ -177,7 +177,7 @@ above or below.
 
 ## Run a session
 
-Switch to **Play** mode. The sidebar holds Session, Story, and Log tabs.
+Switch to **Play** mode. The sidebar has Session, Story, and Log tabs.
 Click **Hide panels** to give the map the full width.
 
 ![Play mode: the fog-revealed map with the session panels alongside](images/play-mode-light.png)
@@ -233,7 +233,7 @@ The Player view does not show these controls.
    foe adds to each save and check. Leave the rating at **Unrated** for a foe
    you do not want counted.
 5. Change the weapon and the armor if you want. Pick **None** for a beast
-   that carries no weapon or wears no armor.
+   that has no weapon or wears no armor.
 6. To place the encounter elsewhere, set the map and the tile in the same
    dialog.
 
@@ -248,12 +248,12 @@ HP, stat block, and conditions survive the edit.
    template or a library entry.
 3. The copy arrives at full health on the chosen tile.
 
-A campaign template is a snapshot. Later edits to the live encounter do not
-change it.
+A campaign template is a snapshot, so later edits to the live encounter do
+not change it.
 
 ### Run a fight
 
-1. Move the party onto a tile that holds a live creature. A modal names
+1. Move the party onto a tile with a live creature. A modal names
    each hostile one. A friendly or neutral creature opens no modal, but it
    still lists in the panel.
 2. Open the **Active encounter** tab and click **Start combat**. The tab
@@ -291,9 +291,9 @@ To step away without ending the fight, click **Back to map**. The
 
 ### Rule distance yourself
 
-The app does not measure distance between tokens, by design. Movement,
-range, reach, and the shape of an area spell are your calls at the table.
-Each call has a control that carries it into the rolls.
+The app does not measure distance between tokens, so movement, range,
+reach, and the area of an area spell are your calls at the table, and each
+call has a control that applies it to the rolls.
 
 - **Movement.** The speed badge on the sheet shows the walking speed of a
   character. Narrate who stands where. Move the party token when the group
@@ -422,7 +422,7 @@ The Creatures tab splits into Foes and People subtabs by disposition.
 
 ### Add a spell the app does not ship
 
-The built-in list holds 30 spells. A GM-authored spell uses the same schema
+The built-in list has 54 spells. A GM-authored spell uses the same schema
 as a built-in one, so no code change is needed. See
 [Curated spells](spells-missing.md) for what the resolver can and cannot
 apply.
@@ -445,7 +445,7 @@ apply.
 4. To drop every customization, click **Reset**. Export a copy first if you
    want to keep one.
 
-A campaign export carries your library too, so importing a campaign file
+A campaign export includes your library too, so importing a campaign file
 in the other browser moves both at once. Use the Library file card when
 you want the library without a campaign.
 

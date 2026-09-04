@@ -1,7 +1,7 @@
 # Documentation
 
-Every document here is one of four kinds. The kind tells you what the
-document does for you, and what it does not do.
+Each document here is a tutorial, a how-to guide, a reference, or an
+explanation, and the kind tells you what the document does for you.
 
 | Kind | What it does | When you read it |
 | --- | --- | --- |
@@ -10,8 +10,8 @@ document does for you, and what it does not do.
 | Reference | Describes what exists: controls, fields, rules, and modules | You need a fact while you work |
 | Explanation | Says why the app or the code works the way it does | You want the background |
 
-A document stays inside its kind. A tutorial does not list every option. A
-reference does not teach. An explanation gives no steps.
+A document stays inside its kind, so a tutorial does not list every option,
+a reference does not teach, and an explanation gives no steps.
 
 ## Tutorials
 
@@ -48,7 +48,7 @@ reference does not teach. An explanation gives no steps.
 | [Combat](architecture/combat.md) | The fight screen, its one writer, and its derived view |
 | [Persistence](architecture/persistence.md) | How a campaign becomes a string, the packing layers, and undo history |
 | [Testing strategy](testing-strategy.md) | Why the coverage total is low, and what the suite cannot reach |
-| [Curated spells](spells-missing.md) | Why the app ships 30 spells and not the full SRD |
+| [Curated spells](spells-missing.md) | Why the app ships 54 spells and not the full SRD |
 
 `dev-guide.html` sits beside these documents. It is a generated tour of the
 codebase, not one of the four kinds. `CONTRIBUTING.md` in the project root
@@ -57,5 +57,5 @@ tells you how to rebuild it.
 `gallery.html` sits beside them too. It renders every shared builder in
 `src/ui/` from the real modules, with the call that built each one and the
 classes that call produces. Open it over the dev server at
-`http://localhost:8934/docs/gallery.html`, since it loads ES modules. Reach
-for it when you need to see a widget before you use it.
+`http://localhost:8934/docs/gallery.html`, since it loads ES modules. Open
+it when you need to see a widget before you use it.

@@ -38,7 +38,7 @@ Open `src/map/TilePalette.js` and add the tile to the table for its family:
 | POI marker | `MARKER_TYPES` | The marker name |
 | Interior | `INTERIOR_KINDS` | The kind name and its rule meaning |
 
-An interior piece must carry a rule meaning: `wall`, `door`, `stairs-up`,
+An interior piece needs a rule meaning: `wall`, `door`, `stairs-up`,
 `stairs-down`, or `floor`. Every other piece takes the meaning `plain`. The
 rest of the app reads this meaning through `kindOf(imageRef)`, so a piece
 without one is scenery to the rules.
@@ -60,9 +60,9 @@ node --test tests/TilePalette.test.js
    ```
 
 2. Open `http://localhost:8934/tests/tile-preview.html`.
-3. Find the new tile and check three things: the background matches its
-   family, no detail touches an edge, and the tile abuts its neighbors with
-   no seam.
+3. Find the new tile and check that the background matches its family,
+   that no detail touches an edge, and that the tile abuts its neighbors
+   with no seam.
 4. If the tile is a connector, check that its path lines up with a straight
    piece and with a corner piece at the shared edge.
 

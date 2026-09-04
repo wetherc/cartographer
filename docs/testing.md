@@ -18,7 +18,7 @@ Before a commit, run the whole suite:
 pnpm test
 ```
 
-Node runs the tests with its built-in runner. The project has no test
+Node runs the tests with its built-in runner, so the project has no test
 framework.
 
 `pnpm test` prints a summary: the area under `src/`, then one line for each
@@ -29,14 +29,14 @@ recap at the bottom, and the last line gives the totals. `TEST_VERBOSE=1`
 lists the name of every test, and a test that takes 100 ms or more shows
 its time.
 
-Anything a test file writes to stdout or stderr is held and counted on the
+Anything a test file writes to stdout or stderr is captured and counted on the
 line of that file, as `11 printed lines`. Several suites drive a path that
 warns on purpose, such as the fallback for an unreadable save in
 `Campaigns.test.js`. Without this, those warnings print above the tree and
 read as loose errors. A file that fails shows the text of what it printed.
 Any other file shows it only with `TEST_OUTPUT=1`.
 
-Three switches change the output:
+These switches change the output:
 
 ```bash
 TEST_VERBOSE=1 pnpm test  # list every test, not only the failures
@@ -49,7 +49,7 @@ commit prints one line per module.
 
 ## Know what the vocabulary tests check
 
-`tests/uiVocabulary.test.js` reads `src/` and `styles/` as text and holds
+`tests/uiVocabulary.test.js` reads `src/` and `styles/` as text and checks
 the UI rules that no linter states: a builder owns its classes, a shared
 module names no feature's vocabulary, `innerHTML` is only ever cleared, and
 `style.css` imports every sheet. It runs with the rest of the suite. A
@@ -110,13 +110,13 @@ Node measures the coverage, and the same reporter prints it: one row per
 file, grouped by `src/` area, with the line, branch, and function
 percentages and the uncovered line ranges. A total row closes the table.
 
-The total sits far below the per-file numbers of the pure modules. That is
+The total sits far below the per-file numbers of the pure modules, which is
 expected. [Testing strategy](testing-strategy.md) lists the rows that pull
 it down, and the rows that must not.
 
 ## Check a change in the browser
 
-The unit tests build no DOM and no canvas. A change to rendering, to
+The unit tests build no DOM and no canvas, so a change to rendering, to
 layout, or to interaction needs an eye on it.
 
 1. Start the app with `pnpm run dev`, and open the address it prints. If a
@@ -155,8 +155,8 @@ python3 -m http.server 8934
 Then open `http://localhost:8934/tests/tile-preview.html`.
 
 Keep a preview page current when the modules it mounts change their
-interface. A
-stale page can hide a real error the next time someone opens it.
+interface, because a stale page can hide a real error the next time someone
+opens it.
 
 The gallery is the page to check after a change to a shared builder, since
 it draws every one of them on one screen in both themes. Its stories live in
@@ -185,8 +185,8 @@ labels.
    );
    ```
 
-4. Compare the accessible names before and after. Do not compare the
-   elements. The rebuilt control is a different element with the same
+4. Compare the accessible names before and after rather than the elements,
+   because the rebuilt control is a different element with the same
    signature.
 
 The `rehydrate-focus` scenario of `bench/app-bench.js` runs the same check

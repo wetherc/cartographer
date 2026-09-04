@@ -2,17 +2,14 @@
 
 *Explanation. Back to the [architecture overview](../architecture.md).*
 
-A campaign lives in the browser's localStorage. This storage limit is near 5 MB
-for each origin. This one limit drove almost every decision in `src/storage/`.
-Saves are packed tightly. The undo history stores small deltas instead of full
-snapshots. Image payloads stay in their own section, so one large picture
-cannot take down the whole map.
+A campaign lives in the browser's localStorage, whose limit of about 5 MB per
+origin drove almost every decision in `src/storage/`: saves are packed
+tightly, the undo history stores small deltas instead of full snapshots, and
+image payloads stay in their own section so that one large picture cannot
+take down the whole map.
 
-This page follows the save path from live state to a stored string. It then
-covers loading, schema migrations, undo and redo, and the separate store for
-the custom library. A broken rule here can destroy a GM's campaign without
-warning. For this reason, each rule states why it holds, not only what it
-does.
+A broken rule here can destroy a GM's campaign without warning, so each rule
+below states why it exists as well as what it does.
 
 ## The save pipeline at a glance
 
@@ -42,18 +39,19 @@ does.
 Loading runs the same stages in reverse, with two extra steps at the front:
 schema migrations, then field coercion.
 
-The top-level type is `CampaignState` (`src/types/storage.ts`). It holds a
+The top-level type is `CampaignState` (`src/types/storage.ts`). It has a
 flat `nodes` array (the flattened node map of the `TileGrid`), plus `party`,
 `characters`, `creatures`, and the other collections. `storage/SaveManager.js`
 owns `buildState`, `serialize`, `deserialize`, and `toTileGrid`, and all four
 are pure. `toTileGrid` rebuilds a working hierarchy by adding each node of
-the state as it is, because a `MapNode` already carries its own `parentId`.
-It runs no defaulting of its own. `deserialize` has already defaulted every
-node, and a second pass would re-map and re-freeze every tile of the world
-on each load. The grid therefore holds the parsed node objects themselves.
+the state as it is, because a `MapNode` already has its own `parentId`.
+It runs no defaulting of its own, because `deserialize` has already
+defaulted every node and a second pass would re-map and re-freeze every tile
+of the world on each load. The grid therefore contains the parsed node
+objects themselves.
 
 `buildState` takes one source object (`CampaignSource`: a `TileGrid` plus any
-campaign field the caller holds) instead of a positional list. Every field
+campaign field the caller has) instead of a positional list. Every field
 except the grid is optional. Each optional field falls back to the same empty
 value that an older save reads as. As a result, adding a top-level field means
 naming it in `buildState` and in `CampaignState`. No caller needs an update to
@@ -67,7 +65,7 @@ Thin wrappers surround these pure functions: `trySaveToLocalStorage`,
 `loadFromLocalStorage`, `downloadState`, and `readStateFromFile`. These
 wrappers are the only code that touches the real browser APIs: `localStorage`,
 `Blob`, and `FileReader`. The save wrapper reports its result instead of
-throwing an error. A quota failure must reach the GM and must not appear as
+throwing an error, so a quota failure reaches the GM instead of appearing as
 a successful save.
 
 The save wrapper also reports the footprint of the whole origin, because
@@ -88,7 +86,7 @@ field, and omits the field when the customs are empty, so such a file
 equals the plain serialized save. `readCampaignFromFile` splits the two
 apart again. The library joins the byte stream in this one module and
 nowhere else: `buildState`, the localStorage save, the history log, and
-the tab-sync deltas never carry it, so bundling adds nothing to the
+the tab-sync deltas never include it, so bundling adds nothing to the
 storage costs those paths account for.
 
 ## Load-time validation
@@ -99,10 +97,9 @@ the only validation step a save passes through. It coerces every field whose
 *structure* the load path trusts. Collections become lists of records. The
 party position, a running combat, the travelogue, the quest log, and the
 bestiary get their required members with the right types. Those coercers
-live in `storage/RecordCoercion.js`, one function per collection. The reason
-is that Import persists what it reads and then reloads. As a result, a
-malformed field that survives `deserialize` becomes the stored save of an app
-that no longer starts. A travelogue entry whose timestamp is not a number is
+live in `storage/RecordCoercion.js`, one function per collection. Import
+persists what it reads and then reloads, so a malformed field that survives
+`deserialize` becomes the stored save of an app that no longer starts. A travelogue entry whose timestamp is not a number is
 one example: the panel formats every entry during startup, and an unreadable
 date throws there.
 
@@ -140,8 +137,8 @@ exactly those fields from absence, and every load already runs it, so no code
 states a default twice. `deserialize` runs `withNodeDefaults` itself on load,
 instead of leaving the unpack to `toTileGrid`.
 
-Packing must not drop a field that the packer does not know about. A packed
-tile must never reach live state.
+Packing drops no field that the packer does not know about, and a packed
+tile never reaches live state:
 
 - `packTile` deletes keys from a *copy* of the tile, instead of picking named
   fields into a new object. As a result, a `Tile` member added later survives
@@ -168,10 +165,10 @@ A static table of defaults does not work, because for entities the default
 value can depend on the entity itself. `Character.withDefaults` derives the
 hit dice pool and the spell slots from the character's own class list, so the
 value that an omitted field restores to differs per character. A table of
-per-type defaults holds one value per field. It either never omits such a
-field, or omits it against a value that the load puts back wrong. Validating
-each omission against the real unpacker is what stops packing and loading
-from disagreeing with each other.
+per-type defaults has one value per field, so it either never omits such a
+field or omits it against a value that the load puts back wrong. Validating
+each omission against the real unpacker keeps packing and loading in
+agreement.
 
 `SaveManager`'s one `ENTITY_DEFAULTS` table names three pairs: `characters`,
 `creatures`, and `handouts`. Both directions read this table, so the
@@ -181,14 +178,14 @@ zero default-valued bytes.
 
 This is also why `deserialize` runs the entity `withDefaults` functions
 itself, instead of leaving them to `Campaigns.loadInitialCampaign`. A stored
-character is allowed to carry no `spellbook` key. `undoHistory` and
+character may have no `spellbook` key. `undoHistory` and
 `readStateFromFile` hand their results to callers that apply no defaults of
 their own.
 
-The omission works per field, on a flat structure. This is a limit, not an
-oversight. Recursion into a nested record needs to know whether the record
-fills member-wise (`stats`) or as a whole (`equipment`). The `withDefaults`
-contract does not state this.
+The omission works per field, on a flat structure, because recursion into a
+nested record would need to know whether the record fills member-wise
+(`stats`) or as a whole (`equipment`), and the `withDefaults` contract does
+not state this.
 
 Each collection packs through one `createEntityPacker`, which caches the
 packed form on the entity's identity. Entities are immutable values, so an
@@ -204,8 +201,8 @@ mobs.
 
 ## Packing layer 3: image payloads become a table
 
-GM-supplied images arrive as inline `data:` URLs. This means that the whole
-image is base64 text sitting inside the field that references it. Stored this
+GM-supplied images arrive as inline `data:` URLs, so the whole image is
+base64 text inside the field that references it. Stored this
 way, one imported tile painted across a 30x30 region costs its whole payload
 once per cell: 18.5 MB of save for a 20 KB image.
 
@@ -242,11 +239,11 @@ The design of the table closes a failure mode at each step:
   root (`assets/tiles/...`). The worst case of leaving it is the placeholder
   that the renderer already draws for a ref that will not load.
 - Like a packed tile, the table exists only on disk. `deserialize` builds its
-  return value field by field, so live state never holds one.
-- The deduplication works within one save, and this is all it needs to do.
-  History is a log of deltas over parsed state. As a result, a step that
-  inserts a handout carries its payload inline once. A step that only
-  retitles one carries no image at all.
+  return value field by field, so live state never contains one.
+- The deduplication works within one save, and this is all it needs to do,
+  because history is a log of deltas over parsed state, so a step that
+  inserts a handout includes its payload inline once and a step that only
+  retitles one includes no image at all.
 
 ### The localStorage split
 
@@ -256,13 +253,13 @@ In localStorage, the assets table does not travel inside the save at all.
 packed state with `detachAssets`. It writes the payloads first, then writes
 the campaign, and reports the two results separately as `ok` and `assetsOk`.
 
-This split lets structure and blobs fail independently. A full origin costs
-the GM a handout picture instead of the whole map. A history snapshot never
-carries a picture that it did not change.
+This split lets structure and blobs fail independently, so a full origin
+costs the GM a handout picture instead of the whole map, and a history
+snapshot never includes a picture that it did not change.
 
 The write order (payloads first) keeps the failure survivable. A campaign
-that references a payload missing from the sidecar
-renders the placeholder that the renderer already draws. The reverse order
+that references a payload missing from the sidecar renders the placeholder
+that the renderer already draws. The reverse order
 can instead persist structure that references nothing. The write order also
 settles the cross-tab case, because `isExternalSaveEvent` fires on the
 campaign key, and by then the payloads are already stored.
@@ -273,7 +270,7 @@ document. Import needs no special handling, because the persist-then-reload
 path hands the inline payloads straight back to the same writer.
 
 The optional second argument to `deserialize` is the read half. It supplies
-payloads that the string does not carry, and a table inside the string takes
+payloads that the string does not contain, and a table inside the string takes
 priority over it. Its only two callers are the two readers of a stored
 string: `loadFromLocalStorage` and the cache that `HistoryLog` keeps of the
 last persisted state.
@@ -284,10 +281,11 @@ These references are collected by matching `asset:` keys against the raw
 text (`referencedAssetKeys`, in `Assets.js`, beside the key alphabet it must
 match), instead of by walking parsed state.
 
-The reason is the tile codec, described below. After encoding, a tile's
-reference lives inside an encoded node's palette. A state walk cannot see it
-without decoding first. The scan is skipped completely when there is nothing
-to keep, which is true of every campaign that has never held an image.
+The tile codec, described below, is the reason: after encoding, a tile's
+reference lives inside an encoded node's palette, where a state walk cannot
+see it without decoding first. The scan is skipped completely when there is
+nothing to keep, which is true of every campaign that has never had an
+image.
 
 The scan is also skipped when it cannot change anything. `persistAssets`
 remembers the table string it last wrote, the keys that save referenced,
@@ -337,8 +335,8 @@ went from 93,880 to 3,621. Exploring that region fully costs 15 more
 characters in this form. The per-cell form adds 25,600 characters for the
 same exploration.
 
-The codec never loses data. It refuses any node that it cannot represent,
-and it carries whatever it does not represent out of line:
+The codec never loses data, because it refuses any node that it cannot
+represent and writes whatever it does not represent out of line:
 
 - **The codec is opt-in for each node.** A node qualifies only when its
   dimensions are usable and every tile id is a canonical in-bounds `"x,y"`
@@ -363,7 +361,7 @@ Smaller design choices in the codec still decide whether a save loads:
 - **Ordering.** The codec runs last in `packState`, after the asset hoist,
   and first in `deserialize`, before the asset restore. The hoist's
   traversal walks `node.tiles[].imageRef`, and an encoded node no longer has
-  this field. Running the codec last means the palette holds refs that are
+  this field. Running the codec last means the palette contains refs that are
   already hoisted to `asset:` form, so `Assets.js` needs no knowledge of the
   encoding. Decoding ahead of `withNodeDefaults` likewise leaves a decoded
   tile still packed, so the codec states nothing about what a default value
@@ -376,7 +374,7 @@ sees `cells` or `fog`.
 
 ## Schema versions and migrations
 
-A save carries a schema `version`. `buildState` stamps this version, and
+A save has a schema `version`. `buildState` stamps this version, and
 `deserialize` reads it, with the step transforms living in
 `storage/Migrations.js`. `MIGRATIONS[n]` turns a version-n save into a
 version-n+1 one, and a missing version reads as 0 (every save written before
@@ -397,16 +395,16 @@ nothing.
 Any future change to the *meaning* of a stored field belongs in that table. Adding a field alone does not belong there,
 because the `withDefaults` functions already absorb its absence.
 
-One field is off limits: a step must never name `library`. The field a
-campaign export bundles belongs to `normalizeLibrary` and passes through
-the table untouched. A test runs a version-1 save with a library through
+A step never names `library`, because the field a campaign export bundles
+belongs to `normalizeLibrary` and passes through the table untouched. A
+test runs a version-1 save with a library through
 the whole chain and asserts the field survives unchanged.
 
 ## Undo and redo: a log of deltas
 
 Undo and redo work from a log of invertible deltas against the persisted
 save, in `storage/HistoryLog.js`. A delta records only what one save
-changed, not the whole campaign. `saveCampaign` is the one save path. It
+changed, not the whole campaign. `saveCampaign` is the one save path, and it
 writes the campaign, then appends one delta produced by the `diffState`
 function of `storage/StateDiff.js`, over the previous and new parsed states.
 
@@ -447,8 +445,8 @@ id. A fresh log draws a new id when its first delta lands. Sequence numbers
 restart at zero after `clearHistoryLog`. A position token pairs the id with
 the number, so a token from a cleared log matches nothing in the new log.
 
-There is deliberately no base snapshot. Undo and redo only ever apply a
-delta to the *current* state, so the canonical save already is the base.
+There is no base snapshot, because undo and redo only ever apply a delta to
+the *current* state, so the canonical save already is the base.
 The cap drops the oldest deltas, instead of folding them into a base that
 needs a synchronous rewrite on every cap hit. (Bringing a base back is what
 the deferred idea of replaying base-plus-log at load needs. That idea also
@@ -457,7 +455,7 @@ means not writing the canonical save at all.)
 The log's own rules keep it from corrupting the campaign that it describes:
 
 1. **A delta is never migrated.** It was written against one schema version
-   of `CampaignState`, so the index carries `version`. A log
+   of `CampaignState`, so the index records `version`. A log
    stamped with any other version is discarded whole. (This same prefix scan
    is also how the previous ring's keys were reclaimed.)
 2. **Every history write happens after the campaign write**, on both the
@@ -465,12 +463,12 @@ The log's own rules keep it from corrupting the campaign that it describes:
    describe a state that was not stored.
 3. **A full origin degrades depth-first.** The app drops the oldest step and
    retries, then drops the whole log if that also fails, and reports
-   `{ ok, evictedAll }` either way. Undo silently becoming single-step is the
-   defect that this reporting exists for. Hitting the ordinary byte cap is
-   the design, and it reports no loss.
+   `{ ok, evictedAll }` either way. This reporting exists so that undo cannot
+   silently become single-step. Hitting the ordinary byte cap is the design,
+   and it reports no loss.
 
-A diff needs the previous state as a *value*, not a string. This is the one
-property that the old snapshot ring had for free. `HistoryLog` caches this
+A diff needs the previous state as a *value*, not a string, the one property
+that the old snapshot ring had for free. `HistoryLog` caches this
 value, stamped with the raw string it was parsed from, so the steady state
 costs only a string compare. A tab that declined the cross-tab reload prompt
 cannot diff against a save that another tab replaced.
@@ -494,16 +492,16 @@ never touch it.
 The browser copy is the working state. `downloadLibrary` and
 `readLibraryFromFile` round-trip this state through a portable JSON file,
 and `fetchLibraryFile` seeds an empty browser from
-`library/campaign-library.json` at startup. This file is committed holding
-an empty library, so the startup fetch never asks for a missing file. A
+`library/campaign-library.json` at startup. This file is committed with an
+empty library, so the startup fetch never asks for a missing file. A
 GM's export overwrites this file, and everything else under `library/` is
 gitignored. `normalizeLibrary` (in `library/Library.js`) makes every load
 tolerant, and it drops invalid entries instead of throwing an error. The
-library file carries no version field. A file written before the creature
-merge holds `bestiary` and `npcs` lists, and `normalizeLibrary` reads both
+library file has no version field. A file written before the creature
+merge has `bestiary` and `npcs` lists, and `normalizeLibrary` reads both
 into the one `creatures` list on the way in.
 
-A campaign export also carries the customs, as a `library` field beside the
+A campaign export also includes the customs, as a `library` field beside the
 save (see the pipeline above). On import, `libraryImportAction` in
 `CampaignFile.js` decides what happens to the browser's customs:
 
@@ -516,8 +514,8 @@ save (see the pipeline above). On import, `libraryImportAction` in
 An adopted library writes to the library key before the import's reload, so
 the library wiring picks it up through its normal mount-time read. A quota
 failure on that write falls back to importing the campaign alone, with a
-toast. The standalone library export stays: it is still the way to move a
-library without a campaign, and the file that seeds a fresh clone.
+toast. The standalone library export stays, because it is still the way to
+move a library without a campaign and the file that seeds a fresh clone.
 
 ### Changing the spell or feat schema
 
@@ -530,17 +528,17 @@ coercion change, never a migration step:
 1. Update the type in `src/types/spell.ts` (or `feat.ts`). A new field is
    optional or has a stated default.
 2. Teach `normalizeSpell` (or `normalizeFeat`) in `library/Library.js` to
-   accept the new shape, coerce the old shape into it, and keep any
+   accept the new format, coerce the old format into it, and keep any
    original free text it cannot interpret. It must never throw, and it must
    never drop an entry over the changed field.
 3. Update the editor form (`ui/SpellForm.js` / `ui/FeatForm.js`) to read
    and write the new field. The form assembles its draft through the same
    normalizer, so a typed entry and an imported one cannot disagree.
-4. If characters carry copies of the shape, give `Character.withDefaults`
+4. If characters keep copies of the record, give `Character.withDefaults`
    the same default. That side rides the campaign save and is covered by
    `deserialize`, not by the library gate.
-5. Add `Library.test.js` cases: the new shape passes through unchanged, the
-   old shape coerces, and garbage in the field coerces to the default.
+5. Add `Library.test.js` cases: the new format passes through unchanged, the
+   old format coerces, and garbage in the field coerces to the default.
 6. Do not add a `Migrations.js` step, and do not bump `CURRENT_VERSION`
    for a library-only change. A migration step must never name
    `state.library`.

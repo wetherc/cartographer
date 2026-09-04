@@ -36,8 +36,8 @@ the list.
 
 This module is *pure logic*: it takes values and returns new values, and it
 never touches the DOM. Almost every rule in the app lives in a module like
-this one. The DOM half sits in `src/ui/`. See
-[Architecture](architecture.md) for the split.
+this one. The DOM half sits in `src/ui/`, and
+[Architecture](architecture.md) explains the split.
 
 ## 3. Make the change
 
@@ -86,7 +86,7 @@ node --test tests/Conditions.test.js
 ```
 
 The run reports one more passing test than before. If it fails, read the
-first assertion in the output. It names the line that did not hold.
+first assertion in the output, which names the line that failed.
 
 ## 6. Run the other checks
 

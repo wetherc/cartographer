@@ -11,7 +11,7 @@ Each terrain type includes 3 variants, for example `grass-1.svg`, `grass-2.svg`,
 
 - All variants of a type use the same background fill color. `farmland` reuses the grass background, like `road`, so fields abut grass tiles around settlements.
 - Decorative details, for example grass tufts, trees, rocks, and sparkles, stay inset from the tile edges. No decorative detail touches or crosses a border.
-- One exception exists. A type can carry a motif that crosses an edge, if the motif is byte-identical across all variants of the type and continuous in geometry at the borders.
+- The one exception is a motif that crosses an edge, which a type can include if the motif is identical across all variants of the type and continuous in geometry at the borders.
 
   A *periodic path* is one type of edge-crossing motif: water's wave rows, desert's dune crests, and the mountain mid-ground ridge band. This path must pass through the same point with the same tangent at x=0 and x=64. For example, use a `Q .. T ..` chain whose period divides 64.
 
@@ -36,13 +36,13 @@ Rivers follow the same pattern as roads. `palette.getRiverPiece(kind)` looks up 
 
 ## Coast transition pieces
 
-`coast/` holds twelve shoreline pieces, found through `palette.getCoastPiece(kind)`:
+`coast/` contains twelve shoreline pieces, found through `palette.getCoastPiece(kind)`:
 
 - Four straights (`n/s/e/w`), named for the edge whose half is water.
 - Four outer corners (`corner-ne/nw/se/sw`). Water wraps the two named edges around a land tip.
 - Four inner corners (`inner-ne/nw/se/sw`). Water fills only the named quadrant, the inside of a turn in a bay.
 
-Like roads and rivers, coast pieces are transparent overlays (`isOverlayType`). The water side uses the water terrain base color `#33719f`, with a wavy `#c2a36c` sand strand and an `#8ac2e6` foam line. The land side is fully transparent. The terrain beneath, for example grass, desert, snow, or mountain, supplies the shore color. One set of twelve pieces therefore serves every biome. No tile combination of water and another terrain is needed.
+Like roads and rivers, coast pieces are transparent overlays (`isOverlayType`). The water side uses the water terrain base color `#33719f`, with a wavy `#c2a36c` sand strand and an `#8ac2e6` foam line. The land side is fully transparent. The terrain beneath, for example grass, desert, snow, or mountain, supplies the shore color, so one set of twelve pieces serves every biome and no piece per combination of water and another terrain is needed.
 
 ## POI markers
 
@@ -54,7 +54,7 @@ The set covers `settlement`, `dungeon`, `castle`, `tavern`, `inn`, `blacksmith`,
 
 ## Interior pieces
 
-`interior/` holds building-interior tiles, for example castle halls and shops. `palette.getInteriorPiece(kind)` selects a tile by kind, in the same pattern as road pieces. Every piece shares a byte-identical flagstone floor base: fill `#a89f8d` with a `#8f8776` grout grid on a 16-pixel pitch. This base includes half-width grout strokes centered on the tile edges, so the grid continues across any seam. The kinds are:
+`interior/` contains building-interior tiles, for example castle halls and shops. `palette.getInteriorPiece(kind)` selects a tile by kind, in the same pattern as road pieces. Every piece shares an identical flagstone floor base: fill `#a89f8d` with a `#8f8776` grout grid on a 16-pixel pitch. This base includes half-width grout strokes centered on the tile edges, so the grid continues across any seam. The kinds are:
 
 - `floor-1` through `floor-3`: floor variants. They differ only in inset cracks, pebbles, and tinted inner grid cells. Tints never touch a tile edge.
 - `wall-h`, `wall-v`, and `wall-corner-*`: a 16-pixel stone wall band centered on the tile. These pieces share one cross-section: fill `#6f6a60`, dark `#4c4841` edges, a `#55514a` course line, and an `#8a857a` highlight one unit inside the top or left face. This shared cross-section lets straight pieces and corner pieces join cleanly. Corner names describe the open edges. For example, `wall-corner-ne` connects north and east, so it caps the south-west corner of a room.
@@ -66,7 +66,7 @@ Interior pieces are the only art that the game rules read. `INTERIOR_KINDS` in `
 
 ## Registry tables
 
-`TilePalette.js` holds one table per tile family. A tile exists for the app
+`TilePalette.js` defines one table per tile family. A tile exists for the app
 only when its family table names it.
 
 | Table | What it registers |

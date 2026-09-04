@@ -2,9 +2,7 @@
 
 *Reference. For the steps of a task, read the [GM guide](gm-guide.md).*
 
-This document describes what the app contains: the two header switches, the
-panels of each mode, the keyboard controls, and the rules that the app
-applies on its own. It assumes no knowledge of the code.
+This reference assumes no knowledge of the code.
 
 If a control named here does not show, look at the mode switch and the role
 switch first. Most of the app depends on these two settings.
@@ -32,11 +30,11 @@ with GM and Player as its options.
 | GM | Exact enemy HP, tile notes, the whole map | Everything |
 | Player | Enemy health as a band (Unharmed, Bloodied, Down), no tile notes, the fog-revealed map only | Nothing, unless the tab is bound to a character |
 
-The role is per browser tab. Only one tab at a time holds the GM view.
+The role is per browser tab. Only one tab at a time has the GM view.
 While a GM tab is open, every other tab of the same origin opens as a
 Player tab and stays that way. The claim expires about 15 seconds after the
 GM tab closes or crashes. The claim stops two tabs from editing the
-campaign at the same time by accident. It is not a security control. See
+campaign at the same time by accident, but it is not a security control. See
 [What the Player view hides, and what it does not protect](#what-the-player-view-hides-and-what-it-does-not-protect).
 
 Every save in the GM tab, including an autosave, reaches the other tabs. A
@@ -90,7 +88,7 @@ player.
 
 Put a Player tab only on hardware that you control. A second screen on the
 GM laptop, or a laptop that you own and place on the table, are both
-fine. If the campaign holds text that a player must not read, do not give
+fine. If the campaign contains text that a player must not read, do not give
 that player the address on their own device.
 
 ## Theme
@@ -106,7 +104,7 @@ run at the same time.
 | --- | --- |
 | New | Resets to the blank campaign after a confirmation |
 | Load example | Replaces the campaign with the demo campaign after a confirmation |
-| Import | Loads a campaign from a `.json` file. If the file carries library customizations, a prompt offers to replace yours; declining keeps them, and the campaign imports either way |
+| Import | Loads a campaign from a `.json` file. If the file includes library customizations, a prompt offers to replace yours; declining keeps them, and the campaign imports either way |
 | Save | Writes the campaign to the local storage of the browser |
 | Export | Downloads the whole campaign as a `.json` file, with your library customizations bundled in |
 | Undo, Redo | Steps back to the state before the last Save, New, Load example, or Import, and forward again |
@@ -141,7 +139,7 @@ interiors hang beneath it.
 | Region | The full terrain, road, river, coast, and building palette |
 | Interior | Interior pieces only: floors, walls, doors, stairs |
 
-A node also carries a free-text environment tag, for example grassland,
+A node also has a free-text environment tag, for example grassland,
 forest, shop, or temple. The tag is description only.
 
 ### Palette tools
@@ -162,7 +160,7 @@ scaled stamp places one block per click. Roads always paint at 1x.
 Roads overlay the terrain under them. Repainting the terrain under a road
 leaves the road on top.
 
-The Tools card holds Undo stroke and Export PNG. Undo stroke reverts the
+The Tools card has Undo stroke and Export PNG. Undo stroke reverts the
 last edit, where a whole drag, a region link, or a generation each count as
 one edit. This history is separate from the header Undo and Redo, and it
 ends at a page reload. Export PNG downloads the current map at 64 pixels
@@ -218,7 +216,7 @@ offers a plain "Return to {parent}" button.
 
 ## Play mode
 
-The sidebar holds the session panels in three tabs.
+The sidebar has three tabs of session panels.
 
 | Tab | Panels |
 | --- | --- |
@@ -259,7 +257,7 @@ dead character buys no budget and does not count toward the party size. The
 band names the highest budget the fight reaches. The line hides when no living
 character remains, because there is no budget to rate against.
 
-The line is a hint. It blocks nothing, and it awards no experience points. A foe
+The line is a hint that blocks nothing and awards no experience points. A foe
 with no challenge rating is worth nothing in this sum, so the line says how many
 such foes it counted. The real fight is then harder than the total, though the
 crowd multiplier such foes raise can also push the rated foes' worth the other
@@ -279,7 +277,7 @@ way. Players never see the line.
 | Weapon, Armor | Gear from the library. None leaves the enemy unarmed or unarmored |
 | Map, Tile | Where the encounter stands |
 
-The six ability scores plus AC are the only stats an enemy carries. A
+The six ability scores plus AC are the only stats an enemy has. A
 legend always out-stats a level-matched mob. A defeated encounter is styled
 as defeated, not deleted.
 
@@ -300,11 +298,11 @@ while it lasts. In Build mode, the same chips set base values.
 | Area | Contents |
 | --- | --- |
 | Left column | The active combatant: initiative, AC, HP, conditions, concentration with its Drop control, death saves with their Roll and Stabilize controls, damage and heal steppers, and the loadout |
-| Center | The board: one card per combatant, with HP bar, AC, conditions, and a short loadout. A dying, stable, or dead character carries a chip for it |
+| Center | The board: one card per combatant, with HP bar, AC, conditions, and a short loadout. A dying, stable, or dead character shows a chip for it |
 | Right column | The combat log, with the dice tray docked beneath it |
 | Bottom | The turn ribbon: one chip per combatant in initiative order |
 
-The current turn is ringed in the ribbon. A foe chip carries a sword. A
+The current turn is ringed in the ribbon. A foe chip shows a sword. A
 defeated combatant is struck through. A combatant that cannot act, such as a
 stunned one, takes a dashed edge on both its ribbon chip and its board card,
 which marks it apart from a defeat: it is still in the fight, and only its
@@ -316,13 +314,13 @@ card shows armor and weapons only. A foe card shows no loadout at all
 except to the GM tab.
 
 Back to map leaves the screen without ending the fight. The Initiative card
-in the sidebar shows the round and holds Open combat. Only the GM can click
+in the sidebar shows the round and has Open combat. Only the GM can click
 End combat. A fight also ends when the party walks off the tile, or when
 the last creature staged there is deleted.
 
 ### What a turn can spend
 
-The Actions heading on the combat screen carries three pips: Action, Bonus
+The Actions heading on the combat screen shows three pips: Action, Bonus
 action, and Reaction. A pip is struck through once the turn spent it. A
 combatant with Extra Attack also shows how many swings are left.
 
@@ -337,7 +335,7 @@ combatant with Extra Attack also shows how many swings are left.
 
 The pips report and never block a button. A swing or a cast the turn cannot pay
 for is refused in its dialog instead, and the dialog offers an "Ignore action
-cost" box that goes ahead anyway. Use it for a rule the app does not carry.
+cost" box that goes ahead anyway. Use it for a rule the app does not model.
 
 A casting time longer than a turn, such as a ten-minute ritual, is refused in a
 fight for the same reason and offers the same box.
@@ -350,7 +348,7 @@ appears after the character takes its Attack action, and only while the bonus
 action is unspent. Both weapons are offered, and you pick the one the second
 hand swings.
 
-The off-hand swing rolls to hit like any other attack. Its damage carries no
+The off-hand swing rolls to hit like any other attack. Its damage gets no
 ability bonus, which is the 5e rule. A negative ability modifier still applies,
 so a weak character swings weakly with either hand. The combat log marks the
 swing "off-hand".
@@ -358,9 +356,9 @@ swing "off-hand".
 ### Reactions and opportunity attacks
 
 A reaction is taken between the turns of its owner, so its controls are on the
-board card, not in the action bar. A card carries a "Reaction" row when all of
+board card, not in the action bar. A card shows a "Reaction" row when all of
 this is true: the card is not the current turn, you can act for that combatant,
-the combatant can still act, and its reaction is unspent. The row holds one
+the combatant can still act, and its reaction is unspent. The row has one
 button per melee weapon for an opportunity attack, and one button per spell that
 casts as a reaction, such as Shield.
 
@@ -388,7 +386,7 @@ of the target for that swing, and three-quarters cover adds 5. The log prints
 both numbers, such as `vs AC 12 (10 half cover +2)`, so the reason for the change
 is on the record. Total cover is not offered: a target in total cover cannot be
 attacked, so no roll happens. Cover in 5e also adds the same bonus to Dexterity
-saving throws, and the cast dialog does not carry that. Fold it into the save
+saving throws, and the cast dialog does not apply that. Fold it into the save
 bonus you type for a foe, or into the roll mode for a character.
 
 A "Sneak Attack" box appears when the attacker has the feature and has not used
@@ -488,17 +486,17 @@ A Barbarian keeps its unarmored defense while carrying a shield. A Monk loses
 it, but the shield still adds its bonus. Either one loses the formula the
 moment it puts on body armor.
 
-Body armor carries two more 5e traits. Noisy armor gives the wearer
+Body armor has two more 5e traits. Noisy armor gives the wearer
 disadvantage on every Stealth check, and the Stealth row on the sheet is
 marked "dis" when it applies. Armor that needs a Strength score the wearer
 does not have costs 10 feet of walking speed, and the speed badge beside AC
 says which piece is to blame. The Strength checked includes what equipped
-items add, so a ring of Strength can carry a character over the line. Both
-traits come with the armor presets. Armor already in a saved campaign carries
+items add, so a ring of Strength can lift a character over the line. Both
+traits come with the armor presets. Armor already in a saved campaign has
 neither until you pick its preset again or set the fields by hand.
 
 Armor proficiency follows 5e as well. A character that wears armor its
-proficiency lists do not cover pays for it in four places. A shield counts
+proficiency lists do not cover pays for it in these places. A shield counts
 as its own entry in the armor list.
 
 - Every STR and DEX save or check from the sheet rolls at disadvantage. The
@@ -519,7 +517,7 @@ this penalty.
 Timed conditions tick down at the start of each round and expire on their
 own.
 
-Eleven condition names carry rules. The app applies them wherever the roll is
+Eleven condition names have rules. The app applies them wherever the roll is
 thrown: a weapon attack, a spell attack, a spell save, and a save or a check
 rolled from the character sheet.
 
@@ -537,13 +535,14 @@ rolled from the character sheet.
 | Stunned | Loses its turn. Attacks against it have advantage. Fails STR and DEX saves outright |
 | Unconscious | Loses its turn. Attacks against it have advantage, and a melee hit is a critical hit. Fails STR and DEX saves outright |
 
-Charmed, Deafened, and Grappled carry no rule. They need a relationship between
-two combatants, or they need movement, and the app has neither. Adjudicate them
-by hand. A chip that you type yourself matches a row when it spells one of the
-names above, and case does not matter. Any other chip carries no rule.
+Charmed, Deafened, and Grappled have no rule, because they need a relationship
+between two combatants or they need movement, and the app has neither, so
+adjudicate them by hand. A chip that you type yourself matches a row when it
+spells one of the names above, and case does not matter. Any other chip has no
+rule.
 
-Exhaustion is not in the list. It is a level from 0 to 6 rather than a chip, and
-the app stores it as its own number. Each level takes 2 off every d20 test and 5
+Exhaustion is not in the list, because it is a level from 0 to 6 rather than a
+chip, and the app stores it as its own number. Each level takes 2 off every d20 test and 5
 feet off the walking speed. The penalty reaches the saving throws and the skills
 on the sheet, the passive Perception score, an attack with a weapon or a spell,
 and a death save. The log names the level and the number it took off.
@@ -580,7 +579,7 @@ A combatant that loses its turn keeps its place in the initiative order. Next
 turn steps past it and says nothing. A save that fails outright never reaches
 the dice, and the log names the chip that failed it.
 
-NPCs carry condition chips as well. The chips sit on the NPC's row in the Story
+NPCs have condition chips as well. The chips sit on the NPC's row in the Story
 tab's NPC panel and on its card in the fight. The Build rail's NPC list is for
 authoring and shows none.
 
@@ -609,13 +608,13 @@ nobody says they are looking.
 A click on a save or a skill rolls it. The dice tray opens with the d20 and
 the whole bonus, and the session log breaks the number down: the ability
 modifier, the proficiency or expertise, and any condition chip that adds to
-the roll, such as Bless on a save or Guidance on a check. The roll carries no
+the roll, such as Bless on a save or Guidance on a check. The roll has no
 DC, so nothing judges it. Read the total against whatever you had in mind. The
 tray's advantage and disadvantage toggle applies, and the log names the die it
 threw away. A player on a bound tab rolls their own character. A spectator sees
 the numbers and cannot roll.
 
-The Conditions block holds the chips, the held spell with its Drop control,
+The Conditions block shows the chips, the held spell with its Drop control,
 and, while the character is at 0 HP, the death-save tracker with its Roll and
 Stabilize controls. The tracker shows the same pips and the same words as the
 combat screen.
@@ -629,7 +628,7 @@ hand grant with no maximum, for a subclass or homebrew feature that the
 class catalog does not model.
 
 The four fields below are not on the sheet. Each row of the Party roster
-carries two GM buttons: the pencil opens the HP and AC dialog, and the
+has two GM buttons: the pencil opens the HP and AC dialog, and the
 sparkle grants XP to that character alone. The sheet reports the results in
 its HP bar and its banner.
 
@@ -661,7 +660,7 @@ arrives full, and an already spent slot stays spent. An ASI level leaves a
 pending choice: +2 across one or two abilities, capped at 20, or a feat by
 name. Both choices are undoable from the same block.
 
-A class feature that carries choices, such as the Rogue's Expertise, prompts
+A class feature with choices, such as the Rogue's Expertise, prompts
 when its level is assigned. A choice with only one possible pick applies
 with no prompt. A cancel keeps the grant pending, and the Choose button in
 the Progression block offers it again.
@@ -671,9 +670,9 @@ plus the CON modifier. A long rest restores half the pool.
 
 ### Inventory and equipment
 
-The panel has two tabs. Equipment holds nine slots: Helmet, Armor, Gloves,
+The panel has two tabs. Equipment has nine slots: Helmet, Armor, Gloves,
 Greaves, Main hand, Off hand, Ranged, Ring 1, and Ring 2. Each picker lists
-only the items that its slot accepts. Inventory holds the item list, with a
+only the items that its slot accepts. Inventory has the item list, with a
 search box over names and descriptions, a type filter, and one collapsible
 heading per item type.
 
@@ -699,10 +698,10 @@ Only the GM adds an item. A player uses, gives away, and discards what the
 character carries. A consumable gets a use-one control down to its last
 charge. Anything else gets a drop-one control while it is stacked. The
 discard button takes the whole stack, and confirms first when the stack
-holds more than one item.
+has more than one item.
 
 An edit keeps the item equipped, because it is the same item. A type change
-that its slot cannot hold takes the item off. Removing the last of a stack
+that its slot cannot accept takes the item off. Removing the last of a stack
 unequips it.
 
 ## Time, story, and dice
@@ -739,11 +738,11 @@ Library mode has three tabs.
 | Tab | Contents |
 | --- | --- |
 | Equipment | Every weapon, armor, gear item, and consumable the item form offers, across five category subtabs |
-| Creatures | Stock enemies and townsfolk, across two subtabs. Foes holds the hostile templates, and People holds the rest. The hand-off icon opens the matching campaign dialog, pre-filled |
+| Creatures | Stock enemies and townsfolk, across two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, pre-filled |
 | Spells | The spell catalog the spellbook picks from, grouped by spell level |
 
 An edit to a built-in default stores an override. The row gains a
-"customized" badge and a revert button. A new entry carries a "custom"
+"customized" badge and a revert button. A new entry gets a "custom"
 badge and a delete button. A custom entry overrides a default when the
 names match. For equipment, the name and the type must both match.
 
@@ -803,6 +802,6 @@ target. A live region announces each turn.
 | Right button drag | Pan the map | Pan the map |
 | Wheel | Zoom | Zoom |
 
-The map grid carries X and Y labels along the top and left edges. The
+The map grid shows X and Y labels along the top and left edges. The
 labels pin to the edges of the viewport at partial opacity when the grid
 edge scrolls out of view.

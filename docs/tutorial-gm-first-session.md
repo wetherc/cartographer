@@ -25,7 +25,7 @@ characters already in it.
 
 The top row is the world map. Under it sit the regions and interiors:
 wilderness, the town of Briarwick, the port of Saltmere, a dungeon, and a
-keep. The tree is how the world is built. A node holds tiles, and a tile
+keep. The tree is how the world is built: a node contains tiles, and a tile
 can lead into another node.
 
 3. Click one of the child nodes. The map shows that node instead.
@@ -45,7 +45,7 @@ stays revealed for the rest of the campaign.
 
 ## 4. Zoom into a town
 
-1. Move the party onto a tile that carries a settlement marker.
+1. Move the party onto a tile with a settlement marker.
 2. The map changes to the map of that town. The party lands on the border
    tile it approached from.
 3. Walk one or two tiles inside the town.
@@ -53,8 +53,8 @@ stays revealed for the rest of the campaign.
    of the map above.
 5. Click that arrow. The party walks back out onto the tile it came from.
 
-You did not author either direction. The link on the tile carries the party
-both ways.
+You did not author either direction, because the link on the tile takes the
+party both ways.
 
 ## 5. Meet an enemy
 
@@ -86,8 +86,8 @@ ribbon along the bottom.
 7. Click **Next turn** and play the enemy turn the same way.
 8. Keep going until one side drops. Then click **End combat**.
 
-The defeated enemy stays in the panel, styled as defeated. The app keeps
-the record instead of deleting it.
+The defeated enemy stays in the panel, styled as defeated, because the app
+keeps the record instead of deleting it.
 
 ## 7. Look after a character
 

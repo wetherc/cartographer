@@ -2,12 +2,9 @@
 
 *Reference. Back to the [architecture overview](../architecture.md).*
 
-This codebase has no component framework. A "component" here is a plain
-function that builds DOM elements and returns a handle. The consistency comes
-from a small set of shared builders plus one CSS token file. This guide is
-the reference for both: what the shared builders are, what the contract of
-each one is, and which CSS class or custom property to use instead of a new
-one.
+This codebase has no component framework: a component here is a plain
+function that builds DOM elements and returns a handle, and the consistency
+comes from a small set of shared builders plus one CSS token file.
 
 Read this guide before you add anything to `src/ui/` or `styles/`. Almost
 every widget pattern that you need already exists. The existing widgets became
@@ -16,8 +13,8 @@ attributes.
 
 The rules behind these components (when to use a confirm dialog, how buttons
 are styled, what gets a toast) live in
-[Conventions](conventions.md#ui-and-style). This guide covers the API
-surface. Conventions covers the policy.
+[Conventions](conventions.md#ui-and-style). This guide covers the API, and
+Conventions covers the policy.
 
 `docs/gallery.html` is the visual half of this guide. It renders every
 builder named here from the real modules, beside the call that built it and
@@ -34,7 +31,7 @@ describes the builders that exist today. Where the two disagree, the places
 that have not caught up are listed under [Known
 gaps](#known-gaps).
 
-## Two layers
+## The layers
 
 ```
   src/app/*Wiring.js ......... mounts panels, owns callbacks and modals
@@ -73,7 +70,7 @@ builder and to any change to an existing one.
 | `mount<Name>(container, callbacks)` | a handle, usually `{ update }` | creates the root element and appends it to `container` |
 | `build<Name>(spec)` | detached DOM, sometimes with readers beside it | nothing; the caller appends and decides the lifetime |
 | `wire<Name>(element, options?)` | a handle over markup the caller already has | state and ARIA only. It builds no elements |
-| `open<Name>(...)` | a `Promise` | a surface that comes and goes: a dialog, a menu. It resolves when the surface closes |
+| `open<Name>(...)` | a `Promise` | an element that comes and goes: a dialog, a menu. It resolves when the element closes |
 | `noun(...)` | one element | a primitive with no lifecycle: `iconButton`, `chip`, `icon`, `textField` |
 
 A function that builds and mounts is a `mount`. A function that builds and
@@ -83,7 +80,7 @@ feature it was first written for.
 ### Two positionals, then one options object
 
 A builder takes at most two positional arguments, then one options object. A
-value earns a positional slot only when it is required, has no default, and
+value gets a positional slot only when it is required, has no default, and
 reads unambiguously in order at every call site: `iconButton(name,
 ariaLabel, onClick, opts)`, `chip(label, opts)`. Everything else is a named
 key in the object.
@@ -96,7 +93,7 @@ key in the object.
   another only by accident, not by design.
 - No second spelling of an existing option. A per-variant boolean
   (`{ danger: true }`) is not an alternative to `{ variant: 'danger' }`.
-- A `mount`'s second argument is named `callbacks` and holds functions. A
+- A `mount`'s second argument is named `callbacks` and contains functions. A
   panel that spells it `options`, takes a bare function, or takes four
   positionals is inconsistent with every other panel, and the caller has to
   read the source to mount it.
@@ -115,11 +112,11 @@ el('div', classNames(['chip', opts.className]))
   `element.className = opts.className` throws away its own contract.
 - A space-separated string is valid. `classList.add(opts.className)` throws
   on one, so combine through `classNames` instead.
-- No builder that returns an element leaves the option out. A missing
-  `className` is what pushes a caller into hand-rolling the element.
+- No builder that returns an element leaves the option out, because a
+  missing `className` pushes a caller into hand-rolling the element.
 
-`className` carries per-feature layout and one-off modifiers. It is not the
-way to reach a state the builder already knows about.
+`className` is for per-feature layout and one-off modifiers, not for a state
+the builder already knows about.
 
 ### Semantic options, not class strings
 
@@ -139,22 +136,22 @@ builders: `primary`, `danger`, `success`, and the neutral default when the
 option is omitted.
 
 A class contract that exists in CSS, as a block plus its modifiers, with no
-builder that applies it, is a missing builder. That holds however few call
+builder that applies it, is a missing builder. That applies however few call
 sites type the class today, because typing the class is the only option
 they have.
 
 ### What a test enforces
 
-Four of the rules on this page are checked by `tests/uiVocabulary.test.js`,
-which reads `src/` as text because the modules it covers build DOM and the
-runner has no document:
+These rules are checked by `tests/uiVocabulary.test.js`, which reads `src/`
+as text because the modules it covers build DOM and the runner has no
+document:
 
 - A class that a builder owns is never typed by hand anywhere else. Owners
   are listed in the test. Call the builder and pass `className` for your own
   modifier. `buildDisclosure` composing `section-label` onto its header is
   the one recorded exception.
-- A shared module names its own block and the utility layer, nothing else.
-  This is what stops a widget from learning one feature's vocabulary.
+- A shared module names its own block and the utility layer, nothing else,
+  which stops a widget from learning one feature's vocabulary.
 - `innerHTML` is only ever assigned `''`. Content is built with `el`.
 - `style.css` imports every sheet under `styles/`, and every import
   resolves.
@@ -186,7 +183,7 @@ These are settled, and recorded here so they are not reopened:
   rule covers the caller's spacing and layout around and between builder
   output, not the inside of a builder's own block.
 - **No CSS-in-JS, no framework, no build step.** Styling lives in CSS
-  files. A builder applies the right class. It does not carry declarations.
+  files. A builder applies the right class and has no declarations of its own.
 - **No component base class and no registry.** A component here is a
   function. There is nothing to register with and nothing to extend.
 
@@ -203,9 +200,9 @@ const container = mustGetElement('encounter-container');
 ```
 
 `mustGetElement` throws `Required element #x is missing from index.html`
-when the id is gone. This behavior is deliberate. Wiring runs at startup, so
-a markup rename fails at load time instead of leaving a panel silently
-unmounted, where no one notices until a GM clicks something.
+when the id is gone. Wiring runs at startup, so a markup rename fails at load
+time instead of leaving a panel silently unmounted, where no one notices
+until a GM clicks something.
 
 ## The panel contract
 
@@ -229,8 +226,8 @@ export function mountQuestPanel(container, callbacks) {
 }
 ```
 
-This is the pattern written by hand. Most list panels, including the real
-`mountQuestPanel`, get this pattern from `mountListPanel` instead (below), and
+That is the pattern written by hand, and most list panels, including the
+real `mountQuestPanel`, get it from `mountListPanel` instead (below) and
 never write this boilerplate.
 
 The `{ update }` handle is the `Updatable` interface (`src/types/app.ts`). It
@@ -242,10 +239,9 @@ draws.
 An `update()` call works without any special knowledge of the panel, because
 of how the panel is built:
 
-- **Panels hold no campaign data of their own.** Everything a panel draws
+- **Panels keep no campaign data of their own.** Everything a panel draws
   comes from a `get*` callback that it calls at render time (`getQuests()`,
-  `getRole()`). Because of this, `update()` always re-reads the current
-  state. A panel that cached its data needs its own way to mark the
+  `getRole()`), so `update()` always re-reads the current state. A panel that cached its data needs its own way to mark the
   cache stale. The single `update()` entry point exists to avoid this.
   Transient view state is different, and it does belong to
   the panel: which row is in edit mode, which section is expanded, which tab
@@ -270,12 +266,13 @@ By default, `render()` clears `innerHTML` and rebuilds. This is fine for the
 small lists that most panels show. The rebuild stays cheap because `update()`
 can do nothing: a panel built on `mountListPanel` compares the rows it is
 about to draw against the rows it last drew, and returns early when they are the same
-objects. This is why a party step can fire five panel refreshes without five
+objects, so a party step can fire five panel refreshes without five
 rebuilds.
 
-Three panels skip the rebuild in their own way. The travelogue compares
-anchor ids. The tile inspector builds once and re-points. The character
-sheet does the same behind a structure check (below). Copy this pattern only
+The travelogue, the tile inspector, and the character sheet skip the rebuild
+in their own ways: the travelogue compares anchor ids, the tile inspector
+builds once and re-points, and the character sheet does the same behind a
+structure check (below). Copy this pattern only
 when a panel is large or grows continuously. See
 [Conventions](conventions.md#growing-lists-render-incrementally).
 
@@ -288,8 +285,8 @@ spell-slot pip, the progression and spell sections, the condition chips)
 only to move the width of one bar. Every tick also commits, which fires the
 sibling panels too.
 
-Because of this, the sheet splits its work in two parts. `build()` creates
-the DOM once, and collects a list of small writers. Each writer pushes one
+The sheet therefore splits its work: `build()` creates the DOM once and
+collects a list of small writers. Each writer pushes one
 current value into an element that it captured. `render()` runs only those
 writers when it can.
 
@@ -314,9 +311,9 @@ The repoint path limits how a contributor can extend the sheet:
   section without adding it there, the display goes stale, and the compiler
   cannot catch the error.
 
-Comparing these fields by reference is sound, because the entity layer
+Comparing these fields by reference is correct, because the entity layer
 never mutates data in place. See
-[Conventions](conventions.md#tiles-are-frozen-once-a-node-holds-them).
+[Conventions](conventions.md#tiles-are-frozen-once-a-node-contains-them).
 
 ### Handles that are not `{ update }`
 
@@ -324,13 +321,13 @@ Not every mount returns `update`. The other handle kinds are:
 
 | Handle | Used by | Why |
 | --- | --- | --- |
-| `{ setCharacter }`, plus `getCharacter` on two of them | `CharacterSheet`, `InventoryPanel`, `SpellbookPanel` | these three are scoped to one selected character, which they hold and draw from. A sibling panel's edit is pushed in through `setCharacter` rather than read again through a getter |
+| `{ setCharacter }`, plus `getCharacter` on two of them | `CharacterSheet`, `InventoryPanel`, `SpellbookPanel` | these three are scoped to one selected character, which they keep and draw from. A sibling panel's edit is pushed in through `setCharacter` rather than read again through a getter |
 | a domain handle | `segSwitch` (`{ element, getValue, setValue, sync }`), `ThemeToggle`, `PalettePanel`, `TileInspector`, `Toast` (`{ show }`) | a control, not a list. There is nothing to redraw from state |
 | `build<X>Form(...)` returning DOM plus readers | `ItemForm`, `SpellForm`, `CreatureTemplateForm`, `CharacterProgress` | inline forms are built per edit and thrown away, so they are constructed, not mounted |
 | `Promise<result>` | `combatSetupModal`, `generateDialog`, `promptSpellDetail`, everything in `Modal.js` | a dialog is one question with one answer |
 | `{ element, get, set }` | `buildDamageEditor`, `buildEffectsEditor` (`ItemFormEditors.js`) | a composite sub-widget inside a form: it owns a working copy, hands over `element` to mount, `get` to read at submit, and `set` so a preset picker can overwrite it |
 
-To add a composite form widget, use that last contract. It is what lets
+To add a composite form widget, use that last contract, which lets
 `ItemForm` treat a damage-parts editor exactly like a text input.
 
 ## The list panel
@@ -396,15 +393,15 @@ actions: (quest) => [
 ],
 ```
 
-The `ctx` handed to `buildBody`, `actions`, and `buildExtras` carries `gm`
+The `ctx` handed to `buildBody`, `actions`, and `buildExtras` includes `gm`
 (the resolved gate), `render` for a custom control that must refresh the
-list, and `action(spec, entry)` to build a button with the same behavior.
-This last option is how a leading toggle, like the quest's complete button
-or the handout's eye, gets wired even though it sits inside the body rather
+list, and `action(spec, entry)` to build a button with the same behavior. A
+leading toggle, like the quest's complete button or the handout's eye, is
+wired through that last option even though it sits inside the body rather
 than in `actions`.
 
 `update()`'s early-out compares row objects by identity. This check is
-sound only because the entity layer never mutates data in place. A panel
+correct only because the entity layer never mutates data in place. A panel
 that draws something its rows do not describe passes `dependsOn`, a
 function returning one comparable value, which the guard compares with
 `Object.is` alongside the rows and the gate. The Active encounter tab uses
@@ -422,7 +419,7 @@ also discards what the user typed into a row's input on every refresh.
 
 `src/ui/buttons.js` gives three button builders, a segmented switch, an
 empty-state paragraph, the chip pair, a status badge, and the section label.
-A panel must not build a `<button>` element itself. A control that carries the
+A panel must not build a `<button>` element itself. A control that has the
 `btn` presentation is an `iconButton` or a `textButton`. A control that is a
 button for the keyboard but wears no button chrome is a `bareButton`, whatever
 class it goes on to take: a tab, a menu item, a tree row, a disclosure header,
@@ -485,32 +482,32 @@ first. See
 mode, role, and theme switches, and the dice tray's d20 mode. Each option is
 `{ value, label?, icon?, ariaLabel?, title? }`, so a choice can be text, an
 icon, or both. The selected button gets the active class and
-`aria-pressed` together. The caller appends `element` itself, which is what
-lets the dice tray put the switch inside a labelled row.
+`aria-pressed` together. The caller appends `element` itself, so the dice
+tray can put the switch inside a labelled row.
 
 `setValue` selects a choice and reports it through `onChange`, the same
-path that a click takes. Calling `setValue` right after mounting is how the
-mode switch applies the starting mode's body classes. `sync` repaints the
-buttons without reporting anything, for a caller whose value lives
-elsewhere and can change without going through the switch. This is the case
-for the dice tray's selection object.
+path that a click takes, and the mode switch calls it right after mounting
+to apply the starting mode's body classes. `sync` repaints the buttons
+without reporting anything, for a caller whose value lives elsewhere and can
+change without going through the switch, such as the dice tray's selection
+object.
 
 `emptyState(message)` is the one `<p class="empty-state">`. Every list panel's
 "nothing here yet" line goes through it. The class alone sets only the margin,
 the padding, and the italic style. The builder pairs it with `u-muted`, which
 supplies the muted color and the label size.
 
-`chip(label)` is a `<span class="chip">` holding the label in its own inner
+`chip(label)` is a `<span class="chip">` with the label in its own inner
 span, so a caller can append to the chip without disturbing the text. With
-`opts.onClick` it is a `<button class="btn-bare chip">` instead, which is what
-the stat-block chips use to open their editor. The tag follows from the option,
+`opts.onClick` it is a `<button class="btn-bare chip">` instead, which the
+stat-block chips use to open their editor. The tag follows from the option,
 so there is no way to build a chip that looks clickable and is not.
 `removableChip(label, onRemove)` adds the trailing x (`.chip__remove`) that
 calls `onRemove`. Pass `opts.removeLabel` when the visible label is not the
 thing being removed: the conditions bar shows "Poisoned (3)", but its
 button reads "Remove Poisoned". Status conditions, the effects a weapon
 inflicts, and tag-field pills all build through these. `opts.className`
-carries any per-feature modifier.
+takes any per-feature modifier.
 
 `badge(label)` is the read-only marker on a list row. `opts.variant` covers the
 three shared readings, `success`, `danger`, and `neutral`, which is how an
@@ -534,8 +531,8 @@ One function over a table of 24x24 stroke path data. Icons draw in
 sit in, and they theme themselves with no extra work. They are built with
 `createElementNS` from path strings, never `innerHTML`.
 
-Every icon is `aria-hidden="true"`. Icons here are decorative by
-definition. The enclosing control owns the accessible name. This is why
+Every icon is `aria-hidden="true"`, because icons here are decorative by
+definition and the enclosing control owns the accessible name, so
 `iconButton` requires a label.
 
 The 29 names available (`IconName` in `icons.js`):
@@ -561,14 +558,14 @@ than placing an inline SVG at the call site.
 factLine(label, value, { layout = 'stack', className }?) -> HTMLDivElement
 ```
 
-`src/ui/FactLine.js` draws a label with the value it names. Three places
-grew their own version of this before it existed, under three names and
-three class families: the active combatant's initiative, AC, and HP in
-`CombatScreen.js`, the casting meta of `SpellDetail.js`, and the lines of
-`LoadoutBlock.js`. They all build it from here now.
+`src/ui/FactLine.js` draws a label with the value it names. Before it
+existed, the active combatant's initiative, AC, and HP in `CombatScreen.js`,
+the casting meta of `SpellDetail.js`, and the lines of `LoadoutBlock.js` each
+had their own version under their own name and class family, and all of them
+build it from here now.
 
-The label is a `sectionLabel`, which is what keeps every line of this kind
-cased and sized alike. The value takes any `Child`, so a caller can pass a
+The label is a `sectionLabel`, which keeps every line of this kind cased and
+sized alike. The value takes any `Child`, so a caller can pass a
 built node where plain text will not do: the detailed loadout passes a row
 of slot chips.
 
@@ -585,15 +582,15 @@ bar draws a fraction as a filled track. A fact line draws text.
 deathSaveBlock(state, { name, canAct, onRoll, onStabilize }) -> HTMLElement | null
 ```
 
-`src/ui/DeathSaveBlock.js` draws the line a character at 0 HP carries: three
+`src/ui/DeathSaveBlock.js` draws the line a character at 0 HP shows: three
 success pips, three failure pips, and the Roll and Stabilize controls. A
 stable character reads "Stable at 0 HP" and a dead one "Dead", with no
 controls. The combat screen and the character sheet both call it, so neither
 can describe the same state differently.
 
-The function returns null when the character holds no tracker, which is the
+The function returns null when the character has no tracker, which is the
 usual case, so a caller appends whatever comes back and tests nothing itself.
-`canAct` is what gates the controls: on the combat screen it is `row.mayAct`,
+`canAct` gates the controls: on the combat screen it is `row.mayAct`,
 and on the sheet it is the play permission.
 
 The words and the pip counts come from `view/DeathSaveView.js`, which is pure
@@ -627,7 +624,7 @@ unit tested. This module is the DOM around them.
 ## Dialogs
 
 `src/ui/Modal.js` wraps the native `<dialog>` element and is the most-imported
-module in `src/ui/` (24 modules). Four entry points, each returning a promise:
+module in `src/ui/` (24 modules). Its entry points each return a promise:
 
 ```js
 promptModal(title, fields, options?) -> Promise<Record<string, string> | null>
@@ -636,7 +633,7 @@ confirmModal(message, options?)      -> Promise<boolean>
 confirmDelete(name, detail?)         -> Promise<boolean>
 ```
 
-All four share one lifecycle, and so does every other dialog in the app: capture
+All of them share one lifecycle, and so does every other dialog in the app: capture
 `document.activeElement` as the opener, build and append the dialog,
 `showModal()`, and on `close` remove the dialog and put focus back before
 resolving. Escape closes, because that is what `<dialog>` does natively. Nothing
@@ -673,7 +670,7 @@ decode is awaited). With `form: true`, the parts go inside a
 `<form method="dialog">`, which makes Enter submit, and makes a
 submit button's `value` become the return value.
 
-The four dialogs that live outside `Modal.js` are all built this way:
+The dialogs that live outside `Modal.js` are all built this way:
 `promptSpellDetail` (`SpellDetail.js`), `combatSetupModal`
 (`CombatSetup.js`), `generateDialog` (`GenerateDialog.js`), and the
 ability-score breakdown (`CharacterStatBadge.js`). Focus restoration and
@@ -706,13 +703,13 @@ A field is a `ModalField` record (`Modal.js`), and `type` picks the widget:
 
 Every field also takes `label`, `value`, `full`, `newRow`, `hidden`, and
 `disabled`. With `options.wide` the form lays fields two per row, `full: true`
-spans both columns, and `newRow: true` begins a row, which is what keeps a pair
+spans both columns, and `newRow: true` begins a row, which keeps a pair
 that belongs together (weapon and armor) on one row when an odd number of
 fields comes before it. Actions are Cancel then submit
 (`options.submitLabel`, default `'Create'`), which is the
-dismiss-left/primary-right ordering used on every form surface in the app.
+dismiss-left/primary-right ordering used on every form in the app.
 
-A dialog rebuilt by hand tends to lose two of the wrapper's behaviors:
+A dialog rebuilt by hand tends to lose these wrapper behaviors:
 
 - **The file field shows errors inline**, as a `<p class="modal__error"
   role="alert">` inside the dialog, not as a nested alert modal. It also
@@ -783,7 +780,7 @@ forms do this through `entities/ItemDraft.js` and `entities/SpellDraft.js`.
 Their tests live there too. See
 [Entities](entities.md#the-ui-layer-over-entities).
 
-### One spec, two surfaces
+### One spec for the dialog and the rail
 
 The creature template form builds no controls of its own. An entity
 the GM authors both in a dialog and in the rail describes its fields once as
@@ -798,13 +795,13 @@ buildSpecForm({ fields, assemble, submitLabel, onSubmit,
 The first field is the entity's name and becomes the wide name input. The rest
 lay out two per row, honoring `full` and `newRow` as the wide dialog does.
 `assemble` receives the same field-name-to-string record that `promptModal`
-resolves to, so both surfaces read a form back through the same functions, and
+resolves to, so both read a form back through the same functions, and
 `onChange` receives the same `ModalFormHandle`, so a rule such as "re-stamp the
 default stats when the tier changes" runs on both. The spec itself is in
 `app/creatureFields.js`; see [App wiring](app-wiring.md). The controls come from
 `formFields.js` and `ModalFields.js`, the builders the dialog uses. The file,
 tags, pill-grid, allocation, and button kinds have no inline renderer, and a
-spec that reaches for one throws rather than dropping the field.
+spec that uses one throws rather than dropping the field.
 
 ## Tabs and disclosures
 
@@ -857,7 +854,7 @@ fires on init. Because a redrawing panel rebuilds its DOM, the documented
 pattern is to pass the last known state in as `expanded`, and record
 changes from `onToggle`.
 
-`buildDisclosure` builds the header too: a `bareButton` carrying `disclosure`,
+`buildDisclosure` builds the header too: a `bareButton` with the `disclosure` class,
 the chevron, and, when a `label` is given, `section-label` for the shared
 group-heading treatment. A header made of icons instead, the dice tray's d20
 summary, leaves `label` out and names itself through `ariaLabel`. Anything
@@ -880,12 +877,12 @@ The stack is `role="status" aria-live="polite"`, which announces messages to a
 screen reader without stealing focus. Toasts self-dismiss and a click dismisses
 early.
 
-The two queue functions carry one confirmation across a page reload through
+The queue functions pass one confirmation across a page reload through
 `sessionStorage`, for actions (like adopting another tab's save) whose
 completion happens after the current document is gone.
 
 Toasts render over map art, so they use the `--overlay-*` tokens rather than
-the page surface colors, for the reason given under the tokens below.
+the page background colors, for the reason given under the tokens below.
 
 ## Tooltips
 
@@ -900,8 +897,8 @@ tipPlacement(anchorRect, tipSize, viewport, margin?)
 tooltip element on `document.body`, with listeners delegated to the document,
 so a widget gains a tooltip by marking an element with `setTip` and adds no
 listeners of its own. `setTip` writes a `data-tip` attribute and clears any
-native `title`, which keeps a control from carrying two hint boxes. The text
-may hold newlines, and the box keeps them.
+native `title`, which keeps a control from having two hint boxes. The text
+may contain newlines, and the box keeps them.
 
 The button builders route their `opts.title` through `setTip`, so most of the
 app is covered without a per-call change.
@@ -913,7 +910,7 @@ buttons flashes nothing. Keyboard focus shows the hint at once, since a Tab
 press is already a deliberate stop. A press, a scroll, or Escape hides it.
 The focus that a click gives its own control shows no hint, so a pressed
 button does not bring the box straight back. A control that is removed from
-the page while it holds focus fires no `focusout`, so a mutation observer
+the page while it has focus fires no `focusout`, so a mutation observer
 hides the hint when its anchor leaves the document.
 
 The element is a popover, which puts it in the browser's top layer. A hint on
@@ -934,7 +931,7 @@ clampToViewport(x, y, width, height, viewportWidth, viewportHeight, margin?)
 ```
 
 `src/ui/ContextMenu.js` is the right-click counterpart to `Modal.js`, for
-choices that do not need a dialog. It carries native-menu semantics: focus
+choices that do not need a dialog. It follows native-menu semantics: focus
 moves into the first item, arrows cycle, Escape or an outside click
 dismisses the menu without choosing an item, and choosing an item closes
 the menu before it runs the action. Only one menu is open at a time, so
@@ -952,8 +949,8 @@ lifecycle rather than being folded into it.
 
 `src/ui/imageField.js` backs the `file` field. It exists because a picked
 image lands in the campaign save, which is copied whole into every undo
-slot and lives in a localStorage origin of about 5 MB. Because of this,
-ingestion is bounded:
+slot and lives in a localStorage origin of about 5 MB, so ingestion is
+bounded:
 
 ```js
 readImageFile(file)                       -> Promise<string>  // a data: URL
@@ -1021,7 +1018,7 @@ defined in one `:root` block in `styles/base.css`:
 | Radius | `--radius-sm`, `--radius`, `--radius-lg`, `--radius-pill` |
 | Motion | `--transition-press` (40ms), `--transition-fast` (120ms), `--transition-base` (250ms) |
 
-The token system holds together only while both of these rules hold:
+The token system depends on these rules:
 
 - **Never write a fallback** (`var(--border, #ccc)`). A missing token
   renders as nothing, which is visible. A fallback hides the typo instead.
@@ -1033,7 +1030,7 @@ shadows follow the theme without restating a color.
 
 ### Theming
 
-There is one set of tokens, not two. Each color is a single
+There is one set of tokens. Each color is a single
 `light-dark(light, dark)` declaration resolved by the root `color-scheme`:
 
 - `:root { color-scheme: light dark }` follows the OS preference by
@@ -1048,13 +1045,13 @@ There is one set of tokens, not two. Each color is a single
   reload does not flash light.
 
 The one non-color themed value is `--select-chevron`, an inline SVG data
-URI. `light-dark()` resolves `<color>` only, so it cannot hold a `url()`.
+URI. `light-dark()` resolves `<color>` only, so it cannot contain a `url()`.
 Instead, the arrow is swapped in a `prefers-color-scheme` block plus the
-two `data-theme` blocks. This is why that token appears four times.
+two `data-theme` blocks, so that token appears four times.
 
-`--overlay-*` is the deliberate exception to all of this: pinned dark in both
-themes, because map controls, toasts, tooltips, and the onboarding scrim float
-over map art rather than the page surface.
+`--overlay-*` is the one exception: pinned dark in both themes, because map
+controls, toasts, tooltips, and the onboarding scrim float over map art
+rather than the page background.
 
 ### Shared classes
 
@@ -1080,15 +1077,15 @@ keep only layout (margins, grid placement) in the component's own class.
 | `.modal` and its parts | the native `<dialog>`, built through `Modal.js` |
 | `.sr-only` | visually hidden, still announced |
 
-Three more shared widgets live one sheet up, next to the widget they were
-built for, all three in `widgets.css`: `.disclosure` / `__chevron` /
+More shared widgets live one sheet up in `widgets.css`, next to the widget
+they were built for: `.disclosure` / `__chevron` /
 `--open`, `.stat-bar` / `__track` / `__fill` (plus `--mana` and
 `--critical`, the `--compact` pill variant, and the `data-band` fill
 colors), and `.fact-line` / `__label` / `__value` / `--row`.
 
 ### Utilities
 
-Alongside those shared classes, `base.css` carries a small utility layer,
+Alongside those shared classes, `base.css` has a small utility layer,
 for the treatments that kept getting restated in every feature sheet. A
 utility describes how something looks, not what it is, so an element
 keeps its own component class for the rest of its styling and for
@@ -1098,18 +1095,18 @@ anything that needs to select it:
 el('span', 'npc-panel__location u-muted', label);
 ```
 
-There are two groups. `.u-muted` is the small secondary text used by
-captions, hints, derived readouts, and row metadata: `font-size:
-var(--text-label)` plus `color: var(--text-muted)`, the pair that about
-thirty rules each spelled out separately.
+`.u-muted` is the small secondary text used by captions, hints, derived
+readouts, and row metadata: `font-size: var(--text-label)` plus
+`color: var(--text-muted)`, the pair that about thirty rules each spelled
+out separately.
 
-The rest cover the two flex layouts that almost every container here uses.
+The rest cover the flex layouts that almost every container here uses.
 `.u-row` is a horizontal bar with its items centered across it
-(`display: flex` plus `align-items: center`). `.u-col` is a vertical
-stack (`display: flex` plus `flex-direction: column`). `.u-wrap` adds
+(`display: flex` plus `align-items: center`), `.u-col` is a vertical stack
+(`display: flex` plus `flex-direction: column`), and `.u-wrap` adds
 `flex-wrap: wrap`. Neither row nor column sets a gap, since the spacing
-varies from one container to the next. Because of this, they pair with
-`.u-g1` through `.u-g4` for a gap on the `--space-*` scale:
+varies from one container to the next, so they pair with `.u-g1` through
+`.u-g4` for a gap on the `--space-*` scale:
 
 ```js
 el('div', 'encounter-panel__row u-col u-g1', head, chips);
@@ -1125,7 +1122,7 @@ beside a bare `.u-col`.
 The layer sits before the feature sheets in the cascade, so a component
 rule always wins where the two set the same property.
 `.tile-inspector__field--inline` relies on this: it takes its text back
-to the full `--text` color while the element still carries `u-muted` for
+to the full `--text` color while the element still has `u-muted` for
 the size. Every `.foo[hidden]` companion rule does the same, and each
 must out-specify the utility's `display: flex` for the hidden attribute
 to work.
@@ -1140,7 +1137,7 @@ a component rule empty, delete the rule and drop the class, rather than
 leaving a name in the markup with nothing behind it, unless another
 selector still names it, as `.character-sheet__features summary` does.
 
-Two details in `.field` look removable, but are not. Single-line
+The `.field` rule has details that look removable but are not. Single-line
 controls get an explicit `height`, because a bare `<select>` ignores
 `line-height` for its box metrics, and otherwise sits about 2.5 px
 shorter than a neighboring `<input>`. Selects opt into the
@@ -1175,7 +1172,7 @@ centralized:
   queries it at `50rem` to deal the sheet's sections into two columns.
   The card's width depends on whether the sidebar is open and on which
   rails the current mode shows, so a viewport breakpoint only guesses
-  at it. The query places four things by grid area: the head
+  at it. The query places these by grid area: the head
   (name and HP bar) and the level/AC/XP banner across from each other
   on the first row, and a section column under each on the second row.
   Below the query, `--sheet-measure` caps the one stacked column. Inside
@@ -1196,7 +1193,7 @@ centralized:
   `.role-locked`, and `.sidebar-collapsed` gate whole regions, so
   switching modes is a class flip rather than a redraw.
 
-A flex child that holds text needs `min-width: 0`, or long content
+A flex child that contains text needs `min-width: 0`, or long content
 refuses to shrink. That guard appears over twenty times across the
 sheets, and it is the usual explanation for a panel that overflows its
 column.
@@ -1218,7 +1215,7 @@ new panel must follow the habits that keep the page still:
   changing one default means changing both.
 - **Reserve space that a container will fill.** An empty container that
   later grows pushes everything under it down. For this reason,
-  `#breadcrumb-container` holds one crumb's height from the start, sized
+  `#breadcrumb-container` reserves one crumb's height from the start, sized
   from the same tokens that build the crumb, rather than a pixel
   constant.
 - **Reserve the scrollbar too.** `html` sets `scrollbar-gutter: stable`,
@@ -1227,7 +1224,7 @@ new panel must follow the habits that keep the page still:
 
 ## Accessibility in practice
 
-The shared layer already handles all of this, so a new surface does not
+The shared layer already handles all of this, so a new panel does not
 restate it:
 
 - **Focus** is one global `:focus-visible` outline in `--focus-ring`,
@@ -1249,7 +1246,7 @@ restate it:
 
 Nothing in the app covers these gaps:
 
-- No `prefers-reduced-motion` handling. The animated surfaces are the
+- No `prefers-reduced-motion` handling. The animated elements are the
   `.btn` transition, the disclosure chevron rotation, and the toast
   slide-in.
 - No touch-target floor. `.btn--icon` is 1.75rem (28 px) square, well
@@ -1306,7 +1303,7 @@ fixtures, without the rest of the app: `tests/ui-panels-preview.html`
 for the character sheet, inventory, and encounter panels, plus the map
 and tile previews beside it. Keep these pages current when a mount
 signature changes. A stale preview page can mask a real error the next
-time someone reaches for it.
+time someone opens it.
 
 See [`docs/testing.md`](../testing.md) for the full loop, including how
 to check both themes and the console.

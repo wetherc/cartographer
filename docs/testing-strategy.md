@@ -4,9 +4,9 @@
 [Testing a change](testing.md).*
 
 The suite here tests pure logic with `node --test` and checks everything
-else by eye in a browser. This document says why, and what that costs.
+else by eye in a browser.
 
-## One split decides everything
+## The pure and glue split
 
 Almost every module is either pure logic or DOM glue. A pure module takes
 its inputs as arguments, including the random number generator and the
@@ -18,13 +18,13 @@ Pure modules get unit tests. Each `tests/*.test.js` file pairs with one
 with an injected random number generator or plain fixture data. They build
 no DOM, no canvas, and no mock of a browser API.
 
-Glue modules get a browser instead. This is a deliberate trade. A mock of
-the DOM proves that the code called the functions the mock expected, not
-that a GM can see the panel or click the button. The map, the panels, and
-the dialogs are visual questions, so they get a visual answer.
+Glue modules get a browser instead, because a mock of the DOM proves only
+that the code called the functions the mock expected, not that a GM can see
+the panel or click the button. The map, the panels, and the dialogs are
+visual questions, so they get a visual answer.
 
-The split is also why the project has no test framework and no browser
-polyfill in its dependencies. Nothing in the suite needs one.
+The same split leaves the project with no test framework and no browser
+polyfill in its dependencies, because nothing in the suite needs one.
 
 ## Why the coverage total is low
 
@@ -38,7 +38,8 @@ whole tree. That test doubles as a load check. A renamed export or a
 circular import in a file with no test of its own fails there.
 
 Because every file has a row, the total sits far below the per-file numbers
-of the pure modules. That is the true figure. These rows pull it down:
+of the pure modules. That low total is accurate, and these rows pull it
+down:
 
 | What | Why it scores low |
 | --- | --- |
@@ -51,9 +52,9 @@ of the pure modules. That is the true figure. These rows pull it down:
 A low number on one of those files is expected. A low number anywhere else
 is work to do.
 
-The reverse case is easier to miss. A high line count on a module that is
-mostly `el(...)` calls means a test built the DOM. It does not mean a test
-looked at what the DOM built.
+A high line count on a module that is mostly `el(...)` calls is easier to
+misread, because it means a test built the DOM and not that a test looked
+at what the DOM built.
 
 The coverage script excludes `tests/**`. Without that flag, the runner
 reports the test files beside the modules they exercise. A test file runs
@@ -72,7 +73,7 @@ as thin wrappers over pure functions that already have tests, which are
 `serialize` and `deserialize`. The wrapper itself is checked in a real
 browser, where a save-then-load click sequence is an end-to-end check.
 
-The same rule holds inside `src/ui/`. The pure helpers that happen to live
+The same rule applies inside `src/ui/`. The pure helpers that happen to live
 there are tested where they sit: `fitDimensions` and `encodeAttempts` in
 `tests/imageField.test.js`, and `clampToViewport` in
 `tests/context-menu.test.js`. They are arithmetic, so the DOM around them
@@ -86,8 +87,8 @@ poor place to find a rendering fault. A tile that does not abut its
 neighbor is obvious in a grid of every tile, and hard to see on a map with
 a party on it.
 
-A preview page carries a maintenance cost. It goes stale when a mount
-signature changes, and a stale page can mask the very error it was built to
+A preview page costs maintenance, because it goes stale when a mount
+signature changes, and a stale page can mask the error it was built to
 show. Keep the pages current, or delete one when its module no longer
 exists.
 

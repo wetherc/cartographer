@@ -41,7 +41,7 @@ whole loop once, from a running app to a tested change.
           v
   src/app/*.js ............... wiring modules, one per feature area;
           |                    mount panels, register views and actions,
-          |                    hold per-feature UI state
+          |                    keep per-feature UI state
      _____|______________________________
     |            |            |          |
     v            v            v          v
@@ -55,11 +55,10 @@ whole loop once, from a running app to a tested change.
                                 file export/import, undo history
 ```
 
-The diagram shows the direction of the arrows. UI widgets and wiring modules
-call *down* into the pure modules (`map/`, `entities/`, `storage/`, `dice/`,
-`party/`, `library/`). The pure modules never import from `ui/` or `app/`. The
-pure modules never touch the DOM. This rule keeps most of the codebase
-testable with `node --test` alone. See
+UI widgets and wiring modules call *down* into the pure modules (`map/`,
+`entities/`, `storage/`, `dice/`, `party/`, `library/`). The pure modules
+never import from `ui/` or `app/` and never touch the DOM, which keeps most
+of the codebase testable with `node --test` alone. See
 [Conventions](architecture/conventions.md) for the pattern in detail.
 
 ## Directory map
@@ -94,7 +93,7 @@ last. This states the cascade order in exactly one place.
 
 ## Pure logic and DOM glue
 
-Almost every module here is one of two kinds:
+Almost every module here is either pure logic or thin DOM glue:
 
 1. **Pure logic** takes its inputs as arguments, including side effects such
    as RNG or the current time, and returns new values. It never changes what
@@ -106,21 +105,19 @@ Almost every module here is one of two kinds:
    widgets in `ui/`, the canvas event handlers, and the wiring modules in
    `app/`.
 
-Unit tests cover pure logic. DOM glue is checked in the browser instead
+Unit tests cover pure logic, and DOM glue is checked in the browser instead
 (see `docs/testing.md`). When you add a feature, decide which part is a pure
-function and which part is glue. Then split the code at that point. Both
-halves stay simpler this way. Anything you can construct without the DOM
-belongs in a pure module.
+function and which part is glue, then split the code at that point so that
+both halves stay simple. Anything you can construct without the DOM belongs
+in a pure module.
 
-The example world's maps live in `campaign/ExampleWorld.js`. Its populace
-lives in `campaign/ExampleContent.js`. Neither lives in the wiring module that
-loads them.
+The example world's maps live in `campaign/ExampleWorld.js` and its populace
+in `campaign/ExampleContent.js`, not in the wiring module that loads them.
 
-The pure modules share one more pattern. Functions take a value and return a
-new value instead of changing the value in place. `applyDamage(encounter, n)`
-returns a new encounter. `setTile(node, tile)` returns a new node. Several
-caches depend on this pattern. Once code hands out an object, no code changes
-that object in place. As a result, a cache keyed on the object itself never
-goes stale. The [Conventions](architecture/conventions.md) guide covers these
-caches and explains why the code enforces immutability instead of assuming
-it.
+Pure functions take a value and return a new value instead of changing the
+value in place: `applyDamage(encounter, n)` returns a new encounter, and
+`setTile(node, tile)` returns a new node. Several caches depend on this,
+because once code hands out an object no code changes that object in place,
+so a cache keyed on the object itself never goes stale. The
+[Conventions](architecture/conventions.md) guide covers these caches and
+explains why the code enforces immutability instead of assuming it.

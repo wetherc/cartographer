@@ -10,25 +10,23 @@ no header button for combat mode.
 
 The app enters combat mode when a fight starts. The app leaves combat mode
 when the fight ends, whatever way it ends. The ribbon's Back to map control
-and the sidebar's Initiative card carry a tab back and forth during a fight.
+and the sidebar's Initiative card move a tab back and forth during a fight.
 If no fight is running, a request for combat mode lands on Play instead.
 `sessionControls.js` guards this rule, so a stale `setMode` call can never
 show an empty screen.
 
-Combat mode works for both roles: the GM and a player. Build mode and Library
-mode are authoring modes. When a tab switches to the Player role, it leaves
-Build mode and Library mode. The same guard in `sessionControls.js` keeps a
-player on the combat screen instead. A player takes their own character's
-turn there. Moving a player back to the map takes the fight away from them.
-The header's mode switch is hidden on a player tab.
-Because of this, a player uses the ribbon's Back to map control to reach the
-map instead.
+Combat mode works for the GM and for a player. A tab that switches to the
+Player role leaves Build mode and Library mode, which are authoring modes,
+but the same guard in `sessionControls.js` keeps a player on the combat
+screen, where they take their own character's turn, because moving a player
+back to the map would take the fight away from them. The header's mode
+switch is hidden on a player tab, so a player reaches the map through the
+ribbon's Back to map control instead.
 
-This guide covers who owns what during a fight and how the screen stays
-current. The screen does not change the 5e resolution itself: attack rolls,
-casts, and damage application.
-[The wiring layer](app-wiring.md#encounterwiringjs-plus-encounterformjs-weaponattackjs-spellcastjs-combatantsjs)
-and [entities](entities.md) document that resolution.
+The screen does not change the 5e resolution itself (attack rolls, casts,
+and damage application), which
+[the wiring layer](app-wiring.md#encounterwiringjs-plus-encounterformjs-weaponattackjs-spellcastjs-combatantsjs)
+and [entities](entities.md) document.
 
 ## The pieces
 
@@ -36,7 +34,7 @@ and [entities](entities.md) document that resolution.
 src/combat/ActionBudget.js ... pure: what one combatant already spent on the
                                current turn, and what a turn start gives back
 src/combat/CombatView.js ..... pure: projects a CombatState into rows a
-                               surface can draw (side, HP, AC, defeated,
+                               panel can draw (side, HP, AC, defeated,
                                who can act), plus the fight's outcome
 src/combat/Loadout.js ........ pure: what a combatant is wearing, swinging,
                                and holding in slots, and how much of that a
@@ -68,7 +66,7 @@ src/ui/LoadoutBlock.js ....... a loadout as labelled lines, shared by the
                                cards and the active column
 src/ui/CombatActionBar.js .... the active combatant's weapons and spells as
                                buttons, grouped by kind and spell level
-src/app/combatWiring.js ...... mounts the screen, holds its transient UI
+src/app/combatWiring.js ...... mounts the screen, keeps its transient UI
                                state, routes everything else to actions
 src/app/encounterWiring.js ... still the only writer of state.combat; the
                                turn flow lives here as registered actions
@@ -77,21 +75,21 @@ src/ui/InitiativePanel.js .... the sidebar card: one status line plus the
 styles/combat.css ............ the mode's layout and the screen's styles
 ```
 
-## One writer, two surfaces
+## One writer
 
-`encounterWiring.js` owned the running fight before the screen existed. It
-still owns the fight today. The fight lives only in `state.combat`. Every
-read goes through a `current()` accessor. Every write goes through
-`setCombat`. Both accessors are local to that module. In the past, the
-module also kept a closure copy beside the state field. A cross-tab
-rehydrate did not reach that copy: the rehydrate writes `state.combat`, so
-a follower tab whose fight had ended elsewhere kept drawing the old order.
-One home for the value removes this whole class of drift.
+`encounterWiring.js` owned the running fight before the screen existed and
+still owns it. The fight lives only in `state.combat`, every read goes
+through a `current()` accessor, every write goes through `setCombat`, and
+both accessors are local to that module. The module once kept a closure copy
+beside the state field, which a cross-tab rehydrate did not reach, because
+the rehydrate writes `state.combat`, so a follower tab whose fight had ended
+elsewhere kept drawing the old order. One home for the value removes that
+drift.
 
 Turn advance and combat end are registered on `app.actions` as
-`advanceCombatTurn` and `endCombat`. Because of this, the screen's Next turn
-and End combat buttons run the exact code the fight has always run. This
-includes round-wrap condition ticks and concentration sweeps. The advance
+`advanceCombatTurn` and `endCombat`, so the screen's Next turn and End
+combat buttons run the exact code the fight has always run, including
+round-wrap condition ticks and concentration sweeps. The advance
 step skips combatants who are down and those whose chips cost them the turn.
 `advanceTurn` takes a predicate and steps the pointer past them to the next
 combatant that can act. `CombatView.skipsTurn` is that predicate, and it covers
@@ -99,16 +97,15 @@ the downed, the stunned, and a participant id that no longer resolves. A
 defeated goblin's turn never comes up, but its chip stays in the ribbon,
 struck through. A stunned one keeps its place too, marked with a dashed edge
 rather than a strike, because it is still in the fight. If every participant is
-skipped, the pointer walks one full
-cycle and stops where it started. This keeps the round counter and timed
-effects moving until the GM closes the fight. `removeCombatant` follows the
-same pattern: anything that changes the fight goes through the module that
-holds it.
+skipped, the pointer walks one full cycle and stops where it started, which
+keeps the round counter and timed effects moving until the GM closes the
+fight. `removeCombatant` follows the same pattern: anything that changes the
+fight goes through the module that owns it.
 
-`combatWiring.js` owns per-tab UI state that never persists. This includes
-`inspectedId`: which combatant the left column is inspecting, picked by the
-ribbon chips, with null meaning whoever's turn it is. It also includes
-`selectedTargetId`: which board card is held as the target. The app never
+`combatWiring.js` owns per-tab UI state that never persists: `inspectedId`,
+which combatant the left column is inspecting (picked by the ribbon chips,
+with null meaning whoever's turn it is), and `selectedTargetId`, which board
+card is picked as the target. The app never
 validates the inspection. Inspecting a defeated combatant is legitimate, and
 an id that stops resolving falls back to whoever's turn it is. The app
 releases the target on the refresh that shows it defeated, out of the order,
@@ -117,11 +114,11 @@ ring, even after the attack dialog stops honoring the pick.
 
 ## The action budget
 
-A turn in 5e holds one action, one bonus action, and one reaction.
+A turn in 5e has one action, one bonus action, and one reaction.
 `src/combat/ActionBudget.js` is the pure model of what a combatant already
 spent. The budget lives on the participant, in a `used` field, so it saves and
 resumes with the fight. It records what is gone, not what is left. As a result,
-a participant from an older save carries no `used` field, and `budgetOf` reads
+a participant from an older save has no `used` field, and `budgetOf` reads
 that absence as a whole turn.
 
 `attacksLeft` is the one counter in the budget. Extra Attack buys two swings
@@ -144,9 +141,9 @@ own swing can spend them again on an opportunity attack. `refresh` and
 identity of the order array, and with it the save diff and the combatant index
 caches.
 
-`canSpend` is a gate on the buttons and not a refusal. The rules hold more
-exceptions than this model carries. Every path that spends a cost also gives
-the GM a way past the gate.
+`canSpend` is a gate on the buttons and not a refusal, because the rules have
+more exceptions than this model covers, so every path that spends a cost also
+gives the GM a way past the gate.
 
 Movement has no entry in the budget. Nothing in the app moves a token by feet,
 so `Movement.walkSpeed` stays informational.
@@ -157,7 +154,7 @@ so `Movement.walkSpeed` stays informational.
 encounterWiring registers it, so `state.combat` keeps one writer. The cost is
 'action', 'bonus', 'reaction', 'attack' for a weapon swing, or 'sneak' for the
 once-per-turn Sneak Attack flag, which costs no part of the turn. The return value
-is false when the budget no longer holds the cost. With no fight running the
+is false when the budget no longer has the cost. With no fight running the
 action reports success and writes nothing, which is what a cast from the
 character sheet needs.
 
@@ -169,8 +166,8 @@ A cast spends what its casting time names. `SpellTiming.castingCost` turns the
 structured casting time into a cost, and reads a ten-minute or a `special`
 casting time as null: no part of a turn pays for it. `castPlan` puts the cost
 and a blocked flag on the plan, and `resolveCast` spends the cost before the
-first roll. Two things block a cast: a turn that already spent that part of
-itself, and a casting time longer than a turn.
+first roll. A cast is blocked by a turn that already spent that part of
+itself, or by a casting time longer than a turn.
 
 Both dialogs offer the way past. The attack dialog shows an "Ignore action cost"
 box on a turn with no swing left. The cast dialog shows one for a blocked cast,
@@ -179,18 +176,18 @@ opt-out spends nothing, because there is nothing left to take.
 
 The action bar draws the pips: one per cost, struck through once spent, plus the
 swing count when more than one swing is left. The pips report and never gate.
-`CombatantRow` carries the `used` budget and `attacksLeft`, so the screen reads
+`CombatantRow` includes the `used` budget and `attacksLeft`, so the screen reads
 them from the same row it draws everything else from.
 
 ### Two-weapon fighting
 
 `src/combat/TwoWeapon.js` is the pure half. `isLightMelee` reads the kind and
 the `light` property of one weapon. `offhandWeapons` gives the light melee
-weapons of a list, and gives none unless the list holds two of them.
-`canOffhand` adds the two budget conditions: the Attack action is already
+weapons of a list, and gives none unless the list has two of them.
+`canOffhand` adds the budget conditions: the Attack action is already
 taken, and the bonus action is still free. The test reads the `attacked` mark
 rather than the `action` flag, so an action spent on a cast does not unlock
-the second hand. The taken attack is what makes the off-hand swing the second
+the second hand, because the taken attack makes the off-hand swing the second
 attack of the rule.
 
 Which hand holds which weapon is not modeled. Both light melee weapons are
@@ -203,7 +200,7 @@ spends the bonus action instead of an attack and takes `offhandDamageModifier`
 for its damage. That function drops a positive ability modifier and keeps a
 negative one: the rule takes the bonus away, and a penalty is not a bonus.
 
-`weaponAttack` holds one table of the three swings a combatant can take: the
+`weaponAttack` has one table of the three swings a combatant can take: the
 main-hand one, the off-hand one, and the opportunity attack. Each row states
 what the swing spends, what the dialog is titled, what its opt-out box says,
 what the log adds to the attack line, and what the toast says when the turn
@@ -222,8 +219,8 @@ track, such as a creature leaving the reach of another. The GM sees the trigger
 at the table and presses the control.
 
 The controls sit under the board card of the combatant that reacts, which is not
-the combatant taking the turn. A board card is one button, and a button holds no
-button, so `combatantCard` returns the card and the controls wrapped in one
+the combatant taking the turn. A board card is one button, and a button cannot
+contain a button, so `combatantCard` returns the card and the controls wrapped in one
 `.combatant-slot` element. The card draws the row it is given.
 `CombatScreen.reactionFor` decides who gets one: not the active turn, a viewer
 who can act for the combatant, a combatant still able to act, an unspent
@@ -244,7 +241,7 @@ Both of these are GM calls in the pre-roll dialog. The app tracks no distance
 between tokens and no line of sight, so no rule here can read a wall, a barrel,
 or where the rogue stands. The GM sees the table and answers the dialog.
 
-`src/combat/Cover.js` holds the 5e table: half cover adds 2 to the AC of the
+`src/combat/Cover.js` has the 5e table: half cover adds 2 to the AC of the
 target, and three-quarters cover adds 5. `coverBonus` reads an answer it does
 not know as no cover. `coverNote` gives the text the log prints. Total cover has
 no entry, because a target in total cover cannot be attacked at all.
@@ -256,7 +253,7 @@ and to the miss toast. The log prints the raised AC and the plain one together,
 such as `vs AC 12 (10 half cover +2)`.
 
 Sneak Attack is a checkbox. It appears when `Features.sneakAttackDice` gives the
-attacker dice and the turn still holds the `sneak` flag. The label states the
+attacker dice and the turn still has the `sneak` flag. The label states the
 count, so the GM sees what the box is worth. The count comes from the level in
 the class that granted the feature, not from the level of the character.
 
@@ -265,27 +262,26 @@ d6, they take the damage type of the weapon, and a critical hit doubles them
 like every other damage die. The flag is spent at the damage step and not
 beside the swing, because Sneak Attack applies only on a hit. A miss leaves the
 flag for the next attack of the turn. The flag comes back at every turn
-boundary, as the budget section above says, so an opportunity attack can carry
+boundary, as the budget section above says, so an opportunity attack can use
 the dice on somebody else's turn.
 
-Whether the rogue earned the dice is not modeled. The 5e condition is advantage
+Whether the rogue qualifies for the dice is not modeled. The 5e condition is advantage
 on the attack or an ally next to the target, and the second half needs the map
 distance that nothing here has. The box states the GM's answer to that question.
 
-## The view is derived, not stored
+## A derived view
 
 `buildCombatView(combat, resolve, viewer)` in `src/combat/CombatView.js` is a
 pure projection. It returns the round, the turn index, and one row per
-participant. Each row carries a name, side, initiative, HP, AC, conditions, a
+participant. Each row has a name, side, initiative, HP, AC, conditions, a
 defeated flag, an incapacitated flag for a combatant whose chips cost it the
 turn, whether this viewer can act for it, and what the turn has spent. The
-wiring layer
-injects the resolver (`findCombatant` from `combatants.js`), because only the
-wiring layer sees every collection where an id can live. The order itself
-stores nothing on a row. Because of this, a rename, a disposition flip, or
+wiring layer injects the resolver (`findCombatant` from `combatants.js`),
+because only the wiring layer sees every collection where an id can live. The
+order itself stores nothing on a row, so a rename, a disposition flip, or
 damage during a fight shows up on the next render. The screen and the old
 panel derivations (`sideOf`, `isDowned`, `mayActOn`) both read from this one
-module. The unit tests also live in this module. The DOM on top of it is
+module, which also has the unit tests, while the DOM on top of it is
 inspected visually instead.
 
 `mayAct` is the one field that depends on the viewer. The GM can act for
@@ -299,31 +295,31 @@ player's tab, this button reads "End my turn" instead of "Next turn".
 `fightOutcome(view)` is the other derivation in the module. It returns
 `victory` once every foe row is defeated. It returns `defeat` once every
 counted party row is defeated. It returns null while both sides still have
-someone standing. A side with nobody on it settles nothing. Because of this,
-an order that the GM built with no foes in it reads as undecided. A mutual
+someone standing. A side with nobody on it settles nothing, so an order that
+the GM built with no foes in it reads as undecided. A mutual
 wipe reads as a defeat: what happens to the party outweighs what happens to
 the monsters.
 
 A creature row takes its side from its disposition. A hostile creature is a
 foe, and a friendly or neutral one stands with the party. Only characters
-and hostile creatures carry the row's `counted` flag and settle the outcome.
+and hostile creatures have the row's `counted` flag and settle the outcome.
 A friendly or neutral creature is a bystander: its fall settles nothing, and
-its standing does not hold off the defeat of a fallen party. The side does
-not shield a creature: a hostile action's target list carries every other
+its standing does not prevent the defeat of a fallen party. The side does
+not shield a creature: a hostile action's target list includes every other
 creature in the fight, whatever its side, so the party can turn on a
 bystander mid-fight.
 
 ### Who can see what
 
-`src/combat/Loadout.js` holds the second viewer rule. `loadoutAccess(found,
+`src/combat/Loadout.js` defines the second viewer rule. `loadoutAccess(found,
 viewer, id)` returns `full`, `public`, or `none`. The GM sees everything. A
 player sees their own character in full. For another party member, a player
 sees only armor and weapons. A player sees nothing of a foe. Armor and a
 drawn weapon are visible across the table. A caster's prepared list and
 remaining slots are that player's own business. A foe's sheet is the GM's to
 reveal. `buildLoadout` takes the access level and never assembles what the
-viewer cannot see. Because of this, no surface downstream can leak that data
-by drawing a field it was handed.
+viewer cannot see, so nothing downstream can leak that data by drawing a
+field it was handed.
 
 ## The layout
 
@@ -337,7 +333,7 @@ also shows its death-save tracker: three success pips, three failure pips, and
 Roll and Stabilize controls. A stable character reads "Stable at 0 HP" and a
 dead one "Dead", with no controls. The block comes from
 `ui/DeathSaveBlock.js`, which the character sheet also uses, so the two
-surfaces cannot describe the same state differently. The HP value is
+cannot describe the same state differently. The HP value is
 exact where the viewer can act for the combatant: the GM anywhere, a player
 only on their own character. Otherwise the column shows a coarse band instead
 of the exact HP. The GM also gets a damage and heal amount field with a
@@ -352,21 +348,20 @@ the sidebar strip used to read. The buttons are grouped under an Actions
 heading: weapons first, then spells by spell level under the spellbook's own
 headings. Without this grouping, a caster with a dozen spells shows one
 undifferentiated run of buttons. The bar belongs to the turn, not the
-inspection. Because of this, inspecting a foe never offers its weapons to a
-player.
+inspection, so inspecting a foe never offers its weapons to a player.
 
 The **board** shows the two sides as labelled groups of cards
-(`CombatantCard.js`). Each card carries the same loadout in a compact form.
+(`CombatantCard.js`). Each card shows the same loadout in a compact form, and
 `LoadoutBlock.js` draws both forms, so a card and the column can never
 describe one combatant differently. The host trims each card to what that
 viewer can see. Each card is a real `<button>` that acts as the target
-picker. Clicking a card holds it (`aria-pressed`). Clicking it again releases
-it. The held id pre-fills the attack dialog's defender field and the cast
-dialog's target field, whichever picker the spell built: single select,
-multiselect, or the projectile allocation grid (`prefillTarget` in
-`spellTargets.js`). The attack dialog's six situational fields sit behind a
-collapsed disclosure (`promptModal`'s `advanced` field flag). Because of
-this, the common flow is: click the card, click the weapon, press Enter.
+picker: clicking a card selects it (`aria-pressed`), clicking it again
+releases it, and the selected id pre-fills the attack dialog's defender field
+and the cast dialog's target field, whichever picker the spell built (single
+select, multiselect, or the projectile allocation grid, through
+`prefillTarget` in `spellTargets.js`). The attack dialog's six situational
+fields sit behind a collapsed disclosure (`promptModal`'s `advanced` field
+flag), so the common flow is: click the card, click the weapon, press Enter.
 
 The **log column** shows the travelogue filtered to `combat` and `roll`
 entries. It shows only entries logged since this fight's setup opened
@@ -375,7 +370,7 @@ entries. It shows only entries logged since this fight's setup opened
 This time bound keeps the column from replaying every battle that the
 campaign ever logged. The "Initiative rolled" line lands inside this bound,
 because the app takes the stamp when the setup dialog opens, not when Start
-is pressed. Under the log sits the dice tray. The app has one tray. The
+is pressed. Under the log sits the dice tray. The app has one tray, and the
 screen borrows the whole `#dice-tray-container` card by `appendChild` while
 the mode is active, and returns it below the map on exit. Moving the element
 keeps `diceWiring.js`'s handle valid, because the app mounts the tray once
@@ -417,11 +412,11 @@ roller is not trained for, and reads the exhaustion penalty. `rollInitiative`
 throws the d20s itself, keeps the higher or the lower one, and adds the DEX
 modifier that the roster already stamped on the participant.
 
-The setup dialog fills a whole column at once, which is why this roll does not
-go through the dice tray: the tray shows one roll and this press makes six. The
+The setup dialog fills a whole column at once, so this roll does not go
+through the dice tray, which shows one roll where this press makes six. The
 roll returns a note instead, which names the dropped die and every reason, and
-the travelogue line carries it. `encounterWiring.js` resolves the participant id
-to its entity with `findCombatant`, and an id that nothing holds any more rolls
+the travelogue line includes it. `encounterWiring.js` resolves the participant
+id to its entity with `findCombatant`, and an id that no longer resolves rolls
 plain rather than failing.
 
 ## Ending a fight
@@ -441,8 +436,8 @@ adopted from another tab. The auto-drop reads `creaturesOnTile`, which
 keeps defeated creatures and bystanders in the count. A combatant at 0 HP
 is a turn in the fight, not the end of it, and a fight the party picked
 with a neutral creature has no hostiles in it at all. Walking off the tile
-still clears the fight. So does deleting the last thing to fight. A kill
-does not clear the fight.
+still clears the fight, and so does deleting the last thing to fight, but a
+kill does not.
 
 The screen also grows a banner under the ribbon once `fightOutcome` settles.
 The banner states that the party is victorious or defeated, with a line for
@@ -451,10 +446,10 @@ takes the primary emphasis away from the turn-end button. Turns still
 advance, so a round of healing is available before the GM leaves the fight.
 
 The banner is a persistent `role="status"` node. The app does not rebuild
-this node on every render. It unhides the node before it writes the node's
-text. A status region hidden at the moment of the change is not read out by
-a screen reader. A rebuilt node re-announces the outcome on every HP
-edit.
+this node on every render, because a rebuilt node would re-announce the
+outcome on every HP edit, and it unhides the node before it writes the text,
+because a status region hidden at the moment of the change is not read out
+by a screen reader.
 
 ## How the screen stays current
 
@@ -463,10 +458,10 @@ edit.
 run. Four different paths reach this view. The registered `update` function
 skips the rebuild while the tab sits on another mode with the fight still
 running, because nothing on the screen is visible then. The switch back into
-combat mode is itself one of the refresh paths. Because of this, the first
-visible frame is always freshly drawn. A fight that has ended still falls
-through to the rebuild. This rebuild empties the screen instead of leaving
-the last fight's DOM behind.
+combat mode is itself one of the refresh paths, so the first visible frame
+is always freshly drawn. A fight that has ended still falls through to the
+rebuild, which empties the screen instead of leaving the last fight's DOM
+behind.
 
 The rebuild is deferred and coalesced. `update` asks
 `src/combat/RefreshScheduler.js` for a refresh. The first request in a
@@ -483,16 +478,16 @@ The log column does not rebuild at all. `CombatLog.js` keeps the id of the
 newest row it drew. On each update it asks `entriesAfter` for the entries
 logged since then, and prepends only those. It rebuilds from scratch only
 when that id has left the log, which means the log was cleared or a new
-fight began. `TravelogPanel.js` renders the same way. This matters for more
-than cost: the list is a `role="log"` live region, and a screen reader
-speaks only the rows that are added. A list rebuilt whole would either
-re-read every row or read nothing.
+fight began. `TravelogPanel.js` renders the same way. The list is also a
+`role="log"` live region, and a screen reader speaks only the rows that are
+added, so a list rebuilt whole would either re-read every row or read
+nothing.
 
 - **The initiative-panel wrapper.** `encounterWiring.js` wraps
   `views.initiativePanel.update()` and refreshes the combat screen inside
-  that wrapper. Because of this, every call site that the sidebar card
-  already had (party moves, role switches, the rehydrate loop,
-  `commitCreatures`) reaches the screen without extra code.
+  that wrapper, so every call site that the sidebar card already had (party
+  moves, role switches, the rehydrate loop, `commitCreatures`) reaches the
+  screen without extra code.
 - **Combatant writes.** The character `store` that `findCombatant` uses
   updates the screen directly. The creature branch reaches the screen
   through `commitCreatures`.
@@ -500,18 +495,18 @@ re-read every row or read nothing.
   changes no combatant, such as a missed attack or a plain tray roll, never
   reaches the log column.
 - **Mode changes.** `sessionControls.js` updates the screen on every mode
-  switch. This keeps the dice tray in the correct place. The registered
-  `update` function is a wrapper that first syncs the tray's dock against
-  `state.mode`. Because of this, the tray moves on entry and exit however
-  they happen: auto-enter, auto-exit, the header's Play button, the
-  sidebar's Open combat control, or a reload that resumes a fight.
+  switch, which keeps the dice tray in the correct place, because the
+  registered `update` function is a wrapper that first syncs the tray's dock
+  against `state.mode`, so the tray moves on entry and exit however they
+  happen: auto-enter, auto-exit, the header's Play button, the sidebar's
+  Open combat control, or a reload that resumes a fight.
 
 A reload with a fight running re-enters combat mode from `main.js`, after
-`wireSessionControls` has registered `setMode`. This happens whatever the
-tab's role. A player takes their turn on that screen too, and Back to map
-lets anyone leave who prefers to watch the map. This re-entry is
-deliberately not part of `rehydrate.js`. Cross-tab rehydrate adopts campaign
-state in place and leaves `mode` out of its synced keys, so a Player-pinned
+`wireSessionControls` has registered `setMode`, whatever the tab's role. A
+player takes their turn on that screen too, and Back to map lets anyone
+leave who prefers to watch the map. This re-entry is not part of
+`rehydrate.js`, because cross-tab rehydrate adopts campaign state in place
+and leaves `mode` out of its synced keys, so a Player-pinned
 display never inherits the GM tab's mode. `combat` is in the synced keys, and
 the rehydrate refresh loop includes the initiative panel, whose wrapper
 refreshes the screen.
