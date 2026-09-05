@@ -58,8 +58,8 @@ export const tokensSection = {
   blurb:
     'Every color, space, radius, and type size is a custom property in one :root block. Each color ' +
     'is a single light-dark() declaration, so there is one set of tokens rather than a light set and ' +
-    'a dark one. Never write a fallback: a missing token renders as nothing, which is visible, while a ' +
-    'fallback hides the typo.',
+    'a dark one. Write each token without a fallback value, because a missing token renders as ' +
+    'nothing and shows the typo, while a fallback value hides it.',
   stories: [
     {
       title: 'Surfaces and lines',
@@ -76,7 +76,7 @@ export const tokensSection = {
     {
       title: 'Over-map chrome',
       notes:
-        'Pinned dark in both themes. Map controls, toasts, tooltips, and the onboarding scrim float over map art rather than the page surface.',
+        'These tokens stay dark in both themes, because map controls, toasts, tooltips, and the onboarding scrim float over map art rather than over the page.',
       render: () => el('div', 'gx-swatches', ...OVERLAY.map(swatch)),
     },
     {
@@ -97,7 +97,7 @@ export const tokensSection = {
     {
       title: 'Utilities',
       notes:
-        'u-muted is the small secondary text of captions and row metadata. u-row and u-col are the two flex layouts, neither setting a gap, so both pair with u-g1 through u-g4. These are written at the call site, not folded into builder options, because they style the space around an element rather than the element itself.',
+        'u-muted is the small secondary text of captions and row metadata. u-row and u-col are the two flex layouts, neither setting a gap, so both pair with u-g1 through u-g4. These classes go at the call site instead of into builder options, because they style the space around an element rather than the element itself.',
       classes: '.u-muted .u-row .u-col .u-wrap .u-g1 .u-g2 .u-g3 .u-g4',
       stack: true,
       render: () => [

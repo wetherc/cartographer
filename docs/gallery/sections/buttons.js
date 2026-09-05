@@ -57,8 +57,8 @@ export const buttonsSection = {
   id: 'buttons',
   title: 'Buttons and chips',
   blurb:
-    'Three button builders, a segmented switch, and the small read-only markers. ' +
-    'In the snippets below, notify stands in for whatever handler the caller passes.',
+    'This section shows the three button builders, the segmented switch, and the small read-only ' +
+    'markers. In the snippets, notify stands in for whatever handler the caller passes.',
   stories: [
     {
       title: 'textButton, every variant',
@@ -102,7 +102,7 @@ export const buttonsSection = {
     {
       title: 'bareButton',
       notes:
-        'A button for the keyboard and the screen reader that wears no button chrome. The look comes from the class the caller passes.',
+        'A bare button is a real button element with none of the button styling, so the keyboard and the screen reader treat it as a button while the class the caller passes sets the look.',
       classes: '.btn-bare',
       render: () =>
         bareButton([icon('map'), 'Ironhold Vale'], () => notify('Crumb'), {
@@ -112,7 +112,7 @@ export const buttonsSection = {
     {
       title: 'segSwitch',
       notes:
-        'A role="group" over one value. The selected button carries the active class and aria-pressed together.',
+        'The switch is a role="group" over one value, and the selected button has both the active class and aria-pressed.',
       classes: '.seg-switch .seg-switch__btn .seg-switch__btn--active',
       render: () =>
         segSwitch({
@@ -128,7 +128,7 @@ export const buttonsSection = {
     {
       title: 'chip and removableChip',
       notes:
-        'A chip with onClick is a real button, so a chip cannot look clickable without being clickable. removeLabel names the thing removed when the visible label is not it.',
+        'A chip with onClick is a real button, so a chip that looks clickable is clickable. removeLabel names the thing removed when the visible label does not.',
       classes: '.chip .chip__remove .btn-bare.chip',
       render: () => [
         chip('Poisoned'),
@@ -139,7 +139,7 @@ export const buttonsSection = {
     {
       title: 'badge',
       notes:
-        'The read-only marker on a list row. A reading outside the three shared ones passes its own className.',
+        'A badge is the read-only marker on a list row. A meaning outside the three shared variants passes its own className.',
       classes: '.badge .badge--success .badge--danger .badge--neutral',
       render: () => [
         badge('custom'),
@@ -151,7 +151,7 @@ export const buttonsSection = {
     {
       title: 'sectionLabel and emptyState',
       notes:
-        'The in-panel sub-heading and the one "nothing here yet" paragraph. sectionLabel is a span unless tag makes it a heading a screen reader can reach.',
+        'sectionLabel is the sub-heading inside a panel, and emptyState is the one paragraph that an empty list shows. The label renders a span unless the tag option makes it a heading that a screen reader can reach.',
       classes: '.section-label .empty-state.u-muted',
       stack: true,
       render: () => [sectionLabel('Active quests', { tag: 'h3' }), emptyState('No quests yet.')],

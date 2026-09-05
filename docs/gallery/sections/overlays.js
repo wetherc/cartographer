@@ -16,13 +16,14 @@ export const overlaysSection = {
   id: 'overlays',
   title: 'Dialogs, menus, and toasts',
   blurb:
-    'Every dialog in the app shares one lifecycle: capture the opener, show the native dialog element, ' +
-    'and on close remove it and give focus back before the promise resolves. Escape always dismisses.',
+    'Every dialog in the app shares one lifecycle. It captures the opener, shows the native dialog ' +
+    'element, and on close removes it and gives focus back before the promise resolves. Escape ' +
+    'always dismisses a dialog.',
   stories: [
     {
       title: 'promptModal',
       notes:
-        'The form asks one question and returns one answer. It resolves to a record of field name to string, or null when the GM dismisses it. With wide, the fields lay out two per row.',
+        'The form asks one question and returns one answer. It resolves to a record of field name to string, or null when the GM dismisses it. With the wide option, the fields lay out two per row.',
       classes: '.modal .modal__title .modal__actions',
       render: () =>
         textButton('Open promptModal', async () => {
@@ -52,7 +53,7 @@ export const overlaysSection = {
     {
       title: 'confirmModal and alertModal',
       notes:
-        'A confirm is for a question with two real answers. An alert is for a notification that has to block. Anything that does not have to block is a toast instead.',
+        'A confirm is for a question with two real answers, an alert is for a notification that has to block, and anything that does not have to block is a toast instead.',
       classes: '.modal .btn--primary',
       render: () => [
         textButton('Open confirmModal', async () => {
@@ -73,7 +74,7 @@ export const overlaysSection = {
     {
       title: 'confirmDelete',
       notes:
-        'The one wording for deleting a named entity. It owns the question and the danger button, so no call site restates them.',
+        'confirmDelete is the one wording for deleting a named entity. It defines the question and the danger button, so no call site restates them.',
       classes: '.modal .btn--danger',
       render: () =>
         textButton(
@@ -91,7 +92,7 @@ export const overlaysSection = {
     {
       title: 'openContextMenu',
       notes:
-        'The right-click counterpart to a dialog, for a choice that needs no form. Focus moves to the first item, arrows cycle, Escape dismisses. The items act through their own callbacks.',
+        'The context menu is the right-click counterpart to a dialog, for a choice that needs no form. Focus moves to the first item, the arrow keys cycle through the items, and Escape dismisses the menu. Each item acts through its own callback.',
       classes: '.context-menu .context-menu__item',
       render: () =>
         textButton('Open a context menu', (event) => {
@@ -124,7 +125,7 @@ export const overlaysSection = {
     {
       title: 'mountToasts',
       notes:
-        'One stack lives on document.body and is injected app-wide as app.toasts. It is role="status" aria-live="polite", so a message is announced without stealing focus. Every button on this page reports through it.',
+        'The app mounts one stack on document.body and injects it app-wide as app.toasts. The stack has role="status" and aria-live="polite", so it announces a message without stealing focus. Every button on this page reports through it.',
       classes: '.toast-stack .toast',
       render: () =>
         textButton('Show a toast', () => {

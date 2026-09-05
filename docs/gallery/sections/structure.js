@@ -34,13 +34,13 @@ export const structureSection = {
   id: 'structure',
   title: 'Panels and structure',
   blurb:
-    'A tab strip, a disclosure, and the list panel. These own state and ARIA, so a feature panel ' +
-    'describes what its rows hold and nothing else.',
+    'The tab strip, the disclosure, and the list panel each keep their own state and ARIA ' +
+    'attributes, so a feature panel only describes what its rows contain.',
   stories: [
     {
       title: 'buildTabs',
       notes:
-        'The full ARIA tabs pattern: aria-selected, a roving tabIndex, arrow keys that wrap, and Home and End. Selecting a tab only flips hidden, so panel contents survive a click.',
+        'The strip follows the full ARIA tabs pattern, with aria-selected, a roving tabIndex, arrow keys that wrap, and Home and End. Selecting a tab only toggles the hidden attribute, so the panel contents stay in the DOM.',
       classes: '.tabs .tabs__tab .tabs__panel',
       stack: true,
       render: () => {
@@ -60,7 +60,7 @@ export const structureSection = {
     {
       title: 'buildDisclosure',
       notes:
-        'The header and the body come back as siblings, so a panel puts them in whatever box its layout needs. A label takes the shared section-label treatment. Pass the last known state back in as expanded, since a redrawing panel rebuilds its DOM.',
+        'The header and the body come back as siblings, so a panel puts them in whatever box its layout needs. The label uses the shared section-label style. Pass the last known state back in as expanded, since a redrawing panel rebuilds its DOM.',
       classes: '.disclosure .disclosure__chevron .disclosure--open .section-label',
       stack: true,
       render: () => {
@@ -83,7 +83,7 @@ export const structureSection = {
     {
       title: 'buildStatBar',
       notes:
-        'One wide line with a label, a fill track, and the numbers. band colors the fill by the fraction left, in three steps, for a bar read at a glance. compact drops the label and puts the numbers over the track, for a roster row. emptyStatBar draws the same track with no pool behind it. update rewrites four properties rather than rebuilding the line.',
+        'The bar is one wide line with a label, a fill track, and the numbers. The band option colors the fill in three steps by the fraction left. The compact option drops the label and puts the numbers over the track, for a roster row. emptyStatBar draws the same track with no pool behind it, and update rewrites four properties rather than rebuilding the line.',
       classes: '.stat-bar .stat-bar--compact .stat-bar__track .stat-bar__fill .stat-bar__text',
       stack: true,
       raised: true,
@@ -101,7 +101,7 @@ export const structureSection = {
     {
       title: 'factLine',
       notes:
-        'A label with the value it names. The value stacks under the label by default and sits beside it with layout row, which is the form a block of them reads as a table. The value takes a node as well as a string, so a line can hold chips.',
+        'A fact line pairs a label with the value it names. The value stacks under the label by default, and with layout row it sits beside the label, so a block of row lines reads as a table. The value accepts a node as well as a string, so a line can contain chips.',
       classes: '.fact-line .fact-line--row .fact-line__label .fact-line__value',
       stack: true,
       render: () => [
@@ -115,7 +115,7 @@ export const structureSection = {
     {
       title: 'mountListPanel',
       notes:
-        'The rail skeleton: the root, the gate, the row loop with its group headings, the empty state, and the add controls. Every handler is awaited, and the panel redraws unless the handler returns false or null.',
+        'The panel builds the rail skeleton, which is the root, the gate, the row loop with its group headings, the empty state, and the add controls. The panel awaits every handler and redraws unless the handler returns false or null.',
       classes: '.quest-panel .quest-panel__row .quest-panel__group .panel-actions',
       stack: true,
       render: () => {
@@ -157,7 +157,7 @@ export const structureSection = {
     {
       title: 'The player view of the same panel',
       notes:
-        'A false gate is the read-only view. The panel builds no action buttons and no add controls at all, rather than hiding them with CSS.',
+        'A gate that returns false gives the read-only view, in which the panel builds no action buttons and no add controls rather than hiding them with CSS.',
       classes: '.quest-panel__row',
       stack: true,
       render: () => {
@@ -177,7 +177,7 @@ export const structureSection = {
     {
       title: 'card and empty-state',
       notes:
-        'A bordered box with an uppercase heading, holding the one paragraph every empty list shows.',
+        'The card is a bordered box with an uppercase heading, and here it contains the one paragraph that every empty list shows.',
       classes: '.card .card__title .empty-state',
       stack: true,
       render: () =>
