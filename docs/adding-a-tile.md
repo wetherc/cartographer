@@ -4,14 +4,16 @@
 [Tile assets](tile-assets.md).*
 
 Follow these steps to add built-in tile art. A GM who loads their own image
-at runtime needs none of this.
+at runtime needs none of this, because `addCustom` registers that image
+without a code change.
 
 ## 1. Read the family rules first
 
 Open [Tile assets](tile-assets.md) and read the section for the family you
 are adding: terrain variants, road pieces, river pieces, coast pieces, POI
 markers, or interior pieces. Each family has its own rule for backgrounds
-and edges. A tile that breaks the rule draws a seam against its neighbors.
+and edges, and a tile that breaks the rule shows a visible line against its
+neighbors on the map.
 
 ## 2. Draw the SVG
 
@@ -21,7 +23,7 @@ and edges. A tile that breaks the rule draws a seam against its neighbors.
 3. Use a 64-unit tile box.
 4. Keep every decorative detail inset from the edges, unless the family
    rules allow an edge-crossing motif.
-5. Define a repeated shape once in `<defs>` and stamp it with
+5. Define a repeated element once in `<defs>` and stamp it with
    `<use href="#id" transform=...>`. The `drawImage` method of the canvas
    draws these correctly.
 
@@ -40,8 +42,8 @@ Open `src/map/TilePalette.js` and add the tile to the table for its family:
 
 An interior piece needs a rule meaning: `wall`, `door`, `stairs-up`,
 `stairs-down`, or `floor`. Every other piece takes the meaning `plain`. The
-rest of the app reads this meaning through `kindOf(imageRef)`, so the rules
-treat a piece without one as scenery.
+rest of the app reads this meaning through `kindOf(imageRef)`, so a piece
+without one is scenery that the party can walk across.
 
 ## 4. Update the palette test
 
@@ -62,7 +64,7 @@ node --test tests/TilePalette.test.js
 2. Open `http://localhost:8934/tests/tile-preview.html`.
 3. Find the new tile and check that the background matches its family,
    that no detail touches an edge, and that the tile abuts its neighbors
-   with no seam.
+   with no visible join.
 4. If the tile is a connector, check that its path lines up with a straight
    piece and with a corner piece at the shared edge.
 

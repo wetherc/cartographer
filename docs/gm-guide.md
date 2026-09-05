@@ -62,7 +62,7 @@ tools and read the whole save: the fog, the tile notes, the hidden
 handouts, and the exact HP of each foe. The same person can also remove
 `?role=player` from the URL. Put a player-facing tab only on hardware that
 you control, such as a second screen or a laptop that you own. Read
-[What the Player view hides, and what it does not protect](gm-reference.md#what-the-player-view-hides-and-what-it-does-not-protect)
+[Limits of the Player view](gm-reference.md#limits-of-the-player-view)
 in the reference for the full list.
 
 ### Let one player run their own character
@@ -114,8 +114,7 @@ in the center, and the palette and tile inspector on the right.
 5. To revert the last edit, click **Undo stroke** or press Ctrl/Cmd+Z. A
    whole drag counts as one edit.
 
-Pan with a right-button drag, and zoom with the wheel. The left button
-paints.
+The left button paints, a right-button drag pans, and the wheel zooms.
 
 ### Generate a map instead of painting it
 
@@ -260,8 +259,8 @@ not change it.
    lists every live creature on the tile, and the button shows whenever
    the tab has a row. A party set on fighting a bystander can do so.
    Above the rows, one line rates the fight for you by weighing what the
-   hostile creatures are worth against your party's budget. Players never
-   see it.
+   hostile creatures are worth against your party's budget, and players
+   never see it.
 3. In the setup dialog, click **Roll initiative**, or type values by hand.
    Hostile creatures on the tile join the foes. Friendly and neutral
    creatures join the party. The party can still attack a creature on its
@@ -278,8 +277,8 @@ not change it.
 8. Click **Next turn** to advance. Timed conditions tick down each round.
 9. When the fight is over, click **End combat**.
 
-Defeating the last enemy does not end the fight. A victory banner appears,
-and the fight stays open so that everyone can heal and read the log.
+Defeating the last enemy shows a victory banner and leaves the fight open,
+so everyone can heal and read the log before you end it.
 
 To step away without ending the fight, click **Back to map**. The
 **Initiative** card in the sidebar brings you back.
@@ -290,7 +289,7 @@ To step away without ending the fight, click **Back to map**. The
 2. Click a stat chip and set the value and the number of rounds.
 3. The chip reads "STR 14->16 (3r)" and ticks down as rounds pass.
 
-### Rule distance yourself
+### Distance, range, and cover
 
 The app does not measure distance between tokens, so movement, range,
 reach, and the area of an area spell are your calls at the table, and each
@@ -363,8 +362,8 @@ call has a control that applies it to the rolls.
 3. Open the **Equipment** tab and pick the item in its slot.
 4. To edit an item later, click the pencil on its row.
 
-Only a GM adds an item. A player uses, gives away, and discards what the
-character carries.
+Only a GM adds an item, while a player uses, gives away, and discards what
+the character carries.
 
 ### Rest
 
@@ -403,8 +402,8 @@ character carries.
 
 ## Curate the library
 
-Switch to **Library** mode. It has Equipment, Creatures, and Spells tabs.
-The Creatures tab splits into Foes and People subtabs by disposition.
+Switch to **Library** mode, which has Equipment, Creatures, Spells, and Feats
+tabs. The Creatures tab splits into Foes and People subtabs by disposition.
 
 ![Library mode: the Equipment tab with its category subtabs and a customized override](images/library-mode.png)
 
@@ -418,13 +417,13 @@ The Creatures tab splits into Foes and People subtabs by disposition.
 
 1. Click the add control on the tab.
 2. To override a default, give the entry the same name. For equipment, the
-   name and the type must both match.
+   name and the type both have to match.
 3. Anything else is added beside the defaults.
 
-### Add a spell the app does not ship
+### Add a missing spell
 
-The built-in list has 54 spells. A GM-authored spell uses the same schema
-as a built-in one, so no code change is needed. See
+The built-in list has 54 spells, and a GM-authored spell uses the same
+schema as a built-in one, so no code change is needed. See
 [Curated spells](spells-missing.md) for what the resolver can and cannot
 apply.
 

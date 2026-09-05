@@ -29,12 +29,12 @@ recap at the bottom, and the last line gives the totals. `TEST_VERBOSE=1`
 lists the name of every test, and a test that takes 100 ms or more shows
 its time.
 
-Anything a test file writes to stdout or stderr is captured and counted on the
-line of that file, as `11 printed lines`. Several suites drive a path that
-warns on purpose, such as the fallback for an unreadable save in
-`Campaigns.test.js`. Without this, those warnings print above the tree and
-read as loose errors. A file that fails shows the text of what it printed.
-Any other file shows it only with `TEST_OUTPUT=1`.
+Anything a test file writes to stdout or stderr is captured and counted on
+the line of that file, as `11 printed lines`, because several suites drive a
+path that warns on purpose, such as the fallback for an unreadable save in
+`Campaigns.test.js`, and uncaptured warnings print above the tree and read
+as loose errors. A file that fails shows the text of what it printed. Any
+other file shows it only with `TEST_OUTPUT=1`.
 
 These switches change the output:
 
@@ -47,12 +47,12 @@ pnpm run test:flat        # the default TAP output of Node
 `hooks/pre-commit` runs the suite through the same reporter, so a clean
 commit prints one line per module.
 
-## Know what the vocabulary tests check
+## Keep the vocabulary tests passing
 
 `tests/uiVocabulary.test.js` reads `src/` and `styles/` as text and checks
 the UI rules that no linter states: a builder owns its classes, a shared
 module names no feature's vocabulary, `innerHTML` is only ever cleared, and
-`style.css` imports every sheet. It runs with the rest of the suite. A
+`style.css` imports every sheet. It runs with the rest of the suite, and a
 failure names the file, the line, and the call to make instead.
 
 Adding a builder with a class of its own means adding its block to the
@@ -67,8 +67,8 @@ pnpm run typecheck
 
 This compares the JSDoc types in the `.js` files against the declarations
 in `src/types/*.ts`. Run it after any change that is not trivial, even when
-the change does not touch a type. `checkJs` reports a call-signature
-mismatch anywhere in the tree.
+the change does not touch a type, because `checkJs` reports a
+call-signature mismatch anywhere in the tree.
 
 ## Run the linter
 
@@ -112,7 +112,7 @@ percentages and the uncovered line ranges. A total row closes the table.
 
 The total sits far below the per-file numbers of the pure modules, which is
 expected. [Testing strategy](testing-strategy.md) lists the rows that pull
-it down, and the rows that must not.
+it down, and the rows where a low number is work to do.
 
 ## Check a change in the browser
 
@@ -199,8 +199,6 @@ over ten adoptions and reports `focusKept`.
 Some modules wrap browser APIs that the Node runner does not have, for
 example `trySaveToLocalStorage`, `loadFromLocalStorage`, `downloadState`,
 and `readStateFromFile` in `storage/SaveManager.js`. These have no unit
-test at all.
-
-Check them in a real browser instead. A Chromium instance has working
-`localStorage`, so a save-then-load click sequence is an end-to-end check,
-not only a visual one.
+test at all, so check them in a real browser instead. A Chromium instance
+has working `localStorage`, so a save-then-load click sequence is an
+end-to-end check and not only a visual one.

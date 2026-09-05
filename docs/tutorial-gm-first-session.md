@@ -23,10 +23,10 @@ characters already in it.
 1. Click **Build** in the mode switch.
 2. Read the left rail. This is the world tree.
 
-The top row is the world map. Under it sit the regions and interiors:
+The top row is the world map, and under it sit the regions and interiors:
 wilderness, the town of Briarwick, the port of Saltmere, a dungeon, and a
-keep. The tree is how the world is built: a node contains tiles, and a tile
-can lead into another node.
+keep. The tree is how the world is built, because a node contains tiles and
+a tile can lead into another node.
 
 3. Click one of the child nodes. The map shows that node instead.
 4. Click the world map row again to come back.
@@ -40,7 +40,7 @@ can lead into another node.
 The party moves, and the fog opens around the new position. A revealed tile
 stays revealed for the rest of the campaign.
 
-4. Move a few more tiles. Watch the travelogue in the **Log** tab. It
+4. Move a few more tiles, and watch the travelogue in the **Log** tab. It
    records where the party went.
 
 ## 4. Zoom into a town
@@ -56,7 +56,7 @@ stays revealed for the rest of the campaign.
 You did not author either direction, because the link on the tile takes the
 party both ways.
 
-## 5. Meet an enemy
+## 5. Find an enemy
 
 1. Open the **Session** tab in the sidebar and read the **Encounters**
    panel. The **Nearby encounters** tab lists what stands close to the
@@ -89,16 +89,16 @@ ribbon along the bottom.
 The defeated enemy stays in the panel, styled as defeated, because the app
 keeps the record instead of deleting it.
 
-## 7. Look after a character
+## 7. Manage a character
 
 1. Open the **Party** roster and select a character.
 2. Read the character card. The HP bar has damage and heal steppers on
    either side.
 3. If the character is a caster, click a filled spell-slot pip. The slot is
-   now spent.
+   spent.
 4. Open the **Time** panel and click **Long rest**. The slots come back.
 
-## 8. Put a screen in front of the players
+## 8. Set up a player display
 
 1. Click **Save** in the header.
 2. Open a second browser tab on the same address, and add `?role=player` to
@@ -118,8 +118,8 @@ This is how you drive a table display from one laptop, with no server.
 1. Click **Save**, or press Ctrl/Cmd+S. A toast confirms the save.
 2. Click **Export**. This downloads the whole campaign as a `.json` file.
 
-The campaign lives in the local storage of this one browser. The exported
-file is the only copy outside it.
+The campaign lives in the local storage of this one browser, so the
+exported file is the only copy outside it.
 
 ## What next
 

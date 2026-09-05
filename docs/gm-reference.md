@@ -35,7 +35,7 @@ While a GM tab is open, every other tab of the same origin opens as a
 Player tab and stays that way. The claim expires about 15 seconds after the
 GM tab closes or crashes. The claim stops two tabs from editing the
 campaign at the same time by accident, but it is not a security control. See
-[What the Player view hides, and what it does not protect](#what-the-player-view-hides-and-what-it-does-not-protect).
+[Limits of the Player view](#limits-of-the-player-view).
 
 Every save in the GM tab, including an autosave, reaches the other tabs. A
 Play-mode tab takes the change without a reload, so it keeps its scroll
@@ -56,15 +56,15 @@ bound tab cannot edit base attributes (stats, XP, Bonus HP, Base AC), add
 an inventory item, or touch another character. An unbound Player tab is a
 spectator.
 
-Recovery of a resource is a GM action. A player can spend a slot but cannot
-restore one. HP steppers are GM-only for the same reason.
+Recovery of a resource is a GM action, so a player can spend a slot but
+cannot restore one, and HP steppers are GM-only for the same reason.
 
 A binding is exclusive, under the same claim-and-expire rule as the GM
 view. The GM tab ignores bindings and can edit everyone. A roll from a
 bound tab is logged under the character's name. A roll from a spectator tab
 stays anonymous.
 
-### What the Player view hides, and what it does not protect
+### Limits of the Player view
 
 The Player view is a display setting on the same browser data. It hides
 these things from the screen:
@@ -88,7 +88,7 @@ player.
 
 Put a Player tab only on hardware that you control. A second screen on the
 GM laptop, or a laptop that you own and place on the table, are both
-fine. If the campaign contains text that a player must not read, do not give
+fine. If the campaign contains text that you do not want a player to read, do not give
 that player the address on their own device.
 
 ## Theme
@@ -120,7 +120,7 @@ There is no server and no account.
 ## The example campaign
 
 Load example replaces the campaign with a complete demo. It has a 32x32
-overworld with a bay coastline. Four outdoor subregions sit on it: two
+overworld with a bay coastline. Four outdoor sub-regions sit on it: two
 wilderness regions, the farming town of Briarwick, and the port of
 Saltmere. A dungeon interior and a castle keep sit under it. The campaign
 ships an eleven-quest chain, two staffed towns of NPCs, field enemies in
@@ -211,7 +211,7 @@ warning triangle.
 | Nothing leads here | No tile on the parent map links to this node |
 | No way out | The node is linked, but has no outer door, no usable staircase, and no painted parent tile beside its block |
 
-Neither problem strands a party. A node without an authored way out still
+Neither problem strands a party, because a node without an authored way out
 offers a plain "Return to {parent}" button.
 
 ## Play mode
@@ -281,7 +281,7 @@ The six ability scores plus AC are the only stats an enemy has. A
 legend always out-stats a level-matched mob. A defeated encounter is styled
 as defeated, not deleted.
 
-Both panels print what the enemy is trained in, with the bonus it rolls in each,
+The Encounters and NPCs panels print what the enemy is trained in, with the bonus it rolls in each,
 for example "Saves DEX +4 | Skills Stealth +6". The app works each bonus out
 from the ability score, the challenge rating, and any exhaustion, so there is no
 number to type. An unrated enemy takes its proficiency bonus from its level
@@ -318,7 +318,7 @@ in the sidebar shows the round and has Open combat. Only the GM can click
 End combat. A fight also ends when the party walks off the tile, or when
 the last creature staged there is deleted.
 
-### What a turn can spend
+### Action, bonus action, and reaction
 
 The Actions heading on the combat screen shows three pips: Action, Bonus
 action, and Reaction. A pip is struck through once the turn spent it. A
@@ -333,14 +333,14 @@ combatant with Extra Attack also shows how many swings are left.
 - A combatant the turn order steps past, because it is down or cannot act,
   keeps whatever it spent.
 
-The pips report and never block a button. A swing or a cast the turn cannot pay
-for is refused in its dialog instead, and the dialog offers an "Ignore action
+The pips report and never block a button, so a swing or a cast the turn cannot
+pay for is refused in its dialog instead, and the dialog offers an "Ignore action
 cost" box that goes ahead anyway. Use it for a rule the app does not model.
 
 A casting time longer than a turn, such as a ten-minute ritual, is refused in a
 fight for the same reason and offers the same box.
 
-### Fighting with two weapons
+### Two-weapon fighting
 
 A character with two light melee weapons equipped, a dagger and a shortsword for
 example, gets an "Off-hand (bonus action)" group in the action bar. The group
@@ -403,7 +403,7 @@ rogue that spent the dice on its own swing can spend them again on an
 opportunity attack, which is the 5e reading of once per turn. A miss leaves the
 box, because Sneak Attack applies only on a hit.
 
-### The rules the app applies
+### Combat rules
 
 Attack rolls follow 5e without change.
 
@@ -441,8 +441,8 @@ the combat screen and on its sheet, and the Unconscious chip.
   A Bless chip still adds its die.
 - Three successes stabilize. The character stays at 0 HP and unconscious, and
   rolls no more saves. The Stabilize button does the same thing without a roll.
-- Three failures kill. The app says so and changes nothing else. What happens
-  next is yours to decide.
+- Three failures kill. The app says so and changes nothing else, so what
+  happens next is yours to decide.
 - A natural 20 wakes the character at 1 HP. A natural 1 counts as two failures.
 - Any damage while at 0 HP is an automatic failure, with no roll. A critical
   hit counts as two. Damage on a stable character starts the saves again.
@@ -451,8 +451,8 @@ the combat screen and on its sheet, and the Unconscious chip.
   so in this app any heal above 0 HP brings a dead character back, and you
   decide when that is allowed. Healing from the combat screen, from the
   sheet's HP stepper, from a spell, and from a rest all count.
-- The roll is a button, not automatic. Nobody rolls for the player at the turn
-  advance.
+- The roll is a button rather than an automatic step, so nobody rolls for the
+  player at the turn advance.
 
 An encounter and an NPC have no death saves. Both are defeated at 0 HP.
 
@@ -549,9 +549,8 @@ and a death save. The log names the level and the number it took off.
 
 A row of six pips sets the level. The row is on the character sheet under the
 chips. It is also on each creature row, in the Encounters and the Story panels.
-Only you can click the pips. A player on a bound tab sees the row, and cannot
-change it, because the sixth pip kills.
-Click a pip to set the level to that pip. Click the pip of the current level to
+Only you can click the pips, because the sixth pip kills, so a player on a
+bound tab sees the row and cannot change it. Click a pip to set the level to that pip. Click the pip of the current level to
 take one level off. The top line of the character sheet names the level as well,
 beside AC and speed. Long rest, in the Time panel, takes one level off each
 character. A creature does not rest, so a creature keeps its level until you set
@@ -564,8 +563,9 @@ HP and drops out of the fight, the same as a killing blow. A revive undoes the
 fatal level as well. A heal that brings a character or a creature back takes the
 level from 6 down to 5, so nothing stands up dead.
 
-One roll does not get the penalty. A creature's saving throw against a spell is
-a number you type into the cast dialog, so subtract the penalty as you type it.
+A creature's saving throw against a spell is a number you type into the cast
+dialog, so it gets no penalty on its own and you subtract the penalty as you
+type it.
 A spell save DC is not a d20 test, and exhaustion does not lower it.
 
 Advantage and disadvantage from any number of sources fold by the 5e rule: if
@@ -609,8 +609,8 @@ A click on a save or a skill rolls it. The dice tray opens with the d20 and
 the whole bonus, and the session log breaks the number down: the ability
 modifier, the proficiency or expertise, and any condition chip that adds to
 the roll, such as Bless on a save or Guidance on a check. The roll has no
-DC, so nothing judges it. Read the total against whatever you had in mind. The
-tray's advantage and disadvantage toggle applies, and the log names the die it
+DC, so nothing judges it and you read the total against whatever you had in
+mind. The tray's advantage and disadvantage toggle applies, and the log names the die it
 threw away. A player on a bound tab rolls their own character. A spectator sees
 the numbers and cannot roll.
 
@@ -733,18 +733,19 @@ the current session only.
 
 ## The library
 
-Library mode has three tabs.
+Library mode has four tabs.
 
 | Tab | Contents |
 | --- | --- |
 | Equipment | Every weapon, armor, gear item, and consumable the item form offers, across five category subtabs |
 | Creatures | Stock enemies and townsfolk, across two subtabs. Foes lists the hostile templates, and People lists the rest. The hand-off icon opens the matching campaign dialog, pre-filled |
 | Spells | The spell catalog the spellbook picks from, grouped by spell level |
+| Feats | The feat catalog that the level-up feat choice offers |
 
 An edit to a built-in default stores an override. The row gains a
 "customized" badge and a revert button. A new entry gets a "custom"
 badge and a delete button. A custom entry overrides a default when the
-names match. For equipment, the name and the type must both match.
+names match. For equipment, the name and the type both have to match.
 
 Customizations live outside the campaign. New and Load example replace the
 campaign and never touch the library. A campaign export bundles the

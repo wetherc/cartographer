@@ -6,7 +6,7 @@
 creatures, resource pools, and characters, which all follow one update
 style.
 
-## The shared pattern: immutable updates
+## Immutable updates
 
 `entities/Creature.js`, `entities/Resource.js`, and `entities/Character.js`
 (types in `src/types/creature.ts` and `src/types/entities.ts`) are all plain
@@ -65,9 +65,9 @@ deriving writers move a maximum through `Resource.js`:
   pool sat, so the order that the resource card reads in stays the same. When
   no pool of the family is present, it follows the pools named by `after`.
 
-`Roster.js`'s `updateById(list, id, fn)` is the matching helper for the by-id
-patch. The resource and inventory writers used to each spell out that patch
-inline.
+`Roster.js`'s `updateById(list, id, fn)` is the helper for the by-id patch,
+and the resource and inventory writers call it instead of spelling the patch
+out inline.
 
 ## The creature
 
@@ -90,8 +90,8 @@ when it has none, so a stored null means unarmed or unarmored on purpose.
 from the level again, so an absent field has one meaning everywhere.
 
 `isCreature(entity)` tells a creature from a character: a creature always
-has a `disposition`, and a character never does. Every caller that must
-tell the two apart uses this one test.
+has a `disposition`, and a character never does. Every caller that tells
+the two apart uses this one test.
 
 `effectiveStatBlock(creature)` is the one AC read: the closed stat block, plus
 the `acBonus` of the worn armor, plus every active timed stat modifier.
@@ -125,7 +125,7 @@ the rules give it.
 
 `Modifiers.crProficiencyBonus` is the proficiency bonus of a rating. It calls
 `proficiencyBonus` at the rating, because the rating ladder and the character
-level ladder take the same steps. There is one implementation of that ladder.
+level ladder take the same steps, so the ladder has one implementation.
 
 The `cr` field on a creature is optional, and an absent field means unrated.
 An unrated creature falls back to its level for proficiency, then to its
@@ -197,7 +197,7 @@ rather than by level. Merging them would also make `Checks.js` import
 `Creature.js`, which imports `Character.js`, which reaches `Checks.js` again.
 
 Nothing stores a bonus. `combatants.targetSaveBonus` derives one for either kind
-of combatant, so the cast dialog no longer asks the GM to type a foe's save. The
+of combatant, so the cast dialog does not ask the GM to type a foe's save. The
 number the panel prints and the number the save rolls come from the same
 function, and an edit to a rating or a stat cannot leave a stale bonus behind.
 
@@ -205,7 +205,7 @@ A derived bonus can sit below the one an SRD stat block prints. A printed bonus
 can include a trait this app does not model, such as the goblin's Nimble
 Escape.
 
-### A creature that casts
+### Creature casters
 
 A creature casts through the same class machinery as a character. It has
 one scalar `class` with an optional `subclass`, a `casterLevel`, a `spellbook`,
@@ -297,13 +297,13 @@ race, and background (`assembleProficiencies`). It applies or hand-edits them
 with `withProficiencies`, and it sets the expertise list on its own with
 `withExpertise`. Both writers run `normalizeProficiencies`, which is the one
 place that deduplicates the lists and cuts expertise down to the skills the
-character is actually proficient in. Expertise doubles a proficiency, so it
+character is proficient in. Expertise doubles a proficiency, so it
 cannot exist without one, and no writer has to remember to prune. A patch that
 names no expertise keeps whatever the character already had, so editing the
 tool list does not clear a player's picks.
 
-Expertise used to sit beside the lists as `Character.expertise`. A save written
-that way loads with it folded inside, so no migration step is involved. The
+A save with a top-level `Character.expertise` field loads with the list
+folded inside the proficiencies, so no migration step is involved. The
 `isProficient*` and `hasExpertise` predicates return `false` for a legacy
 character with no lists at all.
 
@@ -428,10 +428,10 @@ decides how a term with a bonus and a term without one are each repaired:
 
 The validator also takes the vocabulary of types that a term can have, and it
 defaults to the 13 damage types. Healing is not one of them, because a weapon
-must not be able to deal it. A spell's restorative dice normalize against
+that dealt it would heal on a hit. A spell's restorative dice normalize against
 `HEALING_TYPES` instead, and the authoring form pins them to that one type
 rather than offering a picker. Validating healing dice against the damage list
-used to rewrite a heal spell's dice as slashing whenever a GM edited or
+would rewrite a heal spell's dice as slashing whenever a GM edited or
 imported it.
 
 `DiceRoller.rollDamage` groups terms by damage type and adds each term's bonus
@@ -450,8 +450,7 @@ reads like a single roll.
 ## The weapon property model
 
 A weapon has `kind`, `category`, `properties`, `range`, and
-`versatileDamage`. These fields replaced the old three-value `handling` enum.
-`entities/Weapons.js` owns the vocabularies and the reads:
+`versatileDamage`. `entities/Weapons.js` owns the vocabularies and the reads:
 
 - `weaponKind(weapon)` returns `'melee'` or `'ranged'`. An absent `kind`
   reads as melee.
@@ -533,10 +532,10 @@ and whether a shield cancels the formula are stored on the class definition as
 `unarmoredDefense`, and `Classes.unarmoredDefenses(character)` gathers the
 grants of the whole class list. `armorClass` takes whichever is higher, the
 plain unarmored AC or the formula, so a raised `baseAC` from Mage Armor still
-wins when it beats the class feature. The chest slot must be empty, because a
-chest item with no `baseAC` still means the character wears something, and
-`baseAC` must be at least 10, because a GM who lowers it as a curse would
-otherwise see the formula erase the debuff. A Monk who takes a shield loses the formula but
+wins when it beats the class feature. The formula needs an empty chest slot,
+because a chest item with no `baseAC` still means the character wears
+something, and a `baseAC` of at least 10, because a GM who lowers it as a
+curse would otherwise see the formula erase the debuff. A Monk who takes a shield loses the formula but
 still gains the AC the shield adds.
 
 Body armor has two more traits, both optional and both absence-defaulted.
@@ -596,14 +595,13 @@ is a number the target rolls against and not a roll the caster makes.
 death-save paths both read it.
 
 The app logs the penalty as its own part, next to the ability modifier and the
-proficiency bonus. `app/checkRolls.js` must therefore subtract the penalty back
-out of the bonus to get the ability part. Without that step the log prints a
+proficiency bonus. `app/checkRolls.js` therefore subtracts the penalty back out
+of the bonus to get the ability part. Without that step the log prints a
 modifier that the stat block does not have.
 
-Initiative throws a straight d20 in `app/encounterWiring.js`, which no chip
-or slant reaches either, so it does not get the penalty yet. A creature's
-saving throw is a number the GM types into the cast dialog, so a creature's
-own level cannot reach it.
+`combat/InitiativeRoll.js` subtracts it from the initiative roll that the
+setup dialog fills. A creature's saving throw derives through
+`creatureSaveBonus`, which subtracts it as described above.
 
 The module imports `Conditions.js` and nothing else, because `Checks.js`
 reads this module and `DeathSaves.js` is built on `Checks.js`, so an import
@@ -618,7 +616,8 @@ differently.
 A character gets three failed death saves from `DeathSaves.killOutright`,
 because three failures is what the whole app reads as dead, and the
 Unconscious chip goes on beside them. HP is untouched, because exhaustion
-kills without damage and the number the GM tracks must stay true.
+kills without damage, and a damage write would show a wound that the fiction
+does not have.
 
 A creature goes to 0 HP through `Creature.applyDamage`, which is the only way a
 creature leaves a fight, and `logDefeatTransition` names it. A combatant that is
@@ -639,9 +638,9 @@ killed it. The guard is in `longRest` and not at its call site, because the Time
 rests every character at once and does not ask who is alive. A short rest eases
 nothing.
 
-Exhaustion was a hand-added condition chip before it had a level behind it.
-`exhaustionFields` is the load-path coercion, and both `withDefaults`
-functions call it. A chip with no stored level reads as level 1, which is the
+`exhaustionFields` is the load-path coercion for a save that stores
+exhaustion as a hand-added condition chip with no level behind it, and both
+`withDefaults` functions call it. A chip with no stored level reads as level 1, which is the
 least a GM can mean by the chip. The chip then comes off. A stored level wins
 over a stray chip beside it, and the chip still comes off. The two values
 therefore can never disagree.
@@ -656,7 +655,7 @@ chest piece against its weight class and an off-hand shield against the
 shield grant, and returns a list such as `['heavy armor', 'a shield']`. Those
 two slots cover every case, because `armorClass` reads body armor from the
 chest slot and `EQUIPMENT_SLOTS` admits a shield to the off hand alone. A
-character without proficiency lists predates them and returns an empty list,
+character without proficiency lists returns an empty list,
 the same rule the weapon gate applies.
 
 The call sites act on the list as follows. `app/checkRolls.js` folds a disadvantage
@@ -702,7 +701,7 @@ an amount and an `upTo` flag for a duration that the caster can end early.
   and a `special` one, return null: no part of a turn pays for them.
 - `durationInRounds` converts a duration into a round count, which puts a
   timer on a condition that a spell imposes. Days and open-ended durations
-  return null, so the GM must clear the chip by hand.
+  return null, so the GM clears the chip by hand.
 
 The authoring form and the library normalizer both route their raw values
 through the parsers, so a spell typed into the Library rail and one imported
@@ -715,8 +714,8 @@ projectiles from one cast, and each projectile rolls on its own. An attack
 effect states this with `projectiles: { count, perStep?, autoHit? }`. Its
 presence changes what the effect's `damage` means: what one projectile deals,
 rather than what the whole cast deals. An effect without the field rolls
-once, the same as every other attack spell, so nothing needed migration when
-the field was added.
+once, the same as every other attack spell, so a spell written without the field
+needs no migration.
 
 `entities/Casting.js` owns the rules over it:
 
@@ -756,11 +755,11 @@ migrated in: Revivify names its diamonds, and Fire Bolt has nothing to name.
 
 Both `consumed` and `costGP` change what happens at the table.
 `Casting.materialCheck(caster, spell)` applies the rule and returns
-`{ required, satisfied, item, consumes }`: whether the caster must hold the
+`{ required, satisfied, item, consumes }`: whether the caster has to hold the
 material, whether a stack of it is there, which stack it is, and whether the
 cast spends it.
 
-A material that the cast destroys must be in the inventory, and so must one
+A material that the cast destroys has to be in the inventory, and so does one
 with a gp cost, because a pouch and a focus never cover a priced component.
 Anything else is covered, but only while the caster carries a component pouch
 or a spellcasting focus, and a caster with neither needs the printed material
@@ -901,7 +900,8 @@ takes a bonus that the caller worked out, and only the character path goes
 through `saveBonus`.
 
 The cast dialog reflects that split. `app/combatants.js`'s `targetSaveBonus`
-returns a derived bonus for a party character and nothing for a foe.
+returns a derived bonus for either kind of combatant, and nothing only for a
+target deleted while the dialog sat open.
 `app/spellCast.js` decorates a save spell's targets with whatever comes back,
 shows it in the target picker (`Rook (WIS +6)`, in place of the AC that a
 save never reads), and asks for one hand-entered number to cover the targets
@@ -937,8 +937,7 @@ Rogue and the Bard grant it through the pending-grant flow (see Class
 features above). The Set expertise button on the Progression section is the
 GM's hand grant for subclasses and homebrew: a multiselect over the
 character's proficient skills, committed through `Progression.withExpertise`.
-A creature has no expertise, so its bonus is still whatever the GM
-types.
+A creature has no expertise, so its bonus comes from its training alone.
 
 ## Concentration
 
@@ -984,8 +983,8 @@ Only characters concentrate. A creature has no field to write, so a foe's
 concentration is still a chip that the GM adds and removes by hand, which is
 the reason `Concentrating` stays in the pick-list. The character
 sheet's `-1 HP` button is bookkeeping rather than a damage event, so it
-calls for no save. Damage that must test concentration goes through an
-attack or a cast.
+calls for no save. Damage that tests concentration goes through an attack
+or a cast.
 
 ## Death saves
 
@@ -1032,8 +1031,8 @@ character makes it dying again, with that failure against it, which is the 2014
 rule. The hit that drops the character to 0 HP in the first place costs no
 failure. Damage large enough for instant death is out of scope.
 
-`Unconscious` goes on with the tracker and comes off with it, so no caller must
-remember both halves. `Conditions.js` exports the chip's name as `UNCONSCIOUS`.
+`Unconscious` goes on with the tracker and comes off with it, so no caller tracks
+both halves. `Conditions.js` exports the chip's name as `UNCONSCIOUS`.
 That chip gives an attacker advantage and a melee hit an automatic crit,
 through the condition-effect table below, so the crit rule needs no special
 case here.
@@ -1126,7 +1125,7 @@ that the GM placed has no such field.
   `countPerStep` for each scaling increment.
 - `stampSummon(creature, source)` writes the record onto a fresh creature.
 - `isSummonedBy(creature, casterId, spellId)` matches one cast. Both halves
-  must agree, for the same reason `removeImposed` needs both.
+  have to agree, for the same reason `removeImposed` needs both.
 - `despawnSummons(list, casterId, spellId)` removes every creature of one
   cast, reports them, and hands the original list back when none matched.
 
@@ -1161,7 +1160,7 @@ therefore acts for the first time on the next round. Despawning the last
 creature staged on the tile of the party ends the fight, through
 `syncCombatLocation`.
 
-## What a condition does
+## Condition effects
 
 `Conditions.js` owns the pick-list and the list algebra and says which names
 exist, and `entities/ConditionEffects.js` says what those names do.
@@ -1256,6 +1255,9 @@ the direction. `entities/Riders.js` owns the model:
 - `rollRiders(sources, kind, rng)` rolls them and returns
   `{ modifier, note }`. The note names each source and the faces it rolled,
   so a log line can explain the number.
+- `riderText` and `riderSummary` render a rider for a chip tooltip or a spell
+  readout.
+
 
 A source is anything with a name and a rider. A condition chip is one, and so
 is a taken feat's stamp. `FeatChoices.featRiders` reads a character's stamped
@@ -1270,8 +1272,7 @@ condition's name cannot slant a roll. A cast's target therefore has its
 chips in `conditions` and its feat riders in a separate `riders` field. Both
 join its saving throw, and only the chips decide advantage or an automatic
 failure.
-- `riderText` and `riderSummary` render a rider for a chip tooltip or a spell
-  readout.
+
 
 The rider dice roll inside `rollRiders` rather than joining the caller's own
 dice selection. A bonus and a penalty then resolve the same way, and a save,

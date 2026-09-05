@@ -5,8 +5,7 @@
 The map is a tiled world that the GM paints in Build mode and the party
 explores in Play mode. A small data model of nodes and tiles sits underneath
 it, and the hierarchy, regions, drawing, fog of war, and party movement all
-build on that model, so the first section is worth reading even for a later
-topic.
+build on that model, so the first section applies to every later topic.
 
 ## Nodes and tiles
 
@@ -20,12 +19,11 @@ Both types of the model are declared in `src/types/map.ts`:
 
 There is no separate "world" type, "region" type, or "dungeon" type. A world
 map, a region inside it, a town inside that region, and a dungeon under the
-town are all MapNodes. The difference between them is how they connect, and
-they connect in two directions at once:
-
-- Each node has a `parentId` that points up at the map that contains it.
-- A tile can have a `childNodeId` that points down at another node. A click
-  on that tile in Play mode means "zoom in here, and you get that map."
+town are all MapNodes, and the difference between them is how they connect.
+They connect in two directions at once, because each node has a `parentId`
+that points up at the map that contains it, and a tile can have a
+`childNodeId` that points down at another node. A click on that tile in Play
+mode means "zoom in here, and you get that map."
 
 A concrete example, using the names from the example campaign:
 
@@ -59,15 +57,15 @@ build a breadcrumb, and resolve a tile's zoom target.
 Cross-tab sync depends on `replaceNodes`, which swaps out the entire
 registry's contents but keeps the grid *object's* identity. Several
 long-lived objects (the navigator, the party tracker, the canvas) each keep a
-reference to the grid they were constructed with. When another browser tab
+reference to the grid they were constructed with, so when another browser tab
 saves the campaign, the running tab adopts the new campaign by replacing the
-grid's contents in place, so none of those objects need a rebuild or a new
+grid's contents in place, and none of those objects need a rebuild or a new
 reference.
 
 ### Grid coordinates
 
 A tile's id doubles as its position. Tiles placed in a grid use `"x,y"` as
-their id, for example `"3,4"` for the tile at column 3, row 4. There is no
+their id, for example `"3,4"` for the tile at column 3, row 4, so there is no
 separate x/y field to keep consistent with the id.
 
 The pure functions `parseCoords`, `tileRect`, and `screenToTile` in
@@ -115,36 +113,36 @@ instead of four copies of a castle tile.
 filled-rectangle group into chunks of at most 2x2 tiles, and each chunk draws
 one image stretched across its block. The image chosen for a chunk
 (`groupImageRef`) is the art of a tile marked as a point of interest, if the
-chunk has one. Otherwise the chunk uses the top-left-most tile's art.
+chunk has one, and otherwise the top-left-most tile's art.
 `MapRenderer._renderGroupImages` draws these chunks, and the ordinary
 per-tile pass then skips the base images of the covered cells.
 
-Fog rectangles and path overlays still draw per tile, on top of the
-stretched image. This layering lets a partially explored block reveal piece
-by piece, and keeps a road that runs through a region drawn at tile size
-instead of stretched with the landmark art.
+Fog rectangles and path overlays draw per tile even here, on top of the
+stretched image, so a partially explored block reveals piece by piece and a
+road that runs through a region stays drawn at tile size instead of
+stretched with the landmark art.
 
 Groups that are ragged (not a filled rectangle), and groups on interior
 maps, keep plain per-tile drawing.
 
-### Spans: one tile's art drawn large
+### Spans
 
 Independent of region links, a single tile can have an optional `span`. The
 Build palette's Size row sets it (2x or 3x), and `paintTile(node, tileId,
 imageRef, overlay, span)` records it. A spanned tile's image draws stretched
-across a span-by-span block anchored at that tile. Near the right or bottom
-edge of the map, the block shifts up or left as needed to stay in bounds.
+across a span-by-span block anchored at that tile, and near the right or
+bottom edge of the map the block shifts up or left as needed to stay in
+bounds.
 
 `spanBlocks(node)` in `TilePaint.js` lists these blocks with pure geometry,
 and `MapRenderer._renderSpanImages` draws them right after the region-group
 chunks. Span blocks feed the same "covered cells" set, so the per-tile pass
-skips the base images underneath, while fog and overlays stay per tile, in
-the same way as with group images.
+skips the base images underneath, while fog and overlays stay per tile, the
+same as with group images.
 
-Unlike a region chunk, span art draws on interior maps too, not only on
-outdoor ones, and the covered cells keep their own tile data untouched. The
-span is only a drawing effect of the anchor tile, so a repaint of the anchor
-at 1x clears it.
+Unlike a region chunk, span art draws on interior maps too, and the covered
+cells keep their own tile data untouched. The span is only a drawing effect
+of the anchor tile, so a repaint of the anchor at 1x clears it.
 
 ## Drawing and input
 
@@ -169,63 +167,63 @@ The canvas code splits so that each file owns one concern:
 ```
 
 `MapCanvas` is the host. The renderer and decoration modules read the view
-state and draw. The two input controllers (pointer and keyboard) change the
-view state back through the host reference.
+state and draw, and the two input controllers (pointer and keyboard) change
+the view state back through the host reference.
 
 Every drawing layer takes its colors from `INK` in `src/map/CanvasInk.js` and
-its captions from `src/map/CanvasText.js`. Canvas accepts a color string, not a
-CSS custom property, so the map cannot read the stylesheet's tokens, and `INK`
-is the canvas side of that vocabulary: one named entry per role, so a color two
-layers share is written once. `CanvasText` defines the label rule that the
-coordinate digits, character names, exit labels, and region names share:
-`labelSize(size, { factor, min, max })` scales a font from the on-screen tile
-size, and `drawPlatedLabel(ctx, text, x, y, opts)` sets the font and alignment,
-draws the pill or rectangle behind the text, and restores the context. Each
-caller keeps its own scale, because the bounds differ by what the label sits
-over: coordinate digits run large on empty canvas, and a character name stays
-small over tile art.
+its captions from `src/map/CanvasText.js`. Canvas accepts a color string, not
+a CSS custom property, so the map cannot read the stylesheet's tokens, and
+`INK` is the canvas side of that vocabulary, with one named entry per role,
+so a color two layers share is written once. `CanvasText` defines the label
+rule that the coordinate digits, character names, exit labels, and region
+names share: `labelSize(size, { factor, min, max })` scales a font from the
+on-screen tile size, and `drawPlatedLabel(ctx, text, x, y, opts)` sets the
+font and alignment, draws the pill or rectangle behind the text, and restores
+the context. Each caller keeps its own scale, because the bounds differ by
+what the label sits over, so coordinate digits run large on empty canvas and
+a character name stays small over tile art.
 
 For each tile, the draw pass draws a fog rectangle if the tile is not
 revealed and otherwise draws the image at `tile.imageRef`. The group, span,
 and marker passes described elsewhere on this page add to that base.
 
 Tile art does not come straight from the SVG file. `TileRaster`
-(`src/map/TileRaster.js`) draws each image ref once into an offscreen canvas at
-the size the map draws it, and every later frame copies those pixels. A canvas
-re-rasterizes an SVG on every `drawImage` call, and Build mode draws every tile
-in the node, so a 40x40 map used to run about 1,600 rasterizations per frame.
-That cost 769 ms of script for one paint stroke across the example world, and it
-now costs 29 ms.
+(`src/map/TileRaster.js`) draws each image ref once into an offscreen canvas
+at the size the map draws it, and every later frame copies those pixels. A
+canvas re-rasterizes an SVG on every `drawImage` call, and Build mode draws
+every tile in the node, so drawing the vector art directly costs about 1,600
+rasterizations per frame on a 40x40 map, or 769 ms of script for one paint
+stroke across the example world, where the raster cache costs 29 ms.
 
-The raster is the same size as the tile on screen, down to the pixel. An earlier
-version rounded the size up to a power of two to keep fewer rasters. That
-averaged away the hairline strokes in the art, such as the grid lines on grass
-and the ripples on water, and the whole map went flat at the zoom that fits it
+The raster is the same size as the tile on screen, down to the pixel. A
+raster rounded up to a power of two, which would keep fewer rasters, averages
+away the hairline strokes in the art, such as the grid lines on grass and
+the ripples on water, and the whole map goes flat at the zoom that fits it
 on screen. A destination wider than 256 pixels skips the cache and draws the
-vector art, so one large landmark stays crisp at high zoom, and the cache drops
-itself once it reaches 32 MB.
+vector art, so one large landmark stays crisp at high zoom, and the cache
+drops itself once it reaches 32 MB.
 
-The one-pixel grid along the cell boundaries is drawn by
-`MapRenderer._renderCellGrid`, and it was once a side effect rather than a
-pass: the SVG rasterizer left the outermost pixel row of each tile partly
-transparent, so the dark map backdrop showed through at every boundary. A
-cached raster fills those pixels, so the grid is explicit now. The pass is
-clipped to the revealed cells, because a flat fog rectangle never showed the
-backdrop through and so never showed a grid. Where tiles still draw from the
-vector art, which is the PNG export and any zoom past the raster size ceiling,
-the natural boundary is still there, so the pass skips itself rather than
-darken every boundary with a second line.
+`MapRenderer._renderCellGrid` draws the one-pixel grid along the cell
+boundaries as its own pass. The SVG rasterizer leaves the outermost pixel row
+of each tile partly transparent, so tiles drawn from vector art show the dark
+map backdrop through at every boundary as a natural grid, while a cached
+raster fills those pixels and shows none, and the pass restores the line. It
+is clipped to the revealed cells, because a flat fog rectangle never shows
+the backdrop through and so never shows a grid. Where tiles still draw from
+the vector art, which is the PNG export and any zoom past the raster size
+ceiling, the natural boundary is present, so the pass skips itself rather
+than darken every boundary with a second line.
 
 A pointerup counts as a tile click only if the total drag distance stays
-below a small threshold. Without that check, a pointer that ends a pan
-gesture on a region tile also zooms into it.
+below a small threshold, because without that check a pointer that ends a
+pan gesture on a region tile also zooms into it.
 
 **Navigation** is pure logic with no DOM. `MapNavigator`
 (`src/map/MapNavigator.js`) tracks which node is currently in view, and
 exposes `zoomIn(tileId)`, `zoomOut()`, `goTo(nodeId)`, and `getBreadcrumb()`
-over a `TileGrid`. The canvas's `onTileClick` callback, and the breadcrumb's
-click handler (`ui/Breadcrumb.js`), both call into a navigator and redraw the
-view. Because the navigator has no DOM dependency, plain unit tests cover
+over a `TileGrid`. The canvas's `onTileClick` callback and the breadcrumb's
+click handler (`ui/Breadcrumb.js`) both call into a navigator and redraw the
+view, and because the navigator has no DOM dependency, plain unit tests cover
 all of the zoom and breadcrumb behavior.
 
 ## The tile catalog and generation
@@ -238,32 +236,32 @@ distinguishes terrain variants from connector pieces:
   wallpaper pattern. `pickVariant(type, rng)` chooses one, and takes the
   random number generator as an argument so tests can pass a deterministic
   one.
-- Road pieces are named connector shapes (a straight, a corner, a tee), not
+- Road pieces are named connector pieces (a straight, a corner, a tee), not
   random variants. `getRoadPiece(kind)` looks one up by name.
 
 Callers can register custom tiles with `addCustom`/`removeCustom`. Custom
-tiles cannot override built-in tiles. They only extend the catalog.
+tiles cannot override built-in tiles, so they only extend the catalog.
 
 A few pieces of art mean something to the rules, not only to the eye: the
 party cannot stand on a wall, a door is the authored way into a space, and
-stairs connect one dungeon level to the next. `kindOf(imageRef)` says what
-a given image means, and it is the only place in the code that knows this.
-It matches whole references against the catalog, instead of looking for a
-word in a file name, so a GM's own art called `interior-wall-h.svg` stays
-plain art. Renaming a built-in asset cannot quietly change where the party
-can walk. Everything outside the interior set (terrain, markers, custom
-images) is `plain`.
+stairs connect one dungeon level to the next. `kindOf(imageRef)` says what a
+given image means, and it is the only place in the code that knows this. It
+matches whole references against the catalog instead of looking for a word in
+a file name, so a GM's own art called `interior-wall-h.svg` stays plain art
+and renaming a built-in asset cannot quietly change where the party can
+walk. Everything outside the interior set (terrain, markers, custom images)
+is `plain`.
 
 `Autotile.js` (`src/map/Autotile.js`) handles the detailed part of generated
 terrain: it picks connector overlay pieces so that coastlines and rivers
 join up visually. It is pure and RNG-injected, like the palette:
 
-- `smoothCoastline` widens water until every shore shape matches a coast
+- `smoothCoastline` widens water until every shore outline matches a coast
   piece in the art set.
 - `coastOverlays` and `coastKind` name the shoreline overlay for each land
   cell along the water.
 - `riverCourse` walks a meandering channel from the north edge south, and
-  returns the correct river piece for each tile along the way.
+  returns the matching river piece for each tile along the way.
 
 The generator archetypes build on these helpers: wilderness and town in
 `src/map/GeneratorRegions.js`, dispatched from `MapGenerator`, and dungeon
@@ -279,51 +277,51 @@ overlay displaces the other.
 ## Fog of war
 
 Play mode hides the parts of a map the party has not been near. The state
-behind this is only the `revealed` flag on each tile. `FogOfWar.js`
-(`src/map/FogOfWar.js`) is a set of pure functions over a MapNode that manage
-it:
+behind this is only the `revealed` flag on each tile, and `FogOfWar.js`
+(`src/map/FogOfWar.js`) is a set of pure functions over a MapNode that
+manage it:
 
 - `revealAround(node, centerId, radius)` parses `centerId` as an `"x,y"`
   grid coordinate, and reveals every tile within a Euclidean radius of it, so
   the revealed area is a disc instead of a square. Revealing is monotonic: a
-  tile that is already revealed, or outside the radius, stays untouched.
-  Moving away from an area never re-fogs it.
+  tile that is already revealed, or outside the radius, stays untouched, and
+  moving away from an area never re-fogs it.
 - `hideAll(node)` resets a node to fully unrevealed. It backs reset and debug
   paths.
 - `revealedCount(node)` backs "percent explored" style readouts.
 - `withinRadius(tileId, centerId, radius)` exposes the same Euclidean cutoff
   as a standalone predicate.
 
-That last function also gates the markers. `MapMarkers` uses it to limit
-the encounter, NPC, and point-of-interest markers to a detection range
-around the party tile, and around every individual character token. The
-range (`MapView.markerRange`, wired from `PartyTracker.revealRadius`) is
-twice the fog reveal radius, so a marker can be sensed slightly beyond the
-fog edge, but never from across the map. A node the party is not currently
-in shows no markers at all outside Build mode.
+That last function also gates the markers. `MapMarkers` uses it to limit the
+encounter, NPC, and point-of-interest markers to a detection range around
+the party tile, and around every individual character token. The range
+(`MapView.markerRange`, wired from `PartyTracker.revealRadius`) is twice the
+fog reveal radius, so a marker can be sensed slightly beyond the fog edge but
+never from across the map. A node the party is not currently in shows no
+markers at all outside Build mode.
 
 `markerAnchors` and `withinMarkerRange` in `MapMarkers.js` are the pure
 halves of that rule, and `MapCanvas.markerVisible(tileId)` answers it for
 code outside the render loop. The Play-mode hover tooltip in `mapTravel.js`
-calls it before it names the POI type or the NPCs on a tile. The tooltip runs
-for a pointer hover and for the keyboard cursor alike, so without that call
-either one would read out what the map deliberately leaves unmarked. GM notes
-are not gated, because they are not drawn on the map at all.
+calls it before it names the POI type or the NPCs on a tile, because the
+tooltip runs for a pointer hover and for the keyboard cursor alike, and
+without that call either one would read out what the map leaves unmarked. GM
+notes are not gated, because they are not drawn on the map at all.
 
 ## The party
 
 `PartyTracker` (`src/party/PartyTracker.js`) owns the party's
 `PartyPosition`, which is a nodeId plus a tileId, and it is the only object
-that moves the party. `moveTo(nodeId, tileId)` updates the position and
-calls `revealAround` on the target node, and writes the revealed tiles
-straight back into the `TileGrid` it was constructed with. The constructor
-also reveals around the initial position, so a party never starts the
-campaign fogged in on its own tile.
+that moves the party. `moveTo(nodeId, tileId)` updates the position, calls
+`revealAround` on the target node, and writes the revealed tiles straight
+back into the `TileGrid` it was constructed with. The constructor also
+reveals around the initial position, so a party never starts the campaign
+fogged in on its own tile.
 
 `moveTo`'s `nodeId` can differ from the party's current node. Crossing
 between a parent map and a zoomed-in region (through `MapNavigator`) works
 the same way as moving within one node, and each node's revealed state stays
-independent: exploring the barrow reveals nothing about Darkwood.
+independent, so exploring the barrow reveals nothing about Darkwood.
 
 ### Individual character tokens and the split party
 
@@ -351,30 +349,30 @@ place action, which reaches nodes that are not on screen.
 A pick of a character in the roster brings them into view while the party is
 split. `partyWiring.js`'s `followCharacter` resolves their
 `characterPosition` and hands it to `mapWiring.js`'s `centerOnLocation`,
-which navigates to that node if the view is elsewhere, and centers the
-canvas on the tile at the current zoom. This is the lighter half of
-`focusLocation`: no tile selection, no inspector, so it stays out of the way
-in Play mode.
+which navigates to that node if the view is elsewhere and centers the canvas
+on the tile at the current zoom. This is the lighter half of
+`focusLocation`, with no tile selection and no inspector, so it stays out of
+the way in Play mode.
 
-All of this individual movement sits behind the `splitParty` flag,
-persisted on `CampaignState` and false by default, and toggled by a GM-only
-switch in the Party panel (`app/splitParty.js`). While the switch is off, the
-app behaves as if individual movement did not exist: `syncPartyMarker`
-passes no tokens to the canvas (only the shared marker draws), the roster
-hides its place action, a pick of a character leaves the view alone, a GM's
-map click moves the whole party and brings everyone back to it, and a bound
-player's map click has no effect.
+All of this individual movement sits behind the `splitParty` flag, persisted
+on `CampaignState` and false by default, and toggled by a GM-only switch in
+the Party panel (`app/splitParty.js`). While the switch is off, the app
+behaves as if individual movement did not exist: `syncPartyMarker` passes no
+tokens to the canvas (only the shared marker draws), the roster hides its
+place action, a pick of a character leaves the view alone, a GM's map click
+moves the whole party and brings everyone back to it, and a bound player's
+map click has no effect.
 
 Turning the switch off while characters are scattered first regroups the
-party: the GM picks a member, and the party position moves to that member's
+party. The GM picks a member, and the party position moves to that member's
 `characterPosition` (a `PartyTracker.moveTo` plus `recallAll`). A cancelled
 pick leaves the switch on, so the app never ends up with the switch off and
 the party still split. A character placed on a node that no longer exists
 (deleted, or gone from a save that another tab adopted) is left out of the
-pick through `regroupCandidates`, and counts as standing with the party.
-When nobody is left to pick, the party regroups at its own marker.
+pick through `regroupCandidates` and counts as standing with the party, and
+when nobody is left to pick, the party regroups at its own marker.
 
-## Getting back out
+## Leaving a sub-region
 
 Zooming in uses a tile's `childNodeId` plus
 `EntryPoint.computeRegionEntryTile`. Leaving again uses
@@ -392,16 +390,16 @@ Zooming in uses a tile's `childNodeId` plus
 
 The block a child occupies in its parent comes from `blockFor`, a lookup
 over `RegionGroups.findRegionGroups`. A parent can link one child from two
-blocks that do not touch, such as a cave with two mouths. `blockFor` takes
+blocks that do not touch, such as a cave with two mouths, so `blockFor` takes
 an optional zoom-through tile for that case and returns the block that
-contains it. Without the tile it returns the first block. `findExits` takes
-the same tile: it reports the sides of the block that contains the tile, and
-the sides of every block when no tile is given.
+contains it, and without the tile it returns the first block. `findExits`
+takes the same tile: it reports the sides of the block that contains the
+tile, and the sides of every block when no tile is given.
 
 That tile comes from the entry memory in `src/map/EntryMemory.js`. The
 memory records one parent tile for each traveler and child node pair, and it
 is part of the save, under `entryTiles`. A traveler is the party, or one
-character who has their own location while the party is split. Two
+character who has their own location while the party is split, and two
 travelers can stand in one child having come in by different blocks, so one
 tile per node is not enough. `travelerFor` names the key: the party for the
 party marker, and for a character who stands at it, and `c:<id>` for a
@@ -410,22 +408,22 @@ character with a location of their own.
 `mapTravel.js` writes an entry when a tab that moves somebody zooms in, and
 drops the entry when the party teleports in, because a teleport arrives
 through no block. A whole-party move recalls every character, so it also
-drops the character side of the memory. Deleting or regenerating a node
+drops the character side of the memory, and deleting or regenerating a node
 drops the entries of the nodes that go with it.
 
 For an `edge` exit, a side counts when any cell of that block has an
-orthogonal neighbor in the parent that has an `imageRef` and is not part
-of the block itself. Diagonal contact past a corner does not count, because
-it leaves the party nothing to step onto.
+orthogonal neighbor in the parent that has an `imageRef` and is not part of
+the block itself. Diagonal contact past a corner does not count, because it
+leaves the party nothing to step onto.
 
 An interior's doors qualify when they open outward: on the grid border, or
 beside a cell the map leaves empty, which is the void a generated dungeon
 leaves around its rooms. That test cannot tell the void from an unpainted
 courtyard inside a hand-authored structure, so a door onto such a courtyard
-also reads as a way out. If the courtyard must not be a way out, the GM
-must paint it.
+also reads as a way out, and a GM who does not want the courtyard to be a
+way out paints it.
 
-### Stairways run both ways
+### Stairway direction
 
 `stairwayTo(parent, childNodeId)` answers which of the parent's tiles reaches
 a child, and which tile kind in the child comes back along it. A parent that
@@ -445,8 +443,7 @@ GM to paint.
 
 A parent that links the same child from both a stairs-down tile and a
 stairs-up tile has authored two contradictory connections. The descent wins,
-because a level below is the much more common case, and it is what such a
-map resolved to before the model added the ascent.
+because a level below is the far more common case.
 
 The model expresses one return staircase per level. Every tile in the child
 of the kind that runs back counts as an exit to the parent, and all of them
@@ -463,16 +460,16 @@ of the child maps back onto the block's extent, and then one cell further
 out, onto the parent terrain the side touches. Through a door, the model
 uses the same projection from the door's own coordinate. Along a stairway,
 it uses the parent's tile at the other end of the stairway. A block that
-sits on the parent's own north or west edge projects to a coordinate of -1.
-The function limits the coordinate to the grid before the snap, so the
+sits on the parent's own north or west edge projects to a coordinate of -1,
+so the function limits the coordinate to the grid before the snap, and the
 party lands beside the block instead of at the origin.
 
 The first two cases snap through `resolveReturnTile`, the parent-side
 counterpart of `resolveEntryTile`: the nearest painted, non-wall tile that
 does not belong to the block just left, since landing back on the block
-reads as never having left. The stairway case deliberately skips the snap.
-The parent's staircase *is* a tile of that block, and the snap logic
-rejects any tile from that block for that same reason.
+reads as never having left. The stairway case skips the snap, because the
+parent's staircase *is* a tile of that block, and the snap logic rejects any
+tile from that block for that same reason.
 
 ### Drawing and taking an exit
 
@@ -500,18 +497,18 @@ readers are:
   moves focus to the first remaining button, instead of dropping it.
 
 The band's rectangle is computed once, by `exitBandGeometry` plus
-`edgeExitBand`, and both the drawing code and the pointer call it. The arrow
-the GM sees, and the rectangle their click is tested against, therefore
-cannot drift apart. The band is a bounded pill centered on the party's row
-or column, kept within the canvas, so panning the map's border out of view
-pins the arrow at the viewport edge instead of scrolling it away.
+`edgeExitBand`, and both the drawing code and the pointer call it, so the
+arrow the GM sees and the rectangle their click is tested against cannot
+differ. The band is a bounded pill centered on the party's row or column,
+kept within the canvas, so panning the map's border out of view pins the
+arrow at the viewport edge instead of scrolling it away.
 
 `mapTravel.js`'s `exitToParent` does the travel, and it moves whoever a
 click moves: the whole party for the GM, one character while the
 split-party toggle is on, and no one from a spectator tab, which follows the
 camera out instead. A `tile` exit also stays an ordinary tile to walk onto,
-so it only leads out once whoever the click moves is already standing on
-it. Otherwise the party can never stand in a doorway. The exit buttons
+so it only leads out once whoever the click moves is already standing on it,
+because otherwise the party could never stand in a doorway. The exit buttons
 take the same door in one press.
 
 `mapWiring.js`'s `syncExits` is the one place that recomputes the list, and
@@ -519,15 +516,15 @@ it feeds the canvas and the button list together. It runs from
 `syncPartyMarker`, which every path that changes the node in view already
 calls, plus `resyncMapViews`, the three authoring paths in
 `mapAuthoring.js`, the zoom-in branch of `onCellClick`, and the mode switch.
-`travel.currentExits` returns an empty list outside Play mode: authoring a
-map is not the same as traveling it.
+`travel.currentExits` returns an empty list outside Play mode, because
+authoring a map is not the same as traveling it.
 
 ### The Build warning
 
 `syncExits` also refreshes `authoringWarning(node, parent)`, the sentence
 Build mode shows the GM about the node in view. It looks at the same links
-from the parent's side, and it reports these problems in the order they must
-be solved:
+from the parent's side, and it reports these problems in the order they have
+to be solved:
 
 1. No parent tile links here at all, so the node is unreachable, and players
    never see it, whatever is painted inside.
@@ -538,13 +535,13 @@ be solved:
 
 The link comes first because it also decides the later answers. A staircase
 counts as a way out only in the direction the link runs, so stair advice
-before a link exists is a guess. Once there is a link, the warning
-names that direction and no other: a crypt level is told about its stairs
-up, an upper story about its stairs down, and a keep entered through a town
-door about a door alone.
+before a link exists is a guess. Once there is a link, the warning names
+that direction and no other: a crypt level is told about its stairs up, an
+upper story about its stairs down, and a keep entered through a town door
+about a door alone.
 
-All of these are warnings about an unfinished map, not a stranded party.
-`findExits` hands Play mode a fallback either way, and nothing is written to
+These are warnings about an unfinished map, not a stranded party, because
+`findExits` hands Play mode a fallback either way and nothing is written to
 the node. The `#build-warning` element is a permanent `role="status"` live
 region, hidden by CSS while empty, and its writes are deduplicated against
 the last text, because `syncExits` runs on every party step and every paint
@@ -554,8 +551,7 @@ The Build world tree runs the same check on every node. A row whose
 `authoringWarning` is non-null gets a warning badge with the sentence as its
 tooltip and accessible name, so an unlinked tile flags the orphaned child at
 the moment of the break, instead of when the GM next views it. The warning
-is part of the tree's redraw signature, so `syncExits` also
-refreshes the tree: a stroke on the parent can seal or unseal a child
-without a change to the rail warning for the node in view. Outside Build
-mode the check returns null, so a Play-mode party step never pays for a
-world scan.
+is part of the tree's redraw signature, so `syncExits` also refreshes the
+tree, because a stroke on the parent can seal or unseal a child without a
+change to the rail warning for the node in view. Outside Build mode the check
+returns null, so a Play-mode party step never pays for a world scan.

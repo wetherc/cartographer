@@ -44,18 +44,18 @@ a reference does not teach, and an explanation gives no steps.
 | --- | --- |
 | [Architecture](architecture.md) | How the codebase is organized, and the split between pure logic and DOM glue |
 | [The map](architecture/map.md) | Tiles, the node hierarchy, rendering, fog of war, and party movement |
-| [Entities](architecture/entities.md) | Encounters, resources, and the character model |
-| [Combat](architecture/combat.md) | The fight screen, its one writer, and its derived view |
+| [Entities](architecture/entities.md) | Creatures, resources, and the character model |
+| [Combat](architecture/combat.md) | The fight screen, the one module that writes the fight, and the view derived from it |
 | [Persistence](architecture/persistence.md) | How a campaign becomes a string, the packing layers, and undo history |
 | [Testing strategy](testing-strategy.md) | Why the coverage total is low, and what the suite cannot reach |
 | [Curated spells](spells-missing.md) | Why the app ships 54 spells and not the full SRD |
 
 `dev-guide.html` sits beside these documents. It is a generated tour of the
-codebase, not one of the four kinds. `CONTRIBUTING.md` in the project root
-tells you how to rebuild it.
+codebase rather than one of the four kinds, and `CONTRIBUTING.md` in the
+project root tells you how to rebuild it.
 
 `gallery.html` renders every shared builder in `src/ui/` from the real
-modules, with the call that built each one and the classes that call
+modules, with the call that built each one and the classes that the call
 produces. It loads ES modules, so start `pnpm run dev` and open
 `http://localhost:8080/docs/gallery.html` when you need to see a widget
 before you use it.

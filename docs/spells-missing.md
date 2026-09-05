@@ -1,13 +1,14 @@
 # Curated spells vs. the full SRD
 
 *Explanation. To add a spell of your own, follow the steps in the
-[GM guide](gm-guide.md#add-a-spell-the-app-does-not-ship).*
+[GM guide](gm-guide.md#add-a-missing-spell).*
 
 The built-in spell corpus (`src/data/spells.js`) is a curated cross-section
 of the SRD, not the complete SRD. The SRD 5.1 lists 319 spells, and the app
-ships 54.
+ships 54, because every spell it ships has rules that the resolver can apply
+in full or a description that says which clause it leaves to the GM.
 
-## What ships
+## The built-in list
 
 The list covers every level band from cantrip through 9th level, all six
 caster lists (bard, cleric, druid, sorcerer, warlock, and wizard), and all
@@ -48,17 +49,18 @@ full. These rules are:
 - damage or effect scaling by spell slot level, and by caster level for
   cantrips
 
-A rider chip runs for the spell's whole duration. Nothing spends it after one
-roll, so Guidance and Resistance are the two built-in spells whose rider is
-wider than the printed rule. Each grants 1d4 to a single roll, and the chip
-stays until its duration runs out or the caster stops concentrating. A check
-or a save rolled from the character sheet picks the die up on its own, and so
-does every roll after it. Take the chip off after the roll it paid for.
+A rider chip runs for the spell's whole duration, and nothing spends it
+after one roll, so Guidance and Resistance are the two built-in spells whose
+rider is wider than the printed rule. Each grants 1d4 to a single roll in
+print, while here the chip stays until its duration runs out or the caster
+stops concentrating. A check or a save rolled from the character sheet picks
+the die up on its own, and so does every roll after it, so take the chip off
+after the roll it paid for.
 
 The list also includes utility spells with rules that exist only as prose:
-Light, Mage Armor, Counterspell, and Revivify. These spells are common enough
-that a GM notices when they are missing. Their effects stay in the description
-text of each spell.
+Light, Mage Armor, Counterspell, and Revivify. These spells are common
+enough that a GM notices when they are missing, and their effects stay in
+the description text of each spell.
 
 A few entries include a clause that the app cannot resolve beside a payload
 that it can. Chill Touch deals its damage and leaves the no-healing clause to
@@ -67,7 +69,7 @@ here. Flame Strike raises its fire dice at a higher slot, where the printed
 spell offers a choice of two. Conjure Animals always summons wolves. The
 description of each one states the difference.
 
-## Why the rest are missing
+## Spells that need a missing mechanic
 
 Each omitted spell needs a mechanic that the app does not have yet, so
 adding the spell today would print rules that the app cannot apply.
@@ -75,15 +77,15 @@ adding the spell today would print rules that the app cannot apply.
 - **Spells that move a creature or spend its turn** (Slow, Banishment,
   Command, Dominate Person, Confusion). A failed save adds a condition chip,
   and that part works today: Hold Person, Hold Monster, Blindness/Deafness,
-  Fear, and Sunburst all ship. The rest of each spell's text is still
-  missing. Slow halves speed and cuts an action, Banishment removes the
+  Fear, and Sunburst all ship. The rest of each spell's text needs more,
+  because Slow halves speed and cuts an action, Banishment removes the
   creature from the map, and Dominate Person hands control to the caster.
   None of movement, the action economy, or one creature driving another
   exists yet.
 - **Lingering zones** (Web, Grease, Wall of Fire, Cloudkill, Moonbeam, Spirit
   Guardians). Area targeting lets the caster pick the creatures that the
   spell catches. A spell with `targetCount: 0` offers every reachable
-  combatant, and the caster selects whoever the blast covers. This is how
+  combatant, and the caster selects whoever the blast covers, which is how
   Fireball, Shatter, Circle of Death, and Fire Storm work. A cast resolves
   once, and the app has no map-geometry template, so nothing keeps a zone on
   the map after the cast ends.
@@ -104,7 +106,7 @@ adding the spell today would print rules that the app cannot apply.
   economy, the hit-point maximum, or a creature's size has nothing to hook.
 - **Choosing a summon, and controlling it** (Find Familiar, Animate Dead).
   Summoning itself works today. A `summons` effect names one library creature
-  template and a count, and the cast puts those creatures on the tile of the
+  template and a count, the cast puts those creatures on the tile of the
   party, and they leave when the caster stops concentrating on the spell. A
   cast cannot yet offer the caster a menu of templates, a summon takes its
   own turn as a combatant with no player running it as a companion, and a
@@ -112,32 +114,29 @@ adding the spell today would print rules that the app cannot apply.
   familiar, stays until the GM removes it by hand.
 - **Exploration and social utility spells** (Detect Magic, Identify, Charm
   Person, Suggestion, Divination, teleportation). These spells have rules
-  that exist only as prose. They work today as `utility` entries. The
+  that exist only as prose, so they work today as `utility` entries. The
   built-in list omits them only to stay small, and a GM can add this
   category by hand more easily than any other.
-- The app does not model **eldritch invocations**. For this reason, the
-  built-in list leaves out entries related to invocations, beyond Eldritch
-  Blast itself. The app does model pact magic: a warlock casts from its own
-  pact pool, not from the standard slot table.
+- **Eldritch invocations** are not modeled, so the built-in list leaves out
+  entries related to invocations beyond Eldritch Blast itself. Pact magic is
+  modeled: a warlock casts from its own pact pool, not from the standard slot
+  table.
 
-## Why the gap is a GM's to close
+## Adding a spell by hand
 
-The built-in schema is identical to the schema for a GM-authored spell. A
-missing spell therefore needs no code change. The Spells rail in Library
-mode creates one, and a custom spell whose name matches a default replaces
-that default in place. A library export (`campaign-library.json`) is
-portable, so a shared file of extra spells merges into any browser.
+The built-in schema is identical to the schema for a GM-authored spell, so a
+missing spell needs no code change. The Spells rail in Library mode creates
+one, and a custom spell whose name matches a default replaces that default in
+place. A library export (`campaign-library.json`) is portable, so a shared
+file of extra spells merges into any browser.
 
 Attack, save, heal, buff, summons, and utility effects, together with scaling
 by slot level and by cantrip level, cover most of the mechanics in the SRD
-today. A spell outside them still works as a `utility` entry
-with its rules in the description. The GM then adjudicates it by hand, the
-same way as at a physical table.
+today. A spell outside them works as a `utility` entry with its rules in the
+description, and the GM adjudicates it by hand, the same way as at a
+physical table. The [GM guide](gm-guide.md#add-a-missing-spell)
+gives the steps.
 
-The [GM guide](gm-guide.md#add-a-spell-the-app-does-not-ship) gives the
-steps.
-
-Each family above waits on one mechanic: movement for the first, zones that
-outlive their cast for the second, and an effect that rolls again on a later
-turn for the third. When a mechanic lands, the spells that wait on it belong
-in `src/data/spells.js`.
+When a mechanic lands, such as movement, a zone that outlives its cast, or an
+effect that rolls again on a later turn, the spells that wait on it belong in
+`src/data/spells.js`.

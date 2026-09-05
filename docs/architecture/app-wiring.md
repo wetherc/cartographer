@@ -2,7 +2,7 @@
 
 *Reference. Back to the [architecture overview](../architecture.md).*
 
-`src/main.js` is the composition root: it builds one shared context object,
+`src/main.js` is the composition root. It builds one shared context object,
 then calls a series of `wireX(app)` functions, one per feature area, each in
 its own file under `src/app/`.
 
@@ -83,31 +83,29 @@ guard) and the header's campaign controls: Save, Undo, Redo, New, Load
 example, Export, and Import. It provides `markDirty`, which every other
 module calls.
 
-`src/storage/SaveNotices.js` decides what message the GM sees after a write,
-and its main job is to stay quiet, because autosave writes every ten seconds
-while the campaign is dirty and a full origin would otherwise repeat the same
-warning on every write. `saveOutcome` turns a write result into a message
-and a landed flag. `historyLoss` and `historyLossMessage` announce a
-shortened or cleared undo history once, not on every write.
-`footprintWarning` waits for the footprint to grow by ten percent before it
-warns again.
+`src/storage/SaveNotices.js` decides what message the GM sees after a write.
+Autosave writes every ten seconds while the campaign is dirty, so a full
+origin would repeat the same warning on every write without a rule for when
+to stay quiet. `saveOutcome` turns a write result into a message and a landed
+flag, `historyLoss` and `historyLossMessage` announce a shortened or cleared
+undo history once rather than on every write, and `footprintWarning` waits
+for the footprint to grow by ten percent before it warns again.
 
 This module also handles cross-tab save adoption. When another browser tab
 saves, a Play-mode tab with nothing unsaved adopts that campaign in place
-through `rehydrate.js`, and it does not reload the page. Build mode,
-Library mode, and any failure to adopt fall back to a reload.
+through `rehydrate.js`, without a page reload. Build mode, Library mode, and
+any failure to adopt fall back to a reload.
 
 The adoption tries the recorded delta first. Every save writes its exact
 edit as a delta beside the campaign (see the history log in
-[Persistence](persistence.md)). This module remembers the history position
-of its live state. When an external save is exactly one delta ahead of that
-position, `HistoryLog.planAdoption` returns the ops. The tab then applies
-the ops to its own state with `applyOps`, and it does not read the whole
-save again. `applyOps` copies only along the op paths, so every node and
-entity outside the edit keeps its identity and the adoption costs the size
-of the edit. Every other case (a position gap, an undo, a cleared log, or a
-failed apply) takes the full load path through
-`Campaigns.loadInitialCampaign`.
+[Persistence](persistence.md)), and this module remembers the history
+position of its live state. When an external save is exactly one delta ahead
+of that position, `HistoryLog.planAdoption` returns the ops, and the tab
+applies them to its own state with `applyOps` without reading the whole save
+again. `applyOps` copies only along the op paths, so every node and entity
+outside the edit keeps its identity and the adoption costs the size of the
+edit. Every other case (a position gap, an undo, a cleared log, or a failed
+apply) takes the full load path through `Campaigns.loadInitialCampaign`.
 
 ### mapWiring.js (plus mapAuthoring.js and mapTravel.js)
 
@@ -128,11 +126,12 @@ view still needs to draw, the canvas only redraws in place and the GM keeps
 their pan and zoom. The helper lives in its own module because
 `mapWiring.js` imports `nodeActions.js`, one of the callers.
 
-`locationPanels.js` is the other shared refresh step. `refreshLocationPanels(app)`
-updates the four panels that filter their rows by a map location: encounters,
-initiative, NPCs, and handouts. The map resync does not cover them, because
-it reads the grid and these read the campaign lists. A caller uses this when
-it moves a creature, unplaces one, or changes what a handout is bound to.
+`locationPanels.js` is the other shared refresh step.
+`refreshLocationPanels(app)` updates the four panels that filter their rows
+by a map location: encounters, initiative, NPCs, and handouts. The map resync
+does not cover them, because it reads the grid and these read the campaign
+lists. A caller uses this when it moves a creature, unplaces one, or changes
+what a handout is bound to.
 
 The gesture layers live beside it, in their own files:
 
@@ -140,33 +139,33 @@ The gesture layers live beside it, in their own files:
   drop-paint, the tile inspector, and the map-edit undo (`snapshotEdit` on the
   `MapEnv`, `undoStroke` as an action).
 - `mapTravel.js` handles Play mode: cell clicks, teleports, point-of-interest
-  discovery, NPC meets, and the hover tooltip. It syncs its own views, and
-  it does not call `resyncMapViews`. A bound character's move does not move
-  the party that the location panels filter on. A Play-mode zoom into a node
+  discovery, NPC meets, and the hover tooltip. It syncs its own views and
+  does not call `resyncMapViews`. A bound character's move does not move the
+  party that the location panels filter on, and a Play-mode zoom into a node
   leaves the tile selection and the palette alone.
 
 ### generateAction.js and nodeActions.js
 
-`generateAction.js` runs the Generate dialog flow and its apply.
+`generateAction.js` runs the Generate dialog flow and its apply, and
 `nodeActions.js` handles node create, edit, and delete. Both take
 `(app, env)` like the gesture layers, and both end in `resyncMapViews`.
 
-A generated layout replaces every tile of the node, so the sub-maps the old
-tiles led to are removed with them. A multi-level dungeon leaves its old
-deeper levels this way, and the new level 1 gets new ones. The pure
-decisions live in `src/map/RegenerateNode.js`. `linkedDescendants` names
-the nodes to remove: every node an old tile links to, with its subtree. A
-child that no tile links to is left alone, because it was already
-unreachable. `regenerateLanding` says where the party goes, including a
-party that stood in a removed level. `regenerateTokenMoves` says the same
-for each token that stood in the node, a split character or a placed
-creature, because the new layout can turn the tile it stands on into wall or
-void. Every other location inside the removed levels is emptied, with the
-same answers the delete path gives: a character rejoins the party
+A generated layout replaces every tile of the node, so the sub-maps the
+replaced tiles led to are removed with them. A multi-level dungeon leaves its
+deeper levels this way, and the new level 1 gets new ones. The pure decisions
+live in `src/map/RegenerateNode.js`. `linkedDescendants` names the nodes to
+remove: every node a replaced tile links to, with its subtree. A child that
+no tile links to is left alone, because it was already unreachable.
+`regenerateLanding` says where the party goes, including a party that stood
+in a removed level, and `regenerateTokenMoves` says the same for each token
+that stood in the node, a split character or a placed creature, because the
+new layout can turn the tile it stands on into wall or void. Every other
+location inside the removed levels is emptied, with the same answers the
+delete path gives: a character rejoins the party
 (`CharacterTokens.recallFrom`), a creature becomes unplaced
 (`CreatureMap.unplaceFrom`), and a handout becomes campaign-wide
-(`Handouts.unbindFrom`). A location left on a node that is gone hides its
-owner from every panel.
+(`Handouts.unbindFrom`). A location left on a node that is gone would hide
+its owner from every panel.
 
 `regenerateSnapshot` builds the undo record. The stroke-undo ring in
 `EditHistory.js` keeps an `EditSnapshot` per edit: the rewritten nodes, the
@@ -174,17 +173,16 @@ ids of created nodes, the removed nodes, the party position, the locations
 of the characters and creatures the edit moved, the nodes the handouts it
 set loose were bound to, and the entry memory. `undoStroke` in
 `mapAuthoring.js` applies them all, then refreshes the panels that filter by
-location through `app/locationPanels.js`.
-The rng that drew the layout also picks the entrance art on the parent, so
-one seed gives one result.
+location through `app/locationPanels.js`. The rng that drew the layout also
+picks the entrance art on the parent, so one seed gives one result.
 
 The decisions they share are pure functions in `src/map/NodeEdits.js`.
-`freshNodeId` picks an id that the grid does not use. `tileWithinBounds`
-says where the party goes when the node it stands in shrinks.
-`relandedTile` says the same for a node that was regenerated under it.
+`freshNodeId` picks an id that the grid does not use, `tileWithinBounds`
+says where the party goes when the node it stands in shrinks,
+`relandedTile` says the same for a node that was regenerated under it, and
 `entranceArtFor` names the marker that a generated map's entrance gets on
-its parent. `coerceNodeKind`, in `NodeKinds.js`, makes sure that a dialog or
-a hand-edited save cannot write a kind that the renderer does not know.
+its parent. `coerceNodeKind`, in `NodeKinds.js`, keeps a dialog or a
+hand-edited save from writing a kind that the renderer does not know.
 
 `src/map/NodeCleanup.js` decides where every other location goes when a
 node is deleted or shrinks. A delete can remove the node the party stands
@@ -192,10 +190,10 @@ in, and a party position on a missing node breaks the next load, so
 `deleteLanding` names the tile in the remaining parent, beside the block the
 node occupied, and `deleteNode` refuses when no parent remains.
 `locationsAfterDelete` then recalls split characters inside the subtree,
-unplaces creatures there, and unbinds handouts from it. `locationsAfterShrink`
-pulls the party, split characters, and placed creatures inside the new
-bounds through `tileWithinBounds`. `nodeActions.js` reads the live state
-into these functions and writes the answers back.
+unplaces creatures there, and unbinds handouts from it, and
+`locationsAfterShrink` pulls the party, split characters, and placed
+creatures inside the new bounds through `tileWithinBounds`. `nodeActions.js`
+reads the live state into these functions and writes the answers back.
 
 ### partyWiring.js
 
@@ -204,24 +202,23 @@ panel. It provides `refreshSelectedCharacter` and the `partyPanels` view,
 which re-reads everything those panels show at once.
 
 The character panels do not talk to each other, so `characterScope.js`
-records which character the panels are pointed at. It writes an edited character
-back into the roster, and it hands the new value to every panel that
-registered with it. A panel gets a commit handle from `register`. The scope
-skips that panel when it distributes an edit, because the panel already
-re-renders itself from its own commit path. A fourth character tab needs one
-registration.
+records which character the panels are pointed at. It writes an edited
+character back into the roster, and it hands the new value to every panel
+that registered with it. A panel gets a commit handle from `register`, and
+the scope skips that panel when it distributes an edit, because the panel
+already re-renders itself from its own commit path. A fourth character tab
+needs one registration.
 
 `view/CharacterClaim.js` owns this tab's claim on one character and the
-"Playing as" picker. `splitParty.js` owns the GM's split switch and the
-regroup that it forces. This module mounts both here, and both call back
-into it. The claim calls back to select a character, or to fall back to
-spectator. The switch calls back to redraw the roster, whose place buttons
-follow it.
+"Playing as" picker, and `splitParty.js` owns the GM's split switch and the
+regroup that it forces. This module mounts both, and both call back into it:
+the claim to select a character or to fall back to spectator, and the switch
+to redraw the roster, whose place buttons follow it.
 
 Every panel this module refreshes stops short of rebuilding when nothing it
 shows has changed. `ui/CharacterSheet.js` compares a dependency list and
-re-points its existing nodes at the new values. `ui/CharacterRoster.js` runs
-the guard that the list panels run, through `repaintNeeded`. The claim
+re-points its existing nodes at the new values, `ui/CharacterRoster.js` runs
+the guard that the list panels run through `repaintNeeded`, and the claim
 compares the option list and the displayed value before it replaces the
 picker's options. A `partyPanels` update on an adopted save that changed
 nothing therefore adds no element to the party rail.
@@ -237,8 +234,8 @@ This module writes a loaded campaign over the running one. It replaces:
 - every campaign-backed view, refreshed last
 
 A follower tab's update therefore costs a repaint rather than a page load.
-The parse was never the expensive part, since after the tile codec (see
-[Persistence](persistence.md)) it takes well under a millisecond.
+The parse itself takes well under a millisecond after the tile codec (see
+[Persistence](persistence.md)).
 
 The adoption has limits:
 
@@ -248,9 +245,9 @@ The adoption has limits:
   load. The delta adoption in `campaignActions.js` also hands it a
   `Campaign`, which `Campaigns.campaignFromLiveState` builds from the state
   that `applyOps` produced, and this module cannot tell which path built it.
-- `mode` and `role` are deliberately *not* adopted. Both are per-tab view
-  state, so a display pinned to the Player view does not follow the GM tab
-  into Build mode.
+- `mode` and `role` are *not* adopted. Both are per-tab view state, so a
+  display pinned to the Player view does not follow the GM tab into Build
+  mode.
 
 A new campaign field joins `SYNCED_STATE_KEYS`, because a test compares that
 list with the fields of `Campaign` and fails when one is missing.
@@ -268,20 +265,20 @@ tell a real edit from a repeated autosave. It pairs a collection by element
 changed.
 
 The world's nodes go through the same `reconcile` call before
-`grid.replaceNodes`, and for a stronger reason than the panels. The map
-caches (`revealedIdsOf` in `map/MapRenderer.js`, `findRegionGroups` in
-`map/RegionGroups.js`, and `spanBlocks` in `map/TilePaint.js`) are keyed on
-node identity. A node the save did not change comes back as the object those
-caches already know, so an adoption that moved nothing leaves them warm.
+`grid.replaceNodes`, because the map caches (`revealedIdsOf` in
+`map/MapRenderer.js`, `findRegionGroups` in `map/RegionGroups.js`, and
+`spanBlocks` in `map/TilePaint.js`) are keyed on node identity. A node the
+save did not change comes back as the object those caches already know, so
+an adoption that moved nothing leaves them warm.
 
 ### encounterWiring.js (plus creatureForm.js, weaponAttack.js, the four cast modules, combatants.js)
 
 This module owns the Encounters panel, the sidebar's Initiative card, the
 Build-rail encounter authoring list, and the walked-into-an-encounter alert.
-It owns the running combat, and only this module writes `state.combat`. The turn
-flow is registered on `app.actions` (`advanceCombatTurn`, `endCombat`), so
-the combat screen drives the same fight through the same code. The fight
-itself renders in combat mode. [The combat guide](combat.md) covers it.
+It owns the running combat, and only this module writes `state.combat`. The
+turn flow is registered on `app.actions` (`advanceCombatTurn`, `endCombat`),
+so the combat screen drives the same fight through the same code. The fight
+itself renders in combat mode, which [the combat guide](combat.md) covers.
 
 The shared create-and-edit dialog (identity, disposition, an optional level
 and tier, placement via `locationFields`) lives in `creatureForm.js`. It
@@ -289,8 +286,8 @@ backs every creature authoring flow: this module's panels, the Story
 sidebar's lists, and the Build-mode right-click menu. A caller that creates
 passes a seed, either a library template or a small preset such as the "New
 foe here" item's level-1 hostile. Edits go through the pure
-`Creature.editCreature`. It keeps live state (current HP lowered to fit a new
-max, stat block, conditions), and it resets the `met` flag when the creature
+`Creature.editCreature`, which keeps live state (current HP lowered to fit a
+new max, stat block, conditions) and resets the `met` flag when the creature
 moves. The bestiary spawn dialog is `creatureForm.js`'s `addFromLibrary`.
 
 `weaponAttack.js` resolves the 5e attacks that the combat screen's action
@@ -299,32 +296,32 @@ bar triggers. Casting a spell is the same job, split across four modules:
 `spellTargets.js` says who a spell can reach, `spellCastFields.js` builds
 the dialog fields, and `spellCastResolve.js` rolls the cast and writes the
 outcome. `CastPlan` in `src/types/cast.ts` passes between them.
-`weaponAttack.js` itself is the dialog, the dice tray, and the log lines.
-The rules it applies are pure functions in `src/combat/AttackResolve.js`,
-which has the unit tests. `resolveAttack` decides hit, crit, and the
-wording that both the log and the toast quote. `damageParts` assembles the
-dice that a hit rolls, and it doubles every count on a crit, including the
-dialog's added dice. `attackerStats` picks between a creature's stat block
-and a character's gear-buffed scores.
+`weaponAttack.js` itself is the dialog, the dice tray, and the log lines,
+while the rules it applies are pure functions in
+`src/combat/AttackResolve.js`, which has the unit tests. `resolveAttack`
+decides hit, crit, and the wording that both the log and the toast quote,
+`damageParts` assembles the dice that a hit rolls and doubles every count on
+a crit, including the dialog's added dice, and `attackerStats` picks between
+a creature's stat block and a character's gear-buffed scores.
 
 The spell decides how many creatures a cast can name. `Casting.maxTargets`
 reads its `targetCount` value, where an absent value means one target, plus
-one target per scaling step. A `targetCount` of 0 marks an area spell with
-no cap at all. The cast dialog offers a single picker at a cap of one, and a
-capped checkbox group above that. Both caps are read at the slot level that
-the picker opens on, which is the lowest level that the caster can spend. A
-cast that ends up over the cap resolves the targets it can reach, and it
-reports the rest as dropped. A multi-projectile spell, such as Scorching
-Ray, gets the allocation grid, rather than checkboxes, because its
-projectiles split between creatures. Its total must add up exactly, so a
-change to the slot level restates it through the form's `setTotal`. See
+one target per scaling step, and a `targetCount` of 0 marks an area spell
+with no cap at all. The cast dialog offers a single picker at a cap of one,
+and a capped checkbox group above that. Both caps are read at the slot level
+that the picker opens on, which is the lowest level that the caster can
+spend. A cast that ends up over the cap resolves the targets it can reach
+and reports the rest as dropped. A multi-projectile spell, such as Scorching
+Ray, gets the allocation grid rather than checkboxes, because its
+projectiles split between creatures, and its total has to add up exactly, so
+a change to the slot level restates it through the form's `setTotal`. See
 [Entities](entities.md#multi-projectile-spells) for the model.
 
 Which creatures a cast can reach depends on where it is cast from. In
-combat, the list comes from the initiative order, so it is whoever is in
-the fight. Out of combat, it is the party's own tile: the undefeated hostile
+combat, the list comes from the initiative order, so it is whoever is in the
+fight. Out of combat, it is the party's own tile: the undefeated hostile
 creatures standing on it. The tile is as close to a range check as the app
-gets, since there is no distance between two tokens to measure yet.
+gets, since there is no distance between two tokens to measure.
 
 All of this builds on `combatants.js`, the one place that resolves a
 participant id across the two combatant collections (characters,
@@ -344,10 +341,10 @@ creatures):
   branches only to satisfy the store function of the collection the target
   lives in.
 - `commitCreatures(app)` is the refresh that follows a write to
-  `state.creatures`. Several panels can show the same creature: the Play
+  `state.creatures`. Several panels can show the same creature (the Play
   sidebar's Encounters and NPCs lists and the Build rail's two authoring
-  lists. A write from any side must refresh the others, because nothing
-  about the write itself says which side it came from.
+  lists), and nothing about the write itself says which side it came from,
+  so a write from any side refreshes the others.
 
   After a write, `commitCreatures` re-marks the danger and blue tiles on the
   viewed map, which also rebuilds both Build-rail lists scoped to the same
@@ -390,9 +387,9 @@ never in one form.
 
 This module mounts the combat screen (`ui/CombatScreen.js`) and registers
 `views.combatScreen`. It owns no combat state, because the fight lives in
-encounterWiring, and the view is derived per render by `combat/CombatView.js`.
-This module keeps only the tab's transient UI choices: which combatant the
-screen is inspecting, and which board card is picked as the attack target.
+encounterWiring and the view is derived per render by `combat/CombatView.js`,
+and it keeps only the tab's transient UI choices: which combatant the screen
+is inspecting, and which board card is picked as the attack target.
 `main.js` wires this module before `wireEncounters`, so the view exists by
 the time the fight's refresh paths run. The details, including how the dice
 tray moves into the screen and back, are in [the combat guide](combat.md).
@@ -424,19 +421,18 @@ The helper owns the rest:
 This module owns the Library mode's four template lists (equipment,
 creatures, spells, feats) and the custom-library file controls: export,
 import, reset, and the startup auto-load. The creature list shows two
-subtabs. Foes lists the hostile templates, and People lists the rest. An
-edit that changes a template's disposition moves it to the other subtab.
-"Add to campaign" opens the campaign's creature dialog, seeded from the
-template.
+subtabs, Foes for the hostile templates and People for the rest, and an edit
+that changes a template's disposition moves it to the other subtab. "Add to
+campaign" opens the campaign's creature dialog, seeded from the template.
 
 The custom library is not campaign state, because it belongs to the GM
 rather than to any one campaign. `library/Library.js` has the built-in
 defaults, the pure merge logic, and a small module-level "active library"
 registry. A custom entry whose name (and for equipment, type) matches a
-default overrides it in place, and all others append. The
-code that uses the presets, such as the item form's pickers, the enemy gear
-selects, and "From bestiary", reads that registry at call time. They mount far from
-the wiring that loads customizations.
+default overrides it in place, and all others append. The code that uses the
+presets, such as the item form's pickers, the enemy gear selects, and "From
+bestiary", reads that registry at call time, because those controls mount
+far from the wiring that loads customizations.
 
 Inside the wiring, every list's remove flow goes through one
 `makeRemoveHandler(noun, apply)`, so the revert-override-vs-delete-custom
@@ -447,7 +443,7 @@ another entry already uses, with a toast, because a custom entry keeps its
 id and the store would drop the other entry's id from the index. The id
 rules (`storedEntryId`, `renameConflict`, and the `idClaimer` that
 `normalizeLibrary` uses on the way in) live in `library/LibraryIdentity.js`.
-Every edit and removal writes through `updateCustom(edit)`. It reads the
+Every edit and removal writes through `updateCustom(edit)`, which reads the
 stored library first and applies the edit onto that, so two tabs editing the
 library do not erase each other's work. The row summaries live in
 `app/librarySummaries.js`.
@@ -456,33 +452,33 @@ library do not erase each other's work. The row summaries live in
 
 This module owns the mode and role switches (role guarded by the cross-tab
 GM lock), the sidebar tabs, and the sidebar collapse. It provides
-`setMode`. Mode is a three-way toggle: Play, Build, or Library. Library
-mode hides the map column entirely, and shows only the template lists.
+`setMode`. Mode is a three-way toggle for the header (Play, Build, or
+Library), and Library mode hides the map column entirely and shows only the
+template lists.
 
 Only one tab can have the GM view, and only one tab can play a given
 character. Both locks come from `createHeartbeatLock`, in
-`storage/GMLock.js`, which builds one tab's side of a lock.
-`claim(key)` takes the key, and it releases whatever key this tab claimed
-before. It also refreshes the stored record on an interval, so other tabs
-can see that the holder is alive. `release()` frees the key, and so does
-`pagehide`. The `onYield` callback runs when another tab claims the held
-key. This happens when this tab stays frozen long enough for its record to
-pass the TTL. `sessionControls.js` claims the single GM key. To yield, it
-switches to the Player view. `view/CharacterClaim.js` claims a
-per-character key from `characterLockKey`. To yield, it drops to
-spectator.
+`storage/GMLock.js`, which builds one tab's side of a lock. `claim(key)`
+takes the key and releases whatever key this tab claimed before, and it
+refreshes the stored record on an interval, so other tabs can see that the
+holder is alive. `release()` frees the key, and so does `pagehide`. The
+`onYield` callback runs when another tab claims the held key, which happens
+when this tab stays frozen long enough for its record to pass the TTL.
+`sessionControls.js` claims the single GM key and yields by switching to the
+Player view, and `view/CharacterClaim.js` claims a per-character key from
+`characterLockKey` and yields by dropping to spectator.
 
 ### diceWiring.js
 
 This module owns the dice tray, and the `rollDice` action that a weapon
 attack or a spell uses to put its own roll through it. Every roll is logged
-to the travelogue. Each entry is attributed to the GM, to the character
-that this tab is bound to, or to an anonymous player. This last case
-happens when the tab is a spectator.
+to the travelogue, and each entry is attributed to the GM, to the character
+that this tab is bound to, or to an anonymous player when the tab is a
+spectator.
 
 ### shortcuts.js and onboarding.js
 
-This module owns global keyboard shortcuts and the first-run overlay. Which
+These modules own global keyboard shortcuts and the first-run overlay. Which
 key means what is the table in `src/view/Shortcuts.js`, so it can be tested
 without a keyboard. `shortcuts.js` keeps the listener, the "am I typing in a
 field" test that needs real DOM elements, and the clicks each action turns

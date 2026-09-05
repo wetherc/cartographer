@@ -20,7 +20,8 @@ The dev server bundles the sources into `dist/` and serves them. Open the
 address it prints, which is `http://localhost:8080` by default. The server
 rebuilds each time you save a source file.
 
-Leave this terminal running. Use a second terminal for the commands below.
+Leave this terminal running, and use a second terminal for the commands
+below.
 
 ## 2. Find the module
 
@@ -36,7 +37,7 @@ the list.
 
 This module is *pure logic*: it takes values and returns new values, and it
 never touches the DOM. Almost every rule in the app lives in a module like
-this one. The DOM half sits in `src/ui/`, and
+this one, while the DOM half sits in `src/ui/`.
 [Architecture](architecture.md) explains the split.
 
 ## 3. Make the change
@@ -79,7 +80,8 @@ import {
 
 ## 5. Run the test
 
-Run the one file while you work. It is much faster than the whole suite:
+Run the one file while you work, because it is much faster than the whole
+suite:
 
 ```bash
 node --test tests/Conditions.test.js
@@ -122,8 +124,8 @@ eye on it.
    dialog opens.
 5. Open the **Condition** dropdown. `Cursed` is in the list.
 
-Open the browser console as well. An error there is easy to miss, and a
-missing asset shows up nowhere else.
+Open the browser console as well, because an error there is easy to miss
+and a missing asset shows up nowhere else.
 
 ## 8. Undo the change
 
@@ -137,5 +139,5 @@ missing asset shows up nowhere else.
 You have used the whole loop: change a pure module, test it, check the
 types and the style, and look at the result. Read
 [Testing a change](testing.md) for the rest of the loop, including the
-preview pages and the browser checks. Read
+preview pages and the browser checks, and
 [Architecture](architecture.md) to see where the other subsystems live.

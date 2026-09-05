@@ -6,10 +6,10 @@ This codebase has no component framework: a component here is a plain
 function that builds DOM elements and returns a handle, and the consistency
 comes from a small set of shared builders plus one CSS token file.
 
-Read this guide before you add anything to `src/ui/` or `styles/`. Almost
-every widget pattern that you need already exists. The existing widgets became
-centralized because the hand-rolled copies had drifted on accessibility
-attributes.
+Read this guide before you add anything to `src/ui/` or `styles/`, because
+almost every widget pattern that you need already exists, and a hand-rolled
+copy of one tends to miss the accessibility attributes that the shared
+builder sets.
 
 The rules behind these components (when to use a confirm dialog, how buttons
 are styled, what gets a toast) live in
@@ -25,8 +25,8 @@ story to the matching file under `docs/gallery/sections/`. The snippet comes
 from the source of the story's own render function, so there is no second
 copy of the call to keep in step.
 
-[The builder contract](#the-builder-contract) below is the normative part:
-what any function in `src/ui/` must look like. The rest of the guide
+[The builder contract](#the-builder-contract) below is the normative part,
+which says what any function in `src/ui/` looks like. The rest of the guide
 describes the builders that exist today. Where the two disagree, the places
 that have not caught up are listed under [Known
 gaps](#known-gaps).
@@ -63,7 +63,7 @@ Everything in `src/ui/` is a function that returns DOM, or a handle over
 DOM. These rules say what such a function looks like. They apply to a new
 builder and to any change to an existing one.
 
-### The name says the contract
+### Naming
 
 | Form | Returns | Owns |
 | --- | --- | --- |
@@ -77,7 +77,7 @@ A function that builds and mounts is a `mount`. A function that builds and
 hands the result back is a `build`. A builder is never named after the
 feature it was first written for.
 
-### Two positionals, then one options object
+### Arguments
 
 A builder takes at most two positional arguments, then one options object. A
 value gets a positional slot only when it is required, has no default, and
@@ -98,7 +98,7 @@ key in the object.
   positionals is inconsistent with every other panel, and the caller has to
   read the source to mount it.
 
-### `className` appends, always
+### The `className` option
 
 Every builder that returns an element accepts `opts.className` and appends
 it to its own base class through `classNames`:
@@ -118,7 +118,7 @@ el('div', classNames(['chip', opts.className]))
 `className` is for per-feature layout and one-off modifiers, not for a state
 the builder already knows about.
 
-### Semantic options, not class strings
+### Semantic options
 
 A caller says what it wants. The builder owns the class vocabulary that
 produces it.
@@ -140,7 +140,7 @@ builder that applies it, is a missing builder. That applies however few call
 sites type the class today, because typing the class is the only option
 they have.
 
-### What a test enforces
+### The vocabulary test
 
 These rules are checked by `tests/uiVocabulary.test.js`, which reads `src/`
 as text because the modules it covers build DOM and the runner has no
@@ -160,9 +160,8 @@ A failure prints the file, the line, and the builder to call instead. If you
 add a builder with a class of its own, add its block to the owners table in
 the test.
 
-### Deliberately not doing
+### Settled decisions
 
-These are settled, and recorded here so they are not reopened:
 
 - **`el` keeps its positional class string.** `el(tag, className,
   ...children)` is the leaf that everything else builds on. Its value is
@@ -274,16 +273,16 @@ in their own ways: the travelogue compares anchor ids, the tile inspector
 builds once and re-points, and the character sheet does the same behind a
 structure check (below). Copy this pattern only
 when a panel is large or grows continuously. See
-[Conventions](conventions.md#growing-lists-render-incrementally).
+[Conventions](conventions.md#incremental-rendering-of-growing-lists).
 
 ### The character sheet's structure check
 
-The sheet is the one panel where clearing and rebuilding was expensive enough
-to design around. A single HP tick used to discard about two hundred
-elements (six ability badges, each with an inline SVG die, every
-spell-slot pip, the progression and spell sections, the condition chips)
-only to move the width of one bar. Every tick also commits, which fires the
-sibling panels too.
+The sheet is the one panel where clearing and rebuilding costs enough to
+design around. A rebuild on a single HP tick would discard about two hundred
+elements (six ability badges, each with an inline SVG die, every spell-slot
+pip, the progression and spell sections, the condition chips) to move the
+width of one bar, and every tick also commits, which fires the sibling
+panels too.
 
 The sheet therefore splits its work: `build()` creates the DOM once and
 collects a list of small writers. Each writer pushes one
@@ -301,19 +300,18 @@ triggers a rebuild.
 
 The repoint path limits how a contributor can extend the sheet:
 
-- **Event handlers must read the live character, not the character they
-  were built from.** A handler now outlives the change that follows it, so
+- **Event handlers read the live character, not the character they were
+  built from.** A handler outlives the change that follows it, so
   the sheet passes around a `live()` getter, and `buildProgressSection`
   takes a getter rather than a character. A handler that closed over a
   build-time snapshot silently undoes any change written since.
-- **`sheetDeps` must name every field that the structural builders read.**
-  If a read is added to the sheet, the progression section, or the spell
-  section without adding it there, the display goes stale, and the compiler
-  cannot catch the error.
+- **`sheetDeps` names every field that the structural builders read.** A
+  read added to the sheet, the progression section, or the spell section
+  without an entry there leaves the display stale, and the compiler cannot
+  catch the error.
 
-Comparing these fields by reference is correct, because the entity layer
-never mutates data in place. See
-[Conventions](conventions.md#tiles-are-frozen-once-a-node-contains-them).
+Comparing these fields by reference works because the entity layer never
+mutates data in place. See [Conventions](conventions.md#frozen-tiles).
 
 ### Handles that are not `{ update }`
 
@@ -376,8 +374,8 @@ changes how a handler is written.
 reports that nothing happened.** "Nothing happened" is a returned `false` or
 `null`. This is already what a cancelled dialog gives, since `confirmModal`
 resolves `false` and `promptModal` resolves `null`. A handler that returns
-nothing at all counts as a change, and the panel redraws. So the fourteen
-hand-written copies of
+nothing at all counts as a change, and the panel redraws. The hand-written
+form
 
 ```js
 const button = iconButton('edit', `Edit ${quest.title}`, async () => {
@@ -385,7 +383,7 @@ const button = iconButton('edit', `Edit ${quest.title}`, async () => {
 });
 ```
 
-collapse to a descriptor:
+becomes a descriptor:
 
 ```js
 actions: (quest) => [
@@ -394,14 +392,14 @@ actions: (quest) => [
 ```
 
 The `ctx` handed to `buildBody`, `actions`, and `buildExtras` includes `gm`
-(the resolved gate), `render` for a custom control that must refresh the
+(the resolved gate), `render` for a custom control that refreshes the
 list, and `action(spec, entry)` to build a button with the same behavior. A
 leading toggle, like the quest's complete button or the handout's eye, is
 wired through that last option even though it sits inside the body rather
 than in `actions`.
 
-`update()`'s early-out compares row objects by identity. This check is
-correct only because the entity layer never mutates data in place. A panel
+`update()`'s early-out compares row objects by identity. This check works
+only because the entity layer never mutates data in place. A panel
 that draws something its rows do not describe passes `dependsOn`, a
 function returning one comparable value, which the guard compares with
 `Object.is` alongside the rows and the gate. The Active encounter tab uses
@@ -419,7 +417,7 @@ also discards what the user typed into a row's input on every refresh.
 
 `src/ui/buttons.js` gives three button builders, a segmented switch, an
 empty-state paragraph, the chip pair, a status badge, and the section label.
-A panel must not build a `<button>` element itself. A control that has the
+A panel builds no `<button>` element itself. A control that has the
 `btn` presentation is an `iconButton` or a `textButton`. A control that is a
 button for the keyboard but has no button chrome is a `bareButton`, whatever
 class it goes on to take: a tab, a menu item, a tree row, a disclosure header,
@@ -450,7 +448,7 @@ label.
 `textButton` builds `btn` with an optional leading `opts.icon`. Here the
 visible text is already the accessible name, so the widget sets `ariaLabel`
 only when the caller gives one, for cases where the label alone is
-ambiguous (a weapon name whose action is really "Attack with ..."). A
+ambiguous (a weapon name whose action is "Attack with ..."). A
 dialog's confirm button also passes `opts.type: 'submit'` with an
 `opts.value` that the dialog reads back from `returnValue`. This is how an
 Escape dismissal (with the value left empty) stays distinguishable from a
@@ -475,7 +473,7 @@ CSS modifier:
 
 Every destructive control passes `variant: 'danger'`, stays visible rather
 than appearing only on hover, and asks for confirmation first. See
-[Conventions](conventions.md#every-destructive-action-confirms-first).
+[Conventions](conventions.md#confirmation-before-destructive-actions).
 
 `segSwitch` builds a `role="group"` of buttons over one value: the header's
 mode, role, and theme switches, and the dice tray's d20 mode. Each option is
@@ -516,8 +514,8 @@ mana colour, and a custom library entry takes the accent.
 
 `sectionLabel(text)` is the sub-heading inside a panel section. It is a span by
 default, since these label the box beside them rather than open a section.
-`opts.tag` makes it an `h3` or `h4` for a heading a screen reader should reach
-through the document outline.
+`opts.tag` makes it an `h3` or `h4` for a heading that the document outline
+lists for a screen reader.
 
 ### `src/ui/icons.js`
 
@@ -557,11 +555,10 @@ than placing an inline SVG at the call site.
 factLine(label, value, { layout = 'stack', className }?) -> HTMLDivElement
 ```
 
-`src/ui/FactLine.js` draws a label with the value it names. Before it
-existed, the active combatant's initiative, AC, and HP in `CombatScreen.js`,
-the casting meta of `SpellDetail.js`, and the lines of `LoadoutBlock.js` each
-had their own version under their own name and class family, and all of them
-build it from here now.
+`src/ui/FactLine.js` draws a label with the value it names. The active
+combatant's initiative, AC, and HP in `CombatScreen.js`, the casting meta of
+`SpellDetail.js`, and the lines of `LoadoutBlock.js` all build through it, so
+one class family covers every line of this kind.
 
 The label is a `sectionLabel`, which keeps every line of this kind cased and
 sized alike. The value takes any `Child`, so a caller can pass a
@@ -572,8 +569,8 @@ of slot chips.
 for a block of lines that reads as a table, and give the label a width in
 your own sheet so the values line up. The loadout block does both.
 
-This is not `buildStatBar`, despite the names sitting close together. A stat
-bar draws a fraction as a filled track, while a fact line draws text.
+A fact line is not a `buildStatBar`, because a stat bar draws a fraction as
+a filled track, while a fact line draws text.
 
 ## Death-save block
 
@@ -622,8 +619,8 @@ unit tested. This module is the DOM around them.
 
 ## Dialogs
 
-`src/ui/Modal.js` wraps the native `<dialog>` element and is the most-imported
-module in `src/ui/` (24 modules). Its entry points each return a promise:
+`src/ui/Modal.js` wraps the native `<dialog>` element, and 27 modules import
+it. Its entry points each return a promise:
 
 ```js
 promptModal(title, fields, options?) -> Promise<Record<string, string> | null>
@@ -677,7 +674,7 @@ dismissal semantics have one owner, so these four cannot drift from the
 `Modal.js` dialogs.
 
 Which dialog to use is a policy question, covered in
-[Conventions](conventions.md#dialog-discipline): `confirmModal` only for
+[Conventions](conventions.md#choosing-a-dialog): `confirmModal` only for
 questions with two real answers, `alertModal` for blocking notifications,
 `app.toasts.show` for non-blocking ones, and `confirmDelete(name, detail?)`
 for plain entity deletes. `confirmDelete` owns the `Delete "X"?` wording and
@@ -697,7 +694,7 @@ A field is a `ModalField` record (`Modal.js`), and `type` picks the widget:
 | `'multiselect'` | scrollable checkbox group, capped by `max` | checked values, comma-joined |
 | `'tags'` | pill list with inline entry | pills plus any unfinalized text, comma-joined |
 | `'pillgrid'` | assignment grid: `rows` x `options`, one option per row | `row:value` pairs, comma-joined |
-| `'allocation'` | distribution grid: a number input per row that must sum to `total` | `row:count` pairs, comma-joined. A row given 0 is left out |
+| `'allocation'` | distribution grid: a number input per row whose values sum to `total` | `row:count` pairs, comma-joined. A row given 0 is left out |
 | `'button'` | an in-form action button | `''` (it acts through `onChange`) |
 
 Every field also takes `label`, `value`, `full`, `newRow`, `hidden`, and
@@ -773,13 +770,14 @@ re-implements that check. `afterSubmit` runs on an accepted submit, which
 is how the inventory add row clears itself while the per-item editor keeps
 its values on screen.
 
-An `assemble` must read its controls and hand the values to a pure
-function, rather than build the finished value itself. The item and spell
+An `assemble` reads its controls and hands the values to a pure function
+rather than building the finished value itself, so the meaning of a value
+stays testable without a DOM. The item and spell
 forms do this through `entities/ItemDraft.js` and `entities/SpellDraft.js`.
 Their tests live there too. See
 [Entities](entities.md#the-ui-layer-over-entities).
 
-### One spec for the dialog and the rail
+### Spec forms
 
 The creature template form builds no controls of its own. An entity
 the GM authors both in a dialog and in the rail describes its fields once as
@@ -947,9 +945,8 @@ lifecycle rather than being folded into it.
 ## Image input
 
 `src/ui/imageField.js` backs the `file` field. It exists because a picked
-image lands in the campaign save, which is copied whole into every undo
-slot and lives in a localStorage origin of about 5 MB, so ingestion is
-bounded:
+image lands in the campaign save, whose localStorage origin is about 5 MB,
+so ingestion is bounded:
 
 ```js
 readImageFile(file)                       -> Promise<string>  // a data: URL
@@ -979,7 +976,7 @@ expected to go away when image payloads move to real files.
 
 ## The CSS layer
 
-### One manifest, one cascade order
+### The import manifest
 
 `style.css` contains nothing but `@import`s of the feature sheets under
 `styles/`, in cascade order, with a one-line comment for each. A later
@@ -1085,7 +1082,7 @@ colors), and `.fact-line` / `__label` / `__value` / `--row`.
 ### Utilities
 
 Alongside those shared classes, `base.css` has a small utility layer,
-for the treatments that kept getting restated in every feature sheet. A
+for the treatments that every feature sheet would otherwise restate. A
 utility describes how something looks, not what it is, so an element
 keeps its own component class for the rest of its styling and for
 anything that needs to select it:
@@ -1096,8 +1093,8 @@ el('span', 'npc-panel__location u-muted', label);
 
 `.u-muted` is the small secondary text used by captions, hints, derived
 readouts, and row metadata: `font-size: var(--text-label)` plus
-`color: var(--text-muted)`, the pair that about thirty rules each spelled
-out separately.
+`color: var(--text-muted)`, the pair that about thirty rules would each
+spell out otherwise.
 
 The rest cover the flex layouts that almost every container here uses.
 `.u-row` is a horizontal bar with its items centered across it
@@ -1123,8 +1120,8 @@ rule always wins where the two set the same property.
 `.tile-inspector__field--inline` relies on this: it takes its text back
 to the full `--text` color while the element still has `u-muted` for
 the size. Every `.foo[hidden]` companion rule does the same, and each
-must out-specify the utility's `display: flex` for the hidden attribute
-to work.
+one out-specifies the utility's `display: flex`, because otherwise the
+hidden attribute has no effect.
 
 Add a new utility only when the pattern is already repeated several times
 and its values come from the token scale. Anything with a
@@ -1150,8 +1147,8 @@ engine also themes the popup.
 
 Layout is flex-dominant with intrinsic sizing (`min()`,
 `flex: 1 1 <rem basis>`, `repeat(auto-fit, minmax(...))`), so most reflow
-happens with no media query at all. Grid is reserved for genuinely
-tabular content.
+happens with no media query at all. Grid is reserved for tabular
+content.
 
 Because reflow is intrinsic, the few things that do switch on state are
 centralized:
@@ -1183,7 +1180,7 @@ centralized:
   `.belowmap-sheet` caps itself at `--sheet-measure-body` plus the
   card's padding and border, and a variable on the sheet is invisible
   to the card around it. Without that cap, a 2560- or 3840-wide screen
-  gave the card hundreds of pixels that the sheet was unable to use,
+  gives the card hundreds of pixels that the sheet cannot use,
   with the tab strip stretched across the empty part.
   `.belowmap-side` caps for the same reason, and `.app-belowmap` centers
   the pair so that the room left over sits outside both cards.
@@ -1197,11 +1194,11 @@ refuses to shrink. That guard appears over twenty times across the
 sheets, and it is the usual explanation for a panel that overflows its
 column.
 
-### Keeping the first paint still
+### First paint stability
 
 The page is laid out before any module runs, so anything the wiring
 changes afterward moves content that the reader is already looking at. A
-new panel must follow the habits that keep the page still:
+new panel follows these rules so that the page stays still:
 
 - **Decide the body classes up front.** Because a mode or role class
   hides whole rails, waiting for `wireSessionControls` to apply them
@@ -1210,7 +1207,7 @@ new panel must follow the habits that keep the page still:
   stamps the starting mode and role instead, right after it pins the
   theme. It is a separate file rather than an inline block so the page's
   Content Security Policy can allow scripts from this origin only. Its
-  defaults deliberately restate the defaults in `src/main.js`, so
+  defaults restate the defaults in `src/main.js`, so
   changing one default means changing both.
 - **Reserve space that a container will fill.** An empty container that
   later grows pushes everything under it down. For this reason,
@@ -1221,10 +1218,9 @@ new panel must follow the habits that keep the page still:
   so that the moment the panels fill and the page passes one screen
   tall, every column does not narrow at once.
 
-## Accessibility in practice
+## Accessibility
 
-The shared layer already handles all of this, so a new panel does not
-restate it:
+The shared layer handles these, so a new panel does not restate them:
 
 - **Focus** is one global `:focus-visible` outline in `--focus-ring`,
   with two intentional escalations: the map canvas draws a thicker
@@ -1239,11 +1235,11 @@ restate it:
 - **Announcements** go through live regions: the toast stack is
   `role="status" aria-live="polite"`, the map has its own description
   live region, and file-field errors are `role="alert"`. The map's live
-  region is rewritten only when the text actually changed, because
+  region is rewritten only when the text changed, because
   rewriting it re-announces it.
 - **Focus return**: every dialog refocuses whatever opened it, on close.
 
-Nothing in the app covers these gaps:
+The app has no handling for:
 
 - No `prefers-reduced-motion` handling. The animated elements are the
   `.btn` transition, the disclosure chevron rotation, and the toast
@@ -1264,7 +1260,7 @@ Against the contract:
 - **Several builders take no `className` at all.** `emptyState`, `fieldRow`,
   `checkboxInput`, `buildTagsField`, `openContextMenu`, and `mountToasts`
   give the caller no way to add a class.
-- **Mount signatures have drifted.** The second argument is `callbacks` in
+- **Mount signatures differ.** The second argument is `callbacks` in
   most panels, `options` or `opts` in others, and a bare function in a few.
   `mountPalettePanel` takes four positionals, and `mountSpellbookPanel`
   takes five.

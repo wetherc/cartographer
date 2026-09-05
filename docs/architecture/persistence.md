@@ -8,10 +8,7 @@ tightly, the undo history stores small deltas instead of full snapshots, and
 image payloads stay in their own section so that one large picture cannot
 take down the whole map.
 
-A broken rule here can destroy a GM's campaign without warning, so each rule
-below states why it exists as well as what it does.
-
-## The save pipeline at a glance
+## The save pipeline
 
 ```
   live state (TileGrid, characters, creatures, ...)
@@ -127,11 +124,11 @@ tile. It omits each field that equals its default value: `overlayRef: null`,
 `revealed: false`, `childNodeId: null`, `span: 1`, any default `metadata`
 member, and the empty `metadata` object itself.
 
-This packing matters because default tile fields made up 62% of the example
-campaign's characters. Almost every tile of a painted map is plain unrevealed
-terrain with no point of interest. The undo history of a day multiplied
-whatever a save cost by ten. This layer alone took the example campaign from
-358,413 to 134,907 characters.
+Default tile fields make up 62% of the example campaign's characters in the
+per-cell form, because almost every tile of a painted map is plain unrevealed
+terrain with no point of interest, and a day of undo history multiplies
+whatever a save costs by ten. This layer alone takes the example campaign
+from 358,413 to 134,907 characters.
 
 The inverse function is `withTileDefaults` (`map/TileGrid.js`). It fills
 exactly those fields from absence, and every load already runs it, so no code
@@ -145,8 +142,8 @@ tile never reaches live state:
   fields into a new object. As a result, a `Tile` member added later stays
   in a save, even when the packer does not know about it.
 - Packed tiles exist only inside the serialized string. The renderer reads
-  `tile.metadata` without a guard, so a packed tile must never reach live
-  state. An explicit `span: 1` comes back absent, and the `Tile` type defines
+  `tile.metadata` without a guard, so a packed tile in live state throws on
+  its first draw. An explicit `span: 1` comes back absent, and the `Tile` type defines
   absence as the same value.
 
 ## Packing layer 2: entity defaults
@@ -195,19 +192,19 @@ Without the cache, the trial loop ran for every creature on every autosave,
 and it dominated the save cost of a campaign with hundreds of creatures.
 
 Measured on the example campaign, this layer moved the save from 133,948
-characters to 129,715, with the encounter collection alone dropping 49%. The
+characters to 129,715, with the creature collection alone dropping 49%. The
 win scales with the size of the roster, not the size of the map. It is small
 next to the tile packing, and it grows with a campaign that has hundreds of
 mobs.
 
-## Packing layer 3: image payloads become a table
+## Packing layer 3: the asset table
 
 GM-supplied images arrive as inline `data:` URLs, so the whole image is
 base64 text inside the field that references it. Stored this
 way, one imported tile painted across a 30x30 region costs its whole payload
 once per cell: 18.5 MB of save for a 20 KB image.
 
-`storage/Assets.js` corrects this. `hoistAssets` replaces every inline
+`hoistAssets` in `storage/Assets.js` replaces every inline
 `data:` URL with an `asset:<key>` reference into an `assets` table, keyed by
 a hash of the payload's content. `restoreAssets` inlines the payloads again
 inside `deserialize`. The 18.5 MB example becomes 58 KB, because the payload
@@ -224,7 +221,7 @@ The fields that contain payloads (a tile's `imageRef` and `overlayRef`,
 single or stacked, and a handout's `image`) are listed in one traversal
 there. As a result, adding a third site takes a single line.
 
-The design of the table closes a failure mode at each step:
+The table follows these rules:
 
 - The table is rebuilt from the refs that are present on every serialize. As
   a result, it prunes itself, and an image-free campaign gets no `assets`
@@ -279,12 +276,12 @@ last persisted state.
 Retention spans every stored string, not only the current save. A payload is
 deleted exactly when the last state that references it becomes unreachable.
 These references are collected by matching `asset:` keys against the raw
-text (`referencedAssetKeys`, in `Assets.js`, beside the key alphabet it must
-match), instead of by walking parsed state.
+text (`referencedAssetKeys`, in `Assets.js`, beside the key alphabet it
+matches), instead of by walking parsed state.
 
-The tile codec, described below, is the reason: after encoding, a tile's
-reference lives inside an encoded node's palette, where a state walk cannot
-see it without decoding first. The scan is skipped completely when there is
+The scan reads raw text because of the tile codec, described below. After
+encoding, a tile's reference lives inside an encoded node's palette, where a
+state walk cannot see it without decoding first. The scan is skipped completely when there is
 nothing to keep, which is true of every campaign that has never had an
 image.
 
@@ -297,8 +294,9 @@ history log dropped a record), the table on the origin is not the one this
 tab wrote, or a payload differs under a known key. A key that appears, as
 every save adds one history delta, does not trigger a scan. After a scan,
 the table is written only when the kept table differs from the stored one.
-With one picture in the campaign, every autosave used to parse the table,
-read every other stored string, and write the table back unchanged.
+Without these checks, one picture in the campaign makes every autosave parse
+the table, read every other stored string, and write the table back
+unchanged.
 
 ## Packing layer 4: the tile codec
 
@@ -350,11 +348,12 @@ represent and writes whatever it does not represent out of line:
   represents itself**, exactly as `packTile` does. As a result, a `Tile`
   member added later rides out of line, instead of being dropped.
 
-Smaller design choices in the codec still decide whether a save loads:
+The codec also follows these rules:
 
 - The palette is built by row-major traversal, instead of by `tiles` array
-  order, because `isExternalSaveEvent` compares raw strings. Re-serializing
-  an unchanged campaign must produce the same string.
+  order, because `isExternalSaveEvent` compares raw strings, and a palette in
+  array order would make an unchanged campaign re-serialize to a different
+  string and read as another tab's save.
 - Decoding degrades instead of throwing an error. An unreadable palette
   entry skips its cell, and an unreadable run ends the stream. Import
   persists what it reads before it reloads, so an error thrown here produces
@@ -368,9 +367,9 @@ Smaller design choices in the codec still decide whether a save loads:
   tile still packed, so the codec states nothing about what a default value
   is.
 
-This is the first change whose *reader* branches on whether a field is
-present, instead of filling one from absence. As a result, the app reads
-both forms indefinitely. `StateDiff` works on parsed state, and it never
+The codec is the one place where the reader branches on whether a field is
+present instead of filling one from absence, so the app reads both forms
+indefinitely. `StateDiff` works on parsed state, and it never
 sees `cells` or `fog`.
 
 ## Schema versions and migrations
@@ -382,9 +381,9 @@ version-n+1 one, and a missing version reads as 0 (every save written before
 this field existed).
 
 The migration chain runs on the raw parsed object *before* the coercion in
-`deserialize`. A step exists precisely to repair data that coercion
-flattens or drops. The chain also runs ahead of the asset restore, so a
-step sees hoisted refs and must resolve a payload through the table itself. A
+`deserialize`. A step repairs data that coercion would flatten or drop. The chain also
+runs ahead of the asset restore, so a step sees hoisted refs and resolves a
+payload through the table itself. A
 save stamped newer than the app runs no migration steps, and the app reads it
 on a best-effort basis.
 
@@ -401,7 +400,7 @@ belongs to `normalizeLibrary` and passes through the table untouched. A
 test runs a version-1 save with a library through
 the whole chain and asserts that the field is unchanged.
 
-## Undo and redo: a log of deltas
+## Undo and redo
 
 Undo and redo work from a log of invertible deltas against the persisted
 save, in `storage/HistoryLog.js`. A delta records only what one save
@@ -430,9 +429,9 @@ The storage layout uses one key for each record: an index at
 `campaign-builder:history` that contains `{ version, log, deltas, cursor }`, and
 one `campaign-builder:history:d<seq>` for each delta. A step is therefore
 one small `setItem` call, instead of a rewrite of the whole log. Measured on
-the example campaign, fifty party steps cost 27,304 bytes of log, where the
-previous ten-snapshot ring cost 699,980 bytes for ten steps. A save writes
-70,488 bytes, instead of 139,996.
+the example campaign, fifty party steps cost 27,304 bytes of log, where a
+ring of ten full snapshots costs 699,980 bytes for ten steps, and a save
+writes 70,488 bytes where the ring writes 139,996.
 
 The log also serves cross-tab adoption. A tab calls
 `historyPosition()` to get a token for the delta that its live state
@@ -449,28 +448,26 @@ the number, so a token from a cleared log matches nothing in the new log.
 There is no base snapshot, because undo and redo only ever apply a delta to
 the *current* state, so the canonical save already is the base.
 The cap drops the oldest deltas, instead of folding them into a base that
-needs a synchronous rewrite on every cap hit. (Bringing a base back is what
-the deferred idea of replaying base-plus-log at load needs. That idea also
-means not writing the canonical save at all.)
+needs a synchronous rewrite on every cap hit. A deferred idea, replaying a
+base plus the log at load instead of writing the canonical save, would need
+a base again.
 
 The log's own rules keep it from corrupting the campaign that it describes:
 
 1. **A delta is never migrated.** It was written against one schema version
    of `CampaignState`, so the index records `version`. A log
-   stamped with any other version is discarded whole. (This same prefix scan
-   is also how the previous ring's keys were reclaimed.)
+   stamped with any other version is discarded whole.
 2. **Every history write happens after the campaign write**, on both the
    save path and the cursor-stepping path. As a result, the index can never
    describe a state that was not stored.
 3. **A full origin degrades depth-first.** The app drops the oldest step and
    retries, then drops the whole log if that also fails, and reports
-   `{ ok, evictedAll }` either way. This reporting exists so that undo cannot
-   silently become single-step. Hitting the ordinary byte cap is the design,
-   and it reports no loss.
+   `{ ok, evictedAll }` either way. The report keeps undo from becoming
+   single-step without notice. Reaching the ordinary byte cap is normal
+   operation and reports no loss.
 
-A diff needs the previous state as a *value*, not a string, the one property
-that the old snapshot ring had for free. `HistoryLog` caches this
-value, stamped with the raw string it was parsed from, so the steady state
+A diff needs the previous state as a *value*, not a string. `HistoryLog`
+caches this value, stamped with the raw string it was parsed from, so the steady state
 costs only a string compare. A tab that declined the cross-tab reload prompt
 cannot diff against a save that another tab replaced.
 
@@ -479,11 +476,11 @@ reads the save through `HistoryLog.loadPersistedCampaign`, which parses the
 stored string once and keeps the result as the base for the first delta.
 `toTileGrid` adds those parsed nodes to the grid as they are, so the live
 nodes and the cached nodes are the same objects, and the first save of the
-session diffs by identity like every later one. Before this, the first save
-parsed the save a second time and ran a cold diff over two unrelated object
-trees, which cost more than a hundred milliseconds at two hundred nodes.
+session diffs by identity like every later one. A first save that parses
+the stored string a second time and diffs two unrelated object trees costs
+more than a hundred milliseconds at two hundred nodes.
 
-## The custom library's own store
+## The custom library store
 
 The GM's custom library (equipment, creature, spell, and feat overrides)
 persists separately in `storage/LibraryStore.js`, under its own localStorage
@@ -530,8 +527,8 @@ coercion change, never a migration step:
    optional or has a stated default.
 2. Teach `normalizeSpell` (or `normalizeFeat`) in `library/Library.js` to
    accept the new format, coerce the old format into it, and keep any
-   original free text it cannot interpret. It must never throw, and it must
-   never drop an entry over the changed field.
+   original free text it cannot interpret. A throw here fails the load of the
+   whole library, and a dropped entry deletes a record the GM wrote.
 3. Update the editor form (`ui/SpellForm.js` / `ui/FeatForm.js`) to read
    and write the new field. The form assembles its draft through the same
    normalizer, so a typed entry and an imported one cannot disagree.
@@ -541,14 +538,14 @@ coercion change, never a migration step:
 5. Add `Library.test.js` cases: the new format passes through unchanged, the
    old format coerces, and garbage in the field coerces to the default.
 6. Do not add a `Migrations.js` step, and do not bump `CURRENT_VERSION`
-   for a library-only change. A migration step must never name
-   `state.library`.
+   for a library-only change. `state.library` never appears in a migration
+   step, because the campaign chain does not own that field.
 
 ## File IO
 
 Both stores' file paths route through `storage/fileIO.js`. Its
 `downloadJSON` and `readFileText` functions are the only two places where
 the app touches `Blob`, object URLs, or `FileReader`. New export and import
-features must call these functions, instead of building the browser
-plumbing again. The planned Tauri desktop build swaps this one file for
-native dialogs and the fs plugin.
+features call these functions instead of building the browser plumbing
+again, so a Tauri desktop build swaps this one file for native dialogs and
+the fs plugin.
