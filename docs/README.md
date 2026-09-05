@@ -56,6 +56,6 @@ tells you how to rebuild it.
 
 `gallery.html` renders every shared builder in `src/ui/` from the real
 modules, with the call that built each one and the classes that call
-produces. It loads ES modules, so open it over the dev server at
-`http://localhost:8934/docs/gallery.html` when you need to see a widget
+produces. It loads ES modules, so start `pnpm run dev` and open
+`http://localhost:8080/docs/gallery.html` when you need to see a widget
 before you use it.

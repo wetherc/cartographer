@@ -152,7 +152,9 @@ serve the project root to open one:
 python3 -m http.server 8934
 ```
 
-Then open `http://localhost:8934/tests/tile-preview.html`.
+Then open `http://localhost:8934/tests/tile-preview.html`. The gallery is
+also served by `pnpm run dev`, at `http://localhost:8080/docs/gallery.html`,
+because the dev server links the source directories into `dist/`.
 
 Keep a preview page current when the modules it mounts change their
 interface, because a stale page can hide a real error the next time someone

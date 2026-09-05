@@ -18,9 +18,9 @@ Conventions covers the policy.
 
 `docs/gallery.html` is the visual half of this guide. It renders every
 builder named here from the real modules, beside the call that built it and
-the classes that call produces. Open it over a dev server, since it loads ES
-modules: `python3 -m http.server 8934` from the project root, then
-`http://localhost:8934/docs/gallery.html`. To add a builder to it, add a
+the classes that call produces. It loads ES modules, so open it over the
+dev server: run `pnpm run dev`, then open
+`http://localhost:8080/docs/gallery.html`. To add a builder to it, add a
 story to the matching file under `docs/gallery/sections/`. The snippet comes
 from the source of the story's own render function, so there is no second
 copy of the call to keep in step.

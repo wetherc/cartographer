@@ -39,12 +39,12 @@ async function build() {
     html = html
       .replace(
         '<link rel="stylesheet" href="style.css" />',
-        `<link rel="stylesheet" href="${cssName}" />`
+        `<link rel="stylesheet" href="${cssName}" />`,
       )
       .replace('<script src="src/boot.js"></script>', `<script src="${bootName}"></script>`)
       .replace(
         '<script type="module" src="src/main.js"></script>',
-        `<script defer src="${jsName}"></script>`
+        `<script defer src="${jsName}"></script>`,
       );
     await fs.writeFile(path.join(outdir, 'index.html'), html);
   }
@@ -56,37 +56,51 @@ async function build() {
   // request 404. Only this one file, so a GM's other library/ contents stay
   // out of a published build.
   await fs.mkdir(path.join(outdir, 'library'), { recursive: true });
-  await fs.cp(
-    'library/campaign-library.json',
-    path.join(outdir, 'library/campaign-library.json')
-  );
+  await fs.cp('library/campaign-library.json', path.join(outdir, 'library/campaign-library.json'));
 
   if (watch) {
     await writeHtml('main.bundle.js', 'boot.bundle.js', 'style.bundle.css');
+    await linkSources();
     const ctx = await esbuild.context(options);
     await ctx.watch();
-    const { host, port } = await ctx.serve({
+    const { hosts, port } = await ctx.serve({
       servedir: outdir,
       port: 8080,
     });
-    console.log(`[watch] Server listening on http://${host}:${port}`);
+    console.log(`[watch] Server listening on http://${hosts[0]}:${port}`);
   } else {
     const result = await esbuild.build(options);
     const outputs = Object.keys(result.metafile.outputs);
-    const jsName = outputs.find(
-      (p) => p.endsWith('.js') && path.basename(p).startsWith('main-')
-    );
-    const bootName = outputs.find(
-      (p) => p.endsWith('.js') && path.basename(p).startsWith('boot-')
-    );
+    const jsName = outputs.find((p) => p.endsWith('.js') && path.basename(p).startsWith('main-'));
+    const bootName = outputs.find((p) => p.endsWith('.js') && path.basename(p).startsWith('boot-'));
     const cssName = outputs.find(
-      (p) => p.endsWith('.css') && path.basename(p).startsWith('style-')
+      (p) => p.endsWith('.css') && path.basename(p).startsWith('style-'),
     );
     if (!jsName || !bootName || !cssName) {
       throw new Error('Bundle outputs not found in the esbuild metafile.');
     }
     await writeHtml(path.basename(jsName), path.basename(bootName), path.basename(cssName));
     console.log('[build] Build complete.');
+  }
+}
+
+// The dev server also serves the pages that load the source modules as
+// plain files, such as docs/gallery.html. The gallery reads each snippet
+// from Function.prototype.toString, so a bundled copy would show esbuild's
+// rewritten code instead of the code in the repository. Symbolic links from
+// dist/ to the source directories serve the files in place, and an edit
+// shows on the next reload with no rebuild. A directory link is a junction
+// on Windows, which needs no extra permission there.
+async function linkSources() {
+  const links = [
+    ['docs', 'junction'],
+    ['fonts', 'junction'],
+    ['src', 'junction'],
+    ['styles', 'junction'],
+    ['style.css', 'file'],
+  ];
+  for (const [name, type] of links) {
+    await fs.symlink(path.join('..', name), path.join(outdir, name), type);
   }
 }
 
