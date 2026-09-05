@@ -19,10 +19,9 @@ Both types of the model are declared in `src/types/map.ts`:
   kind (`'world'`, `'region'`, or `'interior'`), and dimensions.
 
 There is no separate "world" type, "region" type, or "dungeon" type. A world
-map is a MapNode. A region inside it is also
-a MapNode. A town inside that region is a MapNode too, and so is a dungeon
-under the town. The difference between them is how they connect, and they
-connect in two directions at once:
+map, a region inside it, a town inside that region, and a dungeon under the
+town are all MapNodes. The difference between them is how they connect, and
+they connect in two directions at once:
 
 - Each node has a `parentId` that points up at the map that contains it.
 - A tile can have a `childNodeId` that points down at another node. A click
@@ -247,7 +246,7 @@ tiles cannot override built-in tiles. They only extend the catalog.
 
 A few pieces of art mean something to the rules, not only to the eye: the
 party cannot stand on a wall, a door is the authored way into a space, and
-stairs connect one dungeon level to the next. `kindOf(imageRef)` answers what
+stairs connect one dungeon level to the next. `kindOf(imageRef)` says what
 a given image means, and it is the only place in the code that knows this.
 It matches whole references against the catalog, instead of looking for a
 word in a file name, so a GM's own art called `interior-wall-h.svg` stays
@@ -465,7 +464,7 @@ out, onto the parent terrain the side touches. Through a door, the model
 uses the same projection from the door's own coordinate. Along a stairway,
 it uses the parent's tile at the other end of the stairway. A block that
 sits on the parent's own north or west edge projects to a coordinate of -1.
-The function clamps the coordinate into the grid before the snap, so the
+The function limits the coordinate to the grid before the snap, so the
 party lands beside the block instead of at the origin.
 
 The first two cases snap through `resolveReturnTile`, the parent-side
@@ -484,7 +483,7 @@ readers are:
   in the gutter beyond each `edge` exit, and `MapMarkers` draws a small
   chevron badge on each `tile` exit.
 - `MapCanvasPointer` hit-tests the same bands on a click. `MapCanvasKeyboard`
-  arms an exit when a cursor key leaves the cursor clamped at a border
+  arms an exit when a cursor key leaves the cursor stopped at a border
   that has one: the band brightens, a live region says to press again,
   and only a second discrete press of the same arrow moves the party. Key
   repeats neither arm nor confirm an exit, so holding an arrow key sends the
@@ -498,13 +497,13 @@ readers are:
   open instead, because the canvas draws no arrow and no badge for a
   fallback, and without the pin a pointer user in a sealed interior sees no
   way out anywhere. A list that changes while one of its buttons has focus
-  moves focus to the first surviving button, instead of dropping it.
+  moves focus to the first remaining button, instead of dropping it.
 
 The band's rectangle is computed once, by `exitBandGeometry` plus
 `edgeExitBand`, and both the drawing code and the pointer call it. The arrow
 the GM sees, and the rectangle their click is tested against, therefore
 cannot drift apart. The band is a bounded pill centered on the party's row
-or column, clamped to the canvas, so panning the map's border out of view
+or column, kept within the canvas, so panning the map's border out of view
 pins the arrow at the viewport edge instead of scrolling it away.
 
 `mapTravel.js`'s `exitToParent` does the travel, and it moves whoever a
@@ -551,7 +550,7 @@ region, hidden by CSS while empty, and its writes are deduplicated against
 the last text, because `syncExits` runs on every party step and every paint
 stroke.
 
-The Build world tree asks the same question about every node. A row whose
+The Build world tree runs the same check on every node. A row whose
 `authoringWarning` is non-null gets a warning badge with the sentence as its
 tooltip and accessible name, so an unlinked tile flags the orphaned child at
 the moment of the break, instead of when the GM next views it. The warning

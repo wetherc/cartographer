@@ -27,7 +27,7 @@ under a cache.
 The models include these behaviors directly rather than validating them
 separately:
 
-- HP and resource pools clamp to `[0, max]` on every operation. No caller
+- HP and resource pools stay within `[0, max]` on every operation. No caller
   can overheal or drive HP negative.
 - `Character.addXP` uses an `N * XP_PER_LEVEL` (100) cost curve and loops
   internally. One large XP award can cross several level thresholds in a
@@ -338,7 +338,7 @@ that already took the feat. Undo subtracts the increases and hands the
 proficiencies to `GrantLedger.rebuildGrants`. That function takes the current
 lists, removes every entry any feat or feature record added, and merges the
 requests of the records that stay back on top. A proficiency that two records
-both ask for therefore survives the undo of either one. Each record that stays
+both ask for therefore stays through the undo of either one. Each record that stays
 is stamped again with what it added in that replay, so the next undo reads an
 accurate diff. An expertise that rode a removed skill prunes with it. A
 matching grant made by hand between take and undo comes off anyway, the same
@@ -453,14 +453,14 @@ A weapon has `kind`, `category`, `properties`, `range`, and
 `versatileDamage`. These fields replaced the old three-value `handling` enum.
 `entities/Weapons.js` owns the vocabularies and the reads:
 
-- `weaponKind(weapon)` answers `'melee'` or `'ranged'`. An absent `kind`
+- `weaponKind(weapon)` returns `'melee'` or `'ranged'`. An absent `kind`
   reads as melee.
 - `hasWeaponProperty(weapon, property)` reads the `properties` list. The nine
   flags are the 5e set: finesse, versatile, two-handed, light, heavy, reach,
   thrown, ammunition, and loading.
 - `attackAbility(weapon, stats)` picks the ability behind an attack. A ranged
-  weapon uses DEX. A finesse weapon uses the higher of the roller's STR and
-  DEX. Every other weapon uses STR.
+  weapon uses DEX, a finesse weapon uses the higher of the roller's STR and
+  DEX, and every other weapon uses STR.
 - `abilityLabel(weapon)` is the label for a weapon shown without a roller. A
   finesse weapon reads `STR/DEX`, because the choice depends on who holds it.
 
@@ -475,15 +475,15 @@ The two vocabularies live in separate constants (`WEAPON_PROPERTIES` in
 `Weapons.js`, `ARMOR_WEIGHTS` in `Equipment.js`) and never mix.
 
 `clampWeaponRange(value, fallback)` reads a range as whole feet, with the long
-range held at or above the normal one. A field under one foot, or one that does
+range kept at or above the normal one. A field under one foot, or one that does
 not read as a number, takes the matching fallback from `DEFAULT_RANGES`, which
 is 80/320 feet for a ranged weapon and 20/60 for a thrown melee one. The item
-form and the legacy coercer both clamp here, so an imported file cannot have a
-range the form refuses to produce.
+form and the legacy coercer both limit the range here, so an imported file
+cannot have a range the form refuses to produce.
 
 `EquipmentPresets.coerceWeapon` reads a weapon-like value from any era and
-answers the current fields. The `kind` field says which era the value comes
-from, because every value the coercer answers has one. A value that has it
+returns the current fields. The `kind` field says which era the value comes
+from, because every value the coercer returns has one. A value that has it
 keeps its own fields, filtered to the known vocabulary. A value without it is
 legacy: a name match against `WEAPON_PRESETS` adopts the preset's property
 fields and keeps the value's own damage dice, because a GM can edit them, and
@@ -569,14 +569,14 @@ level costs 2 on every d20 test and 5 feet of speed, and the sixth level
 kills.
 
 The level is one number, `exhaustion`, on the character or the creature.
-Nothing else is stored. `exhaustionLevel` reads that number and clamps it to
+Nothing else is stored. `exhaustionLevel` reads that number and limits it to
 the range 0 through `MAX_EXHAUSTION`. A hand-edited save therefore cannot go
 past death or under zero. `d20Penalty` and `speedPenalty` derive from the
 level. `atDeathLevel` reports the fatal level, and `exhaustionNote` is the
 sentence for a badge or a log line.
 
 `setExhaustion`, `gainExhaustion`, and `easeExhaustion` are the writers. Each
-one clamps the result.
+one limits the result to the same range.
 
 The penalty reaches a roll through the bonus rather than through a condition
 chip with a rider on it, because a rider appears only after dice are thrown
@@ -653,10 +653,10 @@ The list contains weight classes plus `'shield'`, so a shield goes through the
 same check as a breastplate. `Armor.unproficientWear(character)` turns
 the check into phrases: it reads the memoized `equippedIndex`, checks the
 chest piece against its weight class and an off-hand shield against the
-shield grant, and answers a list such as `['heavy armor', 'a shield']`. Those
+shield grant, and returns a list such as `['heavy armor', 'a shield']`. Those
 two slots cover every case, because `armorClass` reads body armor from the
 chest slot and `EQUIPMENT_SLOTS` admits a shield to the off hand alone. A
-character without proficiency lists predates them and answers an empty list,
+character without proficiency lists predates them and returns an empty list,
 the same rule the weapon gate applies.
 
 The call sites act on the list as follows. `app/checkRolls.js` folds a disadvantage
@@ -728,7 +728,7 @@ the field was added.
   it.
 - `allocateProjectiles(targets, count)` decides how many projectiles each
   target catches. A target with a `projectiles` value states its own share,
-  clamped in order so the total never exceeds what the spell fires. With
+  limited in order so the total never exceeds what the spell fires. With
   nothing stated, the projectiles spread as evenly as possible, which puts
   all of them on the single target in the common case.
 - Resolution rolls one attack per projectile: its own d20, its own critical
@@ -766,7 +766,7 @@ Anything else is covered, but only while the caster carries a component pouch
 or a spellcasting focus, and a caster with neither needs the printed material
 itself.
 
-`required` and `consumes` are separate answers, because holding a material is
+`required` and `consumes` are separate fields, because holding a material is
 not the same as spending it. Revivify's diamonds are destroyed and come off
 the stack. Chromatic Orb's 50 gp diamond has to be in hand and stays there.
 
@@ -848,7 +848,7 @@ the class level, rounded down, for a paladin. The cap is at least 1. A
 The `known` list is castable directly, and there is no prepare step at all.
 Cantrips sit outside this distinction in their own list.
 
-`SpellView.spellRule(character, spellId)` answers which rule governs a spell.
+`SpellView.spellRule(character, spellId)` says which rule governs a spell.
 It uses the rule of the class that the character learned the spell under
 (the spellbook's `sources` map), falls back to the first caster class when no
 source was recorded, and falls back to `'known'` when even that is missing,
@@ -997,8 +997,7 @@ and `stable`. A character who is not dying has this field set to null.
 - `isDying`, `isStable`, and `isDead` read the four positions apart: standing,
   rolling, out of danger at 0 HP, and killed by three failures.
 - `dropToDying(character)` starts the tracker. A second call on a character
-  who already has one changes nothing, so the failures already rolled
-  survive.
+  who already has one changes nothing, so the failures already rolled stay.
 - `clearDying(character)` takes the tracker away, which is what a heal above 0
   HP and a natural 20 both do.
 - `stabilize(character)` sets `stable` and resets the counters. The character
@@ -1195,10 +1194,10 @@ The reads over that table are pure and take chip lists only:
 - `combineModes(slants)` folds a set of slants by the 5e rule: any advantage
   and any disadvantage cancel to a straight roll, and otherwise the one kind
   present wins. Counting rather than pairing makes the arrival order
-  irrelevant. It answers null, not `'normal'`, when nothing applies, because
+  irrelevant. It returns null, not `'normal'`, when nothing applies, because
   the dice tray injects its standing advantage toggle whenever a caller names
-  no mode, and a helper that always answered would cancel that toggle on every
-  roll.
+  no mode, and a helper that always returned a mode would cancel that toggle
+  on every roll.
 - `rollMode({ roller, target, kind, melee, ability })` is the mode one roll
   takes from the chips on both sides. Only an attack reads the target's chips.
   A save or a check is rolled against a number, and whoever set that number

@@ -237,8 +237,8 @@ The Player view does not show these controls.
 6. To place the encounter elsewhere, set the map and the tile in the same
    dialog.
 
-To edit a staged encounter later, click the pencil on its row. Its current
-HP, stat block, and conditions survive the edit.
+To edit a staged encounter later, click the pencil on its row. The edit
+keeps its current HP, stat block, and conditions.
 
 ### Reuse a foe
 
@@ -259,8 +259,9 @@ not change it.
 2. Open the **Active encounter** tab and click **Start combat**. The tab
    lists every live creature on the tile, and the button shows whenever
    the tab has a row. A party set on fighting a bystander can do so.
-   Above the rows, one line rates the fight for you: what the hostile
-   creatures are worth against your party's budget. Players never see it.
+   Above the rows, one line rates the fight for you by weighing what the
+   hostile creatures are worth against your party's budget. Players never
+   see it.
 3. In the setup dialog, click **Roll initiative**, or type values by hand.
    Hostile creatures on the tile join the foes. Friendly and neutral
    creatures join the party. The party can still attack a creature on its

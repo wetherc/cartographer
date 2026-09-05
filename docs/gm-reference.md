@@ -286,7 +286,7 @@ for example "Saves DEX +4 | Skills Stealth +6". The app works each bonus out
 from the ability score, the challenge rating, and any exhaustion, so there is no
 number to type. An unrated enemy takes its proficiency bonus from its level
 instead, and from +2 when it has no level. A save that a spell calls for uses
-the same bonus, which is why the cast dialog asks only for the DC.
+the same bonus, so the cast dialog asks only for the DC.
 
 In Play mode, a click on a stat chip applies a timed adjustment, for
 example +2 STR for 3 rounds, shown as "STR 14->16 (3r)". The adjustment
@@ -309,8 +309,8 @@ which marks it apart from a defeat: it is still in the fight, and only its
 turn is gone. A click on a chip inspects that combatant without advancing the
 turn.
 
-A player card shows spells and slots to its own bound tab. Another player's
-card shows armor and weapons only. A foe card shows no loadout at all
+A player card shows spells and slots to its own bound tab, another player's
+card shows armor and weapons only, and a foe card shows no loadout at all
 except to the GM tab.
 
 Back to map leaves the screen without ending the fight. The Initiative card
@@ -413,8 +413,8 @@ Attack rolls follow 5e without change.
   the weapon, by category or by name. Without that, the roll takes the ability
   modifier alone, and the log says "not proficient". A creature is always
   proficient with its own weapon, the way a 5e stat block is.
-- STR modifies a melee weapon. DEX modifies a ranged weapon. A finesse weapon
-  uses the higher of the two.
+- STR modifies a melee weapon, DEX modifies a ranged weapon, and a finesse
+  weapon uses the higher of the two.
 - A versatile weapon offers a "Wield two-handed" box in the attack dialog. The
   box swaps the damage dice for the two-handed dice.
 - A ranged or thrown weapon offers a Range field in the attack dialog. A shot
@@ -634,7 +634,7 @@ its HP bar and its banner.
 
 | Field | Who can set it | Meaning |
 | --- | --- | --- |
-| Max HP | GM | Overrides the derived maximum and clamps current HP |
+| Max HP | GM | Overrides the derived maximum and lowers current HP to fit |
 | Bonus HP | GM | Temporary points on top of intrinsic HP. Damage drains it first, and healing never refills it |
 | Base AC | GM | The unarmored baseline, normally 10 |
 | XP | GM | The roster row grants it to one character. Award Party XP below the roster grants the same amount to every character at once |
@@ -714,10 +714,10 @@ unequips it.
 | Handouts | Read-aloud text or lore attached to a node or the campaign, with an optional image and an eye toggle |
 | Travelogue | An automatic log of region entry, teleports, defeats, rests, and discoveries, newest first |
 
-A short rest restores half of the character resources. A long rest restores
-all of them. Only a long rest refills spell slots. A long rest also takes one
-level of exhaustion off each character. A character that is already dead keeps
-its level.
+A short rest restores half of the character resources, while a long rest
+restores all of them, refills the spell slots, and takes one level of
+exhaustion off each character. A character that is already dead keeps its
+level.
 
 An NPC sits on any map at a column and row, or stays unplaced, in which
 case it appears everywhere. Columns and rows count from 1, the same as the

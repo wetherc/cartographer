@@ -40,8 +40,8 @@ Open `src/map/TilePalette.js` and add the tile to the table for its family:
 
 An interior piece needs a rule meaning: `wall`, `door`, `stairs-up`,
 `stairs-down`, or `floor`. Every other piece takes the meaning `plain`. The
-rest of the app reads this meaning through `kindOf(imageRef)`, so a piece
-without one is scenery to the rules.
+rest of the app reads this meaning through `kindOf(imageRef)`, so the rules
+treat a piece without one as scenery.
 
 ## 4. Update the palette test
 

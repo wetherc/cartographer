@@ -172,7 +172,7 @@ run against stub nodes, so they prove the matching rule and not the browser
 behavior. Do this check when you change the controls of a panel or their
 labels.
 
-1. Focus a control that survives the rebuild, for example the damage amount
+1. Focus a control that the rebuild keeps, for example the damage amount
    field on an encounter row.
 2. Compare `document.activeElement` against that control. A hidden control,
    for example one on an unselected tab, takes no focus at all.

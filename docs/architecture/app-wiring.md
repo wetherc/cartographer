@@ -189,8 +189,8 @@ a hand-edited save cannot write a kind that the renderer does not know.
 `src/map/NodeCleanup.js` decides where every other location goes when a
 node is deleted or shrinks. A delete can remove the node the party stands
 in, and a party position on a missing node breaks the next load, so
-`deleteLanding` names the tile in the surviving parent, beside the block the
-node occupied, and `deleteNode` refuses when no parent survives.
+`deleteLanding` names the tile in the remaining parent, beside the block the
+node occupied, and `deleteNode` refuses when no parent remains.
 `locationsAfterDelete` then recalls split characters inside the subtree,
 unplaces creatures there, and unbinds handouts from it. `locationsAfterShrink`
 pulls the party, split characters, and placed creatures inside the new
@@ -203,8 +203,8 @@ This module owns the roster, character sheet, inventory, spellbook, and Time
 panel. It provides `refreshSelectedCharacter` and the `partyPanels` view,
 which re-reads everything those panels show at once.
 
-The character panels do not talk to each other. `characterScope.js` records
-which character the panels are pointed at. It writes an edited character
+The character panels do not talk to each other, so `characterScope.js`
+records which character the panels are pointed at. It writes an edited character
 back into the roster, and it hands the new value to every panel that
 registered with it. A panel gets a commit handle from `register`. The scope
 skips that panel when it distributes an edit, because the panel already
@@ -289,7 +289,7 @@ backs every creature authoring flow: this module's panels, the Story
 sidebar's lists, and the Build-mode right-click menu. A caller that creates
 passes a seed, either a library template or a small preset such as the "New
 foe here" item's level-1 hostile. Edits go through the pure
-`Creature.editCreature`. It keeps live state (current HP clamped to a new
+`Creature.editCreature`. It keeps live state (current HP lowered to fit a new
 max, stat block, conditions), and it resets the `met` flag when the creature
 moves. The bestiary spawn dialog is `creatureForm.js`'s `addFromLibrary`.
 
@@ -373,17 +373,18 @@ in the Library rail) describes its fields once as a `ModalField[]`:
   and townsfolk, because a blank level is the only difference between them.
 - `gearFields.js` defines the weapon and armor picker options, plus the None,
   preset, and hand-tuned read-back cascade.
-- `statFields.js` defines the stat-block fields and the clamped read-back.
+- `statFields.js` defines the stat-block fields and the range-limited
+  read-back.
 - `casterFields.js` defines the class, level, and spell picker, plus
   `refilterSpellsOnChange`.
 
 `promptModal` renders such a spec as a dialog and `ui/SpecForm.js`'s
 `buildSpecForm` renders it as an inline rail form, so a field, a default, a
-clamp, and a cross-field rule are each written once. A dialog adds the
+range limit, and a cross-field rule are each written once. A dialog adds the
 placement fields from `locationFields.js` around the spec, and a template
 form omits them, because a template has no position. A change to a field, a
-default, a clamp, or a cross-field rule lands in the shared module, never in
-one form.
+default, a range limit, or a cross-field rule lands in the shared module,
+never in one form.
 
 ### combatWiring.js
 

@@ -293,12 +293,11 @@ player gets the turn-end button only on their own character's turn. On a
 player's tab, this button reads "End my turn" instead of "Next turn".
 
 `fightOutcome(view)` is the other derivation in the module. It returns
-`victory` once every foe row is defeated. It returns `defeat` once every
-counted party row is defeated. It returns null while both sides still have
-someone standing. A side with nobody on it settles nothing, so an order that
-the GM built with no foes in it reads as undecided. A mutual
-wipe reads as a defeat: what happens to the party outweighs what happens to
-the monsters.
+`victory` once every foe row is defeated, `defeat` once every counted party
+row is defeated, and null while both sides still have someone standing. A
+side with nobody on it settles nothing, so an order that the GM built with
+no foes in it reads as undecided. A mutual wipe reads as a defeat, because
+what happens to the party outweighs what happens to the monsters.
 
 A creature row takes its side from its disposition. A hostile creature is a
 foe, and a friendly or neutral one stands with the party. Only characters
@@ -312,12 +311,12 @@ bystander mid-fight.
 ### Who can see what
 
 `src/combat/Loadout.js` defines the second viewer rule. `loadoutAccess(found,
-viewer, id)` returns `full`, `public`, or `none`. The GM sees everything. A
-player sees their own character in full. For another party member, a player
-sees only armor and weapons. A player sees nothing of a foe. Armor and a
-drawn weapon are visible across the table. A caster's prepared list and
-remaining slots are that player's own business. A foe's sheet is the GM's to
-reveal. `buildLoadout` takes the access level and never assembles what the
+viewer, id)` returns `full`, `public`, or `none`. The GM sees everything,
+while a player sees their own character in full, only the armor and weapons
+of another party member, and nothing of a foe. Armor and a drawn weapon are
+visible across the table, a caster's prepared list and remaining slots are
+that player's own business, and a foe's sheet is the GM's to reveal.
+`buildLoadout` takes the access level and never assembles what the
 viewer cannot see, so nothing downstream can leak that data by drawing a
 field it was handed.
 
@@ -421,8 +420,8 @@ plain rather than failing.
 
 ## Ending a fight
 
-A fight ends when the GM ends it, or when its participants are genuinely gone.
-Killing the last enemy is neither of these. In the past, killing the last
+A fight ends when the GM ends it, or when its participants are gone, and
+killing the last enemy is neither of these. In the past, killing the last
 enemy ended the fight on the spot. This closed the screen mid-swing and took
 the log and the board away from whoever landed the hit, with no chance to
 heal first.
@@ -455,7 +454,7 @@ by a screen reader.
 
 `combatWiring.js` registers `app.views.combatScreen`. It mounts before
 `wireEncounters`, so the view exists by the time the fight's refresh paths
-run. Four different paths reach this view. The registered `update` function
+run. The registered `update` function
 skips the rebuild while the tab sits on another mode with the fight still
 running, because nothing on the screen is visible then. The switch back into
 combat mode is itself one of the refresh paths, so the first visible frame

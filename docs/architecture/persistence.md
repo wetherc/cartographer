@@ -98,8 +98,9 @@ the only validation step a save passes through. It coerces every field whose
 party position, a running combat, the travelogue, the quest log, and the
 bestiary get their required members with the right types. Those coercers
 live in `storage/RecordCoercion.js`, one function per collection. Import
-persists what it reads and then reloads, so a malformed field that survives
-`deserialize` becomes the stored save of an app that no longer starts. A travelogue entry whose timestamp is not a number is
+persists what it reads and then reloads, so a malformed field that passes
+through `deserialize` becomes the stored save of an app that no longer
+starts. A travelogue entry whose timestamp is not a number is
 one example: the panel formats every entry during startup, and an unreadable
 date throws there.
 
@@ -141,8 +142,8 @@ Packing drops no field that the packer does not know about, and a packed
 tile never reaches live state:
 
 - `packTile` deletes keys from a *copy* of the tile, instead of picking named
-  fields into a new object. As a result, a `Tile` member added later survives
-  a save, even when the packer does not know about it.
+  fields into a new object. As a result, a `Tile` member added later stays
+  in a save, even when the packer does not know about it.
 - Packed tiles exist only inside the serialized string. The renderer reads
   `tile.metadata` without a guard, so a packed tile must never reach live
   state. An explicit `span: 1` comes back absent, and the `Tile` type defines
@@ -176,7 +177,7 @@ two halves cannot drift apart. `quests` and `bestiary` are absent because
 neither has a `withDefaults` function to pack against, and both measured at
 zero default-valued bytes.
 
-This is also why `deserialize` runs the entity `withDefaults` functions
+For the same reason, `deserialize` runs the entity `withDefaults` functions
 itself, instead of leaving them to `Campaigns.loadInitialCampaign`. A stored
 character may have no `spellbook` key. `undoHistory` and
 `readStateFromFile` hand their results to callers that apply no defaults of
@@ -257,7 +258,7 @@ This split lets structure and blobs fail independently, so a full origin
 costs the GM a handout picture instead of the whole map, and a history
 snapshot never includes a picture that it did not change.
 
-The write order (payloads first) keeps the failure survivable. A campaign
+The write order (payloads first) makes the failure recoverable. A campaign
 that references a payload missing from the sidecar renders the placeholder
 that the renderer already draws. The reverse order
 can instead persist structure that references nothing. The write order also
@@ -398,7 +399,7 @@ because the `withDefaults` functions already absorb its absence.
 A step never names `library`, because the field a campaign export bundles
 belongs to `normalizeLibrary` and passes through the table untouched. A
 test runs a version-1 save with a library through
-the whole chain and asserts the field survives unchanged.
+the whole chain and asserts that the field is unchanged.
 
 ## Undo and redo: a log of deltas
 
@@ -426,7 +427,7 @@ path. Both controls grey out from `historyDepth` when that direction is
 empty.
 
 The storage layout uses one key for each record: an index at
-`campaign-builder:history` holding `{ version, log, deltas, cursor }`, and
+`campaign-builder:history` that contains `{ version, log, deltas, cursor }`, and
 one `campaign-builder:history:d<seq>` for each delta. A step is therefore
 one small `setItem` call, instead of a rewrite of the whole log. Measured on
 the example campaign, fifty party steps cost 27,304 bytes of log, where the
@@ -438,9 +439,9 @@ The log also serves cross-tab adoption. A tab calls
 reflects. The tab records this token each time its live state matches the
 persisted save. When another tab saves, the follower calls
 `planAdoption(held)`. The answer is the head delta's ops when the save is
-exactly one delta ahead of the held position. The answer is `current` when
-nothing moved. The answer is `full` in every other case, and the follower
-then takes the ordinary load path. The `log` field of the index is a random
+exactly one delta ahead of the held position, `current` when nothing moved,
+and `full` in every other case, where the follower then takes the ordinary
+load path. The `log` field of the index is a random
 id. A fresh log draws a new id when its first delta lands. Sequence numbers
 restart at zero after `clearHistoryLog`. A position token pairs the id with
 the number, so a token from a cleared log matches nothing in the new log.

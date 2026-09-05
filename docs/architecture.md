@@ -97,7 +97,7 @@ Almost every module here is either pure logic or thin DOM glue:
 
 1. **Pure logic** takes its inputs as arguments, including side effects such
    as RNG or the current time, and returns new values. It never changes what
-   it received. It never touches the DOM. Examples: `dice/`'s
+   it received, and it never touches the DOM. Examples: `dice/`'s
    `roll(selection, rng)`, `map/MapNavigator.js`, `map/FogOfWar.js`, all of
    `entities/`, and the serialize and deserialize functions of
    `storage/SaveManager.js`.

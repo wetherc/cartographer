@@ -107,7 +107,7 @@ it to its own base class through `classNames`:
 el('div', classNames(['chip', opts.className]))
 ```
 
-- It appends. It never replaces. A caller that passes a class still gets
+- It appends and never replaces, so a caller that passes a class still gets
   the shared presentation. A builder that assigns
   `element.className = opts.className` throws away its own contract.
 - A space-separated string is valid. `classList.add(opts.className)` throws
@@ -246,7 +246,7 @@ of how the panel is built:
   Transient view state is different, and it does belong to
   the panel: which row is in edit mode, which section is expanded, which tab
   shows. `LibraryPanel`'s `update` closes an open inline editor for this
-  reason, but its filter text and selected subtab survive, because the input
+  reason, but its filter text and selected subtab stay, because the input
   and the tab strip are built once and only the lists redraw.
 - **Every mutation leaves through a callback.** Panels do not write state and
   do not open dialogs. They call `callbacks.onEdit(id)` and let the wiring
@@ -421,7 +421,7 @@ also discards what the user typed into a row's input on every refresh.
 empty-state paragraph, the chip pair, a status badge, and the section label.
 A panel must not build a `<button>` element itself. A control that has the
 `btn` presentation is an `iconButton` or a `textButton`. A control that is a
-button for the keyboard but wears no button chrome is a `bareButton`, whatever
+button for the keyboard but has no button chrome is a `bareButton`, whatever
 class it goes on to take: a tab, a menu item, a tree row, a disclosure header,
 a spell-slot pip, a target card. The only `<button>` elements written by hand
 are the static ones in `index.html` (the sixteen tabs, the header file
@@ -473,9 +473,8 @@ CSS modifier:
 | `'danger'` | danger-outlined, fills red on hover |
 | `'success'` | success-outlined, fills green on hover |
 
-`variant: 'danger'` is not decoration. Every destructive control passes it,
-stays visible rather than appearing only on hover, and asks for confirmation
-first. See
+Every destructive control passes `variant: 'danger'`, stays visible rather
+than appearing only on hover, and asks for confirmation first. See
 [Conventions](conventions.md#every-destructive-action-confirms-first).
 
 `segSwitch` builds a `role="group"` of buttons over one value: the header's
@@ -574,7 +573,7 @@ for a block of lines that reads as a table, and give the label a width in
 your own sheet so the values line up. The loadout block does both.
 
 This is not `buildStatBar`, despite the names sitting close together. A stat
-bar draws a fraction as a filled track. A fact line draws text.
+bar draws a fraction as a filled track, while a fact line draws text.
 
 ## Death-save block
 
@@ -691,7 +690,7 @@ A field is a `ModalField` record (`Modal.js`), and `type` picks the widget:
 | `type` | Widget | Value in the result record |
 | --- | --- | --- |
 | `'text'` *(default)* | `input.field` | the string |
-| `'number'` | `input.field type=number`, honoring `min`/`max` | the string. Out-of-range values clamp on `change`, not per keystroke |
+| `'number'` | `input.field type=number`, honoring `min`/`max` | the string. An out-of-range value moves to the nearer bound on `change`, not per keystroke |
 | `'textarea'` | `textarea.field`, `rows` lines tall | the string |
 | `'select'` | `select.field` over `options: { value, label, disabled? }[]` | the selected value |
 | `'file'` | image picker | a `data:` URL produced by `readImageFile` |
@@ -761,7 +760,7 @@ same helper serves enum pickers and labelled choices.
 These controls are not rail-only. `promptModal` builds a dialog's plain text,
 number, select, and checkbox fields from the same functions, so a field
 behaves the same in a dialog as in the rail. `numberField` owns the
-clamp-on-`change` for both, reading `min`/`max` off the element so a dialog
+range correction on `change` for both, reading `min`/`max` off the element so a dialog
 that restates a field's range through `setRange` still gets it enforced.
 
 `buildInlineForm` is the envelope that all four forms share. It wraps the
@@ -837,8 +836,8 @@ thing to `wireTabs`. `resolvePanel` is how the panels are found before
 they are in the document, and `onSelect` reports the caller's own tab id,
 including for the initial selection. The encounter panel's two tabs and
 the equipment library's category subtabs both use this path. Selecting a
-tab only flips `hidden`, so the panels' contents survive a tab click and
-refresh on their own schedule. Neither panel redraws to move a highlight.
+tab only flips `hidden`, so the panels' contents stay in the DOM across a
+tab click and refresh on their own schedule. Neither panel redraws to move a highlight.
 Use one of these two helpers, never a third strip built by hand.
 
 ```js
@@ -917,7 +916,7 @@ The element is a popover, which puts it in the browser's top layer. A hint on
 a control inside a modal dialog would otherwise draw behind the dialog, since
 a modal dialog is in that layer too. `tipPlacement` is the pure placement
 rule: above the anchor and centered on it, flipped below when there is no room
-above, clamped to the viewport either way.
+above, kept within the viewport either way.
 
 `src/ui/TileTooltip.js` is a separate widget. It follows the cursor over the
 map canvas and shows several lines of tile metadata, with no element to anchor
@@ -935,8 +934,8 @@ choices that do not need a dialog. It follows native-menu semantics: focus
 moves into the first item, arrows cycle, Escape or an outside click
 dismisses the menu without choosing an item, and choosing an item closes
 the menu before it runs the action. Only one menu is open at a time, so
-opening a second menu closes the first. There is no return value: the
-items' own callbacks are the result.
+opening a second menu closes the first. It has no return value, because
+the items' own callbacks are the result.
 
 `clampToViewport` is the pure positioning helper, kept separate so that it
 can be tested with a unit test. It flips the menu off a viewport edge
@@ -974,7 +973,7 @@ The arithmetic (`fitDimensions`, `encodeSizes`, `encodeAttempts`,
 `pickFit`) is pure and tested with unit tests. The canvas encode path is
 checked in a browser.
 
-Both size caps exist to survive the browser storage budget, not because
+Both size caps exist to fit the browser storage budget, not because
 they are the right quality ceiling for a projected handout. The caps are
 expected to go away when image payloads move to real files.
 
@@ -1020,8 +1019,8 @@ defined in one `:root` block in `styles/base.css`:
 
 The token system depends on these rules:
 
-- **Never write a fallback** (`var(--border, #ccc)`). A missing token
-  renders as nothing, which is visible. A fallback hides the typo instead.
+- **Never write a fallback** (`var(--border, #ccc)`), because a missing
+  token renders as nothing and shows the typo, while a fallback hides it.
 - **Every accent has a `*-contrast` partner**, and a filled element always
   declares its own foreground color from it. Add new accents as a pair.
 
@@ -1049,7 +1048,7 @@ URI. `light-dark()` resolves `<color>` only, so it cannot contain a `url()`.
 Instead, the arrow is swapped in a `prefers-color-scheme` block plus the
 two `data-theme` blocks, so that token appears four times.
 
-`--overlay-*` is the one exception: pinned dark in both themes, because map
+`--overlay-*` is the one exception, pinned dark in both themes because map
 controls, toasts, tooltips, and the onboarding scrim float over map art
 rather than the page background.
 

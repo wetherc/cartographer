@@ -82,7 +82,8 @@ mutating freshly created tiles and only then hand the list over, which stays
 legal while no node contains those tiles.
 
 Freezing is on in development and off elsewhere, because a throw that reaches
-a GM mid-session is worse than the stale render it replaces.
+a GM mid-session stops the session, while the stale render it replaces does
+not.
 `setTileFreezing` overrides this detection.
 
 ### Per-node derived data is WeakMap-cached
@@ -184,9 +185,9 @@ The three built-in catalogs behind them (`defaultEquipmentTemplates()`,
 `DEFAULT_CREATURES`, `DEFAULT_SPELLS`) are `deepFreeze`d
 (`src/util/deepFreeze.js`), so the code enforces this contract instead of
 only documenting it. A path that copies library data into campaign state
-says so by name, which is why `Creature.fromTemplate`,
-`Library.activeEnemyArmor`, `EquipmentPresets.copyEnemyWeapon`, and
-`Character.copySpellbook` exist.
+says so by name, so `Creature.fromTemplate`, `Library.activeEnemyArmor`,
+`EquipmentPresets.copyEnemyWeapon`, and `Character.copySpellbook` exist for
+that purpose.
 
 ## UI and style
 
@@ -245,8 +246,9 @@ element of its own.
 
 ### Numbers off a form or a file go through src/util/num.js
 
-`clampInt(value, min, max, fallback)` floors a value, clamps it, and reads
-anything it cannot parse (blank, text, `undefined`, zero) as `fallback`.
+`clampInt(value, min, max, fallback)` floors a value, limits it to the range,
+and reads anything it cannot parse (blank, text, `undefined`, zero) as
+`fallback`.
 `fallback` defaults to `min`.
 
 For a whole value that has several such fields, add a named normalizer beside

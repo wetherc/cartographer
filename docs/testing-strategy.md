@@ -21,7 +21,7 @@ no DOM, no canvas, and no mock of a browser API.
 Glue modules get a browser instead, because a mock of the DOM proves only
 that the code called the functions the mock expected, not that a GM can see
 the panel or click the button. The map, the panels, and the dialogs are
-visual questions, so they get a visual answer.
+checked by looking at them.
 
 The same split leaves the project with no test framework and no browser
 polyfill in its dependencies, because nothing in the suite needs one.
@@ -45,12 +45,12 @@ down:
 | --- | --- |
 | `src/ui/*` panels, dialogs, and widgets | They build and mount elements. A DOM-less runner can call almost none of it |
 | `src/app/*Wiring.js` | Each one mounts panels and registers handlers against a live app. The per-feature logic that the suites do cover was pulled out into the neighboring `src/app/` modules |
-| The canvas renderers: `MapRenderer`, `MapMarkers`, `MapDecorations`, `CanvasText`, `MapExport` | They draw to a 2D context. What they draw is a visual question |
+| The canvas renderers: `MapRenderer`, `MapMarkers`, `MapDecorations`, `CanvasText`, `MapExport` | They draw to a 2D context. Only a browser shows what they drew |
 | `src/storage/fileIO.js` | Download and upload primitives, which need a browser |
 | `src/main.js` | Not loaded at all. It builds the app on load, so it needs a document |
 
-A low number on one of those files is expected. A low number anywhere else
-is work to do.
+A low number on one of those files is expected, while a low number anywhere
+else is work to do.
 
 A high line count on a module that is mostly `el(...)` calls is easier to
 misread, because it means a test built the DOM and not that a test looked
@@ -76,8 +76,7 @@ browser, where a save-then-load click sequence is an end-to-end check.
 The same rule applies inside `src/ui/`. The pure helpers that happen to live
 there are tested where they sit: `fitDimensions` and `encodeAttempts` in
 `tests/imageField.test.js`, and `clampToViewport` in
-`tests/context-menu.test.js`. They are arithmetic, so the DOM around them
-is beside the point.
+`tests/context-menu.test.js`. They are arithmetic, so they need no DOM.
 
 ## What the preview pages are for
 

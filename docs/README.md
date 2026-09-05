@@ -54,8 +54,8 @@ a reference does not teach, and an explanation gives no steps.
 codebase, not one of the four kinds. `CONTRIBUTING.md` in the project root
 tells you how to rebuild it.
 
-`gallery.html` sits beside them too. It renders every shared builder in
-`src/ui/` from the real modules, with the call that built each one and the
-classes that call produces. Open it over the dev server at
-`http://localhost:8934/docs/gallery.html`, since it loads ES modules. Open
-it when you need to see a widget before you use it.
+`gallery.html` renders every shared builder in `src/ui/` from the real
+modules, with the call that built each one and the classes that call
+produces. It loads ES modules, so open it over the dev server at
+`http://localhost:8934/docs/gallery.html` when you need to see a widget
+before you use it.
