@@ -52,8 +52,24 @@
   flex: 1;
 }
 
+/* The actions stay pinned to the bottom of the dialog while the fields
+   scroll, so a short window still shows Generate. The negative offset
+   cancels the dialog padding below the row. */
+.modal--generate .modal__actions {
+  position: sticky;
+  bottom: calc(-1 * var(--space-5));
+  padding-block: var(--space-2) var(--space-5);
+  margin-bottom: calc(-1 * var(--space-5));
+  background: var(--surface);
+}
+
+/* The preview is square, so its width is capped by the viewport height. At
+   full width it is about 540 px tall, which pushes Generate below the fold
+   of a 900 px window. */
 .generate-dialog__preview {
-  width: 100%;
+  display: block;
+  width: min(100%, 45vh);
+  margin-inline: auto;
   aspect-ratio: 1;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);

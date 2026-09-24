@@ -76,7 +76,14 @@ export function generateDialog(options) {
         ),
       );
 
-      const levelsInput = field('Levels (dungeon only)', numberField(1, { min: 1 }));
+      // Only a dungeon stacks levels, so the field shows for that archetype
+      // alone. A region lists no dungeon, so there it never shows.
+      const levelsInput = field('Levels', numberField(1, { min: 1 }));
+      const levelsField = /** @type {HTMLElement} */ (levelsInput.closest('.modal__field'));
+      const syncLevels = () =>
+        levelsField.classList.toggle('modal__field--hidden', archetypeSelect.value !== 'dungeon');
+      syncLevels();
+      archetypeSelect.addEventListener('change', syncLevels);
 
       // This is the seed row: the editable seed plus a Reroll button that
       // draws a fresh one. The preview canvas below always shows the
