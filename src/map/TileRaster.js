@@ -56,6 +56,19 @@ export function rasterSize(edge) {
 }
 
 /**
+ * The per-ref cache key for a bucket size. A number instead of a `WxH`
+ * string, because a frame looks up every visible cell, and 1,600 string keys
+ * cost about five times what 1,600 numeric keys do. `rasterSize` caps both
+ * edges at `MAX_SIZE`, which is below 4096, so no two sizes share a key.
+ * @param {number} width
+ * @param {number} height
+ * @returns {number}
+ */
+export function sizeKey(width, height) {
+  return width * 4096 + height;
+}
+
+/**
  * The `src` to load a tile image ref from. A built-in ref is a
  * project-relative path and needs the leading slash. A GM-supplied tile's art
  * is a `data:` URL and is used as-is, because prefixing it produces an
@@ -107,11 +120,12 @@ export class TileRaster {
      */
     this.images = new Map();
     /**
-     * Cached rasters, keyed by ref and then by `WxH`. Two levels instead of
-     * one `ref@WxH` string: a GM-supplied ref is a `data:` URL that runs to
-     * hundreds of kilobytes, and a single-level key would build a string
-     * that long for every tile on every frame.
-     * @type {Map<string, Map<string, CanvasImageSource>>}
+     * Cached rasters, keyed by ref and then by the bucket size (see
+     * `sizeKey`). Two levels instead of one `ref@WxH` string: a GM-supplied
+     * ref is a `data:` URL that runs to hundreds of kilobytes, and a
+     * single-level key would build a string that long for every tile on every
+     * frame.
+     * @type {Map<string, Map<number, CanvasImageSource>>}
      */
     this.rasters = new Map();
     this.bytes = 0;
@@ -172,7 +186,7 @@ export class TileRaster {
   source(imageRef, width, height) {
     const bw = this.enabled ? rasterSize(width) : 0;
     const bh = this.enabled ? rasterSize(height) : 0;
-    const cached = bw && bh ? this.rasters.get(imageRef)?.get(`${bw}x${bh}`) : undefined;
+    const cached = bw && bh ? this.rasters.get(imageRef)?.get(sizeKey(bw, bh)) : undefined;
     if (cached) return cached;
 
     const img = this.image(imageRef);
@@ -211,7 +225,7 @@ export class TileRaster {
       perRef = new Map();
       this.rasters.set(imageRef, perRef);
     }
-    perRef.set(`${width}x${height}`, canvas);
+    perRef.set(sizeKey(width, height), canvas);
     this.bytes += width * height * 4;
     return canvas;
   }

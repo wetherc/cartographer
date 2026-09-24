@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TileRaster, rasterSize, imageSrcForRef } from '../src/map/TileRaster.js';
+import { TileRaster, rasterSize, imageSrcForRef, sizeKey } from '../src/map/TileRaster.js';
 
 /**
  * A stand-in for a decoded image. The class only reads `complete`,
@@ -58,6 +58,13 @@ test('rasterSize takes the destination size, rounded up to a whole pixel', () =>
   assert.equal(rasterSize(17.76), 18);
   assert.equal(rasterSize(192), 192);
   assert.equal(rasterSize(256), 256);
+});
+
+test('sizeKey gives every pair of bucket edges its own number', () => {
+  assert.notEqual(sizeKey(2, 1), sizeKey(1, 2));
+  const keys = new Set();
+  for (const w of [1, 2, 255, 256]) for (const h of [1, 2, 255, 256]) keys.add(sizeKey(w, h));
+  assert.equal(keys.size, 16);
 });
 
 test('rasterSize keeps a tiny destination at one pixel', () => {
