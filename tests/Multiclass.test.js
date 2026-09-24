@@ -7,7 +7,9 @@ import {
   assignedLevel,
   pendingLevels,
   withClasses,
+  characterProficiency,
 } from '../src/entities/Multiclass.js';
+import { spellSaveDC } from '../src/entities/Classes.js';
 import { createCharacter, withDefaults, addXP, withHP, getHP } from '../src/entities/Character.js';
 
 /** @param {import('../src/types/class.js').ClassRef[]} classes @param {number} [level] */
@@ -113,7 +115,7 @@ test('withDefaults trims a class list that oversells the level, exposing the pen
 
 test('addXP leaves every earned level pending for a classed character', () => {
   const single = withHP(withList([{ classId: 'fighter', level: 1 }], 1), 10); // d10, CON 10
-  const leveled = addXP(single, 300); // 1 -> 3
+  const leveled = addXP(single, 900); // 1 -> 3
   assert.equal(leveled.level, 3);
   assert.deepEqual(leveled.classes, [{ classId: 'fighter', level: 1 }]);
   assert.equal(pendingLevels(leveled), 2);
@@ -126,7 +128,7 @@ test('addXP leaves every earned level pending for a classed character', () => {
     ],
     2,
   );
-  const gained = addXP(multi, 200); // 2 -> 3
+  const gained = addXP(multi, 600); // 2 -> 3
   assert.equal(gained.level, 3);
   assert.deepEqual(gained.classes, multi.classes);
   assert.equal(pendingLevels(gained), 1);
@@ -152,4 +154,18 @@ test('withDefaults folds legacy scalar class fields into a one-entry list', () =
   // An already-migrated list passes through untouched.
   const listed = withDefaults(withList([{ classId: 'fighter', level: 2 }]));
   assert.deepEqual(listed.classes, [{ classId: 'fighter', level: 2 }]);
+});
+
+test('the proficiency bonus follows the assigned class levels, not pending ones', () => {
+  // A Wizard 5 with six levels earned but not assigned.
+  const wizard = withDefaults({
+    ...createCharacter('c1', 'Mage', { INT: 18 }),
+    classes: [{ classId: 'wizard', level: 5 }],
+    level: 11,
+  });
+  assert.equal(pendingLevels(wizard), 6);
+  assert.equal(characterProficiency(wizard), 3);
+  assert.equal(spellSaveDC(wizard, 'wizard'), 15);
+  // A classless character has nothing to assign, so its stored level counts.
+  assert.equal(characterProficiency({ ...createCharacter('c2', 'Nim'), level: 9 }), 4);
 });

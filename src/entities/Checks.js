@@ -6,7 +6,8 @@
  */
 
 import { roll } from '../dice/DiceRoller.js';
-import { abilityModifier, proficiencyBonus, ABILITY_SCORES } from './Modifiers.js';
+import { abilityModifier, ABILITY_SCORES } from './Modifiers.js';
+import { characterProficiency } from './Multiclass.js';
 import { effectiveStats } from './Equipment.js';
 import { d20Penalty } from './Exhaustion.js';
 import { isProficientSave, isProficientSkill, hasExpertise } from './Proficiencies.js';
@@ -55,9 +56,7 @@ import { SKILL_ABILITIES, SKILL_IDS } from '../data/skills.js';
  */
 export function saveBonus(character, ability) {
   const mod = abilityModifier(effectiveStats(character)[ability] ?? 10);
-  const proficient = isProficientSave(character, ability)
-    ? proficiencyBonus(character.level ?? 1)
-    : 0;
+  const proficient = isProficientSave(character, ability) ? characterProficiency(character) : 0;
   return mod + proficient + d20Penalty(character);
 }
 
@@ -183,7 +182,7 @@ export function checkBonus(character, key) {
   const mod = abilityModifier((ability ? effectiveStats(character)[ability] : undefined) ?? 10);
   const tired = d20Penalty(character);
   if (!SKILL_IDS.includes(key) || !isProficientSkill(character, key)) return mod + tired;
-  const bonus = proficiencyBonus(character.level ?? 1);
+  const bonus = characterProficiency(character);
   return mod + (hasExpertise(character, key) ? bonus * 2 : bonus) + tired;
 }
 

@@ -14,7 +14,8 @@ import { checkAbility, checkBonus, saveBonus } from '../entities/Checks.js';
 import { stealthPenalty, unproficientWear } from '../entities/Armor.js';
 import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
 import { modeReasons, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
-import { formatModifier, proficiencyBonus } from '../entities/Modifiers.js';
+import { formatModifier } from '../entities/Modifiers.js';
+import { characterProficiency } from '../entities/Multiclass.js';
 import { hasExpertise, isProficientSave, isProficientSkill } from '../entities/Proficiencies.js';
 import { rollRiders } from '../entities/Riders.js';
 import { riderSources } from '../entities/FeatChoices.js';
@@ -45,7 +46,7 @@ import { article } from '../util/text.js';
  * @returns {{ amount: number, word: string }}
  */
 function proficiencyPart(character, event) {
-  const bonus = proficiencyBonus(character.level ?? 1);
+  const bonus = characterProficiency(character);
   if (event.kind === 'save') {
     if (!isProficientSave(character, event.key)) return { amount: 0, word: '' };
     return { amount: bonus, word: `proficiency +${bonus}` };

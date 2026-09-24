@@ -3,6 +3,7 @@
 /** @typedef {import('../types/class.js').ClassRef} ClassRef */
 
 import { clamp } from '../util/num.js';
+import { proficiencyBonus } from './Modifiers.js';
 
 /**
  * Class-list mechanics. A character's classes are a list of `ClassRef`s
@@ -56,7 +57,7 @@ export function totalLevel(character) {
 
 /**
  * The class levels the character has assigned, summed across the list.
- * @param {Character} character
+ * @param {SpellCaster} character
  * @returns {number}
  */
 export function assignedLevel(character) {
@@ -73,6 +74,20 @@ export function assignedLevel(character) {
 export function pendingLevels(character) {
   if (getClasses(character).length === 0) return 0;
   return Math.max(0, totalLevel(character) - assignedLevel(character));
+}
+
+/**
+ * The proficiency bonus of a character. A classed character reads it at the
+ * sum of its assigned class levels, so a level earned by XP but not yet
+ * assigned adds nothing: a Wizard 5 with six pending levels rolls with +3,
+ * the bonus of Wizard 5. A classless character has nothing to assign and
+ * reads it at its stored level.
+ * @param {SpellCaster} character
+ * @returns {number}
+ */
+export function characterProficiency(character) {
+  const classed = getClasses(character).length > 0;
+  return proficiencyBonus(classed ? Math.max(1, assignedLevel(character)) : totalLevel(character));
 }
 
 /**

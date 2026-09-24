@@ -1,10 +1,5 @@
-import {
-  getHP,
-  damageCharacter,
-  spendResource,
-  restoreResource,
-  XP_PER_LEVEL,
-} from '../entities/Character.js';
+import { getHP, damageCharacter, spendResource, restoreResource } from '../entities/Character.js';
+import { xpForNextLevel } from '../entities/Experience.js';
 import { armorClass } from '../entities/Armor.js';
 import { speedNote, walkSpeed } from '../entities/Movement.js';
 import { getSlotPools, getPactPool, isSlotPool, isPactPool } from '../entities/SpellSlots.js';
@@ -27,6 +22,17 @@ import { el } from './dom.js';
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
 /** @typedef {import('../types/view.js').SheetPermissions} SheetPermissions */
+
+/**
+ * The header's XP line: the total against the start of the next level, or
+ * the total alone at the top level.
+ * @param {Character} character
+ * @returns {string}
+ */
+function xpProgress(character) {
+  const next = xpForNextLevel(character.level);
+  return next === null ? `XP ${character.xp}` : `XP ${character.xp} / ${next}`;
+}
 
 /**
  * This returns the pools the head and the stepper list do not already own.
@@ -310,11 +316,7 @@ export function mountCharacterSheet(
         acBadge,
         speedBadge,
         tiredBadge,
-        el(
-          'span',
-          'character-sheet__xp-progress u-muted',
-          `XP ${character.xp} / ${character.level * XP_PER_LEVEL}`,
-        ),
+        el('span', 'character-sheet__xp-progress u-muted', xpProgress(character)),
       ),
     );
     // The banner is built after the pip line but reads above it.

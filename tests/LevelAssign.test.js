@@ -199,11 +199,11 @@ test('addXP defers a multiclass character HP growth to assignment', () => {
     ),
     19, // d10 + CON 2, plus one rogue level at 7
   );
-  const leveled = addXP(c, 200); // level 2 -> 3, pending
+  const leveled = addXP(c, 600); // level 2 -> 3, pending
   assert.equal(getHP(leveled).max, 19);
   assert.equal(pendingLevels(leveled), 1);
   assert.equal(getHP(assignLevel(leveled, 'fighter')).max, 27);
-  assert.equal(getHP(addXP(c, 200, { hpGrowth: 5 })).max, 24); // explicit override
+  assert.equal(getHP(addXP(c, 600, { hpGrowth: 5 })).max, 24); // explicit override
 });
 
 test('className resolves a known class and falls back to the id', () => {

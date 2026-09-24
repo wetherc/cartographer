@@ -655,13 +655,20 @@ and a multiclass character combines its casting classes on the
 combined-caster-level table. A classless character still works. Its HP then
 follows a flat growth curve, and it gains no proficiencies.
 
+A character's total XP follows the SRD table. It reaches level 2 at 300,
+level 5 at 6,500, level 11 at 85,000, and level 20 at 355,000. The sheet
+header shows the total against the start of the next level. A character
+made at a higher level starts at the XP where that level begins.
+
 Enough XP does not level a classed character on its own. Each earned level
 waits as a pending level that the GM assigns to a class, either the current
-class or a new one. An assignment grows HP by the hit die of that class,
-adds a hit die, and advances spell slots. A newly unlocked spell level
-arrives full, and an already spent slot stays spent. An ASI level leaves a
-pending choice: +2 across one or two abilities, capped at 20, or a feat by
-name. Both choices are undoable from the same block.
+class or a new one. The proficiency bonus follows the assigned class levels,
+so a pending level does not raise it until the GM assigns it. An
+assignment grows HP by the hit die of that class, adds a hit die, and
+advances spell slots. A newly unlocked spell level arrives full, and an
+already spent slot stays spent. An ASI level leaves a pending choice: +2
+across one or two abilities, capped at 20, or a feat by name. Both choices
+are undoable from the same block.
 
 A class feature with choices, such as the Rogue's Expertise, prompts
 when its level is assigned. A choice with only one possible pick applies

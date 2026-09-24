@@ -29,9 +29,11 @@ separately:
 
 - HP and resource pools stay within `[0, max]` on every operation. No caller
   can overheal or drive HP negative.
-- `Character.addXP` uses an `N * XP_PER_LEVEL` (100) cost curve and loops
-  internally. One large XP award can cross several level thresholds in a
-  single call.
+- A character's `xp` is the total XP earned. `Character.addXP` reads the
+  level from the SRD table in `Experience.js`, the same scale as the CR XP
+  values and the encounter thresholds. One large XP award can cross several
+  level thresholds in a single call, and the load path raises a total below
+  the start of the stored level to that start.
 - `Character.js` looks up a character's resources and inventory by id.
   `spendResource` and `restoreResource` delegate to the matching
   `ResourcePool` through `Resource.js`. `addItem` and `removeItem` merge or

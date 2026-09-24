@@ -2,7 +2,8 @@ import { effectiveStatBlock, isCreature } from '../entities/Creature.js';
 import { effectiveStats } from '../entities/Equipment.js';
 import { creatureProficiencyBonus } from '../entities/CreatureChecks.js';
 import { DIE_SIDES } from '../dice/DiceRoller.js';
-import { abilityModifier, proficiencyBonus } from '../entities/Modifiers.js';
+import { abilityModifier } from '../entities/Modifiers.js';
+import { characterProficiency } from '../entities/Multiclass.js';
 
 /**
  * The 5e rules a weapon attack resolves by. This module stays apart from the
@@ -42,7 +43,7 @@ export function attackerStats(attacker) {
 export function attackerProficiency(attacker) {
   return isCreature(attacker)
     ? creatureProficiencyBonus(/** @type {import('../types/creature.js').Creature} */ (attacker))
-    : proficiencyBonus(/** @type {import('../types/entities.js').Character} */ (attacker).level);
+    : characterProficiency(/** @type {import('../types/entities.js').Character} */ (attacker));
 }
 
 /**

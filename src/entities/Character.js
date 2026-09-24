@@ -20,6 +20,7 @@ import { getClasses, sanitizeClasses } from './Multiclass.js';
 import { migrateASIChoices } from './LevelUp.js';
 import { clamp, clampInt } from '../util/num.js';
 import { conditionList, recordList, spellbookOf } from './LoadCoercion.js';
+import { MAX_LEVEL, levelForXp, xpForLevel } from './Experience.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -27,11 +28,10 @@ import { conditionList, recordList, spellbookOf } from './LoadCoercion.js';
 /** @typedef {import('../types/entities.js').Spellbook} Spellbook */
 /** @typedef {import('../types/entities.js').SpellCaster} SpellCaster */
 
-/** XP required to go from level N to N+1 is N * XP_PER_LEVEL. */
-export const XP_PER_LEVEL = 100;
-
-/** The highest level a character reaches. XP past the last threshold stays banked. */
-export const MAX_LEVEL = 20;
+/** The highest level a character reaches. Declared in Experience.js with the
+ * XP table. Re-exported here because character code is its natural import
+ * site. */
+export { MAX_LEVEL } from './Experience.js';
 
 /** The six ability scores every character carries, in conventional order.
  * Defined beside STAT_KEYS in Modifiers.js, so the enemy stat set derives
@@ -358,7 +358,9 @@ export function withDefaults(character) {
   );
   // The level and XP are clamped here, not only in the derived reads. A save
   // can carry a level as a string or far outside the range, and `addXP`
-  // computes from the stored values.
+  // computes from the stored values. The XP total is at least the start of
+  // the stored level, so a character made at level 3 starts at 900 XP and
+  // the next award counts toward level 4.
   const level = clampInt(character.level, 1, MAX_LEVEL, 1);
   const classes = sanitizeClasses(
     character.classes ??
@@ -368,7 +370,7 @@ export function withDefaults(character) {
   return derive({
     ...rest,
     level,
-    xp: clampInt(character.xp, 0, XP_PER_LEVEL * MAX_LEVEL, 0),
+    xp: clampInt(character.xp, xpForLevel(level), xpForLevel(MAX_LEVEL)),
     race: character.race ?? '',
     classes,
     stats: { ...defaultStats(), ...character.stats },
@@ -437,41 +439,15 @@ function defaultGrowth(max) {
 }
 
 /**
- * The XP a climb from level `from` to level `to` costs: the sum of
- * n * XP_PER_LEVEL for every level n from `from` up to `to - 1`.
- * @param {number} from
- * @param {number} to
- * @returns {number}
- */
-function xpBetween(from, to) {
-  const steps = to - from;
-  return XP_PER_LEVEL * (steps * from + (steps * (steps - 1)) / 2);
-}
-
-/**
- * How many levels `xp` points buy from `level`, capped at MAX_LEVEL. This is
- * the closed form of "spend one threshold and climb while the bank covers
- * it". The largest whole k with xpBetween(level, level + k) <= xp is the
- * positive root of k^2 + (2 * level - 1) * k - 2 * xp / XP_PER_LEVEL. A loop
- * over the thresholds does the same work, but its length grows with the
- * stored values, and a level far below 1 from a bad save never finished.
- * @param {number} level
- * @param {number} xp
- * @returns {number}
- */
-function levelsGained(level, xp) {
-  const b = 2 * level - 1;
-  const k = Math.floor((-b + Math.sqrt(b * b + (8 * xp) / XP_PER_LEVEL)) / 2);
-  return Math.max(0, Math.min(MAX_LEVEL - level, k || 0));
-}
-
-/**
- * Add XP, auto-leveling up (possibly multiple times) as the character
- * crosses thresholds. For a classed character, every gained level stays
- * pending until the player assigns it to a class (see Multiclass.js's
- * pendingLevels). HP growth, the hit die, spell slots, and ASI or feature
- * grants all follow the assigned class, so they land in
- * LevelAssign.assignLevel rather than here. Barring an explicit
+ * Add XP to the character's total, and level up (possibly several times)
+ * for each threshold of the SRD table that the new total crosses. The total
+ * stays between the start of the current level and the start of MAX_LEVEL,
+ * so a negative amount never takes a level away, and the live value equals
+ * what a reload of the same character gives. For a classed character,
+ * every gained level stays pending until the player assigns it to a class
+ * (see Multiclass.js's pendingLevels). HP growth, the hit die, spell
+ * slots, and ASI or feature grants all follow the assigned class, so they
+ * land in LevelAssign.assignLevel rather than here. Barring an explicit
  * `opts.hpGrowth`, the HP pool stays untouched. A classless character has
  * nothing to assign, so its HP pool grows immediately: by `opts.hpGrowth`
  * if given, otherwise a tenth of the pool's max per level. Characters with
@@ -488,13 +464,10 @@ function levelsGained(level, xp) {
  */
 export function addXP(character, amount, opts = {}) {
   const startLevel = character.level;
-  const banked = character.xp + amount;
-  const gained = levelsGained(startLevel, banked);
-  const level = startLevel + gained;
-  // At the top level the bank stops at the last threshold, so the live value
-  // equals what a reload of the same character gives.
-  const spent = banked - xpBetween(startLevel, level);
-  const xp = level === MAX_LEVEL ? Math.min(spent, XP_PER_LEVEL * MAX_LEVEL) : spent;
+  const floor = xpForLevel(startLevel);
+  const xp = clamp(Math.max(character.xp, floor) + amount, floor, xpForLevel(MAX_LEVEL));
+  const level = Math.max(startLevel, levelForXp(xp));
+  const gained = level - startLevel;
   if (gained === 0) return { ...character, level, xp };
 
   const classed = getClasses(character).length > 0;

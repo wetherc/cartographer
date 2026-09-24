@@ -164,7 +164,7 @@ test('syncSlotsToLevel gives a martial character pools when it takes a caster le
 
 test('addXP levels a caster into new slot pools', () => {
   let mage = withSpellSlots(withHP(createCharacter('c1', 'Mage'), 10));
-  mage = addXP(mage, 320); // level 1 -> 3
+  mage = addXP(mage, 900); // level 1 -> 3
   assert.deepEqual(
     getSlotPools(mage).map((p) => p.max),
     [4, 2],

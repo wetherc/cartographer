@@ -5,7 +5,8 @@ import { overlayList } from '../src/map/TileGrid.js';
 import { imageSrcForRef } from '../src/map/MapRenderer.js';
 import { exceedsExportCap } from '../src/map/MapExport.js';
 import { isoTimestamp } from '../src/log/Travelogue.js';
-import { addXP, MAX_LEVEL, XP_PER_LEVEL } from '../src/entities/Character.js';
+import { addXP, MAX_LEVEL } from '../src/entities/Character.js';
+import { XP_THRESHOLDS } from '../src/entities/Experience.js';
 import { hasWeaponProperty } from '../src/entities/Weapons.js';
 
 /**
@@ -194,19 +195,23 @@ test('a character with a level or XP outside the range loads clamped and levels 
   assert.equal(hero({ level: -3e7, xp: 0 }).level, 1);
   assert.equal(hero({ level: -1e15 }).level, 1);
   assert.equal(hero({ level: '7', xp: '50' }).level, 7, 'a numeric string reads as its number');
-  assert.equal(hero({ level: '7', xp: '50' }).xp, 50);
+  assert.equal(
+    hero({ level: '7', xp: '50' }).xp,
+    23000,
+    'a total below the level start rises to it',
+  );
   assert.equal(hero({ level: 99 }).level, MAX_LEVEL);
   assert.equal(hero({ xp: -20 }).xp, 0);
-  assert.equal(hero({ xp: 1e9 }).xp, XP_PER_LEVEL * MAX_LEVEL);
+  assert.equal(hero({ xp: 1e9 }).xp, XP_THRESHOLDS[MAX_LEVEL - 1]);
   assert.equal(hero({ level: null, xp: 'abc' }).level, 1);
   assert.equal(hero({ level: null, xp: 'abc' }).xp, 0);
 
   const started = Date.now();
-  const awarded = addXP(hero({ level: -1e15, xp: 0 }), 150);
+  const awarded = addXP(hero({ level: -1e15, xp: 0 }), 350);
   assert.ok(Date.now() - started < 1000, 'the award returns at once');
   assert.equal(awarded.level, 2);
-  assert.equal(awarded.xp, 50);
-  const stringLevel = addXP(hero({ level: '7' }), 700);
+  assert.equal(awarded.xp, 350);
+  const stringLevel = addXP(hero({ level: '7' }), 11000);
   assert.equal(stringLevel.level, 8, 'a level stored as text still adds as a number');
 });
 

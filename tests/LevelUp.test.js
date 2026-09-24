@@ -326,7 +326,7 @@ test('featuresGained lists only what the earlier snapshot lacked', () => {
 });
 
 test('crossing an ASI level leaves a pending choice once the level is assigned', () => {
-  const leveled = addXP(fighter(3), 300); // level 3 -> 4, pending
+  const leveled = addXP(fighter(3), 1800); // level 3 -> 4, pending
   assert.equal(leveled.level, 4);
   assert.deepEqual(pendingASISlots(leveled), []);
   const assigned = assignLevel(leveled, 'fighter');
@@ -338,7 +338,7 @@ test('a multiclass pending level earns no slot until assigned', () => {
     { classId: 'fighter', level: 3 },
     { classId: 'rogue', level: 1 },
   ]);
-  const leveled = addXP(c, 400); // level 4 -> 5, pending
+  const leveled = addXP(c, 3800); // level 4 -> 5, pending
   assert.equal(leveled.level, 5);
   assert.deepEqual(pendingASISlots(leveled), []);
 });

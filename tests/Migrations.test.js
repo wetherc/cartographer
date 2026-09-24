@@ -293,3 +293,23 @@ test('a bundled library rides through the whole migration chain untouched', () =
   );
   assert.deepEqual(migrated.library, library);
 });
+
+test('step 7 turns the XP banked toward the next level into a total', () => {
+  const state = {
+    characters: [
+      { id: 'c1', level: 3, xp: 150 },
+      { id: 'c2', level: '3', xp: 150 },
+      { id: 'c3', level: 2 },
+      null,
+    ],
+  };
+  const migrated = /** @type {any} */ (MIGRATIONS[7](state));
+  assert.equal(migrated.characters[0].xp, 1050, 'level 3 starts at 900');
+  assert.deepEqual(
+    migrated.characters.slice(1),
+    state.characters.slice(1),
+    'the rest pass through',
+  );
+  const none = { nodes: [] };
+  assert.equal(MIGRATIONS[7](none), none, 'a save with no character list is left alone');
+});

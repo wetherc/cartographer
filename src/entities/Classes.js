@@ -1,7 +1,7 @@
-import { abilityModifier, proficiencyBonus } from './Modifiers.js';
+import { abilityModifier } from './Modifiers.js';
 import { d20Penalty } from './Exhaustion.js';
 import { slotsForCaster, slotPoolsForCaster, casterLevelContribution } from './SpellSlots.js';
-import { getClasses } from './Multiclass.js';
+import { characterProficiency, getClasses } from './Multiclass.js';
 import { DEFAULT_CLASSES } from '../data/classes.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { clamp } from '../util/num.js';
@@ -178,8 +178,8 @@ export function spellAbilityModifier(character, classId) {
 
 /**
  * A caster's spell save DC: 8 plus proficiency bonus plus spell-ability
- * modifier. Proficiency reads the total character level (the 5e multiclass
- * rule), unless the caster carries an explicit `proficiency` (a rated
+ * modifier. Proficiency reads the sum of the assigned class levels (the 5e
+ * multiclass rule, see `Multiclass.characterProficiency`), unless the caster carries an explicit `proficiency` (a rated
  * creature's view does, from the challenge-rating ladder). The ability
  * comes from `classId`, defaulting to the first caster class. Returns null
  * for a non-caster.
@@ -219,7 +219,7 @@ export function spellAttackBonus(character, classId) {
  * @returns {number}
  */
 function casterProficiency(character) {
-  return character.proficiency ?? proficiencyBonus(character.level);
+  return character.proficiency ?? characterProficiency(character);
 }
 
 /**

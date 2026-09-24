@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   createCharacter,
   MAX_LEVEL,
-  XP_PER_LEVEL,
   withDefaults,
   withHP,
   getHP,
@@ -28,6 +27,7 @@ import { createResource } from '../src/entities/Resource.js';
 import { createCondition } from '../src/entities/Conditions.js';
 import { equip } from '../src/entities/Equipment.js';
 import { item } from './helpers/fixtures.js';
+import { XP_THRESHOLDS } from '../src/entities/Experience.js';
 
 test('createCharacter starts at level 1 with no xp/resources/inventory', () => {
   const hero = createCharacter('c1', 'Hero', { STR: 14 });
@@ -90,22 +90,22 @@ test('addXP accumulates without leveling up below the threshold', () => {
   assert.equal(hero.xp, 50);
 });
 
-test('addXP levels up once crossing the threshold, carrying remainder xp', () => {
-  const hero = addXP(createCharacter('c1', 'Hero'), 120);
+test('addXP levels up once the total crosses a threshold, and keeps the total', () => {
+  const hero = addXP(createCharacter('c1', 'Hero'), 320);
   assert.equal(hero.level, 2);
-  assert.equal(hero.xp, 20);
+  assert.equal(hero.xp, 320);
 });
 
 test('addXP can trigger multiple level-ups in one call', () => {
-  // level 1 -> 2 costs 100, level 2 -> 3 costs 200: 320 xp clears both with 20 left over
-  const hero = addXP(createCharacter('c1', 'Hero'), 320);
+  // Level 3 starts at 900 XP and level 4 at 2700.
+  const hero = addXP(createCharacter('c1', 'Hero'), 920);
   assert.equal(hero.level, 3);
-  assert.equal(hero.xp, 20);
+  assert.equal(hero.xp, 920);
 });
 
 test('addXP grows the HP pool per level gained, default a tenth of max', () => {
   let hero = withHP(createCharacter('c1', 'Hero'), 20);
-  hero = addXP(hero, 320); // level 1 -> 3, two levels gained
+  hero = addXP(hero, 900); // level 1 -> 3, two levels gained
   // HP grows ceil(20*0.1)=2 per level -> +4.
   assert.equal(getHP(hero).max, 24);
   assert.equal(getHP(hero).current, 24);
@@ -113,12 +113,12 @@ test('addXP grows the HP pool per level gained, default a tenth of max', () => {
 
 test('addXP honors an explicit per-level growth override', () => {
   let hero = withHP(createCharacter('c1', 'Hero'), 20);
-  hero = addXP(hero, 100, { hpGrowth: 5 }); // one level -> +5
+  hero = addXP(hero, 300, { hpGrowth: 5 }); // one level -> +5
   assert.equal(getHP(hero).max, 25);
 });
 
 test('addXP leaves a pool-less character unchanged but for level/xp', () => {
-  const hero = addXP(createCharacter('c1', 'Hero'), 120);
+  const hero = addXP(createCharacter('c1', 'Hero'), 300);
   assert.equal(hero.level, 2);
   assert.deepEqual(hero.resources, []);
 });
@@ -390,31 +390,22 @@ test('withDefaults backfills baseAC as 10 and migrates bonus-era armor items', (
   );
 });
 
-test('addXP matches the threshold walk for every start level and bank, and stops at MAX_LEVEL', () => {
-  /** The rule as a walk: spend one threshold and climb while the bank covers it. */
-  const walk = (level, xp) => {
-    while (level < MAX_LEVEL && xp >= level * XP_PER_LEVEL) {
-      xp -= level * XP_PER_LEVEL;
-      level += 1;
-    }
-    return { level, xp };
-  };
+test('addXP reads the level from the SRD table and stops at MAX_LEVEL', () => {
   for (let level = 1; level <= MAX_LEVEL; level += 1) {
-    for (const amount of [0, 1, 99, 100, 101, 150, 300, 320, 1000, 2099, 2100, 5000]) {
-      const hero = addXP({ ...createCharacter('c1', 'Hero'), level }, amount);
-      const expected = walk(level, amount);
-      assert.equal(hero.level, expected.level, `level ${level} plus ${amount} XP`);
-      assert.equal(
-        hero.xp,
-        Math.min(expected.xp, hero.level === MAX_LEVEL ? XP_PER_LEVEL * MAX_LEVEL : Infinity),
-        `bank after level ${level} plus ${amount} XP`,
-      );
+    const start = withDefaults({ ...createCharacter('c1', 'Hero'), level });
+    assert.equal(start.xp, XP_THRESHOLDS[level - 1], `level ${level} starts at its threshold`);
+    for (const amount of [0, 1, 299, 300, 6500, 84999, 400000]) {
+      const hero = addXP(start, amount);
+      const total = Math.min(start.xp + amount, XP_THRESHOLDS[MAX_LEVEL - 1]);
+      const reached = XP_THRESHOLDS.filter((t) => t <= total).length;
+      assert.equal(hero.level, Math.max(level, reached), `level ${level} plus ${amount} XP`);
+      assert.equal(hero.xp, total, `total after level ${level} plus ${amount} XP`);
     }
   }
   const capped = addXP({ ...createCharacter('c1', 'Hero'), level: MAX_LEVEL, xp: 0 }, 9000);
   assert.equal(capped.level, MAX_LEVEL, 'no level past the top');
-  assert.equal(capped.xp, XP_PER_LEVEL * MAX_LEVEL, 'the bank stops at the last threshold');
-  const negative = addXP(createCharacter('c1', 'Hero'), -50);
-  assert.equal(negative.level, 1, 'a negative bank buys no level');
-  assert.equal(negative.xp, -50);
+  assert.equal(capped.xp, XP_THRESHOLDS[MAX_LEVEL - 1], 'the total stops at the last threshold');
+  const negative = addXP(addXP(createCharacter('c1', 'Hero'), 350), -200);
+  assert.equal(negative.level, 2, 'a negative award takes no level away');
+  assert.equal(negative.xp, 300, 'the total stops at the start of the current level');
 });

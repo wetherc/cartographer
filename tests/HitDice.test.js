@@ -333,7 +333,7 @@ test('a short rest leaves hit dice spent; a long rest restores half of each pool
 
 test('addXP defers HP and hit-die growth until the levels are assigned', () => {
   const c = withHitDice(withHP(fighter(14), 12)); // level 1, d10, CON +2
-  const leveled = addXP(c, 320); // level 1 -> 3, both levels pending
+  const leveled = addXP(c, 900); // level 1 -> 3, both levels pending
   assert.equal(getHP(leveled).max, 12);
   assert.deepEqual(dicePools(leveled), [{ id: 'hit-dice-d10', max: 1, current: 1 }]);
   const assigned = assignLevel(assignLevel(leveled, 'fighter'), 'fighter');
@@ -349,7 +349,7 @@ test('addXP leaves a multiclass character dice for pending levels unassigned', (
       { classId: 'wizard', level: 1 },
     ]),
   );
-  const leveled = addXP(duo, 300); // level 2 -> 3, pending until assigned
+  const leveled = addXP(duo, 600); // level 2 -> 3, pending until assigned
   assert.equal(leveled.level, 3);
   assert.deepEqual(dicePools(leveled), [
     { id: 'hit-dice-d10', max: 1, current: 1 },
@@ -359,10 +359,10 @@ test('addXP leaves a multiclass character dice for pending levels unassigned', (
 
 test('addXP keeps the tenth-of-max fallback for a classless character', () => {
   const c = withHP(createCharacter('c1', 'Nim'), 30);
-  assert.equal(getHP(addXP(c, 100)).max, 33);
+  assert.equal(getHP(addXP(c, 300)).max, 33);
 });
 
 test('addXP honors an explicit hpGrowth override past the class rule', () => {
   const c = withHP(fighter(14), 12);
-  assert.equal(getHP(addXP(c, 100, { hpGrowth: 1 })).max, 13);
+  assert.equal(getHP(addXP(c, 300, { hpGrowth: 1 })).max, 13);
 });

@@ -17,6 +17,7 @@
 import { defaultEnemyGear } from '../entities/Creature.js';
 import { coerceWeapon } from '../entities/EquipmentPresets.js';
 import { slugId } from '../entities/Roster.js';
+import { xpForLevel } from '../entities/Experience.js';
 
 /** @typedef {import('../types/storage.js').RawSave} RawSave */
 /** @typedef {import('../types/storage.js').MigrationStep} MigrationStep */
@@ -25,7 +26,7 @@ import { slugId } from '../entities/Roster.js';
  * The schema version `buildState` stamps on every save it writes. Version 0
  * is every save written before this field existed.
  */
-export const CURRENT_VERSION = 7;
+export const CURRENT_VERSION = 8;
 
 /**
  * Step transforms keyed by the version being migrated from. `MIGRATIONS[n]`
@@ -205,6 +206,22 @@ export const MIGRATIONS = {
       ...(Array.isArray(state.creatures) ? { creatures: state.creatures.map(recastCreature) } : {}),
       ...(Array.isArray(state.bestiary) ? { bestiary: state.bestiary.map(recastCreature) } : {}),
     };
+  },
+  // 7 -> 8: a character's `xp` is the total XP earned, read against the SRD
+  // table. A version-7 save stores the XP banked toward the next level, and
+  // each level up empties that bank. The step adds the start of the stored
+  // level to the bank, so a character keeps its level and its progress.
+  // A level or XP value that is not a number passes through, and the
+  // validator after the chain repairs it.
+  7: (state) => {
+    if (!Array.isArray(state.characters)) return state;
+    const total = (/** @type {unknown} */ c) => {
+      if (c === null || typeof c !== 'object' || Array.isArray(c)) return c;
+      const record = /** @type {Record<string, any>} */ (c);
+      if (typeof record.level !== 'number' || typeof record.xp !== 'number') return c;
+      return { ...record, xp: xpForLevel(record.level) + record.xp };
+    };
+    return { ...state, characters: state.characters.map(total) };
   },
 };
 
