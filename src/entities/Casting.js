@@ -29,6 +29,8 @@ import { clamp } from '../util/num.js';
  * chip such as Prone slants only the attack rolls aimed at its holder.
  * `autoFailSave` names the chip that fails this target's save with no roll,
  * which is what being unable to move does to a Strength or Dexterity save.
+ * `autoCrit` turns any hit on this target into a critical hit, which is what
+ * a Paralyzed or Unconscious target takes from a melee spell attack.
  * @typedef {{
  *   id?: string,
  *   name?: string,
@@ -37,6 +39,7 @@ import { clamp } from '../util/num.js';
  *   saveMode?: RollMode,
  *   attackMode?: RollMode,
  *   autoFailSave?: string,
+ *   autoCrit?: boolean,
  *   projectiles?: number,
  *   conditions?: import('./Riders.js').RiderSource[],
  *   riders?: import('./Riders.js').RiderSource[],
@@ -347,8 +350,8 @@ function slotPoolToSpend(caster, slotLevel) {
  * - `attack`: one entry per target, with its d20 attack roll, whether it hit
  *   or crit, and the damage dealt on a hit (a crit doubles the dice). A
  *   multi-projectile spell instead carries the target's allocated `shots`,
- *   each with its own roll, how many `fired` and `hits` landed, and their
- *   damage merged.
+ *   each with its own roll and damage, how many `fired` and `hits` landed,
+ *   and their damage merged for the log.
  * - `save`: the damage rolled once, plus one entry per target with its save
  *   roll, whether it saved, and the damage it takes (full, half when
  *   `halfOnSave`, or none).
@@ -472,7 +475,8 @@ export function castSpell(caster, spell, options = {}) {
 /**
  * Roll one projectile against an AC: a d20 plus the caster's spell attack
  * bonus, plus whatever the caster's rider chips add. A natural 20 doubles
- * this projectile's dice alone, and a natural 1 always misses. An `autoHit`
+ * this projectile's dice alone, and a natural 1 always misses. `autoCrit`
+ * makes any hit a critical one. An `autoHit`
  * projectile skips the d20 entirely and can neither miss nor crit, so no
  * rider applies to it either.
  *
@@ -484,12 +488,22 @@ export function castSpell(caster, spell, options = {}) {
  *   attackBonus: number,
  *   mode: RollMode,
  *   autoHit: boolean | undefined,
+ *   autoCrit?: boolean,
  *   casterConditions: import('./Riders.js').RiderSource[],
  *   rng: RandomFn,
  * }} shot `parts` is what one projectile deals
  * @returns {ProjectileShot}
  */
-function rollProjectile({ parts, ac, attackBonus, mode, autoHit, casterConditions, rng }) {
+function rollProjectile({
+  parts,
+  ac,
+  attackBonus,
+  mode,
+  autoHit,
+  autoCrit = false,
+  casterConditions,
+  rng,
+}) {
   if (autoHit) {
     return {
       attack: null,
@@ -503,8 +517,8 @@ function rollProjectile({ parts, ac, attackBonus, mode, autoHit, casterCondition
   const rider = rollRiders(casterConditions, 'attack', rng);
   const attack = roll({ counts: { d20: 1 }, modifier: attackBonus + rider.modifier, mode }, rng);
   const natural = attack.results.find((r) => r.die === 'd20')?.rolls[0] ?? 0;
-  const crit = natural === 20;
-  const hit = natural !== 1 && (crit || attack.total >= ac);
+  const hit = natural !== 1 && (natural === 20 || attack.total >= ac);
+  const crit = hit && (natural === 20 || autoCrit);
   const doubled = crit ? parts.map((p) => ({ ...p, count: p.count * 2 })) : parts;
   return {
     attack,
@@ -517,9 +531,10 @@ function rollProjectile({ parts, ac, attackBonus, mode, autoHit, casterCondition
 }
 
 /**
- * Fold several projectiles' damage into one result, so a creature caught by
- * two rays takes one hit that carries both. This has the same shape that
- * `rollDamage` returns: totals and raw dice merged per damage type.
+ * Fold several projectiles' damage into one result, so the log line for a
+ * creature caught by two rays names both rays' dice. The result has the same
+ * fields that `rollDamage` returns: totals and raw dice merged per damage
+ * type. The caller still applies each ray as its own hit.
  * @param {ReturnType<typeof rollDamage>[]} rolls
  * @returns {ReturnType<typeof rollDamage>}
  */
@@ -584,6 +599,7 @@ function resolveEffect(spell, ctx) {
         attackBonus: spellAttackBonus,
         mode: target.attackMode ?? attackMode,
         autoHit: effect.projectiles?.autoHit,
+        autoCrit: target.autoCrit,
         casterConditions,
         rng,
       });
@@ -599,8 +615,8 @@ function resolveEffect(spell, ctx) {
     }
 
     // Otherwise each allocated projectile rolls on its own, with its own d20
-    // and its own crit that doubles only its own dice. The damage is merged
-    // per target, so a creature takes one hit instead of one hit per ray.
+    // and its own crit that doubles only its own dice. The merged damage is
+    // for the readout. Each shot keeps its own damage for the caller to apply.
     const allocation = allocateProjectiles(targets, projectileCount(effect, steps));
     return targets.map((target, i) => {
       const ac = target.ac ?? 10;

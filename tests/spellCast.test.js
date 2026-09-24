@@ -1899,3 +1899,88 @@ test('a reaction cast with the reaction gone is blocked and offers the opt-out',
   assert.equal(app.toasted[0], 'Mage already used their reaction this turn.');
   assert.deepEqual(spends, []);
 });
+
+/** A party character at 0 HP with a fresh death-save tracker. */
+function dyingMonk() {
+  const down = damageCharacter(withHP(mage({ id: 'monk', name: 'Monk' }), 20), 20);
+  return { ...down, deathSaves: { successes: 0, failures: 0, stable: false } };
+}
+
+test('a critical spell hit on a dying character adds two failures', () => {
+  const app = stubApp({ characters: [mage(), dyingMonk()] });
+  applyOutcomes(
+    app,
+    firebolt,
+    /** @type {any} */ ({
+      targets: [{ id: 'monk', name: 'Monk' }],
+      outcomes: [
+        {
+          target: { id: 'monk', name: 'Monk' },
+          attack: { total: 25 },
+          hit: true,
+          crit: true,
+          ac: 10,
+          damage: { total: 4, detail: '4 fire' },
+          rider: null,
+        },
+      ],
+    }),
+    'mage',
+  );
+  assert.equal(app.state.characters[1].deathSaves.failures, 2);
+});
+
+test('each ray that lands on a dying character is its own failure', () => {
+  const app = stubApp({ characters: [mage(), dyingMonk()] });
+  const shot = { hit: true, crit: false, damage: { total: 3 }, rider: null };
+  applyOutcomes(
+    app,
+    scorchingRay,
+    /** @type {any} */ ({
+      targets: [{ id: 'monk', name: 'Monk' }],
+      outcomes: [
+        {
+          target: { id: 'monk', name: 'Monk' },
+          ac: 10,
+          shots: [shot, { hit: false, crit: false, damage: null, rider: null }, shot],
+          fired: 3,
+          hits: 2,
+          hit: true,
+          damage: { total: 6, detail: '6 fire' },
+        },
+      ],
+    }),
+    'mage',
+  );
+  assert.equal(app.state.characters[1].deathSaves.failures, 2, 'two rays landed, one missed');
+});
+
+test('a melee spell hit on a paralyzed foe is a critical hit', () => {
+  const grasp = spell({
+    id: 'shocking-grasp',
+    name: 'Shocking Grasp',
+    level: 0,
+    range: 'Touch',
+    effect: { kind: 'attack', damage: [{ count: 1, sides: 8, damageType: 'lightning' }] },
+  });
+  const caster = mage({ spellbook: { cantrips: ['shocking-grasp'], known: [], prepared: [] } });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 30,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const held = { ...goblin, conditions: [{ name: 'Paralyzed' }] };
+  const app = stubApp({ characters: [caster], creatures: [held] });
+  const plan = planFor(app, caster, grasp);
+  resolveCast(app, plan, submit({ target: 'goblin', slot: undefined }), {
+    writeBack: () => {},
+    concentrates: false,
+    // Paralyzed grants advantage, so two d20 roll. Neither is a 20, then two
+    // d8 roll for the doubled die.
+    rng: seq([d20(15), d20(14), face(8, 4), face(8, 4)]),
+  });
+  assert.match(app.log[1], /Shocking Grasp critically hits Goblin/);
+  assert.equal(app.state.creatures[0].currentHP, 22);
+});

@@ -1,7 +1,7 @@
 import { castSpell } from '../entities/Casting.js';
 import { riderSummary } from '../entities/Riders.js';
 import { riderSources } from '../entities/FeatChoices.js';
-import { combineModes, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
+import { autoCrits, combineModes, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { removeItem } from '../entities/Character.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
 import { spellAbilityModifier, spellAttackBonus } from '../entities/Classes.js';
@@ -167,6 +167,9 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
           mode,
           rollMode({ roller: casterConditions, target: t.conditions, kind: 'attack', melee }),
         ]) ?? 'normal',
+      // A helpless target turns a melee spell hit into a critical one, the
+      // same rule a weapon swing follows.
+      autoCrit: autoCrits(t.conditions, { melee }),
     }));
   }
 
@@ -325,7 +328,11 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
             ? `${spell.name}: ${tally}${rode} for ${o.damage.detail}.`
             : `${spell.name}: ${tally}${rode} (AC ${o.ac}).`,
         );
-        applyToTarget(app, o.target.id, o.damage?.total ?? 0, false);
+        // Each ray that lands is its own hit, so a concentrating target
+        // saves once per ray and a dying one takes a failure per ray.
+        for (const s of o.shots) {
+          if (s.damage) applyToTarget(app, o.target.id, s.damage.total, false, { crit: s.crit });
+        }
         continue;
       }
       const verb = o.crit ? 'critically hits' : o.hit ? 'hits' : 'misses';
@@ -342,7 +349,7 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
         'combat',
         `${spell.name} ${verb} ${o.target.name}${rode} for ${o.damage?.detail || '0 damage'}.`,
       );
-      applyToTarget(app, o.target.id, o.damage?.total ?? 0, false);
+      applyToTarget(app, o.target.id, o.damage?.total ?? 0, false, { crit: o.crit });
     }
     app.toasts.show(`${spell.name} on ${summary}.`);
     return;

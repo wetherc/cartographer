@@ -494,7 +494,7 @@ test('each projectile rolls its own attack and crits its own dice alone', () => 
   assert.equal(o.shots[1].damage.total, 12);
   assert.equal(o.shots[2].hit, false);
   assert.equal(o.shots[2].damage, null);
-  assert.equal(o.damage.total, 36, 'the target takes one hit carrying both rays');
+  assert.equal(o.damage.total, 36, 'the readout carries both rays');
   assert.equal(o.damage.detail, '36 fire [6,6,6,6,6,6]');
 });
 
@@ -545,7 +545,7 @@ test('an auto-hitting projectile skips the attack roll entirely', () => {
   // flat +1 that rolls nothing.
   const result = castSpell(rayCaster(), darts, {
     slotLevel: 2,
-    targets: [{ id: 't', ac: 99 }],
+    targets: [{ id: 't', ac: 99, autoCrit: true }],
     rng: seq(Array(3).fill(face(4, 4))),
   });
   const [o] = result.outcomes;
@@ -622,6 +622,31 @@ test('cantrip attack hits, doubles dice on a crit, spends no slot', () => {
   assert.equal(o.hit, true);
   // 2 base+scaled dice, doubled by crit = 4 d10 at max = 40
   assert.equal(o.damage.total, 40);
+});
+
+test('an auto-crit target turns an ordinary hit into a critical one', () => {
+  // A 15 hits AC 5 without a natural 20, and the doubled d10 both come up 10.
+  const rng = seq([face(20, 15), face(10, 10), face(10, 10)]);
+  const result = castSpell(caster(), firebolt, {
+    slotLevel: 0,
+    casterLevel: 1,
+    targets: [{ id: 't', ac: 5, autoCrit: true }],
+    rng,
+  });
+  const [o] = result.outcomes;
+  assert.equal(o.crit, true);
+  assert.equal(o.damage.total, 20);
+});
+
+test('an auto-crit target still dodges a miss', () => {
+  const result = castSpell(caster(), firebolt, {
+    slotLevel: 0,
+    casterLevel: 1,
+    targets: [{ id: 't', ac: 15, autoCrit: true }],
+    rng: seq([face(20, 2)]),
+  });
+  assert.equal(result.outcomes[0].hit, false);
+  assert.equal(result.outcomes[0].crit, false);
 });
 
 test('attack miss deals no damage', () => {

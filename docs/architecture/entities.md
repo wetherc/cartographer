@@ -760,10 +760,14 @@ needs no migration.
   all of them on the single target in the common case.
 - Resolution rolls one attack per projectile: its own d20, its own critical
   hit that doubles only its own dice, or no roll at all when `autoHit` is
-  set. It then merges the damage per target, so a creature caught by two rays
-  takes one hit that includes both. The outcome keeps each projectile's roll
-  under `shots`, plus `fired` and `hits`, which lets the log read `2 of 3 hit
-  Grelka`.
+  set. The outcome keeps each projectile's roll and damage under `shots`,
+  plus `fired` and `hits`, which lets the log read `2 of 3 hit Grelka`. The
+  merged damage per target feeds that log line. The app applies each ray that
+  lands as its own hit, so a concentrating target saves once per ray and a
+  dying one takes a failure per ray.
+- A target that holds a Paralyzed or Unconscious chip turns a hit from a
+  Touch-range spell into a critical hit, the same rule a melee weapon
+  follows. The cast path sets `autoCrit` on that target.
 
 The cast dialog offers the allocation grid instead of target checkboxes for
 these spells, because a checkbox cannot say "two rays here, one there". The
