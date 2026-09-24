@@ -214,6 +214,25 @@ A derived bonus can sit below the one an SRD stat block prints. A printed bonus
 can include a trait this app does not model, such as the goblin's Nimble
 Escape.
 
+### Damage defenses
+
+A creature has an optional `defenses` field with three lists of damage types:
+`resist`, `vulnerable`, and `immune`. `entities/DamageDefenses.js` cleans
+the lists with `normalizeDefenses`, and the write paths and
+`Library.normalizeLibrary` spread `defenseFields`, so a creature with no
+defenses stores no field. A party character keeps no lists of its own.
+`defensesOf` reads its resistances from the race snapshot in `raceTraits`.
+
+`applyDefenses(groups, defenses, { halve })` takes the `byType` groups of a
+damage roll and returns the total taken and a note for each defense that
+changed a type. `halve` is a successful save against a spell that deals half
+damage, and it comes before the defenses, which is the 5e order. When no
+defense touches the hit, the function halves the whole total rather than
+each type, so a spell of two damage types rounds down once. `combatants.defendedDamage` finds
+the target by id and calls it. The weapon path, the spell attack path (once
+for each ray), and the save path all apply its total. Damage typed into an HP
+stepper has no damage type, so no defense reads it.
+
 ### Creature casters
 
 A creature casts through the same class machinery as a character. It has

@@ -691,7 +691,7 @@ A field is a `ModalField` record (`Modal.js`), and `type` picks the widget:
 | `'textarea'` | `textarea.field`, `rows` lines tall | the string |
 | `'select'` | `select.field` over `options: { value, label, disabled? }[]` | the selected value |
 | `'file'` | image picker | a `data:` URL produced by `readImageFile` |
-| `'multiselect'` | scrollable checkbox group, capped by `max` | checked values, comma-joined |
+| `'multiselect'` | scrollable checkbox group, capped by `max`; `columns` lays a short list out in columns with no scroll | checked values, comma-joined |
 | `'tags'` | pill list with inline entry | pills plus any unfinalized text, comma-joined |
 | `'pillgrid'` | assignment grid: `rows` x `options`, one option per row | `row:value` pairs, comma-joined |
 | `'allocation'` | distribution grid: a number input per row whose values sum to `total` | `row:count` pairs, comma-joined. A row given 0 is left out |

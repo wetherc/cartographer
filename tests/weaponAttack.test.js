@@ -1399,3 +1399,26 @@ test('canSwing asks the attack bank for a main swing and the pips for the other 
   assert.equal(canSwing(drained, 'offhand', 1), false);
   assert.equal(canSwing(drained, 'reaction', 1), false);
 });
+
+test('a hit on a resistant foe halves the damage and says so', () => {
+  const hero = makeHero({ STR: 16 });
+  const skeleton = createCreature('skeleton', 'Skeleton', {
+    disposition: 'hostile',
+    maxHP: 20,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+    defenses: { resist: ['slashing'], vulnerable: [], immune: [] },
+  });
+  const app = stubApp({ characters: [hero], creatures: [skeleton], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: hero,
+    defender: { id: 'skeleton', name: 'Skeleton', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    rng: scripted([4 / 8]),
+  });
+  // 5 on the die plus STR +3 is 8, halved to 4.
+  assert.match(app.log[1], /\(resists slashing, takes 4\)\.$/);
+  assert.equal(app.state.creatures[0].currentHP, 16);
+  assert.equal(app.toastMessages[0], 'Hit! Skeleton takes 4 damage.');
+});

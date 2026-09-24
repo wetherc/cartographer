@@ -15,11 +15,13 @@ import {
   findCombatant,
   applyToTarget,
   applyConditionToTarget,
+  defendedDamage,
   endSpellEffects,
 } from './combatants.js';
 import { targetFree, chosenTargets, targetSummary } from './spellTargets.js';
 import { effectiveSlot } from './spellCastFields.js';
 import { spendRollRiders } from './riderSpend.js';
+import { defenseNote } from '../entities/DamageDefenses.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -319,17 +321,23 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
         // ray's dice. The tally itself prints no to-hit numbers, and this is
         // the only place the rays' own rolls are recorded.
         const rode = riderNote(o.shots.map((/** @type {any} */ s) => s.rider));
+        // Each ray is its own hit, so the defenses apply to each one.
+        const hits = /** @type {any[]} */ (o.shots)
+          .filter((s) => s.damage)
+          .map((s) => ({ crit: s.crit, ...defendedDamage(app, o.target.id, s.damage.byType) }));
+        const defended = defenseNote(
+          hits.flatMap((h) => h.notes),
+          hits.reduce((n, h) => n + h.total, 0),
+        );
         app.actions.logEvent(
           'combat',
           o.hits > 0
-            ? `${spell.name}: ${tally}${rode} for ${o.damage.detail}.`
+            ? `${spell.name}: ${tally}${rode} for ${o.damage.detail}${defended}.`
             : `${spell.name}: ${tally}${rode} (AC ${o.ac}).`,
         );
         // Each ray that lands is its own hit, so a concentrating target
         // saves once per ray and a dying one takes a failure per ray.
-        for (const s of o.shots) {
-          if (s.damage) applyToTarget(app, o.target.id, s.damage.total, false, { crit: s.crit });
-        }
+        for (const h of hits) applyToTarget(app, o.target.id, h.total, false, { crit: h.crit });
         continue;
       }
       const verb = o.crit ? 'critically hits' : o.hit ? 'hits' : 'misses';
@@ -342,11 +350,13 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
         );
         continue;
       }
+      const taken = defendedDamage(app, o.target.id, o.damage?.byType ?? []);
       app.actions.logEvent(
         'combat',
-        `${spell.name} ${verb} ${o.target.name}${rode} for ${o.damage?.detail || '0 damage'}.`,
+        `${spell.name} ${verb} ${o.target.name}${rode} for ${o.damage?.detail || '0 damage'}` +
+          `${defenseNote(taken.notes, taken.total)}.`,
       );
-      applyToTarget(app, o.target.id, o.damage?.total ?? 0, false, { crit: o.crit });
+      applyToTarget(app, o.target.id, taken.total, false, { crit: o.crit });
     }
     app.toasts.show(`${spell.name} on ${summary}.`);
     return;
@@ -392,11 +402,19 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
       // A chip that fails the save outright threw no die, so the line names
       // the chip where the roll would have gone.
       const detail = o.autoFailedBy ? o.autoFailedBy : `${bonus}${rode}: ${o.save.total}`;
+      // A save that negates the damage leaves nothing for the defenses to
+      // change. Otherwise they apply per type, after the halving of a save.
+      const taken =
+        o.taken > 0
+          ? defendedDamage(app, o.target.id, o.damage.byType, { halve: o.saved })
+          : { total: 0, notes: [] };
+      const defended = taken.notes.length > 0 ? ` (${taken.notes.join(', ')})` : '';
       app.actions.logEvent(
         'combat',
-        `${o.target.name} ${verdict} DC ${o.dc} (${detail}) — takes ${o.taken} damage${cond}.`,
+        `${o.target.name} ${verdict} DC ${o.dc} (${detail}) — takes ${taken.total} damage` +
+          `${defended}${cond}.`,
       );
-      applyToTarget(app, o.target.id, o.taken, false);
+      applyToTarget(app, o.target.id, taken.total, false);
       spendRollRiders(app, o.target.id, o.rider);
     }
     app.toasts.show(`${spell.name} on ${summary}.`);

@@ -354,7 +354,8 @@ function slotPoolToSpend(caster, slotLevel) {
  *   and their damage merged for the log.
  * - `save`: the damage rolled once, plus one entry per target with its save
  *   roll, whether it saved, and the damage it takes (full, half when
- *   `halfOnSave`, or none).
+ *   `halfOnSave`, or none). Each entry also keeps the rolled `damage`, so a
+ *   caller can apply the target's damage defenses per type.
  * - `heal`: the healing rolled once, applied identically to each target. A
  *   heal with `addsModifier` adds `spellModifier`, the caster's spellcasting
  *   ability modifier, to the roll.
@@ -670,6 +671,7 @@ function resolveEffect(spell, ctx) {
         dc: saveDC,
         saved,
         taken,
+        damage,
         rider,
         autoFailedBy: target.autoFailSave ?? null,
         condition,

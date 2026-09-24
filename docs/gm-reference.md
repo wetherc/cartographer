@@ -278,6 +278,7 @@ way. Players never see the line.
 | Challenge rating | The 5e rating, or Unrated. It sets the proficiency bonus the enemy rolls with |
 | Save proficiencies | The saving throws the enemy is trained in |
 | Skill proficiencies | The skills the enemy is trained in |
+| Resistant to, Vulnerable to, Immune to | The damage types the enemy takes half, double, or no damage from |
 | Weapon, Armor | Gear from the library. None leaves the enemy unarmed or unarmored |
 | Map, Tile | Where the encounter stands |
 
@@ -447,6 +448,17 @@ Attack rolls follow 5e without change.
 The app applies the damage to the defender. An encounter loses HP on the
 spot, and a defeat is logged. A character loses bonus HP first, then real
 HP. An NPC loses HP the way an encounter does.
+
+A weapon or spell hit checks the damage defenses of the defender first. An
+immunity takes a damage type to 0, a resistance halves it, and a
+vulnerability doubles it, each rounded down. Each damage type in the hit
+changes on its own. A successful save against a spell that deals half damage
+halves first, and the defenses apply after that. A character resists the
+damage types of its race, such as fire for a tiefling. A foe takes its three
+lists from the enemy form. The log names each defense that changed the
+damage, with the amount taken. The Damage button on the combat screen and on
+the panels deals the typed amount with no damage type, so no defense applies
+to it.
 
 A party character at 0 HP is dying, not dead. It gets a death-save tracker on
 the combat screen and on its sheet, and the Unconscious chip.

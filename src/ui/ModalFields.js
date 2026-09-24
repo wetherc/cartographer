@@ -23,6 +23,8 @@ import { splitList, splitTrimmedList } from '../util/text.js';
  * `max` caps the picks: it disables the unchecked boxes once the cap is
  * reached. `fixedHeight` pins the box's height, so a refilter does not reflow
  * the dialog, and `emptyText` fills the box while there are no options.
+ * `columns` lays the options out in columns with no scroll, for a short
+ * list whose picks stay in view.
  * `className` is appended to the box's own classes, so a caller that mounts it
  * outside a dialog still gets the scroll box.
  * @param {{
@@ -31,6 +33,7 @@ import { splitList, splitTrimmedList } from '../util/text.js';
  *   max?: number,
  *   emptyText?: string,
  *   fixedHeight?: boolean,
+ *   columns?: boolean,
  *   className?: string,
  * }} spec
  * @returns {CompositeField & { setOptions: (options: FieldOption[], max?: number) => void }}
@@ -41,6 +44,7 @@ export function buildMultiselect(spec) {
     classNames([
       'field modal__multiselect',
       spec.fixedHeight && 'modal__multiselect--fixed',
+      spec.columns && 'modal__multiselect--columns',
       spec.className,
     ]),
   );

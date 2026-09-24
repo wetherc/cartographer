@@ -106,6 +106,15 @@
   max-height: none;
 }
 
+/* A short, fixed option list, such as the damage types, laid out in columns
+   so every pick stays in view without a scroll. */
+.modal__multiselect--columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(7.5rem, 1fr));
+  gap: var(--space-1) var(--space-2);
+  max-height: none;
+}
+
 /* ==========================================================================
    Character-sheet spells: a read-only view of the castable set, one group per
    spell level, spanning the full card width beneath the sheet's two section

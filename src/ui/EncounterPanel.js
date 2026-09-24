@@ -3,6 +3,7 @@ import { mountConditionsBar } from './ConditionsBar.js';
 import { mountExhaustionBar } from './ExhaustionBar.js';
 import { mountStatBlockBar } from './StatBlockBar.js';
 import { proficiencySummary } from '../entities/CreatureChecks.js';
+import { defensesSummary } from '../entities/DamageDefenses.js';
 import { casterSummary } from '../entities/Caster.js';
 import { el } from './dom.js';
 import { numberField } from './formFields.js';
@@ -197,6 +198,8 @@ export function mountEncounterPanel(container, callbacks) {
     // Build rail row.
     const trained = proficiencySummary(encounter);
     if (trained) row.appendChild(el('div', 'u-muted', trained));
+    const defended = defensesSummary(encounter.defenses);
+    if (defended) row.appendChild(el('div', 'u-muted', defended));
 
     // What the creature casts as, with its remaining slots. Derived the same
     // way, so the numbers match what a cast spends and rolls.

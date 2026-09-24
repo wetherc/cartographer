@@ -45,6 +45,9 @@ function baseValues() {
     cr: '',
     saves: '',
     skills: '',
+    resist: '',
+    vulnerable: '',
+    immune: '',
     weapon: '',
     armor: '',
     casterClass: '',
@@ -222,4 +225,17 @@ test('readCreatureFields reads both proficiency pickers and omits an empty pair'
   );
   assert.deepEqual(trained.proficiencies, { saves: ['DEX', 'WIS'], skills: ['stealth'] });
   assert.equal('proficiencies' in readCreatureFields(baseValues(), gear), false);
+});
+
+test('the defense pickers show a seed and read back its lists', () => {
+  const seed = { defenses: { resist: ['fire'], vulnerable: [], immune: ['poison', 'necrotic'] } };
+  const fields = creatureFields(seed, gearOptions(null));
+  assert.equal(field(fields, 'resist').value, 'fire');
+  assert.equal(field(fields, 'immune').value, 'poison,necrotic');
+  const read = readCreatureFields(
+    { ...baseValues(), resist: 'cold', immune: 'poison' },
+    gearOptions(null),
+  );
+  assert.deepEqual(read.defenses, { resist: ['cold'], vulnerable: [], immune: ['poison'] });
+  assert.equal('defenses' in readCreatureFields(baseValues(), gearOptions(null)), false);
 });

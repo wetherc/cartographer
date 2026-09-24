@@ -19,8 +19,10 @@ import {
   STAT_KEYS,
 } from '../entities/Modifiers.js';
 import { creatureProficiencyFields } from '../entities/Proficiencies.js';
+import { defenseFields } from '../entities/DamageDefenses.js';
+import { DAMAGE_TYPES } from '../entities/Equipment.js';
 import { clampInt } from '../util/num.js';
-import { splitList } from '../util/text.js';
+import { capitalize, splitList } from '../util/text.js';
 import { casterFields, readCasterOptions, refilterSpellsOnChange } from './casterFields.js';
 import { readGear } from './gearFields.js';
 import { readStats, statFields } from './statFields.js';
@@ -45,6 +47,7 @@ import { readStats, statFields } from './statFields.js';
  *   tier?: EnemyTier,
  *   cr?: number,
  *   proficiencies?: import('../types/creature.js').CreatureProficiencies,
+ *   defenses?: import('../types/creature.js').DamageDefenses,
  *   stats?: Record<string, number>,
  *   weapon?: import('../types/entities.js').EnemyWeapon | null,
  *   armor?: import('../types/entities.js').EnemyArmor | null,
@@ -54,6 +57,30 @@ import { readStats, statFields } from './statFields.js';
  * } | null} CreatureSeed
  */
 
+/**
+ * The three damage-type pickers: resistances, vulnerabilities, and immunities.
+ * @param {import('../types/creature.js').DamageDefenses | undefined} defenses
+ * @returns {ModalField[]}
+ */
+function defenseFieldList(defenses) {
+  const options = DAMAGE_TYPES.map((type) => ({ value: type, label: capitalize(type) }));
+  /** @type {['resist' | 'vulnerable' | 'immune', string][]} */
+  const rows = [
+    ['resist', 'Resistant to'],
+    ['vulnerable', 'Vulnerable to'],
+    ['immune', 'Immune to'],
+  ];
+  return rows.map(([name, label]) => ({
+    name,
+    label,
+    type: 'multiselect',
+    full: true,
+    columns: true,
+    value: (defenses?.[name] ?? []).join(','),
+    options,
+  }));
+}
+
 /** The tier picker's choices. Both surfaces show the same two. */
 function tierOptions() {
   return ENEMY_TIERS.map((t) => ({ value: t, label: t === 'mob' ? 'Mob' : 'Legend' }));
@@ -61,7 +88,8 @@ function tierOptions() {
 
 /**
  * The creature blueprint fields: identity, disposition, notes, the optional
- * level, tier, and challenge rating, the save and skill proficiencies, vitals,
+ * level, tier, and challenge rating, the save and skill proficiencies, the
+ * damage defenses, vitals,
  * gear, the stat block, and the optional caster section. A caster class turns the creature into a combatant that can cast
  * during initiative, and "None" leaves it a plain fighter.
  *
@@ -153,6 +181,7 @@ export function creatureFields(seed, gear, { stats = true } = {}) {
       value: (seed?.proficiencies?.skills ?? []).join(','),
       options: SKILL_IDS.map((id) => ({ value: id, label: skillName(id) })),
     },
+    ...defenseFieldList(seed?.defenses),
     {
       name: 'weapon',
       label: 'Weapon',
@@ -236,7 +265,8 @@ function readLevel(raw) {
  * shows is what the creature gets. A blank level, or a level of 0 or below,
  * stores no level and no tier (see readLevel).
  * A blank challenge rating stores none, which the app reads as unrated. Two
- * empty proficiency pickers store no proficiency record. The result carries
+ * empty proficiency pickers store no proficiency record, and three empty
+ * defense pickers store no defenses. The result carries
  * `stats` only when the form showed the block.
  * @param {Record<string, string>} values
  * @param {GearOptions} gear the same options the fields were built from
@@ -251,6 +281,7 @@ function readLevel(raw) {
  *   tier?: EnemyTier,
  *   cr?: number,
  *   proficiencies?: import('../types/creature.js').CreatureProficiencies,
+ *   defenses?: import('../types/creature.js').DamageDefenses,
  *   stats?: Record<string, number>,
  *   weapon: import('../types/entities.js').EnemyWeapon | null,
  *   armor: import('../types/entities.js').EnemyArmor | null,
@@ -267,6 +298,11 @@ export function readCreatureFields(values, gear, { stats = true } = {}) {
     ...creatureProficiencyFields({
       saves: splitList(values.saves),
       skills: splitList(values.skills),
+    }),
+    ...defenseFields({
+      resist: splitList(values.resist),
+      vulnerable: splitList(values.vulnerable),
+      immune: splitList(values.immune),
     }),
     name: values.name.trim(),
     disposition: /** @type {Disposition} */ (values.disposition),

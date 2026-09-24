@@ -13,6 +13,7 @@ import { creatureSaveBonus } from '../entities/CreatureChecks.js';
 import { healCharacter, hitCharacter } from '../entities/CharacterHit.js';
 import { dropIfHelpless } from '../entities/Concentration.js';
 import { settleConcentration } from '../entities/CreatureHit.js';
+import { applyDefenses, defensesOf } from '../entities/DamageDefenses.js';
 import { replaceById } from '../entities/Roster.js';
 import { castableLeveledIds } from '../entities/SpellView.js';
 import { resolveSpellIds } from '../library/Library.js';
@@ -240,6 +241,21 @@ function combatantSaveBonus(found, ability) {
 export function targetConditions(app, id) {
   const found = findCombatant(app, id);
   return found ? (found.entity.conditions ?? []) : [];
+}
+
+/**
+ * The damage a combatant takes from one hit after its resistances,
+ * vulnerabilities, and immunities (see `DamageDefenses.applyDefenses`), and
+ * the defenses that changed it, for the log. An unknown id has no defenses.
+ * @param {AppContext} app
+ * @param {string} id
+ * @param {import('../dice/DiceRoller.js').DamageGroup[]} groups
+ * @param {{ halve?: boolean }} [options]
+ * @returns {{ total: number, notes: string[] }}
+ */
+export function defendedDamage(app, id, groups, options) {
+  const found = findCombatant(app, id);
+  return applyDefenses(groups, defensesOf(found?.entity ?? {}), options);
 }
 
 /**

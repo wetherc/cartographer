@@ -1859,6 +1859,14 @@ test('a reaction cast with the reaction gone is blocked and offers the opt-out',
   assert.deepEqual(spends, []);
 });
 
+/** One damage group of fire, as `rollDamage` returns it. */
+const fire = (/** @type {number} */ n) => ({
+  damageType: 'fire',
+  rolls: [n],
+  bonus: 0,
+  subtotal: n,
+});
+
 /** A party character at 0 HP with a fresh death-save tracker. */
 function dyingMonk() {
   const down = damageCharacter(withHP(mage({ id: 'monk', name: 'Monk' }), 20), 20);
@@ -1879,7 +1887,7 @@ test('a critical spell hit on a dying character adds two failures', () => {
           hit: true,
           crit: true,
           ac: 10,
-          damage: { total: 4, detail: '4 fire' },
+          damage: { total: 4, detail: '4 fire', byType: [fire(4)] },
           rider: null,
         },
       ],
@@ -1891,7 +1899,7 @@ test('a critical spell hit on a dying character adds two failures', () => {
 
 test('each ray that lands on a dying character is its own failure', () => {
   const app = stubApp({ characters: [mage(), dyingMonk()] });
-  const shot = { hit: true, crit: false, damage: { total: 3 }, rider: null };
+  const shot = { hit: true, crit: false, damage: { total: 3, byType: [fire(3)] }, rider: null };
   applyOutcomes(
     app,
     scorchingRay,
@@ -1964,4 +1972,99 @@ test('a creature caster holds the concentration spell it casts', () => {
     rng: seq([d20(1)]),
   });
   assert.equal(written.at(-1).concentration.spellId, 'hold-person');
+});
+
+test('a spell hit on a character applies the resistance of its race', () => {
+  const tiefling = {
+    ...withHP(mage({ id: 'tiefling', name: 'Tiefling' }), 20),
+    raceTraits: { resistances: ['fire'] },
+  };
+  const app = stubApp({ characters: [mage(), tiefling] });
+  applyOutcomes(
+    app,
+    firebolt,
+    /** @type {any} */ ({
+      targets: [{ id: 'tiefling', name: 'Tiefling' }],
+      outcomes: [
+        {
+          target: { id: 'tiefling', name: 'Tiefling' },
+          attack: { total: 18 },
+          hit: true,
+          crit: false,
+          ac: 10,
+          damage: { total: 9, detail: '9 fire [9]', byType: [fire(9)] },
+          rider: null,
+        },
+      ],
+    }),
+    'mage',
+  );
+  assert.match(app.log[0], /for 9 fire \[9\] \(resists fire, takes 4\)\.$/);
+  assert.equal(getHP(app.state.characters[1]).current, 16);
+});
+
+test('a saved half comes before the resistance of the target', () => {
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 30,
+    location: HERE,
+    defenses: { resist: ['fire'], vulnerable: [], immune: [] },
+  });
+  const app = stubApp({ characters: [mage()], creatures: [goblin] });
+  applyOutcomes(
+    app,
+    burningHands,
+    /** @type {any} */ ({
+      targets: [{ id: 'goblin', name: 'Goblin' }],
+      outcomes: [
+        {
+          target: { id: 'goblin', name: 'Goblin', saveBonus: 0 },
+          save: { total: 18 },
+          dc: 13,
+          saved: true,
+          taken: 4,
+          damage: { total: 9, byType: [fire(9)] },
+          rider: null,
+          autoFailedBy: null,
+          condition: null,
+          conditionRider: null,
+        },
+      ],
+    }),
+    'mage',
+  );
+  assert.match(app.log[0], /takes 2 damage \(resists fire\)\.$/);
+  assert.equal(app.state.creatures[0].currentHP, 28);
+});
+
+test('each ray is resisted on its own', () => {
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 30,
+    location: HERE,
+    defenses: { resist: ['fire'], vulnerable: [], immune: [] },
+  });
+  const app = stubApp({ characters: [mage()], creatures: [goblin] });
+  const shot = { hit: true, crit: false, damage: { total: 5, byType: [fire(5)] }, rider: null };
+  applyOutcomes(
+    app,
+    scorchingRay,
+    /** @type {any} */ ({
+      targets: [{ id: 'goblin', name: 'Goblin' }],
+      outcomes: [
+        {
+          target: { id: 'goblin', name: 'Goblin' },
+          ac: 10,
+          shots: [shot, shot],
+          fired: 2,
+          hits: 2,
+          hit: true,
+          damage: { total: 10, detail: '10 fire [5,5]' },
+        },
+      ],
+    }),
+    'mage',
+  );
+  assert.match(app.log[0], /for 10 fire \[5,5\] \(resists fire, takes 4\)\.$/);
+  assert.equal(app.state.creatures[0].currentHP, 26, 'each 5 halves to 2');
 });

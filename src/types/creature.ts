@@ -36,6 +36,14 @@ export interface CreatureProficiencies {
   skills: string[];
 }
 
+/** The damage types a creature resists, is vulnerable to, and is immune to.
+ * Each list holds lowercase names from `Equipment.DAMAGE_TYPES`. */
+export interface DamageDefenses {
+  resist: string[];
+  vulnerable: string[];
+  immune: string[];
+}
+
 /**
  * One creature in the campaign: a foe, a townsperson, or anything between.
  * The disposition decides which side it fights on. Hostile creatures fight
@@ -90,6 +98,9 @@ export interface Creature {
   /** The saving throws and skills the creature is trained in. Its bonus in each
    * is derived, never stored: see `entities/CreatureChecks.js`. */
   proficiencies?: CreatureProficiencies;
+  /** Damage resistances, vulnerabilities, and immunities. Absent on a
+   * creature that has none. */
+  defenses?: DamageDefenses;
   /** Free-text role or faction, for example "Innkeeper". */
   role?: string;
   notes?: string;
@@ -135,6 +146,7 @@ export interface CreatureTemplate {
   tier?: EnemyTier;
   cr?: number;
   proficiencies?: CreatureProficiencies;
+  defenses?: DamageDefenses;
   role?: string;
   notes?: string;
   class?: string;

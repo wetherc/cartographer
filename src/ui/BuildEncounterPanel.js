@@ -3,6 +3,7 @@ import { bareButton } from './buttons.js';
 import { el } from './dom.js';
 import { crLabel } from '../data/challenge.js';
 import { proficiencySummary } from '../entities/CreatureChecks.js';
+import { defensesSummary } from '../entities/DamageDefenses.js';
 import { casterSummary } from '../entities/Caster.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { enemyArmorLabel } from '../entities/EnemyArmor.js';
@@ -88,6 +89,8 @@ export function mountBuildEncounterPanel(container, callbacks) {
       // bonus is derived, so it follows an edit of the rating or the stats.
       const trained = proficiencySummary(encounter);
       if (trained) row.appendChild(el('div', 'u-muted', trained));
+      const defended = defensesSummary(encounter.defenses);
+      if (defended) row.appendChild(el('div', 'u-muted', defended));
 
       // What the creature casts as, with its remaining slots. Derived, so it
       // follows an edit of the class, the caster level, or the rating.

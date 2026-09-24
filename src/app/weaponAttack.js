@@ -21,7 +21,8 @@ import {
   droppedNote,
   resolveAttack,
 } from '../combat/AttackResolve.js';
-import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.js';
+import { findCombatant, combatantsAsTargets, applyToTarget, defendedDamage } from './combatants.js';
+import { defenseNote } from '../entities/DamageDefenses.js';
 import { spendRollRiders } from './riderSpend.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -399,19 +400,22 @@ export function rollWeaponAttack(
   // them came from Sneak Attack. A crit doubled that count too.
   const sneakNote =
     sneakDice > 0 ? `, with sneak attack ${crit ? sneakDice * 2 : sneakDice}d6` : '';
+  // The defender's resistances, vulnerabilities, and immunities change what
+  // it takes, and the log names them beside the roll.
+  const taken = defendedDamage(app, defender.id, damage.byType);
+  const defended = defenseNote(taken.notes, taken.total);
   // The travelogue keeps the raw damage dice as detail. The toast below
   // keeps only the short per-type totals as text.
   app.actions.logEvent(
     'combat',
-    `${weapon.name} ${blow} ${defender.name} for ${damage.detail || '0 damage'}${sneakNote}${inflicts}.`,
+    `${weapon.name} ${blow} ${defender.name} for ${damage.detail || '0 damage'}${sneakNote}${inflicts}${defended}.`,
   );
   // Applies the damage on the spot through the shared write path. Every
   // combatant tracks HP, and the function logs a defeat or a drop to 0
   // only once.
-  applyToTarget(app, defender.id, damage.total, false, { crit });
-  app.toasts.show(
-    `${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${damage.text || 'no damage'}${inflicts}.`,
-  );
+  applyToTarget(app, defender.id, taken.total, false, { crit });
+  const text = defended ? `${taken.total} damage` : damage.text || 'no damage';
+  app.toasts.show(`${crit ? 'Critical hit!' : 'Hit!'} ${defender.name} takes ${text}${inflicts}.`);
 }
 
 /**

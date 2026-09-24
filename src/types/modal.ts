@@ -80,7 +80,8 @@ export interface FileModalField extends FieldBase {
 /**
  * A scrollable checkbox group. Its value is the comma-joined checked
  * values, which is why option values must be slugs. `max` caps the picks.
- * `fixedHeight` keeps a refilter from reflowing the dialog. `emptyText`
+ * `fixedHeight` keeps a refilter from reflowing the dialog. `columns` lays a
+ * short, fixed list of options out in columns with no scroll. `emptyText`
  * fills the box while there are no options.
  */
 export interface MultiselectModalField extends FieldBase {
@@ -90,6 +91,7 @@ export interface MultiselectModalField extends FieldBase {
   max?: number;
   emptyText?: string;
   fixedHeight?: boolean;
+  columns?: boolean;
 }
 
 /** A pill list with an inline entry. Its value is the comma-joined pills. */

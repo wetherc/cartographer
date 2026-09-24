@@ -35,6 +35,7 @@ import { DEFAULT_CREATURE_HP, DISPOSITIONS, defaultEnemyGear } from '../entities
 import { isCasterClass } from '../entities/Classes.js';
 import { coerceEnemyArmor } from '../entities/EnemyArmor.js';
 import { creatureProficiencyFields, ARMOR_PROFICIENCIES } from '../entities/Proficiencies.js';
+import { defenseFields } from '../entities/DamageDefenses.js';
 import { idClaimer, renameConflict, storedEntryId } from './LibraryIdentity.js';
 import { indexById } from '../util/indexById.js';
 import { deepFreeze } from '../util/deepFreeze.js';
@@ -651,6 +652,8 @@ export function normalizeLibrary(parsed) {
       // An entry trained in nothing carries no list, and an entry that names an
       // unknown ability or skill loses that one entry.
       ...creatureProficiencyFields(e.proficiencies),
+      // Unknown damage types drop out the same way.
+      ...defenseFields(e.defenses),
       ...(typeof e.role === 'string' && e.role ? { role: e.role } : {}),
       ...(typeof e.notes === 'string' && e.notes ? { notes: e.notes } : {}),
       ...casterTemplateFrom(e),
