@@ -649,6 +649,17 @@ test('normalizeLibrary types a heal spell’s dice as healing, not as damage', (
   assert.equal(botched.scaling?.damagePerLevel?.[0].damageType, 'healing');
 });
 
+test('normalizeLibrary keeps the modifier flag of a heal spell only when it is true', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      { name: 'Mend', effect: { kind: 'heal', healing: [], addsModifier: true } },
+      { name: 'Odd', effect: { kind: 'heal', healing: [], addsModifier: 'yes' } },
+    ],
+  });
+  assert.equal(/** @type {any} */ (lib.spells[0].effect).addsModifier, true);
+  assert.equal('addsModifier' in lib.spells[1].effect, false);
+});
+
 test('normalizeLibrary keeps a damage term’s flat bonus, dice or not', () => {
   const lib = normalizeLibrary({
     spells: [

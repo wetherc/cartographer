@@ -33,6 +33,10 @@ import { clampInt } from '../util/num.js';
  * @property {DamagePart[]} damage the dice editor's terms, damage or healing
  * @property {string} [saveAbility]
  * @property {boolean} [halfOnSave]
+ * @property {boolean} [saveEnds] whether the imposed condition ends on a
+ *   save at the end of each of the target's turns
+ * @property {boolean} [addsModifier] whether the heal kind adds the
+ *   spellcasting ability modifier
  * @property {boolean} [dealsDamage] the save kind's damage gate
  * @property {string} [condition] empty for none
  * @property {boolean} [fires] whether the attack kind fires projectiles
@@ -73,7 +77,8 @@ import { clampInt } from '../util/num.js';
  * and heal always carry their dice. An unusable projectile block drops out,
  * instead of becoming a spell that fires nothing. A rider rides a chip, so
  * a save keeps one only alongside a condition, while a buff always has a
- * chip to carry it.
+ * chip to carry it. A repeated save (`saveEnds`) also needs a condition to
+ * end.
  * @param {EffectDraft} draft
  * @returns {SpellEffect}
  */
@@ -95,10 +100,17 @@ export function assembleEffect(draft) {
       damage: draft.dealsDamage ? draft.damage : [],
       halfOnSave: Boolean(draft.halfOnSave),
       ...(condition ? { condition } : {}),
+      ...(condition && draft.saveEnds ? { saveEnds: true } : {}),
       ...(rider ? { rider } : {}),
     };
   }
-  if (draft.kind === 'heal') return { kind: 'heal', healing: draft.damage };
+  if (draft.kind === 'heal') {
+    return {
+      kind: 'heal',
+      healing: draft.damage,
+      ...(draft.addsModifier ? { addsModifier: true } : {}),
+    };
+  }
   // A summons with no template names nothing to spawn, so it casts nothing and
   // reads as a utility spell. This is the same rule the library import applies.
   if (draft.kind === 'summons' && (draft.summons?.creature ?? '').trim()) {

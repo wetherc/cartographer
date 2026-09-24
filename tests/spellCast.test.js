@@ -592,6 +592,21 @@ test('a leveled cast spends the slot and stores the caster once', () => {
   assert.deepEqual(app.toasted, ['Cure Wounds heals Monk.']);
 });
 
+test('a heal that adds the modifier heals the roll plus the spellcasting modifier', () => {
+  const caster = mage();
+  const app = stubApp({ characters: [caster] });
+  const hurt = damageCharacter(withHP(mage({ id: 'monk', name: 'Monk' }), 20), 16);
+  app.state.characters = [caster, hurt];
+  const mending = { ...cureWounds, effect: { ...cureWounds.effect, addsModifier: true } };
+  const plan = planFor(app, caster, mending);
+  resolveCast(app, plan, submit({ target: 'monk' }), {
+    writeBack: () => {},
+    concentrates: true,
+    rng: seq([face(8, 1)]),
+  });
+  assert.match(app.log[1], /Cure Wounds heals Monk for 4 HP./, 'a roll of 1 plus INT +3');
+});
+
 test('a failed save takes full damage and lands a tracked condition', () => {
   const caster = mage();
   const goblin = createCreature('goblin', 'Goblin', {

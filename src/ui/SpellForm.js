@@ -192,6 +192,9 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     spell?.effect.kind === 'save' || spell?.effect.kind === 'buff' ? spell.effect : null;
   const abilitySelect = select([...SPELL_ABILITIES], saveEffect?.saveAbility ?? 'DEX');
   const halfOnSave = checkbox('Half on save', saveEffect?.halfOnSave ?? false);
+  // A held target repeats the save at the end of each of its turns and
+  // ends the condition on a success (Hold Person).
+  const saveEnds = checkbox('Save ends each turn', saveEffect?.saveEnds ?? false);
   // The condition the chip is called, picked from the same list the
   // conditions bar offers, so the name always matches a real chip. An
   // imported spell that names something else keeps that name as its own
@@ -213,6 +216,10 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     spell?.effect.kind === 'attack' || (saveEffect?.damage.length ?? 0) > 0,
   );
   const heals = spell?.effect.kind === 'heal';
+  const addsModifier = checkbox(
+    'Add spellcasting modifier',
+    spell?.effect.kind === 'heal' && spell.effect.addsModifier === true,
+  );
   const effectDamage = buildDamageEditor(
     effectDamageOf(spell?.effect) ?? [{ count: 1, sides: 6, damageType: 'fire' }],
     heals ? HEALING_TYPE : null,
@@ -295,8 +302,13 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
 
   // --- Scaling -------------------------------------------------------------
   const scales = checkbox('Scales per level', !!spell?.scaling);
+  // A spell that scales only its targets (Hold Person) starts with no extra
+  // dice. The sample term is only for a spell with no scaling block yet, so
+  // a save of an unchanged form cannot add damage the spell never dealt.
   const scalingDamage = buildDamageEditor(
-    spell?.scaling?.damagePerLevel ?? [{ count: 1, sides: 6, damageType: 'fire' }],
+    spell?.scaling
+      ? (spell.scaling.damagePerLevel ?? [])
+      : [{ count: 1, sides: 6, damageType: 'fire' }],
     heals ? HEALING_TYPE : null,
   );
   const scalingDamageField = labeled('Extra dice / level', scalingDamage.element);
@@ -328,6 +340,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   // The save's two toggles share a row. The condition picker gets its own row.
   const saveTogglesRow = fieldRow(halfOnSave.label, dealsDamage.label);
   const conditionRow = fieldRow(conditionField);
+  const saveEndsRow = fieldRow(saveEnds.label);
+  const healTogglesRow = fieldRow(addsModifier.label);
   const riderRow = fieldRow(riderDiceField, riderDieField, riderFlatField);
   const riderRollsRow = fieldRow(riderRollsField);
   const scalingRow = fieldRow(scales.label);
@@ -346,6 +360,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     // same None entry.
     const chips = kind === 'save' || kind === 'buff';
     conditionRow.hidden = !chips;
+    // A repeated save ends a condition, so it shows once a save names one.
+    saveEndsRow.hidden = kind !== 'save' || conditionSelect.value === '';
     // A rider rides a chip. A save keeps one only once it names a condition;
     // a buff always has a chip to carry it.
     const rides = chips && (kind === 'buff' || conditionSelect.value !== '');
@@ -365,6 +381,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     setCaption(damageField, firesShots ? 'Damage / projectile' : 'Damage');
     damageField.hidden = !showDamage;
     healField.hidden = kind !== 'heal';
+    healTogglesRow.hidden = kind !== 'heal';
     // Restorative dice are healing, never a damage type. The same rule holds
     // for the per-level dice that add to them.
     const fixed = kind === 'heal' ? HEALING_TYPE : null;
@@ -475,6 +492,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
         damage: effectDamage.get(),
         saveAbility: abilitySelect.value,
         halfOnSave: halfOnSave.input.checked,
+        saveEnds: saveEnds.input.checked,
+        addsModifier: addsModifier.input.checked,
         dealsDamage: dealsDamage.input.checked,
         condition: conditionSelect.value,
         rider: {
@@ -520,10 +539,12 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       summonsRow,
       saveTogglesRow,
       conditionRow,
+      saveEndsRow,
       riderRow,
       riderRollsRow,
       damageField,
       healField,
+      healTogglesRow,
       scalingRow,
       scalingDamageRow,
       scalingTargetsRow,

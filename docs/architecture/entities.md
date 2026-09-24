@@ -438,6 +438,12 @@ rather than offering a picker. Validating healing dice against the damage list
 would rewrite a heal spell's dice as slashing whenever a GM edited or
 imported it.
 
+A heal effect with `addsModifier` adds the caster's spellcasting ability
+modifier to the roll (`Casting.castSpell` takes it as `spellModifier`).
+Cure Wounds, Healing Word, Prayer of Healing, Mass Healing Word, and Mass
+Cure Wounds ship with it, and the spell form offers it as the "Add
+spellcasting modifier" box.
+
 `DiceRoller.rollDamage` groups terms by damage type and adds each term's bonus
 to its own group. The `modifier` argument (the attacker's ability modifier)
 joins the first group only, per 5e. Both land in one `bonus` number per group,
@@ -1109,8 +1115,10 @@ bring the chips back.
 
 A spell states that its condition allows the retry with `saveEnds` on its
 save effect. `Library.normalizeSpell` accepts this alongside a condition and
-drops it when there is no condition. Hold Person and Power Word Stun ship
-with it.
+drops it when there is no condition. The spell form offers it as the "Save ends each
+turn" box, which shows once a save names a condition, and
+`SpellDraft.assembleEffect` keeps it under the same rule. Hold Person and
+Power Word Stun ship with it.
 
 The retry, the effect table below, and the rider are the rules that read a
 chip. A spell whose only target shook the effect off also leaves the caster

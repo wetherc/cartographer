@@ -62,6 +62,10 @@ export interface SpellSaveEffect {
 export interface SpellHealEffect {
   kind: 'heal';
   healing: DamagePart[];
+  /** True when the caster adds its spellcasting ability modifier to the
+   * healing roll, once per target (Cure Wounds, Healing Word). Absent means
+   * the dice alone heal. */
+  addsModifier?: boolean;
 }
 
 /** A spell that puts a condition chip on each willing target, with no roll

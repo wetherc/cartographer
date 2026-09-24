@@ -352,7 +352,9 @@ function slotPoolToSpend(caster, slotLevel) {
  * - `save`: the damage rolled once, plus one entry per target with its save
  *   roll, whether it saved, and the damage it takes (full, half when
  *   `halfOnSave`, or none).
- * - `heal`: the healing rolled once, applied identically to each target.
+ * - `heal`: the healing rolled once, applied identically to each target. A
+ *   heal with `addsModifier` adds `spellModifier`, the caster's spellcasting
+ *   ability modifier, to the roll.
  * - `buff`: no rolls, and one entry per target naming the `condition` chip it
  *   takes and the `rider` that chip carries.
  * - `summons`: no rolls and no targets, and one entry naming the `creature`
@@ -367,6 +369,7 @@ function slotPoolToSpend(caster, slotLevel) {
  *   targets?: CastTarget[],
  *   spellAttackBonus?: number,
  *   saveDC?: number,
+ *   spellModifier?: number,
  *   casterLevel?: number,
  *   attackMode?: RollMode,
  *   ritual?: boolean,
@@ -389,6 +392,7 @@ export function castSpell(caster, spell, options = {}) {
     targets = [],
     spellAttackBonus = 0,
     saveDC = 0,
+    spellModifier = 0,
     casterLevel = caster.level ?? 1,
     attackMode = 'normal',
     ritual = false,
@@ -430,6 +434,7 @@ export function castSpell(caster, spell, options = {}) {
     targets: reached,
     spellAttackBonus,
     saveDC,
+    spellModifier,
     attackMode,
     casterConditions,
     rng,
@@ -548,6 +553,7 @@ function mergeDamage(rolls) {
  *   targets: CastTarget[],
  *   spellAttackBonus: number,
  *   saveDC: number,
+ *   spellModifier: number,
  *   attackMode: RollMode,
  *   casterConditions: import('./Riders.js').RiderSource[],
  *   rng: RandomFn,
@@ -556,7 +562,16 @@ function mergeDamage(rolls) {
  */
 function resolveEffect(spell, ctx) {
   const { effect } = spell;
-  const { steps, targets, spellAttackBonus, saveDC, attackMode, casterConditions, rng } = ctx;
+  const {
+    steps,
+    targets,
+    spellAttackBonus,
+    saveDC,
+    spellModifier,
+    attackMode,
+    casterConditions,
+    rng,
+  } = ctx;
 
   if (effect.kind === 'attack') {
     const baseParts = scaledParts(effect.damage, spell.scaling, steps);
@@ -649,7 +664,8 @@ function resolveEffect(spell, ctx) {
   }
 
   if (effect.kind === 'heal') {
-    const healing = rollDamage(scaledParts(effect.healing, spell.scaling, steps), 0, rng);
+    const bonus = effect.addsModifier ? spellModifier : 0;
+    const healing = rollDamage(scaledParts(effect.healing, spell.scaling, steps), bonus, rng);
     return targets.map((target) => ({ target, healing }));
   }
 

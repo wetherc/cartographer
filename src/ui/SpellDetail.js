@@ -46,7 +46,8 @@ function effectSummary(spell, saveDC) {
     return `${effect.saveAbility} save${dc} — ${dmg || 'no damage'}${half}${cond}`;
   }
   if (effect.kind === 'heal') {
-    return `Healing — ${formatDamage(effect.healing) || 'no dice'}`;
+    const mod = effect.addsModifier ? ' + spellcasting modifier' : '';
+    return `Healing — ${formatDamage(effect.healing) || 'no dice'}${mod}`;
   }
   if (effect.kind === 'buff') {
     const chip = buffCondition(spell);

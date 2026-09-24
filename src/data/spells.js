@@ -325,7 +325,11 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: false,
     ritual: false,
     description: 'A touched creature regains 1d8 + your spellcasting modifier hit points.',
-    effect: { kind: 'heal', healing: [{ count: 1, sides: 8, damageType: 'healing' }] },
+    effect: {
+      kind: 'heal',
+      healing: [{ count: 1, sides: 8, damageType: 'healing' }],
+      addsModifier: true,
+    },
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'healing' }] },
   },
   {
@@ -341,7 +345,11 @@ export const DEFAULT_SPELLS = deepFreeze([
     concentration: false,
     ritual: false,
     description: 'A creature you can see regains 1d4 + your spellcasting modifier hit points.',
-    effect: { kind: 'heal', healing: [{ count: 1, sides: 4, damageType: 'healing' }] },
+    effect: {
+      kind: 'heal',
+      healing: [{ count: 1, sides: 4, damageType: 'healing' }],
+      addsModifier: true,
+    },
     scaling: { damagePerLevel: [{ count: 1, sides: 4, damageType: 'healing' }] },
   },
   {
@@ -615,7 +623,11 @@ export const DEFAULT_SPELLS = deepFreeze([
     ritual: false,
     description: 'Up to six creatures each regain 2d8 + your spellcasting modifier hit points.',
     targetCount: 6,
-    effect: { kind: 'heal', healing: [{ count: 2, sides: 8, damageType: 'healing' }] },
+    effect: {
+      kind: 'heal',
+      healing: [{ count: 2, sides: 8, damageType: 'healing' }],
+      addsModifier: true,
+    },
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'healing' }] },
   },
   {
@@ -752,7 +764,11 @@ export const DEFAULT_SPELLS = deepFreeze([
     ritual: false,
     description: 'Up to six creatures each regain 1d4 + your spellcasting modifier hit points.',
     targetCount: 6,
-    effect: { kind: 'heal', healing: [{ count: 1, sides: 4, damageType: 'healing' }] },
+    effect: {
+      kind: 'heal',
+      healing: [{ count: 1, sides: 4, damageType: 'healing' }],
+      addsModifier: true,
+    },
     scaling: { damagePerLevel: [{ count: 1, sides: 4, damageType: 'healing' }] },
   },
   {
@@ -868,7 +884,11 @@ export const DEFAULT_SPELLS = deepFreeze([
     ritual: false,
     description: 'Up to six creatures each regain 3d8 + your spellcasting modifier hit points.',
     targetCount: 6,
-    effect: { kind: 'heal', healing: [{ count: 3, sides: 8, damageType: 'healing' }] },
+    effect: {
+      kind: 'heal',
+      healing: [{ count: 3, sides: 8, damageType: 'healing' }],
+      addsModifier: true,
+    },
     scaling: { damagePerLevel: [{ count: 1, sides: 8, damageType: 'healing' }] },
   },
   {

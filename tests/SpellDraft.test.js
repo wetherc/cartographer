@@ -94,6 +94,22 @@ test('a save effect carries a condition only when one is picked', () => {
   );
 });
 
+test('a save keeps a repeated save only alongside a condition', () => {
+  const held = assembleEffect(
+    effectDraft({ kind: 'save', condition: 'Paralyzed', saveEnds: true }),
+  );
+  assert.equal(held.saveEnds, true);
+  assert.equal('saveEnds' in assembleEffect(effectDraft({ kind: 'save', saveEnds: true })), false);
+});
+
+test('a heal keeps the spellcasting modifier flag when the form ticks it', () => {
+  assert.equal(
+    assembleEffect(effectDraft({ kind: 'heal', addsModifier: true })).addsModifier,
+    true,
+  );
+  assert.equal('addsModifier' in assembleEffect(effectDraft({ kind: 'heal' })), false);
+});
+
 test('a heal effect reads the dice as healing', () => {
   assert.deepEqual(assembleEffect(effectDraft({ kind: 'heal' })), {
     kind: 'heal',

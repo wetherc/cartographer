@@ -285,7 +285,11 @@ function normalizeSpell(raw, id) {
       ...(rider ? { rider } : {}),
     };
   } else if (kind === 'heal') {
-    effect = { kind: 'heal', healing: normalizeDamageParts(raw.effect.healing, HEALING_TYPES) };
+    effect = {
+      kind: 'heal',
+      healing: normalizeDamageParts(raw.effect.healing, HEALING_TYPES),
+      ...(raw.effect.addsModifier === true ? { addsModifier: true } : {}),
+    };
   } else if (kind === 'buff') {
     // An unnamed chip stays absent, and the cast falls back to the spell's
     // own name. A buff with neither a chip name nor a rider is still a valid

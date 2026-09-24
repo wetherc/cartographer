@@ -723,6 +723,19 @@ test('heal rolls once and applies to every target', () => {
   assert.equal(result.outcomes[1].healing.total, 8);
 });
 
+test('a heal that adds the modifier adds the spellcasting modifier to the roll', () => {
+  const mending = { ...cureWounds, effect: { ...cureWounds.effect, addsModifier: true } };
+  const cast = (/** @type {any} */ spell) =>
+    castSpell(caster(), spell, {
+      slotLevel: 1,
+      targets: [{ id: 'a' }],
+      spellModifier: 4,
+      rng: seq([face(8, 1)]),
+    }).outcomes[0].healing.total;
+  assert.equal(cast(mending), 5, 'a roll of 1 plus WIS +4');
+  assert.equal(cast(cureWounds), 1, 'a heal without the flag ignores the modifier');
+});
+
 test('rejects an unknown spell, a low slot level, and an empty slot pool', () => {
   assert.deepEqual(castSpell(caster(), { ...firebolt, id: 'x', level: 1 }, { slotLevel: 1 }), {
     ok: false,

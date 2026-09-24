@@ -4,7 +4,7 @@ import { riderSources } from '../entities/FeatChoices.js';
 import { combineModes, rollMode, saveOutcome } from '../entities/ConditionEffects.js';
 import { removeItem } from '../entities/Character.js';
 import { formatInventoryEvent } from '../entities/InventoryLog.js';
-import { spellAttackBonus } from '../entities/Classes.js';
+import { spellAbilityModifier, spellAttackBonus } from '../entities/Classes.js';
 import { formatModifier } from '../entities/Modifiers.js';
 import { toCaster, withCasterState } from '../entities/Caster.js';
 import { durationInRounds, formatCastingTime } from '../entities/SpellTiming.js';
@@ -175,6 +175,7 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
     targets: castTargets,
     spellAttackBonus: spellAttackBonus(caster, sourceClass) ?? 0,
     saveDC,
+    spellModifier: spellAbilityModifier(caster, sourceClass) ?? 0,
     attackMode: spell.effect.kind === 'attack' ? mode : 'normal',
     ritual: asRitual,
     // The caster's feat riders join its chips for the projectile rolls. The
