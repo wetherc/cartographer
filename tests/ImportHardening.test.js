@@ -22,7 +22,10 @@ function loadFile(fields) {
 /** @param {Record<string, any>} tile */
 function loadTile(tile) {
   const state = loadFile({
-    nodes: [{ id: 'n', name: 'Node', parentId: null, width: 2, height: 2, tiles: [tile] }],
+    nodes: [
+      { id: 'n', name: 'Node', parentId: null, width: 2, height: 2, tiles: [tile] },
+      { id: 'r', name: 'Linked', parentId: 'n', width: 1, height: 1, tiles: [] },
+    ],
   });
   return state.nodes[0].tiles[0];
 }

@@ -141,8 +141,8 @@ what a handout is bound to.
 The gesture layers live beside it, in their own files:
 
 - `mapAuthoring.js` handles Build mode: paint, erase, and region strokes,
-  drop-paint, the tile inspector, and the map-edit undo (`snapshotEdit` on the
-  `MapEnv`, `undoStroke` as an action).
+  drop-paint, the tile inspector, and the map-edit undo (`snapshotEdit` and
+  `finishEdit` on the `MapEnv`, `undoStroke` as an action).
 - `mapTravel.js` handles Play mode: cell clicks, teleports, point-of-interest
   discovery, NPC meets, and the hover tooltip. It syncs its own views and
   does not call `resyncMapViews`. A bound character's move does not move the
@@ -173,13 +173,22 @@ delete path gives: a character rejoins the party
 its owner from every panel.
 
 `regenerateSnapshot` builds the undo record. The stroke-undo ring in
-`EditHistory.js` keeps an `EditSnapshot` per edit: the rewritten nodes, the
-ids of created nodes, the removed nodes, the party position, the locations
-of the characters and creatures the edit moved, the nodes the handouts it
-set loose were bound to, and the entry memory. `undoStroke` in
-`mapAuthoring.js` applies them all, then refreshes the panels that filter by
-location through `app/locationPanels.js`. The rng that drew the layout also
+`EditHistory.js` keeps an `EditSnapshot` per edit: the rewritten nodes as
+the edit found them and as it left them, the ids of created nodes, the
+removed nodes, the party position, the locations of the characters and
+creatures the edit moved, the nodes the handouts it set loose were bound
+to, and the entry memory. `undoStroke` in `mapAuthoring.js` applies them
+all, then refreshes the panels that filter by location through
+`app/locationPanels.js`. The rng that drew the layout also
 picks the entrance art on the parent, so one seed gives one result.
+
+Each edit calls `finishEdit` on the `MapEnv` when it is done, which records
+the nodes as the edit left them. `EditRevert.revertEdit` then writes back
+only the tile fields that differ between the two records. A fog reveal, a discovered point of interest, an
+inspector note, or an adopted save from another tab that lands after the
+edit stays through the undo. A restored tile link to a node deleted since
+the edit is cleared (`TileGrid.withoutDeadLinks`), and the load path clears
+the same dead links (`withRepairedLinks`).
 
 The decisions they share are pure functions in `src/map/NodeEdits.js`.
 `freshNodeId` picks an id that the grid does not use, `tileWithinBounds`

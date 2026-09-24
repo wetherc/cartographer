@@ -83,3 +83,20 @@ test('deserialize breaks a parent loop in the node list', () => {
     ['b', null, null],
   );
 });
+
+test('deserialize clears a tile link to a node the save does not hold', () => {
+  const state = deserialize(
+    JSON.stringify({
+      nodes: [
+        {
+          id: 'world',
+          name: 'World',
+          width: 1,
+          height: 1,
+          tiles: [{ id: '0,0', imageRef: 'grass.svg', childNodeId: 'gone' }],
+        },
+      ],
+    }),
+  );
+  assert.equal(state.nodes[0].tiles[0].childNodeId, null);
+});

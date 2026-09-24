@@ -140,6 +140,7 @@ test('regenerateSnapshot records the node, its parent, and everything else undo 
   });
   assert.deepEqual(snapshot, {
     nodes: [level1, town],
+    after: null,
     created: ['fresh-2'],
     removed,
     party,

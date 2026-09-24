@@ -140,6 +140,7 @@ export function regenerateSnapshot({
 }) {
   return {
     nodes: parent ? [node, parent] : [node],
+    after: null,
     created,
     removed,
     party,

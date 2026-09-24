@@ -238,6 +238,7 @@ export function wireGenerateAction(app, env) {
       }
       grid.updateNode(revealed);
     }
+    env.finishEdit();
     // The removal and the moves above change which creatures stand on the
     // party's tile, which is what a running fight is scoped to.
     app.actions.syncCombatLocation();

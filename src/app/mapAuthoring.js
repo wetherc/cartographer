@@ -1,4 +1,4 @@
-import { getTile, updateTileMetadata } from '../map/TileGrid.js';
+import { getTile, updateTileMetadata, withoutDeadLinks } from '../map/TileGrid.js';
 import { clientToBuffer, screenToTile, tileIdAt } from '../map/MapGeometry.js';
 import {
   paintTile,
@@ -15,7 +15,8 @@ import { recallAll, restorePlacements } from '../party/CharacterTokens.js';
 import { restoreCreaturePlacements } from '../entities/CreatureMap.js';
 import { restoreBindings } from '../handout/Handouts.js';
 import { refreshLocationPanels } from './locationPanels.js';
-import { nodeSnapshot, pushEdit, popEdit } from '../map/EditHistory.js';
+import { nodeSnapshot, pushEdit, popEdit, commitEdit } from '../map/EditHistory.js';
+import { revertEdit } from '../map/EditRevert.js';
 import { mountTileInspector } from '../ui/TileInspector.js';
 import { promptModal, alertModal } from '../ui/Modal.js';
 import { resyncMapViews } from './mapResync.js';
@@ -61,10 +62,19 @@ export function createMapAuthoring(app, env) {
     editHistory = pushEdit(editHistory, snapshot);
   }
 
+  /** Record the nodes of the most recent edit as the edit left them. Every
+   * edit calls this when it finishes, so undo can revert only the cells
+   * that the edit changed. */
+  function finishEdit() {
+    editHistory = commitEdit(editHistory, (id) => grid.getNode(id));
+  }
+
   /**
    * Restore the most recent stroke-undo snapshot. Nodes the edit created go
    * first, so a link they hold cannot outlive them. Nodes the edit removed
-   * come back next, then the rewritten nodes as they stood. A rewritten
+   * come back next. On each rewritten node, only the cells and fields that
+   * the edit changed go back, so a later fog reveal or inspector note stays.
+   * A tile link to a node that no longer exists is cleared. A rewritten
    * node deleted since the snapshot stays deleted. Any character or creature
    * the edit moved goes back to their own tile, any handout it made
    * campaign-wide binds to its node again, and the entry memory goes back to
@@ -85,9 +95,12 @@ export function createMapAuthoring(app, env) {
       if (grid.getNode(id)) grid.removeNode(id);
     }
     for (const node of snapshot.removed) grid.addNode(node);
-    for (const node of snapshot.nodes) {
-      if (grid.getNode(node.id)) grid.updateNode(node);
-    }
+    snapshot.nodes.forEach((node, i) => {
+      const current = grid.getNode(node.id);
+      if (!current) return;
+      const reverted = revertEdit(current, node, snapshot.after?.[i] ?? null);
+      grid.updateNode(withoutDeadLinks(reverted, (id) => grid.getNode(id) !== undefined));
+    });
     state.characters = restorePlacements(state.characters, snapshot.recalled);
     state.creatures = restoreCreaturePlacements(state.creatures, snapshot.creatures);
     state.handouts = restoreBindings(state.handouts, snapshot.handouts);
@@ -153,6 +166,7 @@ export function createMapAuthoring(app, env) {
     // out. Linking an interior's only door seals it. Unlinking the tile
     // opens it again.
     env.syncExits();
+    finishEdit();
     app.actions.markDirty();
   }
 
@@ -206,6 +220,7 @@ export function createMapAuthoring(app, env) {
     // Same as the per-tile link, but for a whole block. Every tile in the
     // block now leads further into the map instead of out.
     env.syncExits();
+    finishEdit();
     app.actions.markDirty();
   }
 
@@ -267,6 +282,7 @@ export function createMapAuthoring(app, env) {
 
   const onStrokeEnd = () => {
     if (env.regionAnchor) finishRegionStroke();
+    finishEdit();
     if (strokeTouched) {
       strokeTouched = false;
       settleAfterStroke();
@@ -347,12 +363,14 @@ export function createMapAuthoring(app, env) {
       const scale = overlay ? 1 : env.palettePanel.getScale();
       applyToTile(tileId, (node) => paintTile(node, tileId, entry.imageRef, overlay, scale));
       settleAfterStroke();
+      finishEdit();
     });
   }
 
   return {
     snapshotEdit,
     recordEdit,
+    finishEdit,
     undoStroke,
     applyToTile,
     linkSelectedTile,

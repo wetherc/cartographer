@@ -201,7 +201,11 @@ test('a condition chip keeps its rider across packing and reload', () => {
   );
 });
 
-/** A node holding one of every tile variation the packer has to survive. */
+/**
+ * A node holding one of every tile variation the packer has to survive. Tile
+ * 3,1 links to a node named `region`. Each test adds that node, because the
+ * load path clears a link to a node the save does not hold.
+ */
 function variedNode() {
   let node = createMapNode('world', 'World', null, 4, 3);
   const tiles = [
@@ -243,6 +247,7 @@ function loadedForm(tile) {
 test('packing omits default tile fields and the load path restores them', () => {
   const grid = new TileGrid();
   grid.addNode(variedNode());
+  grid.addNode(createMapNode('region', 'Region', 'world', 1, 1));
   const state = buildState({ grid });
   const json = serialize(state);
 
@@ -293,6 +298,7 @@ test('packing shrinks a save dominated by default tiles', () => {
 test('a save written before tiles were packed still loads whole', () => {
   const grid = new TileGrid();
   grid.addNode(variedNode());
+  grid.addNode(createMapNode('region', 'Region', 'world', 1, 1));
   const state = buildState({ grid });
   // Version 1 wrote every tile field explicitly. The backfill only checks
   // each field, so the tiles come back in their loaded form.
@@ -412,6 +418,7 @@ test('a save written before image payloads were hoisted still loads', () => {
 test('serializing encodes a grid node positionally and loading reads it back', () => {
   const grid = new TileGrid();
   grid.addNode(variedNode());
+  grid.addNode(createMapNode('region', 'Region', 'world', 1, 1));
   const state = buildState({ grid });
   const json = serialize(state);
 
@@ -446,6 +453,7 @@ test('the positional encoding shrinks a save of a fully explored map', () => {
 test('a save written before tiles were encoded positionally still loads', () => {
   const grid = new TileGrid();
   grid.addNode(variedNode());
+  grid.addNode(createMapNode('region', 'Region', 'world', 1, 1));
   const state = buildState({ grid });
   // Version 4 carries no `cells`, so the decoder must take the unencoded branch.
   const restored = deserialize(JSON.stringify({ ...state, version: 4 })).nodes[0];

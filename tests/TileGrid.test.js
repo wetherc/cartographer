@@ -10,6 +10,7 @@ import {
   tilesOutsideBounds,
   withNodeDefaults,
   withRepairedParents,
+  withRepairedLinks,
   overlayList,
   tilesById,
   TileGrid,
@@ -253,4 +254,19 @@ test('withRepairedParents breaks every parent loop', () => {
     assert.equal(grid.getBreadcrumb(node.id)[0].parentId, null, `${node.id} reaches a root`);
   }
   assert.equal(repaired.filter((node) => node.parentId === null).length, 2, 'one root per loop');
+});
+
+test('withRepairedLinks clears tile links to nodes that do not exist', () => {
+  const cave = createMapNode('cave', 'Cave', 'world', 1, 1);
+  const world = {
+    ...createMapNode('world', 'World', null, 2, 1),
+    tiles: [
+      createTile('0,0', 'grass.svg', { childNodeId: 'cave' }),
+      createTile('1,0', 'grass.svg', { childNodeId: 'gone' }),
+    ],
+  };
+  const [repaired, sameCave] = withRepairedLinks([world, cave]);
+  assert.equal(sameCave, cave, 'a node with no dead link keeps its identity');
+  assert.equal(getTile(repaired, '0,0')?.childNodeId, 'cave');
+  assert.equal(getTile(repaired, '1,0')?.childNodeId, null);
 });

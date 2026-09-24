@@ -198,6 +198,34 @@ export function withRepairedParents(nodes) {
 }
 
 /**
+ * A node with every `childNodeId` that names a missing node set to null. A
+ * dead link draws as a sub-map entrance, and a click on it in Play zooms
+ * nowhere. A node with no dead link stays the same object.
+ * @param {MapNode} node
+ * @param {(id: string) => boolean} exists
+ * @returns {MapNode}
+ */
+export function withoutDeadLinks(node, exists) {
+  if (!node.tiles.some((t) => t.childNodeId !== null && !exists(t.childNodeId))) return node;
+  return withNodeTiles(
+    node,
+    node.tiles.map((t) =>
+      t.childNodeId !== null && !exists(t.childNodeId) ? { ...t, childNodeId: null } : t,
+    ),
+  );
+}
+
+/**
+ * Clear the dead tile links of a loaded node list (see `withoutDeadLinks`).
+ * @param {MapNode[]} nodes
+ * @returns {MapNode[]}
+ */
+export function withRepairedLinks(nodes) {
+  const ids = new Set(nodes.map((n) => n.id));
+  return nodes.map((node) => withoutDeadLinks(node, (id) => ids.has(id)));
+}
+
+/**
  * A tile's overlay images as a draw-ordered list, bottom first, whether the
  * tile holds none, one, or a stack.
  * @param {Tile} tile

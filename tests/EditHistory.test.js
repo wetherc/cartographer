@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { pushEdit, popEdit, nodeSnapshot, DEFAULT_EDIT_LIMIT } from '../src/map/EditHistory.js';
+import {
+  pushEdit,
+  popEdit,
+  nodeSnapshot,
+  commitEdit,
+  DEFAULT_EDIT_LIMIT,
+} from '../src/map/EditHistory.js';
 import { createMapNode } from '../src/map/TileGrid.js';
 
 test('pushEdit appends and popEdit restores in LIFO order', () => {
@@ -52,4 +58,28 @@ test('a node snapshot records the nodes alone and nothing created, removed, or m
 
 test('the default limit holds a painting session of thirty strokes', () => {
   assert.equal(DEFAULT_EDIT_LIMIT, 30);
+});
+
+test('commitEdit records the nodes as the last edit left them, once', () => {
+  const a = createMapNode('a', 'A', null, 4, 4);
+  const a2 = { ...a, name: 'A2' };
+  const history = pushEdit([], nodeSnapshot([a]));
+  const committed = commitEdit(history, () => a2);
+  assert.deepEqual(committed[0].after, [a2]);
+  assert.equal(history[0].after, null, 'the input ring is unchanged');
+  assert.equal(
+    commitEdit(committed, () => a),
+    committed,
+    'a second commit changes nothing',
+  );
+  assert.deepEqual(
+    commitEdit([], () => a),
+    [],
+  );
+});
+
+test('commitEdit keeps the before state of a node that no longer exists', () => {
+  const a = createMapNode('a', 'A', null, 4, 4);
+  const committed = commitEdit(pushEdit([], nodeSnapshot([a])), () => undefined);
+  assert.deepEqual(committed[0].after, [a]);
 });

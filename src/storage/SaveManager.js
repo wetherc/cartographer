@@ -1,4 +1,9 @@
-import { TileGrid, withNodeDefaults, withRepairedParents } from '../map/TileGrid.js';
+import {
+  TileGrid,
+  withNodeDefaults,
+  withRepairedLinks,
+  withRepairedParents,
+} from '../map/TileGrid.js';
 import { downloadJSON, readFileText } from './fileIO.js';
 import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
 import { hoistAssets, restoreAssets } from './Assets.js';
@@ -266,7 +271,8 @@ function entities(key, value) {
  * validation a save goes through. Import stores what it reads and then
  * reloads it, so an unreadable field that survives this function becomes
  * the stored save of an app that no longer starts. The function removes
- * nodes with no id and breaks parent loops (`withRepairedParents`).
+ * nodes with no id, breaks parent loops (`withRepairedParents`), and
+ * clears tile links to missing nodes (`withRepairedLinks`).
  * `withNodeDefaults` (TileGrid) defends the tiles inside
  * a node, and it also unpacks the tile fields `serialize` omits, so it runs
  * here, not only in `toTileGrid`. The entity `withDefaults` functions play
@@ -316,10 +322,12 @@ export function deserialize(json, assets) {
   const parsed = restoreAssets(decoded);
   return {
     version: CURRENT_VERSION,
-    nodes: withRepairedParents(
-      records(parsed.nodes)
-        .filter((node) => typeof node.id === 'string')
-        .map(withNodeDefaults),
+    nodes: withRepairedLinks(
+      withRepairedParents(
+        records(parsed.nodes)
+          .filter((node) => typeof node.id === 'string')
+          .map(withNodeDefaults),
+      ),
     ),
     party: partyPosition(parsed.party),
     entryTiles: entryTileMemory(parsed.entryTiles),
