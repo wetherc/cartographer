@@ -30,6 +30,7 @@ import {
 import { attacksAvailable, canSpend, spend, spendAttack } from '../combat/ActionBudget.js';
 import { rollInitiative } from '../combat/InitiativeRoll.js';
 import { abilityModifier } from '../entities/Modifiers.js';
+import { effectiveStats } from '../entities/Equipment.js';
 import { arrivalAlert } from '../combat/Arrival.js';
 import { tickConditions } from '../entities/Conditions.js';
 import { tick as tickConcentration } from '../entities/Concentration.js';
@@ -363,7 +364,7 @@ export function wireEncounters(app) {
       (c) => c.disposition !== 'hostile' || !isDefeated(c),
     );
     return [
-      ...state.characters.map((c) => withDex(c.id, c.stats)),
+      ...state.characters.map((c) => withDex(c.id, effectiveStats(c))),
       ...roster.map((c) => withDex(c.id, effectiveStatBlock(c))),
     ];
   }

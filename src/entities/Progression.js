@@ -1,4 +1,5 @@
 import { syncSlotsToLevel } from './SpellSlots.js';
+import { equip as setEquipped } from './Equipment.js';
 import { syncHitDice, reconcileMaxHP } from './HitDice.js';
 import { withClasses as setClassList } from './Multiclass.js';
 import { withRace as setRace, withCustomRace as setCustomRace } from './Races.js';
@@ -127,3 +128,8 @@ export const undoFeatureGrant = deriving(dropFeatureGrant);
 export function setStat(character, key, value) {
   return derive({ ...character, stats: { ...character.stats, [key]: value } });
 }
+
+/** Equip an item or clear a slot, then re-derive. A worn CON bonus moves max
+ * HP. See Equipment.equip.
+ * @type {(character: Character, slot: import('../types/entities.js').EquipmentSlot, itemId: string | null) => Character} */
+export const withEquipped = deriving(setEquipped);

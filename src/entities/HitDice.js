@@ -12,6 +12,7 @@ import { isCasterPool } from './SpellSlots.js';
 import { getClass } from './Classes.js';
 import { getClasses, primaryClass } from './Multiclass.js';
 import { abilityModifier } from './Modifiers.js';
+import { effectiveStats } from './Equipment.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -263,7 +264,7 @@ export function spendHitDie(character, die = null, rng = Math.random) {
 
 /** @param {Character} character @returns {number} */
 function conModifierOf(character) {
-  return abilityModifier(character.stats?.CON ?? 10);
+  return abilityModifier(effectiveStats(character).CON ?? 10);
 }
 
 /**

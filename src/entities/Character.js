@@ -630,7 +630,8 @@ export function transferItem(giver, receiver, itemId, quantity) {
  * Replace an inventory item's fields wholesale (the GM's post-creation edit),
  * keeping its id so equipment references survive. The replacement is the
  * edited item as a whole, not a patch. A field absent from `next` is gone.
- * Any slot that no longer accepts the edited item unequips it. This
+ * Any slot that no longer accepts the edited item unequips it. The result
+ * re-derives, so an edited CON bonus on a worn item moves max HP. This
  * function is pure.
  * @param {Character} character
  * @param {string} itemId
@@ -638,15 +639,18 @@ export function transferItem(giver, receiver, itemId, quantity) {
  * @returns {Character}
  */
 export function updateItem(character, itemId, next) {
-  return pruneEquipment({
-    ...character,
-    inventory: updateById(character.inventory, itemId, (i) => ({ ...next, id: i.id })),
-  });
+  return derive(
+    pruneEquipment({
+      ...character,
+      inventory: updateById(character.inventory, itemId, (i) => ({ ...next, id: i.id })),
+    }),
+  );
 }
 
 /**
  * Remove quantity from a stack, dropping it from the inventory entirely once
- * it hits 0, and unequipping it from any slot it occupied.
+ * it hits 0, and unequipping it from any slot it occupied. The result
+ * re-derives, so a worn CON item that leaves takes its HP with it.
  * @param {Character} character
  * @param {string} itemId
  * @param {number} quantity
@@ -657,5 +661,5 @@ export function removeItem(character, itemId, quantity) {
     ...i,
     quantity: Math.max(0, i.quantity - quantity),
   })).filter((i) => i.quantity > 0);
-  return pruneEquipment({ ...character, inventory });
+  return derive(pruneEquipment({ ...character, inventory }));
 }

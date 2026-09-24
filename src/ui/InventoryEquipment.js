@@ -2,11 +2,11 @@ import {
   EQUIPMENT_SLOTS,
   itemType,
   itemSummary,
-  equip,
   equipBlocker,
   getEquipped,
 } from '../entities/Equipment.js';
 import { hasWeaponProperty } from '../entities/Weapons.js';
+import { withEquipped } from '../entities/Progression.js';
 import { el } from './dom.js';
 import { select } from './formFields.js';
 
@@ -69,7 +69,7 @@ export function buildEquipment(getCharacter, commit, playable) {
     );
     picker.disabled = !playable || bothHands;
     picker.addEventListener('change', () =>
-      commit(equip(getCharacter(), slot.key, picker.value === '' ? null : picker.value)),
+      commit(withEquipped(getCharacter(), slot.key, picker.value === '' ? null : picker.value)),
     );
 
     section.append(el('label', 'inventory-panel__slot', el('span', 'u-muted', slot.label), picker));

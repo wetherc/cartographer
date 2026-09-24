@@ -1,3 +1,4 @@
+import { effectiveStats } from './Equipment.js';
 import { abilityModifier } from './Modifiers.js';
 import { d20Penalty } from './Exhaustion.js';
 import { slotsForCaster, slotPoolsForCaster, casterLevelContribution } from './SpellSlots.js';
@@ -171,7 +172,13 @@ export function hasPreparedCaster(character) {
 export function spellAbilityModifier(character, classId) {
   const def = getClass(classId ?? primaryCasterClass(character)?.classId);
   if (!def || !def.spellAbility) return null;
-  const score = character.stats?.[def.spellAbility];
+  // A character reads its equipped buffs, so a +4 INT headband raises the
+  // spell DC with the INT check. A creature view carries no equipment.
+  const stats =
+    'equipment' in character
+      ? effectiveStats(/** @type {Character} */ (character))
+      : character.stats;
+  const score = stats?.[def.spellAbility];
   if (typeof score !== 'number') return null;
   return abilityModifier(score);
 }
