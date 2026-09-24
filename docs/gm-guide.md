@@ -43,7 +43,8 @@ a task does not show, set the mode that the task names.
 
 To step back, click **Undo**. Undo returns to the state before your last
 Save, New, Load example, or Import. If you save from a stepped-back
-position, the app discards what was left to redo.
+position, the app discards what was left to redo. With unsaved changes, Undo
+and Redo ask first, because the step discards those changes.
 
 ## Drive a player-facing display
 

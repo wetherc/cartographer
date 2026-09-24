@@ -397,12 +397,27 @@ export function wireCampaignActions(app) {
   // because stepping the cursor is not an edit. Recording it as an edit
   // pushes the inverse of the undo and leaves Undo toggling between two
   // states forever.
+  //
+  // A step restores a saved state and reloads, so unsaved changes in this tab
+  // are lost. While the campaign is dirty, the step asks first. A GM who
+  // presses Undo to take back an unsaved paint stroke otherwise loses that
+  // stroke and everything else since the last save, and the tab leaves Build.
   /**
    * @param {() => { save: Parameters<typeof reportSave>[0] } | null} apply
    * @param {string} nothingToDo
    * @param {string} restored
+   * @param {string} verb the confirm label, "Undo" or "Redo"
    */
-  function stepHistory(apply, nothingToDo, restored) {
+  async function stepHistory(apply, nothingToDo, restored, verb) {
+    if (
+      dirty &&
+      !(await confirmModal(
+        `${verb} steps between saves. Your changes since the last save are discarded. Save first to keep them.`,
+        { variant: 'danger', confirmLabel: verb },
+      ))
+    ) {
+      return;
+    }
     const step = apply();
     if (!step) {
       // Nothing exists in that direction, or the log was unreadable and got
@@ -418,13 +433,13 @@ export function wireCampaignActions(app) {
   }
 
   mustGetElement('undo-btn').addEventListener('click', () => {
-    stepHistory(undoCampaign, 'Nothing to undo.', 'Restored the previous save.');
+    void stepHistory(undoCampaign, 'Nothing to undo.', 'Restored the previous save.', 'Undo');
   });
 
   // Redo is reachable only right after an Undo. Saving from a stepped-back
   // cursor is a new edit, and it drops everything ahead of it.
   mustGetElement('redo-btn').addEventListener('click', () => {
-    stepHistory(redoCampaign, 'Nothing to redo.', 'Reapplied the undone change.');
+    void stepHistory(redoCampaign, 'Nothing to redo.', 'Reapplied the undone change.', 'Redo');
   });
 
   refreshHistoryButtons();
