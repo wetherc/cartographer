@@ -852,10 +852,11 @@ Save, Undo, Redo, and the mode keys work in a GM tab only.
 
 The map is a focusable widget with a visible focus ring. A screen-reader
 live region names the current node, its size, the party position, and the
-points of interest, and updates as these change. In Play mode it names only
-the points of interest that the tooltip names: revealed, discovered if
-discoverable, and within detection range. It reads the notes in a GM tab
-only. A second region names the cursor cell after each arrow key: its
+number of points of interest, and updates as these change. The points of
+interest themselves are in a list after the map, which a screen reader reads
+on demand. In Play mode the list names only the points of interest that the
+tooltip names: revealed, discovered if discoverable, and within detection
+range. It reads the notes in a GM tab only. A second region names the cursor cell after each arrow key: its
 column and row, its art, its point of interest, and whether it is explored.
 
 The ways out of a sub-region are real buttons. Tab past the map, and they

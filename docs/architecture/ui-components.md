@@ -1236,7 +1236,9 @@ The shared layer handles these, so a new panel does not restate them:
   `role="status" aria-live="polite"`, the map has its own description
   live region, and file-field errors are `role="alert"`. The map's live
   region is rewritten only when the text changed, because
-  rewriting it re-announces it.
+  rewriting it re-announces it. It gives a count of the points of
+  interest, and the points themselves are in a plain list after the map,
+  so a node with long notes does not read them all on each navigation.
 - **Focus return**: every dialog refocuses whatever opened it, on close.
 
 The app has no handling for:

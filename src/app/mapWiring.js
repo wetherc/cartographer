@@ -227,24 +227,35 @@ export function wireMapView(app) {
   app.actions.syncCreatureMarkers = syncCreatureMarkers;
 
   let lastDescription = '';
+  let lastPoints = '';
 
   /** Re-narrate the current map for the screen-reader live region. Call this
    * wherever the node, the party, the fog, or the tiles change, the same
    * events that redraw the map. */
   function refreshMapDescription() {
-    const text = describeNode(navigator.getCurrentNode(), partyTracker.getPosition(), {
-      revealAll: state.mode === 'build',
-      showNotes: isGM(state.role),
-      markerVisible: (id) => mapCanvas.markerVisible(id),
-    });
+    const { status, points } = describeNode(
+      navigator.getCurrentNode(),
+      partyTracker.getPosition(),
+      {
+        revealAll: state.mode === 'build',
+        showNotes: isGM(state.role),
+        markerVisible: (id) => mapCanvas.markerVisible(id),
+      },
+    );
     // Write only when the narration changes. Assigning textContent replaces
     // the live region's text node, and a screen reader watches that node. An
     // unconditional write re-announces the whole description even when no
     // word changed, for example on a paint stroke that only swaps tile art,
     // or a party step inside an already-explored area.
-    if (text === lastDescription) return;
-    lastDescription = text;
-    mapDescription.textContent = text;
+    if (status !== lastDescription) {
+      lastDescription = status;
+      mapDescription.textContent = status;
+    }
+    const joined = points.join('\n');
+    if (joined === lastPoints) return;
+    lastPoints = joined;
+    pointList.replaceChildren(...points.map((point) => el('li', '', point)));
+    pointList.hidden = points.length === 0;
   }
   app.actions.refreshMapDescription = refreshMapDescription;
 
@@ -525,6 +536,14 @@ export function wireMapView(app) {
   mapDescription.setAttribute('role', 'status');
   mapDescription.setAttribute('aria-live', 'polite');
   mustGetElement('map-viewport').appendChild(mapDescription);
+
+  // The points of interest are an ordinary list, not part of the live region.
+  // A screen reader visits it on demand. In the live region, a node with many
+  // notes reads over a thousand characters on each navigation.
+  const pointList = el('ul', 'sr-only');
+  pointList.hidden = true;
+  pointList.setAttribute('aria-label', 'Points of interest');
+  mustGetElement('map-viewport').appendChild(pointList);
 
   // This is its own region, not a line in mapDescription. The arming prompt
   // comes and goes with single keystrokes. Sharing mapDescription's region,

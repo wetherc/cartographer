@@ -50,8 +50,14 @@ function poiNamed(tile, options) {
 /**
  * Build a plain-text description of a map node for screen readers and any
  * non-visual view, because the map itself is an opaque canvas. The
- * description reports the node name and size, how much is explored, where
- * the party stands, and the points of interest. In Play mode (revealAll
+ * description comes in two parts. The `status` line reports the node name
+ * and size, how much is explored, where the party stands, and how many
+ * points of interest there are. It is short because a live region reads it
+ * aloud on every change. The `points` list names each point of interest
+ * with its position and notes, for an ordinary list that a screen reader
+ * visits on demand. A node with many notes gives a list of more than a
+ * thousand characters, which a live region would read in full on each
+ * navigation. In Play mode (revealAll
  * false), the description names only the points of interest that the
  * tooltip names (see `poiNamed`). In Build mode (revealAll true), the
  * description covers everything. The GM's notes are read only when
@@ -59,7 +65,7 @@ function poiNamed(tile, options) {
  * @param {MapNode} node
  * @param {PartyPosition | null} party
  * @param {DescribeOptions} [options]
- * @returns {string}
+ * @returns {{ status: string, points: string[] }}
  */
 export function describeNode(node, party, options = {}) {
   const revealAll = options.revealAll ?? false;
@@ -103,14 +109,15 @@ export function describeNode(node, party, options = {}) {
   }
 
   if (pois.length) {
-    const listed = pois.map((poi) => {
-      const notes = poi.notes ? `: ${poi.notes}` : '';
-      return `${readablePoi(poi.poiType)} at column ${toDisplay(poi.x)}, row ${toDisplay(poi.y)}${notes}`;
-    });
-    parts.push(`Points of interest: ${listed.join('; ')}.`);
+    const noun = pois.length === 1 ? 'point' : 'points';
+    parts.push(`${pois.length} ${noun} of interest, listed after the map.`);
   }
 
-  return parts.join(' ');
+  const points = pois.map((poi) => {
+    const notes = poi.notes ? `: ${poi.notes}` : '';
+    return `${readablePoi(poi.poiType)} at column ${toDisplay(poi.x)}, row ${toDisplay(poi.y)}${notes}`;
+  });
+  return { status: parts.join(' '), points };
 }
 
 /**

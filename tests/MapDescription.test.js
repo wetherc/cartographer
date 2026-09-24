@@ -18,23 +18,23 @@ function node() {
 }
 
 test('describeNode reports name, size, and explored count in Play mode', () => {
-  const text = describeNode(node(), null);
+  const text = describeNode(node(), null).status;
   assert.match(text, /World, a region, 4 by 3 tiles\./);
   assert.match(text, /2 of 12 tiles explored\./); // two revealed tiles (0,0 and 2,1)
 });
 
 test('describeNode names the kind and environment when set', () => {
   const n = { ...node(), kind: /** @type {const} */ ('interior'), environ: 'temple' };
-  assert.match(describeNode(n, null), /World, an interior \(temple\), 4 by 3 tiles\./);
+  assert.match(describeNode(n, null).status, /World, an interior \(temple\), 4 by 3 tiles\./);
 });
 
 test('describeNode reports the party position when the party is in the node', () => {
-  const text = describeNode(node(), { nodeId: 'world', tileId: '0,0' });
+  const text = describeNode(node(), { nodeId: 'world', tileId: '0,0' }).status;
   assert.match(text, /Party at column 1, row 1\./);
 });
 
 test('describeNode omits party position when the party is elsewhere', () => {
-  const text = describeNode(node(), { nodeId: 'region', tileId: '0,0' });
+  const text = describeNode(node(), { nodeId: 'region', tileId: '0,0' }).status;
   assert.doesNotMatch(text, /Party at/);
 });
 
@@ -44,20 +44,38 @@ function found() {
 }
 
 test('describeNode hides an undiscovered POI in Play mode', () => {
-  assert.doesNotMatch(describeNode(node(), null), /Points of interest|Tavern/);
+  const { status, points } = describeNode(node(), null);
+  assert.doesNotMatch(status, /of interest/);
+  assert.deepEqual(points, []);
 });
 
 test('describeNode lists a discovered POI and reads notes only for the GM', () => {
-  assert.match(describeNode(found(), null), /Points of interest: Tavern at column 3, row 2\./);
+  assert.deepEqual(describeNode(found(), null).points, ['Tavern at column 3, row 2']);
+  assert.deepEqual(describeNode(found(), null, { showNotes: true }).points, [
+    'Tavern at column 3, row 2: The Prancing Pony',
+  ]);
+});
+
+test('describeNode counts the points in the status line and keeps their text out of it', () => {
+  const { status } = describeNode(found(), null, { showNotes: true });
+  assert.match(status, /1 point of interest, listed after the map./);
+  assert.doesNotMatch(status, /Tavern|Prancing/);
+  const two = setTile(
+    found(),
+    createTile('0,2', 'dungeon.svg', {
+      metadata: { poiType: 'dungeon', discoverable: false, notes: '' },
+    }),
+  );
   assert.match(
-    describeNode(found(), null, { showNotes: true }),
-    /Points of interest: Tavern at column 3, row 2: The Prancing Pony\./,
+    describeNode(two, null, { revealAll: true }).status,
+    /2 points of interest, listed after the map./,
   );
 });
 
 test('describeNode leaves out a POI outside detection range', () => {
-  const text = describeNode(found(), null, { markerVisible: (id) => id !== '2,1' });
-  assert.doesNotMatch(text, /Tavern/);
+  const { status, points } = describeNode(found(), null, { markerVisible: (id) => id !== '2,1' });
+  assert.doesNotMatch(status, /of interest/);
+  assert.deepEqual(points, []);
 });
 
 test('describeNode ignores tiles whose ids are not grid coordinates', () => {
@@ -69,13 +87,13 @@ test('describeNode ignores tiles whose ids are not grid coordinates', () => {
       metadata: { poiType: 'dungeon', discoverable: false, notes: '' },
     }),
   );
-  const text = describeNode(n, null);
+  const { status, points } = describeNode(n, null);
   assert.match(
-    text,
+    status,
     /2 of 12 tiles explored\./,
     'a non-grid tile is not a placed or revealed cell',
   );
-  assert.doesNotMatch(text, /Dungeon/, 'and it has no position to narrate');
+  assert.deepEqual(points, [], 'and it has no position to narrate');
 });
 
 test('describeNode in Build mode counts placed tiles and includes unrevealed POIs', () => {
@@ -86,9 +104,9 @@ test('describeNode in Build mode counts placed tiles and includes unrevealed POI
       metadata: { poiType: 'dungeon', discoverable: false, notes: '' },
     }),
   );
-  const text = describeNode(n, null, { revealAll: true });
-  assert.match(text, /4 of 12 tiles placed\./);
-  assert.match(text, /Dungeon at column 4, row 3/);
+  const { status, points } = describeNode(n, null, { revealAll: true });
+  assert.match(status, /4 of 12 tiles placed\./);
+  assert.ok(points.includes('Dungeon at column 4, row 3'));
 });
 
 test('describeCursor names the cell and what stands there', () => {
