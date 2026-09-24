@@ -3,9 +3,10 @@ import {
   itemType,
   itemSummary,
   equip,
+  equipBlocker,
   getEquipped,
-  slotAccepts,
 } from '../entities/Equipment.js';
+import { hasWeaponProperty } from '../entities/Weapons.js';
 import { el } from './dom.js';
 import { select } from './formFields.js';
 
@@ -20,16 +21,18 @@ import { select } from './formFields.js';
 
 /**
  * Equipment slot rows. Each row shows a labeled select for one slot. Its
- * options are limited to inventory items whose type the slot accepts, so a
- * potion never appears in the armor pickers. Options sort by the slot's
+ * options are limited to inventory items that `equipBlocker` allows, so a
+ * potion never appears in the armor pickers, a single ring is not offered
+ * for the second ring slot, and the off hand offers nothing while a
+ * two-handed weapon fills the main hand. Options sort by the slot's
  * preference, then by name. An already-equipped item that no longer passes
  * the filter, for example in a legacy save, still shows, so a GM can see
  * it and unequip it.
  *
  * The character arrives as a getter because these rows outlive changes
  * made elsewhere on the sheet. A slot's options depend only on the
- * inventory, so the panel leaves the rows standing when a sibling panel
- * commits an unrelated change. The equip call below must write against
+ * inventory and the other slots, so the panel leaves the rows standing when
+ * a sibling panel commits an unrelated change. The equip call below must write against
  * that newer character.
  * @param {() => Character} getCharacter
  * @param {(next: Character) => void} commit
@@ -42,7 +45,7 @@ export function buildEquipment(getCharacter, commit, playable) {
   for (const slot of EQUIPMENT_SLOTS) {
     const equippedId = getEquipped(character, slot.key)?.id ?? '';
     const eligible = character.inventory
-      .filter((i) => slotAccepts(slot.key, i) || i.id === equippedId)
+      .filter((i) => !equipBlocker(character, slot.key, i) || i.id === equippedId)
       .sort((a, b) => {
         const rank = (/** @type {typeof a} */ i) => {
           const at = slot.accepts.indexOf(itemType(i));
@@ -50,9 +53,13 @@ export function buildEquipment(getCharacter, commit, playable) {
         };
         return rank(a) - rank(b) || a.name.localeCompare(b.name);
       });
+    // A two-handed weapon fills both hands, so the empty off hand names it.
+    const main = getEquipped(character, 'mainHand');
+    const bothHands =
+      slot.key === 'offHand' && !equippedId && !!main && hasWeaponProperty(main, 'two-handed');
     const picker = select(
       [
-        { value: '', label: '—' },
+        { value: '', label: bothHands ? `Both hands on ${main.name}` : '—' },
         ...eligible.map((item) => {
           const summary = itemSummary(item);
           return { value: item.id, label: summary ? `${item.name} (${summary})` : item.name };
@@ -60,7 +67,7 @@ export function buildEquipment(getCharacter, commit, playable) {
       ],
       equippedId,
     );
-    picker.disabled = !playable;
+    picker.disabled = !playable || bothHands;
     picker.addEventListener('change', () =>
       commit(equip(getCharacter(), slot.key, picker.value === '' ? null : picker.value)),
     );

@@ -234,21 +234,49 @@ export function slotAccepts(slot, item) {
 }
 
 /**
+ * Why an item cannot go into a slot, or null when it can. The slot has to
+ * accept the item's type. One stack fills at most as many slots as its
+ * quantity, so one Ring of Protection cannot be worn on both hands and one
+ * dagger cannot fill both hands for two-weapon fighting. The off hand is
+ * closed while the main hand holds a two-handed weapon. The slot being
+ * filled does not count against the stack, so re-picking the worn item is
+ * allowed. This function is pure.
+ * @param {Character} character
+ * @param {EquipmentSlot} slot
+ * @param {InventoryItem} item
+ * @returns {'slot' | 'stack' | 'two-handed' | null}
+ */
+export function equipBlocker(character, slot, item) {
+  if (!slotAccepts(slot, item)) return 'slot';
+  const equipment = migrateEquipment(character.equipment);
+  const worn = EQUIPMENT_SLOTS.filter((s) => s.key !== slot && equipment[s.key] === item.id);
+  if (worn.length >= Math.max(1, item.quantity ?? 1)) return 'stack';
+  if (slot === 'offHand') {
+    const main = equipment.mainHand === item.id ? item : getEquipped(character, 'mainHand');
+    if (main && hasWeaponProperty(main, 'two-handed')) return 'two-handed';
+  }
+  return null;
+}
+
+/**
  * Equip an inventory item, by id, into a slot, or clear the slot with null.
- * Equipping an item that the slot does not accept, or an item not in the
- * inventory, does nothing. This keeps a potion from ever being worn as
- * armor. This function is pure.
+ * An item that `equipBlocker` refuses, or an item not in the inventory,
+ * leaves the character unchanged. This keeps a potion from ever being worn
+ * as armor. A two-handed weapon put in the main hand clears the off hand.
+ * This function is pure.
  * @param {Character} character
  * @param {EquipmentSlot} slot
  * @param {string | null} itemId
  * @returns {Character}
  */
 export function equip(character, slot, itemId) {
+  const equipment = { ...migrateEquipment(character.equipment), [slot]: itemId };
   if (itemId !== null) {
     const item = character.inventory.find((i) => i.id === itemId);
-    if (!item || !slotAccepts(slot, item)) return character;
+    if (!item || equipBlocker(character, slot, item)) return character;
+    if (slot === 'mainHand' && hasWeaponProperty(item, 'two-handed')) equipment.offHand = null;
   }
-  return { ...character, equipment: { ...migrateEquipment(character.equipment), [slot]: itemId } };
+  return { ...character, equipment };
 }
 
 /**

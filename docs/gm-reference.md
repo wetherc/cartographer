@@ -698,7 +698,11 @@ spent gets three dice back.
 
 The panel has two tabs. Equipment has nine slots: Helmet, Armor, Gloves,
 Greaves, Main hand, Off hand, Ranged, Ring 1, and Ring 2. Each picker lists
-only the items that its slot accepts. Inventory has the item list, with a
+only the items that its slot accepts. One item fills as many slots as its
+quantity, so a single ring goes on one hand and a pair of daggers can fill
+both. A two-handed weapon in the main hand takes the off hand off, and the Off
+hand picker stays closed until the weapon comes out of the main hand.
+Inventory has the item list, with a
 search box over names and descriptions, a type filter, and one collapsible
 heading per item type.
 

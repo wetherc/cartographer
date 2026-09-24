@@ -13,6 +13,7 @@ import {
   itemEffects,
   slotAccepts,
   equip,
+  equipBlocker,
   getEquipped,
   itemACBonus,
   effectiveStats,
@@ -814,4 +815,30 @@ test('body armor with no stated weight is treated as light', () => {
   hero = equip(hero, 'chest', 'plate');
   assert.equal(armorClass(hero), 16, '12 + full DEX (+4)');
   assert.deepEqual(itemEffects(hero.inventory[0]), ['light armor, AC 12 + DEX']);
+});
+
+test('one stack fills at most as many slots as its quantity', () => {
+  let hero = createCharacter('c1', 'Hero');
+  hero = addItem(hero, item('ring', 'Ring of Protection', { type: 'ring', acBonus: 1 }));
+  hero = addItem(hero, item('dagger', 'Dagger', { type: 'weapon', properties: ['light'] }));
+  hero = equip(equip(hero, 'accessory', 'ring'), 'mainHand', 'dagger');
+  assert.equal(equip(hero, 'accessory2', 'ring'), hero, 'one ring cannot fill both ring slots');
+  assert.equal(equip(hero, 'offHand', 'dagger'), hero, 'one dagger cannot fill both hands');
+  assert.equal(equipBlocker(hero, 'accessory', hero.inventory[0]), null, 'its own slot is free');
+  const pair = updateItem(hero, 'dagger', { ...hero.inventory[1], quantity: 2 });
+  assert.equal(getEquipped(equip(pair, 'offHand', 'dagger'), 'offHand')?.id, 'dagger');
+});
+
+test('a two-handed weapon closes the off hand and clears it when wielded', () => {
+  let hero = createCharacter('c1', 'Hero');
+  hero = addItem(hero, item('gs', 'Greatsword', { type: 'weapon', properties: ['two-handed'] }));
+  hero = addItem(hero, item('shield', 'Shield', { type: 'shield' }));
+  const shielded = equip(hero, 'offHand', 'shield');
+  const wielding = equip(shielded, 'mainHand', 'gs');
+  assert.equal(getEquipped(wielding, 'mainHand')?.id, 'gs');
+  assert.equal(getEquipped(wielding, 'offHand'), null, 'the shield comes off');
+  assert.equal(equip(wielding, 'offHand', 'shield'), wielding, 'no shield beside a greatsword');
+  assert.equal(equipBlocker(wielding, 'offHand', hero.inventory[1]), 'two-handed');
+  assert.equal(equipBlocker(hero, 'chest', hero.inventory[1]), 'slot');
+  assert.equal(getEquipped(equip(wielding, 'mainHand', null), 'mainHand'), null);
 });
