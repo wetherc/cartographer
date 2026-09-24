@@ -32,7 +32,7 @@ import { ABILITY_SCORES, normalizeStatBlock } from '../entities/Modifiers.js';
 import { SKILL_IDS } from '../data/skills.js';
 import { DEFAULT_FEATS, FEAT_EFFECT_KINDS } from '../data/feats.js';
 import { DEFAULT_CREATURE_HP, DISPOSITIONS, defaultEnemyGear } from '../entities/Creature.js';
-import { isCasterClass } from '../entities/Classes.js';
+import { castsAs } from '../entities/ClassCasting.js';
 import { coerceEnemyArmor } from '../entities/EnemyArmor.js';
 import { creatureProficiencyFields, ARMOR_PROFICIENCIES } from '../entities/Proficiencies.js';
 import { defenseFields } from '../entities/DamageDefenses.js';
@@ -516,7 +516,10 @@ function normalizeSpellbook(raw) {
  * @returns {{ class?: string, subclass?: string, casterLevel?: number, spellbook?: import('../types/entities.js').Spellbook }}
  */
 function casterTemplateFrom(e) {
-  if (!isCasterClass(e.class)) return {};
+  // A template with no caster level is judged at level 20, because its
+  // spawn level is not known yet.
+  const level = typeof e.casterLevel === 'number' ? e.casterLevel : 20;
+  if (!castsAs(e.class, e.subclass, level)) return {};
   return {
     class: e.class,
     ...(typeof e.subclass === 'string' ? { subclass: e.subclass } : {}),

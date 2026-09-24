@@ -102,7 +102,8 @@ export function characterProficiency(character) {
  * entry that still fits is trimmed to what remains, and the function drops
  * anything after it. This case is reachable only from an imported or
  * hand-edited save, since every writer in the app assigns one level at a
- * time.
+ * time. A `subclass` that is not a string (a hand-edited save) is dropped,
+ * because the sheet prints it and the caster readers trim it.
  * @param {ClassRef[]} classes
  * @param {number} cap total class levels allowed
  * @returns {ClassRef[]}
@@ -118,7 +119,8 @@ export function sanitizeClasses(classes, cap) {
     if (level < 1) break;
     seen.add(ref.classId);
     used += level;
-    next.push({ ...ref, level });
+    const { subclass, ...rest } = ref;
+    next.push(typeof subclass === 'string' ? { ...rest, level, subclass } : { ...rest, level });
   }
   return next;
 }

@@ -16,6 +16,7 @@ import {
   hasPreparedCaster,
 } from '../entities/Classes.js';
 import { primaryClass } from '../entities/Multiclass.js';
+import { casterName, spellListOf } from '../entities/ClassCasting.js';
 import { groupSpellsByLevel, spellStatus } from '../entities/SpellView.js';
 import { sameDeps, spellListDeps } from '../view/SheetStructure.js';
 import { badge, bareButton, emptyState, sectionLabel } from './buttons.js';
@@ -124,7 +125,7 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
    */
   async function pickSourceClass(character, spell) {
     const refs = casterClassRefs(character);
-    const eligible = refs.filter((ref) => spell.classes.includes(ref.classId));
+    const eligible = refs.filter((ref) => spell.classes.includes(spellListOf(ref)));
     const pool = eligible.length > 0 ? eligible : refs;
     if (pool.length <= 1) return pool[0]?.classId;
     const values = await promptModal(
@@ -136,7 +137,7 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
           type: 'select',
           options: pool.map((ref) => ({
             value: ref.classId,
-            label: getClass(ref.classId)?.name ?? ref.classId,
+            label: casterName(ref),
           })),
           value: pool[0].classId,
         },
@@ -220,9 +221,7 @@ export function mountSpellbookPanel(container, initial, onChange, getPermissions
       return;
     }
 
-    const casterNames = casterClassRefs(character)
-      .map((ref) => getClass(ref.classId)?.name)
-      .filter(Boolean);
+    const casterNames = casterClassRefs(character).map(casterName);
     const heading = el(
       'div',
       'spellbook__heading',

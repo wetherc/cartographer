@@ -1,4 +1,5 @@
-import { isCasterClass, casterSlots, getClass, spellSaveDC, spellAttackBonus } from './Classes.js';
+import { casterSlots, spellSaveDC, spellAttackBonus } from './Classes.js';
+import { isCasterRef, casterName, castsAs } from './ClassCasting.js';
 import { crProficiencyBonus, formatModifier } from './Modifiers.js';
 import { emptySpellbook } from './Character.js';
 import { spliceReservedPools } from './Resource.js';
@@ -121,7 +122,7 @@ export function toCaster(entity) {
  */
 export function isCaster(entity) {
   const view = toCaster(entity);
-  return view.classes.some((ref) => isCasterClass(ref.classId)) && !!view.spellbook;
+  return view.classes.some(isCasterRef) && !!view.spellbook;
 }
 
 /**
@@ -140,9 +141,9 @@ export function isCaster(entity) {
 export function casterSummary(entity) {
   if (!isCaster(entity)) return '';
   const view = toCaster(entity);
-  const ref = view.classes.find((c) => isCasterClass(c.classId));
+  const ref = view.classes.find(isCasterRef);
   if (!ref) return '';
-  const parts = [`${getClass(ref.classId)?.name ?? ref.classId} ${ref.level}`];
+  const parts = [`${casterName(ref)} ${ref.level}`];
   const dc = spellSaveDC(view, ref.classId);
   const attack = spellAttackBonus(view, ref.classId);
   if (dc !== null && attack !== null) {
@@ -179,10 +180,10 @@ export function withCasterState(entity, caster) {
 /**
  * Stamp fresh caster fields onto an entity from authoring options: class,
  * optional subclass, caster level, an (empty by default) spellbook, and
- * full slot pools rebuilt for the class and level. A non-caster class (or
- * none) leaves the entity untouched, so this function is safe to call for
- * every create or edit. The function replaces any prior slot pools, and
- * non-slot resources survive.
+ * full slot pools rebuilt for the class, subclass, and level. A class and
+ * subclass that do not cast at that level (or no class) leave the entity
+ * untouched, so this function is safe to call for every create or edit. The
+ * function replaces any prior slot pools, and non-slot resources survive.
  * @template {CasterEntity} T
  * @param {T} entity
  * @param {CasterOptions} [options]
@@ -190,8 +191,8 @@ export function withCasterState(entity, caster) {
  * @returns {T}
  */
 export function withCasterFields(entity, options = {}, defaultLevel = 1) {
-  if (!isCasterClass(options.class)) return entity;
   const casterLevel = Math.max(1, Math.floor(options.casterLevel ?? defaultLevel) || 1);
+  if (!castsAs(options.class, options.subclass, casterLevel)) return entity;
   return {
     ...entity,
     class: options.class,
@@ -200,7 +201,7 @@ export function withCasterFields(entity, options = {}, defaultLevel = 1) {
     spellbook: options.spellbook ?? emptySpellbook(),
     resources: spliceReservedPools(
       entity.resources ?? [],
-      casterSlots(options.class, casterLevel),
+      casterSlots(options.class, casterLevel, options.subclass),
       isCasterPool,
     ),
   };
@@ -219,8 +220,8 @@ export function withCasterFields(entity, options = {}, defaultLevel = 1) {
  * @returns {T}
  */
 export function ensureCasterFields(entity, defaultLevel = 1) {
-  if (!isCasterClass(entity.class)) return entity;
   const casterLevel = entity.casterLevel ?? defaultLevel;
+  if (!castsAs(entity.class, entity.subclass, casterLevel)) return entity;
   const stored = entity.resources ?? [];
   return {
     ...entity,
@@ -228,7 +229,7 @@ export function ensureCasterFields(entity, defaultLevel = 1) {
     spellbook: entity.spellbook ?? emptySpellbook(),
     resources: stored.some(isCasterPool)
       ? stored
-      : [...stored, ...casterSlots(entity.class, casterLevel)],
+      : [...stored, ...casterSlots(entity.class, casterLevel, entity.subclass)],
   };
 }
 
@@ -236,12 +237,13 @@ export function ensureCasterFields(entity, defaultLevel = 1) {
  * The caster fields to persist in a creature template: the identity
  * of the caster, not its live slots. Those slots rebuild from class and
  * level on spawn. Returns an empty object for a non-caster, to spread into
- * a template literal.
+ * a template literal. A template with no caster level is judged at level
+ * 20, because its spawn level is not known yet.
  * @param {{ class?: string, subclass?: string, casterLevel?: number, spellbook?: Spellbook }} entity
  * @returns {CasterOptions}
  */
 export function casterTemplateFields(entity) {
-  if (!isCasterClass(entity.class)) return {};
+  if (!castsAs(entity.class, entity.subclass, entity.casterLevel ?? 20)) return {};
   return {
     class: entity.class,
     ...(entity.subclass ? { subclass: entity.subclass } : {}),

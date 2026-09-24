@@ -3,9 +3,10 @@ import type { FeatEffect } from './feat.js';
 
 /** A class's spellcasting progression. Full casters gain 9th-level slots
  * (Wizard, Cleric, Bard, Druid, Sorcerer). Half casters top out at 5th level
- * (Paladin, Ranger). Pact is the Warlock's short-rest slots. 'none' marks a
- * non-caster. */
-export type CasterType = 'full' | 'half' | 'pact' | 'none';
+ * (Paladin, Ranger). Third casters top out at 4th level, and only a subclass
+ * grants this type (Eldritch Knight, Arcane Trickster). Pact is the
+ * Warlock's short-rest slots. 'none' marks a non-caster. */
+export type CasterType = 'full' | 'half' | 'third' | 'pact' | 'none';
 
 /** How a class manages its leveled spells. A prepared caster swaps its list
  * on a rest (Cleric, Druid, Paladin, Wizard). A known caster fixes its list
@@ -93,6 +94,9 @@ export interface ClassDef {
   subclassLevel: number;
   /** What the class calls its subclass ("Sacred Oath", "Arcane Tradition"). */
   subclassLabel?: string;
+  /** The subclasses the subclass picker offers. A character can also carry
+   * a subclass name outside this list, which has no mechanics. */
+  subclasses?: SubclassDef[];
   /** The levels that grant an ability score improvement, or later a feat. */
   asiLevels: number[];
   /** Ability-score minimums required to multiclass into or out of this class. */
@@ -107,6 +111,30 @@ export interface ClassDef {
    * no modeled effect. A ClassFeatureDef carries structured effects that the
    * grant flow applies when the character reaches the level. */
   featuresByLevel: Record<number, (string | ClassFeatureDef)[]>;
+}
+
+/** The caster fields a subclass puts in place of its class's fields. The
+ * Eldritch Knight turns the non-caster Fighter into a third caster that
+ * learns from the wizard list with INT. */
+export interface SubclassCasting {
+  casterType: CasterType;
+  spellAbility: Ability;
+  spellListId: string;
+  knownRule: SpellKnownRule;
+  /** Cantrips known by class level, where index 0 is level 1. */
+  cantripsKnown: number[];
+  ritual?: boolean;
+  ritualFromBook?: boolean;
+}
+
+/** One subclass of a class. A character's `ClassRef.subclass` matches it by
+ * `id` or by `name`, compared without case. */
+export interface SubclassDef {
+  id: string;
+  name: string;
+  /** Present only for a subclass that grants spellcasting. The fields apply
+   * from the class's `subclassLevel` on. */
+  casting?: SubclassCasting;
 }
 
 /** A class feature with structured effects, in the same effect vocabulary

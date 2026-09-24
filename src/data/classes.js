@@ -36,6 +36,35 @@ function multiclassGrant(grant = {}) {
   return { armor: [], weaponCategories: [], weaponNamed: [], tools: [], ...grant };
 }
 
+/** The Fighter subclass that casts from the wizard list with INT, on the
+ * third-caster slot table. */
+const ELDRITCH_KNIGHT = {
+  id: 'eldritch-knight',
+  name: 'Eldritch Knight',
+  casting: {
+    casterType: /** @type {const} */ ('third'),
+    spellAbility: /** @type {const} */ ('INT'),
+    spellListId: 'wizard',
+    knownRule: /** @type {const} */ ('known'),
+    cantripsKnown: curve({ 3: 2, 10: 3 }),
+  },
+};
+
+/** The Rogue subclass that casts from the wizard list with INT, on the
+ * third-caster slot table. It knows one more cantrip than the Eldritch
+ * Knight, because Mage Hand is always one of them. */
+const ARCANE_TRICKSTER = {
+  id: 'arcane-trickster',
+  name: 'Arcane Trickster',
+  casting: {
+    casterType: /** @type {const} */ ('third'),
+    spellAbility: /** @type {const} */ ('INT'),
+    spellListId: 'wizard',
+    knownRule: /** @type {const} */ ('known'),
+    cantripsKnown: curve({ 3: 3, 10: 4 }),
+  },
+};
+
 const RANGER_SKILLS = [
   'animal-handling',
   'athletics',
@@ -62,10 +91,12 @@ const ROGUE_SKILLS = [
 ];
 
 /**
- * The playable classes. Each entry carries the spellcasting spine that the
+ * The playable classes. Each entry keeps the spellcasting fields that the
  * spell system reads: caster type, spell ability, and cantrip curve.
- * Non-casters carry casterType 'none' and never gain a spellbook. Cantrip
- * curves follow the SRD breakpoints. `ritual` marks the four classes with
+ * Non-casters have casterType 'none'. A subclass in `subclasses` with a
+ * `casting` entry replaces those fields from the subclass level on, which
+ * is how the Eldritch Knight and the Arcane Trickster cast. Cantrip curves
+ * follow the SRD breakpoints. `ritual` marks the four classes with
  * ritual casting. Each entry also carries the character-foundation fields:
  * saving-throw and armor or weapon proficiencies, skill choices by id from
  * data/skills.js, hit die, subclass unlock level, ASI levels, and a
@@ -93,6 +124,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       },
       subclassLevel: 3,
       subclassLabel: 'Primal Path',
+      subclasses: [{ id: 'berserker', name: 'Path of the Berserker' }],
       asiLevels: ASI,
       multiclassPrereq: [{ STR: 13 }],
       multiclassGrant: multiclassGrant({
@@ -129,6 +161,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       skillChoice: { choose: 3, from: [] },
       subclassLevel: 3,
       subclassLabel: 'Bard College',
+      subclasses: [{ id: 'lore', name: 'College of Lore' }],
       asiLevels: ASI,
       multiclassPrereq: [{ CHA: 13 }],
       multiclassGrant: multiclassGrant({
@@ -165,6 +198,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       },
       subclassLevel: 1,
       subclassLabel: 'Divine Domain',
+      subclasses: [{ id: 'life', name: 'Life Domain' }],
       asiLevels: ASI,
       multiclassPrereq: [{ WIS: 13 }],
       multiclassGrant: multiclassGrant({ armor: ['light', 'medium', 'shield'] }),
@@ -215,6 +249,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       },
       subclassLevel: 2,
       subclassLabel: 'Druid Circle',
+      subclasses: [{ id: 'land', name: 'Circle of the Land' }],
       asiLevels: ASI,
       multiclassPrereq: [{ WIS: 13 }],
       multiclassGrant: multiclassGrant({ armor: ['light', 'medium', 'shield'] }),
@@ -251,6 +286,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       },
       subclassLevel: 3,
       subclassLabel: 'Martial Archetype',
+      subclasses: [{ id: 'champion', name: 'Champion' }, ELDRITCH_KNIGHT],
       asiLevels: [4, 6, 8, 12, 14, 16, 19],
       multiclassPrereq: [{ STR: 13 }, { DEX: 13 }],
       multiclassGrant: multiclassGrant({
@@ -284,6 +320,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       },
       subclassLevel: 3,
       subclassLabel: 'Monastic Tradition',
+      subclasses: [{ id: 'open-hand', name: 'Way of the Open Hand' }],
       asiLevels: ASI,
       multiclassPrereq: [{ DEX: 13, WIS: 13 }],
       multiclassGrant: multiclassGrant({
@@ -321,6 +358,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       },
       subclassLevel: 3,
       subclassLabel: 'Sacred Oath',
+      subclasses: [{ id: 'devotion', name: 'Oath of Devotion' }],
       asiLevels: ASI,
       multiclassPrereq: [{ STR: 13, CHA: 13 }],
       multiclassGrant: multiclassGrant({
@@ -353,6 +391,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       skillChoice: { choose: 3, from: RANGER_SKILLS },
       subclassLevel: 3,
       subclassLabel: 'Ranger Archetype',
+      subclasses: [{ id: 'hunter', name: 'Hunter' }],
       asiLevels: ASI,
       multiclassPrereq: [{ DEX: 13, WIS: 13 }],
       multiclassGrant: multiclassGrant({
@@ -385,6 +424,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       skillChoice: { choose: 4, from: ROGUE_SKILLS },
       subclassLevel: 3,
       subclassLabel: 'Roguish Archetype',
+      subclasses: [{ id: 'thief', name: 'Thief' }, ARCANE_TRICKSTER],
       asiLevels: [4, 8, 10, 12, 16, 19],
       multiclassPrereq: [{ DEX: 13 }],
       multiclassGrant: multiclassGrant({
@@ -425,6 +465,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       },
       subclassLevel: 1,
       subclassLabel: 'Sorcerous Origin',
+      subclasses: [{ id: 'draconic', name: 'Draconic Bloodline' }],
       asiLevels: ASI,
       multiclassPrereq: [{ CHA: 13 }],
       multiclassGrant: multiclassGrant(),
@@ -462,6 +503,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       },
       subclassLevel: 1,
       subclassLabel: 'Otherworldly Patron',
+      subclasses: [{ id: 'fiend', name: 'The Fiend' }],
       asiLevels: ASI,
       multiclassPrereq: [{ CHA: 13 }],
       multiclassGrant: multiclassGrant({
@@ -497,6 +539,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       },
       subclassLevel: 2,
       subclassLabel: 'Arcane Tradition',
+      subclasses: [{ id: 'evocation', name: 'School of Evocation' }],
       asiLevels: ASI,
       multiclassPrereq: [{ INT: 13 }],
       multiclassGrant: multiclassGrant(),

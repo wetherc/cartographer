@@ -1,5 +1,5 @@
 import { getSpellbook, spellSource } from './Character.js';
-import { getClass, primaryCasterClass } from './Classes.js';
+import { casterDefOf, primaryCasterClass } from './Classes.js';
 
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -59,7 +59,7 @@ export function groupSpellsByLevel(spells) {
  */
 export function spellRule(character, spellId) {
   const classId = spellSource(character, spellId) ?? primaryCasterClass(character)?.classId;
-  return getClass(classId)?.knownRule ?? 'known';
+  return casterDefOf(character, classId)?.knownRule ?? 'known';
 }
 
 /**
@@ -105,7 +105,7 @@ export function isRitualOnly(character, spell) {
   if (!spell.ritual || spell.level === 0 || isSpellCastable(character, spell)) return false;
   if (!getSpellbook(character).known.includes(spell.id)) return false;
   const classId = spellSource(character, spell.id) ?? primaryCasterClass(character)?.classId;
-  return getClass(classId)?.ritualFromBook === true;
+  return casterDefOf(character, classId)?.ritualFromBook === true;
 }
 
 /**

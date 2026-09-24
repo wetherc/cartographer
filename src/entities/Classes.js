@@ -3,6 +3,7 @@ import { abilityModifier } from './Modifiers.js';
 import { d20Penalty } from './Exhaustion.js';
 import { slotsForCaster, slotPoolsForCaster, casterLevelContribution } from './SpellSlots.js';
 import { characterProficiency, getClasses } from './Multiclass.js';
+import { casterDefFor, isCasterRef } from './ClassCasting.js';
 import { DEFAULT_CLASSES } from '../data/classes.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { clamp } from '../util/num.js';
@@ -49,7 +50,9 @@ export function featureEntry(entry) {
 }
 
 /**
- * Whether a class casts spells at all (full/half/pact, not none).
+ * Whether a class casts spells at all (full, half, or pact), by class alone.
+ * A subclass that adds casting (the Eldritch Knight) does not count here.
+ * Ask `isCasterRef` about a whole class membership.
  * @param {string | undefined | null} classId
  * @returns {boolean}
  */
@@ -59,30 +62,51 @@ export function isCasterClass(classId) {
 }
 
 /**
+ * The caster definition for one of the character's classes: its class
+ * membership with the subclass applied (see `ClassCasting.casterDefFor`).
+ * A class the character does not hold reads the plain class definition, so
+ * a caller that names any class still gets its fields. Null for an unknown
+ * class.
+ * @param {SpellCaster} character
+ * @param {string | undefined | null} classId
+ * @returns {ClassDef | null}
+ */
+export function casterDefOf(character, classId) {
+  if (!classId) return null;
+  const ref = getClasses(character).find((r) => r.classId === classId);
+  return ref ? casterDefFor(ref) : getClass(classId);
+}
+
+/**
  * Slot counts per spell level for a class at a character level, driven by the
  * class's caster type. A non-caster, pact caster, or unknown class gets no
- * leveled slots here. A different function handles pact magic.
+ * leveled slots here. A different function handles pact magic. `subclass`
+ * applies a casting subclass such as the Eldritch Knight.
  * @param {string | undefined | null} classId
  * @param {number} characterLevel
+ * @param {string} [subclass]
  * @returns {number[]} index 0 = spell level 1
  */
-export function slotsForClass(classId, characterLevel) {
-  const def = getClass(classId);
+export function slotsForClass(classId, characterLevel, subclass) {
+  if (!classId) return [];
+  const def = casterDefFor({ classId, level: characterLevel, subclass });
   if (!def) return [];
   return slotsForCaster(def.casterType, characterLevel);
 }
 
 /**
  * The full spell-slot pools for a class at a character level, all at full.
- * This is caster-type-aware (full or half), so a creature caster
- * gets exactly the slots its class grants, and a pact caster gets its pact
- * pool. Empty for a non-caster or an unknown class.
+ * This is caster-type-aware (full, half, or third), so a creature caster
+ * gets exactly the slots its class and subclass grant, and a pact caster
+ * gets its pact pool. Empty for a non-caster or an unknown class.
  * @param {string | undefined | null} classId
  * @param {number} characterLevel
+ * @param {string} [subclass]
  * @returns {import('../types/entities.js').ResourcePool[]}
  */
-export function casterSlots(classId, characterLevel) {
-  const def = getClass(classId);
+export function casterSlots(classId, characterLevel, subclass) {
+  if (!classId) return [];
+  const def = casterDefFor({ classId, level: characterLevel, subclass });
   if (!def) return [];
   return slotPoolsForCaster(def.casterType, characterLevel);
 }
@@ -93,10 +117,12 @@ export function casterSlots(classId, characterLevel) {
  * Levels past the curve read its last entry.
  * @param {string | undefined | null} classId
  * @param {number} characterLevel
+ * @param {string} [subclass]
  * @returns {number}
  */
-export function cantripsKnownForClass(classId, characterLevel) {
-  const def = getClass(classId);
+export function cantripsKnownForClass(classId, characterLevel, subclass) {
+  if (!classId) return 0;
+  const def = casterDefFor({ classId, level: characterLevel, subclass });
   if (!def || def.cantripsKnown.length === 0) return 0;
   const idx = clamp(Math.floor(characterLevel) || 1, 1, def.cantripsKnown.length) - 1;
   return def.cantripsKnown[idx];
@@ -119,12 +145,13 @@ export function unarmoredDefenses(character) {
 
 /**
  * The character's caster classes: every class-list entry whose class casts
- * (full/half/pact). Empty for a martial or classless character.
+ * (full, half, third, or pact), with its subclass applied, so an Eldritch
+ * Knight counts. Empty for a martial or classless character.
  * @param {SpellCaster} character
  * @returns {ClassRef[]}
  */
 export function casterClassRefs(character) {
-  return getClasses(character).filter((ref) => isCasterClass(ref.classId));
+  return getClasses(character).filter(isCasterRef);
 }
 
 /**
@@ -136,7 +163,7 @@ export function casterClassRefs(character) {
  * @returns {boolean}
  */
 export function hasRitualCasting(character) {
-  return casterClassRefs(character).some((ref) => !!getClass(ref.classId)?.ritual);
+  return casterClassRefs(character).some((ref) => !!casterDefFor(ref)?.ritual);
 }
 
 /**
@@ -158,7 +185,7 @@ export function primaryCasterClass(character) {
  * @returns {boolean}
  */
 export function hasPreparedCaster(character) {
-  return casterClassRefs(character).some((ref) => getClass(ref.classId)?.knownRule === 'prepared');
+  return casterClassRefs(character).some((ref) => casterDefFor(ref)?.knownRule === 'prepared');
 }
 
 /**
@@ -170,7 +197,7 @@ export function hasPreparedCaster(character) {
  * @returns {number | null}
  */
 export function spellAbilityModifier(character, classId) {
-  const def = getClass(classId ?? primaryCasterClass(character)?.classId);
+  const def = casterDefOf(character, classId ?? primaryCasterClass(character)?.classId);
   if (!def || !def.spellAbility) return null;
   // A character reads its equipped buffs, so a +4 INT headband raises the
   // spell DC with the INT check. A creature view carries no equipment.
@@ -246,7 +273,7 @@ export const cantripLimit = memoizeByIdentity(countCantripsKnown);
  */
 function countCantripsKnown(character) {
   return casterClassRefs(character).reduce(
-    (sum, ref) => sum + cantripsKnownForClass(ref.classId, ref.level),
+    (sum, ref) => sum + cantripsKnownForClass(ref.classId, ref.level, ref.subclass),
     0,
   );
 }
@@ -270,7 +297,7 @@ export const preparedLimit = memoizeByIdentity(countPreparedAllowed);
  */
 function countPreparedAllowed(character) {
   return casterClassRefs(character).reduce((sum, ref) => {
-    const def = getClass(ref.classId);
+    const def = casterDefFor(ref);
     if (def?.knownRule !== 'prepared') return sum;
     const mod = spellAbilityModifier(character, ref.classId);
     if (mod === null) return sum;

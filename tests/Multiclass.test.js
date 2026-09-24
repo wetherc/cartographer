@@ -71,6 +71,17 @@ test('withClasses sanitizes: drops blank ids and duplicates, floors levels to 1'
   ]);
 });
 
+test('withClasses keeps a string subclass and drops any other value', () => {
+  const c = withClasses(withList([], 6), [
+    { classId: 'fighter', level: 3, subclass: 'Eldritch Knight' },
+    /** @type {any} */ ({ classId: 'rogue', level: 3, subclass: { name: 'x' } }),
+  ]);
+  assert.deepEqual(c.classes, [
+    { classId: 'fighter', level: 3, subclass: 'Eldritch Knight' },
+    { classId: 'rogue', level: 3 },
+  ]);
+});
+
 test('withClasses caps the class levels at the character level', () => {
   const trimmed = withClasses(withList([], 3), [{ classId: 'fighter', level: 5 }]);
   assert.deepEqual(trimmed.classes, [{ classId: 'fighter', level: 3 }]);

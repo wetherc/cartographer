@@ -1,5 +1,6 @@
 import { getSpellbook } from '../entities/Character.js';
-import { getClass, casterClassRefs, primaryCasterClass } from '../entities/Classes.js';
+import { casterClassRefs, primaryCasterClass } from '../entities/Classes.js';
+import { casterName } from '../entities/ClassCasting.js';
 import { groupSpellsByLevel, castableLeveledIds, isRitualOnly } from '../entities/SpellView.js';
 import { emptyState, sectionLabel, textButton } from './buttons.js';
 import { el } from './dom.js';
@@ -34,7 +35,8 @@ export function buildSpellsSection(character, opts) {
   const hasEntries = book.cantrips.length > 0 || book.known.length > 0;
   if (casterClassRefs(character).length === 0 && !hasEntries) return null;
 
-  const className = getClass(primaryCasterClass(character)?.classId)?.name;
+  const primary = primaryCasterClass(character);
+  const className = primary ? casterName(primary) : undefined;
   const section = el(
     'div',
     'character-sheet__spells u-col u-g2',

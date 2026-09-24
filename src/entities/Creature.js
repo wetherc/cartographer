@@ -4,8 +4,8 @@ import { coerceEnemyArmor, enemyArmorDelta } from './EnemyArmor.js';
 import { WEAPON_PRESETS, enemyArmor, copyEnemyWeapon } from './EquipmentPresets.js';
 import { copySpellbook } from './Character.js';
 import { withCasterFields, ensureCasterFields, casterTemplateFields } from './Caster.js';
-import { isCasterClass } from './Classes.js';
-import { isSlotPool } from './SpellSlots.js';
+import { castsAs, casterDefFor } from './ClassCasting.js';
+import { isCasterPool } from './SpellSlots.js';
 import { atDeathLevel, easeExhaustion, exhaustionFields } from './Exhaustion.js';
 import { creatureProficiencyFields } from './Proficiencies.js';
 import { defenseFields } from './DamageDefenses.js';
@@ -321,29 +321,41 @@ export function editCreature(creature, edits) {
  * @returns {Creature}
  */
 function applyCasterEdit(base, prior, edits) {
-  const wasCaster = isCasterClass(prior.class);
+  const priorLevel = prior.casterLevel ?? prior.level ?? 1;
+  const wasCaster = castsAs(prior.class, prior.subclass, priorLevel);
   const level = edits.casterLevel ?? edits.level ?? 1;
-  const changed = edits.class !== prior.class || level !== prior.casterLevel;
-  if (!isCasterClass(edits.class)) {
+  // The caster form sends a subclass only for a casting one (the Eldritch
+  // Knight). A kept class keeps its stored subclass, so a Life Domain cleric
+  // stays one across an edit.
+  const subclass = edits.subclass ?? (edits.class === prior.class ? prior.subclass : undefined);
+  // A subclass counts as a change only when it changes the casting, so
+  // naming a cleric's domain keeps its spent slots.
+  const changed =
+    edits.class !== prior.class ||
+    level !== prior.casterLevel ||
+    casterDefFor({ classId: edits.class ?? '', subclass, level }) !==
+      casterDefFor({ classId: prior.class ?? '', subclass: prior.subclass, level });
+  if (!castsAs(edits.class, subclass, level)) {
     // Dropped to a non-caster: shed the spell fields and slot pools.
-    if (!wasCaster) return { ...base, class: edits.class, subclass: edits.subclass };
+    if (!wasCaster) return { ...base, class: edits.class, subclass };
     const { casterLevel: _lvl, spellbook: _book, ...rest } = base;
     return {
       ...rest,
       class: edits.class,
-      subclass: edits.subclass,
-      resources: (base.resources ?? []).filter((r) => !isSlotPool(r)),
+      subclass,
+      resources: (base.resources ?? []).filter((r) => !isCasterPool(r)),
     };
   }
   if (!changed && wasCaster) {
-    // Same caster class and level: keep current (possibly spent) slots.
-    return {
-      ...base,
-      spellbook: edits.spellbook ?? base.spellbook,
-      subclass: edits.subclass,
-    };
+    // Same caster class, subclass, and level: keep current (possibly spent)
+    // slots.
+    return { ...base, spellbook: edits.spellbook ?? base.spellbook, subclass };
   }
-  return withCasterFields({ ...base, spellbook: edits.spellbook ?? prior.spellbook }, edits, level);
+  return withCasterFields(
+    { ...base, spellbook: edits.spellbook ?? prior.spellbook },
+    { ...edits, subclass },
+    level,
+  );
 }
 
 /**

@@ -1,7 +1,7 @@
 import { createResource, growMax, spliceReservedPools } from './Resource.js';
 import { HP_RESOURCE_ID, SLOT_ID_PREFIX, PACT_ID_PREFIX } from './PoolIds.js';
 import { getClasses } from './Multiclass.js';
-import { DEFAULT_CLASSES } from '../data/classes.js';
+import { casterTypeOf } from './ClassCasting.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -84,12 +84,42 @@ const HALF_SLOT_TABLE = [
   [4, 3, 3, 3, 2],
 ];
 
+/**
+ * Third-caster slot progression (Eldritch Knight, Arcane Trickster): no
+ * slots before class level 3, then first slots at 3 and topping out at
+ * 4th-level slots at 19. Same row semantics as SLOT_TABLE.
+ * @type {number[][]}
+ */
+const THIRD_SLOT_TABLE = [
+  [],
+  [],
+  [2],
+  [3],
+  [3],
+  [3],
+  [4, 2],
+  [4, 2],
+  [4, 2],
+  [4, 3],
+  [4, 3],
+  [4, 3],
+  [4, 3, 2],
+  [4, 3, 2],
+  [4, 3, 2],
+  [4, 3, 3],
+  [4, 3, 3],
+  [4, 3, 3],
+  [4, 3, 3, 1],
+  [4, 3, 3, 1],
+];
+
 /** The slot table for each caster type. Pact and none carry no leveled-slot
  * table here, because pact magic is special-cased and none has no slots.
  * @type {Record<string, number[][] | undefined>} */
 const CASTER_TABLES = {
   full: SLOT_TABLE,
   half: HALF_SLOT_TABLE,
+  third: THIRD_SLOT_TABLE,
 };
 
 /**
@@ -131,9 +161,9 @@ export function slotsForCasterLevel(combinedLevel) {
 
 /**
  * One class's contribution to a character's combined caster level. A full
- * caster counts its whole level. A half caster counts half its level,
- * rounded down.
- * Pact and none contribute nothing to the shared slot pool, because warlock
+ * caster counts its whole level. A half caster counts half its level, and a
+ * third caster (Eldritch Knight, Arcane Trickster) counts a third of it,
+ * both rounded down. Pact and none contribute nothing to the shared slot pool, because warlock
  * pact slots stay a separate pool. The deferred multiclass work sums these
  * contributions across classes and feeds slotsForCasterLevel. Single-class
  * callers do not need this function. This function is pure.
@@ -148,6 +178,8 @@ export function casterLevelContribution(casterType, classLevel) {
       return classLevel;
     case 'half':
       return Math.floor(classLevel / 2);
+    case 'third':
+      return Math.floor(classLevel / 3);
     default:
       return 0;
   }
@@ -243,36 +275,36 @@ export function slotPoolsForCaster(casterType, level) {
   return slotsForCaster(casterType, level).map((max, i) => slotPool(i + 1, max));
 }
 
-/** The caster type that each class id maps to, read straight from the class
- * catalog. SpellSlots cannot import Classes.js, because Classes.js imports
- * this module, so the lookup is built here from the shared data.
- * @type {Map<string, import('../types/class.js').CasterType>} */
-const CASTER_TYPE_BY_ID = new Map(DEFAULT_CLASSES.map((c) => [c.id, c.casterType]));
-
 /** @param {SpellCaster} character @returns {{ classId: string, level: number,
  *   casterType: import('../types/class.js').CasterType }[]} */
 function casterEntries(character) {
   return getClasses(character)
-    .map((ref) => ({ ...ref, casterType: CASTER_TYPE_BY_ID.get(ref.classId) ?? 'none' }))
+    .map((ref) => ({ ...ref, casterType: casterTypeOf(ref) }))
     .filter((ref) => ref.casterType !== 'none');
 }
 
 /**
  * The leveled slot counts that a character's class list grants, per the 5e
- * multiclass rules. A single slot-granting caster class reads its own table
- * at its class level. Two or more classes read the multiclass, full-caster,
- * table at the summed per-class contributions. A pact caster contributes
- * nothing here, because its slots come from `characterPactSlots`. A class
- * list with no slot caster (a martial character, a lone warlock, or a class
- * outside the catalog) grants no slots. Only a character with no classes at
- * all keeps the old full-caster-at-character-level behavior, so a
- * hand-built caster without a class still works.
+ * multiclass rules. Only a class that has its Spellcasting feature counts,
+ * which is a class whose own table grants slots at its class level. A
+ * paladin 1 or a fighter 2 does not count, so an Eldritch Knight 4 with one
+ * paladin level reads the third-caster table at 4, not the combined table
+ * at 1. A single counting class reads its own table at its class level. Two
+ * or more read the multiclass, full-caster, table at the summed per-class
+ * contributions. A pact caster contributes nothing here, because its slots
+ * come from `characterPactSlots`. A class list with no slot caster (a
+ * martial character, a lone warlock, or a class outside the catalog) grants
+ * no slots. Only a character with no classes at all keeps the old
+ * full-caster-at-character-level behavior, so a hand-built caster without a
+ * class still works.
  * @param {SpellCaster} character
  * @returns {number[]} index 0 = spell level 1
  */
 export function characterSlots(character) {
   if (getClasses(character).length === 0) return slotsForLevel(character.level);
-  const slotClasses = casterEntries(character).filter((c) => c.casterType !== 'pact');
+  const slotClasses = casterEntries(character).filter(
+    (c) => c.casterType !== 'pact' && slotsForCaster(c.casterType, c.level).length > 0,
+  );
   if (slotClasses.length === 0) return [];
   if (slotClasses.length === 1) {
     return slotsForCaster(slotClasses[0].casterType, slotClasses[0].level);

@@ -109,7 +109,8 @@ export interface Creature {
   /** Spellcaster class id (see Classes.js). A present value that names a
    * caster class lets this creature cast. Absent marks a non-caster. */
   class?: string;
-  /** The chosen subclass id, if any. */
+  /** The chosen subclass, by id or name. A subclass with casting (the
+   * Eldritch Knight) makes a non-caster class a caster. */
   subclass?: string;
   /** Caster level, which drives the slot maxima and the save DC. It
    * defaults to `level`, or to 1 when the creature has no level. */

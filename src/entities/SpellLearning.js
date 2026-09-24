@@ -1,4 +1,5 @@
-import { getClass, casterClassRefs } from './Classes.js';
+import { casterClassRefs } from './Classes.js';
+import { casterDefFor, spellListOf } from './ClassCasting.js';
 import { slotsForCaster, pactSlotsFor } from './SpellSlots.js';
 
 /** @typedef {import('../types/entities.js').SpellCaster} SpellCaster */
@@ -19,13 +20,15 @@ import { slotsForCaster, pactSlotsFor } from './SpellSlots.js';
  * The highest spell level one class can learn at its class level: the top
  * row of its own slot table, or the pact slot level for a warlock. A class
  * with no slots yet (a paladin 1) or outside the catalog learns cantrips
- * only, and the result is 0.
+ * only, and the result is 0. `subclass` applies a casting subclass, so an
+ * Eldritch Knight 7 learns 2nd-level spells.
  * @param {string} classId
  * @param {number} classLevel
+ * @param {string} [subclass]
  * @returns {number}
  */
-export function classSpellLevelCap(classId, classLevel) {
-  const def = getClass(classId);
+export function classSpellLevelCap(classId, classLevel, subclass) {
+  const def = casterDefFor({ classId, level: classLevel, subclass });
   if (!def) return 0;
   if (def.casterType === 'pact') return pactSlotsFor(classLevel)?.level ?? 0;
   return slotsForCaster(def.casterType, classLevel).length;
@@ -33,8 +36,9 @@ export function classSpellLevelCap(classId, classLevel) {
 
 /**
  * Whether one of the character's caster classes can learn a spell. The
- * spell must be on that class's list. A cantrip needs nothing more. A
- * leveled spell must also sit at or under that class's own level cap.
+ * spell must be on that class's list (the wizard list for an Eldritch
+ * Knight). A cantrip needs nothing more. A leveled spell must also sit at
+ * or under that class's own level cap.
  * @param {SpellCaster} character
  * @param {Spell} spell
  * @returns {boolean}
@@ -42,8 +46,9 @@ export function classSpellLevelCap(classId, classLevel) {
 export function canLearnSpell(character, spell) {
   return casterClassRefs(character).some(
     (ref) =>
-      spell.classes.includes(ref.classId) &&
-      (spell.level === 0 || spell.level <= classSpellLevelCap(ref.classId, ref.level)),
+      spell.classes.includes(spellListOf(ref)) &&
+      (spell.level === 0 ||
+        spell.level <= classSpellLevelCap(ref.classId, ref.level, ref.subclass)),
   );
 }
 
