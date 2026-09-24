@@ -17,6 +17,9 @@ export { imageSrcForRef };
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('./RegionGroups.js').RegionGroup} RegionGroup */
 
+/** The font size of a region name, in CSS pixels. */
+const REGION_LABEL_PX = 12;
+
 /**
  * The revealed tile ids on a node, memoized on the node object. This relies
  * on the same immutable-replacement rule that TileIndex relies on.
@@ -70,6 +73,7 @@ export function anyRevealed(tileIds, revealedIds) {
  * @property {string | null} cursorCellId
  * @property {boolean} focused whether the keyboard cursor outline shows
  * @property {import('./TilePaint.js').CellRect | null} marquee
+ * @property {number} [pixelRatio] buffer pixels per CSS pixel, from devicePixelRatio. A label sized in CSS pixels multiplies by it, so it reads at one size on every screen. It defaults to 1.
  */
 
 /**
@@ -573,16 +577,21 @@ export class MapRenderer {
       if (name) {
         // The label reads as body text, not as chrome, and its plate starts at
         // the group's top-left corner, so the text is inset by the padding.
-        drawPlatedLabel(ctx, name, x + 4, y + 2, {
-          fontSize: 12,
+        // Its sizes are CSS pixels. At a devicePixelRatio of 2, a 12 px buffer
+        // font shows 6 px tall.
+        const px = view.pixelRatio ?? 1;
+        const padX = 4 * px;
+        const padY = 2 * px;
+        drawPlatedLabel(ctx, name, x + padX, y + padY, {
+          fontSize: Math.round(REGION_LABEL_PX * px),
           weight: '400',
           align: 'left',
           baseline: 'top',
           plate: 'rect',
           plateColor: INK.regionLabelPlate,
           color: INK.regionLabelText,
-          padX: 4,
-          padY: 2,
+          padX,
+          padY,
         });
       }
     }

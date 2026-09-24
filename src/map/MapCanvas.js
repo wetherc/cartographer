@@ -476,6 +476,7 @@ export class MapCanvas {
       cursorCellId: this.cursorCellId,
       focused: this._focused,
       marquee: this.marquee,
+      pixelRatio: globalThis.devicePixelRatio || 1,
     };
   }
 
