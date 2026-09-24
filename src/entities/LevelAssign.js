@@ -49,6 +49,24 @@ export function canMulticlass(character, classId) {
   return classes.every((ref) => !getClass(ref.classId) || meetsPrereq(character, ref.classId));
 }
 
+/**
+ * Whether an ASI, feat, or class-feature record claims a class level at or
+ * above `level`. The donor path moves a class's newest level to a new class,
+ * and a record left on the moved level keeps its increases and grants with no
+ * level to claim them.
+ * @param {Character} character
+ * @param {string} classId
+ * @param {number} level
+ * @returns {boolean}
+ */
+export function hasChoiceAt(character, classId, level) {
+  const records = [
+    ...Object.values(character.asiChoices ?? {}),
+    ...Object.values(character.featureChoices ?? {}),
+  ];
+  return records.some((r) => r.classId === classId && r.classLevel >= level);
+}
+
 /** @param {Character} character @param {ClassDef} def @returns {Character} */
 function grantMulticlassProficiencies(character, def) {
   const grant = def.multiclassGrant;
@@ -74,7 +92,8 @@ function grantMulticlassProficiencies(character, def) {
  * the new class list, so HP, hit dice, and spell slots all follow it. This
  * includes the case where the moved level swaps a bigger hit die for a
  * smaller one, and HP decreases. An unknown class, a failed prerequisite,
- * or nothing to assign leaves the character unchanged. This function is
+ * a choice record on the level that would move (see {@link hasChoiceAt}), or
+ * nothing to assign leaves the character unchanged. This function is
  * pure.
  * @param {Character} character
  * @param {string} classId
@@ -102,6 +121,7 @@ export function assignLevel(character, classId) {
   }
 
   if (classes.length !== 1 || classes[0].level < 2) return character;
+  if (hasChoiceAt(character, classes[0].classId, classes[0].level)) return character;
   const next = withClasses(character, [
     { ...classes[0], level: classes[0].level - 1 },
     { classId, level: 1 },
@@ -171,8 +191,22 @@ export function assignOptions(character) {
     }
   }
   if (pending > 0 || (classes.length === 1 && classes[0].level >= 2)) {
+    const donor = pending > 0 ? null : classes[0];
+    // The donor level as "Fighter 4", set only when a choice record claims it.
+    const claimed =
+      donor && hasChoiceAt(character, donor.classId, donor.level)
+        ? `${className(donor.classId)} ${donor.level}`
+        : null;
     for (const def of CLASS_LIST) {
       if (classLevelOf(character, def.id) > 0) continue;
+      if (claimed && canMulticlass(character, def.id)) {
+        ineligible.push({
+          value: def.id,
+          label: `${def.name}: undo the ${claimed} choice first`,
+          disabled: true,
+        });
+        continue;
+      }
       if (canMulticlass(character, def.id)) {
         options.push({ value: def.id, label: `${def.name}: new class at level 1` });
         continue;

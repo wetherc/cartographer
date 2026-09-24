@@ -7,6 +7,7 @@ import {
   assignOptions,
   className,
   prereqText,
+  hasChoiceAt,
 } from '../src/entities/LevelAssign.js';
 import { getClass } from '../src/entities/Classes.js';
 import {
@@ -310,4 +311,46 @@ test('a classless character with a pending level is offered every class it quali
 
 test('a class with no prerequisite at all reads as empty text', () => {
   assert.equal(prereqText({ ...getClass('rogue'), multiclassPrereq: [] }), '');
+});
+
+test('hasChoiceAt finds an ASI or a feature record at or above a class level', () => {
+  const c = classed([{ classId: 'fighter', level: 4 }]);
+  assert.equal(hasChoiceAt(c, 'fighter', 4), false);
+  const asi = /** @type {any} */ ({
+    ...c,
+    asiChoices: {
+      'fighter 4': { classId: 'fighter', classLevel: 4, order: 0, type: 'asi', increases: {} },
+    },
+  });
+  assert.equal(hasChoiceAt(asi, 'fighter', 4), true);
+  assert.equal(hasChoiceAt(asi, 'fighter', 5), false);
+  assert.equal(hasChoiceAt(asi, 'rogue', 4), false);
+  const feature = /** @type {any} */ ({
+    ...c,
+    featureChoices: { x: { classId: 'fighter', classLevel: 4, order: 0, name: 'X' } },
+  });
+  assert.equal(hasChoiceAt(feature, 'fighter', 3), true);
+});
+
+test('the newest level stays put while a choice record claims it', () => {
+  const c = /** @type {any} */ ({
+    ...classed([{ classId: 'fighter', level: 4 }], { INT: 13 }),
+    asiChoices: {
+      'fighter 4': {
+        classId: 'fighter',
+        classLevel: 4,
+        order: 0,
+        type: 'asi',
+        increases: { STR: 2 },
+      },
+    },
+  });
+  assert.equal(assignLevel(c, 'wizard'), c);
+  const wizard = assignOptions(c).find((o) => o.value === 'wizard');
+  assert.deepEqual(wizard, {
+    value: 'wizard',
+    label: 'Wizard: undo the Fighter 4 choice first',
+    disabled: true,
+  });
+  assert.ok(assignOptions(c).every((o) => o.disabled));
 });

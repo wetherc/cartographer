@@ -336,6 +336,12 @@ level leaves a pending improvement, spent later by `applyASI` or `takeFeat`. A
 choice is stored against the class and class level that earned it (`slotKey`
 builds that key), so a slot can have at most one choice. Each choice also
 records the order in which the player made it, for `undoLastChoice` to read.
+A single-class character with no pending level can move their newest level
+into a new class. `assignLevel` refuses that move while an ASI, feat, or
+feature record claims the level (`hasChoiceAt`), because the moved level
+would leave the record and its increases with no level to claim them. The
+assign dialog lists each new class disabled and asks the player to undo the
+choice first.
 
 A feat choice stores a stamp of what it did, not a reference to the catalog.
 `takeFeat` takes either a plain name or a `FeatStamp` (`types/feat.ts`): the
