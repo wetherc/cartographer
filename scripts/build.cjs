@@ -65,6 +65,9 @@ async function build() {
     await ctx.watch();
     const { hosts, port } = await ctx.serve({
       servedir: outdir,
+      // Loopback only, so the dev server accepts no connections from other
+      // machines on the network.
+      host: '127.0.0.1',
       port: 8080,
     });
     console.log(`[watch] Server listening on http://${hosts[0]}:${port}`);
