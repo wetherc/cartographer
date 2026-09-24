@@ -18,7 +18,7 @@
 }
 
 .encounter-panel__row--defeated {
-  opacity: 0.5;
+  color: var(--text-muted);
 }
 
 .encounter-panel__row--defeated .encounter-panel__label {

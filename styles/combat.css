@@ -218,8 +218,11 @@ body.mode-combat .app-buildrail {
   text-decoration: line-through;
 }
 
+/* A defeated combatant keeps text at 4.5:1. Opacity would blend the text
+   into the card and drop it to about 2.5:1. */
 .combatant-card--defeated {
-  opacity: 0.6;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
 }
 
 /* A combatant that cannot act is still in the fight, so it dims less than a
@@ -483,7 +486,8 @@ body.mode-combat .app-buildrail {
 }
 
 .combat-ribbon__chip--defeated {
-  opacity: 0.6;
+  background: var(--surface-sunken);
+  color: var(--text-muted);
 }
 
 /* The ribbon's match for the card's dashed edge. */
