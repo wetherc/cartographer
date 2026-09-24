@@ -5,6 +5,7 @@ import { unproficientWear } from '../entities/Armor.js';
 import { d20Penalty, exhaustionLevel } from '../entities/Exhaustion.js';
 import { isProficientWeapon } from '../entities/Proficiencies.js';
 import { attacksPerAction, sneakAttackDice } from '../entities/Features.js';
+import { allowsSneakAttack, hasFreeHandFor } from '../combat/AttackOptions.js';
 import { attacksAvailable, canSpend } from '../combat/ActionBudget.js';
 import { COVER_LEVELS, coverBonus, coverNote } from '../combat/Cover.js';
 import { offhandDamageModifier } from '../combat/TwoWeapon.js';
@@ -400,13 +401,19 @@ export function rollWeaponAttack(
   // A crit rolls every damage die twice, including the dialog's added dice.
   // The ability modifier still adds only once, and proficiency never
   // reaches damage. A two-handed swing of a versatile weapon reads the
-  // two-handed dice instead of the one-handed ones.
+  // two-handed dice instead of the one-handed ones. The live attacker must
+  // still have the other hand free, because the dialog read the equipment
+  // before its await.
   const twoHanded =
-    tweaks.twoHanded && 'versatileDamage' in weapon && weapon.versatileDamage?.length;
+    tweaks.twoHanded &&
+    hasFreeHandFor(attacker, weapon) &&
+    'versatileDamage' in weapon &&
+    weapon.versatileDamage?.length;
   // Sneak Attack adds its dice only on a hit, so the flag is spent here rather
-  // than beside the swing. An attacker without the feature has no dice to add,
-  // whatever the dialog said.
-  const sneakDice = tweaks.sneak ? sneakAttackDice(attacker) : 0;
+  // than beside the swing. An attacker without the feature, or a weapon that
+  // is neither finesse nor ranged, has no dice to add, whatever the dialog
+  // said.
+  const sneakDice = tweaks.sneak && allowsSneakAttack(weapon) ? sneakAttackDice(attacker) : 0;
   if (sneakDice > 0 && app.actions.spendBudget) app.actions.spendBudget(attacker.id, 'sneak');
   const parts = damageParts((twoHanded ? weapon.versatileDamage : weapon.damage) ?? [], {
     crit,
@@ -502,11 +509,13 @@ export async function weaponAttack(
   // like all damage dice. The attack-roll dice do not double, because they
   // modify the d20, not the damage.
   const bonusDieOptions = BONUS_DICE.map((d) => ({ value: d, label: d }));
-  // A versatile weapon offers the two-handed grip. A ranged or thrown weapon
-  // with a stated range offers the long-range shot. Both sit in the open part
-  // of the dialog, because the GM decides them per swing.
+  // A versatile weapon offers the two-handed grip when the other hand is
+  // free. A ranged or thrown weapon with a stated range offers the long-range
+  // shot. Both sit in the open part of the dialog, because the GM decides
+  // them per swing.
   const versatile =
     hasWeaponProperty(weapon, 'versatile') &&
+    hasFreeHandFor(attacker, weapon) &&
     'versatileDamage' in weapon &&
     weapon.versatileDamage?.length;
   // A thrown melee weapon can also be struck with, so its control names the
@@ -537,7 +546,7 @@ export async function weaponAttack(
     swingKind({ offhand, reaction }),
     attacksPerAction(attacker),
   );
-  const sneakDice = sneakAttackDice(attacker);
+  const sneakDice = allowsSneakAttack(weapon) ? sneakAttackDice(attacker) : 0;
   const values = await promptModal(
     `${swing.title} ${weapon.name}`,
     [
@@ -577,9 +586,10 @@ export async function weaponAttack(
         options: COVER_LEVELS.map((level) => ({ value: level.value, label: level.label })),
         full: true,
       },
-      // The Sneak Attack box appears for an attacker that has the feature and
-      // has not used it this turn. Whether the rogue earned it, from advantage
-      // or from an ally beside the target, is the GM's call at the table.
+      // The Sneak Attack box appears for an attacker that has the feature, has
+      // not used it this turn, and swings a finesse or ranged weapon. Whether
+      // the rogue earned it, from advantage or from an ally beside the
+      // target, is the GM's call at the table.
       ...(sneakDice > 0 && canSpend(participant, 'sneak')
         ? [
             {

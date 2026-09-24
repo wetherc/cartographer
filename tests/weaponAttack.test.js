@@ -1324,13 +1324,16 @@ test('cover can turn a hit into a miss', () => {
   assert.equal(app.toastMessages[0], '14 vs AC 15: Hero misses Goblin.');
 });
 
+/** The sword with the finesse property, so Sneak Attack can ride on it. */
+const FINESSE_SWORD = { ...SWORD, properties: ['finesse'] };
+
 test('a sneak attack adds its d6, names them in the log, and spends the flag', () => {
   const { app, hero, spends } = budgetApp();
   const rogue = { ...hero, classes: [{ classId: 'rogue', level: 3 }], level: 3 };
   rollWeaponAttack(app, {
     attacker: rogue,
     defender: { id: 'goblin', name: 'Goblin', ac: 10 },
-    weapon: /** @type {any} */ (SWORD),
+    weapon: /** @type {any} */ (FINESSE_SWORD),
     tweaks: { sneak: true },
     // A d8 landing on 5, then two d6 landing on 4 each.
     rng: scripted([4 / 8]),
@@ -1352,7 +1355,7 @@ test('a critical sneak attack doubles the dice it names', () => {
   rollWeaponAttack(app, {
     attacker: rogue,
     defender: { id: 'goblin', name: 'Goblin', ac: 10 },
-    weapon: /** @type {any} */ (SWORD),
+    weapon: /** @type {any} */ (FINESSE_SWORD),
     tweaks: { sneak: true },
     rng: scripted([4 / 8]),
   });
@@ -1421,4 +1424,52 @@ test('a hit on a resistant foe halves the damage and says so', () => {
   assert.match(app.log[1], /\(resists slashing, takes 4\)\.$/);
   assert.equal(app.state.creatures[0].currentHP, 16);
   assert.equal(app.toastMessages[0], 'Hit! Skeleton takes 4 damage.');
+});
+
+test('the sneak box adds nothing to a weapon that is neither finesse nor ranged', () => {
+  const { app, hero, spends } = budgetApp();
+  const rogue = { ...hero, classes: [{ classId: 'rogue', level: 3 }], level: 3 };
+  rollWeaponAttack(app, {
+    attacker: rogue,
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (SWORD),
+    tweaks: { sneak: true },
+    rng: scripted([4 / 8]),
+  });
+  assert.deepEqual(spends, [{ id: 'hero', cost: 'attack', attacksPerAction: 1 }]);
+  const damage = app.log.find((entry) => entry.includes('hits Goblin'));
+  assert.equal(/sneak attack/.test(damage), false);
+});
+
+test('a two-handed swing with a shield in the other hand rolls the one-handed dice', () => {
+  const shield = { id: 'shield', name: 'Shield', type: 'shield', quantity: 1 };
+  const longsword = {
+    ...SWORD,
+    name: 'Longsword',
+    properties: ['versatile'],
+    versatileDamage: [{ count: 1, sides: 10, damageType: 'slashing' }],
+  };
+  const base = makeHero({ STR: 16 });
+  const hero = {
+    ...base,
+    inventory: [longsword, shield],
+    equipment: { ...base.equipment, mainHand: 'sword', offHand: 'shield' },
+  };
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 40,
+    stats: { AC: 10 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [hero], creatures: [goblin], rng: scripted([d20(15)]) });
+  rollWeaponAttack(app, {
+    attacker: /** @type {any} */ (hero),
+    defender: { id: 'goblin', name: 'Goblin', ac: 10 },
+    weapon: /** @type {any} */ (longsword),
+    tweaks: { twoHanded: true },
+    rng: () => 0.999,
+  });
+  // The d8 at its maximum plus the STR modifier.
+  assert.equal(app.state.creatures[0].currentHP, 40 - 11);
 });
