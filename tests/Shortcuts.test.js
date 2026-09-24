@@ -70,3 +70,9 @@ test('the help dialog documents every shortcut', () => {
     'Shift+F10 or Menu key: open the tile menu (Build)',
   ]);
 });
+
+test('a player cannot save, undo, or redo from the keyboard', () => {
+  assert.equal(shortcutFor({ key: 's', ctrlKey: true }, player), null);
+  assert.equal(shortcutFor({ key: 'z', metaKey: true }, player), null);
+  assert.equal(shortcutFor({ key: 'z', ctrlKey: true, shiftKey: true }, player), null);
+});

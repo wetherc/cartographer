@@ -780,11 +780,15 @@ Press `?` anywhere for the shortcut reference.
 | Arrow off an edge, twice | Leave the area through that side. The first press lights the exit, the second travels |
 | Shift+F10, Menu key on the map | Open the tile menu for the cursor cell (Build mode) |
 
+Save, Undo, Redo, and the mode keys work in a GM tab only.
+
 The map is a focusable widget with a visible focus ring. A screen-reader
 live region names the current node, its size, the party position, and the
-revealed points of interest, and updates as these change. A second region
-names the cursor cell after each arrow key: its column and row, its art, its
-point of interest, and whether it is explored.
+points of interest, and updates as these change. In Play mode it names only
+the points of interest that the tooltip names: revealed, discovered if
+discoverable, and within detection range. It reads the notes in a GM tab
+only. A second region names the cursor cell after each arrow key: its
+column and row, its art, its point of interest, and whether it is explored.
 
 The ways out of a sub-region are real buttons. Tab past the map, and they
 appear over it, each naming its way out, for example "Return to Darkwood,

@@ -223,6 +223,8 @@ export function wireMapView(app) {
   function refreshMapDescription() {
     const text = describeNode(navigator.getCurrentNode(), partyTracker.getPosition(), {
       revealAll: state.mode === 'build',
+      showNotes: isGM(state.role),
+      markerVisible: (id) => mapCanvas.markerVisible(id),
     });
     // Write only when the narration changes. Assigning textContent replaces
     // the live region's text node, and a screen reader watches that node. An
@@ -409,6 +411,7 @@ export function wireMapView(app) {
     onCursorMove: (tileId) => {
       cursorStatus.textContent = describeCursor(navigator.getCurrentNode(), tileId, {
         revealAll: state.mode === 'build',
+        markerVisible: (id) => mapCanvas.markerVisible(id),
         labelFor: (imageRef) => palette.listAll().find((e) => e.imageRef === imageRef)?.label,
       });
     },

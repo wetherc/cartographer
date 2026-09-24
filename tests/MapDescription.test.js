@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { describeCursor, describeNode } from '../src/map/MapDescription.js';
-import { createMapNode, createTile, setTile } from '../src/map/TileGrid.js';
+import { createMapNode, createTile, setTile, updateTileMetadata } from '../src/map/TileGrid.js';
 
 function node() {
   let n = createMapNode('world', 'World', null, 4, 3);
@@ -38,9 +38,26 @@ test('describeNode omits party position when the party is elsewhere', () => {
   assert.doesNotMatch(text, /Party at/);
 });
 
-test('describeNode lists only revealed POIs with notes in Play mode', () => {
-  const text = describeNode(node(), null);
-  assert.match(text, /Points of interest: Tavern at column 3, row 2: The Prancing Pony\./);
+/** The node above with the tavern already found by the party. */
+function found() {
+  return updateTileMetadata(node(), '2,1', { discovered: true });
+}
+
+test('describeNode hides an undiscovered POI in Play mode', () => {
+  assert.doesNotMatch(describeNode(node(), null), /Points of interest|Tavern/);
+});
+
+test('describeNode lists a discovered POI and reads notes only for the GM', () => {
+  assert.match(describeNode(found(), null), /Points of interest: Tavern at column 3, row 2\./);
+  assert.match(
+    describeNode(found(), null, { showNotes: true }),
+    /Points of interest: Tavern at column 3, row 2: The Prancing Pony\./,
+  );
+});
+
+test('describeNode leaves out a POI outside detection range', () => {
+  const text = describeNode(found(), null, { markerVisible: (id) => id !== '2,1' });
+  assert.doesNotMatch(text, /Tavern/);
 });
 
 test('describeNode ignores tiles whose ids are not grid coordinates', () => {
@@ -94,5 +111,22 @@ test('describeCursor reports an empty cell and hides an unexplored one in Play m
     describeCursor(node(), '0,0', { labelFor: () => 'Grass' }),
     'Cursor at column 1, row 1: Grass.',
     'Play mode names no fog state for an explored cell, the only state it shows',
+  );
+});
+
+test('describeCursor names a POI in Play mode only once it is found and in range', () => {
+  const labelFor = () => 'Tavern art';
+  assert.equal(
+    describeCursor(node(), '2,1', { labelFor }),
+    'Cursor at column 3, row 2: Tavern art.',
+    'an undiscovered POI reads as its art alone',
+  );
+  assert.equal(
+    describeCursor(found(), '2,1', { labelFor }),
+    'Cursor at column 3, row 2: Tavern art, Tavern.',
+  );
+  assert.equal(
+    describeCursor(found(), '2,1', { labelFor, markerVisible: () => false }),
+    'Cursor at column 3, row 2: Tavern art.',
   );
 });

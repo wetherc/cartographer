@@ -6,6 +6,19 @@ import { capitalize } from '../util/text.js';
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
 /** @typedef {import('../types/map.js').POIType} POIType */
+/** @typedef {import('../types/map.js').Tile} Tile */
+
+/**
+ * What a description may name. `revealAll` is Build mode, where every tile
+ * and every point of interest is named. `showNotes` is true for a GM tab.
+ * `markerVisible` is the canvas's detection range test, the same test that
+ * decides whether a point of interest outline draws.
+ * @typedef {{
+ *   revealAll?: boolean,
+ *   showNotes?: boolean,
+ *   markerVisible?: (tileId: string) => boolean,
+ * }} DescribeOptions
+ */
 
 /**
  * Convert "general-store" to "General store" for a spoken description.
@@ -17,20 +30,40 @@ function readablePoi(poiType) {
 }
 
 /**
+ * Whether a description may name the point of interest on a tile. Play mode
+ * uses the same rules as the hover tooltip. The tile has to be revealed, a
+ * discoverable point has to be discovered, and the tile has to be within
+ * detection range. Otherwise a screen reader on the table display names a
+ * secret that the canvas keeps hidden.
+ * @param {Tile} tile
+ * @param {DescribeOptions} options
+ * @returns {boolean}
+ */
+function poiNamed(tile, options) {
+  if (!tile.metadata.poiType) return false;
+  if (options.revealAll) return true;
+  if (!tile.revealed) return false;
+  if (tile.metadata.discoverable && !tile.metadata.discovered) return false;
+  return options.markerVisible?.(tile.id) ?? true;
+}
+
+/**
  * Build a plain-text description of a map node for screen readers and any
- * non-visual surface, because the map itself is an opaque canvas. The
+ * non-visual view, because the map itself is an opaque canvas. The
  * description reports the node name and size, how much is explored, where
- * the party stands, and the points of interest with their notes. In Play
- * mode (revealAll false), the description covers only revealed tiles, to
- * match what a sighted player can see through the fog. In Build mode
- * (revealAll true), the description covers everything.
+ * the party stands, and the points of interest. In Play mode (revealAll
+ * false), the description names only the points of interest that the
+ * tooltip names (see `poiNamed`). In Build mode (revealAll true), the
+ * description covers everything. The GM's notes are read only when
+ * `showNotes` or `revealAll` is set, because a player tab never shows them.
  * @param {MapNode} node
  * @param {PartyPosition | null} party
- * @param {{ revealAll?: boolean }} [options]
+ * @param {DescribeOptions} [options]
  * @returns {string}
  */
 export function describeNode(node, party, options = {}) {
   const revealAll = options.revealAll ?? false;
+  const showNotes = revealAll || (options.showNotes ?? false);
   const total = node.width * node.height;
 
   // This is one pass over the tiles. The placed count, the revealed count, and
@@ -47,16 +80,15 @@ export function describeNode(node, party, options = {}) {
     if (!coords) continue;
     placed++;
     if (tile.revealed) revealed++;
-    if (tile.metadata.poiType && (revealAll || tile.revealed)) {
+    if (poiNamed(tile, options)) {
       pois.push({
-        poiType: tile.metadata.poiType,
+        poiType: /** @type {POIType} */ (tile.metadata.poiType),
         x: coords.x,
         y: coords.y,
-        notes: tile.metadata.notes,
+        notes: showNotes ? tile.metadata.notes : '',
       });
     }
   }
-
   const kindPhrase = node.kind === 'interior' ? 'an interior' : 'a region';
   const environ = node.environ ? ` (${node.environ})` : '';
   const parts = [`${node.name}, ${kindPhrase}${environ}, ${node.width} by ${node.height} tiles.`];
@@ -88,12 +120,14 @@ export function describeNode(node, party, options = {}) {
  * line names the cell in the 1-based column and row a GM reads elsewhere,
  * then what stands there. In Play mode (revealAll false) an unexplored cell
  * reports only that it is unexplored, so the cursor cannot read through the
- * fog. In Build mode (revealAll true) every cell reports its art, its point
- * of interest, and its fog state. `labelFor` turns a tile's image reference
- * into the palette label, since this module does not hold the palette.
+ * fog, and a point of interest is named under the same rules as in
+ * `describeNode`. In Build mode (revealAll true) every cell reports its art,
+ * its point of interest, and its fog state. `labelFor` turns a tile's image
+ * reference into the palette label, since this module does not keep the
+ * palette.
  * @param {MapNode} node
  * @param {string} tileId
- * @param {{ revealAll?: boolean, labelFor?: (imageRef: string) => string | undefined }} [options]
+ * @param {DescribeOptions & { labelFor?: (imageRef: string) => string | undefined }} [options]
  * @returns {string}
  */
 export function describeCursor(node, tileId, options = {}) {
@@ -103,7 +137,8 @@ export function describeCursor(node, tileId, options = {}) {
   if (!tile) return `${where}: empty.`;
   if (!revealAll && !tile.revealed) return `${where}: unexplored.`;
   const parts = [options.labelFor?.(tile.imageRef) ?? tile.imageRef];
-  if (tile.metadata.poiType) parts.push(readablePoi(tile.metadata.poiType));
+  if (poiNamed(tile, options))
+    parts.push(readablePoi(/** @type {POIType} */ (tile.metadata.poiType)));
   if (revealAll) parts.push(tile.revealed ? 'explored' : 'unexplored');
   return `${where}: ${parts.join(', ')}.`;
 }

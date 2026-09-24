@@ -300,7 +300,7 @@ test('teleportToNode ignores an id no node holds', () => {
   assert.deepEqual(calls, []);
 });
 
-test('discoverTile logs a find once, with the notes when the GM wrote any', () => {
+test('discoverTile logs a find once and leaves the GM notes out of the line', () => {
   const { travel, grid, navigator, log } = world();
   const withNotes = updateTileMetadata(navigator.getCurrentNode(), '1,1', {
     discoverable: true,
@@ -310,7 +310,7 @@ test('discoverTile logs a find once, with the notes when the GM wrote any', () =
   grid.updateNode(updateTileMetadata(withNotes, '3,3', { discoverable: true }));
   travel.discoverTile(tileOf(navigator, '1,1'));
   travel.discoverTile(tileOf(navigator, '3,3'));
-  assert.deepEqual(log, ['Discovered shrine: a cracked altar.', 'Discovered a hidden location.']);
+  assert.deepEqual(log, ['Discovered shrine.', 'Discovered a hidden location.']);
   // The flag is stored, so the same tile read fresh discovers nothing more.
   travel.discoverTile(tileOf(navigator, '1,1'));
   travel.discoverTile(tileOf(navigator, '0,0'));

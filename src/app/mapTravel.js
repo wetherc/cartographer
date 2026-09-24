@@ -210,11 +210,10 @@ export function createMapTravel(app, env) {
     if (!tile.metadata.discoverable || tile.metadata.discovered) return;
     const node = navigator.getCurrentNode();
     grid.updateNode(updateTileMetadata(node, tile.id, { discovered: true }));
+    // The line leaves out the GM notes, because player tabs can open the
+    // travelogue.
     const what = tile.metadata.poiType ?? 'a hidden location';
-    app.actions.logEvent(
-      'travel',
-      `Discovered ${what}${tile.metadata.notes ? `: ${tile.metadata.notes}` : ''}.`,
-    );
+    app.actions.logEvent('travel', `Discovered ${what}.`);
   }
 
   /**

@@ -38,10 +38,13 @@ export const SHORTCUT_HELP = [
  * Shift turns it into a redo, always the save-level redo, because strokes
  * have no redo.
  *
- * Mode switching is GM-only, and uses a bare letter. The function checks it
- * after the modifier combinations, and skips it entirely when any modifier
- * is held. Help is open to everyone, because a player who cannot switch
- * modes can still want to know what the map keys do.
+ * Save, Undo, and Redo are GM-only. A player tab hides their header
+ * buttons, and a Ctrl+Z on the table display rolls the campaign back for
+ * every tab. Mode switching is GM-only too, and uses a bare letter. The
+ * function checks it after the modifier combinations, and skips it
+ * entirely when any modifier is held. Help is open to everyone, because a
+ * player who cannot switch modes can still want to know what the map keys
+ * do.
  * @param {{ key: string, ctrlKey?: boolean, metaKey?: boolean, altKey?: boolean, shiftKey?: boolean }} event
  * @param {{ mode: string, gm: boolean }} context
  * @returns {ShortcutAction | null}
@@ -49,6 +52,7 @@ export const SHORTCUT_HELP = [
 export function shortcutFor(event, context) {
   const command = Boolean(event.ctrlKey || event.metaKey);
   const key = event.key.toLowerCase();
+  if (command && !context.gm) return null;
   if (command && key === 's') return 'save';
   if (command && key === 'z') {
     if (event.shiftKey) return 'redo';
