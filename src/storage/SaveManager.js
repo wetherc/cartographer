@@ -241,6 +241,28 @@ export function packState(state) {
 }
 
 /**
+ * The work of a first `packState` call, split into one step per node and one
+ * per entity. Each step fills the same identity caches that `packState`
+ * reads, and returns what it packed. A load hands every node and entity a
+ * fresh object, so the first save packs the whole world, about 110 ms at 200
+ * nodes and 1,200 creatures. A caller runs these steps in idle time so that
+ * save is mostly cache lookups. The asset hoist is not split, because it
+ * walks the whole state at once, and it costs little next to the packs.
+ * @param {CampaignState} state
+ * @returns {(() => unknown)[]}
+ */
+export function warmPackSteps(state) {
+  /** @type {(() => unknown)[]} */
+  const steps = state.nodes.map((node) => () => encodePackedNode(packNodeTiles(node)));
+  for (const [key, pack] of Object.entries(ENTITY_PACKERS)) {
+    const list = /** @type {Record<string, unknown>} */ (/** @type {unknown} */ (state))[key];
+    if (!Array.isArray(list)) continue;
+    for (const entity of list) steps.push(() => pack([entity])[0]);
+  }
+  return steps;
+}
+
+/**
  * @param {CampaignState} state
  * @returns {string}
  */

@@ -7,11 +7,17 @@ import {
 } from '../campaign/Campaigns.js';
 import { rehydrateCampaign } from './rehydrate.js';
 import { mustGetElement } from '../ui/dom.js';
-import { onIdle } from '../util/idle.js';
+import { runStepsWhenIdle } from '../util/idle.js';
 import { setTip } from '../ui/Tooltip.js';
 import { confirmModal } from '../ui/Modal.js';
 import { queueToastAfterReload } from '../ui/Toast.js';
-import { STORAGE_KEY, buildState, onExternalSave, packState } from '../storage/SaveManager.js';
+import {
+  STORAGE_KEY,
+  buildState,
+  onExternalSave,
+  packState,
+  warmPackSteps,
+} from '../storage/SaveManager.js';
 import {
   downloadCampaignFile,
   readCampaignFromFile,
@@ -327,18 +333,28 @@ export function wireCampaignActions(app) {
 
   // The pack caches key on the identity of a node and an entity, and a load
   // hands every one of them a fresh object. The first save of a session
-  // therefore packs and encodes the whole world, which is about 120 ms at
+  // therefore packs and encodes the whole world, which is about 110 ms at
   // 200 nodes, and the GM pays it on their first edit. Doing that pack now,
   // while nothing else is happening, fills the caches so the real save is a
-  // lookup. The result is thrown away: only the caches matter. This is work
-  // the app can skip, so a failure here must not reach the session.
-  onIdle(() => {
-    try {
-      packState(buildCurrentState());
-    } catch {
-      // The next real save reports its own failure, with a toast the GM sees.
-    }
-  });
+  // lookup. The steps run a node or an entity at a time across idle
+  // callbacks, because one 110 ms pack blocks input for its whole length. The
+  // last step packs the live state whole, for the asset hoist and anything
+  // edited since the steps were built. The results are thrown away: only the
+  // caches matter. A Player view tab skips this. A spectator tab never
+  // saves, and a bound player tab saves only after its own actions. This is work the app can skip, so a failure
+  // here must not reach the session.
+  if (isGM(app.state.role)) {
+    /** @param {() => unknown} step */
+    const quietly = (step) => () => {
+      try {
+        step();
+      } catch {
+        // The next real save reports its own failure, with a toast the GM sees.
+      }
+    };
+    const steps = [...warmPackSteps(buildCurrentState()), () => packState(buildCurrentState())];
+    runStepsWhenIdle(steps.map(quietly));
+  }
 
   /**
    * True when the live campaign is the untouched blank one. A blank campaign
