@@ -317,6 +317,37 @@ test('discoverTile logs a find once and leaves the GM notes out of the line', ()
   assert.equal(log.length, 2, 'a found tile and a plain tile both stay quiet');
 });
 
+test('walking through a discoverable linked tile discovers it on the parent', () => {
+  const { grid, navigator, log, clickTile } = world();
+  grid.updateNode(
+    updateTileMetadata(navigator.getCurrentNode(), '2,4', {
+      discoverable: true,
+      poiType: 'cave',
+    }),
+  );
+  clickTile('2,4');
+  assert.equal(navigator.getCurrentNode().id, 'child');
+  const linked = grid.getNode('world')?.tiles.find((t) => t.id === '2,4');
+  assert.equal(linked?.metadata.discovered, true);
+  assert.deepEqual(log, ['Discovered cave.', 'Discovered Saltmere.']);
+});
+
+test('a spectator zoom-in discovers nothing', () => {
+  const { grid, navigator, log, clickTile } = world({ role: 'player' });
+  grid.updateNode(updateTileMetadata(navigator.getCurrentNode(), '2,4', { discoverable: true }));
+  clickTile('2,4');
+  const linked = grid.getNode('world')?.tiles.find((t) => t.id === '2,4');
+  assert.equal(linked?.metadata.discovered, false);
+  assert.deepEqual(log, []);
+});
+
+test('discoverTile ignores a node id the grid does not know', () => {
+  const { grid, navigator, travel, log } = world();
+  grid.updateNode(updateTileMetadata(navigator.getCurrentNode(), '1,1', { discoverable: true }));
+  travel.discoverTile(tileOf(navigator, '1,1'), 'gone');
+  assert.deepEqual(log, []);
+});
+
 test('clickSubject moves the whole party unless the split-party toggle is on', () => {
   const hero = createCharacter('hero', 'Hero');
   const off = world({ characters: [hero], selected: 'hero' });

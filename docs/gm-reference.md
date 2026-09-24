@@ -176,7 +176,7 @@ is refused.
 | Field | Meaning |
 | --- | --- |
 | POI type | The point-of-interest marker on the tile |
-| Discoverable | The POI stays hidden until the party steps onto its tile |
+| Discoverable | The POI stays hidden until the party steps onto its tile, or walks through it into the sub-map it links to |
 | Notes | Text for the GM. The GM sees it on hover in Play mode. The Player view does not show it, but the text is in the saved campaign |
 | Zooms into | The child node that this tile leads to |
 | Set party start here | Places the spawn tile of the party |

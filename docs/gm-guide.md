@@ -137,7 +137,8 @@ that tile to move the entrance.
 1. Pick the **Inspect** tool and click the tile.
 2. Set the **POI type** in the tile inspector.
 3. For a secret, turn on **discoverable**. The POI stays hidden until the
-   party steps onto its tile.
+   party steps onto its tile. On a tile that links to a sub-map, the party
+   discovers it when it walks through the tile.
 4. Write your own text in **Notes**. The Player view does not show it. In
    Play mode you see it on hover. The text is part of the saved campaign,
    so a player with the developer tools of the browser can read it.

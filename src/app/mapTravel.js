@@ -202,13 +202,17 @@ export function createMapTravel(app, env) {
   /**
    * Mark a discoverable POI discovered once the party reaches it. Save the
    * flag and log the find. A non-discoverable or already-found tile does
-   * nothing. Read the node fresh from the navigator, because the party's
-   * move just rewrote the node in the grid.
+   * nothing. Read the node fresh from the grid, because the party's move
+   * just rewrote the node there.
    * @param {import('../types/map.js').Tile} tile
+   * @param {string} [nodeId] the node that contains the tile; the node in
+   *   view by default. A zoom-in passes the parent, because the view is
+   *   already on the child.
    */
-  function discoverTile(tile) {
+  function discoverTile(tile, nodeId = navigator.getCurrentNode().id) {
     if (!tile.metadata.discoverable || tile.metadata.discovered) return;
-    const node = navigator.getCurrentNode();
+    const node = grid.getNode(nodeId);
+    if (!node) return;
     grid.updateNode(updateTileMetadata(node, tile.id, { discovered: true }));
     // The line leaves out the GM notes, because player tabs can open the
     // travelogue.
@@ -311,6 +315,9 @@ export function createMapTravel(app, env) {
             state.characters = recallAll(state.characters);
             state.entryTiles = forgetCharacterEntries(state.entryTiles);
           }
+          // A linked tile can be a discoverable point of interest, such as a
+          // cave mouth over a dungeon. Walking through it reaches it.
+          discoverTile(tile, parent.id);
           // Remember which parent tile this entry was through, so the ways
           // out and the return landing read the block this traveler came in
           // by. The subject is read back off the roster, because the move
