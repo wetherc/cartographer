@@ -315,7 +315,9 @@ character with no lists at all.
 modifier per level (`classMaxHP`, the 5e average rule). It also models hit
 dice as spendable resource pools sized to the assigned class levels.
 `withHitDice` creates them, `syncHitDice` re-derives them while it keeps the
-spent count, and `spendHitDie` heals on a short rest.
+spent count, and `spendHitDie` heals on a short rest. `restoreHitDice` gives
+back half of the total dice on a long rest, shared across the die sizes
+with the largest first.
 
 ### Leveling up
 

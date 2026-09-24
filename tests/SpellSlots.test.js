@@ -344,13 +344,13 @@ test('a short rest refills pact slots but not leveled ones; a long rest refills 
   assert.equal(getPactPool(slept)?.current, 2);
 });
 
-test('a short rest heals HP but leaves spent slots spent; a long rest refills them', () => {
+test('a short rest leaves HP and spent slots as they are; a long rest refills them', () => {
   let mage = withSpellSlots(withHP(createCharacter('c1', 'Mage'), 10));
   mage = spendResource(mage, 'hp', 6);
   mage = spendResource(mage, 'slots-1', 2);
 
   const rested = shortRest(mage);
-  assert.equal(getHP(rested).current, 9, 'short rest restores half of max HP');
+  assert.equal(getHP(rested).current, 4, 'only spent hit dice heal on a short rest');
   assert.equal(getSlotPools(rested)[0].current, 0, 'slots untouched by a short rest');
 
   const slept = longRest(mage);

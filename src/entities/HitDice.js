@@ -265,3 +265,31 @@ export function spendHitDie(character, die = null, rng = Math.random) {
 function conModifierOf(character) {
   return abilityModifier(character.stats?.CON ?? 10);
 }
+
+/**
+ * The hit-dice pools after a long rest. The rest restores half of the
+ * character's total hit dice, at least one, shared across the die-size
+ * pools rather than half of each: Fighter 3 / Wizard 3 with every die
+ * spent gets three dice back, where half of each pool gives only two. The
+ * largest dice come back first, because they heal the most. Pools that are
+ * not hit dice pass through unchanged.
+ * @param {ResourcePool[]} resources
+ * @returns {ResourcePool[]}
+ */
+export function restoreHitDice(resources) {
+  const pools = resources.filter(isHitDicePool);
+  const total = pools.reduce((sum, r) => sum + r.max, 0);
+  let budget = total > 0 ? Math.max(1, Math.floor(total / 2)) : 0;
+  /** @type {Map<string, number>} */
+  const restored = new Map();
+  const bySize = [...pools].sort((a, b) => (hitDieOfPool(b) ?? 0) - (hitDieOfPool(a) ?? 0));
+  for (const pool of bySize) {
+    const back = Math.min(budget, pool.max - pool.current);
+    budget -= back;
+    if (back > 0) restored.set(pool.id, back);
+  }
+  return resources.map((r) => {
+    const back = restored.get(r.id);
+    return back ? restore(r, back) : r;
+  });
+}

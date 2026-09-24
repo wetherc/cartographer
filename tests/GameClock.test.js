@@ -14,8 +14,10 @@ import {
   longRest,
   createCharacter,
   spendResource,
+  addResource,
 } from '../src/entities/Character.js';
-import { isDead, killOutright } from '../src/entities/DeathSaves.js';
+import { createResource } from '../src/entities/Resource.js';
+import { dropToDying, isDead, isDying, killOutright } from '../src/entities/DeathSaves.js';
 
 test('createClock starts at dawn of day 1', () => {
   assert.deepEqual(createClock(), { day: 1, watch: 0 });
@@ -44,11 +46,13 @@ test('formatClock falls back to the first watch for an out-of-range index', () =
   assert.equal(formatClock({ day: 2, watch: 99 }), 'Day 2, Dawn');
 });
 
-test('longRest fully restores every pool; shortRest restores half', () => {
+test('longRest fully restores every pool; shortRest restores half of a custom pool', () => {
   let hero = withHP(createCharacter('h', 'Hero'), 20);
-  hero = spendResource(hero, 'hp', 16); // down to 4/20
+  hero = addResource(hero, createResource('ki', 'Ki', 'custom', 4));
+  hero = spendResource(spendResource(hero, 'hp', 16), 'ki', 4); // down to 4/20 HP
   const short = shortRest(hero);
-  assert.equal(getHP(short).current, 14); // 4 + ceil(20*0.5)=10
+  assert.equal(getHP(short).current, 4, 'a short rest heals no HP');
+  assert.equal(short.resources.find((r) => r.id === 'ki')?.current, 2);
   const long = longRest(hero);
   assert.equal(getHP(long).current, 20);
 });
@@ -66,4 +70,20 @@ test('longRest leaves a dead character at the level that killed it', () => {
   const rested = longRest(dead);
   assert.equal(rested.exhaustion, 6, 'a rest cannot walk death back');
   assert.equal(isDead(rested), true);
+});
+
+test('a long rest that heals a dying character clears the dying state', () => {
+  const hero = withHP(createCharacter('h', 'Hero'), 10);
+  const dying = dropToDying(spendResource(hero, 'hp', 10));
+  assert.equal(isDying(dying), true);
+  const rested = longRest(dying);
+  assert.equal(getHP(rested).current, 10);
+  assert.equal(rested.deathSaves, null);
+  assert.equal(isDying(rested), false);
+  assert.equal(
+    rested.conditions.some((c) => c.name === 'Unconscious'),
+    false,
+    'the Unconscious chip goes with the tracker',
+  );
+  assert.equal(isDying(shortRest(dying)), true, 'a short rest heals nothing, so it stays');
 });

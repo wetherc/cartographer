@@ -369,9 +369,11 @@ the character carries.
 ### Rest
 
 1. Open the **Time** panel.
-2. Click **Short rest** to restore half of the character resources, or
-   **Long rest** to restore all of them.
-3. For spell slots, take a long rest. A short rest leaves them spent.
+2. Click **Short rest** to restore half of each custom resource and the
+   pact slots, or **Long rest** to restore HP, spell slots, and every
+   resource.
+3. To heal on a short rest, spend hit dice. A short rest restores no HP
+   and leaves spell slots spent.
 
 ## Write the story
 

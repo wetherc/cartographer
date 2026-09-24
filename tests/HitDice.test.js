@@ -13,6 +13,7 @@ import {
   withHitDice,
   spendHitDie,
   syncHitDice,
+  restoreHitDice,
 } from '../src/entities/HitDice.js';
 import {
   createCharacter,
@@ -365,4 +366,22 @@ test('addXP keeps the tenth-of-max fallback for a classless character', () => {
 test('addXP honors an explicit hpGrowth override past the class rule', () => {
   const c = withHP(fighter(14), 12);
   assert.equal(getHP(addXP(c, 300, { hpGrowth: 1 })).max, 13);
+});
+
+test('a long rest restores half of the total hit dice, largest dice first', () => {
+  const duo = withHitDice(
+    classed([
+      { classId: 'fighter', level: 3 },
+      { classId: 'wizard', level: 3 },
+    ]),
+  );
+  /** @param {import('../src/types/entities.js').ResourcePool[]} pools */
+  const dice = (pools) =>
+    Object.fromEntries(pools.filter(isHitDicePool).map((p) => [p.id, p.current]));
+  const spent = spendResource(spendResource(duo, 'hit-dice-d10', 3), 'hit-dice-d6', 3);
+  assert.deepEqual(dice(longRest(spent).resources), { 'hit-dice-d10': 3, 'hit-dice-d6': 0 });
+  // Once the d10s are full, the rest of the budget goes to the smaller dice.
+  const mixed = spendResource(spendResource(duo, 'hit-dice-d10', 1), 'hit-dice-d6', 3);
+  assert.deepEqual(dice(restoreHitDice(mixed.resources)), { 'hit-dice-d10': 3, 'hit-dice-d6': 2 });
+  assert.deepEqual(restoreHitDice([]), [], 'no hit dice, nothing to restore');
 });

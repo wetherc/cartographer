@@ -8,7 +8,7 @@ import {
 import { HP_RESOURCE_ID } from './PoolIds.js';
 import { updateById } from './Roster.js';
 import { isSlotPool, isPactPool } from './SpellSlots.js';
-import { isHitDicePool } from './HitDice.js';
+import { isHitDicePool, restoreHitDice } from './HitDice.js';
 import { derive } from './Progression.js';
 import { clearDying, isDead } from './DeathSaves.js';
 import { easeExhaustion, exhaustionFields } from './Exhaustion.js';
@@ -530,31 +530,32 @@ export function restoreResource(character, resourceId, amount) {
 }
 
 /**
- * Restore every resource pool (HP and any custom pool) by a fraction of its
- * max, clamped to full. The rest model: a long rest restores everything
- * (fraction 1), and a short rest restores half (fraction 0.5). Spell slots
- * follow the D&D rule instead. Only a full rest (fraction 1) refills them.
- * Anything less leaves them untouched. Pact slots refill in full on a short
- * or long rest (fraction 0.5 and up). Hit dice ignore short rests, since
- * they are what a short rest spends. A long rest restores half of each
- * die-size pool, at least one die. This function is pure.
+ * Restore every resource pool by a fraction of its max, clamped to full. The
+ * rest model: a long rest restores everything (fraction 1), and a short rest
+ * restores half (fraction 0.5). HP, spell slots, and hit dice follow the D&D
+ * rule instead. Only a full rest (fraction 1) refills HP and spell slots, so
+ * a short rest heals nothing unless the character spends hit dice. Pact
+ * slots refill in full on a short or long rest (fraction 0.5 and up). A full
+ * rest restores half of the total hit dice (see `HitDice.restoreHitDice`).
+ * A rest that lifts HP above 0 clears the dying state, the same as any other
+ * heal (see `restoreResource`). This function is pure.
  * @param {Character} character
  * @param {number} fraction 0..1
  * @returns {Character}
  */
 export function restAll(character, fraction) {
   const clamped = clamp(fraction, 0, 1);
-  return {
-    ...character,
-    resources: character.resources.map((r) => {
-      if (isSlotPool(r)) return clamped < 1 ? r : restorePool(r, r.max);
-      if (isPactPool(r)) return clamped < 0.5 ? r : restorePool(r, r.max);
-      if (isHitDicePool(r)) {
-        return clamped < 1 ? r : restorePool(r, Math.max(1, Math.floor(r.max / 2)));
-      }
-      return restorePool(r, Math.ceil(r.max * clamped));
-    }),
-  };
+  const pools = character.resources.map((r) => {
+    if (r.id === HP_RESOURCE_ID || isSlotPool(r)) return clamped < 1 ? r : restorePool(r, r.max);
+    if (isPactPool(r)) return clamped < 0.5 ? r : restorePool(r, r.max);
+    if (isHitDicePool(r)) return r;
+    return restorePool(r, Math.ceil(r.max * clamped));
+  });
+  const resources = clamped < 1 ? pools : restoreHitDice(pools);
+  const rested = { ...character, resources };
+  const before = getHP(character)?.current ?? 0;
+  const after = getHP(rested)?.current ?? 0;
+  return character.deathSaves && after > before ? clearDying(rested) : rested;
 }
 
 /**
@@ -574,8 +575,9 @@ export function longRest(character) {
 }
 
 /**
- * A short rest: restore half of each pool's maximum. Spell slots stay spent.
- * Pact slots refill in full.
+ * A short rest: restore half of the maximum of each custom pool. HP, spell
+ * slots, and hit dice stay as they are, because in 5e a short rest heals
+ * only through the hit dice a character spends. Pact slots refill in full.
  * @param {Character} character
  * @returns {Character}
  */

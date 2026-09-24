@@ -676,7 +676,9 @@ with no prompt. A cancel keeps the grant pending, and the Choose button in
 the Progression block offers it again.
 
 The hit-dice pool is spendable. A short rest spends a die to heal the roll
-plus the CON modifier. A long rest restores half the pool.
+plus the CON modifier. A long rest restores half of the total hit dice, at
+least one, with the largest dice first. Fighter 3 / Wizard 3 with every die
+spent gets three dice back.
 
 ### Inventory and equipment
 
@@ -724,9 +726,11 @@ unequips it.
 | Handouts | Read-aloud text or lore attached to a node or the campaign, with an optional image and an eye toggle |
 | Travelogue | An automatic log of region entry, teleports, defeats, rests, and discoveries, newest first |
 
-A short rest restores half of the character resources, while a long rest
-restores all of them, refills the spell slots, and takes one level of
-exhaustion off each character. A character that is already dead keeps its
+A short rest restores half of each custom resource and refills pact slots.
+It restores no HP, because in 5e only spent hit dice heal on a short rest.
+A long rest restores HP and every resource, refills the spell slots, and
+takes one level of exhaustion off each character. A rest that lifts a dying
+character above 0 HP clears the death-save tracker. A character that is already dead keeps its
 level.
 
 An NPC sits on any map at a column and row, or stays unplaced, in which
