@@ -74,8 +74,8 @@ export function slotsForClass(classId, characterLevel) {
 /**
  * The full spell-slot pools for a class at a character level, all at full.
  * This is caster-type-aware (full, half, third), so a creature caster
- * gets exactly the slots its class grants. Empty for a non-caster, pact
- * caster, or unknown class.
+ * gets exactly the slots its class grants, and a pact caster gets its pact
+ * pool. Empty for a non-caster or an unknown class.
  * @param {string | undefined | null} classId
  * @param {number} characterLevel
  * @returns {import('../types/entities.js').ResourcePool[]}

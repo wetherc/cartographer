@@ -260,13 +260,17 @@ function pactPool(pact) {
 /**
  * The slot pools for a caster of the given type and level, all at full. This
  * is the standalone builder used for creatures, which, unlike
- * characters, carry no HP pool to order around. A non-slot caster type gets
- * an empty list.
+ * characters, carry no HP pool to order around. A pact caster gets its one
+ * pact pool (`pactSlotsFor`). A non-slot caster type gets an empty list.
  * @param {import('../types/class.js').CasterType} casterType
  * @param {number} level
  * @returns {ResourcePool[]}
  */
 export function slotPoolsForCaster(casterType, level) {
+  if (casterType === 'pact') {
+    const pact = pactSlotsFor(level);
+    return pact ? [pactPool(pact)] : [];
+  }
   return slotsForCaster(casterType, level).map((max, i) => slotPool(i + 1, max));
 }
 

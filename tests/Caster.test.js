@@ -16,8 +16,10 @@ import {
   fromTemplate,
   editCreature,
 } from '../src/entities/Creature.js';
-import { getSlotPools, slotLevelOf } from '../src/entities/SpellSlots.js';
+import { getPactPool, getSlotPools, slotLevelOf } from '../src/entities/SpellSlots.js';
 import { spellSaveDC, spellAttackBonus } from '../src/entities/Classes.js';
+import { castSpell } from '../src/entities/Casting.js';
+import { DEFAULT_SPELLS } from '../src/data/spells.js';
 
 /** The slot pool for a spell level, or undefined. */
 function slot(entity, level) {
@@ -362,4 +364,33 @@ test('a rated creature casts with the rating-ladder proficiency', () => {
   const unrated = toCaster({ ...mage, cr: undefined });
   assert.equal(unrated.proficiency, undefined);
   assert.equal(spellSaveDC(unrated), 15, 'an unrated caster keeps the level ladder');
+});
+
+test('a creature Warlock gets pact slots on create and on load, and spends them', () => {
+  const warlock = createCreature('w1', 'Hexblade', {
+    class: 'warlock',
+    casterLevel: 5,
+    stats: { CHA: 16 },
+  });
+  const pact = getPactPool(warlock);
+  assert.deepEqual({ level: pact && slotLevelOf(pact), max: pact?.max }, { level: 3, max: 2 });
+  assert.equal(getSlotPools(warlock).length, 0, 'no leveled slots');
+  assert.match(casterSummary(warlock), /pact 2\/2 \(L3\)/);
+
+  const loaded = ensureCasterFields({ ...warlock, resources: [] }, 5);
+  assert.equal(getPactPool(loaded)?.max, 2, 'a load without pools rebuilds the pact pool');
+  const kept = ensureCasterFields({
+    ...warlock,
+    resources: warlock.resources.map((r) => ({ ...r, current: 0 })),
+  });
+  assert.equal(getPactPool(kept)?.current, 0, 'spent pact slots survive a reload');
+
+  const spell = /** @type {any} */ (DEFAULT_SPELLS.find((s) => s.id === 'magic-missile'));
+  const caster = toCaster({
+    ...warlock,
+    spellbook: { cantrips: [], known: [spell.id], prepared: [spell.id] },
+  });
+  const cast = castSpell(caster, spell, { slotLevel: 3 });
+  assert.equal(cast.ok, true);
+  if (cast.ok) assert.equal(getPactPool(cast.caster)?.current, 1);
 });

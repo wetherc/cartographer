@@ -2,7 +2,7 @@ import { isCasterClass, casterSlots, getClass, spellSaveDC, spellAttackBonus } f
 import { crProficiencyBonus, formatModifier } from './Modifiers.js';
 import { emptySpellbook } from './Character.js';
 import { spliceReservedPools } from './Resource.js';
-import { isSlotPool, isCasterPool, getSlotPools, getPactPool, slotLevelOf } from './SpellSlots.js';
+import { isCasterPool, getSlotPools, getPactPool, slotLevelOf } from './SpellSlots.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -201,7 +201,7 @@ export function withCasterFields(entity, options = {}, defaultLevel = 1) {
     resources: spliceReservedPools(
       entity.resources ?? [],
       casterSlots(options.class, casterLevel),
-      isSlotPool,
+      isCasterPool,
     ),
   };
 }
@@ -226,7 +226,9 @@ export function ensureCasterFields(entity, defaultLevel = 1) {
     ...entity,
     casterLevel,
     spellbook: entity.spellbook ?? emptySpellbook(),
-    resources: stored.some(isSlotPool) ? stored : casterSlots(entity.class, casterLevel),
+    resources: stored.some(isCasterPool)
+      ? stored
+      : [...stored, ...casterSlots(entity.class, casterLevel)],
   };
 }
 
