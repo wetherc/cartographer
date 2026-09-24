@@ -88,7 +88,8 @@ export interface AppActions {
   logEvent(kind: LogEntryKind, message: string): void;
   // partyWiring: point the sheet, inventory, and roster back at the selected
   // character after an out-of-band character change, for example a
-  // condition tick.
+  // condition tick. It does nothing in combat mode, where the combat screen
+  // covers those panels. Leaving combat mode calls it once.
   refreshSelectedCharacter(): void;
   // partyWiring: the character this tab is bound to (Player view), or null.
   getBoundCharacterId(): string | null;

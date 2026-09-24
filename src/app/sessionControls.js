@@ -58,12 +58,16 @@ export function wireSessionControls(app) {
         mode = 'play';
         queueMicrotask(() => modeSwitch.sync('play'));
       }
+      const leftCombat = app.state.mode === 'combat' && mode !== 'combat';
       app.state.mode = mode;
       document.body.classList.toggle('mode-play', mode === 'play');
       document.body.classList.toggle('mode-build', mode === 'build');
       document.body.classList.toggle('mode-library', mode === 'library');
       document.body.classList.toggle('mode-combat', mode === 'combat');
       app.actions.onModeChanged(mode);
+      // The party panels skip their refresh while the combat screen covers
+      // them, so they catch up here.
+      if (leftCombat) app.actions.refreshSelectedCharacter();
       // The combat screen moves the dice tray to a new home on entry and
       // exit, so every mode change must reach it, not only the fight's own
       // refresh paths.

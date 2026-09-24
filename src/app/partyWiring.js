@@ -101,7 +101,13 @@ export function wireParty(app) {
   });
   const selectCharacter = scope.select;
   const selectedCharacter = scope.getSelected;
-  app.actions.refreshSelectedCharacter = scope.reselect;
+  // The party panels sit behind the combat screen, and each rebuild costs
+  // about 700 elements. A spell that hits four party members writes four
+  // characters, so the refresh waits while the screen is up. sessionControls
+  // calls it again when the app leaves combat mode.
+  app.actions.refreshSelectedCharacter = () => {
+    if (state.mode !== 'combat') scope.reselect();
+  };
   app.actions.getSelectedCharacterId = scope.getSelectedId;
 
   /** What this tab can do to the character currently on the sheet or inventory.
