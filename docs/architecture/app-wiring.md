@@ -291,8 +291,10 @@ This module owns the Encounters panel, the sidebar's Initiative card, the
 Build-rail encounter authoring list, and the walked-into-an-encounter alert.
 It owns the running combat, and only this module writes `state.combat`. The
 turn flow is registered on `app.actions` (`advanceCombatTurn`, `endCombat`),
-so the combat screen drives the same fight through the same code. The fight
-itself renders in combat mode, which [the combat guide](combat.md) covers.
+so the combat screen drives the same fight through the same code. The turn
+advance moves the pointer through `turnAdvance.js`, which also rolls the
+repeated saves of every turn that ends on the way. The fight itself renders
+in combat mode, which [the combat guide](combat.md) covers.
 
 The shared create-and-edit dialog (identity, disposition, an optional level
 and tier, placement via `locationFields`) lives in `creatureForm.js`. It

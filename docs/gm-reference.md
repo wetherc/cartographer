@@ -538,6 +538,11 @@ rolled from the character sheet.
 | Stunned | Loses its turn. Attacks against it have advantage. Fails STR and DEX saves outright |
 | Unconscious | Loses its turn. Attacks against it have advantage, and a melee hit is a critical hit. Fails STR and DEX saves outright |
 
+A spell such as Hold Person lets its target repeat the save at the end of
+each of its turns. A target that loses its turn still has that turn end, so
+Next turn rolls the save as it steps past the target. A success ends the
+condition, and the target still loses the turn it was held for.
+
 Charmed, Deafened, and Grappled have no rule, because they need a relationship
 between two combatants or they need movement, and the app has neither, so
 adjudicate them by hand. A chip that you type yourself matches a row when it

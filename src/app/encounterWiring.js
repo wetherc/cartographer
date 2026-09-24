@@ -25,8 +25,6 @@ import {
   addParticipant,
   createParticipant,
   startCombat,
-  advanceTurn,
-  currentParticipant,
   dropParticipant,
 } from '../combat/Initiative.js';
 import { attacksAvailable, canSpend, spend, spendAttack } from '../combat/ActionBudget.js';
@@ -44,11 +42,10 @@ import {
   endSpellEffects,
   findCombatant,
   logDefeatTransition,
-  retryImposedSaves,
 } from './combatants.js';
+import { advancePastHeld } from './turnAdvance.js';
 import { setCombatantExhaustion } from './exhaustion.js';
 import { focusMapCanvas } from './combatWiring.js';
-import { skipsTurn } from '../combat/CombatView.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -431,17 +428,13 @@ export function wireEncounters(app) {
   app.actions.advanceCombatTurn = () => {
     const combat = current();
     if (!combat) return;
-    // Read this before the turn pointer moves. A spell that lets its target
-    // retry the save gets that retry at the end of the target's own turn,
-    // the turn now ending.
-    const acting = currentParticipant(combat);
-    if (acting) retryImposedSaves(app, acting.id);
     // A defeated combatant keeps its place in the order but not its turn.
     // The pointer steps past it to the next combatant standing. A
     // participant that resolves to nothing, because it was deleted
     // mid-fight, also has no turn to take. A chip such as Stunned takes the
     // turn the same way, without taking the combatant out of the fight.
-    const result = advanceTurn(combat, (p) => skipsTurn(findCombatant(app, p.id)));
+    // Every turn that ends on the way rolls its repeated saves.
+    const result = advancePastHeld(app, combat);
     setCombat(result.state);
     // A new round elapsed. Tick down every combatant's timed conditions,
     // the enemies' timed stat modifiers, and the party's concentration

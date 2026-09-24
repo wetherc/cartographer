@@ -1104,8 +1104,11 @@ Drop control and its hand-removed `Concentrating` chip (through
 `onConcentrationEnd`, wired in `app/partyWiring.js`), a failed CON save or a
 drop to 0 HP in `applyToTarget`, a displacing cast in
 `app/spellCastResolve.js`, and a duration that runs out at the round wrap.
-`retryImposedSaves(app, combatantId)` rolls the repeated saves, called from
-the turn advance (`advanceCombatTurn`) for whoever's turn is ending. A party
+`retryImposedSaves(app, combatantId)` rolls the repeated saves.
+`app/turnAdvance.js` calls it from the turn advance (`advanceCombatTurn`)
+for whoever's turn is ending, and for each held combatant the pointer
+steps past. A Paralyzed or Stunned combatant never takes a turn, so
+without the second call it never rolls to shake off Hold Person. A party
 character rolls its live bonus there rather than the stamped one, so a save
 granted since the cast counts.
 
