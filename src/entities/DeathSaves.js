@@ -18,6 +18,9 @@ import { UNCONSCIOUS, addCondition, removeCondition } from './Conditions.js';
 import { resolveSave } from './Checks.js';
 import { riderSources } from './FeatChoices.js';
 import { atDeathLevel, d20Penalty, easeExhaustion } from './Exhaustion.js';
+import { HP_RESOURCE_ID } from './PoolIds.js';
+import { restore as restorePool } from './Resource.js';
+import { updateById } from './Roster.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').DeathSaveState} DeathSaveState */
@@ -231,14 +234,16 @@ export function rollDeathSave(character, opts = {}) {
 }
 
 /**
- * Write a judged tracker back to the character. A null state is a revive, so
- * it goes through `clearDying` and takes the chip with it.
+ * Write a judged tracker back to the character. A null state is a revive. The
+ * character regains 1 HP, and `clearDying` removes the tracker and the chip.
  * @param {Character} character
  * @param {DeathSaveState | null} state
  * @returns {Character}
  */
 export function applyJudged(character, state) {
-  return state === null ? clearDying(character) : { ...character, deathSaves: state };
+  if (state !== null) return { ...character, deathSaves: state };
+  const resources = updateById(character.resources, HP_RESOURCE_ID, (r) => restorePool(r, 1));
+  return clearDying({ ...character, resources });
 }
 
 /**

@@ -1019,6 +1019,8 @@ and `stable`. A character who is not dying has this field set to null.
   stays at 0 HP and stays unconscious. A dead character cannot be stabilized.
 - `judgeDeathSave(state, roll)` maps one rolled d20 to the next tracker state
   and names the outcome: `revive`, `success`, `stable`, `failure`, or `dead`.
+- `applyJudged(character, state)` writes a judged tracker back. A revive
+  restores 1 HP and then calls `clearDying`.
 - `rollDeathSave(character, opts)` rolls the save and applies the outcome. It
   is the headless path, for tests and for callers with no dice tray.
 - `recordDamage(character, { crit })` is damage on a character already at 0 HP.

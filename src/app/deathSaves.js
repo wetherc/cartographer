@@ -10,7 +10,6 @@
  * Both paths therefore share one set of rules.
  */
 
-import { HP_RESOURCE_ID, restoreResource } from '../entities/Character.js';
 import {
   DEATH_SAVE_DC,
   applyJudged,
@@ -62,7 +61,7 @@ function dyingCharacter(app, id) {
  *
  * The save adds no ability modifier and no proficiency, so the tray's modifier
  * is the riders plus the exhaustion penalty. A natural 20 wakes the character at
- * 1 HP, which is the one outcome that writes HP as well as the tracker.
+ * 1 HP through `applyJudged`.
  *
  * A character who is not dying rolls nothing. This covers a standing
  * character, a stable one, and a dead one, so a stale button cannot move the
@@ -91,10 +90,9 @@ export function rollDeathSaveFor(app, characterId, { rng = Math.random } = {}) {
   const d20 = result.results.find((r) => r.die === 'd20');
   const natural = d20?.rolls[0] ?? 0;
   const judged = judgeDeathSave(state, { natural, total: result.total, dc: DEATH_SAVE_DC });
-  let next = applyJudged(character, judged.state);
-  if (judged.outcome === 'revive') next = restoreResource(next, HP_RESOURCE_ID, 1);
+  const applied = applyJudged(character, judged.state);
   // A one-roll rider such as Resistance is used up by this save.
-  next = { ...next, conditions: spendRiders(next.conditions, rider.spent) };
+  const next = { ...applied, conditions: spendRiders(applied.conditions, rider.spent) };
   found.store(next);
   app.actions.markDirty();
   const tiredNote = tired ? `, exhaustion ${exhaustionLevel(character)} ${tired}` : '';

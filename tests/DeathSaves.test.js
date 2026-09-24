@@ -14,7 +14,14 @@ import {
   rollDeathSave,
   stabilize,
 } from '../src/entities/DeathSaves.js';
-import { createCharacter, withDefaults } from '../src/entities/Character.js';
+import {
+  HP_RESOURCE_ID,
+  createCharacter,
+  getHP,
+  spendResource,
+  withDefaults,
+  withHP,
+} from '../src/entities/Character.js';
 import { addCondition } from '../src/entities/Conditions.js';
 import { packEntity } from '../src/storage/EntityPack.js';
 
@@ -187,13 +194,13 @@ test('rollDeathSave rolls a bare d20 against DC 10 and applies the outcome', () 
   assert.deepEqual(character.deathSaves, { successes: 0, failures: 1, stable: false });
 });
 
-test('rollDeathSave clears the tracker and the chip on a natural 20', () => {
-  const { character, outcome } = rollDeathSave(dying({ failures: 2 }), {
-    rng: seq([face(20, 20)]),
-  });
+test('rollDeathSave clears the tracker and the chip and restores 1 HP on a natural 20', () => {
+  const atZero = spendResource(withHP(dying({ failures: 2 }), 8), HP_RESOURCE_ID, 8);
+  const { character, outcome } = rollDeathSave(atZero, { rng: seq([face(20, 20)]) });
   assert.equal(outcome, 'revive');
   assert.equal(character.deathSaves, null);
   assert.deepEqual(character.conditions, []);
+  assert.equal(getHP(character)?.current, 1);
 });
 
 test('a Bless rider turns a 9 into a success', () => {
