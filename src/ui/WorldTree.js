@@ -3,6 +3,7 @@ import { setTip } from './Tooltip.js';
 import { bareButton, iconButton } from './buttons.js';
 import { el } from './dom.js';
 import { buildWorldTree } from '../map/WorldTree.js';
+import { createRefreshScheduler } from '../combat/RefreshScheduler.js';
 
 /** @typedef {import('../types/map.js').MapNode} MapNode */
 /** @typedef {import('../map/WorldTree.js').WorldTreeNode} WorldTreeNode */
@@ -87,10 +88,7 @@ export function mountWorldTree(container, opts) {
     const select = bareButton([treeNode.node.name], () => opts.onSelect(treeNode.node.id), {
       className: 'row-select',
     });
-    if (treeNode.node.id === opts.getCurrentId()) {
-      select.classList.add('row-select--current');
-      select.setAttribute('aria-current', 'true');
-    }
+    rows.set(treeNode.node.id, select);
 
     const warning = opts.getWarning?.(treeNode.node) ?? null;
     /** @type {HTMLSpanElement | null} */
@@ -139,40 +137,67 @@ export function mountWorldTree(container, opts) {
 
   /** @type {string | null} the signature the tree on screen was built from */
   let shownSignature = null;
+  /** The select button of each row on screen, by node id. @type {Map<string, HTMLButtonElement>} */
+  const rows = new Map();
+  /** @type {HTMLButtonElement | null} the row marked as the current node */
+  let currentRow = null;
+
+  /**
+   * Move the current-node mark to the row of `currentId`. Navigation changes
+   * only this mark, so it touches two rows instead of rebuilding the tree.
+   * @param {string} currentId
+   */
+  function markCurrent(currentId) {
+    const next = rows.get(currentId) ?? null;
+    if (next === currentRow) return;
+    currentRow?.classList.remove('row-select--current');
+    currentRow?.removeAttribute('aria-current');
+    next?.classList.add('row-select--current');
+    next?.setAttribute('aria-current', 'true');
+    currentRow = next;
+  }
 
   /**
    * This returns everything the markup reads: each node's id, name,
-   * parent, and warning, plus which row is current. It compares by
+   * parent, and warning. The current row is left out, because markCurrent
+   * moves that mark without a rebuild. It compares by
    * value, not by node identity, since a party step replaces the node it
    * revealed fog on without changing any of these fields, and that step
    * is the most frequent caller of update(). The warning sits in the
    * signature, so a paint stroke that seals or unseals a node redraws its badge.
    * @param {MapNode[]} nodes
-   * @param {string} currentId
    */
-  function signatureOf(nodes, currentId) {
-    return JSON.stringify([
-      currentId,
+  function signatureOf(nodes) {
+    return JSON.stringify(
       nodes.map((n) => [n.id, n.name, n.parentId, opts.getWarning?.(n) ?? null]),
-    ]);
+    );
   }
 
-  function update() {
+  function render() {
     const nodes = opts.getNodes();
     // A caller refreshes the tree after anything that can have moved a
     // node, so it redraws far more often than it changes. Stop when the
     // markup comes out the same, since a rebuild costs the scroll
     // position and any focus inside the tree.
-    const signature = signatureOf(nodes, opts.getCurrentId());
-    if (signature === shownSignature) return;
-    shownSignature = signature;
-
-    root.innerHTML = '';
-    root.appendChild(
-      el('ul', 'world-tree__children world-tree__root', ...buildWorldTree(nodes).map(renderNode)),
-    );
+    const signature = signatureOf(nodes);
+    if (signature !== shownSignature) {
+      shownSignature = signature;
+      rows.clear();
+      currentRow = null;
+      root.innerHTML = '';
+      root.appendChild(
+        el('ul', 'world-tree__children world-tree__root', ...buildWorldTree(nodes).map(renderNode)),
+      );
+    }
+    markCurrent(opts.getCurrentId());
   }
 
-  update();
-  return { update };
+  // One navigation calls update() two or three times, from the resync, the
+  // exit sync, and the travel code. Each signature runs getWarning for every
+  // node, so the calls of one handler share a single render in a microtask,
+  // which still runs before the browser paints.
+  const scheduler = createRefreshScheduler(render);
+
+  render();
+  return { update: scheduler.request };
 }
