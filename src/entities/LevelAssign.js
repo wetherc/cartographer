@@ -2,6 +2,7 @@ import { getClass, CLASS_LIST } from './Classes.js';
 import { getClasses, pendingLevels, withClasses, classLevelOf } from './Multiclass.js';
 import { getProficiencies, withProficiencies } from './Proficiencies.js';
 import { applyFeatureGrant, derive } from './Progression.js';
+import { withSubclass } from './Subclass.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
@@ -51,10 +52,12 @@ export function canMulticlass(character, classId) {
 }
 
 /**
- * Whether an ASI, feat, or class-feature record claims a class level at or
- * above `level`. The donor path moves a class's newest level to a new class,
- * and a record left on the moved level keeps its increases and grants with no
- * level to claim them.
+ * Whether an ASI, feat, or class-feature record, or a chosen subclass,
+ * claims a class level at or above `level`. The donor path moves a class's
+ * newest level to a new class, and a record left on the moved level keeps
+ * its increases and grants with no level to claim them. A subclass claims
+ * the class's subclass level, because an Eldritch Knight moved below it
+ * would keep its slots and spells with no casting to use them.
  * @param {Character} character
  * @param {string} classId
  * @param {number} level
@@ -65,7 +68,9 @@ export function hasChoiceAt(character, classId, level) {
     ...Object.values(character.asiChoices ?? {}),
     ...Object.values(character.featureChoices ?? {}),
   ];
-  return records.some((r) => r.classId === classId && r.classLevel >= level);
+  if (records.some((r) => r.classId === classId && r.classLevel >= level)) return true;
+  const ref = getClasses(character).find((r) => r.classId === classId);
+  return !!ref?.subclass && (getClass(classId)?.subclassLevel ?? 0) >= level;
 }
 
 /** @param {Character} character @param {ClassDef} def @returns {Character} */
@@ -136,14 +141,17 @@ export function assignLevel(character, classId) {
  * the last dialog closes, the sheet calls this on the character read at that
  * moment, so an HP change or a spent slot from another tab while a dialog
  * stood open is kept. `skills` are the multiclass skill picks, and they apply
- * only when the level starts a new class. A feature stamp whose grant is not
- * pending on the result does nothing. The character comes back unchanged
- * when the level itself cannot be assigned any more. This function is pure.
+ * only when the level starts a new class. `subclass`, when present, is the
+ * subclass picked as the level reached the class's subclass level (see
+ * `Subclass.withSubclass`). It applies before the feature stamps. A feature
+ * stamp whose grant is not pending on the result does nothing. The
+ * character comes back unchanged when the level itself cannot be assigned
+ * any more. This function is pure.
  * @param {Character} character
- * @param {{ classId: string, skills: string[], stamps: FeatureStamp[] }} choices
+ * @param {{ classId: string, skills: string[], stamps: FeatureStamp[], subclass?: string }} choices
  * @returns {Character}
  */
-export function applyLevelChoices(character, { classId, skills, stamps }) {
+export function applyLevelChoices(character, { classId, skills, stamps, subclass }) {
   const isNew = classLevelOf(character, classId) === 0;
   let next = assignLevel(character, classId);
   if (next === character) return character;
@@ -153,8 +161,22 @@ export function applyLevelChoices(character, { classId, skills, stamps }) {
       withProficiencies(next, { ...p, skills: [...new Set([...p.skills, ...skills])] }),
     );
   }
+  if (subclass) next = withSubclass(next, classId, subclass);
   for (const stamp of stamps) next = applyFeatureGrant(next, stamp);
   return next;
+}
+
+/**
+ * Whether reaching the class's next level asks for a subclass: the level
+ * lands on the class's subclass level and the class has no subclass yet.
+ * @param {Character} preview the character with the level applied
+ * @param {string} classId
+ * @returns {boolean}
+ */
+export function asksForSubclass(preview, classId) {
+  const def = getClass(classId);
+  const ref = getClasses(preview).find((r) => r.classId === classId);
+  return !!def && !!ref && ref.level === def.subclassLevel && !ref.subclass;
 }
 
 /**

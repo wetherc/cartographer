@@ -1,4 +1,6 @@
 import { promptModal } from './Modal.js';
+import { pickSubclass, subclassButtons } from './SubclassPicker.js';
+import { subclassNotice, withSubclass } from '../entities/Subclass.js';
 import { sectionLabel, textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
 import { getClass } from '../entities/Classes.js';
@@ -8,6 +10,7 @@ import {
   assignLevel,
   assignOptions,
   className,
+  asksForSubclass,
 } from '../entities/LevelAssign.js';
 import {
   ABILITY_MAX,
@@ -175,6 +178,9 @@ export function buildProgressSection(getCharacter, opts) {
     addText(addRow('character-sheet__classes'), line);
   }
 
+  const subclassRow = opts.editBase ? subclassButtons(getCharacter, opts) : [];
+  if (subclassRow.length > 0) addRow().append(...subclassRow);
+
   async function runAssign() {
     const options = assignOptions(getCharacter());
     const first = options.find((option) => !option.disabled);
@@ -199,6 +205,12 @@ export function buildProgressSection(getCharacter, opts) {
     const skills =
       classLevelOf(from, classId) === 0 ? await pickMulticlassSkills(preview, classId) : [];
     preview = applyLevelChoices(from, { classId, skills, stamps: [] });
+    // Reaching the subclass level asks for one. A cancelled pick still takes
+    // the level, and the sheet's Choose button asks again later.
+    const subclass = asksForSubclass(preview, classId)
+      ? ((await pickSubclass(preview, classId)) ?? undefined)
+      : undefined;
+    if (subclass) preview = withSubclass(preview, classId, subclass);
     const gained = featuresGained(preview, from);
     /** @type {FeatureStamp[]} */
     const stamps = [];
@@ -216,14 +228,15 @@ export function buildProgressSection(getCharacter, opts) {
       preview = applyFeatureGrant(preview, stamp);
     }
     const live = getCharacter();
-    const next = applyLevelChoices(live, { classId, skills, stamps });
+    const next = applyLevelChoices(live, { classId, skills, stamps, subclass });
     if (next === live) {
       opts.notify('That level can no longer be assigned.');
       return;
     }
     const gainedText = gained.length > 0 ? ` New: ${gained.map((f) => f.name).join(', ')}.` : '';
+    const subclassText = subclass ? ` ${subclassNotice(next, classId)}` : '';
     opts.notify(
-      `${live.name} takes ${className(classId)} ${classLevelOf(next, classId)}.${gainedText}`,
+      `${live.name} takes ${className(classId)} ${classLevelOf(next, classId)}.${gainedText}${subclassText}`,
     );
     opts.onCommit(next);
   }
