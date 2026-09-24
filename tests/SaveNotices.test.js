@@ -8,6 +8,7 @@ import {
   footprintWarning,
   historyLoss,
   historyLossMessage,
+  loadFailedMessage,
   saveOutcome,
 } from '../src/storage/SaveNotices.js';
 
@@ -82,4 +83,10 @@ test('a footprint that has grown materially warns again', () => {
   const warning = footprintWarning(grown, over);
   assert.notEqual(warning.message, null);
   assert.equal(warning.warnedAt, grown);
+});
+
+test('the load-failure notice names Undo only when a step exists to undo', () => {
+  assert.match(loadFailedMessage(1), /press Undo/);
+  assert.doesNotMatch(loadFailedMessage(0), /Undo/);
+  assert.match(loadFailedMessage(0), /next save overwrites it/);
 });

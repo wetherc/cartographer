@@ -435,6 +435,20 @@ a swap. Undo and redo are the same walk, in opposite directions:
    new edit at cursor: d4 is deleted (the redo tail)
 ```
 
+A step that replaces the whole campaign stores a snapshot record in place
+of a delta. New, Load example, and Import diff to ops that contain the old
+world and the new world, both unpacked. `saveCampaign` compares that ops
+string with the stored save string it replaces, and when the save string is
+shorter it stores `snapshot:` followed by that string. Undo across a
+snapshot writes the snapshot as the campaign, then stores the current save
+string in a new record at the same position, so redo swaps the two back.
+The save that records a snapshot passes `keepPrevious` to
+`trySaveToLocalStorage`, so the image table keeps every picture of the
+replaced campaign until the snapshot record references it.
+
+A record larger than the byte cap stays as the only step, because
+`trimToCap` always keeps the newest record, and the older steps drop.
+
 Both header controls step the cursor and then reload. As a result, every
 module re-initializes from the restored state through the ordinary load
 path. Both controls grey out from `historyDepth` when that direction is
@@ -442,7 +456,7 @@ empty.
 
 The storage layout uses one key for each record: an index at
 `campaign-builder:history` that contains `{ version, log, deltas, cursor }`, and
-one `campaign-builder:history:d<seq>` for each delta. A step is therefore
+one `campaign-builder:history:d<seq>` for each record. A step is therefore
 one small `setItem` call, instead of a rewrite of the whole log. Measured on
 the example campaign, fifty party steps cost 27,304 bytes of log, where a
 ring of ten full snapshots costs 699,980 bytes for ten steps, and a save

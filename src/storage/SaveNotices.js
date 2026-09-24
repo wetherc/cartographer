@@ -108,3 +108,18 @@ export function footprintWarning(footprint, warnedAt) {
 function megabytes(bytes) {
   return (bytes / (1024 * 1024)).toFixed(1);
 }
+
+/**
+ * The boot notice for a stored save that the app cannot read. The session
+ * starts blank, and the stored string stays in place until the next save.
+ * Undo is named only when the history has a step to undo, because with no
+ * step the button does nothing.
+ * @param {number} undoSteps
+ * @returns {string}
+ */
+export function loadFailedMessage(undoSteps) {
+  const lead = 'The saved campaign could not be read, so this session started blank.';
+  return undoSteps > 0
+    ? `${lead} Nothing has been overwritten: press Undo to restore the previous save, and export a backup before making changes.`
+    : `${lead} The stored save stays in this browser until the next save overwrites it.`;
+}

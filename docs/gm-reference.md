@@ -104,7 +104,7 @@ run at the same time.
 | --- | --- |
 | New | Resets to the blank campaign after a confirmation |
 | Load example | Replaces the campaign with the demo campaign after a confirmation |
-| Import | Loads a campaign from a `.json` file. If the file includes library customizations, a prompt offers to replace yours; declining keeps them, and the campaign imports either way |
+| Import | Loads a campaign from a `.json` file, after a confirmation when the current campaign is not blank. If the file includes library customizations, a prompt offers to replace yours; declining keeps them, and the campaign imports either way |
 | Save | Writes the campaign to the local storage of the browser |
 | Export | Downloads the whole campaign as a `.json` file, with your library customizations bundled in |
 | Undo, Redo | Steps back to the state before the last Save, New, Load example, or Import, and forward again |

@@ -197,16 +197,20 @@ test('a step whose record has gone missing drops the log instead of throwing', (
   assert.deepEqual(persistedTitles(), ['One'], 'the campaign itself is untouched');
 });
 
-test('one edit larger than the whole cap drops the log and reports it', () => {
+test('one delta larger than the whole cap stays as the only step', () => {
+  const store = installLocalStorage();
+  // The first quest makes the stored save larger than the next delta, so the
+  // next step records a delta and not a snapshot.
+  const big = quest('q0', 'x'.repeat(HISTORY_BYTE_CAP));
   saveCampaign(state());
-  // Every quest is its own insertion op, so a long enough list exceeds the cap
-  // in a single step -- the shape a generated 40x40 node takes.
-  const many = [];
-  for (let i = 0; many.length * 120 < HISTORY_BYTE_CAP; i += 1) many.push(quest(`q${i}`, `Q${i}`));
-  const result = saveCampaign(state(many));
+  saveCampaign(state([big]));
+  const result = saveCampaign(state([big, quest('q1', 'y'.repeat(HISTORY_BYTE_CAP / 2))]));
   assert.equal(result.ok, true, 'the campaign still saves');
-  assert.deepEqual(result.history, { ok: false, evictedAll: true });
-  assert.deepEqual(historyDepth(), { undo: 0, redo: 0 });
+  assert.deepEqual(result.history, { ok: true, evictedAll: false }, 'trimming is not a failure');
+  assert.deepEqual(historyDepth(), { undo: 1, redo: 0 }, 'the older step is trimmed');
+  assert.equal(storedDeltas(store), 1);
+  undoCampaign();
+  assert.equal(persistedTitles().length, 1);
 });
 
 test('the log drops its oldest steps once it passes the byte cap', () => {

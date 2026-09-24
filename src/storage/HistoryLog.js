@@ -17,8 +17,15 @@
  *   `deltas` is the ordered list of sequence numbers. `cursor` is how many of
  *   them the persisted save currently reflects. Deltas past the cursor are
  *   the redo tail.
- * - `campaign-builder:history:d<seq>`: one delta, a `JSON.stringify`d list of
- *   ops.
+ * - `campaign-builder:history:d<seq>`: one record. A delta record is a
+ *   `JSON.stringify`d list of ops. A snapshot record is `snapshot:` followed
+ *   by the stored save string on the other side of the step.
+ *
+ * A step that replaces the whole campaign (New, Load example, Import)
+ * stores a snapshot record, because its ops contain both worlds and a
+ * snapshot contains only one, in the packed save form. Undo and redo swap
+ * a snapshot record with the current save string, so the record always
+ * contains the state across the step from the cursor.
  *
  * This module deliberately stores no base snapshot: a packed campaign that
  * the log applies onto. The canonical save already holds that state, and
@@ -68,6 +75,14 @@ import { removeStored, storedLength, writeStored } from './Footprint.js';
 /** @typedef {import('../types/storage.js').DiffOp} DiffOp */
 /** @typedef {{ version: number, log: string, deltas: number[], cursor: number }} HistoryIndex */
 /** @typedef {{ ok: boolean, evictedAll: boolean }} HistoryResult */
+/** @typedef {{ ops: DiffOp[] } | { snapshot: string }} HistoryRecord */
+
+/**
+ * The prefix of a snapshot record. The rest of the record is a stored save
+ * string. A delta record is a JSON array, so it starts with `[` and never
+ * with this prefix.
+ */
+const SNAPSHOT_PREFIX = 'snapshot:';
 
 /** The localStorage key that holds the history index. */
 export const HISTORY_KEY = 'campaign-builder:history';
@@ -189,22 +204,42 @@ function writeIndex(index) {
 }
 
 /**
- * One stored delta, or null when its key is missing or unreadable. This
- * function tolerates a missing key instead of throwing an error on it. The
- * previous ring also skipped missing keys. An error on a load or undo path
- * leaves the GM unable to recover the campaign.
+ * One stored record, or null when its key is missing or unreadable. This
+ * function tolerates a missing key instead of throwing an error on it. An
+ * error on a load or undo path leaves the GM unable to recover the campaign.
+ * @param {number} seq
+ * @returns {HistoryRecord | null}
+ */
+function readRecord(seq) {
+  const raw = localStorage.getItem(deltaKey(seq));
+  if (!raw) return null;
+  if (raw.startsWith(SNAPSHOT_PREFIX)) return { snapshot: raw.slice(SNAPSHOT_PREFIX.length) };
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? { ops: parsed } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * The ops of one stored delta, or null when the record is missing,
+ * unreadable, or a snapshot.
  * @param {number} seq
  * @returns {DiffOp[] | null}
  */
 function readDelta(seq) {
-  const raw = localStorage.getItem(deltaKey(seq));
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
+  const record = readRecord(seq);
+  return record && 'ops' in record ? record.ops : null;
+}
+
+/**
+ * The sequence number for the next record of this log.
+ * @param {HistoryIndex} index
+ * @returns {number}
+ */
+function nextSeq(index) {
+  return Math.max(-1, ...index.deltas) + 1;
 }
 
 /**
@@ -266,41 +301,44 @@ function trimToCap(deltas) {
 }
 
 /**
- * Append one delta describing the change from `before` to `after`. Remove
- * any redo tail that the new edit invalidates. This function reports the
- * same way the ring did: `ok` states whether this step is undoable, and
- * `evictedAll` states whether a full origin cost the GM depth beyond the
- * ordinary cap.
- * @param {CampaignState | null} before
+ * The record for the step from `before` to `after`, or null when the step
+ * changes nothing. Saving an unchanged campaign again is not a history step.
+ *
+ * The record is the delta, or a snapshot of the replaced save when the
+ * snapshot is the smaller of the two. A replacing step (New, Load example,
+ * Import) diffs to ops that hold both whole worlds, unpacked, and the
+ * packed save string of the old world is several times smaller. A small
+ * edit to a large campaign keeps its delta.
+ * @param {CampaignState} before
+ * @param {string} beforeRaw the stored string that `before` was parsed from
  * @param {CampaignState} after
+ * @returns {string | null}
+ */
+function stepRecord(before, beforeRaw, after) {
+  const ops = diffState(before, after);
+  if (!ops.length) return null;
+  const json = JSON.stringify(ops);
+  return json.length > beforeRaw.length ? SNAPSHOT_PREFIX + beforeRaw : json;
+}
+
+/**
+ * Append one record and remove any redo tail that the new edit
+ * invalidates. `ok` states whether this step is undoable, and `evictedAll`
+ * states whether a full origin cost the GM depth beyond the ordinary cap.
+ * A record larger than the whole cap stays as the only step, because
+ * `trimToCap` always keeps the newest record.
+ * @param {string} record
  * @returns {HistoryResult}
  */
-function recordDelta(before, after) {
+function recordStep(record) {
   const index = readIndex();
-  // Nothing is stored to diff against: this is a first save, or a stored
-  // save that this app cannot read. Either way, the campaign is now the
-  // oldest state there is.
-  if (!before) return { ok: true, evictedAll: false };
-  const ops = diffState(before, after);
-  // Saving an unchanged campaign again is not a history step. This also
-  // replaces the ring's skip-if-identical-to-the-newest check.
-  if (!ops.length) return { ok: true, evictedAll: false };
-  const json = JSON.stringify(ops);
-  const seq = Math.max(-1, ...index.deltas) + 1;
+  const seq = nextSeq(index);
   const tail = index.deltas.slice(index.cursor);
-  // One edit larger than the whole cap cannot be stored without leaving no
-  // room for anything else. For example, generating a node inserts every one
-  // of its tiles as one op. Delete the log instead of the campaign, and
-  // report this.
-  if (json.length * 2 > HISTORY_BYTE_CAP) {
-    clearHistoryLog();
-    return { ok: false, evictedAll: true };
-  }
   const deltas = [...index.deltas.slice(0, index.cursor), seq];
   let evictedAll = false;
   for (;;) {
     try {
-      writeStored(deltaKey(seq), json);
+      writeStored(deltaKey(seq), record);
       break;
     } catch {
       // A full origin degrades depth first: give up the oldest step and
@@ -329,40 +367,68 @@ function recordDelta(before, after) {
 
 /**
  * Persist a campaign and record the step that produced it. This is the only
- * save path. This module writes the delta after the campaign, so a failed
- * campaign write leaves the log describing exactly what is stored.
+ * save path. This module writes the record after the campaign, so a failed
+ * campaign write leaves the log describing exactly what is stored. A
+ * snapshot record references the images of the replaced save, so the save
+ * keeps those images in the payload table.
+ *
+ * Nothing is recorded when nothing readable is stored to diff against: a
+ * first save, or a stored save that this app cannot read. Either way, the
+ * campaign is now the oldest state there is.
  * @param {CampaignState} state
  * @returns {ReturnType<typeof trySaveToLocalStorage> & { history: HistoryResult }}
  */
 export function saveCampaign(state) {
   const before = lastPersisted();
-  const save = trySaveToLocalStorage(state);
+  // `lastPersisted` leaves the cache on the string it parsed.
+  const record = before && cached ? stepRecord(before, cached.raw, state) : null;
+  const keepPrevious = record !== null && record.startsWith(SNAPSHOT_PREFIX);
+  const save = trySaveToLocalStorage(state, STORAGE_KEY, { keepPrevious });
   if (!save.ok) return { ...save, history: { ok: true, evictedAll: false } };
   cached = { raw: save.json, state };
-  return { ...save, history: recordDelta(before, state) };
+  return { ...save, history: record ? recordStep(record) : { ok: true, evictedAll: false } };
 }
 
+/** @typedef {{ save: ReturnType<typeof trySaveToLocalStorage>, state: CampaignState }} StepResult */
+
 /**
- * Move the cursor by one delta and persist the state it names. Undo and redo
- * share this function. They differ only in which delta they read and which
- * way they apply it. This function returns null when there is nothing in
- * that direction.
+ * Move the cursor by one record and persist the state it names. Undo and
+ * redo share this function. They differ only in which record they read and
+ * which way they apply it. This function returns null when there is
+ * nothing in that direction.
  * @param {number} direction -1 to undo, 1 to redo
- * @returns {{ save: ReturnType<typeof trySaveToLocalStorage>, state: CampaignState } | null}
+ * @returns {StepResult | null}
  */
 function step(direction) {
   const index = readIndex();
   const at = direction < 0 ? index.cursor - 1 : index.cursor;
   if (at < 0 || at >= index.deltas.length) return null;
-  const current = lastPersisted();
-  if (!current) return null;
-  const ops = readDelta(index.deltas[at]);
-  if (!ops) {
+  const record = readRecord(index.deltas[at]);
+  if (!record) {
     // The step's own record is gone. Neither direction of the log can
     // describe the campaign correctly anymore.
     clearHistoryLog();
     return null;
   }
+  return 'ops' in record
+    ? applyDelta(index, direction, record.ops)
+    : swapSnapshot(index, at, direction, record.snapshot);
+}
+
+/**
+ * Step across a delta record. This writes the campaign first and the index
+ * second, for the same reason a save records after writing: the cursor
+ * never claims a state that was not stored. An index write that fails
+ * clears the log, because the old cursor applies the same delta again to a
+ * state that already has it.
+ * @param {HistoryIndex} index
+ * @param {number} direction
+ * @param {DiffOp[]} ops
+ * @returns {StepResult | null}
+ */
+function applyDelta(index, direction, ops) {
+  const current = lastPersisted();
+  if (!current) return null;
   /** @type {CampaignState} */
   let restored;
   try {
@@ -372,17 +438,60 @@ function step(direction) {
     return null;
   }
   const save = trySaveToLocalStorage(restored);
-  // This function writes the campaign first and the index second, for the
-  // same reason a save records after writing. The cursor must never claim a
-  // state that was not stored.
   if (!save.ok) return { save, state: restored };
   cached = { raw: save.json, state: restored };
-  writeIndex({
-    version: CURRENT_VERSION,
-    log: index.log,
-    deltas: index.deltas,
-    cursor: index.cursor + direction,
-  });
+  if (!writeIndex({ ...index, cursor: index.cursor + direction })) clearHistoryLog();
+  return { save, state: restored };
+}
+
+/**
+ * Step across a snapshot record. The record holds the save on the other
+ * side of the step. This writes that save, then stores the current save
+ * string in a new record at the same position, so the next step in the
+ * opposite direction swaps the two back. The current save is read only as
+ * a string, so this also restores a campaign from under a stored save that
+ * this app cannot parse.
+ * @param {HistoryIndex} index
+ * @param {number} at the position of the record in `index.deltas`
+ * @param {number} direction
+ * @param {string} snapshot
+ * @returns {StepResult | null}
+ */
+function swapSnapshot(index, at, direction, snapshot) {
+  const currentRaw = localStorage.getItem(STORAGE_KEY);
+  if (currentRaw === null) return null;
+  /** @type {CampaignState} */
+  let restored;
+  try {
+    restored = deserialize(snapshot, loadAssetTable());
+  } catch {
+    clearHistoryLog();
+    return null;
+  }
+  // The new record references the images of the save this write replaces.
+  const save = trySaveToLocalStorage(restored, STORAGE_KEY, { keepPrevious: true });
+  if (!save.ok) return { save, state: restored };
+  cached = { raw: save.json, state: restored };
+  const seq = nextSeq(index);
+  const cursor = index.cursor + direction;
+  /** @type {{ deltas: number[], cursor: number }} */
+  let next;
+  try {
+    writeStored(deltaKey(seq), SNAPSHOT_PREFIX + currentRaw);
+    next = { deltas: index.deltas.map((old, i) => (i === at ? seq : old)), cursor };
+  } catch {
+    // No step can cross back over this position without the new record.
+    // Only the records on the restored side of it still apply.
+    next =
+      direction < 0
+        ? { deltas: index.deltas.slice(0, at), cursor }
+        : { deltas: index.deltas.slice(at + 1), cursor: 0 };
+  }
+  if (!writeIndex({ ...index, ...next })) {
+    clearHistoryLog();
+    return { save, state: restored };
+  }
+  for (const old of index.deltas) if (!next.deltas.includes(old)) removeStored(deltaKey(old));
   return { save, state: restored };
 }
 

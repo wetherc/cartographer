@@ -395,15 +395,23 @@ export function localStorageFootprint() {
  * write. `HistoryLog.js` caches the state it just stored against this
  * string, so recording a history step costs a string comparison, not a
  * re-read and re-parse of the save.
+ *
+ * `keepPrevious` keeps every payload that the save being replaced
+ * references. `HistoryLog.js` sets it when it stores the replaced save
+ * string as a snapshot record after this write. Without it, the payload
+ * table drops the images of the replaced save before the snapshot key
+ * exists to reference them, and an undo restores a campaign with missing
+ * pictures.
  * @param {CampaignState} state
  * @param {string} [key]
+ * @param {{ keepPrevious?: boolean }} [options]
  * @returns {{ ok: boolean, assetsOk: boolean, nearQuota: boolean, bytes: number, footprint: number, json: string }}
  */
-export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY) {
+export function trySaveToLocalStorage(state, key = DEFAULT_STORAGE_KEY, options = {}) {
   const { state: detached, assets } = detachAssets(packState(state));
   const json = JSON.stringify(detached);
   const bytes = saveByteSize(json);
-  const assetsOk = persistAssets(assets, json, [key]);
+  const assetsOk = persistAssets(assets, json, options.keepPrevious ? [] : [key]);
   try {
     writeStored(key, json);
   } catch {

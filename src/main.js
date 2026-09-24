@@ -11,6 +11,8 @@ import { loadInitialCampaignSafe } from './campaign/Campaigns.js';
 import { mountToasts, flushQueuedToast } from './ui/Toast.js';
 import { mountTooltips } from './ui/Tooltip.js';
 import { alertModal } from './ui/Modal.js';
+import { loadFailedMessage } from './storage/SaveNotices.js';
+import { historyDepth } from './storage/HistoryLog.js';
 import { wireCampaignActions } from './app/campaignActions.js';
 import { wireMapView } from './app/mapWiring.js';
 import { wireGenerateAction } from './app/generateAction.js';
@@ -106,13 +108,12 @@ if (app.state.combat !== null) app.actions.setMode('combat');
 flushQueuedToast(toasts);
 
 // A save the loader cannot read leaves the app running on a blank
-// campaign. The app must report this. Undo restores the previous save and
-// gives the GM a way back.
+// campaign, and the GM who is not told takes the blank map for data loss.
+// When the history has a step, Undo restores the previous save.
 if (loadFailed) {
-  void alertModal(
-    'The saved campaign could not be read, so this session started blank. Nothing has been overwritten: press Undo to restore the previous save, and export a backup before making changes.',
-    { title: 'Could not load the saved campaign' },
-  );
+  void alertModal(loadFailedMessage(historyDepth().undo), {
+    title: 'Could not load the saved campaign',
+  });
 }
 
 maybeShowOnboarding(app);

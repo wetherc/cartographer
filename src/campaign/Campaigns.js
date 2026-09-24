@@ -189,7 +189,7 @@ export function partyOnGrid(party, grid) {
  * what it reads before it reloads the app, so the unreadable campaign is
  * already the stored save, and the GM has no app left to press Undo
  * in. `failed` lets the caller report the error once the toasts mount. The
- * previous save is still in the undo ring, and Undo restores it.
+ * previous save is still in the undo history, and Undo restores it.
  * @returns {{ campaign: Campaign, navigator: MapNavigator, partyTracker: PartyTracker, failed: boolean }}
  */
 export function loadInitialCampaignSafe() {

@@ -286,9 +286,26 @@ export function wireCampaignActions(app) {
    * @param {string} [toastMessage]
    */
   function replaceCampaign(campaign, toastMessage = 'Campaign replaced.') {
-    const ok = persistState(buildState(campaign));
-    if (!ok) return; // The error toast already explained the failure. Reloading here would use a stale state.
-    queueToastAfterReload(toastMessage);
+    persistAndReload(buildState(campaign), toastMessage);
+  }
+
+  /**
+   * Persists a campaign that replaces the live one, then reloads. The save
+   * and history notices go into the queued toast, because a toast shown
+   * here disappears with the page at once.
+   * @param {import('../types/storage.js').CampaignState} state
+   * @param {string} toastMessage
+   */
+  function persistAndReload(state, toastMessage) {
+    const result = saveCampaign(state);
+    const { landed, message } = saveOutcome(result);
+    if (!landed) {
+      // Reloading here would read the stale save that is still stored.
+      if (message) app.toasts.show(message, { level: 'error' });
+      return;
+    }
+    const loss = historyLossMessage(historyLoss(result.history), '');
+    queueToastAfterReload([toastMessage, message, loss].filter(Boolean).join(' '));
     setDirty(false); // This reload is intentional and must not trip the beforeunload guard.
     location.reload();
   }
@@ -308,6 +325,15 @@ export function wireCampaignActions(app) {
     }
   });
 
+  /**
+   * True when the live campaign is the untouched blank one. A blank campaign
+   * has nothing to lose, so a replace warning would only stand between a
+   * first-run GM and the example or their own file.
+   */
+  function isBlank() {
+    return isBlankCampaign(app.grid, app.navigator.getCurrentNode(), app.state.characters);
+  }
+
   mustGetElement('new-btn').addEventListener('click', async () => {
     const ok = await confirmModal(
       'Start a new blank campaign? The current campaign is replaced, including anything saved.',
@@ -317,11 +343,8 @@ export function wireCampaignActions(app) {
   });
 
   mustGetElement('example-btn').addEventListener('click', async () => {
-    // A blank campaign has nothing to lose, so the replace warning would
-    // only stand between a first-run GM and the example.
-    const blank = isBlankCampaign(app.grid, app.navigator.getCurrentNode(), app.state.characters);
     const ok =
-      blank ||
+      isBlank() ||
       (await confirmModal(
         'Load the example campaign? The current campaign is replaced, including anything saved.',
         { variant: 'danger', confirmLabel: 'Load example' },
@@ -529,6 +552,15 @@ export function wireCampaignActions(app) {
       app.toasts.show('That file has no map, so it is not a campaign file.', { level: 'error' });
       return;
     }
+    // The confirm comes after the read, so a file that is not a campaign
+    // gets its error without a question first.
+    const replace =
+      isBlank() ||
+      (await confirmModal(
+        'Import this campaign? It replaces the current campaign. Undo in the header restores the current one.',
+        { variant: 'danger', confirmLabel: 'Import' },
+      ));
+    if (!replace) return;
     // A file with a bundled library adopts it into the browser's customs,
     // asking first when that would overwrite existing ones. A decline keeps
     // the browser library and still imports the campaign, the same outcome
@@ -548,13 +580,9 @@ export function wireCampaignActions(app) {
       });
       adopt = false;
     }
-    // This is the simplest correct way to apply an imported campaign. It
-    // persists the campaign, then reloads so every module re-initializes from
-    // the same loadFromLocalStorage path that a normal page load takes,
-    // including the library wiring's fresh read of the customs written above.
-    if (!persistState(state)) return;
-    queueToastAfterReload(adopt ? 'Campaign and library imported.' : 'Campaign imported.');
-    setDirty(false);
-    location.reload();
+    // The reload makes every module re-initialize from the same
+    // loadFromLocalStorage path that a normal page load takes, including the
+    // library wiring's fresh read of the customs written above.
+    persistAndReload(state, adopt ? 'Campaign and library imported.' : 'Campaign imported.');
   });
 }
