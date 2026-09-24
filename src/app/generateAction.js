@@ -228,13 +228,19 @@ export function wireGenerateAction(app, env) {
         tileId: move.tileId,
       });
     }
-    if (moves.length) {
-      // A character's step reveals fog around it, the same as a walk does.
-      // Without this, a moved token stands in a blank fog field. A creature
-      // reveals nothing: fog follows the party and the characters.
+    // The new layout starts in fog. The party and every character still in
+    // the node reveal fog around the tile they stand on, whether or not they
+    // moved, the same as a walk does. Without this, a party whose tile stayed
+    // valid stands in a blank fog field. A creature reveals nothing, because
+    // fog follows the party and the characters.
+    const seers = [
+      partyTracker.getPosition(),
+      ...state.characters.map((c) => c.location).filter((at) => at != null),
+    ].filter((at) => at.nodeId === node.id);
+    if (seers.length) {
       let revealed = grid.getNode(node.id) ?? fresh;
-      for (const move of moves) {
-        revealed = revealAround(revealed, move.tileId, partyTracker.revealRadius);
+      for (const at of seers) {
+        revealed = revealAround(revealed, at.tileId, partyTracker.revealRadius);
       }
       grid.updateNode(revealed);
     }
