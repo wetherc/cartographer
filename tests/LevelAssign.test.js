@@ -8,6 +8,7 @@ import {
   className,
   prereqText,
   hasChoiceAt,
+  applyLevelChoices,
 } from '../src/entities/LevelAssign.js';
 import { getClass } from '../src/entities/Classes.js';
 import {
@@ -17,11 +18,13 @@ import {
   withHP,
   setMaxHP,
   getClasses,
+  damageCharacter,
 } from '../src/entities/Character.js';
 import { getProficiencies } from '../src/entities/Proficiencies.js';
 import { withHitDice, getHitDicePools } from '../src/entities/HitDice.js';
 import { getSlotPools } from '../src/entities/SpellSlots.js';
 import { pendingLevels } from '../src/entities/Multiclass.js';
+import { buildFeatureStamp } from '../src/entities/FeatureGrants.js';
 
 /**
  * @param {{ classId: string, level: number }[]} classes
@@ -353,4 +356,40 @@ test('the newest level stays put while a choice record claims it', () => {
     disabled: true,
   });
   assert.ok(assignOptions(c).every((o) => o.disabled));
+});
+
+test('applyLevelChoices applies the level, the new-class skill, and the feature picks', () => {
+  const c = withHP(classed([{ classId: 'fighter', level: 4 }], { DEX: 14 }, 5), 36);
+  // The Rogue's first-level Expertise, as the class data states it.
+  const effects = [
+    { kind: /** @type {const} */ ('proficiency'), expertise: { choose: 2, from: [] } },
+  ];
+  const stamp = buildFeatureStamp(
+    { classId: 'rogue', classLevel: 1, name: 'Expertise', effects },
+    { expertise: ['stealth'] },
+  );
+  // The character took damage while the dialogs stood open.
+  const live = damageCharacter(c, 16);
+  const next = applyLevelChoices(live, { classId: 'rogue', skills: ['stealth'], stamps: [stamp] });
+  assert.deepEqual(getClasses(next), [
+    { classId: 'fighter', level: 4 },
+    { classId: 'rogue', level: 1 },
+  ]);
+  const unhurt = applyLevelChoices(c, { classId: 'rogue', skills: [], stamps: [] });
+  assert.equal(getHP(next)?.current, (getHP(unhurt)?.current ?? 0) - 16, 'the damage is kept');
+  const p = getProficiencies(next);
+  assert.ok(p.skills.includes('stealth'));
+  assert.deepEqual(p.expertise, ['stealth']);
+});
+
+test('applyLevelChoices adds skill picks only when the level starts a new class', () => {
+  const c = classed([{ classId: 'fighter', level: 4 }], {}, 5);
+  const next = applyLevelChoices(c, { classId: 'fighter', skills: ['stealth'], stamps: [] });
+  assert.equal(getClasses(next)[0].level, 5);
+  assert.equal(getProficiencies(next).skills.includes('stealth'), false);
+});
+
+test('applyLevelChoices leaves a character with nothing to assign unchanged', () => {
+  const c = classed([{ classId: 'fighter', level: 5 }]);
+  assert.equal(applyLevelChoices(c, { classId: 'fighter', skills: [], stamps: [] }), c);
 });

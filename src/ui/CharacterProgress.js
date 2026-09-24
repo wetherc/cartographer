@@ -3,7 +3,12 @@ import { sectionLabel, textButton } from './buttons.js';
 import { classNames, el } from './dom.js';
 import { getClass } from '../entities/Classes.js';
 import { getClasses, pendingLevels, classLevelOf } from '../entities/Multiclass.js';
-import { assignLevel, assignOptions, className } from '../entities/LevelAssign.js';
+import {
+  applyLevelChoices,
+  assignLevel,
+  assignOptions,
+  className,
+} from '../entities/LevelAssign.js';
 import {
   ABILITY_MAX,
   pendingASISlots,
@@ -17,7 +22,6 @@ import {
   takeFeat,
   undoLastChoice,
   withExpertise,
-  withProficiencies,
   applyFeatureGrant,
   undoFeatureGrant,
 } from '../entities/Progression.js';
@@ -37,6 +41,7 @@ import { SKILL_IDS, skillName } from '../data/skills.js';
 import { splitList } from '../util/text.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
+/** @typedef {import('../entities/FeatureGrants.js').FeatureStamp} FeatureStamp */
 
 /**
  * This is the progression section of the character sheet. It shows the
@@ -57,15 +62,15 @@ import { splitList } from '../util/text.js';
  * keeps the assignment without a skill.
  * @param {Character} character
  * @param {string} classId
- * @returns {Promise<Character>}
+ * @returns {Promise<string[]>} the picked skill ids
  */
-async function pickMulticlassSkill(character, classId) {
+async function pickMulticlassSkills(character, classId) {
   const choice = getClass(classId)?.multiclassGrant.skillChoice;
-  if (!choice) return character;
+  if (!choice) return [];
   const p = getProficiencies(character);
   const pool = choice.from.length > 0 ? choice.from : SKILL_IDS;
   const from = pool.filter((id) => !p.skills.includes(id));
-  if (from.length === 0) return character;
+  if (from.length === 0) return [];
   const values = await promptModal(
     `${className(classId)} skill`,
     [
@@ -80,24 +85,24 @@ async function pickMulticlassSkill(character, classId) {
     ],
     { submitLabel: 'Choose' },
   );
-  const picked = values ? splitList(values.skills).slice(0, choice.choose) : [];
-  if (picked.length === 0) return character;
-  return withProficiencies(character, { ...p, skills: [...p.skills, ...picked] });
+  return values ? splitList(values.skills).slice(0, choice.choose) : [];
 }
 
 /**
- * Prompt for a pending feature grant's picks and apply the grant. A cancel
- * in any dialog returns the character unchanged, so the grant stays
- * pending and the sheet's pending row offers it again.
+ * Prompt for a pending feature grant's picks and return the stamp that
+ * claims it. A cancel in any dialog returns null, so the grant stays pending
+ * and the sheet's pending row offers it again. The caller applies the stamp
+ * to the character read after the last dialog closes, because the character
+ * can change while a dialog is open: a heal lands, or a player tab spends a
+ * slot.
  * @param {Character} character
  * @param {import('../entities/FeatureGrants.js').PendingFeature} grant
- * @returns {Promise<Character>}
+ * @returns {Promise<FeatureStamp | null>}
  */
-async function claimFeatureGrant(character, grant) {
+async function askFeatureStamp(character, grant) {
   const title = `${grant.name} (${className(grant.classId)} ${grant.classLevel})`;
   const picks = await gatherEffectPicks(title, grant.effects, character);
-  if (!picks) return character;
-  return applyFeatureGrant(character, buildFeatureStamp(grant, picks));
+  return picks ? buildFeatureStamp(grant, picks) : null;
 }
 
 /**
@@ -183,27 +188,42 @@ export function buildProgressSection(getCharacter, opts) {
       { submitLabel: 'Assign' },
     );
     if (!values) return;
-    // Read the character again after the dialog closes. The dialog stays
-    // open long enough for the sheet's HP or slots to change underneath it.
+    const classId = values.class;
+    // The picks gather against a preview of the level. The dialogs stay open
+    // long enough for the sheet's HP or slots to change underneath them, so
+    // the level and its picks apply again to the character read after the
+    // last dialog closes.
     const from = getCharacter();
-    const isNew = classLevelOf(from, values.class) === 0;
-    let next = assignLevel(from, values.class);
-    if (next === from) return;
-    if (isNew) next = await pickMulticlassSkill(next, values.class);
-    const gained = featuresGained(next, from);
+    let preview = assignLevel(from, classId);
+    if (preview === from) return;
+    const skills =
+      classLevelOf(from, classId) === 0 ? await pickMulticlassSkills(preview, classId) : [];
+    preview = applyLevelChoices(from, { classId, skills, stamps: [] });
+    const gained = featuresGained(preview, from);
+    /** @type {FeatureStamp[]} */
+    const stamps = [];
     for (const feature of gained) {
       if (!feature.effects) continue;
-      next = await claimFeatureGrant(next, {
+      const stamp = await askFeatureStamp(preview, {
         classId: feature.classId,
         classLevel: feature.level,
         name: feature.name,
         effects: feature.effects,
       });
+      if (!stamp) continue;
+      stamps.push(stamp);
+      // A later grant's picks exclude what an earlier one already gave.
+      preview = applyFeatureGrant(preview, stamp);
+    }
+    const live = getCharacter();
+    const next = applyLevelChoices(live, { classId, skills, stamps });
+    if (next === live) {
+      opts.notify('That level can no longer be assigned.');
+      return;
     }
     const gainedText = gained.length > 0 ? ` New: ${gained.map((f) => f.name).join(', ')}.` : '';
     opts.notify(
-      `${from.name} takes ${className(values.class)} ` +
-        `${classLevelOf(next, values.class)}.${gainedText}`,
+      `${live.name} takes ${className(classId)} ${classLevelOf(next, classId)}.${gainedText}`,
     );
     opts.onCommit(next);
   }
@@ -325,11 +345,18 @@ export function buildProgressSection(getCharacter, opts) {
   }
 
   async function runFeatureGrants() {
-    let c = getCharacter();
-    for (const grant of pendingFeatureGrants(c)) {
-      c = await claimFeatureGrant(c, grant);
+    let preview = getCharacter();
+    /** @type {FeatureStamp[]} */
+    const stamps = [];
+    for (const grant of pendingFeatureGrants(preview)) {
+      const stamp = await askFeatureStamp(preview, grant);
+      if (!stamp) continue;
+      stamps.push(stamp);
+      preview = applyFeatureGrant(preview, stamp);
     }
-    if (c !== getCharacter()) opts.onCommit(c);
+    const live = getCharacter();
+    const next = stamps.reduce(applyFeatureGrant, live);
+    if (next !== live) opts.onCommit(next);
   }
 
   const grants = pendingFeatureGrants(character);
@@ -418,8 +445,12 @@ export function buildProgressSection(getCharacter, opts) {
     const undone = undoFeatureGrant(from, key);
     if (undone === from) return;
     const grant = pendingFeatureGrants(undone).find((g) => featureKey(g) === key);
-    const next = grant ? await claimFeatureGrant(undone, grant) : undone;
-    opts.onCommit(next);
+    const stamp = grant ? await askFeatureStamp(undone, grant) : null;
+    // Undo and claim again on the character read after the dialog closes.
+    const live = getCharacter();
+    const liveUndone = undoFeatureGrant(live, key);
+    const next = stamp ? applyFeatureGrant(liveUndone, stamp) : liveUndone;
+    if (next !== live) opts.onCommit(next);
   }
 
   const features = unlockedFeatures(character);

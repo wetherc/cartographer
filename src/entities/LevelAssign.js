@@ -1,10 +1,11 @@
 import { getClass, CLASS_LIST } from './Classes.js';
 import { getClasses, pendingLevels, withClasses, classLevelOf } from './Multiclass.js';
 import { getProficiencies, withProficiencies } from './Proficiencies.js';
-import { derive } from './Progression.js';
+import { applyFeatureGrant, derive } from './Progression.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/class.js').ClassDef} ClassDef */
+/** @typedef {import('./FeatureGrants.js').FeatureStamp} FeatureStamp */
 
 /**
  * The multiclass level-up flow. A multiclass character's XP levels stay
@@ -127,6 +128,33 @@ export function assignLevel(character, classId) {
     { classId, level: 1 },
   ]);
   return derive(grantMulticlassProficiencies(next, def));
+}
+
+/**
+ * Assign a level and apply the picks gathered for it, as one step. The
+ * level-up dialogs gather their picks against a preview of the level. When
+ * the last dialog closes, the sheet calls this on the character read at that
+ * moment, so an HP change or a spent slot from another tab while a dialog
+ * stood open is kept. `skills` are the multiclass skill picks, and they apply
+ * only when the level starts a new class. A feature stamp whose grant is not
+ * pending on the result does nothing. The character comes back unchanged
+ * when the level itself cannot be assigned any more. This function is pure.
+ * @param {Character} character
+ * @param {{ classId: string, skills: string[], stamps: FeatureStamp[] }} choices
+ * @returns {Character}
+ */
+export function applyLevelChoices(character, { classId, skills, stamps }) {
+  const isNew = classLevelOf(character, classId) === 0;
+  let next = assignLevel(character, classId);
+  if (next === character) return character;
+  if (isNew && skills.length > 0) {
+    const p = getProficiencies(next);
+    next = derive(
+      withProficiencies(next, { ...p, skills: [...new Set([...p.skills, ...skills])] }),
+    );
+  }
+  for (const stamp of stamps) next = applyFeatureGrant(next, stamp);
+  return next;
 }
 
 /**
