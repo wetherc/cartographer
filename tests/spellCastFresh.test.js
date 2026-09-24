@@ -79,7 +79,6 @@ test('the spent slot lands on the caster as it is at submit time', () => {
   const written = [];
   resolveCast(app, plan, submit(), {
     writeBack: (next) => written.push(next),
-    concentrates: true,
   });
   assert.equal(written.length, 1);
   assert.deepEqual(written[0].conditions, ['Blessed'], 'the newer entity is kept');
@@ -97,7 +96,6 @@ test('a slot spent elsewhere while the dialog was open is not spent twice', () =
   const written = [];
   resolveCast(app, plan, submit(), {
     writeBack: (next) => written.push(next),
-    concentrates: true,
   });
   assert.equal(written[0].resources[0].current, 0, 'one slot comes off the live count');
 });
@@ -112,7 +110,6 @@ test('a caster that left the campaign casts nothing and spends nothing', () => {
     writeBack: () => {
       written += 1;
     },
-    concentrates: true,
   });
   assert.equal(written, 0);
   assert.deepEqual(app.log, []);

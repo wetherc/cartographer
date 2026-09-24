@@ -570,7 +570,6 @@ test('a cantrip attack rolls, logs, and damages without spending anything', () =
   const written = [];
   resolveCast(app, plan, submit({ target: 'goblin', slot: undefined }), {
     writeBack: (next) => written.push(next),
-    concentrates: true,
     rng: seq([d20(18), face(10, 7)]),
   });
   assert.deepEqual(written, [], 'a cantrip changes nothing about the caster');
@@ -594,7 +593,6 @@ test('a missed attack logs the roll against AC and leaves HP alone', () => {
   const plan = planFor(app, caster, firebolt);
   resolveCast(app, plan, submit({ target: 'goblin' }), {
     writeBack: () => {},
-    concentrates: true,
     rng: seq([d20(2)]),
   });
   assert.match(app.log[1], /to hit vs AC 14 — misses Goblin\.$/);
@@ -611,7 +609,6 @@ test('a leveled cast spends the slot and stores the caster once', () => {
   const written = [];
   resolveCast(app, plan, submit({ target: 'monk' }), {
     writeBack: (next) => written.push(next),
-    concentrates: true,
     rng: seq([face(8, 5)]),
   });
   assert.equal(written.length, 1, 'the slot, the component, and the hold store together');
@@ -632,7 +629,6 @@ test('a heal that adds the modifier heals the roll plus the spellcasting modifie
   const plan = planFor(app, caster, mending);
   resolveCast(app, plan, submit({ target: 'monk' }), {
     writeBack: () => {},
-    concentrates: true,
     rng: seq([face(8, 1)]),
   });
   assert.match(app.log[1], /Cure Wounds heals Monk for 4 HP./, 'a roll of 1 plus INT +3');
@@ -651,7 +647,6 @@ test('a failed save takes full damage and lands a tracked condition', () => {
   const plan = planFor(app, caster, holdPerson);
   resolveCast(app, plan, submit({ target: 'goblin', dc: '14' }), {
     writeBack: () => {},
-    concentrates: false,
     rng: seq([d20(3)]),
   });
   assert.match(app.log[1], /Goblin fails DC 14 \(WIS \+0: 3\) — takes 0 damage, Paralyzed\.$/);
@@ -675,7 +670,6 @@ test('a made save logs the roll and no condition', () => {
   const plan = planFor(app, caster, burningHands);
   resolveCast(app, plan, submit({ target: 'goblin', dc: '14' }), {
     writeBack: () => {},
-    concentrates: false,
     // A save spell rolls its damage first, then each target's save against it.
     rng: seq([face(6, 6), face(6, 6), face(6, 6), d20(20)]),
   });
@@ -704,7 +698,6 @@ test('the chips on both sides slant a spell attack', () => {
   const plan = planFor(app, caster, firebolt);
   resolveCast(app, plan, submit({ target: 'goblin' }), {
     writeBack: () => {},
-    concentrates: true,
     // Blinded on the caster and Prone on a ranged target both point the same
     // way, so the roll takes two d20s and keeps the low one.
     rng: seq([d20(18), d20(2), face(10, 7)]),
@@ -729,7 +722,6 @@ test("the dialog's mode and the chips cancel instead of overriding", () => {
   const plan = planFor(app, caster, firebolt);
   resolveCast(app, plan, submit({ target: 'goblin', mode: 'advantage' }), {
     writeBack: () => {},
-    concentrates: true,
     // The GM's advantage and the prone target's ranged disadvantage cancel, so
     // one d20 is thrown and the 18 behind it is never reached.
     rng: seq([d20(2), d20(18), face(10, 7)]),
@@ -753,7 +745,6 @@ test('a paralyzed target fails a body save with no roll', () => {
   const plan = planFor(app, caster, burningHands);
   resolveCast(app, plan, submit({ target: 'goblin', dc: '14' }), {
     writeBack: () => {},
-    concentrates: false,
     // Only the damage dice are drawn. A paralyzed target never reaches a d20.
     rng: seq([face(6, 6), face(6, 6), face(6, 6)]),
   });
@@ -777,7 +768,6 @@ test('a restrained target rolls its Dexterity save at disadvantage', () => {
   const plan = planFor(app, caster, burningHands);
   resolveCast(app, plan, submit({ target: 'goblin', dc: '5' }), {
     writeBack: () => {},
-    concentrates: false,
     // The kept 2 leaves the save short of the DC that the dropped 18 would
     // have cleared.
     rng: seq([face(6, 6), face(6, 6), face(6, 6), d20(18), d20(2)]),
@@ -789,7 +779,7 @@ test('a utility cast logs the spell and says only that it was cast', () => {
   const caster = mage();
   const app = stubApp({ characters: [caster] });
   const plan = planFor(app, caster, detectMagic);
-  resolveCast(app, plan, submit(), { writeBack: () => {}, concentrates: true });
+  resolveCast(app, plan, submit(), { writeBack: () => {} });
   assert.deepEqual(app.toasted, ['Detect Magic cast.']);
 });
 
@@ -801,7 +791,6 @@ test('a ritual cast spends no slot and states the extra ten minutes', () => {
   const written = [];
   resolveCast(app, plan, submit({ ritual: '1' }), {
     writeBack: (next) => written.push(next),
-    concentrates: true,
   });
   assert.deepEqual(written, []);
   assert.match(app.log[0], /Mage casts Detect Magic as a ritual \(10 minutes longer\)\.$/);
@@ -813,7 +802,6 @@ test('unticking the ritual box with no slot left refuses the cast', () => {
   const plan = planFor(app, caster, detectMagic);
   resolveCast(app, plan, submit({ slot: undefined }), {
     writeBack: () => {},
-    concentrates: true,
   });
   assert.deepEqual(app.toasted, ['No level 1+ slot left for Detect Magic.']);
   assert.deepEqual(app.log, [], 'a refused cast logs nothing');
@@ -830,7 +818,6 @@ test('a cast the caster cannot make at all is refused plainly', () => {
   const plan = planFor(app, caster, detectMagic);
   resolveCast(app, { ...plan, spell: alarm }, submit(), {
     writeBack: () => {},
-    concentrates: true,
   });
   assert.deepEqual(app.toasted, ["Can't cast Alarm."]);
 });
@@ -846,7 +833,7 @@ test('submitting no target refuses before the slot is spent', () => {
   });
   const app = stubApp({ characters: [caster], creatures: [goblin] });
   const plan = planFor(app, caster, burningHands);
-  resolveCast(app, plan, submit({ targets: '' }), { writeBack: () => {}, concentrates: false });
+  resolveCast(app, plan, submit({ targets: '' }), { writeBack: () => {} });
   assert.deepEqual(app.toasted, ['Pick at least one target for Burning Hands.']);
   assert.equal(caster.resources[0].current, 4);
 });
@@ -858,7 +845,6 @@ test('a missing component blocks the cast, and the opt-out lets it through', () 
   const plan = planFor(app, caster, revivify);
   resolveCast(app, plan, submit({ target: 'monk' }), {
     writeBack: () => {},
-    concentrates: false,
   });
   assert.deepEqual(app.toasted, ['Revivify needs diamonds worth 300 gp.']);
 
@@ -866,7 +852,6 @@ test('a missing component blocks the cast, and the opt-out lets it through', () 
   const plan2 = planFor(ignored, caster, revivify);
   resolveCast(ignored, plan2, submit({ target: 'monk', 'ignore-components': '1' }), {
     writeBack: () => {},
-    concentrates: false,
     rng: seq([face(4, 2)]),
   });
   assert.match(ignored.log[0], /Mage casts Revivify at level 1\./);
@@ -881,7 +866,6 @@ test('a consumed component comes off the inventory and is logged as used', () =>
   const written = [];
   resolveCast(app, plan, submit({ target: 'monk' }), {
     writeBack: (next) => written.push(next),
-    concentrates: false,
     rng: seq([face(4, 2)]),
   });
   assert.equal(written[0].inventory[0].quantity, 1);
@@ -894,7 +878,7 @@ test('a pouch or a focus covers a cost-free material, and its absence blocks the
   const app = stubApp({ characters: [bare] });
   const plan = planFor(app, bare, mageArmor);
   assert.equal(plan.material.required, true, 'no focus, so the caster holds the leather itself');
-  resolveCast(app, plan, submit(), { writeBack: () => {}, concentrates: false });
+  resolveCast(app, plan, submit(), { writeBack: () => {} });
   assert.deepEqual(app.toasted, [
     'Mage Armor needs a component pouch or a focus, or a piece of cured leather.',
   ]);
@@ -913,7 +897,6 @@ test('a pouch or a focus covers a cost-free material, and its absence blocks the
   const written = [];
   resolveCast(covered, plan2, submit(), {
     writeBack: (next) => written.push(next),
-    concentrates: false,
   });
   assert.match(covered.log[0], /Mage casts Mage Armor at level 1\./);
   assert.equal(written[0].inventory.length, 1, 'the pouch is not spent');
@@ -937,7 +920,7 @@ test('a costed material must be held whatever focus the caster carries, and stay
   const plan = planFor(app, caster, orb);
   assert.equal(plan.material.required, true);
   assert.equal(plan.material.consumes, false);
-  resolveCast(app, plan, submit({ target: 'monk' }), { writeBack: () => {}, concentrates: false });
+  resolveCast(app, plan, submit({ target: 'monk' }), { writeBack: () => {} });
   assert.deepEqual(app.toasted, ['Chromatic Orb needs a diamond worth 50 gp.']);
 
   const holder = mage({ inventory: [pouch(), item('diamond', 'Diamond')] });
@@ -948,7 +931,6 @@ test('a costed material must be held whatever focus the caster carries, and stay
   const written = [];
   resolveCast(rich, planFor(rich, holder, orb), submit({ target: 'monk' }), {
     writeBack: (next) => written.push(next),
-    concentrates: false,
     rng: seq([face(4, 2)]),
   });
   assert.equal(written[0].inventory.length, 2, 'a priced component is held, not spent');
@@ -970,7 +952,6 @@ test('a concentration cast holds the spell and drops what it held before', () =>
   const written = [];
   resolveCast(app, plan, submit({ target: 'goblin', dc: '14' }), {
     writeBack: (next) => written.push(next),
-    concentrates: true,
     rng: seq([d20(1)]),
   });
   assert.equal(written[0].concentration.spellId, 'hold-person');
@@ -983,7 +964,6 @@ test('a concentration cast holds the spell and drops what it held before', () =>
   const plan2 = planFor(second, held, holdPerson);
   resolveCast(second, plan2, submit({ target: 'goblin', dc: '14' }), {
     writeBack: () => {},
-    concentrates: true,
     rng: seq([d20(1)]),
   });
   assert.ok(
@@ -1012,7 +992,6 @@ test('a cast above its target cap reports the targets it dropped', () => {
   const plan = planFor(app, caster, holdPerson);
   resolveCast(app, plan, submit({ targets: 'goblin, wolf', dc: '14' }), {
     writeBack: () => {},
-    concentrates: false,
     rng: seq([d20(1)]),
   });
   assert.equal(
@@ -1045,7 +1024,6 @@ test('a multi-projectile cast logs one tally per creature', () => {
   const plan = planFor(app, caster, scorchingRay);
   resolveCast(app, plan, submit({ slot: '2', allocation: 'goblin:2,wolf:1' }), {
     writeBack: () => {},
-    concentrates: false,
     // Both rays at the goblin land, the one at the AC 30 wolf cannot. Each ray
     // rolls its own d20 and then its own dice. A natural 20 would double the
     // dice and shift the queue, so these hit without critting.
@@ -1187,7 +1165,6 @@ test('a buff puts its chip and rider on every recipient', () => {
     writeBack: (next) => {
       app.state.characters = app.state.characters.map((c) => (c.id === next.id ? next : c));
     },
-    concentrates: true,
     rng: () => assert.fail('a buff rolls no dice'),
   });
   const chips = app.state.characters.map((c) => c.conditions.find((x) => x.name === 'Bless'));
@@ -1213,7 +1190,6 @@ test('dropping the concentration on a buff sweeps its chips off every recipient'
   };
   resolveCast(app, planFor(app, caster, bless), submit({ targets: 'mage,rogue' }), {
     writeBack: write,
-    concentrates: true,
   });
   for (const c of app.state.characters) {
     assert.ok(
@@ -1234,7 +1210,6 @@ test('dropping the concentration on a buff sweeps its chips off every recipient'
   app.state.creatures = [goblin];
   resolveCast(app, planFor(app, holder, holdPerson), submit({ target: 'goblin', dc: '14' }), {
     writeBack: write,
-    concentrates: true,
     rng: seq([d20(20)]),
   });
   for (const c of app.state.characters) {
@@ -1254,7 +1229,6 @@ test('an unnamed buff chip carries the spell’s own name', () => {
     writeBack: (next) => {
       app.state.characters = [next];
     },
-    concentrates: true,
   });
   const chip = app.state.characters[0].conditions.find((c) => c.name === 'Bless');
   assert.equal(chip.rider, undefined, 'a chip with no rider stores no key');
@@ -1303,7 +1277,6 @@ test('a rider the caster holds joins the spell attack roll and the log', () => {
   const plan = planFor(app, caster, firebolt);
   resolveCast(app, plan, submit({ target: 'goblin' }), {
     writeBack: () => {},
-    concentrates: false,
     rng: seq([face(4, 3), d20(5)]),
   });
   assert.ok(
@@ -1327,7 +1300,6 @@ test('a hit names the rider that got it there', () => {
   const plan = planFor(app, caster, firebolt);
   resolveCast(app, plan, submit({ target: 'goblin' }), {
     writeBack: () => {},
-    concentrates: false,
     rng: seq([face(4, 3), d20(9), face(10, 5)]),
   });
   assert.match(app.log.join('\n'), /Fire Bolt hits Goblin \(Bless \+1d4 \[3\]\) for/);
@@ -1352,7 +1324,6 @@ test('each ray of a projectile cast reports its own rider dice', () => {
   const plan = planFor(app, caster, scorchingRay);
   resolveCast(app, plan, submit({ slot: '2', allocation: 'goblin:2' }), {
     writeBack: () => {},
-    concentrates: false,
     // Each ray rolls its own d4 before its own d20, so the two rays roll
     // different faces and both belong in the line.
     rng: seq([
@@ -1388,7 +1359,6 @@ test('a rider the target holds rides its save against the next spell', () => {
   const plan = planFor(app, caster, burningHands);
   resolveCast(app, plan, submit({ target: 'goblin', dc: '14' }), {
     writeBack: () => {},
-    concentrates: false,
     // Three d6 of damage, then the Bane d4, then the target's d20.
     rng: seq([face(6, 1), face(6, 1), face(6, 1), face(4, 4), d20(5)]),
   });
@@ -1408,7 +1378,6 @@ test('a failed save against a rider spell lands the rider on the chip', () => {
   const plan = planFor(app, caster, bane);
   resolveCast(app, plan, submit({ target: 'goblin', dc: '14' }), {
     writeBack: () => {},
-    concentrates: false,
     rng: seq([d20(3)]),
   });
   const chip = app.state.creatures[0].conditions.find((c) => c.name === 'Bane');
@@ -1456,7 +1425,6 @@ test('untrained armor refuses the cast before a slot is spent', () => {
   const written = [];
   resolveCast(app, plan, submit({ target: 'monk' }), {
     writeBack: (next) => written.push(next),
-    concentrates: true,
     rng: seq([face(8, 5)]),
   });
   assert.deepEqual(app.toasted, ['Mage cannot cast in heavy armor without armor proficiency.']);
@@ -1473,7 +1441,6 @@ test('the Ignore armor box casts anyway', () => {
   const written = [];
   resolveCast(app, plan, submit({ target: 'monk', 'ignore-armor': '1' }), {
     writeBack: (next) => written.push(next),
-    concentrates: true,
     rng: seq([face(8, 5)]),
   });
   assert.equal(written.length, 1, 'the slot is spent');
@@ -1503,7 +1470,6 @@ test('a target in untrained armor rolls a body save at disadvantage', () => {
   assert.equal(/** @type {any} */ (plan).targets[0].armorPenalty, true);
   resolveCast(app, /** @type {any} */ (plan), submit({ target: 'monk', dc: '14' }), {
     writeBack: () => {},
-    concentrates: false,
     // Disadvantage keeps the 2 and drops the 18 that would have saved.
     rng: seq([d20(18), d20(2)]),
   });
@@ -1586,7 +1552,6 @@ test('a summons puts stamped creatures on the party tile and spends the slot', (
     writeBack: (/** @type {any} */ next) => {
       app.state.characters = [next];
     },
-    concentrates: true,
   });
   assert.equal(
     app.state.characters[0].resources.find((/** @type {any} */ r) => r.id === 'slots-1').current,
@@ -1622,16 +1587,16 @@ test('a summons upcast at a higher slot brings more creatures', () => {
   });
   const app = stubApp({ characters: [caster] });
   const plan = planFor(app, caster, conjureAnimals);
-  resolveCast(app, plan, submit({ slot: '3' }), { writeBack: () => {}, concentrates: true });
+  resolveCast(app, plan, submit({ slot: '3' }), { writeBack: () => {} });
   assert.equal(app.state.creatures.length, 4, 'one more creature per slot level above the first');
 });
 
 test('a summons nothing concentrates on says so in the log', () => {
   const caster = druid();
   const app = stubApp({ characters: [caster] });
-  const plan = planFor(app, caster, conjureAnimals);
-  // A creature caster holds no concentration, so nothing will sweep its summons.
-  resolveCast(app, plan, submit(), { writeBack: () => {}, concentrates: false });
+  // A summons spell with no concentration leaves nothing to sweep its creatures.
+  const plan = planFor(app, caster, { ...conjureAnimals, concentration: false });
+  resolveCast(app, plan, submit(), { writeBack: () => {} });
   assert.ok(app.log.includes('Conjure Animals summons 2 x Wolf (untracked).'));
 });
 
@@ -1648,7 +1613,7 @@ test('a summons cast mid-fight joins the running order', () => {
   const joined = [];
   app.actions.addCombatant = (/** @type {any} */ participant) => joined.push(participant);
   const plan = planFor(app, caster, conjureAnimals);
-  resolveCast(app, plan, submit(), { writeBack: () => {}, concentrates: true });
+  resolveCast(app, plan, submit(), { writeBack: () => {} });
   assert.equal(joined.length, 2, 'each summon rolls its own place in the order');
   assert.deepEqual(
     joined.map((p) => p.id),
@@ -1663,7 +1628,7 @@ test('a summons out of combat joins no order', () => {
   const caster = druid();
   const app = stubApp({ characters: [caster] });
   const plan = planFor(app, caster, conjureAnimals);
-  resolveCast(app, plan, submit(), { writeBack: () => {}, concentrates: true });
+  resolveCast(app, plan, submit(), { writeBack: () => {} });
   assert.equal(app.calls.includes('addCombatant'), false);
   assert.equal(app.state.creatures.length, 2, 'the wolves still stand on the tile');
 });
@@ -1704,7 +1669,7 @@ test('a summons marks the campaign dirty even when the cast spends nothing', () 
   });
   const app = stubApp({ characters: [caster] });
   const plan = planFor(app, caster, cantrip);
-  resolveCast(app, plan, submit({ slot: '0' }), { writeBack: () => {}, concentrates: false });
+  resolveCast(app, plan, submit({ slot: '0' }), { writeBack: () => {} });
   assert.equal(app.state.creatures.length, 1);
   assert.ok(app.dirty > 0, 'the new creature has to reach the save');
 });
@@ -1757,7 +1722,7 @@ test('a cast in a fight spends the action its casting time names', () => {
     !plan.fields.some((/** @type {any} */ f) => f.name === 'ignore-action'),
     'an affordable cast needs no opt-out',
   );
-  resolveCast(app, plan, atGoblin(), { writeBack: () => {}, concentrates: true });
+  resolveCast(app, plan, atGoblin(), { writeBack: () => {} });
   assert.deepEqual(spends, [{ id: 'mage', cost: 'action' }]);
 });
 
@@ -1769,7 +1734,7 @@ test('a cast whose cost went away while the dialog stood open is refused', () =>
   const plan = planFor(app, caster, firebolt);
   assert.equal(plan.actionBlocked, false);
   app.actions.spendBudget = () => false;
-  resolveCast(app, plan, atGoblin(), { writeBack: () => {}, concentrates: true });
+  resolveCast(app, plan, atGoblin(), { writeBack: () => {} });
   assert.equal(app.toasted[0], 'Mage already used their action this turn.');
   assert.deepEqual(app.log, [], 'the refused cast rolled nothing');
 });
@@ -1784,7 +1749,6 @@ test('a cast out of combat spends nothing', () => {
   assert.equal(plan.actionBlocked, false);
   resolveCast(app, plan, submit({ target: 'mage' }), {
     writeBack: () => {},
-    concentrates: true,
   });
   assert.deepEqual(spends, [], 'no turn is running to pay for it');
 });
@@ -1796,7 +1760,7 @@ test('a turn that already acted blocks a cast and offers the opt-out', () => {
   assert.equal(plan.actionBlocked, true);
   const optOut = plan.fields.find((/** @type {any} */ f) => f.name === 'ignore-action');
   assert.equal(optOut.label, 'Ignore action cost (action already used)');
-  resolveCast(app, plan, atGoblin(), { writeBack: () => {}, concentrates: true });
+  resolveCast(app, plan, atGoblin(), { writeBack: () => {} });
   assert.equal(app.toasted[0], 'Mage already used their action this turn.');
   assert.deepEqual(app.log, [], 'the refused cast rolled nothing');
   assert.deepEqual(spends, [], 'and spent nothing');
@@ -1808,7 +1772,6 @@ test('the opt-out casts anyway and still spends nothing', () => {
   const plan = planFor(app, caster, firebolt);
   resolveCast(app, plan, atGoblin({ 'ignore-action': '1' }), {
     writeBack: () => {},
-    concentrates: true,
   });
   assert.ok(app.log.some((/** @type {string} */ line) => line.startsWith('Mage casts Fire Bolt')));
   assert.deepEqual(spends, [], 'the budget has nothing left to take');
@@ -1831,7 +1794,6 @@ test('a casting time longer than a turn blocks a cast in a fight', () => {
   assert.equal(optOut.label, 'Ignore casting time (10 minutes)');
   resolveCast(app, plan, submit({ target: 'mage' }), {
     writeBack: () => {},
-    concentrates: true,
   });
   assert.equal(app.toasted[0], 'Slow Working takes 10 minutes, longer than one turn.');
 });
@@ -1850,7 +1812,6 @@ test('a bonus-action cast spends the bonus action', () => {
   assert.equal(plan.actionBlocked, false, 'the spent action does not block a bonus action');
   resolveCast(app, plan, submit({ target: 'mage' }), {
     writeBack: () => {},
-    concentrates: true,
   });
   assert.deepEqual(spends, [{ id: 'mage', cost: 'bonus' }]);
 });
@@ -1873,7 +1834,6 @@ test('a reaction cast spends the reaction on somebody else another turn', () => 
   assert.equal(plan.actionBlocked, false, 'the spent action and bonus action leave it free');
   resolveCast(app, plan, submit({ target: 'mage' }), {
     writeBack: () => {},
-    concentrates: true,
   });
   assert.deepEqual(spends, [{ id: 'mage', cost: 'reaction' }]);
 });
@@ -1894,7 +1854,6 @@ test('a reaction cast with the reaction gone is blocked and offers the opt-out',
   assert.equal(optOut.label, 'Ignore action cost (reaction already used)');
   resolveCast(app, plan, submit({ target: 'mage' }), {
     writeBack: () => {},
-    concentrates: true,
   });
   assert.equal(app.toasted[0], 'Mage already used their reaction this turn.');
   assert.deepEqual(spends, []);
@@ -1976,11 +1935,33 @@ test('a melee spell hit on a paralyzed foe is a critical hit', () => {
   const plan = planFor(app, caster, grasp);
   resolveCast(app, plan, submit({ target: 'goblin', slot: undefined }), {
     writeBack: () => {},
-    concentrates: false,
     // Paralyzed grants advantage, so two d20 roll. Neither is a 20, then two
     // d8 roll for the doubled die.
     rng: seq([d20(15), d20(14), face(8, 4), face(8, 4)]),
   });
   assert.match(app.log[1], /Shocking Grasp critically hits Goblin/);
   assert.equal(app.state.creatures[0].currentHP, 22);
+});
+
+test('a creature caster holds the concentration spell it casts', () => {
+  const shaman = createCreature('shaman', 'Shaman', {
+    disposition: 'hostile',
+    maxHP: 20,
+    location: HERE,
+    level: 3,
+    class: 'cleric',
+  });
+  const caster = { ...shaman, spellbook: { cantrips: [], known: [], prepared: ['hold-person'] } };
+  const hero = mage({ id: 'hero', name: 'Hero' });
+  const app = stubApp({ characters: [hero], creatures: [caster] });
+  const offered = [{ id: 'hero', name: 'Hero', kind: 'character', ac: 10 }];
+  const plan = castPlan(app, caster, holdPerson, /** @type {any} */ (offered));
+  assert.equal(plan.ok, true);
+  /** @type {any[]} */
+  const written = [];
+  resolveCast(app, /** @type {any} */ (plan), submit({ target: 'hero' }), {
+    writeBack: (next) => written.push(next),
+    rng: seq([d20(1)]),
+  });
+  assert.equal(written.at(-1).concentration.spellId, 'hold-person');
 });

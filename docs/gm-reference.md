@@ -553,8 +553,10 @@ rolled from the character sheet.
 | Stunned | Loses its turn. Attacks against it have advantage. Fails STR and DEX saves outright |
 | Unconscious | Loses its turn. Attacks against it have advantage, and a melee hit is a critical hit. Fails STR and DEX saves outright |
 
-A character who takes a condition that makes it lose its turn also loses
-concentration, and the conditions its spell put on other creatures end.
+A caster, party character or foe, that takes a condition that makes it lose
+its turn also loses concentration, and the conditions its spell put on other
+creatures end. A foe caster rolls a CON save to keep its spell when it takes
+damage, and loses the spell at 0 HP.
 
 A spell such as Hold Person lets its target repeat the save at the end of
 each of its turns. A target that loses its turn still has that turn end, so

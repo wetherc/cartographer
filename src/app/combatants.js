@@ -12,6 +12,7 @@ import { saveBonus } from '../entities/Checks.js';
 import { creatureSaveBonus } from '../entities/CreatureChecks.js';
 import { healCharacter, hitCharacter } from '../entities/CharacterHit.js';
 import { dropIfHelpless } from '../entities/Concentration.js';
+import { settleConcentration } from '../entities/CreatureHit.js';
 import { replaceById } from '../entities/Roster.js';
 import { castableLeveledIds } from '../entities/SpellView.js';
 import { resolveSpellIds } from '../library/Library.js';
@@ -395,7 +396,7 @@ export function applyConditionToTarget(
     storeCharacterChips(app, found, { ...found.entity, conditions });
     return true;
   }
-  storeConditions(found, conditions);
+  storeCreature(app, found.entity, { ...found.entity, conditions }, found.store);
   app.actions.markDirty();
   return true;
 }
@@ -416,6 +417,23 @@ export function storeCharacterChips(app, found, character) {
   app.actions.logEvent('combat', `${next.name} loses concentration on ${ended.spellName}.`);
   // The sweep rewrites `state.characters`, so it runs after the store.
   endSpellEffects(app, next.id, ended.spellId);
+}
+
+/**
+ * Store a creature after a write, with what the write did to the spell the
+ * creature holds open (see `CreatureHit.settleConcentration`). The log
+ * names a lost spell, and its targets go free once the creature is stored.
+ * The caller marks the campaign dirty.
+ * @param {AppContext} app
+ * @param {Creature} prev the creature before the write
+ * @param {Creature} next the creature after the write
+ * @param {(next: Creature) => void} store
+ */
+export function storeCreature(app, prev, next, store) {
+  const settled = settleConcentration(prev, next);
+  logHitEvents(app, settled.creature.name, settled.events);
+  store(settled.creature);
+  if (settled.ended) endSpellEffects(app, settled.creature.id, settled.ended);
 }
 
 /**
@@ -596,8 +614,8 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
     // store re-syncs the map markers itself. A defeated hostile must drop
     // off the danger layer, and a healed one must return to it. Doing this
     // again here only rebuilds the lists and the Build rail a second time
-    // per hit.
-    found.store(next);
+    // per hit. The damage can also break the spell the creature holds.
+    storeCreature(app, found.entity, next, found.store);
     app.actions.markDirty();
     return;
   }
@@ -635,7 +653,7 @@ function hpAfter(kind, entity) {
 }
 
 /**
- * Log what a hit or a heal did to a party character, in the order it
+ * Log what a hit or a heal did to a combatant, in the order it
  * happened (see `CharacterHit.HitEvent`).
  * @param {AppContext} app
  * @param {string} name

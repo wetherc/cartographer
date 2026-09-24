@@ -17,7 +17,7 @@ import { createHandout, toggleRevealed, handoutsAt } from '../handout/Handouts.j
 import { replaceById, removeById } from '../entities/Roster.js';
 import { wireEntityList } from './entityList.js';
 import { creatureForm } from './creatureForm.js';
-import { commitCreatures } from './combatants.js';
+import { commitCreatures, storeCreature } from './combatants.js';
 import { setCombatantExhaustion } from './exhaustion.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
@@ -110,7 +110,10 @@ export function wireStory(app) {
     // The chips on an NPC's row are combat state, so only the panel beside
     // the party writes them. The combat screen shows the same chips.
     onUpdate: (npc) => {
-      state.creatures = replaceById(state.creatures, npc);
+      const prev = state.creatures.find((c) => c.id === npc.id);
+      storeCreature(app, prev ?? npc, npc, (c) => {
+        state.creatures = replaceById(state.creatures, c);
+      });
       commitCreatures(app);
       app.views.combatScreen.update();
     },

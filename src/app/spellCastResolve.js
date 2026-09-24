@@ -48,21 +48,18 @@ import { spendRollRiders } from './riderSpend.js';
  * change back onto the real entity, and the caller's `writeBack` function
  * stores it in the right collection. Damage or healing lands on each target
  * the same way a weapon hit does: every combatant tracks HP. A ritual spends
- * nothing and writes nothing back. A concentration spell cast by a party
- * character starts that character concentrating and ends whatever spell it
+ * nothing and writes nothing back. A concentration spell starts the caster,
+ * a party character or a creature, concentrating and ends whatever spell it
  * held before.
  * @param {AppContext} app
  * @param {CastPlan} plan
  * @param {Record<string, string>} values the dialog's answers
- * @param {{ writeBack: (next: any) => void, concentrates: boolean, rng?: () => number }} opts
- *   `writeBack` stores the updated entity. `concentrates` is true when this
- *   caster can hold a spell open. Only a party character can, because a
- *   creature has no concentration field. The call site passes
- *   this value, because it already knows the combatant kind. `rng` is the
+ * @param {{ writeBack: (next: any) => void, rng?: () => number }} opts
+ *   `writeBack` stores the updated entity. `rng` is the
  *   source for every roll the cast makes, injected the way the pure modules
  *   take theirs.
  */
-export function resolveCast(app, plan, values, { writeBack, concentrates, rng = Math.random }) {
+export function resolveCast(app, plan, values, { writeBack, rng = Math.random }) {
   const { entity, spell, targets, saveAbility, sourceClass, dc, material, armor } = plan;
   // The plan holds the caster as it was when the dialog opened. The dialog
   // can sit open while a heal lands or another tab adopts a save. The cast
@@ -217,7 +214,7 @@ export function resolveCast(app, plan, values, { writeBack, concentrates, rng = 
   // Holding the material is not the same as spending it. A costed component
   // must be in hand and stays there.
   const consumed = enforce && material.consumes && material.item ? material.item : null;
-  const holds = concentrates && spell.concentration;
+  const holds = spell.concentration;
   /** @type {import('../types/entities.js').ConcentrationState | null} */
   let displaced = null;
   if (result.spent || consumed || holds) {

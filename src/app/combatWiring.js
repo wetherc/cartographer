@@ -189,18 +189,16 @@ export function wireCombatScreen(app) {
     // panels. The amount field has no roll behind it, so the write path logs
     // the amount and the resulting HP for it.
     onApplyHP: (id, amount, isHeal) => applyToTarget(app, id, amount, isHeal, { manual: true }),
-    getConcentration: (id) => {
-      const found = findCombatant(app, id);
-      return found?.kind === 'character' ? (found.entity.concentration ?? null) : null;
-    },
-    // This is the character sheet's Drop path. It stores the released
-    // caster, then removes the spell's chips from everyone it affected.
+    getConcentration: (id) => findCombatant(app, id)?.entity.concentration ?? null,
+    // This is the combat screen's Drop path, for a party caster or a foe
+    // caster. It stores the released caster, then removes the spell's chips
+    // from everyone it affected.
     onDropConcentration: (id) => {
       const found = findCombatant(app, id);
-      if (found?.kind !== 'character') return;
-      const held = found.entity.concentration;
-      if (!held) return;
-      found.store(dropConcentration(found.entity));
+      const held = found?.entity.concentration;
+      if (!found || !held) return;
+      if (found.kind === 'character') found.store(dropConcentration(found.entity));
+      else found.store(dropConcentration(found.entity));
       app.actions.markDirty();
       endSpellEffects(app, id, held.spellId);
     },

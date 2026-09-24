@@ -975,9 +975,10 @@ A creature has no expertise, so its bonus comes from its training alone.
 
 Many spells last only as long as the caster keeps concentrating on them, and
 a caster holds only one at a time. `entities/Concentration.js` models this
-over a `concentration` field on the character. The field records the spell's
-id and name, the level it was cast at, and `remaining`, the rounds left. A
-character concentrating on nothing has this field set to null.
+over a `concentration` field on the caster, a party character or a creature.
+The field records the spell's id and name, the level it was cast at, and
+`remaining`, the rounds left. A caster concentrating on nothing has this
+field set to null or absent.
 
 - `begin(character, spell, slotLevel)` starts one. It takes `remaining` from
   the spell's duration through `durationInRounds`. A duration that no round
@@ -1019,11 +1020,19 @@ changed through `dropIfHelpless`. A spell that paralyzes the caster and a
 death from exhaustion both go through it. The character sheet's conditions
 bar ends the spell the same way when the GM adds a chip that stops actions.
 
-Only characters concentrate. A creature has no field to write, so a foe's
-concentration is still a chip that the GM adds and removes by hand, which is
-the reason `Concentrating` stays in the pick-list. Every damage path tests
-concentration, the character sheet's `-1 HP` button included, because they
-all go through `CharacterHit.hitCharacter` (see the death saves below).
+Every damage path tests a character's concentration, the character sheet's
+`-1 HP` button included, because they all go through
+`CharacterHit.hitCharacter` (see the death saves below).
+
+A creature caster holds its spell the same way. `entities/CreatureHit.js`
+exports `settleConcentration(prev, next)`, which reads one write to a creature
+and ends its spell on a drop to 0 HP, on a failed CON save after damage, on a
+chip that stops it acting, or when the GM removes the `Concentrating` chip by
+hand. The save uses the creature's own bonus from `creatureSaveBonus`.
+`storeCreature` in `app/combatants.js` applies it to every creature write:
+`applyToTarget`, `applyConditionToTarget`, the exhaustion stepper, and the
+`onUpdate` of the Encounters and NPC panels. The combat screen's Drop control
+works for a creature caster too, and the round wrap ticks its duration.
 
 ## Death saves
 
@@ -1203,8 +1212,7 @@ because a summoning spell usually imposes no chip at all. A defeated summon
 leaves with the living ones. The log names each creature that vanishes.
 
 A cast that nothing concentrates on still spawns its creatures, and the log
-marks that cast untracked. Only characters concentrate, so the summons of a
-creature caster are always untracked. The GM removes those by hand.
+marks that cast untracked. The GM removes those by hand.
 
 A summons cast during a fight joins the running order.
 `Initiative.addParticipant` sorts the newcomer in and keeps the turn on whoever

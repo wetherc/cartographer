@@ -948,3 +948,33 @@ test('a repeated save names the rider that changed it', () => {
   retryImposedSaves(app, 'goblin');
   assert.match(app.log[0], /Bane -1d4 \[\d\]/);
 });
+
+/** A goblin shaman holding Hold Person on the hero. */
+function heldByShaman() {
+  const { hero, goblin } = fixtures();
+  const hold = /** @type {any} */ ({
+    id: 'hold-person',
+    name: 'Hold Person',
+    duration: { kind: 'minutes', amount: 1 },
+  });
+  const shaman = beginConcentration(goblin, hold, 2).character;
+  const source = heldBy({ casterId: 'goblin' });
+  const held = { ...hero, conditions: addCondition([], 'Paralyzed', 10, { source }) };
+  return stubApp({ characters: [held], creatures: [shaman] });
+}
+
+test('a creature knocked to 0 HP drops its spell and frees the target', () => {
+  const app = heldByShaman();
+  applyToTarget(app, 'goblin', 10, false);
+  assert.equal(app.state.creatures[0].concentration, null);
+  assert.deepEqual(app.state.characters[0].conditions, [], 'the hero walks free');
+  assert.ok(app.log.includes('Goblin falls and loses concentration on Hold Person.'));
+});
+
+test('a chip that stops a creature caster acting ends its spell', () => {
+  const app = heldByShaman();
+  applyConditionToTarget(app, 'goblin', 'Stunned', 1);
+  assert.equal(app.state.creatures[0].concentration, null);
+  assert.deepEqual(app.state.characters[0].conditions, []);
+  assert.equal(app.dirty >= 1, true);
+});

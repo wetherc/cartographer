@@ -64,7 +64,6 @@ export async function castSpellAction(app, combat, participant, spell, { targetI
     spell,
     targets,
     /** @type {(next: any) => void} */ (found.store),
-    found.kind === 'character',
     targetId,
   );
 }
@@ -79,17 +78,10 @@ export async function castSpellAction(app, combat, participant, spell, { targetI
  * @param {Spell} spell
  */
 export async function castSpellOutOfCombat(app, caster, spell) {
-  await runCast(
-    app,
-    caster,
-    spell,
-    rosterTargets(app, spell),
-    (next) => {
-      app.state.characters = replaceById(app.state.characters, next);
-      app.actions.refreshSelectedCharacter();
-    },
-    true,
-  );
+  await runCast(app, caster, spell, rosterTargets(app, spell), (next) => {
+    app.state.characters = replaceById(app.state.characters, next);
+    app.actions.refreshSelectedCharacter();
+  });
 }
 
 /**
@@ -261,12 +253,11 @@ export function castPlan(app, entity, spell, offered) {
  * @param {Spell} spell
  * @param {import('./combatants.js').CombatTarget[]} offered
  * @param {(next: T) => void} writeBack stores the updated entity
- * @param {boolean} concentrates true when this caster can hold a spell open
  * @param {string | null} [preferredTargetId] a target picked before the
  *   dialog opened, from the combat board selection. The dialog pre-fills
  *   this target where it is offered.
  */
-async function runCast(app, entity, spell, offered, writeBack, concentrates, preferredTargetId) {
+async function runCast(app, entity, spell, offered, writeBack, preferredTargetId) {
   const plan = castPlan(app, entity, spell, offered);
   if (!plan.ok) {
     app.toasts.show(plan.message, { level: 'error' });
@@ -286,5 +277,5 @@ async function runCast(app, entity, spell, offered, writeBack, concentrates, pre
     ],
   });
   if (!values) return;
-  resolveCast(app, plan, values, { writeBack, concentrates });
+  resolveCast(app, plan, values, { writeBack });
 }

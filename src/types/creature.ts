@@ -1,4 +1,5 @@
 import type {
+  ConcentrationState,
   Condition,
   EncounterLocation,
   EnemyArmor,
@@ -110,6 +111,9 @@ export interface Creature {
   /** Which cast spawned this creature. Absent on every creature that the GM
    * placed. */
   summonedBy?: SummonSource;
+  /** The spell this creature holds open, or null when it holds none. Absent
+   * on a creature that never cast a concentration spell. */
+  concentration?: ConcentrationState | null;
 }
 
 /**

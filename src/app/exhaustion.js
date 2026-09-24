@@ -21,7 +21,12 @@ import {
   exhaustionNote,
   setExhaustion,
 } from '../entities/Exhaustion.js';
-import { findCombatant, logDefeatTransition, storeCharacterChips } from './combatants.js';
+import {
+  findCombatant,
+  logDefeatTransition,
+  storeCharacterChips,
+  storeCreature,
+} from './combatants.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/entities.js').Character} Character */
@@ -54,13 +59,18 @@ export function setCombatantExhaustion(app, id, level) {
   app.actions.logEvent('note', `${found.entity.name}: ${exhaustionNote({ exhaustion: after })}`);
   // The two branches do the same write. They are split because each store
   // function accepts only its own entity type, and because the sixth level
-  // kills the two kinds differently. A character who dies of exhaustion also
-  // drops the spell it held, because the death adds the Unconscious chip.
+  // kills the two kinds differently. A combatant who dies of exhaustion also
+  // drops the spell it held.
   if (found.kind === 'character') {
     storeCharacterChips(app, found, killIfFatalCharacter(app, setExhaustion(found.entity, after)));
     return true;
   }
-  found.store(killIfFatalCreature(app, setExhaustion(found.entity, after)));
+  storeCreature(
+    app,
+    found.entity,
+    killIfFatalCreature(app, setExhaustion(found.entity, after)),
+    found.store,
+  );
   app.actions.markDirty();
   return true;
 }

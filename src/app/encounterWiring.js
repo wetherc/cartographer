@@ -43,6 +43,7 @@ import {
   endSpellEffects,
   findCombatant,
   logDefeatTransition,
+  storeCreature,
 } from './combatants.js';
 import { advancePastHeld } from './turnAdvance.js';
 import { setCombatantExhaustion } from './exhaustion.js';
@@ -222,7 +223,10 @@ export function wireEncounters(app) {
       // pre-update creature so damage that keeps it down does not log again.
       const prev = state.creatures.find((c) => c.id === next.id);
       if (prev) logDefeatTransition(app, prev, next);
-      state.creatures = replaceById(state.creatures, next);
+      // An HP or chip edit can also break the spell the creature holds.
+      storeCreature(app, prev ?? next, next, (c) => {
+        state.creatures = replaceById(state.creatures, c);
+      });
       // The panel re-renders its own rows once this call resolves. It skips
       // that part of the refresh.
       commitCreatures(app, { panel: false });
@@ -293,7 +297,10 @@ export function wireEncounters(app) {
     // Persist base stat edits from the Build rail's chips. The Play panel
     // shows the same creature and picks up the change.
     onUpdate: (next) => {
-      state.creatures = replaceById(state.creatures, next);
+      const prev = state.creatures.find((c) => c.id === next.id);
+      storeCreature(app, prev ?? next, next, (c) => {
+        state.creatures = replaceById(state.creatures, c);
+      });
       app.views.encounterPanel.update();
       app.actions.markDirty();
     },
@@ -426,31 +433,41 @@ export function wireEncounters(app) {
   }
 
   // A new round elapsed. Tick down every combatant's timed conditions, the
-  // enemies' timed stat modifiers, and the party's concentration durations.
+  // enemies' timed stat modifiers, and every concentration duration.
   // A turn advance past the bottom of the order and the removal of the last
   // combatant on its own turn both start a round.
   function tickRound() {
     /** @type {{ casterId: string, spellId: string }[]} */
     const expired = [];
-    state.characters = state.characters.map((c) => {
-      // Concentration ticks after the conditions, because it rewrites its
-      // own chip's counter from the duration it owns.
-      const ticked = tickConcentration({ ...c, conditions: tickConditions(c.conditions) });
-      const held = c.concentration;
+    // Concentration ticks after the conditions, because it rewrites its own
+    // chip's counter from the duration it owns.
+    /**
+     * @template {import('../types/entities.js').Character | import('../types/creature.js').Creature} T
+     * @param {T} entity with its conditions already ticked
+     * @returns {T}
+     */
+    const tickHeld = (entity) => {
+      const ticked = tickConcentration(entity);
+      const held = entity.concentration;
       if (ticked.expired && held) {
-        app.actions.logEvent('combat', `${c.name}'s concentration on ${held.spellName} ends.`);
-        expired.push({ casterId: c.id, spellId: held.spellId });
+        app.actions.logEvent('combat', `${entity.name}'s concentration on ${held.spellName} ends.`);
+        expired.push({ casterId: entity.id, spellId: held.spellId });
       }
       return ticked.character;
-    });
+    };
+    state.characters = state.characters.map((c) =>
+      tickHeld({ ...c, conditions: tickConditions(c.conditions) }),
+    );
     // Every creature ticks the same way, so a bystander's timed stat
     // modifier counts down too. A creature that carries no statMods field
     // does not gain an empty one here.
-    state.creatures = state.creatures.map((c) => ({
-      ...c,
-      conditions: tickConditions(c.conditions),
-      ...(c.statMods ? { statMods: tickStatModifiers(c.statMods) } : {}),
-    }));
+    state.creatures = state.creatures.map((c) =>
+      tickHeld({
+        ...c,
+        conditions: tickConditions(c.conditions),
+        ...(c.statMods ? { statMods: tickStatModifiers(c.statMods) } : {}),
+      }),
+    );
     app.actions.refreshSelectedCharacter();
     app.views.encounterPanel.update();
     app.views.npcPanel.update();

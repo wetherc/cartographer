@@ -1,10 +1,10 @@
 /**
  * Concentration: the one spell effect a caster holds open, what breaks it,
  * and when it runs out. Every function is pure. Each function takes a
- * character and returns a new one, and the d20 for a concentration save
- * comes from the injected random number generator.
+ * character or a creature and returns a new one, and the d20 for a
+ * concentration save comes from the injected random number generator.
  *
- * A character holds at most one, in `character.concentration`. The
+ * A caster holds at most one, in its `concentration` field. The
  * `Concentrating` chip beside it is for display only. `begin` writes it,
  * `drop` removes it, and `tick` keeps its counter equal to the state's own
  * `remaining`, which is the authoritative number.
@@ -18,6 +18,11 @@ import { canAct } from './ConditionEffects.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ConcentrationState} ConcentrationState */
+/** @typedef {import('../types/entities.js').Condition} Condition */
+/**
+ * Anything that can hold a spell open: a party character or a creature.
+ * @typedef {{ concentration?: ConcentrationState | null, conditions: Condition[] }} Holder
+ */
 /** @typedef {import('../types/spell.js').Spell} Spell */
 /** @typedef {import('../types/dice.js').RollMode} RollMode */
 /** @typedef {import('../types/dice.js').RandomFn} RandomFn */
@@ -36,7 +41,8 @@ export function concentrationDC(damage) {
 }
 
 /**
- * @param {Character} character
+ * @template {Holder} T
+ * @param {T} character
  * @returns {boolean} whether this character is holding a spell open.
  */
 export function isConcentrating(character) {
@@ -53,10 +59,11 @@ export function isConcentrating(character) {
  * Returns the displaced spell alongside the new character, so the caller
  * can state what was lost and remove that spell's effects from the
  * creatures it was holding.
- * @param {Character} character
+ * @template {Holder} T
+ * @param {T} character
  * @param {Spell} spell
  * @param {number} slotLevel the level the spell was cast at
- * @returns {{ character: Character, dropped: ConcentrationState | null }}
+ * @returns {{ character: T, dropped: ConcentrationState | null }}
  */
 export function begin(character, spell, slotLevel) {
   const remaining = durationInRounds(spell.duration);
@@ -76,8 +83,9 @@ export function begin(character, spell, slotLevel) {
  * Stop concentrating, however it ended: voluntarily, on a failed save, when
  * the duration ran out, or on dropping to 0 HP. Removing the chip is part of
  * this action, so no caller must remember both halves.
- * @param {Character} character
- * @returns {Character}
+ * @template {Holder} T
+ * @param {T} character
+ * @returns {T}
  */
 export function drop(character) {
   if (!character.concentration) return character;
@@ -93,8 +101,9 @@ export function drop(character) {
  * Paralyzed, Stunned, or Unconscious caster cannot hold a spell, and the
  * Unconscious chip that `killOutright` adds covers a death with no damage.
  * The caller gets the ended spell back, so it can free what the spell held.
- * @param {Character} character
- * @returns {{ character: Character, ended: ConcentrationState | null }}
+ * @template {Holder} T
+ * @param {T} character
+ * @returns {{ character: T, ended: ConcentrationState | null }}
  */
 export function dropIfHelpless(character) {
   const held = character.concentration;
@@ -143,8 +152,9 @@ export function checkOnDamage(character, damage, opts = {}) {
  * decrementing it. This lets the shared `tickConditions` run over the same
  * list first. Whatever that does to the chip, the number the GM reads
  * afterward is the state's own number.
- * @param {Character} character
- * @returns {{ character: Character, expired: boolean }}
+ * @template {Holder} T
+ * @param {T} character
+ * @returns {{ character: T, expired: boolean }}
  */
 export function tick(character) {
   const held = character.concentration;
