@@ -287,8 +287,8 @@
      selecting a non-caster after a caster does not move the rows below the
      header. The reserve is a level label over two pip rows, which is as tall
      as the line gets: a pool holds at most four slots, and the pip grid is
-     two pips wide. */
-  min-height: calc(var(--text-label) * 1.5 + 0.1rem + var(--text-label) * 2.2);
+     two pips wide. Each pip row is one 24 px pip button tall. */
+  min-height: calc(var(--text-label) * 1.5 + 0.1rem + 48px);
 }
 
 /* The reserved line for a character with no slot pools at all. */
@@ -299,7 +299,7 @@
 .slot-line__groups {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(2rem, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(3rem, 1fr));
   justify-items: center;
   gap: var(--space-1) var(--space-1);
   min-width: 0;
@@ -315,7 +315,7 @@
 .slot-line__pips {
   display: grid;
   grid-template-columns: repeat(2, auto);
-  gap: 0 0.2rem;
+  gap: 0;
   font-size: var(--text-label);
   line-height: 1.1;
   color: var(--mana);
@@ -323,6 +323,17 @@
 
 /* Interactive pip: click a filled one to spend the slot, an empty one to
    restore it. A .btn-bare button, so the pip glyph is the whole control. */
+.slot-line__pip,
+.exhaustion-bar__pip {
+  /* WCAG 2.5.8 asks for a 24 px target. The glyph is about 12 px wide, so the
+     button pads out around it. */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+}
+
 .slot-line__pip:hover:not(:disabled) {
   transform: scale(1.25);
 }
