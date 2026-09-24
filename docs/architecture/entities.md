@@ -243,6 +243,19 @@ helpers read, and it reads the scalar pair as a one-entry class list at the
 caster level. `withCasterFields` stamps the fields on a create or an edit, and
 it rebuilds the slot pools from the class and the level.
 
+The subclass can make the creature a caster (see
+[Subclass casting](#subclass-casting)). `withCasterFields`,
+`ensureCasterFields`, and `casterTemplateFields` ask
+`ClassCasting.castsAs(class, subclass, level)`, so a fighter with an
+Eldritch Knight subclass at caster level 3 or more gets slots. A template
+with no caster level is judged at level 20, because its spawn level is not
+known yet. In the creature form, `app/casterFields.js` offers the casting
+subclasses as options such as "Fighter (Eldritch Knight)". The option value
+is `fighter:eldritch-knight` (`casterValue` and `parseCasterValue`), and
+`readCasterOptions` raises a caster level under 3 to the subclass level. An
+edit keeps a stored subclass while the class stays the same, because the
+form sends a subclass only for a casting one.
+
 A rated creature takes the proficiency bonus for its spells from the rating
 ladder. `toCaster` stamps a `proficiency` field on the view from
 `crProficiencyBonus`, and `Classes.spellSaveDC` and `spellAttackBonus` prefer
@@ -275,6 +288,7 @@ return-a-value pattern.
 ```
   data catalogs (plain data, no logic)
     data/classes.js      hit die, proficiencies, skill choices, caster type,
+                         subclasses (with subclass casting),
                          subclass level, ASI levels, features-by-level
     data/races.js        races and their traits
     data/backgrounds.js  backgrounds
@@ -282,6 +296,7 @@ return-a-value pattern.
           |
           v
   entity modules (pure logic over character values)
+    ClassCasting.js      a class membership's caster fields, subclass applied
     Classes.js           caster reads: spellSaveDC, spellAttackBonus,
                          cantrip/prepared limits
     SpellLearning.js     which spells each caster class can learn at its level
@@ -292,6 +307,7 @@ return-a-value pattern.
     HitDice.js           max HP derivation, hit dice as resource pools
     LevelUp.js           pending levels, ASI/feat choices, unlocked features
     LevelAssign.js       commit a pending level to a class
+    Subclass.js          set or clear a subclass, then resync slots and spells
     FeatureGrants.js     apply and undo the grants of a structured feature
     GrantLedger.js       the grant records of feats and features; rebuild on undo
     FeatRequirement.js   check a feat's ability, armor, and spellcasting requirement
@@ -318,6 +334,61 @@ paths identical: a fighter is a character whose class list has one entry.
 `entities/Races.js` and `entities/Backgrounds.js` resolve a stored id to its
 definition. `resolveRace` prefers the live catalog and falls back to a stored
 `raceTraits` snapshot, so a hand-typed or since-deleted race still round-trips.
+
+### Subclass casting
+
+A class membership (`ClassRef`) stores its subclass as a name. Each class in
+`data/classes.js` lists its catalog subclasses in `subclasses`, and each
+entry has an `id` and a `name`. A subclass with a `casting` entry replaces
+the caster fields of its class: `casterType`, `spellAbility`, `spellListId`,
+`knownRule`, `cantripsKnown`, and the ritual flags. The Fighter's Eldritch
+Knight and the Rogue's Arcane Trickster use this entry. Both are `'third'`
+casters on the wizard list with INT.
+
+`entities/ClassCasting.js` resolves a membership to its caster fields.
+`casterDefFor(ref)` returns the class definition, or a frozen merge of the
+class and its subclass `casting`. The match compares the stored name with
+the subclass `id` or `name`, without case, so an imported `'eldritch-knight'`
+and a typed `'Eldritch Knight'` resolve the same. The merge applies only from
+the class's `subclassLevel`. A Fighter 2 with an Eldritch Knight subclass on
+record reads the plain Fighter definition, so it has no spell ability and no
+slots. Each class and subclass pair has one merged object, so `withSubclass`
+and the creature edit compare two results by identity to find a change in
+casting.
+
+Every reader of caster fields takes the membership, not the class id alone.
+`casterTypeOf`, `isCasterRef`, `spellListOf`, and `casterName` are the
+small readers. `Classes.casterDefOf(character, classId)` finds the
+character's membership for a class id, because the spellbook's `sources` map
+and the cast paths record a class id. SpellSlots.js imports ClassCasting.js
+and not Classes.js, because Classes.js imports SpellSlots.js.
+ClassCasting.js imports only the class data, so no cycle can form.
+`Classes.isCasterClass(classId)` still answers for the class alone, and a
+creature caster or a template asks `ClassCasting.castsAs(classId, subclass,
+level)` instead.
+
+The third-caster slot table in SpellSlots.js starts with two 1st-level slots
+at class level 3 and ends with one 4th-level slot at 19. In a multiclass,
+`casterLevelContribution('third', n)` adds `floor(n / 3)`. `characterSlots`
+counts only the classes whose own table grants slots at their level, which
+is the 5e rule that a class counts once it has its Spellcasting feature.
+Without this filter, a Fighter 4 (Eldritch Knight) / Paladin 1 reads the
+combined table at level 1 and gets two slots in place of three.
+
+`entities/Subclass.js` writes the subclass. `withSubclass(character,
+classId, text)` stores the catalog name for a catalog match and the trimmed
+text for any other name, and an empty text clears the subclass. The write
+re-derives only when the casting changes, so naming a cleric's domain keeps
+its spent slots. A class that stops casting loses the spellbook entries that
+`sources` records under it. A character with no caster class left loses all
+slot and pact pools. `syncSlotsToLevel` returns a martial character
+unchanged and does not strip these pools, because `derive` runs on every
+load and would remove pools that a GM added by hand.
+
+`LevelAssign.hasChoiceAt` counts a set subclass as a claim on the class's
+subclass level. The donor path moves a class's newest level to a new class,
+and an Eldritch Knight moved from level 3 to 2 would keep a subclass that
+casts nothing.
 
 ### Proficiencies
 
@@ -920,14 +991,19 @@ so whichever list their class reads, the whole picked set stays castable.
 `SpellLearning.js` decides which spells the Spellbook tab offers. Each caster
 class learns as a single-class caster of its own class level, which is the
 5e multiclass rule. `classSpellLevelCap` reads the top row of the class's
-own slot table, or the pact slot level for a warlock. `canLearnSpell` then
-requires a class that lists the spell and reaches its level. A cleric 3 /
+own slot table, or the pact slot level for a warlock. Its optional
+`subclass` argument applies a casting subclass, so an Eldritch Knight 7
+learns 2nd-level spells. `canLearnSpell` then requires a class whose spell
+list (`ClassCasting.spellListOf`, the wizard list for an Eldritch Knight)
+has the spell and whose cap reaches its level. A cleric 3 /
 wizard 3 has third-level slots on the combined table, but neither class
 reaches Fireball. The module never reads the character's slot pools, because
 the combined slot level is the wrong cap for learning.
 
 Known casters have no spells-known cap, because the app does not model a
-per-level spells-known curve. Prepared casters swap their list freely,
+per-level spells-known curve. The school limits of the Eldritch Knight and
+the Arcane Trickster are not modeled either, so both learn from the whole
+wizard list. Prepared casters swap their list freely,
 rather than only on a long rest.
 
 ## Saving throws

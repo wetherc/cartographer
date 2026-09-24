@@ -24,6 +24,7 @@ With Campaign Builder, you can:
     - shows class and subclass, race, background, and assembled proficiencies;
     - shows hit dice and spellcasting;
     - tracks level and progression, with class assignment at each level;
+    - lets you choose a subclass. The Eldritch Knight and the Arcane Trickster add spellcasting to the Fighter and the Rogue;
     - supports multiclassing and choices for an ability score improvement or a feat. A feat comes from an editable catalog in the library, and its ability increases, proficiencies, and roll bonuses apply to the sheet when you take it. A class feature with choices, such as the Expertise of the Rogue, prompts its picks at level-up and applies them the same way.
   - Simulate dice rolls and their results for any combination of dice that an interaction needs
   - Curate a library of equipment, creature, spell, and feat templates that is independent of the campaign (the Library mode in the header). The library lists the built-in 5e defaults, and you can customize each one separately. Your overrides and additions export to a portable JSON file. The file saves over `library/campaign-library.json`, and it loads automatically into any new browser or clone. A campaign export bundles them too, and a campaign import offers to restore them, so one file moves a whole table.

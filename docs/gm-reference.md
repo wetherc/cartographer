@@ -688,8 +688,9 @@ choices of the class. From these three choices the sheet assembles the
 proficiencies: saving throws, skills, weapons, armor, tools, and languages.
 Every list stays editable afterward.
 
-The class fixes the hit die and the caster type. Max HP derives from the
-hit die plus the CON modifier per level. Spell slots follow the 5e table,
+The class fixes the hit die, and the class with its subclass fixes the
+caster type. Max HP derives from the hit die plus the CON modifier per
+level. Spell slots follow the 5e table,
 and a multiclass character combines its casting classes on the
 combined-caster-level table. A classless character still works. Its HP then
 follows a flat growth curve, and it gains no proficiencies.
@@ -721,6 +722,59 @@ The hit-dice pool is spendable. A short rest spends a die to heal the roll
 plus the CON modifier. A long rest restores half of the total hit dice, at
 least one, with the largest dice first. Fighter 3 / Wizard 3 with every die
 spent gets three dice back.
+
+### Subclasses
+
+A class can take a subclass from its subclass level: level 1 for the
+Cleric, Sorcerer, and Warlock, level 2 for the Druid and Wizard, and level 3
+for the other classes. The Progression block shows a Choose button for each
+class at that level, and a Change button after the pick. The assignment of
+the subclass level also asks for the pick. Only the GM can set a subclass.
+
+The list offers the SRD subclass of each class. The Fighter also offers the
+Eldritch Knight, and the Rogue also offers the Arcane Trickster. **Other…**
+stores any typed name, and **None** clears the subclass. A typed name that
+matches a listed subclass stores as the listed name. A subclass that is not
+on the list has no rules effect.
+
+The Eldritch Knight and the Arcane Trickster cast spells. Each learns from
+the wizard list with INT, as a known caster with no rituals. The slots follow
+the third-caster table below, and the learning cap is the top slot level.
+
+| Class level | Slots | Top spell level |
+| --- | --- | --- |
+| 3 | 2 × 1st | 1st |
+| 4 to 6 | 3 × 1st | 1st |
+| 7 to 9 | 4 × 1st, 2 × 2nd | 2nd |
+| 10 to 12 | 4 × 1st, 3 × 2nd | 2nd |
+| 13 to 15 | 4 × 1st, 3 × 2nd, 2 × 3rd | 3rd |
+| 16 to 18 | 4 × 1st, 3 × 2nd, 3 × 3rd | 3rd |
+| 19 to 20 | 4 × 1st, 3 × 2nd, 3 × 3rd, 1 × 4th | 4th |
+
+The Eldritch Knight knows 2 cantrips, and 3 from level 10. The Arcane
+Trickster knows 3 cantrips, and 4 from level 10. In a multiclass, each of
+these subclasses adds a third of its class level to the combined caster
+level. A class with no slots yet at its own level does not join the combined
+table, so a Fighter 4 (Eldritch Knight) / Paladin 1 keeps the Eldritch
+Knight slots.
+
+A change away from a casting subclass removes its slots, and it removes the
+spells that the character learned under that class. A later change back
+gives full slots. While a class has a subclass on its subclass level, that
+level cannot move to a new class.
+
+The app does not enforce these subclass rules, so you enforce them:
+
+- The spell schools of each subclass (abjuration and evocation for the
+  Eldritch Knight, enchantment and illusion for the Arcane Trickster), with
+  their free picks from any school.
+- The number of spells that each subclass knows. No known caster has this
+  limit in the app.
+- Mage Hand as one of the Arcane Trickster cantrips.
+
+In the creature dialogs, the caster class list also offers "Fighter
+(Eldritch Knight)" and "Rogue (Arcane Trickster)". A caster level below 3
+saves as 3, because these subclasses cast from level 3.
 
 ### Inventory and equipment
 

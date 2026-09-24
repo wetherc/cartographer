@@ -359,6 +359,20 @@ call has a control that applies it to the rolls.
 4. If the level is an ASI level, apply +2 across one or two abilities, or
    take a feat by name.
 5. To undo either choice, use the same block.
+6. If the level reaches the subclass level of the class, pick the subclass
+   in the dialog that opens. To pick it later, click **Cancel**.
+
+### Choose a subclass
+
+1. Open the Progression block of the character.
+2. Click **Choose** (or **Change**) beside the class list. The button
+   names the subclass of the class, for example **Choose martial
+   archetype**.
+3. Pick a subclass from the list. To type a name that is not in the list,
+   pick **Other…** and type the name.
+4. Click **Choose**.
+5. If the subclass is marked "casts spells", open the Spellbook tab and
+   learn the cantrips and spells of the character.
 
 ### Equip and carry items
 
