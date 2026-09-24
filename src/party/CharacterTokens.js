@@ -151,3 +151,17 @@ export function restorePlacements(characters, placements) {
   const byId = new Map(placements.map((p) => [p.characterId, p.location]));
   return characters.map((c) => (byId.has(c.id) ? { ...c, location: byId.get(c.id) ?? null } : c));
 }
+
+/**
+ * The position that a tab's map view follows. A player tab bound to a
+ * character follows that character, who can stand apart from the party
+ * while the party is split. Every other tab follows the party.
+ * @param {Character[]} characters
+ * @param {PartyPosition} partyPosition
+ * @param {string | null} boundId the tab's own character, or null
+ * @returns {PartyPosition}
+ */
+export function followedPosition(characters, partyPosition, boundId) {
+  const own = boundId ? characters.find((c) => c.id === boundId) : undefined;
+  return own ? characterPosition(own, partyPosition) : partyPosition;
+}

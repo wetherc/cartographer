@@ -249,16 +249,20 @@ export function readableScale(tileSize) {
 }
 
 /**
- * The pan offset along one axis: centered when the scaled extent fits the
- * buffer, otherwise anchored at the padding so the view starts at the top
- * or left edge of the map rather than somewhere inside it.
+ * The pan offset along one axis. The extent is centered when it fits the
+ * buffer. Otherwise the view centers on `focus` when one is given, or
+ * starts at the top or left edge of the map. The offset stays between the
+ * two edges, so the map never pulls away from the padding on either side.
  * @param {number} extent the scaled extent along this axis
  * @param {number} buffer the canvas size along this axis
  * @param {number} padding
+ * @param {number | undefined} focus the scaled position to center on
  * @returns {number}
  */
-function fitOffset(extent, buffer, padding) {
-  return extent + padding * 2 > buffer ? padding : (buffer - extent) / 2;
+function fitOffset(extent, buffer, padding, focus) {
+  if (extent + padding * 2 <= buffer) return (buffer - extent) / 2;
+  if (focus === undefined) return padding;
+  return Math.min(padding, Math.max(buffer - padding - extent, buffer / 2 - focus));
 }
 
 /**
@@ -269,14 +273,15 @@ function fitOffset(extent, buffer, padding) {
  *
  * `readableScale` is a floor under the fitted zoom. When the whole extent
  * would need a smaller scale than that, the view uses the floor and shows
- * as much of the map as fits, anchored at the padding on the axis that
- * overflows. A narrow phone layout then shows a readable corner of a large
- * region instead of the whole region at a quarter size.
+ * as much of the map as fits. A narrow phone layout then shows a readable
+ * part of a large region instead of the whole region at a quarter size.
+ * On the axis that overflows, the view centers on `focus` (world pixels at
+ * scale 1), such as the party's tile, and otherwise starts at the padding.
  * @param {number} extentW
  * @param {number} extentH
  * @param {number} bufferW
  * @param {number} bufferH
- * @param {{ padding?: number, minScale?: number, maxScale?: number, readableScale?: number }} [options]
+ * @param {{ padding?: number, minScale?: number, maxScale?: number, readableScale?: number, focus?: { x: number, y: number } | null }} [options]
  * @returns {{ scale: number, offsetX: number, offsetY: number }}
  */
 export function fitToExtent(extentW, extentH, bufferW, bufferH, options = {}) {
@@ -292,9 +297,10 @@ export function fitToExtent(extentW, extentH, bufferW, bufferH, options = {}) {
     options.minScale ?? 0.25,
     options.maxScale ?? 4,
   );
+  const focus = options.focus;
   return {
     scale,
-    offsetX: fitOffset(extentW * scale, bufferW, padding),
-    offsetY: fitOffset(extentH * scale, bufferH, padding),
+    offsetX: fitOffset(extentW * scale, bufferW, padding, focus ? focus.x * scale : undefined),
+    offsetY: fitOffset(extentH * scale, bufferH, padding, focus ? focus.y * scale : undefined),
   };
 }

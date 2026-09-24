@@ -10,6 +10,7 @@ import {
   regroupCandidates,
   placementsIn,
   restorePlacements,
+  followedPosition,
 } from '../src/party/CharacterTokens.js';
 import { createCharacter, withDefaults } from '../src/entities/Character.js';
 
@@ -161,4 +162,12 @@ test('restorePlacements keeps every other edit made since the recall', () => {
 test('restorePlacements skips a character who left the roster', () => {
   const placements = [{ characterId: 'gone', location: { nodeId: 'cave', tileId: '0,1' } }];
   assert.deepEqual(restorePlacements(party, placements), party);
+});
+
+test('followedPosition follows a bound character, and the party otherwise', () => {
+  const placed = moveCharacter(party, 'hero', { nodeId: 'cave', tileId: '1,1' });
+  assert.deepEqual(followedPosition(placed, position, 'hero'), { nodeId: 'cave', tileId: '1,1' });
+  assert.equal(followedPosition(placed, position, 'sage'), position, 'sage stands with the party');
+  assert.equal(followedPosition(placed, position, null), position);
+  assert.equal(followedPosition(placed, position, 'gone'), position);
 });

@@ -2,8 +2,8 @@ import { iconButton } from './buttons.js';
 import { el } from './dom.js';
 
 /**
- * Mount the on-canvas map controls: zoom in, zoom out, fit-to-extent, and
- * a live zoom-percentage readout. Nothing else on the map shows that it
+ * Mount the on-canvas map controls: zoom in, zoom out, fit-to-extent, center on
+ * the party, and a live zoom-percentage readout. Nothing else on the map shows that it
  * pans and zooms, so these buttons give keyboard users a reachable
  * alternative to the wheel-only zoom.
  * If a `fog` group is set, a second GM-only cluster offers a reveal
@@ -15,6 +15,7 @@ import { el } from './dom.js';
  *   onZoomIn: () => void,
  *   onZoomOut: () => void,
  *   onFit: () => void,
+ *   onCenter: () => void,
  *   getZoom: () => number,
  *   fog?: {
  *     getTool: () => 'reveal' | 'hide' | null,
@@ -67,6 +68,7 @@ export function mountMapControls(container, callbacks) {
     button('plus', 'Zoom in', callbacks.onZoomIn),
     button('minus', 'Zoom out', callbacks.onZoomOut),
     button('fit', 'Fit map to view', callbacks.onFit),
+    button('target', 'Center on party', callbacks.onCenter),
     readout,
   );
 

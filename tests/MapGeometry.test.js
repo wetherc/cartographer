@@ -257,3 +257,24 @@ test('the readable floor still respects the zoom range', () => {
   });
   assert.equal(capped.scale, 4);
 });
+
+test('fitToExtent centers an overflowing axis on the focus, kept inside the map edges', () => {
+  // Same 1408x1408 extent at the 0.5 floor, so it draws 704 wide in a 600 buffer.
+  const opts = { padding: 64, readableScale: 0.5 };
+  // A focus in the middle of the map centers exactly: 300 - 704 * 0.5.
+  const middle = fitToExtent(1408, 1408, 600, 600, { ...opts, focus: { x: 704, y: 704 } });
+  assert.deepEqual({ x: middle.offsetX, y: middle.offsetY }, { x: -52, y: -52 });
+  // A focus near the far corner stops where the far edge meets the padding.
+  const far = fitToExtent(1408, 1408, 600, 600, { ...opts, focus: { x: 1400, y: 1400 } });
+  assert.deepEqual({ x: far.offsetX, y: far.offsetY }, { x: 600 - 64 - 704, y: 600 - 64 - 704 });
+  // A focus near the near corner stops at the padding.
+  const near = fitToExtent(1408, 1408, 600, 600, { ...opts, focus: { x: 10, y: 10 } });
+  assert.deepEqual({ x: near.offsetX, y: near.offsetY }, { x: 64, y: 64 });
+  // An axis that fits still centers the map and ignores the focus.
+  const wide = fitToExtent(1408, 320, 600, 900, { ...opts, focus: { x: 704, y: 0 } });
+  assert.equal(wide.offsetX, -52);
+  assert.equal(wide.offsetY, (900 - 320 * 0.5) / 2);
+  // A null focus keeps the padding anchor.
+  const none = fitToExtent(1408, 1408, 600, 600, { ...opts, focus: null });
+  assert.equal(none.offsetX, 64);
+});

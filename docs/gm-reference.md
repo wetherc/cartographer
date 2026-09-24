@@ -854,3 +854,10 @@ target. A live region announces each turn.
 The map grid shows X and Y labels along the top and left edges. The
 labels pin to the edges of the viewport at partial opacity when the grid
 edge scrolls out of view.
+
+When a map opens, the view fits the whole map. A map too large to show
+at a readable size centers on the party instead, or on the bound
+character in a player tab, and follows it until you pan or zoom. The
+**Center on party** button in the map controls brings the party back into
+view at the current zoom. A switch to Play mode opens the node where the
+party stands.

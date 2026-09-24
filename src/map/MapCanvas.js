@@ -66,6 +66,10 @@ export class MapCanvas {
     this.regionGroups = [];
     /** @type {string | null} tile id of the party marker within the current node, if any */
     this.partyTileId = null;
+    /** @type {string | null} tile id that a fit centers on when the node
+     * overflows the view: the party, or the own character of a bound
+     * player tab. Null when that tile is in another node. */
+    this.focusTileId = null;
     /** @type {string | null} tile id highlighted as the Build-mode selection, if any */
     this.selectedTileId = null;
     /** @type {string[]} tile ids in the current node carrying a live encounter */
@@ -137,6 +141,7 @@ export class MapCanvas {
     this.regionGroups = findRegionGroups(node);
     this.partyTileId = null;
     this.characterTokens = [];
+    this.focusTileId = null;
     // This clears along with the party marker. The previous node's ways out
     // point at the wrong parent. Drawing them before the wiring recomputes
     // them offers a click that travels to a place where the party is not.
@@ -165,6 +170,7 @@ export class MapCanvas {
         maxScale: this.maxZoom,
         padding: 64,
         readableScale: readableScale(this.tileSize),
+        focus: this._focusPoint(),
       },
     );
     this.scale = fitted.scale;
@@ -189,6 +195,54 @@ export class MapCanvas {
     this.offsetX = this.canvas.width / 2 - worldX * this.scale;
     this.offsetY = this.canvas.height / 2 - worldY * this.scale;
     this.render();
+  }
+
+  /**
+   * Set the tile that a fit centers on. While the view is still the fitted
+   * default, a focus tile that lies outside the view, or within one tile of
+   * its edge, re-fits the view around it. A party that walks toward the
+   * edge of a large map then stays in view until the user pans or zooms.
+   * @param {string | null} tileId
+   */
+  setFocusTile(tileId) {
+    if (tileId === this.focusTileId) return;
+    this.focusTileId = tileId;
+    if (tileId && !this._userView && !this._tileWellInView(tileId)) this.fit();
+  }
+
+  /**
+   * Center the view on a tile, at the current zoom, only when the tile lies
+   * outside the view or within one tile of its edge.
+   * @param {string} tileId
+   */
+  bringTileIntoView(tileId) {
+    if (!this._tileWellInView(tileId)) this.centerOnTile(tileId);
+  }
+
+  /** The focus tile's centre in world pixels at scale 1, or null. */
+  _focusPoint() {
+    const coords = this.focusTileId ? parseCoords(this.focusTileId) : null;
+    if (!coords) return null;
+    return { x: (coords.x + 0.5) * this.tileSize, y: (coords.y + 0.5) * this.tileSize };
+  }
+
+  /**
+   * Whether a tile draws inside the canvas with at least one tile of room
+   * on every side.
+   * @param {string} tileId
+   */
+  _tileWellInView(tileId) {
+    const coords = parseCoords(tileId);
+    if (!coords) return true;
+    const size = this.tileSize * this.scale;
+    const x = this.offsetX + coords.x * size;
+    const y = this.offsetY + coords.y * size;
+    return (
+      x >= size &&
+      y >= size &&
+      x + size * 2 <= this.canvas.width &&
+      y + size * 2 <= this.canvas.height
+    );
   }
 
   /**

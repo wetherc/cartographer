@@ -11,7 +11,7 @@
 
 import { classNames, setAttrs } from './dom.js';
 
-/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'map'|'fit'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'} IconName */
+/** @typedef {'plus'|'minus'|'heal'|'remove'|'edit'|'save'|'export'|'import'|'dice'|'d20'|'add'|'check'|'chevron'|'circle'|'map'|'fit'|'target'|'sword'|'shield'|'clock'|'flag'|'scroll'|'sparkles'|'eye'|'eye-off'|'lock'|'give'|'sun'|'moon'|'monitor'|'warning'} IconName */
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -83,6 +83,8 @@ const PATHS = {
     'M6.3 6.3A15 15 0 002 12s3.5 7 10 7a9.6 9.6 0 004-.8',
     'M9.5 9.5a3 3 0 004.2 4.2',
   ],
+  // A ring with four ticks marks centering the map on the party.
+  target: ['M12 6a6 6 0 100 12 6 6 0 000-12z', 'M12 2v4', 'M12 18v4', 'M2 12h4', 'M18 12h4'],
   fit: ['M9 4H4v5', 'M15 4h5v5', 'M20 15v5h-5', 'M9 20H4v-5'],
   // These are the theme-toggle icons. Sun means light. Moon means dark.
   // Monitor means follow the OS setting.

@@ -3,7 +3,7 @@ import { describeCursor, describeNode } from '../map/MapDescription.js';
 import { tileIdAt } from '../map/MapGeometry.js';
 import { MapCanvas } from '../map/MapCanvas.js';
 import { revealAll, discoveredNodes } from '../map/FogOfWar.js';
-import { characterTokens } from '../party/CharacterTokens.js';
+import { characterTokens, followedPosition } from '../party/CharacterTokens.js';
 import {
   renderNodeToCanvas,
   downloadCanvasPNG,
@@ -132,6 +132,8 @@ export function wireMapView(app) {
     const position = partyTracker.getPosition();
     const nodeId = navigator.getCurrentNode().id;
     mapCanvas.setPartyTile(position.nodeId === nodeId ? position.tileId : null);
+    const followed = followedView();
+    mapCanvas.setFocusTile(followed.nodeId === nodeId ? followed.tileId : null);
     mapCanvas.setCharacterTokens(
       state.splitParty ? characterTokens(state.characters, position, nodeId) : [],
     );
@@ -140,6 +142,13 @@ export function wireMapView(app) {
     refreshMapDescription();
   }
   app.actions.syncPartyMarker = syncPartyMarker;
+
+  /** Where this tab's view follows: the party, or a bound player's own
+   * character while the party is split. */
+  function followedView() {
+    const boundId = isGM(state.role) ? null : app.actions.getBoundCharacterId();
+    return followedPosition(state.characters, partyTracker.getPosition(), boundId);
+  }
 
   /** Recompute the ways out of the node in view and pass them to both places
    * that show them: the canvas, which draws an arrow for each side and a
@@ -462,6 +471,7 @@ export function wireMapView(app) {
     onZoomIn: () => mapCanvas.zoomBy(1.25),
     onZoomOut: () => mapCanvas.zoomBy(1 / 1.25),
     onFit: () => mapCanvas.fit(),
+    onCenter: () => centerOnLocation(followedView()),
     getZoom: () => mapCanvas.scale,
     // GM fog controls, hidden from the player role by CSS. Brushes stroke fog
     // on or off. Reveal-all lights the whole current node.
@@ -552,6 +562,14 @@ export function wireMapView(app) {
     worldTree.update();
     regionTree.update();
     refreshMapDescription();
+    // Play mode is about the party. Bring it into view, from whatever node
+    // Build had open.
+    if (mode === 'play') {
+      const at = followedView();
+      if (navigator.getCurrentNode().id !== at.nodeId && grid.getNode(at.nodeId)) {
+        goToNode(at.nodeId);
+      } else mapCanvas.bringTileIntoView(at.tileId);
+    }
   };
 
   // This handles a role switch in the same way. A player role gets no fog
