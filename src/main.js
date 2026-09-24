@@ -7,8 +7,6 @@
  * one mounted later.
  */
 import { TilePalette } from './map/TilePalette.js';
-import { MapNavigator } from './map/MapNavigator.js';
-import { PartyTracker } from './party/PartyTracker.js';
 import { loadInitialCampaignSafe } from './campaign/Campaigns.js';
 import { mountToasts, flushQueuedToast } from './ui/Toast.js';
 import { mountTooltips } from './ui/Tooltip.js';
@@ -27,7 +25,12 @@ import { wireDiceTray } from './app/diceWiring.js';
 import { maybeShowOnboarding } from './app/onboarding.js';
 
 const palette = new TilePalette();
-const { campaign: initial, failed: loadFailed } = loadInitialCampaignSafe();
+const {
+  campaign: initial,
+  navigator,
+  partyTracker,
+  failed: loadFailed,
+} = loadInitialCampaignSafe();
 const toasts = mountToasts(document.body);
 // One tooltip for the whole page. Its listeners are delegated, so a widget
 // built later gains a tooltip just by carrying the attribute `setTip` writes.
@@ -43,8 +46,8 @@ const app = /** @type {import('./types/app.js').AppContext} */ (
   /** @type {unknown} */ ({
     palette,
     grid: initial.grid,
-    navigator: new MapNavigator(initial.grid, initial.party.nodeId),
-    partyTracker: new PartyTracker(initial.grid, initial.party),
+    navigator,
+    partyTracker,
     toasts,
     state: {
       entryTiles: initial.entryTiles,

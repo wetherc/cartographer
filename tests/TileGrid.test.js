@@ -9,6 +9,7 @@ import {
   resizeNode,
   tilesOutsideBounds,
   withNodeDefaults,
+  withRepairedParents,
   overlayList,
   tilesById,
   TileGrid,
@@ -209,4 +210,47 @@ test('overlayList normalizes none, one, and stacked overlays to a draw-ordered l
     overlayList(createTile('0,0', 'g.svg', { overlayRef: ['coast.svg', 'river.svg'] })),
     ['coast.svg', 'river.svg'],
   );
+});
+
+test('getBreadcrumb stops at a node it has already visited', () => {
+  const grid = new TileGrid();
+  grid.addNode(createMapNode('a', 'A', 'b', 1, 1));
+  grid.addNode(createMapNode('b', 'B', 'a', 1, 1));
+  assert.deepEqual(
+    grid.getBreadcrumb('a').map((n) => n.id),
+    ['b', 'a'],
+  );
+});
+
+test('withRepairedParents clears parent links that name nothing or the node itself', () => {
+  const world = createMapNode('world', 'World', null, 1, 1);
+  const cave = createMapNode('cave', 'Cave', 'world', 1, 1);
+  const self = createMapNode('self', 'Self', 'self', 1, 1);
+  const ghost = createMapNode('ghost', 'Ghost', 'missing', 1, 1);
+  const odd = /** @type {any} */ ({ ...createMapNode('odd', 'Odd', null, 1, 1), parentId: 7 });
+  const repaired = withRepairedParents([world, cave, self, ghost, odd]);
+  assert.equal(repaired[0], world, 'a node that needs no repair keeps its identity');
+  assert.equal(repaired[1], cave);
+  assert.deepEqual(
+    repaired.map((node) => node.parentId),
+    [null, 'world', null, null, null],
+  );
+});
+
+test('withRepairedParents breaks every parent loop', () => {
+  const nodes = [
+    createMapNode('a', 'A', 'b', 1, 1),
+    createMapNode('b', 'B', 'a', 1, 1),
+    createMapNode('c', 'C', 'b', 1, 1),
+    createMapNode('x', 'X', 'z', 1, 1),
+    createMapNode('y', 'Y', 'x', 1, 1),
+    createMapNode('z', 'Z', 'y', 1, 1),
+  ];
+  const repaired = withRepairedParents(nodes);
+  const grid = new TileGrid();
+  for (const node of repaired) grid.addNode(node);
+  for (const node of repaired) {
+    assert.equal(grid.getBreadcrumb(node.id)[0].parentId, null, `${node.id} reaches a root`);
+  }
+  assert.equal(repaired.filter((node) => node.parentId === null).length, 2, 'one root per loop');
 });

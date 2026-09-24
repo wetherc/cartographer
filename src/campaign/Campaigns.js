@@ -1,4 +1,6 @@
 import { createMapNode, TileGrid } from '../map/TileGrid.js';
+import { MapNavigator } from '../map/MapNavigator.js';
+import { PartyTracker } from '../party/PartyTracker.js';
 import { pruneEntries } from '../map/EntryMemory.js';
 import { toTileGrid } from '../storage/SaveManager.js';
 import { loadPersistedCampaign } from '../storage/HistoryLog.js';
@@ -104,6 +106,8 @@ export function buildExampleCampaign(palette, rng = Math.random) {
 export function loadInitialCampaign() {
   const saved = loadPersistedCampaign();
   if (!saved) return buildBlankCampaign();
+  // A campaign with no map has nowhere to put the party or the map view.
+  if (saved.nodes.length === 0) throw new Error('The saved campaign has no map nodes.');
   // SaveManager's deserialize sets a default for every missing top-level field
   // and runs withDefaults for each entity. saved is a complete CampaignState
   // here. Only party and clock still need a runtime default, because
@@ -111,7 +115,7 @@ export function loadInitialCampaign() {
   const grid = toTileGrid(saved);
   return {
     grid,
-    party: saved.party ?? { nodeId: 'world', tileId: '0,0' },
+    party: partyOnGrid(saved.party, grid),
     // An entry for a node that another tab deleted names nothing. Dropping
     // it here keeps it out of the next save.
     entryTiles: pruneEntries(saved.entryTiles, (nodeId) => grid.getNode(nodeId) !== undefined),
@@ -142,7 +146,7 @@ export function campaignFromLiveState(state) {
   for (const node of state.nodes) grid.addNode(node);
   return {
     grid,
-    party: state.party ?? { nodeId: 'world', tileId: '0,0' },
+    party: partyOnGrid(state.party, grid),
     // No prune here. A delta applied to live state is already consistent,
     // and a prune would walk the world on every adoption.
     entryTiles: state.entryTiles,
@@ -159,21 +163,51 @@ export function campaignFromLiveState(state) {
 }
 
 /**
- * The boot entry point. It calls `loadInitialCampaign`, but a save that the
- * app cannot read at all produces a blank campaign instead of an exception.
+ * The party position a loaded campaign boots with. A position that names a
+ * node in the grid is kept. Any other position, including none, moves the
+ * party to tile 0,0 of the first root node. The party tracker throws on a
+ * node it cannot find, and an imported file can name any node it likes.
+ * @param {import('../types/map.js').PartyPosition | null} party
+ * @param {TileGrid} grid
+ * @returns {import('../types/map.js').PartyPosition}
+ */
+export function partyOnGrid(party, grid) {
+  if (party && grid.getNode(party.nodeId)) return party;
+  const nodes = [...grid.nodes.values()];
+  const root = nodes.find((node) => node.parentId === null) ?? nodes[0];
+  if (!root) throw new Error('The campaign has no map nodes to put the party on.');
+  return { nodeId: root.id, tileId: '0,0' };
+}
+
+/**
+ * The boot entry point. It calls `loadInitialCampaign` and builds the map
+ * navigator and the party tracker over the result. A save that the app
+ * cannot read, or whose map these two objects refuse, produces a blank
+ * campaign instead of an exception.
  *
  * Without this, one unreadable field causes a white screen. Import writes
  * what it reads before it reloads the app, so the unreadable campaign is
  * already the stored save, and the GM has no app left to press Undo
  * in. `failed` lets the caller report the error once the toasts mount. The
  * previous save is still in the undo ring, and Undo restores it.
- * @returns {{ campaign: Campaign, failed: boolean }}
+ * @returns {{ campaign: Campaign, navigator: MapNavigator, partyTracker: PartyTracker, failed: boolean }}
  */
 export function loadInitialCampaignSafe() {
   try {
-    return { campaign: loadInitialCampaign(), failed: false };
+    return { ...withTrackers(loadInitialCampaign()), failed: false };
   } catch (error) {
     console.error('Could not load the saved campaign; starting blank.', error);
-    return { campaign: buildBlankCampaign(), failed: true };
+    return { ...withTrackers(buildBlankCampaign()), failed: true };
   }
+}
+
+/**
+ * A campaign with the navigator and party tracker that start on it. Both
+ * throw on a node the grid does not hold.
+ * @param {Campaign} campaign
+ */
+function withTrackers(campaign) {
+  const navigator = new MapNavigator(campaign.grid, campaign.party.nodeId);
+  navigator.getCurrentNode();
+  return { campaign, navigator, partyTracker: new PartyTracker(campaign.grid, campaign.party) };
 }

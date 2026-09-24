@@ -7,9 +7,10 @@ import {
   isBlankCampaign,
   loadInitialCampaign,
   loadInitialCampaignSafe,
+  partyOnGrid,
 } from '../src/campaign/Campaigns.js';
 import { TilePalette } from '../src/map/TilePalette.js';
-import { createTile, getTile } from '../src/map/TileGrid.js';
+import { createTile, getTile, TileGrid } from '../src/map/TileGrid.js';
 import { buildingTile } from '../src/campaign/ExampleWorld.js';
 import { createCharacter, getHP, getClasses } from '../src/entities/Character.js';
 import { isHitDicePool } from '../src/entities/HitDice.js';
@@ -52,7 +53,12 @@ test('loadInitialCampaign restores a save and default-fills fields older saves l
   // No demo character is injected into an authored-empty roster.
   localStorage.setItem(
     'campaign-builder:save',
-    JSON.stringify({ nodes: [], party: null, characters: [], encounters: [] }),
+    JSON.stringify({
+      nodes: [{ id: 'world', name: 'World', parentId: null, width: 2, height: 2, tiles: [] }],
+      party: null,
+      characters: [],
+      encounters: [],
+    }),
   );
   assert.equal(loadInitialCampaign().characters.length, 0);
 });
@@ -103,18 +109,14 @@ test('loadInitialCampaign keeps the entry memory and drops what names a missing 
 });
 
 test('loadInitialCampaignSafe falls back to a blank campaign when a save is unreadable', () => {
-  // Survives deserialize as a record, then throws in the character default-fill.
-  localStorage.setItem(
-    'campaign-builder:save',
-    JSON.stringify({
-      nodes: [{ id: 'world', name: 'World', parentId: null, width: 2, height: 2, tiles: [] }],
-      characters: [{ id: 'c1', name: 'Hero', inventory: 5 }],
-    }),
-  );
+  // Any JSON record parses as a campaign, and one with no nodes has no map.
+  localStorage.setItem('campaign-builder:save', JSON.stringify({ hello: 'world' }));
   assert.throws(loadInitialCampaign, 'the strict loader still reports the problem');
-  const { campaign, failed } = loadInitialCampaignSafe();
+  const { campaign, navigator, partyTracker, failed } = loadInitialCampaignSafe();
   assert.equal(failed, true);
   assert.deepEqual(campaign, buildBlankCampaign());
+  assert.equal(navigator.getCurrentNode().id, 'world');
+  assert.equal(partyTracker.grid, campaign.grid, 'the tracker walks the fallback grid');
   assert.ok(
     localStorage.getItem('campaign-builder:save'),
     'the unreadable save is left alone, so Undo can still reach the one before it',
@@ -279,8 +281,8 @@ test('campaignFromLiveState wraps live objects without re-parsing or re-defaulti
   }
   assert.equal(campaign.characters, source.characters);
   assert.equal(campaign.clock, source.clock);
-  const bare = campaignFromLiveState({ nodes: [], party: null, clock: null, combat: null });
-  assert.deepEqual(bare.party, { nodeId: 'world', tileId: '0,0' });
+  const bare = campaignFromLiveState({ nodes: [nodes[0]], party: null, clock: null, combat: null });
+  assert.deepEqual(bare.party, { nodeId: nodes[0].id, tileId: '0,0' });
   assert.ok(bare.clock, 'a null clock gets a fresh one');
   assert.equal(bare.combat, null);
 });
@@ -308,4 +310,49 @@ test('the blank campaign builder produces a blank campaign', () => {
   const node = campaign.grid.getNode(campaign.party.nodeId);
   assert.ok(node);
   assert.equal(isBlankCampaign(campaign.grid, node, campaign.characters), true);
+});
+
+test('loadInitialCampaign moves a party on a missing node to the first root node', () => {
+  localStorage.setItem(
+    'campaign-builder:save',
+    JSON.stringify({
+      nodes: [
+        { id: 'cave', name: 'Cave', parentId: 'vale', width: 2, height: 2, tiles: [] },
+        { id: 'vale', name: 'Vale', parentId: null, width: 2, height: 2, tiles: [] },
+      ],
+      party: { nodeId: 'world', tileId: '1,1' },
+    }),
+  );
+  assert.deepEqual(loadInitialCampaign().party, { nodeId: 'vale', tileId: '0,0' });
+  const { failed, navigator } = loadInitialCampaignSafe();
+  assert.equal(failed, false);
+  assert.equal(navigator.getCurrentNode().id, 'vale');
+});
+
+test('partyOnGrid keeps a party on a known node and throws on an empty grid', () => {
+  const { grid } = buildBlankCampaign();
+  const party = { nodeId: 'world', tileId: '2,1' };
+  assert.equal(partyOnGrid(party, grid), party);
+  assert.throws(() => partyOnGrid(null, new TileGrid()), /no map nodes/);
+});
+
+test('loadInitialCampaign boots a save with a parent loop and a malformed spellbook', () => {
+  localStorage.setItem(
+    'campaign-builder:save',
+    JSON.stringify({
+      nodes: [
+        { id: 'a', name: 'A', parentId: 'b', width: 2, height: 2, tiles: [] },
+        { id: 'b', name: 'B', parentId: 'a', width: 2, height: 2, tiles: [] },
+      ],
+      party: { nodeId: 'a', tileId: '0,0' },
+      characters: [{ id: 'c1', name: 'Hero', spellbook: 5 }],
+    }),
+  );
+  const { campaign, navigator, failed } = loadInitialCampaignSafe();
+  assert.equal(failed, false);
+  assert.deepEqual(
+    navigator.getBreadcrumb().map((n) => n.id),
+    ['b', 'a'],
+  );
+  assert.deepEqual(campaign.characters[0].spellbook, { cantrips: [], known: [], prepared: [] });
 });

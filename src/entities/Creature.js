@@ -8,6 +8,7 @@ import { isSlotPool } from './SpellSlots.js';
 import { atDeathLevel, easeExhaustion, exhaustionFields } from './Exhaustion.js';
 import { creatureProficiencyFields } from './Proficiencies.js';
 import { capitalize } from '../util/text.js';
+import { conditionList, recordList, spellbookOf } from './LoadCoercion.js';
 
 /** @typedef {import('../types/creature.js').Creature} Creature */
 /** @typedef {import('../types/creature.js').CreatureTemplate} CreatureTemplate */
@@ -177,10 +178,13 @@ export function createCreature(id, name, options = {}) {
  */
 export function withDefaults(creature) {
   const maxHP = clampMaxHP(creature.maxHP);
-  const { cr: _cr, proficiencies: _proficiencies, ...stripped } = creature;
+  const { cr: _cr, proficiencies: _proficiencies, resources, spellbook, ...stripped } = creature;
+  const book = spellbookOf(spellbook);
   return ensureCasterFields(
     {
       ...stripped,
+      ...(resources !== undefined ? { resources: recordList(resources) } : {}),
+      ...(book ? { spellbook: book } : {}),
       ...crFields(creature.cr),
       ...creatureProficiencyFields(creature.proficiencies),
       disposition: creature.disposition ?? 'neutral',
@@ -188,7 +192,7 @@ export function withDefaults(creature) {
       currentHP: Math.min(maxHP, creature.currentHP ?? maxHP),
       stats: normalizeStatBlock(creature.stats ?? {}),
       location: creature.location ?? null,
-      ...exhaustionFields(creature.exhaustion, creature.conditions ?? []),
+      ...exhaustionFields(creature.exhaustion, conditionList(creature.conditions)),
       met: creature.met ?? false,
       weapon: creature.weapon ?? null,
       armor: creature.armor ?? null,

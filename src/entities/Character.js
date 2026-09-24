@@ -19,6 +19,7 @@ import { emptyProficiencies, normalizeProficiencies } from './Proficiencies.js';
 import { getClasses, sanitizeClasses } from './Multiclass.js';
 import { migrateASIChoices } from './LevelUp.js';
 import { clamp, clampInt } from '../util/num.js';
+import { conditionList, recordList, spellbookOf } from './LoadCoercion.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/entities.js').ResourcePool} ResourcePool */
@@ -371,16 +372,16 @@ export function withDefaults(character) {
     race: character.race ?? '',
     classes,
     stats: { ...defaultStats(), ...character.stats },
-    resources: character.resources ?? [],
-    ...exhaustionFields(character.exhaustion, character.conditions ?? []),
+    resources: recordList(character.resources),
+    ...exhaustionFields(character.exhaustion, conditionList(character.conditions)),
     concentration: character.concentration ?? null,
     deathSaves: character.deathSaves ?? null,
     equipment: migrateEquipment(character.equipment),
-    inventory: (character.inventory ?? []).map(migrateItem),
+    inventory: recordList(character.inventory).map(migrateItem),
     bonusHP: character.bonusHP ?? 0,
     baseAC: character.baseAC ?? 10,
     location: character.location ?? null,
-    spellbook: character.spellbook ?? emptySpellbook(),
+    spellbook: spellbookOf(character.spellbook) ?? emptySpellbook(),
     proficiencies: character.proficiencies
       ? normalizeProficiencies({
           ...character.proficiencies,

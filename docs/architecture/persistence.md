@@ -102,7 +102,20 @@ one example: the panel formats every entry during startup, and an unreadable
 date throws there.
 
 `withNodeDefaults` (`map/TileGrid.js`) does the same job for nodes and their
-tiles. It drops any tile it cannot read.
+tiles. It drops any tile it cannot read. `withRepairedParents` then clears a
+`parentId` that names the node itself or a node not in the save, and breaks
+each parent loop by turning one node of the loop into a root. Every walk up
+the hierarchy, such as the breadcrumb, loops forever on a cycle and freezes
+the tab at startup. The character and creature `withDefaults` functions use
+`entities/LoadCoercion.js` for their list fields (resources, inventory,
+conditions) and the spellbook, so a scalar in one of those fields reads as
+empty.
+
+`loadInitialCampaign` throws on a save with no map nodes, and the import
+refuses such a file before it stores anything. Any JSON record parses as a
+campaign, so a file such as `{"hello":"world"}` reaches this check. A party
+position that names a missing node moves to tile 0,0 of the first root node
+(`Campaigns.partyOnGrid`).
 
 A bundled `library` field has its own gate. `deserialize` rebuilds the
 state field by field, so the field can never enter `CampaignState` or reach
@@ -112,8 +125,10 @@ parse a standalone library file passes, and reads anything absent,
 malformed, or empty as null. A broken library therefore cannot fail the
 campaign import around it.
 
-As a backstop, `main.js` starts through `Campaigns.loadInitialCampaignSafe`. A
-save that still cannot be read produces a blank campaign plus a notice. This
+As a backstop, `main.js` starts through `Campaigns.loadInitialCampaignSafe`,
+which also builds the map navigator and the party tracker. A save that still
+cannot be read, or whose map either object refuses, produces a blank campaign
+plus a notice. This
 leaves the stored save and the history log untouched, so Undo can still step
 back to the save before the broken one.
 

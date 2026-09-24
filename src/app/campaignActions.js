@@ -523,6 +523,12 @@ export function wireCampaignActions(app) {
       app.toasts.show('That file is not a readable campaign JSON.', { level: 'error' });
       return;
     }
+    // Any JSON record parses as a campaign, and one with no map nodes gives
+    // the party and the map view nowhere to start.
+    if (state.nodes.length === 0) {
+      app.toasts.show('That file has no map, so it is not a campaign file.', { level: 'error' });
+      return;
+    }
     // A file with a bundled library adopts it into the browser's customs,
     // asking first when that would overwrite existing ones. A decline keeps
     // the browser library and still imports the campaign, the same outcome

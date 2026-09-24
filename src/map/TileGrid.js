@@ -153,6 +153,51 @@ export function withNodeDefaults(node) {
 }
 
 /**
+ * Repair the parent links of a loaded node list, so every node reaches a
+ * root in a finite walk. A `parentId` that is not a string, names the node
+ * itself, or names a node not in the list becomes null. In a loop such as
+ * `a -> b -> a`, the node whose parent closes the loop becomes a root. The
+ * breadcrumb, the world tree, and every walk up the hierarchy loop forever
+ * on a cycle, and an imported file alone can hold one. A node that needs
+ * no repair stays the same object.
+ * @param {MapNode[]} nodes
+ * @returns {MapNode[]}
+ */
+export function withRepairedParents(nodes) {
+  /** @type {Map<string, string | null>} */
+  const parents = new Map();
+  for (const node of nodes) parents.set(node.id, node.parentId);
+  for (const [id, parentId] of parents) {
+    if (typeof parentId !== 'string' || parentId === id || !parents.has(parentId)) {
+      parents.set(id, null);
+    }
+  }
+  /** @type {Set<string>} */
+  const settled = new Set();
+  for (const start of parents.keys()) {
+    /** @type {Set<string>} */
+    const path = new Set();
+    /** @type {string | null} */
+    let id = start;
+    while (id !== null && !settled.has(id)) {
+      path.add(id);
+      const parentId = /** @type {string | null} */ (parents.get(id));
+      if (parentId !== null && path.has(parentId)) {
+        parents.set(id, null);
+        break;
+      }
+      id = parentId;
+    }
+    for (const walked of path) settled.add(walked);
+  }
+  return nodes.map((node) =>
+    node.parentId === parents.get(node.id)
+      ? node
+      : { ...node, parentId: parents.get(node.id) ?? null },
+  );
+}
+
+/**
  * A tile's overlay images as a draw-ordered list, bottom first, whether the
  * tile holds none, one, or a stack.
  * @param {Tile} tile
@@ -337,17 +382,22 @@ export class TileGrid {
 
   /**
    * The breadcrumb from the root node down to and including the given node.
+   * The walk stops at a node it has already visited, so a parent loop that
+   * a live edit creates gives a short breadcrumb instead of a frozen tab.
    * @param {string} nodeId
    * @returns {MapNode[]}
    */
   getBreadcrumb(nodeId) {
     /** @type {MapNode[]} */
     const path = [];
+    /** @type {Set<string>} */
+    const visited = new Set();
     /** @type {string | null} */
     let currentId = nodeId;
-    while (currentId) {
+    while (currentId && !visited.has(currentId)) {
       const node = this.nodes.get(currentId);
       if (!node) break;
+      visited.add(currentId);
       path.unshift(node);
       currentId = node.parentId;
     }
