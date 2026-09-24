@@ -28,7 +28,8 @@ import { mountSpellbookPanel } from '../ui/SpellbookPanel.js';
 import { mountInventoryPanel } from '../ui/InventoryPanel.js';
 import { wireTabs } from '../ui/Tabs.js';
 import { mountTimePanel } from '../ui/TimePanel.js';
-import { advanceWatches, advanceToDawn, formatClock } from '../time/GameClock.js';
+import { advanceWatches, advanceToDawn, formatClock, watchesBetween } from '../time/GameClock.js';
+import { passTime } from './passTime.js';
 import { isGM } from '../view/ViewRole.js';
 import { partyPermissions } from '../view/CharacterBinding.js';
 import { createCharacterClaim } from '../view/CharacterClaim.js';
@@ -438,11 +439,13 @@ export function wireParty(app) {
     getClock: () => state.clock,
     onAdvance: () => {
       state.clock = advanceWatches(state.clock, 1);
+      passTime(app, 1);
       app.actions.markDirty();
     },
     onShortRest: () => {
       state.characters = state.characters.map(shortRest);
       state.clock = advanceWatches(state.clock, 1);
+      passTime(app, 1);
       scope.reselect();
       app.actions.logEvent(
         'rest',
@@ -451,7 +454,10 @@ export function wireParty(app) {
     },
     onLongRest: () => {
       state.characters = state.characters.map(longRest);
+      const before = state.clock;
       state.clock = advanceToDawn(state.clock);
+      // A long rest takes eight hours, two watches, even when Dawn is nearer.
+      passTime(app, Math.max(2, watchesBetween(before, state.clock)));
       scope.reselect();
       app.actions.logEvent('rest', `The party takes a long rest. Now ${formatClock(state.clock)}.`);
     },

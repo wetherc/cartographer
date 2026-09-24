@@ -44,3 +44,14 @@ export function advanceToDawn(clock) {
 export function formatClock(clock) {
   return `Day ${clock.day}, ${WATCHES[clock.watch] ?? WATCHES[0]}`;
 }
+
+/**
+ * How many watches pass from one clock reading to a later one. A long rest
+ * from Dusk to the next Dawn is two watches.
+ * @param {GameClock} from
+ * @param {GameClock} to
+ * @returns {number}
+ */
+export function watchesBetween(from, to) {
+  return Math.max(0, (to.day - from.day) * WATCHES.length + to.watch - from.watch);
+}

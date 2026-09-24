@@ -751,6 +751,14 @@ takes one level of exhaustion off each character. A rest that lifts a dying
 character above 0 HP clears the death-save tracker. A character that is already dead keeps its
 level.
 
+A watch is four hours, or 2,400 combat rounds. Advance and a short rest each
+pass one watch, and a long rest passes the watches until Dawn, at least two.
+Every condition, timed stat change, and concentration with a round count
+loses that many rounds, and one that runs out ends. When a concentration
+ends, the conditions its spell put on other creatures end with it. Bless cast
+between fights is gone after a rest, while an effect that lasts 8 hours still
+has 4 hours left after one watch.
+
 An NPC sits on any map at a column and row, or stays unplaced, in which
 case it appears everywhere. Columns and rows count from 1, the same as the
 numbers along the map edges. The panel lists the NPCs at the current
