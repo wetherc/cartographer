@@ -22,6 +22,7 @@ import {
   resolveAttack,
 } from '../combat/AttackResolve.js';
 import { findCombatant, combatantsAsTargets, applyToTarget, defendedDamage } from './combatants.js';
+import { skipsTurn } from '../combat/CombatView.js';
 import { defenseNote } from '../entities/DamageDefenses.js';
 import { spendRollRiders } from './riderSpend.js';
 
@@ -165,6 +166,33 @@ export function attackParticipants(app, combat, participant) {
   const found = findCombatant(app, participant.id);
   if (!found) return null;
   return { attacker: found.entity, defenders: combatantsAsTargets(app, combat, participant) };
+}
+
+/**
+ * Both sides of an attack, read again by id after the pre-roll dialog closes.
+ * The dialog stands open across an await. In that time a cross-tab adoption
+ * can replace the attacker and the defender with new objects, and a roll from
+ * the old ones uses chips and HP that are no longer true. The GM can also end
+ * the fight, which leaves no budget to spend, so the swing would deal damage
+ * for free. A refusal names why the attack does not roll: the fight is over,
+ * the attacker is down or cannot act, or the picked defender is no longer a
+ * target.
+ * @param {AppContext} app
+ * @param {import('../types/combat.js').Participant} participant
+ * @param {string} defenderId
+ * @returns {{ attacker: NonNullable<ReturnType<typeof attackParticipants>>['attacker'], defender: CombatTarget } | { refusal: string }}
+ */
+export function liveAttackSides(app, participant, defenderId) {
+  const combat = app.state.combat;
+  if (!combat) return { refusal: 'The fight ended before the attack rolled.' };
+  const sides = attackParticipants(app, combat, participant);
+  const found = findCombatant(app, participant.id);
+  if (!sides || !found || skipsTurn(found)) {
+    return { refusal: 'The attacker can no longer act, so the attack did not roll.' };
+  }
+  const defender = sides.defenders.find((d) => d.id === defenderId);
+  if (!defender) return { refusal: 'That target is down or gone, so the attack did not roll.' };
+  return { attacker: sides.attacker, defender };
 }
 
 /**
@@ -639,12 +667,14 @@ export async function weaponAttack(
     },
   );
   if (!values) return;
-  // A defender the dialog no longer offers, for example one defeated while
-  // the dialog stood open, falls back to the first one left standing.
-  const defender = defenders.find((d) => d.id === values.target) ?? defenders[0];
+  const live = liveAttackSides(app, participant, values.target);
+  if ('refusal' in live) {
+    app.toasts.show(live.refusal);
+    return;
+  }
   rollWeaponAttack(app, {
-    attacker,
-    defender,
+    attacker: live.attacker,
+    defender: live.defender,
     weapon,
     tweaks: { ...readAttackTweaks(values), offhand, reaction },
   });
