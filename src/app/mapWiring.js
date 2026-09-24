@@ -270,8 +270,26 @@ export function wireMapView(app) {
   // Re-read the node in view and every location view from the grid. Use this
   // for a caller that replaced the world underneath the tab. The node object,
   // the party marker, the breadcrumb, and both trees all derive from grid
-  // content that this tab did not change itself.
-  app.actions.resyncMap = () => goToNode(navigator.currentNodeId);
+  // content that this tab did not change itself. An adopted save arrives on
+  // every GM autosave and every combat flush. While the canvas still shows
+  // the same node at the same size, it redraws in place, so the pan, zoom,
+  // keyboard cursor, and a held fog brush stay. A new node, or a resize that
+  // can drop the cells under the cursor, re-frames.
+  app.actions.resyncMap = () => {
+    const shown = mapCanvas.node;
+    const next = navigator.getCurrentNode();
+    if (
+      shown &&
+      shown.id === next.id &&
+      shown.width === next.width &&
+      shown.height === next.height
+    ) {
+      resyncMapViews(app, env);
+      syncPartyMarker();
+    } else {
+      goToNode(navigator.currentNodeId);
+    }
+  };
 
   /** Show only the palette terrain that the current node's kind can use. */
   function syncPaletteKind() {

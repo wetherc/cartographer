@@ -142,7 +142,8 @@ export interface AppActions {
   meetCreatures(): void;
   refreshMapDescription(): void;
   // mapWiring: reread the node in view and every location view from the
-  // grid, for a caller that replaced the world underneath them.
+  // grid, for a caller that replaced the world underneath them. The view
+  // keeps its pan and zoom while the node in view keeps its id and size.
   resyncMap(): void;
   // mapWiring: the Build-mode selected tile id, or null. This is the default
   // spot for authoring flows that place something "here".
