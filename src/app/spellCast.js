@@ -5,6 +5,7 @@ import { unproficientWear } from '../entities/Armor.js';
 import { spellSaveDC, hasRitualCasting } from '../entities/Classes.js';
 import { castableSlotLevels } from '../entities/SpellSlots.js';
 import { toCaster } from '../entities/Caster.js';
+import { isRitualOnly } from '../entities/SpellView.js';
 import { replaceById } from '../entities/Roster.js';
 import { castingCost, formatCastingTime, parseCastingTime } from '../entities/SpellTiming.js';
 import { COST_LABELS, canSpend } from '../combat/ActionBudget.js';
@@ -153,8 +154,11 @@ export function castPlan(app, entity, spell, offered) {
     : offered;
 
   // A leveled spell casts from a slot at or above its level that still has a
-  // charge, leveled or pact. The picker offers each such level.
-  const slotLevels = spell.level > 0 ? castableSlotLevels(caster, spell.level) : [];
+  // charge, leveled or pact. The picker offers each such level. A Wizard's
+  // unprepared ritual casts only as a ritual, so it offers no slot, and the
+  // ritual box opens ticked.
+  const ritualOnly = isRitualOnly(caster, spell);
+  const slotLevels = spell.level > 0 && !ritualOnly ? castableSlotLevels(caster, spell.level) : [];
   // A multiclass caster's DC and attack bonus use the class the spell was
   // learned under. Without a recorded source, they fall back to the first
   // caster class.
@@ -229,6 +233,7 @@ export function castPlan(app, entity, spell, offered) {
     targets,
     saveAbility,
     slotLevels,
+    ritualOnly,
     sourceClass,
     dc,
     material,

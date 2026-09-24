@@ -93,6 +93,22 @@ export function isSpellCastable(character, spell) {
 }
 
 /**
+ * Whether the character can cast this spell only as a ritual: a ritual in
+ * the known list of a class that casts rituals from its book (the Wizard),
+ * and not prepared. Such a spell casts with no slot and the extra ten
+ * minutes, never from a slot. This function is pure.
+ * @param {SpellCaster} character
+ * @param {Spell} spell
+ * @returns {boolean}
+ */
+export function isRitualOnly(character, spell) {
+  if (!spell.ritual || spell.level === 0 || isSpellCastable(character, spell)) return false;
+  if (!getSpellbook(character).known.includes(spell.id)) return false;
+  const classId = spellSource(character, spell.id) ?? primaryCasterClass(character)?.classId;
+  return getClass(classId)?.ritualFromBook === true;
+}
+
+/**
  * The leveled spell ids the character can cast right now, in spellbook
  * order. The list holds every known spell under a known-rule class, plus
  * the prepared ones under a prepared-rule class. Cantrips are not included.

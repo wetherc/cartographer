@@ -273,6 +273,7 @@ function normalizeSpell(raw, id) {
     // A rider rides the chip, so it means nothing without one, the same as a
     // repeated save.
     const rider = condition ? normalizeRider(raw.effect.rider) : null;
+    const hpLimit = clampInt(raw.effect.hpLimit, 0);
     effect = {
       kind: 'save',
       saveAbility: SPELL_ABILITIES.includes(raw.effect.saveAbility)
@@ -285,6 +286,7 @@ function normalizeSpell(raw, id) {
       // absent otherwise. An entry written before this field reads as a
       // condition that runs for the spell's whole duration.
       ...(raw.effect.saveEnds && condition ? { saveEnds: true } : {}),
+      ...(hpLimit > 0 ? { hpLimit } : {}),
       ...(rider ? { rider } : {}),
     };
   } else if (kind === 'heal') {

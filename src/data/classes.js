@@ -485,6 +485,7 @@ export const DEFAULT_CLASSES = deepFreeze(
       spellListId: 'wizard',
       knownRule: 'prepared',
       ritual: true,
+      ritualFromBook: true,
       cantripsKnown: curve({ 1: 3, 4: 4, 10: 5 }),
       savingThrows: ['INT', 'WIS'],
       armor: [],

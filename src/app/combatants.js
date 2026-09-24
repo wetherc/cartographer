@@ -617,7 +617,7 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
   /** @param {Character | Creature} next */
   const logManual = (next) => {
     if (!opts.manual) return;
-    const hp = hpAfter(found.kind, next);
+    const hp = hpOf(found.kind, next);
     const line = isHeal ? healLine(next.name, amount, hp) : damageLine(next.name, amount, hp);
     app.actions.logEvent('combat', line);
   };
@@ -653,13 +653,14 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
 }
 
 /**
- * The HP readout for the manual log line, from the entity as written. A
- * character without an HP pool reads as null, and the line drops the readout.
+ * The HP of a combatant, from the entity as written. The manual log line
+ * reads it, and so does a spell with an HP limit. A character without an HP
+ * pool reads as null, and the log line then drops the readout.
  * @param {Combatant['kind']} kind
  * @param {Character | Creature} entity
  * @returns {{ current: number, max: number } | null}
  */
-function hpAfter(kind, entity) {
+export function hpOf(kind, entity) {
   if (kind === 'creature') {
     const creature = /** @type {Creature} */ (entity);
     return { current: creature.currentHP, max: creature.maxHP };

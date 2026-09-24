@@ -35,6 +35,7 @@ import { clampInt } from '../util/num.js';
  * @property {boolean} [halfOnSave]
  * @property {boolean} [saveEnds] whether the imposed condition ends on a
  *   save at the end of each of the target's turns
+ * @property {unknown} [hpLimit] the save kind's HP limit, 0 or blank for none
  * @property {boolean} [addsModifier] whether the heal kind adds the
  *   spellcasting ability modifier
  * @property {boolean} [dealsDamage] the save kind's damage gate
@@ -93,6 +94,7 @@ export function assembleEffect(draft) {
   }
   if (draft.kind === 'save') {
     const condition = (draft.condition ?? '').trim();
+    const hpLimit = clampInt(draft.hpLimit, 0);
     const rider = condition ? normalizeRider(draft.rider) : null;
     return {
       kind: 'save',
@@ -101,6 +103,7 @@ export function assembleEffect(draft) {
       halfOnSave: Boolean(draft.halfOnSave),
       ...(condition ? { condition } : {}),
       ...(condition && draft.saveEnds ? { saveEnds: true } : {}),
+      ...(hpLimit > 0 ? { hpLimit } : {}),
       ...(rider ? { rider } : {}),
     };
   }

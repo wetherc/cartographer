@@ -1,6 +1,6 @@
 import { getSpellbook } from '../entities/Character.js';
 import { getClass, casterClassRefs, primaryCasterClass } from '../entities/Classes.js';
-import { groupSpellsByLevel, castableLeveledIds } from '../entities/SpellView.js';
+import { groupSpellsByLevel, castableLeveledIds, isRitualOnly } from '../entities/SpellView.js';
 import { emptyState, sectionLabel, textButton } from './buttons.js';
 import { el } from './dom.js';
 import { promptSpellDetail } from './SpellDetail.js';
@@ -13,8 +13,10 @@ import { promptSpellDetail } from './SpellDetail.js';
  * spells the character can cast right now, grouped by spell level. It
  * shows cantrips plus the leveled spells that the known-rule makes
  * castable, prepared ones under a prepared-rule class, and every known
- * one under a known-rule class. A click on a spell opens its detail,
- * which offers Cast, in play, and Close. Learning, preparing, and
+ * one under a known-rule class. A Wizard's unprepared rituals list too,
+ * titled as rituals, because the Wizard casts them from the book. A click
+ * on a spell opens its detail, which offers Cast, in play, and Close.
+ * Learning, preparing, and
  * forgetting a spell live in the Spellbook tab, not here. A character
  * with no caster class and an empty spellbook renders nothing and returns null.
  * @param {Character} character
@@ -46,6 +48,7 @@ export function buildSpellsSection(character, opts) {
   const groups = groupSpellsByLevel([
     ...opts.resolveSpells(book.cantrips),
     ...opts.resolveSpells(castableLeveledIds(character)),
+    ...opts.resolveSpells(book.known).filter((spell) => isRitualOnly(character, spell)),
   ]);
   if (groups.length === 0) {
     section.appendChild(emptyState('Nothing castable'));
@@ -55,7 +58,9 @@ export function buildSpellsSection(character, opts) {
   // wrap. A caster with several levels prepared does not turn into one
   // long column.
   const levels = el('div', 'character-sheet__spell-levels');
-  for (const group of groups) levels.appendChild(buildGroup(group.label, group.spells, opts));
+  for (const group of groups) {
+    levels.appendChild(buildGroup(character, group.label, group.spells, opts));
+  }
   section.appendChild(levels);
   return section;
 }
@@ -64,12 +69,13 @@ export function buildSpellsSection(character, opts) {
  * One spell level's row of castable chips, under its level heading. A
  * click on a chip opens the spell's detail, which offers Cast when the
  * viewer can play the character. This runs only for a level that has spells.
+ * @param {Character} character
  * @param {string} title
  * @param {Spell[]} spells
  * @param {{ play: boolean, onCast: (spell: Spell) => void }} opts
  * @returns {HTMLElement}
  */
-function buildGroup(title, spells, opts) {
+function buildGroup(character, title, spells, opts) {
   const list = el('div', 'u-row u-wrap u-g1');
   for (const spell of spells) {
     list.appendChild(
@@ -85,7 +91,9 @@ function buildGroup(title, spells, opts) {
         {
           icon: 'sparkles',
           className: 'character-sheet__spell-chip',
-          title: `${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`})`,
+          title: `${spell.name} (${spell.level === 0 ? 'cantrip' : `level ${spell.level}`}${
+            isRitualOnly(character, spell) ? ', ritual only' : ''
+          })`,
         },
       ),
     );

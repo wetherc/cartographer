@@ -2068,3 +2068,64 @@ test('each ray is resisted on its own', () => {
   assert.match(app.log[0], /for 10 fire \[5,5\] \(resists fire, takes 4\)\.$/);
   assert.equal(app.state.creatures[0].currentHP, 26, 'each 5 halves to 2');
 });
+
+test('an unprepared ritual in a wizard book casts only as a ritual', () => {
+  const caster = mage({
+    spellbook: { cantrips: [], known: ['detect-magic'], prepared: [] },
+  });
+  const app = stubApp({ characters: [caster] });
+  const plan = planFor(app, caster, detectMagic);
+  assert.equal(plan.ritualOnly, true);
+  assert.equal(
+    plan.fields.some((/** @type {any} */ f) => f.name === 'slot'),
+    false,
+    'no slot to cast from',
+  );
+  assert.equal(plan.fields.find((/** @type {any} */ f) => f.name === 'ritual')?.value, true);
+  // An unticked box still casts the ritual, since no slot cast is possible.
+  resolveCast(app, plan, submit({ slot: undefined }), { writeBack: () => {} });
+  assert.match(app.log[0], /as a ritual/);
+});
+
+test('a save spell with an HP limit logs a target above it as unaffected', () => {
+  const caster = mage({
+    spellbook: { cantrips: [], known: ['stun'], prepared: ['stun'] },
+  });
+  const stun = spell({
+    ...holdPerson,
+    id: 'stun',
+    name: 'Stun',
+    targetCount: 2,
+    effect: {
+      kind: 'save',
+      saveAbility: 'CON',
+      damage: [],
+      halfOnSave: false,
+      condition: 'Stunned',
+      hpLimit: 150,
+    },
+  });
+  const giant = createCreature('giant', 'Giant', {
+    disposition: 'hostile',
+    maxHP: 200,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const goblin = createCreature('goblin', 'Goblin', {
+    disposition: 'hostile',
+    maxHP: 10,
+    stats: { AC: 13 },
+    location: HERE,
+    level: 1,
+  });
+  const app = stubApp({ characters: [caster], creatures: [giant, goblin] });
+  const plan = castPlan(app, caster, stun, [
+    /** @type {any} */ ({ id: 'giant', name: 'Giant', ac: 13, conditions: [] }),
+    /** @type {any} */ ({ id: 'goblin', name: 'Goblin', ac: 13, conditions: [] }),
+  ]);
+  assert.equal(plan.ok, true);
+  resolveCast(app, plan, submit({ targets: 'giant,goblin' }), { writeBack: () => {} });
+  assert.ok(app.log.includes('Giant is unaffected (over 150 HP).'));
+  assert.ok(app.log.some((line) => /^Goblin fails DC \d+ \(150 HP or fewer\)/.test(line)));
+});

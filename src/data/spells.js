@@ -1158,6 +1158,7 @@ export const DEFAULT_SPELLS = deepFreeze([
       halfOnSave: false,
       condition: 'Stunned',
       saveEnds: true,
+      hpLimit: 150,
     },
   },
   {

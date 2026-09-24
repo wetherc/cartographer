@@ -3,7 +3,7 @@ import { resolveSave } from './Checks.js';
 import { carriesSpellFocus } from './Equipment.js';
 import { rollRiders } from './Riders.js';
 import { spendResource } from './Character.js';
-import { isSpellCastable } from './SpellView.js';
+import { isRitualOnly, isSpellCastable } from './SpellView.js';
 import { SLOT_ID_PREFIX, PACT_ID_PREFIX } from './SpellSlots.js';
 import { clamp } from '../util/num.js';
 
@@ -30,7 +30,8 @@ import { clamp } from '../util/num.js';
  * `autoFailSave` names the chip that fails this target's save with no roll,
  * which is what being unable to move does to a Strength or Dexterity save.
  * `autoCrit` turns any hit on this target into a critical hit, which is what
- * a Paralyzed or Unconscious target takes from a melee spell attack.
+ * a Paralyzed or Unconscious target takes from a melee spell attack. `hp` is
+ * the target's current HP, which only a spell with an HP limit reads.
  * @typedef {{
  *   id?: string,
  *   name?: string,
@@ -40,6 +41,7 @@ import { clamp } from '../util/num.js';
  *   attackMode?: RollMode,
  *   autoFailSave?: string,
  *   autoCrit?: boolean,
+ *   hp?: number,
  *   projectiles?: number,
  *   conditions?: import('./Riders.js').RiderSource[],
  *   riders?: import('./Riders.js').RiderSource[],
@@ -404,7 +406,10 @@ export function castSpell(caster, spell, options = {}) {
     rng = Math.random,
   } = options;
 
-  if (!canCast(caster, spell)) return { ok: false, reason: 'not-known' };
+  // A Wizard's unprepared ritual passes as a ritual cast and nothing else.
+  if (!canCast(caster, spell) && !(ritual && isRitualOnly(caster, spell))) {
+    return { ok: false, reason: 'not-known' };
+  }
 
   // A ritual cast takes the extra ten minutes instead of a slot, so it spends
   // nothing and always resolves at the spell's own level. There is no slot to
@@ -490,6 +495,7 @@ export function castSpell(caster, spell, options = {}) {
  *   mode: RollMode,
  *   autoHit: boolean | undefined,
  *   autoCrit?: boolean,
+ *   hp?: number,
  *   casterConditions: import('./Riders.js').RiderSource[],
  *   rng: RandomFn,
  * }} shot `parts` is what one projectile deals
@@ -655,7 +661,17 @@ function resolveEffect(spell, ctx) {
       // against the next save spell too.
       // A target whose chip fails the save outright throws no die at all, so
       // its `save` is null and the caller reports the chip instead of a total.
-      const rolled = target.autoFailSave
+      // A spell with an HP limit skips the first save. A target at or under
+      // the limit fails it, and one above the limit is left alone. A target
+      // with no known HP counts as under the limit, so the GM can still
+      // apply the effect.
+      const limit = effect.hpLimit;
+      if (limit !== undefined && target.hp !== undefined && target.hp > limit) {
+        return { target, unaffectedBy: `over ${limit} HP`, saved: true, taken: 0, condition: null };
+      }
+      const limitFails = limit === undefined ? null : `${limit} HP or fewer`;
+      const autoFailedBy = target.autoFailSave ?? limitFails;
+      const rolled = autoFailedBy
         ? { roll: null, success: false, rider: null }
         : resolveSave(target.saveBonus ?? 0, saveDC, {
             mode: target.saveMode ?? 'normal',
@@ -673,7 +689,7 @@ function resolveEffect(spell, ctx) {
         taken,
         damage,
         rider,
-        autoFailedBy: target.autoFailSave ?? null,
+        autoFailedBy,
         condition,
         // The rider rides the chip, so it lands only when the chip does.
         conditionRider: condition ? (effect.rider ?? null) : null,

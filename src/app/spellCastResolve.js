@@ -13,6 +13,7 @@ import { begin as beginConcentration } from '../entities/Concentration.js';
 import { spawnSummons } from './summons.js';
 import {
   findCombatant,
+  hpOf,
   applyToTarget,
   applyConditionToTarget,
   defendedDamage,
@@ -74,7 +75,9 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
     return;
   }
   const caster = live === entity ? plan.caster : toCaster(live);
-  const asRitual = values.ritual === '1';
+  // An unprepared Wizard ritual has no slot to fall back to, so it casts as
+  // a ritual even if the box was unticked.
+  const asRitual = values.ritual === '1' || plan.ritualOnly === true;
   const slotLevel = spell.level > 0 ? effectiveSlot(spell, values.slot, asRitual) : spell.level;
   const mode = /** @type {import('../types/dice.js').RollMode} */ (values.mode ?? 'normal');
   const saveDC = Number(values.dc) || dc;
@@ -138,6 +141,7 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
   // overrides the other.
   let castTargets = chosen;
   if (saveAbility) {
+    const hpLimited = spell.effect.kind === 'save' && spell.effect.hpLimit !== undefined;
     castTargets = chosen.map((t) => {
       // A target's untrained armor slants its STR or DEX save. The slant
       // folds in with the target's chips, so an advantage chip cancels it.
@@ -146,8 +150,12 @@ export function resolveCast(app, plan, values, { writeBack, rng = Math.random })
         saveAbility,
         t.armorPenalty ? ['disadvantage'] : [],
       );
+      // A spell with an HP limit reads the target's HP as it is now.
+      const found = hpLimited ? findCombatant(app, t.id) : null;
+      const hp = found ? hpOf(found.kind, found.entity) : null;
       return {
         ...t,
+        ...(hp ? { hp: hp.current } : {}),
         // Every live target carries a derived bonus. A target the roster lost
         // while the dialog sat open carries none and saves on the flat die.
         saveBonus: t.saveBonus ?? 0,
@@ -369,6 +377,10 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
     const effect = /** @type {import('../types/spell.js').SpellSaveEffect} */ (spell.effect);
     const ability = effect.saveAbility;
     for (const o of /** @type {any[]} */ (result.outcomes)) {
+      if (o.unaffectedBy) {
+        app.actions.logEvent('combat', `${o.target.name} is unaffected (${o.unaffectedBy}).`);
+        continue;
+      }
       const verdict = o.saved ? 'saves' : 'fails';
       // The log names the bonus alongside the roll, the same way an attack
       // log names the ability and proficiency behind its number.

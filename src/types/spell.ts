@@ -56,6 +56,10 @@ export interface SpellSaveEffect {
    * -1d4). It rides on the chip, so it lasts as long as the chip does. Only
    * meaningful alongside a condition. */
   rider?: RollRider;
+  /** An HP limit on the first save (Power Word Stun's 150). A target whose
+   * current HP is at or under it fails that save with no roll. A target
+   * above it is unaffected. Absent means every target rolls. */
+  hpLimit?: number;
 }
 
 /** Restorative magic: healing dice applied to the target. */

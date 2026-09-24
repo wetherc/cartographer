@@ -588,6 +588,17 @@ test('normalizeLibrary keeps a repeated save only alongside a condition', () => 
   assert.equal(lib.spells[2].effect.saveEnds, undefined);
 });
 
+test('normalizeLibrary keeps a positive HP limit on a save spell', () => {
+  const lib = normalizeLibrary({
+    spells: [
+      { name: 'Stun', effect: { kind: 'save', saveAbility: 'CON', hpLimit: 150 } },
+      { name: 'Odd', effect: { kind: 'save', saveAbility: 'CON', hpLimit: -3 } },
+    ],
+  });
+  assert.equal(lib.spells[0].effect.hpLimit, 150);
+  assert.equal(lib.spells[1].effect.hpLimit, undefined);
+});
+
 test('normalizeLibrary reads spell timing as either a structured value or printed text', () => {
   const lib = normalizeLibrary({
     spells: [

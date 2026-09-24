@@ -102,6 +102,12 @@ test('a save keeps a repeated save only alongside a condition', () => {
   assert.equal('saveEnds' in assembleEffect(effectDraft({ kind: 'save', saveEnds: true })), false);
 });
 
+test('a save keeps a positive whole HP limit and drops a blank or zero one', () => {
+  assert.equal(assembleEffect(effectDraft({ kind: 'save', hpLimit: '150.7' })).hpLimit, 150);
+  assert.equal('hpLimit' in assembleEffect(effectDraft({ kind: 'save', hpLimit: '0' })), false);
+  assert.equal('hpLimit' in assembleEffect(effectDraft({ kind: 'save', hpLimit: '' })), false);
+});
+
 test('a heal keeps the spellcasting modifier flag when the form ticks it', () => {
   assert.equal(
     assembleEffect(effectDraft({ kind: 'heal', addsModifier: true })).addsModifier,

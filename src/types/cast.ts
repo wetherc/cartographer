@@ -30,6 +30,8 @@ export interface CastPlan {
   targets: CombatTarget[];
   saveAbility: Ability | null;
   slotLevels: number[];
+  /** True for a Wizard's unprepared ritual, which casts only as a ritual. */
+  ritualOnly?: boolean;
   sourceClass: string | undefined;
   dc: number;
   material: ReturnType<typeof import('../entities/Casting.js').materialCheck>;

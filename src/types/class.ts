@@ -75,6 +75,10 @@ export interface ClassDef {
    * which can cast a ritual spell without spending a slot. Absent means the
    * class cannot. */
   ritual?: boolean;
+  /** True for a class that casts any ritual in its spellbook as a ritual,
+   * prepared or not (the Wizard). Absent means a ritual follows the class's
+   * known rule like any other spell. */
+  ritualFromBook?: boolean;
   /** Cantrips known by character level, where index 0 is level 1. Empty for
    * a class that knows no cantrips. A level past the array's end uses the
    * last entry. */
