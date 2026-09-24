@@ -89,6 +89,7 @@ export function wireEncounters(app) {
     const next = dropParticipant(combat, id);
     if (next === combat) return;
     setCombat(next);
+    if (next.round !== combat.round) tickRound();
     app.views.initiativePanel.update();
   };
 
@@ -423,6 +424,41 @@ export function wireEncounters(app) {
     if (state.mode === 'combat') app.actions.setMode('play');
   }
 
+  // A new round elapsed. Tick down every combatant's timed conditions, the
+  // enemies' timed stat modifiers, and the party's concentration durations.
+  // A turn advance past the bottom of the order and the removal of the last
+  // combatant on its own turn both start a round.
+  function tickRound() {
+    /** @type {{ casterId: string, spellId: string }[]} */
+    const expired = [];
+    state.characters = state.characters.map((c) => {
+      // Concentration ticks after the conditions, because it rewrites its
+      // own chip's counter from the duration it owns.
+      const ticked = tickConcentration({ ...c, conditions: tickConditions(c.conditions) });
+      const held = c.concentration;
+      if (ticked.expired && held) {
+        app.actions.logEvent('combat', `${c.name}'s concentration on ${held.spellName} ends.`);
+        expired.push({ casterId: c.id, spellId: held.spellId });
+      }
+      return ticked.character;
+    });
+    // Every creature ticks the same way, so a bystander's timed stat
+    // modifier counts down too. A creature that carries no statMods field
+    // does not gain an empty one here.
+    state.creatures = state.creatures.map((c) => ({
+      ...c,
+      conditions: tickConditions(c.conditions),
+      ...(c.statMods ? { statMods: tickStatModifiers(c.statMods) } : {}),
+    }));
+    app.actions.refreshSelectedCharacter();
+    app.views.encounterPanel.update();
+    app.views.npcPanel.update();
+    // The sweep runs only after both collections are reassigned. The
+    // sweep writes to the same two collections. Run earlier, the tick's
+    // own write restores its result.
+    for (const { casterId, spellId } of expired) endSpellEffects(app, casterId, spellId);
+  }
+
   // Turn advance and combat end are registered as actions. This lets the
   // combat screen drive the same fight through the same code as the
   // sidebar panel. This module stays the only writer of `combat`.
@@ -437,39 +473,7 @@ export function wireEncounters(app) {
     // Every turn that ends on the way rolls its repeated saves.
     const result = advancePastHeld(app, combat);
     setCombat(result.state);
-    // A new round elapsed. Tick down every combatant's timed conditions,
-    // the enemies' timed stat modifiers, and the party's concentration
-    // durations.
-    if (result.wrapped) {
-      /** @type {{ casterId: string, spellId: string }[]} */
-      const expired = [];
-      state.characters = state.characters.map((c) => {
-        // Concentration ticks after the conditions, because it rewrites its
-        // own chip's counter from the duration it owns.
-        const ticked = tickConcentration({ ...c, conditions: tickConditions(c.conditions) });
-        const held = c.concentration;
-        if (ticked.expired && held) {
-          app.actions.logEvent('combat', `${c.name}'s concentration on ${held.spellName} ends.`);
-          expired.push({ casterId: c.id, spellId: held.spellId });
-        }
-        return ticked.character;
-      });
-      // Every creature ticks the same way, so a bystander's timed stat
-      // modifier counts down too. A creature that carries no statMods field
-      // does not gain an empty one here.
-      state.creatures = state.creatures.map((c) => ({
-        ...c,
-        conditions: tickConditions(c.conditions),
-        ...(c.statMods ? { statMods: tickStatModifiers(c.statMods) } : {}),
-      }));
-      app.actions.refreshSelectedCharacter();
-      app.views.encounterPanel.update();
-      app.views.npcPanel.update();
-      // The sweep runs only after both collections are reassigned. The
-      // sweep writes to the same two collections. Run earlier, the tick's
-      // own write restores its result.
-      for (const { casterId, spellId } of expired) endSpellEffects(app, casterId, spellId);
-    }
+    if (result.wrapped) tickRound();
     // The sidebar panel redraws itself after its own button. The combat
     // screen must be told that the turn moved, in either case.
     app.views.combatScreen.update();

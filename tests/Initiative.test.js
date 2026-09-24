@@ -203,14 +203,24 @@ test('dropParticipant keeps the turn on the same combatant', () => {
   assert.equal(currentParticipant(withoutC)?.id, 'a');
 });
 
-test('dropParticipant wraps the pointer when the last combatant leaves on its turn', () => {
+test('dropParticipant wraps the pointer and the round when the last combatant leaves on its turn', () => {
   const state = {
-    ...startCombat([createParticipant('a', 20), createParticipant('b', 10)]),
-    index: 1,
+    ...startCombat([
+      createParticipant('a', 20),
+      createParticipant('b', 15),
+      createParticipant('c', 10),
+    ]),
+    index: 2,
   };
-  const next = dropParticipant(state, 'b');
+  const next = dropParticipant(state, 'c');
   assert.equal(next.index, 0);
-  assert.equal(currentParticipant(next)?.id, 'a');
+  assert.equal(currentParticipant(next)?.id, 'a', 'b does not take a second turn');
+  assert.equal(next.round, 2);
+  assert.equal(
+    dropParticipant({ ...state, index: 1 }, 'b').round,
+    1,
+    'a mid-order drop keeps the round',
+  );
 });
 
 test('dropParticipant empties an order down to nothing and ignores an absent id', () => {

@@ -60,8 +60,9 @@ export function startCombat(participants, nameOf, startedAt = 0) {
  * character mid-fight must do this, because a participant whose entity is
  * gone can neither act nor be targeted. The turn pointer follows the
  * combatant it was on: removing someone earlier in the order shifts the
- * pointer back, and removing the last participant during their own turn
- * wraps the pointer to the top instead of past the end. When the dropped
+ * pointer back. Removing the last participant during their own turn wraps the
+ * pointer to the top and starts the next round, as `advanceTurn` does, so the
+ * caller runs the same round-wrap ticks when the round changes. When the dropped
  * combatant held the turn, the combatant the pointer lands on gets a fresh
  * budget, the same way `advanceTurn` gives one: their turn is what begins
  * now. The function returns the state unchanged (identity preserved) when
@@ -74,10 +75,12 @@ export function dropParticipant(state, id) {
   const removed = state.order.filter((p) => p.id !== id);
   if (removed.length === state.order.length) return state;
   const before = state.order.slice(0, state.index).filter((p) => p.id === id).length;
-  const index = removed.length === 0 ? 0 : Math.min(state.index - before, removed.length - 1);
+  const shifted = state.index - before;
+  const wrapped = removed.length > 0 && shifted >= removed.length;
+  const index = wrapped || removed.length === 0 ? 0 : shifted;
   const heldTurn = state.order[state.index]?.id === id;
   const order = heldTurn && removed.length > 0 ? refreshTurn(removed, index) : removed;
-  return { ...state, index, order };
+  return { ...state, index, round: wrapped ? state.round + 1 : state.round, order };
 }
 
 /**
