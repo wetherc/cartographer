@@ -15,7 +15,7 @@ const TILE_ROOT = 'assets/tiles';
 const VARIANT_COUNTS = {
   grass: 3,
   forest: 3,
-  mountain: 3,
+  mountain: 5,
   water: 3,
   desert: 3,
   swamp: 3,

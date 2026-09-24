@@ -8,17 +8,22 @@ test('TilePalette ships with built-in terrain variants', () => {
   assert.equal(grassVariants.length, 3);
   assert.equal(palette.get('grass-1').custom, false);
   assert.equal(palette.get('grass-1').imageRef, 'assets/tiles/grass/grass-1.svg');
-  for (const type of [
-    'forest',
-    'mountain',
-    'water',
-    'desert',
-    'swamp',
-    'snow',
-    'hills',
-    'farmland',
-  ]) {
-    assert.equal(palette.listVariants(type).length, 3, `expected 3 variants of "${type}"`);
+  const counts = {
+    forest: 3,
+    mountain: 5,
+    water: 3,
+    desert: 3,
+    swamp: 3,
+    snow: 3,
+    hills: 3,
+    farmland: 3,
+  };
+  for (const [type, count] of Object.entries(counts)) {
+    assert.equal(
+      palette.listVariants(type).length,
+      count,
+      `expected ${count} variants of "${type}"`,
+    );
   }
 });
 

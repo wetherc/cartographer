@@ -15,8 +15,11 @@ files reads `VARIANT_COUNTS`, `ROAD_KINDS`, `RIVER_KINDS`, `COAST_KINDS`,
 ## Terrain variants
 
 Each terrain type has 3 variants, for example `grass-1.svg`, `grass-2.svg`,
-and `grass-3.svg`. `palette.pickVariant(type, rng)` selects one so that
-adjacent tiles of the same type do not look identical. The variants abut
+and `grass-3.svg`. Mountain has 5, because its peaks are large and a
+range of 3 repeated layouts shows as rows. `VARIANT_COUNTS` in
+`TilePalette.js` sets the count per type. `palette.pickVariant(type, rng)`
+selects one so that adjacent tiles of the same type do not look identical.
+The variants abut
 cleanly in the grid under these rules:
 
 - All variants of a type use the same background fill color. `farmland`
