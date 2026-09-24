@@ -575,10 +575,18 @@ test('a spellcasting focus is read from the flag, never from the name', () => {
   assert.equal(itemSummary(impostor), '');
 });
 
-test('enemyArmor reads a preset as a flat bonus over the unarmored 10', () => {
-  assert.deepEqual(enemyArmor('Leather Armor'), { name: 'Leather Armor', acBonus: 1 });
-  assert.deepEqual(enemyArmor('Chain Mail'), { name: 'Chain Mail', acBonus: 6 });
-  assert.deepEqual(enemyArmor('Plate'), { name: 'Plate', acBonus: 8 });
+test('enemyArmor reads a preset as its base AC and weight', () => {
+  assert.deepEqual(enemyArmor('Leather Armor'), {
+    name: 'Leather Armor',
+    baseAC: 11,
+    armorWeight: 'light',
+  });
+  assert.deepEqual(enemyArmor('Chain Mail'), {
+    name: 'Chain Mail',
+    baseAC: 16,
+    armorWeight: 'heavy',
+  });
+  assert.deepEqual(enemyArmor('Plate'), { name: 'Plate', baseAC: 18, armorWeight: 'heavy' });
   assert.equal(enemyArmor('Cursed Robes'), null, 'unknown names return null');
 });
 

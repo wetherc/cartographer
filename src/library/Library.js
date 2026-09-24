@@ -33,6 +33,7 @@ import { SKILL_IDS } from '../data/skills.js';
 import { DEFAULT_FEATS, FEAT_EFFECT_KINDS } from '../data/feats.js';
 import { DEFAULT_CREATURE_HP, DISPOSITIONS, defaultEnemyGear } from '../entities/Creature.js';
 import { isCasterClass } from '../entities/Classes.js';
+import { coerceEnemyArmor } from '../entities/EnemyArmor.js';
 import { creatureProficiencyFields, ARMOR_PROFICIENCIES } from '../entities/Proficiencies.js';
 import { idClaimer, renameConflict, storedEntryId } from './LibraryIdentity.js';
 import { indexById } from '../util/indexById.js';
@@ -625,8 +626,9 @@ export function normalizeLibrary(parsed) {
         e[slot] === null || (e[slot] && typeof e[slot] === 'object')
           ? e[slot]
           : (stamp?.[slot] ?? null);
+      if (!value) return value;
+      if (slot === 'armor') return coerceEnemyArmor(value);
       // A creature's weapon coerces the same way an equipment entry does.
-      if (slot !== 'weapon' || !value) return value;
       return withCoercedWeapon(/** @type {Record<string, any>} */ (value));
     };
     const stats = e.stats ?? e.statBlock;
@@ -763,14 +765,14 @@ export function activeWeapons() {
     .filter((e) => WEAPON_TYPES.includes(e.type) && (e.damage?.length ?? 0) > 0));
 }
 
-/** Every merged body-armor template as an enemy armor choice: the name, plus
- * the flat bonus that its base AC adds over the unarmored value of 10.
+/** Every merged body-armor template as an enemy armor choice: the name, the
+ * base AC, and the weight class.
  * @returns {import('../types/entities.js').EnemyArmor[]} */
 export function activeArmors() {
   return (cache.armors ??= activeEquipmentEntries()
     .map((e) => e.entry)
     .filter((e) => e.type === 'armor' && e.baseAC !== undefined)
-    .map((e) => ({ name: e.name, acBonus: /** @type {number} */ (e.baseAC) - 10 })));
+    .map((e) => /** @type {import('../types/entities.js').EnemyArmor} */ (coerceEnemyArmor(e))));
 }
 
 /** A merged armor template as an enemy's worn armor, or null for an unknown

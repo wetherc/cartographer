@@ -5,6 +5,7 @@
 import { equippedIndex } from './Equipment.js';
 import { normalizeStatBlock } from './Modifiers.js';
 import { isCreature } from './Creature.js';
+import { enemyArmorDelta } from './EnemyArmor.js';
 
 /** @typedef {import('../types/entities.js').Character} Character */
 /** @typedef {import('../types/creature.js').Creature} Creature */
@@ -49,8 +50,9 @@ export function effectiveStat(entity, stat) {
       if (delta) sources.push({ source: item.name, delta });
     }
   } else {
-    const armor = /** @type {Creature} */ (entity).armor;
-    if (stat === 'AC' && armor?.acBonus) sources.push({ source: armor.name, delta: armor.acBonus });
+    const { armor, stats } = /** @type {Creature} */ (entity);
+    const delta = stat === 'AC' ? enemyArmorDelta(armor, stats?.DEX ?? 10) : 0;
+    if (armor && delta) sources.push({ source: armor.name, delta });
   }
   for (const mod of ('statMods' in entity ? entity.statMods : null) ?? []) {
     if (mod.stat === stat && mod.delta) {

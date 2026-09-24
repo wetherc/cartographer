@@ -281,7 +281,13 @@ way. Players never see the line.
 | Map, Tile | Where the encounter stands |
 
 The six ability scores plus AC are the only stats an enemy has. A
-legend always out-stats a level-matched mob. A defeated encounter is styled
+legend always out-stats a level-matched mob. The Build chip for AC reads
+"Base AC", which is the AC without armor: 10 plus the DEX modifier by default,
+or higher for natural armor or a shield. Worn armor replaces the 10 + DEX part
+with its own base AC and the DEX modifier its weight allows. Light armor adds
+all of the DEX modifier, medium armor adds at most +2, and heavy armor adds
+none. A DEX 16 enemy in Plate has AC 18. The Play chip and the combat card
+show the AC with armor. A defeated encounter is styled
 as defeated, not deleted.
 
 The Encounters and NPCs panels print what the enemy is trained in, with the bonus it rolls in each,

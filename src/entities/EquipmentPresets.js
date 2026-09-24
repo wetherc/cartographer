@@ -278,15 +278,17 @@ export const CONSUMABLE_PRESETS = [
 ];
 
 /**
- * An armor preset as an enemy's worn armor. Enemy AC is the stat block's AC
- * plus a flat armor bonus, so the preset's base AC reads as its margin over
- * the unarmored 10. Unknown names return null.
+ * An armor preset as an enemy's worn armor: its name, base AC, and weight.
+ * `EnemyArmor.js` states how the three set the creature's AC. Unknown names
+ * return null.
  * @param {string} name
  * @returns {import('../types/entities.js').EnemyArmor | null}
  */
 export function enemyArmor(name) {
   const preset = ARMOR_PRESETS.find((p) => p.name === name);
-  return preset ? { name: preset.name, acBonus: preset.baseAC - 10 } : null;
+  if (!preset) return null;
+  const armorWeight = /** @type {ArmorWeight} */ (preset.armorWeight);
+  return { name: preset.name, baseAC: preset.baseAC, armorWeight };
 }
 
 /** The valid property strings, for the coercer's filter. Weapons.js owns the

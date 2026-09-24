@@ -1,8 +1,9 @@
 /**
  * The application's built-in creatures. The hostile entries are a small set
  * of 5e stock enemies, and the rest are stock townsfolk that a GM can place
- * without typing stats. The effective AC is the stat block's AC plus the
- * armor's bonus, the same rule that effectiveStatBlock uses. Each hostile
+ * without typing stats. The stat block's AC is the AC without armor, and
+ * worn armor replaces its 10 + DEX part by the rule in `EnemyArmor.js`, the
+ * same rule that effectiveStatBlock uses. Each hostile
  * entry carries the challenge rating of its SRD counterpart. The townsfolk
  * stay unrated, because nothing fights them and the difficulty hint counts
  * hostile creatures only. A hostile entry whose SRD counterpart lists trained
@@ -43,7 +44,7 @@ export const DEFAULT_CREATURES = deepFreeze([
       properties: ['finesse', 'light'],
       damage: [{ count: 1, sides: 6, damageType: 'slashing' }],
     },
-    armor: { name: 'Leather Armor', acBonus: 1 },
+    armor: { name: 'Leather Armor', baseAC: 11, armorWeight: 'light' },
   },
   {
     id: 'wolf',
@@ -80,7 +81,7 @@ export const DEFAULT_CREATURES = deepFreeze([
       properties: ['finesse', 'light'],
       damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
     },
-    armor: { name: 'Leather Armor', acBonus: 1 },
+    armor: { name: 'Leather Armor', baseAC: 11, armorWeight: 'light' },
   },
   {
     id: 'skeleton',
@@ -98,7 +99,7 @@ export const DEFAULT_CREATURES = deepFreeze([
       properties: ['finesse', 'light'],
       damage: [{ count: 1, sides: 6, damageType: 'piercing' }],
     },
-    armor: { name: 'Armor Scraps', acBonus: 1 },
+    armor: { name: 'Armor Scraps', baseAC: 11, armorWeight: 'light' },
   },
   {
     id: 'orc',
@@ -117,7 +118,7 @@ export const DEFAULT_CREATURES = deepFreeze([
       properties: ['heavy', 'two-handed'],
       damage: [{ count: 1, sides: 12, damageType: 'slashing' }],
     },
-    armor: { name: 'Hide', acBonus: 2 },
+    armor: { name: 'Hide', baseAC: 12, armorWeight: 'medium' },
   },
   {
     id: 'ogre',
@@ -135,7 +136,7 @@ export const DEFAULT_CREATURES = deepFreeze([
       properties: ['two-handed'],
       damage: [{ count: 2, sides: 8, damageType: 'bludgeoning' }],
     },
-    armor: { name: 'Hide', acBonus: 2 },
+    armor: { name: 'Hide', baseAC: 12, armorWeight: 'medium' },
   },
   {
     id: 'acolyte',
@@ -190,7 +191,7 @@ export const DEFAULT_CREATURES = deepFreeze([
       properties: ['finesse', 'light'],
       damage: [{ count: 1, sides: 4, damageType: 'piercing' }],
     },
-    armor: { name: 'Leather Armor', acBonus: 1 },
+    armor: { name: 'Leather Armor', baseAC: 11, armorWeight: 'light' },
   },
   {
     id: 'mage',

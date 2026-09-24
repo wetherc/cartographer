@@ -4,25 +4,61 @@ import { withProficiencies } from '../entities/Progression.js';
 import { classMaxHP, withHitDice } from '../entities/HitDice.js';
 import { withSpellSlots } from '../entities/SpellSlots.js';
 import { createCreature, defaultEnemyGear } from '../entities/Creature.js';
+import { enemyArmor } from '../entities/EquipmentPresets.js';
 import { createClock } from '../time/GameClock.js';
 import { defaultEnemyStats } from '../entities/Modifiers.js';
 import { buildingTile } from './ExampleWorld.js';
 
 /** @typedef {import('../map/TilePalette.js').TilePalette} TilePalette */
 /** @typedef {import('../types/entities.js').EnemyTier} EnemyTier */
+/** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
+/** @typedef {import('../types/entities.js').EnemyArmor} EnemyArmor */
 /** @typedef {import('./ExampleWorld.js').ExampleWorld} ExampleWorld */
+/** @typedef {{ weapon?: EnemyWeapon | null, armor?: EnemyArmor | null }} Gear */
+
+/**
+ * The gear of a beast or a monster: one natural melee attack and no armor.
+ * Its stat block AC is its natural armor.
+ * @param {string} name @param {number} count @param {number} sides
+ * @param {string} damageType
+ * @returns {Gear}
+ */
+const natural = (name, count, sides, damageType) => ({
+  weapon: { name, kind: 'melee', category: null, damage: [{ count, sides, damageType }] },
+  armor: null,
+});
+
+const BITE = natural('Bite', 2, 4, 'piercing');
+const GREAT_BITE = natural('Bite', 2, 6, 'piercing');
+const CLAWS = natural('Claws', 2, 4, 'slashing');
+const PINCER = natural('Claw', 1, 8, 'bludgeoning');
+const SLAM = natural('Slam', 1, 6, 'bludgeoning');
+
+// Stat block extras. An armored enemy sets DEX and an AC of 10 + DEX, so its
+// worn armor gives the SRD AC: Leather Armor at DEX 14 is AC 13 and at DEX 12
+// is AC 12. An unarmored enemy states its natural AC.
+const GOBLIN = { DEX: 14, AC: 12, Speed: 30 };
+const BANDIT = { DEX: 12, AC: 11, Speed: 30 };
+const SKELETON = { DEX: 14, AC: 12, Speed: 30 };
+const WOLF = { AC: 13, Speed: 40 };
+const WINTER_WOLF = { AC: 13, Speed: 50 };
+const ZOMBIE = { AC: 8, Speed: 20 };
+const HARPY = { AC: 11, Speed: 20 };
+const SCORPION = { AC: 15, Speed: 40 };
+const DROWNED = { AC: 11, Speed: 20, Swim: 30 };
 
 /**
  * A placed enemy. It combines default ability scores for the level and tier
  * with the stat block extras (AC, Speed, and more) a GM needs at the table.
+ * The gear is the level and tier default, and `gear` replaces either piece.
  * Every enemy carries a challenge rating, which is what the difficulty hint
  * adds up.
  * @param {string} id @param {string} name @param {number} hp
  * @param {number} level @param {EnemyTier} tier @param {number} cr
  * @param {string} nodeId @param {string} tileId
- * @param {Record<string, number>} extras
+ * @param {Record<string, number>} extras @param {Gear} gear
  */
-const enemy = (id, name, hp, level, tier, cr, nodeId, tileId, extras) =>
+const enemy = (id, name, hp, level, tier, cr, nodeId, tileId, extras, gear) =>
   createCreature(id, name, {
     disposition: 'hostile',
     maxHP: hp,
@@ -31,6 +67,7 @@ const enemy = (id, name, hp, level, tier, cr, nodeId, tileId, extras) =>
     level,
     tier,
     cr,
+    ...gear,
   });
 
 /** A placed enemy of the rank and file, the common case. Same fields as
@@ -38,18 +75,18 @@ const enemy = (id, name, hp, level, tier, cr, nodeId, tileId, extras) =>
  * @param {string} id @param {string} name @param {number} hp
  * @param {number} level @param {number} cr
  * @param {string} nodeId @param {string} tileId
- * @param {Record<string, number>} extras */
-const mob = (id, name, hp, level, cr, nodeId, tileId, extras) =>
-  enemy(id, name, hp, level, 'mob', cr, nodeId, tileId, extras);
+ * @param {Record<string, number>} extras @param {Gear} [gear] */
+const mob = (id, name, hp, level, cr, nodeId, tileId, extras, gear = {}) =>
+  enemy(id, name, hp, level, 'mob', cr, nodeId, tileId, extras, gear);
 
 /** A placed enemy above the rank and file: a named boss or a lieutenant. Same
  * fields as `mob`, with the legend tier implied.
  * @param {string} id @param {string} name @param {number} hp
  * @param {number} level @param {number} cr
  * @param {string} nodeId @param {string} tileId
- * @param {Record<string, number>} extras */
-const legend = (id, name, hp, level, cr, nodeId, tileId, extras) =>
-  enemy(id, name, hp, level, 'legend', cr, nodeId, tileId, extras);
+ * @param {Record<string, number>} extras @param {Gear} [gear] */
+const legend = (id, name, hp, level, cr, nodeId, tileId, extras, gear = {}) =>
+  enemy(id, name, hp, level, 'legend', cr, nodeId, tileId, extras, gear);
 
 /**
  * A townsperson or story figure, placed or roaming.
@@ -60,16 +97,16 @@ const person = (id, name, options) => createCreature(id, name, options);
 
 /**
  * A reusable bestiary blueprint for the campaign's common enemies. The gear
- * is the level and tier default, stored explicitly, because the merged
- * template shape carries no absent-means-default rule.
+ * is the level and tier default with `gear` over it, stored explicitly,
+ * because the merged template format has no absent-means-default rule.
  * Every template is a mob, and it carries its challenge rating, so a creature
  * spawned from one counts in the difficulty hint.
  * @param {string} id @param {string} name @param {number} hp
  * @param {number} level @param {number} cr
- * @param {Record<string, number>} extras
+ * @param {Record<string, number>} extras @param {Gear} [gear]
  * @returns {import('../types/creature.js').CreatureTemplate}
  */
-const template = (id, name, hp, level, cr, extras) => ({
+const template = (id, name, hp, level, cr, extras, gear = {}) => ({
   id,
   name,
   disposition: 'hostile',
@@ -79,6 +116,7 @@ const template = (id, name, hp, level, cr, extras) => ({
   tier: /** @type {EnemyTier} */ ('mob'),
   cr,
   ...defaultEnemyGear(level, 'mob'),
+  ...gear,
 });
 
 /**
@@ -264,81 +302,102 @@ export function buildExampleContent(palette, world) {
     characters: exampleParty(),
     creatures: [
       // Field enemies on the overworld, one type for each biome.
-      mob('goblin-scout', 'Goblin Scout', 7, 1, 0.25, 'world', '18,15', { AC: 13, Speed: 30 }),
-      mob('gray-wolf-1', 'Gray Wolf', 11, 1, 0.25, 'world', '24,16', { AC: 13, Speed: 40 }),
-      mob('gray-wolf-2', 'Gray Wolf', 11, 1, 0.25, 'world', '25,17', { AC: 13, Speed: 40 }),
-      mob('bandit-1', 'Roadside Bandit', 11, 1, 0.125, 'world', '11,18', { AC: 12, Speed: 30 }),
-      mob('bandit-2', 'Roadside Bandit', 11, 1, 0.125, 'world', '13,20', { AC: 12, Speed: 30 }),
-      mob('bog-zombie-1', 'Bog Zombie', 22, 2, 0.25, 'world', '16,28', { AC: 8, Speed: 20 }),
-      mob('bog-zombie-2', 'Bog Zombie', 22, 2, 0.25, 'world', '19,29', { AC: 8, Speed: 20 }),
-      mob('hill-harpy', 'Harpy', 24, 2, 1, 'world', '23,12', { AC: 11, Speed: 20 }),
-      mob('giant-scorpion', 'Giant Scorpion', 26, 3, 3, 'world', '27,29', {
-        AC: 15,
-        Speed: 40,
-      }),
-      mob('winter-wolf', 'Winter Wolf', 34, 3, 3, 'world', '26,3', { AC: 13, Speed: 50 }),
+      mob('goblin-scout', 'Goblin Scout', 7, 1, 0.25, 'world', '18,15', GOBLIN),
+      mob('gray-wolf-1', 'Gray Wolf', 11, 1, 0.25, 'world', '24,16', WOLF, BITE),
+      mob('gray-wolf-2', 'Gray Wolf', 11, 1, 0.25, 'world', '25,17', WOLF, BITE),
+      mob('bandit-1', 'Roadside Bandit', 11, 1, 0.125, 'world', '11,18', BANDIT),
+      mob('bandit-2', 'Roadside Bandit', 11, 1, 0.125, 'world', '13,20', BANDIT),
+      mob('bog-zombie-1', 'Bog Zombie', 22, 2, 0.25, 'world', '16,28', ZOMBIE, SLAM),
+      mob('bog-zombie-2', 'Bog Zombie', 22, 2, 0.25, 'world', '19,29', ZOMBIE, SLAM),
+      mob('hill-harpy', 'Harpy', 24, 2, 1, 'world', '23,12', HARPY, CLAWS),
+      mob('giant-scorpion', 'Giant Scorpion', 26, 3, 3, 'world', '27,29', SCORPION, PINCER),
+      mob('winter-wolf', 'Winter Wolf', 34, 3, 3, 'world', '26,3', WINTER_WOLF, GREAT_BITE),
       // The bay: drowned dead walk the shallows below Saltmere, and
       // something knocks in the abandoned silver mine.
-      mob('drowned-watchman-1', 'Drowned Watchman', 22, 2, 0.5, 'world', '6,10', {
-        AC: 11,
-        Speed: 20,
-        Swim: 30,
-      }),
-      mob('drowned-watchman-2', 'Drowned Watchman', 22, 2, 0.5, 'world', '7,14', {
-        AC: 11,
-        Speed: 20,
-        Swim: 30,
-      }),
-      mob('hollowvein-knocker', 'The Knocker in the Vein', 30, 3, 2, 'world', '21,11', {
-        AC: 14,
-        Speed: 30,
-      }),
+      mob('drowned-watchman-1', 'Drowned Watchman', 22, 2, 0.5, 'world', '6,10', DROWNED, SLAM),
+      mob('drowned-watchman-2', 'Drowned Watchman', 22, 2, 0.5, 'world', '7,14', DROWNED, SLAM),
+      mob(
+        'hollowvein-knocker',
+        'The Knocker in the Vein',
+        30,
+        3,
+        2,
+        'world',
+        '21,11',
+        {
+          AC: 14,
+          Speed: 30,
+        },
+        natural('Claws', 1, 8, 'slashing'),
+      ),
       // Minor bosses: the mire hag in the southern marsh, the goblin chieftain
       // at his camp, and the wyvern over the hermitage.
-      legend('grelka', 'Grelka the Mire Hag', 45, 4, 3, 'world', '20,29', {
-        AC: 15,
-        Speed: 30,
-      }),
-      mob('goblin-raider-1', 'Goblin Raider', 7, 1, 0.25, 'northmarch', raiderTiles[0], {
-        AC: 13,
-        Speed: 30,
-      }),
-      mob('goblin-raider-2', 'Goblin Raider', 7, 1, 0.25, 'northmarch', raiderTiles[1], {
-        AC: 13,
-        Speed: 30,
-      }),
-      legend('snagtooth', 'Chieftain Snagtooth', 36, 3, 1, 'northmarch', campTile, {
-        AC: 16,
-        Speed: 30,
-      }),
-      legend('skalvyr', 'Skalvyr the Wyvern', 68, 5, 6, 'graypeak', eyrieTile, {
-        AC: 16,
-        Speed: 20,
-        Fly: 80,
-      }),
+      legend(
+        'grelka',
+        'Grelka the Mire Hag',
+        45,
+        4,
+        3,
+        'world',
+        '20,29',
+        {
+          AC: 15,
+          Speed: 30,
+        },
+        natural('Claws', 2, 8, 'slashing'),
+      ),
+      mob('goblin-raider-1', 'Goblin Raider', 7, 1, 0.25, 'northmarch', raiderTiles[0], GOBLIN),
+      mob('goblin-raider-2', 'Goblin Raider', 7, 1, 0.25, 'northmarch', raiderTiles[1], GOBLIN),
+      // Chain Mail, the legend default below level 5, gives AC 16.
+      legend('snagtooth', 'Chieftain Snagtooth', 36, 3, 1, 'northmarch', campTile, { Speed: 30 }),
+      legend(
+        'skalvyr',
+        'Skalvyr the Wyvern',
+        68,
+        5,
+        6,
+        'graypeak',
+        eyrieTile,
+        {
+          AC: 16,
+          Speed: 20,
+          Fly: 80,
+        },
+        natural('Stinger', 2, 6, 'piercing'),
+      ),
       // The barrow: pickets, the seneschal, and the major boss at the tomb.
-      mob('barrow-skeleton-1', 'Barrow Skeleton', 13, 1, 0.25, 'barrow', boneTiles[0], {
-        AC: 13,
-        Speed: 30,
-      }),
-      mob('barrow-skeleton-2', 'Barrow Skeleton', 13, 1, 0.25, 'barrow', boneTiles[1], {
-        AC: 13,
-        Speed: 30,
-      }),
-      legend('grave-wight', 'Grave Wight', 45, 4, 3, 'barrow', wightTile, {
-        AC: 14,
-        Speed: 30,
-      }),
+      mob('barrow-skeleton-1', 'Barrow Skeleton', 13, 1, 0.25, 'barrow', boneTiles[0], SKELETON),
+      mob('barrow-skeleton-2', 'Barrow Skeleton', 13, 1, 0.25, 'barrow', boneTiles[1], SKELETON),
+      // Studded Leather at DEX 14 gives AC 14.
+      legend(
+        'grave-wight',
+        'Grave Wight',
+        45,
+        4,
+        3,
+        'barrow',
+        wightTile,
+        { DEX: 14, AC: 12, Speed: 30 },
+        { armor: enemyArmor('Studded Leather') },
+      ),
       // Thornhold: the shade of the warden who sealed the barrow, risen in
       // the keep's own hall now that the ward is failing.
-      legend('crypt-shade', 'The Crypt Shade', 40, 4, 3, 'thornhold', shadeTile, {
-        AC: 14,
-        Speed: 30,
-      }),
-      legend('ostrand', 'King Ostrand the Risen', 110, 8, 8, 'barrow', tombTile, {
-        AC: 18,
-        Speed: 30,
-      }),
+      legend(
+        'crypt-shade',
+        'The Crypt Shade',
+        40,
+        4,
+        3,
+        'thornhold',
+        shadeTile,
+        {
+          AC: 14,
+          Speed: 30,
+        },
+        natural('Withering Touch', 2, 6, 'necrotic'),
+      ),
+      // Plate, the legend default from level 5, gives AC 18.
+      legend('ostrand', 'King Ostrand the Risen', 110, 8, 8, 'barrow', tombTile, { Speed: 30 }),
       // The people of the Marches share the same list as the field enemies.
       person('caravan-master-dorn', 'Dorn', {
         role: 'Caravan master, stranded at the crossroads',
@@ -595,19 +654,15 @@ export function buildExampleContent(palette, world) {
       },
     ],
     bestiary: [
-      template('goblin', 'Goblin', 7, 1, 0.25, { AC: 13, Speed: 30 }),
-      template('gray-wolf', 'Gray Wolf', 11, 1, 0.25, { AC: 13, Speed: 40 }),
-      template('bandit', 'Bandit', 11, 1, 0.125, { AC: 12, Speed: 30 }),
-      template('bog-zombie', 'Bog Zombie', 22, 2, 0.25, { AC: 8, Speed: 20 }),
-      template('harpy', 'Harpy', 24, 2, 1, { AC: 11, Speed: 20 }),
-      template('giant-scorpion', 'Giant Scorpion', 26, 3, 3, { AC: 15, Speed: 40 }),
-      template('winter-wolf', 'Winter Wolf', 34, 3, 3, { AC: 13, Speed: 50 }),
-      template('barrow-skeleton', 'Barrow Skeleton', 13, 1, 0.25, { AC: 13, Speed: 30 }),
-      template('drowned-watchman', 'Drowned Watchman', 22, 2, 0.5, {
-        AC: 11,
-        Speed: 20,
-        Swim: 30,
-      }),
+      template('goblin', 'Goblin', 7, 1, 0.25, GOBLIN),
+      template('gray-wolf', 'Gray Wolf', 11, 1, 0.25, WOLF, BITE),
+      template('bandit', 'Bandit', 11, 1, 0.125, BANDIT),
+      template('bog-zombie', 'Bog Zombie', 22, 2, 0.25, ZOMBIE, SLAM),
+      template('harpy', 'Harpy', 24, 2, 1, HARPY, CLAWS),
+      template('giant-scorpion', 'Giant Scorpion', 26, 3, 3, SCORPION, PINCER),
+      template('winter-wolf', 'Winter Wolf', 34, 3, 3, WINTER_WOLF, GREAT_BITE),
+      template('barrow-skeleton', 'Barrow Skeleton', 13, 1, 0.25, SKELETON),
+      template('drowned-watchman', 'Drowned Watchman', 22, 2, 0.5, DROWNED, SLAM),
     ],
     splitParty: false,
     combat: null,

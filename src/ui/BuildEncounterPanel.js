@@ -5,6 +5,7 @@ import { crLabel } from '../data/challenge.js';
 import { proficiencySummary } from '../entities/CreatureChecks.js';
 import { casterSummary } from '../entities/Caster.js';
 import { formatDamage } from '../entities/Equipment.js';
+import { enemyArmorLabel } from '../entities/EnemyArmor.js';
 import { mountListPanel } from './listPanel.js';
 import { describeTile } from '../map/TileCoords.js';
 
@@ -80,7 +81,7 @@ export function mountBuildEncounterPanel(container, callbacks) {
       if (encounter.cr !== undefined) parts.push(`CR ${crLabel(encounter.cr)}`);
       if (encounter.weapon)
         parts.push(`${encounter.weapon.name} ${formatDamage(encounter.weapon.damage)}`);
-      if (encounter.armor) parts.push(`${encounter.armor.name} +${encounter.armor.acBonus} AC`);
+      if (encounter.armor) parts.push(enemyArmorLabel(encounter.armor));
       if (parts.length) row.appendChild(el('div', 'u-muted', parts.join(' | ')));
 
       // What the creature is trained in, with the bonus it rolls in each. The

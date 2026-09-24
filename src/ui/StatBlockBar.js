@@ -32,11 +32,11 @@ export function mountStatBlockBar(container, callbacks) {
   const root = el('div', 'statblock-bar');
   container.appendChild(root);
 
-  /** @param {string} name @param {number} base */
-  async function editBase(name, base) {
+  /** @param {string} label @param {string} name @param {number} base */
+  async function editBase(label, name, base) {
     const values = await promptModal(
-      `Set ${name}`,
-      [{ name: 'value', label: `${name} value`, type: 'number', value: base }],
+      `Set ${label}`,
+      [{ name: 'value', label: `${label} value`, type: 'number', value: base }],
       { submitLabel: 'Save' },
     );
     if (!values) return;
@@ -82,11 +82,11 @@ export function mountStatBlockBar(container, callbacks) {
       // shows its base value and how long the adjustment lasts.
       const statChip =
         callbacks.mode === 'base'
-          ? chip(`${name} ${base}`, {
+          ? chip(`${baseLabel(name)} ${base}`, {
               className,
-              onClick: () => editBase(name, base),
-              ariaLabel: `Set ${name} (currently ${base})`,
-              title: `Set ${name}`,
+              onClick: () => editBase(baseLabel(name), name, base),
+              ariaLabel: `Set ${baseLabel(name)} (currently ${base})`,
+              title: `Set ${baseLabel(name)}`,
             })
           : chip(modified ? `${name} ${base}→${effective} (${rounds}r)` : `${name} ${effective}`, {
               className,
@@ -102,4 +102,15 @@ export function mountStatBlockBar(container, callbacks) {
 
   render();
   return { update: render };
+}
+
+/**
+ * The name a base-mode chip shows. A creature's authored AC is its AC
+ * without armor, and worn armor replaces part of it, so the Build chip says
+ * "Base AC" where the Play chip and the combat card show the AC in use.
+ * @param {string} name
+ * @returns {string}
+ */
+function baseLabel(name) {
+  return name === 'AC' ? 'Base AC' : name;
 }

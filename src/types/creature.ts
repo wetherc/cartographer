@@ -74,7 +74,7 @@ export interface Creature {
   /** What the creature swings, or null for an unarmed creature. */
   weapon: EnemyWeapon | null;
   /** What the creature wears, or null for an unarmored creature. Its
-   * `acBonus` adds to the AC of the stat block. */
+   * AC follows the rule in `EnemyArmor.js`. */
   armor: EnemyArmor | null;
   /** Authoring level. It picks the default stats and gear for a new foe.
    * Absent on a creature that was never authored as a foe. */

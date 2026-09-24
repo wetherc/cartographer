@@ -31,10 +31,10 @@ test('SHIELD_PRESETS ship the 5e shield at the default bonus', () => {
 
 test('enemyArmor returns correct armor object for valid name', () => {
   const plate = enemyArmor('Plate');
-  assert.deepEqual(plate, { name: 'Plate', acBonus: 8 });
+  assert.deepEqual(plate, { name: 'Plate', baseAC: 18, armorWeight: 'heavy' });
 
   const leather = enemyArmor('Leather Armor');
-  assert.deepEqual(leather, { name: 'Leather Armor', acBonus: 1 });
+  assert.deepEqual(leather, { name: 'Leather Armor', baseAC: 11, armorWeight: 'light' });
 });
 
 test('enemyArmor returns null for invalid or missing name', () => {

@@ -17,6 +17,7 @@ import { isHitDicePool } from '../src/entities/HitDice.js';
 import { mulberry32 } from '../src/util/Rng.js';
 import { coerceCR, crXP } from '../src/data/challenge.js';
 import { difficultyLine } from '../src/entities/EncounterDifficulty.js';
+import { effectiveStatBlock } from '../src/entities/Creature.js';
 import { installLocalStorage } from './helpers/env.js';
 
 beforeEach(installLocalStorage);
@@ -355,4 +356,34 @@ test('loadInitialCampaign boots a save with a parent loop and a malformed spellb
     ['b', 'a'],
   );
   assert.deepEqual(campaign.characters[0].spellbook, { cantrips: [], known: [], prepared: [] });
+});
+
+test('example enemies reach their stat block AC, and beasts fight unarmored with natural attacks', () => {
+  const campaign = buildExampleCampaign(new TilePalette(), mulberry32(1));
+  const byId = (/** @type {string} */ id) => {
+    const found = campaign.creatures.find((c) => c.id === id);
+    assert.ok(found, id);
+    return found;
+  };
+  const expected = {
+    'goblin-scout': 13,
+    'bandit-1': 12,
+    'barrow-skeleton-1': 13,
+    'gray-wolf-1': 13,
+    'giant-scorpion': 15,
+    snagtooth: 16,
+    'grave-wight': 14,
+    ostrand: 18,
+  };
+  for (const [id, ac] of Object.entries(expected)) {
+    assert.equal(effectiveStatBlock(byId(id)).AC, ac, id);
+  }
+  for (const id of ['gray-wolf-1', 'hill-harpy', 'giant-scorpion', 'skalvyr', 'crypt-shade']) {
+    const beast = byId(id);
+    assert.equal(beast.armor, null, `${id} wears no armor`);
+    assert.equal(beast.weapon?.category, null, `${id} attacks with a natural weapon`);
+  }
+  const wolf = campaign.bestiary.find((t) => t.id === 'gray-wolf');
+  assert.equal(wolf?.armor, null);
+  assert.equal(wolf?.weapon?.name, 'Bite');
 });

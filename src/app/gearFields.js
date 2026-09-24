@@ -1,6 +1,7 @@
 import { activeWeapons, activeArmors, activeEnemyArmor } from '../library/Library.js';
 import { formatDamage } from '../entities/Equipment.js';
 import { copyEnemyWeapon } from '../entities/EquipmentPresets.js';
+import { enemyArmorLabel } from '../entities/EnemyArmor.js';
 
 /** @typedef {import('../types/entities.js').EnemyWeapon} EnemyWeapon */
 /** @typedef {import('../types/entities.js').EnemyArmor} EnemyArmor */
@@ -47,10 +48,8 @@ export function gearOptions(current) {
   const customArmor = currentArmor && !armorChoices.some((a) => a.name === currentArmor.name);
   const armorOptions = [
     { value: '', label: 'None (unarmored)' },
-    ...(customArmor
-      ? [{ value: currentArmor.name, label: `${currentArmor.name} (+${currentArmor.acBonus} AC)` }]
-      : []),
-    ...armorChoices.map((a) => ({ value: a.name, label: `${a.name} (+${a.acBonus} AC)` })),
+    ...(customArmor ? [{ value: currentArmor.name, label: enemyArmorLabel(currentArmor) }] : []),
+    ...armorChoices.map((a) => ({ value: a.name, label: enemyArmorLabel(a) })),
   ];
   return { weaponChoices, currentWeapon, currentArmor, weaponOptions, armorOptions };
 }

@@ -33,7 +33,7 @@ test('gearOptions keeps a hand-tuned non-library entry offered, labelled with it
       kind: 'melee',
       damage: [{ count: 2, sides: 4, type: 'slashing' }],
     },
-    armor: { name: 'Bone Plate', acBonus: 3 },
+    armor: { name: 'Bone Plate', baseAC: 15, armorWeight: 'heavy' },
   };
   const { weaponOptions, armorOptions } = gearOptions(current);
   const weapon = weaponOptions.find((o) => o.value === 'Rusty Cleaver');
@@ -41,7 +41,7 @@ test('gearOptions keeps a hand-tuned non-library entry offered, labelled with it
   assert.ok(weapon.label.includes('2d4'), 'labelled with its damage');
   const armor = armorOptions.find((o) => o.value === 'Bone Plate');
   assert.ok(armor, 'custom armor stays offered');
-  assert.ok(armor.label.includes('+3 AC'));
+  assert.equal(armor.label, 'Bone Plate (AC 15)');
 });
 
 test('gearOptions omits the custom rows when the current gear is a library entry', () => {
@@ -72,7 +72,7 @@ test('readGear copies a library preset with its damage cloned', () => {
 test('readGear falls back to the current hand-tuned entry', () => {
   const current = {
     weapon: { name: 'Rusty Cleaver', kind: 'melee', damage: [] },
-    armor: { name: 'Bone Plate', acBonus: 3 },
+    armor: { name: 'Bone Plate', baseAC: 15, armorWeight: 'heavy' },
   };
   const options = gearOptions(current);
   const kept = readGear('Rusty Cleaver', 'Bone Plate', options);

@@ -1,5 +1,6 @@
 import { coerceCR } from '../data/challenge.js';
 import { normalizeStatBlock } from './Modifiers.js';
+import { coerceEnemyArmor, enemyArmorDelta } from './EnemyArmor.js';
 import { WEAPON_PRESETS, enemyArmor, copyEnemyWeapon } from './EquipmentPresets.js';
 import { copySpellbook } from './Character.js';
 import { withCasterFields, ensureCasterFields, casterTemplateFields } from './Caster.js';
@@ -149,7 +150,7 @@ export function createCreature(id, name, options = {}) {
     exhaustion: 0,
     met: options.met ?? false,
     weapon: options.weapon !== undefined ? options.weapon : (stamp?.weapon ?? null),
-    armor: options.armor !== undefined ? options.armor : (stamp?.armor ?? null),
+    armor: options.armor !== undefined ? coerceEnemyArmor(options.armor) : (stamp?.armor ?? null),
     ...(hasLevel ? { level: options.level, tier } : {}),
     ...crFields(options.cr),
     ...creatureProficiencyFields(options.proficiencies),
@@ -195,22 +196,22 @@ export function withDefaults(creature) {
       ...exhaustionFields(creature.exhaustion, conditionList(creature.conditions)),
       met: creature.met ?? false,
       weapon: creature.weapon ?? null,
-      armor: creature.armor ?? null,
+      armor: coerceEnemyArmor(creature.armor),
     },
     creature.casterLevel ?? creature.level ?? 1,
   );
 }
 
 /**
- * The stat block a creature fights with: base values, plus the worn armor's
- * flat AC bonus, plus every active timed modifier. Combat math and the Play
- * view must use this value.
+ * The stat block a creature fights with: base values, with the worn armor in
+ * place of the unarmored 10 + DEX (`enemyArmorDelta`), plus every active
+ * timed modifier. Combat math and the Play view use this value.
  * @param {Creature} creature
  * @returns {Record<string, number>}
  */
 export function effectiveStatBlock(creature) {
   const block = normalizeStatBlock(creature.stats ?? {});
-  block.AC += creature.armor?.acBonus ?? 0;
+  block.AC += enemyArmorDelta(creature.armor, block.DEX);
   for (const mod of creature.statMods ?? []) {
     if (mod.stat in block) block[mod.stat] += mod.delta;
   }

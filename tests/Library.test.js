@@ -185,7 +185,11 @@ test('normalizeLibrary keeps a supplied id, valid tier, and an armor object', ()
   const wyvern = lib.creatures[0];
   assert.equal(wyvern.id, 'wyvern-alpha', 'a present string id is kept, not sluggified');
   assert.equal(wyvern.tier, 'legend', 'a valid tier survives');
-  assert.deepEqual(wyvern.armor, { name: 'Scales', acBonus: 3 }, 'an armor object is kept');
+  assert.deepEqual(
+    wyvern.armor,
+    { name: 'Scales', baseAC: 13, armorWeight: 'light' },
+    'an armor object with a flat bonus reads as a light base AC',
+  );
 });
 
 test('normalizeLibrary reads a written challenge rating and drops a bad one', () => {
@@ -496,7 +500,11 @@ test('the active registry merges customs into every getter', () => {
       1,
       'no duplicate for an overridden name',
     );
-    assert.deepEqual(activeEnemyArmor('Dragonhide'), { name: 'Dragonhide', acBonus: 5 });
+    assert.deepEqual(activeEnemyArmor('Dragonhide'), {
+      name: 'Dragonhide',
+      baseAC: 15,
+      armorWeight: 'medium',
+    });
     assert.ok(
       activeArmors().some((a) => a.name === 'Plate'),
       'defaults stay offered',
@@ -888,7 +896,11 @@ test('with no customizations the active getters return the pure defaults', () =>
   assert.equal(activeEquipment().length, defaultEquipmentTemplates().length);
   assert.equal(activeCreatures().length, DEFAULT_CREATURES.length);
   assert.equal(activeEnemyArmor('Nonesuch'), null);
-  assert.deepEqual(activeEnemyArmor('Leather Armor'), { name: 'Leather Armor', acBonus: 1 });
+  assert.deepEqual(activeEnemyArmor('Leather Armor'), {
+    name: 'Leather Armor',
+    baseAC: 11,
+    armorWeight: 'light',
+  });
 });
 
 test('the built-in catalogs are frozen, so a consumer cannot edit shared data', () => {
@@ -910,8 +922,12 @@ test('activeEnemyArmor hands out a copy, not an element of the memoized list', (
   const armor = /** @type {any} */ (activeEnemyArmor('Leather Armor'));
   assert.notEqual(armor, activeEnemyArmor('Leather Armor'), 'each call is its own object');
   // An encounter tuning its armor must not tune the library's.
-  armor.acBonus = 99;
-  assert.deepEqual(activeEnemyArmor('Leather Armor'), { name: 'Leather Armor', acBonus: 1 });
+  armor.baseAC = 99;
+  assert.deepEqual(activeEnemyArmor('Leather Armor'), {
+    name: 'Leather Armor',
+    baseAC: 11,
+    armorWeight: 'light',
+  });
 });
 
 test('the active getters memoize their merged lists until the library changes', () => {

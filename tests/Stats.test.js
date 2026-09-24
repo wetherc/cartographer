@@ -92,7 +92,7 @@ test("an encounter's worn armor is an AC source with no countdown", () => {
   // The Play chips and the combat card both read the armored value. The base
   // stays the authored AC, which is what the Build chips edit.
   const goblin = createCreature('e1', 'Goblin', { maxHP: 10, stats: { AC: 12 }, level: 1 });
-  assert.equal(goblin.armor?.acBonus, 1);
+  assert.equal(goblin.armor?.baseAC, 11, 'Leather Armor, the level 1 default');
   assert.deepEqual(effectiveStat(goblin, 'AC'), {
     base: 12,
     total: 13,
@@ -110,7 +110,7 @@ test('armor reaches only AC, and an unarmored creature has no armor source', () 
   const noBonus = createCreature('e3', 'Rat', {
     maxHP: 10,
     stats: { AC: 12 },
-    armor: { name: 'Rags', acBonus: 0 },
+    armor: { name: 'Rags', baseAC: 10, armorWeight: 'light' },
   });
   assert.deepEqual(effectiveStat(noBonus, 'AC').sources, []);
 });

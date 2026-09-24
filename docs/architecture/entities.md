@@ -95,8 +95,15 @@ from the level again, so an absent field has one meaning everywhere.
 has a `disposition`, and a character never does. Every caller that tells
 the two apart uses this one test.
 
-`effectiveStatBlock(creature)` is the one AC read: the closed stat block, plus
-the `acBonus` of the worn armor, plus every active timed stat modifier.
+`effectiveStatBlock(creature)` is the one AC read: the closed stat block,
+with the worn armor in place of the unarmored 10 + DEX, plus every active
+timed stat modifier. The stored AC is the AC without armor. `EnemyArmor.js`
+keeps the armor rule: the armor's `baseAC` plus the DEX modifier that its
+`armorWeight` allows (all of it for light, at most +2 for medium, none for
+heavy), with any authored AC above 10 + DEX added on top. A flat bonus over
+the unarmored AC gives a DEX 16 creature in Plate an AC of 21, where the
+rule gives 18.
+
 `CreatureMap.js` has the placement reads. `meetCreatures` marks every
 creature on the party's tile as met. `knownCreaturesAt` is the player view of
 the non-hostile roster. `discoveredHostiles` is the player view of the hostile

@@ -104,11 +104,13 @@ export interface EnemyWeapon {
   versatileDamage?: DamagePart[];
 }
 
-/** An enemy's worn armor: a name, and the flat AC it adds on top of the stat
- * block's base AC. The effective AC includes this bonus. */
+/** An enemy's worn armor: a name, a base AC, and a weight class. The armor
+ * replaces the 10 + DEX part of the creature's AC with the base AC plus the
+ * DEX contribution its weight allows (`EnemyArmor.js`). */
 export interface EnemyArmor {
   name: string;
-  acBonus: number;
+  baseAC: number;
+  armorWeight: ArmorWeight;
 }
 
 export type ResourceType = 'item-count' | 'mana' | 'custom';
