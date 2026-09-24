@@ -65,7 +65,7 @@ test('loadInitialCampaign restores a save and default-fills fields older saves l
 });
 
 test('loadInitialCampaign passes through every present field of a full save', () => {
-  const clock = { day: 3, minutes: 42 };
+  const clock = { day: 3, watch: 4 };
   localStorage.setItem(
     'campaign-builder:save',
     JSON.stringify({

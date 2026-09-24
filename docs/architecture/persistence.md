@@ -92,8 +92,8 @@ storage costs those paths account for.
 throwing an error, so an older or smaller save still loads. It is also
 the only validation step a save passes through. It coerces every field whose
 *structure* the load path trusts. Collections become lists of records. The
-party position, a running combat, the travelogue, the quest log, and the
-bestiary get their required members with the right types. Those coercers
+party position, a running combat, the game clock, the travelogue, the quest
+log, and the bestiary get their required members with the right types. Those coercers
 live in `storage/RecordCoercion.js`, one function per collection. Import
 persists what it reads and then reloads, so a malformed field that passes
 through `deserialize` becomes the stored save of an app that no longer

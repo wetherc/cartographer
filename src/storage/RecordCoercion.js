@@ -1,7 +1,7 @@
 /**
  * The field coercers `deserialize` runs on the parts of a save that have no
  * entity `withDefaults` of their own: the party position, a running combat,
- * the travelogue, the quest log, and the bestiary. Each function reads an
+ * the game clock, the travelogue, the quest log, and the bestiary. Each function reads an
  * unknown value and returns a record the panels can render without a type
  * check, or drops what it cannot read.
  *
@@ -14,6 +14,8 @@
  */
 
 import { budgetOf } from '../combat/ActionBudget.js';
+import { WATCHES } from '../time/GameClock.js';
+import { clampInt } from '../util/num.js';
 
 /** @typedef {import('../types/map.js').PartyPosition} PartyPosition */
 /** @typedef {import('../types/log.js').LogEntry} LogEntry */
@@ -127,6 +129,22 @@ export function partyPosition(value) {
   const party = record(value);
   if (!party || typeof party.nodeId !== 'string' || typeof party.tileId !== 'string') return null;
   return { nodeId: party.nodeId, tileId: party.tileId };
+}
+
+/**
+ * The game clock, or null when the save has none. A day below 1 reads as 1,
+ * and a watch outside the day's watches reads as Dawn. Both coerce to whole
+ * numbers, because a string watch such as "5" makes `advanceWatches` join
+ * strings (Day 1 plus one watch gives Day 9) and a missing day shows "Day
+ * undefined".
+ * @param {unknown} value
+ * @returns {import('../types/time.js').GameClock | null}
+ */
+export function gameClock(value) {
+  const clock = record(value);
+  if (!clock) return null;
+  const watch = clampInt(clock.watch, 0, Infinity, 0);
+  return { day: clampInt(clock.day, 1), watch: watch < WATCHES.length ? watch : 0 };
 }
 
 /**
