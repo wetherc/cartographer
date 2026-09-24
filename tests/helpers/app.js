@@ -54,6 +54,7 @@ const ACTION_NAMES = [
   'onModeChanged',
   'onRoleChanged',
   'setMode',
+  'mergeQueuedPatches',
   'rollDice',
 ];
 

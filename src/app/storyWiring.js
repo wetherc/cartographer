@@ -33,11 +33,17 @@ export function wireStory(app) {
 
   /** A monotonic counter. It makes travelogue entry ids unique within one session. */
   let logSeq = 0;
+  /**
+   * A random tag for this tab. A player tab's patch pairs log entries with
+   * the GM tab's by id, so two tabs that log in the same millisecond with
+   * the same counter value would otherwise merge into one entry.
+   */
+  const tabTag = Math.random().toString(36).slice(2, 6);
 
   /**
    * Records a travelogue event and refreshes the panel. Ids combine the clock
-   * time with a session counter, so two events in the same millisecond never
-   * collide.
+   * time with a session counter and the tab tag, so two events in the same
+   * millisecond never collide, in one tab or across tabs.
    * @param {import('../types/log.js').LogEntryKind} kind
    * @param {string} message
    */
@@ -45,7 +51,7 @@ export function wireStory(app) {
     const now = Date.now();
     state.travelog = appendEntry(
       state.travelog,
-      createEntry(`log-${now}-${logSeq++}`, kind, message, now),
+      createEntry(`log-${now}-${tabTag}${logSeq++}`, kind, message, now),
     );
     app.views.travelogPanel.update();
     // The combat screen's log column shows the same entries. Without this

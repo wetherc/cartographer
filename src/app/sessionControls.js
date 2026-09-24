@@ -65,6 +65,9 @@ export function wireSessionControls(app) {
       document.body.classList.toggle('mode-library', mode === 'library');
       document.body.classList.toggle('mode-combat', mode === 'combat');
       app.actions.onModeChanged(mode);
+      // A player tab's edit that arrived in Build or Library mode waits for
+      // Play or combat mode.
+      app.actions.mergeQueuedPatches();
       // The party panels skip their refresh while the combat screen covers
       // them, so they catch up here.
       if (leftCombat) app.actions.refreshSelectedCharacter();

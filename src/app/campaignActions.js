@@ -43,6 +43,7 @@ import { applyOps } from '../storage/StateDiff.js';
 import { shouldAutosave, storageMovedOn, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
 import { followerMode } from '../view/CombatMode.js';
 import { isGM } from '../view/ViewRole.js';
+import { wirePlayerPatches } from './playerPatches.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -100,9 +101,10 @@ export function wireCampaignActions(app) {
    * of starting the poll at wiring time. A tab that never becomes dirty never
    * polls: this covers a spectator tab and a GM tab between saves. A player
    * tab becomes dirty too, because a dice roll, a sheet action, or a token
-   * move writes the campaign, so its writes go through the same check
-   * against another tab's save as the GM's. The poll also queries the DOM for an open
-   * dialog, so running it in a tab that can never save wastes resources.
+   * move changes the campaign. With no GM tab open, its writes go through
+   * the same check against another tab's save as the GM's. The poll also
+   * queries the DOM for an open dialog, so running it in a tab that can
+   * never save wastes resources.
    */
   function startAutosavePolling() {
     if (autosaveTimer === null) autosaveTimer = setInterval(autosaveTick, AUTOSAVE_POLL_MS);
@@ -155,8 +157,10 @@ export function wireCampaignActions(app) {
     // follower needs it most: a tab left on the combat screen has nothing to
     // show once the fight ends. The write that clears `combat` flushes on the
     // strength of the fight that was there a moment before.
+    // A player tab's patch goes out at once too, so the GM tab merges it
+    // before its own next save instead of up to fifteen seconds later.
     const fight = app.state.combat !== null;
-    if (fight || sawFight) flushSoon();
+    if (fight || sawFight || patches.active()) flushSoon();
     sawFight = fight;
   }
 
@@ -183,11 +187,23 @@ export function wireCampaignActions(app) {
     if (flushTimer !== null) return;
     flushTimer = setTimeout(() => {
       flushTimer = null;
-      if (!dirty) return;
-      if (externalWriteBlocks()) return;
-      if (!persistState(buildCurrentState())) return;
+      if (!dirty || !writeOut()) return;
       setDirty(false);
     }, FLUSH_DELAY_MS);
+  }
+
+  /**
+   * The write that autosave and the flush share. A player tab sends only its
+   * own edit while a GM tab is open, and the GM tab merges and saves it. A
+   * whole-campaign write from each tab loses one tab's change whenever both
+   * change the campaign in the same window. Every other tab writes the
+   * campaign, after the check against another tab's save.
+   * @returns {boolean} whether the write landed
+   */
+  function writeOut() {
+    if (patches.active()) return patches.send();
+    if (externalWriteBlocks()) return false;
+    return persistState(buildCurrentState());
   }
 
   // Warn before the tab closes or reloads with unsaved changes. Intentional
@@ -248,6 +264,7 @@ export function wireCampaignActions(app) {
     if (!reportSave(result)) return false;
     heldSave = result.json;
     heldPosition = historyPosition();
+    patches.rebase();
     reportHistory(result.history);
     refreshHistoryButtons();
     return true;
@@ -298,6 +315,15 @@ export function wireCampaignActions(app) {
     });
   }
 
+  const patches = wirePlayerPatches(app, {
+    buildCurrentState,
+    onMerged: () => {
+      markDirty();
+      flushSoon();
+    },
+  });
+  app.actions.mergeQueuedPatches = patches.mergeQueued;
+
   /**
    * Replaces the whole campaign. This persists the given campaign and
    * reloads, so every module re-initializes from the same
@@ -341,7 +367,7 @@ export function wireCampaignActions(app) {
   // last step packs the live state whole, for the asset hoist and anything
   // edited since the steps were built. The results are thrown away: only the
   // caches matter. A Player view tab skips this. A spectator tab never
-  // saves, and a bound player tab saves only after its own actions. This is work the app can skip, so a failure
+  // saves, and a bound player tab writes only after its own actions. This is work the app can skip, so a failure
   // here must not reach the session.
   if (isGM(app.state.role)) {
     /** @param {() => unknown} step */
@@ -400,8 +426,7 @@ export function wireCampaignActions(app) {
     // Skip autosave under an open dialog. The GM is mid-edit, and a modal's
     // pending form values are not yet in the state.
     if (document.querySelector('dialog[open]')) return;
-    if (externalWriteBlocks()) return;
-    if (!persistState(buildCurrentState())) return;
+    if (!writeOut()) return;
     setDirty(false);
     app.toasts.show('Autosaved.');
   }
@@ -529,6 +554,7 @@ export function wireCampaignActions(app) {
       if (!adoptByDelta()) rehydrateCampaign(app, loadInitialCampaign());
       heldPosition = historyPosition();
       heldSave = localStorage.getItem(STORAGE_KEY);
+      patches.rebase();
     } catch (error) {
       console.error('Could not adopt the campaign another tab saved; reloading.', error);
       return false;
@@ -593,6 +619,9 @@ export function wireCampaignActions(app) {
   }
 
   onExternalSave(() => {
+    // A player tab sends its unsent edit first. The GM tab merges it, so the
+    // tab adopts the save with nothing lost and needs no reload prompt.
+    if (dirty && patches.active() && patches.send()) setDirty(false);
     if (!dirty) {
       if (!adoptExternalSave()) location.reload();
       return;

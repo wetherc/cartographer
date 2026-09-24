@@ -112,6 +112,21 @@ outside the edit keeps its identity and the adoption costs the size of the
 edit. Every other case (a position gap, an undo, a cleared log, or a failed
 apply) takes the full load path through `Campaigns.loadInitialCampaign`.
 
+A player tab does not write the save while a GM tab is open. If both tabs
+write the whole campaign and both change it within the same few seconds,
+one of the two changes is lost when a tab reloads onto the other's save.
+Instead, while the GM lock is live, `playerPatches.js` diffs the player
+tab's state against the state it last sent, saved, or adopted, and writes
+only those ops under the tab's own key (`storage/PlayerPatch.js`) 250 ms
+after the edit. The GM tab applies each patch to its live campaign through
+`rehydrateCampaign` and saves at once, and the player tabs then adopt that
+save in the usual way. A patch that arrives in Build or Library mode waits
+for the next switch to Play or combat mode. With no GM tab open, a player
+tab writes the whole campaign, after the same storage check as a GM tab.
+If the GM tab saves before it merges a patch, a player tab that adopts that
+save by a full load shows its own edit again only after the merge reaches
+storage.
+
 ### mapWiring.js (plus mapAuthoring.js and mapTravel.js)
 
 This module mounts the map and syncs its location: the canvas, the
