@@ -325,7 +325,11 @@ except to the GM tab.
 
 Back to map leaves the screen without ending the fight. The Initiative card
 in the sidebar shows the round and has Open combat. Only the GM can click
-End combat. A fight also ends when the party walks off the tile, or when
+End combat. While a hostile creature still stands, End combat asks first.
+After a victory, it offers the experience points of the defeated foes,
+split evenly among the characters still alive and rounded down. A foe with
+no challenge rating is worth nothing, and you can change the amount or
+cancel. A fight also ends when the party walks off the tile, or when
 the last creature staged there is deleted.
 
 ### Action, bonus action, and reaction

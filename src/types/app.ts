@@ -115,7 +115,7 @@ export interface AppActions {
   // ticks, or end the fight. The combat screen and the sidebar panel share
   // these actions.
   advanceCombatTurn(): void;
-  endCombat(): void;
+  endCombat(): Promise<void>;
   // encounterWiring: spend part of one combatant's turn, which is how an
   // attack or a cast pays for itself. 'attack' is the weapon swing, which
   // spends the Attack action and banks the extra swings of Extra Attack.

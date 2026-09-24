@@ -47,6 +47,7 @@ import {
 import { advancePastHeld } from './turnAdvance.js';
 import { setCombatantExhaustion } from './exhaustion.js';
 import { focusMapCanvas } from './combatWiring.js';
+import { confirmFightEnd, offerFightXP } from './combatEnd.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -479,7 +480,9 @@ export function wireEncounters(app) {
     app.views.combatScreen.update();
   };
 
-  app.actions.endCombat = () => {
+  app.actions.endCombat = async () => {
+    const end = await confirmFightEnd(app);
+    if (!end) return;
     const onScreen = state.mode === 'combat';
     setCombat(null);
     app.views.initiativePanel.update(); // hides the panel again
@@ -488,6 +491,7 @@ export function wireEncounters(app) {
     // The End combat button leaves with the screen. Focus moves to the map,
     // which is what the GM looks at next, instead of falling to the body.
     if (onScreen) focusMapCanvas();
+    await offerFightXP(app, end);
   };
 
   const initiativeContainer = mustGetElement('initiative-container');

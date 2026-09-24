@@ -277,7 +277,8 @@ not change it.
 7. For a bonus die, a penalty die, or a flat rider, open the **Situational
    modifiers** disclosure in the dialog.
 8. Click **Next turn** to advance. Timed conditions tick down each round.
-9. When the fight is over, click **End combat**.
+9. When the fight is over, click **End combat**. After a victory, confirm
+   or change the XP that each character gets.
 
 Defeating the last enemy shows a victory banner and leaves the fight open,
 so everyone can heal and read the log before you end it.
