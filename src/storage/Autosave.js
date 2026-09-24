@@ -26,3 +26,20 @@ export function shouldAutosave({ dirty, now, lastMutationAt, dirtySince }) {
   if (!dirty) return false;
   return now - lastMutationAt >= AUTOSAVE_IDLE_MS || now - dirtySince >= AUTOSAVE_MAX_WAIT_MS;
 }
+
+/**
+ * Whether another tab has written the campaign since this tab last matched
+ * storage. `held` is the save string this tab loaded, wrote, or adopted.
+ * `stored` is the save string in storage now. An automatic write (autosave,
+ * or the combat flush) stops while this is true, so a tab that has not
+ * adopted another tab's save cannot write its older copy over it. A GM who
+ * declines the reload prompt, or a player tab that is mid-roll when the GM
+ * saves, then keeps its changes in memory until an explicit Save. Nothing
+ * stored means there is nothing to overwrite.
+ * @param {string | null} held
+ * @param {string | null} stored
+ * @returns {boolean}
+ */
+export function storageMovedOn(held, stored) {
+  return stored !== null && stored !== held;
+}

@@ -94,7 +94,12 @@ for the footprint to grow by ten percent before it warns again.
 This module also handles cross-tab save adoption. When another browser tab
 saves (`SaveManager.onExternalSave` reports it once the save mark lands), a Play-mode tab with nothing unsaved adopts that campaign in place
 through `rehydrate.js`, without a page reload. Build mode, Library mode, and
-any failure to adopt fall back to a reload.
+any failure to adopt fall back to a reload. A tab with unsaved changes gets a
+reload prompt instead. Until it reloads or the GM clicks Save, autosave and
+the combat flush do not write, because `Autosave.storageMovedOn` sees that
+storage no longer contains the save string this tab last loaded, wrote, or
+adopted. Without that check, the tab writes its older copy over the other
+tab's change.
 
 The adoption tries the recorded delta first. Every save writes its exact
 edit as a delta beside the campaign (see the history log in

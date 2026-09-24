@@ -1,6 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { shouldAutosave, AUTOSAVE_IDLE_MS, AUTOSAVE_MAX_WAIT_MS } from '../src/storage/Autosave.js';
+import {
+  shouldAutosave,
+  storageMovedOn,
+  AUTOSAVE_IDLE_MS,
+  AUTOSAVE_MAX_WAIT_MS,
+} from '../src/storage/Autosave.js';
 
 test('never autosaves a clean campaign', () => {
   assert.equal(
@@ -26,4 +31,11 @@ test('continuous editing under the hard cap keeps waiting', () => {
   const dirtySince = 10_000;
   const now = dirtySince + AUTOSAVE_MAX_WAIT_MS - 1;
   assert.equal(shouldAutosave({ dirty: true, now, lastMutationAt: now - 1, dirtySince }), false);
+});
+
+test('storage moved on only when another string replaced the held one', () => {
+  assert.equal(storageMovedOn('a', 'a'), false);
+  assert.equal(storageMovedOn('a', 'b'), true);
+  assert.equal(storageMovedOn(null, 'b'), true);
+  assert.equal(storageMovedOn('a', null), false, 'nothing stored is nothing to overwrite');
 });

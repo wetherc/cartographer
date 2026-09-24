@@ -11,7 +11,7 @@ import { onIdle } from '../util/idle.js';
 import { setTip } from '../ui/Tooltip.js';
 import { confirmModal } from '../ui/Modal.js';
 import { queueToastAfterReload } from '../ui/Toast.js';
-import { buildState, onExternalSave, packState } from '../storage/SaveManager.js';
+import { STORAGE_KEY, buildState, onExternalSave, packState } from '../storage/SaveManager.js';
 import {
   downloadCampaignFile,
   readCampaignFromFile,
@@ -34,8 +34,9 @@ import {
   planAdoption,
 } from '../storage/HistoryLog.js';
 import { applyOps } from '../storage/StateDiff.js';
-import { shouldAutosave, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
+import { shouldAutosave, storageMovedOn, AUTOSAVE_POLL_MS } from '../storage/Autosave.js';
 import { followerMode } from '../view/CombatMode.js';
+import { isGM } from '../view/ViewRole.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 
@@ -79,13 +80,22 @@ export function wireCampaignActions(app) {
    * @type {string | null}
    */
   let heldPosition = historyPosition();
+  /**
+   * The save string this tab last matched in storage: the one it loaded,
+   * wrote, or adopted. An automatic write checks storage against it first.
+   * @type {string | null}
+   */
+  let heldSave = localStorage.getItem(STORAGE_KEY);
+  /** True once this tab reported that autosave is paused. This stops the toast from repeating on every poll. */
+  let pausedNoticeShown = false;
 
   /**
    * Starts polling the autosave policy. The dirty flag controls this instead
    * of starting the poll at wiring time. A tab that never becomes dirty never
-   * polls: this covers every player tab, because it is read-only and nothing
-   * can mark it dirty, including a tab locked to the Player view. It also
-   * covers a GM tab between saves. The poll also queries the DOM for an open
+   * polls: this covers a spectator tab and a GM tab between saves. A player
+   * tab becomes dirty too, because a dice roll, a sheet action, or a token
+   * move writes the campaign, so its writes go through the same check
+   * against another tab's save as the GM's. The poll also queries the DOM for an open
    * dialog, so running it in a tab that can never save wastes resources.
    */
   function startAutosavePolling() {
@@ -103,7 +113,10 @@ export function wireCampaignActions(app) {
     if (next && !dirty) dirtySince = Date.now();
     // After this tab saves or intentionally reloads, its state becomes
     // canonical again. A future external save then gets a fresh prompt.
-    if (!next) syncPromptDeclined = false;
+    if (!next) {
+      syncPromptDeclined = false;
+      pausedNoticeShown = false;
+    }
     dirty = next;
     // Autosave has no work while the campaign is clean. The poll runs only
     // between the first unsaved change and the write that clears it.
@@ -165,6 +178,7 @@ export function wireCampaignActions(app) {
     flushTimer = setTimeout(() => {
       flushTimer = null;
       if (!dirty) return;
+      if (externalWriteBlocks()) return;
       if (!persistState(buildCurrentState())) return;
       setDirty(false);
     }, FLUSH_DELAY_MS);
@@ -226,6 +240,7 @@ export function wireCampaignActions(app) {
   function persistState(state) {
     const result = saveCampaign(state);
     if (!reportSave(result)) return false;
+    heldSave = result.json;
     heldPosition = historyPosition();
     reportHistory(result.history);
     refreshHistoryButtons();
@@ -369,6 +384,7 @@ export function wireCampaignActions(app) {
     // Skip autosave under an open dialog. The GM is mid-edit, and a modal's
     // pending form values are not yet in the state.
     if (document.querySelector('dialog[open]')) return;
+    if (externalWriteBlocks()) return;
     if (!persistState(buildCurrentState())) return;
     setDirty(false);
     app.toasts.show('Autosaved.');
@@ -481,6 +497,7 @@ export function wireCampaignActions(app) {
     try {
       if (!adoptByDelta()) rehydrateCampaign(app, loadInitialCampaign());
       heldPosition = historyPosition();
+      heldSave = localStorage.getItem(STORAGE_KEY);
     } catch (error) {
       console.error('Could not adopt the campaign another tab saved; reloading.', error);
       return false;
@@ -492,18 +509,23 @@ export function wireCampaignActions(app) {
   }
 
   let syncPromptOpen = false;
-  onExternalSave(async () => {
-    if (!dirty) {
-      if (!adoptExternalSave()) location.reload();
-      return;
-    }
-    if (syncPromptOpen) return;
-    if (syncPromptDeclined) {
-      app.toasts.show(
-        'Another tab saved again. Save here to overwrite it, or reload to take its version.',
-      );
-      return;
-    }
+
+  /**
+   * The way out of a declined reload. A player tab has no Save button, so it
+   * can only reload.
+   */
+  function takeOrOverwrite() {
+    return isGM(app.state.role)
+      ? 'Save here to overwrite it, or reload to take its version.'
+      : 'Reload to take its version.';
+  }
+
+  /**
+   * Asks a tab with unsaved changes whether to take another tab's save. A
+   * yes reloads, and a no keeps the changes here and pauses the automatic
+   * writes until an explicit Save.
+   */
+  async function promptExternalSave() {
     syncPromptOpen = true;
     const ok = await confirmModal(
       'Another tab saved this campaign. Reload to match it? Your unsaved changes here are discarded.',
@@ -516,6 +538,40 @@ export function wireCampaignActions(app) {
     } else {
       syncPromptDeclined = true;
     }
+  }
+
+  /**
+   * True when another tab wrote the campaign after this tab last matched
+   * storage, so an automatic write here stops. Without the stop, a tab that
+   * declined the reload prompt, or one that has not seen the other save yet,
+   * writes its older copy over the other tab's roll, attack, or map edit.
+   * The first stop asks the reload question, and a stop after a decline
+   * says once that autosave is paused.
+   * @returns {boolean}
+   */
+  function externalWriteBlocks() {
+    if (!storageMovedOn(heldSave, localStorage.getItem(STORAGE_KEY))) return false;
+    if (syncPromptOpen) return true;
+    if (!syncPromptDeclined) {
+      void promptExternalSave();
+    } else if (!pausedNoticeShown) {
+      pausedNoticeShown = true;
+      app.toasts.show(`Autosave is paused because another tab saved. ${takeOrOverwrite()}`);
+    }
+    return true;
+  }
+
+  onExternalSave(() => {
+    if (!dirty) {
+      if (!adoptExternalSave()) location.reload();
+      return;
+    }
+    if (syncPromptOpen) return;
+    if (syncPromptDeclined) {
+      app.toasts.show(`Another tab saved again. ${takeOrOverwrite()}`);
+      return;
+    }
+    void promptExternalSave();
   });
 
   mustGetElement('export-btn').addEventListener('click', () => {
