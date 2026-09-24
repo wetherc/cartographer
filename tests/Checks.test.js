@@ -135,7 +135,7 @@ test('a rider on the roller joins the save and reports what it added', () => {
   });
   assert.equal(made.total, 16, '10 on the d20, +2 bonus, +4 from Bless');
   assert.equal(made.success, true);
-  assert.deepEqual(made.rider, { modifier: 4, note: 'Bless +1d4 [4]' });
+  assert.deepEqual(made.rider, { modifier: 4, note: 'Bless +1d4 [4]', spent: [] });
   // The natural stays the raw d20, so a readout can still name the die.
   assert.equal(made.natural, 10);
 });
@@ -277,7 +277,7 @@ test('a check rider joins the check, and a save rider does not', () => {
   const guided = [createCondition('Guidance', 10, { rider: { rolls: ['check'], dice: 1 } })];
   const helped = resolveCheck(2, 15, { conditions: guided, rng: seq([face(4, 4), face(20, 10)]) });
   assert.equal(helped.total, 16, '10 on the d20, +2 bonus, +4 from Guidance');
-  assert.deepEqual(helped.rider, { modifier: 4, note: 'Guidance +1d4 [4]' });
+  assert.deepEqual(helped.rider, { modifier: 4, note: 'Guidance +1d4 [4]', spent: [] });
 
   const saveOnly = resolveCheck(2, 15, {
     conditions: [createCondition('Bless', 10, { rider: { rolls: ['save'], dice: 1 } })],

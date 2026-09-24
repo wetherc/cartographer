@@ -11,6 +11,7 @@
  */
 
 import { CONCENTRATING, addCondition, removeCondition } from './Conditions.js';
+import { spendRiders } from './Riders.js';
 import { savingThrow } from './Checks.js';
 import { durationInRounds } from './SpellTiming.js';
 
@@ -108,8 +109,11 @@ export function checkOnDamage(character, damage, opts = {}) {
     return { character, save: null, dropped: false };
   }
   const save = savingThrow(character, CONCENTRATION_ABILITY, concentrationDC(damage), opts);
+  // A one-roll rider such as Resistance is used up by this save.
+  const conditions = spendRiders(character.conditions, save.rider?.spent);
+  const rolled = conditions === character.conditions ? character : { ...character, conditions };
   return {
-    character: save.success ? character : drop(character),
+    character: save.success ? rolled : drop(rolled),
     save,
     dropped: !save.success,
   };

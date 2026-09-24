@@ -376,3 +376,24 @@ test('exhaustion and a Bless chip both reach one save, and both are named', () =
     'Rook rolls a CON saving throw (CON -1, exhaustion 3 -6, Blessed +1d4 [3]): 10.',
   );
 });
+
+test('a Guidance chip rides one check and is used up by it', () => {
+  const guidance = { ...chip('Guidance', ['check']), rounds: 10 };
+  guidance.rider = { ...guidance.rider, once: true };
+  const bless = { ...chip('Bless', ['check']), rounds: 10 };
+  const character = hero({ conditions: [guidance, bless] });
+  const app = stubApp();
+  app.state.characters = [character];
+  rollCheck(app, character, { kind: 'check', key: 'stealth' }, { rng: () => 0 });
+  assert.deepEqual(
+    app.state.characters[0].conditions.map((/** @type {any} */ c) => c.name),
+    ['Bless'],
+  );
+  assert.ok(app.dirty > 0);
+  // A roll with no once chip writes nothing.
+  const plain = hero({ conditions: [bless] });
+  const quiet = stubApp();
+  quiet.state.characters = [plain];
+  rollCheck(quiet, plain, { kind: 'check', key: 'stealth' }, { rng: () => 0 });
+  assert.equal(quiet.state.characters[0], plain);
+});

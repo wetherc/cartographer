@@ -229,7 +229,7 @@ export const DEFAULT_SPELLS = deepFreeze([
     effect: {
       kind: 'buff',
       condition: 'Resistance',
-      rider: { rolls: ['save'], dice: 1, die: 'd4' },
+      rider: { rolls: ['save'], dice: 1, die: 'd4', once: true },
     },
   },
   {
@@ -249,7 +249,7 @@ export const DEFAULT_SPELLS = deepFreeze([
     effect: {
       kind: 'buff',
       condition: 'Guidance',
-      rider: { rolls: ['check'], dice: 1, die: 'd4' },
+      rider: { rolls: ['check'], dice: 1, die: 'd4', once: true },
     },
   },
   {

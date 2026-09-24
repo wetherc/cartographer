@@ -625,8 +625,10 @@ nobody says they are looking.
 A click on a save or a skill rolls it. The dice tray opens with the d20 and
 the whole bonus, and the session log breaks the number down: the ability
 modifier, the proficiency or expertise, and any condition chip that adds to
-the roll, such as Bless on a save or Guidance on a check. The roll has no
-DC, so nothing judges it and you read the total against whatever you had in
+the roll, such as Bless on a save or Guidance on a check. Guidance and
+Resistance add to one roll only, so the first check or save they change
+removes their chip. A spell in the Library marks this with One roll only. The
+roll has no DC, so nothing judges it and you read the total against whatever you had in
 mind. The tray's advantage and disadvantage toggle applies, and the log names the die it
 threw away. A player on a bound tab rolls their own character. A spectator sees
 the numbers and cannot roll.

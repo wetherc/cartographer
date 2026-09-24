@@ -465,7 +465,7 @@ export function castSpell(caster, spell, options = {}) {
  *   crit: boolean,
  *   hit: boolean,
  *   damage: ReturnType<typeof rollDamage> | null,
- *   rider: { modifier: number, note: string } | null,
+ *   rider: { modifier: number, note: string, spent: string[] } | null,
  * }} ProjectileShot
  */
 

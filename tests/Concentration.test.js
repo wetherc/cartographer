@@ -202,3 +202,19 @@ test('the chip stays in step with the duration when the round tick runs first', 
   assert.equal(last.expired, true);
   assert.equal(chip(last.character), undefined);
 });
+
+test('a concentration save uses up a Resistance chip', () => {
+  const resisted = {
+    ...createCharacter('c1', 'Cleric'),
+    concentration: { spellId: 'bless', spellName: 'Bless', slotLevel: 1, remaining: 10 },
+    conditions: addCondition([], 'Resistance', 10, {
+      rider: { rolls: ['save'], dice: 1, die: 'd4', once: true },
+    }),
+  };
+  const held = checkOnDamage(resisted, 4, { rng: () => 0.99 });
+  assert.equal(held.dropped, false);
+  assert.deepEqual(held.character.conditions, []);
+  const lost = checkOnDamage(resisted, 4, { rng: () => 0 });
+  assert.equal(lost.dropped, true);
+  assert.deepEqual(lost.character.conditions, []);
+});

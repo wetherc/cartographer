@@ -19,6 +19,7 @@ import {
 } from './combatants.js';
 import { targetFree, chosenTargets, targetSummary } from './spellTargets.js';
 import { effectiveSlot } from './spellCastFields.js';
+import { spendRollRiders } from './riderSpend.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('../types/spell.js').Spell} Spell */
@@ -301,6 +302,13 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
   const kind = spell.effect.kind;
   const summary = targetSummary(result.targets);
   if (kind === 'attack') {
+    // A one-roll rider on the caster is used up by the first attack it joins.
+    const spent = /** @type {any[]} */ (result.outcomes).flatMap((o) =>
+      [o.rider, ...(o.shots ?? []).map((/** @type {any} */ s) => s.rider)].flatMap(
+        (r) => r?.spent ?? [],
+      ),
+    );
+    spendRollRiders(app, casterId, { spent });
     for (const o of /** @type {any[]} */ (result.outcomes)) {
       // A multi-projectile cast logs the tally, not one line per ray. The
       // rolls are already aggregated per creature, and the damage carries
@@ -385,6 +393,7 @@ export function applyOutcomes(app, spell, result, casterId, { tracked = false } 
         `${o.target.name} ${verdict} DC ${o.dc} (${detail}) — takes ${o.taken} damage${cond}.`,
       );
       applyToTarget(app, o.target.id, o.taken, false);
+      spendRollRiders(app, o.target.id, o.rider);
     }
     app.toasts.show(`${spell.name} on ${summary}.`);
     return;

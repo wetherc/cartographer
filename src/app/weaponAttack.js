@@ -22,6 +22,7 @@ import {
   resolveAttack,
 } from '../combat/AttackResolve.js';
 import { findCombatant, combatantsAsTargets, applyToTarget } from './combatants.js';
+import { spendRollRiders } from './riderSpend.js';
 
 /** @typedef {import('../types/app.js').AppContext} AppContext */
 /** @typedef {import('./combatants.js').CombatTarget} CombatTarget */
@@ -362,6 +363,7 @@ export function rollWeaponAttack(
     'combat',
     `${attacker.name} attacks ${defender.name} with ${weapon.name}${handNote} (${ability} ${formatModifier(abilityMod)}, ${proficiencyNote}${tiredNote}${tweakNote}${riderNote}${conditionNote}): ${result.total} to hit vs AC ${ac}${coverAC}${modeNote} — ${outcome}.`,
   );
+  spendRollRiders(app, attacker.id, rider);
   if (!hit) {
     app.toasts.show(`${result.total} vs AC ${ac}: ${attacker.name} misses ${defender.name}.`);
     return;

@@ -57,6 +57,9 @@ export interface RollRider {
   die?: DieType;
   /** A flat amount on top of the dice, negative to subtract. Absent means none. */
   flat?: number;
+  /** True when the first roll the rider changes uses up its chip, as with
+   * Guidance and Resistance. Absent means the chip lasts its duration. */
+  once?: boolean;
 }
 
 /** A status or condition with an optional remaining-rounds counter. Null means indefinite. */

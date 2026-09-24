@@ -250,6 +250,8 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     'Applies to',
     el('div', 'u-row u-wrap u-g2', ...riderRollChecks.map((c) => c.label)),
   );
+  const riderOnce = checkbox('One roll only', storedRider?.once === true);
+  setTip(riderOnce.label, 'The first roll the rider changes uses up the chip, as with Guidance');
 
   // --- Projectiles: several separately-rolled attacks from one cast -------
   const shots = spell?.effect.kind === 'attack' ? (spell.effect.projectiles ?? null) : null;
@@ -344,6 +346,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
   const healTogglesRow = fieldRow(addsModifier.label);
   const riderRow = fieldRow(riderDiceField, riderDieField, riderFlatField);
   const riderRollsRow = fieldRow(riderRollsField);
+  const riderOnceRow = fieldRow(riderOnce.label);
   const scalingRow = fieldRow(scales.label);
   // Keep the multi-line dice editor and the lone targets number on separate
   // rows. A shared flex row leaves the small number field floating beside the
@@ -367,6 +370,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
     const rides = chips && (kind === 'buff' || conditionSelect.value !== '');
     riderRow.hidden = !rides;
     riderRollsRow.hidden = !rides;
+    riderOnceRow.hidden = !rides;
     // Only an attack fires projectiles. Their count fields matter only once
     // the attack does.
     projectilesRow.hidden = kind !== 'attack';
@@ -501,6 +505,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
           dice: riderDiceInput.value,
           die: riderDieSelect.value,
           flat: riderFlatInput.value,
+          once: riderOnce.input.checked,
         },
         fires: fires.input.checked,
         projectiles: {
@@ -542,6 +547,7 @@ export function buildSpellForm({ spell = null, submitLabel, onSubmit, onCancel =
       saveEndsRow,
       riderRow,
       riderRollsRow,
+      riderOnceRow,
       damageField,
       healField,
       healTogglesRow,

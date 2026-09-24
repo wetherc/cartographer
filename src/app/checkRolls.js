@@ -18,6 +18,7 @@ import { formatModifier } from '../entities/Modifiers.js';
 import { characterProficiency } from '../entities/Multiclass.js';
 import { hasExpertise, isProficientSave, isProficientSkill } from '../entities/Proficiencies.js';
 import { rollRiders } from '../entities/Riders.js';
+import { spendRollRiders } from './riderSpend.js';
 import { riderSources } from '../entities/FeatChoices.js';
 import { SKILL_IDS, skillName } from '../data/skills.js';
 import { article } from '../util/text.js';
@@ -87,8 +88,8 @@ function rollName(event) {
  * ordinary result on both rolls, so the log names it and the app does not act
  * on it.
  *
- * Nothing is written. The roll reads the character and its chips, and a rider
- * chip lasts as long as its duration does, so no roll spends one.
+ * The only write is a rider chip marked `once`, such as Guidance, which the
+ * roll uses up. Every other rider chip lasts as long as its duration does.
  * @param {AppContext} app
  * @param {Character} character
  * @param {CheckRequest} event
@@ -179,4 +180,5 @@ export function rollCheck(app, character, event, { rng = Math.random } = {}) {
     `${character.name} rolls ${phrase} (${parts.join(', ')}): ${result.total}${modeNote}.${naturalNote}`,
   );
   app.toasts.show(`${character.name} rolls ${result.total} on ${phrase}.`);
+  spendRollRiders(app, character.id, rider);
 }

@@ -21,7 +21,7 @@ import {
   stabilize,
 } from '../entities/DeathSaves.js';
 import { exhaustionLevel } from '../entities/Exhaustion.js';
-import { rollRiders } from '../entities/Riders.js';
+import { rollRiders, spendRiders } from '../entities/Riders.js';
 import { riderSources } from '../entities/FeatChoices.js';
 import { findCombatant } from './combatants.js';
 
@@ -93,6 +93,8 @@ export function rollDeathSaveFor(app, characterId, { rng = Math.random } = {}) {
   const judged = judgeDeathSave(state, { natural, total: result.total, dc: DEATH_SAVE_DC });
   let next = applyJudged(character, judged.state);
   if (judged.outcome === 'revive') next = restoreResource(next, HP_RESOURCE_ID, 1);
+  // A one-roll rider such as Resistance is used up by this save.
+  next = { ...next, conditions: spendRiders(next.conditions, rider.spent) };
   found.store(next);
   app.actions.markDirty();
   const tiredNote = tired ? `, exhaustion ${exhaustionLevel(character)} ${tired}` : '';

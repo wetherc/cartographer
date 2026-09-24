@@ -67,6 +67,7 @@ export function normalizeRider(value) {
     rolls,
     ...(count !== 0 ? { dice: count, die: /** @type {DieType} */ (die) } : {}),
     ...(flat !== 0 ? { flat } : {}),
+    ...(raw.once === true ? { once: true } : {}),
   };
 }
 
@@ -139,7 +140,7 @@ export function riderSummary(rider) {
   const last = rolls[rolls.length - 1];
   const list =
     rolls.length <= 1 ? (last ?? 'nothing') : `${rolls.slice(0, -1).join(', ')} and ${last}`;
-  return `${riderText(rider)} to ${list}`;
+  return `${riderText(rider)} to ${list}${rider.once ? ' (one roll)' : ''}`;
 }
 
 /**
@@ -152,17 +153,23 @@ export function riderSummary(rider) {
  * explain the number. A creature with no rider source costs one pass over its
  * list and returns a zero modifier with an empty note, which every call site
  * treats as nothing to say.
+ *
+ * `spent` names each source whose rider has `once` set. The roll used it up,
+ * and the caller removes it from the roller with `spendRiders`.
  * @param {RiderSource[] | undefined} sources
  * @param {RiderRoll} kind
  * @param {RandomFn} [rng]
- * @returns {{ modifier: number, note: string }}
+ * @returns {{ modifier: number, note: string, spent: string[] }}
  */
 export function rollRiders(sources, kind, rng = Math.random) {
   const chips = activeRiders(sources, kind);
-  if (chips.length === 0) return { modifier: 0, note: '' };
+  if (chips.length === 0) return { modifier: 0, note: '', spent: [] };
   let modifier = 0;
   const notes = [];
+  /** @type {string[]} */
+  const spent = [];
   for (const { condition, rider } of chips) {
+    if (rider.once) spent.push(condition.name);
     const dice = rider.dice ?? 0;
     const die = rider.die ?? DEFAULT_RIDER_DIE;
     /** @type {number[]} */
@@ -178,5 +185,20 @@ export function rollRiders(sources, kind, rng = Math.random) {
         : `${condition.name} ${riderText(rider)}`,
     );
   }
-  return { modifier, note: notes.join(', ') };
+  return { modifier, note: notes.join(', '), spent };
+}
+
+/**
+ * The chip list with each chip named in `spent` removed, when its rider has
+ * `once` set. A chip whose rider lasts its duration stays, even when it
+ * shares the name. The same list comes back when nothing is spent.
+ * @template {RiderSource} T
+ * @param {T[]} conditions
+ * @param {string[] | undefined} spent
+ * @returns {T[]}
+ */
+export function spendRiders(conditions, spent) {
+  if (!spent || spent.length === 0) return conditions;
+  const names = new Set(spent);
+  return conditions.filter((c) => !(names.has(c.name) && chipRider(c)?.once));
 }

@@ -12,6 +12,7 @@
  */
 
 import { resolveSave } from './Checks.js';
+import { spendRiders } from './Riders.js';
 
 /** @typedef {import('../types/entities.js').Condition} Condition */
 /** @typedef {import('../types/entities.js').ConditionSource} ConditionSource */
@@ -107,8 +108,9 @@ export function repeatSaves(
     results.push({ condition, save, ended: save.success });
     return !save.success;
   });
-  // Identity preserved unless a save actually ended something, so a caller can
-  // skip the write when every retry failed.
+  // Identity preserved unless a save actually ended something or used up a
+  // one-roll rider, so a caller can skip the write when nothing changed.
   const ended = results.some((r) => r.ended);
-  return { conditions: ended ? conditions : list, results };
+  const spent = results.flatMap((r) => r.save.rider?.spent ?? []);
+  return { conditions: spendRiders(ended ? conditions : list, spent), results };
 }

@@ -41,7 +41,7 @@ import { clampInt } from '../util/num.js';
  * @property {string} [condition] empty for none
  * @property {boolean} [fires] whether the attack kind fires projectiles
  * @property {{ count: unknown, perStep: unknown, autoHit: boolean }} [projectiles]
- * @property {{ rolls: string[], dice: unknown, die: string, flat: unknown }} [rider]
+ * @property {{ rolls: string[], dice: unknown, die: string, flat: unknown, once?: boolean }} [rider]
  *   what the imposed chip adds to the target's later rolls
  * @property {{ creature: string, count: unknown, countPerStep: unknown }} [summons]
  *   which library creature template the summons kind spawns, and how many

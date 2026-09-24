@@ -9,6 +9,7 @@ import {
   riderText,
   riderSummary,
   rollRiders,
+  spendRiders,
 } from '../src/entities/Riders.js';
 import { createCondition } from '../src/entities/Conditions.js';
 
@@ -112,6 +113,7 @@ test('a chip whose rider is malformed reads as a chip with no rider', () => {
       {
         modifier: 0,
         note: '',
+        spent: [],
       },
     );
   }
@@ -191,8 +193,8 @@ test('a roller with no rider chip costs nothing and says nothing', () => {
   const quiet = rollRiders([createCondition('Prone', null)], 'attack', () =>
     assert.fail('no die to roll'),
   );
-  assert.deepEqual(quiet, { modifier: 0, note: '' });
-  assert.deepEqual(rollRiders(undefined, 'save'), { modifier: 0, note: '' });
+  assert.deepEqual(quiet, { modifier: 0, note: '', spent: [] });
+  assert.deepEqual(rollRiders(undefined, 'save'), { modifier: 0, note: '', spent: [] });
 });
 
 test('a rider that names no die rolls the default d4', () => {
@@ -200,4 +202,25 @@ test('a rider that names no die rolls the default d4', () => {
   const { modifier, note } = rollRiders(chips, 'save', seq([face(4, 4)]));
   assert.equal(modifier, 4);
   assert.equal(note, 'Blessed +1d4 [4]');
+});
+
+test('a once rider reports itself spent, and spendRiders removes only that chip', () => {
+  const guidance = createCondition('Guidance', 10, {
+    rider: { rolls: ['check'], dice: 1, die: 'd4', once: true },
+  });
+  const bless = createCondition('Bless', 10, { rider: { rolls: ['check'], dice: 1 } });
+  const chips = [guidance, bless];
+  const rolled = rollRiders(chips, 'check', () => 0);
+  assert.deepEqual(rolled.spent, ['Guidance']);
+  assert.deepEqual(spendRiders(chips, rolled.spent), [bless]);
+  assert.equal(spendRiders(chips, []), chips, 'nothing spent keeps the list');
+  assert.equal(spendRiders(chips, undefined), chips);
+  // A chip with the same name whose rider lasts stays.
+  assert.deepEqual(spendRiders([bless], ['Bless']), [bless]);
+  assert.equal(normalizeRider({ rolls: ['save'], dice: 1, once: true })?.once, true);
+  assert.equal('once' in (normalizeRider({ rolls: ['save'], dice: 1, once: 'yes' }) ?? {}), false);
+  assert.equal(
+    riderSummary({ rolls: ['check'], dice: 1, once: true }),
+    '+1d4 to ability checks (one roll)',
+  );
 });

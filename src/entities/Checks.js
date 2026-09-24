@@ -35,7 +35,7 @@ import { SKILL_ABILITIES, SKILL_IDS } from '../data/skills.js';
  *   dc: number,
  *   natural: number,
  *   success: boolean,
- *   rider: { modifier: number, note: string } | null,
+ *   rider: { modifier: number, note: string, spent: string[] } | null,
  * }} SaveResult
  */
 
@@ -143,7 +143,7 @@ export function savingThrow(character, ability, dc, opts = {}) {
  *   dc: number | null,
  *   natural: number,
  *   success: boolean | null,
- *   rider: { modifier: number, note: string } | null,
+ *   rider: { modifier: number, note: string, spent: string[] } | null,
  * }} CheckResult
  */
 

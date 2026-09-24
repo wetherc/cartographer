@@ -1017,7 +1017,7 @@ test('a rider on the caster joins every spell attack roll', () => {
   const shot = /** @type {any} */ (result.outcomes[0]);
   assert.equal(shot.attack.total, 16, '8 on the die, +5 bonus, +3 from Bless');
   assert.equal(shot.hit, true, '16 beats AC 15, which the raw 13 would not have');
-  assert.deepEqual(shot.rider, { modifier: 3, note: 'Bless +1d4 [3]' });
+  assert.deepEqual(shot.rider, { modifier: 3, note: 'Bless +1d4 [3]', spent: [] });
 });
 
 test('each projectile rolls its own rider die', () => {
@@ -1089,7 +1089,7 @@ test('a rider on the target rides the save, and the chip carries the spell rider
   const o = /** @type {any} */ (result.outcomes[0]);
   assert.equal(o.save.total, 14, '16 on the die, +2 bonus, -4 from Bane');
   assert.equal(o.saved, false, 'the penalty is what dropped it under DC 15');
-  assert.deepEqual(o.rider, { modifier: -4, note: 'Bane -1d4 [4]' });
+  assert.deepEqual(o.rider, { modifier: -4, note: 'Bane -1d4 [4]', spent: [] });
   assert.equal(o.condition, 'Blinded');
   assert.equal(o.conditionRider, BANE_RIDER);
 });
@@ -1132,7 +1132,7 @@ test("a target's feat riders ride its save without becoming chips", () => {
   const o = /** @type {any} */ (result.outcomes[0]);
   assert.equal(o.save.total, 14, '12 on the die plus the +2 feat rider');
   assert.equal(o.saved, true);
-  assert.deepEqual(o.rider, { modifier: 2, note: 'Iron Will +2' });
+  assert.deepEqual(o.rider, { modifier: 2, note: 'Iron Will +2', spent: [] });
 });
 
 /** @type {any} */
