@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { encodeNodeTiles, decodeNodeTiles } from '../src/storage/TileCodec.js';
+import {
+  encodeNodeTiles,
+  decodeNodeTiles,
+  decodeNodeList,
+  MAX_NODES,
+  MAX_TOTAL_CELLS,
+} from '../src/storage/TileCodec.js';
 import { gridTiles } from './helpers/grid.js';
 
 /**
@@ -355,4 +361,35 @@ test('a bare ref that reads like the JSON of a pair gets its own palette slot', 
   );
   assert.deepEqual(encoded.refs, [lookalike, ['grass', 'road']]);
   assert.deepEqual(encoded.cells, [0, 1]);
+});
+
+test('decodeNodeList stops expanding nodes once the total cell limit is spent', () => {
+  // Each node declares a 1000x1000 grid with one run, a few characters in
+  // the file and a million tiles in memory.
+  const huge = (/** @type {string} */ id) => ({
+    id,
+    width: 1000,
+    height: 1000,
+    refs: ['a'],
+    cells: [[0, 1_000_000]],
+    tiles: [{ id: '0,0', name: 'kept only when decoded' }],
+  });
+  const count = MAX_TOTAL_CELLS / 1_000_000 + 1;
+  const nodes = /** @type {any[]} */ (
+    decodeNodeList(Array.from({ length: count }, (_, i) => huge(`n${i}`)))
+  );
+  assert.deepEqual(
+    nodes.map((node) => node.tiles.length),
+    [...Array(count - 1).fill(1_000_000), 0],
+  );
+  assert.equal(nodes.at(-1).id, `n${count - 1}`, 'the node over the limit keeps its fields');
+  assert.equal('cells' in nodes.at(-1), false);
+});
+
+test('decodeNodeList passes per-tile nodes through and drops nodes past MAX_NODES', () => {
+  const plain = { id: 'p', tiles: [] };
+  const list = decodeNodeList([plain, null, ...Array(MAX_NODES).fill(plain)]);
+  assert.equal(list.length, MAX_NODES);
+  assert.equal(list[0], plain);
+  assert.equal(list[1], null);
 });

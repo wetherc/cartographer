@@ -9,7 +9,7 @@ import { CURRENT_VERSION, migrateState, stateVersion } from './Migrations.js';
 import { hoistAssets, restoreAssets } from './Assets.js';
 import { detachAssets, loadAssetTable, persistAssets } from './AssetStore.js';
 import { createEntityPacker } from './EntityPack.js';
-import { encodeNodeTiles, decodeNodeTiles } from './TileCodec.js';
+import { encodeNodeTiles, decodeNodeList } from './TileCodec.js';
 import { memoizeByIdentity } from '../util/memoize.js';
 import { recordExternalWrite, storageFootprint, writeStored } from './Footprint.js';
 import { createSaveFollower } from './SaveFollower.js';
@@ -313,7 +313,7 @@ export function deserialize(json, assets) {
   // place that states what a tile default is. A node stored in the
   // unencoded form passes through the decoder unchanged.
   const decoded = { ...migrated };
-  if (Array.isArray(decoded.nodes)) decoded.nodes = decoded.nodes.map(decodeNodeTiles);
+  if (Array.isArray(decoded.nodes)) decoded.nodes = decodeNodeList(decoded.nodes);
   if (assets && Object.keys(assets).length) {
     // The sidecar table is a fallback under whatever the string itself
     // carries, so a save holding its own table resolves from that table alone.

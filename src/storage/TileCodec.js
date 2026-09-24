@@ -378,10 +378,9 @@ export function decodeNodeTiles(node) {
   delete decoded.cells;
   delete decoded.fog;
   const leftovers = leftoversById(node.tiles);
-  const width = Number.isInteger(node.width) && node.width >= 1 ? node.width : 0;
-  const height = Number.isInteger(node.height) && node.height >= 1 ? node.height : 0;
-  const size = width * height;
-  if (!size || size > MAX_GRID_CELLS) {
+  const size = gridSize(node);
+  const width = size ? node.width : 0;
+  if (!size) {
     // The codec cannot place a tile without usable dimensions. Keep the
     // leftovers, which carry their own ids, instead of dropping the node's
     // tiles outright.
@@ -422,4 +421,51 @@ export function decodeNodeTiles(node) {
   }
   decoded.tiles = tiles;
   return decoded;
+}
+
+/**
+ * Total cell limit summed over every encoded node of one save. A run of
+ * `[index, count]` costs a few characters in the file and one tile record
+ * in memory per cell, so a 192-character node with one 1000x1000 run
+ * allocates about 283 MB when it loads. The per-node `MAX_GRID_CELLS` limit
+ * alone lets a file repeat that node until the tab runs out of memory.
+ */
+export const MAX_TOTAL_CELLS = 2_000_000;
+
+/** Node count limit for one save. Nodes past this index are dropped. */
+export const MAX_NODES = 10_000;
+
+/**
+ * Decode every node of a save with `decodeNodeTiles`, under the
+ * `MAX_NODES` and `MAX_TOTAL_CELLS` limits. The function counts an encoded
+ * node's declared grid size against the cell limit. A node that does not
+ * fit in the cells left keeps its other fields and loads with no tiles, so
+ * links to it still resolve. A node in the per-tile form costs its file
+ * size in memory and does not count.
+ * @param {unknown[]} nodes
+ * @returns {unknown[]}
+ */
+export function decodeNodeList(nodes) {
+  let left = MAX_TOTAL_CELLS;
+  return nodes.slice(0, MAX_NODES).map((node) => {
+    const record = /** @type {Record<string, any>} */ (node);
+    if (!record || typeof record !== 'object' || !Array.isArray(record.cells)) return node;
+    const size = gridSize(record);
+    if (size > left) return decodeNodeTiles({ ...record, cells: [], tiles: [] });
+    left -= size;
+    return decodeNodeTiles(record);
+  });
+}
+
+/**
+ * The cell count of an encoded node, or 0 when a dimension is not a
+ * positive integer or the grid exceeds `MAX_GRID_CELLS`.
+ * @param {Record<string, any>} node
+ * @returns {number}
+ */
+function gridSize(node) {
+  const { width, height } = node;
+  if (!Number.isInteger(width) || width < 1 || !Number.isInteger(height) || height < 1) return 0;
+  const size = width * height;
+  return size > MAX_GRID_CELLS ? 0 : size;
 }
