@@ -464,6 +464,14 @@ function formStub(values = {}) {
     setHidden: (/** @type {string} */ name, /** @type {boolean} */ value) => {
       form.hidden[name] = value;
     },
+    /** @type {Record<string, number>} */ maxes: {},
+    setOptions: (
+      /** @type {string} */ name,
+      /** @type {unknown} */ _options,
+      /** @type {number} */ max,
+    ) => {
+      form.maxes[name] = max;
+    },
   };
   return form;
 }
@@ -487,6 +495,29 @@ test('upcasting a projectile spell restates the grid total and its caption', () 
   onChange('slot', /** @type {any} */ (form));
   assert.equal(form.totals.allocation, 4, 'the third-level slot fires a fourth ray');
   assert.equal(form.labels.allocation, 'Targets (4 to allocate)');
+});
+
+test('upcasting a spell that scales its targets raises the target cap', () => {
+  const caster = mage({
+    resources: [
+      createResource('slots-1', 'Level 1 slots', 'mana', 2),
+      createResource('slots-2', 'Level 2 slots', 'mana', 1),
+    ],
+  });
+  const goblins = ['g1', 'g2'].map((id) =>
+    createCreature(id, id, { disposition: 'hostile', maxHP: 10, location: HERE, level: 1 }),
+  );
+  const app = stubApp({ characters: [caster], creatures: goblins });
+  const upcastable = { ...holdPerson, scaling: { targetsPerLevel: 1 } };
+  const plan = planFor(app, caster, upcastable);
+  const group = plan.fields.find((f) => f.name === 'targets');
+  assert.equal(group?.type, 'multiselect', 'a second slot level can name a second creature');
+  assert.equal(/** @type {any} */ (group).max, 1, 'the starting slot reaches one');
+  const form = formStub({ slot: '2' });
+  castChangeHandler(plan)('slot', /** @type {any} */ (form));
+  assert.equal(form.maxes.targets, 2);
+  assert.equal(form.labels.targets, 'Targets (up to 2)');
+  assert.deepEqual(form.totals, {}, 'a target group has no grid total');
 });
 
 test('ticking the ritual box hides the slot picker it overrides', () => {

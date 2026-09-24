@@ -170,11 +170,17 @@ export function castPlan(app, entity, spell, offered) {
   const dc = spellSaveDC(caster, sourceClass) ?? 10;
   // Both caps read the level the picker starts on: the lowest slot the
   // caster can spend. This is also the level submitted if the GM does not
-  // change it. The projectile allocation then follows the picked level,
-  // because it must add up exactly. The target checkboxes stay at the
-  // starting cap, and a cast above it drops the extra targets. `castSpell`
-  // reports the dropped targets back.
+  // change it. The projectile allocation and the target checkboxes then
+  // follow the picked level. The cap at the highest slot decides whether the
+  // dialog needs checkboxes at all, so an upcast Hold Person can name a
+  // second creature. A cast over its cap drops the extra targets, and
+  // `castSpell` reports them back.
   const cap = castCap(spell, startingSlotLevel(spell, slotLevels), caster.level ?? 1);
+  const maxCap = castCap(
+    spell,
+    slotLevels.length ? Math.max(...slotLevels) : startingSlotLevel(spell, slotLevels),
+    caster.level ?? 1,
+  );
   // The check reads the real entity, not the caster view, because the
   // caster view has no inventory. A combatant with no inventory is never
   // asked for a component. Only a Character has an inventory. The check's
@@ -209,6 +215,7 @@ export function castPlan(app, entity, spell, offered) {
   // a casting time no turn can hold. Both offer the same opt-out.
   const actionBlocked = Boolean(participant && (cost === null || !canSpend(participant, cost)));
   const fields = castFields(spell, targets, slotLevels, dc, cap, {
+    maxCap,
     material: material.required,
     ritual: ritualOffered,
     armor: armor.length > 0,

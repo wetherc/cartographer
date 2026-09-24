@@ -68,6 +68,17 @@ export function castCap(spell, slotLevel, casterLevel) {
 }
 
 /**
+ * The label of the target checkbox group at a cap.
+ * @param {Spell['effect']['kind']} kind
+ * @param {number} cap
+ * @returns {string}
+ */
+function targetsLabel(kind, cap) {
+  const noun = helps(kind) ? 'Recipient' : 'Target';
+  return Number.isFinite(cap) ? `${noun}s (up to ${cap})` : `${noun}s in the area`;
+}
+
+/**
  * The pre-roll dialog fields for a cast. Fields include a slot-level picker
  * (for a leveled spell cast at or above its level, from a slot the caster
  * still has), the target or targets, an advantage/disadvantage mode, and,
@@ -75,9 +86,13 @@ export function castCap(spell, slotLevel, casterLevel) {
  * slot picker. A utility spell adds no target field. The function returns
  * null when the caster has no usable slot for a leveled spell.
  *
- * A spell that reaches one creature keeps a single select, so the common
- * case stays one click. A spell that reaches more creatures gets a checkbox
- * group, capped at the number the spell allows. An area spell has no cap, so
+ * A spell that reaches one creature at every offered slot keeps a single
+ * select, so the common case stays one click. A spell that reaches more
+ * creatures at any offered slot gets a checkbox group, capped at the number
+ * the starting slot allows. `opts.maxCap` is the cap at the highest offered
+ * slot. It picks the group for a spell such as Hold Person, which reaches one
+ * creature at its own level and one more per level above. The change
+ * handler then moves the cap with the slot picker. An area spell has no cap, so
  * the GM picks whoever the blast covers. A multi-projectile spell gets the
  * allocation grid instead, because a checkbox cannot express partial
  * allocation across targets. The grid also serves as the target picker: a
@@ -98,7 +113,7 @@ export function castCap(spell, slotLevel, casterLevel) {
  * @param {number[]} slotLevels the available slot levels at or above the spell's level
  * @param {number} saveDC
  * @param {number} cap the number of targets this cast can reach. The value is Infinity for an area spell.
- * @param {{ material?: boolean, ritual?: boolean, armor?: boolean, actionLabel?: string }} [opts] `material`: true when the
+ * @param {{ material?: boolean, ritual?: boolean, armor?: boolean, actionLabel?: string, maxCap?: number }} [opts] `material`: true when the
  *   cast requires the caster to hold a material component. This adds the opt-out
  *   checkbox for a table that treats components as flavor. `ritual`: true when this caster can
  *   cast this spell as a ritual. This adds the box that trades the slot for extra time.
@@ -106,10 +121,11 @@ export function castCap(spell, slotLevel, casterLevel) {
  *   the opt-out checkbox that lets the GM waive the armor rule.
  *   `actionLabel`: the wording of the action-cost opt-out, for a cast the
  *   caster's turn cannot pay for. An empty string leaves the box out.
+ *   `maxCap`: the cap at the highest offered slot. It defaults to `cap`.
  * @returns {import('../types/modal.js').ModalField[] | null}
  */
 export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
-  const { material = false, ritual = false, armor = false, actionLabel = '' } = opts;
+  const { material = false, ritual = false, armor = false, actionLabel = '', maxCap = cap } = opts;
   const kind = spell.effect.kind;
   /** @type {import('../types/modal.js').ModalField[]} */
   const fields = [];
@@ -153,12 +169,12 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
         // single-target cast to one click.
         value: `${options[0].value}:${cap}`,
       });
-    } else if (cap <= 1) {
+    } else if (Math.max(cap, maxCap) <= 1) {
       fields.push({ name: 'target', label: noun, type: 'select', full: true, options });
     } else {
       fields.push({
         name: 'targets',
-        label: Number.isFinite(cap) ? `${noun}s (up to ${cap})` : `${noun}s in the area`,
+        label: targetsLabel(kind, cap),
         type: 'multiselect',
         full: true,
         options,
@@ -235,7 +251,9 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
  * allocation must add up to that number, so the grid's total and caption are
  * restated whenever the level changes. Ticking the ritual box also changes
  * the level, because a ritual always resolves at the spell's own level, and
- * it hides the slot picker it overrides.
+ * it hides the slot picker it overrides. A capped target group follows the
+ * level the same way: an upcast Hold Person reaches one more creature per
+ * level, so the group's cap and caption move with the picker.
  *
  * This takes the form as an interface, not as elements, so a fake form
  * records what a change would do to the dialog.
@@ -245,6 +263,10 @@ export function castFields(spell, targets, slotLevels, saveDC, cap, opts = {}) {
 export function castChangeHandler(plan) {
   const { spell, caster, slotLevels, fields } = plan;
   const allocates = fields.some((f) => f.name === 'allocation');
+  // An area group has no cap to move.
+  const group = /** @type {import('../types/modal.js').MultiselectModalField | undefined} */ (
+    fields.find((f) => f.name === 'targets' && f.type === 'multiselect' && f.max !== undefined)
+  );
   // A spell with no ritual has no box to read. Reading one that the dialog
   // never built throws, which would break the slot picker of every leveled
   // spell that cannot be cast as a ritual.
@@ -253,12 +275,17 @@ export function castChangeHandler(plan) {
     if (name !== 'slot' && name !== 'ritual') return;
     const asRitual = offersRitual && form.get('ritual') === '1';
     if (name === 'ritual' && slotLevels.length > 0) form.setHidden('slot', asRitual);
-    if (!allocates) return;
+    if (!allocates && !group) return;
     const total = castCap(
       spell,
       effectiveSlot(spell, form.get('slot'), asRitual),
       caster.level ?? 1,
     );
+    if (group) {
+      form.setOptions('targets', group.options ?? [], total);
+      form.setLabel('targets', targetsLabel(spell.effect.kind, total));
+      return;
+    }
     form.setTotal('allocation', total);
     form.setLabel('allocation', allocationLabel(total));
   };

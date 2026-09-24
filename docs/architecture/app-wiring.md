@@ -323,11 +323,13 @@ a creature's stat block and a character's gear-buffed scores.
 The spell decides how many creatures a cast can name. `Casting.maxTargets`
 reads its `targetCount` value, where an absent value means one target, plus
 one target per scaling step, and a `targetCount` of 0 marks an area spell
-with no cap at all. The cast dialog offers a single picker at a cap of one,
-and a capped checkbox group above that. Both caps are read at the slot level
-that the picker opens on, which is the lowest level that the caster can
-spend. A cast that ends up over the cap resolves the targets it can reach
-and reports the rest as dropped. A multi-projectile spell, such as Scorching
+with no cap at all. The cast dialog offers a single picker when the cap is
+one at every slot the caster can spend, and a capped checkbox group
+otherwise. Both caps start at the lowest slot level that the caster can
+spend, and `castChangeHandler` moves them with the slot picker, so an
+upcast Hold Person can name one more creature per level. A cast that ends
+up over the cap resolves the targets it can reach and reports the rest as
+dropped. A multi-projectile spell, such as Scorching
 Ray, gets the allocation grid rather than checkboxes, because its
 projectiles split between creatures, and its total has to add up exactly, so
 a change to the slot level restates it through the form's `setTotal`. See
