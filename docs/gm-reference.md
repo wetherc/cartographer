@@ -449,6 +449,9 @@ the combat screen and on its sheet, and the Unconscious chip.
 - A natural 20 wakes the character at 1 HP. A natural 1 counts as two failures.
 - Any damage while at 0 HP is an automatic failure, with no roll. A critical
   hit counts as two. Damage on a stable character starts the saves again.
+- Damage left over past 0 HP that is at least the HP maximum kills outright.
+  A 12 HP character hit for 24 dies, and so does a character at 0 HP hit for
+  12. Bonus HP soaks the hit first.
 - The hit that drops the character to 0 HP costs no failure. Any healing above
   0 HP clears the tracker, a dead one included. The app has no revival spell,
   so in this app any heal above 0 HP brings a dead character back, and you

@@ -117,6 +117,12 @@ function customPools(character) {
  *   The write behind the exhaustion pips. It goes through the host for the same
  *   reason a death save does: the sixth level kills, and the write that kills
  *   also logs. Without it, the pips are read-only.
+ * @param {{ onStep: (amount: number, isHeal: boolean) => void } | null} [hpStep]
+ *   The write behind the HP steppers. It goes through the host, because a
+ *   step to 0 HP starts the death-save tracker, a step on a character at 0
+ *   HP costs a death save, and a step on a concentrating character calls for
+ *   the CON save, all of which log. Without it, the steppers change the HP
+ *   pool alone.
  * @returns {{ getCharacter: () => Character | null, setCharacter: (character: Character | null) => void }}
  */
 export function mountCharacterSheet(
@@ -129,6 +135,7 @@ export function mountCharacterSheet(
   onCheck = null,
   deathSaves = null,
   exhaustion = null,
+  hpStep = null,
 ) {
   let current = initial;
 
@@ -234,13 +241,13 @@ export function mountCharacterSheet(
         const damageButton = iconButton(
           'minus',
           `Damage ${character.name} by 1`,
-          () => commit(damageCharacter(live(), 1)),
+          () => (hpStep ? hpStep.onStep(1, false) : commit(damageCharacter(live(), 1))),
           { variant: 'danger', className: 'character-sheet__hp-step' },
         );
         const healButton = iconButton(
           'heal',
           `Heal ${character.name} by 1`,
-          () => commit(restoreResource(live(), 'hp', 1)),
+          () => (hpStep ? hpStep.onStep(1, true) : commit(restoreResource(live(), 'hp', 1))),
           { variant: 'success', className: 'character-sheet__hp-step' },
         );
         flank = { before: damageButton, after: healButton };

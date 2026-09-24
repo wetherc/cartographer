@@ -991,10 +991,9 @@ logs a spell that ran out.
 
 Only characters concentrate. A creature has no field to write, so a foe's
 concentration is still a chip that the GM adds and removes by hand, which is
-the reason `Concentrating` stays in the pick-list. The character
-sheet's `-1 HP` button is bookkeeping rather than a damage event, so it
-calls for no save. Damage that tests concentration goes through an attack
-or a cast.
+the reason `Concentrating` stays in the pick-list. Every damage path tests
+concentration, the character sheet's `-1 HP` button included, because they
+all go through `CharacterHit.hitCharacter` (see the death saves below).
 
 ## Death saves
 
@@ -1039,7 +1038,10 @@ Damage on a character who is already at 0 HP skips the roll and is an
 automatic failure, and a critical hit counts as two. Damage on a stable
 character makes it dying again, with that failure against it, which is the 2014
 rule. The hit that drops the character to 0 HP in the first place costs no
-failure. Damage large enough for instant death is out of scope.
+failure. Damage left over past 0 HP that is at least the HP maximum kills
+outright, which is the 5e massive damage rule. Bonus HP soaks the hit first,
+so it does not count toward the leftover. The rule applies both to the hit
+that drops the character and to a hit on a character already at 0 HP.
 
 `Unconscious` goes on with the tracker and comes off with it, so no caller tracks
 both halves. `Conditions.js` exports the chip's name as `UNCONSCIOUS`.
@@ -1047,13 +1049,17 @@ That chip gives an attacker advantage and a melee hit an automatic crit,
 through the condition-effect table below, so the crit rule needs no special
 case here.
 
-`app/combatants.js`'s `applyToTarget` drives all of this, in `foldDeathSaves`.
-Every hit and every heal arrives through that one function, so the three cases
-(the drop to 0, a hit while down, and a heal back above 0) are decided in one
-place. The consequence folds into the same write as the HP change.
+`entities/CharacterHit.js` decides all of this. `hitCharacter` and
+`healCharacter` return the character after the change, the events to log
+(the drop to 0, massive damage, a failure while down, a heal back above 0,
+and the concentration outcome), and the spell the hit ended. The consequence
+folds into the same write as the HP change. `app/combatants.js`'s
+`applyToTarget` calls them and logs the events. Every hit and every heal
+arrives through that one function, the character sheet's HP steppers
+included, which reach it through the sheet's `hpStep` host.
 `applyToTarget` takes `opts.crit` for the doubled failure, and
-`app/weaponAttack.js` passes it. Spell damage does not crit here and leaves it
-off.
+`app/weaponAttack.js` passes it. Spell damage does not crit here and leaves
+it off.
 
 The roll itself comes from a button, on the combat screen's active column and
 on the character sheet, not from the turn advance. `retryImposedSaves`

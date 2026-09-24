@@ -14,7 +14,7 @@ import { learnableSpells as spellsLearnableBy } from '../entities/SpellLearning.
 import { characterFields, characterFormChange, buildCharacter } from './characterCreate.js';
 import { activeSpells, resolveSpellIds, getActiveLibrary } from '../library/Library.js';
 import { castSpellOutOfCombat } from './spellCast.js';
-import { endSpellEffects, rosterIds } from './combatants.js';
+import { applyToTarget, endSpellEffects, rosterIds } from './combatants.js';
 import { rollCheck } from './checkRolls.js';
 import { rollDeathSaveFor, stabilizeCharacter } from './deathSaves.js';
 import { setCombatantExhaustion } from './exhaustion.js';
@@ -364,6 +364,15 @@ export function wireParty(app) {
       onSet: (level) => {
         const character = selectedCharacter();
         if (character) setCombatantExhaustion(app, character.id, level);
+      },
+    },
+    // The HP steppers go through the same write path as a hit or a heal on
+    // the combat screen, which folds in the death-save and concentration rules
+    // and logs them.
+    {
+      onStep: (amount, isHeal) => {
+        const character = selectedCharacter();
+        if (character) applyToTarget(app, character.id, amount, isHeal);
       },
     },
   );

@@ -3,21 +3,14 @@ import { memoizeByIdentity } from '../util/memoize.js';
 import { applyDamage, effectiveStatBlock, heal, isDefeated } from '../entities/Creature.js';
 import { armorClass, unproficientWear } from '../entities/Armor.js';
 import { equippedWeapons } from '../entities/Equipment.js';
-import {
-  damageCharacter,
-  restoreResource,
-  getHP,
-  getSpellbook,
-  HP_RESOURCE_ID,
-} from '../entities/Character.js';
+import { getHP, getSpellbook } from '../entities/Character.js';
 import { addCondition } from '../entities/Conditions.js';
 import { removeImposed, repeatSaves } from '../entities/ImposedConditions.js';
 import { featRiders } from '../entities/FeatChoices.js';
 import { despawnSummons } from '../entities/Summons.js';
 import { saveBonus } from '../entities/Checks.js';
 import { creatureSaveBonus } from '../entities/CreatureChecks.js';
-import { checkOnDamage, drop as dropConcentration } from '../entities/Concentration.js';
-import { dropToDying, isDead, recordDamage } from '../entities/DeathSaves.js';
+import { healCharacter, hitCharacter } from '../entities/CharacterHit.js';
 import { replaceById } from '../entities/Roster.js';
 import { castableLeveledIds } from '../entities/SpellView.js';
 import { resolveSpellIds } from '../library/Library.js';
@@ -586,38 +579,19 @@ export function applyToTarget(app, targetId, amount, isHeal, opts = {}) {
     return;
   }
   if (found.kind === 'character') {
-    const wasDown = (getHP(found.entity)?.current ?? 0) <= 0;
-    // Read before the write. `restoreResource` ends the tracker itself when it
-    // heals a character above 0, so the healed copy no longer says it was
-    // dying, and this is the only place left that knows.
-    const wasDying = Boolean(found.entity.deathSaves);
-    let next = isHeal
-      ? restoreResource(found.entity, HP_RESOURCE_ID, amount)
-      : damageCharacter(found.entity, amount);
-    // Log the drop to 0 exactly once. Further damage on a downed character
-    // must not repeat it. A character dead of exhaustion keeps its HP, so a
-    // hit can still push it to 0; that drop gets no line, because the log
-    // already said the character died.
-    const downed = !isHeal && !wasDown && (getHP(next)?.current ?? 0) <= 0;
+    const result = isHeal
+      ? healCharacter(found.entity, amount)
+      : hitCharacter(found.entity, amount, { crit: opts.crit ?? false });
     // The amount line comes first, so the drop and the death-save lines that
     // follow read as its consequences.
-    logManual(next);
-    if (downed && !isDead(next)) app.actions.logEvent('combat', `${next.name} drops to 0 HP.`);
-    next = foldDeathSaves(app, next, {
-      isHeal,
-      downed,
-      wasDown,
-      wasDying,
-      crit: opts.crit ?? false,
-    });
-    const broke = isHeal ? null : breakConcentration(app, next, amount, downed);
-    if (broke) next = broke.character;
-    found.store(next);
+    logManual(result.character);
+    logHitEvents(app, result.character.name, result.events);
+    found.store(result.character);
     app.actions.markDirty();
     // Do this after the store, never before. The sweep rewrites
     // `state.characters`. Storing the damaged character here first puts
     // the pre-sweep copy back.
-    if (broke?.ended) endSpellEffects(app, next.id, broke.ended);
+    if (result.ended) endSpellEffects(app, result.character.id, result.ended);
   }
 }
 
@@ -638,75 +612,41 @@ function hpAfter(kind, entity) {
 }
 
 /**
- * foldDeathSaves applies the death-save consequence of one hit or one heal,
- * folded into the same write as the HP change. There are three cases.
- *
- * The hit that drops a character to 0 HP starts the tracker and puts the
- * Unconscious chip on. That hit costs no failure itself.
- *
- * A hit on a character who was already at 0 HP is an automatic failure, with
- * no roll. A critical hit counts as two. This also un-stabilizes a stable
- * character, which is the 2014 rule.
- *
- * A heal that brings a dying character above 0 HP has already ended the
- * tracker inside `restoreResource`, which every heal in the app goes through.
- * All that is left here is to say so, and `wasDying` is what the caller read
- * before the write.
+ * Log what a hit or a heal did to a party character, in the order it
+ * happened (see `CharacterHit.HitEvent`).
  * @param {AppContext} app
- * @param {Character} character already damaged or healed
- * @param {{
- *   isHeal: boolean, downed: boolean, wasDown: boolean, wasDying: boolean, crit: boolean,
- * }} edge
- * @returns {Character}
+ * @param {string} name
+ * @param {import('../entities/CharacterHit.js').HitEvent[]} events
  */
-function foldDeathSaves(app, character, { isHeal, downed, wasDown, wasDying, crit }) {
-  if (isHeal) {
-    if (wasDying && !character.deathSaves) {
-      app.actions.logEvent('combat', `${character.name} regains consciousness.`);
-    }
-    return character;
+function logHitEvents(app, name, events) {
+  for (const event of events) {
+    const line = hitEventLine(name, event);
+    app.actions.logEvent('combat', line);
+    if (event.kind === 'failures' && event.dead) app.actions.logEvent('combat', `${name} dies.`);
   }
-  if (downed) return dropToDying(character);
-  if (!wasDown || !character.deathSaves) return character;
-  const hit = recordDamage(character, { crit });
-  if (hit.failures === 0) return character;
-  const failures = hit.failures === 2 ? 'two failed death saves' : 'a failed death save';
-  app.actions.logEvent('combat', `${character.name} takes ${failures} from the hit.`);
-  if (hit.dead) app.actions.logEvent('combat', `${character.name} dies.`);
-  return hit.character;
 }
 
 /**
- * breakConcentration applies the concentration consequence of damage,
- * folded into the same write. A character knocked to 0 HP loses the spell
- * outright. A character still standing makes the CON save for it, and the
- * log records the DC and the roll. The function returns the character to
- * store, alongside the id of the spell the damage ended. The caller sweeps
- * that spell off its targets once the store lands. A character holding no
- * spell comes back unchanged, with nothing ended.
- * @param {AppContext} app
- * @param {Character} character already damaged
- * @param {number} damage
- * @param {boolean} downed whether this damage dropped the character to 0 HP
- * @returns {{ character: Character, ended: string | null }}
+ * @param {string} name
+ * @param {import('../entities/CharacterHit.js').HitEvent} event
+ * @returns {string}
  */
-function breakConcentration(app, character, damage, downed) {
-  const held = character.concentration;
-  if (!held) return { character, ended: null };
-  if (downed) {
-    app.actions.logEvent(
-      'combat',
-      `${character.name} falls and loses concentration on ${held.spellName}.`,
-    );
-    return { character: dropConcentration(character), ended: held.spellId };
+function hitEventLine(name, event) {
+  switch (event.kind) {
+    case 'downed':
+      return `${name} drops to 0 HP.`;
+    case 'massive':
+      return `${name} dies from massive damage.`;
+    case 'failures':
+      return `${name} takes ${event.count === 2 ? 'two failed death saves' : 'a failed death save'} from the hit.`;
+    case 'revived':
+      return `${name} regains consciousness.`;
+    case 'fell':
+      return `${name} falls and loses concentration on ${event.spellName}.`;
+    default:
+      return (
+        `${name} ${event.kept ? 'holds' : 'loses'} concentration on ${event.spellName} ` +
+        `(CON save ${event.total} vs DC ${event.dc}).`
+      );
   }
-  const check = checkOnDamage(character, damage);
-  if (!check.save) return { character, ended: null };
-  const verdict = check.dropped ? 'loses' : 'holds';
-  app.actions.logEvent(
-    'combat',
-    `${character.name} ${verdict} concentration on ${held.spellName} ` +
-      `(CON save ${check.save.total} vs DC ${check.save.dc}).`,
-  );
-  return { character: check.character, ended: check.dropped ? held.spellId : null };
 }

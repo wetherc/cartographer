@@ -332,7 +332,7 @@ test('applyToTarget heals an encounter without a defeat log', () => {
 test('applyToTarget logs a character dropping to 0 HP exactly once and heals back', () => {
   const hero = withHP(createCharacter('hero', 'Hero'), 10);
   const app = stubApp({ characters: [hero] });
-  applyToTarget(app, 'hero', 999, false);
+  applyToTarget(app, 'hero', 10, false);
   assert.equal(getHP(app.state.characters[0]).current, 0);
   assert.deepEqual(app.log, ['Hero drops to 0 HP.']);
   applyToTarget(app, 'hero', 5, false);
@@ -344,6 +344,14 @@ test('applyToTarget logs a character dropping to 0 HP exactly once and heals bac
   );
   applyToTarget(app, 'hero', 4, true);
   assert.equal(getHP(app.state.characters[0]).current, 4);
+});
+
+test('applyToTarget kills outright on massive damage and logs it', () => {
+  const hero = withHP(createCharacter('hero', 'Hero'), 12);
+  const app = stubApp({ characters: [hero] });
+  applyToTarget(app, 'hero', 30, false);
+  assert.deepEqual(app.log, ['Hero dies from massive damage.']);
+  assert.equal(app.state.characters[0].deathSaves?.failures, 3);
 });
 
 test('applyToTarget starts the death-save tracker on the drop to 0 HP', () => {
@@ -873,7 +881,7 @@ test('a concentrating character dropped to 0 HP loses the spell without a save',
   const hero = withHP(createCharacter('hero', 'Hero'), 10);
   const { character } = beginConcentration(hero, /** @type {any} */ (HOLD_PERSON), 2);
   const app = stubApp({ characters: [character] });
-  applyToTarget(app, 'hero', 999, false);
+  applyToTarget(app, 'hero', 10, false);
   assert.equal(app.state.characters[0].concentration, null);
   assert.deepEqual(app.log, [
     'Hero drops to 0 HP.',
